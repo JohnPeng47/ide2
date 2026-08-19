@@ -1,0 +1,134 @@
+import { useMemo, useRef, useState } from "react";
+import type { CodeEntitiesSetRecord, DiagramRecord } from "../domain";
+import { promptOptions } from "../prompt";
+
+export function GeneratorOptions(props: {
+  codeEntities: CodeEntitiesSetRecord;
+  diagrams: DiagramRecord[];
+  prompt: string;
+  count: number;
+  generating: boolean;
+  progress: string;
+  error: string | null;
+  onPrompt: (value: string) => void;
+  onCount: (value: number) => void;
+  onFinalize: () => void;
+  onGenerate: () => void;
+}) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const options = useMemo(
+    () => promptOptions(props.codeEntities, props.diagrams),
+    [props.codeEntities, props.diagrams]
+  );
+  const suggestions = mentionQuery === null ? [] : options.filter((option) => (
+    option.token.toLowerCase().includes(mentionQuery.toLowerCase())
+    || option.label.toLowerCase().includes(mentionQuery.toLowerCase().replace(/^@/, ""))
+  )).slice(0, 8);
+
+  const updatePrompt = (value: string, cursor: number) => {
+    props.onPrompt(value);
+    const before = value.slice(0, cursor);
+    const match = before.match(/@[a-z0-9\/-]*$/i);
+    setMentionQuery(match?.[0] ?? null);
+  };
+
+  const insertMention = (token: string) => {
+    const textarea = textareaRef.current;
+    const cursor = textarea?.selectionStart ?? props.prompt.length;
+    const before = props.prompt.slice(0, cursor);
+    const match = before.match(/@[a-z0-9\/-]*$/i);
+    const start = match ? cursor - match[0].length : cursor;
+    const next = `${props.prompt.slice(0, start)}${token} ${props.prompt.slice(cursor)}`;
+    props.onPrompt(next);
+    setMentionQuery(null);
+    requestAnimationFrame(() => {
+      const nextCursor = start + token.length + 1;
+      textarea?.focus();
+      textarea?.setSelectionRange(nextCursor, nextCursor);
+    });
+  };
+
+  const finalized = props.codeEntities.status === "finalized";
+  return (
+    <div className="generator-panel">
+      <header className="pane-header">
+        <div>
+          <span className="eyebrow">GENERATION VIEW</span>
+          <h2>{finalized ? "Create diagram variants" : "Review the collected context"}</h2>
+        </div>
+        <span className="agent-count">N AGENTS · {props.count} OUTPUTS</span>
+      </header>
+
+      {!finalized ? (
+        <section className="approval-callout">
+          <span className="eyebrow">HUMAN GATE</span>
+          <h3>Finalize this CodeEntitiesSet</h3>
+          <p>Finalization makes revision {props.codeEntities.revision} immutable. New context requires a new DiagramSet.</p>
+          <button type="button" className="button button--primary" onClick={props.onFinalize}>
+            finalize {props.codeEntities.entities.length} entities →
+          </button>
+        </section>
+      ) : (
+        <>
+          <div className="prompt-field">
+            <label htmlFor="diagram-prompt">DIAGRAM INSTRUCTION</label>
+            <textarea
+              ref={textareaRef}
+              id="diagram-prompt"
+              value={props.prompt}
+              disabled={props.generating}
+              placeholder="Use @ to reference a CodeEntity or Diagram…"
+              spellCheck={false}
+              onChange={(event) => updatePrompt(event.target.value, event.target.selectionStart)}
+              onClick={(event) => updatePrompt(event.currentTarget.value, event.currentTarget.selectionStart)}
+              onKeyUp={(event) => updatePrompt(event.currentTarget.value, event.currentTarget.selectionStart)}
+            />
+            {suggestions.length > 0 ? (
+              <div className="mention-menu" role="listbox" aria-label="Prompt references">
+                {suggestions.map((option) => (
+                  <button type="button" role="option" key={`${option.kind}:${option.id}`} onClick={() => insertMention(option.token)}>
+                    <code>{option.token}</code><span>{option.label}</span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            <p className="field-help">Type @ for entity and diagram references. Selected entities are included even without an explicit mention.</p>
+          </div>
+
+          <div className="generation-controls">
+            <div className="counter">
+              <span className="eyebrow">PARALLEL AGENTS</span>
+              <div>
+                <button
+                  type="button"
+                  aria-label="Use one fewer agent"
+                  disabled={props.generating || props.count <= 1}
+                  onClick={() => props.onCount(Math.max(1, props.count - 1))}
+                >−</button>
+                <output aria-live="polite">{props.count}</output>
+                <button
+                  type="button"
+                  aria-label="Use one more agent"
+                  disabled={props.generating || props.count >= 12}
+                  onClick={() => props.onCount(Math.min(12, props.count + 1))}
+                >+</button>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="button button--primary generate-action"
+              disabled={props.generating}
+              onClick={props.onGenerate}
+            >
+              {props.generating ? `running ${props.count} agents…` : `generate ${props.count} diagrams →`}
+            </button>
+          </div>
+        </>
+      )}
+
+      {props.progress ? <p className="run-progress" aria-live="polite"><span />{props.progress}</p> : null}
+      {props.error ? <p className="inline-error" role="alert">{props.error}</p> : null}
+    </div>
+  );
+}
