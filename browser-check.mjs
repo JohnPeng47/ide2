@@ -760,12 +760,18 @@ try {
         setId: diagram?.diagramSetId ?? '',
         origin: diagram?.origin ?? '',
         viewOrigin: document.querySelector('.diagram-meta span:last-child')?.textContent ?? '',
-        ascii: document.querySelector('.ascii-stage pre')?.textContent ?? ''
+        ascii: document.querySelector('.ascii-stage pre')?.textContent ?? '',
+        importsBranches: document.querySelectorAll('[data-imports-branch]').length,
+        groupedUnderImports: Boolean(diagram?.id && document.querySelector(
+          '[data-imports-branch] [data-diagram-id="' + diagram.id + '"]'
+        ))
       };
     })()`);
     if (!importedDiagramState.id || !importedDiagramState.setId
       || importedDiagramState.origin !== "imported"
       || importedDiagramState.viewOrigin !== "IMPORTED"
+      || importedDiagramState.importsBranches !== 1
+      || !importedDiagramState.groupedUnderImports
       || !importedDiagramState.ascii.includes("| imported |")) {
       throw new Error(`imported Diagram view was incomplete: ${JSON.stringify(importedDiagramState)}`);
     }
@@ -822,6 +828,8 @@ try {
     await waitFor(async () => await evaluate(cdp, `(
       document.querySelectorAll('.diagram-tree-diagram').length === 8
       && document.querySelectorAll('.diagram-tree-component').length === 4
+      && document.querySelectorAll('[data-imports-branch]').length === 1
+      && document.querySelector('[data-imports-branch] [data-diagram-id="${importedDiagramState.id}"]')
       && Array.from(document.querySelectorAll('.diagram-tree-component em')).some(
         (node) => node.textContent === 'IMPORTED'
       )

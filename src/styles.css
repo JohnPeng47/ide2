@@ -202,6 +202,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .diagram-tree-line strong { flex: none; margin-right: 0.45rem; font-weight: 700; }
 .diagram-tree-description { max-width: 20rem; overflow: hidden; color: var(--muted); text-overflow: ellipsis; }
 .diagram-tree-generation { width: 100%; }
+.diagram-tree-imports { width: 100%; }
+.diagram-tree-imports strong { color: var(--accent-cyan); }
 .diagram-tree-status { margin-right: 0.55rem; color: var(--muted); font-weight: 700; }
 .diagram-tree-generation.status-queued .diagram-tree-status,
 .diagram-tree-generation.status-running .diagram-tree-status,

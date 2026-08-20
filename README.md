@@ -95,8 +95,10 @@ The project header's `IMPORT` action adds an existing Diagram or
 DiagramComponent to any DiagramSet in the current Project. Paste 7-bit ASCII
 directly or load a plain-text or stored artifact JSON file; JSON imports extract
 the artifact name, ASCII, and type when it can be identified. Imported artifacts
-receive fresh ids and collision-safe handles, appear as `IMPORTED` lineage roots,
-and participate in capture, derivative generation, prompt references, archival,
-and reload persistence through the same records as generated artifacts.
+receive fresh ids and collision-safe handles. Imported Diagrams appear together
+under the lineage tree's `IMPORTS` branch, while every imported artifact keeps an
+`IMPORTED` marker and participates in capture, derivative generation, prompt
+references, archival, and reload persistence through the same records as
+generated artifacts.
 
 For an offline deterministic fixture, set `NEW_DIAGRAM_AGENT=fake`.

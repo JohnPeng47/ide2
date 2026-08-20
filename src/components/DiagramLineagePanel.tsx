@@ -314,7 +314,9 @@ export function DiagramLineagePanel(props: {
     .filter((batch) => !parentByBatch.has(batch.id))
     .map((batch) => batch.id);
   const batchedDiagramIds = new Set(batches.flatMap((batch) => batch.outputDiagramIds));
-  const orphanDiagrams = props.diagrams.filter((diagram) => !batchedDiagramIds.has(diagram.id));
+  const rootDiagrams = props.diagrams.filter((diagram) => !batchedDiagramIds.has(diagram.id));
+  const importedDiagrams = rootDiagrams.filter((diagram) => diagram.origin === "imported");
+  const orphanDiagrams = rootDiagrams.filter((diagram) => diagram.origin !== "imported");
 
   const outputDiagrams = (batchId: string): DiagramRecord[] => {
     const batch = batchesById.get(batchId);
@@ -541,6 +543,42 @@ export function DiagramLineagePanel(props: {
     );
   };
 
+  const renderImports = (last: boolean): ReactNode => {
+    const collapseId = "imports";
+    const collapsed = collapsedIds.has(collapseId);
+    const hiddenCount = importedDiagrams.reduce(
+      (total, diagram) => total + subtreeSize(diagram, new Set()),
+      0
+    );
+    const childPrefix = continuation(last);
+    return (
+      <div className="diagram-tree-branch" data-imports-branch>
+        <div className="diagram-tree-line diagram-tree-imports">
+          <TreePrefix prefix="" last={last} />
+          <button
+            type="button"
+            className="diagram-tree-toggle"
+            aria-label={`${collapsed ? "Expand" : "Collapse"} imports`}
+            aria-expanded={!collapsed}
+            onClick={() => toggleCollapsed(collapseId)}
+          >
+            {collapsed ? `[+${hiddenCount}]` : "[-]"}
+          </button>
+          <strong>IMPORTS</strong>
+          <span className="diagram-tree-description">
+            {importedDiagrams.length} imported {importedDiagrams.length === 1 ? "diagram" : "diagrams"}
+          </span>
+        </div>
+        {!collapsed && importedDiagrams.map((diagram, index) => (
+          <Fragment key={diagram.id}>
+            <TreeBridge prefix={childPrefix} />
+            {renderDiagram(diagram, childPrefix, index === importedDiagrams.length - 1)}
+          </Fragment>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="diagram-lineage-panel">
       <header className="pane-header">
@@ -562,16 +600,28 @@ export function DiagramLineagePanel(props: {
             {renderRootBatch(
               batchId,
               "",
-              index === rootBatchIds.length - 1 && orphanDiagrams.length === 0
+              index === rootBatchIds.length - 1
+                && orphanDiagrams.length === 0
+                && importedDiagrams.length === 0
             )}
           </Fragment>
         ))}
         {orphanDiagrams.map((diagram, index) => (
           <Fragment key={diagram.id}>
             <TreeBridge prefix="" />
-            {renderDiagram(diagram, "", index === orphanDiagrams.length - 1)}
+            {renderDiagram(
+              diagram,
+              "",
+              index === orphanDiagrams.length - 1 && importedDiagrams.length === 0
+            )}
           </Fragment>
         ))}
+        {importedDiagrams.length > 0 ? (
+          <Fragment>
+            <TreeBridge prefix="" />
+            {renderImports(true)}
+          </Fragment>
+        ) : null}
         <ComponentLineageSection
           diagramSet={props.diagramSet}
           components={props.components}
