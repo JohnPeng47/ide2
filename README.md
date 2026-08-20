@@ -5,15 +5,19 @@ ASCII diagrams with parallel Pi agents.
 
 ## Start the studio
 
-The server is the only process that writes `.diagrams/`. Start it for the target
-checkout before invoking the agent-facing CLI:
+The server is the only process that writes DiagramSet records. Start it for the
+target checkout before invoking the agent-facing CLI:
 
 ```bash
-NEW_DIAGRAM_PROJECT_ROOT=/path/to/repository npm --prefix scripts/new-diagram run dev
+npm --prefix scripts/new-diagram run diagram -- serve \
+  --path /path/to/repository \
+  --diagrams-dir .diagrams
 ```
 
 Open `http://127.0.0.1:5173`. The dashboard can remain open while the CLI starts
-a collection.
+a collection. `--diagrams-dir` accepts an absolute path or a path relative to
+the repository and defaults to `.diagrams`; use `--port` to run another studio
+alongside an existing server.
 
 ## Start a DiagramSet
 
@@ -30,18 +34,57 @@ npm --prefix scripts/new-diagram run diagram -- create \
 
 The CLI asks the server to create the DiagramSet, streams collection progress,
 and stops at the human finalization gate. The CLI path must resolve to the same
-checkout as `NEW_DIAGRAM_PROJECT_ROOT`. `--server` defaults to
+checkout passed to the server's `--path`. `--server` defaults to
 `http://127.0.0.1:5173` and can also be set with `NEW_DIAGRAM_SERVER_URL`.
 
 The studio supports the waiting state, immutable CodeEntitiesSet finalization,
-typed `@entity/` and `@diagram/` references, N parallel diagram agents, and a
-resizable workspace. Diagram View keeps Code Entities and an ASCII generation
-lineage in right-pane tabs; selecting a lineage node opens that diagram, and
-its display name can be edited without changing its stable `@diagram/` handle.
+typed `@entity/`, `@diagram/`, and `@component/` references, N parallel agents,
+and a resizable workspace. Diagram View keeps Code Entities and an ASCII
+artifact lineage in right-pane tabs; selecting a lineage node opens that
+diagram, and its display name can be edited without changing its stable
+`@diagram/` handle.
 Root generation nodes group diagrams without ancestors, while derivative
 diagrams attach directly to their parent without intermediary generation nodes.
 Lineage branches can be collapsed with their hidden-diagram count retained in
 the toggle. Archiving through `[x]` removes a variant from active UI and prompt
 references while preserving its timestamped diagram JSON for future learning.
+
+`capture component` enables a character-aligned rectangle selector over the
+active Diagram. Releasing the pointer sends the bounds to the server, which
+crops and persists a distinct DiagramComponent under the lineage tree's
+Components section. Generation can switch between Diagram and DiagramComponent
+outputs; generated components remain source-backed, can derive from existing
+components, and are available to later prompts through `@component/<handle>`.
+Selecting any component opens its ASCII in the main DiagramComponent view,
+where another rectangle can be captured recursively as a direct child.
+Component `[x]` controls archive variants out of the UI and prompt context while
+retaining their timestamped JSON artifacts on disk.
+Component handles stay out of the compact lineage label; hovering or focusing a
+row reveals `copy`, which writes its full `@component/<handle>` reference.
+
+`edit mode` is available for both Diagrams and DiagramComponents. It creates a
+persisted working-copy session without modifying the source artifact. The main
+pane becomes a cursor-editable ASCII textarea, while the right-pane Operations
+tab records reversible manual, marker, and LLM changes. `Ctrl-Z` and `Ctrl-Y`
+move through that operation buffer; undoing and then making a new change drops
+the redo branch.
+
+The Single Marker tool replaces one clicked character with an unused rare
+7-bit marker and inserts its short reference, such as `@^`, into the LLM edit
+instruction. The edit menu can run each LLM operation with GPT-5.6 Terra or
+GPT-5.6 Sol, and records the selected model with that operation. Every submitted
+LLM edit automatically includes the complete current Diagram or DiagramComponent
+plus its active marker guide. Saving
+publishes a new `EDITED` lineage child and retains the session history; discard
+keeps the session record for learning without publishing a variant. Existing
+component capture and derivative generation remain unchanged outside edit mode.
+
+The project header's `IMPORT` action adds an existing Diagram or
+DiagramComponent to any DiagramSet in the current Project. Paste 7-bit ASCII
+directly or load a plain-text or stored artifact JSON file; JSON imports extract
+the artifact name, ASCII, and type when it can be identified. Imported artifacts
+receive fresh ids and collision-safe handles, appear as `IMPORTED` lineage roots,
+and participate in capture, derivative generation, prompt references, archival,
+and reload persistence through the same records as generated artifacts.
 
 For an offline deterministic fixture, set `NEW_DIAGRAM_AGENT=fake`.

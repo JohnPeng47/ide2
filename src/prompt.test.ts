@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { SCHEMA_VERSION, type CodeEntitiesSetRecord, type DiagramRecord, type DiagramSetRecord } from "./domain";
+import {
+  isDiagramComponentArchived,
+  SCHEMA_VERSION,
+  type CodeEntitiesSetRecord,
+  type DiagramComponentRecord,
+  type DiagramRecord,
+  type DiagramSetRecord
+} from "./domain";
 import { promptOptions, resolveGenerationPrompt } from "./prompt";
 
 const diagramSet: DiagramSetRecord = {
@@ -11,11 +18,29 @@ const diagramSet: DiagramSetRecord = {
   sourceCheckoutRoot: "/repo",
   codeEntitiesSetId: "entities-one",
   diagramIds: ["diagram-one"],
+  diagramComponentIds: ["component-one"],
   generationBatchIds: [],
   agentRunIds: [],
+  editSessionIds: [],
   readiness: "ready",
   createdAt: "2026-01-01T00:00:00Z",
   updatedAt: "2026-01-01T00:00:00Z"
+};
+
+const component: DiagramComponentRecord = {
+  schemaVersion: SCHEMA_VERSION,
+  id: "component-one",
+  diagramSetId: "set-one",
+  handle: "queue-fragment",
+  name: "Queue fragment",
+  ascii: "[queue]",
+  codeEntityIds: ["entity-queue"],
+  promptReferences: [],
+  origin: "selection",
+  sourceDiagramId: "diagram-one",
+  derivedFromDiagramIds: ["diagram-one"],
+  derivedFromDiagramComponentIds: [],
+  createdAt: "2026-01-01T00:00:00Z"
 };
 
 const codeEntities: CodeEntitiesSetRecord = {
@@ -45,6 +70,7 @@ const diagram: DiagramRecord = {
   ascii: "queue -> worker",
   codeEntityIds: ["entity-queue"],
   promptReferences: [],
+  origin: "generated",
   producedByRunId: "run-one",
   derivedFromDiagramIds: [],
   createdAt: "2026-01-01T00:00:00Z"
@@ -56,16 +82,20 @@ describe("resolveGenerationPrompt", () => {
       diagramSet,
       codeEntities,
       diagrams: [diagram],
-      userPrompt: "Simplify @diagram/current-flow around @entity/queue",
+      components: [component],
+      outputKind: "diagram",
+      userPrompt: "Simplify @diagram/current-flow around @entity/queue and @component/queue-fragment",
       selectedCodeEntityIds: []
     });
     expect(result.references.map((reference) => reference.targetId)).toEqual([
       "diagram-one",
-      "entity-queue"
+      "entity-queue",
+      "component-one"
     ]);
     expect(result.allowedCodeEntityIds).toEqual(["entity-queue"]);
     expect(result.resolvedPrompt).toContain("CodeEntity @entity/queue");
     expect(result.resolvedPrompt).toContain("Diagram @diagram/current-flow");
+    expect(result.resolvedPrompt).toContain("DiagramComponent @component/queue-fragment");
   });
 
   it("rejects unknown references", () => {
@@ -73,6 +103,8 @@ describe("resolveGenerationPrompt", () => {
       diagramSet,
       codeEntities,
       diagrams: [diagram],
+      components: [component],
+      outputKind: "diagram",
       userPrompt: "Use @entity/missing",
       selectedCodeEntityIds: []
     })).toThrow(/unknown prompt reference/);
@@ -80,13 +112,31 @@ describe("resolveGenerationPrompt", () => {
 
   it("excludes archived diagrams from prompt interaction", () => {
     const archived = { ...diagram, archivedAt: "2026-01-02T00:00:00Z" };
-    expect(promptOptions(codeEntities, [archived]).map((option) => option.token))
+    expect(promptOptions(codeEntities, [archived], [component]).map((option) => option.token))
       .not.toContain("@diagram/current-flow");
     expect(() => resolveGenerationPrompt({
       diagramSet,
       codeEntities,
       diagrams: [archived],
+      components: [component],
+      outputKind: "diagram",
       userPrompt: "Use @diagram/current-flow",
+      selectedCodeEntityIds: []
+    })).toThrow(/unknown prompt reference/);
+  });
+
+  it("excludes archived DiagramComponents from prompt interaction", () => {
+    const archived = { ...component, archivedAt: "2026-01-02T00:00:00Z" };
+    expect(isDiagramComponentArchived(archived)).toBe(true);
+    expect(promptOptions(codeEntities, [diagram], [archived]).map((option) => option.token))
+      .not.toContain("@component/queue-fragment");
+    expect(() => resolveGenerationPrompt({
+      diagramSet,
+      codeEntities,
+      diagrams: [diagram],
+      components: [archived],
+      outputKind: "diagram-component",
+      userPrompt: "Use @component/queue-fragment",
       selectedCodeEntityIds: []
     })).toThrow(/unknown prompt reference/);
   });

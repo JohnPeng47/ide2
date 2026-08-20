@@ -1,27 +1,53 @@
-import { useState } from "react";
 import type {
   CodeEntitiesSetRecord,
+  DiagramComponentRecord,
   DiagramRecord,
   DiagramSetRecord,
+  EditModelId,
+  EditSessionRecord,
   GenerationBatchRecord
 } from "../domain";
+import { DEFAULT_EDIT_MODEL_ID } from "../domain";
 import { CodeEntitiesPanel } from "./CodeEntitiesPanel";
 import { DiagramLineagePanel } from "./DiagramLineagePanel";
+import { EditOperationsPanel } from "./EditOperationsPanel";
 
-type ContextTab = "code-entities" | "diagrams";
+export type ContextTab = "code-entities" | "diagrams" | "operations";
 
 export function DiagramContextPanel(props: {
   setId: string;
   codeEntities: CodeEntitiesSetRecord;
   diagramSet: DiagramSetRecord;
   diagrams: DiagramRecord[];
+  components: DiagramComponentRecord[];
   generationBatches: Record<string, GenerationBatchRecord>;
-  activeDiagram: DiagramRecord;
+  activeDiagram?: DiagramRecord;
+  activeComponent?: DiagramComponentRecord;
+  editSession?: EditSessionRecord;
+  editPrompt?: string;
+  editModelId?: EditModelId;
+  markerMode?: boolean;
+  editBusy?: boolean;
+  editProgress?: string;
+  editError?: string | null;
+  selectedIds?: Set<string>;
+  onToggleEntity?: (id: string) => void;
+  activeTab: ContextTab;
+  onTab: (tab: ContextTab) => void;
   onSelectDiagram: (diagramId: string) => void;
+  onSelectComponent: (componentId: string) => void;
   onRenameDiagram: (diagramId: string, name: string) => Promise<void>;
   onArchiveDiagram: (diagramId: string) => Promise<void>;
+  onArchiveComponent: (componentId: string) => Promise<void>;
+  onEditPrompt?: (value: string) => void;
+  onEditModel?: (value: EditModelId) => void;
+  onMarkerMode?: (value: boolean) => void;
+  onUndoEdit?: () => void;
+  onRedoEdit?: () => void;
+  onLlmEdit?: () => void;
+  onFinishEdit?: () => void;
+  onDiscardEdit?: () => void;
 }) {
-  const [activeTab, setActiveTab] = useState<ContextTab>("code-entities");
   return (
     <div className="diagram-context-panel">
       <div className="context-tabs" role="tablist" aria-label="Diagram context">
@@ -29,10 +55,10 @@ export function DiagramContextPanel(props: {
           type="button"
           id="code-entities-tab"
           role="tab"
-          aria-selected={activeTab === "code-entities"}
+          aria-selected={props.activeTab === "code-entities"}
           aria-controls="code-entities-panel"
-          className={activeTab === "code-entities" ? "is-active" : ""}
-          onClick={() => setActiveTab("code-entities")}
+          className={props.activeTab === "code-entities" ? "is-active" : ""}
+          onClick={() => props.onTab("code-entities")}
         >
           Code Entities
         </button>
@@ -40,15 +66,53 @@ export function DiagramContextPanel(props: {
           type="button"
           id="diagrams-tab"
           role="tab"
-          aria-selected={activeTab === "diagrams"}
+          aria-selected={props.activeTab === "diagrams"}
           aria-controls="diagrams-panel"
-          className={activeTab === "diagrams" ? "is-active" : ""}
-          onClick={() => setActiveTab("diagrams")}
+          className={props.activeTab === "diagrams" ? "is-active" : ""}
+          onClick={() => props.onTab("diagrams")}
         >
           Diagrams
         </button>
+        {props.editSession ? (
+          <button
+            type="button"
+            id="operations-tab"
+            role="tab"
+            aria-selected={props.activeTab === "operations"}
+            aria-controls="operations-panel"
+            className={props.activeTab === "operations" ? "is-active" : ""}
+            onClick={() => props.onTab("operations")}
+          >
+            Operations · {props.editSession.operationCursor}
+          </button>
+        ) : null}
       </div>
-      {activeTab === "code-entities" ? (
+      {props.activeTab === "operations" && props.editSession ? (
+        <div
+          className="context-tabpanel"
+          id="operations-panel"
+          role="tabpanel"
+          aria-labelledby="operations-tab"
+        >
+          <EditOperationsPanel
+            session={props.editSession}
+            prompt={props.editPrompt ?? ""}
+            modelId={props.editModelId ?? DEFAULT_EDIT_MODEL_ID}
+            markerMode={Boolean(props.markerMode)}
+            busy={Boolean(props.editBusy)}
+            progress={props.editProgress ?? ""}
+            error={props.editError ?? null}
+            onPrompt={(value) => props.onEditPrompt?.(value)}
+            onModel={(value) => props.onEditModel?.(value)}
+            onMarkerMode={(value) => props.onMarkerMode?.(value)}
+            onUndo={() => props.onUndoEdit?.()}
+            onRedo={() => props.onRedoEdit?.()}
+            onLlmEdit={() => props.onLlmEdit?.()}
+            onFinish={() => props.onFinishEdit?.()}
+            onDiscard={() => props.onDiscardEdit?.()}
+          />
+        </div>
+      ) : props.activeTab === "code-entities" ? (
         <div
           className="context-tabpanel"
           id="code-entities-panel"
@@ -58,7 +122,9 @@ export function DiagramContextPanel(props: {
           <CodeEntitiesPanel
             setId={props.setId}
             codeEntities={props.codeEntities}
-            diagram={props.activeDiagram}
+            diagram={props.activeDiagram ?? props.activeComponent}
+            selectedIds={props.selectedIds}
+            onToggle={props.onToggleEntity}
           />
         </div>
       ) : (
@@ -71,11 +137,15 @@ export function DiagramContextPanel(props: {
           <DiagramLineagePanel
             diagramSet={props.diagramSet}
             diagrams={props.diagrams}
+            components={props.components}
             generationBatches={props.generationBatches}
-            activeDiagramId={props.activeDiagram.id}
+            activeDiagramId={props.activeDiagram?.id}
+            activeComponentId={props.activeComponent?.id}
             onSelect={props.onSelectDiagram}
+            onSelectComponent={props.onSelectComponent}
             onRename={props.onRenameDiagram}
             onArchive={props.onArchiveDiagram}
+            onArchiveComponent={props.onArchiveComponent}
           />
         </div>
       )}

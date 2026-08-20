@@ -1,10 +1,17 @@
 import { useMemo, useRef, useState } from "react";
-import type { CodeEntitiesSetRecord, DiagramRecord } from "../domain";
+import type {
+  CodeEntitiesSetRecord,
+  DiagramComponentRecord,
+  DiagramRecord,
+  GenerationOutputKind
+} from "../domain";
 import { promptOptions } from "../prompt";
 
 export function GeneratorOptions(props: {
   codeEntities: CodeEntitiesSetRecord;
   diagrams: DiagramRecord[];
+  components: DiagramComponentRecord[];
+  outputKind: GenerationOutputKind;
   prompt: string;
   count: number;
   generating: boolean;
@@ -12,14 +19,15 @@ export function GeneratorOptions(props: {
   error: string | null;
   onPrompt: (value: string) => void;
   onCount: (value: number) => void;
+  onOutputKind: (value: GenerationOutputKind) => void;
   onFinalize: () => void;
   onGenerate: () => void;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const options = useMemo(
-    () => promptOptions(props.codeEntities, props.diagrams),
-    [props.codeEntities, props.diagrams]
+    () => promptOptions(props.codeEntities, props.diagrams, props.components),
+    [props.codeEntities, props.diagrams, props.components]
   );
   const suggestions = mentionQuery === null ? [] : options.filter((option) => (
     option.token.toLowerCase().includes(mentionQuery.toLowerCase())
@@ -55,7 +63,9 @@ export function GeneratorOptions(props: {
       <header className="pane-header">
         <div>
           <span className="eyebrow">GENERATION VIEW</span>
-          <h2>{finalized ? "Create diagram variants" : "Review the collected context"}</h2>
+          <h2>{finalized
+            ? props.outputKind === "diagram" ? "Create diagram variants" : "Create component variants"
+            : "Review the collected context"}</h2>
         </div>
         <span className="agent-count">N AGENTS · {props.count} OUTPUTS</span>
       </header>
@@ -71,14 +81,33 @@ export function GeneratorOptions(props: {
         </section>
       ) : (
         <>
+          <div className="output-kind" role="radiogroup" aria-label="Generated output type">
+            <span className="eyebrow">OUTPUT</span>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={props.outputKind === "diagram"}
+              className={props.outputKind === "diagram" ? "is-active" : ""}
+              disabled={props.generating}
+              onClick={() => props.onOutputKind("diagram")}
+            >Diagram</button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={props.outputKind === "diagram-component"}
+              className={props.outputKind === "diagram-component" ? "is-active" : ""}
+              disabled={props.generating}
+              onClick={() => props.onOutputKind("diagram-component")}
+            >DiagramComponent</button>
+          </div>
           <div className="prompt-field">
-            <label htmlFor="diagram-prompt">DIAGRAM INSTRUCTION</label>
+            <label htmlFor="diagram-prompt">GENERATION INSTRUCTION</label>
             <textarea
               ref={textareaRef}
               id="diagram-prompt"
               value={props.prompt}
               disabled={props.generating}
-              placeholder="Use @ to reference a CodeEntity or Diagram…"
+              placeholder="Use @ to reference a CodeEntity, Diagram, or DiagramComponent…"
               spellCheck={false}
               onChange={(event) => updatePrompt(event.target.value, event.target.selectionStart)}
               onClick={(event) => updatePrompt(event.currentTarget.value, event.currentTarget.selectionStart)}
@@ -93,7 +122,7 @@ export function GeneratorOptions(props: {
                 ))}
               </div>
             ) : null}
-            <p className="field-help">Type @ for entity and diagram references. Selected entities are included even without an explicit mention.</p>
+            <p className="field-help">Type @ for entity, diagram, and component references. Selected entities are included even without an explicit mention.</p>
           </div>
 
           <div className="generation-controls">
@@ -121,7 +150,9 @@ export function GeneratorOptions(props: {
               disabled={props.generating}
               onClick={props.onGenerate}
             >
-              {props.generating ? `running ${props.count} agents…` : `generate ${props.count} diagrams →`}
+              {props.generating
+                ? `running ${props.count} agents…`
+                : `generate ${props.count} ${props.outputKind === "diagram" ? "diagrams" : "components"} →`}
             </button>
           </div>
         </>

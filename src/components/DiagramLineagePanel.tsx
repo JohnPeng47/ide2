@@ -1,5 +1,6 @@
 import { Fragment, useState, type FormEvent, type ReactNode } from "react";
 import type {
+  DiagramComponentRecord,
   DiagramRecord,
   DiagramSetRecord,
   GenerationBatchRecord
@@ -7,6 +8,226 @@ import type {
 
 function connector(last: boolean): string {
   return last ? "`-- " : "+-- ";
+}
+
+function ComponentLineageSection(props: {
+  diagramSet: DiagramSetRecord;
+  components: DiagramComponentRecord[];
+  generationBatches: Record<string, GenerationBatchRecord>;
+  activeComponentId?: string;
+  onSelect: (componentId: string) => void;
+  onArchive: (componentId: string) => Promise<void>;
+}) {
+  const [archivingId, setArchivingId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const byId = new Map(props.components.map((component) => [component.id, component]));
+  const number = new Map(
+    props.diagramSet.diagramComponentIds.map((componentId, index) => [componentId, index + 1])
+  );
+  const batches = props.diagramSet.generationBatchIds
+    .map((id) => props.generationBatches[id])
+    .filter((batch): batch is GenerationBatchRecord => Boolean(batch))
+    .filter((batch) => batch.outputKind === "diagram-component")
+    .filter((batch) => (
+      batch.status !== "complete"
+      || batch.outputDiagramComponentIds.some((componentId) => byId.has(componentId))
+    ));
+  const parentByBatch = new Map<string, string>();
+  const batchesByParent = new Map<string, GenerationBatchRecord[]>();
+  for (const batch of batches) {
+    const parent = batch.promptReferences.find(
+      (reference) => reference.kind === "diagram-component" && byId.has(reference.targetId)
+    )?.targetId;
+    if (!parent) continue;
+    parentByBatch.set(batch.id, parent);
+    batchesByParent.set(parent, [...(batchesByParent.get(parent) ?? []), batch]);
+  }
+  const batchedIds = new Set(batches.flatMap((batch) => batch.outputDiagramComponentIds));
+  const directChildrenByParent = new Map<string, DiagramComponentRecord[]>();
+  const directParentByComponent = new Map<string, string>();
+  for (const component of props.components) {
+    if (batchedIds.has(component.id)) continue;
+    const parentId = component.sourceDiagramComponentId
+      ?? component.derivedFromDiagramComponentIds.find((id) => byId.has(id));
+    if (!parentId || !byId.has(parentId)) continue;
+    directParentByComponent.set(component.id, parentId);
+    directChildrenByParent.set(parentId, [
+      ...(directChildrenByParent.get(parentId) ?? []),
+      component
+    ]);
+  }
+  const rootComponents = props.components.filter((component) => (
+    !batchedIds.has(component.id) && !directParentByComponent.has(component.id)
+  ));
+  const rootBatches = batches.filter((batch) => !parentByBatch.has(batch.id));
+
+  const archive = async (component: DiagramComponentRecord) => {
+    setArchivingId(component.id);
+    setActionError(null);
+    try {
+      await props.onArchive(component.id);
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "DiagramComponent archive failed");
+    } finally {
+      setArchivingId(null);
+    }
+  };
+
+  const copyReference = async (component: DiagramComponentRecord) => {
+    setActionError(null);
+    try {
+      await navigator.clipboard.writeText(`@component/${component.handle}`);
+      setCopiedId(component.id);
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "DiagramComponent reference copy failed");
+    }
+  };
+
+  const renderComponent = (
+    component: DiagramComponentRecord,
+    prefix: string,
+    last: boolean,
+    ancestors: Set<string>
+  ): ReactNode => {
+    if (ancestors.has(component.id)) return null;
+    const childBatches = batchesByParent.get(component.id) ?? [];
+    const directChildren = directChildrenByParent.get(component.id) ?? [];
+    const nextAncestors = new Set(ancestors).add(component.id);
+    const current = component.id === props.activeComponentId;
+    return (
+      <div className="diagram-tree-branch" key={component.id}>
+        <div
+          className={`diagram-tree-line diagram-tree-component${current ? " is-current" : ""}`}
+          data-component-id={component.id}
+        >
+          <TreePrefix prefix={prefix} last={last} />
+          <span className="diagram-tree-toggle-spacer" />
+          <button
+            type="button"
+            className="diagram-tree-component__open"
+            aria-current={current ? "page" : undefined}
+            title={component.ascii}
+            onClick={() => props.onSelect(component.id)}
+          >
+            <strong>C{String(number.get(component.id) ?? 0).padStart(2, "0")}</strong>
+            <span className="diagram-tree-description">{component.name}</span>
+            <em>{component.origin === "selection" ? "CAPTURED" : component.origin.toUpperCase()}</em>
+          </button>
+          <span className="diagram-tree-component-actions">
+            <button
+              type="button"
+              className={`diagram-tree-copy${copiedId === component.id ? " is-copied" : ""}`}
+              aria-label={`Copy @component/${component.handle}`}
+              data-reference={`@component/${component.handle}`}
+              title={`Copy @component/${component.handle}`}
+              onClick={() => void copyReference(component)}
+            >
+              {copiedId === component.id ? "copied" : "copy"}
+            </button>
+            <button
+              type="button"
+              className="diagram-tree-archive"
+              aria-label={`Archive ${component.name}`}
+              title="Archive DiagramComponent; keep its artifact on disk"
+              disabled={archivingId === component.id}
+              onClick={() => void archive(component)}
+            >
+              [x]
+            </button>
+          </span>
+        </div>
+        {childBatches.map((batch, batchIndex) => {
+          const childPrefix = `${prefix}${continuation(last)}`;
+          return (
+            <Fragment key={batch.id}>
+              <TreeBridge prefix={childPrefix} />
+              {renderBatch(
+                batch,
+                childPrefix,
+                batchIndex === childBatches.length - 1 && directChildren.length === 0,
+                nextAncestors
+              )}
+            </Fragment>
+          );
+        })}
+        {directChildren.map((child, index) => {
+          const childPrefix = `${prefix}${continuation(last)}`;
+          return (
+            <Fragment key={child.id}>
+              <TreeBridge prefix={childPrefix} />
+              {renderComponent(
+                child,
+                childPrefix,
+                index === directChildren.length - 1,
+                nextAncestors
+              )}
+            </Fragment>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const renderBatch = (
+    batch: GenerationBatchRecord,
+    prefix: string,
+    last: boolean,
+    ancestors: Set<string>
+  ): ReactNode => {
+    const outputs = batch.outputDiagramComponentIds
+      .map((id) => byId.get(id))
+      .filter((component): component is DiagramComponentRecord => Boolean(component));
+    const batchNumber = props.diagramSet.generationBatchIds.indexOf(batch.id) + 1;
+    const outputPrefix = `${prefix}${continuation(last)}`;
+    return (
+      <div className="diagram-tree-branch" key={batch.id}>
+        <div className={`diagram-tree-line diagram-tree-generation status-${batch.status}`}>
+          <TreePrefix prefix={prefix} last={last} />
+          <span className="diagram-tree-toggle-spacer" />
+          <strong>G{batchNumber}</strong>
+          <span className="diagram-tree-status">[{statusLabel(batch.status)}]</span>
+          <span className="diagram-tree-description">{batch.userPrompt || "Component variants"}</span>
+        </div>
+        {outputs.map((component, index) => (
+          <Fragment key={component.id}>
+            <TreeBridge prefix={outputPrefix} />
+            {renderComponent(component, outputPrefix, index === outputs.length - 1, ancestors)}
+          </Fragment>
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <section className="component-lineage" aria-label="Diagram components">
+      <div className="diagram-tree-section-title">
+        <strong>COMPONENTS · {props.components.length}</strong>
+        <span>captured and generated fragments</span>
+      </div>
+      {actionError ? <p className="diagram-tree-error" role="alert">{actionError}</p> : null}
+      {rootComponents.map((component, index) => (
+        <Fragment key={component.id}>
+          <TreeBridge prefix="" />
+          {renderComponent(
+            component,
+            "",
+            index === rootComponents.length - 1 && rootBatches.length === 0,
+            new Set()
+          )}
+        </Fragment>
+      ))}
+      {rootBatches.map((batch, index) => (
+        <Fragment key={batch.id}>
+          <TreeBridge prefix="" />
+          {renderBatch(batch, "", index === rootBatches.length - 1, new Set())}
+        </Fragment>
+      ))}
+      {props.components.length === 0 && batches.length === 0
+        ? <p className="empty-copy">Capture a rectangle from a Diagram to create the first component.</p>
+        : null}
+    </section>
+  );
 }
 
 function continuation(last: boolean): string {
@@ -50,11 +271,15 @@ function statusLabel(status: GenerationBatchRecord["status"]): string {
 export function DiagramLineagePanel(props: {
   diagramSet: DiagramSetRecord;
   diagrams: DiagramRecord[];
+  components: DiagramComponentRecord[];
   generationBatches: Record<string, GenerationBatchRecord>;
-  activeDiagramId: string;
+  activeDiagramId?: string;
+  activeComponentId?: string;
   onSelect: (diagramId: string) => void;
+  onSelectComponent: (componentId: string) => void;
   onRename: (diagramId: string, name: string) => Promise<void>;
   onArchive: (diagramId: string) => Promise<void>;
+  onArchiveComponent: (componentId: string) => Promise<void>;
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
@@ -69,6 +294,7 @@ export function DiagramLineagePanel(props: {
   const batches = props.diagramSet.generationBatchIds
     .map((id) => props.generationBatches[id])
     .filter((batch): batch is GenerationBatchRecord => Boolean(batch))
+    .filter((batch) => batch.outputKind === "diagram")
     .filter((batch) => (
       batch.status !== "complete"
       || batch.outputDiagramIds.some((diagramId) => diagramsById.has(diagramId))
@@ -224,6 +450,7 @@ export function DiagramLineagePanel(props: {
             >
               <strong>{String(number).padStart(2, "0")}</strong>
               <span className="diagram-tree-description">{diagram.name}</span>
+              {diagram.origin === "imported" ? <em>IMPORTED</em> : null}
               {current ? <em>CURRENT</em> : null}
             </button>
             <span className="diagram-tree-actions">
@@ -318,8 +545,8 @@ export function DiagramLineagePanel(props: {
     <div className="diagram-lineage-panel">
       <header className="pane-header">
         <div>
-          <span className="eyebrow">DIAGRAMS · {props.diagrams.length}</span>
-          <h2>Generated lineage</h2>
+          <span className="eyebrow">ARTIFACTS · {props.diagrams.length + props.components.length}</span>
+          <h2>Diagram lineage</h2>
         </div>
         <span className="status-pill">{rootBatchIds.length} ROOT {rootBatchIds.length === 1 ? "BATCH" : "BATCHES"}</span>
       </header>
@@ -345,6 +572,14 @@ export function DiagramLineagePanel(props: {
             {renderDiagram(diagram, "", index === orphanDiagrams.length - 1)}
           </Fragment>
         ))}
+        <ComponentLineageSection
+          diagramSet={props.diagramSet}
+          components={props.components}
+          generationBatches={props.generationBatches}
+          activeComponentId={props.activeComponentId}
+          onSelect={props.onSelectComponent}
+          onArchive={props.onArchiveComponent}
+        />
       </div>
     </div>
   );

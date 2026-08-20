@@ -9,8 +9,10 @@ import {
   type AgentRunRecord,
   type CodeEntitiesSetRecord,
   type CodeEntityRecord,
+  type DiagramComponentRecord,
   type DiagramRecord,
   type DiagramSetRecord,
+  type EditSessionRecord,
   type GenerationBatchRecord,
   type ProjectRecord,
   type WorkspaceSnapshot
@@ -80,11 +82,12 @@ async function writeJsonAtomic(filePath: string, value: unknown): Promise<void> 
 }
 
 export class DiagramStore {
+  readonly checkoutRoot: string;
   readonly storeRoot: string;
 
-  constructor(readonly checkoutRoot: string) {
+  constructor(checkoutRoot: string, diagramsDirectory = ".diagrams") {
     this.checkoutRoot = path.resolve(checkoutRoot);
-    this.storeRoot = path.join(this.checkoutRoot, ".diagrams");
+    this.storeRoot = path.resolve(this.checkoutRoot, diagramsDirectory);
   }
 
   private projectPath(): string {
@@ -109,6 +112,11 @@ export class DiagramStore {
     return path.join(this.setRoot(setId), "diagrams", `${diagramId}.json`);
   }
 
+  private diagramComponentPath(setId: string, componentId: string): string {
+    assertSafeId(componentId, "DiagramComponent id");
+    return path.join(this.setRoot(setId), "diagram-components", `${componentId}.json`);
+  }
+
   private batchPath(setId: string, batchId: string): string {
     assertSafeId(batchId, "GenerationBatch id");
     return path.join(this.setRoot(setId), "generation-batches", `${batchId}.json`);
@@ -117,6 +125,11 @@ export class DiagramStore {
   private runPath(setId: string, runId: string): string {
     assertSafeId(runId, "AgentRun id");
     return path.join(this.setRoot(setId), "runs", `${runId}.json`);
+  }
+
+  private editSessionPath(setId: string, sessionId: string): string {
+    assertSafeId(sessionId, "EditSession id");
+    return path.join(this.setRoot(setId), "edit-sessions", `${sessionId}.json`);
   }
 
   async ensureProject(location: RepositoryLocation): Promise<ProjectRecord> {
@@ -161,8 +174,10 @@ export class DiagramStore {
       gitRevision: input.location.gitRevision,
       codeEntitiesSetId: entitySetId,
       diagramIds: [],
+      diagramComponentIds: [],
       generationBatchIds: [],
       agentRunIds: [],
+      editSessionIds: [],
       readiness: "collecting",
       createdAt: timestamp,
       updatedAt: timestamp
@@ -191,7 +206,20 @@ export class DiagramStore {
   }
 
   async loadDiagramSet(setId: string): Promise<DiagramSetRecord> {
-    return readJson<DiagramSetRecord>(this.setPath(setId));
+    const stored = await readJson<DiagramSetRecord & {
+      diagramComponentIds?: string[];
+      editSessionIds?: string[];
+    }>(this.setPath(setId));
+    if (Array.isArray(stored.diagramComponentIds) && Array.isArray(stored.editSessionIds)) {
+      return stored as DiagramSetRecord;
+    }
+    const normalized: DiagramSetRecord = {
+      ...stored,
+      diagramComponentIds: stored.diagramComponentIds ?? [],
+      editSessionIds: stored.editSessionIds ?? []
+    };
+    await writeJsonAtomic(this.setPath(setId), normalized);
+    return normalized;
   }
 
   async loadCodeEntities(setId: string): Promise<CodeEntitiesSetRecord> {
@@ -199,7 +227,61 @@ export class DiagramStore {
   }
 
   async loadDiagram(setId: string, diagramId: string): Promise<DiagramRecord> {
-    return readJson<DiagramRecord>(this.diagramPath(setId, diagramId));
+    const stored = await readJson<DiagramRecord & { origin?: DiagramRecord["origin"] }>(
+      this.diagramPath(setId, diagramId)
+    );
+    if (stored.origin) return stored as DiagramRecord;
+    const normalized: DiagramRecord = { ...stored, origin: "generated" };
+    await writeJsonAtomic(this.diagramPath(setId, diagramId), normalized);
+    return normalized;
+  }
+
+  async loadDiagramComponent(setId: string, componentId: string): Promise<DiagramComponentRecord> {
+    return readJson<DiagramComponentRecord>(this.diagramComponentPath(setId, componentId));
+  }
+
+  async loadGenerationBatch(setId: string, batchId: string): Promise<GenerationBatchRecord> {
+    const stored = await readJson<GenerationBatchRecord & {
+      outputKind?: GenerationBatchRecord["outputKind"];
+      outputDiagramComponentIds?: string[];
+    }>(this.batchPath(setId, batchId));
+    if (stored.outputKind && Array.isArray(stored.outputDiagramComponentIds)) {
+      return stored as GenerationBatchRecord;
+    }
+    const normalized: GenerationBatchRecord = {
+      ...stored,
+      outputKind: stored.outputKind ?? "diagram",
+      outputDiagramComponentIds: stored.outputDiagramComponentIds ?? []
+    };
+    await writeJsonAtomic(this.batchPath(setId, batchId), normalized);
+    return normalized;
+  }
+
+  async saveDiagramComponent(component: DiagramComponentRecord): Promise<void> {
+    await writeJsonAtomic(
+      this.diagramComponentPath(component.diagramSetId, component.id),
+      component
+    );
+  }
+
+  async addDiagram(diagram: DiagramRecord): Promise<void> {
+    await writeJsonAtomic(this.diagramPath(diagram.diagramSetId, diagram.id), diagram);
+    const set = await this.loadDiagramSet(diagram.diagramSetId);
+    await writeJsonAtomic(this.setPath(diagram.diagramSetId), {
+      ...set,
+      diagramIds: [...set.diagramIds, diagram.id],
+      updatedAt: nowIso()
+    });
+  }
+
+  async addDiagramComponent(component: DiagramComponentRecord): Promise<void> {
+    await this.saveDiagramComponent(component);
+    const set = await this.loadDiagramSet(component.diagramSetId);
+    await writeJsonAtomic(this.setPath(component.diagramSetId), {
+      ...set,
+      diagramComponentIds: [...set.diagramComponentIds, component.id],
+      updatedAt: nowIso()
+    });
   }
 
   async renameDiagram(setId: string, diagramId: string, name: string): Promise<DiagramRecord> {
@@ -217,12 +299,41 @@ export class DiagramStore {
     return archived;
   }
 
+  async archiveDiagramComponent(
+    setId: string,
+    componentId: string
+  ): Promise<DiagramComponentRecord> {
+    const component = await this.loadDiagramComponent(setId, componentId);
+    if (component.archivedAt) return component;
+    const archived = { ...component, archivedAt: nowIso() };
+    await writeJsonAtomic(this.diagramComponentPath(setId, componentId), archived);
+    return archived;
+  }
+
   async saveRun(run: AgentRunRecord): Promise<void> {
     await writeJsonAtomic(this.runPath(run.diagramSetId, run.id), run);
   }
 
   async saveBatch(batch: GenerationBatchRecord): Promise<void> {
     await writeJsonAtomic(this.batchPath(batch.diagramSetId, batch.id), batch);
+  }
+
+  async loadEditSession(setId: string, sessionId: string): Promise<EditSessionRecord> {
+    return readJson<EditSessionRecord>(this.editSessionPath(setId, sessionId));
+  }
+
+  async saveEditSession(session: EditSessionRecord): Promise<void> {
+    await writeJsonAtomic(this.editSessionPath(session.diagramSetId, session.id), session);
+  }
+
+  async addEditSession(session: EditSessionRecord): Promise<void> {
+    await this.saveEditSession(session);
+    const set = await this.loadDiagramSet(session.diagramSetId);
+    await writeJsonAtomic(this.setPath(session.diagramSetId), {
+      ...set,
+      editSessionIds: [...set.editSessionIds, session.id],
+      updatedAt: nowIso()
+    });
   }
 
   async attachRun(setId: string, runId: string): Promise<DiagramSetRecord> {
@@ -309,7 +420,8 @@ export class DiagramStore {
   async completeBatch(
     batch: GenerationBatchRecord,
     runs: AgentRunRecord[],
-    diagrams: DiagramRecord[]
+    diagrams: DiagramRecord[],
+    components: DiagramComponentRecord[]
   ): Promise<void> {
     const entities = await this.loadCodeEntities(batch.diagramSetId);
     if (entities.status !== "finalized" || entities.revision !== batch.codeEntitiesRevision) {
@@ -318,12 +430,17 @@ export class DiagramStore {
     for (const diagram of diagrams) {
       await writeJsonAtomic(this.diagramPath(diagram.diagramSetId, diagram.id), diagram);
     }
+    for (const component of components) await this.saveDiagramComponent(component);
     for (const run of runs) await this.saveRun(run);
     await this.saveBatch(batch);
     const set = await this.loadDiagramSet(batch.diagramSetId);
     await writeJsonAtomic(this.setPath(batch.diagramSetId), {
       ...set,
       diagramIds: [...set.diagramIds, ...diagrams.map((diagram) => diagram.id)],
+      diagramComponentIds: [
+        ...set.diagramComponentIds,
+        ...components.map((component) => component.id)
+      ],
       updatedAt: nowIso()
     });
   }
@@ -336,32 +453,54 @@ export class DiagramStore {
         diagramSets: [],
         codeEntitySets: {},
         diagrams: {},
+        diagramComponents: {},
         generationBatches: {},
-        agentRuns: {}
+        agentRuns: {},
+        editSessions: {}
       };
     }
     const diagramSets = await Promise.all(project.diagramSetIds.map((id) => this.loadDiagramSet(id)));
     const codeEntitySets: Record<string, CodeEntitiesSetRecord> = {};
     const diagrams: Record<string, DiagramRecord> = {};
+    const diagramComponents: Record<string, DiagramComponentRecord> = {};
     const generationBatches: Record<string, GenerationBatchRecord> = {};
     const agentRuns: Record<string, AgentRunRecord> = {};
+    const editSessions: Record<string, EditSessionRecord> = {};
     for (const set of diagramSets) {
       codeEntitySets[set.codeEntitiesSetId] = await this.loadCodeEntities(set.id);
       for (const id of set.diagramIds) diagrams[id] = await this.loadDiagram(set.id, id);
+      for (const id of set.diagramComponentIds) {
+        diagramComponents[id] = await this.loadDiagramComponent(set.id, id);
+      }
       for (const id of set.generationBatchIds) {
-        generationBatches[id] = await readJson<GenerationBatchRecord>(this.batchPath(set.id, id));
+        generationBatches[id] = await this.loadGenerationBatch(set.id, id);
       }
       for (const id of set.agentRunIds) {
         agentRuns[id] = await readJson<AgentRunRecord>(this.runPath(set.id, id));
       }
+      for (const id of set.editSessionIds) {
+        editSessions[id] = await this.loadEditSession(set.id, id);
+      }
     }
-    return { project, diagramSets, codeEntitySets, diagrams, generationBatches, agentRuns };
+    return {
+      project,
+      diagramSets,
+      codeEntitySets,
+      diagrams,
+      diagramComponents,
+      generationBatches,
+      agentRuns,
+      editSessions
+    };
   }
 
   ids = {
     set: () => makeId("set"),
     run: () => makeId("run"),
     batch: () => makeId("batch"),
-    diagram: () => makeId("diagram")
+    diagram: () => makeId("diagram"),
+    diagramComponent: () => makeId("component"),
+    editSession: () => makeId("edit"),
+    editOperation: () => makeId("operation")
   };
 }

@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -11,6 +11,22 @@ afterEach(async () => {
 });
 
 describe("DiagramStore", () => {
+  it("writes to a caller-selected diagrams directory", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-store-root-"));
+    roots.push(root);
+    await mkdir(path.join(root, ".git"));
+    const store = new DiagramStore(root, ".new_diagrams");
+    const location = { checkoutRoot: root, repositoryIdentity: path.join(root, ".git") };
+    await store.ensureProject(location);
+
+    expect(store.storeRoot).toBe(path.join(root, ".new_diagrams"));
+    const project = JSON.parse(await readFile(
+      path.join(root, ".new_diagrams", "project.json"),
+      "utf8"
+    )) as { repositoryIdentity: string };
+    expect(project.repositoryIdentity).toBe(location.repositoryIdentity);
+  });
+
   it("creates a set and makes CodeEntities immutable after finalization", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "new-diagram-store-"));
     roots.push(root);

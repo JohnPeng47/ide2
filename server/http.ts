@@ -45,6 +45,11 @@ function parseSetAction(pathname: string): { setId: string; action: string } | n
   return match ? { setId: match[1], action: match[2] } : null;
 }
 
+function parseProjectImport(pathname: string): { projectId: string } | null {
+  const match = pathname.match(/^\/api\/projects\/([a-z0-9][a-z0-9-]*)\/imports$/);
+  return match ? { projectId: match[1] } : null;
+}
+
 function parseDiagram(pathname: string): { setId: string; diagramId: string } | null {
   const match = pathname.match(
     /^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/diagrams\/([a-z0-9][a-z0-9-]*)$/
@@ -59,11 +64,56 @@ function parseDiagramArchive(pathname: string): { setId: string; diagramId: stri
   return match ? { setId: match[1], diagramId: match[2] } : null;
 }
 
-export function diagramApi(projectRoot: string): Plugin {
+function parseDiagramComponents(pathname: string): { setId: string; diagramId: string } | null {
+  const match = pathname.match(
+    /^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/diagrams\/([a-z0-9][a-z0-9-]*)\/components$/
+  );
+  return match ? { setId: match[1], diagramId: match[2] } : null;
+}
+
+function parseComponentAction(pathname: string): {
+  setId: string;
+  componentId: string;
+  action: "archive" | "components";
+} | null {
+  const match = pathname.match(
+    /^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/components\/([a-z0-9][a-z0-9-]*)\/(archive|components)$/
+  );
+  return match
+    ? { setId: match[1], componentId: match[2], action: match[3] as "archive" | "components" }
+    : null;
+}
+
+function parseEditSessions(pathname: string): { setId: string } | null {
+  const match = pathname.match(
+    /^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/edit-sessions$/
+  );
+  return match ? { setId: match[1] } : null;
+}
+
+function parseEditSessionAction(pathname: string): {
+  setId: string;
+  sessionId: string;
+  action: "manual" | "marker" | "llm" | "undo" | "redo" | "finish" | "discard";
+} | null {
+  const match = pathname.match(
+    /^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/edit-sessions\/([a-z0-9][a-z0-9-]*)\/(manual|marker|llm|undo|redo|finish|discard)$/
+  );
+  return match ? {
+    setId: match[1],
+    sessionId: match[2],
+    action: match[3] as "manual" | "marker" | "llm" | "undo" | "redo" | "finish" | "discard"
+  } : null;
+}
+
+export function diagramApi(projectRoot: string, diagramsDirectory = ".diagrams"): Plugin {
   const runtime = process.env.NEW_DIAGRAM_AGENT === "fake"
     ? new FakeDiagramAgentRuntime()
     : new PiDiagramAgentRuntime();
-  const application = new DiagramApplication(new DiagramStore(projectRoot), runtime);
+  const application = new DiagramApplication(
+    new DiagramStore(projectRoot, diagramsDirectory),
+    runtime
+  );
   let recovered: Promise<void> | undefined;
   const ensureRecovered = () => recovered ??= application.recoverInterruptedRuns();
 
@@ -114,6 +164,31 @@ export function diagramApi(projectRoot: string): Plugin {
         if (!response.destroyed && !response.writableEnded) response.end();
         return;
       }
+      const projectImport = parseProjectImport(url.pathname);
+      if (projectImport) {
+        if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
+        const body = await readBody(request) as Record<string, unknown>;
+        const diagramSetId = typeof body.diagramSetId === "string" ? body.diagramSetId : "";
+        const artifactKind = body.artifactKind;
+        const name = typeof body.name === "string" ? body.name : "";
+        const ascii = typeof body.ascii === "string" ? body.ascii : "";
+        const codeEntityIds = Array.isArray(body.codeEntityIds)
+          ? body.codeEntityIds.filter((value): value is string => typeof value === "string")
+          : undefined;
+        if (!diagramSetId || !name.trim() || !ascii.trim()) {
+          return sendJson(response, 400, { error: "DiagramSet, artifact name, and ASCII are required" });
+        }
+        if (artifactKind !== "diagram" && artifactKind !== "diagram-component") {
+          return sendJson(response, 400, { error: "artifactKind must be diagram or diagram-component" });
+        }
+        return sendJson(response, 200, await application.importArtifact(projectImport.projectId, {
+          diagramSetId,
+          artifactKind,
+          name,
+          ascii,
+          codeEntityIds
+        }));
+      }
       const archive = parseDiagramArchive(url.pathname);
       if (archive) {
         if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
@@ -121,6 +196,116 @@ export function diagramApi(projectRoot: string): Plugin {
           response,
           200,
           await application.archiveDiagram(archive.setId, archive.diagramId)
+        );
+      }
+      const editSessions = parseEditSessions(url.pathname);
+      if (editSessions) {
+        if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
+        const body = await readBody(request) as Record<string, unknown>;
+        const artifactKind = body.artifactKind;
+        const artifactId = typeof body.artifactId === "string" ? body.artifactId : "";
+        if ((artifactKind !== "diagram" && artifactKind !== "diagram-component") || !artifactId) {
+          return sendJson(response, 400, { error: "artifactKind and artifactId are required" });
+        }
+        return sendJson(
+          response,
+          200,
+          await application.createEditSession(editSessions.setId, artifactKind, artifactId)
+        );
+      }
+      const editAction = parseEditSessionAction(url.pathname);
+      if (editAction) {
+        if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
+        const body = await readBody(request) as Record<string, unknown>;
+        if (editAction.action === "manual") {
+          const ascii = typeof body.ascii === "string" ? body.ascii : "";
+          return sendJson(response, 200, await application.manualEdit(
+            editAction.setId, editAction.sessionId, ascii
+          ));
+        }
+        if (editAction.action === "marker") {
+          return sendJson(response, 200, await application.placeEditMarker(
+            editAction.setId,
+            editAction.sessionId,
+            Number(body.line),
+            Number(body.column)
+          ));
+        }
+        if (editAction.action === "undo") {
+          return sendJson(response, 200, await application.undoEdit(editAction.setId, editAction.sessionId));
+        }
+        if (editAction.action === "redo") {
+          return sendJson(response, 200, await application.redoEdit(editAction.setId, editAction.sessionId));
+        }
+        if (editAction.action === "finish") {
+          return sendJson(response, 200, await application.finishEdit(editAction.setId, editAction.sessionId));
+        }
+        if (editAction.action === "discard") {
+          return sendJson(response, 200, await application.discardEdit(editAction.setId, editAction.sessionId));
+        }
+        const instruction = typeof body.instruction === "string" ? body.instruction : "";
+        const modelId = typeof body.modelId === "string" ? body.modelId : undefined;
+        response.statusCode = 200;
+        response.setHeader("content-type", "application/x-ndjson; charset=utf-8");
+        response.setHeader("cache-control", "no-cache, no-transform");
+        response.flushHeaders();
+        const workspace = await application.llmEdit(
+          editAction.setId,
+          editAction.sessionId,
+          instruction,
+          modelId,
+          (event) => sendEvent(response, event)
+        );
+        sendEvent(response, { type: "result", workspace });
+        response.end();
+        return;
+      }
+      const componentAction = parseComponentAction(url.pathname);
+      if (componentAction) {
+        if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
+        if (componentAction.action === "archive") {
+          return sendJson(
+            response,
+            200,
+            await application.archiveDiagramComponent(
+              componentAction.setId,
+              componentAction.componentId
+            )
+          );
+        }
+        const body = await readBody(request) as Record<string, unknown>;
+        const bounds = body.bounds as Record<string, unknown> | undefined;
+        if (!bounds) return sendJson(response, 400, { error: "selection bounds are required" });
+        return sendJson(
+          response,
+          200,
+          await application.captureNestedDiagramComponent(
+            componentAction.setId,
+            componentAction.componentId,
+            {
+              startLine: Number(bounds.startLine),
+              endLine: Number(bounds.endLine),
+              startColumn: Number(bounds.startColumn),
+              endColumn: Number(bounds.endColumn)
+            }
+          )
+        );
+      }
+      const componentCapture = parseDiagramComponents(url.pathname);
+      if (componentCapture) {
+        if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
+        const body = await readBody(request) as Record<string, unknown>;
+        const bounds = body.bounds as Record<string, unknown> | undefined;
+        if (!bounds) return sendJson(response, 400, { error: "selection bounds are required" });
+        return sendJson(
+          response,
+          200,
+          await application.captureDiagramComponent(componentCapture.setId, componentCapture.diagramId, {
+            startLine: Number(bounds.startLine),
+            endLine: Number(bounds.endLine),
+            startColumn: Number(bounds.startColumn),
+            endColumn: Number(bounds.endColumn)
+          })
         );
       }
       const diagram = parseDiagram(url.pathname);
@@ -146,6 +331,10 @@ export function diagramApi(projectRoot: string): Plugin {
       const selectedCodeEntityIds = Array.isArray(body.selectedCodeEntityIds)
         ? body.selectedCodeEntityIds.filter((value): value is string => typeof value === "string")
         : [];
+      const outputKind = body.outputKind;
+      if (outputKind !== "diagram" && outputKind !== "diagram-component") {
+        return sendJson(response, 400, { error: "outputKind must be diagram or diagram-component" });
+      }
       response.statusCode = 200;
       response.setHeader("content-type", "application/x-ndjson; charset=utf-8");
       response.setHeader("cache-control", "no-cache, no-transform");
@@ -153,7 +342,8 @@ export function diagramApi(projectRoot: string): Plugin {
       const workspace = await application.generate(action.setId, {
         prompt,
         selectedCodeEntityIds,
-        count
+        count,
+        outputKind
       }, (event) => sendEvent(response, event));
       sendEvent(response, { type: "result", workspace });
       response.end();

@@ -6,7 +6,7 @@ description: Create a new source-backed ASCII diagram workspace for a repository
 # New Diagram
 
 Use the repository CLI as an HTTP client; only the running studio server writes
-`.diagrams` records.
+DiagramSet records.
 
 1. Resolve the repository path, DiagramSet name, and concise collection prompt from the request.
 2. Ensure the studio server is running for that repository, then run:
@@ -27,8 +27,13 @@ read-only Pi agent to collect source-backed entities. If the CLI cannot connect,
 report this start command:
 
 ```bash
-NEW_DIAGRAM_PROJECT_ROOT=<repo-path> npm --prefix /home/john/drone-interception/scripts/new-diagram run dev
+npm --prefix /home/john/drone-interception/scripts/new-diagram run diagram -- serve \
+  --path <repo-path> \
+  --diagrams-dir .diagrams
 ```
+
+Use `--diagrams-dir <dir>` when the user requests an isolated DiagramSet store;
+relative directories resolve from `<repo-path>`.
 
 Do not generate diagrams from the external agent. Do not mutate a
 CodeEntitiesSet after the human finalizes it; bootstrap a new DiagramSet if

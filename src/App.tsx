@@ -1,25 +1,72 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { archiveDiagram, fetchWorkspace, finalizeCodeEntities, generateDiagrams, renameDiagram } from "./api";
-import { CodeEntitiesPanel } from "./components/CodeEntitiesPanel";
-import { DiagramContextPanel } from "./components/DiagramContextPanel";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  applyLlmEdit,
+  applyManualEdit,
+  archiveDiagram,
+  archiveDiagramComponent,
+  captureDiagramComponent,
+  captureNestedDiagramComponent,
+  createEditSession,
+  discardEdit,
+  fetchWorkspace,
+  finalizeCodeEntities,
+  generateArtifacts,
+  finishEdit,
+  importProjectArtifact,
+  placeEditMarker,
+  redoEdit,
+  renameDiagram,
+  undoEdit
+} from "./api";
+import { DiagramContextPanel, type ContextTab } from "./components/DiagramContextPanel";
 import { DiagramView } from "./components/DiagramView";
 import { GeneratorOptions } from "./components/GeneratorOptions";
+import { ImportArtifactDialog } from "./components/ImportArtifactDialog";
 import { SplitPane } from "./components/SplitPane";
-import { isDiagramArchived, type DiagramRecord, type WorkspaceSnapshot } from "./domain";
+import {
+  DEFAULT_EDIT_MODEL_ID,
+  isDiagramComponentArchived,
+  isDiagramArchived,
+  type ArtifactImportInput,
+  type DiagramComponentRecord,
+  type DiagramRecord,
+  type DiagramSelectionBounds,
+  type EditModelId,
+  type GenerationOutputKind,
+  type WorkspaceSnapshot
+} from "./domain";
 
-type Screen = "diagram" | "generation";
+type Screen = "diagram" | "diagram-component" | "generation";
 
 export function App() {
   const [workspace, setWorkspace] = useState<WorkspaceSnapshot | null>(null);
   const [activeSetId, setActiveSetId] = useState<string | null>(null);
   const [activeDiagramId, setActiveDiagramId] = useState<string | null>(null);
+  const [activeComponentId, setActiveComponentId] = useState<string | null>(null);
   const [screen, setScreen] = useState<Screen>("generation");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [prompt, setPrompt] = useState("");
   const [count, setCount] = useState(3);
+  const [outputKind, setOutputKind] = useState<GenerationOutputKind>("diagram");
+  const [contextTab, setContextTab] = useState<ContextTab>("code-entities");
   const [progress, setProgress] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [pendingImported, setPendingImported] = useState<{
+    setId: string;
+    artifactKind: GenerationOutputKind;
+    artifactId: string;
+  } | null>(null);
+  const [activeEditSessionId, setActiveEditSessionId] = useState<string | null>(null);
+  const [editPrompt, setEditPrompt] = useState("");
+  const [editModelId, setEditModelId] = useState<EditModelId>(DEFAULT_EDIT_MODEL_ID);
+  const [markerMode, setMarkerMode] = useState(false);
+  const [editBusy, setEditBusy] = useState(false);
+  const [editProgress, setEditProgress] = useState("");
+  const [editError, setEditError] = useState<string | null>(null);
+  const editQueue = useRef<Promise<void>>(Promise.resolve());
+  const editShortcutHandlers = useRef({ undo: () => {}, redo: () => {} });
 
   const load = useCallback(async () => {
     try {
@@ -47,9 +94,28 @@ export function App() {
       .map((id) => workspace.diagrams[id])
       .filter((diagram): diagram is DiagramRecord => Boolean(diagram) && !isDiagramArchived(diagram))
     : [], [activeSet, workspace]);
+  const components = useMemo(() => activeSet && workspace
+    ? activeSet.diagramComponentIds
+      .map((id) => workspace.diagramComponents[id])
+      .filter((component): component is DiagramComponentRecord => (
+        Boolean(component) && !isDiagramComponentArchived(component)
+      ))
+    : [], [activeSet, workspace]);
   const activeDiagram = diagrams.find((diagram) => diagram.id === activeDiagramId)
     ?? diagrams.at(-1)
     ?? null;
+  const activeComponent = components.find((component) => component.id === activeComponentId) ?? null;
+  const selectedArtifact = screen === "diagram-component" ? activeComponent : activeDiagram;
+  const selectedArtifactKind: GenerationOutputKind = screen === "diagram-component"
+    ? "diagram-component"
+    : "diagram";
+  const activeEditSession = activeEditSessionId && workspace
+    ? workspace.editSessions[activeEditSessionId] ?? null
+    : null;
+  const editSession = activeEditSession?.status === "active"
+    && activeEditSession.sourceArtifactId === selectedArtifact?.id
+    ? activeEditSession
+    : null;
   const collectionRun = activeSet && workspace
     ? [...activeSet.agentRunIds]
       .reverse()
@@ -62,8 +128,27 @@ export function App() {
     setSelectedIds(new Set(entitySet.entities.map((entity) => entity.id)));
     setPrompt("");
     setCount(3);
+    setOutputKind("diagram");
+    setContextTab("code-entities");
     setProgress("");
     setError(null);
+    setActiveComponentId(null);
+    setActiveEditSessionId(null);
+    setEditPrompt("");
+    setMarkerMode(false);
+    if (pendingImported?.setId === activeSet.id) {
+      if (pendingImported.artifactKind === "diagram") {
+        setActiveDiagramId(pendingImported.artifactId);
+        setScreen("diagram");
+      } else {
+        setActiveDiagramId(null);
+        setActiveComponentId(pendingImported.artifactId);
+        setScreen("diagram-component");
+      }
+      setContextTab("diagrams");
+      setPendingImported(null);
+      return;
+    }
     const activeDiagramIds = activeSet.diagramIds.filter((id) => {
       const diagram = workspace?.diagrams[id];
       return diagram && !isDiagramArchived(diagram);
@@ -85,6 +170,22 @@ export function App() {
     const timer = window.setInterval(() => void load(), 1000);
     return () => window.clearInterval(timer);
   }, [workspace?.diagramSets.length, activeSet?.readiness, load]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || !(event.ctrlKey || event.metaKey)) return;
+      if ((event.target as HTMLElement | null)?.closest("#edit-prompt")) return;
+      if (event.key.toLowerCase() === "z" && !event.shiftKey) {
+        event.preventDefault();
+        editShortcutHandlers.current.undo();
+      } else if (event.key.toLowerCase() === "y" || (event.key.toLowerCase() === "z" && event.shiftKey)) {
+        event.preventDefault();
+        editShortcutHandlers.current.redo();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   if (!workspace) {
     return <main className="center-state"><span className="pulse" /><h1>NEW DIAGRAM</h1><p>{error || "loading workspace…"}</p></main>;
@@ -122,19 +223,31 @@ export function App() {
     setBusy(true);
     setError(null);
     setProgress("queuing generation batch");
-    const before = new Set(activeSet.diagramIds);
+    const beforeDiagrams = new Set(activeSet.diagramIds);
+    const beforeComponents = new Set(activeSet.diagramComponentIds);
     try {
-      const next = await generateDiagrams(activeSet.id, {
+      const next = await generateArtifacts(activeSet.id, {
         prompt,
         selectedCodeEntityIds: [...selectedIds],
-        count
+        count,
+        outputKind
       }, setProgress);
       setWorkspace(next);
       const nextSet = next.diagramSets.find((set) => set.id === activeSet.id);
-      const created = nextSet?.diagramIds.filter((id) => !before.has(id)) ?? [];
-      setActiveDiagramId(created[0] ?? nextSet?.diagramIds.at(-1) ?? null);
-      setScreen("diagram");
-      setProgress(`generated ${created.length} diagrams with ${count} parallel agents`);
+      const createdDiagrams = nextSet?.diagramIds.filter((id) => !beforeDiagrams.has(id)) ?? [];
+      const createdComponents = nextSet?.diagramComponentIds
+        .filter((id) => !beforeComponents.has(id)) ?? [];
+      if (outputKind === "diagram") {
+        setActiveDiagramId(createdDiagrams[0] ?? nextSet?.diagramIds.at(-1) ?? null);
+        setActiveComponentId(null);
+        setScreen("diagram");
+      } else {
+        setActiveComponentId(createdComponents[0] ?? null);
+        setScreen("diagram-component");
+      }
+      setContextTab("diagrams");
+      const created = outputKind === "diagram" ? createdDiagrams.length : createdComponents.length;
+      setProgress(`generated ${created} ${outputKind === "diagram" ? "diagrams" : "components"} with ${count} parallel agents`);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "generation failed");
     } finally {
@@ -145,7 +258,42 @@ export function App() {
   const derive = (diagram: DiagramRecord) => {
     setPrompt(`@diagram/${diagram.handle} `);
     setSelectedIds(new Set(diagram.codeEntityIds));
+    setOutputKind("diagram");
     setScreen("generation");
+  };
+
+  const deriveComponent = (component: DiagramComponentRecord) => {
+    setPrompt(`@component/${component.handle} `);
+    setSelectedIds(new Set(component.codeEntityIds));
+    setOutputKind("diagram-component");
+    setScreen("generation");
+  };
+
+  const importArtifact = async (input: ArtifactImportInput) => {
+    if (!workspace.project) throw new Error("Project is not available");
+    const before = workspace.diagramSets.find((set) => set.id === input.diagramSetId);
+    if (!before) throw new Error("Import target DiagramSet is not available");
+    const next = await importProjectArtifact(workspace.project.id, input);
+    const target = next.diagramSets.find((set) => set.id === input.diagramSetId);
+    if (!target) throw new Error("Imported artifact target was not returned");
+    const artifactId = input.artifactKind === "diagram"
+      ? target.diagramIds.find((id) => !before.diagramIds.includes(id))
+      : target.diagramComponentIds.find((id) => !before.diagramComponentIds.includes(id));
+    if (!artifactId) throw new Error("Imported artifact was not returned");
+    setWorkspace(next);
+    setProgress(`imported ${input.artifactKind === "diagram" ? "Diagram" : "DiagramComponent"}`);
+    setContextTab("diagrams");
+    if (input.diagramSetId !== activeSet.id) {
+      setPendingImported({ setId: input.diagramSetId, artifactKind: input.artifactKind, artifactId });
+      setActiveSetId(input.diagramSetId);
+    } else if (input.artifactKind === "diagram") {
+      setActiveDiagramId(artifactId);
+      setActiveComponentId(null);
+      setScreen("diagram");
+    } else {
+      setActiveComponentId(artifactId);
+      setScreen("diagram-component");
+    }
   };
 
   const rename = async (diagramId: string, name: string) => {
@@ -163,8 +311,217 @@ export function App() {
     setActiveDiagramId((current) => current === diagramId
       ? nextActiveIds.at(-1) ?? null
       : current);
-    if (nextActiveIds.length === 0) setScreen("generation");
+    if (nextActiveIds.length === 0) {
+      if (components.length > 0) {
+        setActiveComponentId(components.at(-1)?.id ?? null);
+        setScreen("diagram-component");
+      } else {
+        setScreen("generation");
+      }
+    }
   };
+
+  const archiveComponent = async (componentId: string) => {
+    const next = await archiveDiagramComponent(activeSet.id, componentId);
+    setWorkspace(next);
+    const nextSet = next.diagramSets.find((set) => set.id === activeSet.id);
+    const nextActiveIds = nextSet?.diagramComponentIds.filter((id) => {
+      const component = next.diagramComponents[id];
+      return component && !isDiagramComponentArchived(component);
+    }) ?? [];
+    if (activeComponentId === componentId) {
+      const replacement = nextActiveIds.at(-1) ?? null;
+      setActiveComponentId(replacement);
+      if (!replacement) setScreen(activeDiagram ? "diagram" : "generation");
+    }
+  };
+
+  const capture = async (bounds: DiagramSelectionBounds) => {
+    if (!activeDiagram) throw new Error("No active Diagram to capture");
+    const next = await captureDiagramComponent(activeSet.id, activeDiagram.id, bounds);
+    setWorkspace(next);
+    setContextTab("diagrams");
+    setProgress("DiagramComponent captured and saved");
+  };
+
+  const captureNested = async (bounds: DiagramSelectionBounds) => {
+    if (!activeComponent) throw new Error("No active DiagramComponent to capture");
+    const next = await captureNestedDiagramComponent(activeSet.id, activeComponent.id, bounds);
+    setWorkspace(next);
+    const nextSet = next.diagramSets.find((set) => set.id === activeSet.id);
+    const createdId = nextSet?.diagramComponentIds
+      .filter((id) => !activeSet.diagramComponentIds.includes(id))
+      .at(-1);
+    if (createdId) setActiveComponentId(createdId);
+    setContextTab("diagrams");
+    setProgress("Child DiagramComponent captured and saved");
+  };
+
+  const selectDiagram = (diagramId: string) => {
+    setActiveDiagramId(diagramId);
+    setActiveComponentId(null);
+    setScreen("diagram");
+  };
+
+  const selectComponent = (componentId: string) => {
+    setActiveComponentId(componentId);
+    setScreen("diagram-component");
+  };
+
+  const toggleEntity = (id: string) => setSelectedIds((current) => {
+    const next = new Set(current);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    return next;
+  });
+
+  const startEdit = async () => {
+    if (!selectedArtifact) return;
+    setEditBusy(true);
+    setEditError(null);
+    try {
+      const reusable = Object.values(workspace.editSessions).find((session) => (
+        session.status === "active"
+        && session.diagramSetId === activeSet.id
+        && session.sourceArtifactKind === selectedArtifactKind
+        && session.sourceArtifactId === selectedArtifact.id
+      ));
+      if (reusable) {
+        setActiveEditSessionId(reusable.id);
+      } else {
+        const next = await createEditSession(activeSet.id, selectedArtifactKind, selectedArtifact.id);
+        setWorkspace(next);
+        const created = Object.values(next.editSessions).find((session) => (
+          session.status === "active"
+          && session.sourceArtifactKind === selectedArtifactKind
+          && session.sourceArtifactId === selectedArtifact.id
+        ));
+        if (!created) throw new Error("edit session was not returned");
+        setActiveEditSessionId(created.id);
+      }
+      setEditPrompt("");
+      setMarkerMode(false);
+      setEditProgress("");
+      setContextTab("operations");
+    } catch (caught) {
+      setEditError(caught instanceof Error ? caught.message : "could not start edit mode");
+    } finally {
+      setEditBusy(false);
+    }
+  };
+
+  const queueManualEdit = (ascii: string) => {
+    if (!editSession) return;
+    const sessionId = editSession.id;
+    editQueue.current = editQueue.current.then(async () => {
+      const next = await applyManualEdit(activeSet.id, sessionId, ascii);
+      setWorkspace(next);
+    }).catch((caught) => {
+      setEditError(caught instanceof Error ? caught.message : "manual edit failed");
+    });
+  };
+
+  const runEditAction = async (
+    action: (setId: string, sessionId: string) => Promise<WorkspaceSnapshot>
+  ) => {
+    if (!editSession) return;
+    setEditBusy(true);
+    setEditError(null);
+    try {
+      await editQueue.current;
+      setWorkspace(await action(activeSet.id, editSession.id));
+    } catch (caught) {
+      setEditError(caught instanceof Error ? caught.message : "edit operation failed");
+    } finally {
+      setEditBusy(false);
+    }
+  };
+
+  const markLocation = async (line: number, column: number) => {
+    if (!editSession) return;
+    setEditBusy(true);
+    setEditError(null);
+    try {
+      await editQueue.current;
+      const result = await placeEditMarker(activeSet.id, editSession.id, line, column);
+      setWorkspace(result.workspace);
+      setEditPrompt((current) => `${current}${current && !/\s$/.test(current) ? " " : ""}${result.markerToken} `);
+      setMarkerMode(false);
+      setContextTab("operations");
+    } catch (caught) {
+      setEditError(caught instanceof Error ? caught.message : "marker placement failed");
+    } finally {
+      setEditBusy(false);
+    }
+  };
+
+  const runLlmEdit = async () => {
+    if (!editSession || !editPrompt.trim()) return;
+    setEditBusy(true);
+    setEditError(null);
+    setEditProgress("queuing LLM edit");
+    try {
+      await editQueue.current;
+      const next = await applyLlmEdit(
+        activeSet.id,
+        editSession.id,
+        editPrompt,
+        editModelId,
+        setEditProgress
+      );
+      setWorkspace(next);
+      setEditPrompt("");
+      setEditProgress("LLM edit applied");
+    } catch (caught) {
+      setEditError(caught instanceof Error ? caught.message : "LLM edit failed");
+    } finally {
+      setEditBusy(false);
+    }
+  };
+
+  const saveEdit = async () => {
+    if (!editSession) return;
+    setEditBusy(true);
+    setEditError(null);
+    try {
+      await editQueue.current;
+      const next = await finishEdit(activeSet.id, editSession.id);
+      const completed = next.editSessions[editSession.id];
+      if (!completed?.outputArtifactId) throw new Error("saved edit did not return an artifact");
+      setWorkspace(next);
+      if (editSession.sourceArtifactKind === "diagram") {
+        setActiveDiagramId(completed.outputArtifactId);
+        setActiveComponentId(null);
+        setScreen("diagram");
+      } else {
+        setActiveComponentId(completed.outputArtifactId);
+        setScreen("diagram-component");
+      }
+      setActiveEditSessionId(null);
+      setMarkerMode(false);
+      setEditPrompt("");
+      setContextTab("diagrams");
+      setProgress("edited copy saved");
+    } catch (caught) {
+      setEditError(caught instanceof Error ? caught.message : "could not save edited copy");
+    } finally {
+      setEditBusy(false);
+    }
+  };
+
+  const leaveEdit = async () => {
+    if (!editSession) return;
+    await runEditAction(discardEdit);
+    setActiveEditSessionId(null);
+    setMarkerMode(false);
+    setEditPrompt("");
+    setContextTab("code-entities");
+  };
+
+  editShortcutHandlers.current = editSession ? {
+    undo: () => void runEditAction(undoEdit),
+    redo: () => void runEditAction(redoEdit)
+  } : { undo: () => {}, redo: () => {} };
 
   return (
     <main className="studio-shell">
@@ -180,8 +537,16 @@ export function App() {
           </select>
         </label>
         <nav className="screen-tabs" aria-label="Workspace screens">
-          <button type="button" className={screen === "diagram" ? "is-active" : ""} disabled={diagrams.length === 0} onClick={() => setScreen("diagram")}>DIAGRAM</button>
+          <button
+            type="button"
+            className={screen === "diagram" || screen === "diagram-component" ? "is-active" : ""}
+            disabled={diagrams.length + components.length === 0}
+            onClick={() => setScreen(activeComponent ? "diagram-component" : "diagram")}
+          >
+            {activeComponent ? "COMPONENT" : "DIAGRAM"}
+          </button>
           <button type="button" className={screen === "generation" ? "is-active" : ""} onClick={() => setScreen("generation")}>GENERATE</button>
+          <button type="button" className="header-import" onClick={() => setImportOpen(true)}>IMPORT</button>
         </nav>
       </header>
 
@@ -199,6 +564,8 @@ export function App() {
           left={<GeneratorOptions
             codeEntities={entitySet}
             diagrams={diagrams}
+            components={components}
+            outputKind={outputKind}
             prompt={prompt}
             count={count}
             generating={busy}
@@ -206,38 +573,131 @@ export function App() {
             error={error}
             onPrompt={setPrompt}
             onCount={setCount}
+            onOutputKind={setOutputKind}
             onFinalize={() => void finalize()}
             onGenerate={() => void generate()}
-          />}
-          right={<CodeEntitiesPanel
-            setId={activeSet.id}
-            codeEntities={entitySet}
-            selectedIds={selectedIds}
-            onToggle={(id) => setSelectedIds((current) => {
-              const next = new Set(current);
-              if (next.has(id)) next.delete(id);
-              else next.add(id);
-              return next;
-            })}
-          />}
-        />
-      ) : activeDiagram ? (
-        <SplitPane
-          left={<DiagramView
-            active={activeDiagram}
-            onDerive={derive}
           />}
           right={<DiagramContextPanel
             setId={activeSet.id}
             codeEntities={entitySet}
             diagramSet={activeSet}
             diagrams={diagrams}
+            components={components}
             generationBatches={workspace.generationBatches}
-            activeDiagram={activeDiagram}
-            onSelectDiagram={setActiveDiagramId}
+            selectedIds={selectedIds}
+            onToggleEntity={toggleEntity}
+            activeTab={contextTab}
+            onTab={setContextTab}
+            onSelectDiagram={selectDiagram}
+            onSelectComponent={selectComponent}
             onRenameDiagram={rename}
             onArchiveDiagram={archive}
+            onArchiveComponent={archiveComponent}
           />}
+        />
+      ) : screen === "diagram-component" && activeComponent ? (
+        <SplitPane
+          left={<DiagramView
+            active={editSession ? { ...activeComponent, ascii: editSession.workingAscii } : activeComponent}
+            artifactKind="diagram-component"
+            onDerive={() => deriveComponent(activeComponent)}
+            onCapture={captureNested}
+            editMode={Boolean(editSession)}
+            markerMode={markerMode}
+            editBusy={editBusy}
+            onToggleEdit={() => void (editSession ? leaveEdit() : startEdit())}
+            onManualEdit={queueManualEdit}
+            onMarker={(line, column) => void markLocation(line, column)}
+            onUndoEdit={() => void runEditAction(undoEdit)}
+            onRedoEdit={() => void runEditAction(redoEdit)}
+          />}
+          right={<DiagramContextPanel
+            setId={activeSet.id}
+            codeEntities={entitySet}
+            diagramSet={activeSet}
+            diagrams={diagrams}
+            components={components}
+            generationBatches={workspace.generationBatches}
+            activeComponent={activeComponent}
+            editSession={editSession ?? undefined}
+            editPrompt={editPrompt}
+            editModelId={editModelId}
+            markerMode={markerMode}
+            editBusy={editBusy}
+            editProgress={editProgress}
+            editError={editError}
+            activeTab={contextTab}
+            onTab={setContextTab}
+            onSelectDiagram={selectDiagram}
+            onSelectComponent={selectComponent}
+            onRenameDiagram={rename}
+            onArchiveDiagram={archive}
+            onArchiveComponent={archiveComponent}
+            onEditPrompt={setEditPrompt}
+            onEditModel={setEditModelId}
+            onMarkerMode={setMarkerMode}
+            onUndoEdit={() => void runEditAction(undoEdit)}
+            onRedoEdit={() => void runEditAction(redoEdit)}
+            onLlmEdit={() => void runLlmEdit()}
+            onFinishEdit={() => void saveEdit()}
+            onDiscardEdit={() => void leaveEdit()}
+          />}
+        />
+      ) : activeDiagram ? (
+        <SplitPane
+          left={<DiagramView
+            active={editSession ? { ...activeDiagram, ascii: editSession.workingAscii } : activeDiagram}
+            artifactKind="diagram"
+            onDerive={() => derive(activeDiagram)}
+            onCapture={capture}
+            editMode={Boolean(editSession)}
+            markerMode={markerMode}
+            editBusy={editBusy}
+            onToggleEdit={() => void (editSession ? leaveEdit() : startEdit())}
+            onManualEdit={queueManualEdit}
+            onMarker={(line, column) => void markLocation(line, column)}
+            onUndoEdit={() => void runEditAction(undoEdit)}
+            onRedoEdit={() => void runEditAction(redoEdit)}
+          />}
+          right={<DiagramContextPanel
+            setId={activeSet.id}
+            codeEntities={entitySet}
+            diagramSet={activeSet}
+            diagrams={diagrams}
+            components={components}
+            generationBatches={workspace.generationBatches}
+            activeDiagram={activeDiagram}
+            editSession={editSession ?? undefined}
+            editPrompt={editPrompt}
+            editModelId={editModelId}
+            markerMode={markerMode}
+            editBusy={editBusy}
+            editProgress={editProgress}
+            editError={editError}
+            activeTab={contextTab}
+            onTab={setContextTab}
+            onSelectDiagram={selectDiagram}
+            onSelectComponent={selectComponent}
+            onRenameDiagram={rename}
+            onArchiveDiagram={archive}
+            onArchiveComponent={archiveComponent}
+            onEditPrompt={setEditPrompt}
+            onEditModel={setEditModelId}
+            onMarkerMode={setMarkerMode}
+            onUndoEdit={() => void runEditAction(undoEdit)}
+            onRedoEdit={() => void runEditAction(redoEdit)}
+            onLlmEdit={() => void runLlmEdit()}
+            onFinishEdit={() => void saveEdit()}
+            onDiscardEdit={() => void leaveEdit()}
+          />}
+        />
+      ) : null}
+      {importOpen ? (
+        <ImportArtifactDialog
+          diagramSets={workspace.diagramSets}
+          defaultDiagramSetId={activeSet.id}
+          onClose={() => setImportOpen(false)}
+          onImport={importArtifact}
         />
       ) : null}
     </main>

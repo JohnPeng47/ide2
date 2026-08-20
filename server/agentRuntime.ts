@@ -11,9 +11,13 @@ import {
 import { Type, type Model } from "@earendil-works/pi-ai";
 import type {
   AgentProgress,
+  ArtifactEditDraft,
   CodeEntityDraft,
-  DiagramDraft
+  GeneratedArtifactDraft,
+  EditModelId,
+  GenerationOutputKind
 } from "../src/domain";
+import { codeEntityCollectionPrompt } from "./codeEntityPrompt";
 
 export interface EntityCollectionRequest {
   sourceRoot: string;
@@ -21,14 +25,28 @@ export interface EntityCollectionRequest {
   initialPrompt: string;
 }
 
-export interface DiagramGenerationRequest {
+export interface ArtifactGenerationRequest {
   sourceRoot: string;
   diagramSetName: string;
   resolvedPrompt: string;
   allowedCodeEntityIds: string[];
   allowedDiagramIds: string[];
+  allowedDiagramComponentIds: string[];
+  outputKind: GenerationOutputKind;
   slot: number;
   total: number;
+}
+
+export interface ArtifactEditRequest {
+  sourceRoot: string;
+  diagramSetName: string;
+  artifactKind: GenerationOutputKind;
+  artifactName: string;
+  artifactHandle: string;
+  currentAscii: string;
+  instruction: string;
+  modelId: EditModelId;
+  markers: Array<{ token: string; character: string; originalCharacter: string }>;
 }
 
 export interface DiagramAgentRuntime {
@@ -36,10 +54,14 @@ export interface DiagramAgentRuntime {
     request: EntityCollectionRequest,
     onProgress?: (progress: AgentProgress) => void
   ): Promise<CodeEntityDraft[]>;
-  generateDiagram(
-    request: DiagramGenerationRequest,
+  generateArtifact(
+    request: ArtifactGenerationRequest,
     onProgress?: (progress: AgentProgress) => void
-  ): Promise<DiagramDraft>;
+  ): Promise<GeneratedArtifactDraft>;
+  editArtifact(
+    request: ArtifactEditRequest,
+    onProgress?: (progress: AgentProgress) => void
+  ): Promise<ArtifactEditDraft>;
   dispose(): void;
 }
 
@@ -68,10 +90,15 @@ export class PiDiagramAgentRuntime implements DiagramAgentRuntime {
     return this.modelRuntime;
   }
 
-  private async model(): Promise<{ runtime: ModelRuntime; model: Model<any>; provider: string; modelId: string }> {
+  private async model(overrideModelId?: string): Promise<{
+    runtime: ModelRuntime;
+    model: Model<any>;
+    provider: string;
+    modelId: string;
+  }> {
     const runtime = await this.runtime();
     const provider = "openai-codex";
-    const modelId = process.env.NEW_DIAGRAM_MODEL || "gpt-5.6-terra";
+    const modelId = overrideModelId || process.env.NEW_DIAGRAM_MODEL || "gpt-5.6-terra";
     const model = runtime.getModel(provider, modelId);
     if (!model) throw new Error(`Pi model is unavailable: ${provider}/${modelId}`);
     if (!runtime.hasConfiguredAuth(provider)) {
@@ -106,7 +133,27 @@ export class PiDiagramAgentRuntime implements DiagramAgentRuntime {
             path: Type.String({ minLength: 1, maxLength: 500 }),
             startLine: Type.Integer({ minimum: 1 }),
             endLine: Type.Integer({ minimum: 1 }),
-            symbol: Type.Optional(Type.String({ minLength: 1, maxLength: 200 }))
+            symbol: Type.Optional(Type.String({ minLength: 1, maxLength: 200 })),
+            compactedSource: Type.Object({
+              level: Type.Union([
+                Type.Literal("low"),
+                Type.Literal("medium"),
+                Type.Literal("high")
+              ]),
+              sections: Type.Array(Type.Union([
+                Type.Object({
+                  kind: Type.Literal("source"),
+                  startLine: Type.Integer({ minimum: 1 }),
+                  endLine: Type.Integer({ minimum: 1 })
+                }),
+                Type.Object({
+                  kind: Type.Literal("collapsed-comment"),
+                  startLine: Type.Integer({ minimum: 1 }),
+                  endLine: Type.Integer({ minimum: 1 }),
+                  comment: Type.String({ minLength: 1, maxLength: 1200 })
+                })
+              ]), { minItems: 1, maxItems: 100 })
+            })
           }), { minItems: 1, maxItems: 12 })
         }), { minItems: 1, maxItems: 200 })
       }),
@@ -133,7 +180,7 @@ export class PiDiagramAgentRuntime implements DiagramAgentRuntime {
       noPromptTemplates: true,
       noThemes: true,
       noContextFiles: true,
-      systemPrompt: "Inspect repository source without modifying it. Collect only source-backed code entities and finish through submit_code_entities."
+      systemPrompt: "Inspect repository source without modifying it. Collect source-backed CodeEntities with compacted source presentations and finish through submit_code_entities."
     });
     await resourceLoader.reload();
     const { session } = await createAgentSession({
@@ -154,12 +201,7 @@ export class PiDiagramAgentRuntime implements DiagramAgentRuntime {
       if (progress) onProgress?.(progress);
     });
     try {
-      await session.prompt(`Collect code entities for the diagram set "${request.diagramSetName}".
-
-Request:
-${request.initialPrompt || "Map the requested code feature."}
-
-By code-entities, I mean labels in a diagram that map to ranges of source code. Classify each as State, Interface / Data Struct, or Operation. These categories are intentionally broad; use your best judgement. Return concise summaries and exact repo-relative source ranges.`);
+      await session.prompt(codeEntityCollectionPrompt(request));
       if (!state.submission) throw new Error("collector finished without submitting code entities");
       return state.submission.entities;
     } finally {
@@ -169,31 +211,33 @@ By code-entities, I mean labels in a diagram that map to ranges of source code. 
     }
   }
 
-  async generateDiagram(
-    request: DiagramGenerationRequest,
+  async generateArtifact(
+    request: ArtifactGenerationRequest,
     onProgress?: (progress: AgentProgress) => void
-  ): Promise<DiagramDraft> {
+  ): Promise<GeneratedArtifactDraft> {
     const configured = await this.model();
-    const state: { submission?: DiagramDraft } = {};
+    const componentMode = request.outputKind === "diagram-component";
+    const artifactLabel = componentMode ? "DiagramComponent" : "diagram";
+    const toolName = componentMode ? "submit_diagram_component" : "submit_diagram";
+    const state: { submission?: GeneratedArtifactDraft } = {};
     const submit = defineTool({
-      name: "submit_diagram",
-      label: "Submit diagram",
-      description: "Submit exactly one source-backed 7-bit ASCII architecture diagram.",
-      promptSnippet: "Submit the final ASCII diagram",
+      name: toolName,
+      label: `Submit ${artifactLabel}`,
+      description: `Submit exactly one source-backed 7-bit ASCII ${artifactLabel}.`,
+      promptSnippet: `Submit the final ASCII ${artifactLabel}`,
       promptGuidelines: [
         "Give the diagram a compact, specific name, ideally two to five words.",
-        "End by calling submit_diagram exactly once."
+        `End by calling ${toolName} exactly once.`
       ],
       parameters: Type.Object({
         name: Type.String({ minLength: 1, maxLength: 120 }),
         ascii: Type.String({ minLength: 1, maxLength: 20000 }),
-        codeEntityIds: Type.Array(Type.String(), { maxItems: 200 }),
-        derivedFromDiagramIds: Type.Array(Type.String(), { maxItems: 50 })
+        codeEntityIds: Type.Array(Type.String(), { maxItems: 200 })
       }),
       async execute(_toolCallId, params) {
         state.submission = params;
         return {
-          content: [{ type: "text", text: "Recorded one diagram." }],
+          content: [{ type: "text", text: `Recorded one ${artifactLabel}.` }],
           details: { name: params.name },
           terminate: true
         };
@@ -213,7 +257,9 @@ By code-entities, I mean labels in a diagram that map to ranges of source code. 
       noPromptTemplates: true,
       noThemes: true,
       noContextFiles: true,
-      systemPrompt: "Generate exactly one architecture diagram from the supplied explicit context. Give it a compact, specific name, ideally two to five words; omit redundant words such as the DiagramSet name. Never modify files. Use 7-bit ASCII only and finish through submit_diagram."
+      systemPrompt: componentMode
+        ? "Generate exactly one reusable DiagramComponent from the supplied explicit context. It is a fragment for a broader ASCII Diagram, not a complete diagram. Give it a compact, specific name. Be creative. Never modify files. Use 7-bit ASCII only and finish through submit_diagram_component."
+        : "Generate exactly one architecture diagram from the supplied explicit context. Give it a compact, specific name, ideally two to five words; omit redundant words such as the DiagramSet name. Never modify files. Use 7-bit ASCII only and finish through submit_diagram."
     });
     await resourceLoader.reload();
     const { session } = await createAgentSession({
@@ -221,7 +267,7 @@ By code-entities, I mean labels in a diagram that map to ranges of source code. 
       modelRuntime: configured.runtime,
       model: configured.model,
       thinkingLevel: "medium",
-      tools: ["submit_diagram"],
+      tools: [toolName],
       customTools: [submit],
       resourceLoader,
       settingsManager,
@@ -237,10 +283,96 @@ By code-entities, I mean labels in a diagram that map to ranges of source code. 
       await session.prompt(`${request.resolvedPrompt}
 
 Parallel generation slot: ${request.slot} of ${request.total}.
-Independently choose a clear organizing shape for this slot. Return one diagram only.
+Independently choose a clear organizing shape for this slot. Return one ${artifactLabel} only.
 Allowed CodeEntity ids: ${request.allowedCodeEntityIds.join(", ") || "none"}
-Allowed derived-from Diagram ids: ${request.allowedDiagramIds.join(", ") || "none"}`);
-      if (!state.submission) throw new Error("diagram agent finished without submitting a diagram");
+Referenced Diagram ids: ${request.allowedDiagramIds.join(", ") || "none"}
+Referenced DiagramComponent ids: ${request.allowedDiagramComponentIds.join(", ") || "none"}`);
+      if (!state.submission) throw new Error(`${artifactLabel} agent finished without submitting an artifact`);
+      return state.submission;
+    } finally {
+      unsubscribe();
+      session.dispose();
+      this.sessions.delete(session);
+    }
+  }
+
+  async editArtifact(
+    request: ArtifactEditRequest,
+    onProgress?: (progress: AgentProgress) => void
+  ): Promise<ArtifactEditDraft> {
+    const configured = await this.model(request.modelId);
+    const state: { submission?: ArtifactEditDraft } = {};
+    const submit = defineTool({
+      name: "submit_artifact_edit",
+      label: "Submit artifact edit",
+      description: "Submit the complete revised 7-bit ASCII artifact.",
+      promptSnippet: "Submit the complete revised ASCII",
+      promptGuidelines: ["End by calling submit_artifact_edit exactly once."],
+      parameters: Type.Object({
+        ascii: Type.String({ minLength: 1, maxLength: 20000 })
+      }),
+      async execute(_toolCallId, params) {
+        state.submission = params;
+        return {
+          content: [{ type: "text", text: "Recorded the revised artifact." }],
+          details: {},
+          terminate: true
+        };
+      }
+    });
+    const settingsManager = SettingsManager.inMemory({
+      defaultProvider: configured.provider,
+      defaultModel: configured.modelId,
+      defaultThinkingLevel: "medium"
+    });
+    const resourceLoader = new DefaultResourceLoader({
+      cwd: request.sourceRoot,
+      agentDir: getAgentDir(),
+      settingsManager,
+      noExtensions: true,
+      noSkills: true,
+      noPromptTemplates: true,
+      noThemes: true,
+      noContextFiles: true,
+      systemPrompt: "Edit the supplied ASCII artifact exactly as instructed. Preserve unrelated content, use 7-bit ASCII only, remove location marker characters from the final result, never modify files, and finish through submit_artifact_edit."
+    });
+    await resourceLoader.reload();
+    const { session } = await createAgentSession({
+      cwd: request.sourceRoot,
+      modelRuntime: configured.runtime,
+      model: configured.model,
+      thinkingLevel: "medium",
+      tools: ["submit_artifact_edit"],
+      customTools: [submit],
+      resourceLoader,
+      settingsManager,
+      sessionManager: SessionManager.inMemory(request.sourceRoot)
+    });
+    this.sessions.add(session);
+    const modelName = `${configured.provider}/${configured.modelId}`;
+    const unsubscribe = session.subscribe((event) => {
+      const progress = progressFor(event, modelName, session.sessionId);
+      if (progress) onProgress?.(progress);
+    });
+    const markerGuide = request.markers.length
+      ? request.markers.map((marker) => (
+        `${marker.token} identifies the unique '${marker.character}' character; it replaced ${JSON.stringify(marker.originalCharacter)}.`
+      )).join("\n")
+      : "none";
+    try {
+      await session.prompt(`DiagramSet: ${request.diagramSetName}
+Artifact: ${request.artifactKind === "diagram" ? "Diagram" : "DiagramComponent"} @${request.artifactKind === "diagram" ? "diagram" : "component"}/${request.artifactHandle}
+Name: ${request.artifactName}
+
+Current complete ASCII artifact:
+${request.currentAscii}
+
+Location markers:
+${markerGuide}
+
+Edit instruction:
+${request.instruction}`);
+      if (!state.submission) throw new Error("edit agent finished without submitting an artifact");
       return state.submission;
     } finally {
       unsubscribe();
@@ -273,22 +405,55 @@ export class FakeDiagramAgentRuntime implements DiagramAgentRuntime {
       label: "Workspace Store",
       category: "state",
       summary: "Persists the diagram workspace.",
-      sourceRanges: [{ path: "fixture.ts", startLine: 1, endLine: 1, symbol: "workspace" }]
+      sourceRanges: [{
+        path: "fixture.ts",
+        startLine: 1,
+        endLine: 4,
+        symbol: "workspace",
+        compactedSource: {
+          level: "medium",
+          sections: [
+            { kind: "source", startLine: 1, endLine: 1 },
+            {
+              kind: "collapsed-comment",
+              startLine: 2,
+              endLine: 3,
+              comment: "Initializes and updates the workspace status."
+            },
+            { kind: "source", startLine: 4, endLine: 4 }
+          ]
+        }
+      }]
     }];
   }
 
-  async generateDiagram(
-    request: DiagramGenerationRequest,
+  async generateArtifact(
+    request: ArtifactGenerationRequest,
     onProgress?: (progress: AgentProgress) => void
-  ): Promise<DiagramDraft> {
+  ): Promise<GeneratedArtifactDraft> {
     onProgress?.({ status: "generating", message: `generating fixture slot ${request.slot}`, model: "fake/test" });
     const entityId = request.allowedCodeEntityIds[0];
     return {
-      name: `Diagram ${request.slot}`,
-      ascii: `+------------------+\n| parallel slot ${String(request.slot).padStart(2, "0")} |\n+------------------+`,
-      codeEntityIds: entityId ? [entityId] : [],
-      derivedFromDiagramIds: request.allowedDiagramIds.slice(0, 1)
+      name: request.outputKind === "diagram-component"
+        ? `Component ${request.slot}`
+        : `Diagram ${request.slot}`,
+      ascii: request.outputKind === "diagram-component"
+        ? `+-------------------+\n| component slot ${String(request.slot).padStart(2, "0")} |\n+-------------------+`
+        : `+------------------+\n| parallel slot ${String(request.slot).padStart(2, "0")} |\n+------------------+`,
+      codeEntityIds: entityId ? [entityId] : []
     };
+  }
+
+  async editArtifact(
+    request: ArtifactEditRequest,
+    onProgress?: (progress: AgentProgress) => void
+  ): Promise<ArtifactEditDraft> {
+    onProgress?.({ status: "generating", message: "editing fixture artifact", model: "fake/test" });
+    let ascii = request.currentAscii;
+    for (const marker of request.markers) {
+      ascii = ascii.replace(marker.character, marker.originalCharacter);
+    }
+    return { ascii: `${ascii}\n[edited: ${request.instruction.trim()}]` };
   }
 
   dispose(): void {}
