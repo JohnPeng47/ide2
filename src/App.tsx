@@ -9,29 +9,32 @@ import {
   createEditSession,
   discardEdit,
   fetchWorkspace,
-  finalizeCodeEntities,
   generateArtifacts,
   finishEdit,
   importProjectArtifact,
+  mapCodeEntities,
   placeEditMarker,
   redoEdit,
   renameDiagram,
   undoEdit
 } from "./api";
 import { DiagramContextPanel, type ContextTab } from "./components/DiagramContextPanel";
+import type { CodeEntityReveal } from "./components/CodeEntitiesPanel";
 import { DiagramView } from "./components/DiagramView";
 import { GeneratorOptions } from "./components/GeneratorOptions";
 import { ImportArtifactDialog } from "./components/ImportArtifactDialog";
 import { SplitPane } from "./components/SplitPane";
 import {
-  DEFAULT_EDIT_MODEL_ID,
+  DEFAULT_DIAGRAM_MODEL_ID,
+  DEFAULT_GENERATION_COUNT,
   isDiagramComponentArchived,
   isDiagramArchived,
   type ArtifactImportInput,
   type DiagramComponentRecord,
+  type DiagramElementMapping,
   type DiagramRecord,
   type DiagramSelectionBounds,
-  type EditModelId,
+  type DiagramModelId,
   type GenerationOutputKind,
   type WorkspaceSnapshot
 } from "./domain";
@@ -46,8 +49,9 @@ export function App() {
   const [screen, setScreen] = useState<Screen>("generation");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [prompt, setPrompt] = useState("");
-  const [count, setCount] = useState(3);
+  const [count, setCount] = useState(DEFAULT_GENERATION_COUNT);
   const [outputKind, setOutputKind] = useState<GenerationOutputKind>("diagram");
+  const [generationModelId, setGenerationModelId] = useState<DiagramModelId>(DEFAULT_DIAGRAM_MODEL_ID);
   const [contextTab, setContextTab] = useState<ContextTab>("code-entities");
   const [progress, setProgress] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -60,11 +64,16 @@ export function App() {
   } | null>(null);
   const [activeEditSessionId, setActiveEditSessionId] = useState<string | null>(null);
   const [editPrompt, setEditPrompt] = useState("");
-  const [editModelId, setEditModelId] = useState<EditModelId>(DEFAULT_EDIT_MODEL_ID);
+  const [editModelId, setEditModelId] = useState<DiagramModelId>(DEFAULT_DIAGRAM_MODEL_ID);
   const [markerMode, setMarkerMode] = useState(false);
   const [editBusy, setEditBusy] = useState(false);
   const [editProgress, setEditProgress] = useState("");
   const [editError, setEditError] = useState<string | null>(null);
+  const [mappingBusy, setMappingBusy] = useState(false);
+  const [mappingProgress, setMappingProgress] = useState("");
+  const [mappingError, setMappingError] = useState<string | null>(null);
+  const [codeEntityReveal, setCodeEntityReveal] = useState<CodeEntityReveal | undefined>();
+  const revealRequestId = useRef(0);
   const editQueue = useRef<Promise<void>>(Promise.resolve());
   const editShortcutHandlers = useRef({ undo: () => {}, redo: () => {} });
 
@@ -122,12 +131,32 @@ export function App() {
       .map((id) => workspace.agentRuns[id])
       .find((run) => run?.kind === "collect-entities")
     : undefined;
+  const initialGenerationPending = Boolean(activeSet && workspace
+    && activeSet.readiness === "ready"
+    && activeSet.diagramIds.length === 0
+    && (activeSet.generationBatchIds.length === 0
+      || activeSet.generationBatchIds.some((id) => {
+        const status = workspace.generationBatches[id]?.status;
+        return status !== "complete" && status !== "failed";
+      })));
+  const initialGenerationRun = initialGenerationPending && activeSet && workspace
+    ? [...activeSet.agentRunIds]
+      .reverse()
+      .map((id) => workspace.agentRuns[id])
+      .find((run) => run?.kind === "generate-one-diagram")
+    : undefined;
+
+  useEffect(() => {
+    setMappingProgress("");
+    setMappingError(null);
+    setCodeEntityReveal(undefined);
+  }, [selectedArtifact?.id]);
 
   useEffect(() => {
     if (!activeSet || !entitySet) return;
     setSelectedIds(new Set(entitySet.entities.map((entity) => entity.id)));
     setPrompt("");
-    setCount(3);
+    setCount(DEFAULT_GENERATION_COUNT);
     setOutputKind("diagram");
     setContextTab("code-entities");
     setProgress("");
@@ -136,6 +165,9 @@ export function App() {
     setActiveEditSessionId(null);
     setEditPrompt("");
     setMarkerMode(false);
+    setMappingProgress("");
+    setMappingError(null);
+    setCodeEntityReveal(undefined);
     if (pendingImported?.setId === activeSet.id) {
       if (pendingImported.artifactKind === "diagram") {
         setActiveDiagramId(pendingImported.artifactId);
@@ -163,13 +195,27 @@ export function App() {
   }, [activeSet?.id, entitySet?.id]);
 
   useEffect(() => {
+    if (!activeSet || activeSet.readiness !== "ready" || activeDiagramId !== null) return;
+    const activeDiagramIds = activeSet.diagramIds.filter((id) => {
+      const diagram = workspace?.diagrams[id];
+      return diagram && !isDiagramArchived(diagram);
+    });
+    const latestDiagramId = activeDiagramIds.at(-1);
+    if (!latestDiagramId) return;
+    setActiveDiagramId(latestDiagramId);
+    setScreen("diagram");
+  }, [activeSet, activeDiagramId, workspace]);
+
+  useEffect(() => {
     const shouldPoll = workspace !== null && (
-      workspace.diagramSets.length === 0 || activeSet?.readiness === "collecting"
+      workspace.diagramSets.length === 0
+      || activeSet?.readiness === "collecting"
+      || initialGenerationPending
     );
     if (!shouldPoll) return undefined;
     const timer = window.setInterval(() => void load(), 1000);
     return () => window.clearInterval(timer);
-  }, [workspace?.diagramSets.length, activeSet?.readiness, load]);
+  }, [workspace?.diagramSets.length, activeSet?.readiness, initialGenerationPending, load]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -204,20 +250,9 @@ export function App() {
   }
 
   if (!activeSet || !entitySet) return null;
-  const waiting = activeSet.readiness === "collecting" || activeSet.readiness === "failed";
-
-  const finalize = async () => {
-    setBusy(true);
-    setError(null);
-    try {
-      setWorkspace(await finalizeCodeEntities(activeSet.id));
-      setProgress("CodeEntitiesSet finalized and immutable");
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "finalization failed");
-    } finally {
-      setBusy(false);
-    }
-  };
+  const waiting = activeSet.readiness === "collecting"
+    || initialGenerationPending
+    || activeSet.readiness === "failed";
 
   const generate = async () => {
     setBusy(true);
@@ -230,7 +265,8 @@ export function App() {
         prompt,
         selectedCodeEntityIds: [...selectedIds],
         count,
-        outputKind
+        outputKind,
+        modelId: generationModelId
       }, setProgress);
       setWorkspace(next);
       const nextSet = next.diagramSets.find((set) => set.id === activeSet.id);
@@ -518,6 +554,39 @@ export function App() {
     setContextTab("code-entities");
   };
 
+  const generateCodeEntityMap = async () => {
+    if (!selectedArtifact) return;
+    setMappingBusy(true);
+    setMappingError(null);
+    setMappingProgress("queuing code-entity mapping");
+    try {
+      const next = await mapCodeEntities(
+        activeSet.id,
+        selectedArtifactKind,
+        selectedArtifact.id,
+        setMappingProgress
+      );
+      setWorkspace(next);
+      const count = next.codeEntityMaps[selectedArtifact.id]?.mappings.length ?? 0;
+      setMappingProgress(`mapped ${count} diagram elements`);
+    } catch (caught) {
+      setMappingError(caught instanceof Error ? caught.message : "code-entity mapping failed");
+      setMappingProgress("");
+    } finally {
+      setMappingBusy(false);
+    }
+  };
+
+  const revealCodeEntity = (mapping: DiagramElementMapping) => {
+    revealRequestId.current += 1;
+    setContextTab("code-entities");
+    setCodeEntityReveal({
+      entityId: mapping.entityId,
+      sourceRangeIndex: mapping.sourceRangeIndex,
+      requestId: revealRequestId.current
+    });
+  };
+
   editShortcutHandlers.current = editSession ? {
     undo: () => void runEditAction(undoEdit),
     redo: () => void runEditAction(redoEdit)
@@ -553,9 +622,18 @@ export function App() {
       {waiting ? (
         <section className="waiting-state" aria-live="polite">
           <span className={activeSet.readiness === "failed" ? "waiting-icon is-failed" : "waiting-icon"} />
-          <span className="eyebrow">{activeSet.readiness === "failed" ? "COLLECTION FAILED" : "COLLECTING CODE ENTITIES"}</span>
+          <span className="eyebrow">{
+            activeSet.readiness === "failed"
+              ? "COLLECTION FAILED"
+              : initialGenerationPending
+                ? "GENERATING INITIAL DIAGRAMS"
+                : "COLLECTING CODE ENTITIES"
+          }</span>
           <h2>{activeSet.name}</h2>
-          <p>{activeSet.error || collectionRun?.statusMessage || "Opening the code-entity collector."}</p>
+          <p>{activeSet.error
+            || initialGenerationRun?.statusMessage
+            || collectionRun?.statusMessage
+            || "Opening the code-entity collector."}</p>
           <code>{activeSet.sourceCheckoutRoot}</code>
           <button type="button" className="button" onClick={() => void load()}>refresh status</button>
         </section>
@@ -566,6 +644,7 @@ export function App() {
             diagrams={diagrams}
             components={components}
             outputKind={outputKind}
+            modelId={generationModelId}
             prompt={prompt}
             count={count}
             generating={busy}
@@ -574,7 +653,7 @@ export function App() {
             onPrompt={setPrompt}
             onCount={setCount}
             onOutputKind={setOutputKind}
-            onFinalize={() => void finalize()}
+            onModel={setGenerationModelId}
             onGenerate={() => void generate()}
           />}
           right={<DiagramContextPanel
@@ -605,7 +684,14 @@ export function App() {
             editMode={Boolean(editSession)}
             markerMode={markerMode}
             editBusy={editBusy}
+            codeEntities={entitySet.entities}
+            codeEntityMap={workspace.codeEntityMaps[activeComponent.id]}
+            mappingBusy={mappingBusy}
+            mappingProgress={mappingProgress}
+            mappingError={mappingError}
             onToggleEdit={() => void (editSession ? leaveEdit() : startEdit())}
+            onMapCodeEntities={() => void generateCodeEntityMap()}
+            onRevealCodeEntity={revealCodeEntity}
             onManualEdit={queueManualEdit}
             onMarker={(line, column) => void markLocation(line, column)}
             onUndoEdit={() => void runEditAction(undoEdit)}
@@ -626,6 +712,7 @@ export function App() {
             editBusy={editBusy}
             editProgress={editProgress}
             editError={editError}
+            codeEntityReveal={codeEntityReveal}
             activeTab={contextTab}
             onTab={setContextTab}
             onSelectDiagram={selectDiagram}
@@ -653,7 +740,14 @@ export function App() {
             editMode={Boolean(editSession)}
             markerMode={markerMode}
             editBusy={editBusy}
+            codeEntities={entitySet.entities}
+            codeEntityMap={workspace.codeEntityMaps[activeDiagram.id]}
+            mappingBusy={mappingBusy}
+            mappingProgress={mappingProgress}
+            mappingError={mappingError}
             onToggleEdit={() => void (editSession ? leaveEdit() : startEdit())}
+            onMapCodeEntities={() => void generateCodeEntityMap()}
+            onRevealCodeEntity={revealCodeEntity}
             onManualEdit={queueManualEdit}
             onMarker={(line, column) => void markLocation(line, column)}
             onUndoEdit={() => void runEditAction(undoEdit)}
@@ -674,6 +768,7 @@ export function App() {
             editBusy={editBusy}
             editProgress={editProgress}
             editError={editError}
+            codeEntityReveal={codeEntityReveal}
             activeTab={contextTab}
             onTab={setContextTab}
             onSelectDiagram={selectDiagram}

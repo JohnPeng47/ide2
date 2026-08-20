@@ -81,11 +81,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .agent-count { border: 1px solid var(--accent-purple); border-radius: 999px; padding: 0.35rem 0.55rem; color: var(--accent-purple); font: 10px var(--font-mono); white-space: nowrap; }
 .status-pill { border: 1px solid var(--gutter); border-radius: 999px; padding: 0.3rem 0.5rem; color: var(--muted); font: 9px var(--font-mono); text-transform: uppercase; }
 .status-pill--finalized { border-color: var(--accent-green); color: var(--accent-green); }
-.status-pill--awaiting-approval { border-color: var(--accent-yellow); color: var(--accent-yellow); }
 
-.approval-callout { width: min(36rem, calc(100% - 3rem)); margin: auto; border: 1px solid var(--gutter); border-radius: 6px; padding: 1.5rem; }
-.approval-callout h3 { margin: 0.45rem 0 0.75rem; font-size: 1.25rem; }
-.approval-callout p { margin-bottom: 1.25rem; color: var(--muted); font-size: 0.9rem; line-height: 1.55; }
 .button { border: 1px solid var(--gutter); border-radius: 4px; padding: 0.55rem 0.75rem; background: transparent; font: 11px var(--font-mono); }
 .button:hover:not(:disabled) { border-color: var(--accent-cyan); color: var(--accent-cyan); }
 .button--primary { border-color: var(--accent-cyan); color: var(--accent-cyan); }
@@ -99,6 +95,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 
 .prompt-field { position: relative; display: flex; min-height: 0; flex: 1; flex-direction: column; padding: 1.25rem; }
 .prompt-field label { margin-bottom: 0.6rem; }
+.generation-prompt-heading { display: flex; flex: none; align-items: end; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.6rem; }
+.generation-prompt-heading > label { margin: 0; }
 .prompt-field textarea { width: 100%; min-height: 12rem; flex: 1; resize: none; border: 1px solid var(--border); border-radius: 6px; padding: 1rem; background: transparent; font: 13px/1.55 var(--font-mono); }
 .prompt-field textarea:hover { border-color: var(--gutter); }
 .field-help { margin-top: 0.55rem; color: var(--muted); font: 11px/1.45 var(--font-mono); }
@@ -130,6 +128,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .entity-card + .entity-card { margin-top: 0.65rem; }
 .entity-card.is-selected, .diagram-panel + .entity-card { opacity: 1; }
 .entity-card:hover { border-color: var(--gutter); background: rgb(255 255 255 / 2%); }
+.entity-card.is-revealed { border-color: var(--accent-cyan); background: rgb(136 192 208 / 7%); opacity: 1; outline: 1px solid rgb(136 192 208 / 18%); }
 .entity-card__head { display: flex; align-items: start; justify-content: space-between; gap: 0.75rem; }
 .entity-card__head b { font-size: 0.82rem; font-weight: 600; }
 .entity-card__head > code { color: var(--accent-purple); font: 9px var(--font-mono); }
@@ -143,13 +142,16 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .entity-sources { display: flex; margin-top: 0.65rem; flex-direction: column; align-items: start; gap: 0.25rem; }
 .source-link { border: 0; border-bottom: 1px dotted var(--gutter); background: transparent; color: var(--accent-green); font: 10px var(--font-mono); text-align: left; }
 .source-link:hover { border-color: var(--accent-green); }
+.source-link.is-revealed { border-color: var(--accent-cyan); color: var(--accent-cyan); }
 .source-preview-shell { width: 100%; border: 1px solid var(--border); }
 .source-preview-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; border-bottom: 1px solid var(--border); padding: 0.4rem 0.6rem; color: var(--muted); font: 9px var(--font-mono); text-transform: uppercase; }
 .source-original-toggle { border: 0; border-bottom: 1px dotted var(--accent-cyan); padding: 0; background: transparent; color: var(--accent-cyan); font: inherit; text-transform: uppercase; }
 .source-original-toggle:hover { color: var(--fg); }
 .source-preview { width: 100%; max-height: 13rem; overflow: auto; border: 1px solid var(--border); padding: 0.6rem; color: var(--fg); font: 10px/1.5 var(--font-mono); }
 .source-preview-shell > .source-preview { border: 0; }
+.source-preview-shell.is-revealed { border-color: var(--accent-cyan); box-shadow: 0 0 0 1px rgb(136 192 208 / 12%); }
 .source-line { display: block; min-width: max-content; white-space: pre; }
+.source-line.is-highlighted { background: rgb(136 192 208 / 14%); color: #eef7f8; }
 .source-line i { display: inline-block; width: 3rem; margin-right: 0.65rem; color: var(--gutter); font-style: normal; text-align: right; user-select: none; }
 .source-collapse { min-width: max-content; border-block: 1px solid rgb(255 255 255 / 4%); color: var(--muted); }
 .source-collapse + .source-collapse { border-top: 0; }
@@ -158,17 +160,23 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .source-collapse summary code { max-width: 58rem; color: var(--accent-cyan); font: inherit; white-space: pre-wrap; }
 .source-collapse summary small { margin-left: auto; color: var(--gutter); font: inherit; white-space: nowrap; }
 .source-collapse__lines { margin: 0.25rem 0 0.4rem 1rem; border-left: 1px solid var(--gutter); padding-left: 0.45rem; color: var(--fg); }
+.source-preview-shell.is-revealed .source-collapse summary { background: rgb(136 192 208 / 8%); }
 .empty-copy { padding: 1rem; color: var(--muted); font-size: 0.85rem; }
 
 .ascii-stage { display: grid; min-width: 0; min-height: 0; flex: 1; place-items: center; overflow: auto; padding: 2rem; }
 .ascii-stage pre { min-width: max-content; color: var(--fg); font: 13px/1.4 var(--font-mono); }
 .diagram-actions { display: flex; align-items: center; gap: 0.55rem; }
 .capture-instructions { flex: none; border-bottom: 1px solid var(--accent-yellow); padding: 0.55rem 1.25rem; background: rgb(235 203 139 / 6%); color: var(--accent-yellow); font: 10px var(--font-mono); }
+.mapping-status { flex: none; border-bottom: 1px solid var(--accent-cyan); padding: 0.55rem 1.25rem; background: rgb(136 192 208 / 6%); color: var(--accent-cyan); font: 10px var(--font-mono); }
 .ascii-stage.is-capturing { cursor: crosshair; place-items: center; }
 .ascii-selector { touch-action: none; user-select: none; }
 .ascii-line { white-space: pre; }
 .ascii-char { white-space: pre; }
 .ascii-char.is-selected { background: var(--accent-cyan); color: var(--bg); }
+.mapped-ascii-line { white-space: pre; }
+.mapped-element-wrap { position: relative; display: inline; }
+.mapped-element { border: 0; border-bottom: 1px dotted var(--accent-cyan); padding: 0; background: rgb(136 192 208 / 8%); color: inherit; font: inherit; line-height: inherit; white-space: pre; cursor: pointer; }
+.mapped-element:hover, .mapped-element:focus-visible { outline: 0; background: var(--accent-cyan); color: var(--bg); }
 .ascii-selector.is-marking .ascii-char:hover { background: var(--accent-purple); color: var(--bg); }
 .marker-instructions { border-color: var(--accent-purple); background: rgb(180 142 173 / 7%); color: var(--accent-purple); }
 .ascii-editor { width: 100%; height: 100%; min-width: max-content; min-height: 100%; resize: none; border: 0; outline: 0; padding: 0; background: transparent; color: var(--fg); font: 13px/1.4 var(--font-mono); tab-size: 2; white-space: pre; }
@@ -248,9 +256,9 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .edit-prompt { min-height: 13rem; max-height: 38%; padding: 0.9rem 1rem; }
 .edit-prompt-heading { display: flex; flex: none; align-items: end; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.6rem; }
 .edit-prompt-heading > label { margin: 0; }
-.edit-model-field { display: flex; align-items: center; gap: 0.45rem; }
-.edit-model-field span { color: var(--muted); font: 600 9px var(--font-mono); letter-spacing: 0.12em; }
-.edit-model-field select { border: 1px solid var(--gutter); border-radius: 4px; padding: 0.3rem 1.7rem 0.3rem 0.45rem; background: var(--bg); color: var(--accent-purple); font: 10px var(--font-mono); }
+.model-field { display: flex; align-items: center; gap: 0.45rem; margin: 0 !important; }
+.model-field span { color: var(--muted); font: 600 9px var(--font-mono); letter-spacing: 0.12em; }
+.model-field select { border: 1px solid var(--gutter); border-radius: 4px; padding: 0.3rem 1.7rem 0.3rem 0.45rem; background: var(--bg); color: var(--accent-purple); font: 10px var(--font-mono); }
 .edit-prompt textarea { min-height: 6rem; padding: 0.7rem; font-size: 11px; }
 .edit-submit { align-self: end; margin-top: 0.7rem; }
 .operation-buffer { display: flex; min-height: 8rem; flex: 1; overflow: hidden; flex-direction: column; border-top: 1px solid var(--border); }

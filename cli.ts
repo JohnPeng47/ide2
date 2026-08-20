@@ -166,7 +166,7 @@ async function main(): Promise<void> {
     }
   });
   if (!diagramSetId) throw new Error("diagram server stream ended before creating a DiagramSet");
-  process.stdout.write(`${JSON.stringify({ event: "awaiting-approval", diagramSetId })}\n`);
+  process.stdout.write(`${JSON.stringify({ event: "ready", diagramSetId })}\n`);
 }
 
 main().catch((error) => {

@@ -9,13 +9,16 @@ import {
   type AgentSessionEvent
 } from "@earendil-works/pi-coding-agent";
 import { Type, type Model } from "@earendil-works/pi-ai";
-import type {
-  AgentProgress,
-  ArtifactEditDraft,
-  CodeEntityDraft,
-  GeneratedArtifactDraft,
-  EditModelId,
-  GenerationOutputKind
+import {
+  DEFAULT_DIAGRAM_MODEL_ID,
+  type AgentProgress,
+  type ArtifactEditDraft,
+  type CodeEntityDraft,
+  type CodeEntityRecord,
+  type DiagramElementMappingDraft,
+  type DiagramModelId,
+  type GeneratedArtifactDraft,
+  type GenerationOutputKind
 } from "../src/domain";
 import { codeEntityCollectionPrompt } from "./codeEntityPrompt";
 
@@ -33,6 +36,7 @@ export interface ArtifactGenerationRequest {
   allowedDiagramIds: string[];
   allowedDiagramComponentIds: string[];
   outputKind: GenerationOutputKind;
+  modelId: DiagramModelId;
   slot: number;
   total: number;
 }
@@ -45,8 +49,18 @@ export interface ArtifactEditRequest {
   artifactHandle: string;
   currentAscii: string;
   instruction: string;
-  modelId: EditModelId;
+  modelId: DiagramModelId;
   markers: Array<{ token: string; character: string; originalCharacter: string }>;
+}
+
+export interface ArtifactEntityMappingRequest {
+  sourceRoot: string;
+  diagramSetName: string;
+  artifactKind: GenerationOutputKind;
+  artifactName: string;
+  artifactHandle: string;
+  ascii: string;
+  codeEntities: CodeEntityRecord[];
 }
 
 export interface DiagramAgentRuntime {
@@ -58,6 +72,10 @@ export interface DiagramAgentRuntime {
     request: ArtifactGenerationRequest,
     onProgress?: (progress: AgentProgress) => void
   ): Promise<GeneratedArtifactDraft>;
+  mapArtifactEntities(
+    request: ArtifactEntityMappingRequest,
+    onProgress?: (progress: AgentProgress) => void
+  ): Promise<DiagramElementMappingDraft[]>;
   editArtifact(
     request: ArtifactEditRequest,
     onProgress?: (progress: AgentProgress) => void
@@ -98,7 +116,7 @@ export class PiDiagramAgentRuntime implements DiagramAgentRuntime {
   }> {
     const runtime = await this.runtime();
     const provider = "openai-codex";
-    const modelId = overrideModelId || process.env.NEW_DIAGRAM_MODEL || "gpt-5.6-terra";
+    const modelId = overrideModelId || process.env.NEW_DIAGRAM_MODEL || DEFAULT_DIAGRAM_MODEL_ID;
     const model = runtime.getModel(provider, modelId);
     if (!model) throw new Error(`Pi model is unavailable: ${provider}/${modelId}`);
     if (!runtime.hasConfiguredAuth(provider)) {
@@ -215,7 +233,7 @@ export class PiDiagramAgentRuntime implements DiagramAgentRuntime {
     request: ArtifactGenerationRequest,
     onProgress?: (progress: AgentProgress) => void
   ): Promise<GeneratedArtifactDraft> {
-    const configured = await this.model();
+    const configured = await this.model(request.modelId);
     const componentMode = request.outputKind === "diagram-component";
     const artifactLabel = componentMode ? "DiagramComponent" : "diagram";
     const toolName = componentMode ? "submit_diagram_component" : "submit_diagram";
@@ -381,6 +399,101 @@ ${request.instruction}`);
     }
   }
 
+  async mapArtifactEntities(
+    request: ArtifactEntityMappingRequest,
+    onProgress?: (progress: AgentProgress) => void
+  ): Promise<DiagramElementMappingDraft[]> {
+    const configured = await this.model();
+    const state: { submission?: { mappings: DiagramElementMappingDraft[] } } = {};
+    const submit = defineTool({
+      name: "submit_code_entity_map",
+      label: "Submit code entity map",
+      description: "Map exact visible ASCII text spans to CodeEntities and their source ranges.",
+      promptSnippet: "Submit the final diagram-to-code mapping",
+      promptGuidelines: ["End by calling submit_code_entity_map exactly once."],
+      parameters: Type.Object({
+        mappings: Type.Array(Type.Object({
+          entityId: Type.String({ minLength: 1, maxLength: 120 }),
+          sourceRangeIndex: Type.Integer({ minimum: 0 }),
+          line: Type.Integer({ minimum: 1 }),
+          startColumn: Type.Integer({ minimum: 1 }),
+          endColumn: Type.Integer({ minimum: 1 })
+        }), { minItems: 1, maxItems: 200 })
+      }),
+      async execute(_toolCallId, params) {
+        state.submission = params;
+        return {
+          content: [{ type: "text", text: `Recorded ${params.mappings.length} diagram mappings.` }],
+          details: { count: params.mappings.length },
+          terminate: true
+        };
+      }
+    });
+    const settingsManager = SettingsManager.inMemory({
+      defaultProvider: configured.provider,
+      defaultModel: configured.modelId,
+      defaultThinkingLevel: "medium"
+    });
+    const resourceLoader = new DefaultResourceLoader({
+      cwd: request.sourceRoot,
+      agentDir: getAgentDir(),
+      settingsManager,
+      noExtensions: true,
+      noSkills: true,
+      noPromptTemplates: true,
+      noThemes: true,
+      noContextFiles: true,
+      systemPrompt: "Map visible semantic text in the supplied ASCII artifact to the supplied CodeEntities. Never modify files and finish through submit_code_entity_map."
+    });
+    await resourceLoader.reload();
+    const { session } = await createAgentSession({
+      cwd: request.sourceRoot,
+      modelRuntime: configured.runtime,
+      model: configured.model,
+      thinkingLevel: "medium",
+      tools: ["submit_code_entity_map"],
+      customTools: [submit],
+      resourceLoader,
+      settingsManager,
+      sessionManager: SessionManager.inMemory(request.sourceRoot)
+    });
+    this.sessions.add(session);
+    const modelName = `${configured.provider}/${configured.modelId}`;
+    const unsubscribe = session.subscribe((event) => {
+      const progress = progressFor(event, modelName, session.sessionId);
+      if (progress) onProgress?.(progress);
+    });
+    const numberedAscii = request.ascii
+      .split("\n")
+      .map((line, index) => `${String(index + 1).padStart(4, " ")}: ${line}`)
+      .join("\n");
+    const entities = request.codeEntities.map((entity) => [
+      `${entity.id}: ${entity.label} — ${entity.summary}`,
+      ...entity.sourceRanges.map((range, index) => (
+        `  sourceRangeIndex ${index}: ${range.path}:${range.startLine}-${range.endLine}${range.symbol ? ` (${range.symbol})` : ""}`
+      ))
+    ].join("\n")).join("\n\n");
+    try {
+      await session.prompt(`DiagramSet: ${request.diagramSetName}
+Artifact: ${request.artifactKind === "diagram" ? "Diagram" : "DiagramComponent"} @${request.artifactKind === "diagram" ? "diagram" : "component"}/${request.artifactHandle}
+Name: ${request.artifactName}
+
+ASCII with 1-based line numbers (columns are also 1-based and count every space):
+${numberedAscii}
+
+Available CodeEntities and source ranges:
+${entities}
+
+Map the smallest exact visible text span that names or clearly represents each CodeEntity. Map labels and words, not box borders, arrow shafts, or whitespace. A CodeEntity may have multiple mapped spans. Choose the sourceRangeIndex most directly represented by each span. Spans must stay on one line, contain non-whitespace text, and must not overlap.`);
+      if (!state.submission) throw new Error("mapping agent finished without submitting mappings");
+      return state.submission.mappings;
+    } finally {
+      unsubscribe();
+      session.dispose();
+      this.sessions.delete(session);
+    }
+  }
+
   dispose(): void {
     for (const session of this.sessions) {
       void session.abort();
@@ -454,6 +567,29 @@ export class FakeDiagramAgentRuntime implements DiagramAgentRuntime {
       ascii = ascii.replace(marker.character, marker.originalCharacter);
     }
     return { ascii: `${ascii}\n[edited: ${request.instruction.trim()}]` };
+  }
+
+  async mapArtifactEntities(
+    request: ArtifactEntityMappingRequest,
+    onProgress?: (progress: AgentProgress) => void
+  ): Promise<DiagramElementMappingDraft[]> {
+    onProgress?.({ status: "generating", message: "mapping fixture labels", model: "fake/test" });
+    const entity = request.codeEntities[0];
+    if (!entity) return [];
+    const lines = request.ascii.split("\n");
+    for (const [index, line] of lines.entries()) {
+      const match = /[A-Za-z][A-Za-z0-9_-]*/.exec(line);
+      if (match) {
+        return [{
+          entityId: entity.id,
+          sourceRangeIndex: 0,
+          line: index + 1,
+          startColumn: match.index + 1,
+          endColumn: match.index + match[0].length
+        }];
+      }
+    }
+    return [];
   }
 
   dispose(): void {}

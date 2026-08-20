@@ -1,6 +1,9 @@
-import { useEffect, useMemo, useState, type PointerEvent } from "react";
+import { useEffect, useMemo, useState, type PointerEvent, type ReactNode } from "react";
 import type {
+  CodeEntityRecord,
+  DiagramCodeEntityMapRecord,
   DiagramComponentRecord,
+  DiagramElementMapping,
   DiagramRecord,
   DiagramSelectionBounds
 } from "../domain";
@@ -27,7 +30,14 @@ export function DiagramView(props: {
   editMode?: boolean;
   markerMode?: boolean;
   editBusy?: boolean;
+  codeEntities: CodeEntityRecord[];
+  codeEntityMap?: DiagramCodeEntityMapRecord;
+  mappingBusy?: boolean;
+  mappingProgress?: string;
+  mappingError?: string | null;
   onToggleEdit?: () => void;
+  onMapCodeEntities?: () => void;
+  onRevealCodeEntity?: (mapping: DiagramElementMapping) => void;
   onManualEdit?: (ascii: string) => void;
   onMarker?: (line: number, column: number) => void;
   onUndoEdit?: () => void;
@@ -143,6 +153,18 @@ export function DiagramView(props: {
           >
             {props.editMode ? "exit edit" : "edit mode"}
           </button>
+          <button
+            type="button"
+            className="button map-code-entities"
+            disabled={saving || props.editBusy || props.editMode || props.mappingBusy || props.active.codeEntityIds.length === 0}
+            onClick={props.onMapCodeEntities}
+          >
+            {props.mappingBusy
+              ? "mapping…"
+              : props.codeEntityMap
+                ? "remap code entities"
+                : "map code entities"}
+          </button>
         </div>
       </header>
       {capturing ? (
@@ -154,6 +176,9 @@ export function DiagramView(props: {
         <div className="capture-instructions marker-instructions" role="status">
           Click one character to replace it with a unique location marker.
         </div>
+      ) : null}
+      {props.mappingProgress ? (
+        <div className="mapping-status" role="status">{props.mappingProgress}</div>
       ) : null}
       <div className={capturing || props.markerMode ? "ascii-stage is-capturing" : "ascii-stage"}>
         {capturing || props.markerMode ? (
@@ -206,9 +231,17 @@ export function DiagramView(props: {
               }
             }}
           />
-        ) : <pre>{props.active.ascii}</pre>}
+        ) : (
+          <MappedAscii
+            ascii={props.active.ascii}
+            mapping={props.codeEntityMap}
+            entities={props.codeEntities}
+            onReveal={props.onRevealCodeEntity}
+          />
+        )}
       </div>
       {error ? <p className="capture-error" role="alert">{error}</p> : null}
+      {props.mappingError ? <p className="capture-error" role="alert">{props.mappingError}</p> : null}
       <footer className="diagram-meta">
         <code>@{props.artifactKind === "diagram" ? "diagram" : "component"}/{props.active.handle}</code>
         <span>{props.active.codeEntityIds.length} code entities</span>
@@ -219,5 +252,60 @@ export function DiagramView(props: {
           : (props.active as DiagramComponentRecord).origin.toUpperCase()}</span>
       </footer>
     </div>
+  );
+}
+
+function MappedAscii(props: {
+  ascii: string;
+  mapping?: DiagramCodeEntityMapRecord;
+  entities: CodeEntityRecord[];
+  onReveal?: (mapping: DiagramElementMapping) => void;
+}) {
+  if (!props.mapping) return <pre>{props.ascii}</pre>;
+  const entitiesById = new Map(props.entities.map((entity) => [entity.id, entity]));
+  const mappingsByLine = new Map<number, DiagramElementMapping[]>();
+  for (const mapping of props.mapping?.mappings ?? []) {
+    const lineMappings = mappingsByLine.get(mapping.line) ?? [];
+    lineMappings.push(mapping);
+    mappingsByLine.set(mapping.line, lineMappings);
+  }
+  for (const mappings of mappingsByLine.values()) {
+    mappings.sort((left, right) => left.startColumn - right.startColumn);
+  }
+  return (
+    <pre className="mapped-ascii">
+      {props.ascii.split("\n").map((line, lineIndex, lines) => {
+        const mappings = mappingsByLine.get(lineIndex + 1) ?? [];
+        const content: ReactNode[] = [];
+        let cursor = 0;
+        for (const mapping of mappings) {
+          const start = mapping.startColumn - 1;
+          const end = mapping.endColumn;
+          if (start > cursor) content.push(line.slice(cursor, start));
+          const entity = entitiesById.get(mapping.entityId);
+          const range = entity?.sourceRanges[mapping.sourceRangeIndex];
+          content.push(
+            <span className="mapped-element-wrap" key={mapping.id}>
+              <button
+                type="button"
+                className="mapped-element"
+                data-mapping-id={mapping.id}
+                data-entity-id={mapping.entityId}
+                aria-label={entity ? `Reveal ${entity.label} in Code Entities` : "Reveal mapped CodeEntity"}
+                title={entity
+                  ? `${entity.label}\n${entity.summary}${range ? `\n${range.path}:${range.startLine}-${range.endLine}` : ""}`
+                  : undefined}
+                onClick={() => props.onReveal?.(mapping)}
+              >
+                {line.slice(start, end)}
+              </button>
+            </span>
+          );
+          cursor = end;
+        }
+        if (cursor < line.length) content.push(line.slice(cursor));
+        return <span className="mapped-ascii-line" key={lineIndex}>{content}{lineIndex < lines.length - 1 ? "\n" : null}</span>;
+      })}
+    </pre>
   );
 }

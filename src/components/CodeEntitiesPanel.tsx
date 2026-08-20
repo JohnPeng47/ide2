@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { fetchSourceSnippet, type SourceSnippet } from "../api";
 import type {
   CodeEntitiesSetRecord,
@@ -17,6 +17,7 @@ function SourceLines(props: {
   preview: SourceSnippet;
   startLine: number;
   endLine: number;
+  highlighted?: boolean;
 }) {
   const first = Math.max(props.startLine, props.preview.startLine);
   const last = Math.min(
@@ -27,14 +28,14 @@ function SourceLines(props: {
   return <>
     {props.preview.lines.slice(first - props.preview.startLine, last - props.preview.startLine + 1)
       .map((line, index) => (
-        <span className="source-line" key={first + index}>
+        <span className={props.highlighted ? "source-line is-highlighted" : "source-line"} key={first + index}>
           <i>{String(first + index).padStart(4, " ")}</i>{line || " "}
         </span>
       ))}
   </>;
 }
 
-function CompactedSourcePreview(props: { preview: SourceSnippet; range: SourceRange }) {
+function CompactedSourcePreview(props: { preview: SourceSnippet; range: SourceRange; highlighted?: boolean }) {
   return (
     <div className="source-preview source-preview--compacted" aria-label={`Compacted source preview for ${props.preview.path}`}>
       {props.range.compactedSource?.sections.map((section, index) => (
@@ -43,6 +44,7 @@ function CompactedSourcePreview(props: { preview: SourceSnippet; range: SourceRa
             preview={props.preview}
             startLine={section.startLine}
             endLine={section.endLine}
+            highlighted={props.highlighted}
             key={`source:${section.startLine}:${section.endLine}:${index}`}
           />
         ) : (
@@ -59,6 +61,7 @@ function CompactedSourcePreview(props: { preview: SourceSnippet; range: SourceRa
                 preview={props.preview}
                 startLine={section.startLine}
                 endLine={section.endLine}
+                highlighted={props.highlighted}
               />
             </div>
           </details>
@@ -68,18 +71,17 @@ function CompactedSourcePreview(props: { preview: SourceSnippet; range: SourceRa
   );
 }
 
-function SourcePreview(props: { setId: string; entity: CodeEntityRecord }) {
+function SourcePreview(props: {
+  setId: string;
+  entity: CodeEntityRecord;
+  reveal?: CodeEntityReveal;
+}) {
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const [preview, setPreview] = useState<SourceSnippet | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [openRange, setOpenRange] = useState<number | null>(null);
   const [showOriginal, setShowOriginal] = useState(false);
-  const open = async (index: number) => {
-    if (openRange === index) {
-      setOpenRange(null);
-      setPreview(null);
-      setShowOriginal(false);
-      return;
-    }
+  const show = async (index: number) => {
     setError(null);
     try {
       setPreview(await fetchSourceSnippet(props.setId, props.entity.id, index));
@@ -89,12 +91,33 @@ function SourcePreview(props: { setId: string; entity: CodeEntityRecord }) {
       setError(caught instanceof Error ? caught.message : "source preview failed");
     }
   };
+  const open = async (index: number) => {
+    if (openRange === index) {
+      setOpenRange(null);
+      setPreview(null);
+      setShowOriginal(false);
+      return;
+    }
+    await show(index);
+  };
+  useEffect(() => {
+    if (!props.reveal || props.reveal.entityId !== props.entity.id) return;
+    void show(props.reveal.sourceRangeIndex);
+  }, [props.reveal?.requestId]);
+  useEffect(() => {
+    if (!preview || props.reveal?.sourceRangeIndex !== openRange) return;
+    const frame = window.requestAnimationFrame(() => {
+      rootRef.current?.querySelector<HTMLElement>(".source-preview-shell.is-revealed")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [openRange, preview, props.reveal?.requestId]);
   return (
-    <div className="entity-sources">
+    <div ref={rootRef} className="entity-sources">
       {props.entity.sourceRanges.map((range, index) => (
         <button
           type="button"
-          className="source-link"
+          className={props.reveal?.sourceRangeIndex === index ? "source-link is-revealed" : "source-link"}
           key={`${range.path}:${range.startLine}:${index}`}
           onClick={() => void open(index)}
         >
@@ -105,7 +128,8 @@ function SourcePreview(props: { setId: string; entity: CodeEntityRecord }) {
       {preview && openRange !== null ? (() => {
         const range = props.entity.sourceRanges[openRange];
         const compacted = range.compactedSource !== undefined;
-        return <div className="source-preview-shell">
+        const highlighted = props.reveal?.sourceRangeIndex === openRange;
+        return <div className={highlighted ? "source-preview-shell is-revealed" : "source-preview-shell"}>
           {compacted ? (
             <div className="source-preview-toolbar">
               <span>{range.compactedSource?.level} compaction</span>
@@ -120,13 +144,14 @@ function SourcePreview(props: { setId: string; entity: CodeEntityRecord }) {
             </div>
           ) : null}
           {compacted && !showOriginal ? (
-            <CompactedSourcePreview preview={preview} range={range} />
+            <CompactedSourcePreview preview={preview} range={range} highlighted={highlighted} />
           ) : (
             <pre className="source-preview" aria-label={`Source preview for ${preview.path}`}>
               <SourceLines
                 preview={preview}
                 startLine={range.startLine}
                 endLine={range.endLine}
+                highlighted={highlighted}
               />
             </pre>
           )}
@@ -136,16 +161,35 @@ function SourcePreview(props: { setId: string; entity: CodeEntityRecord }) {
   );
 }
 
+export interface CodeEntityReveal {
+  entityId: string;
+  sourceRangeIndex: number;
+  requestId: number;
+}
+
 export function CodeEntitiesPanel(props: {
   setId: string;
   codeEntities: CodeEntitiesSetRecord;
   selectedIds?: Set<string>;
   onToggle?: (id: string) => void;
   diagram?: DiagramRecord | DiagramComponentRecord;
+  reveal?: CodeEntityReveal;
 }) {
+  const listRef = useRef<HTMLDivElement | null>(null);
   const visible = props.diagram
     ? props.codeEntities.entities.filter((entity) => props.diagram?.codeEntityIds.includes(entity.id))
     : props.codeEntities.entities;
+  useEffect(() => {
+    if (!props.reveal) return;
+    const frame = window.requestAnimationFrame(() => {
+      const card = listRef.current?.querySelector<HTMLElement>(
+        `[data-entity-id="${CSS.escape(props.reveal!.entityId)}"]`
+      );
+      card?.scrollIntoView({ behavior: "smooth", block: "center" });
+      card?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [props.reveal?.requestId]);
   return (
     <div className="entities-panel">
       <header className="pane-header">
@@ -157,15 +201,20 @@ export function CodeEntitiesPanel(props: {
           {props.codeEntities.status}
         </span>
       </header>
-      <div className="entity-list" role={props.onToggle ? "group" : undefined} aria-label="Code entities">
+      <div ref={listRef} className="entity-list" role={props.onToggle ? "group" : undefined} aria-label="Code entities">
         {visible.length === 0 ? (
           <p className="empty-copy">This artifact does not declare any CodeEntities.</p>
         ) : visible.map((entity) => {
           const selected = props.selectedIds?.has(entity.id) ?? true;
           return (
             <article
-              className={selected ? "entity-card is-selected" : "entity-card"}
+              className={[
+                "entity-card",
+                selected ? "is-selected" : "",
+                props.reveal?.entityId === entity.id ? "is-revealed" : ""
+              ].filter(Boolean).join(" ")}
               data-entity-id={entity.id}
+              tabIndex={-1}
               key={entity.id}
             >
               <div className="entity-card__head">
@@ -184,7 +233,11 @@ export function CodeEntitiesPanel(props: {
               </div>
               <p>{entity.summary}</p>
               <code className="entity-handle">@entity/{entity.handle}</code>
-              <SourcePreview setId={props.setId} entity={entity} />
+              <SourcePreview
+                setId={props.setId}
+                entity={entity}
+                reveal={props.reveal?.entityId === entity.id ? props.reveal : undefined}
+              />
             </article>
           );
         })}

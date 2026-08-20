@@ -7,11 +7,13 @@ import type {
   AgentProgress,
   ArtifactEditDraft,
   CodeEntityDraft,
+  DiagramElementMappingDraft,
   GeneratedArtifactDraft
 } from "../src/domain";
 import type {
   ArtifactGenerationRequest,
   ArtifactEditRequest,
+  ArtifactEntityMappingRequest,
   DiagramAgentRuntime,
   EntityCollectionRequest
 } from "./agentRuntime";
@@ -28,6 +30,8 @@ class ParallelRuntime implements DiagramAgentRuntime {
   active = 0;
   maxActive = 0;
   started = 0;
+  requestedModels: string[] = [];
+  mappingDrafts?: DiagramElementMappingDraft[];
   private release!: () => void;
   private readonly gate = new Promise<void>((resolve) => { this.release = resolve; });
 
@@ -45,6 +49,7 @@ class ParallelRuntime implements DiagramAgentRuntime {
   }
 
   async generateArtifact(request: ArtifactGenerationRequest): Promise<GeneratedArtifactDraft> {
+    this.requestedModels.push(request.modelId);
     this.active += 1;
     this.started += 1;
     this.maxActive = Math.max(this.maxActive, this.active);
@@ -64,10 +69,55 @@ class ParallelRuntime implements DiagramAgentRuntime {
     return { ascii: `${ascii}\n[edited]` };
   }
 
+  async mapArtifactEntities(
+    request: ArtifactEntityMappingRequest
+  ): Promise<DiagramElementMappingDraft[]> {
+    if (this.mappingDrafts) return this.mappingDrafts;
+    const entity = request.codeEntities[0];
+    const lineIndex = request.ascii.split("\n").findIndex((line) => line.includes("worker"));
+    if (!entity || lineIndex < 0) return [];
+    const startColumn = request.ascii.split("\n")[lineIndex].indexOf("worker") + 1;
+    return [{
+      entityId: entity.id,
+      sourceRangeIndex: 0,
+      line: lineIndex + 1,
+      startColumn,
+      endColumn: startColumn + "worker".length - 1
+    }];
+  }
+
   dispose(): void {}
 }
 
 describe("DiagramApplication", () => {
+  it("generates three initial diagrams immediately after collection", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-initialize-"));
+    roots.push(root);
+    execFileSync("git", ["init", "-q", root]);
+    await writeFile(path.join(root, "fixture.ts"), "export const worker = () => true;\n", "utf8");
+    execFileSync("git", ["-C", root, "add", "fixture.ts"]);
+    execFileSync("git", ["-C", root, "-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-qm", "fixture"]);
+    const runtime = new ParallelRuntime();
+    const application = new DiagramApplication(new DiagramStore(root), runtime);
+    const set = await application.createDiagramSet({
+      path: root,
+      name: "Initial worker flow",
+      prompt: "Show the worker"
+    });
+
+    await application.collectCodeEntities(set.id);
+    const workspace = await application.generateInitialDiagrams(set.id);
+
+    expect(workspace.codeEntitySets[set.codeEntitiesSetId].status).toBe("finalized");
+    expect(workspace.diagramSets[0].readiness).toBe("ready");
+    expect(workspace.diagramSets[0].diagramIds).toHaveLength(3);
+    expect(runtime.requestedModels).toEqual([
+      "gpt-5.6-sol",
+      "gpt-5.6-sol",
+      "gpt-5.6-sol"
+    ]);
+  });
+
   it("persists reversible edit sessions and publishes edited copies", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "new-diagram-edit-"));
     roots.push(root);
@@ -78,7 +128,7 @@ describe("DiagramApplication", () => {
     const application = new DiagramApplication(new DiagramStore(root), new ParallelRuntime());
     const set = await application.createDiagramSet({ path: root, name: "Edits", prompt: "Edit it" });
     await application.collectCodeEntities(set.id);
-    let workspace = await application.finalizeCodeEntities(set.id);
+    let workspace = await application.workspace();
     workspace = await application.importArtifact(workspace.project!.id, {
       diagramSetId: set.id,
       artifactKind: "diagram",
@@ -133,7 +183,7 @@ describe("DiagramApplication", () => {
       prompt: "Show imported state"
     });
     await application.collectCodeEntities(set.id);
-    let workspace = await application.finalizeCodeEntities(set.id);
+    let workspace = await application.workspace();
     const projectId = workspace.project!.id;
     const entityId = workspace.codeEntitySets[set.codeEntitiesSetId].entities[0].id;
 
@@ -206,7 +256,7 @@ describe("DiagramApplication", () => {
     })).rejects.toThrow(/unknown Project/);
   });
 
-  it("collects, finalizes, and generates one diagram per parallel agent", async () => {
+  it("collects and generates one diagram per parallel agent", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "new-diagram-app-"));
     roots.push(root);
     execFileSync("git", ["init", "-q", root]);
@@ -221,7 +271,7 @@ describe("DiagramApplication", () => {
       prompt: "Show the worker"
     });
     await application.collectCodeEntities(set.id);
-    let workspace = await application.finalizeCodeEntities(set.id);
+    let workspace = await application.workspace();
     const entitySet = workspace.codeEntitySets[set.codeEntitiesSetId];
     expect(entitySet.entities[0].sourceRanges[0].originalLines).toEqual([
       "export const worker = () => true;"
@@ -233,14 +283,47 @@ describe("DiagramApplication", () => {
       prompt: "Show @entity/worker",
       selectedCodeEntityIds: [entitySet.entities[0].id],
       count: 3,
-      outputKind: "diagram"
+      outputKind: "diagram",
+      modelId: "gpt-5.6-sol"
     });
     expect(runtime.maxActive).toBe(3);
+    expect(runtime.requestedModels).toEqual([
+      "gpt-5.6-sol",
+      "gpt-5.6-sol",
+      "gpt-5.6-sol"
+    ]);
+    expect(workspace.generationBatches[workspace.diagramSets[0].generationBatchIds[0]].modelId)
+      .toBe("gpt-5.6-sol");
     expect(workspace.diagramSets[0].diagramIds).toHaveLength(3);
     expect(Object.values(workspace.agentRuns).filter((run) => run.kind === "generate-one-diagram"))
       .toHaveLength(3);
     const diagramId = workspace.diagramSets[0].diagramIds[0];
     const originalHandle = workspace.diagrams[diagramId].handle;
+    workspace = await application.mapCodeEntities(set.id, "diagram", diagramId);
+    expect(workspace.codeEntityMaps[diagramId]).toMatchObject({
+      artifactKind: "diagram",
+      artifactId: diagramId,
+      mappings: [{
+        entityId: entitySet.entities[0].id,
+        sourceRangeIndex: 0,
+        line: 1,
+        startColumn: 2,
+        endColumn: 7
+      }]
+    });
+    expect(workspace.codeEntityMaps[diagramId].asciiSha256).toMatch(/^[a-f0-9]{64}$/);
+    expect(Object.values(workspace.agentRuns).filter((run) => run.kind === "map-code-entities"))
+      .toHaveLength(1);
+    runtime.mappingDrafts = [{
+      entityId: entitySet.entities[0].id,
+      sourceRangeIndex: 0,
+      line: 1,
+      startColumn: 2,
+      endColumn: 999
+    }];
+    await expect(application.mapCodeEntities(set.id, "diagram", diagramId))
+      .rejects.toThrow(/outside the ASCII/);
+    expect((await application.workspace()).codeEntityMaps[diagramId].mappings).toHaveLength(1);
     workspace = await application.captureDiagramComponent(set.id, diagramId, {
       startLine: 1,
       endLine: 1,
@@ -267,6 +350,14 @@ describe("DiagramApplication", () => {
       workspace.diagramSets[0].diagramComponentIds[1]
     ];
     expect(generatedComponent.derivedFromDiagramComponentIds).toEqual([componentId]);
+    expect(runtime.requestedModels.slice(-2)).toEqual(["gpt-5.6-sol", "gpt-5.6-sol"]);
+    await expect(application.generate(set.id, {
+      prompt: "Bad model",
+      selectedCodeEntityIds: [],
+      count: 1,
+      outputKind: "diagram",
+      modelId: "gpt-unknown"
+    })).rejects.toThrow(/unsupported generation model/);
     workspace = await application.captureNestedDiagramComponent(set.id, componentId, {
       startLine: 1,
       endLine: 1,

@@ -32,14 +32,18 @@ npm --prefix scripts/new-diagram run diagram -- create \
   --server http://127.0.0.1:5173
 ```
 
-The CLI asks the server to create the DiagramSet, streams collection progress,
-and stops at the human finalization gate. The CLI path must resolve to the same
-checkout passed to the server's `--path`. `--server` defaults to
+The CLI asks the server to create the DiagramSet and streams collection and
+generation progress. Successful collection finalizes the immutable
+CodeEntitiesSet, then immediately launches three Sol diagram agents with all
+collected entities selected. The CLI path must resolve to the same checkout
+passed to the server's `--path`. `--server` defaults to
 `http://127.0.0.1:5173` and can also be set with `NEW_DIAGRAM_SERVER_URL`.
 
-The studio supports the waiting state, immutable CodeEntitiesSet finalization,
+The studio supports the waiting state, immutable collected CodeEntitiesSets,
 typed `@entity/`, `@diagram/`, and `@component/` references, N parallel agents,
-and a resizable workspace. Diagram View keeps Code Entities and an ASCII
+shared Terra/Sol model selection for generation and LLM editing, and a resizable
+workspace. The selected generation model is persisted on its GenerationBatch.
+Diagram View keeps Code Entities and an ASCII
 artifact lineage in right-pane tabs; selecting a lineage node opens that
 diagram, and its display name can be edited without changing its stable
 `@diagram/` handle.
@@ -48,6 +52,14 @@ diagrams attach directly to their parent without intermediary generation nodes.
 Lineage branches can be collapsed with their hidden-diagram count retained in
 the toggle. Archiving through `[x]` removes a variant from active UI and prompt
 references while preserving its timestamped diagram JSON for future learning.
+
+`map code entities` runs an LLM over the active artifact and its declared
+CodeEntities, then persists exact character-span-to-source-range associations
+in a sidecar record. Mapped ASCII text is visually marked without changing the
+underlying text. Hovering shows the entity summary; clicking switches the right
+pane to Code Entities, opens the mapped source range, scrolls it into view, and
+highlights its rendered lines. Running the action again replaces that artifact's
+mapping with a newly validated result.
 
 `capture component` enables a character-aligned rectangle selector over the
 active Diagram. Releasing the pointer sends the bounds to the server, which

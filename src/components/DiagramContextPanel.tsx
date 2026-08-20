@@ -3,12 +3,12 @@ import type {
   DiagramComponentRecord,
   DiagramRecord,
   DiagramSetRecord,
-  EditModelId,
+  DiagramModelId,
   EditSessionRecord,
   GenerationBatchRecord
 } from "../domain";
-import { DEFAULT_EDIT_MODEL_ID } from "../domain";
-import { CodeEntitiesPanel } from "./CodeEntitiesPanel";
+import { DEFAULT_DIAGRAM_MODEL_ID } from "../domain";
+import { CodeEntitiesPanel, type CodeEntityReveal } from "./CodeEntitiesPanel";
 import { DiagramLineagePanel } from "./DiagramLineagePanel";
 import { EditOperationsPanel } from "./EditOperationsPanel";
 
@@ -25,11 +25,12 @@ export function DiagramContextPanel(props: {
   activeComponent?: DiagramComponentRecord;
   editSession?: EditSessionRecord;
   editPrompt?: string;
-  editModelId?: EditModelId;
+  editModelId?: DiagramModelId;
   markerMode?: boolean;
   editBusy?: boolean;
   editProgress?: string;
   editError?: string | null;
+  codeEntityReveal?: CodeEntityReveal;
   selectedIds?: Set<string>;
   onToggleEntity?: (id: string) => void;
   activeTab: ContextTab;
@@ -40,7 +41,7 @@ export function DiagramContextPanel(props: {
   onArchiveDiagram: (diagramId: string) => Promise<void>;
   onArchiveComponent: (componentId: string) => Promise<void>;
   onEditPrompt?: (value: string) => void;
-  onEditModel?: (value: EditModelId) => void;
+  onEditModel?: (value: DiagramModelId) => void;
   onMarkerMode?: (value: boolean) => void;
   onUndoEdit?: () => void;
   onRedoEdit?: () => void;
@@ -97,7 +98,7 @@ export function DiagramContextPanel(props: {
           <EditOperationsPanel
             session={props.editSession}
             prompt={props.editPrompt ?? ""}
-            modelId={props.editModelId ?? DEFAULT_EDIT_MODEL_ID}
+            modelId={props.editModelId ?? DEFAULT_DIAGRAM_MODEL_ID}
             markerMode={Boolean(props.markerMode)}
             busy={Boolean(props.editBusy)}
             progress={props.editProgress ?? ""}
@@ -125,6 +126,7 @@ export function DiagramContextPanel(props: {
             diagram={props.activeDiagram ?? props.activeComponent}
             selectedIds={props.selectedIds}
             onToggle={props.onToggleEntity}
+            reveal={props.codeEntityReveal}
           />
         </div>
       ) : (

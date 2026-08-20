@@ -40,9 +40,9 @@ function readBody(request: Connect.IncomingMessage): Promise<unknown> {
   });
 }
 
-function parseSetAction(pathname: string): { setId: string; action: string } | null {
-  const match = pathname.match(/^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/(finalize|generate)$/);
-  return match ? { setId: match[1], action: match[2] } : null;
+function parseGeneration(pathname: string): { setId: string } | null {
+  const match = pathname.match(/^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/generate$/);
+  return match ? { setId: match[1] } : null;
 }
 
 function parseProjectImport(pathname: string): { projectId: string } | null {
@@ -69,6 +69,22 @@ function parseDiagramComponents(pathname: string): { setId: string; diagramId: s
     /^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/diagrams\/([a-z0-9][a-z0-9-]*)\/components$/
   );
   return match ? { setId: match[1], diagramId: match[2] } : null;
+}
+
+function parseCodeEntityMap(pathname: string): {
+  setId: string;
+  artifactKind: "diagram" | "diagram-component";
+  artifactId: string;
+} | null {
+  const match = pathname.match(
+    /^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/(diagrams|components)\/([a-z0-9][a-z0-9-]*)\/code-entity-map$/
+  );
+  if (!match) return null;
+  return {
+    setId: match[1],
+    artifactKind: match[2] === "diagrams" ? "diagram" : "diagram-component",
+    artifactId: match[3]
+  };
 }
 
 function parseComponentAction(pathname: string): {
@@ -156,10 +172,14 @@ export function diagramApi(projectRoot: string, diagramsDirectory = ".diagrams")
           projectRoot: diagramSet.sourceCheckoutRoot
         });
         await application.collectCodeEntities(diagramSet.id, (event) => sendEvent(response, event));
+        const workspace = await application.generateInitialDiagrams(
+          diagramSet.id,
+          (event) => sendEvent(response, event)
+        );
         sendEvent(response, {
           type: "result",
           diagramSetId: diagramSet.id,
-          workspace: await application.workspace()
+          workspace
         });
         if (!response.destroyed && !response.writableEnded) response.end();
         return;
@@ -197,6 +217,23 @@ export function diagramApi(projectRoot: string, diagramsDirectory = ".diagrams")
           200,
           await application.archiveDiagram(archive.setId, archive.diagramId)
         );
+      }
+      const codeEntityMap = parseCodeEntityMap(url.pathname);
+      if (codeEntityMap) {
+        if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
+        response.statusCode = 200;
+        response.setHeader("content-type", "application/x-ndjson; charset=utf-8");
+        response.setHeader("cache-control", "no-cache, no-transform");
+        response.flushHeaders();
+        const workspace = await application.mapCodeEntities(
+          codeEntityMap.setId,
+          codeEntityMap.artifactKind,
+          codeEntityMap.artifactId,
+          (event) => sendEvent(response, event)
+        );
+        sendEvent(response, { type: "result", workspace });
+        response.end();
+        return;
       }
       const editSessions = parseEditSessions(url.pathname);
       if (editSessions) {
@@ -319,19 +356,17 @@ export function diagramApi(projectRoot: string, diagramsDirectory = ".diagrams")
           await application.renameDiagram(diagram.setId, diagram.diagramId, name)
         );
       }
-      const action = parseSetAction(url.pathname);
-      if (!action) return sendJson(response, 404, { error: "API route not found" });
+      const generation = parseGeneration(url.pathname);
+      if (!generation) return sendJson(response, 404, { error: "API route not found" });
       if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
       const body = await readBody(request) as Record<string, unknown>;
-      if (action.action === "finalize") {
-        return sendJson(response, 200, await application.finalizeCodeEntities(action.setId));
-      }
       const count = Number(body.count);
       const prompt = typeof body.prompt === "string" ? body.prompt : "";
       const selectedCodeEntityIds = Array.isArray(body.selectedCodeEntityIds)
         ? body.selectedCodeEntityIds.filter((value): value is string => typeof value === "string")
         : [];
       const outputKind = body.outputKind;
+      const modelId = typeof body.modelId === "string" ? body.modelId : undefined;
       if (outputKind !== "diagram" && outputKind !== "diagram-component") {
         return sendJson(response, 400, { error: "outputKind must be diagram or diagram-component" });
       }
@@ -339,11 +374,12 @@ export function diagramApi(projectRoot: string, diagramsDirectory = ".diagrams")
       response.setHeader("content-type", "application/x-ndjson; charset=utf-8");
       response.setHeader("cache-control", "no-cache, no-transform");
       response.flushHeaders();
-      const workspace = await application.generate(action.setId, {
+      const workspace = await application.generate(generation.setId, {
         prompt,
         selectedCodeEntityIds,
         count,
-        outputKind
+        outputKind,
+        modelId
       }, (event) => sendEvent(response, event));
       sendEvent(response, { type: "result", workspace });
       response.end();

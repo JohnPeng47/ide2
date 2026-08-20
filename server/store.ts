@@ -4,11 +4,14 @@ import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import {
+  DEFAULT_DIAGRAM_MODEL_ID,
   SCHEMA_VERSION,
   assertSafeId,
+  isDiagramModelId,
   type AgentRunRecord,
   type CodeEntitiesSetRecord,
   type CodeEntityRecord,
+  type DiagramCodeEntityMapRecord,
   type DiagramComponentRecord,
   type DiagramRecord,
   type DiagramSetRecord,
@@ -132,6 +135,11 @@ export class DiagramStore {
     return path.join(this.setRoot(setId), "edit-sessions", `${sessionId}.json`);
   }
 
+  private codeEntityMapPath(setId: string, artifactId: string): string {
+    assertSafeId(artifactId, "artifact id");
+    return path.join(this.setRoot(setId), "code-entity-maps", `${artifactId}.json`);
+  }
+
   async ensureProject(location: RepositoryLocation): Promise<ProjectRecord> {
     const existing = await readJsonIfExists<ProjectRecord>(this.projectPath());
     if (existing) {
@@ -244,13 +252,16 @@ export class DiagramStore {
     const stored = await readJson<GenerationBatchRecord & {
       outputKind?: GenerationBatchRecord["outputKind"];
       outputDiagramComponentIds?: string[];
+      modelId?: GenerationBatchRecord["modelId"];
     }>(this.batchPath(setId, batchId));
-    if (stored.outputKind && Array.isArray(stored.outputDiagramComponentIds)) {
+    if (stored.outputKind && Array.isArray(stored.outputDiagramComponentIds)
+      && isDiagramModelId(stored.modelId)) {
       return stored as GenerationBatchRecord;
     }
     const normalized: GenerationBatchRecord = {
       ...stored,
       outputKind: stored.outputKind ?? "diagram",
+      modelId: stored.modelId ?? DEFAULT_DIAGRAM_MODEL_ID,
       outputDiagramComponentIds: stored.outputDiagramComponentIds ?? []
     };
     await writeJsonAtomic(this.batchPath(setId, batchId), normalized);
@@ -326,6 +337,22 @@ export class DiagramStore {
     await writeJsonAtomic(this.editSessionPath(session.diagramSetId, session.id), session);
   }
 
+  async loadCodeEntityMap(
+    setId: string,
+    artifactId: string
+  ): Promise<DiagramCodeEntityMapRecord | null> {
+    return readJsonIfExists<DiagramCodeEntityMapRecord>(
+      this.codeEntityMapPath(setId, artifactId)
+    );
+  }
+
+  async saveCodeEntityMap(mapping: DiagramCodeEntityMapRecord): Promise<void> {
+    await writeJsonAtomic(
+      this.codeEntityMapPath(mapping.diagramSetId, mapping.artifactId),
+      mapping
+    );
+  }
+
   async addEditSession(session: EditSessionRecord): Promise<void> {
     await this.saveEditSession(session);
     const set = await this.loadDiagramSet(session.diagramSetId);
@@ -347,18 +374,20 @@ export class DiagramStore {
   async completeCollection(setId: string, entities: CodeEntityRecord[]): Promise<void> {
     const current = await this.loadCodeEntities(setId);
     if (current.status === "finalized") throw new Error("CodeEntitiesSet is immutable after finalization");
+    const timestamp = nowIso();
     const updatedEntities: CodeEntitiesSetRecord = {
       ...current,
-      status: "awaiting-approval",
+      status: "finalized",
       entities,
+      finalizedAt: timestamp,
       error: undefined
     };
     await writeJsonAtomic(this.entitiesPath(setId), updatedEntities);
     const set = await this.loadDiagramSet(setId);
     await writeJsonAtomic(this.setPath(setId), {
       ...set,
-      readiness: "awaiting-approval",
-      updatedAt: nowIso(),
+      readiness: "ready",
+      updatedAt: timestamp,
       error: undefined
     });
   }
@@ -375,30 +404,6 @@ export class DiagramStore {
       updatedAt: nowIso(),
       error: message
     });
-  }
-
-  async finalizeCodeEntities(setId: string, actor: string): Promise<CodeEntitiesSetRecord> {
-    const entities = await this.loadCodeEntities(setId);
-    if (entities.status === "finalized") return entities;
-    if (entities.status !== "awaiting-approval" || entities.entities.length === 0) {
-      throw new Error("CodeEntitiesSet is not ready for finalization");
-    }
-    const timestamp = nowIso();
-    const finalized: CodeEntitiesSetRecord = {
-      ...entities,
-      status: "finalized",
-      finalizedAt: timestamp,
-      finalizedBy: actor
-    };
-    await writeJsonAtomic(this.entitiesPath(setId), finalized);
-    const set = await this.loadDiagramSet(setId);
-    await writeJsonAtomic(this.setPath(setId), {
-      ...set,
-      readiness: "ready",
-      updatedAt: timestamp,
-      error: undefined
-    });
-    return finalized;
   }
 
   async beginBatch(batch: GenerationBatchRecord, runs: AgentRunRecord[]): Promise<void> {
@@ -456,7 +461,8 @@ export class DiagramStore {
         diagramComponents: {},
         generationBatches: {},
         agentRuns: {},
-        editSessions: {}
+        editSessions: {},
+        codeEntityMaps: {}
       };
     }
     const diagramSets = await Promise.all(project.diagramSetIds.map((id) => this.loadDiagramSet(id)));
@@ -466,11 +472,18 @@ export class DiagramStore {
     const generationBatches: Record<string, GenerationBatchRecord> = {};
     const agentRuns: Record<string, AgentRunRecord> = {};
     const editSessions: Record<string, EditSessionRecord> = {};
+    const codeEntityMaps: Record<string, DiagramCodeEntityMapRecord> = {};
     for (const set of diagramSets) {
       codeEntitySets[set.codeEntitiesSetId] = await this.loadCodeEntities(set.id);
-      for (const id of set.diagramIds) diagrams[id] = await this.loadDiagram(set.id, id);
+      for (const id of set.diagramIds) {
+        diagrams[id] = await this.loadDiagram(set.id, id);
+        const mapping = await this.loadCodeEntityMap(set.id, id);
+        if (mapping) codeEntityMaps[id] = mapping;
+      }
       for (const id of set.diagramComponentIds) {
         diagramComponents[id] = await this.loadDiagramComponent(set.id, id);
+        const mapping = await this.loadCodeEntityMap(set.id, id);
+        if (mapping) codeEntityMaps[id] = mapping;
       }
       for (const id of set.generationBatchIds) {
         generationBatches[id] = await this.loadGenerationBatch(set.id, id);
@@ -490,7 +503,8 @@ export class DiagramStore {
       diagramComponents,
       generationBatches,
       agentRuns,
-      editSessions
+      editSessions,
+      codeEntityMaps
     };
   }
 

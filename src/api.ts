@@ -1,7 +1,7 @@
 import type {
   ArtifactImportInput,
+  DiagramModelId,
   DiagramSelectionBounds,
-  EditModelId,
   GenerationOutputKind,
   WorkspaceSnapshot
 } from "./domain";
@@ -15,6 +15,57 @@ export async function fetchWorkspace(): Promise<WorkspaceSnapshot> {
   const response = await fetch("/api/workspace", { cache: "no-store" });
   if (!response.ok) throw await errorFrom(response);
   return response.json() as Promise<WorkspaceSnapshot>;
+}
+
+export async function mapCodeEntities(
+  setId: string,
+  artifactKind: GenerationOutputKind,
+  artifactId: string,
+  onProgress: (message: string) => void
+): Promise<WorkspaceSnapshot> {
+  const collection = artifactKind === "diagram" ? "diagrams" : "components";
+  const response = await fetch(
+    `/api/diagram-sets/${encodeURIComponent(setId)}/${collection}/${encodeURIComponent(artifactId)}/code-entity-map`,
+    { method: "POST" }
+  );
+  if (!response.ok) throw await errorFrom(response);
+  if (!response.body) throw new Error("mapping response did not include a stream");
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let workspace: WorkspaceSnapshot | undefined;
+  while (true) {
+    const { done, value } = await reader.read();
+    buffer += decoder.decode(value, { stream: !done });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      const event = JSON.parse(line) as {
+        type: string;
+        message?: string;
+        error?: string;
+        workspace?: WorkspaceSnapshot;
+      };
+      if (event.type === "error") throw new Error(event.error || "mapping failed");
+      if (event.message) onProgress(event.message);
+      if (event.workspace) workspace = event.workspace;
+    }
+    if (done) break;
+  }
+  if (buffer.trim()) {
+    const event = JSON.parse(buffer) as {
+      type: string;
+      message?: string;
+      error?: string;
+      workspace?: WorkspaceSnapshot;
+    };
+    if (event.type === "error") throw new Error(event.error || "mapping failed");
+    if (event.message) onProgress(event.message);
+    if (event.workspace) workspace = event.workspace;
+  }
+  if (!workspace) throw new Error("mapping stream ended without a workspace result");
+  return workspace;
 }
 
 async function editAction(
@@ -80,7 +131,7 @@ export async function applyLlmEdit(
   setId: string,
   sessionId: string,
   instruction: string,
-  modelId: EditModelId,
+  modelId: DiagramModelId,
   onProgress: (message: string) => void
 ): Promise<WorkspaceSnapshot> {
   const response = await fetch(
@@ -123,16 +174,6 @@ export async function applyLlmEdit(
   }
   if (!workspace) throw new Error("edit stream ended without a workspace result");
   return workspace;
-}
-
-export async function finalizeCodeEntities(setId: string): Promise<WorkspaceSnapshot> {
-  const response = await fetch(`/api/diagram-sets/${encodeURIComponent(setId)}/finalize`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: "{}"
-  });
-  if (!response.ok) throw await errorFrom(response);
-  return response.json() as Promise<WorkspaceSnapshot>;
 }
 
 export async function importProjectArtifact(
@@ -230,6 +271,7 @@ export async function generateArtifacts(
     selectedCodeEntityIds: string[];
     count: number;
     outputKind: GenerationOutputKind;
+    modelId: DiagramModelId;
   },
   onProgress: (message: string) => void
 ): Promise<WorkspaceSnapshot> {

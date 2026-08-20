@@ -1,10 +1,12 @@
 import { useMemo, useRef, useState } from "react";
 import type {
   CodeEntitiesSetRecord,
+  DiagramModelId,
   DiagramComponentRecord,
   DiagramRecord,
   GenerationOutputKind
 } from "../domain";
+import { ModelSelector } from "./ModelSelector";
 import { promptOptions } from "../prompt";
 
 export function GeneratorOptions(props: {
@@ -12,6 +14,7 @@ export function GeneratorOptions(props: {
   diagrams: DiagramRecord[];
   components: DiagramComponentRecord[];
   outputKind: GenerationOutputKind;
+  modelId: DiagramModelId;
   prompt: string;
   count: number;
   generating: boolean;
@@ -20,7 +23,7 @@ export function GeneratorOptions(props: {
   onPrompt: (value: string) => void;
   onCount: (value: number) => void;
   onOutputKind: (value: GenerationOutputKind) => void;
-  onFinalize: () => void;
+  onModel: (value: DiagramModelId) => void;
   onGenerate: () => void;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -57,106 +60,98 @@ export function GeneratorOptions(props: {
     });
   };
 
-  const finalized = props.codeEntities.status === "finalized";
   return (
     <div className="generator-panel">
       <header className="pane-header">
         <div>
           <span className="eyebrow">GENERATION VIEW</span>
-          <h2>{finalized
-            ? props.outputKind === "diagram" ? "Create diagram variants" : "Create component variants"
-            : "Review the collected context"}</h2>
+          <h2>{props.outputKind === "diagram" ? "Create diagram variants" : "Create component variants"}</h2>
         </div>
         <span className="agent-count">N AGENTS · {props.count} OUTPUTS</span>
       </header>
 
-      {!finalized ? (
-        <section className="approval-callout">
-          <span className="eyebrow">HUMAN GATE</span>
-          <h3>Finalize this CodeEntitiesSet</h3>
-          <p>Finalization makes revision {props.codeEntities.revision} immutable. New context requires a new DiagramSet.</p>
-          <button type="button" className="button button--primary" onClick={props.onFinalize}>
-            finalize {props.codeEntities.entities.length} entities →
-          </button>
-        </section>
-      ) : (
-        <>
-          <div className="output-kind" role="radiogroup" aria-label="Generated output type">
-            <span className="eyebrow">OUTPUT</span>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={props.outputKind === "diagram"}
-              className={props.outputKind === "diagram" ? "is-active" : ""}
-              disabled={props.generating}
-              onClick={() => props.onOutputKind("diagram")}
-            >Diagram</button>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={props.outputKind === "diagram-component"}
-              className={props.outputKind === "diagram-component" ? "is-active" : ""}
-              disabled={props.generating}
-              onClick={() => props.onOutputKind("diagram-component")}
-            >DiagramComponent</button>
+      <div className="output-kind" role="radiogroup" aria-label="Generated output type">
+        <span className="eyebrow">OUTPUT</span>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={props.outputKind === "diagram"}
+          className={props.outputKind === "diagram" ? "is-active" : ""}
+          disabled={props.generating}
+          onClick={() => props.onOutputKind("diagram")}
+        >Diagram</button>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={props.outputKind === "diagram-component"}
+          className={props.outputKind === "diagram-component" ? "is-active" : ""}
+          disabled={props.generating}
+          onClick={() => props.onOutputKind("diagram-component")}
+        >DiagramComponent</button>
+      </div>
+      <div className="prompt-field">
+        <div className="generation-prompt-heading">
+          <label htmlFor="diagram-prompt">GENERATION INSTRUCTION</label>
+          <ModelSelector
+            id="generation-model"
+            value={props.modelId}
+            disabled={props.generating}
+            onChange={props.onModel}
+          />
+        </div>
+        <textarea
+          ref={textareaRef}
+          id="diagram-prompt"
+          value={props.prompt}
+          disabled={props.generating}
+          placeholder="Use @ to reference a CodeEntity, Diagram, or DiagramComponent…"
+          spellCheck={false}
+          onChange={(event) => updatePrompt(event.target.value, event.target.selectionStart)}
+          onClick={(event) => updatePrompt(event.currentTarget.value, event.currentTarget.selectionStart)}
+          onKeyUp={(event) => updatePrompt(event.currentTarget.value, event.currentTarget.selectionStart)}
+        />
+        {suggestions.length > 0 ? (
+          <div className="mention-menu" role="listbox" aria-label="Prompt references">
+            {suggestions.map((option) => (
+              <button type="button" role="option" key={`${option.kind}:${option.id}`} onClick={() => insertMention(option.token)}>
+                <code>{option.token}</code><span>{option.label}</span>
+              </button>
+            ))}
           </div>
-          <div className="prompt-field">
-            <label htmlFor="diagram-prompt">GENERATION INSTRUCTION</label>
-            <textarea
-              ref={textareaRef}
-              id="diagram-prompt"
-              value={props.prompt}
-              disabled={props.generating}
-              placeholder="Use @ to reference a CodeEntity, Diagram, or DiagramComponent…"
-              spellCheck={false}
-              onChange={(event) => updatePrompt(event.target.value, event.target.selectionStart)}
-              onClick={(event) => updatePrompt(event.currentTarget.value, event.currentTarget.selectionStart)}
-              onKeyUp={(event) => updatePrompt(event.currentTarget.value, event.currentTarget.selectionStart)}
-            />
-            {suggestions.length > 0 ? (
-              <div className="mention-menu" role="listbox" aria-label="Prompt references">
-                {suggestions.map((option) => (
-                  <button type="button" role="option" key={`${option.kind}:${option.id}`} onClick={() => insertMention(option.token)}>
-                    <code>{option.token}</code><span>{option.label}</span>
-                  </button>
-                ))}
-              </div>
-            ) : null}
-            <p className="field-help">Type @ for entity, diagram, and component references. Selected entities are included even without an explicit mention.</p>
-          </div>
+        ) : null}
+        <p className="field-help">Type @ for entity, diagram, and component references. Selected entities are included even without an explicit mention.</p>
+      </div>
 
-          <div className="generation-controls">
-            <div className="counter">
-              <span className="eyebrow">PARALLEL AGENTS</span>
-              <div>
-                <button
-                  type="button"
-                  aria-label="Use one fewer agent"
-                  disabled={props.generating || props.count <= 1}
-                  onClick={() => props.onCount(Math.max(1, props.count - 1))}
-                >−</button>
-                <output aria-live="polite">{props.count}</output>
-                <button
-                  type="button"
-                  aria-label="Use one more agent"
-                  disabled={props.generating || props.count >= 12}
-                  onClick={() => props.onCount(Math.min(12, props.count + 1))}
-                >+</button>
-              </div>
-            </div>
+      <div className="generation-controls">
+        <div className="counter">
+          <span className="eyebrow">PARALLEL AGENTS</span>
+          <div>
             <button
               type="button"
-              className="button button--primary generate-action"
-              disabled={props.generating}
-              onClick={props.onGenerate}
-            >
-              {props.generating
-                ? `running ${props.count} agents…`
-                : `generate ${props.count} ${props.outputKind === "diagram" ? "diagrams" : "components"} →`}
-            </button>
+              aria-label="Use one fewer agent"
+              disabled={props.generating || props.count <= 1}
+              onClick={() => props.onCount(Math.max(1, props.count - 1))}
+            >−</button>
+            <output aria-live="polite">{props.count}</output>
+            <button
+              type="button"
+              aria-label="Use one more agent"
+              disabled={props.generating || props.count >= 12}
+              onClick={() => props.onCount(Math.min(12, props.count + 1))}
+            >+</button>
           </div>
-        </>
-      )}
+        </div>
+        <button
+          type="button"
+          className="button button--primary generate-action"
+          disabled={props.generating}
+          onClick={props.onGenerate}
+        >
+          {props.generating
+            ? `running ${props.count} agents…`
+            : `generate ${props.count} ${props.outputKind === "diagram" ? "diagrams" : "components"} →`}
+        </button>
+      </div>
 
       {props.progress ? <p className="run-progress" aria-live="polite"><span />{props.progress}</p> : null}
       {props.error ? <p className="inline-error" role="alert">{props.error}</p> : null}

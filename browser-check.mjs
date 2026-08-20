@@ -76,6 +76,34 @@ async function replaceText(cdp, selector, value) {
   await cdp.send("Input.insertText", { text: value });
 }
 
+async function selectLastOption(cdp, selector) {
+  await pointerClick(cdp, selector);
+  if (!await evaluate(cdp, `document.activeElement?.matches(${JSON.stringify(selector)})`)) {
+    await evaluate(cdp, `document.querySelector(${JSON.stringify(selector)}).focus()`);
+  }
+  await waitFor(async () => await evaluate(cdp, `document.activeElement?.matches(${JSON.stringify(selector)})`), {
+    message: `${selector} did not receive focus`
+  });
+  await cdp.send("Input.dispatchKeyEvent", {
+    type: "rawKeyDown", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27
+  });
+  await cdp.send("Input.dispatchKeyEvent", {
+    type: "keyUp", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27
+  });
+  await cdp.send("Input.dispatchKeyEvent", {
+    type: "rawKeyDown", key: "End", code: "End", windowsVirtualKeyCode: 35
+  });
+  await cdp.send("Input.dispatchKeyEvent", {
+    type: "keyUp", key: "End", code: "End", windowsVirtualKeyCode: 35
+  });
+  await cdp.send("Input.dispatchKeyEvent", {
+    type: "rawKeyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13
+  });
+  await cdp.send("Input.dispatchKeyEvent", {
+    type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13
+  });
+}
+
 async function controlKey(cdp, key, code, windowsVirtualKeyCode) {
   await cdp.send("Input.dispatchKeyEvent", {
     type: "rawKeyDown", key: "Control", code: "ControlLeft", windowsVirtualKeyCode: 17
@@ -122,6 +150,8 @@ const fixtureRoot = await mkdtemp(path.join(tmpdir(), "new-diagram-browser-"));
 const screenshotPath = path.join(fixtureRoot, "studio.png");
 const sourceScreenshotPath = path.join(fixtureRoot, "compacted-source.png");
 const importScreenshotPath = path.join(fixtureRoot, "import-dialog.png");
+const generationScreenshotPath = path.join(fixtureRoot, "generation-model.png");
+const mappingScreenshotPath = path.join(fixtureRoot, "code-entity-mapping.png");
 let archivedArtifactPath = "";
 let archivedComponentArtifactPath = "";
 let importedArtifactPath = "";
@@ -187,11 +217,19 @@ try {
     });
     const collectionResult = await collection;
     if (!collectionResult.stdout.includes(`"event":"server"`)
-      || !collectionResult.stdout.includes(`"serverUrl":"${url.slice(0, -1)}"`)) {
+      || !collectionResult.stdout.includes(`"serverUrl":"${url.slice(0, -1)}"`)
+      || !collectionResult.stdout.includes(`"event":"ready"`)) {
       throw new Error("CLI did not print the studio server address");
     }
-    await waitForSelector(cdp, ".approval-callout");
-    await pointerClick(cdp, ".approval-callout .button--primary");
+    await waitForSelector(cdp, ".diagram-panel", { timeoutMs: 10000 });
+    const initialDiagramCount = await evaluate(cdp, `(async () => {
+      const workspace = await fetch('/api/workspace').then((response) => response.json());
+      return workspace.diagramSets[0].diagramIds.length;
+    })()`);
+    if (initialDiagramCount !== 3) {
+      throw new Error(`initialization generated ${initialDiagramCount} diagrams instead of 3`);
+    }
+    await pointerClick(cdp, ".screen-tabs button:nth-child(2)");
     try {
       await waitForSelector(cdp, "#diagram-prompt");
     } catch (error) {
@@ -217,13 +255,49 @@ try {
     if (!prompt.includes("@entity/")) throw new Error("mention selection did not insert a typed entity reference");
     const count = await evaluate(cdp, `document.querySelector('.counter output').textContent`);
     if (count !== "3") throw new Error(`expected default count 3, got ${count}`);
+    await selectLastOption(cdp, "#generation-model");
+    await waitFor(async () => (
+      await evaluate(cdp, `document.querySelector('#generation-model').value`)
+    ) === "gpt-5.6-sol", { message: "generation model dropdown did not select GPT-5.6 Sol" });
+    await captureScreenshot(cdp, { output: generationScreenshotPath });
 
     await pointerClick(cdp, ".generate-action");
     await waitForSelector(cdp, ".diagram-panel", { timeoutMs: 10000 });
+    const generatedModel = await evaluate(cdp, `(async () => {
+      const workspace = await fetch('/api/workspace').then((response) => response.json());
+      const set = workspace.diagramSets[0];
+      return workspace.generationBatches[set.generationBatchIds.at(-1)]?.modelId ?? '';
+    })()`);
+    if (generatedModel !== "gpt-5.6-sol") {
+      throw new Error(`generation batch persisted unexpected model: ${generatedModel}`);
+    }
     const oldStripExists = await evaluate(cdp, `Boolean(document.querySelector('.diagram-tabs'))`);
     if (oldStripExists) throw new Error("horizontal diagram strip is still rendered");
+    const asciiBeforeMapping = await evaluate(cdp, `document.querySelector('.ascii-stage pre').textContent`);
+    await pointerClick(cdp, ".map-code-entities");
+    await waitForSelector(cdp, ".mapped-element", { timeoutMs: 10000 });
+    const asciiAfterMapping = await evaluate(cdp, `document.querySelector('.ascii-stage pre').textContent`);
+    if (asciiAfterMapping !== asciiBeforeMapping) {
+      throw new Error("mapping changed the diagram's ASCII text content");
+    }
+    const mappedEntityId = await evaluate(cdp, `document.querySelector('.mapped-element').dataset.entityId`);
+    const mappedTitle = await evaluate(cdp, `document.querySelector('.mapped-element').title`);
+    if (!mappedTitle.includes("Workspace Store") || !mappedTitle.includes("fixture.ts:1-4")) {
+      throw new Error(`mapped hover summary was incomplete: ${mappedTitle}`);
+    }
+    await pointerHover(cdp, ".mapped-element");
+    await pointerClick(cdp, ".mapped-element");
+    await waitForSelector(cdp, ".entity-card.is-revealed", { timeoutMs: 10000 });
+    await waitForSelector(cdp, ".source-preview-shell.is-revealed", { timeoutMs: 10000 });
+    await waitForSelector(cdp, ".source-line.is-highlighted", { timeoutMs: 10000 });
+    const revealedEntityId = await evaluate(cdp, `document.querySelector('.entity-card.is-revealed').dataset.entityId`);
+    if (revealedEntityId !== mappedEntityId) {
+      throw new Error(`mapped entity ${mappedEntityId} revealed ${revealedEntityId}`);
+    }
+    const entityTabSelected = await evaluate(cdp, `document.querySelector('#code-entities-tab').getAttribute('aria-selected')`);
+    if (entityTabSelected !== "true") throw new Error("mapped element did not open the Code Entities tab");
+    await captureScreenshot(cdp, { output: mappingScreenshotPath });
     await pointerClick(cdp, "#code-entities-tab");
-    await pointerClick(cdp, ".source-link");
     await waitForSelector(cdp, ".source-preview");
     await waitForSelector(cdp, ".source-collapse:not([open])");
     const compactedText = await evaluate(cdp, `document.querySelector('.source-collapse summary code').textContent`);
@@ -248,11 +322,11 @@ try {
     await waitForSelector(cdp, ".diagram-lineage-panel");
     await waitFor(async () => (
       await evaluate(cdp, `document.querySelectorAll('.diagram-tree-diagram').length`)
-    ) === 3, { timeoutMs: 10000, message: "lineage tree did not render three diagrams" });
+    ) === 6, { timeoutMs: 10000, message: "lineage tree did not render six diagrams" });
     await pointerClick(cdp, "[data-generation-batch-id] .diagram-tree-toggle");
     await waitFor(async () => (
       await evaluate(cdp, `document.querySelectorAll('.diagram-tree-diagram').length`)
-    ) === 0, { message: "root generation did not collapse" });
+    ) === 3, { message: "root generation did not collapse" });
     const rootCollapsedLabel = await evaluate(cdp, `document.querySelector(
       '[data-generation-batch-id] .diagram-tree-toggle'
     ).textContent`);
@@ -260,7 +334,7 @@ try {
     await pointerClick(cdp, "[data-generation-batch-id] .diagram-tree-toggle");
     await waitFor(async () => (
       await evaluate(cdp, `document.querySelectorAll('.diagram-tree-diagram').length`)
-    ) === 3, { message: "root generation did not expand" });
+    ) === 6, { message: "root generation did not expand" });
     const bridgeTexts = await evaluate(cdp, `Array.from(
       document.querySelectorAll('.diagram-tree-bridge'),
       (node) => node.textContent
@@ -409,7 +483,7 @@ try {
     await pointerClick(cdp, "#diagrams-tab");
     await waitFor(async () => (
       await evaluate(cdp, `document.querySelectorAll('.diagram-tree-diagram').length`)
-    ) === 4, { timeoutMs: 10000, message: "derivative did not appear in lineage tree" });
+    ) === 7, { timeoutMs: 10000, message: "derivative did not appear in lineage tree" });
     const lineageShape = await evaluate(cdp, `(() => {
       const selected = document.querySelector('[data-diagram-id="${selection.id}"]');
       const branch = selected?.closest('.diagram-tree-branch');
@@ -420,7 +494,7 @@ try {
           : 0
       };
     })()`);
-    if (lineageShape.visibleGenerations !== 1 || lineageShape.directChildDiagrams !== 1) {
+    if (lineageShape.visibleGenerations !== 2 || lineageShape.directChildDiagrams !== 1) {
       throw new Error(`derivative lineage was not compact: ${JSON.stringify(lineageShape)}`);
     }
     const renamedInTree = await evaluate(cdp, `document.querySelector(
@@ -430,7 +504,7 @@ try {
     await pointerClick(cdp, `[data-diagram-id="${selection.id}"] .diagram-tree-toggle`);
     await waitFor(async () => (
       await evaluate(cdp, `document.querySelectorAll('.diagram-tree-diagram').length`)
-    ) === 3, { message: "diagram descendants did not collapse" });
+    ) === 6, { message: "diagram descendants did not collapse" });
     const diagramCollapsedLabel = await evaluate(cdp, `document.querySelector(
       '[data-diagram-id="${selection.id}"] .diagram-tree-toggle'
     ).textContent`);
@@ -441,9 +515,12 @@ try {
     await pointerClick(cdp, `[data-diagram-id="${selection.id}"] .diagram-tree-toggle`);
     await waitFor(async () => (
       await evaluate(cdp, `document.querySelectorAll('.diagram-tree-diagram').length`)
-    ) === 4, { message: "diagram descendants did not expand" });
+    ) === 7, { message: "diagram descendants did not expand" });
 
     await pointerClick(cdp, `[data-diagram-id="${selection.id}"]`);
+    await waitFor(async () => (
+      await evaluate(cdp, `document.querySelector('.diagram-panel .pane-header h2').textContent`)
+    ) === renamedDiagram, { message: "diagram did not settle before edit mode" });
     const sourceAsciiBeforeEdit = await evaluate(cdp, `document.querySelector('.ascii-stage pre').textContent`);
     await pointerClick(cdp, ".edit-mode-toggle");
     await waitForSelector(cdp, "#operations-tab.is-active");
@@ -462,19 +539,7 @@ try {
     if (markedAscii !== "[`rowser edit]") {
       throw new Error(`marker did not replace exactly one character: ${markedAscii}`);
     }
-    await pointerClick(cdp, "#edit-model");
-    await cdp.send("Input.dispatchKeyEvent", {
-      type: "rawKeyDown", key: "End", code: "End", windowsVirtualKeyCode: 35
-    });
-    await cdp.send("Input.dispatchKeyEvent", {
-      type: "keyUp", key: "End", code: "End", windowsVirtualKeyCode: 35
-    });
-    await cdp.send("Input.dispatchKeyEvent", {
-      type: "rawKeyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13
-    });
-    await cdp.send("Input.dispatchKeyEvent", {
-      type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13
-    });
+    await selectLastOption(cdp, "#edit-model");
     await waitFor(async () => (
       await evaluate(cdp, `document.querySelector('#edit-model').value`)
     ) === "gpt-5.6-sol", { message: "edit model dropdown did not select GPT-5.6 Sol" });
@@ -500,7 +565,7 @@ try {
     try {
       await waitFor(async () => (
         await evaluate(cdp, `document.querySelectorAll('.diagram-tree-diagram').length`)
-      ) === 5, { message: "saving the edit did not publish a new diagram" });
+      ) === 8, { message: "saving the edit did not publish a new diagram" });
     } catch (error) {
       const state = await evaluate(cdp, `(async () => ({
         count: document.querySelectorAll('.diagram-tree-diagram').length,
@@ -527,7 +592,7 @@ try {
       || diagramEditState.operationCount !== 3
       || diagramEditState.editModel !== "gpt-5.6-sol"
       || !diagramEditState.heading.endsWith(" Edit")) {
-      throw new Error(`diagram edit session was incomplete: ${JSON.stringify(diagramEditState)}`);
+      throw new Error(`diagram edit session was incomplete: ${JSON.stringify({ ...diagramEditState, sourceAsciiBeforeEdit })}`);
     }
 
     await pointerClick(cdp, `[data-diagram-id="${selection.id}"] .diagram-tree-archive`);
@@ -544,7 +609,7 @@ try {
         visibleDiagrams: document.querySelectorAll('.diagram-tree-diagram').length
       };
     })()`);
-    if (!archiveState.archivedAt || !archiveState.setId || archiveState.visibleDiagrams !== 4) {
+    if (!archiveState.archivedAt || !archiveState.setId || archiveState.visibleDiagrams !== 7) {
       throw new Error(`archive state was incomplete: ${JSON.stringify(archiveState)}`);
     }
     archivedArtifactPath = path.join(
@@ -670,7 +735,7 @@ try {
       await evaluate(cdp, `(
         !document.querySelector('[data-diagram-id="${selection.id}"]')
         && !document.querySelector('[data-component-id="${capturedComponentId}"]')
-        && document.querySelectorAll('.diagram-tree-diagram').length === 4
+        && document.querySelectorAll('.diagram-tree-diagram').length === 7
         && document.querySelectorAll('.diagram-tree-component').length === 3
       )`)
     ), { message: "diagram archival was not persisted across reload" });
@@ -683,7 +748,7 @@ try {
     await pointerClick(cdp, '.import-dialog button[type="submit"]');
     await waitFor(async () => await evaluate(cdp, `(
       !document.querySelector('.import-dialog')
-      && document.querySelectorAll('.diagram-tree-diagram').length === 5
+      && document.querySelectorAll('.diagram-tree-diagram').length === 8
     )`), { message: "imported Diagram did not appear in the lineage" });
     const importedDiagramState = await evaluate(cdp, `(async () => {
       const workspace = await fetch('/api/workspace').then((response) => response.json());
@@ -755,7 +820,7 @@ try {
     await waitForSelector(cdp, "[role=separator]");
     await pointerClick(cdp, "#diagrams-tab");
     await waitFor(async () => await evaluate(cdp, `(
-      document.querySelectorAll('.diagram-tree-diagram').length === 5
+      document.querySelectorAll('.diagram-tree-diagram').length === 8
       && document.querySelectorAll('.diagram-tree-component').length === 4
       && Array.from(document.querySelectorAll('.diagram-tree-component em')).some(
         (node) => node.textContent === 'IMPORTED'
@@ -769,6 +834,10 @@ try {
   if (sourceScreenshot.length < 1000) throw new Error("source preview screenshot was unexpectedly small");
   const importScreenshot = await readFile(importScreenshotPath);
   if (importScreenshot.length < 1000) throw new Error("import dialog screenshot was unexpectedly small");
+  const generationScreenshot = await readFile(generationScreenshotPath);
+  if (generationScreenshot.length < 1000) throw new Error("generation model screenshot was unexpectedly small");
+  const mappingScreenshot = await readFile(mappingScreenshotPath);
+  if (mappingScreenshot.length < 1000) throw new Error("code-entity mapping screenshot was unexpectedly small");
   const archivedArtifact = JSON.parse(await readFile(archivedArtifactPath, "utf8"));
   if (!archivedArtifact.archivedAt) throw new Error("archived diagram artifact was removed or unmarked");
   const archivedComponentArtifact = JSON.parse(await readFile(archivedComponentArtifactPath, "utf8"));

@@ -19,12 +19,12 @@ npm --prefix /home/john/drone-interception/scripts/new-diagram run diagram -- cr
   --server http://127.0.0.1:5173
 ```
 
-3. Return the emitted DiagramSet id and `serverUrl` to the user, and say the set
-   is awaiting approval at that address.
+3. Return the emitted DiagramSet id and `serverUrl` to the user, and say the
+   initial diagrams are ready at that address.
 
-The server creates one DiagramSet and one CodeEntitiesSet, then uses one
-read-only Pi agent to collect source-backed entities. If the CLI cannot connect,
-report this start command:
+The server creates one DiagramSet and one CodeEntitiesSet, uses one read-only Pi
+agent to collect source-backed entities, then runs three Sol diagram agents in
+parallel. If the CLI cannot connect, report this start command:
 
 ```bash
 npm --prefix /home/john/drone-interception/scripts/new-diagram run diagram -- serve \
@@ -35,6 +35,5 @@ npm --prefix /home/john/drone-interception/scripts/new-diagram run diagram -- se
 Use `--diagrams-dir <dir>` when the user requests an isolated DiagramSet store;
 relative directories resolve from `<repo-path>`.
 
-Do not generate diagrams from the external agent. Do not mutate a
-CodeEntitiesSet after the human finalizes it; bootstrap a new DiagramSet if
-different context is required.
+Do not generate diagrams from the external agent. Do not mutate a finalized
+CodeEntitiesSet; bootstrap a new DiagramSet if different context is required.

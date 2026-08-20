@@ -1,16 +1,17 @@
 import { useRef } from "react";
-import { EDIT_MODELS, type EditModelId, type EditSessionRecord } from "../domain";
+import type { DiagramModelId, EditSessionRecord } from "../domain";
+import { ModelSelector } from "./ModelSelector";
 
 export function EditOperationsPanel(props: {
   session: EditSessionRecord;
   prompt: string;
-  modelId: EditModelId;
+  modelId: DiagramModelId;
   markerMode: boolean;
   busy: boolean;
   progress: string;
   error: string | null;
   onPrompt: (value: string) => void;
-  onModel: (value: EditModelId) => void;
+  onModel: (value: DiagramModelId) => void;
   onMarkerMode: (value: boolean) => void;
   onUndo: () => void;
   onRedo: () => void;
@@ -74,19 +75,12 @@ export function EditOperationsPanel(props: {
       <section className="edit-prompt prompt-field">
         <div className="edit-prompt-heading">
           <label htmlFor="edit-prompt">LLM EDIT INSTRUCTION</label>
-          <label className="edit-model-field" htmlFor="edit-model">
-            <span>MODEL</span>
-            <select
-              id="edit-model"
-              value={props.modelId}
-              disabled={props.busy}
-              onChange={(event) => props.onModel(event.target.value as EditModelId)}
-            >
-              {EDIT_MODELS.map((model) => (
-                <option value={model.id} key={model.id}>{model.label}</option>
-              ))}
-            </select>
-          </label>
+          <ModelSelector
+            id="edit-model"
+            value={props.modelId}
+            disabled={props.busy}
+            onChange={props.onModel}
+          />
         </div>
         <textarea
           ref={textareaRef}

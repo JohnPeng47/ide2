@@ -27,7 +27,7 @@ describe("DiagramStore", () => {
     expect(project.repositoryIdentity).toBe(location.repositoryIdentity);
   });
 
-  it("creates a set and makes CodeEntities immutable after finalization", async () => {
+  it("finalizes collected CodeEntities and makes them immutable", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "new-diagram-store-"));
     roots.push(root);
     await mkdir(path.join(root, ".git"));
@@ -49,7 +49,6 @@ describe("DiagramStore", () => {
       sourceRanges: [{ path: "src/worker.ts", startLine: 1, endLine: 4 }]
     };
     await store.completeCollection(diagramSet.id, [entity]);
-    await store.finalizeCodeEntities(diagramSet.id, "human");
     await expect(store.completeCollection(diagramSet.id, [entity])).rejects.toThrow(/immutable/);
     const workspace = await store.loadWorkspace();
     expect(workspace.diagramSets[0].readiness).toBe("ready");

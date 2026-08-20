@@ -2,22 +2,24 @@ export const SCHEMA_VERSION = 1 as const;
 
 export type CodeEntityCategory = "state" | "interface-data-struct" | "operation";
 export type SourceCompactionLevel = "low" | "medium" | "high";
-export type DiagramSetReadiness = "collecting" | "awaiting-approval" | "ready" | "failed";
+export type DiagramSetReadiness = "collecting" | "ready" | "failed";
 export type GenerationOutputKind = "diagram" | "diagram-component";
-export const EDIT_MODELS = [
+export const DEFAULT_GENERATION_COUNT = 3;
+export const DIAGRAM_MODELS = [
   { id: "gpt-5.6-terra", label: "GPT-5.6 Terra" },
   { id: "gpt-5.6-sol", label: "GPT-5.6 Sol" }
 ] as const;
-export type EditModelId = typeof EDIT_MODELS[number]["id"];
-export const DEFAULT_EDIT_MODEL_ID: EditModelId = "gpt-5.6-terra";
+export type DiagramModelId = typeof DIAGRAM_MODELS[number]["id"];
+export const DEFAULT_DIAGRAM_MODEL_ID: DiagramModelId = "gpt-5.6-sol";
 
-export function isEditModelId(value: unknown): value is EditModelId {
-  return EDIT_MODELS.some((model) => model.id === value);
+export function isDiagramModelId(value: unknown): value is DiagramModelId {
+  return DIAGRAM_MODELS.some((model) => model.id === value);
 }
 export type AgentRunKind =
   | "collect-entities"
   | "generate-one-diagram"
   | "generate-one-diagram-component"
+  | "map-code-entities"
   | "edit-artifact";
 export type AgentRunStatus =
   | "queued"
@@ -72,10 +74,9 @@ export interface CodeEntitiesSetRecord {
   id: string;
   diagramSetId: string;
   revision: number;
-  status: "collecting" | "awaiting-approval" | "finalized" | "failed";
+  status: "collecting" | "finalized" | "failed";
   entities: CodeEntityRecord[];
   finalizedAt?: string;
-  finalizedBy?: string;
   error?: string;
 }
 
@@ -170,12 +171,33 @@ export function isDiagramArchived(diagram: DiagramRecord): boolean {
   return diagram.archivedAt !== undefined;
 }
 
+export interface DiagramElementMapping {
+  id: string;
+  entityId: string;
+  sourceRangeIndex: number;
+  line: number;
+  startColumn: number;
+  endColumn: number;
+}
+
+export interface DiagramCodeEntityMapRecord {
+  schemaVersion: typeof SCHEMA_VERSION;
+  diagramSetId: string;
+  artifactKind: GenerationOutputKind;
+  artifactId: string;
+  asciiSha256: string;
+  mappings: DiagramElementMapping[];
+  producedByRunId: string;
+  createdAt: string;
+}
+
 export interface GenerationBatchRecord {
   schemaVersion: typeof SCHEMA_VERSION;
   id: string;
   diagramSetId: string;
   requestedCount: number;
   outputKind: GenerationOutputKind;
+  modelId: DiagramModelId;
   userPrompt: string;
   selectedCodeEntityIds: string[];
   promptReferences: PromptReference[];
@@ -224,7 +246,7 @@ export interface EditOperationRecord {
   label: string;
   patch: TextPatch;
   instruction?: string;
-  modelId?: EditModelId;
+  modelId?: DiagramModelId;
   markerChar?: string;
   markerToken?: string;
   replacedChar?: string;
@@ -264,6 +286,7 @@ export interface WorkspaceSnapshot {
   generationBatches: Record<string, GenerationBatchRecord>;
   agentRuns: Record<string, AgentRunRecord>;
   editSessions: Record<string, EditSessionRecord>;
+  codeEntityMaps: Record<string, DiagramCodeEntityMapRecord>;
 }
 
 export interface CodeEntityDraft {
@@ -282,6 +305,14 @@ export interface GeneratedArtifactDraft {
 
 export interface ArtifactEditDraft {
   ascii: string;
+}
+
+export interface DiagramElementMappingDraft {
+  entityId: string;
+  sourceRangeIndex: number;
+  line: number;
+  startColumn: number;
+  endColumn: number;
 }
 
 export interface ArtifactImportInput {

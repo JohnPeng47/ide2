@@ -1,14 +1,16 @@
 import { readFile, realpath, stat } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import {
   CodeEntity,
-  DEFAULT_EDIT_MODEL_ID,
+  DEFAULT_DIAGRAM_MODEL_ID,
+  DEFAULT_GENERATION_COUNT,
   SCHEMA_VERSION,
   assertSevenBitAscii,
   assertSourceRange,
   isDiagramComponentArchived,
   isDiagramArchived,
-  isEditModelId,
+  isDiagramModelId,
   normalizeAscii,
   slugify,
   type AgentProgress,
@@ -16,7 +18,10 @@ import {
   type ArtifactImportInput,
   type CodeEntityDraft,
   type CodeEntityRecord,
+  type DiagramCodeEntityMapRecord,
   type DiagramComponentRecord,
+  type DiagramElementMapping,
+  type DiagramElementMappingDraft,
   type DiagramRecord,
   type DiagramSelectionBounds,
   type DiagramSetRecord,
@@ -120,6 +125,7 @@ function cropAsciiSelection(ascii: string, bounds: DiagramSelectionBounds): {
 
 export class DiagramApplication {
   private readonly activeBatches = new Set<string>();
+  private readonly activeMappings = new Set<string>();
 
   constructor(readonly store: DiagramStore, private readonly agents: DiagramAgentRuntime) {}
 
@@ -211,6 +217,19 @@ export class DiagramApplication {
     }
   }
 
+  async generateInitialDiagrams(
+    setId: string,
+    onEvent?: (event: ServiceEvent) => void
+  ): Promise<WorkspaceSnapshot> {
+    const entities = await this.store.loadCodeEntities(setId);
+    return this.generate(setId, {
+      prompt: "",
+      selectedCodeEntityIds: entities.entities.map((entity) => entity.id),
+      count: DEFAULT_GENERATION_COUNT,
+      outputKind: "diagram"
+    }, onEvent);
+  }
+
   private async validateEntityDrafts(
     set: DiagramSetRecord,
     drafts: CodeEntityDraft[]
@@ -264,11 +283,6 @@ export class DiagramApplication {
       entities.push(record);
     }
     return entities;
-  }
-
-  async finalizeCodeEntities(setId: string, actor = "human"): Promise<WorkspaceSnapshot> {
-    await this.store.finalizeCodeEntities(setId, actor);
-    return this.workspace();
   }
 
   async importArtifact(projectId: string, input: ArtifactImportInput): Promise<WorkspaceSnapshot> {
@@ -370,6 +384,159 @@ export class DiagramApplication {
     }
     await this.store.archiveDiagramComponent(setId, componentId);
     return this.workspace();
+  }
+
+  async mapCodeEntities(
+    setId: string,
+    artifactKind: GenerationOutputKind,
+    artifactId: string,
+    onEvent?: (event: ServiceEvent) => void
+  ): Promise<WorkspaceSnapshot> {
+    const mappingKey = `${setId}:${artifactId}`;
+    if (this.activeMappings.has(mappingKey)) {
+      throw new Error("a code-entity mapping is already running for this artifact");
+    }
+    const set = await this.store.loadDiagramSet(setId);
+    const knownArtifact = artifactKind === "diagram"
+      ? set.diagramIds.includes(artifactId)
+      : set.diagramComponentIds.includes(artifactId);
+    if (!knownArtifact) throw new Error(`unknown ${artifactKind}: ${artifactId}`);
+    const artifact = artifactKind === "diagram"
+      ? await this.store.loadDiagram(setId, artifactId)
+      : await this.store.loadDiagramComponent(setId, artifactId);
+    if (artifact.archivedAt) {
+      throw new Error("archived artifacts cannot be mapped");
+    }
+    const entitySet = await this.store.loadCodeEntities(setId);
+    if (entitySet.status !== "finalized") {
+      throw new Error("CodeEntitiesSet must be finalized before mapping");
+    }
+    const artifactEntityIds = new Set(artifact.codeEntityIds);
+    const entities = entitySet.entities.filter((entity) => artifactEntityIds.has(entity.id));
+    if (entities.length === 0) throw new Error("artifact has no CodeEntities to map");
+
+    this.activeMappings.add(mappingKey);
+    const runId = this.store.ids.run();
+    let run: AgentRunRecord = {
+      schemaVersion: SCHEMA_VERSION,
+      id: runId,
+      diagramSetId: setId,
+      kind: "map-code-entities",
+      status: "queued",
+      statusMessage: "opening diagram mapping agent",
+      codeEntitiesRevision: entitySet.revision,
+      outputCodeEntityIds: [...artifact.codeEntityIds],
+      ...(artifactKind === "diagram"
+        ? { outputDiagramId: artifactId }
+        : { outputDiagramComponentId: artifactId }),
+      startedAt: timestamp(),
+      updatedAt: timestamp()
+    };
+    await this.store.saveRun(run);
+    await this.store.attachRun(setId, run.id);
+    let progressWrites = Promise.resolve();
+    const progress = (update: AgentProgress) => {
+      run = {
+        ...run,
+        status: update.status,
+        statusMessage: update.message,
+        model: update.model ?? run.model,
+        sessionId: update.sessionId ?? run.sessionId,
+        updatedAt: timestamp()
+      };
+      const snapshot = run;
+      progressWrites = progressWrites.then(() => this.store.saveRun(snapshot));
+      onEvent?.({ type: "progress", message: update.message });
+    };
+    try {
+      const drafts = await this.agents.mapArtifactEntities({
+        sourceRoot: set.sourceCheckoutRoot,
+        diagramSetName: set.name,
+        artifactKind,
+        artifactName: artifact.name,
+        artifactHandle: artifact.handle,
+        ascii: artifact.ascii,
+        codeEntities: entities
+      }, progress);
+      await progressWrites;
+      const mappings = this.validateDiagramMappings(artifact.ascii, drafts, entities);
+      const record: DiagramCodeEntityMapRecord = {
+        schemaVersion: SCHEMA_VERSION,
+        diagramSetId: setId,
+        artifactKind,
+        artifactId,
+        asciiSha256: createHash("sha256").update(artifact.ascii).digest("hex"),
+        mappings,
+        producedByRunId: runId,
+        createdAt: timestamp()
+      };
+      await this.store.saveCodeEntityMap(record);
+      run = {
+        ...run,
+        status: "complete",
+        statusMessage: `mapped ${mappings.length} diagram elements`,
+        updatedAt: timestamp(),
+        completedAt: timestamp()
+      };
+      await this.store.saveRun(run);
+      const workspace = await this.workspace();
+      onEvent?.({ type: "workspace", message: run.statusMessage, workspace });
+      return workspace;
+    } catch (error) {
+      await progressWrites.catch(() => undefined);
+      const message = error instanceof Error ? error.message : "code-entity mapping failed";
+      run = {
+        ...run,
+        status: "failed",
+        statusMessage: message,
+        error: message,
+        updatedAt: timestamp(),
+        completedAt: timestamp()
+      };
+      await this.store.saveRun(run);
+      throw error;
+    } finally {
+      this.activeMappings.delete(mappingKey);
+    }
+  }
+
+  private validateDiagramMappings(
+    ascii: string,
+    drafts: DiagramElementMappingDraft[],
+    entities: CodeEntityRecord[]
+  ): DiagramElementMapping[] {
+    if (drafts.length === 0) throw new Error("mapping agent submitted no diagram elements");
+    const lines = ascii.split("\n");
+    const entitiesById = new Map(entities.map((entity) => [entity.id, entity]));
+    const occupied = new Set<string>();
+    return drafts.map((draft, index) => {
+      const entity = entitiesById.get(draft.entityId);
+      if (!entity) throw new Error(`mapping references unavailable CodeEntity: ${draft.entityId}`);
+      if (!Number.isInteger(draft.sourceRangeIndex)
+        || !entity.sourceRanges[draft.sourceRangeIndex]) {
+        throw new Error(`mapping references unavailable source range for ${draft.entityId}`);
+      }
+      if (!Number.isInteger(draft.line)
+        || !Number.isInteger(draft.startColumn)
+        || !Number.isInteger(draft.endColumn)) {
+        throw new Error("mapping coordinates must be integers");
+      }
+      const line = lines[draft.line - 1];
+      if (line === undefined
+        || draft.startColumn < 1
+        || draft.endColumn < draft.startColumn
+        || draft.endColumn > line.length) {
+        throw new Error(`mapping coordinates are outside the ASCII at line ${draft.line}`);
+      }
+      const text = line.slice(draft.startColumn - 1, draft.endColumn);
+      if (!text.trim()) throw new Error("mapped diagram elements must contain visible text");
+      for (let column = draft.startColumn; column <= draft.endColumn; column += 1) {
+        const coordinate = `${draft.line}:${column}`;
+        if (occupied.has(coordinate)) throw new Error("mapped diagram elements cannot overlap");
+        occupied.add(coordinate);
+      }
+      return { ...draft, id: `map-${index + 1}` };
+    });
   }
 
   async captureDiagramComponent(
@@ -528,11 +695,11 @@ export class DiagramApplication {
     setId: string,
     sessionId: string,
     instruction: string,
-    modelId: unknown = DEFAULT_EDIT_MODEL_ID,
+    modelId: unknown = DEFAULT_DIAGRAM_MODEL_ID,
     onEvent?: (event: ServiceEvent) => void
   ): Promise<WorkspaceSnapshot> {
     if (!instruction.trim()) throw new Error("edit instruction is required");
-    if (!isEditModelId(modelId)) throw new Error(`unsupported edit model: ${String(modelId)}`);
+    if (!isDiagramModelId(modelId)) throw new Error(`unsupported edit model: ${String(modelId)}`);
     const session = await this.activeEditSession(setId, sessionId);
     const set = await this.store.loadDiagramSet(setId);
     const runId = this.store.ids.run();
@@ -789,6 +956,7 @@ export class DiagramApplication {
       selectedCodeEntityIds: string[];
       count: number;
       outputKind: GenerationOutputKind;
+      modelId?: unknown;
     },
     onEvent?: (event: ServiceEvent) => void
   ): Promise<WorkspaceSnapshot> {
@@ -798,6 +966,8 @@ export class DiagramApplication {
     if (input.outputKind !== "diagram" && input.outputKind !== "diagram-component") {
       throw new Error("output kind must be diagram or diagram-component");
     }
+    const modelId = input.modelId ?? DEFAULT_DIAGRAM_MODEL_ID;
+    if (!isDiagramModelId(modelId)) throw new Error(`unsupported generation model: ${String(modelId)}`);
     if (this.activeBatches.has(setId)) throw new Error("a generation batch is already active for this DiagramSet");
     this.activeBatches.add(setId);
     try {
@@ -831,6 +1001,7 @@ export class DiagramApplication {
         diagramSetId: setId,
         requestedCount: input.count,
         outputKind: input.outputKind,
+        modelId,
         userPrompt: input.prompt,
         selectedCodeEntityIds: resolved.selectedCodeEntityIds,
         promptReferences: resolved.references,
@@ -889,6 +1060,7 @@ export class DiagramApplication {
                 .filter((reference) => reference.kind === "diagram-component")
                 .map((reference) => reference.targetId),
               outputKind: input.outputKind,
+              modelId,
               slot: index + 1,
               total: input.count
             }, (progress) => {
