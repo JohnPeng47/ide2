@@ -1,6 +1,6 @@
 ---
 name: new-diagram
-description: Create a new source-backed ASCII diagram workspace for a repository. Use when the user asks an agent to start, bootstrap, or collect code entities for a new DiagramSet from a repo path, diagram name, and prompt.
+description: Create one source-backed ASCII diagram workspace for a repository. Use when the user asks an agent to start, bootstrap, or collect code entities for a single DiagramSet from a repo path, diagram name, and prompt.
 ---
 
 # New Diagram
@@ -8,19 +8,57 @@ description: Create a new source-backed ASCII diagram workspace for a repository
 Use the repository CLI as an HTTP client; only the running studio server writes
 DiagramSet records.
 
-1. Resolve the repository path, DiagramSet name, and concise collection prompt from the request.
-2. Ensure the studio server is running for that repository, then run:
+## Invocation boundary
+
+Create exactly one logical diagram per skill invocation:
+
+- Resolve one diagram brief, one DiagramSet name, and one concise collection prompt.
+- Run the `create` command exactly once.
+- Do not add another requested diagram, component, or view to that DiagramSet.
+- Do not call a generation endpoint or use the studio to generate more artifacts.
+- If the user requests multiple diagrams, use a separate skill invocation and
+  DiagramSet for each one.
+- Stop after returning the first DiagramSet; never continue with another brief
+  during the same invocation.
+
+The studio may generate multiple candidate artifacts for the single brief.
+Treat those as variants of that one diagram, never as capacity for additional
+briefs.
+
+## Workflow
+
+1. Resolve the repository path, DiagramSet name, concise collection prompt, and
+   optional system-prompt template id from the request.
+2. Ensure the studio server is running for that repository.
+3. When the user requests a particular prompt style or template but does not
+   provide its exact id, list the available templates:
+
+```bash
+npm --prefix /home/john/drone-interception/scripts/new-diagram run diagram -- prompt-templates \
+  --server http://127.0.0.1:5173
+```
+
+Use an exact returned `id`; do not guess an id from the display label. If the
+user does not request a template, omit the option and use `default`.
+
+4. Run:
 
 ```bash
 npm --prefix /home/john/drone-interception/scripts/new-diagram run diagram -- create \
   --path <repo-path> \
   --name <diagram-set-name> \
   --prompt <prompt> \
+  [--prompt-template <template-id>] \
   --server http://127.0.0.1:5173
 ```
 
-3. Return the emitted DiagramSet id and `serverUrl` to the user, and say the
-   initial diagrams are ready at that address.
+5. Return the emitted DiagramSet id, `serverUrl`, prompt-template id and
+   revision, and immutable generation prompt-config id. Say the initial
+   diagrams are ready at that address.
+
+`--prompt-template` selects the latest persisted revision of a system-prompt
+template. It does not accept a historical `GenerationPromptConfigRecord` id;
+that immutable record is created by the server when generation begins.
 
 The server creates one DiagramSet and one CodeEntitiesSet, uses one read-only Pi
 agent to collect source-backed entities, then runs three Sol diagram agents in
@@ -37,3 +75,10 @@ relative directories resolve from `<repo-path>`.
 
 Do not generate diagrams from the external agent. Do not mutate a finalized
 CodeEntitiesSet; bootstrap a new DiagramSet if different context is required.
+
+## Maintenance
+
+Treat `scripts/new-diagram/skills/new-diagram/` in the repository as the
+canonical skill source. After changing this skill or its installed mirror,
+update the repository copy and run `scripts/new-diagram/install-skill`. Never
+leave the repository and installed copies different.

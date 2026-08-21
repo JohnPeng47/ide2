@@ -94,6 +94,26 @@ class ParallelRuntime implements DiagramAgentRuntime {
 }
 
 describe("DiagramApplication", () => {
+  it("blocks deletion during collection and removes a ready Diagram Set", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-delete-set-"));
+    roots.push(root);
+    execFileSync("git", ["init", "-q", root]);
+    await writeFile(path.join(root, "fixture.ts"), "export const worker = () => true;\n", "utf8");
+    execFileSync("git", ["-C", root, "add", "fixture.ts"]);
+    execFileSync("git", ["-C", root, "-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-qm", "fixture"]);
+    const application = new DiagramApplication(new DiagramStore(root), new ParallelRuntime());
+    const set = await application.createDiagramSet({
+      path: root,
+      name: "Delete me",
+      prompt: "Show the worker"
+    });
+
+    await expect(application.deleteDiagramSet(set.id)).rejects.toThrow(/collection is running/);
+    await application.collectCodeEntities(set.id);
+    const workspace = await application.deleteDiagramSet(set.id);
+    expect(workspace.diagramSets).toEqual([]);
+  });
+
   it("generates three initial diagrams immediately after collection", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "new-diagram-initialize-"));
     roots.push(root);
@@ -103,6 +123,8 @@ describe("DiagramApplication", () => {
     execFileSync("git", ["-C", root, "-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-qm", "fixture"]);
     const runtime = new ParallelRuntime();
     const application = new DiagramApplication(new DiagramStore(root), runtime);
+    await expect(application.resolveSystemPromptTemplate("missing-template"))
+      .rejects.toThrow(/available templates: default, structure-first, flow-first, compact/);
     const set = await application.createDiagramSet({
       path: root,
       name: "Initial worker flow",
@@ -110,11 +132,16 @@ describe("DiagramApplication", () => {
     });
 
     await application.collectCodeEntities(set.id);
-    const workspace = await application.generateInitialDiagrams(set.id);
+    const workspace = await application.generateInitialDiagrams(set.id, {
+      promptTemplateId: "flow-first"
+    });
 
     expect(workspace.codeEntitySets[set.codeEntitiesSetId].status).toBe("finalized");
     expect(workspace.diagramSets[0].readiness).toBe("ready");
     expect(workspace.diagramSets[0].diagramIds).toHaveLength(3);
+    const initialBatch = workspace.generationBatches[workspace.diagramSets[0].generationBatchIds[0]];
+    expect(workspace.generationPromptConfigs[initialBatch.promptConfigId].systemPrompt)
+      .toMatchObject({ profileId: "flow-first", profileVersion: 1 });
     expect(runtime.requestedModels).toEqual([
       "gpt-5.6-sol",
       "gpt-5.6-sol",
@@ -283,13 +310,29 @@ describe("DiagramApplication", () => {
     await writeFile(path.join(root, "fixture.ts"), "export const worker = () => false;\n", "utf8");
     await expect(application.sourceSnippet(set.id, entitySet.entities[0].id, 0))
       .resolves.toMatchObject({ lines: ["export const worker = () => true;"] });
+    const flowTemplate = workspace.systemPromptTemplates["flow-first"];
+    workspace = await application.saveSystemPromptTemplate({
+      id: flowTemplate.id,
+      label: flowTemplate.label,
+      description: "A persisted test edit",
+      prompts: {
+        ...flowTemplate.prompts,
+        diagram: "CUSTOM FLOW. Finish through {{submissionTool}}."
+      }
+    });
+    expect(workspace.systemPromptTemplates["flow-first"]).toMatchObject({
+      version: 2,
+      description: "A persisted test edit"
+    });
+    expect((await new DiagramStore(root).loadWorkspace()).systemPromptTemplates["flow-first"])
+      .toMatchObject({ version: 2, description: "A persisted test edit" });
     workspace = await application.generate(set.id, {
       prompt: "Show @entity/worker",
       selectedCodeEntityIds: [entitySet.entities[0].id],
       count: 3,
       outputKind: "diagram",
       modelId: "gpt-5.6-sol",
-      promptProfileId: "flowFirst"
+      promptProfileId: "flow-first"
     });
     expect(runtime.maxActive).toBe(3);
     expect(runtime.requestedModels).toEqual([
@@ -302,11 +345,10 @@ describe("DiagramApplication", () => {
     expect(promptConfig).toMatchObject({
       modelId: "gpt-5.6-sol",
       instruction: "Show @entity/worker",
-      systemPrompt: { profileId: "flowFirst" }
+      systemPrompt: { profileId: "flow-first" }
     });
-    expect(promptConfig.systemPrompt.rendered).toContain(
-      "Emphasize directional control and data flow."
-    );
+    expect(promptConfig.systemPrompt).toMatchObject({ profileVersion: 2 });
+    expect(promptConfig.systemPrompt.rendered).toBe("CUSTOM FLOW. Finish through submit_diagram.");
     expect(runtime.requestedPromptConfigIds).toEqual([
       promptConfig.id,
       promptConfig.id,
@@ -331,7 +373,7 @@ describe("DiagramApplication", () => {
       set.id,
       "generation-prompts",
       `${promptConfig.id}.json`
-    ), "utf8")).resolves.toContain('"profileId": "flowFirst"');
+    ), "utf8")).resolves.toContain('"profileId": "flow-first"');
     const batchJson = await readFile(path.join(
       root,
       ".diagrams",

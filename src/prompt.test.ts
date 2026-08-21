@@ -9,6 +9,7 @@ import {
 } from "./domain";
 import {
   createGenerationPromptConfig,
+  createBuiltInSystemPromptTemplates,
   promptOptions,
   renderArtifactSystemPrompt
 } from "./prompt";
@@ -82,7 +83,7 @@ const buildPrompt = (input: {
   outputKind: "diagram" | "diagram-component";
   instruction: string;
   selectedCodeEntityIds: string[];
-  profileId?: "default" | "structureFirst" | "flowFirst" | "compact";
+  profileId?: string;
 }) => createGenerationPromptConfig({
   id: "prompt-one",
   diagramSet,
@@ -91,7 +92,8 @@ const buildPrompt = (input: {
   components: [component],
   outputKind: input.outputKind,
   modelId: "gpt-5.6-sol",
-  profileId: input.profileId ?? "default",
+  profile: createBuiltInSystemPromptTemplates("2026-01-01T00:00:00Z")
+    .find((profile) => profile.id === (input.profileId ?? "default"))!,
   instruction: input.instruction,
   selectedCodeEntityIds: input.selectedCodeEntityIds,
   createdAt: "2026-01-01T00:00:00Z"
@@ -122,12 +124,13 @@ describe("createGenerationPromptConfig", () => {
   });
 
   it("renders the original default system prompts exactly", () => {
-    expect(renderArtifactSystemPrompt({ outputKind: "diagram", profileId: "default" })).toBe(
+    const defaultTemplate = createBuiltInSystemPromptTemplates("2026-01-01T00:00:00Z")[0];
+    expect(renderArtifactSystemPrompt({ outputKind: "diagram", template: defaultTemplate })).toBe(
       "Generate exactly one architecture diagram from the supplied explicit context. Give it a compact, specific name, ideally two to five words; omit redundant words such as the DiagramSet name. Never modify files. Use 7-bit ASCII only and finish through submit_diagram."
     );
     expect(renderArtifactSystemPrompt({
       outputKind: "diagram-component",
-      profileId: "default"
+      template: defaultTemplate
     })).toBe(
       "Generate exactly one reusable DiagramComponent from the supplied explicit context. It is a fragment for a broader ASCII Diagram, not a complete diagram. Give it a compact, specific name. Be creative. Never modify files. Use 7-bit ASCII only and finish through submit_diagram_component."
     );
@@ -138,12 +141,12 @@ describe("createGenerationPromptConfig", () => {
       outputKind: "diagram",
       instruction: "Show the queue",
       selectedCodeEntityIds: ["entity-queue"],
-      profileId: "flowFirst"
+      profileId: "flow-first"
     }).config;
     expect(config.systemPrompt).toMatchObject({
       templateId: "artifact-generation",
       templateVersion: 1,
-      profileId: "flowFirst",
+      profileId: "flow-first",
       profileVersion: 1
     });
     expect(config.systemPrompt.rendered).toContain("Emphasize directional control and data flow.");
@@ -170,7 +173,7 @@ describe("createGenerationPromptConfig", () => {
       components: [component],
       outputKind: "diagram",
       modelId: "gpt-5.6-sol",
-      profileId: "default",
+      profile: createBuiltInSystemPromptTemplates("2026-01-01T00:00:00Z")[0],
       instruction: "Use @diagram/current-flow",
       selectedCodeEntityIds: [],
       createdAt: "2026-01-01T00:00:00Z"
@@ -190,7 +193,7 @@ describe("createGenerationPromptConfig", () => {
       components: [archived],
       outputKind: "diagram-component",
       modelId: "gpt-5.6-sol",
-      profileId: "default",
+      profile: createBuiltInSystemPromptTemplates("2026-01-01T00:00:00Z")[0],
       instruction: "Use @component/queue-fragment",
       selectedCodeEntityIds: [],
       createdAt: "2026-01-01T00:00:00Z"

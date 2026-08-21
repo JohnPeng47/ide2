@@ -4,6 +4,7 @@ import type {
   DiagramSelectionBounds,
   GenerationOutputKind,
   GenerationPromptProfileId,
+  SystemPromptTemplateRecord,
   WorkspaceSnapshot
 } from "./domain";
 
@@ -14,6 +15,47 @@ async function errorFrom(response: Response): Promise<Error> {
 
 export async function fetchWorkspace(): Promise<WorkspaceSnapshot> {
   const response = await fetch("/api/workspace", { cache: "no-store" });
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<WorkspaceSnapshot>;
+}
+
+export async function deleteDiagramSet(setId: string): Promise<WorkspaceSnapshot> {
+  const response = await fetch(`/api/diagram-sets/${encodeURIComponent(setId)}`, {
+    method: "DELETE"
+  });
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<WorkspaceSnapshot>;
+}
+
+export async function saveSystemPromptTemplate(
+  template: Pick<SystemPromptTemplateRecord, "label" | "description" | "prompts"> & { id?: string }
+): Promise<WorkspaceSnapshot> {
+  const response = await fetch(
+    template.id
+      ? `/api/system-prompt-templates/${encodeURIComponent(template.id)}`
+      : "/api/system-prompt-templates",
+    {
+      method: template.id ? "PUT" : "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(template)
+    }
+  );
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<WorkspaceSnapshot>;
+}
+
+export async function resetSystemPromptTemplate(id: string): Promise<WorkspaceSnapshot> {
+  const response = await fetch(`/api/system-prompt-templates/${encodeURIComponent(id)}/reset`, {
+    method: "POST"
+  });
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<WorkspaceSnapshot>;
+}
+
+export async function deleteSystemPromptTemplate(id: string): Promise<WorkspaceSnapshot> {
+  const response = await fetch(`/api/system-prompt-templates/${encodeURIComponent(id)}`, {
+    method: "DELETE"
+  });
   if (!response.ok) throw await errorFrom(response);
   return response.json() as Promise<WorkspaceSnapshot>;
 }

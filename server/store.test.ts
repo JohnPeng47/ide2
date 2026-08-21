@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -12,6 +12,30 @@ afterEach(async () => {
 });
 
 describe("DiagramStore", () => {
+  it("moves a deleted Diagram Set to recoverable trash and updates the project index", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-store-trash-"));
+    roots.push(root);
+    await mkdir(path.join(root, ".git"));
+    const store = new DiagramStore(root);
+    const location = { checkoutRoot: root, repositoryIdentity: path.join(root, ".git") };
+    const project = await store.ensureProject(location);
+    const { diagramSet } = await store.createDiagramSet({
+      project,
+      name: "Disposable flow",
+      initialPrompt: "Show it",
+      location
+    });
+
+    const trashPath = await store.moveDiagramSetToTrash(diagramSet.id);
+
+    expect((await store.loadProject())?.diagramSetIds).toEqual([]);
+    await expect(store.loadDiagramSet(diagramSet.id)).rejects.toMatchObject({ code: "ENOENT" });
+    await expect(readFile(path.join(trashPath, "diagram-set.json"), "utf8"))
+      .resolves.toContain('"name": "Disposable flow"');
+    expect(await readdir(path.join(root, ".diagrams", "trash", "diagram-sets")))
+      .toEqual([path.basename(trashPath)]);
+  });
+
   it("writes to a caller-selected diagrams directory", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "new-diagram-store-root-"));
     roots.push(root);

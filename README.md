@@ -22,13 +22,22 @@ alongside an existing server.
 ## Start a DiagramSet
 
 Authenticate Pi's `openai-codex` provider, then run from this repository in a
-second terminal:
+second terminal. List persisted system-prompt templates when you need a
+non-default generation style:
+
+```bash
+npm --prefix scripts/new-diagram run diagram -- prompt-templates \
+  --server http://127.0.0.1:5173
+```
+
+Then create the Diagram Set:
 
 ```bash
 npm --prefix scripts/new-diagram run diagram -- create \
   --path /path/to/repository \
   --name "Feature name" \
   --prompt "Map the feature boundary" \
+  --prompt-template flow-first \
   --server http://127.0.0.1:5173
 ```
 
@@ -38,11 +47,18 @@ CodeEntitiesSet, then immediately launches three Sol diagram agents with all
 collected entities selected. The CLI path must resolve to the same checkout
 passed to the server's `--path`. `--server` defaults to
 `http://127.0.0.1:5173` and can also be set with `NEW_DIAGRAM_SERVER_URL`.
+`--prompt-template` is optional and defaults to `default`. The final CLI event
+reports the exact template revision and immutable generation prompt-config id
+used for the initial diagrams.
 
 The studio supports the waiting state, immutable collected CodeEntitiesSets,
 typed `@entity/`, `@diagram/`, and `@component/` references, N parallel agents,
-shared Terra/Sol model selection for generation and LLM editing, versioned
-generation system-style profiles, and a resizable workspace. Every generation
+shared Terra/Sol model selection for generation and LLM editing, persisted and
+versioned generation system-prompt templates, and a resizable workspace. The
+header's Settings menu opens a template editor with Diagram and
+DiagramComponent variants, resolved previews, custom-template creation, and
+built-in reset. Template edits are atomically persisted in
+`.diagrams/system-prompt-templates.json` and loaded again after restart. Every generation
 persists one immutable prompt-config record containing the exact instruction,
 reference representations, selected entities, model, style, and rendered
 context/system prompts. The batch and all parallel outputs reference that one
@@ -53,6 +69,10 @@ branches, and results in those lines. Every semantic graph node maps to an exact
 source subrange and can reveal or re-collapse that block independently without
 expanding its sibling nodes; the fold gutter still expands the complete omitted
 range at once.
+The Diagram Set picker exposes an `[x]` action for each set. After confirmation,
+deletion removes the set from the project index and moves its complete directory
+to `.diagrams/trash/diagram-sets/` for manual recovery; active agent runs block
+the operation.
 Diagram View keeps Code Entities and an ASCII
 artifact lineage in right-pane tabs; selecting a lineage node opens that
 diagram, and its display name can be edited without changing its stable

@@ -22,11 +22,15 @@ import {
   type GenerationBatchRecord,
   type GenerationOutputKind,
   type GenerationPromptConfigRecord,
+  type SystemPromptTemplateRecord,
   type PromptReference,
   type ProjectRecord,
   type WorkspaceSnapshot
 } from "../src/domain";
-import { renderArtifactSystemPrompt } from "../src/prompt";
+import {
+  createBuiltInSystemPromptTemplates,
+  renderArtifactSystemPrompt
+} from "../src/prompt";
 
 const execFileAsync = promisify(execFile);
 
@@ -102,6 +106,10 @@ export class DiagramStore {
 
   private projectPath(): string {
     return path.join(this.storeRoot, "project.json");
+  }
+
+  private systemPromptTemplatesPath(): string {
+    return path.join(this.storeRoot, "system-prompt-templates.json");
   }
 
   private setRoot(setId: string): string {
@@ -221,8 +229,60 @@ export class DiagramStore {
     return { diagramSet, codeEntities };
   }
 
+  async moveDiagramSetToTrash(setId: string): Promise<string> {
+    assertSafeId(setId, "DiagramSet id");
+    const project = await this.loadProject();
+    if (!project || !project.diagramSetIds.includes(setId)) {
+      throw new Error(`unknown DiagramSet: ${setId}`);
+    }
+    await this.loadDiagramSet(setId);
+    const deletedAt = nowIso();
+    const activeRoot = this.setRoot(setId);
+    const trashRoot = path.join(
+      this.storeRoot,
+      "trash",
+      "diagram-sets",
+      `${setId}-${deletedAt.replace(/[:.]/g, "-")}`
+    );
+    await mkdir(path.dirname(trashRoot), { recursive: true });
+    const updatedProject = {
+      ...project,
+      diagramSetIds: project.diagramSetIds.filter((id) => id !== setId),
+      updatedAt: deletedAt
+    };
+    await writeJsonAtomic(this.projectPath(), updatedProject);
+    try {
+      await rename(activeRoot, trashRoot);
+    } catch (error) {
+      await writeJsonAtomic(this.projectPath(), project).catch(() => undefined);
+      throw error;
+    }
+    return trashRoot;
+  }
+
   async loadProject(): Promise<ProjectRecord | null> {
     return readJsonIfExists<ProjectRecord>(this.projectPath());
+  }
+
+  async loadSystemPromptTemplates(): Promise<SystemPromptTemplateRecord[]> {
+    const stored = await readJsonIfExists<{
+      schemaVersion: typeof SCHEMA_VERSION;
+      templates: SystemPromptTemplateRecord[];
+    }>(this.systemPromptTemplatesPath());
+    if (stored) return stored.templates;
+    const templates = createBuiltInSystemPromptTemplates(nowIso());
+    await writeJsonAtomic(this.systemPromptTemplatesPath(), {
+      schemaVersion: SCHEMA_VERSION,
+      templates
+    });
+    return templates;
+  }
+
+  async saveSystemPromptTemplates(templates: SystemPromptTemplateRecord[]): Promise<void> {
+    await writeJsonAtomic(this.systemPromptTemplatesPath(), {
+      schemaVersion: SCHEMA_VERSION,
+      templates
+    });
   }
 
   async loadDiagramSet(setId: string): Promise<DiagramSetRecord> {
@@ -377,7 +437,10 @@ export class DiagramStore {
         templateVersion: 1,
         profileId: "default",
         profileVersion: 1,
-        rendered: renderArtifactSystemPrompt({ outputKind, profileId: "default" })
+        rendered: renderArtifactSystemPrompt({
+          outputKind,
+          template: createBuiltInSystemPromptTemplates(stored.createdAt)[0]
+        })
       },
       createdAt: stored.createdAt
     };
@@ -623,6 +686,7 @@ export class DiagramStore {
         diagrams: {},
         diagramComponents: {},
         generationPromptConfigs: {},
+        systemPromptTemplates: {},
         generationBatches: {},
         agentRuns: {},
         editSessions: {},
@@ -634,6 +698,9 @@ export class DiagramStore {
     const diagrams: Record<string, DiagramRecord> = {};
     const diagramComponents: Record<string, DiagramComponentRecord> = {};
     const generationPromptConfigs: Record<string, GenerationPromptConfigRecord> = {};
+    const systemPromptTemplates = Object.fromEntries(
+      (await this.loadSystemPromptTemplates()).map((template) => [template.id, template])
+    );
     const generationBatches: Record<string, GenerationBatchRecord> = {};
     const agentRuns: Record<string, AgentRunRecord> = {};
     const editSessions: Record<string, EditSessionRecord> = {};
@@ -672,6 +739,7 @@ export class DiagramStore {
       diagrams,
       diagramComponents,
       generationPromptConfigs,
+      systemPromptTemplates,
       generationBatches,
       agentRuns,
       editSessions,
