@@ -4,9 +4,12 @@ import type {
   DiagramModelId,
   DiagramComponentRecord,
   DiagramRecord,
-  GenerationOutputKind
+  GenerationOutputKind,
+  GenerationPromptReference,
+  GenerationPromptProfileId
 } from "../domain";
 import { ModelSelector } from "./ModelSelector";
+import { PromptProfileSelector } from "./PromptProfileSelector";
 import { promptOptions } from "../prompt";
 
 export function GeneratorOptions(props: {
@@ -15,6 +18,8 @@ export function GeneratorOptions(props: {
   components: DiagramComponentRecord[];
   outputKind: GenerationOutputKind;
   modelId: DiagramModelId;
+  promptProfileId: GenerationPromptProfileId;
+  historicalReferences: GenerationPromptReference[];
   prompt: string;
   count: number;
   generating: boolean;
@@ -24,6 +29,7 @@ export function GeneratorOptions(props: {
   onCount: (value: number) => void;
   onOutputKind: (value: GenerationOutputKind) => void;
   onModel: (value: DiagramModelId) => void;
+  onPromptProfile: (value: GenerationPromptProfileId) => void;
   onGenerate: () => void;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -36,6 +42,21 @@ export function GeneratorOptions(props: {
     option.token.toLowerCase().includes(mentionQuery.toLowerCase())
     || option.label.toLowerCase().includes(mentionQuery.toLowerCase().replace(/^@/, ""))
   )).slice(0, 8);
+  const optionTokens = new Set(options.map((option) => option.token.toLowerCase()));
+  const optionKeys = new Set(options.map((option) => `${option.kind}:${option.id}`));
+  const unresolvedMentions = [...new Set(
+    [...props.prompt.matchAll(/@(entity|diagram|component)\/[a-z0-9][a-z0-9-]*/gi)]
+      .map((match) => match[0])
+      .filter((token) => !optionTokens.has(token.toLowerCase()))
+  )];
+  const unresolvedHistoricalReferences = props.historicalReferences
+    .filter((reference) => props.prompt.includes(reference.token))
+    .filter((reference) => !optionKeys.has(`${reference.kind}:${reference.targetId}`))
+    .map((reference) => reference.token);
+  const unresolvedReferences = [...new Set([
+    ...unresolvedHistoricalReferences,
+    ...unresolvedMentions
+  ])];
 
   const updatePrompt = (value: string, cursor: number) => {
     props.onPrompt(value);
@@ -92,12 +113,20 @@ export function GeneratorOptions(props: {
       <div className="prompt-field">
         <div className="generation-prompt-heading">
           <label htmlFor="diagram-prompt">GENERATION INSTRUCTION</label>
-          <ModelSelector
-            id="generation-model"
-            value={props.modelId}
-            disabled={props.generating}
-            onChange={props.onModel}
-          />
+          <span className="generation-prompt-selectors">
+            <PromptProfileSelector
+              id="generation-prompt-profile"
+              value={props.promptProfileId}
+              disabled={props.generating}
+              onChange={props.onPromptProfile}
+            />
+            <ModelSelector
+              id="generation-model"
+              value={props.modelId}
+              disabled={props.generating}
+              onChange={props.onModel}
+            />
+          </span>
         </div>
         <textarea
           ref={textareaRef}
@@ -120,6 +149,11 @@ export function GeneratorOptions(props: {
           </div>
         ) : null}
         <p className="field-help">Type @ for entity, diagram, and component references. Selected entities are included even without an explicit mention.</p>
+        {unresolvedReferences.length > 0 ? (
+          <p className="unresolved-references" role="status">
+            Unresolved historical references: {unresolvedReferences.join(", ")}
+          </p>
+        ) : null}
       </div>
 
       <div className="generation-controls">

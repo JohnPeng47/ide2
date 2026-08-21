@@ -12,8 +12,21 @@ export const DIAGRAM_MODELS = [
 export type DiagramModelId = typeof DIAGRAM_MODELS[number]["id"];
 export const DEFAULT_DIAGRAM_MODEL_ID: DiagramModelId = "gpt-5.6-sol";
 
+export const GENERATION_PROMPT_PROFILES = [
+  { id: "default", label: "Default" },
+  { id: "structureFirst", label: "Structure first" },
+  { id: "flowFirst", label: "Flow first" },
+  { id: "compact", label: "Compact" }
+] as const;
+export type GenerationPromptProfileId = typeof GENERATION_PROMPT_PROFILES[number]["id"];
+export const DEFAULT_GENERATION_PROMPT_PROFILE_ID: GenerationPromptProfileId = "default";
+
 export function isDiagramModelId(value: unknown): value is DiagramModelId {
   return DIAGRAM_MODELS.some((model) => model.id === value);
+}
+
+export function isGenerationPromptProfileId(value: unknown): value is GenerationPromptProfileId {
+  return GENERATION_PROMPT_PROFILES.some((profile) => profile.id === value);
 }
 export type AgentRunKind =
   | "collect-entities"
@@ -118,6 +131,34 @@ export interface PromptReference {
   handle: string;
 }
 
+export interface GenerationPromptReference extends PromptReference {
+  /** Exact PromptRepresentation supplied to the generation agent. */
+  promptRepresentation: string;
+}
+
+export interface GenerationPromptConfigRecord {
+  schemaVersion: typeof SCHEMA_VERSION;
+  id: string;
+  diagramSetId: string;
+  outputKind: GenerationOutputKind;
+  modelId: DiagramModelId;
+  instruction: string;
+  selectedCodeEntityIds: string[];
+  references: GenerationPromptReference[];
+  contextPrompt: {
+    templateVersion: 1;
+    rendered: string;
+  };
+  systemPrompt: {
+    templateId: "artifact-generation";
+    templateVersion: 1;
+    profileId: GenerationPromptProfileId;
+    profileVersion: 1;
+    rendered: string;
+  };
+  createdAt: string;
+}
+
 export interface DiagramSelectionBounds {
   startLine: number;
   endLine: number;
@@ -133,12 +174,12 @@ export interface DiagramComponentRecord {
   name: string;
   ascii: string;
   codeEntityIds: string[];
-  promptReferences: PromptReference[];
   origin: "selection" | "generated" | "imported" | "edited";
   sourceDiagramId?: string;
   sourceDiagramComponentId?: string;
   selectionBounds?: DiagramSelectionBounds;
   producedByRunId?: string;
+  generationPromptConfigId?: string;
   editSessionId?: string;
   derivedFromDiagramIds: string[];
   derivedFromDiagramComponentIds: string[];
@@ -158,9 +199,9 @@ export interface DiagramRecord {
   name: string;
   ascii: string;
   codeEntityIds: string[];
-  promptReferences: PromptReference[];
   origin: "generated" | "imported" | "edited";
   producedByRunId?: string;
+  generationPromptConfigId?: string;
   editSessionId?: string;
   derivedFromDiagramIds: string[];
   createdAt: string;
@@ -196,12 +237,7 @@ export interface GenerationBatchRecord {
   id: string;
   diagramSetId: string;
   requestedCount: number;
-  outputKind: GenerationOutputKind;
-  modelId: DiagramModelId;
-  userPrompt: string;
-  selectedCodeEntityIds: string[];
-  promptReferences: PromptReference[];
-  resolvedPrompt: string;
+  promptConfigId: string;
   codeEntitiesRevision: number;
   childRunIds: string[];
   outputDiagramIds: string[];
@@ -283,6 +319,7 @@ export interface WorkspaceSnapshot {
   codeEntitySets: Record<string, CodeEntitiesSetRecord>;
   diagrams: Record<string, DiagramRecord>;
   diagramComponents: Record<string, DiagramComponentRecord>;
+  generationPromptConfigs: Record<string, GenerationPromptConfigRecord>;
   generationBatches: Record<string, GenerationBatchRecord>;
   agentRuns: Record<string, AgentRunRecord>;
   editSessions: Record<string, EditSessionRecord>;

@@ -41,8 +41,12 @@ passed to the server's `--path`. `--server` defaults to
 
 The studio supports the waiting state, immutable collected CodeEntitiesSets,
 typed `@entity/`, `@diagram/`, and `@component/` references, N parallel agents,
-shared Terra/Sol model selection for generation and LLM editing, and a resizable
-workspace. The selected generation model is persisted on its GenerationBatch.
+shared Terra/Sol model selection for generation and LLM editing, versioned
+generation system-style profiles, and a resizable workspace. Every generation
+persists one immutable prompt-config record containing the exact instruction,
+reference representations, selected entities, model, style, and rendered
+context/system prompts. The batch and all parallel outputs reference that one
+record; batches do not duplicate prompt fields.
 Diagram View keeps Code Entities and an ASCII
 artifact lineage in right-pane tabs; selecting a lineage node opens that
 diagram, and its display name can be edited without changing its stable
@@ -50,7 +54,11 @@ diagram, and its display name can be edited without changing its stable
 Root generation nodes group diagrams without ancestors, while derivative
 diagrams attach directly to their parent without intermediary generation nodes.
 Lineage branches can be collapsed with their hidden-diagram count retained in
-the toggle. Archiving through `[x]` removes a variant from active UI and prompt
+the toggle. Generated artifact rows expose a `prompt` action for inspecting the
+immutable generation inputs. `create derivative` restores the source prompt's
+selected entities, output kind, model, and system style, prepends the current
+artifact reference, and leaves unavailable historical references visible for
+resolution. Archiving through `[x]` removes a variant from active UI and prompt
 references while preserving its timestamped diagram JSON for future learning.
 
 `map code entities` runs an LLM over the active artifact and its declared

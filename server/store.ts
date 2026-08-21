@@ -4,7 +4,10 @@ import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import {
+  CodeEntity,
   DEFAULT_DIAGRAM_MODEL_ID,
+  Diagram,
+  DiagramComponent,
   SCHEMA_VERSION,
   assertSafeId,
   isDiagramModelId,
@@ -17,9 +20,13 @@ import {
   type DiagramSetRecord,
   type EditSessionRecord,
   type GenerationBatchRecord,
+  type GenerationOutputKind,
+  type GenerationPromptConfigRecord,
+  type PromptReference,
   type ProjectRecord,
   type WorkspaceSnapshot
 } from "../src/domain";
+import { renderArtifactSystemPrompt } from "../src/prompt";
 
 const execFileAsync = promisify(execFile);
 
@@ -123,6 +130,11 @@ export class DiagramStore {
   private batchPath(setId: string, batchId: string): string {
     assertSafeId(batchId, "GenerationBatch id");
     return path.join(this.setRoot(setId), "generation-batches", `${batchId}.json`);
+  }
+
+  private promptConfigPath(setId: string, promptConfigId: string): string {
+    assertSafeId(promptConfigId, "GenerationPromptConfig id");
+    return path.join(this.setRoot(setId), "generation-prompts", `${promptConfigId}.json`);
   }
 
   private runPath(setId: string, runId: string): string {
@@ -235,46 +247,176 @@ export class DiagramStore {
   }
 
   async loadDiagram(setId: string, diagramId: string): Promise<DiagramRecord> {
-    const stored = await readJson<DiagramRecord & { origin?: DiagramRecord["origin"] }>(
+    const stored = await readJson<DiagramRecord & {
+      origin?: DiagramRecord["origin"];
+      promptReferences?: PromptReference[];
+    }>(
       this.diagramPath(setId, diagramId)
     );
-    if (stored.origin) return stored as DiagramRecord;
-    const normalized: DiagramRecord = { ...stored, origin: "generated" };
+    if (stored.origin && !Array.isArray(stored.promptReferences)) return stored as DiagramRecord;
+    const { promptReferences: _promptReferences, ...artifact } = stored;
+    const normalized: DiagramRecord = { ...artifact, origin: stored.origin ?? "generated" };
     await writeJsonAtomic(this.diagramPath(setId, diagramId), normalized);
     return normalized;
   }
 
   async loadDiagramComponent(setId: string, componentId: string): Promise<DiagramComponentRecord> {
-    return readJson<DiagramComponentRecord>(this.diagramComponentPath(setId, componentId));
+    const stored = await readJson<DiagramComponentRecord & {
+      promptReferences?: PromptReference[];
+    }>(this.diagramComponentPath(setId, componentId));
+    if (!Array.isArray(stored.promptReferences)) return stored;
+    const { promptReferences: _promptReferences, ...component } = stored;
+    await writeJsonAtomic(this.diagramComponentPath(setId, componentId), component);
+    return component;
+  }
+
+  async loadGenerationPromptConfig(
+    setId: string,
+    promptConfigId: string
+  ): Promise<GenerationPromptConfigRecord> {
+    return readJson<GenerationPromptConfigRecord>(this.promptConfigPath(setId, promptConfigId));
+  }
+
+  async saveGenerationPromptConfig(config: GenerationPromptConfigRecord): Promise<void> {
+    const filePath = this.promptConfigPath(config.diagramSetId, config.id);
+    const existing = await readJsonIfExists<GenerationPromptConfigRecord>(filePath);
+    if (existing) {
+      if (JSON.stringify(existing) !== JSON.stringify(config)) {
+        throw new Error(`GenerationPromptConfig is immutable: ${config.id}`);
+      }
+      return;
+    }
+    await writeJsonAtomic(filePath, config);
+  }
+
+  private async legacyPromptRepresentation(
+    setId: string,
+    reference: PromptReference
+  ): Promise<string> {
+    try {
+      if (reference.kind === "code-entity") {
+        const entities = await this.loadCodeEntities(setId);
+        const entity = entities.entities.find((candidate) => candidate.id === reference.targetId);
+        if (entity) return new CodeEntity(entity).prompt_str();
+      } else if (reference.kind === "diagram") {
+        return new Diagram(await this.loadDiagram(setId, reference.targetId)).prompt_str();
+      } else {
+        return new DiagramComponent(
+          await this.loadDiagramComponent(setId, reference.targetId)
+        ).prompt_str();
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
+    return `Unavailable historical reference: ${reference.token}`;
   }
 
   async loadGenerationBatch(setId: string, batchId: string): Promise<GenerationBatchRecord> {
-    const stored = await readJson<GenerationBatchRecord & {
-      outputKind?: GenerationBatchRecord["outputKind"];
-      outputDiagramComponentIds?: string[];
-      modelId?: GenerationBatchRecord["modelId"];
+    type LegacyGenerationBatch = Omit<GenerationBatchRecord, "promptConfigId"> & {
+      promptConfigId?: string;
+      outputKind?: GenerationOutputKind;
+      modelId?: unknown;
       userPrompt?: string;
       selectedCodeEntityIds?: string[];
-      promptReferences?: GenerationBatchRecord["promptReferences"];
+      promptReferences?: PromptReference[];
       resolvedPrompt?: string;
-    }>(this.batchPath(setId, batchId));
-    if (stored.outputKind && Array.isArray(stored.outputDiagramComponentIds)
-      && isDiagramModelId(stored.modelId)
-      && typeof stored.userPrompt === "string"
-      && Array.isArray(stored.selectedCodeEntityIds)
-      && Array.isArray(stored.promptReferences)
-      && typeof stored.resolvedPrompt === "string") {
-      return stored as GenerationBatchRecord;
+      outputDiagramComponentIds?: string[];
+    };
+    const stored = await readJson<LegacyGenerationBatch>(this.batchPath(setId, batchId));
+    if (stored.promptConfigId) {
+      const {
+        outputKind: _outputKind,
+        modelId: _modelId,
+        userPrompt: _userPrompt,
+        selectedCodeEntityIds: _selectedCodeEntityIds,
+        promptReferences: _promptReferences,
+        resolvedPrompt: _resolvedPrompt,
+        ...batchFields
+      } = stored;
+      const normalized: GenerationBatchRecord = {
+        ...batchFields,
+        promptConfigId: stored.promptConfigId,
+        outputDiagramComponentIds: stored.outputDiagramComponentIds ?? []
+      };
+      if (!Array.isArray(stored.outputDiagramComponentIds)
+        || _outputKind !== undefined
+        || _modelId !== undefined
+        || _userPrompt !== undefined
+        || _selectedCodeEntityIds !== undefined
+        || _promptReferences !== undefined
+        || _resolvedPrompt !== undefined) {
+        await writeJsonAtomic(this.batchPath(setId, batchId), normalized);
+      }
+      return normalized;
     }
-    const normalized: GenerationBatchRecord = {
-      ...stored,
-      outputKind: stored.outputKind ?? "diagram",
-      modelId: stored.modelId ?? DEFAULT_DIAGRAM_MODEL_ID,
-      outputDiagramComponentIds: stored.outputDiagramComponentIds ?? [],
-      userPrompt: stored.userPrompt ?? "",
+
+    const outputKind = stored.outputKind ?? "diagram";
+    const modelId = isDiagramModelId(stored.modelId)
+      ? stored.modelId
+      : DEFAULT_DIAGRAM_MODEL_ID;
+    const references = await Promise.all((stored.promptReferences ?? []).map(async (reference) => ({
+      ...reference,
+      promptRepresentation: await this.legacyPromptRepresentation(setId, reference)
+    })));
+    const promptConfigId = `prompt-${createHash("sha256").update(stored.id).digest("hex").slice(0, 16)}`;
+    const config: GenerationPromptConfigRecord = {
+      schemaVersion: SCHEMA_VERSION,
+      id: promptConfigId,
+      diagramSetId: setId,
+      outputKind,
+      modelId,
+      instruction: stored.userPrompt ?? "",
       selectedCodeEntityIds: stored.selectedCodeEntityIds ?? [],
-      promptReferences: stored.promptReferences ?? [],
-      resolvedPrompt: stored.resolvedPrompt ?? ""
+      references,
+      contextPrompt: {
+        templateVersion: 1,
+        rendered: stored.resolvedPrompt ?? ""
+      },
+      systemPrompt: {
+        templateId: "artifact-generation",
+        templateVersion: 1,
+        profileId: "default",
+        profileVersion: 1,
+        rendered: renderArtifactSystemPrompt({ outputKind, profileId: "default" })
+      },
+      createdAt: stored.createdAt
+    };
+    await this.saveGenerationPromptConfig(config);
+
+    for (const diagramId of stored.outputDiagramIds) {
+      const diagram = await readJsonIfExists<DiagramRecord>(this.diagramPath(setId, diagramId));
+      if (diagram && diagram.generationPromptConfigId !== promptConfigId) {
+        await writeJsonAtomic(this.diagramPath(setId, diagramId), {
+          ...diagram,
+          generationPromptConfigId: promptConfigId
+        });
+      }
+    }
+    for (const componentId of stored.outputDiagramComponentIds ?? []) {
+      const component = await readJsonIfExists<DiagramComponentRecord>(
+        this.diagramComponentPath(setId, componentId)
+      );
+      if (component && component.generationPromptConfigId !== promptConfigId) {
+        await writeJsonAtomic(this.diagramComponentPath(setId, componentId), {
+          ...component,
+          generationPromptConfigId: promptConfigId
+        });
+      }
+    }
+
+    const {
+      outputKind: _outputKind,
+      modelId: _modelId,
+      userPrompt: _userPrompt,
+      selectedCodeEntityIds: _selectedCodeEntityIds,
+      promptReferences: _promptReferences,
+      resolvedPrompt: _resolvedPrompt,
+      ...batchFields
+    } = stored;
+    const normalized: GenerationBatchRecord = {
+      ...batchFields,
+      promptConfigId,
+      outputDiagramComponentIds: stored.outputDiagramComponentIds ?? []
     };
     await writeJsonAtomic(this.batchPath(setId, batchId), normalized);
     return normalized;
@@ -418,11 +560,20 @@ export class DiagramStore {
     });
   }
 
-  async beginBatch(batch: GenerationBatchRecord, runs: AgentRunRecord[]): Promise<void> {
+  async beginBatch(
+    promptConfig: GenerationPromptConfigRecord,
+    batch: GenerationBatchRecord,
+    runs: AgentRunRecord[]
+  ): Promise<void> {
     const entities = await this.loadCodeEntities(batch.diagramSetId);
     if (entities.status !== "finalized" || entities.revision !== batch.codeEntitiesRevision) {
       throw new Error("generation batch is not pinned to the finalized CodeEntitiesSet");
     }
+    if (promptConfig.id !== batch.promptConfigId
+      || promptConfig.diagramSetId !== batch.diagramSetId) {
+      throw new Error("generation batch does not reference its prompt config");
+    }
+    await this.saveGenerationPromptConfig(promptConfig);
     for (const run of runs) await this.saveRun(run);
     await this.saveBatch(batch);
     const set = await this.loadDiagramSet(batch.diagramSetId);
@@ -471,6 +622,7 @@ export class DiagramStore {
         codeEntitySets: {},
         diagrams: {},
         diagramComponents: {},
+        generationPromptConfigs: {},
         generationBatches: {},
         agentRuns: {},
         editSessions: {},
@@ -481,12 +633,21 @@ export class DiagramStore {
     const codeEntitySets: Record<string, CodeEntitiesSetRecord> = {};
     const diagrams: Record<string, DiagramRecord> = {};
     const diagramComponents: Record<string, DiagramComponentRecord> = {};
+    const generationPromptConfigs: Record<string, GenerationPromptConfigRecord> = {};
     const generationBatches: Record<string, GenerationBatchRecord> = {};
     const agentRuns: Record<string, AgentRunRecord> = {};
     const editSessions: Record<string, EditSessionRecord> = {};
     const codeEntityMaps: Record<string, DiagramCodeEntityMapRecord> = {};
     for (const set of diagramSets) {
       codeEntitySets[set.codeEntitiesSetId] = await this.loadCodeEntities(set.id);
+      for (const id of set.generationBatchIds) {
+        const batch = await this.loadGenerationBatch(set.id, id);
+        generationBatches[id] = batch;
+        generationPromptConfigs[batch.promptConfigId] = await this.loadGenerationPromptConfig(
+          set.id,
+          batch.promptConfigId
+        );
+      }
       for (const id of set.diagramIds) {
         diagrams[id] = await this.loadDiagram(set.id, id);
         const mapping = await this.loadCodeEntityMap(set.id, id);
@@ -496,9 +657,6 @@ export class DiagramStore {
         diagramComponents[id] = await this.loadDiagramComponent(set.id, id);
         const mapping = await this.loadCodeEntityMap(set.id, id);
         if (mapping) codeEntityMaps[id] = mapping;
-      }
-      for (const id of set.generationBatchIds) {
-        generationBatches[id] = await this.loadGenerationBatch(set.id, id);
       }
       for (const id of set.agentRunIds) {
         agentRuns[id] = await readJson<AgentRunRecord>(this.runPath(set.id, id));
@@ -513,6 +671,7 @@ export class DiagramStore {
       codeEntitySets,
       diagrams,
       diagramComponents,
+      generationPromptConfigs,
       generationBatches,
       agentRuns,
       editSessions,
@@ -524,6 +683,7 @@ export class DiagramStore {
     set: () => makeId("set"),
     run: () => makeId("run"),
     batch: () => makeId("batch"),
+    promptConfig: () => makeId("prompt"),
     diagram: () => makeId("diagram"),
     diagramComponent: () => makeId("component"),
     editSession: () => makeId("edit"),

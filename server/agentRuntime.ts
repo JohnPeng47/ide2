@@ -18,7 +18,8 @@ import {
   type DiagramElementMappingDraft,
   type DiagramModelId,
   type GeneratedArtifactDraft,
-  type GenerationOutputKind
+  type GenerationOutputKind,
+  type GenerationPromptConfigRecord
 } from "../src/domain";
 import { codeEntityCollectionPrompt } from "./codeEntityPrompt";
 
@@ -31,12 +32,10 @@ export interface EntityCollectionRequest {
 export interface ArtifactGenerationRequest {
   sourceRoot: string;
   diagramSetName: string;
-  resolvedPrompt: string;
+  promptConfig: GenerationPromptConfigRecord;
   allowedCodeEntityIds: string[];
   allowedDiagramIds: string[];
   allowedDiagramComponentIds: string[];
-  outputKind: GenerationOutputKind;
-  modelId: DiagramModelId;
   slot: number;
   total: number;
 }
@@ -233,8 +232,8 @@ export class PiDiagramAgentRuntime implements DiagramAgentRuntime {
     request: ArtifactGenerationRequest,
     onProgress?: (progress: AgentProgress) => void
   ): Promise<GeneratedArtifactDraft> {
-    const configured = await this.model(request.modelId);
-    const componentMode = request.outputKind === "diagram-component";
+    const configured = await this.model(request.promptConfig.modelId);
+    const componentMode = request.promptConfig.outputKind === "diagram-component";
     const artifactLabel = componentMode ? "DiagramComponent" : "diagram";
     const toolName = componentMode ? "submit_diagram_component" : "submit_diagram";
     const state: { submission?: GeneratedArtifactDraft } = {};
@@ -275,9 +274,7 @@ export class PiDiagramAgentRuntime implements DiagramAgentRuntime {
       noPromptTemplates: true,
       noThemes: true,
       noContextFiles: true,
-      systemPrompt: componentMode
-        ? "Generate exactly one reusable DiagramComponent from the supplied explicit context. It is a fragment for a broader ASCII Diagram, not a complete diagram. Give it a compact, specific name. Be creative. Never modify files. Use 7-bit ASCII only and finish through submit_diagram_component."
-        : "Generate exactly one architecture diagram from the supplied explicit context. Give it a compact, specific name, ideally two to five words; omit redundant words such as the DiagramSet name. Never modify files. Use 7-bit ASCII only and finish through submit_diagram."
+      systemPrompt: request.promptConfig.systemPrompt.rendered
     });
     await resourceLoader.reload();
     const { session } = await createAgentSession({
@@ -298,7 +295,7 @@ export class PiDiagramAgentRuntime implements DiagramAgentRuntime {
       if (progress) onProgress?.(progress);
     });
     try {
-      await session.prompt(`${request.resolvedPrompt}
+      await session.prompt(`${request.promptConfig.contextPrompt.rendered}
 
 Parallel generation slot: ${request.slot} of ${request.total}.
 Independently choose a clear organizing shape for this slot. Return one ${artifactLabel} only.
@@ -547,10 +544,10 @@ export class FakeDiagramAgentRuntime implements DiagramAgentRuntime {
     onProgress?.({ status: "generating", message: `generating fixture slot ${request.slot}`, model: "fake/test" });
     const entityId = request.allowedCodeEntityIds[0];
     return {
-      name: request.outputKind === "diagram-component"
+      name: request.promptConfig.outputKind === "diagram-component"
         ? `Component ${request.slot}`
         : `Diagram ${request.slot}`,
-      ascii: request.outputKind === "diagram-component"
+      ascii: request.promptConfig.outputKind === "diagram-component"
         ? `+-------------------+\n| component slot ${String(request.slot).padStart(2, "0")} |\n+-------------------+`
         : `+------------------+\n| parallel slot ${String(request.slot).padStart(2, "0")} |\n+------------------+`,
       codeEntityIds: entityId ? [entityId] : []

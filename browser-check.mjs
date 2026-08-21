@@ -277,17 +277,24 @@ try {
     await waitFor(async () => (
       await evaluate(cdp, `document.querySelector('#generation-model').value`)
     ) === "gpt-5.6-sol", { message: "generation model dropdown did not select GPT-5.6 Sol" });
+    await selectLastOption(cdp, "#generation-prompt-profile");
+    await waitFor(async () => (
+      await evaluate(cdp, `document.querySelector('#generation-prompt-profile').value`)
+    ) === "compact", { message: "generation prompt profile did not select Compact" });
     await captureScreenshot(cdp, { output: generationScreenshotPath });
 
     await pointerClick(cdp, ".generate-action");
     await waitForSelector(cdp, ".diagram-panel", { timeoutMs: 10000 });
-    const generatedModel = await evaluate(cdp, `(async () => {
+    const generatedPromptConfig = await evaluate(cdp, `(async () => {
       const workspace = await fetch('/api/workspace').then((response) => response.json());
       const set = workspace.diagramSets[0];
-      return workspace.generationBatches[set.generationBatchIds.at(-1)]?.modelId ?? '';
+      const batch = workspace.generationBatches[set.generationBatchIds.at(-1)];
+      return workspace.generationPromptConfigs[batch?.promptConfigId] ?? null;
     })()`);
-    if (generatedModel !== "gpt-5.6-sol") {
-      throw new Error(`generation batch persisted unexpected model: ${generatedModel}`);
+    if (generatedPromptConfig?.modelId !== "gpt-5.6-sol"
+      || generatedPromptConfig?.systemPrompt?.profileId !== "compact"
+      || !generatedPromptConfig?.systemPrompt?.rendered.includes("dense layout")) {
+      throw new Error(`generation prompt config was incomplete: ${JSON.stringify(generatedPromptConfig)}`);
     }
     const oldStripExists = await evaluate(cdp, `Boolean(document.querySelector('.diagram-tabs'))`);
     if (oldStripExists) throw new Error("horizontal diagram strip is still rendered");
@@ -393,7 +400,9 @@ try {
       throw new Error(`lineage bridges were not ASCII pipes: ${JSON.stringify(bridgeTexts)}`);
     }
     const selection = await evaluate(cdp, `(() => {
-      const node = document.querySelector('.diagram-tree-diagram:not(.is-current)');
+      const generation = Array.from(document.querySelectorAll('[data-generation-batch-id]')).at(-1);
+      const node = generation?.closest('.diagram-tree-branch')
+        ?.querySelector('.diagram-tree-diagram:not(.is-current)');
       return {
         id: node?.dataset.diagramId ?? '',
         name: node?.querySelector('.diagram-tree-description')?.textContent ?? ''
@@ -429,6 +438,18 @@ try {
     }
     const handleAfterRename = await evaluate(cdp, `document.querySelector('.diagram-meta code').textContent`);
     if (handleAfterRename !== stableHandle) throw new Error("diagram rename changed its stable @ handle");
+    await pointerHover(cdp, `[data-diagram-id="${selection.id}"]`);
+    await pointerClick(cdp, `[data-diagram-id="${selection.id}"] .diagram-tree-prompt`);
+    await waitForSelector(cdp, ".prompt-config-dialog");
+    const inspectedPrompt = await evaluate(cdp, `document.querySelector('.prompt-config-dialog').textContent`);
+    if (!inspectedPrompt.includes("Immutable prompt config")
+      || !inspectedPrompt.includes("Rendered system prompt")) {
+      throw new Error("lineage prompt inspection did not expose the persisted config");
+    }
+    await pointerClick(cdp, ".prompt-config-dialog > header button");
+    await waitFor(async () => await evaluate(cdp, `!document.querySelector('.prompt-config-dialog')`), {
+      message: "prompt inspection dialog did not close"
+    });
 
     await pointerClick(cdp, ".diagram-actions .button:first-child");
     await waitForSelector(cdp, ".ascii-selector");
@@ -520,6 +541,19 @@ try {
 
     await pointerClick(cdp, ".diagram-actions .create-derivative");
     await waitForSelector(cdp, "#diagram-prompt");
+    const derivativePromptState = await evaluate(cdp, `({
+      instruction: document.querySelector('#diagram-prompt').value,
+      model: document.querySelector('#generation-model').value,
+      profile: document.querySelector('#generation-prompt-profile').value,
+      output: document.querySelector('.output-kind [aria-checked="true"]').textContent.trim()
+    })`);
+    if (!derivativePromptState.instruction.startsWith(stableHandle)
+      || !derivativePromptState.instruction.includes("@entity/")
+      || derivativePromptState.model !== "gpt-5.6-sol"
+      || derivativePromptState.profile !== "compact"
+      || derivativePromptState.output !== "Diagram") {
+      throw new Error(`derivative prompt was not rehydrated: ${JSON.stringify(derivativePromptState)}`);
+    }
     await pointerClick(cdp, '[aria-label="Use one fewer agent"]');
     await waitFor(async () => (
       await evaluate(cdp, `document.querySelector('.counter output').textContent`)
@@ -690,7 +724,22 @@ try {
     await waitFor(async () => (
       await evaluate(cdp, `document.querySelector('#diagram-prompt').value`)
     ) === "Vary @component/", { message: "component prompt text did not settle" });
-    await waitForSelector(cdp, ".mention-menu [role=option]");
+    try {
+      await waitForSelector(cdp, ".mention-menu [role=option]");
+    } catch (error) {
+      const state = await evaluate(cdp, `(async () => {
+        const workspace = await fetch('/api/workspace').then((response) => response.json());
+        return {
+          prompt: document.querySelector('#diagram-prompt')?.value ?? '',
+          components: Object.values(workspace.diagramComponents).map((component) => ({
+            handle: component.handle,
+            archivedAt: component.archivedAt ?? ''
+          })),
+          error: document.querySelector('[role="alert"]')?.textContent ?? ''
+        };
+      })()`);
+      throw new Error(`${error.message}: ${JSON.stringify(state)}`);
+    }
     const componentMention = await evaluate(cdp, `document.querySelector(
       '.mention-menu [role=option] code'
     )?.textContent ?? ''`);

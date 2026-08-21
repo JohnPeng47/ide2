@@ -31,6 +31,8 @@ class ParallelRuntime implements DiagramAgentRuntime {
   maxActive = 0;
   started = 0;
   requestedModels: string[] = [];
+  requestedPromptConfigIds: string[] = [];
+  requestedSystemPrompts: string[] = [];
   mappingDrafts?: DiagramElementMappingDraft[];
   private release!: () => void;
   private readonly gate = new Promise<void>((resolve) => { this.release = resolve; });
@@ -49,7 +51,9 @@ class ParallelRuntime implements DiagramAgentRuntime {
   }
 
   async generateArtifact(request: ArtifactGenerationRequest): Promise<GeneratedArtifactDraft> {
-    this.requestedModels.push(request.modelId);
+    this.requestedModels.push(request.promptConfig.modelId);
+    this.requestedPromptConfigIds.push(request.promptConfig.id);
+    this.requestedSystemPrompts.push(request.promptConfig.systemPrompt.rendered);
     this.active += 1;
     this.started += 1;
     this.maxActive = Math.max(this.maxActive, this.active);
@@ -284,7 +288,8 @@ describe("DiagramApplication", () => {
       selectedCodeEntityIds: [entitySet.entities[0].id],
       count: 3,
       outputKind: "diagram",
-      modelId: "gpt-5.6-sol"
+      modelId: "gpt-5.6-sol",
+      promptProfileId: "flowFirst"
     });
     expect(runtime.maxActive).toBe(3);
     expect(runtime.requestedModels).toEqual([
@@ -292,12 +297,63 @@ describe("DiagramApplication", () => {
       "gpt-5.6-sol",
       "gpt-5.6-sol"
     ]);
-    expect(workspace.generationBatches[workspace.diagramSets[0].generationBatchIds[0]].modelId)
-      .toBe("gpt-5.6-sol");
+    const batch = workspace.generationBatches[workspace.diagramSets[0].generationBatchIds[0]];
+    const promptConfig = workspace.generationPromptConfigs[batch.promptConfigId];
+    expect(promptConfig).toMatchObject({
+      modelId: "gpt-5.6-sol",
+      instruction: "Show @entity/worker",
+      systemPrompt: { profileId: "flowFirst" }
+    });
+    expect(promptConfig.systemPrompt.rendered).toContain(
+      "Emphasize directional control and data flow."
+    );
+    expect(runtime.requestedPromptConfigIds).toEqual([
+      promptConfig.id,
+      promptConfig.id,
+      promptConfig.id
+    ]);
+    expect(runtime.requestedSystemPrompts).toEqual([
+      promptConfig.systemPrompt.rendered,
+      promptConfig.systemPrompt.rendered,
+      promptConfig.systemPrompt.rendered
+    ]);
     expect(workspace.diagramSets[0].diagramIds).toHaveLength(3);
     expect(Object.values(workspace.agentRuns).filter((run) => run.kind === "generate-one-diagram"))
       .toHaveLength(3);
     const diagramId = workspace.diagramSets[0].diagramIds[0];
+    expect(workspace.diagramSets[0].diagramIds.map(
+      (id) => workspace.diagrams[id].generationPromptConfigId
+    )).toEqual([promptConfig.id, promptConfig.id, promptConfig.id]);
+    await expect(readFile(path.join(
+      root,
+      ".diagrams",
+      "diagram-sets",
+      set.id,
+      "generation-prompts",
+      `${promptConfig.id}.json`
+    ), "utf8")).resolves.toContain('"profileId": "flowFirst"');
+    const batchJson = await readFile(path.join(
+      root,
+      ".diagrams",
+      "diagram-sets",
+      set.id,
+      "generation-batches",
+      `${batch.id}.json`
+    ), "utf8");
+    expect(batchJson).toContain(`"promptConfigId": "${promptConfig.id}"`);
+    expect(batchJson).not.toContain('"userPrompt"');
+    expect(batchJson).not.toContain('"resolvedPrompt"');
+    expect(batchJson).not.toContain('"promptReferences"');
+    const diagramJson = await readFile(path.join(
+      root,
+      ".diagrams",
+      "diagram-sets",
+      set.id,
+      "diagrams",
+      `${diagramId}.json`
+    ), "utf8");
+    expect(diagramJson).toContain(`"generationPromptConfigId": "${promptConfig.id}"`);
+    expect(diagramJson).not.toContain('"promptReferences"');
     const originalHandle = workspace.diagrams[diagramId].handle;
     workspace = await application.mapCodeEntities(set.id, "diagram", diagramId);
     expect(workspace.codeEntityMaps[diagramId]).toMatchObject({

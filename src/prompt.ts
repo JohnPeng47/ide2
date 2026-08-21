@@ -2,13 +2,18 @@ import {
   CodeEntity,
   Diagram,
   DiagramComponent,
+  SCHEMA_VERSION,
   isDiagramComponentArchived,
   isDiagramArchived,
   type CodeEntitiesSetRecord,
+  type DiagramModelId,
   type DiagramRecord,
   type DiagramComponentRecord,
   type DiagramSetRecord,
   type GenerationOutputKind,
+  type GenerationPromptConfigRecord,
+  type GenerationPromptProfileId,
+  type GenerationPromptReference,
   type PromptReference
 } from "./domain";
 
@@ -20,11 +25,53 @@ export interface PromptOption {
   token: string;
 }
 
-export interface ResolvedGenerationPrompt {
-  references: PromptReference[];
-  selectedCodeEntityIds: string[];
+export interface GenerationPromptBuildResult {
+  config: GenerationPromptConfigRecord;
   allowedCodeEntityIds: string[];
-  resolvedPrompt: string;
+  allowedDiagramIds: string[];
+  allowedDiagramComponentIds: string[];
+}
+
+const PROFILE_DIRECTIVES: Record<GenerationPromptProfileId, {
+  diagram: string;
+  component: string;
+}> = {
+  default: {
+    diagram: "",
+    component: "Be creative."
+  },
+  structureFirst: {
+    diagram: "Emphasize ownership, boundaries, and hierarchy.",
+    component: "Emphasize a reusable structural relationship."
+  },
+  flowFirst: {
+    diagram: "Emphasize directional control and data flow.",
+    component: "Emphasize one clear input-to-output interaction."
+  },
+  compact: {
+    diagram: "Prefer a dense layout with minimal crossing edges.",
+    component: "Prefer a small fragment that composes cleanly."
+  }
+};
+
+export function renderArtifactSystemPrompt(input: {
+  outputKind: GenerationOutputKind;
+  profileId: GenerationPromptProfileId;
+}): string {
+  const componentMode = input.outputKind === "diagram-component";
+  const directive = PROFILE_DIRECTIVES[input.profileId][componentMode ? "component" : "diagram"];
+  return [
+    componentMode
+      ? "Generate exactly one reusable DiagramComponent from the supplied explicit context. It is a fragment for a broader ASCII Diagram, not a complete diagram."
+      : "Generate exactly one architecture diagram from the supplied explicit context.",
+    componentMode
+      ? "Give it a compact, specific name."
+      : "Give it a compact, specific name, ideally two to five words; omit redundant words such as the DiagramSet name.",
+    directive,
+    componentMode
+      ? "Never modify files. Use 7-bit ASCII only and finish through submit_diagram_component."
+      : "Never modify files. Use 7-bit ASCII only and finish through submit_diagram."
+  ].filter(Boolean).join(" ");
 }
 
 export function promptOptions(
@@ -57,15 +104,19 @@ export function promptOptions(
   ];
 }
 
-export function resolveGenerationPrompt(input: {
+export function createGenerationPromptConfig(input: {
+  id: string;
   diagramSet: DiagramSetRecord;
   codeEntities: CodeEntitiesSetRecord;
   diagrams: DiagramRecord[];
   components: DiagramComponentRecord[];
   outputKind: GenerationOutputKind;
-  userPrompt: string;
+  modelId: DiagramModelId;
+  profileId: GenerationPromptProfileId;
+  instruction: string;
   selectedCodeEntityIds: string[];
-}): ResolvedGenerationPrompt {
+  createdAt: string;
+}): GenerationPromptBuildResult {
   if (input.codeEntities.status !== "finalized") {
     throw new Error("CodeEntitiesSet must be finalized before generation");
   }
@@ -88,10 +139,10 @@ export function resolveGenerationPrompt(input: {
     if (!entitiesById.has(id)) throw new Error(`unknown selected CodeEntity: ${id}`);
   }
 
-  const references: PromptReference[] = [];
+  const references: GenerationPromptReference[] = [];
   const seenReferences = new Set<string>();
   const mentionPattern = /@(entity|diagram|component)\/([a-z0-9][a-z0-9-]*)|@([a-z0-9][a-z0-9-]*)/gi;
-  for (const match of input.userPrompt.matchAll(mentionPattern)) {
+  for (const match of input.instruction.matchAll(mentionPattern)) {
     const token = match[0];
     const typed = match[1] && match[2]
       ? optionsByTypedToken.get(`@${match[1].toLowerCase()}/${match[2].toLowerCase()}`)
@@ -105,11 +156,17 @@ export function resolveGenerationPrompt(input: {
     const key = `${option.kind}:${option.id}`;
     if (seenReferences.has(key)) continue;
     seenReferences.add(key);
+    const promptRepresentation = option.kind === "code-entity"
+      ? new CodeEntity(entitiesById.get(option.id)!).prompt_str()
+      : option.kind === "diagram"
+        ? new Diagram(diagramsById.get(option.id)!).prompt_str()
+        : new DiagramComponent(componentsById.get(option.id)!).prompt_str();
     references.push({
       kind: option.kind,
       targetId: option.id,
       token,
-      handle: option.handle
+      handle: option.handle,
+      promptRepresentation
     });
   }
 
@@ -133,22 +190,51 @@ export function resolveGenerationPrompt(input: {
 
   const selectedBlocks = [...new Set([...selected, ...selectedFromReferences])]
     .map((id) => new CodeEntity(entitiesById.get(id)!).prompt_str());
-  const diagramBlocks = referencedDiagrams.map((diagram) => new Diagram(diagram).prompt_str());
-  const componentBlocks = referencedComponents.map(
-    (component) => new DiagramComponent(component).prompt_str()
-  );
+  const diagramBlocks = references
+    .filter((reference) => reference.kind === "diagram")
+    .map((reference) => reference.promptRepresentation);
+  const componentBlocks = references
+    .filter((reference) => reference.kind === "diagram-component")
+    .map((reference) => reference.promptRepresentation);
   const outputInstruction = input.outputKind === "diagram-component"
     ? "Generate one reusable DiagramComponent for use inside a broader ASCII Diagram. Explore a distinct version of the supplied component or context. Be creative, preserve source-backed meaning, and return only the component, not a complete diagram. Use only 7-bit ASCII."
     : "Generate one architecture diagram. Use only 7-bit ASCII. Every code label must map to one of the supplied CodeEntity ids.";
-  const resolvedPrompt = [
+  const renderedContextPrompt = [
     `DiagramSet: ${input.diagramSet.name}`,
     `Original request: ${input.diagramSet.initialPrompt || "none"}`,
-    `User instruction:\n${input.userPrompt.trim() || "Create a clear diagram from the selected code entities."}`,
+    `User instruction:\n${input.instruction.trim() || "Create a clear diagram from the selected code entities."}`,
     `Selected CodeEntities:\n${selectedBlocks.join("\n\n") || "none"}`,
     `Referenced Diagrams:\n${diagramBlocks.join("\n\n") || "none"}`,
     `Referenced DiagramComponents:\n${componentBlocks.join("\n\n") || "none"}`,
     outputInstruction
   ].join("\n\n");
 
-  return { references, selectedCodeEntityIds: selected, allowedCodeEntityIds, resolvedPrompt };
+  const config: GenerationPromptConfigRecord = {
+    schemaVersion: SCHEMA_VERSION,
+    id: input.id,
+    diagramSetId: input.diagramSet.id,
+    outputKind: input.outputKind,
+    modelId: input.modelId,
+    instruction: input.instruction,
+    selectedCodeEntityIds: selected,
+    references,
+    contextPrompt: { templateVersion: 1, rendered: renderedContextPrompt },
+    systemPrompt: {
+      templateId: "artifact-generation",
+      templateVersion: 1,
+      profileId: input.profileId,
+      profileVersion: 1,
+      rendered: renderArtifactSystemPrompt({
+        outputKind: input.outputKind,
+        profileId: input.profileId
+      })
+    },
+    createdAt: input.createdAt
+  };
+  return {
+    config,
+    allowedCodeEntityIds,
+    allowedDiagramIds: referencedDiagrams.map((diagram) => diagram.id),
+    allowedDiagramComponentIds: referencedComponents.map((component) => component.id)
+  };
 }
