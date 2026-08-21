@@ -55,7 +55,15 @@ export type CompactedSourceSection =
       startLine: number;
       endLine: number;
       comment: string;
+      /** One-based graph-body line to source-block mappings. Optional for legacy records. */
+      nodes?: CompactedSourceNode[];
     };
+
+export interface CompactedSourceNode {
+  graphLine: number;
+  startLine: number;
+  endLine: number;
+}
 
 export interface CompactedSource {
   level: SourceCompactionLevel;
@@ -377,7 +385,15 @@ export class CodeEntity {
         const sections = range.compactedSource?.sections
           .map((section) => section.kind === "source"
             ? `  - retain lines ${section.startLine}-${section.endLine}`
-            : `  - collapse lines ${section.startLine}-${section.endLine}: ${section.comment}`)
+            : `  - collapse lines ${section.startLine}-${section.endLine} as call graph:\n${section.comment
+              .replace(/\r\n?/g, "\n")
+              .split("\n")
+              .map((line) => `      ${line}`)
+              .join("\n")}${section.nodes?.length
+              ? `\n    Node source mappings:\n${section.nodes
+                .map((node) => `      graph line ${node.graphLine} -> source lines ${node.startLine}-${node.endLine}`)
+                .join("\n")}`
+              : ""}`)
           .join("\n");
         const compaction = range.compactedSource
           ? `\n  Compaction: ${range.compactedSource.level}\n${sections}`
@@ -466,6 +482,30 @@ export function assertSourceRange(range: SourceRange): void {
       }
       if (section.kind === "collapsed-comment" && !section.comment.trim()) {
         throw new Error(`collapsed source comment cannot be blank for ${range.path}`);
+      }
+      if (section.kind === "collapsed-comment" && !/^[\t\n\r\x20-\x7E]*$/.test(section.comment)) {
+        throw new Error(`collapsed source call graph must contain only 7-bit ASCII for ${range.path}`);
+      }
+      if (section.kind === "collapsed-comment" && section.nodes !== undefined) {
+        if (!Array.isArray(section.nodes) || section.nodes.length === 0) {
+          throw new Error(`collapsed source call graph nodes cannot be empty for ${range.path}`);
+        }
+        const graphLineCount = section.comment.replace(/\r\n?/g, "\n").split("\n").length;
+        const mappedGraphLines = new Set<number>();
+        for (const node of section.nodes) {
+          if (!Number.isInteger(node.graphLine) || node.graphLine < 1 || node.graphLine > graphLineCount) {
+            throw new Error(`collapsed source node graph line is invalid for ${range.path}`);
+          }
+          if (mappedGraphLines.has(node.graphLine)) {
+            throw new Error(`collapsed source node graph line is duplicated for ${range.path}`);
+          }
+          mappedGraphLines.add(node.graphLine);
+          if (!Number.isInteger(node.startLine) || !Number.isInteger(node.endLine)
+            || node.startLine < section.startLine || node.endLine > section.endLine
+            || node.endLine < node.startLine) {
+            throw new Error(`collapsed source node range is invalid for ${range.path}`);
+          }
+        }
       }
     }
   }

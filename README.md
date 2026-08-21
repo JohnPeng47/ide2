@@ -47,6 +47,12 @@ persists one immutable prompt-config record containing the exact instruction,
 reference representations, selected entities, model, style, and rendered
 context/system prompts. The batch and all parallel outputs reference that one
 record; batches do not duplicate prompt fields.
+Compacted source ranges render omitted implementation as expandable, source-style
+comments containing concise 7-bit ASCII call graphs of the actual calls, loops,
+branches, and results in those lines. Every semantic graph node maps to an exact
+source subrange and can reveal or re-collapse that block independently without
+expanding its sibling nodes; the fold gutter still expands the complete omitted
+range at once.
 Diagram View keeps Code Entities and an ASCII
 artifact lineage in right-pane tabs; selecting a lineage node opens that
 diagram, and its display name can be edited without changing its stable

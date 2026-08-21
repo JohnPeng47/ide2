@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { ThemedToken, TokensResult } from "shiki";
 import type { SourceSnippet } from "../api";
-import type { CompactedSourceSection, SourceRange } from "../domain";
+import type { CompactedSourceNode, CompactedSourceSection, SourceRange } from "../domain";
 
 const SHIKI_THEME = "dark-plus";
 const TOKEN_CACHE_LIMIT = 40;
@@ -112,6 +112,20 @@ function sectionKey(section: CollapsedSection): string {
   return `${section.startLine}:${section.endLine}`;
 }
 
+export function formatCollapsedCallGraph(section: CollapsedSection): string {
+  const graphLines = section.comment.replace(/\r\n?/g, "\n").split("\n");
+  if (!section.nodes) {
+    while (graphLines[0]?.trim() === "") graphLines.shift();
+    while (graphLines.at(-1)?.trim() === "") graphLines.pop();
+  }
+  const lineCount = section.endLine - section.startLine + 1;
+  return [
+    `// [Lines ${section.startLine}-${section.endLine} | ${lineCount} lines compacted]`,
+    "//",
+    ...graphLines.map((line) => `//${line ? ` ${line}` : ""}`)
+  ].join("\n");
+}
+
 function tokenStyle(token: ThemedToken): CSSProperties {
   const fontStyle = token.fontStyle ?? 0;
   return {
@@ -134,6 +148,27 @@ function SourceTokens(props: { tokens: ThemedToken[]; fallback: string }) {
   ));
 }
 
+function GraphNodeSource(props: {
+  node: CompactedSourceNode;
+  preview: SourceSnippet;
+  tokenLines: ThemedToken[][];
+}) {
+  const rows: ReactNode[] = [];
+  for (let lineNumber = props.node.startLine; lineNumber <= props.node.endLine; lineNumber += 1) {
+    const index = lineNumber - props.preview.startLine;
+    if (index < 0 || index >= props.preview.lines.length) continue;
+    rows.push(
+      <div className="source-call-graph-node-source-line" data-line={lineNumber} key={lineNumber}>
+        <span aria-hidden="true">{lineNumber}</span>
+        <code>
+          <SourceTokens tokens={props.tokenLines[index] ?? []} fallback={props.preview.lines[index]} />
+        </code>
+      </div>
+    );
+  }
+  return <div className="source-call-graph-node-source">{rows}</div>;
+}
+
 export function SourceCodeView(props: {
   preview: SourceSnippet;
   range: SourceRange;
@@ -145,6 +180,7 @@ export function SourceCodeView(props: {
   const [highlighted, setHighlighted] = useState<TokensResult | null>(null);
   const [highlightFailed, setHighlightFailed] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(() => new Set());
+  const [expandedGraphNodes, setExpandedGraphNodes] = useState<Set<string>>(() => new Set());
   const source = useMemo(() => props.preview.lines.join("\n"), [props.preview.lines]);
   const sourceIdentity = `${props.preview.path}:${props.preview.startLine}:${source}`;
   const sections = useMemo(
@@ -170,6 +206,7 @@ export function SourceCodeView(props: {
 
   useEffect(() => {
     setExpandedSections(new Set());
+    setExpandedGraphNodes(new Set());
   }, [sourceIdentity, props.range.compactedSource]);
 
   useEffect(() => {
@@ -188,22 +225,71 @@ export function SourceCodeView(props: {
     const expanded = section ? expandedSections.has(key) : false;
 
     if (props.compacted && section && !expanded) {
+      const graphLines = section.comment.replace(/\r\n?/g, "\n").split("\n");
+      const nodesByGraphLine = new Map(section.nodes?.map((node) => [node.graphLine, node]) ?? []);
+      const sourceIndent = props.preview.lines[index]?.match(/^\s*/)?.[0] ?? "";
       rows.push(
-        <button
-          type="button"
+        <div
           className="source-fold-placeholder"
-          aria-label={`Reveal original lines ${section.startLine} through ${section.endLine}`}
-          onClick={() => setExpandedSections((current) => new Set(current).add(key))}
           key={`fold:${key}`}
         >
-          <span className="source-line-gutter" aria-hidden="true">
-            <span className="source-fold-marker">[+]</span>
-            <span>{section.startLine}</span>
+          <span className="source-line-gutter">
+            <button
+              type="button"
+              className="source-fold-marker source-section-fold-toggle"
+              aria-label={`Reveal all original lines ${section.startLine} through ${section.endLine}`}
+              title={`Reveal all lines ${section.startLine}-${section.endLine}`}
+              onClick={() => setExpandedSections((current) => new Set(current).add(key))}
+            >[+]</button>
           </span>
-          <span className="source-fold-copy">
-            {`// Lines ${section.startLine}-${section.endLine}: ${section.comment} (${section.endLine - section.startLine + 1} lines)`}
-          </span>
-        </button>
+          <div className="source-fold-copy">
+            <div className="source-call-graph-line">
+              <span aria-hidden="true" />
+              <span>{`${sourceIndent}// [Lines ${section.startLine}-${section.endLine} | ${section.endLine - section.startLine + 1} lines compacted]`}</span>
+            </div>
+            <div className="source-call-graph-line">
+              <span aria-hidden="true" />
+              <span>{`${sourceIndent}//`}</span>
+            </div>
+            {graphLines.map((line, graphIndex) => {
+              const graphLine = graphIndex + 1;
+              const node = nodesByGraphLine.get(graphLine);
+              if (!node) {
+                return (
+                  <div className="source-call-graph-line" key={`graph:${key}:${graphLine}`}>
+                    <span aria-hidden="true" />
+                    <span>{`${sourceIndent}//${line ? ` ${line}` : ""}`}</span>
+                  </div>
+                );
+              }
+              const nodeKey = `${key}:${graphLine}`;
+              const nodeExpanded = expandedGraphNodes.has(nodeKey);
+              return (
+                <div className="source-call-graph-node-wrap" key={`graph:${nodeKey}`}>
+                  <button
+                    type="button"
+                    className="source-call-graph-node"
+                    data-graph-line={graphLine}
+                    aria-expanded={nodeExpanded}
+                    aria-label={`${nodeExpanded ? "Collapse" : "Reveal"} source lines ${node.startLine} through ${node.endLine} for graph node ${line.trim()}`}
+                    onClick={() => setExpandedGraphNodes((current) => {
+                      const next = new Set(current);
+                      if (next.has(nodeKey)) next.delete(nodeKey);
+                      else next.add(nodeKey);
+                      return next;
+                    })}
+                  >
+                    <span className="source-call-graph-node-marker" aria-hidden="true">{nodeExpanded ? "[-]" : "[+]"}</span>
+                    <span>{`${sourceIndent}//${line ? ` ${line}` : ""}`}</span>
+                  </button>
+                  {nodeExpanded ? (
+                    <GraphNodeSource node={node} preview={props.preview} tokenLines={tokenLines} />
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       );
       index += section.endLine - section.startLine + 1;
       continue;
@@ -225,7 +311,9 @@ export function SourceCodeView(props: {
               })}
             >[-]</button>
           ) : <span className="source-fold-spacer" aria-hidden="true" />}
-          <span className="source-line-number" aria-hidden="true">{lineNumber}</span>
+          {props.compacted && section && expanded ? null : (
+            <span className="source-line-number" aria-hidden="true">{lineNumber}</span>
+          )}
         </span>
         <code className="source-line-text">
           <SourceTokens tokens={tokenLines[index] ?? []} fallback={props.preview.lines[index]} />

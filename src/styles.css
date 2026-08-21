@@ -160,24 +160,38 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .source-original-toggle { border: 0; border-bottom: 1px dotted var(--accent-cyan); padding: 0; background: transparent; color: var(--accent-cyan); font: inherit; text-transform: uppercase; }
 .source-original-toggle:hover { color: var(--fg); }
 .source-workspace__body { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
-.source-code-viewer { width: 100%; height: 100%; min-width: 0; min-height: 0; overflow: auto; background: var(--source-bg); color: var(--source-fg); font: 12px/1.55 var(--font-mono); outline: 0; tab-size: 4; }
+.source-code-viewer { --source-gutter-width: 6.25rem; --source-copy-padding: 0.85rem; width: 100%; height: 100%; min-width: 0; min-height: 0; overflow: auto; background: var(--source-bg); color: var(--source-fg); font: 12px/1.55 var(--font-mono); outline: 0; tab-size: 4; }
 .source-code-viewer.is-revealed { box-shadow: inset 2px 0 var(--accent-cyan); }
 .source-code-viewer:focus-visible { box-shadow: inset 2px 0 var(--accent-cyan), inset 0 0 0 1px rgb(136 192 208 / 42%); }
 .source-code-content { width: max-content; min-width: 100%; padding: 0.65rem 0; }
-.source-code-line, .source-fold-placeholder { display: grid; width: 100%; min-width: max-content; grid-template-columns: 6.25rem minmax(max-content, 1fr); align-items: baseline; border: 0; background: transparent; font: inherit; line-height: inherit; text-align: left; white-space: pre; }
+.source-code-line, .source-fold-placeholder { display: grid; width: 100%; min-width: max-content; grid-template-columns: var(--source-gutter-width) minmax(max-content, 1fr); align-items: baseline; border: 0; background: transparent; font: inherit; line-height: inherit; text-align: left; white-space: pre; }
 .source-code-line:hover { background: rgb(255 255 255 / 3%); }
 .source-line-gutter { position: sticky; z-index: 1; left: 0; display: grid; min-height: 1.55em; grid-template-columns: 2rem 1fr; align-items: baseline; padding: 0 0.7rem 0 0.35rem; background: #181818; color: #858585; text-align: right; user-select: none; }
-.source-line-number { grid-column: 2; }
-.source-line-text, .source-fold-copy { display: block; min-width: max-content; padding: 0 0.85rem; font: inherit; }
+.source-line-number { display: flex; min-height: 1.55em; grid-column: 2; align-items: center; justify-content: flex-end; }
+.source-line-text, .source-fold-copy { display: block; min-width: max-content; padding: 0 var(--source-copy-padding); font: inherit; }
 .source-token { white-space: pre; }
-.source-fold-placeholder { color: #9cdcfe; }
-.source-fold-placeholder:hover, .source-fold-placeholder:focus-visible { outline: 0; background: rgb(78 201 176 / 9%); color: #dcdcaa; }
-.source-fold-placeholder:focus-visible { box-shadow: inset 0 0 0 1px #4ec9b0; }
-.source-fold-placeholder .source-line-gutter { color: #4ec9b0; }
-.source-fold-marker, .source-fold-toggle { grid-column: 1; color: #4ec9b0; text-align: left; }
-.source-fold-toggle { border: 0; padding: 0; background: transparent; font: inherit; line-height: inherit; }
-.source-fold-toggle:hover, .source-fold-toggle:focus-visible { outline: 0; color: #dcdcaa; }
+.source-fold-placeholder { align-items: start; padding: 0.2rem 0; color: #9cdcfe; }
+.source-fold-placeholder:hover { background: rgb(78 201 176 / 4%); }
+.source-fold-placeholder:focus-within { box-shadow: inset 0 0 0 1px rgb(78 201 176 / 45%); }
+.source-fold-placeholder > .source-line-gutter { z-index: 2; height: 1.55em; align-self: start; color: #4ec9b0; }
+.source-fold-marker, .source-fold-toggle { grid-column: 2; justify-content: flex-end; color: #4ec9b0; text-align: right; }
+.source-fold-marker, .source-fold-toggle { display: flex; min-height: 1.55em; align-items: center; border: 0; padding: 0; background: transparent; font: inherit; line-height: inherit; }
+.source-fold-marker:hover, .source-fold-marker:focus-visible, .source-fold-toggle:hover, .source-fold-toggle:focus-visible { outline: 0; color: #dcdcaa; }
 .source-fold-spacer { grid-column: 1; }
+.source-call-graph-line, .source-call-graph-node { display: grid; width: calc(100% + var(--source-gutter-width) + var(--source-copy-padding)); min-height: 1.55em; margin-left: calc(0rem - var(--source-gutter-width) - var(--source-copy-padding)); grid-template-columns: var(--source-gutter-width) max-content; align-items: baseline; color: inherit; font: inherit; line-height: inherit; white-space: pre; }
+.source-call-graph-line > span:first-child, .source-call-graph-node-marker { position: sticky; z-index: 1; left: 0; box-sizing: border-box; align-self: stretch; padding-left: 0.35rem; background: #181818; }
+.source-call-graph-line > span:first-child { pointer-events: none; }
+.source-call-graph-line > span:last-child, .source-call-graph-node > span:last-child { padding-left: var(--source-copy-padding); }
+.source-call-graph-node-wrap { min-width: max-content; }
+.source-call-graph-node { border: 0; padding: 0; background: transparent; text-align: left; }
+.source-call-graph-node { align-items: center; }
+.source-call-graph-node:hover, .source-call-graph-node:focus-visible { outline: 0; background: rgb(220 220 170 / 8%); color: #dcdcaa; }
+.source-call-graph-node:focus-visible { box-shadow: inset 0 0 0 1px rgb(220 220 170 / 55%); }
+.source-call-graph-node-marker { display: flex; min-height: 1.55em; align-self: center; align-items: center; justify-content: flex-end; margin-left: 0; padding: 0 0.7rem 0 0.35rem; color: #4ec9b0; text-align: right; }
+.source-call-graph-node-source { width: calc(100% + var(--source-gutter-width) + var(--source-copy-padding)); margin: 0.1rem 0 0.35rem calc(0rem - var(--source-gutter-width) - var(--source-copy-padding)); padding: 0.2rem 0; background: rgb(0 0 0 / 18%); color: var(--source-fg); }
+.source-call-graph-node-source-line { display: grid; min-height: 1.55em; grid-template-columns: var(--source-gutter-width) max-content; align-items: baseline; }
+.source-call-graph-node-source-line > span { position: sticky; z-index: 1; left: 0; box-sizing: border-box; padding: 0 0.7rem 0 0.35rem; background: #181818; color: #858585; text-align: right; user-select: none; }
+.source-call-graph-node-source-line > code { border-left: 1px solid #4ec9b0; padding: 0 var(--source-copy-padding); font: inherit; }
 .source-state { position: absolute; z-index: 2; inset: 0; padding: 1rem; background: var(--bg); color: var(--muted); font: 11px var(--font-mono); }
 .empty-copy { padding: 1rem; color: var(--muted); font-size: 0.85rem; }
 

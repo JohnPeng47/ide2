@@ -167,7 +167,23 @@ export class PiDiagramAgentRuntime implements DiagramAgentRuntime {
                   kind: Type.Literal("collapsed-comment"),
                   startLine: Type.Integer({ minimum: 1 }),
                   endLine: Type.Integer({ minimum: 1 }),
-                  comment: Type.String({ minLength: 1, maxLength: 1200 })
+                  comment: Type.String({
+                    minLength: 1,
+                    maxLength: 1200,
+                    description: "A source-backed, 7-bit ASCII call-graph body without comment markers or a line-range heading."
+                  }),
+                  nodes: Type.Array(Type.Object({
+                    graphLine: Type.Integer({
+                      minimum: 1,
+                      description: "One-based line number of the semantic node in the comment graph body."
+                    }),
+                    startLine: Type.Integer({ minimum: 1 }),
+                    endLine: Type.Integer({ minimum: 1 })
+                  }), {
+                    minItems: 1,
+                    maxItems: 100,
+                    description: "Map every semantic graph node to its exact source block; omit connector-only graph lines."
+                  })
                 })
               ]), { minItems: 1, maxItems: 100 })
             })
@@ -528,7 +544,17 @@ export class FakeDiagramAgentRuntime implements DiagramAgentRuntime {
               kind: "collapsed-comment",
               startLine: 2,
               endLine: 3,
-              comment: "Initializes and updates the workspace status."
+              comment: [
+                "workspace",
+                "  |",
+                "  +--> status = 'collecting'",
+                "  \\--> status = 'ready'"
+              ].join("\n"),
+              nodes: [
+                { graphLine: 1, startLine: 2, endLine: 3 },
+                { graphLine: 3, startLine: 2, endLine: 2 },
+                { graphLine: 4, startLine: 3, endLine: 3 }
+              ]
             },
             { kind: "source", startLine: 4, endLine: 4 }
           ]

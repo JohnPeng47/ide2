@@ -180,10 +180,10 @@ try {
   await writeFile(
     path.join(fixtureRoot, "fixture.ts"),
     [
-      "export const workspace = { status: 'ready' };",
-      "workspace.status = 'collecting';",
-      "workspace.status = 'ready';",
-      "export default workspace;",
+      "export function updateWorkspace() {",
+      "  workspace.status = 'collecting';",
+      "  workspace.status = 'ready';",
+      "}",
       ""
     ].join("\n"),
     "utf8"
@@ -344,11 +344,117 @@ try {
     await waitFor(async () => (
       await evaluate(cdp, `document.querySelectorAll('.source-code-viewer[data-highlighted="true"] .source-token').length`)
     ) > 0, { message: "Shiki did not render syntax-highlighted tokens" });
-    const compactedText = await evaluate(cdp, `document.querySelector('.source-fold-placeholder').textContent`);
-    if (!compactedText.includes("// Lines 2-3:")) {
-      throw new Error(`collapsed source did not render inline comment notation: ${compactedText}`);
+    const compactedLines = await evaluate(cdp, `Array.from(document.querySelectorAll(
+      '.source-call-graph-line > span:last-child, .source-call-graph-node > span:last-child'
+    )).map((node) => node.textContent)`);
+    const expectedCompactedLines = [
+      "  // [Lines 2-3 | 2 lines compacted]",
+      "  //",
+      "  // workspace",
+      "  //   |",
+      "  //   +--> status = 'collecting'",
+      "  //   \\--> status = 'ready'"
+    ];
+    if (JSON.stringify(compactedLines) !== JSON.stringify(expectedCompactedLines)) {
+      throw new Error(`collapsed source did not render an ASCII call graph comment: ${JSON.stringify(compactedLines)}`);
     }
-    await pointerClick(cdp, ".source-fold-placeholder");
+    const mappedNodeCount = await evaluate(cdp, `document.querySelectorAll('.source-call-graph-node').length`);
+    if (mappedNodeCount !== 3) throw new Error(`collapsed call graph did not render three mapped nodes: ${mappedNodeCount}`);
+    const compactedAlignment = await evaluate(cdp, `(() => {
+      const wholeToggle = document.querySelector('.source-section-fold-toggle').getBoundingClientRect();
+      const nodeToggle = document.querySelector('.source-call-graph-node-marker').getBoundingClientRect();
+      const retained = document.querySelector('.source-code-line[data-line="1"] .source-line-text').getBoundingClientRect();
+      const retainedLineNumberElement = document.querySelector('.source-code-line[data-line="1"] .source-line-number');
+      const comment = document.querySelector('.source-call-graph-line > span:last-child').getBoundingClientRect();
+      const foldGutterElement = document.querySelector('.source-fold-placeholder > .source-line-gutter');
+      const foldGutter = foldGutterElement.getBoundingClientRect();
+      const glyphRect = (root, pattern = /\\S/) => {
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+          const index = node.data.search(pattern);
+          if (index < 0) continue;
+          const range = document.createRange();
+          range.setStart(node, index);
+          range.setEnd(node, index + 1);
+          return range.getBoundingClientRect();
+        }
+        return null;
+      };
+      const textRect = (root) => {
+        const node = root.firstChild;
+        const start = node.data.search(/\\S/);
+        const end = node.data.search(/\\s*$/);
+        const range = document.createRange();
+        range.setStart(node, start);
+        range.setEnd(node, end);
+        return range.getBoundingClientRect();
+      };
+      const wholeGlyph = glyphRect(document.querySelector('.source-section-fold-toggle'));
+      const lineNumberGlyph = glyphRect(retainedLineNumberElement);
+      const nodeGlyph = glyphRect(document.querySelector('.source-call-graph-node-marker'));
+      const nodeCommentGlyph = glyphRect(document.querySelector('.source-call-graph-node > span:last-child'));
+      const wholeText = textRect(document.querySelector('.source-section-fold-toggle'));
+      const lineNumberText = textRect(retainedLineNumberElement);
+      const nodeText = textRect(document.querySelector('.source-call-graph-node-marker'));
+      const nodeComment = document.querySelector('.source-call-graph-node > span:last-child').getBoundingClientRect();
+      return {
+        wholeLineNumberColumnDelta: wholeText.right - lineNumberText.right,
+        nodeLineNumberColumnDelta: nodeText.right - lineNumberText.right,
+        commentDelta: comment.left - retained.left,
+        nodeVerticalDelta: nodeGlyph.top - nodeCommentGlyph.top,
+        nodeCenterDelta: (nodeToggle.top + nodeToggle.height / 2) - (nodeComment.top + nodeComment.height / 2),
+        wholeHeaderCenterDelta: (wholeToggle.top + wholeToggle.height / 2) - (comment.top + comment.height / 2),
+        gutterHeaderHeightDelta: foldGutter.height - comment.height,
+        gutterZIndex: Number(getComputedStyle(foldGutterElement).zIndex),
+        graphGutterZIndex: Number(getComputedStyle(document.querySelector('.source-call-graph-line > span:first-child')).zIndex)
+      };
+    })()`);
+    if (Math.abs(compactedAlignment.wholeLineNumberColumnDelta) > 0.5
+      || Math.abs(compactedAlignment.nodeLineNumberColumnDelta) > 0.5
+      || Math.abs(compactedAlignment.commentDelta) > 0.5
+      || Math.abs(compactedAlignment.nodeVerticalDelta) > 0.5
+      || Math.abs(compactedAlignment.nodeCenterDelta) > 0.5
+      || Math.abs(compactedAlignment.wholeHeaderCenterDelta) > 0.5
+      || Math.abs(compactedAlignment.gutterHeaderHeightDelta) > 0.5
+      || compactedAlignment.gutterZIndex <= compactedAlignment.graphGutterZIndex) {
+      throw new Error(`call graph controls or comments were misaligned: ${JSON.stringify(compactedAlignment)}`);
+    }
+    await captureScreenshot(cdp, { output: sourceScreenshotPath });
+    await pointerClick(cdp, '.source-call-graph-node[data-graph-line="3"]');
+    await waitForSelector(cdp, '.source-call-graph-node-source-line[data-line="2"]');
+    const nodeSourceText = await evaluate(cdp, `document.querySelector('.source-call-graph-node-source').textContent`);
+    if (!nodeSourceText.includes("workspace.status = 'collecting';")) {
+      throw new Error(`mapped graph node did not reveal its source block: ${nodeSourceText}`);
+    }
+    const sourceColumnAlignment = await evaluate(cdp, `(() => {
+      const retained = document.querySelector('.source-code-line[data-line="1"] .source-line-text').getBoundingClientRect();
+      const expanded = document.querySelector('.source-call-graph-node-source-line[data-line="2"] code').getBoundingClientRect();
+      return { retainedLeft: retained.left, expandedLeft: expanded.left, delta: expanded.left - retained.left };
+    })()`);
+    if (Math.abs(sourceColumnAlignment.delta) > 0.5) {
+      throw new Error(`expanded graph-node source did not align with retained source: ${JSON.stringify(sourceColumnAlignment)}`);
+    }
+    if (!await evaluate(cdp, `Boolean(document.querySelector('.source-call-graph-node[data-graph-line="4"]'))`)) {
+      throw new Error("expanding one graph node removed its independently compacted sibling");
+    }
+    await pointerClick(cdp, '.source-call-graph-node[data-graph-line="3"]');
+    await waitFor(async () => !await evaluate(cdp, `Boolean(document.querySelector('.source-call-graph-node-source'))`), {
+      message: "mapped graph node did not collapse independently"
+    });
+    const compactedCommentGlyphLeft = await evaluate(cdp, `(() => {
+      const root = document.querySelector('.source-call-graph-line > span:last-child');
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        const index = node.data.search(/\\S/);
+        if (index < 0) continue;
+        const range = document.createRange();
+        range.setStart(node, index);
+        range.setEnd(node, index + 1);
+        return range.getBoundingClientRect().left;
+      }
+      return null;
+    })()`);
+    await pointerClick(cdp, ".source-section-fold-toggle");
     await waitFor(async () => !await evaluate(cdp, `Boolean(document.querySelector('.source-fold-placeholder'))`), {
       message: "source fold placeholder did not expand"
     });
@@ -356,9 +462,26 @@ try {
     if (!revealedText.includes("workspace.status = 'collecting';")) {
       throw new Error("collapsed source did not reveal its original lines");
     }
+    const revealedSourceGlyphLeft = await evaluate(cdp, `(() => {
+      const root = document.querySelector('.source-code-line[data-line="2"] code');
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        const index = node.data.search(/\\S/);
+        if (index < 0) continue;
+        const range = document.createRange();
+        range.setStart(node, index);
+        range.setEnd(node, index + 1);
+        return range.getBoundingClientRect().left;
+      }
+      return null;
+    })()`);
+    if (compactedCommentGlyphLeft === null || revealedSourceGlyphLeft === null
+      || Math.abs(compactedCommentGlyphLeft - revealedSourceGlyphLeft) > 0.5) {
+      throw new Error(`compacted comment did not preserve source indentation: ${JSON.stringify({ compactedCommentGlyphLeft, revealedSourceGlyphLeft })}`);
+    }
     await pointerClick(cdp, ".source-fold-toggle");
     await waitForSelector(cdp, ".source-fold-placeholder");
-    await pointerClick(cdp, ".source-fold-placeholder");
+    await pointerClick(cdp, ".source-section-fold-toggle");
     await waitFor(async () => !await evaluate(cdp, `Boolean(document.querySelector('.source-fold-placeholder'))`), {
       message: "expanded source section did not support re-collapsing and reopening"
     });
