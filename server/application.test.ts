@@ -114,6 +114,26 @@ describe("DiagramApplication", () => {
     expect(workspace.diagramSets).toEqual([]);
   });
 
+  it("deletes built-in prompt templates and preserves a generation fallback", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-delete-prompt-template-"));
+    roots.push(root);
+    const application = new DiagramApplication(new DiagramStore(root), new ParallelRuntime());
+
+    await application.deleteSystemPromptTemplate("default");
+    expect((await application.systemPromptTemplates()).map((template) => template.id))
+      .not.toContain("default");
+    await expect(application.resolveSystemPromptTemplate()).resolves.toMatchObject({
+      id: "structure-first"
+    });
+
+    await application.deleteSystemPromptTemplate("flow-first");
+    await application.deleteSystemPromptTemplate("compact");
+    expect((await application.systemPromptTemplates()).map((template) => template.id))
+      .toEqual(["structure-first"]);
+    await expect(application.deleteSystemPromptTemplate("structure-first"))
+      .rejects.toThrow(/at least one system prompt template is required/);
+  });
+
   it("generates three initial diagrams immediately after collection", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "new-diagram-initialize-"));
     roots.push(root);

@@ -342,6 +342,28 @@ try {
       || !savedTemplate?.prompts?.diagram?.includes("Browser-persisted-template.")) {
       throw new Error(`edited prompt template was not persisted: ${JSON.stringify(savedTemplate)}`);
     }
+    await pointerClick(cdp, ".prompt-template-list > button:nth-child(2)");
+    await waitFor(async () => (
+      await evaluate(cdp, `document.querySelector('.prompt-template-fields input').value`)
+    ) === "Structure first", { message: "built-in prompt template did not become active" });
+    const promptDeleteConfirmation = new Promise((resolve) => {
+      const unsubscribe = cdp.on("Page.javascriptDialogOpening", (details) => {
+        unsubscribe();
+        resolve(details);
+      });
+    });
+    const promptDeleteClick = pointerClick(cdp, ".prompt-template-side-actions .is-danger");
+    const promptDeleteDetails = await promptDeleteConfirmation;
+    if (!promptDeleteDetails.message.includes("Delete prompt template “Structure first”?")) {
+      throw new Error(`prompt delete confirmation was incomplete: ${promptDeleteDetails.message}`);
+    }
+    await cdp.send("Page.handleJavaScriptDialog", { accept: true });
+    await promptDeleteClick;
+    await waitFor(async () => await evaluate(cdp, `(async () => {
+      const workspace = await fetch('/api/workspace').then((response) => response.json());
+      return !workspace.systemPromptTemplates['structure-first']
+        && document.querySelectorAll('.prompt-template-list > button').length === 3;
+    })()`), { message: "deleted built-in prompt template remained available" });
     await cdp.send("Page.reload", { ignoreCache: true });
     await waitForSelector(cdp, ".diagram-panel", { timeoutMs: 10000 });
     await pointerClick(cdp, ".screen-tabs button:nth-child(2)");

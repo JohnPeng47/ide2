@@ -58,8 +58,11 @@ versioned generation system-prompt templates, and a resizable workspace. The
 header's Settings menu opens a template editor with Diagram and
 DiagramComponent variants, resolved previews, custom-template creation, and
 built-in reset. Template edits are atomically persisted in
-`.diagrams/system-prompt-templates.json` and loaded again after restart. Every generation
-persists one immutable prompt-config record containing the exact instruction,
+`.diagrams/system-prompt-templates.json` and loaded again after restart.
+Prompt templates, including built-ins, can be deleted as long as at least one
+template remains; generation falls back to the first remaining template when
+the default has been removed.
+Every generation persists one immutable prompt-config record containing the exact instruction,
 reference representations, selected entities, model, style, and rendered
 context/system prompts. The batch and all parallel outputs reference that one
 record; batches do not duplicate prompt fields.

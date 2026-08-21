@@ -173,12 +173,17 @@ export function SystemPromptSettingsDialog(props: {
                     const reset = await props.onReset(selected.id);
                     setDraft(draftFrom(reset));
                   })}>reset built-in</button>
-                ) : (
-                  <button className="is-danger" type="button" disabled={busy} onClick={() => {
-                    if (!window.confirm(`Delete ${selected.label}?`)) return;
+                ) : null}
+                <button
+                  className="is-danger"
+                  type="button"
+                  disabled={busy || props.templates.length === 1}
+                  title={props.templates.length === 1 ? "At least one prompt template is required" : undefined}
+                  onClick={() => {
+                    if (!window.confirm(`Delete prompt template “${selected.label}”? This cannot be undone.`)) return;
                     void run(async () => props.onDelete(selected.id));
-                  }}>delete</button>
-                )}
+                  }}
+                >delete</button>
               </div>
             ) : null}
           </aside>

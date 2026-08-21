@@ -140,7 +140,8 @@ export class DiagramApplication {
   }
 
   async resolveSystemPromptTemplate(id?: unknown): Promise<SystemPromptTemplateRecord> {
-    const requestedId = id ?? DEFAULT_GENERATION_PROMPT_PROFILE_ID;
+    const useDefault = id === undefined || id === null;
+    const requestedId = useDefault ? DEFAULT_GENERATION_PROMPT_PROFILE_ID : id;
     if (typeof requestedId !== "string") {
       throw new Error(`unsupported generation prompt template: ${String(requestedId)}`);
     }
@@ -150,7 +151,8 @@ export class DiagramApplication {
     };
     const normalizedId = legacyIds[requestedId] ?? requestedId;
     const templates = await this.store.loadSystemPromptTemplates();
-    const template = templates.find((candidate) => candidate.id === normalizedId);
+    const template = templates.find((candidate) => candidate.id === normalizedId)
+      ?? (useDefault ? templates[0] : undefined);
     if (!template) {
       const available = templates.map((candidate) => candidate.id).join(", ");
       throw new Error(
@@ -1325,7 +1327,7 @@ export class DiagramApplication {
     const templates = await this.store.loadSystemPromptTemplates();
     const existing = templates.find((template) => template.id === id);
     if (!existing) throw new Error(`unknown system prompt template: ${id}`);
-    if (existing.builtIn) throw new Error("built-in system prompt templates cannot be deleted");
+    if (templates.length === 1) throw new Error("at least one system prompt template is required");
     await this.store.saveSystemPromptTemplates(
       templates.filter((template) => template.id !== id)
     );

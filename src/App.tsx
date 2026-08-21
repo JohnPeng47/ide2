@@ -135,6 +135,9 @@ export function App() {
       return Number(right.builtIn) - Number(left.builtIn) || left.label.localeCompare(right.label);
     });
   }, [workspace?.systemPromptTemplates]);
+  const fallbackPromptProfileId = promptProfiles.find(
+    (profile) => profile.id === DEFAULT_GENERATION_PROMPT_PROFILE_ID
+  )?.id ?? promptProfiles[0]?.id ?? DEFAULT_GENERATION_PROMPT_PROFILE_ID;
 
   useEffect(() => {
     if (!promptProfiles.length || promptProfiles.some((profile) => profile.id === promptProfileId)) return;
@@ -145,8 +148,8 @@ export function App() {
     const migrated = legacyIds[promptProfileId];
     setPromptProfileId(promptProfiles.some((profile) => profile.id === migrated)
       ? migrated
-      : DEFAULT_GENERATION_PROMPT_PROFILE_ID);
-  }, [promptProfiles, promptProfileId]);
+      : fallbackPromptProfileId);
+  }, [fallbackPromptProfileId, promptProfiles, promptProfileId]);
   const activeDiagram = diagrams.find((diagram) => diagram.id === activeDiagramId)
     ?? diagrams.at(-1)
     ?? null;
@@ -195,7 +198,7 @@ export function App() {
     setPrompt("");
     setCount(DEFAULT_GENERATION_COUNT);
     setOutputKind("diagram");
-    setPromptProfileId(DEFAULT_GENERATION_PROMPT_PROFILE_ID);
+    setPromptProfileId(fallbackPromptProfileId);
     setHistoricalReferences([]);
     setContextTab("code-entities");
     setProgress("");
@@ -354,7 +357,12 @@ export function App() {
   const removePromptTemplate = async (id: string): Promise<void> => {
     const next = await deleteSystemPromptTemplate(id);
     setWorkspace(next);
-    if (promptProfileId === id) setPromptProfileId(DEFAULT_GENERATION_PROMPT_PROFILE_ID);
+    if (promptProfileId === id) {
+      const remaining = Object.values(next.systemPromptTemplates);
+      setPromptProfileId(remaining.find(
+        (template) => template.id === DEFAULT_GENERATION_PROMPT_PROFILE_ID
+      )?.id ?? remaining[0]?.id ?? DEFAULT_GENERATION_PROMPT_PROFILE_ID);
+    }
   };
 
   const removeDiagramSet = async (setId: string): Promise<void> => {
