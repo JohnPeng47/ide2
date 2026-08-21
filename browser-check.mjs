@@ -1,6 +1,6 @@
 import { execFile, execFileSync, spawn } from "node:child_process";
 import { createServer } from "node:net";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -151,11 +151,14 @@ const screenshotPath = path.join(fixtureRoot, "studio.png");
 const sourceScreenshotPath = path.join(fixtureRoot, "compacted-source.png");
 const importScreenshotPath = path.join(fixtureRoot, "import-dialog.png");
 const generationScreenshotPath = path.join(fixtureRoot, "generation-model.png");
+const promptSettingsScreenshotPath = path.join(fixtureRoot, "system-prompt-settings.png");
 const mappingScreenshotPath = path.join(fixtureRoot, "code-entity-mapping.png");
+const setPickerScreenshotPath = path.join(fixtureRoot, "diagram-set-picker.png");
 let archivedArtifactPath = "";
 let archivedComponentArtifactPath = "";
 let importedArtifactPath = "";
 let importedComponentArtifactPath = "";
+let deletedSetId = "";
 let serverProcess;
 try {
   execFileSync("git", ["init", "-q", fixtureRoot]);
@@ -189,6 +192,36 @@ try {
     return Boolean(response?.ok);
   }, { timeoutMs: 10000, message: "preview server did not start" });
 
+  const promptTemplateListing = await execFileAsync("npm", [
+    "run", "diagram", "--", "prompt-templates", "--server", url
+  ], { cwd: PACKAGE_ROOT, encoding: "utf8" });
+  if (!promptTemplateListing.stdout.includes('"event":"prompt-templates"')
+    || !promptTemplateListing.stdout.includes('"id":"default"')
+    || !promptTemplateListing.stdout.includes('"id":"compact"')) {
+    throw new Error(`CLI prompt-template discovery was incomplete: ${promptTemplateListing.stdout}`);
+  }
+  const invalidTemplateResponse = await fetch(new URL("/api/diagram-sets", url), {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      path: fixtureRoot,
+      name: "Must not be created",
+      prompt: "Invalid template test",
+      promptTemplateId: "missing-template"
+    })
+  });
+  const invalidTemplateError = await invalidTemplateResponse.json();
+  const untouchedWorkspace = await fetch(new URL("/api/workspace", url)).then((response) => response.json());
+  if (invalidTemplateResponse.status !== 400
+    || !invalidTemplateError.error?.includes("available templates")
+    || untouchedWorkspace.diagramSets.length !== 0) {
+    throw new Error(`invalid template created partial state: ${JSON.stringify({
+      status: invalidTemplateResponse.status,
+      error: invalidTemplateError,
+      diagramSets: untouchedWorkspace.diagramSets
+    })}`);
+  }
+
   await withHeadlessBrowser({ url, width: 1440, height: 900 }, async ({ cdp }) => {
     await cdp.send("Page.enable");
     await cdp.send("Runtime.enable");
@@ -218,7 +251,10 @@ try {
     const collectionResult = await collection;
     if (!collectionResult.stdout.includes(`"event":"server"`)
       || !collectionResult.stdout.includes(`"serverUrl":"${url.slice(0, -1)}"`)
-      || !collectionResult.stdout.includes(`"event":"ready"`)) {
+      || !collectionResult.stdout.includes(`"event":"ready"`)
+      || !collectionResult.stdout.includes(`"promptTemplateId":"default"`)
+      || !collectionResult.stdout.includes(`"promptTemplateVersion":1`)
+      || !collectionResult.stdout.includes(`"generationPromptConfigId":"prompt-`)) {
       throw new Error("CLI did not print the studio server address");
     }
     await waitForSelector(cdp, ".diagram-panel", { timeoutMs: 10000 });
@@ -263,6 +299,41 @@ try {
     await waitFor(async () => (
       await evaluate(cdp, `document.querySelector('#generation-prompt-profile').value`)
     ) === "compact", { message: "generation prompt profile did not select Compact" });
+    await pointerClick(cdp, ".settings-menu-shell > button");
+    await waitForSelector(cdp, ".settings-menu [role=menuitem]");
+    await pointerClick(cdp, ".settings-menu [role=menuitem]");
+    await waitForSelector(cdp, ".prompt-settings-dialog");
+    const compactTemplate = await evaluate(cdp, `document.querySelector(
+      '.prompt-template-editor textarea'
+    ).value`);
+    await replaceText(
+      cdp,
+      ".prompt-template-editor textarea",
+      `${compactTemplate} Browser-persisted-template.`
+    );
+    await captureScreenshot(cdp, { output: promptSettingsScreenshotPath });
+    await pointerClick(cdp, '.prompt-settings-dialog button[type="submit"]');
+    await waitFor(async () => (
+      await evaluate(cdp, `document.querySelector('.prompt-settings-dialog footer > span').textContent`)
+    ).includes("v2"), { message: "system prompt template did not save revision two" });
+    const savedTemplate = await evaluate(cdp, `(async () => {
+      const workspace = await fetch('/api/workspace').then((response) => response.json());
+      return workspace.systemPromptTemplates.compact;
+    })()`);
+    if (savedTemplate?.version !== 2
+      || !savedTemplate?.prompts?.diagram?.includes("Browser-persisted-template.")) {
+      throw new Error(`edited prompt template was not persisted: ${JSON.stringify(savedTemplate)}`);
+    }
+    await cdp.send("Page.reload", { ignoreCache: true });
+    await waitForSelector(cdp, ".diagram-panel", { timeoutMs: 10000 });
+    await pointerClick(cdp, ".screen-tabs button:nth-child(2)");
+    await waitForSelector(cdp, "#generation-prompt-profile");
+    await selectLastOption(cdp, "#generation-model");
+    await selectLastOption(cdp, "#generation-prompt-profile");
+    await pointerClick(cdp, "#diagram-prompt");
+    await cdp.send("Input.insertText", { text: "Show @" });
+    await waitForSelector(cdp, ".mention-menu [role=option]");
+    await pointerClick(cdp, ".mention-menu [role=option]");
     await captureScreenshot(cdp, { output: generationScreenshotPath });
 
     await pointerClick(cdp, ".generate-action");
@@ -275,7 +346,8 @@ try {
     })()`);
     if (generatedPromptConfig?.modelId !== "gpt-5.6-sol"
       || generatedPromptConfig?.systemPrompt?.profileId !== "compact"
-      || !generatedPromptConfig?.systemPrompt?.rendered.includes("dense layout")) {
+      || generatedPromptConfig?.systemPrompt?.profileVersion !== 2
+      || !generatedPromptConfig?.systemPrompt?.rendered.includes("Browser-persisted-template.")) {
       throw new Error(`generation prompt config was incomplete: ${JSON.stringify(generatedPromptConfig)}`);
     }
     const oldStripExists = await evaluate(cdp, `Boolean(document.querySelector('.diagram-tabs'))`);
@@ -665,6 +737,10 @@ try {
     if (diagramMentions.includes(stableHandle)) {
       throw new Error("archived diagram remained available as a prompt mention");
     }
+    await pointerClick(cdp, ".mention-menu [role=option]");
+    await waitFor(async () => await evaluate(cdp, `!document.querySelector('.mention-menu')`), {
+      message: "diagram mention menu did not close after selection"
+    });
 
     await pointerClick(cdp, '.output-kind [role="radio"]:last-child');
     await waitFor(async () => await evaluate(cdp, `(
@@ -886,6 +962,77 @@ try {
         (node) => node.textContent === 'IMPORTED'
       )
     )`), { message: "imported artifacts were not persisted across reload" });
+
+    const disposableCollection = await execFileAsync("npm", [
+      "run", "diagram", "--", "create",
+      "--path", fixtureRoot,
+      "--name", "Delete browser fixture",
+      "--prompt", "Temporary Diagram Set",
+      "--prompt-template", "compact",
+      "--server", url
+    ], {
+      cwd: PACKAGE_ROOT,
+      env: { ...process.env, NEW_DIAGRAM_AGENT: "fake" },
+      encoding: "utf8"
+    });
+    if (!disposableCollection.stdout.includes('"promptTemplateId":"compact"')
+      || !disposableCollection.stdout.includes('"promptTemplateVersion":2')) {
+      throw new Error(`CLI did not report the selected persisted template: ${disposableCollection.stdout}`);
+    }
+    await cdp.send("Page.reload", { ignoreCache: true });
+    await waitForSelector(cdp, ".diagram-panel", { timeoutMs: 10000 });
+    deletedSetId = await evaluate(cdp, `(async () => {
+      const workspace = await fetch('/api/workspace').then((response) => response.json());
+      return workspace.diagramSets.at(-1)?.id ?? '';
+    })()`);
+    const selectedInitialPrompt = await evaluate(cdp, `(async () => {
+      const workspace = await fetch('/api/workspace').then((response) => response.json());
+      const set = workspace.diagramSets.find((candidate) => candidate.id === ${JSON.stringify(deletedSetId)});
+      const batch = workspace.generationBatches[set?.generationBatchIds.at(-1)];
+      return workspace.generationPromptConfigs[batch?.promptConfigId]?.systemPrompt ?? null;
+    })()`);
+    if (selectedInitialPrompt?.profileId !== "compact"
+      || selectedInitialPrompt?.profileVersion !== 2
+      || !selectedInitialPrompt?.rendered?.includes("Browser-persisted-template.")) {
+      throw new Error(`initial generation ignored CLI template selection: ${JSON.stringify(selectedInitialPrompt)}`);
+    }
+    await pointerClick(cdp, ".set-picker__trigger");
+    await waitFor(async () => (
+      await evaluate(cdp, `document.querySelectorAll('.set-picker__option').length`)
+    ) === 2, { message: "Diagram Set picker did not render both sets" });
+    const deleteLabels = await evaluate(cdp, `Array.from(
+      document.querySelectorAll('.set-picker__delete'),
+      (button) => button.textContent
+    )`);
+    if (deleteLabels.some((label) => label !== "[x]")) {
+      throw new Error(`Diagram Set delete controls were incomplete: ${JSON.stringify(deleteLabels)}`);
+    }
+    await captureScreenshot(cdp, { output: setPickerScreenshotPath });
+    const confirmation = new Promise((resolve) => {
+      const unsubscribe = cdp.on("Page.javascriptDialogOpening", (details) => {
+        unsubscribe();
+        resolve(details);
+      });
+    });
+    const deleteClick = pointerClick(cdp, ".set-picker__option.is-active .set-picker__delete");
+    const confirmationDetails = await confirmation;
+    if (!confirmationDetails.message.includes("moved to .diagrams/trash")) {
+      throw new Error(`delete confirmation omitted recovery details: ${confirmationDetails.message}`);
+    }
+    await cdp.send("Page.handleJavaScriptDialog", { accept: true });
+    await deleteClick;
+    await waitFor(async () => await evaluate(cdp, `(async () => {
+      const workspace = await fetch('/api/workspace').then((response) => response.json());
+      return Array.isArray(workspace.diagramSets)
+        && workspace.diagramSets.length === 1
+        && !workspace.diagramSets.some((set) => set.id === ${JSON.stringify(deletedSetId)});
+    })()`), { timeoutMs: 10000, message: "deleted Diagram Set remained in the project index" });
+    await cdp.send("Page.reload", { ignoreCache: true });
+    await waitForSelector(cdp, ".diagram-panel", { timeoutMs: 10000 });
+    const survivingSetCount = await evaluate(cdp, `(async () => (
+      await fetch('/api/workspace').then((response) => response.json())
+    ).diagramSets.length)()`);
+    if (survivingSetCount !== 1) throw new Error("Diagram Set deletion did not survive reload");
   });
 
   const screenshot = await readFile(screenshotPath);
@@ -896,8 +1043,12 @@ try {
   if (importScreenshot.length < 1000) throw new Error("import dialog screenshot was unexpectedly small");
   const generationScreenshot = await readFile(generationScreenshotPath);
   if (generationScreenshot.length < 1000) throw new Error("generation model screenshot was unexpectedly small");
+  const promptSettingsScreenshot = await readFile(promptSettingsScreenshotPath);
+  if (promptSettingsScreenshot.length < 1000) throw new Error("system prompt settings screenshot was unexpectedly small");
   const mappingScreenshot = await readFile(mappingScreenshotPath);
   if (mappingScreenshot.length < 1000) throw new Error("code-entity mapping screenshot was unexpectedly small");
+  const setPickerScreenshot = await readFile(setPickerScreenshotPath);
+  if (setPickerScreenshot.length < 1000) throw new Error("Diagram Set picker screenshot was unexpectedly small");
   const archivedArtifact = JSON.parse(await readFile(archivedArtifactPath, "utf8"));
   if (!archivedArtifact.archivedAt) throw new Error("archived diagram artifact was removed or unmarked");
   const archivedComponentArtifact = JSON.parse(await readFile(archivedComponentArtifactPath, "utf8"));
@@ -910,7 +1061,19 @@ try {
   if (importedComponentArtifact.origin !== "imported") {
     throw new Error("imported DiagramComponent was not persisted");
   }
-  process.stdout.write("browser check passed: source -> components -> archives -> imports -> reload\n");
+  const trashEntries = await readdir(path.join(fixtureRoot, ".diagrams", "trash", "diagram-sets"));
+  const deletedEntry = trashEntries.find((entry) => entry.startsWith(`${deletedSetId}-`));
+  if (!deletedEntry) throw new Error("deleted Diagram Set was not moved to recoverable trash");
+  const trashedSet = JSON.parse(await readFile(path.join(
+    fixtureRoot,
+    ".diagrams",
+    "trash",
+    "diagram-sets",
+    deletedEntry,
+    "diagram-set.json"
+  ), "utf8"));
+  if (trashedSet.id !== deletedSetId) throw new Error("trashed Diagram Set contents were incomplete");
+  process.stdout.write("browser check passed: source -> components -> archives -> imports -> set delete -> reload\n");
 } finally {
   if (serverProcess?.exitCode === null) serverProcess.kill("SIGTERM");
   await rm(fixtureRoot, { recursive: true, force: true });

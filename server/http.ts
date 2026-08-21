@@ -45,6 +45,16 @@ function parseGeneration(pathname: string): { setId: string } | null {
   return match ? { setId: match[1] } : null;
 }
 
+function parseDiagramSet(pathname: string): { setId: string } | null {
+  const match = pathname.match(/^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)$/);
+  return match ? { setId: match[1] } : null;
+}
+
+function parseSystemPromptTemplate(pathname: string): { id: string; reset: boolean } | null {
+  const match = pathname.match(/^\/api\/system-prompt-templates\/([a-z0-9][a-z0-9-]*)(\/reset)?$/);
+  return match ? { id: match[1], reset: Boolean(match[2]) } : null;
+}
+
 function parseProjectImport(pathname: string): { projectId: string } | null {
   const match = pathname.match(/^\/api\/projects\/([a-z0-9][a-z0-9-]*)\/imports$/);
   return match ? { projectId: match[1] } : null;
@@ -152,15 +162,57 @@ export function diagramApi(projectRoot: string, diagramsDirectory = ".diagrams")
         const rangeIndex = Number(url.searchParams.get("range") ?? "0");
         return sendJson(response, 200, await application.sourceSnippet(setId, entityId, rangeIndex));
       }
+      if (url.pathname === "/api/system-prompt-templates") {
+        if (request.method === "GET") {
+          return sendJson(response, 200, { templates: await application.systemPromptTemplates() });
+        }
+        if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
+        const body = await readBody(request) as Record<string, unknown>;
+        return sendJson(response, 200, await application.saveSystemPromptTemplate({
+          label: body.label,
+          description: body.description,
+          prompts: body.prompts
+        }));
+      }
+      const systemPromptTemplate = parseSystemPromptTemplate(url.pathname);
+      if (systemPromptTemplate) {
+        if (systemPromptTemplate.reset) {
+          if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
+          return sendJson(
+            response,
+            200,
+            await application.resetSystemPromptTemplate(systemPromptTemplate.id)
+          );
+        }
+        if (request.method === "DELETE") {
+          return sendJson(
+            response,
+            200,
+            await application.deleteSystemPromptTemplate(systemPromptTemplate.id)
+          );
+        }
+        if (request.method !== "PUT") return sendJson(response, 405, { error: "method not allowed" });
+        const body = await readBody(request) as Record<string, unknown>;
+        return sendJson(response, 200, await application.saveSystemPromptTemplate({
+          id: systemPromptTemplate.id,
+          label: body.label,
+          description: body.description,
+          prompts: body.prompts
+        }));
+      }
       if (url.pathname === "/api/diagram-sets") {
         if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
         const body = await readBody(request) as Record<string, unknown>;
         const inputPath = typeof body.path === "string" ? body.path : "";
         const name = typeof body.name === "string" ? body.name : "";
         const prompt = typeof body.prompt === "string" ? body.prompt : "";
+        const requestedPromptTemplateId = body.promptTemplateId;
         if (!inputPath || !name.trim()) {
           return sendJson(response, 400, { error: "repository path and DiagramSet name are required" });
         }
+        const promptTemplate = await application.resolveSystemPromptTemplate(
+          requestedPromptTemplateId
+        );
         response.statusCode = 200;
         response.setHeader("content-type", "application/x-ndjson; charset=utf-8");
         response.setHeader("cache-control", "no-cache, no-transform");
@@ -169,20 +221,36 @@ export function diagramApi(projectRoot: string, diagramsDirectory = ".diagrams")
         sendEvent(response, {
           type: "created",
           diagramSetId: diagramSet.id,
-          projectRoot: diagramSet.sourceCheckoutRoot
+          projectRoot: diagramSet.sourceCheckoutRoot,
+          promptTemplateId: promptTemplate.id
         });
         await application.collectCodeEntities(diagramSet.id, (event) => sendEvent(response, event));
         const workspace = await application.generateInitialDiagrams(
           diagramSet.id,
+          { promptTemplateId: promptTemplate.id },
           (event) => sendEvent(response, event)
         );
+        const completedSet = workspace.diagramSets.find((set) => set.id === diagramSet.id);
+        const batchId = completedSet?.generationBatchIds.at(-1);
+        const batch = batchId ? workspace.generationBatches[batchId] : undefined;
+        const promptConfig = batch
+          ? workspace.generationPromptConfigs[batch.promptConfigId]
+          : undefined;
         sendEvent(response, {
           type: "result",
           diagramSetId: diagramSet.id,
+          promptTemplateId: promptConfig?.systemPrompt.profileId,
+          promptTemplateVersion: promptConfig?.systemPrompt.profileVersion,
+          generationPromptConfigId: promptConfig?.id,
           workspace
         });
         if (!response.destroyed && !response.writableEnded) response.end();
         return;
+      }
+      const diagramSet = parseDiagramSet(url.pathname);
+      if (diagramSet) {
+        if (request.method !== "DELETE") return sendJson(response, 405, { error: "method not allowed" });
+        return sendJson(response, 200, await application.deleteDiagramSet(diagramSet.setId));
       }
       const projectImport = parseProjectImport(url.pathname);
       if (projectImport) {

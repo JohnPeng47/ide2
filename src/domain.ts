@@ -12,13 +12,7 @@ export const DIAGRAM_MODELS = [
 export type DiagramModelId = typeof DIAGRAM_MODELS[number]["id"];
 export const DEFAULT_DIAGRAM_MODEL_ID: DiagramModelId = "gpt-5.6-sol";
 
-export const GENERATION_PROMPT_PROFILES = [
-  { id: "default", label: "Default" },
-  { id: "structureFirst", label: "Structure first" },
-  { id: "flowFirst", label: "Flow first" },
-  { id: "compact", label: "Compact" }
-] as const;
-export type GenerationPromptProfileId = typeof GENERATION_PROMPT_PROFILES[number]["id"];
+export type GenerationPromptProfileId = string;
 export const DEFAULT_GENERATION_PROMPT_PROFILE_ID: GenerationPromptProfileId = "default";
 
 export function isDiagramModelId(value: unknown): value is DiagramModelId {
@@ -26,7 +20,7 @@ export function isDiagramModelId(value: unknown): value is DiagramModelId {
 }
 
 export function isGenerationPromptProfileId(value: unknown): value is GenerationPromptProfileId {
-  return GENERATION_PROMPT_PROFILES.some((profile) => profile.id === value);
+  return typeof value === "string" && /^[a-z0-9][a-z0-9-]*$/.test(value);
 }
 export type AgentRunKind =
   | "collect-entities"
@@ -153,10 +147,22 @@ export interface GenerationPromptConfigRecord {
     templateId: "artifact-generation";
     templateVersion: 1;
     profileId: GenerationPromptProfileId;
-    profileVersion: 1;
+    profileVersion: number;
     rendered: string;
   };
   createdAt: string;
+}
+
+export interface SystemPromptTemplateRecord {
+  schemaVersion: typeof SCHEMA_VERSION;
+  id: GenerationPromptProfileId;
+  label: string;
+  description: string;
+  builtIn: boolean;
+  version: number;
+  prompts: Record<GenerationOutputKind, string>;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface DiagramSelectionBounds {
@@ -320,6 +326,7 @@ export interface WorkspaceSnapshot {
   diagrams: Record<string, DiagramRecord>;
   diagramComponents: Record<string, DiagramComponentRecord>;
   generationPromptConfigs: Record<string, GenerationPromptConfigRecord>;
+  systemPromptTemplates: Record<string, SystemPromptTemplateRecord>;
   generationBatches: Record<string, GenerationBatchRecord>;
   agentRuns: Record<string, AgentRunRecord>;
   editSessions: Record<string, EditSessionRecord>;

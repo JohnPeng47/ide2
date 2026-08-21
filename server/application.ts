@@ -12,7 +12,6 @@ import {
   isDiagramComponentArchived,
   isDiagramArchived,
   isDiagramModelId,
-  isGenerationPromptProfileId,
   normalizeAscii,
   slugify,
   type AgentProgress,
@@ -32,9 +31,14 @@ import {
   type GeneratedArtifactDraft,
   type GenerationOutputKind,
   type GenerationBatchRecord,
+  type SystemPromptTemplateRecord,
   type WorkspaceSnapshot
 } from "../src/domain";
-import { createGenerationPromptConfig } from "../src/prompt";
+import {
+  createBuiltInSystemPromptTemplates,
+  createGenerationPromptConfig,
+  renderSystemPromptTemplate
+} from "../src/prompt";
 import type { DiagramAgentRuntime } from "./agentRuntime";
 import { DiagramStore, discoverRepository } from "./store";
 
@@ -131,6 +135,31 @@ export class DiagramApplication {
 
   constructor(readonly store: DiagramStore, private readonly agents: DiagramAgentRuntime) {}
 
+  async systemPromptTemplates(): Promise<SystemPromptTemplateRecord[]> {
+    return this.store.loadSystemPromptTemplates();
+  }
+
+  async resolveSystemPromptTemplate(id?: unknown): Promise<SystemPromptTemplateRecord> {
+    const requestedId = id ?? DEFAULT_GENERATION_PROMPT_PROFILE_ID;
+    if (typeof requestedId !== "string") {
+      throw new Error(`unsupported generation prompt template: ${String(requestedId)}`);
+    }
+    const legacyIds: Record<string, string> = {
+      structureFirst: "structure-first",
+      flowFirst: "flow-first"
+    };
+    const normalizedId = legacyIds[requestedId] ?? requestedId;
+    const templates = await this.store.loadSystemPromptTemplates();
+    const template = templates.find((candidate) => candidate.id === normalizedId);
+    if (!template) {
+      const available = templates.map((candidate) => candidate.id).join(", ");
+      throw new Error(
+        `unsupported generation prompt template: ${requestedId}; available templates: ${available}`
+      );
+    }
+    return template;
+  }
+
   async createDiagramSet(input: { path: string; name: string; prompt: string }): Promise<DiagramSetRecord> {
     if (!input.name.trim()) throw new Error("DiagramSet name is required");
     const location = await discoverRepository(input.path);
@@ -221,6 +250,7 @@ export class DiagramApplication {
 
   async generateInitialDiagrams(
     setId: string,
+    input: { promptTemplateId?: unknown } = {},
     onEvent?: (event: ServiceEvent) => void
   ): Promise<WorkspaceSnapshot> {
     const entities = await this.store.loadCodeEntities(setId);
@@ -228,7 +258,8 @@ export class DiagramApplication {
       prompt: "",
       selectedCodeEntityIds: entities.entities.map((entity) => entity.id),
       count: DEFAULT_GENERATION_COUNT,
-      outputKind: "diagram"
+      outputKind: "diagram",
+      promptProfileId: input.promptTemplateId
     }, onEvent);
   }
 
@@ -355,6 +386,25 @@ export class DiagramApplication {
       };
       await this.store.addDiagramComponent(component);
     }
+    return this.workspace();
+  }
+
+  async deleteDiagramSet(setId: string): Promise<WorkspaceSnapshot> {
+    const set = await this.store.loadDiagramSet(setId);
+    if (set.readiness === "collecting") {
+      throw new Error("a Diagram Set cannot be deleted while collection is running");
+    }
+    if (this.activeBatches.has(setId)
+      || [...this.activeMappings].some((key) => key.startsWith(`${setId}:`))) {
+      throw new Error("a Diagram Set cannot be deleted while an agent is running");
+    }
+    const workspace = await this.workspace();
+    const hasActiveRun = Object.values(workspace.agentRuns).some((run) => (
+      run.diagramSetId === setId
+      && ["queued", "reading-context", "generating", "validating"].includes(run.status)
+    ));
+    if (hasActiveRun) throw new Error("a Diagram Set cannot be deleted while an agent is running");
+    await this.store.moveDiagramSetToTrash(setId);
     return this.workspace();
   }
 
@@ -955,15 +1005,12 @@ export class DiagramApplication {
     }
     const modelId = input.modelId ?? DEFAULT_DIAGRAM_MODEL_ID;
     if (!isDiagramModelId(modelId)) throw new Error(`unsupported generation model: ${String(modelId)}`);
-    const promptProfileId = input.promptProfileId ?? DEFAULT_GENERATION_PROMPT_PROFILE_ID;
-    if (!isGenerationPromptProfileId(promptProfileId)) {
-      throw new Error(`unsupported generation prompt profile: ${String(promptProfileId)}`);
-    }
     if (this.activeBatches.has(setId)) throw new Error("a generation batch is already active for this DiagramSet");
     this.activeBatches.add(setId);
     try {
       const set = await this.store.loadDiagramSet(setId);
       const entities = await this.store.loadCodeEntities(setId);
+      const promptProfile = await this.resolveSystemPromptTemplate(input.promptProfileId);
       if (entities.status !== "finalized" || set.readiness !== "ready") {
         throw new Error("CodeEntitiesSet must be finalized before generation");
       }
@@ -984,7 +1031,7 @@ export class DiagramApplication {
         components: existingComponents,
         outputKind: input.outputKind,
         modelId,
-        profileId: promptProfileId,
+        profile: promptProfile,
         instruction: input.prompt,
         selectedCodeEntityIds: input.selectedCodeEntityIds,
         createdAt
@@ -1199,6 +1246,90 @@ export class DiagramApplication {
     } finally {
       this.activeBatches.delete(setId);
     }
+  }
+
+  async saveSystemPromptTemplate(input: {
+    id?: unknown;
+    label: unknown;
+    description: unknown;
+    prompts: unknown;
+  }): Promise<WorkspaceSnapshot> {
+    const label = typeof input.label === "string" ? input.label.trim() : "";
+    const description = typeof input.description === "string" ? input.description.trim() : "";
+    const prompts = input.prompts && typeof input.prompts === "object"
+      ? input.prompts as Record<string, unknown>
+      : {};
+    const diagramPrompt = typeof prompts.diagram === "string" ? prompts.diagram.trim() : "";
+    const componentPrompt = typeof prompts["diagram-component"] === "string"
+      ? prompts["diagram-component"].trim()
+      : "";
+    if (!label) throw new Error("template name is required");
+    if (label.length > 80) throw new Error("template name cannot exceed 80 characters");
+    if (description.length > 240) throw new Error("template description cannot exceed 240 characters");
+    if (!diagramPrompt || !componentPrompt) throw new Error("both system prompts are required");
+    if (diagramPrompt.length > 32000 || componentPrompt.length > 32000) {
+      throw new Error("system prompts cannot exceed 32,000 characters");
+    }
+    renderSystemPromptTemplate(diagramPrompt, "diagram");
+    renderSystemPromptTemplate(componentPrompt, "diagram-component");
+
+    const templates = await this.store.loadSystemPromptTemplates();
+    const requestedId = typeof input.id === "string" ? input.id : undefined;
+    const existing = requestedId ? templates.find((template) => template.id === requestedId) : undefined;
+    if (requestedId && !existing) throw new Error(`unknown system prompt template: ${requestedId}`);
+    const timestampValue = timestamp();
+    let id = existing?.id ?? slugify(label, "custom-prompt");
+    if (!existing) {
+      const ids = new Set(templates.map((template) => template.id));
+      const baseId = id;
+      let suffix = 2;
+      while (ids.has(id)) id = `${baseId}-${suffix++}`;
+    }
+    const template: SystemPromptTemplateRecord = {
+      schemaVersion: SCHEMA_VERSION,
+      id,
+      label,
+      description,
+      builtIn: existing?.builtIn ?? false,
+      version: (existing?.version ?? 0) + 1,
+      prompts: { diagram: diagramPrompt, "diagram-component": componentPrompt },
+      createdAt: existing?.createdAt ?? timestampValue,
+      updatedAt: timestampValue
+    };
+    await this.store.saveSystemPromptTemplates(existing
+      ? templates.map((candidate) => candidate.id === id ? template : candidate)
+      : [...templates, template]);
+    return this.workspace();
+  }
+
+  async resetSystemPromptTemplate(id: string): Promise<WorkspaceSnapshot> {
+    const templates = await this.store.loadSystemPromptTemplates();
+    const existing = templates.find((template) => template.id === id);
+    if (!existing?.builtIn) throw new Error(`built-in system prompt template not found: ${id}`);
+    const original = createBuiltInSystemPromptTemplates(existing.createdAt)
+      .find((template) => template.id === id);
+    if (!original) throw new Error(`built-in system prompt template not found: ${id}`);
+    const reset: SystemPromptTemplateRecord = {
+      ...original,
+      version: existing.version + 1,
+      createdAt: existing.createdAt,
+      updatedAt: timestamp()
+    };
+    await this.store.saveSystemPromptTemplates(
+      templates.map((template) => template.id === id ? reset : template)
+    );
+    return this.workspace();
+  }
+
+  async deleteSystemPromptTemplate(id: string): Promise<WorkspaceSnapshot> {
+    const templates = await this.store.loadSystemPromptTemplates();
+    const existing = templates.find((template) => template.id === id);
+    if (!existing) throw new Error(`unknown system prompt template: ${id}`);
+    if (existing.builtIn) throw new Error("built-in system prompt templates cannot be deleted");
+    await this.store.saveSystemPromptTemplates(
+      templates.filter((template) => template.id !== id)
+    );
+    return this.workspace();
   }
 
   private validateGeneratedArtifactDraft(

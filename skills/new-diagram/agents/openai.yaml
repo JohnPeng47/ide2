@@ -1,4 +1,4 @@
 interface:
   display_name: "New Diagram"
   short_description: "Bootstrap an ASCII diagram workspace"
-  default_prompt: "Use $new-diagram to collect code entities for a new diagram set."
+  default_prompt: "Use $new-diagram to create one source-backed ASCII diagram workspace."

@@ -14,6 +14,7 @@ import {
   type GenerationPromptConfigRecord,
   type GenerationPromptProfileId,
   type GenerationPromptReference,
+  type SystemPromptTemplateRecord,
   type PromptReference
 } from "./domain";
 
@@ -32,46 +33,55 @@ export interface GenerationPromptBuildResult {
   allowedDiagramComponentIds: string[];
 }
 
-const PROFILE_DIRECTIVES: Record<GenerationPromptProfileId, {
-  diagram: string;
-  component: string;
-}> = {
-  default: {
-    diagram: "",
-    component: "Be creative."
-  },
-  structureFirst: {
-    diagram: "Emphasize ownership, boundaries, and hierarchy.",
-    component: "Emphasize a reusable structural relationship."
-  },
-  flowFirst: {
-    diagram: "Emphasize directional control and data flow.",
-    component: "Emphasize one clear input-to-output interaction."
-  },
-  compact: {
-    diagram: "Prefer a dense layout with minimal crossing edges.",
-    component: "Prefer a small fragment that composes cleanly."
-  }
-};
+const DIAGRAM_BASE = "Generate exactly one architecture diagram from the supplied explicit context. Give it a compact, specific name, ideally two to five words; omit redundant words such as the DiagramSet name.";
+const COMPONENT_BASE = "Generate exactly one reusable DiagramComponent from the supplied explicit context. It is a fragment for a broader ASCII Diagram, not a complete diagram. Give it a compact, specific name.";
+const DIAGRAM_FINISH = "Never modify files. Use 7-bit ASCII only and finish through {{submissionTool}}.";
+const COMPONENT_FINISH = "Never modify files. Use 7-bit ASCII only and finish through {{submissionTool}}.";
+
+export const BUILT_IN_SYSTEM_PROMPT_TEMPLATES = [
+  { id: "default", label: "Default", description: "Balanced architecture diagram generation.", diagram: "", component: "Be creative." },
+  { id: "structure-first", label: "Structure first", description: "Prioritize ownership, boundaries, and hierarchy.", diagram: "Emphasize ownership, boundaries, and hierarchy.", component: "Emphasize a reusable structural relationship." },
+  { id: "flow-first", label: "Flow first", description: "Prioritize directional control and data flow.", diagram: "Emphasize directional control and data flow.", component: "Emphasize one clear input-to-output interaction." },
+  { id: "compact", label: "Compact", description: "Prefer small, dense, composable layouts.", diagram: "Prefer a dense layout with minimal crossing edges.", component: "Prefer a small fragment that composes cleanly." }
+] as const;
+
+export function createBuiltInSystemPromptTemplates(createdAt: string): SystemPromptTemplateRecord[] {
+  return BUILT_IN_SYSTEM_PROMPT_TEMPLATES.map((template) => ({
+    schemaVersion: SCHEMA_VERSION,
+    id: template.id,
+    label: template.label,
+    description: template.description,
+    builtIn: true,
+    version: 1,
+    prompts: {
+      diagram: [DIAGRAM_BASE, template.diagram, DIAGRAM_FINISH].filter(Boolean).join(" "),
+      "diagram-component": [COMPONENT_BASE, template.component, COMPONENT_FINISH].filter(Boolean).join(" ")
+    },
+    createdAt,
+    updatedAt: createdAt
+  }));
+}
+
+export function renderSystemPromptTemplate(
+  template: string,
+  outputKind: GenerationOutputKind
+): string {
+  const values: Record<string, string> = {
+    outputKind: outputKind === "diagram" ? "Diagram" : "DiagramComponent",
+    submissionTool: outputKind === "diagram" ? "submit_diagram" : "submit_diagram_component"
+  };
+  const unknown = [...template.matchAll(/{{\s*([a-zA-Z][a-zA-Z0-9]*)\s*}}/g)]
+    .map((match) => match[1])
+    .filter((name) => values[name] === undefined);
+  if (unknown.length) throw new Error(`unknown system prompt variable: {{${unknown[0]}}}`);
+  return template.replace(/{{\s*([a-zA-Z][a-zA-Z0-9]*)\s*}}/g, (_match, name: string) => values[name]);
+}
 
 export function renderArtifactSystemPrompt(input: {
   outputKind: GenerationOutputKind;
-  profileId: GenerationPromptProfileId;
+  template: SystemPromptTemplateRecord;
 }): string {
-  const componentMode = input.outputKind === "diagram-component";
-  const directive = PROFILE_DIRECTIVES[input.profileId][componentMode ? "component" : "diagram"];
-  return [
-    componentMode
-      ? "Generate exactly one reusable DiagramComponent from the supplied explicit context. It is a fragment for a broader ASCII Diagram, not a complete diagram."
-      : "Generate exactly one architecture diagram from the supplied explicit context.",
-    componentMode
-      ? "Give it a compact, specific name."
-      : "Give it a compact, specific name, ideally two to five words; omit redundant words such as the DiagramSet name.",
-    directive,
-    componentMode
-      ? "Never modify files. Use 7-bit ASCII only and finish through submit_diagram_component."
-      : "Never modify files. Use 7-bit ASCII only and finish through submit_diagram."
-  ].filter(Boolean).join(" ");
+  return renderSystemPromptTemplate(input.template.prompts[input.outputKind], input.outputKind);
 }
 
 export function promptOptions(
@@ -112,7 +122,7 @@ export function createGenerationPromptConfig(input: {
   components: DiagramComponentRecord[];
   outputKind: GenerationOutputKind;
   modelId: DiagramModelId;
-  profileId: GenerationPromptProfileId;
+  profile: SystemPromptTemplateRecord;
   instruction: string;
   selectedCodeEntityIds: string[];
   createdAt: string;
@@ -222,11 +232,11 @@ export function createGenerationPromptConfig(input: {
     systemPrompt: {
       templateId: "artifact-generation",
       templateVersion: 1,
-      profileId: input.profileId,
-      profileVersion: 1,
+      profileId: input.profile.id,
+      profileVersion: input.profile.version,
       rendered: renderArtifactSystemPrompt({
         outputKind: input.outputKind,
-        profileId: input.profileId
+        template: input.profile
       })
     },
     createdAt: input.createdAt

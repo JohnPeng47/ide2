@@ -1,10 +1,11 @@
 import {
-  GENERATION_PROMPT_PROFILES,
-  type GenerationPromptProfileId
+  type GenerationPromptProfileId,
+  type SystemPromptTemplateRecord
 } from "../domain";
 
 export function PromptProfileSelector(props: {
   id: string;
+  templates: SystemPromptTemplateRecord[];
   value: GenerationPromptProfileId;
   disabled: boolean;
   onChange: (value: GenerationPromptProfileId) => void;
@@ -18,7 +19,7 @@ export function PromptProfileSelector(props: {
         disabled={props.disabled}
         onChange={(event) => props.onChange(event.target.value as GenerationPromptProfileId)}
       >
-        {GENERATION_PROMPT_PROFILES.map((profile) => (
+        {props.templates.map((profile) => (
           <option value={profile.id} key={profile.id}>{profile.label}</option>
         ))}
       </select>

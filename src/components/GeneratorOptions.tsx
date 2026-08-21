@@ -6,7 +6,8 @@ import type {
   DiagramRecord,
   GenerationOutputKind,
   GenerationPromptReference,
-  GenerationPromptProfileId
+  GenerationPromptProfileId,
+  SystemPromptTemplateRecord
 } from "../domain";
 import { ModelSelector } from "./ModelSelector";
 import { PromptProfileSelector } from "./PromptProfileSelector";
@@ -19,6 +20,7 @@ export function GeneratorOptions(props: {
   outputKind: GenerationOutputKind;
   modelId: DiagramModelId;
   promptProfileId: GenerationPromptProfileId;
+  promptProfiles: SystemPromptTemplateRecord[];
   historicalReferences: GenerationPromptReference[];
   prompt: string;
   count: number;
@@ -116,6 +118,7 @@ export function GeneratorOptions(props: {
           <span className="generation-prompt-selectors">
             <PromptProfileSelector
               id="generation-prompt-profile"
+              templates={props.promptProfiles}
               value={props.promptProfileId}
               disabled={props.generating}
               onChange={props.onPromptProfile}

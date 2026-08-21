@@ -7,6 +7,7 @@ import {
   captureDiagramComponent,
   captureNestedDiagramComponent,
   createEditSession,
+  deleteDiagramSet,
   discardEdit,
   fetchWorkspace,
   generateArtifacts,
@@ -16,14 +17,19 @@ import {
   placeEditMarker,
   redoEdit,
   renameDiagram,
+  resetSystemPromptTemplate,
+  saveSystemPromptTemplate,
+  deleteSystemPromptTemplate,
   undoEdit
 } from "./api";
 import { DiagramContextPanel, type ContextTab } from "./components/DiagramContextPanel";
+import { DiagramSetPicker } from "./components/DiagramSetPicker";
 import type { CodeEntityReveal } from "./components/CodeEntitiesPanel";
 import { DiagramView } from "./components/DiagramView";
 import { GeneratorOptions } from "./components/GeneratorOptions";
 import { ImportArtifactDialog } from "./components/ImportArtifactDialog";
 import { SplitPane } from "./components/SplitPane";
+import { SystemPromptSettingsDialog } from "./components/SystemPromptSettingsDialog";
 import {
   DEFAULT_DIAGRAM_MODEL_ID,
   DEFAULT_GENERATION_COUNT,
@@ -39,6 +45,7 @@ import {
   type GenerationOutputKind,
   type GenerationPromptProfileId,
   type GenerationPromptReference,
+  type SystemPromptTemplateRecord,
   type WorkspaceSnapshot
 } from "./domain";
 
@@ -64,6 +71,8 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
+  const [promptSettingsOpen, setPromptSettingsOpen] = useState(false);
   const [pendingImported, setPendingImported] = useState<{
     setId: string;
     artifactKind: GenerationOutputKind;
@@ -117,6 +126,27 @@ export function App() {
         Boolean(component) && !isDiagramComponentArchived(component)
       ))
     : [], [activeSet, workspace]);
+  const promptProfiles = useMemo(() => {
+    const builtInOrder = ["default", "structure-first", "flow-first", "compact"];
+    return Object.values(workspace?.systemPromptTemplates ?? {}).sort((left, right) => {
+      if (left.builtIn && right.builtIn) {
+        return builtInOrder.indexOf(left.id) - builtInOrder.indexOf(right.id);
+      }
+      return Number(right.builtIn) - Number(left.builtIn) || left.label.localeCompare(right.label);
+    });
+  }, [workspace?.systemPromptTemplates]);
+
+  useEffect(() => {
+    if (!promptProfiles.length || promptProfiles.some((profile) => profile.id === promptProfileId)) return;
+    const legacyIds: Record<string, string> = {
+      structureFirst: "structure-first",
+      flowFirst: "flow-first"
+    };
+    const migrated = legacyIds[promptProfileId];
+    setPromptProfileId(promptProfiles.some((profile) => profile.id === migrated)
+      ? migrated
+      : DEFAULT_GENERATION_PROMPT_PROFILE_ID);
+  }, [promptProfiles, promptProfileId]);
   const activeDiagram = diagrams.find((diagram) => diagram.id === activeDiagramId)
     ?? diagrams.at(-1)
     ?? null;
@@ -299,6 +329,40 @@ export function App() {
     } finally {
       setBusy(false);
     }
+  };
+
+  const persistPromptTemplate = async (
+    draft: Pick<SystemPromptTemplateRecord, "label" | "description" | "prompts"> & { id?: string }
+  ): Promise<SystemPromptTemplateRecord> => {
+    const beforeIds = new Set(Object.keys(workspace.systemPromptTemplates));
+    const next = await saveSystemPromptTemplate(draft);
+    setWorkspace(next);
+    const saved = draft.id
+      ? next.systemPromptTemplates[draft.id]
+      : Object.values(next.systemPromptTemplates).find((template) => !beforeIds.has(template.id));
+    if (!saved) throw new Error("saved template was not returned by the workspace");
+    if (!draft.id) setPromptProfileId(saved.id);
+    return saved;
+  };
+
+  const restorePromptTemplate = async (id: string): Promise<SystemPromptTemplateRecord> => {
+    const next = await resetSystemPromptTemplate(id);
+    setWorkspace(next);
+    return next.systemPromptTemplates[id];
+  };
+
+  const removePromptTemplate = async (id: string): Promise<void> => {
+    const next = await deleteSystemPromptTemplate(id);
+    setWorkspace(next);
+    if (promptProfileId === id) setPromptProfileId(DEFAULT_GENERATION_PROMPT_PROFILE_ID);
+  };
+
+  const removeDiagramSet = async (setId: string): Promise<void> => {
+    const next = await deleteDiagramSet(setId);
+    setWorkspace(next);
+    setActiveSetId((current) => current && next.diagramSets.some((set) => set.id === current)
+      ? current
+      : next.diagramSets.at(-1)?.id ?? null);
   };
 
   const derive = (diagram: DiagramRecord) => {
@@ -625,12 +689,12 @@ export function App() {
           <span className="brand-mark">ND</span>
           <div><h1>NEW DIAGRAM</h1><p>{workspace.project.name}</p></div>
         </div>
-        <label className="set-picker">
-          <span>DIAGRAM SET</span>
-          <select value={activeSet.id} onChange={(event) => setActiveSetId(event.target.value)}>
-            {workspace.diagramSets.map((set) => <option value={set.id} key={set.id}>{set.name}</option>)}
-          </select>
-        </label>
+        <DiagramSetPicker
+          diagramSets={workspace.diagramSets}
+          activeSetId={activeSet.id}
+          onSelect={setActiveSetId}
+          onDelete={removeDiagramSet}
+        />
         <nav className="screen-tabs" aria-label="Workspace screens">
           <button
             type="button"
@@ -642,6 +706,23 @@ export function App() {
           </button>
           <button type="button" className={screen === "generation" ? "is-active" : ""} onClick={() => setScreen("generation")}>GENERATE</button>
           <button type="button" className="header-import" onClick={() => setImportOpen(true)}>IMPORT</button>
+          <div className="settings-menu-shell">
+            <button
+              type="button"
+              className={settingsMenuOpen ? "is-active" : ""}
+              aria-haspopup="menu"
+              aria-expanded={settingsMenuOpen}
+              onClick={() => setSettingsMenuOpen((open) => !open)}
+            >SETTINGS</button>
+            {settingsMenuOpen ? (
+              <div className="settings-menu" role="menu">
+                <button type="button" role="menuitem" onClick={() => {
+                  setSettingsMenuOpen(false);
+                  setPromptSettingsOpen(true);
+                }}>Configure system prompts</button>
+              </div>
+            ) : null}
+          </div>
         </nav>
       </header>
 
@@ -672,6 +753,7 @@ export function App() {
             outputKind={outputKind}
             modelId={generationModelId}
             promptProfileId={promptProfileId}
+            promptProfiles={promptProfiles}
             historicalReferences={historicalReferences}
             prompt={prompt}
             count={count}
@@ -825,6 +907,16 @@ export function App() {
           defaultDiagramSetId={activeSet.id}
           onClose={() => setImportOpen(false)}
           onImport={importArtifact}
+        />
+      ) : null}
+      {promptSettingsOpen ? (
+        <SystemPromptSettingsDialog
+          templates={promptProfiles}
+          initialTemplateId={promptProfileId}
+          onClose={() => setPromptSettingsOpen(false)}
+          onSave={persistPromptTemplate}
+          onReset={restorePromptTemplate}
+          onDelete={removePromptTemplate}
         />
       ) : null}
     </main>

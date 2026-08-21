@@ -14,6 +14,17 @@ interface ServerEvent {
   error?: string;
   diagramSetId?: string;
   projectRoot?: string;
+  promptTemplateId?: string;
+  promptTemplateVersion?: number;
+  generationPromptConfigId?: string;
+}
+
+interface PromptTemplateSummary {
+  id: string;
+  label: string;
+  description: string;
+  builtIn: boolean;
+  version: number;
 }
 
 function option(args: string[], name: string): string | undefined {
@@ -25,7 +36,9 @@ function usage(): never {
   throw new Error(
     "usage:\n"
     + "  npm run diagram -- serve --path <repo> [--diagrams-dir <dir>] [--port <port>]\n"
-    + "  npm run diagram -- create --path <repo> --name <name> --prompt <prompt> [--server <url>]"
+    + "  npm run diagram -- prompt-templates [--server <url>]\n"
+    + "  npm run diagram -- create --path <repo> --name <name> --prompt <prompt> "
+    + "[--prompt-template <id>] [--server <url>]"
   );
 }
 
@@ -89,6 +102,40 @@ function endpointFor(serverUrl: string): URL {
   return new URL("/api/diagram-sets", server);
 }
 
+function serverUrlFrom(args: string[]): string {
+  return option(args, "--server")
+    ?? process.env.NEW_DIAGRAM_SERVER_URL
+    ?? DEFAULT_SERVER_URL;
+}
+
+async function listPromptTemplates(args: string[]): Promise<void> {
+  const serverUrl = serverUrlFrom(args);
+  const endpoint = new URL("/api/system-prompt-templates", endpointFor(serverUrl));
+  let response: Response;
+  try {
+    response = await fetch(endpoint, { headers: { accept: "application/json" } });
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new Error(`cannot reach diagram server at ${endpoint.origin}: ${reason}`);
+  }
+  if (!response.ok) throw await responseError(response);
+  const payload = await response.json() as { templates?: PromptTemplateSummary[] };
+  if (!Array.isArray(payload.templates)) {
+    throw new Error("diagram server returned an invalid prompt-template list");
+  }
+  process.stdout.write(`${JSON.stringify({
+    event: "prompt-templates",
+    serverUrl: endpoint.origin,
+    templates: payload.templates.map(({ id, label, description, builtIn, version }) => ({
+      id,
+      label,
+      description,
+      builtIn,
+      version
+    }))
+  })}\n`);
+}
+
 async function responseError(response: Response): Promise<Error> {
   const payload = await response.json().catch(() => ({})) as { error?: string };
   return new Error(payload.error || `diagram server request failed with ${response.status}`);
@@ -121,13 +168,16 @@ async function main(): Promise<void> {
     await serve(args);
     return;
   }
+  if (command === "prompt-templates") {
+    await listPromptTemplates(args);
+    return;
+  }
   if (command !== "create") usage();
   const inputPath = option(args, "--path");
   const name = option(args, "--name");
   const prompt = option(args, "--prompt") ?? "";
-  const serverUrl = option(args, "--server")
-    ?? process.env.NEW_DIAGRAM_SERVER_URL
-    ?? DEFAULT_SERVER_URL;
+  const promptTemplateId = option(args, "--prompt-template");
+  const serverUrl = serverUrlFrom(args);
   if (!inputPath || !name) usage();
 
   const endpoint = endpointFor(serverUrl);
@@ -140,7 +190,12 @@ async function main(): Promise<void> {
     response = await fetch(endpoint, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ path: inputPath, name, prompt })
+      body: JSON.stringify({
+        path: inputPath,
+        name,
+        prompt,
+        ...(promptTemplateId ? { promptTemplateId } : {})
+      })
     });
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
@@ -149,10 +204,14 @@ async function main(): Promise<void> {
   if (!response.ok) throw await responseError(response);
 
   let diagramSetId: string | undefined;
+  let resolvedPromptTemplateId: string | undefined;
+  let promptTemplateVersion: number | undefined;
+  let generationPromptConfigId: string | undefined;
   await consumeEvents(response, (event) => {
     if (event.type === "error") throw new Error(event.error || "diagram collection failed");
     if (event.type === "created") {
       diagramSetId = event.diagramSetId;
+      resolvedPromptTemplateId = event.promptTemplateId;
       process.stdout.write(`${JSON.stringify({
         event: "created",
         projectRoot: event.projectRoot,
@@ -161,12 +220,24 @@ async function main(): Promise<void> {
       })}\n`);
       return;
     }
+    if (event.type === "result") {
+      resolvedPromptTemplateId = event.promptTemplateId ?? resolvedPromptTemplateId;
+      promptTemplateVersion = event.promptTemplateVersion;
+      generationPromptConfigId = event.generationPromptConfigId;
+      return;
+    }
     if (event.type === "progress" && event.message) {
       process.stderr.write(`[progress] ${event.message}\n`);
     }
   });
   if (!diagramSetId) throw new Error("diagram server stream ended before creating a DiagramSet");
-  process.stdout.write(`${JSON.stringify({ event: "ready", diagramSetId })}\n`);
+  process.stdout.write(`${JSON.stringify({
+    event: "ready",
+    diagramSetId,
+    promptTemplateId: resolvedPromptTemplateId,
+    promptTemplateVersion,
+    generationPromptConfigId
+  })}\n`);
 }
 
 main().catch((error) => {
