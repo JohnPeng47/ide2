@@ -3,6 +3,7 @@ import type {
   DiagramModelId,
   DiagramSelectionBounds,
   GenerationOutputKind,
+  GenerationPromptProfileId,
   WorkspaceSnapshot
 } from "./domain";
 
@@ -272,6 +273,7 @@ export async function generateArtifacts(
     count: number;
     outputKind: GenerationOutputKind;
     modelId: DiagramModelId;
+    promptProfileId: GenerationPromptProfileId;
   },
   onProgress: (message: string) => void
 ): Promise<WorkspaceSnapshot> {

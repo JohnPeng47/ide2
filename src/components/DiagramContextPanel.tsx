@@ -5,7 +5,8 @@ import type {
   DiagramSetRecord,
   DiagramModelId,
   EditSessionRecord,
-  GenerationBatchRecord
+  GenerationBatchRecord,
+  GenerationPromptConfigRecord
 } from "../domain";
 import { DEFAULT_DIAGRAM_MODEL_ID } from "../domain";
 import { CodeEntitiesPanel, type CodeEntityReveal } from "./CodeEntitiesPanel";
@@ -21,6 +22,7 @@ export function DiagramContextPanel(props: {
   diagrams: DiagramRecord[];
   components: DiagramComponentRecord[];
   generationBatches: Record<string, GenerationBatchRecord>;
+  generationPromptConfigs: Record<string, GenerationPromptConfigRecord>;
   activeDiagram?: DiagramRecord;
   activeComponent?: DiagramComponentRecord;
   editSession?: EditSessionRecord;
@@ -141,6 +143,7 @@ export function DiagramContextPanel(props: {
             diagrams={props.diagrams}
             components={props.components}
             generationBatches={props.generationBatches}
+            generationPromptConfigs={props.generationPromptConfigs}
             activeDiagramId={props.activeDiagram?.id}
             activeComponentId={props.activeComponent?.id}
             onSelect={props.onSelectDiagram}

@@ -97,9 +97,11 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .prompt-field label { margin-bottom: 0.6rem; }
 .generation-prompt-heading { display: flex; flex: none; align-items: end; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.6rem; }
 .generation-prompt-heading > label { margin: 0; }
+.generation-prompt-selectors { display: flex; flex-wrap: wrap; justify-content: end; gap: 0.75rem; }
 .prompt-field textarea { width: 100%; min-height: 12rem; flex: 1; resize: none; border: 1px solid var(--border); border-radius: 6px; padding: 1rem; background: transparent; font: 13px/1.55 var(--font-mono); }
 .prompt-field textarea:hover { border-color: var(--gutter); }
 .field-help { margin-top: 0.55rem; color: var(--muted); font: 11px/1.45 var(--font-mono); }
+.unresolved-references { margin-top: 0.45rem; color: var(--accent-yellow); font: 10px/1.4 var(--font-mono); }
 .mention-menu { position: absolute; z-index: 5; right: 1.75rem; bottom: 3.6rem; left: 1.75rem; max-height: 15rem; overflow: auto; border: 1px solid var(--gutter); background: var(--bg); }
 .mention-menu button { display: grid; width: 100%; grid-template-columns: minmax(12rem, auto) 1fr; gap: 1rem; border: 0; border-bottom: 1px solid var(--border); padding: 0.55rem 0.7rem; background: transparent; text-align: left; }
 .mention-menu button:hover { background: rgb(255 255 255 / 2%); }
@@ -213,12 +215,15 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .diagram-tree-diagram { display: grid; width: 100%; grid-template-columns: auto auto minmax(0, 1fr) auto; align-items: baseline; }
 .diagram-tree-diagram__open { display: flex; min-width: 0; align-items: baseline; border: 0; padding: 0; background: transparent; color: inherit; font: inherit; text-align: left; white-space: nowrap; cursor: pointer; }
 .diagram-tree-actions { display: flex; align-items: baseline; gap: 0.65rem; margin-left: 0.8rem; }
-.diagram-tree-rename, .diagram-tree-archive { border: 0; background: transparent; font: 9px var(--font-mono); }
-.diagram-tree-rename { border-bottom: 1px dotted var(--gutter); color: var(--muted); opacity: 0; }
+.diagram-tree-rename, .diagram-tree-prompt, .diagram-tree-archive { border: 0; background: transparent; font: 9px var(--font-mono); }
+.diagram-tree-rename, .diagram-tree-prompt { border-bottom: 1px dotted var(--gutter); color: var(--muted); opacity: 0; }
 .diagram-tree-archive { padding: 0; color: var(--gutter); cursor: pointer; }
 .diagram-tree-diagram:hover .diagram-tree-rename,
-.diagram-tree-rename:focus-visible { opacity: 1; }
-.diagram-tree-rename:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+.diagram-tree-diagram:hover .diagram-tree-prompt,
+.diagram-tree-component:hover .diagram-tree-prompt,
+.diagram-tree-rename:focus-visible,
+.diagram-tree-prompt:focus-visible { opacity: 1; }
+.diagram-tree-rename:hover, .diagram-tree-prompt:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
 .diagram-tree-archive:hover { color: var(--accent-red); }
 .diagram-tree-rename:disabled, .diagram-tree-archive:disabled { cursor: wait; opacity: 0.35; }
 .diagram-tree-diagram:hover { background: rgb(255 255 255 / 3%); }
@@ -242,6 +247,24 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .diagram-tree-component.is-current { background: rgb(136 192 208 / 8%); }
 .diagram-tree-component.is-current strong,
 .diagram-tree-component.is-current .diagram-tree-prefix { color: var(--accent-cyan); }
+
+.prompt-config-backdrop { position: fixed; z-index: 20; display: grid; inset: 0; place-items: center; padding: 1.5rem; background: rgb(5 7 10 / 78%); backdrop-filter: blur(3px); }
+.prompt-config-dialog { display: flex; width: min(860px, 100%); max-height: min(820px, calc(100dvh - 3rem)); overflow: hidden; border: 1px solid var(--gutter); border-radius: 7px; background: var(--bg); box-shadow: 0 22px 80px rgb(0 0 0 / 48%); flex-direction: column; }
+.prompt-config-dialog > header { display: flex; flex: none; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--gutter); padding: 1rem 1.2rem; }
+.prompt-config-dialog > header h2 { margin-top: 0.3rem; font-size: 1.15rem; }
+.prompt-config-dialog > header button { border: 0; background: transparent; color: var(--muted); font: 10px var(--font-mono); }
+.prompt-config-body { min-height: 0; overflow: auto; padding: 1rem 1.2rem 1.2rem; }
+.prompt-config-body dl { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.65rem; }
+.prompt-config-body dl > div { min-width: 0; border: 1px solid var(--border); padding: 0.6rem; }
+.prompt-config-body dt, .prompt-config-body h3 { color: var(--muted); font: 600 9px var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; }
+.prompt-config-body dd { overflow: hidden; margin-top: 0.3rem; color: var(--accent-purple); font: 10px var(--font-mono); text-overflow: ellipsis; white-space: nowrap; }
+.prompt-config-body section, .prompt-config-body details { margin-top: 0.9rem; border: 1px solid var(--border); padding: 0.75rem; }
+.prompt-config-body pre { margin-top: 0.55rem; overflow: auto; color: var(--fg); font: 10px/1.5 var(--font-mono); white-space: pre-wrap; }
+.prompt-config-body summary { color: var(--accent-cyan); cursor: pointer; font: 10px var(--font-mono); }
+.prompt-config-body ul { margin-top: 0.5rem; list-style: none; }
+.prompt-config-body li { display: flex; gap: 0.65rem; border-top: 1px solid var(--border); padding: 0.4rem 0; font: 10px var(--font-mono); }
+.prompt-config-body li code { color: var(--accent-cyan); }
+.prompt-config-body li span, .prompt-config-body section > p { color: var(--muted); }
 .diagram-tree-edit { display: grid; grid-template-columns: auto auto auto minmax(10rem, 1fr) auto auto; gap: 0.4rem; padding-right: 0.65rem; }
 .diagram-tree-edit input { min-width: 0; border: 1px solid var(--accent-cyan); border-radius: 3px; padding: 0.2rem 0.35rem; background: var(--bg); color: var(--fg); font: 10px var(--font-mono); }
 .diagram-tree-edit button { border: 0; border-bottom: 1px dotted var(--gutter); background: transparent; color: var(--muted); font: 9px var(--font-mono); }

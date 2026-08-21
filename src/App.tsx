@@ -27,6 +27,7 @@ import { SplitPane } from "./components/SplitPane";
 import {
   DEFAULT_DIAGRAM_MODEL_ID,
   DEFAULT_GENERATION_COUNT,
+  DEFAULT_GENERATION_PROMPT_PROFILE_ID,
   isDiagramComponentArchived,
   isDiagramArchived,
   type ArtifactImportInput,
@@ -36,6 +37,8 @@ import {
   type DiagramSelectionBounds,
   type DiagramModelId,
   type GenerationOutputKind,
+  type GenerationPromptProfileId,
+  type GenerationPromptReference,
   type WorkspaceSnapshot
 } from "./domain";
 
@@ -52,6 +55,10 @@ export function App() {
   const [count, setCount] = useState(DEFAULT_GENERATION_COUNT);
   const [outputKind, setOutputKind] = useState<GenerationOutputKind>("diagram");
   const [generationModelId, setGenerationModelId] = useState<DiagramModelId>(DEFAULT_DIAGRAM_MODEL_ID);
+  const [promptProfileId, setPromptProfileId] = useState<GenerationPromptProfileId>(
+    DEFAULT_GENERATION_PROMPT_PROFILE_ID
+  );
+  const [historicalReferences, setHistoricalReferences] = useState<GenerationPromptReference[]>([]);
   const [contextTab, setContextTab] = useState<ContextTab>("code-entities");
   const [progress, setProgress] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -158,6 +165,8 @@ export function App() {
     setPrompt("");
     setCount(DEFAULT_GENERATION_COUNT);
     setOutputKind("diagram");
+    setPromptProfileId(DEFAULT_GENERATION_PROMPT_PROFILE_ID);
+    setHistoricalReferences([]);
     setContextTab("code-entities");
     setProgress("");
     setError(null);
@@ -266,7 +275,8 @@ export function App() {
         selectedCodeEntityIds: [...selectedIds],
         count,
         outputKind,
-        modelId: generationModelId
+        modelId: generationModelId,
+        promptProfileId
       }, setProgress);
       setWorkspace(next);
       const nextSet = next.diagramSets.find((set) => set.id === activeSet.id);
@@ -292,16 +302,32 @@ export function App() {
   };
 
   const derive = (diagram: DiagramRecord) => {
-    setPrompt(`@diagram/${diagram.handle} `);
-    setSelectedIds(new Set(diagram.codeEntityIds));
-    setOutputKind("diagram");
+    const config = diagram.generationPromptConfigId
+      ? workspace.generationPromptConfigs[diagram.generationPromptConfigId]
+      : undefined;
+    setPrompt(config
+      ? `@diagram/${diagram.handle}\n\n${config.instruction}`
+      : `@diagram/${diagram.handle} `);
+    setHistoricalReferences(config?.references ?? []);
+    setSelectedIds(new Set(config?.selectedCodeEntityIds ?? diagram.codeEntityIds));
+    setOutputKind(config?.outputKind ?? "diagram");
+    setGenerationModelId(config?.modelId ?? DEFAULT_DIAGRAM_MODEL_ID);
+    setPromptProfileId(config?.systemPrompt.profileId ?? DEFAULT_GENERATION_PROMPT_PROFILE_ID);
     setScreen("generation");
   };
 
   const deriveComponent = (component: DiagramComponentRecord) => {
-    setPrompt(`@component/${component.handle} `);
-    setSelectedIds(new Set(component.codeEntityIds));
-    setOutputKind("diagram-component");
+    const config = component.generationPromptConfigId
+      ? workspace.generationPromptConfigs[component.generationPromptConfigId]
+      : undefined;
+    setPrompt(config
+      ? `@component/${component.handle}\n\n${config.instruction}`
+      : `@component/${component.handle} `);
+    setHistoricalReferences(config?.references ?? []);
+    setSelectedIds(new Set(config?.selectedCodeEntityIds ?? component.codeEntityIds));
+    setOutputKind(config?.outputKind ?? "diagram-component");
+    setGenerationModelId(config?.modelId ?? DEFAULT_DIAGRAM_MODEL_ID);
+    setPromptProfileId(config?.systemPrompt.profileId ?? DEFAULT_GENERATION_PROMPT_PROFILE_ID);
     setScreen("generation");
   };
 
@@ -645,6 +671,8 @@ export function App() {
             components={components}
             outputKind={outputKind}
             modelId={generationModelId}
+            promptProfileId={promptProfileId}
+            historicalReferences={historicalReferences}
             prompt={prompt}
             count={count}
             generating={busy}
@@ -654,6 +682,7 @@ export function App() {
             onCount={setCount}
             onOutputKind={setOutputKind}
             onModel={setGenerationModelId}
+            onPromptProfile={setPromptProfileId}
             onGenerate={() => void generate()}
           />}
           right={<DiagramContextPanel
@@ -663,6 +692,7 @@ export function App() {
             diagrams={diagrams}
             components={components}
             generationBatches={workspace.generationBatches}
+            generationPromptConfigs={workspace.generationPromptConfigs}
             selectedIds={selectedIds}
             onToggleEntity={toggleEntity}
             activeTab={contextTab}
@@ -704,6 +734,7 @@ export function App() {
             diagrams={diagrams}
             components={components}
             generationBatches={workspace.generationBatches}
+            generationPromptConfigs={workspace.generationPromptConfigs}
             activeComponent={activeComponent}
             editSession={editSession ?? undefined}
             editPrompt={editPrompt}
@@ -760,6 +791,7 @@ export function App() {
             diagrams={diagrams}
             components={components}
             generationBatches={workspace.generationBatches}
+            generationPromptConfigs={workspace.generationPromptConfigs}
             activeDiagram={activeDiagram}
             editSession={editSession ?? undefined}
             editPrompt={editPrompt}

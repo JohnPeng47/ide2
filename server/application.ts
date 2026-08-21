@@ -4,6 +4,7 @@ import path from "node:path";
 import {
   CodeEntity,
   DEFAULT_DIAGRAM_MODEL_ID,
+  DEFAULT_GENERATION_PROMPT_PROFILE_ID,
   DEFAULT_GENERATION_COUNT,
   SCHEMA_VERSION,
   assertSevenBitAscii,
@@ -11,6 +12,7 @@ import {
   isDiagramComponentArchived,
   isDiagramArchived,
   isDiagramModelId,
+  isGenerationPromptProfileId,
   normalizeAscii,
   slugify,
   type AgentProgress,
@@ -32,7 +34,7 @@ import {
   type GenerationBatchRecord,
   type WorkspaceSnapshot
 } from "../src/domain";
-import { resolveGenerationPrompt } from "../src/prompt";
+import { createGenerationPromptConfig } from "../src/prompt";
 import type { DiagramAgentRuntime } from "./agentRuntime";
 import { DiagramStore, discoverRepository } from "./store";
 
@@ -332,7 +334,6 @@ export class DiagramApplication {
         name,
         ascii,
         codeEntityIds,
-        promptReferences: [],
         origin: "imported",
         derivedFromDiagramIds: [],
         createdAt: timestamp()
@@ -347,7 +348,6 @@ export class DiagramApplication {
         name,
         ascii,
         codeEntityIds,
-        promptReferences: [],
         origin: "imported",
         derivedFromDiagramIds: [],
         derivedFromDiagramComponentIds: [],
@@ -812,13 +812,6 @@ export class DiagramApplication {
     let handle = baseHandle;
     let suffix = 2;
     while (handles.has(handle)) handle = `${baseHandle}-${suffix++}`;
-    const referenceKind = session.sourceArtifactKind === "diagram" ? "diagram" : "diagram-component";
-    const reference = {
-      kind: referenceKind,
-      targetId: source.id,
-      token: `@${referenceKind === "diagram" ? "diagram" : "component"}/${source.handle}`,
-      handle: source.handle
-    } as const;
     let outputArtifactId: string;
     if (session.sourceArtifactKind === "diagram") {
       outputArtifactId = this.store.ids.diagram();
@@ -830,8 +823,8 @@ export class DiagramApplication {
         name,
         ascii: session.workingAscii,
         codeEntityIds: [...session.codeEntityIds],
-        promptReferences: [reference],
         origin: "edited",
+        generationPromptConfigId: source.generationPromptConfigId,
         editSessionId: session.id,
         derivedFromDiagramIds: [source.id],
         createdAt: timestamp()
@@ -847,8 +840,8 @@ export class DiagramApplication {
         name,
         ascii: session.workingAscii,
         codeEntityIds: [...session.codeEntityIds],
-        promptReferences: [reference],
         origin: "edited",
+        generationPromptConfigId: component.generationPromptConfigId,
         sourceDiagramId: component.sourceDiagramId,
         sourceDiagramComponentId: component.id,
         editSessionId: session.id,
@@ -914,7 +907,6 @@ export class DiagramApplication {
     let handle = baseHandle;
     let suffix = 2;
     while (handles.has(handle)) handle = `${baseHandle}-${suffix++}`;
-    const referenceKind = source.kind === "diagram" ? "diagram" : "diagram-component";
     const component: DiagramComponentRecord = {
       schemaVersion: SCHEMA_VERSION,
       id: this.store.ids.diagramComponent(),
@@ -923,12 +915,6 @@ export class DiagramApplication {
       name: `${source.artifact.name} - Component ${sequence}`,
       ascii,
       codeEntityIds: [...source.artifact.codeEntityIds],
-      promptReferences: [{
-        kind: referenceKind,
-        targetId: source.artifact.id,
-        token: `@${referenceKind === "diagram" ? "diagram" : "component"}/${source.artifact.handle}`,
-        handle: source.artifact.handle
-      }],
       origin: "selection",
       ...(source.kind === "diagram"
         ? { sourceDiagramId: source.artifact.id }
@@ -957,6 +943,7 @@ export class DiagramApplication {
       count: number;
       outputKind: GenerationOutputKind;
       modelId?: unknown;
+      promptProfileId?: unknown;
     },
     onEvent?: (event: ServiceEvent) => void
   ): Promise<WorkspaceSnapshot> {
@@ -968,6 +955,10 @@ export class DiagramApplication {
     }
     const modelId = input.modelId ?? DEFAULT_DIAGRAM_MODEL_ID;
     if (!isDiagramModelId(modelId)) throw new Error(`unsupported generation model: ${String(modelId)}`);
+    const promptProfileId = input.promptProfileId ?? DEFAULT_GENERATION_PROMPT_PROFILE_ID;
+    if (!isGenerationPromptProfileId(promptProfileId)) {
+      throw new Error(`unsupported generation prompt profile: ${String(promptProfileId)}`);
+    }
     if (this.activeBatches.has(setId)) throw new Error("a generation batch is already active for this DiagramSet");
     this.activeBatches.add(setId);
     try {
@@ -984,28 +975,28 @@ export class DiagramApplication {
       const existingComponents = storedComponents.filter(
         (component) => !isDiagramComponentArchived(component)
       );
-      const resolved = resolveGenerationPrompt({
+      const createdAt = timestamp();
+      const promptBuild = createGenerationPromptConfig({
+        id: this.store.ids.promptConfig(),
         diagramSet: set,
         codeEntities: entities,
         diagrams: existingDiagrams,
         components: existingComponents,
         outputKind: input.outputKind,
-        userPrompt: input.prompt,
-        selectedCodeEntityIds: input.selectedCodeEntityIds
+        modelId,
+        profileId: promptProfileId,
+        instruction: input.prompt,
+        selectedCodeEntityIds: input.selectedCodeEntityIds,
+        createdAt
       });
+      const promptConfig = promptBuild.config;
       const batchId = this.store.ids.batch();
-      const createdAt = timestamp();
       let batch: GenerationBatchRecord = {
         schemaVersion: SCHEMA_VERSION,
         id: batchId,
         diagramSetId: setId,
         requestedCount: input.count,
-        outputKind: input.outputKind,
-        modelId,
-        userPrompt: input.prompt,
-        selectedCodeEntityIds: resolved.selectedCodeEntityIds,
-        promptReferences: resolved.references,
-        resolvedPrompt: resolved.resolvedPrompt,
+        promptConfigId: promptConfig.id,
         codeEntitiesRevision: entities.revision,
         childRunIds: [],
         outputDiagramIds: [],
@@ -1031,7 +1022,11 @@ export class DiagramApplication {
         updatedAt: createdAt
       }));
       batch = { ...batch, childRunIds: runs.map((run) => run.id) };
-      await this.store.beginBatch(batch, runs);
+      await this.store.beginBatch(promptConfig, batch, runs);
+      const persistedPromptConfig = await this.store.loadGenerationPromptConfig(
+        setId,
+        promptConfig.id
+      );
       batch = { ...batch, status: "running", updatedAt: timestamp() };
       await this.store.saveBatch(batch);
       const outputLabel = input.outputKind === "diagram" ? "diagram" : "component";
@@ -1051,16 +1046,10 @@ export class DiagramApplication {
             const draft = await this.agents.generateArtifact({
               sourceRoot: set.sourceCheckoutRoot,
               diagramSetName: set.name,
-              resolvedPrompt: resolved.resolvedPrompt,
-              allowedCodeEntityIds: resolved.allowedCodeEntityIds,
-              allowedDiagramIds: resolved.references
-                .filter((reference) => reference.kind === "diagram")
-                .map((reference) => reference.targetId),
-              allowedDiagramComponentIds: resolved.references
-                .filter((reference) => reference.kind === "diagram-component")
-                .map((reference) => reference.targetId),
-              outputKind: input.outputKind,
-              modelId,
+              promptConfig: persistedPromptConfig,
+              allowedCodeEntityIds: promptBuild.allowedCodeEntityIds,
+              allowedDiagramIds: promptBuild.allowedDiagramIds,
+              allowedDiagramComponentIds: promptBuild.allowedDiagramComponentIds,
               slot: index + 1,
               total: input.count
             }, (progress) => {
@@ -1072,7 +1061,7 @@ export class DiagramApplication {
               });
               onEvent?.({ type: "progress", message: `slot ${index + 1}: ${progress.message}` });
             });
-            this.validateGeneratedArtifactDraft(draft, resolved.allowedCodeEntityIds);
+            this.validateGeneratedArtifactDraft(draft, promptBuild.allowedCodeEntityIds);
             return { index, draft };
           } catch (error) {
             return { index, error: error instanceof Error ? error.message : "diagram generation failed" };
@@ -1123,10 +1112,10 @@ export class DiagramApplication {
       batch = { ...batch, status: "validating", updatedAt: timestamp() };
       await this.store.saveBatch(batch);
       onEvent?.({ type: "progress", message: "validating complete parallel batch" });
-      const derivedFromDiagramIds = resolved.references
+      const derivedFromDiagramIds = promptConfig.references
         .filter((reference) => reference.kind === "diagram")
         .map((reference) => reference.targetId);
-      const derivedFromDiagramComponentIds = resolved.references
+      const derivedFromDiagramComponentIds = promptConfig.references
         .filter((reference) => reference.kind === "diagram-component")
         .map((reference) => reference.targetId);
       const handles = new Set((input.outputKind === "diagram" ? storedDiagrams : storedComponents)
@@ -1155,9 +1144,9 @@ export class DiagramApplication {
           name: draft.name.trim(),
           ascii: normalizeAscii(draft.ascii),
           codeEntityIds: [...new Set(draft.codeEntityIds)],
-          promptReferences: resolved.references,
           origin: "generated",
           producedByRunId: run.id,
+          generationPromptConfigId: promptConfig.id,
           derivedFromDiagramIds: [...new Set(derivedFromDiagramIds)],
           createdAt: timestamp()
         }))
@@ -1171,9 +1160,9 @@ export class DiagramApplication {
           name: draft.name.trim(),
           ascii: normalizeAscii(draft.ascii),
           codeEntityIds: [...new Set(draft.codeEntityIds)],
-          promptReferences: resolved.references,
           origin: "generated",
           producedByRunId: run.id,
+          generationPromptConfigId: promptConfig.id,
           derivedFromDiagramIds: [...new Set(derivedFromDiagramIds)],
           derivedFromDiagramComponentIds: [...new Set(derivedFromDiagramComponentIds)],
           createdAt: timestamp()

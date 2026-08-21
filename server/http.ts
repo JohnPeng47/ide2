@@ -367,6 +367,9 @@ export function diagramApi(projectRoot: string, diagramsDirectory = ".diagrams")
         : [];
       const outputKind = body.outputKind;
       const modelId = typeof body.modelId === "string" ? body.modelId : undefined;
+      const promptProfileId = typeof body.promptProfileId === "string"
+        ? body.promptProfileId
+        : undefined;
       if (outputKind !== "diagram" && outputKind !== "diagram-component") {
         return sendJson(response, 400, { error: "outputKind must be diagram or diagram-component" });
       }
@@ -379,7 +382,8 @@ export function diagramApi(projectRoot: string, diagramsDirectory = ".diagrams")
         selectedCodeEntityIds,
         count,
         outputKind,
-        modelId
+        modelId,
+        promptProfileId
       }, (event) => sendEvent(response, event));
       sendEvent(response, { type: "result", workspace });
       response.end();

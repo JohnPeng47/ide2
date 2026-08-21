@@ -3,8 +3,10 @@ import type {
   DiagramComponentRecord,
   DiagramRecord,
   DiagramSetRecord,
-  GenerationBatchRecord
+  GenerationBatchRecord,
+  GenerationPromptConfigRecord
 } from "../domain";
+import { PromptConfigDialog } from "./PromptConfigDialog";
 
 function connector(last: boolean): string {
   return last ? "`-- " : "+-- ";
@@ -14,9 +16,11 @@ function ComponentLineageSection(props: {
   diagramSet: DiagramSetRecord;
   components: DiagramComponentRecord[];
   generationBatches: Record<string, GenerationBatchRecord>;
+  generationPromptConfigs: Record<string, GenerationPromptConfigRecord>;
   activeComponentId?: string;
   onSelect: (componentId: string) => void;
   onArchive: (componentId: string) => Promise<void>;
+  onInspectPrompt: (configId: string) => void;
 }) {
   const [archivingId, setArchivingId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -28,7 +32,9 @@ function ComponentLineageSection(props: {
   const batches = props.diagramSet.generationBatchIds
     .map((id) => props.generationBatches[id])
     .filter((batch): batch is GenerationBatchRecord => Boolean(batch))
-    .filter((batch) => batch.outputKind === "diagram-component")
+    .filter((batch) => (
+      props.generationPromptConfigs[batch.promptConfigId]?.outputKind === "diagram-component"
+    ))
     .filter((batch) => (
       batch.status !== "complete"
       || batch.outputDiagramComponentIds.some((componentId) => byId.has(componentId))
@@ -36,7 +42,7 @@ function ComponentLineageSection(props: {
   const parentByBatch = new Map<string, string>();
   const batchesByParent = new Map<string, GenerationBatchRecord[]>();
   for (const batch of batches) {
-    const parent = batch.promptReferences.find(
+    const parent = props.generationPromptConfigs[batch.promptConfigId]?.references.find(
       (reference) => reference.kind === "diagram-component" && byId.has(reference.targetId)
     )?.targetId;
     if (!parent) continue;
@@ -115,6 +121,16 @@ function ComponentLineageSection(props: {
             <em>{component.origin === "selection" ? "CAPTURED" : component.origin.toUpperCase()}</em>
           </button>
           <span className="diagram-tree-component-actions">
+            {component.generationPromptConfigId ? (
+              <button
+                type="button"
+                className="diagram-tree-prompt"
+                aria-label={`Inspect generation prompt for ${component.name}`}
+                onClick={() => props.onInspectPrompt(component.generationPromptConfigId!)}
+              >
+                prompt
+              </button>
+            ) : null}
             <button
               type="button"
               className={`diagram-tree-copy${copiedId === component.id ? " is-copied" : ""}`}
@@ -187,7 +203,9 @@ function ComponentLineageSection(props: {
           <span className="diagram-tree-toggle-spacer" />
           <strong>G{batchNumber}</strong>
           <span className="diagram-tree-status">[{statusLabel(batch.status)}]</span>
-          <span className="diagram-tree-description">{batch.userPrompt || "Component variants"}</span>
+          <span className="diagram-tree-description">{
+            props.generationPromptConfigs[batch.promptConfigId]?.instruction || "Component variants"
+          }</span>
         </div>
         {outputs.map((component, index) => (
           <Fragment key={component.id}>
@@ -248,9 +266,10 @@ function TreeBridge(props: { prefix: string }) {
 
 function parentDiagramId(
   batch: GenerationBatchRecord,
-  diagramsById: Map<string, DiagramRecord>
+  diagramsById: Map<string, DiagramRecord>,
+  promptConfigs: Record<string, GenerationPromptConfigRecord>
 ): string | undefined {
-  const referenced = batch.promptReferences.find(
+  const referenced = promptConfigs[batch.promptConfigId]?.references.find(
     (reference) => reference.kind === "diagram" && diagramsById.has(reference.targetId)
   );
   if (referenced) return referenced.targetId;
@@ -273,6 +292,7 @@ export function DiagramLineagePanel(props: {
   diagrams: DiagramRecord[];
   components: DiagramComponentRecord[];
   generationBatches: Record<string, GenerationBatchRecord>;
+  generationPromptConfigs: Record<string, GenerationPromptConfigRecord>;
   activeDiagramId?: string;
   activeComponentId?: string;
   onSelect: (diagramId: string) => void;
@@ -287,6 +307,7 @@ export function DiagramLineagePanel(props: {
   const [archivingId, setArchivingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
+  const [inspectedConfigId, setInspectedConfigId] = useState<string | null>(null);
   const diagramsById = new Map(props.diagrams.map((diagram) => [diagram.id, diagram]));
   const diagramNumber = new Map(
     props.diagramSet.diagramIds.map((diagramId, index) => [diagramId, index + 1])
@@ -294,7 +315,7 @@ export function DiagramLineagePanel(props: {
   const batches = props.diagramSet.generationBatchIds
     .map((id) => props.generationBatches[id])
     .filter((batch): batch is GenerationBatchRecord => Boolean(batch))
-    .filter((batch) => batch.outputKind === "diagram")
+    .filter((batch) => props.generationPromptConfigs[batch.promptConfigId]?.outputKind === "diagram")
     .filter((batch) => (
       batch.status !== "complete"
       || batch.outputDiagramIds.some((diagramId) => diagramsById.has(diagramId))
@@ -303,7 +324,7 @@ export function DiagramLineagePanel(props: {
   const childrenByDiagram = new Map<string, string[]>();
   const parentByBatch = new Map<string, string>();
   for (const batch of batches) {
-    const parentId = parentDiagramId(batch, diagramsById);
+    const parentId = parentDiagramId(batch, diagramsById, props.generationPromptConfigs);
     if (!parentId) continue;
     parentByBatch.set(batch.id, parentId);
     const children = childrenByDiagram.get(parentId) ?? [];
@@ -456,6 +477,16 @@ export function DiagramLineagePanel(props: {
               {current ? <em>CURRENT</em> : null}
             </button>
             <span className="diagram-tree-actions">
+              {diagram.generationPromptConfigId ? (
+                <button
+                  type="button"
+                  className="diagram-tree-prompt"
+                  aria-label={`Inspect generation prompt for ${diagram.name}`}
+                  onClick={() => setInspectedConfigId(diagram.generationPromptConfigId!)}
+                >
+                  prompt
+                </button>
+              ) : null}
               <button
                 type="button"
                 className="diagram-tree-rename"
@@ -513,7 +544,8 @@ export function DiagramLineagePanel(props: {
           className={`diagram-tree-line diagram-tree-generation status-${batch.status}`}
           data-generation-batch-id={batch.id}
           data-parent-diagram-id={parentByBatch.get(batch.id)}
-          title={batch.userPrompt || `${batch.requestedCount} generated diagrams`}
+          title={props.generationPromptConfigs[batch.promptConfigId]?.instruction
+            || `${batch.requestedCount} generated diagrams`}
         >
           <TreePrefix prefix={prefix} last={last} />
           {outputs.length > 0 ? (
@@ -530,7 +562,8 @@ export function DiagramLineagePanel(props: {
           <strong>G{batchNumber}</strong>
           <span className="diagram-tree-status">[{statusLabel(batch.status)}]</span>
           <span className="diagram-tree-description">
-            {batch.userPrompt || `${batch.requestedCount} generated diagrams`}
+            {props.generationPromptConfigs[batch.promptConfigId]?.instruction
+              || `${batch.requestedCount} generated diagrams`}
           </span>
         </div>
         {!collapsed && outputs.map((diagram, index) => (
@@ -626,11 +659,19 @@ export function DiagramLineagePanel(props: {
           diagramSet={props.diagramSet}
           components={props.components}
           generationBatches={props.generationBatches}
+          generationPromptConfigs={props.generationPromptConfigs}
           activeComponentId={props.activeComponentId}
           onSelect={props.onSelectComponent}
           onArchive={props.onArchiveComponent}
+          onInspectPrompt={setInspectedConfigId}
         />
       </div>
+      {inspectedConfigId && props.generationPromptConfigs[inspectedConfigId] ? (
+        <PromptConfigDialog
+          config={props.generationPromptConfigs[inspectedConfigId]}
+          onClose={() => setInspectedConfigId(null)}
+        />
+      ) : null}
     </div>
   );
 }
