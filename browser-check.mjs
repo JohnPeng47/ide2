@@ -4,14 +4,29 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
-import {
+async function loadBrowserHarness() {
+  const candidates = [
+    new URL("../../.agents/skills/front-end/browser-test.mjs", import.meta.url),
+    new URL("../../../../.codex/skills/front-end/browser-test.mjs", import.meta.url)
+  ];
+  for (const candidate of candidates) {
+    try {
+      return await import(candidate.href);
+    } catch (error) {
+      if (error?.code !== "ERR_MODULE_NOT_FOUND") throw error;
+    }
+  }
+  throw new Error("front-end browser test harness was not found");
+}
+
+const {
   captureScreenshot,
   elementClip,
   evaluate,
   waitFor,
   waitForSelector,
   withHeadlessBrowser
-} from "../../.agents/skills/front-end/browser-test.mjs";
+} = await loadBrowserHarness();
 
 const PACKAGE_ROOT = path.dirname(new URL(import.meta.url).pathname);
 const execFileAsync = promisify(execFile);
@@ -47,6 +62,9 @@ async function pointerHover(cdp, selector) {
 
 async function replaceText(cdp, selector, value) {
   await pointerClick(cdp, selector);
+  await waitFor(async () => await evaluate(cdp, `document.activeElement?.matches(${JSON.stringify(selector)})`), {
+    message: `${selector} did not receive focus before text replacement`
+  });
   await cdp.send("Input.dispatchKeyEvent", {
     type: "rawKeyDown",
     key: "Control",
@@ -287,10 +305,9 @@ try {
     }
     await pointerHover(cdp, ".mapped-element");
     await pointerClick(cdp, ".mapped-element");
-    await waitForSelector(cdp, ".entity-card.is-revealed", { timeoutMs: 10000 });
-    await waitForSelector(cdp, ".source-preview-shell.is-revealed", { timeoutMs: 10000 });
-    await waitForSelector(cdp, ".source-line.is-highlighted", { timeoutMs: 10000 });
-    const revealedEntityId = await evaluate(cdp, `document.querySelector('.entity-card.is-revealed').dataset.entityId`);
+    await waitForSelector(cdp, ".source-workspace.is-revealed", { timeoutMs: 10000 });
+    await waitForSelector(cdp, ".source-code-viewer", { timeoutMs: 10000 });
+    const revealedEntityId = await evaluate(cdp, `document.querySelector('.entity-context__body').dataset.activeEntityId`);
     if (revealedEntityId !== mappedEntityId) {
       throw new Error(`mapped entity ${mappedEntityId} revealed ${revealedEntityId}`);
     }
@@ -298,24 +315,57 @@ try {
     if (entityTabSelected !== "true") throw new Error("mapped element did not open the Code Entities tab");
     await captureScreenshot(cdp, { output: mappingScreenshotPath });
     await pointerClick(cdp, "#code-entities-tab");
-    await waitForSelector(cdp, ".source-preview");
-    await waitForSelector(cdp, ".source-collapse:not([open])");
-    const compactedText = await evaluate(cdp, `document.querySelector('.source-collapse summary code').textContent`);
+    await waitForSelector(cdp, ".source-fold-placeholder");
+    const sourceLayout = await evaluate(cdp, `(() => {
+      const root = document.querySelector('.entities-panel').getBoundingClientRect();
+      const context = document.querySelector('.entity-context').getBoundingClientRect();
+      const source = document.querySelector('.source-workspace').getBoundingClientRect();
+      const divider = document.querySelector('.entity-context-divider');
+      return {
+        contextRatio: context.height / root.height,
+        sourceRatio: source.height / root.height,
+        sourceWidthRatio: source.width / root.width,
+        splitValue: Number(divider.getAttribute('aria-valuenow'))
+      };
+    })()`);
+    if (Math.abs(sourceLayout.contextRatio - 0.2) > 0.03
+      || sourceLayout.sourceRatio < 0.75
+      || sourceLayout.sourceWidthRatio < 0.99
+      || sourceLayout.splitValue !== 20) {
+      throw new Error(`source workspace did not render at full-width 20/80: ${JSON.stringify(sourceLayout)}`);
+    }
+    await waitFor(async () => (
+      await evaluate(cdp, `document.querySelectorAll('.source-code-viewer[data-highlighted="true"] .source-token').length`)
+    ) > 0, { message: "Shiki did not render syntax-highlighted tokens" });
+    const compactedText = await evaluate(cdp, `document.querySelector('.source-fold-placeholder').textContent`);
     if (!compactedText.includes("// Lines 2-3:")) {
       throw new Error(`collapsed source did not render inline comment notation: ${compactedText}`);
     }
-    await pointerClick(cdp, ".source-collapse summary");
-    await waitForSelector(cdp, ".source-collapse[open] .source-collapse__lines");
-    const revealedText = await evaluate(cdp, `document.querySelector('.source-collapse__lines').textContent`);
+    await pointerClick(cdp, ".source-fold-placeholder");
+    await waitFor(async () => !await evaluate(cdp, `Boolean(document.querySelector('.source-fold-placeholder'))`), {
+      message: "source fold placeholder did not expand"
+    });
+    const revealedText = await evaluate(cdp, `document.querySelector('.source-code-content').textContent`);
     if (!revealedText.includes("workspace.status = 'collecting';")) {
       throw new Error("collapsed source did not reveal its original lines");
     }
+    await pointerClick(cdp, ".source-fold-toggle");
+    await waitForSelector(cdp, ".source-fold-placeholder");
+    await pointerClick(cdp, ".source-fold-placeholder");
+    await waitFor(async () => !await evaluate(cdp, `Boolean(document.querySelector('.source-fold-placeholder'))`), {
+      message: "expanded source section did not support re-collapsing and reopening"
+    });
     await pointerClick(cdp, ".source-original-toggle");
     await waitFor(async () => (
-      await evaluate(cdp, `document.querySelector('.source-preview').textContent`)
+      await evaluate(cdp, `document.querySelector('.source-code-content').textContent`)
     ).includes("workspace.status = 'ready';"), {
       message: "peek original did not reveal the complete source range"
     });
+    const sourceBeforeTyping = await evaluate(cdp, `document.querySelector('.source-code-content').textContent`);
+    await pointerClick(cdp, ".source-code-content");
+    await cdp.send("Input.insertText", { text: "MUTATION" });
+    const sourceAfterTyping = await evaluate(cdp, `document.querySelector('.source-code-content').textContent`);
+    if (sourceAfterTyping !== sourceBeforeTyping) throw new Error("read-only source viewer accepted source edits");
     await captureScreenshot(cdp, { output: sourceScreenshotPath });
 
     await pointerClick(cdp, "#diagrams-tab");
@@ -633,7 +683,13 @@ try {
     }
 
     await pointerClick(cdp, '.output-kind [role="radio"]:last-child');
+    await waitFor(async () => (
+      await evaluate(cdp, `document.querySelector('.output-kind [role="radio"]:last-child').getAttribute('aria-checked')`)
+    ) === "true", { message: "component output kind did not become active" });
     await replaceText(cdp, "#diagram-prompt", "Vary @component/");
+    await waitFor(async () => (
+      await evaluate(cdp, `document.querySelector('#diagram-prompt').value`)
+    ) === "Vary @component/", { message: "component prompt text did not settle" });
     await waitForSelector(cdp, ".mention-menu [role=option]");
     const componentMention = await evaluate(cdp, `document.querySelector(
       '.mention-menu [role=option] code'
