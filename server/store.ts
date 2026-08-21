@@ -253,16 +253,28 @@ export class DiagramStore {
       outputKind?: GenerationBatchRecord["outputKind"];
       outputDiagramComponentIds?: string[];
       modelId?: GenerationBatchRecord["modelId"];
+      userPrompt?: string;
+      selectedCodeEntityIds?: string[];
+      promptReferences?: GenerationBatchRecord["promptReferences"];
+      resolvedPrompt?: string;
     }>(this.batchPath(setId, batchId));
     if (stored.outputKind && Array.isArray(stored.outputDiagramComponentIds)
-      && isDiagramModelId(stored.modelId)) {
+      && isDiagramModelId(stored.modelId)
+      && typeof stored.userPrompt === "string"
+      && Array.isArray(stored.selectedCodeEntityIds)
+      && Array.isArray(stored.promptReferences)
+      && typeof stored.resolvedPrompt === "string") {
       return stored as GenerationBatchRecord;
     }
     const normalized: GenerationBatchRecord = {
       ...stored,
       outputKind: stored.outputKind ?? "diagram",
       modelId: stored.modelId ?? DEFAULT_DIAGRAM_MODEL_ID,
-      outputDiagramComponentIds: stored.outputDiagramComponentIds ?? []
+      outputDiagramComponentIds: stored.outputDiagramComponentIds ?? [],
+      userPrompt: stored.userPrompt ?? "",
+      selectedCodeEntityIds: stored.selectedCodeEntityIds ?? [],
+      promptReferences: stored.promptReferences ?? [],
+      resolvedPrompt: stored.resolvedPrompt ?? ""
     };
     await writeJsonAtomic(this.batchPath(setId, batchId), normalized);
     return normalized;

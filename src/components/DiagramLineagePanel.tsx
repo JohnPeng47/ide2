@@ -36,7 +36,7 @@ function ComponentLineageSection(props: {
   const parentByBatch = new Map<string, string>();
   const batchesByParent = new Map<string, GenerationBatchRecord[]>();
   for (const batch of batches) {
-    const parent = batch.promptReferences.find(
+    const parent = (batch.promptReferences ?? []).find(
       (reference) => reference.kind === "diagram-component" && byId.has(reference.targetId)
     )?.targetId;
     if (!parent) continue;
@@ -250,7 +250,7 @@ function parentDiagramId(
   batch: GenerationBatchRecord,
   diagramsById: Map<string, DiagramRecord>
 ): string | undefined {
-  const referenced = batch.promptReferences.find(
+  const referenced = (batch.promptReferences ?? []).find(
     (reference) => reference.kind === "diagram" && diagramsById.has(reference.targetId)
   );
   if (referenced) return referenced.targetId;

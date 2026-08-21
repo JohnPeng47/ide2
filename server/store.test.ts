@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, readFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -53,5 +53,64 @@ describe("DiagramStore", () => {
     const workspace = await store.loadWorkspace();
     expect(workspace.diagramSets[0].readiness).toBe("ready");
     expect(workspace.codeEntitySets[diagramSet.codeEntitiesSetId].status).toBe("finalized");
+  });
+
+  it("normalizes generation batches created before prompt lineage fields existed", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-store-legacy-batch-"));
+    roots.push(root);
+    await mkdir(path.join(root, ".git"));
+    const store = new DiagramStore(root);
+    const location = { checkoutRoot: root, repositoryIdentity: path.join(root, ".git") };
+    const project = await store.ensureProject(location);
+    const { diagramSet } = await store.createDiagramSet({
+      project,
+      name: "Legacy lineage",
+      initialPrompt: "Show the old batch",
+      location
+    });
+    await store.completeCollection(diagramSet.id, []);
+    const createdAt = new Date().toISOString();
+    const batch = {
+      schemaVersion: 1 as const,
+      id: store.ids.batch(),
+      diagramSetId: diagramSet.id,
+      requestedCount: 1,
+      outputKind: "diagram" as const,
+      modelId: "gpt-5.6-sol" as const,
+      userPrompt: "",
+      selectedCodeEntityIds: [],
+      promptReferences: [],
+      resolvedPrompt: "",
+      codeEntitiesRevision: 1,
+      childRunIds: [],
+      outputDiagramIds: [],
+      outputDiagramComponentIds: [],
+      status: "complete" as const,
+      createdAt,
+      updatedAt: createdAt
+    };
+    await store.beginBatch(batch, []);
+    const batchPath = path.join(
+      root,
+      ".diagrams",
+      "diagram-sets",
+      diagramSet.id,
+      "generation-batches",
+      `${batch.id}.json`
+    );
+    const legacy = { ...batch } as Partial<typeof batch>;
+    delete legacy.userPrompt;
+    delete legacy.selectedCodeEntityIds;
+    delete legacy.promptReferences;
+    delete legacy.resolvedPrompt;
+    await writeFile(batchPath, `${JSON.stringify(legacy, null, 2)}\n`, "utf8");
+
+    const workspace = await store.loadWorkspace();
+    expect(workspace.generationBatches[batch.id]).toMatchObject({
+      userPrompt: "",
+      selectedCodeEntityIds: [],
+      promptReferences: [],
+      resolvedPrompt: ""
+    });
   });
 });
