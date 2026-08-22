@@ -1,9 +1,11 @@
 export const SCHEMA_VERSION = 1 as const;
+export const GLOBAL_IMPORTS_DIAGRAM_SET_ID = "global-imports";
 
 export type CodeEntityCategory = "state" | "interface-data-struct" | "operation";
 export type SourceCompactionLevel = "low" | "medium" | "high";
 export type DiagramSetReadiness = "collecting" | "ready" | "failed";
 export type GenerationOutputKind = "diagram" | "diagram-component";
+export type CodeEntityPromptKind = "code-entity-identification" | "code-entity-compaction";
 export const DEFAULT_GENERATION_COUNT = 3;
 export const DIAGRAM_MODELS = [
   { id: "gpt-5.6-terra", label: "GPT-5.6 Terra" },
@@ -14,6 +16,8 @@ export const DEFAULT_DIAGRAM_MODEL_ID: DiagramModelId = "gpt-5.6-sol";
 
 export type GenerationPromptProfileId = string;
 export const DEFAULT_GENERATION_PROMPT_PROFILE_ID: GenerationPromptProfileId = "default";
+export type CodeEntityPromptProfileId = string;
+export const DEFAULT_CODE_ENTITY_PROMPT_PROFILE_ID: CodeEntityPromptProfileId = "default-code-entities";
 
 export function isDiagramModelId(value: unknown): value is DiagramModelId {
   return DIAGRAM_MODELS.some((model) => model.id === value);
@@ -91,6 +95,8 @@ export interface CodeEntitiesSetRecord {
   revision: number;
   status: "collecting" | "finalized" | "failed";
   entities: CodeEntityRecord[];
+  /** Immutable prompt snapshot used to collect this set. Absent on legacy records. */
+  promptConfigId?: string;
   finalizedAt?: string;
   error?: string;
 }
@@ -126,6 +132,14 @@ export interface DiagramSetRecord {
   error?: string;
 }
 
+export interface ImportedArtifactLibraryRecord {
+  schemaVersion: typeof SCHEMA_VERSION;
+  diagramIds: string[];
+  diagramComponentIds: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface PromptReference {
   kind: "code-entity" | "diagram" | "diagram-component";
   targetId: string;
@@ -138,6 +152,17 @@ export interface GenerationPromptReference extends PromptReference {
   promptRepresentation: string;
 }
 
+export interface GenerationReferenceSelection extends PromptReference {
+  included: boolean;
+}
+
+export interface GenerationDerivationRecord {
+  sourceArtifactKind: GenerationOutputKind;
+  sourceArtifactId: string;
+  /** Only the new correction entered after the inherited prompt history. */
+  promptCorrection: string;
+}
+
 export interface GenerationPromptConfigRecord {
   schemaVersion: typeof SCHEMA_VERSION;
   id: string;
@@ -147,6 +172,9 @@ export interface GenerationPromptConfigRecord {
   instruction: string;
   selectedCodeEntityIds: string[];
   references: GenerationPromptReference[];
+  /** Mentioned references intentionally left out of the agent context. */
+  omittedReferences?: PromptReference[];
+  derivation?: GenerationDerivationRecord;
   contextPrompt: {
     templateVersion: 1;
     rendered: string;
@@ -161,16 +189,47 @@ export interface GenerationPromptConfigRecord {
   createdAt: string;
 }
 
-export interface SystemPromptTemplateRecord {
+export interface PromptTemplateRecord<TPromptName extends string, TProfileId extends string = string> {
   schemaVersion: typeof SCHEMA_VERSION;
-  id: GenerationPromptProfileId;
+  id: TProfileId;
   label: string;
   description: string;
   builtIn: boolean;
   version: number;
-  prompts: Record<GenerationOutputKind, string>;
+  prompts: Record<TPromptName, string>;
   createdAt: string;
   updatedAt: string;
+}
+
+export type SystemPromptTemplateRecord = PromptTemplateRecord<
+  GenerationOutputKind,
+  GenerationPromptProfileId
+>;
+
+export type CodeEntityPromptTemplateRecord = PromptTemplateRecord<
+  CodeEntityPromptKind,
+  CodeEntityPromptProfileId
+>;
+
+export interface CodeEntityPromptConfigRecord {
+  schemaVersion: typeof SCHEMA_VERSION;
+  id: string;
+  diagramSetId: string;
+  template: {
+    profileId: CodeEntityPromptProfileId;
+    profileVersion: number;
+  };
+  identificationCriteria: {
+    rendered: string;
+  };
+  compactionCriteria: {
+    rendered: string;
+  };
+  contextPrompt: {
+    templateVersion: 1;
+    rendered: string;
+  };
+  createdAt: string;
 }
 
 export interface DiagramSelectionBounds {
@@ -330,9 +389,12 @@ export interface EditSessionRecord {
 export interface WorkspaceSnapshot {
   project: ProjectRecord | null;
   diagramSets: DiagramSetRecord[];
+  globalImports: ImportedArtifactLibraryRecord;
   codeEntitySets: Record<string, CodeEntitiesSetRecord>;
   diagrams: Record<string, DiagramRecord>;
   diagramComponents: Record<string, DiagramComponentRecord>;
+  codeEntityPromptConfigs: Record<string, CodeEntityPromptConfigRecord>;
+  codeEntityPromptTemplates: Record<string, CodeEntityPromptTemplateRecord>;
   generationPromptConfigs: Record<string, GenerationPromptConfigRecord>;
   systemPromptTemplates: Record<string, SystemPromptTemplateRecord>;
   generationBatches: Record<string, GenerationBatchRecord>;
@@ -368,11 +430,9 @@ export interface DiagramElementMappingDraft {
 }
 
 export interface ArtifactImportInput {
-  diagramSetId: string;
   artifactKind: GenerationOutputKind;
   name: string;
   ascii: string;
-  codeEntityIds?: string[];
 }
 
 export interface AgentProgress {

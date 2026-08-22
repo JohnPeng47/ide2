@@ -9,11 +9,15 @@ import {
   type AgentSessionEvent
 } from "@earendil-works/pi-coding-agent";
 import { Type, type Model } from "@earendil-works/pi-ai";
+import { readFile, realpath, stat } from "node:fs/promises";
+import path from "node:path";
 import {
+  assertSourceRange,
   DEFAULT_DIAGRAM_MODEL_ID,
   type AgentProgress,
   type ArtifactEditDraft,
   type CodeEntityDraft,
+  type CodeEntityPromptConfigRecord,
   type CodeEntityRecord,
   type DiagramElementMappingDraft,
   type DiagramModelId,
@@ -21,12 +25,13 @@ import {
   type GenerationOutputKind,
   type GenerationPromptConfigRecord
 } from "../src/domain";
-import { codeEntityCollectionPrompt } from "./codeEntityPrompt";
+import { diagramMappingValidationError } from "./diagramMapping";
+import { createValidatedSubmission } from "./validatedSubmission";
 
 export interface EntityCollectionRequest {
   sourceRoot: string;
   diagramSetName: string;
-  initialPrompt: string;
+  promptConfig: CodeEntityPromptConfigRecord;
 }
 
 export interface ArtifactGenerationRequest {
@@ -98,6 +103,32 @@ function progressFor(event: AgentSessionEvent, model: string, sessionId: string)
   return undefined;
 }
 
+async function validateSubmittedSourceRanges(
+  sourceRoot: string,
+  entities: CodeEntityDraft[]
+): Promise<string | undefined> {
+  const canonicalRoot = await realpath(sourceRoot);
+  for (const entity of entities) {
+    for (const range of entity.sourceRanges) {
+      try {
+        assertSourceRange(range);
+      } catch (error) {
+        return error instanceof Error ? error.message : `invalid source range for ${range.path}`;
+      }
+      const absolute = await realpath(path.resolve(canonicalRoot, range.path)).catch(() => null);
+      if (!absolute || (absolute !== canonicalRoot && !absolute.startsWith(`${canonicalRoot}${path.sep}`))) {
+        return `${range.path} does not resolve to a repository file`;
+      }
+      if (!(await stat(absolute)).isFile()) return `${range.path} is not a file`;
+      const lineCount = (await readFile(absolute, "utf8")).split(/\r?\n/).length;
+      if (range.endLine > lineCount) {
+        return `${range.path}:${range.startLine}-${range.endLine} exceeds the file's ${lineCount} lines`;
+      }
+    }
+  }
+  return undefined;
+}
+
 export class PiDiagramAgentRuntime implements DiagramAgentRuntime {
   private modelRuntime?: Promise<ModelRuntime>;
   private readonly sessions = new Set<{ abort(): Promise<void>; dispose(): void }>();
@@ -129,13 +160,19 @@ export class PiDiagramAgentRuntime implements DiagramAgentRuntime {
     onProgress?: (progress: AgentProgress) => void
   ): Promise<CodeEntityDraft[]> {
     const configured = await this.model();
-    const state: { submission?: { entities: CodeEntityDraft[] } } = {};
+    const submission = createValidatedSubmission<{ entities: CodeEntityDraft[] }>({
+      toolName: "submit_code_entities",
+      validate: ({ entities }) => validateSubmittedSourceRanges(request.sourceRoot, entities),
+      acceptedMessage: ({ entities }) => `Recorded ${entities.length} code entities.`,
+      acceptedDetails: ({ entities }) => ({ count: entities.length }),
+      correctionPrompt: "Inspect the current file and correct the source coordinates."
+    });
     const submit = defineTool({
       name: "submit_code_entities",
       label: "Submit code entities",
       description: "Submit the source-backed code entities for this diagram set.",
       promptSnippet: "Submit the final code entity set",
-      promptGuidelines: ["End by calling submit_code_entities exactly once."],
+      promptGuidelines: [submission.promptGuideline],
       parameters: Type.Object({
         entities: Type.Array(Type.Object({
           handle: Type.String({ minLength: 1, maxLength: 64 }),
@@ -190,14 +227,7 @@ export class PiDiagramAgentRuntime implements DiagramAgentRuntime {
           }), { minItems: 1, maxItems: 12 })
         }), { minItems: 1, maxItems: 200 })
       }),
-      async execute(_toolCallId, params) {
-        state.submission = params;
-        return {
-          content: [{ type: "text", text: `Recorded ${params.entities.length} code entities.` }],
-          details: { count: params.entities.length },
-          terminate: true
-        };
-      }
+      execute: submission.execute
     });
     const settingsManager = SettingsManager.inMemory({
       defaultProvider: configured.provider,
@@ -234,9 +264,10 @@ export class PiDiagramAgentRuntime implements DiagramAgentRuntime {
       if (progress) onProgress?.(progress);
     });
     try {
-      await session.prompt(codeEntityCollectionPrompt(request));
-      if (!state.submission) throw new Error("collector finished without submitting code entities");
-      return state.submission.entities;
+      await session.prompt(request.promptConfig.contextPrompt.rendered);
+      const accepted = submission.value;
+      if (!accepted) throw new Error("collector finished without submitting code entities");
+      return accepted.entities;
     } finally {
       unsubscribe();
       session.dispose();
@@ -417,13 +448,23 @@ ${request.instruction}`);
     onProgress?: (progress: AgentProgress) => void
   ): Promise<DiagramElementMappingDraft[]> {
     const configured = await this.model();
-    const state: { submission?: { mappings: DiagramElementMappingDraft[] } } = {};
+    const submission = createValidatedSubmission<{ mappings: DiagramElementMappingDraft[] }>({
+      toolName: "submit_code_entity_map",
+      validate: ({ mappings }) => diagramMappingValidationError(
+        request.ascii,
+        mappings,
+        request.codeEntities
+      ),
+      acceptedMessage: ({ mappings }) => `Recorded ${mappings.length} diagram mappings.`,
+      acceptedDetails: ({ mappings }) => ({ count: mappings.length }),
+      correctionPrompt: "Recalculate coordinates against the raw ASCII after the display-only line-number prefix."
+    });
     const submit = defineTool({
       name: "submit_code_entity_map",
       label: "Submit code entity map",
       description: "Map exact visible ASCII text spans to CodeEntities and their source ranges.",
       promptSnippet: "Submit the final diagram-to-code mapping",
-      promptGuidelines: ["End by calling submit_code_entity_map exactly once."],
+      promptGuidelines: [submission.promptGuideline],
       parameters: Type.Object({
         mappings: Type.Array(Type.Object({
           entityId: Type.String({ minLength: 1, maxLength: 120 }),
@@ -433,14 +474,7 @@ ${request.instruction}`);
           endColumn: Type.Integer({ minimum: 1 })
         }), { minItems: 1, maxItems: 200 })
       }),
-      async execute(_toolCallId, params) {
-        state.submission = params;
-        return {
-          content: [{ type: "text", text: `Recorded ${params.mappings.length} diagram mappings.` }],
-          details: { count: params.mappings.length },
-          terminate: true
-        };
-      }
+      execute: submission.execute
     });
     const settingsManager = SettingsManager.inMemory({
       defaultProvider: configured.provider,
@@ -491,15 +525,16 @@ ${request.instruction}`);
 Artifact: ${request.artifactKind === "diagram" ? "Diagram" : "DiagramComponent"} @${request.artifactKind === "diagram" ? "diagram" : "component"}/${request.artifactHandle}
 Name: ${request.artifactName}
 
-ASCII with 1-based line numbers (columns are also 1-based and count every space):
+ASCII with 1-based line numbers. The six-character "NNNN: " prefix is display-only and is not part of the ASCII. Mapping columns are 1-based within the raw ASCII after that prefix, so column 1 is the first character after ": ":
 ${numberedAscii}
 
 Available CodeEntities and source ranges:
 ${entities}
 
 Map the smallest exact visible text span that names or clearly represents each CodeEntity. Map labels and words, not box borders, arrow shafts, or whitespace. A CodeEntity may have multiple mapped spans. Choose the sourceRangeIndex most directly represented by each span. Spans must stay on one line, contain non-whitespace text, and must not overlap.`);
-      if (!state.submission) throw new Error("mapping agent finished without submitting mappings");
-      return state.submission.mappings;
+      const accepted = submission.value;
+      if (!accepted) throw new Error("mapping agent finished without submitting mappings");
+      return accepted.mappings;
     } finally {
       unsubscribe();
       session.dispose();

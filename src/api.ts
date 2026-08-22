@@ -1,9 +1,12 @@
 import type {
   ArtifactImportInput,
+  CodeEntityPromptTemplateRecord,
   DiagramModelId,
   DiagramSelectionBounds,
+  GenerationDerivationRecord,
   GenerationOutputKind,
   GenerationPromptProfileId,
+  GenerationReferenceSelection,
   SystemPromptTemplateRecord,
   WorkspaceSnapshot
 } from "./domain";
@@ -54,6 +57,40 @@ export async function resetSystemPromptTemplate(id: string): Promise<WorkspaceSn
 
 export async function deleteSystemPromptTemplate(id: string): Promise<WorkspaceSnapshot> {
   const response = await fetch(`/api/system-prompt-templates/${encodeURIComponent(id)}`, {
+    method: "DELETE"
+  });
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<WorkspaceSnapshot>;
+}
+
+export async function saveCodeEntityPromptTemplate(
+  template: Pick<CodeEntityPromptTemplateRecord, "label" | "description" | "prompts"> & { id?: string }
+): Promise<WorkspaceSnapshot> {
+  const response = await fetch(
+    template.id
+      ? `/api/code-entity-prompt-templates/${encodeURIComponent(template.id)}`
+      : "/api/code-entity-prompt-templates",
+    {
+      method: template.id ? "PUT" : "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(template)
+    }
+  );
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<WorkspaceSnapshot>;
+}
+
+export async function resetCodeEntityPromptTemplate(id: string): Promise<WorkspaceSnapshot> {
+  const response = await fetch(
+    `/api/code-entity-prompt-templates/${encodeURIComponent(id)}/reset`,
+    { method: "POST" }
+  );
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<WorkspaceSnapshot>;
+}
+
+export async function deleteCodeEntityPromptTemplate(id: string): Promise<WorkspaceSnapshot> {
+  const response = await fetch(`/api/code-entity-prompt-templates/${encodeURIComponent(id)}`, {
     method: "DELETE"
   });
   if (!response.ok) throw await errorFrom(response);
@@ -219,15 +256,45 @@ export async function applyLlmEdit(
   return workspace;
 }
 
-export async function importProjectArtifact(
-  projectId: string,
-  input: ArtifactImportInput
-): Promise<WorkspaceSnapshot> {
-  const response = await fetch(`/api/projects/${encodeURIComponent(projectId)}/imports`, {
+export async function importGlobalArtifact(input: ArtifactImportInput): Promise<WorkspaceSnapshot> {
+  const response = await fetch("/api/imports", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(input)
   });
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<WorkspaceSnapshot>;
+}
+
+export async function renameImportedDiagram(
+  diagramId: string,
+  name: string
+): Promise<WorkspaceSnapshot> {
+  const response = await fetch(`/api/imports/diagrams/${encodeURIComponent(diagramId)}`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ name })
+  });
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<WorkspaceSnapshot>;
+}
+
+export async function archiveImportedDiagram(diagramId: string): Promise<WorkspaceSnapshot> {
+  const response = await fetch(
+    `/api/imports/diagrams/${encodeURIComponent(diagramId)}/archive`,
+    { method: "POST" }
+  );
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<WorkspaceSnapshot>;
+}
+
+export async function archiveImportedDiagramComponent(
+  componentId: string
+): Promise<WorkspaceSnapshot> {
+  const response = await fetch(
+    `/api/imports/diagram-components/${encodeURIComponent(componentId)}/archive`,
+    { method: "POST" }
+  );
   if (!response.ok) throw await errorFrom(response);
   return response.json() as Promise<WorkspaceSnapshot>;
 }
@@ -316,6 +383,8 @@ export async function generateArtifacts(
     outputKind: GenerationOutputKind;
     modelId: DiagramModelId;
     promptProfileId: GenerationPromptProfileId;
+    referenceSelections?: GenerationReferenceSelection[];
+    derivation?: GenerationDerivationRecord;
   },
   onProgress: (message: string) => void
 ): Promise<WorkspaceSnapshot> {

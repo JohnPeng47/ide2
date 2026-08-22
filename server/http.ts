@@ -1,5 +1,6 @@
 import type { ServerResponse } from "node:http";
 import type { Connect, Plugin } from "vite";
+import type { GenerationDerivationRecord, GenerationReferenceSelection } from "../src/domain";
 import { FakeDiagramAgentRuntime, PiDiagramAgentRuntime } from "./agentRuntime";
 import { DiagramApplication } from "./application";
 import { DiagramStore } from "./store";
@@ -55,9 +56,25 @@ function parseSystemPromptTemplate(pathname: string): { id: string; reset: boole
   return match ? { id: match[1], reset: Boolean(match[2]) } : null;
 }
 
-function parseProjectImport(pathname: string): { projectId: string } | null {
-  const match = pathname.match(/^\/api\/projects\/([a-z0-9][a-z0-9-]*)\/imports$/);
-  return match ? { projectId: match[1] } : null;
+function parseCodeEntityPromptTemplate(pathname: string): { id: string; reset: boolean } | null {
+  const match = pathname.match(
+    /^\/api\/code-entity-prompt-templates\/([a-z0-9][a-z0-9-]*)(\/reset)?$/
+  );
+  return match ? { id: match[1], reset: Boolean(match[2]) } : null;
+}
+
+function parseImportedDiagram(pathname: string): { diagramId: string; archive: boolean } | null {
+  const match = pathname.match(/^\/api\/imports\/diagrams\/([a-z0-9][a-z0-9-]*)(\/archive)?$/);
+  return match ? { diagramId: match[1], archive: Boolean(match[2]) } : null;
+}
+
+function parseImportedDiagramComponent(
+  pathname: string
+): { componentId: string; archive: boolean } | null {
+  const match = pathname.match(
+    /^\/api\/imports\/diagram-components\/([a-z0-9][a-z0-9-]*)(\/archive)?$/
+  );
+  return match ? { componentId: match[1], archive: Boolean(match[2]) } : null;
 }
 
 function parseDiagram(pathname: string): { setId: string; diagramId: string } | null {
@@ -174,6 +191,44 @@ export function diagramApi(projectRoot: string, diagramsDirectory = ".diagrams")
           prompts: body.prompts
         }));
       }
+      if (url.pathname === "/api/code-entity-prompt-templates") {
+        if (request.method === "GET") {
+          return sendJson(response, 200, { templates: await application.codeEntityPromptTemplates() });
+        }
+        if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
+        const body = await readBody(request) as Record<string, unknown>;
+        return sendJson(response, 200, await application.saveCodeEntityPromptTemplate({
+          label: body.label,
+          description: body.description,
+          prompts: body.prompts
+        }));
+      }
+      const codeEntityPromptTemplate = parseCodeEntityPromptTemplate(url.pathname);
+      if (codeEntityPromptTemplate) {
+        if (codeEntityPromptTemplate.reset) {
+          if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
+          return sendJson(
+            response,
+            200,
+            await application.resetCodeEntityPromptTemplate(codeEntityPromptTemplate.id)
+          );
+        }
+        if (request.method === "DELETE") {
+          return sendJson(
+            response,
+            200,
+            await application.deleteCodeEntityPromptTemplate(codeEntityPromptTemplate.id)
+          );
+        }
+        if (request.method !== "PUT") return sendJson(response, 405, { error: "method not allowed" });
+        const body = await readBody(request) as Record<string, unknown>;
+        return sendJson(response, 200, await application.saveCodeEntityPromptTemplate({
+          id: codeEntityPromptTemplate.id,
+          label: body.label,
+          description: body.description,
+          prompts: body.prompts
+        }));
+      }
       const systemPromptTemplate = parseSystemPromptTemplate(url.pathname);
       if (systemPromptTemplate) {
         if (systemPromptTemplate.reset) {
@@ -207,11 +262,15 @@ export function diagramApi(projectRoot: string, diagramsDirectory = ".diagrams")
         const name = typeof body.name === "string" ? body.name : "";
         const prompt = typeof body.prompt === "string" ? body.prompt : "";
         const requestedPromptTemplateId = body.promptTemplateId;
+        const requestedCodeEntityPromptTemplateId = body.codeEntityPromptTemplateId;
         if (!inputPath || !name.trim()) {
           return sendJson(response, 400, { error: "repository path and DiagramSet name are required" });
         }
         const promptTemplate = await application.resolveSystemPromptTemplate(
           requestedPromptTemplateId
+        );
+        const codeEntityPromptTemplate = await application.resolveCodeEntityPromptTemplate(
+          requestedCodeEntityPromptTemplateId
         );
         response.statusCode = 200;
         response.setHeader("content-type", "application/x-ndjson; charset=utf-8");
@@ -222,9 +281,14 @@ export function diagramApi(projectRoot: string, diagramsDirectory = ".diagrams")
           type: "created",
           diagramSetId: diagramSet.id,
           projectRoot: diagramSet.sourceCheckoutRoot,
-          promptTemplateId: promptTemplate.id
+          promptTemplateId: promptTemplate.id,
+          codeEntityPromptTemplateId: codeEntityPromptTemplate.id
         });
-        await application.collectCodeEntities(diagramSet.id, (event) => sendEvent(response, event));
+        await application.collectCodeEntities(
+          diagramSet.id,
+          { promptTemplateId: codeEntityPromptTemplate.id },
+          (event) => sendEvent(response, event)
+        );
         const workspace = await application.generateInitialDiagrams(
           diagramSet.id,
           { promptTemplateId: promptTemplate.id },
@@ -236,12 +300,21 @@ export function diagramApi(projectRoot: string, diagramsDirectory = ".diagrams")
         const promptConfig = batch
           ? workspace.generationPromptConfigs[batch.promptConfigId]
           : undefined;
+        const codeEntitySet = completedSet
+          ? workspace.codeEntitySets[completedSet.codeEntitiesSetId]
+          : undefined;
+        const codeEntityPromptConfig = codeEntitySet?.promptConfigId
+          ? workspace.codeEntityPromptConfigs[codeEntitySet.promptConfigId]
+          : undefined;
         sendEvent(response, {
           type: "result",
           diagramSetId: diagramSet.id,
           promptTemplateId: promptConfig?.systemPrompt.profileId,
           promptTemplateVersion: promptConfig?.systemPrompt.profileVersion,
           generationPromptConfigId: promptConfig?.id,
+          codeEntityPromptTemplateId: codeEntityPromptConfig?.template.profileId,
+          codeEntityPromptTemplateVersion: codeEntityPromptConfig?.template.profileVersion,
+          codeEntityPromptConfigId: codeEntityPromptConfig?.id,
           workspace
         });
         if (!response.destroyed && !response.writableEnded) response.end();
@@ -252,30 +325,55 @@ export function diagramApi(projectRoot: string, diagramsDirectory = ".diagrams")
         if (request.method !== "DELETE") return sendJson(response, 405, { error: "method not allowed" });
         return sendJson(response, 200, await application.deleteDiagramSet(diagramSet.setId));
       }
-      const projectImport = parseProjectImport(url.pathname);
-      if (projectImport) {
+      if (url.pathname === "/api/imports") {
         if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
         const body = await readBody(request) as Record<string, unknown>;
-        const diagramSetId = typeof body.diagramSetId === "string" ? body.diagramSetId : "";
         const artifactKind = body.artifactKind;
         const name = typeof body.name === "string" ? body.name : "";
         const ascii = typeof body.ascii === "string" ? body.ascii : "";
-        const codeEntityIds = Array.isArray(body.codeEntityIds)
-          ? body.codeEntityIds.filter((value): value is string => typeof value === "string")
-          : undefined;
-        if (!diagramSetId || !name.trim() || !ascii.trim()) {
-          return sendJson(response, 400, { error: "DiagramSet, artifact name, and ASCII are required" });
+        if (!name.trim() || !ascii.trim()) {
+          return sendJson(response, 400, { error: "artifact name and ASCII are required" });
         }
         if (artifactKind !== "diagram" && artifactKind !== "diagram-component") {
           return sendJson(response, 400, { error: "artifactKind must be diagram or diagram-component" });
         }
-        return sendJson(response, 200, await application.importArtifact(projectImport.projectId, {
-          diagramSetId,
+        return sendJson(response, 200, await application.importArtifact({
           artifactKind,
           name,
-          ascii,
-          codeEntityIds
+          ascii
         }));
+      }
+      const importedDiagram = parseImportedDiagram(url.pathname);
+      if (importedDiagram) {
+        if (importedDiagram.archive) {
+          if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
+          return sendJson(
+            response,
+            200,
+            await application.archiveImportedDiagram(importedDiagram.diagramId)
+          );
+        }
+        if (request.method !== "PATCH") return sendJson(response, 405, { error: "method not allowed" });
+        const body = await readBody(request) as Record<string, unknown>;
+        return sendJson(
+          response,
+          200,
+          await application.renameImportedDiagram(
+            importedDiagram.diagramId,
+            typeof body.name === "string" ? body.name : ""
+          )
+        );
+      }
+      const importedComponent = parseImportedDiagramComponent(url.pathname);
+      if (importedComponent) {
+        if (!importedComponent.archive || request.method !== "POST") {
+          return sendJson(response, 405, { error: "method not allowed" });
+        }
+        return sendJson(
+          response,
+          200,
+          await application.archiveImportedDiagramComponent(importedComponent.componentId)
+        );
       }
       const archive = parseDiagramArchive(url.pathname);
       if (archive) {
@@ -438,6 +536,40 @@ export function diagramApi(projectRoot: string, diagramsDirectory = ".diagrams")
       const promptProfileId = typeof body.promptProfileId === "string"
         ? body.promptProfileId
         : undefined;
+      const referenceSelections: GenerationReferenceSelection[] | undefined = Array.isArray(body.referenceSelections)
+        ? body.referenceSelections.slice(0, 200).flatMap((value) => {
+          if (!value || typeof value !== "object") return [];
+          const selection = value as Record<string, unknown>;
+          const kind = selection.kind;
+          if (kind !== "code-entity" && kind !== "diagram" && kind !== "diagram-component") return [];
+          if (typeof selection.targetId !== "string"
+            || typeof selection.token !== "string"
+            || typeof selection.handle !== "string"
+            || typeof selection.included !== "boolean") return [];
+          return [{
+            kind,
+            targetId: selection.targetId,
+            token: selection.token,
+            handle: selection.handle,
+            included: selection.included
+          }];
+        })
+        : undefined;
+      const rawDerivation = body.derivation;
+      const derivation: GenerationDerivationRecord | undefined = rawDerivation && typeof rawDerivation === "object"
+        ? (() => {
+          const candidate = rawDerivation as Record<string, unknown>;
+          if ((candidate.sourceArtifactKind !== "diagram"
+            && candidate.sourceArtifactKind !== "diagram-component")
+            || typeof candidate.sourceArtifactId !== "string"
+            || typeof candidate.promptCorrection !== "string") return undefined;
+          return {
+            sourceArtifactKind: candidate.sourceArtifactKind,
+            sourceArtifactId: candidate.sourceArtifactId,
+            promptCorrection: candidate.promptCorrection
+          };
+        })()
+        : undefined;
       if (outputKind !== "diagram" && outputKind !== "diagram-component") {
         return sendJson(response, 400, { error: "outputKind must be diagram or diagram-component" });
       }
@@ -451,7 +583,9 @@ export function diagramApi(projectRoot: string, diagramsDirectory = ".diagrams")
         count,
         outputKind,
         modelId,
-        promptProfileId
+        promptProfileId,
+        referenceSelections,
+        derivation
       }, (event) => sendEvent(response, event));
       sendEvent(response, { type: "result", workspace });
       response.end();

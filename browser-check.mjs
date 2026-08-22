@@ -122,6 +122,27 @@ async function selectLastOption(cdp, selector) {
   });
 }
 
+async function selectOptionAt(cdp, selector, index) {
+  await pointerClick(cdp, selector);
+  if (!await evaluate(cdp, `document.activeElement?.matches(${JSON.stringify(selector)})`)) {
+    await evaluate(cdp, `document.querySelector(${JSON.stringify(selector)}).focus()`);
+  }
+  const key = async (name, code, windowsVirtualKeyCode) => {
+    await cdp.send("Input.dispatchKeyEvent", {
+      type: "rawKeyDown", key: name, code, windowsVirtualKeyCode
+    });
+    await cdp.send("Input.dispatchKeyEvent", {
+      type: "keyUp", key: name, code, windowsVirtualKeyCode
+    });
+  };
+  await key("Escape", "Escape", 27);
+  await key("Home", "Home", 36);
+  for (let optionIndex = 0; optionIndex < index; optionIndex += 1) {
+    await key("ArrowDown", "ArrowDown", 40);
+  }
+  await key("Enter", "Enter", 13);
+}
+
 async function controlKey(cdp, key, code, windowsVirtualKeyCode) {
   await cdp.send("Input.dispatchKeyEvent", {
     type: "rawKeyDown", key: "Control", code: "ControlLeft", windowsVirtualKeyCode: 17
@@ -169,7 +190,9 @@ const screenshotPath = path.join(fixtureRoot, "studio.png");
 const sourceScreenshotPath = path.join(fixtureRoot, "compacted-source.png");
 const importScreenshotPath = path.join(fixtureRoot, "import-dialog.png");
 const generationScreenshotPath = path.join(fixtureRoot, "generation-model.png");
+const derivativeScreenshotPath = path.join(fixtureRoot, "derivative-references.png");
 const promptSettingsScreenshotPath = path.join(fixtureRoot, "system-prompt-settings.png");
+const codeEntityPromptSettingsScreenshotPath = path.join(fixtureRoot, "code-entity-prompt-settings.png");
 const mappingScreenshotPath = path.join(fixtureRoot, "code-entity-mapping.png");
 const setPickerScreenshotPath = path.join(fixtureRoot, "diagram-set-picker.png");
 let archivedArtifactPath = "";
@@ -272,7 +295,10 @@ try {
       || !collectionResult.stdout.includes(`"event":"ready"`)
       || !collectionResult.stdout.includes(`"promptTemplateId":"default"`)
       || !collectionResult.stdout.includes(`"promptTemplateVersion":1`)
-      || !collectionResult.stdout.includes(`"generationPromptConfigId":"prompt-`)) {
+      || !collectionResult.stdout.includes(`"generationPromptConfigId":"prompt-`)
+      || !collectionResult.stdout.includes(`"codeEntityPromptTemplateId":"default-code-entities"`)
+      || !collectionResult.stdout.includes(`"codeEntityPromptTemplateVersion":1`)
+      || !collectionResult.stdout.includes(`"codeEntityPromptConfigId":"prompt-`)) {
       throw new Error("CLI did not print the studio server address");
     }
     await waitForSelector(cdp, ".diagram-panel", { timeoutMs: 10000 });
@@ -342,6 +368,46 @@ try {
       || !savedTemplate?.prompts?.diagram?.includes("Browser-persisted-template.")) {
       throw new Error(`edited prompt template was not persisted: ${JSON.stringify(savedTemplate)}`);
     }
+    await pointerClick(cdp, '[aria-label="Prompt family"] button:nth-child(2)');
+    await waitFor(async () => await evaluate(cdp, `(() => {
+      const editor = document.querySelector('.prompt-template-editor textarea');
+      return document.querySelectorAll('.prompt-template-list > button').length === 1
+        && editor?.value.includes('A useful CodeEntity');
+    })()`), { message: "CodeEntity identification criteria did not appear in prompt settings" });
+    await pointerClick(cdp, '[aria-label="CodeEntity prompt"] button:nth-child(2)');
+    await waitFor(async () => (
+      await evaluate(cdp, `document.querySelector('.prompt-template-editor textarea').value`)
+    ).includes("// [Lines 388-405 | 18 lines compacted]"), {
+      message: "CodeEntity compaction example did not appear in prompt settings"
+    });
+    const compactionTemplate = await evaluate(cdp, `document.querySelector(
+      '.prompt-template-editor textarea'
+    ).value`);
+    await replaceText(
+      cdp,
+      ".prompt-template-editor textarea",
+      `${compactionTemplate}\nBrowser-code-entity-template.`
+    );
+    await captureScreenshot(cdp, { output: codeEntityPromptSettingsScreenshotPath });
+    await pointerClick(cdp, '.prompt-settings-dialog button[type="submit"]');
+    await waitFor(async () => (
+      await evaluate(cdp, `document.querySelector('.prompt-settings-dialog footer > span').textContent`)
+    ).includes("v2"), { message: "CodeEntity prompt template did not save revision two" });
+    const savedCodeEntityTemplate = await evaluate(cdp, `(async () => {
+      const workspace = await fetch('/api/workspace').then((response) => response.json());
+      return workspace.codeEntityPromptTemplates['default-code-entities'];
+    })()`);
+    if (savedCodeEntityTemplate?.version !== 2
+      || !savedCodeEntityTemplate?.prompts?.['code-entity-compaction']
+        ?.includes("Browser-code-entity-template.")) {
+      throw new Error(
+        `edited CodeEntity prompt template was not persisted: ${JSON.stringify(savedCodeEntityTemplate)}`
+      );
+    }
+    await pointerClick(cdp, '[aria-label="Prompt family"] button:nth-child(1)');
+    await waitFor(async () => await evaluate(cdp, `
+      document.querySelectorAll('.prompt-template-list > button').length === 4
+    `), { message: "diagram prompt templates did not return after family switch" });
     await pointerClick(cdp, ".prompt-template-list > button:nth-child(2)");
     await waitFor(async () => (
       await evaluate(cdp, `document.querySelector('.prompt-template-fields input').value`)
@@ -758,19 +824,163 @@ try {
 
     await pointerClick(cdp, ".diagram-actions .create-derivative");
     await waitForSelector(cdp, "#diagram-prompt");
+    await waitForSelector(cdp, '.prompt-reference-controls input[type="checkbox"]');
     const derivativePromptState = await evaluate(cdp, `({
       instruction: document.querySelector('#diagram-prompt').value,
       model: document.querySelector('#generation-model').value,
       profile: document.querySelector('#generation-prompt-profile').value,
-      output: document.querySelector('.output-kind [aria-checked="true"]').textContent.trim()
+      output: document.querySelector('.output-kind [aria-checked="true"]').textContent.trim(),
+      reference: document.querySelector('.prompt-reference-controls code').textContent,
+      included: document.querySelector('.prompt-reference-controls input').checked
     })`);
-    if (!derivativePromptState.instruction.startsWith(stableHandle)
+    if (!derivativePromptState.instruction.startsWith("---- PREVIOUS PROMPT ----")
+      || !derivativePromptState.instruction.includes("-------------------------")
+      || !derivativePromptState.instruction.includes(stableHandle)
       || !derivativePromptState.instruction.includes("@entity/")
+      || derivativePromptState.reference !== stableHandle
+      || !derivativePromptState.included
       || derivativePromptState.model !== "gpt-5.6-sol"
       || derivativePromptState.profile !== "compact"
       || derivativePromptState.output !== "Diagram") {
       throw new Error(`derivative prompt was not rehydrated: ${JSON.stringify(derivativePromptState)}`);
     }
+    await pointerClick(cdp, '.prompt-reference-controls input[type="checkbox"]');
+    await waitFor(async () => await evaluate(cdp, `(() => {
+      const root = document.querySelector('.prompt-reference-controls');
+      return !root.querySelector('input').checked
+        && root.querySelector('em').textContent.trim() === 'omitted'
+        && Boolean(root.querySelector('.prompt-reference-warning'));
+    })()`), { message: "diagram reference toggle did not omit the derivative source" });
+    await pointerClick(cdp, '[aria-label="Use one fewer agent"]');
+    await pointerClick(cdp, '.output-kind [role="radio"]:last-child');
+    await selectOptionAt(cdp, "#generation-model", 0);
+    await selectOptionAt(cdp, "#generation-prompt-profile", 0);
+    await pointerClick(cdp, "#code-entities-tab");
+    await waitForSelector(cdp, ".entity-context__toggle input");
+    await pointerClick(cdp, ".entity-context__toggle input");
+    await waitFor(async () => await evaluate(cdp, `(() => ({
+      count: document.querySelector('.counter output').textContent,
+      output: document.querySelector('.output-kind [aria-checked="true"]').textContent.trim(),
+      model: document.querySelector('#generation-model').value,
+      profile: document.querySelector('#generation-prompt-profile').value,
+      entityIncluded: document.querySelector('.entity-context__toggle input').checked
+    }))()` ).then((state) => state.count === "2"
+      && state.output === "DiagramComponent"
+      && state.model === "gpt-5.6-terra"
+      && state.profile === "default"
+      && !state.entityIncluded), { message: "generation controls did not settle before persistence" });
+    await pointerClick(cdp, "#diagram-prompt");
+    await controlKey(cdp, "End", "End", 35);
+    await cdp.send("Input.insertText", { text: "D" });
+    const savedDerivativePrompt = `${derivativePromptState.instruction}D`;
+    await waitFor(async () => await evaluate(cdp, `(() => {
+      const entry = Object.entries(localStorage).find(([key]) => (
+        key.startsWith('new-diagram:generation-draft:') && key.endsWith(':diagram:${selection.id}')
+      ));
+      if (!entry) return false;
+      const draft = JSON.parse(entry[1]);
+      return draft.prompt === ${JSON.stringify(savedDerivativePrompt)}
+        && draft.selectedCodeEntityIds.length === 0
+        && draft.excludedReferenceKeys.includes('diagram:${selection.id}')
+        && draft.count === 2
+        && draft.outputKind === 'diagram-component'
+        && draft.modelId === 'gpt-5.6-terra'
+        && draft.promptProfileId === 'default';
+    })()`), { message: "complete derivative generation state was not saved" });
+    await pointerClick(cdp, ".generation-back");
+    await waitFor(async () => (
+      await evaluate(cdp, `document.querySelector('.diagram-panel .pane-header h2').textContent`)
+    ) === renamedDiagram, { message: "derivative back button did not return to its source diagram" });
+    await cdp.send("Page.reload", { ignoreCache: true });
+    await waitForSelector(cdp, ".diagram-panel");
+    await pointerClick(cdp, "#diagrams-tab");
+    await waitForSelector(cdp, `[data-diagram-id="${selection.id}"]`);
+    await pointerClick(cdp, `[data-diagram-id="${selection.id}"]`);
+    await waitFor(async () => (
+      await evaluate(cdp, `document.querySelector('.diagram-panel .pane-header h2').textContent`)
+    ) === renamedDiagram, { message: "source diagram did not reopen after reload" });
+    await pointerClick(cdp, ".diagram-actions .create-derivative");
+    await waitForSelector(cdp, "#diagram-prompt");
+    await waitForSelector(cdp, '.prompt-reference-controls input[type="checkbox"]');
+    const restoredGenerationState = await evaluate(cdp, `(() => {
+      const references = document.querySelector('.prompt-reference-controls');
+      return {
+        prompt: document.querySelector('#diagram-prompt').value,
+        referenceIncluded: references.querySelector('input').checked,
+        referenceStatus: references.querySelector('em').textContent.trim(),
+        warning: Boolean(references.querySelector('.prompt-reference-warning')),
+        count: document.querySelector('.counter output').textContent,
+        output: document.querySelector('.output-kind [aria-checked="true"]').textContent.trim(),
+        model: document.querySelector('#generation-model').value,
+        profile: document.querySelector('#generation-prompt-profile').value
+      };
+    })()`);
+    if (restoredGenerationState.prompt !== savedDerivativePrompt
+      || restoredGenerationState.referenceIncluded
+      || restoredGenerationState.referenceStatus !== "omitted"
+      || !restoredGenerationState.warning
+      || restoredGenerationState.count !== "2"
+      || restoredGenerationState.output !== "DiagramComponent"
+      || restoredGenerationState.model !== "gpt-5.6-terra"
+      || restoredGenerationState.profile !== "default") {
+      throw new Error(`generation controls did not restore after reload: ${JSON.stringify(restoredGenerationState)}`);
+    }
+    await pointerClick(cdp, "#code-entities-tab");
+    await waitForSelector(cdp, ".entity-context__toggle input");
+    if (await evaluate(cdp, `document.querySelector('.entity-context__toggle input').checked`)) {
+      throw new Error("CodeEntity inclusion checkbox did not restore after reload");
+    }
+    await captureScreenshot(cdp, { output: derivativeScreenshotPath });
+    await evaluate(cdp, `document.querySelector('.entity-context__toggle input').focus()`);
+    await cdp.send("Input.dispatchKeyEvent", {
+      type: "rawKeyDown", key: " ", code: "Space", windowsVirtualKeyCode: 32
+    });
+    await cdp.send("Input.dispatchKeyEvent", {
+      type: "keyUp", key: " ", code: "Space", windowsVirtualKeyCode: 32
+    });
+    await waitFor(async () => await evaluate(
+      cdp,
+      `document.querySelector('.entity-context__toggle input').checked`
+    ), { message: "CodeEntity inclusion checkbox did not reset after persistence check" });
+    await replaceText(cdp, "#diagram-prompt", derivativePromptState.instruction);
+    await pointerClick(cdp, '.prompt-reference-controls input[type="checkbox"]');
+    await pointerClick(cdp, '[aria-label="Use one more agent"]');
+    await pointerClick(cdp, '.output-kind [role="radio"]:first-of-type');
+    await selectOptionAt(cdp, "#generation-model", 1);
+    await selectOptionAt(cdp, "#generation-prompt-profile", 3);
+    try {
+      await waitFor(async () => await evaluate(cdp, `(() => {
+        const root = document.querySelector('.prompt-reference-controls');
+        return document.querySelector('#diagram-prompt').value === ${JSON.stringify(derivativePromptState.instruction)}
+          && root.querySelector('input').checked
+          && root.querySelector('em').textContent.trim() === 'included'
+          && !root.querySelector('.prompt-reference-warning')
+          && document.querySelector('.counter output').textContent === '3'
+          && document.querySelector('.output-kind [aria-checked="true"]').textContent.trim() === 'Diagram'
+          && document.querySelector('#generation-model').value === 'gpt-5.6-sol'
+          && document.querySelector('#generation-prompt-profile').value === 'compact'
+          && document.querySelector('.entity-context__toggle input').checked;
+      })()`), { message: "generation controls did not reset after persistence check" });
+    } catch (error) {
+      const resetState = await evaluate(cdp, `(() => {
+        const root = document.querySelector('.prompt-reference-controls');
+        return {
+          prompt: document.querySelector('#diagram-prompt').value,
+          referenceIncluded: root.querySelector('input').checked,
+          referenceStatus: root.querySelector('em').textContent.trim(),
+          warning: Boolean(root.querySelector('.prompt-reference-warning')),
+          count: document.querySelector('.counter output').textContent,
+          output: document.querySelector('.output-kind [aria-checked="true"]').textContent.trim(),
+          model: document.querySelector('#generation-model').value,
+          profile: document.querySelector('#generation-prompt-profile').value,
+          entityIncluded: document.querySelector('.entity-context__toggle input').checked
+        };
+      })()`);
+      throw new Error(`${error.message}: ${JSON.stringify(resetState)}`);
+    }
+    await pointerClick(cdp, "#diagram-prompt");
+    await controlKey(cdp, "End", "End", 35);
+    await cdp.send("Input.insertText", { text: "Tighten derivative flow." });
     await pointerClick(cdp, '[aria-label="Use one fewer agent"]');
     await waitFor(async () => (
       await evaluate(cdp, `document.querySelector('.counter output').textContent`)
@@ -781,6 +991,18 @@ try {
     ) === "1", { message: "agent count did not decrement to one" });
     await pointerClick(cdp, ".generate-action");
     await waitForSelector(cdp, ".diagram-panel", { timeoutMs: 10000 });
+    const derivativeConfig = await evaluate(cdp, `(async () => {
+      const workspace = await fetch('/api/workspace').then((response) => response.json());
+      const set = workspace.diagramSets[0];
+      const batch = workspace.generationBatches[set.generationBatchIds.at(-1)];
+      return workspace.generationPromptConfigs[batch.promptConfigId];
+    })()`);
+    if (derivativeConfig?.derivation?.sourceArtifactId !== selection.id
+      || derivativeConfig?.derivation?.promptCorrection !== "Tighten derivative flow."
+      || derivativeConfig?.references?.find((reference) => reference.kind === "diagram")?.targetId !== selection.id
+      || derivativeConfig?.omittedReferences?.length) {
+      throw new Error(`derivative reference decision was not persisted: ${JSON.stringify(derivativeConfig)}`);
+    }
     await pointerClick(cdp, "#diagrams-tab");
     await waitFor(async () => (
       await evaluate(cdp, `document.querySelectorAll('.diagram-tree-diagram').length`)
@@ -1104,8 +1326,7 @@ try {
     importedArtifactPath = path.join(
       fixtureRoot,
       ".diagrams",
-      "diagram-sets",
-      importedDiagramState.setId,
+      "imports",
       "diagrams",
       `${importedDiagramState.id}.json`
     );
@@ -1142,8 +1363,7 @@ try {
     importedComponentArtifactPath = path.join(
       fixtureRoot,
       ".diagrams",
-      "diagram-sets",
-      importedComponentState.setId,
+      "imports",
       "diagram-components",
       `${importedComponentState.id}.json`
     );
@@ -1157,7 +1377,7 @@ try {
       && document.querySelectorAll('[data-imports-branch]').length === 1
       && document.querySelector('[data-imports-branch] [data-diagram-id="${importedDiagramState.id}"]')
       && Array.from(document.querySelectorAll('.diagram-tree-component em')).some(
-        (node) => node.textContent === 'IMPORTED'
+        (node) => node.textContent === 'GLOBAL'
       )
     )`), { message: "imported artifacts were not persisted across reload" });
 
@@ -1194,6 +1414,10 @@ try {
       || !selectedInitialPrompt?.rendered?.includes("Browser-persisted-template.")) {
       throw new Error(`initial generation ignored CLI template selection: ${JSON.stringify(selectedInitialPrompt)}`);
     }
+    await pointerClick(cdp, "#diagrams-tab");
+    await waitFor(async () => await evaluate(cdp, `Boolean(
+      document.querySelector('[data-imports-branch] [data-diagram-id="${importedDiagramState.id}"]')
+    )`), { message: "global import was not visible from the second Diagram Set" });
     await pointerClick(cdp, ".set-picker__trigger");
     await waitFor(async () => (
       await evaluate(cdp, `document.querySelectorAll('.set-picker__option').length`)
@@ -1243,6 +1467,10 @@ try {
   if (generationScreenshot.length < 1000) throw new Error("generation model screenshot was unexpectedly small");
   const promptSettingsScreenshot = await readFile(promptSettingsScreenshotPath);
   if (promptSettingsScreenshot.length < 1000) throw new Error("system prompt settings screenshot was unexpectedly small");
+  const codeEntityPromptSettingsScreenshot = await readFile(codeEntityPromptSettingsScreenshotPath);
+  if (codeEntityPromptSettingsScreenshot.length < 1000) {
+    throw new Error("CodeEntity prompt settings screenshot was unexpectedly small");
+  }
   const mappingScreenshot = await readFile(mappingScreenshotPath);
   if (mappingScreenshot.length < 1000) throw new Error("code-entity mapping screenshot was unexpectedly small");
   const setPickerScreenshot = await readFile(setPickerScreenshotPath);

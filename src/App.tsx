@@ -4,20 +4,26 @@ import {
   applyManualEdit,
   archiveDiagram,
   archiveDiagramComponent,
+  archiveImportedDiagram,
+  archiveImportedDiagramComponent,
   captureDiagramComponent,
   captureNestedDiagramComponent,
   createEditSession,
+  deleteCodeEntityPromptTemplate,
   deleteDiagramSet,
   discardEdit,
   fetchWorkspace,
   generateArtifacts,
   finishEdit,
-  importProjectArtifact,
+  importGlobalArtifact,
   mapCodeEntities,
   placeEditMarker,
   redoEdit,
   renameDiagram,
+  renameImportedDiagram,
   resetSystemPromptTemplate,
+  resetCodeEntityPromptTemplate,
+  saveCodeEntityPromptTemplate,
   saveSystemPromptTemplate,
   deleteSystemPromptTemplate,
   undoEdit
@@ -29,7 +35,25 @@ import { DiagramView } from "./components/DiagramView";
 import { GeneratorOptions } from "./components/GeneratorOptions";
 import { ImportArtifactDialog } from "./components/ImportArtifactDialog";
 import { SplitPane } from "./components/SplitPane";
-import { SystemPromptSettingsDialog } from "./components/SystemPromptSettingsDialog";
+import {
+  buildDerivativePrompt,
+  diagramReferencesInPrompt,
+  promptCorrection,
+  type DerivativePromptDraft
+} from "./derivativePrompt";
+import {
+  generationPageDraftKey,
+  legacyGenerationPromptDraftKey,
+  readGenerationPageDraft,
+  readLegacyGenerationPromptDraft,
+  saveGenerationPageDraft,
+  type GenerationPageDraft
+} from "./generationPageDraft";
+import {
+  SystemPromptSettingsDialog,
+  type PromptTemplateDraft,
+  type PromptTemplateFamily
+} from "./components/SystemPromptSettingsDialog";
 import {
   DEFAULT_DIAGRAM_MODEL_ID,
   DEFAULT_GENERATION_COUNT,
@@ -37,6 +61,7 @@ import {
   isDiagramComponentArchived,
   isDiagramArchived,
   type ArtifactImportInput,
+  type CodeEntityPromptTemplateRecord,
   type DiagramComponentRecord,
   type DiagramElementMapping,
   type DiagramRecord,
@@ -44,7 +69,7 @@ import {
   type DiagramModelId,
   type GenerationOutputKind,
   type GenerationPromptProfileId,
-  type GenerationPromptReference,
+  type PromptReference,
   type SystemPromptTemplateRecord,
   type WorkspaceSnapshot
 } from "./domain";
@@ -65,7 +90,10 @@ export function App() {
   const [promptProfileId, setPromptProfileId] = useState<GenerationPromptProfileId>(
     DEFAULT_GENERATION_PROMPT_PROFILE_ID
   );
-  const [historicalReferences, setHistoricalReferences] = useState<GenerationPromptReference[]>([]);
+  const [historicalReferences, setHistoricalReferences] = useState<PromptReference[]>([]);
+  const [derivativeDraft, setDerivativeDraft] = useState<DerivativePromptDraft | null>(null);
+  const [excludedReferenceKeys, setExcludedReferenceKeys] = useState<Set<string>>(new Set());
+  const [restoredGenerationDraftKey, setRestoredGenerationDraftKey] = useState<string | null>(null);
   const [contextTab, setContextTab] = useState<ContextTab>("code-entities");
   const [progress, setProgress] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -73,11 +101,6 @@ export function App() {
   const [importOpen, setImportOpen] = useState(false);
   const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
   const [promptSettingsOpen, setPromptSettingsOpen] = useState(false);
-  const [pendingImported, setPendingImported] = useState<{
-    setId: string;
-    artifactKind: GenerationOutputKind;
-    artifactId: string;
-  } | null>(null);
   const [activeEditSessionId, setActiveEditSessionId] = useState<string | null>(null);
   const [editPrompt, setEditPrompt] = useState("");
   const [editModelId, setEditModelId] = useState<DiagramModelId>(DEFAULT_DIAGRAM_MODEL_ID);
@@ -115,17 +138,22 @@ export function App() {
     ? workspace.codeEntitySets[activeSet.codeEntitiesSetId]
     : null;
   const diagrams = useMemo(() => activeSet && workspace
-    ? activeSet.diagramIds
+    ? [...activeSet.diagramIds, ...workspace.globalImports.diagramIds]
       .map((id) => workspace.diagrams[id])
       .filter((diagram): diagram is DiagramRecord => Boolean(diagram) && !isDiagramArchived(diagram))
     : [], [activeSet, workspace]);
   const components = useMemo(() => activeSet && workspace
-    ? activeSet.diagramComponentIds
+    ? [...activeSet.diagramComponentIds, ...workspace.globalImports.diagramComponentIds]
       .map((id) => workspace.diagramComponents[id])
       .filter((component): component is DiagramComponentRecord => (
         Boolean(component) && !isDiagramComponentArchived(component)
       ))
     : [], [activeSet, workspace]);
+  const promptDiagramReferences = useMemo(() => diagramReferencesInPrompt({
+    prompt,
+    diagrams: workspace?.diagrams ?? {},
+    historicalReferences
+  }), [historicalReferences, prompt, workspace?.diagrams]);
   const promptProfiles = useMemo(() => {
     const builtInOrder = ["default", "structure-first", "flow-first", "compact"];
     return Object.values(workspace?.systemPromptTemplates ?? {}).sort((left, right) => {
@@ -135,9 +163,44 @@ export function App() {
       return Number(right.builtIn) - Number(left.builtIn) || left.label.localeCompare(right.label);
     });
   }, [workspace?.systemPromptTemplates]);
+  const codeEntityPromptProfiles = useMemo(() => Object.values(
+    workspace?.codeEntityPromptTemplates ?? {}
+  ).sort((left, right) => (
+    Number(right.builtIn) - Number(left.builtIn) || left.label.localeCompare(right.label)
+  )), [workspace?.codeEntityPromptTemplates]);
   const fallbackPromptProfileId = promptProfiles.find(
     (profile) => profile.id === DEFAULT_GENERATION_PROMPT_PROFILE_ID
   )?.id ?? promptProfiles[0]?.id ?? DEFAULT_GENERATION_PROMPT_PROFILE_ID;
+
+  const restoreGenerationDraft = (
+    draftKey: string,
+    legacyPromptKey: string,
+    defaults: GenerationPageDraft
+  ) => {
+    const stored = readGenerationPageDraft(window.localStorage, draftKey);
+    const availableEntityIds = new Set(entitySet?.entities.map((entity) => entity.id) ?? []);
+    const selectedCodeEntityIds = stored
+      ? stored.selectedCodeEntityIds.filter((id) => availableEntityIds.has(id))
+      : defaults.selectedCodeEntityIds;
+    const restoredPromptProfileId = stored
+      && promptProfiles.some((profile) => profile.id === stored.promptProfileId)
+      ? stored.promptProfileId
+      : defaults.promptProfileId;
+    setPrompt(stored?.prompt
+      ?? readLegacyGenerationPromptDraft(window.localStorage, legacyPromptKey)
+      ?? defaults.prompt);
+    setSelectedIds(new Set(selectedCodeEntityIds));
+    setExcludedReferenceKeys(new Set(stored?.excludedReferenceKeys ?? defaults.excludedReferenceKeys));
+    setCount(stored?.count ?? defaults.count);
+    setOutputKind(stored?.outputKind ?? defaults.outputKind);
+    setGenerationModelId(stored?.modelId ?? defaults.modelId);
+    setPromptProfileId(restoredPromptProfileId);
+    setRestoredGenerationDraftKey(draftKey);
+  };
+
+  const currentGenerationDraftKey = workspace?.project && activeSet
+    ? generationPageDraftKey(workspace.project.id, activeSet.id, derivativeDraft?.derivation)
+    : null;
 
   useEffect(() => {
     if (!promptProfiles.length || promptProfiles.some((profile) => profile.id === promptProfileId)) return;
@@ -158,6 +221,10 @@ export function App() {
   const selectedArtifactKind: GenerationOutputKind = screen === "diagram-component"
     ? "diagram-component"
     : "diagram";
+  const selectedCodeEntityMap = selectedArtifact && workspace && activeSet
+    ? workspace.codeEntityMaps[`${activeSet.id}:${selectedArtifact.id}`]
+      ?? workspace.codeEntityMaps[selectedArtifact.id]
+    : undefined;
   const activeEditSession = activeEditSessionId && workspace
     ? workspace.editSessions[activeEditSessionId] ?? null
     : null;
@@ -194,12 +261,29 @@ export function App() {
 
   useEffect(() => {
     if (!activeSet || !entitySet) return;
-    setSelectedIds(new Set(entitySet.entities.map((entity) => entity.id)));
-    setPrompt("");
-    setCount(DEFAULT_GENERATION_COUNT);
-    setOutputKind("diagram");
-    setPromptProfileId(fallbackPromptProfileId);
+    const draftKey = workspace?.project
+      ? generationPageDraftKey(workspace.project.id, activeSet.id)
+      : null;
+    if (draftKey && workspace?.project) {
+      restoreGenerationDraft(
+        draftKey,
+        legacyGenerationPromptDraftKey(workspace.project.id, activeSet.id),
+        {
+          version: 1,
+          prompt: "",
+          selectedCodeEntityIds: entitySet.entities.map((entity) => entity.id),
+          excludedReferenceKeys: [],
+          count: DEFAULT_GENERATION_COUNT,
+          outputKind: "diagram",
+          modelId: DEFAULT_DIAGRAM_MODEL_ID,
+          promptProfileId: fallbackPromptProfileId
+        }
+      );
+    } else {
+      setRestoredGenerationDraftKey(null);
+    }
     setHistoricalReferences([]);
+    setDerivativeDraft(null);
     setContextTab("code-entities");
     setProgress("");
     setError(null);
@@ -210,19 +294,6 @@ export function App() {
     setMappingProgress("");
     setMappingError(null);
     setCodeEntityReveal(undefined);
-    if (pendingImported?.setId === activeSet.id) {
-      if (pendingImported.artifactKind === "diagram") {
-        setActiveDiagramId(pendingImported.artifactId);
-        setScreen("diagram");
-      } else {
-        setActiveDiagramId(null);
-        setActiveComponentId(pendingImported.artifactId);
-        setScreen("diagram-component");
-      }
-      setContextTab("diagrams");
-      setPendingImported(null);
-      return;
-    }
     const activeDiagramIds = activeSet.diagramIds.filter((id) => {
       const diagram = workspace?.diagrams[id];
       return diagram && !isDiagramArchived(diagram);
@@ -235,6 +306,31 @@ export function App() {
       setScreen("generation");
     }
   }, [activeSet?.id, entitySet?.id]);
+
+  useEffect(() => {
+    if (!currentGenerationDraftKey
+      || restoredGenerationDraftKey !== currentGenerationDraftKey) return;
+    saveGenerationPageDraft(window.localStorage, currentGenerationDraftKey, {
+      version: 1,
+      prompt,
+      selectedCodeEntityIds: [...selectedIds],
+      excludedReferenceKeys: [...excludedReferenceKeys],
+      count,
+      outputKind,
+      modelId: generationModelId,
+      promptProfileId
+    });
+  }, [
+    count,
+    currentGenerationDraftKey,
+    excludedReferenceKeys,
+    generationModelId,
+    outputKind,
+    prompt,
+    promptProfileId,
+    restoredGenerationDraftKey,
+    selectedIds
+  ]);
 
   useEffect(() => {
     if (!activeSet || activeSet.readiness !== "ready" || activeDiagramId !== null) return;
@@ -309,7 +405,20 @@ export function App() {
         count,
         outputKind,
         modelId: generationModelId,
-        promptProfileId
+        promptProfileId,
+        referenceSelections: promptDiagramReferences.flatMap((reference) => (
+          reference.tokens.map((token) => ({
+            kind: reference.kind,
+            targetId: reference.targetId,
+            token,
+            handle: reference.handle,
+            included: reference.available && !excludedReferenceKeys.has(reference.key)
+          }))
+        )),
+        derivation: derivativeDraft ? {
+          ...derivativeDraft.derivation,
+          promptCorrection: promptCorrection(prompt, derivativeDraft)
+        } : undefined
       }, setProgress);
       setWorkspace(next);
       const nextSet = next.diagramSets.find((set) => set.id === activeSet.id);
@@ -331,6 +440,23 @@ export function App() {
       setError(caught instanceof Error ? caught.message : "generation failed");
     } finally {
       setBusy(false);
+    }
+  };
+
+  const updateGenerationPrompt = (value: string) => {
+    setPrompt(value);
+    if (currentGenerationDraftKey
+      && restoredGenerationDraftKey === currentGenerationDraftKey) {
+      saveGenerationPageDraft(window.localStorage, currentGenerationDraftKey, {
+        version: 1,
+        prompt: value,
+        selectedCodeEntityIds: [...selectedIds],
+        excludedReferenceKeys: [...excludedReferenceKeys],
+        count,
+        outputKind,
+        modelId: generationModelId,
+        promptProfileId
+      });
     }
   };
 
@@ -365,6 +491,58 @@ export function App() {
     }
   };
 
+  const persistCodeEntityPromptTemplate = async (
+    draft: Pick<CodeEntityPromptTemplateRecord, "label" | "description" | "prompts"> & { id?: string }
+  ): Promise<CodeEntityPromptTemplateRecord> => {
+    const beforeIds = new Set(Object.keys(workspace.codeEntityPromptTemplates));
+    const next = await saveCodeEntityPromptTemplate(draft);
+    setWorkspace(next);
+    const saved = draft.id
+      ? next.codeEntityPromptTemplates[draft.id]
+      : Object.values(next.codeEntityPromptTemplates).find((template) => !beforeIds.has(template.id));
+    if (!saved) throw new Error("saved CodeEntity template was not returned by the workspace");
+    return saved;
+  };
+
+  const restoreCodeEntityPromptTemplate = async (
+    id: string
+  ): Promise<CodeEntityPromptTemplateRecord> => {
+    const next = await resetCodeEntityPromptTemplate(id);
+    setWorkspace(next);
+    return next.codeEntityPromptTemplates[id];
+  };
+
+  const removeCodeEntityPromptTemplate = async (id: string): Promise<void> => {
+    const next = await deleteCodeEntityPromptTemplate(id);
+    setWorkspace(next);
+  };
+
+  const savePromptTemplate = (
+    family: PromptTemplateFamily,
+    draft: PromptTemplateDraft
+  ): Promise<SystemPromptTemplateRecord | CodeEntityPromptTemplateRecord> => {
+    if (family === "generation") {
+      return persistPromptTemplate({
+        id: draft.id,
+        label: draft.label,
+        description: draft.description,
+        prompts: {
+          diagram: draft.prompts.diagram ?? "",
+          "diagram-component": draft.prompts["diagram-component"] ?? ""
+        }
+      });
+    }
+    return persistCodeEntityPromptTemplate({
+      id: draft.id,
+      label: draft.label,
+      description: draft.description,
+      prompts: {
+        "code-entity-identification": draft.prompts["code-entity-identification"] ?? "",
+        "code-entity-compaction": draft.prompts["code-entity-compaction"] ?? ""
+      }
+    });
+  };
+
   const removeDiagramSet = async (setId: string): Promise<void> => {
     const next = await deleteDiagramSet(setId);
     setWorkspace(next);
@@ -377,14 +555,36 @@ export function App() {
     const config = diagram.generationPromptConfigId
       ? workspace.generationPromptConfigs[diagram.generationPromptConfigId]
       : undefined;
-    setPrompt(config
-      ? `@diagram/${diagram.handle}\n\n${config.instruction}`
-      : `@diagram/${diagram.handle} `);
-    setHistoricalReferences(config?.references ?? []);
-    setSelectedIds(new Set(config?.selectedCodeEntityIds ?? diagram.codeEntityIds));
-    setOutputKind(config?.outputKind ?? "diagram");
-    setGenerationModelId(config?.modelId ?? DEFAULT_DIAGRAM_MODEL_ID);
-    setPromptProfileId(config?.systemPrompt.profileId ?? DEFAULT_GENERATION_PROMPT_PROFILE_ID);
+    const draft = buildDerivativePrompt({
+      sourceArtifactKind: "diagram",
+      sourceArtifact: diagram,
+      diagrams: workspace.diagrams,
+      components: workspace.diagramComponents,
+      promptConfigs: workspace.generationPromptConfigs
+    });
+    const draftKey = generationPageDraftKey(
+      workspace.project!.id,
+      activeSet.id,
+      draft.derivation
+    );
+    restoreGenerationDraft(
+      draftKey,
+      legacyGenerationPromptDraftKey(workspace.project!.id, activeSet.id, draft.derivation),
+      {
+        version: 1,
+        prompt: draft.prompt,
+        selectedCodeEntityIds: workspace.globalImports.diagramIds.includes(diagram.id)
+          ? [...selectedIds]
+          : config?.selectedCodeEntityIds ?? diagram.codeEntityIds,
+        excludedReferenceKeys: [],
+        count: DEFAULT_GENERATION_COUNT,
+        outputKind: config?.outputKind ?? "diagram",
+        modelId: config?.modelId ?? DEFAULT_DIAGRAM_MODEL_ID,
+        promptProfileId: config?.systemPrompt.profileId ?? DEFAULT_GENERATION_PROMPT_PROFILE_ID
+      }
+    );
+    setHistoricalReferences(draft.historicalReferences);
+    setDerivativeDraft(draft);
     setScreen("generation");
   };
 
@@ -392,35 +592,66 @@ export function App() {
     const config = component.generationPromptConfigId
       ? workspace.generationPromptConfigs[component.generationPromptConfigId]
       : undefined;
-    setPrompt(config
-      ? `@component/${component.handle}\n\n${config.instruction}`
-      : `@component/${component.handle} `);
-    setHistoricalReferences(config?.references ?? []);
-    setSelectedIds(new Set(config?.selectedCodeEntityIds ?? component.codeEntityIds));
-    setOutputKind(config?.outputKind ?? "diagram-component");
-    setGenerationModelId(config?.modelId ?? DEFAULT_DIAGRAM_MODEL_ID);
-    setPromptProfileId(config?.systemPrompt.profileId ?? DEFAULT_GENERATION_PROMPT_PROFILE_ID);
+    const draft = buildDerivativePrompt({
+      sourceArtifactKind: "diagram-component",
+      sourceArtifact: component,
+      diagrams: workspace.diagrams,
+      components: workspace.diagramComponents,
+      promptConfigs: workspace.generationPromptConfigs
+    });
+    const draftKey = generationPageDraftKey(
+      workspace.project!.id,
+      activeSet.id,
+      draft.derivation
+    );
+    restoreGenerationDraft(
+      draftKey,
+      legacyGenerationPromptDraftKey(workspace.project!.id, activeSet.id, draft.derivation),
+      {
+        version: 1,
+        prompt: draft.prompt,
+        selectedCodeEntityIds: workspace.globalImports.diagramComponentIds.includes(component.id)
+          ? [...selectedIds]
+          : config?.selectedCodeEntityIds ?? component.codeEntityIds,
+        excludedReferenceKeys: [],
+        count: DEFAULT_GENERATION_COUNT,
+        outputKind: config?.outputKind ?? "diagram-component",
+        modelId: config?.modelId ?? DEFAULT_DIAGRAM_MODEL_ID,
+        promptProfileId: config?.systemPrompt.profileId ?? DEFAULT_GENERATION_PROMPT_PROFILE_ID
+      }
+    );
+    setHistoricalReferences(draft.historicalReferences);
+    setDerivativeDraft(draft);
     setScreen("generation");
   };
 
+  const leaveDerivative = () => {
+    if (!derivativeDraft) return;
+    const { sourceArtifactKind, sourceArtifactId } = derivativeDraft.derivation;
+    if (sourceArtifactKind === "diagram") {
+      setActiveDiagramId(sourceArtifactId);
+      setActiveComponentId(null);
+      setScreen("diagram");
+    } else {
+      setActiveComponentId(sourceArtifactId);
+      setScreen("diagram-component");
+    }
+  };
+
   const importArtifact = async (input: ArtifactImportInput) => {
-    if (!workspace.project) throw new Error("Project is not available");
-    const before = workspace.diagramSets.find((set) => set.id === input.diagramSetId);
-    if (!before) throw new Error("Import target DiagramSet is not available");
-    const next = await importProjectArtifact(workspace.project.id, input);
-    const target = next.diagramSets.find((set) => set.id === input.diagramSetId);
-    if (!target) throw new Error("Imported artifact target was not returned");
-    const artifactId = input.artifactKind === "diagram"
-      ? target.diagramIds.find((id) => !before.diagramIds.includes(id))
-      : target.diagramComponentIds.find((id) => !before.diagramComponentIds.includes(id));
+    const beforeIds = input.artifactKind === "diagram"
+      ? workspace.globalImports.diagramIds
+      : workspace.globalImports.diagramComponentIds;
+    const next = await importGlobalArtifact(input);
+    const nextIds = input.artifactKind === "diagram"
+      ? next.globalImports.diagramIds
+      : next.globalImports.diagramComponentIds;
+    const artifactId = nextIds.find((id) => !beforeIds.includes(id));
     if (!artifactId) throw new Error("Imported artifact was not returned");
     setWorkspace(next);
     setProgress(`imported ${input.artifactKind === "diagram" ? "Diagram" : "DiagramComponent"}`);
     setContextTab("diagrams");
-    if (input.diagramSetId !== activeSet.id) {
-      setPendingImported({ setId: input.diagramSetId, artifactKind: input.artifactKind, artifactId });
-      setActiveSetId(input.diagramSetId);
-    } else if (input.artifactKind === "diagram") {
+    if (input.artifactKind === "diagram") {
       setActiveDiagramId(artifactId);
       setActiveComponentId(null);
       setScreen("diagram");
@@ -431,17 +662,22 @@ export function App() {
   };
 
   const rename = async (diagramId: string, name: string) => {
-    setWorkspace(await renameDiagram(activeSet.id, diagramId, name));
+    setWorkspace(workspace.globalImports.diagramIds.includes(diagramId)
+      ? await renameImportedDiagram(diagramId, name)
+      : await renameDiagram(activeSet.id, diagramId, name));
   };
 
   const archive = async (diagramId: string) => {
-    const next = await archiveDiagram(activeSet.id, diagramId);
+    const next = workspace.globalImports.diagramIds.includes(diagramId)
+      ? await archiveImportedDiagram(diagramId)
+      : await archiveDiagram(activeSet.id, diagramId);
     setWorkspace(next);
     const nextSet = next.diagramSets.find((set) => set.id === activeSet.id);
-    const nextActiveIds = nextSet?.diagramIds.filter((id) => {
+    const nextActiveIds = [...(nextSet?.diagramIds ?? []), ...next.globalImports.diagramIds]
+      .filter((id) => {
       const diagram = next.diagrams[id];
       return diagram && !isDiagramArchived(diagram);
-    }) ?? [];
+      });
     setActiveDiagramId((current) => current === diagramId
       ? nextActiveIds.at(-1) ?? null
       : current);
@@ -456,13 +692,18 @@ export function App() {
   };
 
   const archiveComponent = async (componentId: string) => {
-    const next = await archiveDiagramComponent(activeSet.id, componentId);
+    const next = workspace.globalImports.diagramComponentIds.includes(componentId)
+      ? await archiveImportedDiagramComponent(componentId)
+      : await archiveDiagramComponent(activeSet.id, componentId);
     setWorkspace(next);
     const nextSet = next.diagramSets.find((set) => set.id === activeSet.id);
-    const nextActiveIds = nextSet?.diagramComponentIds.filter((id) => {
+    const nextActiveIds = [
+      ...(nextSet?.diagramComponentIds ?? []),
+      ...next.globalImports.diagramComponentIds
+    ].filter((id) => {
       const component = next.diagramComponents[id];
       return component && !isDiagramComponentArchived(component);
-    }) ?? [];
+    });
     if (activeComponentId === componentId) {
       const replacement = nextActiveIds.at(-1) ?? null;
       setActiveComponentId(replacement);
@@ -665,7 +906,8 @@ export function App() {
         setMappingProgress
       );
       setWorkspace(next);
-      const count = next.codeEntityMaps[selectedArtifact.id]?.mappings.length ?? 0;
+      const count = (next.codeEntityMaps[`${activeSet.id}:${selectedArtifact.id}`]
+        ?? next.codeEntityMaps[selectedArtifact.id])?.mappings.length ?? 0;
       setMappingProgress(`mapped ${count} diagram elements`);
     } catch (caught) {
       setMappingError(caught instanceof Error ? caught.message : "code-entity mapping failed");
@@ -763,12 +1005,29 @@ export function App() {
             promptProfileId={promptProfileId}
             promptProfiles={promptProfiles}
             historicalReferences={historicalReferences}
+            diagramReferences={promptDiagramReferences}
+            excludedReferenceKeys={excludedReferenceKeys}
+            derivativeSourceReferenceKey={derivativeDraft?.derivation.sourceArtifactKind === "diagram"
+              ? `diagram:${derivativeDraft.derivation.sourceArtifactId}`
+              : undefined}
             prompt={prompt}
             count={count}
             generating={busy}
             progress={progress}
             error={error}
-            onPrompt={setPrompt}
+            backLabel={derivativeDraft
+              ? `back to ${derivativeDraft.derivation.sourceArtifactKind === "diagram"
+                ? "diagram"
+                : "component"}`
+              : undefined}
+            onBack={derivativeDraft ? leaveDerivative : undefined}
+            onPrompt={updateGenerationPrompt}
+            onToggleDiagramReference={(key) => setExcludedReferenceKeys((current) => {
+              const next = new Set(current);
+              if (next.has(key)) next.delete(key);
+              else next.add(key);
+              return next;
+            })}
             onCount={setCount}
             onOutputKind={setOutputKind}
             onModel={setGenerationModelId}
@@ -805,7 +1064,7 @@ export function App() {
             markerMode={markerMode}
             editBusy={editBusy}
             codeEntities={entitySet.entities}
-            codeEntityMap={workspace.codeEntityMaps[activeComponent.id]}
+            codeEntityMap={selectedCodeEntityMap}
             mappingBusy={mappingBusy}
             mappingProgress={mappingProgress}
             mappingError={mappingError}
@@ -862,7 +1121,7 @@ export function App() {
             markerMode={markerMode}
             editBusy={editBusy}
             codeEntities={entitySet.entities}
-            codeEntityMap={workspace.codeEntityMaps[activeDiagram.id]}
+            codeEntityMap={selectedCodeEntityMap}
             mappingBusy={mappingBusy}
             mappingProgress={mappingProgress}
             mappingError={mappingError}
@@ -911,20 +1170,23 @@ export function App() {
       ) : null}
       {importOpen ? (
         <ImportArtifactDialog
-          diagramSets={workspace.diagramSets}
-          defaultDiagramSetId={activeSet.id}
           onClose={() => setImportOpen(false)}
           onImport={importArtifact}
         />
       ) : null}
       {promptSettingsOpen ? (
         <SystemPromptSettingsDialog
-          templates={promptProfiles}
-          initialTemplateId={promptProfileId}
+          generationTemplates={promptProfiles}
+          codeEntityTemplates={codeEntityPromptProfiles}
+          initialGenerationTemplateId={promptProfileId}
           onClose={() => setPromptSettingsOpen(false)}
-          onSave={persistPromptTemplate}
-          onReset={restorePromptTemplate}
-          onDelete={removePromptTemplate}
+          onSave={savePromptTemplate}
+          onReset={(family, id) => family === "generation"
+            ? restorePromptTemplate(id)
+            : restoreCodeEntityPromptTemplate(id)}
+          onDelete={(family, id) => family === "generation"
+            ? removePromptTemplate(id)
+            : removeCodeEntityPromptTemplate(id)}
         />
       ) : null}
     </main>

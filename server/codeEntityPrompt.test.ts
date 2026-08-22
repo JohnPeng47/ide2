@@ -1,26 +1,55 @@
 import { describe, expect, it } from "vitest";
-import { codeEntityCollectionPrompt } from "./codeEntityPrompt";
+import { SCHEMA_VERSION, type DiagramSetRecord } from "../src/domain";
+import { createBuiltInCodeEntityPromptTemplates } from "../src/prompt";
+import { createCodeEntityPromptConfig } from "./codeEntityPrompt";
 
-describe("codeEntityCollectionPrompt", () => {
-  it("requests qualitative, structurally coherent source compaction", () => {
-    const prompt = codeEntityCollectionPrompt({
-      diagramSetName: "SIM.DYNAMICS",
-      initialPrompt: "Show the world step and observation flow"
+const diagramSet: DiagramSetRecord = {
+  schemaVersion: SCHEMA_VERSION,
+  id: "set-one",
+  projectId: "project-one",
+  name: "SIM.DYNAMICS",
+  initialPrompt: "Show the world step and observation flow",
+  sourceCheckoutRoot: "/repo",
+  codeEntitiesSetId: "entities-one",
+  diagramIds: [],
+  diagramComponentIds: [],
+  generationBatchIds: [],
+  agentRunIds: [],
+  editSessionIds: [],
+  readiness: "collecting",
+  createdAt: "2026-01-01T00:00:00Z",
+  updatedAt: "2026-01-01T00:00:00Z"
+};
+
+describe("createCodeEntityPromptConfig", () => {
+  it("composes action-oriented collection from independently stored criteria", () => {
+    const template = createBuiltInCodeEntityPromptTemplates("2026-01-01T00:00:00Z")[0];
+    const config = createCodeEntityPromptConfig({
+      id: "prompt-one",
+      diagramSet,
+      template,
+      createdAt: "2026-01-01T00:00:00Z"
     });
 
-    expect(prompt).toContain('level "low", "medium", or "high"');
-    expect(prompt).toContain("Prefer a few cohesive spans");
-    expect(prompt).toContain("function, class, method, and type declarations");
-    expect(prompt).toContain("collapsed-comment sections");
-    expect(prompt).toContain("compact ASCII call graph");
-    expect(prompt).toContain("success/error branches");
-    expect(prompt).toContain("only 7-bit ASCII graph characters");
-    expect(prompt).toContain("[Lines x-y | n lines compacted]");
-    expect(prompt).toContain("do not invent calls or behavior");
-    expect(prompt).toContain("For every graph line that names an");
-    expect(prompt).toContain("expand each mapped node");
-    expect(prompt).toContain("Do not map blank or connector-only lines");
-    expect(prompt).toContain("server snapshots the exact");
-    expect(prompt).not.toContain("line budget");
+    expect(config.template).toEqual({
+      profileId: "default-code-entities",
+      profileVersion: 1
+    });
+    expect(config.identificationCriteria.rendered).toContain("## Entity significance");
+    expect(config.compactionCriteria.rendered).toContain(
+      "visible inputs -> compacted transformation -> visible consumers"
+    );
+    expect(config.compactionCriteria.rendered).toContain("values = point.values");
+    expect(config.compactionCriteria.rendered).toContain(
+      "// [Lines 388-405 | 18 lines compacted]"
+    );
+    expect(config.compactionCriteria.rendered).toContain(
+      "target_position_w = _array(scenario[\"target_origin_w\"], length=3)"
+    );
+    expect(config.contextPrompt.rendered).toContain("## Identify Code Entities");
+    expect(config.contextPrompt.rendered).toContain("Inspect the repository and identify concepts");
+    expect(config.contextPrompt.rendered).toContain("## Compact Code Entities");
+    expect(config.contextPrompt.rendered).toContain("Create a compactedSource presentation");
+    expect(config.contextPrompt.rendered).toContain("If the submission is rejected");
   });
 });

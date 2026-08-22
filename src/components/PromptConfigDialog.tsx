@@ -27,6 +27,9 @@ export function PromptConfigDialog(props: {
             <div><dt>MODEL</dt><dd>{props.config.modelId}</dd></div>
             <div><dt>STYLE</dt><dd>{props.config.systemPrompt.profileId}</dd></div>
             <div><dt>CONFIG</dt><dd>{props.config.id}</dd></div>
+            {props.config.derivation ? (
+              <div><dt>DERIVED FROM</dt><dd>{props.config.derivation.sourceArtifactId}</dd></div>
+            ) : null}
           </dl>
           <section>
             <h3>Instruction</h3>
@@ -38,10 +41,18 @@ export function PromptConfigDialog(props: {
               <ul>{props.config.references.map((reference) => (
                 <li key={`${reference.kind}:${reference.targetId}`}>
                   <code>{reference.token}</code>
-                  <span>{reference.kind}</span>
+                  <span>{reference.kind} · included</span>
                 </li>
               ))}</ul>
             ) : <p>none</p>}
+            {(props.config.omittedReferences?.length ?? 0) > 0 ? (
+              <ul>{props.config.omittedReferences!.map((reference) => (
+                <li key={`omitted:${reference.kind}:${reference.targetId}`}>
+                  <code>{reference.token}</code>
+                  <span>{reference.kind} · omitted</span>
+                </li>
+              ))}</ul>
+            ) : null}
           </section>
           <details>
             <summary>Rendered context prompt</summary>

@@ -17,6 +17,9 @@ interface ServerEvent {
   promptTemplateId?: string;
   promptTemplateVersion?: number;
   generationPromptConfigId?: string;
+  codeEntityPromptTemplateId?: string;
+  codeEntityPromptTemplateVersion?: number;
+  codeEntityPromptConfigId?: string;
 }
 
 interface PromptTemplateSummary {
@@ -207,11 +210,15 @@ async function main(): Promise<void> {
   let resolvedPromptTemplateId: string | undefined;
   let promptTemplateVersion: number | undefined;
   let generationPromptConfigId: string | undefined;
+  let codeEntityPromptTemplateId: string | undefined;
+  let codeEntityPromptTemplateVersion: number | undefined;
+  let codeEntityPromptConfigId: string | undefined;
   await consumeEvents(response, (event) => {
     if (event.type === "error") throw new Error(event.error || "diagram collection failed");
     if (event.type === "created") {
       diagramSetId = event.diagramSetId;
       resolvedPromptTemplateId = event.promptTemplateId;
+      codeEntityPromptTemplateId = event.codeEntityPromptTemplateId;
       process.stdout.write(`${JSON.stringify({
         event: "created",
         projectRoot: event.projectRoot,
@@ -224,6 +231,9 @@ async function main(): Promise<void> {
       resolvedPromptTemplateId = event.promptTemplateId ?? resolvedPromptTemplateId;
       promptTemplateVersion = event.promptTemplateVersion;
       generationPromptConfigId = event.generationPromptConfigId;
+      codeEntityPromptTemplateId = event.codeEntityPromptTemplateId ?? codeEntityPromptTemplateId;
+      codeEntityPromptTemplateVersion = event.codeEntityPromptTemplateVersion;
+      codeEntityPromptConfigId = event.codeEntityPromptConfigId;
       return;
     }
     if (event.type === "progress" && event.message) {
@@ -236,7 +246,10 @@ async function main(): Promise<void> {
     diagramSetId,
     promptTemplateId: resolvedPromptTemplateId,
     promptTemplateVersion,
-    generationPromptConfigId
+    generationPromptConfigId,
+    codeEntityPromptTemplateId,
+    codeEntityPromptTemplateVersion,
+    codeEntityPromptConfigId
   })}\n`);
 }
 

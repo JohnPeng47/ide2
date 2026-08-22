@@ -9,10 +9,26 @@ import {
 } from "./domain";
 import {
   createGenerationPromptConfig,
+  createBuiltInCodeEntityPromptTemplates,
   createBuiltInSystemPromptTemplates,
   promptOptions,
   renderArtifactSystemPrompt
 } from "./prompt";
+
+describe("prompt template records", () => {
+  it("defines CodeEntity criteria through the same versioned prompts interface", () => {
+    const [template] = createBuiltInCodeEntityPromptTemplates("2026-01-01T00:00:00Z");
+    expect(template).toMatchObject({
+      id: "default-code-entities",
+      builtIn: true,
+      version: 1,
+      prompts: {
+        "code-entity-identification": expect.stringContaining("A useful CodeEntity"),
+        "code-entity-compaction": expect.stringContaining("visible consumers")
+      }
+    });
+  });
+});
 
 const diagramSet: DiagramSetRecord = {
   schemaVersion: SCHEMA_VERSION,
@@ -84,6 +100,8 @@ const buildPrompt = (input: {
   instruction: string;
   selectedCodeEntityIds: string[];
   profileId?: string;
+  referenceSelections?: Parameters<typeof createGenerationPromptConfig>[0]["referenceSelections"];
+  derivation?: Parameters<typeof createGenerationPromptConfig>[0]["derivation"];
 }) => createGenerationPromptConfig({
   id: "prompt-one",
   diagramSet,
@@ -96,6 +114,8 @@ const buildPrompt = (input: {
     .find((profile) => profile.id === (input.profileId ?? "default"))!,
   instruction: input.instruction,
   selectedCodeEntityIds: input.selectedCodeEntityIds,
+  referenceSelections: input.referenceSelections,
+  derivation: input.derivation,
   createdAt: "2026-01-01T00:00:00Z"
 });
 
@@ -121,6 +141,78 @@ describe("createGenerationPromptConfig", () => {
         expect.stringContaining("CodeEntity @entity/queue"),
         expect.stringContaining("DiagramComponent @component/queue-fragment")
       ]));
+  });
+
+  it("persists omitted diagram decisions without adding their context or lineage", () => {
+    const result = buildPrompt({
+      outputKind: "diagram",
+      instruction: "Keep the history text for @diagram/current-flow",
+      selectedCodeEntityIds: [],
+      referenceSelections: [{
+        kind: "diagram",
+        targetId: diagram.id,
+        token: "@diagram/current-flow",
+        handle: diagram.handle,
+        included: false
+      }],
+      derivation: {
+        sourceArtifactKind: "diagram",
+        sourceArtifactId: diagram.id,
+        promptCorrection: "Reduce the queue detail."
+      }
+    });
+
+    expect(result.config.references).toEqual([]);
+    expect(result.config.omittedReferences).toEqual([{
+      kind: "diagram",
+      targetId: diagram.id,
+      token: "@diagram/current-flow",
+      handle: diagram.handle
+    }]);
+    expect(result.config.derivation).toBeUndefined();
+    expect(result.config.contextPrompt.rendered).toContain("Keep the history text");
+    expect(result.config.contextPrompt.rendered).not.toContain("Diagram @diagram/current-flow");
+    expect(result.allowedDiagramIds).toEqual([]);
+  });
+
+  it("binds historical tokens by artifact id and stores derivative correction metadata", () => {
+    const renamed = { ...diagram, handle: "renamed-flow", name: "Renamed flow" };
+    const result = createGenerationPromptConfig({
+      id: "prompt-history",
+      diagramSet,
+      codeEntities,
+      diagrams: [renamed],
+      components: [component],
+      outputKind: "diagram",
+      modelId: "gpt-5.6-sol",
+      profile: createBuiltInSystemPromptTemplates("2026-01-01T00:00:00Z")[0],
+      instruction: "Compare @diagram/current-flow",
+      selectedCodeEntityIds: [],
+      referenceSelections: [{
+        kind: "diagram",
+        targetId: renamed.id,
+        token: "@diagram/current-flow",
+        handle: "current-flow",
+        included: true
+      }],
+      derivation: {
+        sourceArtifactKind: "diagram",
+        sourceArtifactId: renamed.id,
+        promptCorrection: "  Reduce the queue detail.  "
+      },
+      createdAt: "2026-01-01T00:00:00Z"
+    });
+
+    expect(result.config.references[0]).toMatchObject({
+      targetId: renamed.id,
+      token: "@diagram/current-flow",
+      handle: renamed.handle
+    });
+    expect(result.config.derivation).toEqual({
+      sourceArtifactKind: "diagram",
+      sourceArtifactId: renamed.id,
+      promptCorrection: "Reduce the queue detail."
+    });
   });
 
   it("renders the original default system prompts exactly", () => {

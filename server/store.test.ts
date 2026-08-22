@@ -52,6 +52,52 @@ describe("DiagramStore", () => {
     expect(project.repositoryIdentity).toBe(location.repositoryIdentity);
   });
 
+  it("migrates legacy DiagramSet imports into the global imports directory", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-store-import-migration-"));
+    roots.push(root);
+    await mkdir(path.join(root, ".git"));
+    const store = new DiagramStore(root);
+    const location = { checkoutRoot: root, repositoryIdentity: path.join(root, ".git") };
+    const project = await store.ensureProject(location);
+    const { diagramSet } = await store.createDiagramSet({
+      project,
+      name: "Legacy imports",
+      initialPrompt: "Show imports",
+      location
+    });
+    const legacy: DiagramRecord = {
+      schemaVersion: SCHEMA_VERSION,
+      id: "diagram-legacy-import",
+      diagramSetId: diagramSet.id,
+      handle: "legacy-import",
+      name: "Legacy import",
+      ascii: "[legacy]",
+      codeEntityIds: ["entity-project-only"],
+      origin: "imported",
+      derivedFromDiagramIds: [],
+      createdAt: "2026-01-01T00:00:00Z"
+    };
+    await store.addDiagram(legacy);
+
+    const workspace = await store.loadWorkspace();
+
+    expect(workspace.diagramSets[0].diagramIds).toEqual([]);
+    expect(workspace.globalImports.diagramIds).toEqual([legacy.id]);
+    expect(workspace.diagrams[legacy.id]).toMatchObject({
+      diagramSetId: "global-imports",
+      handle: "legacy-import",
+      codeEntityIds: []
+    });
+    await expect(readFile(path.join(
+      root,
+      ".diagrams",
+      "imports",
+      "diagrams",
+      `${legacy.id}.json`
+    ), "utf8")).resolves.toContain('"diagramSetId": "global-imports"');
+    expect((await store.loadWorkspace()).globalImports.diagramIds).toEqual([legacy.id]);
+  });
+
   it("finalizes collected CodeEntities and makes them immutable", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "new-diagram-store-"));
     roots.push(root);

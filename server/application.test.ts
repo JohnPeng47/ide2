@@ -31,6 +31,7 @@ class ParallelRuntime implements DiagramAgentRuntime {
   maxActive = 0;
   started = 0;
   requestedModels: string[] = [];
+  requestedCodeEntityPromptConfigIds: string[] = [];
   requestedPromptConfigIds: string[] = [];
   requestedSystemPrompts: string[] = [];
   mappingDrafts?: DiagramElementMappingDraft[];
@@ -38,9 +39,10 @@ class ParallelRuntime implements DiagramAgentRuntime {
   private readonly gate = new Promise<void>((resolve) => { this.release = resolve; });
 
   async collectEntities(
-    _request: EntityCollectionRequest,
+    request: EntityCollectionRequest,
     _onProgress?: (progress: AgentProgress) => void
   ): Promise<CodeEntityDraft[]> {
+    this.requestedCodeEntityPromptConfigIds.push(request.promptConfig.id);
     return [{
       handle: "worker",
       label: "Worker",
@@ -134,6 +136,52 @@ describe("DiagramApplication", () => {
       .rejects.toThrow(/at least one system prompt template is required/);
   });
 
+  it("manages CodeEntity criteria templates through the prompt-template interface", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-code-entity-prompts-"));
+    roots.push(root);
+    execFileSync("git", ["init", "-q", root]);
+    const application = new DiagramApplication(new DiagramStore(root), new ParallelRuntime());
+    await application.createDiagramSet({ path: root, name: "Prompt settings", prompt: "Map prompts" });
+    const builtIn = (await application.codeEntityPromptTemplates())[0];
+
+    let workspace = await application.saveCodeEntityPromptTemplate({
+      label: "Focused entities",
+      description: "A custom criteria pair",
+      prompts: {
+        "code-entity-identification": "Concepts with public boundaries.",
+        "code-entity-compaction": "Continuous source with explicit outputs."
+      }
+    });
+    expect(workspace.codeEntityPromptTemplates["focused-entities"]).toMatchObject({
+      builtIn: false,
+      version: 1
+    });
+
+    workspace = await application.saveCodeEntityPromptTemplate({
+      id: builtIn.id,
+      label: builtIn.label,
+      description: builtIn.description,
+      prompts: {
+        ...builtIn.prompts,
+        "code-entity-compaction": "Temporarily changed criteria."
+      }
+    });
+    expect(workspace.codeEntityPromptTemplates[builtIn.id].version).toBe(2);
+    workspace = await application.resetCodeEntityPromptTemplate(builtIn.id);
+    expect(workspace.codeEntityPromptTemplates[builtIn.id]).toMatchObject({
+      builtIn: true,
+      version: 3,
+      prompts: {
+        "code-entity-compaction": expect.stringContaining("values = point.values")
+      }
+    });
+
+    workspace = await application.deleteCodeEntityPromptTemplate("focused-entities");
+    expect(Object.keys(workspace.codeEntityPromptTemplates)).toEqual([builtIn.id]);
+    await expect(application.deleteCodeEntityPromptTemplate(builtIn.id))
+      .rejects.toThrow(/at least one CodeEntity prompt template is required/);
+  });
+
   it("generates three initial diagrams immediately after collection", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "new-diagram-initialize-"));
     roots.push(root);
@@ -157,6 +205,15 @@ describe("DiagramApplication", () => {
     });
 
     expect(workspace.codeEntitySets[set.codeEntitiesSetId].status).toBe("finalized");
+    const codeEntityPromptConfigId = workspace.codeEntitySets[set.codeEntitiesSetId].promptConfigId!;
+    expect(runtime.requestedCodeEntityPromptConfigIds).toEqual([codeEntityPromptConfigId]);
+    expect(workspace.codeEntityPromptConfigs[codeEntityPromptConfigId]).toMatchObject({
+      template: { profileId: "default-code-entities", profileVersion: 1 },
+      identificationCriteria: { rendered: expect.stringContaining("A useful CodeEntity") },
+      compactionCriteria: { rendered: expect.stringContaining("values = point.values") }
+    });
+    expect(workspace.codeEntityPromptTemplates["default-code-entities"].prompts)
+      .toHaveProperty("code-entity-compaction");
     expect(workspace.diagramSets[0].readiness).toBe("ready");
     expect(workspace.diagramSets[0].diagramIds).toHaveLength(3);
     const initialBatch = workspace.generationBatches[workspace.diagramSets[0].generationBatchIds[0]];
@@ -180,13 +237,12 @@ describe("DiagramApplication", () => {
     const set = await application.createDiagramSet({ path: root, name: "Edits", prompt: "Edit it" });
     await application.collectCodeEntities(set.id);
     let workspace = await application.workspace();
-    workspace = await application.importArtifact(workspace.project!.id, {
-      diagramSetId: set.id,
+    workspace = await application.importArtifact({
       artifactKind: "diagram",
       name: "Base flow",
       ascii: "[base]"
     });
-    const sourceId = workspace.diagramSets[0].diagramIds[0];
+    const sourceId = workspace.globalImports.diagramIds[0];
 
     workspace = await application.createEditSession(set.id, "diagram", sourceId);
     const sessionId = workspace.diagramSets[0].editSessionIds[0];
@@ -220,7 +276,7 @@ describe("DiagramApplication", () => {
     expect(workspace.diagrams[sourceId].ascii).toBe("[base]");
   });
 
-  it("imports Diagrams and DiagramComponents into a Project DiagramSet", async () => {
+  it("imports Diagrams and DiagramComponents into the global artifact library", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "new-diagram-import-"));
     roots.push(root);
     execFileSync("git", ["init", "-q", root]);
@@ -235,34 +291,30 @@ describe("DiagramApplication", () => {
     });
     await application.collectCodeEntities(set.id);
     let workspace = await application.workspace();
-    const projectId = workspace.project!.id;
-    const entityId = workspace.codeEntitySets[set.codeEntitiesSetId].entities[0].id;
-
-    workspace = await application.importArtifact(projectId, {
-      diagramSetId: set.id,
+    workspace = await application.importArtifact({
       artifactKind: "diagram",
       name: "Pursuer update",
-      ascii: "+----------+\n| Pursuer  |\n+----------+\n",
-      codeEntityIds: [entityId]
+      ascii: "+----------+\n| Pursuer  |\n+----------+\n"
     });
-    const diagramId = workspace.diagramSets[0].diagramIds[0];
+    const diagramId = workspace.globalImports.diagramIds[0];
+    expect(workspace.diagramSets[0].diagramIds).toEqual([]);
     expect(workspace.diagrams[diagramId]).toMatchObject({
       name: "Pursuer update",
       handle: "pursuer-update",
       ascii: "+----------+\n| Pursuer  |\n+----------+",
       origin: "imported",
-      codeEntityIds: [entityId],
+      diagramSetId: "global-imports",
+      codeEntityIds: [],
       derivedFromDiagramIds: []
     });
     expect(workspace.diagrams[diagramId].producedByRunId).toBeUndefined();
 
-    workspace = await application.importArtifact(projectId, {
-      diagramSetId: set.id,
+    workspace = await application.importArtifact({
       artifactKind: "diagram-component",
       name: "Pursuer update",
       ascii: "dynamics -- updates --> Pursuer"
     });
-    const componentId = workspace.diagramSets[0].diagramComponentIds[0];
+    const componentId = workspace.globalImports.diagramComponentIds[0];
     expect(workspace.diagramComponents[componentId]).toMatchObject({
       handle: "pursuer-update",
       origin: "imported",
@@ -271,40 +323,79 @@ describe("DiagramApplication", () => {
       derivedFromDiagramComponentIds: []
     });
 
-    workspace = await application.importArtifact(projectId, {
-      diagramSetId: set.id,
+    workspace = await application.importArtifact({
       artifactKind: "diagram",
       name: "Pursuer update",
       ascii: "[second]"
     });
-    const secondDiagramId = workspace.diagramSets[0].diagramIds[1];
+    const secondDiagramId = workspace.globalImports.diagramIds[1];
     expect(workspace.diagrams[secondDiagramId].handle).toBe("pursuer-update-2");
     await expect(readFile(path.join(
-      root, ".diagrams", "diagram-sets", set.id, "diagrams", `${diagramId}.json`
+      root, ".diagrams", "imports", "diagrams", `${diagramId}.json`
     ), "utf8")).resolves.toContain('"origin": "imported"');
     await expect(readFile(path.join(
-      root, ".diagrams", "diagram-sets", set.id, "diagram-components", `${componentId}.json`
+      root, ".diagrams", "imports", "diagram-components", `${componentId}.json`
     ), "utf8")).resolves.toContain('"origin": "imported"');
 
-    await expect(application.importArtifact(projectId, {
-      diagramSetId: set.id,
+    const selectedCodeEntityIds = workspace.codeEntitySets[set.codeEntitiesSetId].entities
+      .map((entity) => entity.id);
+    workspace = await application.generate(set.id, {
+      prompt: "Use @diagram/pursuer-update as the visual reference.",
+      selectedCodeEntityIds,
+      count: 1,
+      outputKind: "diagram"
+    });
+    const batchId = workspace.diagramSets[0].generationBatchIds.at(-1)!;
+    const config = workspace.generationPromptConfigs[workspace.generationBatches[batchId].promptConfigId];
+    expect(config.references).toContainEqual(expect.objectContaining({
+      kind: "diagram",
+      targetId: diagramId,
+      handle: "pursuer-update"
+    }));
+    expect(workspace.diagrams[workspace.generationBatches[batchId].outputDiagramIds[0]]
+      .derivedFromDiagramIds).toEqual([diagramId]);
+
+    workspace = await application.generate(set.id, {
+      prompt: "Preserve this history mention: @diagram/pursuer-update",
+      selectedCodeEntityIds,
+      count: 1,
+      outputKind: "diagram",
+      referenceSelections: [{
+        kind: "diagram",
+        targetId: diagramId,
+        token: "@diagram/pursuer-update",
+        handle: "pursuer-update",
+        included: false
+      }],
+      derivation: {
+        sourceArtifactKind: "diagram",
+        sourceArtifactId: diagramId,
+        promptCorrection: "Reduce the imported detail."
+      }
+    });
+    const omittedBatchId = workspace.diagramSets[0].generationBatchIds.at(-1)!;
+    const omittedBatch = workspace.generationBatches[omittedBatchId];
+    const omittedConfig = workspace.generationPromptConfigs[omittedBatch.promptConfigId];
+    expect(omittedConfig.references).toEqual([]);
+    expect(omittedConfig.omittedReferences).toContainEqual(expect.objectContaining({
+      kind: "diagram",
+      targetId: diagramId
+    }));
+    expect(omittedConfig.derivation).toBeUndefined();
+    expect(workspace.diagrams[omittedBatch.outputDiagramIds[0]].derivedFromDiagramIds).toEqual([]);
+
+    await expect(application.importArtifact({
       artifactKind: "diagram",
       name: "Unicode",
       ascii: "└─ Pursuer"
     })).rejects.toThrow(/7-bit ASCII/);
-    await expect(application.importArtifact(projectId, {
-      diagramSetId: set.id,
-      artifactKind: "diagram",
-      name: "Unknown entity",
-      ascii: "Pursuer",
-      codeEntityIds: ["entity-elsewhere"]
-    })).rejects.toThrow(/unavailable CodeEntity/);
-    await expect(application.importArtifact("project-elsewhere", {
-      diagramSetId: set.id,
-      artifactKind: "diagram",
-      name: "Wrong project",
-      ascii: "Pursuer"
-    })).rejects.toThrow(/unknown Project/);
+
+    workspace = await application.renameImportedDiagram(diagramId, "Renamed global diagram");
+    expect(workspace.diagrams[diagramId].name).toBe("Renamed global diagram");
+    workspace = await application.archiveImportedDiagram(diagramId);
+    expect(workspace.diagrams[diagramId].archivedAt).toBeTruthy();
+    workspace = await application.archiveImportedDiagramComponent(componentId);
+    expect(workspace.diagramComponents[componentId].archivedAt).toBeTruthy();
   });
 
   it("collects and generates one diagram per parallel agent", async () => {

@@ -5,10 +5,11 @@ import type {
   DiagramComponentRecord,
   DiagramRecord,
   GenerationOutputKind,
-  GenerationPromptReference,
   GenerationPromptProfileId,
+  PromptReference,
   SystemPromptTemplateRecord
 } from "../domain";
+import type { DiagramReferenceMention } from "../derivativePrompt";
 import { ModelSelector } from "./ModelSelector";
 import { PromptProfileSelector } from "./PromptProfileSelector";
 import { promptOptions } from "../prompt";
@@ -21,13 +22,19 @@ export function GeneratorOptions(props: {
   modelId: DiagramModelId;
   promptProfileId: GenerationPromptProfileId;
   promptProfiles: SystemPromptTemplateRecord[];
-  historicalReferences: GenerationPromptReference[];
+  historicalReferences: PromptReference[];
+  diagramReferences: DiagramReferenceMention[];
+  excludedReferenceKeys: Set<string>;
+  derivativeSourceReferenceKey?: string;
   prompt: string;
   count: number;
   generating: boolean;
   progress: string;
   error: string | null;
+  backLabel?: string;
+  onBack?: () => void;
   onPrompt: (value: string) => void;
+  onToggleDiagramReference: (key: string) => void;
   onCount: (value: number) => void;
   onOutputKind: (value: GenerationOutputKind) => void;
   onModel: (value: DiagramModelId) => void;
@@ -90,7 +97,17 @@ export function GeneratorOptions(props: {
           <span className="eyebrow">GENERATION VIEW</span>
           <h2>{props.outputKind === "diagram" ? "Create diagram variants" : "Create component variants"}</h2>
         </div>
-        <span className="agent-count">N AGENTS · {props.count} OUTPUTS</span>
+        <div className="generation-pane-actions">
+          {props.onBack ? (
+            <button
+              type="button"
+              className="button generation-back"
+              disabled={props.generating}
+              onClick={props.onBack}
+            >← {props.backLabel ?? "back"}</button>
+          ) : null}
+          <span className="agent-count">N AGENTS · {props.count} OUTPUTS</span>
+        </div>
       </header>
 
       <div className="output-kind" role="radiogroup" aria-label="Generated output type">
@@ -152,6 +169,39 @@ export function GeneratorOptions(props: {
           </div>
         ) : null}
         <p className="field-help">Type @ for entity, diagram, and component references. Selected entities are included even without an explicit mention.</p>
+        {props.diagramReferences.length > 0 ? (
+          <section className="prompt-reference-controls" aria-label="Referenced diagrams">
+            <header>
+              <span className="eyebrow">REFERENCED DIAGRAMS</span>
+              <span>Toggle model context without changing the prompt text.</span>
+            </header>
+            <div>
+              {props.diagramReferences.map((reference) => {
+                const included = reference.available
+                  && !props.excludedReferenceKeys.has(reference.key);
+                return (
+                  <label key={reference.key} className={!reference.available ? "is-unavailable" : ""}>
+                    <input
+                      type="checkbox"
+                      checked={included}
+                      disabled={props.generating || !reference.available}
+                      onChange={() => props.onToggleDiagramReference(reference.key)}
+                    />
+                    <code>{reference.tokens[0]}</code>
+                    <span>{reference.label}</span>
+                    <em>{reference.available ? (included ? "included" : "omitted") : "unavailable"}</em>
+                  </label>
+                );
+              })}
+            </div>
+            {props.derivativeSourceReferenceKey
+              && props.excludedReferenceKeys.has(props.derivativeSourceReferenceKey) ? (
+                <p className="prompt-reference-warning" role="status">
+                  The current derivative source is omitted, so generated diagrams will not be linked to it.
+                </p>
+              ) : null}
+          </section>
+        ) : null}
         {unresolvedReferences.length > 0 ? (
           <p className="unresolved-references" role="status">
             Unresolved historical references: {unresolvedReferences.join(", ")}

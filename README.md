@@ -49,7 +49,8 @@ passed to the server's `--path`. `--server` defaults to
 `http://127.0.0.1:5173` and can also be set with `NEW_DIAGRAM_SERVER_URL`.
 `--prompt-template` is optional and defaults to `default`. The final CLI event
 reports the exact template revision and immutable generation prompt-config id
-used for the initial diagrams.
+used for the initial diagrams, plus the CodeEntity template revision and
+immutable collection prompt-config id.
 
 The studio supports the waiting state, immutable collected CodeEntitiesSets,
 typed `@entity/`, `@diagram/`, and `@component/` references, N parallel agents,
@@ -62,6 +63,13 @@ built-in reset. Template edits are atomically persisted in
 Prompt templates, including built-ins, can be deleted as long as at least one
 template remains; generation falls back to the first remaining template when
 the default has been removed.
+CodeEntity collection uses the same versioned prompt-template shape, with
+separate identification and compaction criteria. The rendered criteria and
+action-oriented collection prompt are snapshotted in an immutable config under
+the DiagramSet and linked from its CodeEntitiesSet. The prompt settings dialog
+switches between Diagram Generation and Code Entities, exposing Identification
+and Compaction criteria through the same versioned editor interactions. The
+built-in CodeEntity template is currently selected automatically for collection.
 Every generation persists one immutable prompt-config record containing the exact instruction,
 reference representations, selected entities, model, style, and rendered
 context/system prompts. The batch and all parallel outputs reference that one
@@ -129,13 +137,17 @@ keeps the session record for learning without publishing a variant. Existing
 component capture and derivative generation remain unchanged outside edit mode.
 
 The project header's `IMPORT` action adds an existing Diagram or
-DiagramComponent to any DiagramSet in the current Project. Paste 7-bit ASCII
-directly or load a plain-text or stored artifact JSON file; JSON imports extract
-the artifact name, ASCII, and type when it can be identified. Imported artifacts
-receive fresh ids and collision-safe handles. Imported Diagrams appear together
-under the lineage tree's `IMPORTS` branch, while every imported artifact keeps an
-`IMPORTED` marker and participates in capture, derivative generation, prompt
-references, archival, and reload persistence through the same records as
-generated artifacts.
+DiagramComponent to the global import library for the current persistence root.
+Paste 7-bit ASCII directly or load a plain-text or stored artifact JSON file;
+JSON imports extract the artifact name, ASCII, and type when it can be
+identified. Global imports receive fresh ids and collision-safe handles and are
+available to every DiagramSet. Their index is stored at
+`.diagrams/imports/library.json`, with artifact records under
+`.diagrams/imports/diagrams/` and `.diagrams/imports/diagram-components/`.
+Imported Diagrams appear under the lineage tree's `GLOBAL IMPORTS` branch and
+participate in capture, editing, derivative generation, prompt references,
+archival, and reload persistence. Captures, edits, and generated derivatives
+remain local to the active DiagramSet. Legacy set-scoped imports migrate into
+the library on workspace load.
 
 For an offline deterministic fixture, set `NEW_DIAGRAM_AGENT=fake`.

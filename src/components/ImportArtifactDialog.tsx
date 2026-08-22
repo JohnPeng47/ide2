@@ -1,5 +1,5 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
-import type { ArtifactImportInput, DiagramSetRecord, GenerationOutputKind } from "../domain";
+import type { ArtifactImportInput, GenerationOutputKind } from "../domain";
 
 function artifactFromFile(fileName: string, contents: string): {
   name: string;
@@ -27,12 +27,9 @@ function artifactFromFile(fileName: string, contents: string): {
 }
 
 export function ImportArtifactDialog(props: {
-  diagramSets: DiagramSetRecord[];
-  defaultDiagramSetId: string;
   onClose: () => void;
   onImport: (input: ArtifactImportInput) => Promise<void>;
 }) {
-  const [diagramSetId, setDiagramSetId] = useState(props.defaultDiagramSetId);
   const [artifactKind, setArtifactKind] = useState<GenerationOutputKind>("diagram");
   const [name, setName] = useState("");
   const [ascii, setAscii] = useState("");
@@ -60,7 +57,7 @@ export function ImportArtifactDialog(props: {
     setBusy(true);
     setError(null);
     try {
-      await props.onImport({ diagramSetId, artifactKind, name, ascii });
+      await props.onImport({ artifactKind, name, ascii });
       props.onClose();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "artifact import failed");
@@ -87,23 +84,13 @@ export function ImportArtifactDialog(props: {
       >
         <header>
           <div>
-            <span className="eyebrow">PROJECT IMPORT</span>
+            <span className="eyebrow">GLOBAL IMPORT</span>
             <h2 id="import-dialog-title">Import an ASCII artifact</h2>
           </div>
           <button type="button" aria-label="Close import" disabled={busy} onClick={props.onClose}>[x]</button>
         </header>
         <form onSubmit={(event) => void submit(event)}>
           <div className="import-fields">
-            <label>
-              <span>DIAGRAM SET</span>
-              <select
-                value={diagramSetId}
-                disabled={busy}
-                onChange={(event) => setDiagramSetId(event.target.value)}
-              >
-                {props.diagramSets.map((set) => <option value={set.id} key={set.id}>{set.name}</option>)}
-              </select>
-            </label>
             <fieldset className="import-kind">
               <legend>ARTIFACT TYPE</legend>
               <button

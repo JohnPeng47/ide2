@@ -68,6 +68,11 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .prompt-settings-dialog > header button:hover:not(:disabled) { color: var(--accent-red); }
 .prompt-settings-layout { display: grid; min-width: 0; min-height: 0; flex: 1; grid-template-columns: 250px minmax(0, 1fr); }
 .prompt-settings-layout > aside { display: flex; min-height: 0; border-right: 1px solid var(--gutter); flex-direction: column; }
+.prompt-family-tabs { display: grid; flex: none; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--gutter); }
+.prompt-family-tabs button { min-height: 42px; border: 0; border-right: 1px solid var(--border); background: transparent; color: var(--muted); font: 600 9px var(--font-mono); letter-spacing: 0.08em; }
+.prompt-family-tabs button:last-child { border-right: 0; }
+.prompt-family-tabs button:hover { color: var(--text); }
+.prompt-family-tabs button.is-active { box-shadow: inset 0 -2px var(--accent-cyan); background: rgb(136 192 208 / 5%); color: var(--accent-cyan); }
 .prompt-template-list-heading { display: flex; min-height: 42px; flex: none; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding: 0 0.8rem; color: var(--muted); font: 600 9px var(--font-mono); letter-spacing: 0.1em; }
 .prompt-template-list-heading button { border: 0; background: transparent; color: var(--accent-cyan); font: inherit; }
 .prompt-template-list { min-height: 0; flex: 1; overflow: auto; }
@@ -139,6 +144,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .generator-panel, .diagram-panel, .entities-panel, .diagram-context-panel, .diagram-lineage-panel { display: flex; height: 100%; min-height: 0; flex-direction: column; background: var(--bg); }
 .pane-header { display: flex; min-height: 78px; flex: none; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--border); padding: 1rem 1.25rem; }
 .pane-header h2 { margin-top: 0.25rem; font-size: 1.05rem; font-weight: 600; }
+.generation-pane-actions { display: flex; align-items: center; gap: 0.55rem; }
+.generation-back { white-space: nowrap; }
 .agent-count { border: 1px solid var(--accent-purple); border-radius: 999px; padding: 0.35rem 0.55rem; color: var(--accent-purple); font: 10px var(--font-mono); white-space: nowrap; }
 .status-pill { border: 1px solid var(--gutter); border-radius: 999px; padding: 0.3rem 0.5rem; color: var(--muted); font: 9px var(--font-mono); text-transform: uppercase; }
 .status-pill--finalized { border-color: var(--accent-green); color: var(--accent-green); }
@@ -162,6 +169,18 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .prompt-field textarea { width: 100%; min-height: 12rem; flex: 1; resize: none; border: 1px solid var(--border); border-radius: 6px; padding: 1rem; background: transparent; font: 13px/1.55 var(--font-mono); }
 .prompt-field textarea:hover { border-color: var(--gutter); }
 .field-help { margin-top: 0.55rem; color: var(--muted); font: 11px/1.45 var(--font-mono); }
+.prompt-reference-controls { flex: none; margin-top: 0.75rem; border: 1px solid var(--border); border-radius: 5px; background: color-mix(in srgb, var(--panel) 82%, transparent); }
+.prompt-reference-controls > header { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--border); }
+.prompt-reference-controls > header > span:last-child { color: var(--muted); font: 9px/1.35 var(--font-mono); text-align: right; }
+.prompt-reference-controls > div { display: grid; max-height: 8.5rem; overflow: auto; }
+.prompt-reference-controls label { display: grid; grid-template-columns: auto minmax(11rem, auto) 1fr auto; align-items: center; gap: 0.55rem; margin: 0; padding: 0.45rem 0.7rem; border-bottom: 1px solid color-mix(in srgb, var(--border) 65%, transparent); color: var(--fg); letter-spacing: normal; text-transform: none; }
+.prompt-reference-controls label:last-child { border-bottom: 0; }
+.prompt-reference-controls label.is-unavailable { color: var(--muted); }
+.prompt-reference-controls input { margin: 0; accent-color: var(--accent-green); }
+.prompt-reference-controls code { color: var(--accent-cyan); font: 10px var(--font-mono); }
+.prompt-reference-controls label > span { min-width: 0; overflow: hidden; font: 10px var(--font-mono); text-overflow: ellipsis; white-space: nowrap; }
+.prompt-reference-controls em { color: var(--muted); font: normal 9px var(--font-mono); text-transform: uppercase; }
+.prompt-reference-warning { margin: 0; border-top: 1px solid var(--border); padding: 0.5rem 0.7rem; color: var(--accent-yellow); font: 9px/1.4 var(--font-mono); }
 .unresolved-references { margin-top: 0.45rem; color: var(--accent-yellow); font: 10px/1.4 var(--font-mono); }
 .mention-menu { position: absolute; z-index: 5; right: 1.75rem; bottom: 3.6rem; left: 1.75rem; max-height: 15rem; overflow: auto; border: 1px solid var(--gutter); background: var(--bg); }
 .mention-menu button { display: grid; width: 100%; grid-template-columns: minmax(12rem, auto) 1fr; gap: 1rem; border: 0; border-bottom: 1px solid var(--border); padding: 0.55rem 0.7rem; background: transparent; text-align: left; }

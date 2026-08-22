@@ -3,9 +3,11 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import {
   CodeEntity,
+  DEFAULT_CODE_ENTITY_PROMPT_PROFILE_ID,
   DEFAULT_DIAGRAM_MODEL_ID,
   DEFAULT_GENERATION_PROMPT_PROFILE_ID,
   DEFAULT_GENERATION_COUNT,
+  GLOBAL_IMPORTS_DIAGRAM_SET_ID,
   SCHEMA_VERSION,
   assertSevenBitAscii,
   assertSourceRange,
@@ -18,28 +20,32 @@ import {
   type AgentRunRecord,
   type ArtifactImportInput,
   type CodeEntityDraft,
+  type CodeEntityPromptTemplateRecord,
   type CodeEntityRecord,
   type DiagramCodeEntityMapRecord,
   type DiagramComponentRecord,
-  type DiagramElementMapping,
-  type DiagramElementMappingDraft,
   type DiagramRecord,
   type DiagramSelectionBounds,
   type DiagramSetRecord,
   type EditOperationRecord,
   type EditSessionRecord,
   type GeneratedArtifactDraft,
+  type GenerationDerivationRecord,
   type GenerationOutputKind,
+  type GenerationReferenceSelection,
   type GenerationBatchRecord,
   type SystemPromptTemplateRecord,
   type WorkspaceSnapshot
 } from "../src/domain";
 import {
+  createBuiltInCodeEntityPromptTemplates,
   createBuiltInSystemPromptTemplates,
   createGenerationPromptConfig,
   renderSystemPromptTemplate
 } from "../src/prompt";
 import type { DiagramAgentRuntime } from "./agentRuntime";
+import { createCodeEntityPromptConfig } from "./codeEntityPrompt";
+import { validateDiagramMappings } from "./diagramMapping";
 import { DiagramStore, discoverRepository } from "./store";
 
 const MAX_GENERATION_COUNT = 12;
@@ -135,8 +141,63 @@ export class DiagramApplication {
 
   constructor(readonly store: DiagramStore, private readonly agents: DiagramAgentRuntime) {}
 
+  private async artifactForDiagramSet(
+    setId: string,
+    artifactKind: GenerationOutputKind,
+    artifactId: string
+  ): Promise<{
+    artifact: DiagramRecord | DiagramComponentRecord;
+    global: boolean;
+  }> {
+    const set = await this.store.loadDiagramSet(setId);
+    const local = artifactKind === "diagram"
+      ? set.diagramIds.includes(artifactId)
+      : set.diagramComponentIds.includes(artifactId);
+    if (local) {
+      return {
+        artifact: artifactKind === "diagram"
+          ? await this.store.loadDiagram(setId, artifactId)
+          : await this.store.loadDiagramComponent(setId, artifactId),
+        global: false
+      };
+    }
+    const library = await this.store.loadImportedArtifactLibrary();
+    const global = artifactKind === "diagram"
+      ? library.diagramIds.includes(artifactId)
+      : library.diagramComponentIds.includes(artifactId);
+    if (!global) throw new Error(`unknown ${artifactKind}: ${artifactId}`);
+    return {
+      artifact: artifactKind === "diagram"
+        ? await this.store.loadImportedDiagram(artifactId)
+        : await this.store.loadImportedDiagramComponent(artifactId),
+      global: true
+    };
+  }
+
   async systemPromptTemplates(): Promise<SystemPromptTemplateRecord[]> {
     return this.store.loadSystemPromptTemplates();
+  }
+
+  async codeEntityPromptTemplates(): Promise<CodeEntityPromptTemplateRecord[]> {
+    return this.store.loadCodeEntityPromptTemplates();
+  }
+
+  async resolveCodeEntityPromptTemplate(id?: unknown): Promise<CodeEntityPromptTemplateRecord> {
+    const useDefault = id === undefined || id === null;
+    const requestedId = useDefault ? DEFAULT_CODE_ENTITY_PROMPT_PROFILE_ID : id;
+    if (typeof requestedId !== "string") {
+      throw new Error(`unsupported CodeEntity prompt template: ${String(requestedId)}`);
+    }
+    const templates = await this.store.loadCodeEntityPromptTemplates();
+    const template = templates.find((candidate) => candidate.id === requestedId)
+      ?? (useDefault ? templates[0] : undefined);
+    if (!template) {
+      const available = templates.map((candidate) => candidate.id).join(", ");
+      throw new Error(
+        `unsupported CodeEntity prompt template: ${requestedId}; available templates: ${available}`
+      );
+    }
+    return template;
   }
 
   async resolveSystemPromptTemplate(id?: unknown): Promise<SystemPromptTemplateRecord> {
@@ -180,11 +241,20 @@ export class DiagramApplication {
 
   async collectCodeEntities(
     setId: string,
+    input: { promptTemplateId?: unknown } = {},
     onEvent?: (event: ServiceEvent) => void
   ): Promise<void> {
     const set = await this.store.loadDiagramSet(setId);
     const entitySet = await this.store.loadCodeEntities(setId);
     if (entitySet.status === "finalized") throw new Error("CodeEntitiesSet is immutable after finalization");
+    const template = await this.resolveCodeEntityPromptTemplate(input.promptTemplateId);
+    const promptConfig = createCodeEntityPromptConfig({
+      id: this.store.ids.promptConfig(),
+      diagramSet: set,
+      template,
+      createdAt: timestamp()
+    });
+    await this.store.beginCodeEntityCollection(promptConfig);
     const runId = this.store.ids.run();
     let run: AgentRunRecord = {
       schemaVersion: SCHEMA_VERSION,
@@ -218,7 +288,7 @@ export class DiagramApplication {
       const drafts = await this.agents.collectEntities({
         sourceRoot: set.sourceCheckoutRoot,
         diagramSetName: set.name,
-        initialPrompt: set.initialPrompt
+        promptConfig
       }, progress);
       await progressWrites;
       const entities = await this.validateEntityDrafts(set, drafts);
@@ -320,12 +390,7 @@ export class DiagramApplication {
     return entities;
   }
 
-  async importArtifact(projectId: string, input: ArtifactImportInput): Promise<WorkspaceSnapshot> {
-    const project = await this.store.loadProject();
-    if (!project || project.id !== projectId) throw new Error(`unknown Project: ${projectId}`);
-    if (!project.diagramSetIds.includes(input.diagramSetId)) {
-      throw new Error(`DiagramSet does not belong to Project: ${input.diagramSetId}`);
-    }
+  async importArtifact(input: ArtifactImportInput): Promise<WorkspaceSnapshot> {
     if (input.artifactKind !== "diagram" && input.artifactKind !== "diagram-component") {
       throw new Error("artifact kind must be diagram or diagram-component");
     }
@@ -336,21 +401,10 @@ export class DiagramApplication {
     assertSevenBitAscii(ascii);
     if (ascii.length > 20000) throw new Error("artifact ASCII cannot exceed 20,000 characters");
 
-    const set = await this.store.loadDiagramSet(input.diagramSetId);
-    const entities = await this.store.loadCodeEntities(set.id);
-    const availableEntityIds = new Set(entities.entities.map((entity) => entity.id));
-    const codeEntityIds = [...new Set(input.codeEntityIds ?? [])];
-    for (const id of codeEntityIds) {
-      if (!availableEntityIds.has(id)) {
-        throw new Error(`import references unavailable CodeEntity: ${id}`);
-      }
-    }
-
+    const workspace = await this.workspace();
     const existing = input.artifactKind === "diagram"
-      ? await Promise.all(set.diagramIds.map((id) => this.store.loadDiagram(set.id, id)))
-      : await Promise.all(
-        set.diagramComponentIds.map((id) => this.store.loadDiagramComponent(set.id, id))
-      );
+      ? Object.values(workspace.diagrams)
+      : Object.values(workspace.diagramComponents);
     const handles = new Set(existing.map((artifact) => artifact.handle));
     const fallback = input.artifactKind === "diagram" ? "imported-diagram" : "imported-component";
     const baseHandle = slugify(name, fallback);
@@ -362,31 +416,31 @@ export class DiagramApplication {
       const diagram: DiagramRecord = {
         schemaVersion: SCHEMA_VERSION,
         id: this.store.ids.diagram(),
-        diagramSetId: set.id,
+        diagramSetId: GLOBAL_IMPORTS_DIAGRAM_SET_ID,
         handle,
         name,
         ascii,
-        codeEntityIds,
+        codeEntityIds: [],
         origin: "imported",
         derivedFromDiagramIds: [],
         createdAt: timestamp()
       };
-      await this.store.addDiagram(diagram);
+      await this.store.addImportedDiagram(diagram);
     } else {
       const component: DiagramComponentRecord = {
         schemaVersion: SCHEMA_VERSION,
         id: this.store.ids.diagramComponent(),
-        diagramSetId: set.id,
+        diagramSetId: GLOBAL_IMPORTS_DIAGRAM_SET_ID,
         handle,
         name,
         ascii,
-        codeEntityIds,
+        codeEntityIds: [],
         origin: "imported",
         derivedFromDiagramIds: [],
         derivedFromDiagramComponentIds: [],
         createdAt: timestamp()
       };
-      await this.store.addDiagramComponent(component);
+      await this.store.addImportedDiagramComponent(component);
     }
     return this.workspace();
   }
@@ -438,6 +492,26 @@ export class DiagramApplication {
     return this.workspace();
   }
 
+  async renameImportedDiagram(diagramId: string, name: string): Promise<WorkspaceSnapshot> {
+    const normalized = name.trim();
+    if (!normalized) throw new Error("Diagram name is required");
+    if (normalized.length > 120) throw new Error("Diagram name cannot exceed 120 characters");
+    const diagram = await this.store.loadImportedDiagram(diagramId);
+    if (isDiagramArchived(diagram)) throw new Error("archived diagrams cannot be renamed");
+    await this.store.renameImportedDiagram(diagramId, normalized);
+    return this.workspace();
+  }
+
+  async archiveImportedDiagram(diagramId: string): Promise<WorkspaceSnapshot> {
+    await this.store.archiveImportedDiagram(diagramId);
+    return this.workspace();
+  }
+
+  async archiveImportedDiagramComponent(componentId: string): Promise<WorkspaceSnapshot> {
+    await this.store.archiveImportedDiagramComponent(componentId);
+    return this.workspace();
+  }
+
   async mapCodeEntities(
     setId: string,
     artifactKind: GenerationOutputKind,
@@ -449,13 +523,7 @@ export class DiagramApplication {
       throw new Error("a code-entity mapping is already running for this artifact");
     }
     const set = await this.store.loadDiagramSet(setId);
-    const knownArtifact = artifactKind === "diagram"
-      ? set.diagramIds.includes(artifactId)
-      : set.diagramComponentIds.includes(artifactId);
-    if (!knownArtifact) throw new Error(`unknown ${artifactKind}: ${artifactId}`);
-    const artifact = artifactKind === "diagram"
-      ? await this.store.loadDiagram(setId, artifactId)
-      : await this.store.loadDiagramComponent(setId, artifactId);
+    const { artifact, global } = await this.artifactForDiagramSet(setId, artifactKind, artifactId);
     if (artifact.archivedAt) {
       throw new Error("archived artifacts cannot be mapped");
     }
@@ -464,7 +532,9 @@ export class DiagramApplication {
       throw new Error("CodeEntitiesSet must be finalized before mapping");
     }
     const artifactEntityIds = new Set(artifact.codeEntityIds);
-    const entities = entitySet.entities.filter((entity) => artifactEntityIds.has(entity.id));
+    const entities = global
+      ? entitySet.entities
+      : entitySet.entities.filter((entity) => artifactEntityIds.has(entity.id));
     if (entities.length === 0) throw new Error("artifact has no CodeEntities to map");
 
     this.activeMappings.add(mappingKey);
@@ -477,7 +547,7 @@ export class DiagramApplication {
       status: "queued",
       statusMessage: "opening diagram mapping agent",
       codeEntitiesRevision: entitySet.revision,
-      outputCodeEntityIds: [...artifact.codeEntityIds],
+      outputCodeEntityIds: entities.map((entity) => entity.id),
       ...(artifactKind === "diagram"
         ? { outputDiagramId: artifactId }
         : { outputDiagramComponentId: artifactId }),
@@ -511,7 +581,7 @@ export class DiagramApplication {
         codeEntities: entities
       }, progress);
       await progressWrites;
-      const mappings = this.validateDiagramMappings(artifact.ascii, drafts, entities);
+      const mappings = validateDiagramMappings(artifact.ascii, drafts, entities);
       const record: DiagramCodeEntityMapRecord = {
         schemaVersion: SCHEMA_VERSION,
         diagramSetId: setId,
@@ -552,53 +622,14 @@ export class DiagramApplication {
     }
   }
 
-  private validateDiagramMappings(
-    ascii: string,
-    drafts: DiagramElementMappingDraft[],
-    entities: CodeEntityRecord[]
-  ): DiagramElementMapping[] {
-    if (drafts.length === 0) throw new Error("mapping agent submitted no diagram elements");
-    const lines = ascii.split("\n");
-    const entitiesById = new Map(entities.map((entity) => [entity.id, entity]));
-    const occupied = new Set<string>();
-    return drafts.map((draft, index) => {
-      const entity = entitiesById.get(draft.entityId);
-      if (!entity) throw new Error(`mapping references unavailable CodeEntity: ${draft.entityId}`);
-      if (!Number.isInteger(draft.sourceRangeIndex)
-        || !entity.sourceRanges[draft.sourceRangeIndex]) {
-        throw new Error(`mapping references unavailable source range for ${draft.entityId}`);
-      }
-      if (!Number.isInteger(draft.line)
-        || !Number.isInteger(draft.startColumn)
-        || !Number.isInteger(draft.endColumn)) {
-        throw new Error("mapping coordinates must be integers");
-      }
-      const line = lines[draft.line - 1];
-      if (line === undefined
-        || draft.startColumn < 1
-        || draft.endColumn < draft.startColumn
-        || draft.endColumn > line.length) {
-        throw new Error(`mapping coordinates are outside the ASCII at line ${draft.line}`);
-      }
-      const text = line.slice(draft.startColumn - 1, draft.endColumn);
-      if (!text.trim()) throw new Error("mapped diagram elements must contain visible text");
-      for (let column = draft.startColumn; column <= draft.endColumn; column += 1) {
-        const coordinate = `${draft.line}:${column}`;
-        if (occupied.has(coordinate)) throw new Error("mapped diagram elements cannot overlap");
-        occupied.add(coordinate);
-      }
-      return { ...draft, id: `map-${index + 1}` };
-    });
-  }
-
   async captureDiagramComponent(
     setId: string,
     diagramId: string,
     bounds: DiagramSelectionBounds
   ): Promise<WorkspaceSnapshot> {
     const set = await this.store.loadDiagramSet(setId);
-    if (!set.diagramIds.includes(diagramId)) throw new Error(`unknown Diagram: ${diagramId}`);
-    const diagram = await this.store.loadDiagram(setId, diagramId);
+    const { artifact } = await this.artifactForDiagramSet(setId, "diagram", diagramId);
+    const diagram = artifact as DiagramRecord;
     if (isDiagramArchived(diagram)) throw new Error("archived diagrams cannot be captured");
     return this.captureComponentSelection(set, { kind: "diagram", artifact: diagram }, bounds);
   }
@@ -608,14 +639,7 @@ export class DiagramApplication {
     artifactKind: GenerationOutputKind,
     artifactId: string
   ): Promise<WorkspaceSnapshot> {
-    const set = await this.store.loadDiagramSet(setId);
-    const artifact = artifactKind === "diagram"
-      ? await this.store.loadDiagram(setId, artifactId)
-      : await this.store.loadDiagramComponent(setId, artifactId);
-    const known = artifactKind === "diagram"
-      ? set.diagramIds.includes(artifactId)
-      : set.diagramComponentIds.includes(artifactId);
-    if (!known) throw new Error(`unknown ${artifactKind}: ${artifactId}`);
+    const { artifact } = await this.artifactForDiagramSet(setId, artifactKind, artifactId);
     if (artifact.archivedAt) throw new Error("archived artifacts cannot be edited");
     const createdAt = timestamp();
     const session: EditSessionRecord = {
@@ -852,14 +876,22 @@ export class DiagramApplication {
     ));
     if (unresolvedMarker) throw new Error(`resolve ${unresolvedMarker.markerToken} before saving`);
     const set = await this.store.loadDiagramSet(setId);
-    const source = session.sourceArtifactKind === "diagram"
-      ? await this.store.loadDiagram(setId, session.sourceArtifactId)
-      : await this.store.loadDiagramComponent(setId, session.sourceArtifactId);
+    const { artifact: source } = await this.artifactForDiagramSet(
+      setId,
+      session.sourceArtifactKind,
+      session.sourceArtifactId
+    );
     const name = `${source.name} Edit`.slice(0, 120);
     const existing = session.sourceArtifactKind === "diagram"
       ? await Promise.all(set.diagramIds.map((id) => this.store.loadDiagram(setId, id)))
       : await Promise.all(set.diagramComponentIds.map((id) => this.store.loadDiagramComponent(setId, id)));
-    const handles = new Set(existing.map((artifact) => artifact.handle));
+    const library = await this.store.loadImportedArtifactLibrary();
+    const imported = session.sourceArtifactKind === "diagram"
+      ? await Promise.all(library.diagramIds.map((id) => this.store.loadImportedDiagram(id)))
+      : await Promise.all(
+        library.diagramComponentIds.map((id) => this.store.loadImportedDiagramComponent(id))
+      );
+    const handles = new Set([...existing, ...imported].map((artifact) => artifact.handle));
     const baseHandle = slugify(name, session.sourceArtifactKind === "diagram" ? "diagram-edit" : "component-edit");
     let handle = baseHandle;
     let suffix = 2;
@@ -929,10 +961,12 @@ export class DiagramApplication {
     bounds: DiagramSelectionBounds
   ): Promise<WorkspaceSnapshot> {
     const set = await this.store.loadDiagramSet(setId);
-    if (!set.diagramComponentIds.includes(componentId)) {
-      throw new Error(`unknown DiagramComponent: ${componentId}`);
-    }
-    const component = await this.store.loadDiagramComponent(setId, componentId);
+    const { artifact } = await this.artifactForDiagramSet(
+      setId,
+      "diagram-component",
+      componentId
+    );
+    const component = artifact as DiagramComponentRecord;
     if (isDiagramComponentArchived(component)) {
       throw new Error("archived DiagramComponents cannot be captured");
     }
@@ -951,7 +985,11 @@ export class DiagramApplication {
       set.diagramComponentIds.map((id) => this.store.loadDiagramComponent(set.id, id))
     );
     const sequence = existing.length + 1;
-    const handles = new Set(existing.map((component) => component.handle));
+    const library = await this.store.loadImportedArtifactLibrary();
+    const imported = await Promise.all(
+      library.diagramComponentIds.map((id) => this.store.loadImportedDiagramComponent(id))
+    );
+    const handles = new Set([...existing, ...imported].map((component) => component.handle));
     const baseHandle = slugify(
       `${source.artifact.handle}-component-${sequence}`,
       `component-${sequence}`
@@ -996,6 +1034,8 @@ export class DiagramApplication {
       outputKind: GenerationOutputKind;
       modelId?: unknown;
       promptProfileId?: unknown;
+      referenceSelections?: GenerationReferenceSelection[];
+      derivation?: GenerationDerivationRecord;
     },
     onEvent?: (event: ServiceEvent) => void
   ): Promise<WorkspaceSnapshot> {
@@ -1017,11 +1057,19 @@ export class DiagramApplication {
         throw new Error("CodeEntitiesSet must be finalized before generation");
       }
       const storedDiagrams = await Promise.all(set.diagramIds.map((id) => this.store.loadDiagram(setId, id)));
-      const existingDiagrams = storedDiagrams.filter((diagram) => !isDiagramArchived(diagram));
+      const library = await this.store.loadImportedArtifactLibrary();
+      const importedDiagrams = await Promise.all(
+        library.diagramIds.map((id) => this.store.loadImportedDiagram(id))
+      );
+      const existingDiagrams = [...storedDiagrams, ...importedDiagrams]
+        .filter((diagram) => !isDiagramArchived(diagram));
       const storedComponents = await Promise.all(
         set.diagramComponentIds.map((id) => this.store.loadDiagramComponent(setId, id))
       );
-      const existingComponents = storedComponents.filter(
+      const importedComponents = await Promise.all(
+        library.diagramComponentIds.map((id) => this.store.loadImportedDiagramComponent(id))
+      );
+      const existingComponents = [...storedComponents, ...importedComponents].filter(
         (component) => !isDiagramComponentArchived(component)
       );
       const createdAt = timestamp();
@@ -1029,13 +1077,15 @@ export class DiagramApplication {
         id: this.store.ids.promptConfig(),
         diagramSet: set,
         codeEntities: entities,
-        diagrams: existingDiagrams,
-        components: existingComponents,
+        diagrams: [...storedDiagrams, ...importedDiagrams],
+        components: [...storedComponents, ...importedComponents],
         outputKind: input.outputKind,
         modelId,
         profile: promptProfile,
         instruction: input.prompt,
         selectedCodeEntityIds: input.selectedCodeEntityIds,
+        referenceSelections: input.referenceSelections,
+        derivation: input.derivation,
         createdAt
       });
       const promptConfig = promptBuild.config;
@@ -1167,7 +1217,7 @@ export class DiagramApplication {
       const derivedFromDiagramComponentIds = promptConfig.references
         .filter((reference) => reference.kind === "diagram-component")
         .map((reference) => reference.targetId);
-      const handles = new Set((input.outputKind === "diagram" ? storedDiagrams : storedComponents)
+      const handles = new Set((input.outputKind === "diagram" ? existingDiagrams : existingComponents)
         .map((artifact) => artifact.handle));
       const generated = runs.map((run, index) => {
         const draft = accepted.get(index)!;
@@ -1329,6 +1379,95 @@ export class DiagramApplication {
     if (!existing) throw new Error(`unknown system prompt template: ${id}`);
     if (templates.length === 1) throw new Error("at least one system prompt template is required");
     await this.store.saveSystemPromptTemplates(
+      templates.filter((template) => template.id !== id)
+    );
+    return this.workspace();
+  }
+
+  async saveCodeEntityPromptTemplate(input: {
+    id?: unknown;
+    label: unknown;
+    description: unknown;
+    prompts: unknown;
+  }): Promise<WorkspaceSnapshot> {
+    const label = typeof input.label === "string" ? input.label.trim() : "";
+    const description = typeof input.description === "string" ? input.description.trim() : "";
+    const prompts = input.prompts && typeof input.prompts === "object"
+      ? input.prompts as Record<string, unknown>
+      : {};
+    const identificationCriteria = typeof prompts["code-entity-identification"] === "string"
+      ? prompts["code-entity-identification"].trim()
+      : "";
+    const compactionCriteria = typeof prompts["code-entity-compaction"] === "string"
+      ? prompts["code-entity-compaction"].trim()
+      : "";
+    if (!label) throw new Error("template name is required");
+    if (label.length > 80) throw new Error("template name cannot exceed 80 characters");
+    if (description.length > 240) throw new Error("template description cannot exceed 240 characters");
+    if (!identificationCriteria || !compactionCriteria) {
+      throw new Error("identification and compaction criteria are required");
+    }
+    if (identificationCriteria.length > 32000 || compactionCriteria.length > 32000) {
+      throw new Error("CodeEntity criteria cannot exceed 32,000 characters");
+    }
+
+    const templates = await this.store.loadCodeEntityPromptTemplates();
+    const requestedId = typeof input.id === "string" ? input.id : undefined;
+    const existing = requestedId ? templates.find((template) => template.id === requestedId) : undefined;
+    if (requestedId && !existing) throw new Error(`unknown CodeEntity prompt template: ${requestedId}`);
+    const timestampValue = timestamp();
+    let id = existing?.id ?? slugify(label, "custom-code-entities");
+    if (!existing) {
+      const ids = new Set(templates.map((template) => template.id));
+      const baseId = id;
+      let suffix = 2;
+      while (ids.has(id)) id = `${baseId}-${suffix++}`;
+    }
+    const template: CodeEntityPromptTemplateRecord = {
+      schemaVersion: SCHEMA_VERSION,
+      id,
+      label,
+      description,
+      builtIn: existing?.builtIn ?? false,
+      version: (existing?.version ?? 0) + 1,
+      prompts: {
+        "code-entity-identification": identificationCriteria,
+        "code-entity-compaction": compactionCriteria
+      },
+      createdAt: existing?.createdAt ?? timestampValue,
+      updatedAt: timestampValue
+    };
+    await this.store.saveCodeEntityPromptTemplates(existing
+      ? templates.map((candidate) => candidate.id === id ? template : candidate)
+      : [...templates, template]);
+    return this.workspace();
+  }
+
+  async resetCodeEntityPromptTemplate(id: string): Promise<WorkspaceSnapshot> {
+    const templates = await this.store.loadCodeEntityPromptTemplates();
+    const existing = templates.find((template) => template.id === id);
+    if (!existing?.builtIn) throw new Error(`built-in CodeEntity prompt template not found: ${id}`);
+    const original = createBuiltInCodeEntityPromptTemplates(existing.createdAt)
+      .find((template) => template.id === id);
+    if (!original) throw new Error(`built-in CodeEntity prompt template not found: ${id}`);
+    const reset: CodeEntityPromptTemplateRecord = {
+      ...original,
+      version: existing.version + 1,
+      createdAt: existing.createdAt,
+      updatedAt: timestamp()
+    };
+    await this.store.saveCodeEntityPromptTemplates(
+      templates.map((template) => template.id === id ? reset : template)
+    );
+    return this.workspace();
+  }
+
+  async deleteCodeEntityPromptTemplate(id: string): Promise<WorkspaceSnapshot> {
+    const templates = await this.store.loadCodeEntityPromptTemplates();
+    const existing = templates.find((template) => template.id === id);
+    if (!existing) throw new Error(`unknown CodeEntity prompt template: ${id}`);
+    if (templates.length === 1) throw new Error("at least one CodeEntity prompt template is required");
+    await this.store.saveCodeEntityPromptTemplates(
       templates.filter((template) => template.id !== id)
     );
     return this.workspace();

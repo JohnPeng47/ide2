@@ -6,6 +6,7 @@ import type {
   GenerationBatchRecord,
   GenerationPromptConfigRecord
 } from "../domain";
+import { GLOBAL_IMPORTS_DIAGRAM_SET_ID } from "../domain";
 import { PromptConfigDialog } from "./PromptConfigDialog";
 
 function connector(last: boolean): string {
@@ -27,7 +28,12 @@ function ComponentLineageSection(props: {
   const [actionError, setActionError] = useState<string | null>(null);
   const byId = new Map(props.components.map((component) => [component.id, component]));
   const number = new Map(
-    props.diagramSet.diagramComponentIds.map((componentId, index) => [componentId, index + 1])
+    [
+      ...props.diagramSet.diagramComponentIds,
+      ...props.components
+        .filter((component) => component.diagramSetId === GLOBAL_IMPORTS_DIAGRAM_SET_ID)
+        .map((component) => component.id)
+    ].map((componentId, index) => [componentId, index + 1])
   );
   const batches = props.diagramSet.generationBatchIds
     .map((id) => props.generationBatches[id])
@@ -118,7 +124,9 @@ function ComponentLineageSection(props: {
           >
             <strong>C{String(number.get(component.id) ?? 0).padStart(2, "0")}</strong>
             <span className="diagram-tree-description">{component.name}</span>
-            <em>{component.origin === "selection" ? "CAPTURED" : component.origin.toUpperCase()}</em>
+            <em>{component.diagramSetId === GLOBAL_IMPORTS_DIAGRAM_SET_ID
+              ? "GLOBAL"
+              : component.origin === "selection" ? "CAPTURED" : component.origin.toUpperCase()}</em>
           </button>
           <span className="diagram-tree-component-actions">
             {component.generationPromptConfigId ? (
@@ -310,7 +318,12 @@ export function DiagramLineagePanel(props: {
   const [inspectedConfigId, setInspectedConfigId] = useState<string | null>(null);
   const diagramsById = new Map(props.diagrams.map((diagram) => [diagram.id, diagram]));
   const diagramNumber = new Map(
-    props.diagramSet.diagramIds.map((diagramId, index) => [diagramId, index + 1])
+    [
+      ...props.diagramSet.diagramIds,
+      ...props.diagrams
+        .filter((diagram) => diagram.diagramSetId === GLOBAL_IMPORTS_DIAGRAM_SET_ID)
+        .map((diagram) => diagram.id)
+    ].map((diagramId, index) => [diagramId, index + 1])
   );
   const batches = props.diagramSet.generationBatchIds
     .map((id) => props.generationBatches[id])
@@ -473,7 +486,7 @@ export function DiagramLineagePanel(props: {
             >
               <strong>{String(number).padStart(2, "0")}</strong>
               <span className="diagram-tree-description">{diagram.name}</span>
-              {diagram.origin === "imported" ? <em>IMPORTED</em> : null}
+              {diagram.diagramSetId === GLOBAL_IMPORTS_DIAGRAM_SET_ID ? <em>GLOBAL</em> : null}
               {current ? <em>CURRENT</em> : null}
             </button>
             <span className="diagram-tree-actions">
@@ -597,7 +610,7 @@ export function DiagramLineagePanel(props: {
           >
             {collapsed ? `[+${hiddenCount}]` : "[-]"}
           </button>
-          <strong>IMPORTS</strong>
+          <strong>GLOBAL IMPORTS</strong>
           <span className="diagram-tree-description">
             {importedDiagrams.length} imported {importedDiagrams.length === 1 ? "diagram" : "diagrams"}
           </span>
