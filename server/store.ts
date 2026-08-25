@@ -21,6 +21,7 @@ import {
   type DiagramComponentRecord,
   type DiagramRecord,
   type DiagramSetRecord,
+  type DiagramViewKind,
   type EditSessionRecord,
   type GenerationBatchRecord,
   type GenerationOutputKind,
@@ -233,6 +234,7 @@ export class DiagramStore {
       sourceCheckoutRoot: input.location.checkoutRoot,
       gitRevision: input.location.gitRevision,
       codeEntitiesSetId: entitySetId,
+      featuredViewIds: {},
       diagramIds: [],
       diagramComponentIds: [],
       generationBatchIds: [],
@@ -316,7 +318,12 @@ export class DiagramStore {
   }
 
   async loadImportedDiagram(diagramId: string): Promise<DiagramRecord> {
-    return readJson<DiagramRecord>(this.importedDiagramPath(diagramId));
+    const filePath = this.importedDiagramPath(diagramId);
+    const stored = await readJson<DiagramRecord & { viewKind?: DiagramViewKind }>(filePath);
+    if (stored.viewKind) return stored as DiagramRecord;
+    const normalized: DiagramRecord = { ...stored, viewKind: "diagram" };
+    await writeJsonAtomic(filePath, normalized);
+    return normalized;
   }
 
   async loadImportedDiagramComponent(componentId: string): Promise<DiagramComponentRecord> {
@@ -393,7 +400,25 @@ export class DiagramStore {
       schemaVersion: typeof SCHEMA_VERSION;
       templates: SystemPromptTemplateRecord[];
     }>(this.systemPromptTemplatesPath());
-    if (stored) return stored.templates;
+    if (stored) {
+      const builtIns = new Map(createBuiltInSystemPromptTemplates(nowIso()).map((item) => [item.id, item]));
+      let changed = false;
+      const templates = stored.templates.map((template) => {
+        if (template.prompts["call-graph"] && template.prompts["dir-view"]) return template;
+        changed = true;
+        const builtIn = builtIns.get(template.id);
+        return {
+          ...template,
+          prompts: {
+            ...template.prompts,
+            "call-graph": builtIn?.prompts["call-graph"] ?? template.prompts.diagram,
+            "dir-view": builtIn?.prompts["dir-view"] ?? template.prompts.diagram
+          }
+        };
+      });
+      if (changed) await this.saveSystemPromptTemplates(templates);
+      return templates;
+    }
     const templates = createBuiltInSystemPromptTemplates(nowIso());
     await writeJsonAtomic(this.systemPromptTemplatesPath(), {
       schemaVersion: SCHEMA_VERSION,
@@ -434,17 +459,49 @@ export class DiagramStore {
     const stored = await readJson<DiagramSetRecord & {
       diagramComponentIds?: string[];
       editSessionIds?: string[];
+      featuredViewIds?: Partial<Record<DiagramViewKind, string>>;
     }>(this.setPath(setId));
-    if (Array.isArray(stored.diagramComponentIds) && Array.isArray(stored.editSessionIds)) {
+    if (Array.isArray(stored.diagramComponentIds)
+      && Array.isArray(stored.editSessionIds)
+      && stored.featuredViewIds) {
       return stored as DiagramSetRecord;
     }
     const normalized: DiagramSetRecord = {
       ...stored,
+      featuredViewIds: stored.featuredViewIds ?? {},
       diagramComponentIds: stored.diagramComponentIds ?? [],
       editSessionIds: stored.editSessionIds ?? []
     };
     await writeJsonAtomic(this.setPath(setId), normalized);
     return normalized;
+  }
+
+  async setFeaturedView(
+    setId: string,
+    viewKind: DiagramViewKind,
+    diagramId?: string
+  ): Promise<DiagramSetRecord> {
+    const set = await this.loadDiagramSet(setId);
+    const featuredViewIds = { ...set.featuredViewIds };
+    if (diagramId) featuredViewIds[viewKind] = diagramId;
+    else delete featuredViewIds[viewKind];
+    const updated: DiagramSetRecord = {
+      ...set,
+      featuredViewIds,
+      updatedAt: nowIso()
+    };
+    await writeJsonAtomic(this.setPath(setId), updated);
+    return updated;
+  }
+
+  async clearFeaturedViewReferences(diagramId: string): Promise<void> {
+    const project = await this.loadProject();
+    if (!project) return;
+    for (const setId of project.diagramSetIds) {
+      const set = await this.loadDiagramSet(setId);
+      const match = Object.entries(set.featuredViewIds).find(([, id]) => id === diagramId);
+      if (match) await this.setFeaturedView(setId, match[0] as DiagramViewKind);
+    }
   }
 
   async loadCodeEntities(setId: string): Promise<CodeEntitiesSetRecord> {
@@ -454,13 +511,20 @@ export class DiagramStore {
   async loadDiagram(setId: string, diagramId: string): Promise<DiagramRecord> {
     const stored = await readJson<DiagramRecord & {
       origin?: DiagramRecord["origin"];
+      viewKind?: DiagramViewKind;
       promptReferences?: PromptReference[];
     }>(
       this.diagramPath(setId, diagramId)
     );
-    if (stored.origin && !Array.isArray(stored.promptReferences)) return stored as DiagramRecord;
+    if (stored.origin && stored.viewKind && !Array.isArray(stored.promptReferences)) {
+      return stored as DiagramRecord;
+    }
     const { promptReferences: _promptReferences, ...artifact } = stored;
-    const normalized: DiagramRecord = { ...artifact, origin: stored.origin ?? "generated" };
+    const normalized: DiagramRecord = {
+      ...artifact,
+      origin: stored.origin ?? "generated",
+      viewKind: stored.viewKind ?? "diagram"
+    };
     await writeJsonAtomic(this.diagramPath(setId, diagramId), normalized);
     return normalized;
   }
@@ -479,7 +543,12 @@ export class DiagramStore {
     setId: string,
     promptConfigId: string
   ): Promise<GenerationPromptConfigRecord> {
-    return readJson<GenerationPromptConfigRecord>(this.promptConfigPath(setId, promptConfigId));
+    const filePath = this.promptConfigPath(setId, promptConfigId);
+    const stored = await readJson<GenerationPromptConfigRecord>(filePath);
+    if (stored.outputKind !== "diagram" || stored.viewKind) return stored;
+    const normalized = { ...stored, viewKind: "diagram" as const };
+    await writeJsonAtomic(filePath, normalized);
+    return normalized;
   }
 
   async loadCodeEntityPromptConfig(
@@ -590,6 +659,7 @@ export class DiagramStore {
       id: promptConfigId,
       diagramSetId: setId,
       outputKind,
+      ...(outputKind === "diagram" ? { viewKind: "diagram" as const } : {}),
       modelId,
       instruction: stored.userPrompt ?? "",
       selectedCodeEntityIds: stored.selectedCodeEntityIds ?? [],
@@ -605,6 +675,7 @@ export class DiagramStore {
         profileVersion: 1,
         rendered: renderArtifactSystemPrompt({
           outputKind,
+          ...(outputKind === "diagram" ? { viewKind: "diagram" as const } : {}),
           template: createBuiltInSystemPromptTemplates(stored.createdAt)[0]
         })
       },
@@ -690,6 +761,10 @@ export class DiagramStore {
     if (diagram.archivedAt) return diagram;
     const archived = { ...diagram, archivedAt: nowIso() };
     await writeJsonAtomic(this.diagramPath(setId, diagramId), archived);
+    const set = await this.loadDiagramSet(setId);
+    if (set.featuredViewIds[diagram.viewKind] === diagramId) {
+      await this.setFeaturedView(setId, diagram.viewKind);
+    }
     return archived;
   }
 

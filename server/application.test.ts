@@ -96,6 +96,80 @@ class ParallelRuntime implements DiagramAgentRuntime {
 }
 
 describe("DiagramApplication", () => {
+  it("generates and independently stars call-graph and directory-view candidates", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-aux-views-"));
+    roots.push(root);
+    execFileSync("git", ["init", "-q", root]);
+    await writeFile(path.join(root, "fixture.ts"), "export const worker = () => true;\n", "utf8");
+    execFileSync("git", ["-C", root, "add", "fixture.ts"]);
+    execFileSync("git", ["-C", root, "-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-qm", "fixture"]);
+    const application = new DiagramApplication(new DiagramStore(root), new ParallelRuntime());
+    const set = await application.createDiagramSet({ path: root, name: "Aux views", prompt: "Show worker flow" });
+    await application.collectCodeEntities(set.id);
+    const entities = (await application.workspace()).codeEntitySets[set.codeEntitiesSetId].entities;
+
+    await expect(application.generate(set.id, {
+      prompt: "Show calls",
+      selectedCodeEntityIds: entities.map((entity) => entity.id),
+      count: 1,
+      outputKind: "diagram",
+      viewKind: "call-graph"
+    })).rejects.toThrow(/star a main Diagram/);
+
+    let workspace = await application.generate(set.id, {
+      prompt: "Show architecture",
+      selectedCodeEntityIds: entities.map((entity) => entity.id),
+      count: 1,
+      outputKind: "diagram",
+      viewKind: "diagram"
+    });
+    const mainId = workspace.diagramSets[0].diagramIds[0];
+    workspace = await application.setStarredDiagram(set.id, mainId, true);
+
+    await expect(application.generate(set.id, {
+      prompt: "Show files",
+      selectedCodeEntityIds: entities.map((entity) => entity.id),
+      count: 1,
+      outputKind: "diagram",
+      viewKind: "dir-view"
+    })).rejects.toThrow(/star a Call Graph/);
+
+    workspace = await application.generate(set.id, {
+      prompt: "Show calls",
+      selectedCodeEntityIds: entities.map((entity) => entity.id),
+      count: 1,
+      outputKind: "diagram",
+      viewKind: "call-graph"
+    });
+    const callGraph = Object.values(workspace.diagrams).find((diagram) => diagram.viewKind === "call-graph")!;
+    expect(callGraph).toMatchObject({ basedOnDiagramId: mainId, derivedFromDiagramIds: [] });
+    const callConfig = workspace.generationPromptConfigs[callGraph.generationPromptConfigId!];
+    expect(callConfig.references).toEqual([expect.objectContaining({ targetId: mainId })]);
+    workspace = await application.setStarredDiagram(set.id, callGraph.id, true);
+
+    workspace = await application.generate(set.id, {
+      prompt: "Show files",
+      selectedCodeEntityIds: entities.map((entity) => entity.id),
+      count: 1,
+      outputKind: "diagram",
+      viewKind: "dir-view"
+    });
+    const dirView = Object.values(workspace.diagrams).find((diagram) => diagram.viewKind === "dir-view")!;
+    const dirConfig = workspace.generationPromptConfigs[dirView.generationPromptConfigId!];
+    expect(dirConfig.references.map((reference) => reference.targetId)).toEqual([mainId, callGraph.id]);
+    workspace = await application.setStarredDiagram(set.id, dirView.id, true);
+    expect(workspace.diagramSets[0].featuredViewIds).toEqual({
+      diagram: mainId,
+      "call-graph": callGraph.id,
+      "dir-view": dirView.id
+    });
+    workspace = await application.archiveDiagram(set.id, callGraph.id);
+    expect(workspace.diagramSets[0].featuredViewIds).toEqual({
+      diagram: mainId,
+      "dir-view": dirView.id
+    });
+  });
+
   it("blocks deletion during collection and removes a ready Diagram Set", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "new-diagram-delete-set-"));
     roots.push(root);
@@ -330,6 +404,20 @@ describe("DiagramApplication", () => {
     });
     const secondDiagramId = workspace.globalImports.diagramIds[1];
     expect(workspace.diagrams[secondDiagramId].handle).toBe("pursuer-update-2");
+    workspace = await application.setStarredDiagram(set.id, diagramId, true);
+    expect(workspace.diagramSets[0].featuredViewIds.diagram).toBe(diagramId);
+    const persistedSet = JSON.parse(await readFile(path.join(
+      root, ".diagrams", "diagram-sets", set.id, "diagram-set.json"
+    ), "utf8")) as { featuredViewIds?: { diagram?: string } };
+    expect(persistedSet.featuredViewIds?.diagram).toBe(diagramId);
+    workspace = await application.setStarredDiagram(set.id, secondDiagramId, true);
+    expect(workspace.diagramSets[0].featuredViewIds.diagram).toBe(secondDiagramId);
+    workspace = await application.setStarredDiagram(set.id, diagramId, false);
+    expect(workspace.diagramSets[0].featuredViewIds.diagram).toBe(secondDiagramId);
+    workspace = await application.setStarredDiagram(set.id, secondDiagramId, false);
+    expect(workspace.diagramSets[0].featuredViewIds.diagram).toBeUndefined();
+    await expect(application.setStarredDiagram(set.id, "diagram-missing", true))
+      .rejects.toThrow(/unknown diagram/);
     await expect(readFile(path.join(
       root, ".diagrams", "imports", "diagrams", `${diagramId}.json`
     ), "utf8")).resolves.toContain('"origin": "imported"');
@@ -392,8 +480,12 @@ describe("DiagramApplication", () => {
 
     workspace = await application.renameImportedDiagram(diagramId, "Renamed global diagram");
     expect(workspace.diagrams[diagramId].name).toBe("Renamed global diagram");
+    workspace = await application.setStarredDiagram(set.id, diagramId, true);
     workspace = await application.archiveImportedDiagram(diagramId);
     expect(workspace.diagrams[diagramId].archivedAt).toBeTruthy();
+    expect(workspace.diagramSets[0].featuredViewIds.diagram).toBeUndefined();
+    await expect(application.setStarredDiagram(set.id, diagramId, true))
+      .rejects.toThrow(/archived diagrams/);
     workspace = await application.archiveImportedDiagramComponent(componentId);
     expect(workspace.diagramComponents[componentId].archivedAt).toBeTruthy();
   });
@@ -418,9 +510,20 @@ describe("DiagramApplication", () => {
     expect(entitySet.entities[0].sourceRanges[0].originalLines).toEqual([
       "export const worker = () => true;"
     ]);
-    await writeFile(path.join(root, "fixture.ts"), "export const worker = () => false;\n", "utf8");
+    await writeFile(
+      path.join(root, "fixture.ts"),
+      "export const worker = () => false;\nexport const surrounding = true;\n",
+      "utf8"
+    );
     await expect(application.sourceSnippet(set.id, entitySet.entities[0].id, 0))
-      .resolves.toMatchObject({ lines: ["export const worker = () => true;"] });
+      .resolves.toMatchObject({
+        startLine: 1,
+        lines: [
+          "export const worker = () => true;",
+          "export const surrounding = true;",
+          ""
+        ]
+      });
     const flowTemplate = workspace.systemPromptTemplates["flow-first"];
     workspace = await application.saveSystemPromptTemplate({
       id: flowTemplate.id,

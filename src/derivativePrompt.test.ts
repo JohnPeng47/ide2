@@ -20,6 +20,7 @@ const diagram = (
   schemaVersion: SCHEMA_VERSION,
   id,
   diagramSetId: "set-one",
+  viewKind: "diagram",
   handle,
   name: handle.replaceAll("-", " "),
   ascii: `[${handle}]`,

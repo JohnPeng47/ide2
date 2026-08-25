@@ -38,6 +38,7 @@ const diagramSet: DiagramSetRecord = {
   initialPrompt: "Show queue ownership",
   sourceCheckoutRoot: "/repo",
   codeEntitiesSetId: "entities-one",
+  featuredViewIds: {},
   diagramIds: ["diagram-one"],
   diagramComponentIds: ["component-one"],
   generationBatchIds: [],
@@ -77,6 +78,14 @@ const codeEntities: CodeEntitiesSetRecord = {
       category: "state",
       summary: "Pending work",
       sourceRanges: [{ path: "src/queue.ts", startLine: 1, endLine: 10 }]
+    },
+    {
+      id: "entity-unused",
+      handle: "unused",
+      label: "Unused",
+      category: "operation",
+      summary: "Not attached to the foundation",
+      sourceRanges: [{ path: "src/unused.ts", startLine: 1, endLine: 3 }]
     }
   ]
 };
@@ -85,6 +94,7 @@ const diagram: DiagramRecord = {
   schemaVersion: SCHEMA_VERSION,
   id: "diagram-one",
   diagramSetId: "set-one",
+  viewKind: "diagram",
   handle: "current-flow",
   name: "Current flow",
   ascii: "queue -> worker",
@@ -97,6 +107,7 @@ const diagram: DiagramRecord = {
 
 const buildPrompt = (input: {
   outputKind: "diagram" | "diagram-component";
+  viewKind?: "diagram" | "call-graph" | "dir-view";
   instruction: string;
   selectedCodeEntityIds: string[];
   profileId?: string;
@@ -109,6 +120,7 @@ const buildPrompt = (input: {
   diagrams: [diagram],
   components: [component],
   outputKind: input.outputKind,
+  viewKind: input.viewKind,
   modelId: "gpt-5.6-sol",
   profile: createBuiltInSystemPromptTemplates("2026-01-01T00:00:00Z")
     .find((profile) => profile.id === (input.profileId ?? "default"))!,
@@ -243,6 +255,100 @@ describe("createGenerationPromptConfig", () => {
     });
     expect(config.systemPrompt.rendered).toContain("Emphasize directional control and data flow.");
     expect(config.contextPrompt.rendered).toContain("Show the queue");
+  });
+
+  it("requires and injects starred prerequisite views for auxiliary generation", () => {
+    const auxiliarySet = {
+      ...diagramSet,
+      featuredViewIds: { diagram: diagram.id }
+    };
+    const callGraphPrompt = createGenerationPromptConfig({
+      id: "prompt-call-graph",
+      diagramSet: auxiliarySet,
+      codeEntities,
+      diagrams: [diagram],
+      components: [],
+      outputKind: "diagram",
+      viewKind: "call-graph",
+      modelId: "gpt-5.6-sol",
+      profile: createBuiltInSystemPromptTemplates("2026-01-01T00:00:00Z")[0],
+      instruction: "Generate an ASCII call graph based on the foundation diagram.",
+      selectedCodeEntityIds: ["entity-unused"],
+      createdAt: "2026-01-01T00:00:00Z"
+    });
+    expect(callGraphPrompt.config.viewKind).toBe("call-graph");
+    expect(callGraphPrompt.config.references).toEqual([
+      expect.objectContaining({ targetId: diagram.id, promptRepresentation: expect.stringContaining(diagram.ascii) })
+    ]);
+    expect(callGraphPrompt.config.omittedReferences).toBeUndefined();
+    expect(callGraphPrompt.config.systemPrompt.rendered).toContain("source-backed call graph");
+    expect(callGraphPrompt.config.selectedCodeEntityIds).toEqual(["entity-queue"]);
+    expect(callGraphPrompt.config.contextPrompt.rendered).toContain("Immutable CodeEntities:\nCodeEntity @entity/queue");
+    expect(callGraphPrompt.config.contextPrompt.rendered).not.toContain("@entity/unused");
+    expect(callGraphPrompt.config.contextPrompt.rendered).not.toContain(diagramSet.initialPrompt);
+    expect(callGraphPrompt.config.contextPrompt.rendered).not.toContain("PREVIOUS PROMPT");
+
+    expect(() => createGenerationPromptConfig({
+      id: "prompt-dir-view-missing-call-graph",
+      diagramSet: auxiliarySet,
+      codeEntities,
+      diagrams: [diagram],
+      components: [],
+      outputKind: "diagram",
+      viewKind: "dir-view",
+      modelId: "gpt-5.6-sol",
+      profile: createBuiltInSystemPromptTemplates("2026-01-01T00:00:00Z")[0],
+      instruction: "Show relevant files",
+      selectedCodeEntityIds: [],
+      createdAt: "2026-01-01T00:00:00Z"
+    })).toThrow(/star a Call Graph/);
+
+    const companionCallGraph: DiagramRecord = {
+      ...diagram,
+      id: "diagram-call-graph",
+      viewKind: "call-graph",
+      handle: "queue-calls",
+      name: "Queue calls",
+      ascii: "entry --> queue",
+      codeEntityIds: ["entity-queue", "entity-unused"],
+      basedOnDiagramId: diagram.id
+    };
+    const directorySet = {
+      ...auxiliarySet,
+      featuredViewIds: { diagram: diagram.id, "call-graph": companionCallGraph.id }
+    };
+
+    const directory = createGenerationPromptConfig({
+      ...{
+        id: "prompt-dir-view",
+        diagramSet: directorySet,
+        codeEntities,
+        diagrams: [diagram, companionCallGraph],
+        components: [],
+        outputKind: "diagram" as const,
+        viewKind: "dir-view" as const,
+        modelId: "gpt-5.6-sol" as const,
+        profile: createBuiltInSystemPromptTemplates("2026-01-01T00:00:00Z")[0],
+        instruction: "Show relevant files",
+        selectedCodeEntityIds: ["entity-queue"],
+        createdAt: "2026-01-01T00:00:00Z"
+      }
+    });
+    expect(directory.config.references.map((reference) => reference.targetId))
+      .toEqual([diagram.id, companionCallGraph.id]);
+    expect(directory.config.contextPrompt.rendered).toContain("Immutable companion Call Graph:");
+    expect(directory.config.contextPrompt.rendered).toContain(companionCallGraph.ascii);
+    expect(directory.config.contextPrompt.rendered).toContain("Immutable CodeEntities:\nCodeEntity @entity/queue");
+    expect(directory.config.contextPrompt.rendered).toContain("CodeEntity @entity/unused");
+    expect(directory.config.contextPrompt.rendered).toContain("Immutable repository path inventory:\n- src/queue.ts");
+    expect(directory.config.contextPrompt.rendered).toContain("- src/unused.ts");
+
+    expect(() => buildPrompt({
+      outputKind: "diagram",
+      viewKind: "call-graph",
+      instruction: "Show runtime calls",
+      selectedCodeEntityIds: []
+    })).toThrow(/star a main Diagram/);
   });
 
   it("rejects unknown references", () => {

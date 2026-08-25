@@ -2,6 +2,7 @@ import type {
   ArtifactImportInput,
   CodeEntityPromptTemplateRecord,
   DiagramModelId,
+  DiagramViewKind,
   DiagramSelectionBounds,
   GenerationDerivationRecord,
   GenerationOutputKind,
@@ -328,6 +329,23 @@ export async function archiveDiagram(
   return response.json() as Promise<WorkspaceSnapshot>;
 }
 
+export async function setStarredDiagram(
+  setId: string,
+  diagramId: string,
+  starred: boolean
+): Promise<WorkspaceSnapshot> {
+  const response = await fetch(
+    `/api/diagram-sets/${encodeURIComponent(setId)}/diagrams/${encodeURIComponent(diagramId)}/star`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ starred })
+    }
+  );
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<WorkspaceSnapshot>;
+}
+
 export async function captureDiagramComponent(
   setId: string,
   diagramId: string,
@@ -381,6 +399,7 @@ export async function generateArtifacts(
     selectedCodeEntityIds: string[];
     count: number;
     outputKind: GenerationOutputKind;
+    viewKind?: DiagramViewKind;
     modelId: DiagramModelId;
     promptProfileId: GenerationPromptProfileId;
     referenceSelections?: GenerationReferenceSelection[];

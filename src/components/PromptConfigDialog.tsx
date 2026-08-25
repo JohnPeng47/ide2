@@ -23,7 +23,7 @@ export function PromptConfigDialog(props: {
         </header>
         <div className="prompt-config-body">
           <dl>
-            <div><dt>OUTPUT</dt><dd>{props.config.outputKind}</dd></div>
+            <div><dt>OUTPUT</dt><dd>{props.config.viewKind ?? props.config.outputKind}</dd></div>
             <div><dt>MODEL</dt><dd>{props.config.modelId}</dd></div>
             <div><dt>STYLE</dt><dd>{props.config.systemPrompt.profileId}</dd></div>
             <div><dt>CONFIG</dt><dd>{props.config.id}</dd></div>

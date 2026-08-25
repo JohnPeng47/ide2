@@ -11,6 +11,7 @@ const diagramSet: DiagramSetRecord = {
   initialPrompt: "Show the world step and observation flow",
   sourceCheckoutRoot: "/repo",
   codeEntitiesSetId: "entities-one",
+  featuredViewIds: {},
   diagramIds: [],
   diagramComponentIds: [],
   generationBatchIds: [],

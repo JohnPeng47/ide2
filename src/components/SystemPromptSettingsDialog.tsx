@@ -2,13 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   CodeEntityPromptKind,
   CodeEntityPromptTemplateRecord,
-  GenerationOutputKind,
+  GenerationTargetKind,
   SystemPromptTemplateRecord
 } from "../domain";
 import { renderSystemPromptTemplate } from "../prompt";
 
 export type PromptTemplateFamily = "generation" | "code-entities";
-type PromptKind = GenerationOutputKind | CodeEntityPromptKind;
+type PromptKind = GenerationTargetKind | CodeEntityPromptKind;
 type AnyTemplate = SystemPromptTemplateRecord | CodeEntityPromptTemplateRecord;
 
 export interface PromptTemplateDraft {
@@ -19,12 +19,14 @@ export interface PromptTemplateDraft {
 }
 
 const familyKinds: Record<PromptTemplateFamily, PromptKind[]> = {
-  generation: ["diagram", "diagram-component"],
+  generation: ["diagram", "call-graph", "dir-view", "diagram-component"],
   "code-entities": ["code-entity-identification", "code-entity-compaction"]
 };
 
 const kindLabels: Record<PromptKind, string> = {
   diagram: "DIAGRAM",
+  "call-graph": "CALL GRAPH",
+  "dir-view": "DIR VIEW",
   "diagram-component": "COMPONENT",
   "code-entity-identification": "IDENTIFICATION",
   "code-entity-compaction": "COMPACTION"
@@ -99,12 +101,14 @@ export function SystemPromptSettingsDialog(props: {
     const kinds = familyKinds[family];
     if (kinds.some((kind) => !draft.prompts[kind]?.trim())) {
       return family === "generation"
-        ? "Both Diagram and DiagramComponent prompts are required."
+        ? "Diagram, Call Graph, Dir View, and DiagramComponent prompts are required."
         : "Both identification and compaction criteria are required.";
     }
     if (family === "generation") {
       try {
         renderSystemPromptTemplate(draft.prompts.diagram!, "diagram");
+        renderSystemPromptTemplate(draft.prompts["call-graph"]!, "call-graph");
+        renderSystemPromptTemplate(draft.prompts["dir-view"]!, "dir-view");
         renderSystemPromptTemplate(draft.prompts["diagram-component"]!, "diagram-component");
       } catch (caught) {
         return caught instanceof Error ? caught.message : "The prompt template is invalid.";
@@ -117,7 +121,7 @@ export function SystemPromptSettingsDialog(props: {
     const value = draft.prompts[promptKind] ?? "";
     if (family === "code-entities") return value;
     try {
-      return renderSystemPromptTemplate(value, promptKind as GenerationOutputKind);
+      return renderSystemPromptTemplate(value, promptKind as GenerationTargetKind);
     } catch {
       return "Fix template errors to see the resolved prompt.";
     }

@@ -20,12 +20,12 @@ function memoryStorage(): Storage {
 }
 
 const draft: GenerationPageDraft = {
-  version: 1,
+  version: 3,
   prompt: "Refine @diagram/source",
   selectedCodeEntityIds: ["entity-a"],
   excludedReferenceKeys: ["diagram:diagram-source"],
   count: 2,
-  outputKind: "diagram-component",
+  targetKind: "diagram-component",
   modelId: "gpt-5.6-terra",
   promptProfileId: "compact"
 };

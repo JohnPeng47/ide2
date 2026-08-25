@@ -1,10 +1,11 @@
 import { useMemo, useRef, useState } from "react";
 import type {
   CodeEntitiesSetRecord,
+  CodeEntityRecord,
   DiagramModelId,
   DiagramComponentRecord,
   DiagramRecord,
-  GenerationOutputKind,
+  GenerationTargetKind,
   GenerationPromptProfileId,
   PromptReference,
   SystemPromptTemplateRecord
@@ -18,7 +19,11 @@ export function GeneratorOptions(props: {
   codeEntities: CodeEntitiesSetRecord;
   diagrams: DiagramRecord[];
   components: DiagramComponentRecord[];
-  outputKind: GenerationOutputKind;
+  targetKind: GenerationTargetKind;
+  foundationDiagram?: DiagramRecord;
+  companionCallGraph?: DiagramRecord;
+  immutableCodeEntities: CodeEntityRecord[];
+  foundationRepositoryPaths: string[];
   modelId: DiagramModelId;
   promptProfileId: GenerationPromptProfileId;
   promptProfiles: SystemPromptTemplateRecord[];
@@ -36,7 +41,7 @@ export function GeneratorOptions(props: {
   onPrompt: (value: string) => void;
   onToggleDiagramReference: (key: string) => void;
   onCount: (value: number) => void;
-  onOutputKind: (value: GenerationOutputKind) => void;
+  onTargetKind: (value: GenerationTargetKind) => void;
   onModel: (value: DiagramModelId) => void;
   onPromptProfile: (value: GenerationPromptProfileId) => void;
   onGenerate: () => void;
@@ -66,6 +71,16 @@ export function GeneratorOptions(props: {
     ...unresolvedHistoricalReferences,
     ...unresolvedMentions
   ])];
+  const auxiliary = props.targetKind === "call-graph" || props.targetKind === "dir-view";
+  const auxiliaryReady = Boolean(props.foundationDiagram)
+    && (props.targetKind !== "dir-view" || Boolean(props.companionCallGraph));
+  const targetLabel = props.targetKind === "diagram-component"
+    ? "component"
+    : props.targetKind === "call-graph"
+      ? "call graph"
+      : props.targetKind === "dir-view"
+        ? "directory view"
+        : "diagram";
 
   const updatePrompt = (value: string, cursor: number) => {
     props.onPrompt(value);
@@ -95,7 +110,7 @@ export function GeneratorOptions(props: {
       <header className="pane-header">
         <div>
           <span className="eyebrow">GENERATION VIEW</span>
-          <h2>{props.outputKind === "diagram" ? "Create diagram variants" : "Create component variants"}</h2>
+          <h2>Create {targetLabel} variants</h2>
         </div>
         <div className="generation-pane-actions">
           {props.onBack ? (
@@ -115,20 +130,87 @@ export function GeneratorOptions(props: {
         <button
           type="button"
           role="radio"
-          aria-checked={props.outputKind === "diagram"}
-          className={props.outputKind === "diagram" ? "is-active" : ""}
+          aria-checked={props.targetKind === "diagram"}
+          className={props.targetKind === "diagram" ? "is-active" : ""}
           disabled={props.generating}
-          onClick={() => props.onOutputKind("diagram")}
+          onClick={() => props.onTargetKind("diagram")}
         >Diagram</button>
         <button
           type="button"
           role="radio"
-          aria-checked={props.outputKind === "diagram-component"}
-          className={props.outputKind === "diagram-component" ? "is-active" : ""}
+          aria-checked={props.targetKind === "call-graph"}
+          className={props.targetKind === "call-graph" ? "is-active" : ""}
+          disabled={props.generating || !props.foundationDiagram}
+          title={props.foundationDiagram ? undefined : "Star a main Diagram first"}
+          onClick={() => props.onTargetKind("call-graph")}
+        >Call Graph</button>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={props.targetKind === "dir-view"}
+          className={props.targetKind === "dir-view" ? "is-active" : ""}
+          disabled={props.generating || !props.foundationDiagram || !props.companionCallGraph}
+          title={!props.foundationDiagram
+            ? "Star a main Diagram first"
+            : !props.companionCallGraph
+              ? "Generate and star a Call Graph first"
+              : undefined}
+          onClick={() => props.onTargetKind("dir-view")}
+        >Dir View</button>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={props.targetKind === "diagram-component"}
+          className={props.targetKind === "diagram-component" ? "is-active" : ""}
           disabled={props.generating}
-          onClick={() => props.onOutputKind("diagram-component")}
+          onClick={() => props.onTargetKind("diagram-component")}
         >DiagramComponent</button>
       </div>
+      {auxiliary ? (
+        <section className={`generation-immutable-context${auxiliaryReady ? "" : " is-missing"}`} aria-label="Immutable generation context">
+          <header>
+            <span className="eyebrow">IMMUTABLE CONTEXT</span>
+            <span>Always included</span>
+          </header>
+          <div className="generation-foundation" role="status">
+            <span className="eyebrow">FOUNDATION DIAGRAM</span>
+            {props.foundationDiagram ? (
+              <><strong>★ {props.foundationDiagram.name}</strong><code>@diagram/{props.foundationDiagram.handle}</code></>
+            ) : (
+              <strong>Star a main Diagram before generating this view.</strong>
+            )}
+          </div>
+          {props.targetKind === "dir-view" ? (
+            <div className="generation-companion" role="status">
+              <span className="eyebrow">COMPANION CALL GRAPH</span>
+              {props.companionCallGraph ? (
+                <><strong>★ {props.companionCallGraph.name}</strong><code>@diagram/{props.companionCallGraph.handle}</code></>
+              ) : (
+                <strong>Generate and star a Call Graph before generating this view.</strong>
+              )}
+            </div>
+          ) : null}
+          <div className="generation-code-entities">
+            <span className="eyebrow">CODE ENTITIES · {props.immutableCodeEntities.length}</span>
+            {props.immutableCodeEntities.length ? (
+              <ul>{props.immutableCodeEntities.map((entity) => (
+                <li key={entity.id}>
+                  <strong>{entity.label}</strong>
+                  <code>@entity/{entity.handle}</code>
+                </li>
+              ))}</ul>
+            ) : (
+              <strong className="generation-context-empty">No attached CodeEntities.</strong>
+            )}
+          </div>
+          {props.targetKind === "dir-view" ? (
+            <div className="generation-repository-paths">
+              <span className="eyebrow">REPOSITORY PATHS · {props.foundationRepositoryPaths.length}</span>
+              <ul>{props.foundationRepositoryPaths.map((path) => <li key={path}><code>{path}</code></li>)}</ul>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
       <div className="prompt-field">
         <div className="generation-prompt-heading">
           <label htmlFor="diagram-prompt">GENERATION INSTRUCTION</label>
@@ -152,7 +234,7 @@ export function GeneratorOptions(props: {
           ref={textareaRef}
           id="diagram-prompt"
           value={props.prompt}
-          disabled={props.generating}
+          disabled={props.generating || (auxiliary && !auxiliaryReady)}
           placeholder="Use @ to reference a CodeEntity, Diagram, or DiagramComponent…"
           spellCheck={false}
           onChange={(event) => updatePrompt(event.target.value, event.target.selectionStart)}
@@ -168,7 +250,11 @@ export function GeneratorOptions(props: {
             ))}
           </div>
         ) : null}
-        <p className="field-help">Type @ for entity, diagram, and component references. Selected entities are included even without an explicit mention.</p>
+        <p className="field-help">{auxiliary
+          ? props.targetKind === "dir-view"
+            ? "The starred foundation Diagram, starred Call Graph, and their attached CodeEntities are always included. Type @ to add another explicit reference."
+            : "The foundation Diagram and its attached CodeEntities are always included. Type @ to add another explicit reference."
+          : "Type @ for entity, diagram, and component references. Selected entities are included even without an explicit mention."}</p>
         {props.diagramReferences.length > 0 ? (
           <section className="prompt-reference-controls" aria-label="Referenced diagrams">
             <header>
@@ -231,12 +317,12 @@ export function GeneratorOptions(props: {
         <button
           type="button"
           className="button button--primary generate-action"
-          disabled={props.generating}
+          disabled={props.generating || (auxiliary && !auxiliaryReady)}
           onClick={props.onGenerate}
         >
           {props.generating
             ? `running ${props.count} agents…`
-            : `generate ${props.count} ${props.outputKind === "diagram" ? "diagrams" : "components"} →`}
+            : `generate ${props.count} ${targetLabel}${props.count === 1 ? "" : "s"} →`}
         </button>
       </div>
 
