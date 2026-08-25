@@ -34,6 +34,7 @@ import { DiagramContextPanel, type ContextTab } from "./components/DiagramContex
 import { DiagramSetPicker } from "./components/DiagramSetPicker";
 import type { CodeEntityReveal } from "./components/CodeEntitiesPanel";
 import { DIAGRAM_VIEW_OPTIONS, DiagramView, EmptyDiagramView } from "./components/DiagramView";
+import { ExperimentViewerPage } from "./components/ExperimentViewerPage";
 import { GeneratorOptions } from "./components/GeneratorOptions";
 import { ImportArtifactDialog } from "./components/ImportArtifactDialog";
 import { PaneApi } from "./panes/api";
@@ -118,7 +119,27 @@ function createStudioPaneApi(): PaneApi {
   }, PRIMARY_PANE_ID, { placement: "right", ratio, splitId: ROOT_SPLIT_ID }));
 }
 
+function pageFromPath(): "studio" | "experiments" {
+  return window.location.pathname.startsWith("/experiments") ? "experiments" : "studio";
+}
+
 export function App() {
+  const [page, setPage] = useState(pageFromPath);
+  useEffect(() => {
+    const onPopState = () => setPage(pageFromPath());
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+  const navigate = (next: "studio" | "experiments") => {
+    window.history.pushState({}, "", next === "experiments" ? "/experiments" : "/");
+    setPage(next);
+  };
+  return page === "experiments"
+    ? <ExperimentViewerPage onStudio={() => navigate("studio")} />
+    : <StudioPage onExperiments={() => navigate("experiments")} />;
+}
+
+function StudioPage(props: { onExperiments: () => void }) {
   const refBuffer = useRefBuffer();
   const [paneApi] = useState(createStudioPaneApi);
   const [workspace, setWorkspace] = useState<WorkspaceSnapshot | null>(null);
@@ -474,6 +495,7 @@ export function App() {
     const shouldPoll = workspace !== null && (
       workspace.diagramSets.length === 0
       || activeSet?.readiness === "collecting"
+      || activeSet?.readiness === "failed"
       || initialGenerationPending
     );
     if (!shouldPoll) return undefined;
@@ -1347,6 +1369,7 @@ export function App() {
           </button>
           <button type="button" className={screen === "generation" ? "is-active" : ""} onClick={() => setScreen("generation")}>GENERATE</button>
           <button type="button" className="header-import" onClick={() => setImportOpen(true)}>IMPORT</button>
+          <button type="button" onClick={props.onExperiments}>EXPERIMENTS</button>
           <div className="settings-menu-shell">
             <button
               type="button"

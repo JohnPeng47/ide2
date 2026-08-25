@@ -527,3 +527,119 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .import-dialog form > footer { flex-wrap: wrap; }
   .import-dialog form > footer > span { width: 100%; }
 }
+
+.experiment-shell { display: grid; height: 100dvh; min-width: 0; grid-template-rows: 58px minmax(0, 1fr); background: var(--bg); }
+.experiment-header-summary { display: flex; min-width: 0; flex-direction: column; gap: 0.25rem; text-align: center; }
+.experiment-header-summary strong { overflow: hidden; font: 11px var(--font-mono); text-overflow: ellipsis; white-space: nowrap; }
+.experiment-layout { display: grid; min-width: 0; min-height: 0; grid-template-columns: minmax(320px, 380px) minmax(0, 1fr) minmax(280px, 330px); overflow: hidden; }
+.experiment-tree-panel, .experiment-viewer-panel, .experiment-inspector { display: flex; min-width: 0; min-height: 0; flex-direction: column; background: var(--bg); }
+.experiment-tree-panel { border-right: 1px solid var(--gutter); }
+.experiment-inspector { border-left: 1px solid var(--gutter); }
+.experiment-panel-header { display: flex; min-height: 72px; flex: none; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--border); padding: 0.85rem 1rem; }
+.experiment-panel-header h2 { margin-top: 0.25rem; overflow: hidden; font-size: 0.95rem; text-overflow: ellipsis; white-space: nowrap; }
+.experiment-axis-range { color: var(--accent-purple); font: 9px var(--font-mono); white-space: nowrap; }
+.experiment-replicate-nav { display: flex; flex: none; align-items: center; gap: 0.45rem; color: var(--accent-purple); font: 8px var(--font-mono); white-space: nowrap; }
+.experiment-replicate-nav button { display: grid; width: 25px; height: 25px; place-items: center; border: 1px solid var(--gutter); border-radius: 3px; background: transparent; color: var(--accent-cyan); font: 11px var(--font-mono); }
+.experiment-replicate-nav button:hover:not(:disabled) { border-color: var(--accent-cyan); }
+.experiment-viewer-actions { display: flex; flex: none; align-items: center; gap: 0.65rem; }
+.dataset-add-current { padding: 0.42rem 0.58rem; font-size: 9px; white-space: nowrap; }
+.dataset-create { padding: 0.38rem 0.52rem; color: var(--accent-green); font-size: 9px; white-space: nowrap; }
+.experiment-tree-mode { display: grid; flex: none; grid-template-columns: repeat(2, minmax(0, 1fr)); border-bottom: 1px solid var(--border); }
+.experiment-tree-mode button { min-height: 34px; border: 0; border-right: 1px solid var(--border); background: transparent; color: var(--muted); font: 700 9px var(--font-mono); letter-spacing: 0.08em; }
+.experiment-tree-mode button:last-child { border-right: 0; }
+.experiment-tree-mode button.is-active { box-shadow: inset 0 -2px var(--accent-cyan); color: var(--accent-cyan); }
+.experiment-tree-mode button span { margin-left: 0.3rem; color: var(--accent-purple); }
+.dataset-tree-dataset strong { color: var(--accent-green); }
+.dataset-tree-dataset em { color: var(--muted); font-size: 8px; }
+.dataset-tree-item { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; }
+.dataset-tree-item strong { color: var(--accent-purple); }
+.dataset-tree-item em { max-width: 12rem; overflow: hidden; color: var(--accent-yellow); font-size: 8px; text-overflow: ellipsis; }
+.dataset-tree-item.is-current { background: rgb(136 192 208 / 9%); box-shadow: inset 2px 0 var(--accent-cyan); }
+.dataset-status { flex: none; overflow: hidden; border-top: 1px solid var(--accent-green); padding: 0.5rem 0.75rem; color: var(--accent-green); font: 9px var(--font-mono); text-overflow: ellipsis; white-space: nowrap; }
+.dataset-view-empty { margin: auto; max-width: 30rem; line-height: 1.55; }
+.dataset-label-editor { display: flex; flex-direction: column; gap: 0.5rem; }
+.dataset-label-editor input { width: 100%; border: 1px solid var(--gutter); border-radius: 3px; padding: 0.45rem 0.55rem; background: transparent; font: 10px var(--font-mono); }
+.dataset-label-editor small { color: var(--muted); font: 8px/1.4 var(--font-mono); }
+.dataset-label-editor button { align-self: end; }
+.dataset-remove-item { margin: 0.8rem; border-color: var(--accent-red); color: var(--accent-red); }
+.dataset-remove-item:hover:not(:disabled) { background: rgb(191 97 106 / 8%); border-color: var(--accent-red); color: var(--accent-red); }
+.dataset-dialog-backdrop { position: fixed; z-index: 35; display: grid; inset: 0; place-items: center; padding: 1.5rem; background: rgb(5 7 10 / 82%); backdrop-filter: blur(3px); }
+.dataset-dialog { display: flex; width: min(590px, 100%); overflow: hidden; border: 1px solid var(--gutter); border-radius: 6px; background: var(--bg); box-shadow: 0 24px 90px rgb(0 0 0 / 55%); flex-direction: column; }
+.dataset-dialog > header { display: flex; align-items: start; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--gutter); padding: 1rem 1.1rem; }
+.dataset-dialog > header h2 { margin-top: 0.25rem; font-size: 1rem; }
+.dataset-dialog > header p { margin-top: 0.25rem; color: var(--muted); font: 9px var(--font-mono); }
+.dataset-dialog > header > button { border: 0; background: transparent; color: var(--muted); font: 9px var(--font-mono); }
+.dataset-dialog > label { display: flex; margin: 1rem 1.1rem 0; flex-direction: column; gap: 0.4rem; }
+.dataset-dialog > label > span { color: var(--muted); font: 700 9px var(--font-mono); letter-spacing: 0.1em; }
+.dataset-dialog input, .dataset-dialog select { width: 100%; min-height: 36px; border: 1px solid var(--gutter); border-radius: 4px; padding: 0.5rem 0.6rem; background: var(--bg); font: 11px var(--font-mono); }
+.dataset-dialog label small { color: var(--muted); font: 9px var(--font-mono); }
+.dataset-dialog .inline-error { margin: 0.7rem 1.1rem 0; color: var(--accent-red); font: 9px var(--font-mono); }
+.dataset-dialog > footer { display: flex; align-items: center; gap: 0.55rem; margin-top: 1rem; border-top: 1px solid var(--border); padding: 0.75rem 1.1rem; }
+.dataset-dialog > footer > span { margin-right: auto; color: var(--muted); font: 8px var(--font-mono); }
+.experiment-tree-controls { display: grid; flex: none; grid-template-columns: minmax(0, 1fr) 105px; gap: 0.55rem; border-bottom: 1px solid var(--border); padding: 0.7rem; }
+.experiment-tree-controls label { display: flex; min-width: 0; flex-direction: column; gap: 0.3rem; color: var(--muted); font: 600 8px var(--font-mono); letter-spacing: 0.1em; }
+.experiment-tree-controls select { width: 100%; min-width: 0; border: 1px solid var(--gutter); border-radius: 3px; padding: 0.35rem 0.45rem; background: var(--bg); color: var(--fg); font: 10px var(--font-mono); }
+.experiment-tree { min-width: 0; min-height: 0; flex: 1; overflow: auto; padding: 0.75rem 0 1.5rem; font: 10px/1.4 var(--font-mono); }
+.experiment-tree-project + .experiment-tree-project { margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 0.75rem; }
+.experiment-tree-project-title { min-width: max-content; padding: 0.25rem 0.85rem 0.45rem; color: var(--accent-cyan); font-weight: 700; letter-spacing: 0.06em; }
+.experiment-tree-line { display: flex; width: 100%; min-width: max-content; min-height: 25px; align-items: baseline; border: 0; padding: 0.28rem 0.85rem; background: transparent; color: var(--fg); font: inherit; text-align: left; white-space: nowrap; }
+button.experiment-tree-line:hover { background: rgb(255 255 255 / 3%); }
+.experiment-tree-line.is-current { background: rgb(136 192 208 / 9%); box-shadow: inset 2px 0 var(--accent-cyan); }
+.experiment-tree-prefix { flex: none; color: var(--gutter); white-space: pre; }
+.experiment-tree-line strong { margin-right: 0.55rem; font-weight: 700; }
+.experiment-tree-line > span:last-child { max-width: 18rem; overflow: hidden; color: var(--muted); text-overflow: ellipsis; }
+.experiment-tree-line em { margin-left: auto; padding-left: 0.8rem; color: var(--accent-purple); font-style: normal; font-weight: 700; }
+.experiment-tree-experiment strong { color: var(--accent-cyan); }
+.experiment-tree-experiment em { color: var(--accent-green); font-size: 8px; }
+.experiment-tree-iteration strong { color: var(--accent-purple); }
+.experiment-tree-group.is-pass strong { color: var(--accent-green); }
+.experiment-tree-group.is-below strong { color: var(--accent-red); }
+.experiment-tree-group.is-pending strong { color: var(--accent-yellow); }
+.experiment-tree-axis-line.is-current strong, .experiment-tree-value.is-current strong, .experiment-tree-replicate.is-current strong { color: var(--accent-cyan); }
+.experiment-tree-value strong { color: var(--accent-yellow); }
+.experiment-tree-replicate strong { color: var(--accent-purple); }
+.experiment-diagram-grid { display: grid; min-width: 0; min-height: 0; flex: 1; overflow: auto; grid-auto-columns: minmax(360px, 1fr); grid-auto-flow: column; gap: 1px; background: var(--gutter); }
+.experiment-diagram-grid.count-1 { grid-auto-columns: minmax(100%, 1fr); }
+.experiment-diagram-card { display: flex; min-width: 0; min-height: 0; overflow: hidden; background: var(--bg); flex-direction: column; }
+.experiment-diagram-card > header { display: flex; min-height: 45px; flex: none; align-items: center; justify-content: space-between; gap: 0.65rem; border-bottom: 1px solid var(--border); padding: 0.55rem 0.7rem; }
+.experiment-diagram-card > header > div { display: flex; min-width: 0; align-items: baseline; gap: 0.55rem; }
+.experiment-diagram-card > header span { color: var(--accent-purple); font: 700 9px var(--font-mono); }
+.experiment-diagram-card > header strong { overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.experiment-diagram-card > header code { color: var(--muted); font: 9px var(--font-mono); }
+.experiment-ascii-stage { display: grid; min-width: 0; min-height: 0; flex: 1; place-items: start center; overflow: auto; padding: 1.2rem; }
+.experiment-ascii-stage pre { min-width: max-content; color: var(--fg); font: 10px/1.35 var(--font-mono); }
+.experiment-diagram-card > footer { display: flex; min-height: 35px; flex: none; align-items: center; gap: 0.8rem; overflow: hidden; border-top: 1px solid var(--border); padding: 0.45rem 0.7rem; color: var(--muted); font: 8px var(--font-mono); white-space: nowrap; }
+.experiment-loading { display: flex; min-height: 0; flex: 1; align-items: center; justify-content: center; gap: 0.6rem; color: var(--muted); font: 10px var(--font-mono); }
+.experiment-error { border-top: 1px solid var(--accent-red); padding: 0.6rem 0.8rem; color: var(--accent-red); font: 10px var(--font-mono); }
+.experiment-inspector-body { min-height: 0; overflow: auto; padding-bottom: 1rem; }
+.experiment-score-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-bottom: 1px solid var(--border); }
+.experiment-score-grid > div { display: flex; min-height: 68px; flex-direction: column; justify-content: center; gap: 0.25rem; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 0.65rem 0.8rem; }
+.experiment-score-grid > div:nth-child(even) { border-right: 0; }
+.experiment-score-grid span, .experiment-inspector-body h3 { color: var(--muted); font: 600 8px var(--font-mono); letter-spacing: 0.1em; }
+.experiment-score-grid strong { color: var(--accent-green); font: 700 20px var(--font-mono); }
+.experiment-inspector-body > section:not(.experiment-score-grid), .experiment-inspector-body > details { margin: 0.8rem 0.8rem 0; border: 1px solid var(--border); padding: 0.7rem; }
+.experiment-inspector-body section p { margin-top: 0.45rem; color: var(--muted); font: 10px/1.5 var(--font-mono); }
+.experiment-inspector-body summary { color: var(--accent-cyan); cursor: pointer; font: 600 9px var(--font-mono); letter-spacing: 0.08em; }
+.experiment-inspector-body details pre { margin-top: 0.65rem; overflow: auto; color: var(--fg); font: 9px/1.5 var(--font-mono); white-space: pre-wrap; }
+.experiment-metrics { margin-top: 0.55rem; }
+.experiment-metrics > div { display: flex; justify-content: space-between; gap: 0.8rem; border-top: 1px solid var(--border); padding: 0.35rem 0; font: 9px var(--font-mono); }
+.experiment-metrics dt { color: var(--muted); text-transform: lowercase; }
+.experiment-metrics dd { color: var(--accent-yellow); }
+
+@media (max-width: 1100px) {
+  .experiment-layout { grid-template-columns: minmax(280px, 340px) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(240px, 38%); }
+  .experiment-inspector { grid-column: 1 / -1; border-top: 1px solid var(--gutter); border-left: 0; }
+  .experiment-inspector-body { display: grid; grid-template-columns: minmax(240px, 0.7fr) repeat(2, minmax(280px, 1fr)); }
+  .experiment-inspector-body > section:not(.experiment-score-grid), .experiment-inspector-body > details { margin-bottom: 0.8rem; }
+}
+
+@media (max-width: 760px) {
+  .experiment-shell { grid-template-rows: auto minmax(0, 1fr); }
+  .experiment-header { grid-template-columns: 1fr auto; }
+  .experiment-header-summary { display: none; }
+  .experiment-layout { display: flex; overflow: auto; flex-direction: column; }
+  .experiment-tree-panel { min-height: 45dvh; border-right: 0; border-bottom: 1px solid var(--gutter); }
+  .experiment-viewer-panel { min-height: 70dvh; }
+  .experiment-inspector { min-height: 50dvh; }
+  .experiment-inspector-body { display: block; }
+}

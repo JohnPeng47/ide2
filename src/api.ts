@@ -12,6 +12,14 @@ import type {
   SystemPromptTemplateRecord,
   WorkspaceSnapshot
 } from "./domain";
+import type { ExperimentCatalogSnapshot, ExperimentDiagramArtifact } from "./experimentDomain";
+import type {
+  AddDiagramDatasetItemInput,
+  AddDiagramDatasetItemResult,
+  DiagramDatasetCatalogSnapshot,
+  DiagramDatasetItemRecord,
+  DiagramDatasetSummary
+} from "./datasetDomain";
 
 async function errorFrom(response: Response): Promise<Error> {
   const payload = await response.json().catch(() => ({})) as { error?: string };
@@ -33,6 +41,96 @@ export async function fetchMappedArtifactBundle(
   const response = await fetch(`/api/artifact-bundle?${params.toString()}`, { cache: "no-store" });
   if (!response.ok) throw await errorFrom(response);
   return response.json() as Promise<MappedArtifactBundle>;
+}
+
+export async function fetchExperiments(): Promise<ExperimentCatalogSnapshot> {
+  const response = await fetch("/api/experiments", { cache: "no-store" });
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<ExperimentCatalogSnapshot>;
+}
+
+export async function fetchExperimentArtifact(input: {
+  catalogId: string;
+  axisId: string;
+  iteration: number;
+  value: number;
+  replicate: number;
+}): Promise<ExperimentDiagramArtifact> {
+  const query = new URLSearchParams({
+    axis: input.axisId,
+    iteration: String(input.iteration),
+    value: input.value.toFixed(2),
+    replicate: String(input.replicate)
+  });
+  const response = await fetch(`/api/experiments/${encodeURIComponent(input.catalogId)}/artifact?${query}`, {
+    cache: "no-store"
+  });
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<ExperimentDiagramArtifact>;
+}
+
+export async function fetchDiagramDatasets(): Promise<DiagramDatasetCatalogSnapshot> {
+  const response = await fetch("/api/diagram-datasets", { cache: "no-store" });
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<DiagramDatasetCatalogSnapshot>;
+}
+
+export async function createDiagramDataset(name: string): Promise<DiagramDatasetSummary> {
+  const response = await fetch("/api/diagram-datasets", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ name })
+  });
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<DiagramDatasetSummary>;
+}
+
+export async function addDiagramDatasetItem(
+  datasetId: string,
+  input: AddDiagramDatasetItemInput
+): Promise<AddDiagramDatasetItemResult> {
+  const response = await fetch(`/api/diagram-datasets/${encodeURIComponent(datasetId)}/items`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input)
+  });
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<AddDiagramDatasetItemResult>;
+}
+
+export async function fetchDiagramDatasetItem(datasetId: string, itemId: string): Promise<DiagramDatasetItemRecord> {
+  const response = await fetch(
+    `/api/diagram-datasets/${encodeURIComponent(datasetId)}/items/${encodeURIComponent(itemId)}`,
+    { cache: "no-store" }
+  );
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<DiagramDatasetItemRecord>;
+}
+
+export async function updateDiagramDatasetItemLabels(
+  datasetId: string,
+  itemId: string,
+  labels: string[]
+): Promise<DiagramDatasetSummary> {
+  const response = await fetch(
+    `/api/diagram-datasets/${encodeURIComponent(datasetId)}/items/${encodeURIComponent(itemId)}`,
+    {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ labels })
+    }
+  );
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<DiagramDatasetSummary>;
+}
+
+export async function removeDiagramDatasetItem(datasetId: string, itemId: string): Promise<DiagramDatasetSummary> {
+  const response = await fetch(
+    `/api/diagram-datasets/${encodeURIComponent(datasetId)}/items/${encodeURIComponent(itemId)}`,
+    { method: "DELETE" }
+  );
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<DiagramDatasetSummary>;
 }
 
 export async function deleteDiagramSet(setId: string): Promise<WorkspaceSnapshot> {

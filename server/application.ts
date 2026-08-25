@@ -404,13 +404,15 @@ export class DiagramApplication {
         if (!info.isFile()) throw new Error(`source range is not a file: ${range.path}`);
         const sourceLines = (await readFile(absolute, "utf8")).split(/\r?\n/);
         const lineCount = sourceLines.length;
-        if (range.endLine > lineCount) {
-          throw new Error(`source range exceeds ${range.path} (${lineCount} lines)`);
+        if (range.startLine > lineCount) {
+          throw new Error(`source range starts beyond ${range.path} (${lineCount} lines)`);
         }
+        const endLine = Math.min(range.endLine, lineCount);
         sourceRanges.push({
           ...range,
           id: this.store.ids.sourceRange(),
-          originalLines: sourceLines.slice(range.startLine - 1, range.endLine)
+          endLine,
+          originalLines: sourceLines.slice(range.startLine - 1, endLine)
         });
       }
       const record: CodeEntityRecord = {

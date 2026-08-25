@@ -35,6 +35,7 @@ class ParallelRuntime implements DiagramAgentRuntime {
   requestedPromptConfigIds: string[] = [];
   requestedSystemPrompts: string[] = [];
   mappingDrafts?: DiagramElementMappingDraft[];
+  entityDrafts?: CodeEntityDraft[];
   private release!: () => void;
   private readonly gate = new Promise<void>((resolve) => { this.release = resolve; });
 
@@ -43,6 +44,7 @@ class ParallelRuntime implements DiagramAgentRuntime {
     _onProgress?: (progress: AgentProgress) => void
   ): Promise<CodeEntityDraft[]> {
     this.requestedCodeEntityPromptConfigIds.push(request.promptConfig.id);
+    if (this.entityDrafts) return this.entityDrafts;
     return [{
       handle: "worker",
       label: "Worker",
@@ -254,6 +256,31 @@ describe("DiagramApplication", () => {
     expect(Object.keys(workspace.codeEntityPromptTemplates)).toEqual([builtIn.id]);
     await expect(application.deleteCodeEntityPromptTemplate(builtIn.id))
       .rejects.toThrow(/at least one CodeEntity prompt template is required/);
+  });
+
+  it("clips EOF-spanning entity ranges to the captured source", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-source-range-"));
+    roots.push(root);
+    execFileSync("git", ["init", "-q", root]);
+    await writeFile(path.join(root, "fixture.ts"), "export const worker = true;\n", "utf8");
+    execFileSync("git", ["-C", root, "add", "fixture.ts"]);
+    execFileSync("git", ["-C", root, "-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-qm", "fixture"]);
+    const runtime = new ParallelRuntime();
+    runtime.entityDrafts = [{
+      handle: "worker",
+      label: "Worker",
+      category: "operation",
+      summary: "Runs one job.",
+      sourceRanges: [{ path: "fixture.ts", startLine: 1, endLine: 99, symbol: "worker" }]
+    }];
+    const application = new DiagramApplication(new DiagramStore(root), runtime);
+    const set = await application.createDiagramSet({ path: root, name: "Range", prompt: "Show it" });
+
+    await application.collectCodeEntities(set.id);
+
+    const entity = (await application.workspace()).codeEntitySets[set.codeEntitiesSetId].entities[0];
+    expect(entity.sourceRanges[0]).toMatchObject({ startLine: 1, endLine: 2 });
+    expect(entity.sourceRanges[0].originalLines).toEqual(["export const worker = true;", ""]);
   });
 
   it("generates three initial diagrams immediately after collection", async () => {
