@@ -56,6 +56,11 @@ function parseDiagramSet(pathname: string): { setId: string } | null {
   return match ? { setId: match[1] } : null;
 }
 
+function parseRepositoryFiles(pathname: string): { setId: string } | null {
+  const match = pathname.match(/^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/files$/);
+  return match ? { setId: match[1] } : null;
+}
+
 function parseSystemPromptTemplate(pathname: string): { id: string; reset: boolean } | null {
   const match = pathname.match(/^\/api\/system-prompt-templates\/([a-z0-9][a-z0-9-]*)(\/reset)?$/);
   return match ? { id: match[1], reset: Boolean(match[2]) } : null;
@@ -345,6 +350,18 @@ export function diagramApi(projectRoot: string, diagramsDirectory = ".diagrams")
         });
         if (!response.destroyed && !response.writableEnded) response.end();
         return;
+      }
+      const repositoryFiles = parseRepositoryFiles(url.pathname);
+      if (repositoryFiles) {
+        if (request.method !== "GET") return sendJson(response, 405, { error: "method not allowed" });
+        return sendJson(
+          response,
+          200,
+          await application.listRepositoryDirectory(
+            repositoryFiles.setId,
+            url.searchParams.get("path") ?? ""
+          )
+        );
       }
       const diagramSet = parseDiagramSet(url.pathname);
       if (diagramSet) {

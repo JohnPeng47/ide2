@@ -1,6 +1,6 @@
 import { execFile, execFileSync, spawn } from "node:child_process";
 import { createServer } from "node:net";
-import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -158,8 +158,8 @@ async function controlKey(cdp, key, code, windowsVirtualKeyCode) {
   });
 }
 
-async function dragDivider(cdp) {
-  const clip = await elementClip(cdp, ".split-pane__divider");
+async function dragDivider(cdp, selector = ".split-pane__divider") {
+  const clip = await elementClip(cdp, selector);
   const x = clip.x + clip.width / 2;
   const y = clip.y + clip.height / 2;
   await cdp.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
@@ -213,6 +213,15 @@ async function pressEscape(cdp) {
   });
 }
 
+async function pressKey(cdp, key, code, windowsVirtualKeyCode) {
+  await cdp.send("Input.dispatchKeyEvent", {
+    type: "rawKeyDown", key, code, windowsVirtualKeyCode
+  });
+  await cdp.send("Input.dispatchKeyEvent", {
+    type: "keyUp", key, code, windowsVirtualKeyCode
+  });
+}
+
 const fixtureRoot = await mkdtemp(path.join(tmpdir(), "new-diagram-browser-"));
 const screenshotPath = path.join(fixtureRoot, "studio.png");
 const sourceScreenshotPath = path.join(fixtureRoot, "compacted-source.png");
@@ -225,6 +234,7 @@ const mappingScreenshotPath = path.join(fixtureRoot, "code-entity-mapping.png");
 const selectRectScreenshotPath = path.join(fixtureRoot, "select-rect.png");
 const setPickerScreenshotPath = path.join(fixtureRoot, "diagram-set-picker.png");
 const starredDiagramScreenshotPath = path.join(fixtureRoot, "starred-diagram.png");
+const fileExplorerScreenshotPath = path.join(fixtureRoot, "file-explorer.png");
 let archivedArtifactPath = "";
 let archivedComponentArtifactPath = "";
 let importedArtifactPath = "";
@@ -248,6 +258,13 @@ try {
     ].join("\n"),
     "utf8"
   );
+  await mkdir(path.join(fixtureRoot, "src", "nested"), { recursive: true });
+  await writeFile(path.join(fixtureRoot, "src", "nested", "related.ts"), "export const related = true;\n", "utf8");
+  await Promise.all(Array.from({ length: 36 }, (_, index) => writeFile(
+    path.join(fixtureRoot, `explorer-${String(index + 1).padStart(2, "0")}.txt`),
+    `${index + 1}\n`,
+    "utf8"
+  )));
   execFileSync("git", ["-C", fixtureRoot, "add", "fixture.ts"]);
   execFileSync("git", ["-C", fixtureRoot, "-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-qm", "fixture"]);
   const port = await freePort();
@@ -300,6 +317,12 @@ try {
   await withHeadlessBrowser({ url, width: 1440, height: 900 }, async ({ cdp }) => {
     await cdp.send("Page.enable");
     await cdp.send("Runtime.enable");
+    await cdp.send("Emulation.setDeviceMetricsOverride", {
+      width: 1440,
+      height: 900,
+      deviceScaleFactor: 1,
+      mobile: false
+    });
     await cdp.send("Browser.grantPermissions", {
       origin: url,
       permissions: ["clipboardReadWrite", "clipboardSanitizedWrite"]
@@ -343,6 +366,80 @@ try {
     if (initialDiagramCount !== 3) {
       throw new Error(`initialization generated ${initialDiagramCount} diagrams instead of 3`);
     }
+    await waitForSelector(cdp, ".file-explorer");
+    const fileExplorerLayout = await evaluate(cdp, `(() => {
+      const files = document.querySelector('[data-pane-id="files"]')?.getBoundingClientRect();
+      const primary = document.querySelector('[data-pane-id="primary"]')?.getBoundingClientRect();
+      const context = document.querySelector('[data-pane-id="context"]')?.getBoundingClientRect();
+      return {
+        filesLeft: files?.left,
+        filesRight: files?.right,
+        primaryLeft: primary?.left,
+        primaryRight: primary?.right,
+        contextLeft: context?.left,
+        filesTabInContext: Boolean(document.querySelector('[data-pane-id="context"] #files-tab'))
+      };
+    })()`);
+    if (!(fileExplorerLayout.filesRight <= fileExplorerLayout.primaryLeft
+      && fileExplorerLayout.primaryRight <= fileExplorerLayout.contextLeft)
+      || fileExplorerLayout.filesTabInContext) {
+      throw new Error(`file explorer was not a standalone left panel: ${JSON.stringify(fileExplorerLayout)}`);
+    }
+    await waitFor(async () => (
+      await evaluate(cdp, `document.querySelectorAll('.file-tree-row').length`)
+    ) === 38, { message: "default file explorer did not show the complete repository root" });
+    const initialFileExplorerState = await evaluate(cdp, `(() => {
+      const activeMode = document.querySelector('.file-explorer__mode-bar button.is-active');
+      const paths = Array.from(document.querySelectorAll('.file-tree-row'), (row) => row.dataset.path);
+      const scroller = document.querySelector('.file-tree-scroller');
+      const bounds = scroller.getBoundingClientRect();
+      const style = getComputedStyle(scroller);
+      const top = bounds.top + parseFloat(style.paddingTop);
+      const bottom = bounds.bottom - parseFloat(style.paddingBottom);
+      const fullyVisible = Array.from(document.querySelectorAll('.file-tree-row')).filter((row) => {
+        const rowBounds = row.getBoundingClientRect();
+        return rowBounds.top >= top - 0.5 && rowBounds.bottom <= bottom + 0.5;
+      }).length;
+      return {
+        activeMode: activeMode?.textContent.trim() ?? '',
+        paths,
+        fullyVisible,
+        scrollHeight: scroller.scrollHeight,
+        clientHeight: scroller.clientHeight
+      };
+    })()`);
+    if (initialFileExplorerState.activeMode !== "ALL FILES"
+      || initialFileExplorerState.paths.includes(".git")
+      || initialFileExplorerState.paths.includes(".diagrams")
+      || initialFileExplorerState.fullyVisible !== 34
+      || initialFileExplorerState.scrollHeight <= initialFileExplorerState.clientHeight) {
+      throw new Error(`file explorer default or density was incorrect: ${JSON.stringify(initialFileExplorerState)}`);
+    }
+    await pointerClick(cdp, '.file-tree-row[data-path="src"]');
+    await waitForSelector(cdp, '.file-tree-row[data-path="src/nested"]');
+    await pressKey(cdp, "ArrowLeft", "ArrowLeft", 37);
+    await waitFor(async () => (
+      await evaluate(cdp, `document.querySelector('.file-tree-row[data-path="src"]').getAttribute('aria-expanded')`)
+    ) === "false", { message: "ArrowLeft did not collapse the repository directory" });
+    await pressKey(cdp, "ArrowRight", "ArrowRight", 39);
+    await waitForSelector(cdp, '.file-tree-row[data-path="src/nested"]');
+    await pressKey(cdp, "ArrowRight", "ArrowRight", 39);
+    await waitFor(async () => (
+      await evaluate(cdp, `document.activeElement?.dataset.path`)
+    ) === "src/nested", { message: "ArrowRight did not move focus into the expanded directory" });
+    await pointerClick(cdp, ".file-explorer__mode-bar button:nth-child(2)");
+    await waitFor(async () => await evaluate(cdp, `(() => {
+      const rows = Array.from(document.querySelectorAll('.file-tree-row'));
+      return document.querySelector('.file-explorer__mode-bar button:nth-child(2)').getAttribute('aria-pressed') === 'true'
+        && rows.length === 1
+        && rows[0].dataset.path === 'fixture.ts';
+    })()`), { message: "CodeEntity filter did not reduce the live tree to fixture.ts" });
+    await captureScreenshot(cdp, { output: fileExplorerScreenshotPath });
+    await pointerClick(cdp, ".file-explorer__mode-bar button:nth-child(1)");
+    await waitFor(async () => await evaluate(cdp, `(
+      document.querySelector('.file-tree-row[data-path="src"]')?.getAttribute('aria-expanded') === 'true'
+      && Boolean(document.querySelector('.file-tree-row[data-path="src/nested"]'))
+    )`), { message: "ALL FILES expansion state was not restored after filtering" });
     await pointerClick(cdp, ".screen-tabs button:nth-child(2)");
     try {
       await waitForSelector(cdp, "#diagram-prompt");
@@ -354,10 +451,11 @@ try {
       throw new Error(`${error.message}: ${JSON.stringify(state)}`);
     }
 
-    const splitBefore = await evaluate(cdp, `Number(document.querySelector('[role="separator"]').getAttribute('aria-valuenow'))`);
-    await dragDivider(cdp);
+    const rootDividerSelector = '[data-split-id="studio-root"] > .split-pane__divider';
+    const splitBefore = await evaluate(cdp, `Number(document.querySelector(${JSON.stringify('[data-split-id="studio-root"] > .split-pane__divider')}).getAttribute('aria-valuenow'))`);
+    await dragDivider(cdp, rootDividerSelector);
     await waitFor(async () => {
-      const current = await evaluate(cdp, `Number(document.querySelector('[role="separator"]').getAttribute('aria-valuenow'))`);
+      const current = await evaluate(cdp, `Number(document.querySelector(${JSON.stringify('[data-split-id="studio-root"] > .split-pane__divider')}).getAttribute('aria-valuenow'))`);
       return current < splitBefore;
     }, { message: "divider drag did not resize the panes" });
 
@@ -759,13 +857,33 @@ try {
     const handleAfterRename = await evaluate(cdp, `document.querySelector('.diagram-meta code').textContent`);
     if (handleAfterRename !== stableHandle) throw new Error("diagram rename changed its stable @ handle");
     await pointerClick(cdp, ".diagram-star-toggle");
-    await waitFor(async () => await evaluate(cdp, `(async () => {
-      const workspace = await fetch('/api/workspace').then((response) => response.json());
-      const activeSet = workspace.diagramSets.find((set) => set.diagramIds.includes('${selection.id}'));
-      return document.querySelector('.diagram-star-toggle')?.getAttribute('aria-pressed') === 'true'
-        && document.querySelector('[data-diagram-id="${selection.id}"] .diagram-tree-star')?.textContent.trim() === '★'
-        && activeSet?.featuredViewIds?.diagram === '${selection.id}';
-    })()`), { message: "chosen diagram state did not reach the header, lineage, and persistence" });
+    try {
+      await waitFor(async () => await evaluate(cdp, `(async () => {
+        const workspace = await fetch('/api/workspace').then((response) => response.json());
+        const activeSet = workspace.diagramSets.find((set) => set.diagramIds.includes('${selection.id}'));
+        return document.querySelector('.diagram-star-toggle')?.getAttribute('aria-pressed') === 'true'
+          && document.querySelector('[data-diagram-id="${selection.id}"] .diagram-tree-star')?.textContent.trim() === '★'
+          && activeSet?.featuredViewIds?.diagram === '${selection.id}';
+      })()`), { message: "chosen diagram state did not reach the header, lineage, and persistence" });
+    } catch (error) {
+      const state = await evaluate(cdp, `(async () => {
+        const workspace = await fetch('/api/workspace').then((response) => response.json());
+        const activeSet = workspace.diagramSets.find((set) => set.diagramIds.includes('${selection.id}'));
+        const star = document.querySelector('.diagram-star-toggle');
+        const bounds = star?.getBoundingClientRect();
+        const hit = bounds ? document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2) : null;
+        return {
+          headerPressed: star?.getAttribute('aria-pressed'),
+          lineageStar: document.querySelector('[data-diagram-id="${selection.id}"] .diagram-tree-star')?.textContent.trim(),
+          persistedId: activeSet?.featuredViewIds?.diagram,
+          expectedId: '${selection.id}',
+          starBounds: bounds && { left: bounds.left, top: bounds.top, width: bounds.width, height: bounds.height },
+          hitClass: hit?.className,
+          hitTag: hit?.tagName
+        };
+      })()`);
+      throw new Error(`${error.message}: ${JSON.stringify(state)}`);
+    }
     await captureScreenshot(cdp, { output: starredDiagramScreenshotPath });
     await pointerHover(cdp, `[data-diagram-id="${selection.id}"]`);
     await pointerClick(cdp, `[data-diagram-id="${selection.id}"] .diagram-tree-prompt`);
@@ -1551,6 +1669,10 @@ try {
   const starredDiagramScreenshot = await readFile(starredDiagramScreenshotPath);
   if (starredDiagramScreenshot.length < 1000) {
     throw new Error("starred diagram screenshot was unexpectedly small");
+  }
+  const fileExplorerScreenshot = await readFile(fileExplorerScreenshotPath);
+  if (fileExplorerScreenshot.length < 1000) {
+    throw new Error("file explorer screenshot was unexpectedly small");
   }
   const archivedArtifact = JSON.parse(await readFile(archivedArtifactPath, "utf8"));
   if (!archivedArtifact.archivedAt) throw new Error("archived diagram artifact was removed or unmarked");

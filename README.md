@@ -88,7 +88,13 @@ Diagram View keeps Code Entities and an ASCII artifact lineage in right-pane
 tabs. Full ASCII artifacts are grouped as `[DIAGRAM]`, `[CALL-GRAPH]`, and
 `[DIR-VIEW]` candidates. Selecting a lineage node opens that candidate, and its
 display name can be edited without changing its stable `@diagram/` handle.
-The left-pane Diagram, Call Graph, and Dir View tabs open the starred candidate
+The standalone left-hand `Files` panel is a lazy, read-only explorer for the
+active DiagramSet checkout. It opens on `ALL FILES`; `DIAGRAM FILES` filters
+that same live tree to paths referenced by the active artifact's resolved,
+active-project CodeEntities. Foreign-project dependencies and paths absent from
+the current checkout are reported as unavailable rather than being mistaken
+for local files.
+The center-pane Diagram, Call Graph, and Dir View tabs open the starred candidate
 for their category. Each category has one independent star; a category with no
 star renders an explicit empty state instead of silently selecting a candidate.
 Root generation nodes group diagrams without ancestors, while derivative

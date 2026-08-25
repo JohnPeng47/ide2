@@ -21,7 +21,7 @@ body { overflow: hidden; background: var(--bg); color: var(--fg); font-family: v
 button, input, textarea, select { color: inherit; font: inherit; }
 button { cursor: pointer; }
 button:disabled { color: #50535a; cursor: not-allowed; }
-button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, [role="separator"]:focus-visible {
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, [role="separator"]:focus-visible, [role="treeitem"]:focus-visible {
   outline: 2px solid var(--accent-cyan); outline-offset: 2px;
 }
 
@@ -163,6 +163,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .pane-tab > button:first-child { flex: 1; }
 .pane-tab .pane-tab__close { border-left: 1px solid var(--border); padding-inline: 0.4rem; }
 .pane-tab__badge { color: var(--accent-yellow); font-size: 9px; }
+.file-pane-tabs > button { flex: 1; justify-content: flex-start; }
 
 .generator-panel, .diagram-panel, .entities-panel, .diagram-context-panel, .diagram-lineage-panel { display: flex; height: 100%; min-height: 0; flex-direction: column; background: var(--bg); }
 .pane-header { display: flex; min-height: 78px; flex: none; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--border); padding: 1rem 1.25rem; }
@@ -174,8 +175,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .diagram-star-toggle:hover:not(:disabled) { border-color: var(--accent-yellow); color: var(--accent-yellow); }
 .diagram-star-toggle.is-starred { border-color: var(--accent-yellow); background: rgb(235 203 139 / 8%); color: var(--accent-yellow); }
 .diagram-star-toggle:disabled { cursor: wait; opacity: 0.55; }
-.diagram-pane-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
-.diagram-pane-header > .diagram-actions { align-self: center; }
+.diagram-pane-header { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+.diagram-pane-header > .diagram-actions { min-width: 0; align-self: center; }
 .diagram-view-tabs { gap: 0.15rem; }
 .diagram-empty-state { display: grid; max-width: 34rem; flex: 1; align-content: center; justify-items: start; gap: 0.8rem; padding: 2rem; margin: auto; }
 .diagram-empty-state h3 { font-size: 1.1rem; }
@@ -264,6 +265,26 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .context-tabs button.is-active { box-shadow: inset 0 -2px var(--accent-cyan); color: var(--accent-cyan); }
 .context-tabpanel { min-width: 0; min-height: 0; flex: 1; overflow: hidden; }
 .context-tabpanel > * { height: 100%; }
+.file-explorer { --file-tree-row-height: 22px; display: grid; min-width: 0; min-height: 0; grid-template-rows: 42px minmax(0, 1fr); overflow: hidden; }
+.file-explorer__mode-bar { display: flex; min-width: 0; align-items: stretch; justify-content: space-between; border-bottom: 1px solid var(--gutter); }
+.file-explorer__mode-bar > div { display: flex; min-width: 0; }
+.file-explorer__mode-bar button { border: 0; border-right: 1px solid var(--border); padding: 0 0.8rem; background: transparent; color: var(--muted); font: 600 9px var(--font-mono); letter-spacing: 0.09em; }
+.file-explorer__mode-bar button:hover { color: var(--fg); }
+.file-explorer__mode-bar button.is-active { box-shadow: inset 0 -2px var(--accent-green); color: var(--accent-green); }
+.file-explorer__mode-bar button:disabled { cursor: not-allowed; opacity: 0.45; }
+.file-explorer__mode-bar > span { display: flex; min-width: 0; align-items: center; overflow: hidden; padding: 0 0.75rem; color: var(--muted); font: 8px var(--font-mono); text-overflow: ellipsis; white-space: nowrap; }
+.file-tree-scroller { position: relative; min-width: 0; min-height: 0; overflow: auto; padding: 5px 0; font: 11px/var(--file-tree-row-height) var(--font-mono); outline: 0; }
+.file-tree-row { display: flex; width: max-content; min-width: 100%; height: var(--file-tree-row-height); max-height: var(--file-tree-row-height); align-items: center; overflow: hidden; padding: 0 0.65rem; color: var(--fg); line-height: var(--file-tree-row-height); white-space: nowrap; }
+.file-tree-row:hover { background: rgb(255 255 255 / 3%); }
+.file-tree-row:focus-visible { outline-offset: -2px; background: rgb(136 192 208 / 6%); }
+.file-tree-row--directory { color: var(--accent-cyan); cursor: pointer; }
+.file-tree-row__prefix { flex: none; color: var(--gutter); white-space: pre; }
+.file-tree-row__toggle { width: 3ch; flex: none; margin-right: 0.55rem; color: var(--accent-yellow); white-space: pre; }
+.file-tree-row__name { overflow: hidden; min-width: 0; text-overflow: ellipsis; }
+.file-tree-row em { margin-left: 0.65rem; color: var(--muted); font: normal 8px var(--font-mono); text-transform: uppercase; }
+.file-tree-retry, .file-tree-empty button { border: 0; border-bottom: 1px dotted var(--accent-red); margin-left: 0.65rem; padding: 0; background: transparent; color: var(--accent-red); font: 8px var(--font-mono); text-transform: uppercase; }
+.file-tree-empty { display: grid; min-height: 100%; place-content: center; justify-items: center; gap: 0.65rem; padding: 1rem; color: var(--muted); font: 10px/1.45 var(--font-mono); text-align: center; }
+.file-tree-warning { position: sticky; bottom: -5px; border-top: 1px solid var(--accent-red); padding: 0.45rem 0.65rem; background: var(--bg); color: var(--accent-red); font: 9px/1.4 var(--font-mono); }
 .entity-context { display: flex; min-width: 0; min-height: 0; overflow: hidden; flex-direction: column; }
 .entity-context__header { min-height: 58px; padding: 0.65rem 1rem; }
 .entity-context__header h2 { font-size: 0.95rem; }

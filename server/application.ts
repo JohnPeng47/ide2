@@ -1,4 +1,4 @@
-import { readFile, realpath, stat } from "node:fs/promises";
+import { lstat, readFile, readdir, realpath, stat } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import {
@@ -37,6 +37,7 @@ import {
   type GenerationReferenceSelection,
   type GenerationBatchRecord,
   type MappedArtifactBundle,
+  type RepositoryDirectoryListing,
   type SystemPromptTemplateRecord,
   type WorkspaceSnapshot
 } from "../src/domain";
@@ -1690,6 +1691,57 @@ export class DiagramApplication {
       startLine: 1,
       lines
     };
+  }
+
+  async listRepositoryDirectory(
+    setId: string,
+    relativeDirectory: string
+  ): Promise<RepositoryDirectoryListing> {
+    const set = await this.store.loadDiagramSet(setId);
+    if (relativeDirectory.includes("\0") || relativeDirectory.includes("\\")) {
+      throw new Error("repository directory path is invalid");
+    }
+    if (path.posix.isAbsolute(relativeDirectory) || path.win32.isAbsolute(relativeDirectory)) {
+      throw new Error("repository directory path must be relative");
+    }
+    const segments = relativeDirectory === "" ? [] : relativeDirectory.split("/");
+    if (segments.some((segment) => !segment || segment === "." || segment === "..")) {
+      throw new Error("repository directory path is invalid");
+    }
+    const root = await realpath(set.sourceCheckoutRoot);
+    let directoryPath = root;
+    for (const segment of segments) {
+      directoryPath = path.join(directoryPath, segment);
+      const info = await lstat(directoryPath).catch(() => null);
+      if (!info) throw new Error(`unknown repository directory: ${relativeDirectory}`);
+      if (info.isSymbolicLink()) throw new Error("symbolic-link directories cannot be traversed");
+      if (!info.isDirectory()) throw new Error(`repository path is not a directory: ${relativeDirectory}`);
+    }
+    if (directoryPath !== root && !directoryPath.startsWith(`${root}${path.sep}`)) {
+      throw new Error("repository directory escapes checkout root");
+    }
+    const storeRoot = path.resolve(this.store.storeRoot);
+    const entries = (await readdir(directoryPath, { withFileTypes: true }))
+      .filter((entry) => entry.name !== ".git")
+      .filter((entry) => path.resolve(directoryPath, entry.name) !== storeRoot)
+      .map((entry) => {
+        const childPath = path.relative(root, path.join(directoryPath, entry.name))
+          .split(path.sep)
+          .join("/");
+        return {
+          path: childPath,
+          name: entry.name,
+          kind: entry.isDirectory() && !entry.isSymbolicLink()
+            ? "directory" as const
+            : "file" as const
+        };
+      })
+      .sort((left, right) => (
+        (left.kind === right.kind ? 0 : left.kind === "directory" ? -1 : 1)
+        || left.name.localeCompare(right.name, undefined, { sensitivity: "base" })
+        || left.path.localeCompare(right.path)
+      ));
+    return { directory: segments.join("/"), entries };
   }
 
   workspace(): Promise<WorkspaceSnapshot> {

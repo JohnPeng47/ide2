@@ -9,6 +9,7 @@ import type {
   GenerationPromptProfileId,
   GenerationReferenceSelection,
   MappedArtifactBundle,
+  RepositoryDirectoryListing,
   SystemPromptTemplateRecord,
   WorkspaceSnapshot
 } from "./domain";
@@ -22,6 +23,20 @@ export async function fetchWorkspace(): Promise<WorkspaceSnapshot> {
   const response = await fetch("/api/workspace", { cache: "no-store" });
   if (!response.ok) throw await errorFrom(response);
   return response.json() as Promise<WorkspaceSnapshot>;
+}
+
+export async function fetchRepositoryDirectory(
+  setId: string,
+  directory: string,
+  signal?: AbortSignal
+): Promise<RepositoryDirectoryListing> {
+  const params = new URLSearchParams({ path: directory });
+  const response = await fetch(
+    `/api/diagram-sets/${encodeURIComponent(setId)}/files?${params.toString()}`,
+    { cache: "no-store", signal }
+  );
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<RepositoryDirectoryListing>;
 }
 
 export async function fetchMappedArtifactBundle(

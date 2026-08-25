@@ -34,11 +34,19 @@ import { DiagramContextPanel, type ContextTab } from "./components/DiagramContex
 import { DiagramSetPicker } from "./components/DiagramSetPicker";
 import type { CodeEntityReveal } from "./components/CodeEntitiesPanel";
 import { DIAGRAM_VIEW_OPTIONS, DiagramView, EmptyDiagramView } from "./components/DiagramView";
+import { FileExplorerPanel } from "./components/FileExplorerPanel";
 import { GeneratorOptions } from "./components/GeneratorOptions";
 import { ImportArtifactDialog } from "./components/ImportArtifactDialog";
 import { PaneApi } from "./panes/api";
 import { PaneWorkspace, type PaneTabView } from "./panes/PaneWorkspace";
-import { addPane, createPaneLayout, findPaneSplit, parsePaneLayout, type PaneTab } from "./panes/model";
+import {
+  addPane,
+  createPaneLayout,
+  findPaneSplit,
+  parsePaneLayout,
+  setPaneTabs,
+  type PaneTab
+} from "./panes/model";
 import { useRefBuffer } from "./ref-buffer/RefBufferContext";
 import type { ReferenceResolutionContext } from "./referenceResolver";
 import {
@@ -88,14 +96,31 @@ type Screen = "diagram" | "diagram-component" | "generation";
 
 const PRIMARY_PANE_ID = "primary";
 const CONTEXT_PANE_ID = "context";
+const FILES_PANE_ID = "files";
 const ROOT_SPLIT_ID = "studio-root";
+const FILES_SPLIT_ID = "studio-files";
 const PANE_LAYOUT_STORAGE_KEY = "new-diagram:pane-layout";
 const LEGACY_SPLIT_STORAGE_KEY = "new-diagram:split-percent";
 
 function createStudioPaneApi(): PaneApi {
   const restored = parsePaneLayout(window.localStorage.getItem(PANE_LAYOUT_STORAGE_KEY));
   if (restored?.panes[PRIMARY_PANE_ID] && restored.panes[CONTEXT_PANE_ID]) {
-    return new PaneApi(restored);
+    if (restored.panes[FILES_PANE_ID]) return new PaneApi(restored);
+    const contextTabs = restored.panes[CONTEXT_PANE_ID].tabs.filter((tab) => tab.id !== "files");
+    const withoutLegacyFilesTab = setPaneTabs(
+      restored,
+      CONTEXT_PANE_ID,
+      contextTabs,
+      restored.panes[CONTEXT_PANE_ID].activeTabId === "files"
+        ? "code-entities"
+        : restored.panes[CONTEXT_PANE_ID].activeTabId
+    );
+    return new PaneApi(addPane(withoutLegacyFilesTab, {
+      id: FILES_PANE_ID,
+      ariaLabel: "Repository files",
+      tabListClassName: "file-pane-tabs",
+      tabs: [{ id: "files", label: "Files", domId: "files-tab" }]
+    }, PRIMARY_PANE_ID, { placement: "left", ratio: 0.32, splitId: FILES_SPLIT_ID }));
   }
   const storedPercent = Number(window.localStorage.getItem(LEGACY_SPLIT_STORAGE_KEY));
   const ratio = Number.isFinite(storedPercent) && storedPercent > 0
@@ -107,7 +132,7 @@ function createStudioPaneApi(): PaneApi {
     tabListClassName: "diagram-view-tabs",
     tabs: [{ id: "generate", label: "Generate" }]
   });
-  return new PaneApi(addPane(primary, {
+  const withContext = addPane(primary, {
     id: CONTEXT_PANE_ID,
     ariaLabel: "Diagram context",
     tabListClassName: "context-tabs",
@@ -115,7 +140,13 @@ function createStudioPaneApi(): PaneApi {
       { id: "code-entities", label: "Code Entities", domId: "code-entities-tab" },
       { id: "diagrams", label: "Diagrams", domId: "diagrams-tab" }
     ]
-  }, PRIMARY_PANE_ID, { placement: "right", ratio, splitId: ROOT_SPLIT_ID }));
+  }, PRIMARY_PANE_ID, { placement: "right", ratio, splitId: ROOT_SPLIT_ID });
+  return new PaneApi(addPane(withContext, {
+    id: FILES_PANE_ID,
+    ariaLabel: "Repository files",
+    tabListClassName: "file-pane-tabs",
+    tabs: [{ id: "files", label: "Files", domId: "files-tab" }]
+  }, PRIMARY_PANE_ID, { placement: "left", ratio: 0.32, splitId: FILES_SPLIT_ID }));
 }
 
 export function App() {
@@ -314,6 +345,9 @@ export function App() {
   );
   const activeComponent = components.find((component) => component.id === activeComponentId) ?? null;
   const selectedArtifact = screen === "diagram-component" ? activeComponent : activeDiagram;
+  const contextArtifact = screen === "diagram-component"
+    ? activeComponent
+    : screen === "diagram" ? activeDiagram : null;
   const selectedArtifactKind: GenerationOutputKind = screen === "diagram-component"
     ? "diagram-component"
     : "diagram";
@@ -352,6 +386,9 @@ export function App() {
     paneApi.setTabs(PRIMARY_PANE_ID, primaryTabs, screen === "generation"
       ? "generate"
       : screen === "diagram-component" ? "component" : activeViewKind);
+    paneApi.setTabs(FILES_PANE_ID, [
+      { id: "files", label: "Files", domId: "files-tab" }
+    ], "files");
     paneApi.setTabs(CONTEXT_PANE_ID, contextTabs, contextTab);
   }, [activeViewKind, contextTab, editSession, featuredViewKinds, paneApi, screen, viewCounts]);
   const collectionRun = activeSet && workspace
@@ -1319,6 +1356,12 @@ export function App() {
     "call-graph": { content: primaryPaneContent, onActivate: () => selectViewKind("call-graph") },
     "dir-view": { content: primaryPaneContent, onActivate: () => selectViewKind("dir-view") },
     "code-entities": { content: renderContextPane("code-entities"), onActivate: () => setContextTab("code-entities") },
+    files: { content: <FileExplorerPanel
+      activeSetId={activeSet.id}
+      activeProjectId={activeSet.projectId}
+      codeEntities={resolutionEntities}
+      artifact={contextArtifact ?? undefined}
+    /> },
     diagrams: { content: renderContextPane("diagrams"), onActivate: () => setContextTab("diagrams") },
     operations: { content: renderContextPane("operations"), onActivate: () => setContextTab("operations") }
   };

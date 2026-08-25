@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -96,6 +96,52 @@ class ParallelRuntime implements DiagramAgentRuntime {
 }
 
 describe("DiagramApplication", () => {
+  it("lists one live repository directory without exposing metadata or traversing links", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-file-listing-"));
+    roots.push(root);
+    execFileSync("git", ["init", "-q", root]);
+    await mkdir(path.join(root, "src", "nested"), { recursive: true });
+    await writeFile(path.join(root, ".gitignore"), "ignored.txt\n", "utf8");
+    await writeFile(path.join(root, ".plan.toml"), "name = 'fixture'\n", "utf8");
+    await writeFile(path.join(root, "ignored.txt"), "ignored but visible\n", "utf8");
+    await writeFile(path.join(root, "src", "worker.ts"), "export const worker = true;\n", "utf8");
+    await symlink("src", path.join(root, "linked-src"));
+    execFileSync("git", ["-C", root, "add", ".gitignore", ".plan.toml", "src/worker.ts"]);
+    execFileSync("git", [
+      "-C", root, "-c", "user.name=Test", "-c", "user.email=test@example.com",
+      "commit", "-qm", "fixture"
+    ]);
+    const application = new DiagramApplication(new DiagramStore(root), new ParallelRuntime());
+    const set = await application.createDiagramSet({ path: root, name: "Files", prompt: "Show files" });
+
+    const rootListing = await application.listRepositoryDirectory(set.id, "");
+    expect(rootListing.entries.map((entry) => [entry.name, entry.kind])).toEqual([
+      ["src", "directory"],
+      [".gitignore", "file"],
+      [".plan.toml", "file"],
+      ["ignored.txt", "file"],
+      ["linked-src", "file"]
+    ]);
+    expect(rootListing.entries.map((entry) => entry.name)).not.toContain(".git");
+    expect(rootListing.entries.map((entry) => entry.name)).not.toContain(".diagrams");
+    await expect(application.listRepositoryDirectory(set.id, "src"))
+      .resolves.toMatchObject({
+        directory: "src",
+        entries: [
+          { path: "src/nested", name: "nested", kind: "directory" },
+          { path: "src/worker.ts", name: "worker.ts", kind: "file" }
+        ]
+      });
+    await expect(application.listRepositoryDirectory(set.id, "linked-src"))
+      .rejects.toThrow(/symbolic-link directories/);
+    await expect(application.listRepositoryDirectory(set.id, "src/worker.ts"))
+      .rejects.toThrow(/not a directory/);
+    await expect(application.listRepositoryDirectory(set.id, "../src"))
+      .rejects.toThrow(/invalid/);
+    await expect(application.listRepositoryDirectory(set.id, root))
+      .rejects.toThrow(/must be relative/);
+  });
+
   it("generates and independently stars call-graph and directory-view candidates", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "new-diagram-aux-views-"));
     roots.push(root);

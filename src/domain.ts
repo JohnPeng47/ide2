@@ -162,6 +162,19 @@ export interface DiagramSetRecord {
   error?: string;
 }
 
+/** One immediate child of a live repository directory. */
+export interface RepositoryEntry {
+  path: string;
+  name: string;
+  kind: "directory" | "file";
+}
+
+/** A lazy, DiagramSet-scoped view of one live repository directory. */
+export interface RepositoryDirectoryListing {
+  directory: string;
+  entries: RepositoryEntry[];
+}
+
 export interface ImportedArtifactLibraryRecord {
   schemaVersion: typeof SCHEMA_VERSION;
   diagramIds: string[];
