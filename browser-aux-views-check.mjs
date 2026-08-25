@@ -227,33 +227,52 @@ try {
     }
     const panesBeforeFocus = await evaluate(cdp, `document.querySelectorAll('.workspace-pane').length`);
     const splitsBeforeFocus = await evaluate(cdp, `document.querySelectorAll('.pane-split').length`);
+    const contextTabBeforeFocus = await evaluate(cdp, `
+      document.querySelector('[data-pane-id="context"] [role="tab"][aria-selected="true"]')?.id
+    `);
     await click(cdp, ".display-call-graph");
-    await waitForSelector(cdp, '[data-pane-id^="call-graph-focus-pane-"] .call-graph-focus-tree', {
+    await waitForSelector(cdp, '[data-pane-id="context"] .call-graph-focus-tree', {
       timeoutMs: 10000
     });
     const focusState = await evaluate(cdp, `(() => {
-      const pane = document.querySelector('[data-pane-id^="call-graph-focus-pane-"]');
+      const pane = document.querySelector('[data-pane-id="context"]');
       const rows = [...pane.querySelectorAll('[role="treeitem"]')].map((row) => row.textContent);
       return {
         focused: pane.classList.contains('is-focused'),
+        focusTabs: pane.querySelectorAll('[role="tab"][id*="call-graph-focus-view-"]').length,
         rows,
         panes: document.querySelectorAll('.workspace-pane').length,
         splits: document.querySelectorAll('.pane-split').length
       };
     })()`);
     if (!focusState.focused
-      || focusState.panes !== panesBeforeFocus + 1
-      || focusState.splits !== splitsBeforeFocus + 1
+      || focusState.focusTabs !== 1
+      || focusState.panes !== panesBeforeFocus
+      || focusState.splits !== splitsBeforeFocus
       || !focusState.rows.some((row) => row.includes("parallel slot 01"))
       || !focusState.rows.some((row) => row.includes("internal step"))) {
       throw new Error(`focused call-graph pane was incomplete: ${JSON.stringify(focusState)}`);
     }
-    await click(cdp, '[data-pane-id^="call-graph-focus-pane-"] .pane-tab__close');
+    await click(cdp, '[data-pane-id="context"] .call-graph-focus-toggle');
+    await waitFor(async () => await evaluate(cdp, `(() => {
+      const pane = document.querySelector('[data-pane-id="context"]');
+      return pane.querySelectorAll('[role="treeitem"]').length === 1
+        && pane.querySelector('[role="treeitem"]')?.getAttribute('aria-expanded') === 'false';
+    })()`), { message: "focused call-graph branch did not collapse" });
+    await click(cdp, '[data-pane-id="context"] .call-graph-focus-toggle');
+    await waitFor(async () => await evaluate(cdp, `(() => {
+      const pane = document.querySelector('[data-pane-id="context"]');
+      return pane.querySelectorAll('[role="treeitem"]').length === 2
+        && pane.querySelector('[role="treeitem"]')?.getAttribute('aria-expanded') === 'true';
+    })()`), { message: "focused call-graph branch did not expand" });
+    await click(cdp, '[data-pane-id="context"] .pane-tab__close');
     await waitFor(async () => await evaluate(cdp, `
-      !document.querySelector('[data-pane-id^="call-graph-focus-pane-"]')
+      !document.querySelector('[data-pane-id="context"] .call-graph-focus-tree')
         && document.querySelectorAll('.workspace-pane').length === ${panesBeforeFocus}
         && document.querySelectorAll('.pane-split').length === ${splitsBeforeFocus}
-    `), { message: "closing the focused call graph did not collapse its surrounding split" });
+        && document.querySelector('[data-pane-id="context"] [role="tab"][aria-selected="true"]')?.id
+          === ${JSON.stringify(contextTabBeforeFocus)}
+    `), { message: "closing the focused call graph did not restore the previous context tab" });
 
     await click(cdp, ".diagram-view-tabs button:nth-child(3)");
     await waitForSelector(cdp, ".diagram-empty-state");
