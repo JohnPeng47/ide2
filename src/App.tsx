@@ -12,6 +12,7 @@ import {
   deleteCodeEntityPromptTemplate,
   deleteDiagramSet,
   discardEdit,
+  fetchCallGraphFocus,
   fetchMappedArtifactBundle,
   fetchWorkspace,
   generateArtifacts,
@@ -30,21 +31,27 @@ import {
   deleteSystemPromptTemplate,
   undoEdit
 } from "./api";
+import { CallGraphFocusTree } from "./call-graph-tree/CallGraphFocusTree";
+import type { CallGraphFocusRequest, CallGraphFocusResult } from "./callGraphFocus";
 import { DiagramContextPanel, type ContextTab } from "./components/DiagramContextPanel";
 import { DiagramSetPicker } from "./components/DiagramSetPicker";
 import type { CodeEntityReveal } from "./components/CodeEntitiesPanel";
 import { DIAGRAM_VIEW_OPTIONS, DiagramView, EmptyDiagramView } from "./components/DiagramView";
 import { FileExplorerPanel } from "./components/FileExplorerPanel";
+import { ExperimentViewerPage } from "./components/ExperimentViewerPage";
 import { GeneratorOptions } from "./components/GeneratorOptions";
 import { ImportArtifactDialog } from "./components/ImportArtifactDialog";
 import { PaneApi } from "./panes/api";
 import { PaneWorkspace, type PaneTabView } from "./panes/PaneWorkspace";
 import {
   addPane,
+  closePaneTab,
   createPaneLayout,
   findPaneSplit,
   parsePaneLayout,
+  removePane,
   setPaneTabs,
+  type PaneLayoutState,
   type PaneTab
 } from "./panes/model";
 import { useRefBuffer } from "./ref-buffer/RefBufferContext";
@@ -99,21 +106,37 @@ const CONTEXT_PANE_ID = "context";
 const FILES_PANE_ID = "files";
 const ROOT_SPLIT_ID = "studio-root";
 const FILES_SPLIT_ID = "studio-files";
+const LEGACY_CALL_GRAPH_FOCUS_PANE_PREFIX = "call-graph-focus-pane-";
+const CALL_GRAPH_FOCUS_VIEW_PREFIX = "call-graph-focus-view-";
 const PANE_LAYOUT_STORAGE_KEY = "new-diagram:pane-layout";
 const LEGACY_SPLIT_STORAGE_KEY = "new-diagram:split-percent";
+
+function withoutTransientCallGraphFocus(state: PaneLayoutState): PaneLayoutState {
+  let next = Object.keys(state.panes)
+    .filter((paneId) => paneId.startsWith(LEGACY_CALL_GRAPH_FOCUS_PANE_PREFIX))
+    .reduce((current, paneId) => removePane(current, paneId), state);
+  const transientTabs = Object.values(next.panes).flatMap((pane) => pane.tabs
+    .filter((tab) => tab.id.startsWith(CALL_GRAPH_FOCUS_VIEW_PREFIX))
+    .map((tab) => ({ paneId: pane.id, tabId: tab.id })));
+  for (const { paneId, tabId } of transientTabs) {
+    next = closePaneTab(next, paneId, tabId);
+  }
+  return next;
+}
 
 function createStudioPaneApi(): PaneApi {
   const restored = parsePaneLayout(window.localStorage.getItem(PANE_LAYOUT_STORAGE_KEY));
   if (restored?.panes[PRIMARY_PANE_ID] && restored.panes[CONTEXT_PANE_ID]) {
-    if (restored.panes[FILES_PANE_ID]) return new PaneApi(restored);
-    const contextTabs = restored.panes[CONTEXT_PANE_ID].tabs.filter((tab) => tab.id !== "files");
+    const withoutTransient = withoutTransientCallGraphFocus(restored);
+    if (withoutTransient.panes[FILES_PANE_ID]) return new PaneApi(withoutTransient);
+    const contextTabs = withoutTransient.panes[CONTEXT_PANE_ID].tabs.filter((tab) => tab.id !== "files");
     const withoutLegacyFilesTab = setPaneTabs(
-      restored,
+      withoutTransient,
       CONTEXT_PANE_ID,
       contextTabs,
-      restored.panes[CONTEXT_PANE_ID].activeTabId === "files"
+      withoutTransient.panes[CONTEXT_PANE_ID].activeTabId === "files"
         ? "code-entities"
-        : restored.panes[CONTEXT_PANE_ID].activeTabId
+        : withoutTransient.panes[CONTEXT_PANE_ID].activeTabId
     );
     return new PaneApi(addPane(withoutLegacyFilesTab, {
       id: FILES_PANE_ID,
@@ -149,7 +172,27 @@ function createStudioPaneApi(): PaneApi {
   }, PRIMARY_PANE_ID, { placement: "left", ratio: 0.32, splitId: FILES_SPLIT_ID }));
 }
 
+function pageFromPath(): "studio" | "experiments" {
+  return window.location.pathname.startsWith("/experiments") ? "experiments" : "studio";
+}
+
 export function App() {
+  const [page, setPage] = useState(pageFromPath);
+  useEffect(() => {
+    const onPopState = () => setPage(pageFromPath());
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+  const navigate = (next: "studio" | "experiments") => {
+    window.history.pushState({}, "", next === "experiments" ? "/experiments" : "/");
+    setPage(next);
+  };
+  return page === "experiments"
+    ? <ExperimentViewerPage onStudio={() => navigate("studio")} />
+    : <StudioPage onExperiments={() => navigate("experiments")} />;
+}
+
+function StudioPage(props: { onExperiments: () => void }) {
   const refBuffer = useRefBuffer();
   const [paneApi] = useState(createStudioPaneApi);
   const [workspace, setWorkspace] = useState<WorkspaceSnapshot | null>(null);
@@ -188,6 +231,7 @@ export function App() {
   const [mappingProgress, setMappingProgress] = useState("");
   const [mappingError, setMappingError] = useState<string | null>(null);
   const [starBusy, setStarBusy] = useState(false);
+  const [callGraphFocusViews, setCallGraphFocusViews] = useState<Record<string, CallGraphFocusResult>>({});
   const [codeEntityReveal, setCodeEntityReveal] = useState<CodeEntityReveal | undefined>();
   const revealRequestId = useRef(0);
   const editQueue = useRef<Promise<void>>(Promise.resolve());
@@ -195,11 +239,26 @@ export function App() {
 
   useEffect(() => paneApi.subscribe(() => {
     const paneState = paneApi.getState();
-    window.localStorage.setItem(PANE_LAYOUT_STORAGE_KEY, JSON.stringify(paneState));
+    window.localStorage.setItem(
+      PANE_LAYOUT_STORAGE_KEY,
+      JSON.stringify(withoutTransientCallGraphFocus(paneState))
+    );
     const rootSplit = findPaneSplit(paneState.root, ROOT_SPLIT_ID);
     if (rootSplit) {
       window.localStorage.setItem(LEGACY_SPLIT_STORAGE_KEY, (rootSplit.ratio * 100).toFixed(2));
     }
+  }), [paneApi]);
+
+  useEffect(() => paneApi.subscribe(() => {
+    const liveTabIds = new Set(
+      Object.values(paneApi.getState().panes).flatMap((pane) => pane.tabs.map((tab) => tab.id))
+    );
+    setCallGraphFocusViews((current) => {
+      const remaining = Object.entries(current).filter(([viewId]) => liveTabIds.has(viewId));
+      return remaining.length === Object.keys(current).length
+        ? current
+        : Object.fromEntries(remaining);
+    });
   }), [paneApi]);
 
   const load = useCallback(async () => {
@@ -373,7 +432,7 @@ export function App() {
           label,
           badge: featuredViewKinds.has(kind) ? "★" : viewCounts[kind]
         }));
-    const contextTabs: PaneTab[] = [
+    const baseContextTabs: PaneTab[] = [
       { id: "code-entities", label: "Code Entities", domId: "code-entities-tab" },
       { id: "diagrams", label: "Diagrams", domId: "diagrams-tab" },
       ...(editSession ? [{
@@ -383,14 +442,43 @@ export function App() {
         domId: "operations-tab"
       }] : [])
     ];
+    const focusTabs: PaneTab[] = Object.entries(callGraphFocusViews).map(([viewId, result]) => ({
+      id: viewId,
+      label: `Focus · ${result.callGraphName}`,
+      closable: true
+    }));
+    const availableContextTabs = new Map(
+      [...baseContextTabs, ...focusTabs].map((tab) => [tab.id, tab])
+    );
+    const currentContextPane = paneApi.getState().panes[CONTEXT_PANE_ID];
+    const contextTabs = (currentContextPane?.tabs ?? [])
+      .map((tab) => availableContextTabs.get(tab.id))
+      .filter((tab): tab is PaneTab => Boolean(tab));
+    for (const tab of availableContextTabs.values()) {
+      if (!contextTabs.some((candidate) => candidate.id === tab.id)) contextTabs.push(tab);
+    }
+    const currentContextTabId = currentContextPane?.activeTabId;
+    const desiredContextTabId = currentContextTabId?.startsWith(CALL_GRAPH_FOCUS_VIEW_PREFIX)
+      && contextTabs.some((tab) => tab.id === currentContextTabId)
+      ? currentContextTabId
+      : contextTab;
     paneApi.setTabs(PRIMARY_PANE_ID, primaryTabs, screen === "generation"
       ? "generate"
       : screen === "diagram-component" ? "component" : activeViewKind);
     paneApi.setTabs(FILES_PANE_ID, [
       { id: "files", label: "Files", domId: "files-tab" }
     ], "files");
-    paneApi.setTabs(CONTEXT_PANE_ID, contextTabs, contextTab);
-  }, [activeViewKind, contextTab, editSession, featuredViewKinds, paneApi, screen, viewCounts]);
+    paneApi.setTabs(CONTEXT_PANE_ID, contextTabs, desiredContextTabId);
+  }, [
+    activeViewKind,
+    callGraphFocusViews,
+    contextTab,
+    editSession,
+    featuredViewKinds,
+    paneApi,
+    screen,
+    viewCounts
+  ]);
   const collectionRun = activeSet && workspace
     ? [...activeSet.agentRunIds]
       .reverse()
@@ -511,6 +599,7 @@ export function App() {
     const shouldPoll = workspace !== null && (
       workspace.diagramSets.length === 0
       || activeSet?.readiness === "collecting"
+      || activeSet?.readiness === "failed"
       || initialGenerationPending
     );
     if (!shouldPoll) return undefined;
@@ -1183,6 +1272,37 @@ export function App() {
     }
   };
 
+  const openCallGraphFocus = async (request: CallGraphFocusRequest) => {
+    const result = await fetchCallGraphFocus(request);
+    const instanceId = crypto.randomUUID();
+    const viewId = `${CALL_GRAPH_FOCUS_VIEW_PREFIX}${instanceId}`;
+    const contextPane = paneApi.getState().panes[CONTEXT_PANE_ID];
+    if (!contextPane) throw new Error("the Diagram context pane is unavailable");
+    const activeIndex = contextPane.tabs.findIndex((tab) => tab.id === contextPane.activeTabId);
+    const insertAt = activeIndex < 0 ? contextPane.tabs.length : activeIndex;
+    const focusTab: PaneTab = {
+      id: viewId,
+      label: `Focus · ${result.callGraphName}`,
+      closable: true
+    };
+    setCallGraphFocusViews((current) => ({ ...current, [viewId]: result }));
+    try {
+      paneApi.setTabs(CONTEXT_PANE_ID, [
+        ...contextPane.tabs.slice(0, insertAt),
+        focusTab,
+        ...contextPane.tabs.slice(insertAt)
+      ], viewId);
+      paneApi.focusPane(CONTEXT_PANE_ID);
+    } catch (caught) {
+      setCallGraphFocusViews((current) => {
+        const next = { ...current };
+        delete next[viewId];
+        return next;
+      });
+      throw caught;
+    }
+  };
+
   const revealCodeEntity = (mapping: DiagramElementMapping) => {
     revealRequestId.current += 1;
     setContextTab("code-entities");
@@ -1298,6 +1418,7 @@ export function App() {
       onMarker={(line, column) => void markLocation(line, column)}
       onUndoEdit={() => void runEditAction(undoEdit)}
       onRedoEdit={() => void runEditAction(redoEdit)}
+      onOpenCallGraphFocus={openCallGraphFocus}
     />;
   } else {
     primaryPaneContent = <EmptyDiagramView
@@ -1349,6 +1470,12 @@ export function App() {
     onFinishEdit={() => void saveEdit()}
     onDiscardEdit={() => void leaveEdit()}
   />;
+  const callGraphPaneViews: Record<string, PaneTabView> = Object.fromEntries(
+    Object.entries(callGraphFocusViews).map(([viewId, result]) => [
+      viewId,
+      { content: <CallGraphFocusTree result={result} /> }
+    ])
+  );
   const paneViews: Record<string, PaneTabView> = {
     generate: { content: primaryPaneContent },
     component: { content: primaryPaneContent },
@@ -1363,7 +1490,8 @@ export function App() {
       artifact={contextArtifact ?? undefined}
     /> },
     diagrams: { content: renderContextPane("diagrams"), onActivate: () => setContextTab("diagrams") },
-    operations: { content: renderContextPane("operations"), onActivate: () => setContextTab("operations") }
+    operations: { content: renderContextPane("operations"), onActivate: () => setContextTab("operations") },
+    ...callGraphPaneViews
   };
 
   return (
@@ -1390,6 +1518,7 @@ export function App() {
           </button>
           <button type="button" className={screen === "generation" ? "is-active" : ""} onClick={() => setScreen("generation")}>GENERATE</button>
           <button type="button" className="header-import" onClick={() => setImportOpen(true)}>IMPORT</button>
+          <button type="button" onClick={props.onExperiments}>EXPERIMENTS</button>
           <div className="settings-menu-shell">
             <button
               type="button"

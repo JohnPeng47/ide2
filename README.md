@@ -3,6 +3,19 @@
 A repo-local workspace for collecting source-backed code entities and generating
 ASCII diagrams with parallel Pi agents.
 
+## Install the agent skill
+
+The canonical skill source lives at `skills/new-diagram/`. Install or update its
+global Codex mirror with:
+
+```bash
+./scripts/new-diagram/install-skill
+```
+
+The destination is `$CODEX_HOME/skills/new-diagram`, defaulting to
+`~/.codex/skills/new-diagram`. Update the canonical source and run the installer
+after every skill change; do not edit only one copy.
+
 ## Start the studio
 
 The server is the only process that writes DiagramSet records. Start it for the

@@ -9,6 +9,7 @@
     "check:aux-views": "node browser-aux-views-check.mjs",
     "dev": "vite --host 127.0.0.1",
     "diagram": "tsx cli.ts",
+    "experiment": "tsx experiments/cli.ts",
     "preview": "vite preview --host 127.0.0.1",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"

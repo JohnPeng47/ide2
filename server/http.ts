@@ -8,6 +8,8 @@ import {
 } from "../src/domain";
 import { FakeDiagramAgentRuntime, PiDiagramAgentRuntime } from "./agentRuntime";
 import { DiagramApplication } from "./application";
+import { DiagramDatasetStore } from "./diagramDatasetStore";
+import { ExperimentCatalog } from "./experimentCatalog";
 import { DiagramStore } from "./store";
 
 const MAX_REQUEST_BYTES = 10 * 1024 * 1024;
@@ -166,7 +168,27 @@ function parseEditSessionAction(pathname: string): {
   } : null;
 }
 
-export function diagramApi(projectRoot: string, diagramsDirectory = ".diagrams"): Plugin {
+function parseExperimentArtifact(pathname: string): { catalogId: string } | null {
+  const match = pathname.match(/^\/api\/experiments\/([a-z0-9][a-z0-9-]{0,127})\/artifact$/);
+  return match ? { catalogId: match[1] } : null;
+}
+
+function parseDatasetItems(pathname: string): { datasetId: string } | null {
+  const match = pathname.match(/^\/api\/diagram-datasets\/([a-z0-9][a-z0-9-]{0,127})\/items$/);
+  return match ? { datasetId: match[1] } : null;
+}
+
+function parseDatasetItem(pathname: string): { datasetId: string; itemId: string } | null {
+  const match = pathname.match(/^\/api\/diagram-datasets\/([a-z0-9][a-z0-9-]{0,127})\/items\/([a-z0-9][a-z0-9-]{0,127})$/);
+  return match ? { datasetId: match[1], itemId: match[2] } : null;
+}
+
+export function diagramApi(
+  projectRoot: string,
+  diagramsDirectory = ".diagrams",
+  experimentsRoot = `${projectRoot}/.datasets`,
+  datasetCollectionsRoot = `${experimentsRoot}/diagram-collections`
+): Plugin {
   const runtime = process.env.NEW_DIAGRAM_AGENT === "fake"
     ? new FakeDiagramAgentRuntime()
     : new PiDiagramAgentRuntime();
@@ -174,6 +196,8 @@ export function diagramApi(projectRoot: string, diagramsDirectory = ".diagrams")
     new DiagramStore(projectRoot, diagramsDirectory),
     runtime
   );
+  const experimentCatalog = new ExperimentCatalog(experimentsRoot);
+  const datasetStore = new DiagramDatasetStore(datasetCollectionsRoot);
   let recovered: Promise<void> | undefined;
   const ensureRecovered = () => recovered ??= application.recoverInterruptedRuns();
 
@@ -184,6 +208,80 @@ export function diagramApi(projectRoot: string, diagramsDirectory = ".diagrams")
       return;
     }
     try {
+      if (url.pathname === "/api/experiments") {
+        if (request.method !== "GET") return sendJson(response, 405, { error: "method not allowed" });
+        return sendJson(response, 200, await experimentCatalog.list());
+      }
+      if (url.pathname === "/api/diagram-datasets") {
+        if (request.method === "GET") return sendJson(response, 200, await datasetStore.list());
+        if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
+        const body = await readBody(request) as Record<string, unknown>;
+        return sendJson(response, 201, await datasetStore.create(body.name));
+      }
+      const datasetItem = parseDatasetItem(url.pathname);
+      if (datasetItem) {
+        if (request.method === "GET") {
+          return sendJson(response, 200, await datasetStore.item(datasetItem.datasetId, datasetItem.itemId));
+        }
+        if (request.method === "PATCH") {
+          const body = await readBody(request) as Record<string, unknown>;
+          return sendJson(response, 200, await datasetStore.updateLabels(datasetItem.datasetId, datasetItem.itemId, body.labels));
+        }
+        if (request.method === "DELETE") {
+          return sendJson(response, 200, await datasetStore.removeItem(datasetItem.datasetId, datasetItem.itemId));
+        }
+        return sendJson(response, 405, { error: "method not allowed" });
+      }
+      const datasetItems = parseDatasetItems(url.pathname);
+      if (datasetItems) {
+        if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
+        const body = await readBody(request) as Record<string, unknown>;
+        const source = body.source as Record<string, unknown> | undefined;
+        if (!source) return sendJson(response, 400, { error: "diagram source is required" });
+        const catalogId = typeof source.catalogId === "string" ? source.catalogId : "";
+        const axisId = typeof source.axisId === "string" ? source.axisId : "";
+        const iteration = Number(source.iteration);
+        const value = Number(source.value);
+        const replicate = Number(source.replicate);
+        const catalog = await experimentCatalog.list();
+        const experiment = catalog.experiments.find((candidate) => candidate.catalogId === catalogId);
+        const axis = experiment?.axes.find((candidate) => candidate.id === axisId);
+        const iterationSummary = axis?.iterations.find((candidate) => candidate.number === iteration);
+        if (!experiment || !axis || !iterationSummary) throw new Error("experiment source was not found");
+        const artifact = await experimentCatalog.artifact({ catalogId, axisId, iteration, value, replicate });
+        return sendJson(response, 200, await datasetStore.addItem(datasetItems.datasetId, {
+          name: artifact.name,
+          labels: body.labels,
+          source: {
+            catalogId,
+            experimentId: experiment.id,
+            projectId: experiment.project.id,
+            projectName: experiment.project.name,
+            axisId,
+            axisLabel: axis.label,
+            iteration,
+            value,
+            replicate
+          },
+          metrics: artifact.metrics,
+          ascii: artifact.artifact.ascii,
+          codeEntityIds: artifact.artifact.codeEntityIds,
+          modelId: artifact.modelId,
+          promptConfigId: artifact.promptConfigId,
+          testedPrompt: iterationSummary.aggregate?.prompt ?? ""
+        }));
+      }
+      const experimentArtifact = parseExperimentArtifact(url.pathname);
+      if (experimentArtifact) {
+        if (request.method !== "GET") return sendJson(response, 405, { error: "method not allowed" });
+        return sendJson(response, 200, await experimentCatalog.artifact({
+          catalogId: experimentArtifact.catalogId,
+          axisId: url.searchParams.get("axis") ?? "",
+          iteration: Number(url.searchParams.get("iteration")),
+          value: Number(url.searchParams.get("value")),
+          replicate: Number(url.searchParams.get("replicate"))
+        }));
+      }
       await ensureRecovered();
       if (url.pathname === "/api/workspace") {
         if (request.method !== "GET") return sendJson(response, 405, { error: "method not allowed" });
@@ -202,6 +300,10 @@ export function diagramApi(projectRoot: string, diagramsDirectory = ".diagrams")
           200,
           await application.mappedArtifactBundle(setId, artifactKind, artifactId)
         );
+      }
+      if (url.pathname === "/api/call-graph-focus") {
+        if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
+        return sendJson(response, 200, await application.callGraphFocus(await readBody(request)));
       }
       if (url.pathname === "/api/source") {
         if (request.method !== "GET") return sendJson(response, 405, { error: "method not allowed" });

@@ -60,7 +60,9 @@ export function DiagramSetPicker(props: {
             setError(null);
           }}
         >
-          <span>{active?.name ?? "Choose a Diagram Set"}</span>
+          <span>{active
+            ? `${active.name}${active.readiness === "failed" ? " — FAILED" : ""}`
+            : "Choose a Diagram Set"}</span>
           <i aria-hidden="true">{open ? "▴" : "▾"}</i>
         </button>
         {open ? (
@@ -75,7 +77,7 @@ export function DiagramSetPicker(props: {
                 <button type="button" className="set-picker__select" onClick={() => {
                   props.onSelect(set.id);
                   setOpen(false);
-                }}>{set.name}</button>
+                }}>{set.name}{set.readiness === "failed" ? " — FAILED" : ""}</button>
                 <button
                   type="button"
                   className="set-picker__delete"
