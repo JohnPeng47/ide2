@@ -8,6 +8,7 @@ import type {
   GenerationOutputKind,
   GenerationPromptProfileId,
   GenerationReferenceSelection,
+  MappedArtifactBundle,
   SystemPromptTemplateRecord,
   WorkspaceSnapshot
 } from "./domain";
@@ -21,6 +22,17 @@ export async function fetchWorkspace(): Promise<WorkspaceSnapshot> {
   const response = await fetch("/api/workspace", { cache: "no-store" });
   if (!response.ok) throw await errorFrom(response);
   return response.json() as Promise<WorkspaceSnapshot>;
+}
+
+export async function fetchMappedArtifactBundle(
+  setId: string,
+  artifactKind: GenerationOutputKind,
+  artifactId: string
+): Promise<MappedArtifactBundle> {
+  const params = new URLSearchParams({ setId, artifactKind, artifactId });
+  const response = await fetch(`/api/artifact-bundle?${params.toString()}`, { cache: "no-store" });
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<MappedArtifactBundle>;
 }
 
 export async function deleteDiagramSet(setId: string): Promise<WorkspaceSnapshot> {

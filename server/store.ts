@@ -71,7 +71,12 @@ function nowIso(): string {
 }
 
 function makeId(prefix: string): string {
-  return `${prefix}-${randomUUID().replaceAll("-", "").slice(0, 16)}`;
+  return `${prefix}-${randomUUID()}`;
+}
+
+function stableScopedId(prefix: string, ...parts: string[]): string {
+  const digest = createHash("sha256").update(parts.join("\0")).digest("hex").slice(0, 32);
+  return `${prefix}-${digest}`;
 }
 
 async function readJson<T>(filePath: string): Promise<T> {
@@ -138,6 +143,16 @@ export class DiagramStore {
   private importedDiagramComponentPath(componentId: string): string {
     assertSafeId(componentId, "DiagramComponent id");
     return path.join(this.importsRoot(), "diagram-components", `${componentId}.json`);
+  }
+
+  private importedCodeEntityPath(entityId: string): string {
+    assertSafeId(entityId, "CodeEntity id");
+    return path.join(this.importsRoot(), "code-entities", `${entityId}.json`);
+  }
+
+  private importedCodeEntityMapPath(artifactId: string): string {
+    assertSafeId(artifactId, "artifact id");
+    return path.join(this.importsRoot(), "code-entity-maps", `${artifactId}.json`);
   }
 
   private setRoot(setId: string): string {
@@ -306,6 +321,8 @@ export class DiagramStore {
       schemaVersion: SCHEMA_VERSION,
       diagramIds: [],
       diagramComponentIds: [],
+      codeEntityIds: [],
+      codeEntityMapArtifactIds: [],
       createdAt: timestamp,
       updatedAt: timestamp
     };
@@ -320,14 +337,87 @@ export class DiagramStore {
   async loadImportedDiagram(diagramId: string): Promise<DiagramRecord> {
     const filePath = this.importedDiagramPath(diagramId);
     const stored = await readJson<DiagramRecord & { viewKind?: DiagramViewKind }>(filePath);
-    if (stored.viewKind) return stored as DiagramRecord;
-    const normalized: DiagramRecord = { ...stored, viewKind: "diagram" };
+    if (stored.viewKind && stored.recordOrigin) return stored as DiagramRecord;
+    const project = await this.loadProject();
+    const normalized: DiagramRecord = {
+      ...stored,
+      viewKind: stored.viewKind ?? "diagram",
+      recordOrigin: stored.recordOrigin ?? {
+        projectId: project?.id ?? "unowned",
+        diagramSetId: GLOBAL_IMPORTS_DIAGRAM_SET_ID
+      }
+    };
     await writeJsonAtomic(filePath, normalized);
     return normalized;
   }
 
   async loadImportedDiagramComponent(componentId: string): Promise<DiagramComponentRecord> {
-    return readJson<DiagramComponentRecord>(this.importedDiagramComponentPath(componentId));
+    const filePath = this.importedDiagramComponentPath(componentId);
+    const stored = await readJson<DiagramComponentRecord>(filePath);
+    if (stored.recordOrigin) return stored;
+    const project = await this.loadProject();
+    const normalized = {
+      ...stored,
+      recordOrigin: {
+        projectId: project?.id ?? "unowned",
+        diagramSetId: GLOBAL_IMPORTS_DIAGRAM_SET_ID
+      }
+    };
+    await writeJsonAtomic(filePath, normalized);
+    return normalized;
+  }
+
+  async loadImportedCodeEntity(entityId: string): Promise<CodeEntityRecord> {
+    const stored = await readJson<{
+      schemaVersion: typeof SCHEMA_VERSION;
+      entity: CodeEntityRecord;
+    }>(this.importedCodeEntityPath(entityId));
+    return stored.entity;
+  }
+
+  async loadImportedCodeEntityMap(artifactId: string): Promise<DiagramCodeEntityMapRecord | null> {
+    return readJsonIfExists<DiagramCodeEntityMapRecord>(this.importedCodeEntityMapPath(artifactId));
+  }
+
+  async addImportedCodeEntity(entity: CodeEntityRecord): Promise<void> {
+    const library = await this.loadImportedArtifactLibrary();
+    const ids = library.codeEntityIds ?? [];
+    const existing = ids.includes(entity.id)
+      ? await this.loadImportedCodeEntity(entity.id)
+      : null;
+    if (existing) {
+      if (JSON.stringify(existing) !== JSON.stringify(entity)) {
+        throw new Error(`conflicting imported CodeEntity: ${entity.id}`);
+      }
+      return;
+    }
+    await writeJsonAtomic(this.importedCodeEntityPath(entity.id), {
+      schemaVersion: SCHEMA_VERSION,
+      entity
+    });
+    await this.saveImportedArtifactLibrary({
+      ...library,
+      codeEntityIds: [...ids, entity.id],
+      updatedAt: nowIso()
+    });
+  }
+
+  async addImportedCodeEntityMap(mapping: DiagramCodeEntityMapRecord): Promise<void> {
+    const library = await this.loadImportedArtifactLibrary();
+    const ids = library.codeEntityMapArtifactIds ?? [];
+    if (ids.includes(mapping.artifactId)) {
+      const existing = await this.loadImportedCodeEntityMap(mapping.artifactId);
+      if (JSON.stringify(existing) !== JSON.stringify(mapping)) {
+        throw new Error(`conflicting imported CodeEntity map: ${mapping.artifactId}`);
+      }
+      return;
+    }
+    await writeJsonAtomic(this.importedCodeEntityMapPath(mapping.artifactId), mapping);
+    await this.saveImportedArtifactLibrary({
+      ...library,
+      codeEntityMapArtifactIds: [...ids, mapping.artifactId],
+      updatedAt: nowIso()
+    });
   }
 
   async addImportedDiagram(diagram: DiagramRecord): Promise<void> {
@@ -505,7 +595,31 @@ export class DiagramStore {
   }
 
   async loadCodeEntities(setId: string): Promise<CodeEntitiesSetRecord> {
-    return readJson<CodeEntitiesSetRecord>(this.entitiesPath(setId));
+    const filePath = this.entitiesPath(setId);
+    const stored = await readJson<CodeEntitiesSetRecord>(filePath);
+    const set = await this.loadDiagramSet(setId);
+    let changed = false;
+    const entities = stored.entities.map((entity) => {
+      const origin = entity.origin ?? {
+        projectId: set.projectId,
+        diagramSetId: set.id,
+        codeEntitiesSetId: stored.id
+      };
+      const sourceRanges = entity.sourceRanges.map((range, index) => {
+        if (range.id) return range;
+        changed = true;
+        return {
+          ...range,
+          id: stableScopedId("range", set.projectId, stored.id, entity.id, String(index))
+        };
+      });
+      if (!entity.origin) changed = true;
+      return { ...entity, origin, sourceRanges };
+    });
+    if (!changed) return stored;
+    const normalized = { ...stored, entities };
+    await writeJsonAtomic(filePath, normalized);
+    return normalized;
   }
 
   async loadDiagram(setId: string, diagramId: string): Promise<DiagramRecord> {
@@ -516,12 +630,16 @@ export class DiagramStore {
     }>(
       this.diagramPath(setId, diagramId)
     );
-    if (stored.origin && stored.viewKind && !Array.isArray(stored.promptReferences)) {
+    if (stored.origin && stored.viewKind && stored.recordOrigin && !Array.isArray(stored.promptReferences)) {
       return stored as DiagramRecord;
     }
     const { promptReferences: _promptReferences, ...artifact } = stored;
     const normalized: DiagramRecord = {
       ...artifact,
+      recordOrigin: stored.recordOrigin ?? {
+        projectId: (await this.loadDiagramSet(setId)).projectId,
+        diagramSetId: setId
+      },
       origin: stored.origin ?? "generated",
       viewKind: stored.viewKind ?? "diagram"
     };
@@ -533,10 +651,17 @@ export class DiagramStore {
     const stored = await readJson<DiagramComponentRecord & {
       promptReferences?: PromptReference[];
     }>(this.diagramComponentPath(setId, componentId));
-    if (!Array.isArray(stored.promptReferences)) return stored;
+    if (!Array.isArray(stored.promptReferences) && stored.recordOrigin) return stored;
     const { promptReferences: _promptReferences, ...component } = stored;
-    await writeJsonAtomic(this.diagramComponentPath(setId, componentId), component);
-    return component;
+    const normalized = {
+      ...component,
+      recordOrigin: component.recordOrigin ?? {
+        projectId: (await this.loadDiagramSet(setId)).projectId,
+        diagramSetId: setId
+      }
+    };
+    await writeJsonAtomic(this.diagramComponentPath(setId, componentId), normalized);
+    return normalized;
   }
 
   async loadGenerationPromptConfig(
@@ -1037,11 +1162,17 @@ export class DiagramStore {
       const importedComponents = await Promise.all(
         globalImports.diagramComponentIds.map((id) => this.loadImportedDiagramComponent(id))
       );
+      const importedCodeEntities = await Promise.all(
+        (globalImports.codeEntityIds ?? []).map((id) => this.loadImportedCodeEntity(id))
+      );
       return {
         project: null,
         diagramSets: [],
         globalImports,
         codeEntitySets: {},
+        importedCodeEntities: Object.fromEntries(
+          importedCodeEntities.map((entity) => [entity.id, entity])
+        ),
         diagrams: Object.fromEntries(importedDiagrams.map((diagram) => [diagram.id, diagram])),
         diagramComponents: Object.fromEntries(
           importedComponents.map((component) => [component.id, component])
@@ -1060,6 +1191,7 @@ export class DiagramStore {
     globalImports = await this.migrateLegacyImports(diagramSets, globalImports);
     diagramSets = await Promise.all(project.diagramSetIds.map((id) => this.loadDiagramSet(id)));
     const codeEntitySets: Record<string, CodeEntitiesSetRecord> = {};
+    const importedCodeEntities: Record<string, CodeEntityRecord> = {};
     const diagrams: Record<string, DiagramRecord> = {};
     const diagramComponents: Record<string, DiagramComponentRecord> = {};
     const codeEntityPromptConfigs: Record<string, CodeEntityPromptConfigRecord> = {};
@@ -1074,11 +1206,18 @@ export class DiagramStore {
     const agentRuns: Record<string, AgentRunRecord> = {};
     const editSessions: Record<string, EditSessionRecord> = {};
     const codeEntityMaps: Record<string, DiagramCodeEntityMapRecord> = {};
+    for (const id of globalImports.codeEntityIds ?? []) {
+      importedCodeEntities[id] = await this.loadImportedCodeEntity(id);
+    }
     for (const id of globalImports.diagramIds) {
       diagrams[id] = await this.loadImportedDiagram(id);
     }
     for (const id of globalImports.diagramComponentIds) {
       diagramComponents[id] = await this.loadImportedDiagramComponent(id);
+    }
+    for (const id of globalImports.codeEntityMapArtifactIds ?? []) {
+      const mapping = await this.loadImportedCodeEntityMap(id);
+      if (mapping) codeEntityMaps[id] = mapping;
     }
     for (const set of diagramSets) {
       const codeEntities = await this.loadCodeEntities(set.id);
@@ -1123,6 +1262,7 @@ export class DiagramStore {
       diagramSets,
       globalImports,
       codeEntitySets,
+      importedCodeEntities,
       diagrams,
       diagramComponents,
       codeEntityPromptConfigs,
@@ -1143,6 +1283,8 @@ export class DiagramStore {
     promptConfig: () => makeId("prompt"),
     diagram: () => makeId("diagram"),
     diagramComponent: () => makeId("component"),
+    codeEntity: () => makeId("entity"),
+    sourceRange: () => makeId("range"),
     editSession: () => makeId("edit"),
     editOperation: () => makeId("operation")
   };

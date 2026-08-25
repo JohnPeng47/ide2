@@ -40,17 +40,35 @@ export interface ReferenceResolutionResult {
   unresolved: ReferenceIdentity[];
 }
 
+function sameOrigin(
+  expected: ReferenceIdentity["origin"],
+  actual: ReferenceIdentity["origin"]
+): boolean {
+  if (!expected || !actual) return true;
+  return expected.projectId === actual.projectId
+    && expected.diagramSetId === actual.diagramSetId
+    && (!("codeEntitiesSetId" in expected) || (
+      "codeEntitiesSetId" in actual
+      && expected.codeEntitiesSetId === actual.codeEntitiesSetId
+    ));
+}
+
 export function resolveReference(
   identity: ReferenceIdentity,
   context: ReferenceResolutionContext
 ): ResolvedReference | null {
   if (identity.kind === "code-entity") {
-    const record = context.codeEntities.find((entity) => entity.id === identity.targetId);
+    const record = context.codeEntities.find((entity) => (
+      entity.id === identity.targetId && sameOrigin(identity.origin, entity.origin)
+    ));
     if (!record) return null;
-    const sourceRange = identity.sourceRangeIndex === undefined
-      ? undefined
-      : record.sourceRanges[identity.sourceRangeIndex];
-    if (identity.sourceRangeIndex !== undefined && !sourceRange) return null;
+    const sourceRange = identity.sourceRangeId
+      ? record.sourceRanges.find((range) => range.id === identity.sourceRangeId)
+      : identity.sourceRangeIndex === undefined
+        ? undefined
+        : record.sourceRanges[identity.sourceRangeIndex];
+    if ((identity.sourceRangeId !== undefined || identity.sourceRangeIndex !== undefined)
+      && !sourceRange) return null;
     return {
       identity,
       kind: "code-entity",
@@ -61,10 +79,14 @@ export function resolveReference(
   }
   if (identity.kind === "diagram") {
     const record = context.diagrams[identity.targetId];
-    return record ? { identity, kind: "diagram", record } : null;
+    return record && sameOrigin(identity.origin, record.recordOrigin)
+      ? { identity, kind: "diagram", record }
+      : null;
   }
   const record = context.components[identity.targetId];
-  return record ? { identity, kind: "diagram-component", record } : null;
+  return record && sameOrigin(identity.origin, record.recordOrigin)
+    ? { identity, kind: "diagram-component", record }
+    : null;
 }
 
 export function resolveReferences(

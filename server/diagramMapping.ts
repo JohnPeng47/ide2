@@ -45,7 +45,12 @@ export function validateDiagramMappings(
       if (occupied.has(coordinate)) throw new Error("mapped diagram elements cannot overlap");
       occupied.add(coordinate);
     }
-    return { ...draft, id: `map-${index + 1}` };
+    const sourceRange = entity.sourceRanges[draft.sourceRangeIndex];
+    return {
+      ...draft,
+      ...(sourceRange.id ? { sourceRangeId: sourceRange.id } : {}),
+      id: `map-${index + 1}`
+    };
   });
 }
 

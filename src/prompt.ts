@@ -29,6 +29,7 @@ export interface PromptOption {
   handle: string;
   label: string;
   token: string;
+  origin?: PromptReference["origin"];
 }
 
 export interface GenerationPromptBuildResult {
@@ -222,21 +223,24 @@ export function promptOptions(
       id: entity.id,
       handle: entity.handle,
       label: entity.label,
-      token: `@entity/${entity.handle}`
+      token: `@entity/${entity.handle}`,
+      ...(entity.origin ? { origin: entity.origin } : {})
     })),
     ...diagrams.filter((diagram) => !isDiagramArchived(diagram)).map((diagram) => ({
       kind: "diagram" as const,
       id: diagram.id,
       handle: diagram.handle,
       label: diagram.name,
-      token: `@diagram/${diagram.handle}`
+      token: `@diagram/${diagram.handle}`,
+      ...(diagram.recordOrigin ? { origin: diagram.recordOrigin } : {})
     })),
     ...components.filter((component) => !isDiagramComponentArchived(component)).map((component) => ({
       kind: "diagram-component" as const,
       id: component.id,
       handle: component.handle,
       label: component.name,
-      token: `@component/${component.handle}`
+      token: `@component/${component.handle}`,
+      ...(component.recordOrigin ? { origin: component.recordOrigin } : {})
     }))
   ];
 }
@@ -347,7 +351,8 @@ export function createGenerationPromptConfig(input: {
           id: entity.id,
           handle: entity.handle,
           label: entity.label,
-          token
+          token,
+          ...(entity.origin ? { origin: entity.origin } : {})
         };
       } else if (selection.kind === "diagram") {
         const diagram = allDiagramsById.get(selection.targetId);
@@ -356,7 +361,8 @@ export function createGenerationPromptConfig(input: {
           id: diagram.id,
           handle: diagram.handle,
           label: diagram.name,
-          token
+          token,
+          ...(diagram.recordOrigin ? { origin: diagram.recordOrigin } : {})
         };
       } else {
         const component = allComponentsById.get(selection.targetId);
@@ -365,7 +371,8 @@ export function createGenerationPromptConfig(input: {
           id: component.id,
           handle: component.handle,
           label: component.name,
-          token
+          token,
+          ...(component.recordOrigin ? { origin: component.recordOrigin } : {})
         };
       }
       if (!selectedOption) throw new Error(`unavailable prompt reference: ${token}`);
@@ -379,6 +386,7 @@ export function createGenerationPromptConfig(input: {
       omittedReferences.push({
         kind: option.kind,
         targetId: option.id,
+        ...(option.origin ? { origin: option.origin } : {}),
         token,
         handle: option.handle
       });
@@ -392,6 +400,7 @@ export function createGenerationPromptConfig(input: {
     references.push({
       kind: option.kind,
       targetId: option.id,
+      ...(option.origin ? { origin: option.origin } : {}),
       token,
       handle: option.handle,
       promptRepresentation
@@ -414,6 +423,7 @@ export function createGenerationPromptConfig(input: {
         references.unshift({
           kind: "diagram",
           targetId: diagram.id,
+          ...(diagram.recordOrigin ? { origin: diagram.recordOrigin } : {}),
           token: `@diagram/${diagram.handle}`,
           handle: diagram.handle,
           promptRepresentation: new Diagram(diagram).prompt_str()

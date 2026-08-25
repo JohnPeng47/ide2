@@ -45,6 +45,9 @@ function parentReference(config: GenerationPromptConfigRecord): PromptReference 
     return {
       kind: config.derivation.sourceArtifactKind,
       targetId: config.derivation.sourceArtifactId,
+      ...(config.derivation.sourceArtifactOrigin
+        ? { origin: config.derivation.sourceArtifactOrigin }
+        : {}),
       token: "",
       handle: ""
     };
@@ -104,7 +107,10 @@ export function buildDerivativePrompt(input: {
     historicalReferences,
     derivation: {
       sourceArtifactKind: input.sourceArtifactKind,
-      sourceArtifactId: input.sourceArtifact.id
+      sourceArtifactId: input.sourceArtifact.id,
+      ...(input.sourceArtifact.recordOrigin
+        ? { sourceArtifactOrigin: input.sourceArtifact.recordOrigin }
+        : {})
     }
   };
 }
@@ -149,6 +155,9 @@ export function diagramReferencesInPrompt(input: {
     byKey.set(key, {
       kind: "diagram",
       targetId,
+      ...(diagram?.recordOrigin
+        ? { origin: diagram.recordOrigin }
+        : historical?.origin ? { origin: historical.origin } : {}),
       token,
       handle,
       key,

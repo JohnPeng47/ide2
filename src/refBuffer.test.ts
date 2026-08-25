@@ -40,6 +40,22 @@ describe("reference buffer", () => {
       startColumn: 8,
       endColumn: 12
     }])).toEqual([{ kind: "code-entity", targetId: "entity-a", sourceRangeIndex: 2 }]);
-    expect(referenceIdentityKey(first)).toBe("code-entity:entity-a:0");
+    expect(referenceIdentityKey(first)).toBe("code-entity:legacy:entity-a:0");
+  });
+
+  it("keeps identical legacy target ids distinct by collection origin", () => {
+    const left: ReferenceIdentity = {
+      kind: "code-entity",
+      targetId: "entity-parser",
+      origin: { projectId: "project-a", diagramSetId: "set-a", codeEntitiesSetId: "entities-a" }
+    };
+    const right: ReferenceIdentity = {
+      kind: "code-entity",
+      targetId: "entity-parser",
+      origin: { projectId: "project-b", diagramSetId: "set-b", codeEntitiesSetId: "entities-b" }
+    };
+    expect(referenceIdentityKey(left)).not.toBe(referenceIdentityKey(right));
+    expect(reduceRefBuffer(EMPTY_REF_BUFFER, { type: "add", refs: [left, right] }).entries)
+      .toHaveLength(2);
   });
 });

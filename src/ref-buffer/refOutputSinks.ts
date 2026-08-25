@@ -11,7 +11,7 @@ export class ClipboardSink implements OutputSink<string> {
 }
 
 export interface ReferenceEnvelope {
-  schemaVersion: 1;
+  schemaVersion: 2;
   projectId: string;
   diagramSetId: string;
   sourceArtifactId?: string;
@@ -33,7 +33,7 @@ export function createReferenceEnvelope(input: {
   references: ReferenceIdentity[];
 }): ReferenceEnvelope {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     projectId: input.projectId,
     diagramSetId: input.diagramSetId,
     ...(input.sourceArtifactId ? { sourceArtifactId: input.sourceArtifactId } : {}),

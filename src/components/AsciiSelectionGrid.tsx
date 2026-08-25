@@ -17,7 +17,7 @@ import {
   normalizeDiagramSelection,
   type DiagramGridPoint
 } from "../diagramSelection";
-import { referenceIdentityKey } from "../refBuffer";
+import { referenceFromMapping, referenceIdentityKey } from "../refBuffer";
 import { DiagramSelectionOverlay, type SelectionOverlayRect, type SelectionOverlayReference } from "./DiagramSelectionOverlay";
 
 export type AsciiGridMode = "read" | "capture" | "select-refs" | "marker";
@@ -39,12 +39,11 @@ interface GridOrigin {
   top: number;
 }
 
-function mappingReferenceKey(mapping: DiagramElementMapping): string {
-  return referenceIdentityKey({
-    kind: "code-entity",
-    targetId: mapping.entityId,
-    sourceRangeIndex: mapping.sourceRangeIndex
-  });
+function mappingReferenceKey(
+  mapping: DiagramElementMapping,
+  entities: readonly CodeEntityRecord[]
+): string {
+  return referenceIdentityKey(referenceFromMapping(mapping, entities));
 }
 
 export function AsciiSelectionGrid(props: {
@@ -289,11 +288,13 @@ export function AsciiSelectionGrid(props: {
             const end = mapping.endColumn;
             if (start > cursor) content.push(line.slice(cursor, start));
             const entity = entitiesById.get(mapping.entityId);
-            const range = entity?.sourceRanges[mapping.sourceRangeIndex];
+            const range = mapping.sourceRangeId
+              ? entity?.sourceRanges.find((candidate) => candidate.id === mapping.sourceRangeId)
+              : entity?.sourceRanges[mapping.sourceRangeIndex];
             const classes = [
               "mapped-element",
               props.previewMappingIds.has(mapping.id) ? "is-selection-preview" : "",
-              props.bufferedReferenceKeys.has(mappingReferenceKey(mapping)) ? "is-buffered-ref" : ""
+              props.bufferedReferenceKeys.has(mappingReferenceKey(mapping, props.entities)) ? "is-buffered-ref" : ""
             ].filter(Boolean).join(" ");
             content.push(
               <span className="mapped-element-wrap" key={mapping.id}>
@@ -302,7 +303,7 @@ export function AsciiSelectionGrid(props: {
                   className={classes}
                   data-mapping-id={mapping.id}
                   data-entity-id={mapping.entityId}
-                  data-reference-key={mappingReferenceKey(mapping)}
+                  data-reference-key={mappingReferenceKey(mapping, props.entities)}
                   data-line={mapping.line}
                   data-start-column={mapping.startColumn}
                   data-end-column={mapping.endColumn}

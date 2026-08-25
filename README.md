@@ -165,8 +165,15 @@ The project header's `IMPORT` action adds an existing Diagram or
 DiagramComponent to the global import library for the current persistence root.
 Paste 7-bit ASCII directly or load a plain-text or stored artifact JSON file;
 JSON imports extract the artifact name, ASCII, and type when it can be
-identified. Global imports receive fresh ids and collision-safe handles and are
-available to every DiagramSet. Their index is stored at
+identified. New durable artifacts, CodeEntities, and source ranges use
+UUID-backed ids and carry explicit project, DiagramSet, and CodeEntitiesSet
+provenance. `export mapped` downloads a self-contained JSON bundle containing
+the artifact, its mapping, and exact CodeEntity/source snapshots. Importing that
+bundle preserves its global identity and provenance, so foreign mappings remain
+resolvable without access to the source project. Imported dependencies are
+read-only in the receiving project. Plain-text and legacy artifact imports still
+receive fresh ids and collision-safe handles. Global imports are available to
+every DiagramSet in the persistence root. Their index is stored at
 `.diagrams/imports/library.json`, with artifact records under
 `.diagrams/imports/diagrams/` and `.diagrams/imports/diagram-components/`.
 Imported Diagrams appear under the lineage tree's `GLOBAL IMPORTS` branch and
@@ -174,6 +181,20 @@ participate in capture, editing, derivative generation, prompt references,
 archival, and reload persistence. Captures, edits, and generated derivatives
 remain local to the active DiagramSet. Legacy set-scoped imports migrate into
 the library on workspace load.
+
+Relabel a legacy active store once before exchanging mapped bundles. Both
+commands dry-run and validate by default; add `--apply` only after reviewing the
+summary. Run the entity migration first:
+
+```sh
+node scripts/relabel-code-entity-identities.mjs /path/to/.diagrams
+node scripts/relabel-code-entity-identities.mjs /path/to/.diagrams --apply
+node scripts/relabel-artifact-ids.mjs --store /path/to/.diagrams --exclude-trash
+node scripts/relabel-artifact-ids.mjs --store /path/to/.diagrams --exclude-trash --apply
+```
+
+Apply mode retains a timestamped backup. Recoverable deleted DiagramSets under
+`trash/` remain legacy when `--exclude-trash` is used.
 
 For an offline deterministic fixture, set `NEW_DIAGRAM_AGENT=fake`.
 

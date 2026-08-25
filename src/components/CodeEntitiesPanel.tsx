@@ -88,6 +88,20 @@ export function CodeEntitiesPanel(props: {
     let cancelled = false;
     setPreview(null);
     setSourceError(null);
+    if (activeEntity.origin && activeEntity.origin.diagramSetId !== props.setId) {
+      if (activeRange.originalLines) {
+        setPreview({
+          path: activeRange.path,
+          startLine: activeRange.startLine,
+          lines: activeRange.originalLines
+        });
+        setSourceLoading(false);
+      } else {
+        setSourceError("The foreign CodeEntity does not include a captured source snapshot.");
+        setSourceLoading(false);
+      }
+      return;
+    }
     setSourceLoading(true);
     void fetchSourceSnippet(props.setId, activeEntity.id, activeRangeIndex)
       .then((result) => {

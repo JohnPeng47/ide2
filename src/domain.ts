@@ -56,6 +56,16 @@ export type AgentRunStatus =
   | "interrupted";
 export type GenerationBatchStatus = "queued" | "running" | "validating" | "complete" | "failed";
 
+/** Stable provenance for a record, independent from where an imported copy is stored. */
+export interface ArtifactOrigin {
+  projectId: string;
+  diagramSetId: string;
+}
+
+export interface CodeEntityOrigin extends ArtifactOrigin {
+  codeEntitiesSetId: string;
+}
+
 export type CompactedSourceSection =
   | {
       kind: "source";
@@ -83,6 +93,8 @@ export interface CompactedSource {
 }
 
 export interface SourceRange {
+  /** Globally unique on new records. Optional only while reading legacy records. */
+  id?: string;
   path: string;
   startLine: number;
   endLine: number;
@@ -95,6 +107,8 @@ export interface SourceRange {
 
 export interface CodeEntityRecord {
   id: string;
+  /** Exact immutable collection that owns this entity. Optional on legacy records. */
+  origin?: CodeEntityOrigin;
   handle: string;
   label: string;
   category: CodeEntityCategory;
@@ -152,6 +166,10 @@ export interface ImportedArtifactLibraryRecord {
   schemaVersion: typeof SCHEMA_VERSION;
   diagramIds: string[];
   diagramComponentIds: string[];
+  /** Dependency records imported with mapped artifact bundles. */
+  codeEntityIds?: string[];
+  /** Artifact ids whose original mapping is stored in the import library. */
+  codeEntityMapArtifactIds?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -161,6 +179,10 @@ export type ReferenceKind = "code-entity" | "diagram" | "diagram-component";
 export interface ReferenceIdentity {
   kind: ReferenceKind;
   targetId: string;
+  /** Origin is persisted on new references so legacy handle-derived ids remain unambiguous. */
+  origin?: CodeEntityOrigin | ArtifactOrigin;
+  sourceRangeId?: string;
+  /** Legacy range address. New references use sourceRangeId. */
   sourceRangeIndex?: number;
 }
 
@@ -181,6 +203,7 @@ export interface GenerationReferenceSelection extends PromptReference {
 export interface GenerationDerivationRecord {
   sourceArtifactKind: GenerationOutputKind;
   sourceArtifactId: string;
+  sourceArtifactOrigin?: ArtifactOrigin;
   /** Only the new correction entered after the inherited prompt history. */
   promptCorrection: string;
 }
@@ -266,6 +289,8 @@ export interface DiagramSelectionBounds {
 export interface DiagramComponentRecord {
   schemaVersion: typeof SCHEMA_VERSION;
   id: string;
+  /** Original owner; differs from diagramSetId for globally imported artifacts. */
+  recordOrigin?: ArtifactOrigin;
   diagramSetId: string;
   handle: string;
   name: string;
@@ -291,6 +316,8 @@ export function isDiagramComponentArchived(component: DiagramComponentRecord): b
 export interface DiagramRecord {
   schemaVersion: typeof SCHEMA_VERSION;
   id: string;
+  /** Original owner; differs from diagramSetId for globally imported artifacts. */
+  recordOrigin?: ArtifactOrigin;
   diagramSetId: string;
   viewKind: DiagramViewKind;
   /** Main diagram that supplied mandatory context for an auxiliary view. */
@@ -315,6 +342,8 @@ export function isDiagramArchived(diagram: DiagramRecord): boolean {
 export interface DiagramElementMapping {
   id: string;
   entityId: string;
+  /** Stable range identity; sourceRangeIndex remains for agent prompting and legacy maps. */
+  sourceRangeId?: string;
   sourceRangeIndex: number;
   line: number;
   startColumn: number;
@@ -418,6 +447,8 @@ export interface WorkspaceSnapshot {
   diagramSets: DiagramSetRecord[];
   globalImports: ImportedArtifactLibraryRecord;
   codeEntitySets: Record<string, CodeEntitiesSetRecord>;
+  /** Immutable CodeEntity dependencies carried by imported mapped artifacts. */
+  importedCodeEntities: Record<string, CodeEntityRecord>;
   diagrams: Record<string, DiagramRecord>;
   diagramComponents: Record<string, DiagramComponentRecord>;
   codeEntityPromptConfigs: Record<string, CodeEntityPromptConfigRecord>;
@@ -460,6 +491,16 @@ export interface ArtifactImportInput {
   artifactKind: GenerationOutputKind;
   name: string;
   ascii: string;
+  /** Present when importing a self-contained mapped artifact bundle. */
+  bundle?: MappedArtifactBundle;
+}
+
+export interface MappedArtifactBundle {
+  bundleVersion: 1;
+  artifactKind: GenerationOutputKind;
+  artifact: DiagramRecord | DiagramComponentRecord;
+  codeEntities: CodeEntityRecord[];
+  codeEntityMap?: DiagramCodeEntityMapRecord;
 }
 
 export interface AgentProgress {
@@ -480,7 +521,9 @@ export class CodeEntity implements SelectableText {
     if (reference.kind !== "code-entity" || reference.targetId !== this.record.id) {
       return undefined;
     }
-    const rangeIndex = reference.sourceRangeIndex ?? 0;
+    const rangeIndex = reference.sourceRangeId
+      ? this.record.sourceRanges.findIndex((range) => range.id === reference.sourceRangeId)
+      : reference.sourceRangeIndex ?? 0;
     return this.record.sourceRanges[rangeIndex]?.path;
   }
 

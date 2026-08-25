@@ -125,6 +125,15 @@ describe("DiagramStore", () => {
     const workspace = await store.loadWorkspace();
     expect(workspace.diagramSets[0].readiness).toBe("ready");
     expect(workspace.codeEntitySets[diagramSet.codeEntitiesSetId].status).toBe("finalized");
+    expect(workspace.codeEntitySets[diagramSet.codeEntitiesSetId].entities[0]).toMatchObject({
+      id: "entity-worker",
+      origin: {
+        projectId: project.id,
+        diagramSetId: diagramSet.id,
+        codeEntitiesSetId: diagramSet.codeEntitiesSetId
+      },
+      sourceRanges: [{ id: expect.stringMatching(/^range-[a-f0-9]{32}$/) }]
+    });
   });
 
   it("migrates legacy duplicated batch prompts into one prompt-config record", async () => {

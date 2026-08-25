@@ -54,6 +54,7 @@ export function DiagramView(props: {
   active: DiagramRecord | DiagramComponentRecord;
   artifactKind: "diagram" | "diagram-component";
   onGenerate: () => void;
+  onExport: () => Promise<void>;
   onCapture: (bounds: DiagramSelectionBounds) => Promise<void>;
   editMode?: boolean;
   markerMode?: boolean;
@@ -83,6 +84,7 @@ export function DiagramView(props: {
   const [selectingRefs, setSelectingRefs] = useState(false);
   const [liveSelection, setLiveSelection] = useState<DiagramSelectionBounds | null>(null);
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectionStatus, setSelectionStatus] = useState("");
   const [draftAscii, setDraftAscii] = useState(props.active.ascii);
@@ -106,8 +108,8 @@ export function DiagramView(props: {
     [liveSelection, mappings]
   );
   const liveReferences = useMemo(
-    () => referencesFromMappings(liveMappings),
-    [liveMappings]
+    () => referencesFromMappings(liveMappings, props.codeEntities),
+    [liveMappings, props.codeEntities]
   );
   const previewMappingIds = useMemo(
     () => new Set(liveMappings.map((mapping) => mapping.id)),
@@ -166,7 +168,7 @@ export function DiagramView(props: {
       return;
     }
     const selectedMappings = mappingsForSelection(mappings, bounds);
-    const refs = referencesFromMappings(selectedMappings);
+    const refs = referencesFromMappings(selectedMappings, props.codeEntities);
     refBuffer.add(refs);
     setSelectionStatus(refs.length === 0
       ? "no mapped references in selection"
@@ -202,7 +204,19 @@ export function DiagramView(props: {
         <div className="diagram-actions">
           <button
             type="button"
-            className={capturing ? "button is-active" : "button"}
+            className="button export-mapped-artifact"
+            disabled={exporting}
+            onClick={() => {
+              setExporting(true);
+              setError(null);
+              void props.onExport().catch((caught) => {
+                setError(caught instanceof Error ? caught.message : "mapped artifact export failed");
+              }).finally(() => setExporting(false));
+            }}
+          >{exporting ? "exporting…" : "export mapped"}</button>
+          <button
+            type="button"
+            className={capturing ? "button capture-component is-active" : "button capture-component"}
             aria-keyshortcuts="Escape"
             disabled={saving || props.editMode}
             onClick={() => {

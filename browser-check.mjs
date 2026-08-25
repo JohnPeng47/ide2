@@ -604,11 +604,16 @@ try {
     await pointerClick(cdp, ".ref-buffer-actions button:nth-child(3)");
     await waitFor(async () => await evaluate(cdp, `(() => {
       const envelope = window.__selectedReferenceEnvelope;
-      return envelope?.schemaVersion === 1
+      const reference = envelope?.references?.[0];
+      return envelope?.schemaVersion === 2
         && envelope.references?.length === 1
-        && envelope.references[0].kind === 'code-entity'
-        && envelope.references[0].targetId === ${JSON.stringify(mappedEntityId)}
-        && envelope.references[0].sourceRangeIndex === 0;
+        && reference.kind === 'code-entity'
+        && reference.targetId === ${JSON.stringify(mappedEntityId)}
+        && typeof reference.sourceRangeId === 'string'
+        && reference.sourceRangeId.length > 0
+        && typeof reference.origin?.projectId === 'string'
+        && typeof reference.origin?.diagramSetId === 'string'
+        && typeof reference.origin?.codeEntitiesSetId === 'string';
     })()`), { message: "internal reference envelope did not preserve the selected identity" });
     await pointerClick(cdp, ".ref-buffer-actions button:nth-child(4)");
     await waitFor(async () => await evaluate(cdp, `(() => {
@@ -775,7 +780,7 @@ try {
       message: "prompt inspection dialog did not close"
     });
 
-    await pointerClick(cdp, ".diagram-actions .button:first-child");
+    await pointerClick(cdp, ".diagram-actions .capture-component");
     await waitForSelector(cdp, ".ascii-selector");
     await dragAsciiBetween(
       cdp,
@@ -831,7 +836,7 @@ try {
     if (openedComponentToken !== capturedComponent.reference) {
       throw new Error(`component view opened ${openedComponentToken} instead of ${capturedComponent.reference}`);
     }
-    await pointerClick(cdp, ".diagram-actions .button:first-child");
+    await pointerClick(cdp, ".diagram-actions .capture-component");
     await waitForSelector(cdp, ".ascii-selector");
     await dragAsciiBetween(
       cdp,

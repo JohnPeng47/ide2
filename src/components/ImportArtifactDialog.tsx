@@ -1,14 +1,27 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
-import type { ArtifactImportInput, GenerationOutputKind } from "../domain";
+import type { ArtifactImportInput, GenerationOutputKind, MappedArtifactBundle } from "../domain";
 
 function artifactFromFile(fileName: string, contents: string): {
   name: string;
   ascii: string;
   artifactKind?: GenerationOutputKind;
+  bundle?: MappedArtifactBundle;
 } {
   const fallbackName = fileName.replace(/\.[^.]+$/, "").trim();
   try {
     const value = JSON.parse(contents) as Record<string, unknown>;
+    if (value?.bundleVersion === 1
+      && (value.artifactKind === "diagram" || value.artifactKind === "diagram-component")
+      && value.artifact && typeof value.artifact === "object"
+      && Array.isArray(value.codeEntities)) {
+      const bundle = value as unknown as MappedArtifactBundle;
+      return {
+        name: bundle.artifact.name || fallbackName,
+        ascii: bundle.artifact.ascii,
+        artifactKind: bundle.artifactKind,
+        bundle
+      };
+    }
     if (value && typeof value === "object" && typeof value.ascii === "string") {
       const artifactKind = value.artifactKind === "diagram-component"
         || Object.hasOwn(value, "derivedFromDiagramComponentIds")
@@ -34,6 +47,7 @@ export function ImportArtifactDialog(props: {
   const [name, setName] = useState("");
   const [ascii, setAscii] = useState("");
   const [sourceName, setSourceName] = useState("");
+  const [bundle, setBundle] = useState<MappedArtifactBundle | undefined>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,6 +60,7 @@ export function ImportArtifactDialog(props: {
       setName(imported.name);
       setAscii(imported.ascii);
       if (imported.artifactKind) setArtifactKind(imported.artifactKind);
+      setBundle(imported.bundle);
       setSourceName(file.name);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "artifact file could not be read");
@@ -57,7 +72,7 @@ export function ImportArtifactDialog(props: {
     setBusy(true);
     setError(null);
     try {
-      await props.onImport({ artifactKind, name, ascii });
+      await props.onImport({ artifactKind, name, ascii, ...(bundle ? { bundle } : {}) });
       props.onClose();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "artifact import failed");
@@ -137,7 +152,10 @@ export function ImportArtifactDialog(props: {
               disabled={busy}
               spellCheck={false}
               placeholder={"+----------------------+\n| Diagram              |\n+----------------------+"}
-              onChange={(event) => setAscii(event.target.value)}
+              onChange={(event) => {
+                setAscii(event.target.value);
+                setBundle(undefined);
+              }}
             />
           </label>
           {error ? <p className="inline-error" role="alert">{error}</p> : null}

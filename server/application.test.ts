@@ -735,4 +735,85 @@ describe("DiagramApplication", () => {
       outputKind: "diagram"
     })).rejects.toThrow(/unknown prompt reference/);
   });
+
+  it("round-trips a mapped artifact with foreign CodeEntity dependencies", async () => {
+    const prepare = async (prefix: string) => {
+      const root = await mkdtemp(path.join(tmpdir(), prefix));
+      roots.push(root);
+      execFileSync("git", ["init", "-q", root]);
+      await writeFile(path.join(root, "fixture.ts"), "export const worker = () => true;\n", "utf8");
+      execFileSync("git", ["-C", root, "add", "fixture.ts"]);
+      execFileSync("git", [
+        "-C", root, "-c", "user.name=Test", "-c", "user.email=test@example.com",
+        "commit", "-qm", "fixture"
+      ]);
+      const application = new DiagramApplication(new DiagramStore(root), new ParallelRuntime());
+      const set = await application.createDiagramSet({ path: root, name: prefix, prompt: "Show worker" });
+      await application.collectCodeEntities(set.id);
+      return { application, set };
+    };
+
+    const source = await prepare("new-diagram-bundle-source-");
+    const sourceEntities = (await source.application.workspace())
+      .codeEntitySets[source.set.codeEntitiesSetId].entities;
+    let sourceWorkspace = await source.application.generate(source.set.id, {
+      prompt: "Show worker",
+      selectedCodeEntityIds: sourceEntities.map((entity) => entity.id),
+      count: 1,
+      outputKind: "diagram"
+    });
+    const sourceDiagramId = sourceWorkspace.diagramSets[0].diagramIds[0];
+    sourceWorkspace = await source.application.mapCodeEntities(
+      source.set.id,
+      "diagram",
+      sourceDiagramId
+    );
+    const bundle = await source.application.mappedArtifactBundle(
+      source.set.id,
+      "diagram",
+      sourceDiagramId
+    );
+    expect(bundle.codeEntities[0]).toMatchObject({
+      id: expect.stringMatching(/^entity-[0-9a-f-]{36}$/),
+      origin: {
+        projectId: source.set.projectId,
+        diagramSetId: source.set.id,
+        codeEntitiesSetId: source.set.codeEntitiesSetId
+      }
+    });
+    expect(bundle.codeEntities[0].sourceRanges[0].id).toMatch(/^range-[0-9a-f-]{36}$/);
+    expect(bundle.codeEntityMap?.artifactId).toBe(sourceDiagramId);
+
+    const target = await prepare("new-diagram-bundle-target-");
+    const imported = await target.application.importArtifact({
+      artifactKind: "diagram",
+      name: bundle.artifact.name,
+      ascii: bundle.artifact.ascii,
+      bundle
+    });
+    expect(imported.globalImports.diagramIds).toContain(sourceDiagramId);
+    expect(imported.diagrams[sourceDiagramId]).toMatchObject({
+      diagramSetId: "global-imports",
+      recordOrigin: bundle.artifact.recordOrigin,
+      codeEntityIds: [bundle.codeEntities[0].id]
+    });
+    expect(imported.importedCodeEntities[bundle.codeEntities[0].id]).toEqual(bundle.codeEntities[0]);
+    expect(imported.codeEntityMaps[sourceDiagramId]).toEqual(sourceWorkspace.codeEntityMaps[sourceDiagramId]);
+
+    await expect(target.application.importArtifact({
+      artifactKind: "diagram",
+      name: "Invalid foreign map",
+      ascii: bundle.artifact.ascii,
+      bundle: {
+        ...bundle,
+        codeEntityMap: {
+          ...bundle.codeEntityMap!,
+          mappings: [{
+            ...bundle.codeEntityMap!.mappings[0],
+            sourceRangeIndex: 999
+          }]
+        }
+      }
+    })).rejects.toThrow(/unavailable source range/);
+  });
 });

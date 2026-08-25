@@ -12,6 +12,7 @@ import {
   deleteCodeEntityPromptTemplate,
   deleteDiagramSet,
   discardEdit,
+  fetchMappedArtifactBundle,
   fetchWorkspace,
   generateArtifacts,
   finishEdit,
@@ -191,11 +192,15 @@ export function App() {
   const entitySet = activeSet && workspace
     ? workspace.codeEntitySets[activeSet.codeEntitiesSetId]
     : null;
+  const resolutionEntities = useMemo(() => [
+    ...(entitySet?.entities ?? []),
+    ...Object.values(workspace?.importedCodeEntities ?? {})
+  ], [entitySet?.entities, workspace?.importedCodeEntities]);
   const referenceResolutionContext = useMemo<ReferenceResolutionContext>(() => ({
-    codeEntities: entitySet?.entities ?? [],
+    codeEntities: resolutionEntities,
     diagrams: workspace?.diagrams ?? {},
     components: workspace?.diagramComponents ?? {}
-  }), [entitySet?.entities, workspace?.diagramComponents, workspace?.diagrams]);
+  }), [resolutionEntities, workspace?.diagramComponents, workspace?.diagrams]);
   useEffect(() => {
     refBuffer.setScope(workspace?.project && activeSet
       ? `${workspace.project.id}:${activeSet.id}`
@@ -221,14 +226,14 @@ export function App() {
     : undefined;
   const immutableCodeEntities = useMemo(() => {
     if (!foundationDiagram || !entitySet) return [];
-    const byId = new Map(entitySet.entities.map((entity) => [entity.id, entity]));
+    const byId = new Map(resolutionEntities.map((entity) => [entity.id, entity]));
     const ids = targetKind === "dir-view"
       ? [...new Set([...foundationDiagram.codeEntityIds, ...(companionCallGraph?.codeEntityIds ?? [])])]
       : foundationDiagram.codeEntityIds;
     return ids
       .map((id) => byId.get(id))
       .filter((entity): entity is NonNullable<typeof entity> => Boolean(entity));
-  }, [companionCallGraph, entitySet, foundationDiagram, targetKind]);
+  }, [companionCallGraph, entitySet, foundationDiagram, resolutionEntities, targetKind]);
   const foundationRepositoryPaths = useMemo(() => [...new Set(
     immutableCodeEntities.flatMap((entity) => entity.sourceRanges.map((range) => range.path))
   )].sort(), [immutableCodeEntities]);
@@ -535,6 +540,7 @@ export function App() {
           reference.tokens.map((token) => ({
             kind: reference.kind,
             targetId: reference.targetId,
+            ...(reference.origin ? { origin: reference.origin } : {}),
             token,
             handle: reference.handle,
             included: reference.available && !excludedReferenceKeys.has(reference.key)
@@ -808,6 +814,25 @@ export function App() {
     } else {
       setActiveComponentId(artifactId);
       setScreen("diagram-component");
+    }
+  };
+
+  const exportMappedArtifact = async (
+    artifactKind: GenerationOutputKind,
+    artifact: DiagramRecord | DiagramComponentRecord
+  ) => {
+    const bundle = await fetchMappedArtifactBundle(activeSet.id, artifactKind, artifact.id);
+    const url = URL.createObjectURL(new Blob(
+      [`${JSON.stringify(bundle, null, 2)}\n`],
+      { type: "application/json" }
+    ));
+    try {
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${artifact.handle}.mapped-artifact.json`;
+      link.click();
+    } finally {
+      URL.revokeObjectURL(url);
     }
   };
 
@@ -1185,11 +1210,12 @@ export function App() {
       active={editSession ? { ...activeComponent, ascii: editSession.workingAscii } : activeComponent}
       artifactKind="diagram-component"
       onGenerate={() => deriveComponent(activeComponent)}
+      onExport={() => exportMappedArtifact("diagram-component", activeComponent)}
       onCapture={captureNested}
       editMode={Boolean(editSession)}
       markerMode={markerMode}
       editBusy={editBusy}
-      codeEntities={entitySet.entities}
+      codeEntities={resolutionEntities}
       codeEntityMap={selectedCodeEntityMap}
       referenceResolutionContext={referenceResolutionContext}
       projectId={workspace.project.id}
@@ -1211,11 +1237,12 @@ export function App() {
       active={editSession ? { ...activeDiagram, ascii: editSession.workingAscii } : activeDiagram}
       artifactKind="diagram"
       onGenerate={() => derive(activeDiagram)}
+      onExport={() => exportMappedArtifact("diagram", activeDiagram)}
       onCapture={capture}
       editMode={Boolean(editSession)}
       markerMode={markerMode}
       editBusy={editBusy}
-      codeEntities={entitySet.entities}
+      codeEntities={resolutionEntities}
       codeEntityMap={selectedCodeEntityMap}
       referenceResolutionContext={referenceResolutionContext}
       projectId={workspace.project.id}
@@ -1243,9 +1270,12 @@ export function App() {
     />;
   }
 
+  const contextCodeEntities = screen === "generation"
+    ? entitySet
+    : { ...entitySet, entities: resolutionEntities };
   const renderContextPane = (tab: ContextTab) => <DiagramContextPanel
     setId={activeSet.id}
-    codeEntities={entitySet}
+    codeEntities={contextCodeEntities}
     diagramSet={activeSet}
     diagrams={diagrams}
     components={components}

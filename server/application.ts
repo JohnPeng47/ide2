@@ -36,6 +36,7 @@ import {
   type GenerationOutputKind,
   type GenerationReferenceSelection,
   type GenerationBatchRecord,
+  type MappedArtifactBundle,
   type SystemPromptTemplateRecord,
   type WorkspaceSnapshot
 } from "../src/domain";
@@ -173,6 +174,39 @@ export class DiagramApplication {
         ? await this.store.loadImportedDiagram(artifactId)
         : await this.store.loadImportedDiagramComponent(artifactId),
       global: true
+    };
+  }
+
+  async mappedArtifactBundle(
+    setId: string,
+    artifactKind: GenerationOutputKind,
+    artifactId: string
+  ): Promise<MappedArtifactBundle> {
+    const { artifact, global } = await this.artifactForDiagramSet(setId, artifactKind, artifactId);
+    const localSet = await this.store.loadCodeEntities(setId);
+    const library = await this.store.loadImportedArtifactLibrary();
+    const imported = await Promise.all(
+      (library.codeEntityIds ?? []).map((id) => this.store.loadImportedCodeEntity(id))
+    );
+    const available = new Map(
+      [...localSet.entities, ...imported].map((entity) => [entity.id, entity])
+    );
+    const codeEntities = artifact.codeEntityIds.map((id) => available.get(id)).filter(
+      (entity): entity is CodeEntityRecord => Boolean(entity)
+    );
+    if (codeEntities.length !== new Set(artifact.codeEntityIds).size) {
+      throw new Error("artifact has unresolved CodeEntity dependencies");
+    }
+    const codeEntityMap = global
+      ? await this.store.loadImportedCodeEntityMap(artifactId)
+        ?? await this.store.loadCodeEntityMap(setId, artifactId)
+      : await this.store.loadCodeEntityMap(setId, artifactId);
+    return {
+      bundleVersion: 1,
+      artifactKind,
+      artifact,
+      codeEntities,
+      ...(codeEntityMap ? { codeEntityMap } : {})
     };
   }
 
@@ -375,11 +409,17 @@ export class DiagramApplication {
         }
         sourceRanges.push({
           ...range,
+          id: this.store.ids.sourceRange(),
           originalLines: sourceLines.slice(range.startLine - 1, range.endLine)
         });
       }
       const record: CodeEntityRecord = {
-        id: `entity-${handle}`,
+        id: this.store.ids.codeEntity(),
+        origin: {
+          projectId: set.projectId,
+          diagramSetId: set.id,
+          codeEntitiesSetId: set.codeEntitiesSetId
+        },
         handle,
         label: draft.label.trim(),
         category: draft.category,
@@ -404,6 +444,49 @@ export class DiagramApplication {
     if (ascii.length > 20000) throw new Error("artifact ASCII cannot exceed 20,000 characters");
 
     const workspace = await this.workspace();
+    const bundle = input.bundle;
+    if (bundle) {
+      if (bundle.bundleVersion !== 1 || bundle.artifactKind !== input.artifactKind) {
+        throw new Error("mapped artifact bundle kind or version is invalid");
+      }
+      if (bundle.artifact.ascii !== input.ascii) {
+        throw new Error("mapped artifact bundle ASCII cannot be edited during import");
+      }
+      if (!bundle.artifact.recordOrigin) {
+        throw new Error("mapped artifact bundle is missing artifact provenance");
+      }
+      const dependencies = new Map(bundle.codeEntities.map((entity) => [entity.id, entity]));
+      for (const id of bundle.artifact.codeEntityIds) {
+        if (!dependencies.has(id)) throw new Error(`mapped artifact bundle is missing CodeEntity: ${id}`);
+      }
+      for (const entity of bundle.codeEntities) {
+        if (!entity.origin) throw new Error(`CodeEntity ${entity.id} is missing provenance`);
+        if (entity.sourceRanges.some((range) => !range.id)) {
+          throw new Error(`CodeEntity ${entity.id} has a source range without an id`);
+        }
+        await this.store.addImportedCodeEntity(entity);
+      }
+      if (bundle.codeEntityMap) {
+        if (bundle.codeEntityMap.artifactId !== bundle.artifact.id
+          || bundle.codeEntityMap.artifactKind !== input.artifactKind) {
+          throw new Error("mapped artifact bundle has a mismatched CodeEntity map");
+        }
+        for (const mapping of bundle.codeEntityMap.mappings) {
+          const entity = dependencies.get(mapping.entityId);
+          if (!entity || !bundle.artifact.codeEntityIds.includes(mapping.entityId)) {
+            throw new Error(`CodeEntity map references an unavailable dependency: ${mapping.entityId}`);
+          }
+          if (!Number.isInteger(mapping.sourceRangeIndex)
+            || !entity.sourceRanges[mapping.sourceRangeIndex]) {
+            throw new Error(`CodeEntity map references an unavailable source range: ${mapping.entityId}`);
+          }
+          if (mapping.sourceRangeId
+            && entity.sourceRanges[mapping.sourceRangeIndex].id !== mapping.sourceRangeId) {
+            throw new Error(`CodeEntity map has a mismatched source range identity: ${mapping.entityId}`);
+          }
+        }
+      }
+    }
     const existing = input.artifactKind === "diagram"
       ? Object.values(workspace.diagrams)
       : Object.values(workspace.diagramComponents);
@@ -416,34 +499,50 @@ export class DiagramApplication {
 
     if (input.artifactKind === "diagram") {
       const diagram: DiagramRecord = {
+        ...(bundle?.artifact as DiagramRecord | undefined),
         schemaVersion: SCHEMA_VERSION,
-        id: this.store.ids.diagram(),
+        id: bundle?.artifact.id ?? this.store.ids.diagram(),
+        recordOrigin: bundle?.artifact.recordOrigin ?? {
+          projectId: workspace.project?.id ?? "unowned",
+          diagramSetId: GLOBAL_IMPORTS_DIAGRAM_SET_ID
+        },
         diagramSetId: GLOBAL_IMPORTS_DIAGRAM_SET_ID,
-        viewKind: "diagram",
+        viewKind: bundle && "viewKind" in bundle.artifact ? bundle.artifact.viewKind : "diagram",
         handle,
         name,
         ascii,
-        codeEntityIds: [],
+        codeEntityIds: bundle?.artifact.codeEntityIds ?? [],
         origin: "imported",
-        derivedFromDiagramIds: [],
+        derivedFromDiagramIds: bundle && "derivedFromDiagramIds" in bundle.artifact
+          ? bundle.artifact.derivedFromDiagramIds
+          : [],
         createdAt: timestamp()
       };
       await this.store.addImportedDiagram(diagram);
+      if (bundle?.codeEntityMap) await this.store.addImportedCodeEntityMap(bundle.codeEntityMap);
     } else {
       const component: DiagramComponentRecord = {
+        ...(bundle?.artifact as DiagramComponentRecord | undefined),
         schemaVersion: SCHEMA_VERSION,
-        id: this.store.ids.diagramComponent(),
+        id: bundle?.artifact.id ?? this.store.ids.diagramComponent(),
+        recordOrigin: bundle?.artifact.recordOrigin ?? {
+          projectId: workspace.project?.id ?? "unowned",
+          diagramSetId: GLOBAL_IMPORTS_DIAGRAM_SET_ID
+        },
         diagramSetId: GLOBAL_IMPORTS_DIAGRAM_SET_ID,
         handle,
         name,
         ascii,
-        codeEntityIds: [],
+        codeEntityIds: bundle?.artifact.codeEntityIds ?? [],
         origin: "imported",
-        derivedFromDiagramIds: [],
-        derivedFromDiagramComponentIds: [],
+        derivedFromDiagramIds: bundle?.artifact.derivedFromDiagramIds ?? [],
+        derivedFromDiagramComponentIds: bundle && "derivedFromDiagramComponentIds" in bundle.artifact
+          ? bundle.artifact.derivedFromDiagramComponentIds
+          : [],
         createdAt: timestamp()
       };
       await this.store.addImportedDiagramComponent(component);
+      if (bundle?.codeEntityMap) await this.store.addImportedCodeEntityMap(bundle.codeEntityMap);
     }
     return this.workspace();
   }
@@ -925,6 +1024,7 @@ export class DiagramApplication {
       await this.store.addDiagram({
         schemaVersion: SCHEMA_VERSION,
         id: outputArtifactId,
+        recordOrigin: { projectId: set.projectId, diagramSetId: set.id },
         diagramSetId: setId,
         viewKind: (source as DiagramRecord).viewKind,
         ...((source as DiagramRecord).basedOnDiagramId
@@ -946,6 +1046,7 @@ export class DiagramApplication {
       await this.store.addDiagramComponent({
         schemaVersion: SCHEMA_VERSION,
         id: outputArtifactId,
+        recordOrigin: { projectId: set.projectId, diagramSetId: set.id },
         diagramSetId: setId,
         handle,
         name,
@@ -1027,6 +1128,7 @@ export class DiagramApplication {
     const component: DiagramComponentRecord = {
       schemaVersion: SCHEMA_VERSION,
       id: this.store.ids.diagramComponent(),
+      recordOrigin: { projectId: set.projectId, diagramSetId: set.id },
       diagramSetId: set.id,
       handle,
       name: `${source.artifact.name} - Component ${sequence}`,
@@ -1092,6 +1194,9 @@ export class DiagramApplication {
       }
       const storedDiagrams = await Promise.all(set.diagramIds.map((id) => this.store.loadDiagram(setId, id)));
       const library = await this.store.loadImportedArtifactLibrary();
+      const importedCodeEntities = await Promise.all(
+        (library.codeEntityIds ?? []).map((id) => this.store.loadImportedCodeEntity(id))
+      );
       const importedDiagrams = await Promise.all(
         library.diagramIds.map((id) => this.store.loadImportedDiagram(id))
       );
@@ -1110,7 +1215,10 @@ export class DiagramApplication {
       const promptBuild = createGenerationPromptConfig({
         id: this.store.ids.promptConfig(),
         diagramSet: set,
-        codeEntities: entities,
+        codeEntities: {
+          ...entities,
+          entities: [...entities.entities, ...importedCodeEntities]
+        },
         diagrams: [...storedDiagrams, ...importedDiagrams],
         components: [...storedComponents, ...importedComponents],
         outputKind: input.outputKind,
@@ -1285,6 +1393,7 @@ export class DiagramApplication {
         ? generated.map(({ run, draft, handle }) => ({
           schemaVersion: SCHEMA_VERSION,
           id: this.store.ids.diagram(),
+          recordOrigin: { projectId: set.projectId, diagramSetId: set.id },
           diagramSetId: setId,
           viewKind: outputViewKind!,
           ...(outputViewKind !== "diagram" && set.featuredViewIds.diagram
@@ -1305,6 +1414,7 @@ export class DiagramApplication {
         ? generated.map(({ run, draft, handle }) => ({
           schemaVersion: SCHEMA_VERSION,
           id: this.store.ids.diagramComponent(),
+          recordOrigin: { projectId: set.projectId, diagramSetId: set.id },
           diagramSetId: setId,
           handle,
           name: draft.name.trim(),

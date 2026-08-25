@@ -2,6 +2,7 @@ import type { ServerResponse } from "node:http";
 import type { Connect, Plugin } from "vite";
 import {
   isDiagramViewKind,
+  type ArtifactImportInput,
   type GenerationDerivationRecord,
   type GenerationReferenceSelection
 } from "../src/domain";
@@ -9,7 +10,7 @@ import { FakeDiagramAgentRuntime, PiDiagramAgentRuntime } from "./agentRuntime";
 import { DiagramApplication } from "./application";
 import { DiagramStore } from "./store";
 
-const MAX_REQUEST_BYTES = 256 * 1024;
+const MAX_REQUEST_BYTES = 10 * 1024 * 1024;
 
 function sendJson(response: ServerResponse, status: number, payload: unknown): void {
   response.statusCode = status;
@@ -183,6 +184,20 @@ export function diagramApi(projectRoot: string, diagramsDirectory = ".diagrams")
         if (request.method !== "GET") return sendJson(response, 405, { error: "method not allowed" });
         return sendJson(response, 200, await application.workspace());
       }
+      if (url.pathname === "/api/artifact-bundle") {
+        if (request.method !== "GET") return sendJson(response, 405, { error: "method not allowed" });
+        const setId = url.searchParams.get("setId") ?? "";
+        const artifactId = url.searchParams.get("artifactId") ?? "";
+        const artifactKind = url.searchParams.get("artifactKind");
+        if (artifactKind !== "diagram" && artifactKind !== "diagram-component") {
+          return sendJson(response, 400, { error: "artifactKind must be diagram or diagram-component" });
+        }
+        return sendJson(
+          response,
+          200,
+          await application.mappedArtifactBundle(setId, artifactKind, artifactId)
+        );
+      }
       if (url.pathname === "/api/source") {
         if (request.method !== "GET") return sendJson(response, 405, { error: "method not allowed" });
         const setId = url.searchParams.get("setId") ?? "";
@@ -351,7 +366,10 @@ export function diagramApi(projectRoot: string, diagramsDirectory = ".diagrams")
         return sendJson(response, 200, await application.importArtifact({
           artifactKind,
           name,
-          ascii
+          ascii,
+          ...(body.bundle && typeof body.bundle === "object"
+            ? { bundle: body.bundle as ArtifactImportInput["bundle"] }
+            : {})
         }));
       }
       const importedDiagram = parseImportedDiagram(url.pathname);
