@@ -60,6 +60,36 @@ async function replaceText(cdp, selector, value) {
   await cdp.send("Input.insertText", { text: value });
 }
 
+async function asciiGridPoint(cdp, line, column) {
+  const point = await evaluate(cdp, `(() => {
+    const grid = document.querySelector('.ascii-grid');
+    const bounds = grid?.getBoundingClientRect();
+    const cellWidth = Number(grid?.dataset.cellWidth);
+    const lineHeight = Number(grid?.dataset.lineHeight);
+    if (!bounds || !(cellWidth > 0) || !(lineHeight > 0)) return null;
+    return {
+      x: bounds.left + (${column} - 0.5) * cellWidth,
+      y: bounds.top + (${line} - 0.5) * lineHeight
+    };
+  })()`);
+  if (!point) throw new Error("ASCII grid cell metrics were unavailable");
+  return point;
+}
+
+async function dragAsciiBetween(cdp, start, end) {
+  const from = await asciiGridPoint(cdp, start.line, start.column);
+  const to = await asciiGridPoint(cdp, end.line, end.column);
+  await cdp.send("Input.dispatchMouseEvent", {
+    type: "mousePressed", x: from.x, y: from.y, button: "left", buttons: 1, clickCount: 1
+  });
+  await cdp.send("Input.dispatchMouseEvent", {
+    type: "mouseMoved", x: to.x, y: to.y, button: "left", buttons: 1
+  });
+  await cdp.send("Input.dispatchMouseEvent", {
+    type: "mouseReleased", x: to.x, y: to.y, button: "left", buttons: 0, clickCount: 1
+  });
+}
+
 const fixtureRoot = await mkdtemp(path.join(tmpdir(), "new-diagram-aux-browser-"));
 const screenshotPath = path.join(fixtureRoot, "aux-views.png");
 let serverProcess;
@@ -88,6 +118,11 @@ try {
 
   await withHeadlessBrowser({ url, width: 1440, height: 900 }, async ({ cdp }) => {
     await cdp.send("Page.enable");
+    await cdp.send("Runtime.enable");
+    const pageErrors = [];
+    const removeExceptionListener = cdp.on("Runtime.exceptionThrown", ({ exceptionDetails }) => {
+      pageErrors.push(exceptionDetails.exception?.description ?? exceptionDetails.text);
+    });
     await waitForSelector(cdp, ".empty-workspace");
     await execFileAsync("npm", [
       "run", "diagram", "--", "create",
@@ -96,7 +131,15 @@ try {
       "--prompt", "Show entry and worker flow",
       "--server", url
     ], { cwd: packageRoot, env: { ...process.env, NEW_DIAGRAM_AGENT: "fake" }, encoding: "utf8" });
-    await waitForSelector(cdp, ".diagram-panel", { timeoutMs: 10000 });
+    try {
+      await waitForSelector(cdp, ".diagram-panel", { timeoutMs: 10000 });
+    } catch (error) {
+      const pageState = await evaluate(cdp, `({
+        body: document.body.innerText.slice(0, 2000),
+        url: location.href
+      })`);
+      throw new Error(`initial diagram did not render: ${JSON.stringify({ ...pageState, pageErrors })}`, { cause: error });
+    }
 
     const mainName = await evaluate(cdp, `document.querySelector('.diagram-heading h2').textContent`);
     await click(cdp, ".diagram-star-toggle");
@@ -156,6 +199,80 @@ try {
       || callPromptContext.includes("PREVIOUS PROMPT")) {
       throw new Error("call-graph model context was not isolated from previous prompts");
     }
+
+    await click(cdp, ".diagram-view-tabs button:first-child");
+    await waitFor(async () => (await evaluate(cdp, `document.querySelector('.diagram-heading h2').textContent`)) === mainName, {
+      message: "Diagram tab did not return to the source diagram before focus selection"
+    });
+    await click(cdp, ".map-code-entities");
+    await waitForSelector(cdp, ".mapped-element", { timeoutMs: 10000 });
+    const mappedBounds = await evaluate(cdp, `(() => {
+      const mapping = document.querySelector('.mapped-element').dataset;
+      return {
+        line: Number(mapping.line),
+        startColumn: Number(mapping.startColumn),
+        endColumn: Number(mapping.endColumn)
+      };
+    })()`);
+    await click(cdp, ".select-refs");
+    await waitForSelector(cdp, ".ascii-selector--select-refs");
+    await dragAsciiBetween(
+      cdp,
+      { line: mappedBounds.line, column: mappedBounds.startColumn },
+      { line: mappedBounds.line, column: mappedBounds.endColumn }
+    );
+    await waitForSelector(cdp, '.ref-buffer-tray[data-ref-buffer-count="1"]');
+    if (await evaluate(cdp, `document.querySelector('.display-call-graph').disabled`)) {
+      throw new Error("committed mapped CodeEntity did not enable the call-graph action");
+    }
+    const panesBeforeFocus = await evaluate(cdp, `document.querySelectorAll('.workspace-pane').length`);
+    const splitsBeforeFocus = await evaluate(cdp, `document.querySelectorAll('.pane-split').length`);
+    const contextTabBeforeFocus = await evaluate(cdp, `
+      document.querySelector('[data-pane-id="context"] [role="tab"][aria-selected="true"]')?.id
+    `);
+    await click(cdp, ".display-call-graph");
+    await waitForSelector(cdp, '[data-pane-id="context"] .call-graph-focus-tree', {
+      timeoutMs: 10000
+    });
+    const focusState = await evaluate(cdp, `(() => {
+      const pane = document.querySelector('[data-pane-id="context"]');
+      const rows = [...pane.querySelectorAll('[role="treeitem"]')].map((row) => row.textContent);
+      return {
+        focused: pane.classList.contains('is-focused'),
+        focusTabs: pane.querySelectorAll('[role="tab"][id*="call-graph-focus-view-"]').length,
+        rows,
+        panes: document.querySelectorAll('.workspace-pane').length,
+        splits: document.querySelectorAll('.pane-split').length
+      };
+    })()`);
+    if (!focusState.focused
+      || focusState.focusTabs !== 1
+      || focusState.panes !== panesBeforeFocus
+      || focusState.splits !== splitsBeforeFocus
+      || !focusState.rows.some((row) => row.includes("parallel slot 01"))
+      || !focusState.rows.some((row) => row.includes("internal step"))) {
+      throw new Error(`focused call-graph pane was incomplete: ${JSON.stringify(focusState)}`);
+    }
+    await click(cdp, '[data-pane-id="context"] .call-graph-focus-toggle');
+    await waitFor(async () => await evaluate(cdp, `(() => {
+      const pane = document.querySelector('[data-pane-id="context"]');
+      return pane.querySelectorAll('[role="treeitem"]').length === 1
+        && pane.querySelector('[role="treeitem"]')?.getAttribute('aria-expanded') === 'false';
+    })()`), { message: "focused call-graph branch did not collapse" });
+    await click(cdp, '[data-pane-id="context"] .call-graph-focus-toggle');
+    await waitFor(async () => await evaluate(cdp, `(() => {
+      const pane = document.querySelector('[data-pane-id="context"]');
+      return pane.querySelectorAll('[role="treeitem"]').length === 2
+        && pane.querySelector('[role="treeitem"]')?.getAttribute('aria-expanded') === 'true';
+    })()`), { message: "focused call-graph branch did not expand" });
+    await click(cdp, '[data-pane-id="context"] .pane-tab__close');
+    await waitFor(async () => await evaluate(cdp, `
+      !document.querySelector('[data-pane-id="context"] .call-graph-focus-tree')
+        && document.querySelectorAll('.workspace-pane').length === ${panesBeforeFocus}
+        && document.querySelectorAll('.pane-split').length === ${splitsBeforeFocus}
+        && document.querySelector('[data-pane-id="context"] [role="tab"][aria-selected="true"]')?.id
+          === ${JSON.stringify(contextTabBeforeFocus)}
+    `), { message: "closing the focused call graph did not restore the previous context tab" });
 
     await click(cdp, ".diagram-view-tabs button:nth-child(3)");
     await waitForSelector(cdp, ".diagram-empty-state");
@@ -221,6 +338,10 @@ try {
     await waitFor(async () => await evaluate(cdp, `document.querySelector('.diagram-meta').textContent.includes('[CALL-GRAPH]')`), {
       message: "starred call graph did not survive reload"
     });
+    if (pageErrors.length > 0) {
+      throw new Error(`browser reported runtime errors: ${JSON.stringify(pageErrors)}`);
+    }
+    removeExceptionListener();
   });
 
   if ((await readFile(screenshotPath)).length < 1000) {

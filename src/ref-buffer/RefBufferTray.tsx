@@ -1,5 +1,9 @@
-import { useMemo, useState } from "react";
-import type { ReferenceIdentity } from "../domain";
+import { useMemo, useRef, useState } from "react";
+import {
+  createCallGraphFocusRequest,
+  type OpenCallGraphFocus
+} from "../callGraphFocus";
+import type { DiagramRecord, ReferenceIdentity } from "../domain";
 import { referenceIdentityKey } from "../refBuffer";
 import { resolveReferences, type ReferenceResolutionContext } from "../referenceResolver";
 import { useRefBuffer } from "./RefBufferContext";
@@ -24,10 +28,16 @@ export function RefBufferTray(props: {
   internalSink?: OutputSink<ReferenceEnvelope>;
   previewEntries?: readonly ReferenceIdentity[];
   showWhenEmpty?: boolean;
+  sourceDiagram?: DiagramRecord;
+  onOpenCallGraphFocus?: OpenCallGraphFocus;
+  /** Exact buffered references backed by mappings on the active source Diagram. */
+  callGraphFocusReferenceKeys?: ReadonlySet<string>;
 }) {
   const buffer = useRefBuffer();
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
+  const [callGraphPending, setCallGraphPending] = useState(false);
+  const callGraphPendingRef = useRef(false);
   const resolution = useMemo(
     () => resolveReferences(buffer.entries, props.resolutionContext),
     [buffer.entries, props.resolutionContext]
@@ -58,6 +68,33 @@ export function RefBufferTray(props: {
     }
   };
   const outputDisabled = resolution.unresolved.length > 0 || resolution.resolved.length === 0;
+  const resolvedCodeEntityReferences = resolution.resolved
+    .filter((reference) => reference.kind === "code-entity"
+      && props.callGraphFocusReferenceKeys?.has(referenceIdentityKey(reference.identity)))
+    .map((reference) => reference.identity);
+  const canDisplayCallGraph = Boolean(props.sourceDiagram && props.onOpenCallGraphFocus);
+  const displayCallGraph = async () => {
+    if (!props.sourceDiagram || !props.onOpenCallGraphFocus || callGraphPendingRef.current) return;
+    callGraphPendingRef.current = true;
+    setCallGraphPending(true);
+    setError("");
+    setStatus("displaying call graph…");
+    try {
+      const request = createCallGraphFocusRequest({
+        diagramSetId: props.diagramSetId,
+        sourceDiagram: props.sourceDiagram,
+        references: resolvedCodeEntityReferences
+      });
+      await props.onOpenCallGraphFocus(request);
+      setStatus(`displayed call graph for ${request.selectedCodeEntities.length} code entit${request.selectedCodeEntities.length === 1 ? "y" : "ies"}`);
+    } catch (caught) {
+      setStatus("");
+      setError(caught instanceof Error ? caught.message : "call graph display failed");
+    } finally {
+      callGraphPendingRef.current = false;
+      setCallGraphPending(false);
+    }
+  };
   return (
     <section
       className="ref-buffer-tray"
@@ -104,6 +141,14 @@ export function RefBufferTray(props: {
             })}
           >send</button>
           <button type="button" onClick={buffer.clear}>clear</button>
+          {canDisplayCallGraph ? (
+            <button
+              type="button"
+              className="display-call-graph"
+              disabled={callGraphPending || resolvedCodeEntityReferences.length === 0}
+              onClick={() => void displayCallGraph()}
+            >{callGraphPending ? "displaying…" : "display call-graph"}</button>
+          ) : null}
         </div>
       </header>
       <div className="ref-buffer-items">

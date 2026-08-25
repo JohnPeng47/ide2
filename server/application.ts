@@ -46,7 +46,15 @@ import {
   createGenerationPromptConfig,
   renderSystemPromptTemplate
 } from "../src/prompt";
+import {
+  CALL_GRAPH_FOCUS_VERSION,
+  focusIdentityKey,
+  type CallGraphFocusRequest,
+  type CallGraphFocusResult,
+  type CodeEntityFocusIdentity
+} from "../src/callGraphFocus";
 import type { DiagramAgentRuntime } from "./agentRuntime";
+import { filterCallGraphTree, parseCallGraphTree } from "./callGraphTree";
 import { createCodeEntityPromptConfig } from "./codeEntityPrompt";
 import { validateDiagramMappings } from "./diagramMapping";
 import { DiagramStore, discoverRepository } from "./store";
@@ -138,6 +146,79 @@ function cropAsciiSelection(ascii: string, bounds: DiagramSelectionBounds): {
   return { ascii: cropped, selection };
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function requiredString(value: unknown, label: string): string {
+  if (typeof value !== "string" || !value) throw new Error(`${label} must be a non-empty string`);
+  return value;
+}
+
+function parseArtifactOrigin(value: unknown, label: string): { projectId: string; diagramSetId: string } {
+  if (!isRecord(value)) throw new Error(`${label} is missing provenance`);
+  return {
+    projectId: requiredString(value.projectId, `${label} projectId`),
+    diagramSetId: requiredString(value.diagramSetId, `${label} diagramSetId`)
+  };
+}
+
+function parseCallGraphFocusRequest(value: unknown): CallGraphFocusRequest {
+  if (!isRecord(value)) throw new Error("call-graph focus request must be an object");
+  if (value.version !== CALL_GRAPH_FOCUS_VERSION) {
+    throw new Error(`unsupported call-graph focus request version: ${String(value.version)}`);
+  }
+  if (!isRecord(value.sourceDiagram) || value.sourceDiagram.kind !== "diagram") {
+    throw new Error("call-graph focus request requires a qualified source Diagram");
+  }
+  if (!Array.isArray(value.selectedCodeEntities) || value.selectedCodeEntities.length === 0) {
+    throw new Error("call-graph focus request requires at least one selected CodeEntity");
+  }
+  const sourceOrigin = parseArtifactOrigin(value.sourceDiagram.origin, "source Diagram");
+  const selectedCodeEntities: CodeEntityFocusIdentity[] = value.selectedCodeEntities.map(
+    (candidate, index) => {
+      if (!isRecord(candidate) || candidate.kind !== "code-entity") {
+        throw new Error(`selected CodeEntity ${index + 1} is invalid`);
+      }
+      const origin = parseArtifactOrigin(candidate.origin, `selected CodeEntity ${index + 1}`);
+      if (!isRecord(candidate.origin)) throw new Error(`selected CodeEntity ${index + 1} is missing provenance`);
+      return {
+        kind: "code-entity",
+        targetId: requiredString(candidate.targetId, `selected CodeEntity ${index + 1} targetId`),
+        origin: {
+          ...origin,
+          codeEntitiesSetId: requiredString(
+            candidate.origin.codeEntitiesSetId,
+            `selected CodeEntity ${index + 1} codeEntitiesSetId`
+          )
+        }
+      };
+    }
+  );
+  return {
+    version: CALL_GRAPH_FOCUS_VERSION,
+    diagramSetId: requiredString(value.diagramSetId, "diagramSetId"),
+    sourceDiagram: {
+      kind: "diagram",
+      targetId: requiredString(value.sourceDiagram.targetId, "source Diagram targetId"),
+      origin: sourceOrigin
+    },
+    selectedCodeEntities
+  };
+}
+
+function sameArtifactOrigin(
+  left: { projectId: string; diagramSetId: string },
+  right: { projectId: string; diagramSetId: string }
+): boolean {
+  return left.projectId === right.projectId && left.diagramSetId === right.diagramSetId;
+}
+
+function identityForRecord(entity: CodeEntityRecord): CodeEntityFocusIdentity {
+  if (!entity.origin) throw new Error(`CodeEntity ${entity.id} is missing provenance`);
+  return { kind: "code-entity", targetId: entity.id, origin: entity.origin };
+}
+
 export class DiagramApplication {
   private readonly activeBatches = new Set<string>();
   private readonly activeMappings = new Set<string>();
@@ -207,6 +288,91 @@ export class DiagramApplication {
       artifact,
       codeEntities,
       ...(codeEntityMap ? { codeEntityMap } : {})
+    };
+  }
+
+  async callGraphFocus(input: unknown): Promise<CallGraphFocusResult> {
+    const request = parseCallGraphFocusRequest(input);
+    const set = await this.store.loadDiagramSet(request.diagramSetId);
+    const { artifact: sourceArtifact } = await this.artifactForDiagramSet(
+      set.id,
+      "diagram",
+      request.sourceDiagram.targetId
+    );
+    const sourceDiagram = sourceArtifact as DiagramRecord;
+    if (sourceDiagram.viewKind !== "diagram") {
+      throw new Error("source Diagram must have diagram viewKind");
+    }
+    if (!sourceDiagram.recordOrigin
+      || !sameArtifactOrigin(sourceDiagram.recordOrigin, request.sourceDiagram.origin)) {
+      throw new Error("source Diagram provenance does not match the requested identity");
+    }
+
+    const callGraphId = set.featuredViewIds["call-graph"];
+    if (!callGraphId) throw new Error("DiagramSet has no featured call graph");
+    const { artifact: callGraphArtifact } = await this.artifactForDiagramSet(
+      set.id,
+      "diagram",
+      callGraphId
+    );
+    const callGraph = callGraphArtifact as DiagramRecord;
+    if (callGraph.viewKind !== "call-graph") {
+      throw new Error("featured call graph does not have call-graph viewKind");
+    }
+    if (callGraph.basedOnDiagramId !== sourceDiagram.id) {
+      throw new Error("featured call graph is based on another Diagram");
+    }
+    if (!callGraph.recordOrigin) throw new Error("featured call graph is missing provenance");
+
+    const local = await this.store.loadCodeEntities(set.id);
+    const library = await this.store.loadImportedArtifactLibrary();
+    const imported = await Promise.all(
+      (library.codeEntityIds ?? []).map((id) => this.store.loadImportedCodeEntity(id))
+    );
+    const available = new Map(
+      [...local.entities, ...imported].map((entity) => [entity.id, entity])
+    );
+    const declaredEntities = callGraph.codeEntityIds.map((id) => available.get(id));
+    const missingDependency = callGraph.codeEntityIds.find((_, index) => !declaredEntities[index]);
+    if (missingDependency) {
+      throw new Error(`featured call graph has unresolved CodeEntity dependency: ${missingDependency}`);
+    }
+
+    const selected = new Map<string, CodeEntityFocusIdentity>();
+    for (const identity of request.selectedCodeEntities) {
+      const entity = available.get(identity.targetId);
+      if (!entity) throw new Error(`unknown selected CodeEntity: ${identity.targetId}`);
+      if (!entity.origin || focusIdentityKey(identity) !== focusIdentityKey(identityForRecord(entity))) {
+        throw new Error(`selected CodeEntity provenance does not match: ${identity.targetId}`);
+      }
+      if (!sourceDiagram.codeEntityIds.includes(identity.targetId)) {
+        throw new Error(`selected CodeEntity is not declared by the source Diagram: ${identity.targetId}`);
+      }
+      if (!callGraph.codeEntityIds.includes(identity.targetId)) {
+        throw new Error(`selected CodeEntity is not declared by the featured call graph: ${identity.targetId}`);
+      }
+      selected.set(focusIdentityKey(identity), identity);
+    }
+
+    const roots = parseCallGraphTree(
+      callGraph.ascii,
+      declaredEntities.filter((entity): entity is CodeEntityRecord => Boolean(entity))
+    );
+    const filteredRoots = filterCallGraphTree(roots, new Set(selected.keys()));
+    if (filteredRoots.length === 0) {
+      throw new Error("featured call graph contains no nodes for the selected CodeEntities");
+    }
+    return {
+      version: CALL_GRAPH_FOCUS_VERSION,
+      diagramSetId: set.id,
+      sourceDiagram: request.sourceDiagram,
+      callGraph: {
+        kind: "diagram",
+        targetId: callGraph.id,
+        origin: callGraph.recordOrigin
+      },
+      callGraphName: callGraph.name,
+      roots: filteredRoots
     };
   }
 

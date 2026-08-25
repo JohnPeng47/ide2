@@ -6,10 +6,13 @@ import { afterEach, describe, expect, it } from "vitest";
 import type {
   AgentProgress,
   ArtifactEditDraft,
+  CodeEntityRecord,
   CodeEntityDraft,
+  DiagramRecord,
   DiagramElementMappingDraft,
   GeneratedArtifactDraft
 } from "../src/domain";
+import type { CallGraphFocusRequest } from "../src/callGraphFocus";
 import type {
   ArtifactGenerationRequest,
   ArtifactEditRequest,
@@ -97,7 +100,211 @@ class ParallelRuntime implements DiagramAgentRuntime {
   dispose(): void {}
 }
 
+async function createCallGraphFocusFixture() {
+  const root = await mkdtemp(path.join(tmpdir(), "new-diagram-call-graph-focus-"));
+  roots.push(root);
+  execFileSync("git", ["init", "-q", root]);
+  await writeFile(path.join(root, "fixture.ts"), "export const worker = () => true;\n", "utf8");
+  execFileSync("git", ["-C", root, "add", "fixture.ts"]);
+  execFileSync("git", [
+    "-C", root, "-c", "user.name=Test", "-c", "user.email=test@example.com",
+    "commit", "-qm", "fixture"
+  ]);
+  const store = new DiagramStore(root);
+  const application = new DiagramApplication(store, new ParallelRuntime());
+  const set = await application.createDiagramSet({ path: root, name: "Focus", prompt: "Focus" });
+  const foreignEntity: CodeEntityRecord = {
+    id: store.ids.codeEntity(),
+    origin: {
+      projectId: "project-foreign",
+      diagramSetId: "set-foreign",
+      codeEntitiesSetId: "entities-foreign"
+    },
+    handle: "foreign-worker",
+    label: "Foreign worker",
+    category: "operation",
+    summary: "Runs foreign work.",
+    sourceRanges: []
+  };
+  await store.addImportedCodeEntity(foreignEntity);
+  const createdAt = new Date().toISOString();
+  const recordOrigin = { projectId: set.projectId, diagramSetId: set.id };
+  const source: DiagramRecord = {
+    schemaVersion: 1,
+    id: store.ids.diagram(),
+    recordOrigin,
+    diagramSetId: set.id,
+    viewKind: "diagram",
+    handle: "source",
+    name: "Source",
+    ascii: "source",
+    codeEntityIds: [foreignEntity.id],
+    origin: "generated",
+    derivedFromDiagramIds: [],
+    createdAt
+  };
+  await store.addDiagram(source);
+  const callGraph: DiagramRecord = {
+    schemaVersion: 1,
+    id: store.ids.diagram(),
+    recordOrigin,
+    diagramSetId: set.id,
+    viewKind: "call-graph",
+    basedOnDiagramId: source.id,
+    handle: "call-graph",
+    name: "Call Graph",
+    ascii: [
+      "root",
+      "+--> foreign_worker()",
+      "|    [entity-foreign-worker]",
+      "|    `--> internal step",
+      "`--> unrelated sibling"
+    ].join("\n"),
+    codeEntityIds: [foreignEntity.id],
+    origin: "generated",
+    derivedFromDiagramIds: [],
+    createdAt
+  };
+  await store.addDiagram(callGraph);
+  await store.setFeaturedView(set.id, "call-graph", callGraph.id);
+  const request: CallGraphFocusRequest = {
+    version: 1,
+    diagramSetId: set.id,
+    sourceDiagram: { kind: "diagram", targetId: source.id, origin: recordOrigin },
+    selectedCodeEntities: [{
+      kind: "code-entity",
+      targetId: foreignEntity.id,
+      origin: foreignEntity.origin!
+    }]
+  };
+  return { application, store, set, source, callGraph, foreignEntity, request };
+}
+
 describe("DiagramApplication", () => {
+  it("focuses a featured call graph using qualified imported CodeEntity identities", async () => {
+    const { application, set, source, callGraph, foreignEntity, request } =
+      await createCallGraphFocusFixture();
+
+    await expect(application.callGraphFocus(request)).resolves.toEqual({
+      version: 1,
+      diagramSetId: set.id,
+      sourceDiagram: request.sourceDiagram,
+      callGraph: {
+        kind: "diagram",
+        targetId: callGraph.id,
+        origin: callGraph.recordOrigin
+      },
+      callGraphName: callGraph.name,
+      roots: [{
+        id: "call-graph-line-1",
+        label: "root",
+        children: [{
+          id: "call-graph-line-2",
+          label: "foreign_worker()",
+          codeEntity: {
+            kind: "code-entity",
+            targetId: foreignEntity.id,
+            origin: foreignEntity.origin
+          },
+          children: [{ id: "call-graph-line-4", label: "internal step", children: [] }]
+        }]
+      }]
+    });
+  });
+
+  it("validates call-graph focus versions, provenance, and artifact membership", async () => {
+    const { application, store, set, source, callGraph, request, foreignEntity } =
+      await createCallGraphFocusFixture();
+    await expect(application.callGraphFocus({ ...request, version: 2 }))
+      .rejects.toThrow(/unsupported call-graph focus request version/);
+    await expect(application.callGraphFocus({
+      ...request,
+      sourceDiagram: { ...request.sourceDiagram, origin: { ...request.sourceDiagram.origin, projectId: "wrong" } }
+    })).rejects.toThrow(/source Diagram provenance/);
+    await expect(application.callGraphFocus({
+      ...request,
+      selectedCodeEntities: [{
+        ...request.selectedCodeEntities[0],
+        origin: { ...foreignEntity.origin!, codeEntitiesSetId: "wrong" }
+      }]
+    })).rejects.toThrow(/selected CodeEntity provenance/);
+
+    await expect(application.callGraphFocus({
+      ...request,
+      sourceDiagram: { ...request.sourceDiagram, targetId: callGraph.id }
+    })).rejects.toThrow(/source Diagram must have diagram viewKind/);
+
+    await store.setFeaturedView(set.id, "call-graph", source.id);
+    await expect(application.callGraphFocus(request)).rejects.toThrow(/call-graph viewKind/);
+
+    await store.setFeaturedView(set.id, "call-graph");
+    await expect(application.callGraphFocus(request)).rejects.toThrow(/no featured call graph/);
+  });
+
+  it("rejects a featured call graph based on another Diagram and selections outside its context", async () => {
+    const { application, store, set, source, callGraph, request } = await createCallGraphFocusFixture();
+    const otherSource: DiagramRecord = {
+      ...source,
+      id: store.ids.diagram(),
+      handle: "other-source",
+      name: "Other source"
+    };
+    await store.addDiagram(otherSource);
+    const wrongBase: DiagramRecord = {
+      ...callGraph,
+      id: store.ids.diagram(),
+      handle: "wrong-base",
+      name: "Wrong base",
+      basedOnDiagramId: otherSource.id
+    };
+    await store.addDiagram(wrongBase);
+    await store.setFeaturedView(set.id, "call-graph", wrongBase.id);
+    await expect(application.callGraphFocus(request)).rejects.toThrow(/based on another Diagram/);
+
+    const absentEntity: CodeEntityRecord = {
+      id: store.ids.codeEntity(),
+      origin: {
+        projectId: "project-absent",
+        diagramSetId: "set-absent",
+        codeEntitiesSetId: "entities-absent"
+      },
+      handle: "absent",
+      label: "Absent",
+      category: "operation",
+      summary: "Not declared by these artifacts.",
+      sourceRanges: []
+    };
+    await store.addImportedCodeEntity(absentEntity);
+    await store.setFeaturedView(set.id, "call-graph", callGraph.id);
+    await expect(application.callGraphFocus({
+      ...request,
+      selectedCodeEntities: [{ kind: "code-entity", targetId: absentEntity.id, origin: absentEntity.origin! }]
+    })).rejects.toThrow(/not declared by the source Diagram/);
+
+    const expandedSource: DiagramRecord = {
+      ...source,
+      id: store.ids.diagram(),
+      handle: "expanded-source",
+      name: "Expanded source",
+      codeEntityIds: [request.selectedCodeEntities[0].targetId, absentEntity.id]
+    };
+    await store.addDiagram(expandedSource);
+    const narrowGraph: DiagramRecord = {
+      ...callGraph,
+      id: store.ids.diagram(),
+      handle: "narrow-graph",
+      name: "Narrow graph",
+      basedOnDiagramId: expandedSource.id
+    };
+    await store.addDiagram(narrowGraph);
+    await store.setFeaturedView(set.id, "call-graph", narrowGraph.id);
+    await expect(application.callGraphFocus({
+      ...request,
+      sourceDiagram: { ...request.sourceDiagram, targetId: expandedSource.id },
+      selectedCodeEntities: [{ kind: "code-entity", targetId: absentEntity.id, origin: absentEntity.origin! }]
+    })).rejects.toThrow(/not declared by the featured call graph/);
+  });
+
   it("generates and independently stars call-graph and directory-view candidates", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "new-diagram-aux-views-"));
     roots.push(root);

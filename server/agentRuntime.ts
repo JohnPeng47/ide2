@@ -604,13 +604,19 @@ export class FakeDiagramAgentRuntime implements DiagramAgentRuntime {
   ): Promise<GeneratedArtifactDraft> {
     onProgress?.({ status: "generating", message: `generating fixture slot ${request.slot}`, model: "fake/test" });
     const entityId = request.allowedCodeEntityIds[0];
+    const callGraphAscii = entityId
+      ? `parallel slot ${String(request.slot).padStart(2, "0")} [${entityId}]\n` +
+        "`--> internal step"
+      : `parallel slot ${String(request.slot).padStart(2, "0")}`;
     return {
       name: request.promptConfig.outputKind === "diagram-component"
         ? `Component ${request.slot}`
         : `Diagram ${request.slot}`,
       ascii: request.promptConfig.outputKind === "diagram-component"
         ? `+-------------------+\n| component slot ${String(request.slot).padStart(2, "0")} |\n+-------------------+`
-        : `+------------------+\n| parallel slot ${String(request.slot).padStart(2, "0")} |\n+------------------+`,
+        : request.promptConfig.viewKind === "call-graph"
+          ? callGraphAscii
+          : `+------------------+\n| parallel slot ${String(request.slot).padStart(2, "0")} |\n+------------------+`,
       codeEntityIds: entityId ? [entityId] : []
     };
   }
