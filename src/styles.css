@@ -164,9 +164,21 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .pane-tab .pane-tab__close { border-left: 1px solid var(--border); padding-inline: 0.4rem; }
 .pane-tab__badge { color: var(--accent-yellow); font-size: 9px; }
 
-.generator-panel, .diagram-panel, .entities-panel, .diagram-context-panel, .diagram-lineage-panel { display: flex; height: 100%; min-height: 0; flex-direction: column; background: var(--bg); }
+.generator-panel, .diagram-panel, .entities-panel, .diagram-context-panel, .diagram-lineage-panel, .call-graph-focus-panel { display: flex; height: 100%; min-height: 0; flex-direction: column; background: var(--bg); }
 .pane-header { display: flex; min-height: 78px; flex: none; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--border); padding: 1rem 1.25rem; }
 .pane-header h2 { margin-top: 0.25rem; font-size: 1.05rem; font-weight: 600; }
+.call-graph-focus-header { min-height: 70px; }
+.call-graph-focus-count, .call-graph-focus-entity { color: var(--muted); font: 9px var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; }
+.call-graph-focus-tree { min-height: 0; flex: 1; overflow: auto; padding-block: 0.55rem 1rem; outline: none; }
+.call-graph-focus-treeitem { display: flex; min-height: 30px; align-items: center; gap: 0.45rem; border-block: 1px solid transparent; padding-block: 0.25rem; padding-inline-end: 0.75rem; color: var(--fg); font: 12px/1.4 var(--font-mono); outline: none; }
+.call-graph-focus-treeitem:hover { background: color-mix(in srgb, var(--panel) 75%, transparent); }
+.call-graph-focus-treeitem:focus-visible { border-block-color: var(--accent-cyan); background: color-mix(in srgb, var(--accent-cyan) 8%, transparent); }
+.call-graph-focus-toggle { display: inline-grid; width: 20px; height: 20px; flex: none; place-items: center; border: 1px solid var(--gutter); border-radius: 3px; padding: 0; background: var(--panel); color: var(--accent-cyan); font: 14px/1 var(--font-mono); }
+.call-graph-focus-toggle:hover, .call-graph-focus-toggle:focus-visible { border-color: var(--accent-cyan); }
+.call-graph-focus-leaf { display: inline-grid; width: 20px; flex: none; place-items: center; color: var(--muted); }
+.call-graph-focus-label { min-width: 0; overflow-wrap: anywhere; }
+.call-graph-focus-entity { margin-left: auto; }
+.call-graph-focus-empty { margin: auto; padding: 1rem; color: var(--muted); font: 11px/1.5 var(--font-mono); text-align: center; }
 .diagram-heading { min-width: 0; }
 .diagram-heading__title { display: flex; align-items: center; gap: 0.65rem; }
 .diagram-heading__title h2 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

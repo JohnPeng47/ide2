@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import type { OpenCallGraphFocus } from "../callGraphFocus";
 import type {
   CodeEntityRecord,
   DiagramCodeEntityMapRecord,
@@ -78,6 +79,7 @@ export function DiagramView(props: {
   onMarker?: (line: number, column: number) => void;
   onUndoEdit?: () => void;
   onRedoEdit?: () => void;
+  onOpenCallGraphFocus?: OpenCallGraphFocus;
 }) {
   const refBuffer = useRefBuffer();
   const [capturing, setCapturing] = useState(false);
@@ -119,6 +121,10 @@ export function DiagramView(props: {
     () => new Set(refBuffer.entries.map(referenceIdentityKey)),
     [refBuffer.entries]
   );
+  const mappedReferenceKeys = useMemo(
+    () => new Set(referencesFromMappings(mappings, props.codeEntities).map(referenceIdentityKey)),
+    [mappings, props.codeEntities]
+  );
   const overlayReferences = useMemo(() => {
     const result: SelectionOverlayReference[] = [];
     const seen = new Set<string>();
@@ -140,6 +146,11 @@ export function DiagramView(props: {
       : selectingRefs
         ? "select-refs"
         : "read";
+  const callGraphFocusSource = props.artifactKind === "diagram"
+    && (props.active as DiagramRecord).viewKind === "diagram"
+    && props.onOpenCallGraphFocus
+      ? props.active as DiagramRecord
+      : undefined;
 
   const saveCapture = async (bounds: DiagramSelectionBounds) => {
     setSaving(true);
@@ -302,6 +313,9 @@ export function DiagramView(props: {
         onInsertTokens={props.onInsertReferenceTokens}
         previewEntries={capturing ? [] : liveReferences}
         showWhenEmpty={selectingRefs || (!capturing && liveSelection !== null)}
+        sourceDiagram={callGraphFocusSource}
+        onOpenCallGraphFocus={callGraphFocusSource ? props.onOpenCallGraphFocus : undefined}
+        callGraphFocusReferenceKeys={callGraphFocusSource ? mappedReferenceKeys : undefined}
       />
       <div className={gridMode === "read" ? "ascii-stage" : "ascii-stage is-capturing"}>
         {props.editMode && !props.markerMode ? (

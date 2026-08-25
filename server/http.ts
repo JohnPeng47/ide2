@@ -198,6 +198,10 @@ export function diagramApi(projectRoot: string, diagramsDirectory = ".diagrams")
           await application.mappedArtifactBundle(setId, artifactKind, artifactId)
         );
       }
+      if (url.pathname === "/api/call-graph-focus") {
+        if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
+        return sendJson(response, 200, await application.callGraphFocus(await readBody(request)));
+      }
       if (url.pathname === "/api/source") {
         if (request.method !== "GET") return sendJson(response, 405, { error: "method not allowed" });
         const setId = url.searchParams.get("setId") ?? "";

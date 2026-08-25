@@ -12,6 +12,7 @@ import type {
   SystemPromptTemplateRecord,
   WorkspaceSnapshot
 } from "./domain";
+import type { CallGraphFocusRequest, CallGraphFocusResult } from "./callGraphFocus";
 
 async function errorFrom(response: Response): Promise<Error> {
   const payload = await response.json().catch(() => ({})) as { error?: string };
@@ -22,6 +23,18 @@ export async function fetchWorkspace(): Promise<WorkspaceSnapshot> {
   const response = await fetch("/api/workspace", { cache: "no-store" });
   if (!response.ok) throw await errorFrom(response);
   return response.json() as Promise<WorkspaceSnapshot>;
+}
+
+export async function fetchCallGraphFocus(
+  request: CallGraphFocusRequest
+): Promise<CallGraphFocusResult> {
+  const response = await fetch("/api/call-graph-focus", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(request)
+  });
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<CallGraphFocusResult>;
 }
 
 export async function fetchMappedArtifactBundle(
