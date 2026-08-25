@@ -77,3 +77,31 @@ describe("compacted source call graphs", () => {
     })).toThrow("node range is invalid");
   });
 });
+
+describe("selectable CodeEntity text", () => {
+  const entity = new CodeEntity({
+    id: "entity-worker",
+    handle: "worker",
+    label: "Worker",
+    category: "operation",
+    summary: "Runs work.",
+    sourceRanges: [
+      { path: "src/worker.ts", startLine: 1, endLine: 4 },
+      { path: "src/queue.ts", startLine: 8, endLine: 12 }
+    ]
+  });
+
+  it("returns the selected range path and defaults to the first range", () => {
+    expect(entity.getSelectionText({ kind: "code-entity", targetId: "entity-worker", sourceRangeIndex: 1 }))
+      .toBe("src/queue.ts");
+    expect(entity.getSelectionText({ kind: "code-entity", targetId: "entity-worker" }))
+      .toBe("src/worker.ts");
+  });
+
+  it("omits mismatched and invalid selections", () => {
+    expect(entity.getSelectionText({ kind: "diagram", targetId: "entity-worker" })).toBeUndefined();
+    expect(entity.getSelectionText({ kind: "code-entity", targetId: "other" })).toBeUndefined();
+    expect(entity.getSelectionText({ kind: "code-entity", targetId: "entity-worker", sourceRangeIndex: 99 }))
+      .toBeUndefined();
+  });
+});

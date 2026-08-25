@@ -1,8 +1,10 @@
 import {
   isDiagramModelId,
+  isGenerationTargetKind,
   isGenerationPromptProfileId,
   type DiagramModelId,
   type GenerationOutputKind,
+  type GenerationTargetKind,
   type GenerationPromptProfileId
 } from "./domain";
 
@@ -15,12 +17,12 @@ export interface GenerationDraftSource {
 }
 
 export interface GenerationPageDraft {
-  version: 1;
+  version: 3;
   prompt: string;
   selectedCodeEntityIds: string[];
   excludedReferenceKeys: string[];
   count: number;
-  outputKind: GenerationOutputKind;
+  targetKind: GenerationTargetKind;
   modelId: DiagramModelId;
   promptProfileId: GenerationPromptProfileId;
 }
@@ -50,7 +52,7 @@ export function readGenerationPageDraft(storage: Storage, key: string): Generati
     const raw = storage.getItem(key);
     if (!raw) return null;
     const value = JSON.parse(raw) as Record<string, unknown>;
-    if (value.version !== 1
+    if (value.version !== 3
       || typeof value.prompt !== "string"
       || !Array.isArray(value.selectedCodeEntityIds)
       || !value.selectedCodeEntityIds.every((id) => typeof id === "string")
@@ -59,7 +61,7 @@ export function readGenerationPageDraft(storage: Storage, key: string): Generati
       || !Number.isInteger(value.count)
       || (value.count as number) < 1
       || (value.count as number) > 12
-      || (value.outputKind !== "diagram" && value.outputKind !== "diagram-component")
+      || !isGenerationTargetKind(value.targetKind)
       || !isDiagramModelId(value.modelId)
       || !isGenerationPromptProfileId(value.promptProfileId)) return null;
     return value as unknown as GenerationPageDraft;

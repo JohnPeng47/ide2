@@ -14,6 +14,7 @@ import {
   isDiagramComponentArchived,
   isDiagramArchived,
   isDiagramModelId,
+  isDiagramViewKind,
   normalizeAscii,
   slugify,
   type AgentProgress,
@@ -27,6 +28,7 @@ import {
   type DiagramRecord,
   type DiagramSelectionBounds,
   type DiagramSetRecord,
+  type DiagramViewKind,
   type EditOperationRecord,
   type EditSessionRecord,
   type GeneratedArtifactDraft,
@@ -417,6 +419,7 @@ export class DiagramApplication {
         schemaVersion: SCHEMA_VERSION,
         id: this.store.ids.diagram(),
         diagramSetId: GLOBAL_IMPORTS_DIAGRAM_SET_ID,
+        viewKind: "diagram",
         handle,
         name,
         ascii,
@@ -476,6 +479,25 @@ export class DiagramApplication {
     return this.workspace();
   }
 
+  async setStarredDiagram(
+    setId: string,
+    diagramId: string,
+    starred: boolean
+  ): Promise<WorkspaceSnapshot> {
+    const set = await this.store.loadDiagramSet(setId);
+    const { artifact } = await this.artifactForDiagramSet(setId, "diagram", diagramId);
+    const diagram = artifact as DiagramRecord;
+    if (starred) {
+      if (isDiagramArchived(diagram)) {
+        throw new Error("archived diagrams cannot be starred");
+      }
+      await this.store.setFeaturedView(setId, diagram.viewKind, diagramId);
+    } else if (set.featuredViewIds[diagram.viewKind] === diagramId) {
+      await this.store.setFeaturedView(setId, diagram.viewKind);
+    }
+    return this.workspace();
+  }
+
   async archiveDiagram(setId: string, diagramId: string): Promise<WorkspaceSnapshot> {
     const set = await this.store.loadDiagramSet(setId);
     if (!set.diagramIds.includes(diagramId)) throw new Error(`unknown Diagram: ${diagramId}`);
@@ -504,6 +526,7 @@ export class DiagramApplication {
 
   async archiveImportedDiagram(diagramId: string): Promise<WorkspaceSnapshot> {
     await this.store.archiveImportedDiagram(diagramId);
+    await this.store.clearFeaturedViewReferences(diagramId);
     return this.workspace();
   }
 
@@ -903,6 +926,10 @@ export class DiagramApplication {
         schemaVersion: SCHEMA_VERSION,
         id: outputArtifactId,
         diagramSetId: setId,
+        viewKind: (source as DiagramRecord).viewKind,
+        ...((source as DiagramRecord).basedOnDiagramId
+          ? { basedOnDiagramId: (source as DiagramRecord).basedOnDiagramId }
+          : {}),
         handle,
         name,
         ascii: session.workingAscii,
@@ -1032,6 +1059,7 @@ export class DiagramApplication {
       selectedCodeEntityIds: string[];
       count: number;
       outputKind: GenerationOutputKind;
+      viewKind?: DiagramViewKind;
       modelId?: unknown;
       promptProfileId?: unknown;
       referenceSelections?: GenerationReferenceSelection[];
@@ -1044,6 +1072,12 @@ export class DiagramApplication {
     }
     if (input.outputKind !== "diagram" && input.outputKind !== "diagram-component") {
       throw new Error("output kind must be diagram or diagram-component");
+    }
+    if (input.outputKind === "diagram" && !isDiagramViewKind(input.viewKind ?? "diagram")) {
+      throw new Error("view kind must be diagram, call-graph, or dir-view");
+    }
+    if (input.outputKind === "diagram-component" && input.viewKind !== undefined) {
+      throw new Error("DiagramComponents do not have a view kind");
     }
     const modelId = input.modelId ?? DEFAULT_DIAGRAM_MODEL_ID;
     if (!isDiagramModelId(modelId)) throw new Error(`unsupported generation model: ${String(modelId)}`);
@@ -1080,6 +1114,7 @@ export class DiagramApplication {
         diagrams: [...storedDiagrams, ...importedDiagrams],
         components: [...storedComponents, ...importedComponents],
         outputKind: input.outputKind,
+        viewKind: input.viewKind,
         modelId,
         profile: promptProfile,
         instruction: input.prompt,
@@ -1128,7 +1163,14 @@ export class DiagramApplication {
       );
       batch = { ...batch, status: "running", updatedAt: timestamp() };
       await this.store.saveBatch(batch);
-      const outputLabel = input.outputKind === "diagram" ? "diagram" : "component";
+      const outputViewKind = input.outputKind === "diagram" ? input.viewKind ?? "diagram" : undefined;
+      const outputLabel = input.outputKind === "diagram-component"
+        ? "component"
+        : outputViewKind === "call-graph"
+          ? "call graph"
+          : outputViewKind === "dir-view"
+            ? "directory view"
+            : "diagram";
       onEvent?.({ type: "progress", message: `started ${input.count} parallel ${outputLabel} agents` });
 
       const accepted = new Map<number, GeneratedArtifactDraft>();
@@ -1214,6 +1256,11 @@ export class DiagramApplication {
       const derivedFromDiagramIds = promptConfig.references
         .filter((reference) => reference.kind === "diagram")
         .map((reference) => reference.targetId);
+      const sameViewDerivedFromDiagramIds = input.outputKind === "diagram"
+        ? derivedFromDiagramIds.filter((id) => existingDiagrams.find(
+          (diagram) => diagram.id === id && diagram.viewKind === outputViewKind
+        ))
+        : derivedFromDiagramIds;
       const derivedFromDiagramComponentIds = promptConfig.references
         .filter((reference) => reference.kind === "diagram-component")
         .map((reference) => reference.targetId);
@@ -1239,6 +1286,10 @@ export class DiagramApplication {
           schemaVersion: SCHEMA_VERSION,
           id: this.store.ids.diagram(),
           diagramSetId: setId,
+          viewKind: outputViewKind!,
+          ...(outputViewKind !== "diagram" && set.featuredViewIds.diagram
+            ? { basedOnDiagramId: set.featuredViewIds.diagram }
+            : {}),
           handle,
           name: draft.name.trim(),
           ascii: normalizeAscii(draft.ascii),
@@ -1246,7 +1297,7 @@ export class DiagramApplication {
           origin: "generated",
           producedByRunId: run.id,
           generationPromptConfigId: promptConfig.id,
-          derivedFromDiagramIds: [...new Set(derivedFromDiagramIds)],
+          derivedFromDiagramIds: [...new Set(sameViewDerivedFromDiagramIds)],
           createdAt: timestamp()
         }))
         : [];
@@ -1312,17 +1363,28 @@ export class DiagramApplication {
       ? input.prompts as Record<string, unknown>
       : {};
     const diagramPrompt = typeof prompts.diagram === "string" ? prompts.diagram.trim() : "";
+    const callGraphPrompt = typeof prompts["call-graph"] === "string"
+      ? prompts["call-graph"].trim()
+      : "";
+    const dirViewPrompt = typeof prompts["dir-view"] === "string"
+      ? prompts["dir-view"].trim()
+      : "";
     const componentPrompt = typeof prompts["diagram-component"] === "string"
       ? prompts["diagram-component"].trim()
       : "";
     if (!label) throw new Error("template name is required");
     if (label.length > 80) throw new Error("template name cannot exceed 80 characters");
     if (description.length > 240) throw new Error("template description cannot exceed 240 characters");
-    if (!diagramPrompt || !componentPrompt) throw new Error("both system prompts are required");
-    if (diagramPrompt.length > 32000 || componentPrompt.length > 32000) {
+    if (!diagramPrompt || !callGraphPrompt || !dirViewPrompt || !componentPrompt) {
+      throw new Error("all generation system prompts are required");
+    }
+    if ([diagramPrompt, callGraphPrompt, dirViewPrompt, componentPrompt]
+      .some((prompt) => prompt.length > 32000)) {
       throw new Error("system prompts cannot exceed 32,000 characters");
     }
     renderSystemPromptTemplate(diagramPrompt, "diagram");
+    renderSystemPromptTemplate(callGraphPrompt, "call-graph");
+    renderSystemPromptTemplate(dirViewPrompt, "dir-view");
     renderSystemPromptTemplate(componentPrompt, "diagram-component");
 
     const templates = await this.store.loadSystemPromptTemplates();
@@ -1344,7 +1406,12 @@ export class DiagramApplication {
       description,
       builtIn: existing?.builtIn ?? false,
       version: (existing?.version ?? 0) + 1,
-      prompts: { diagram: diagramPrompt, "diagram-component": componentPrompt },
+      prompts: {
+        diagram: diagramPrompt,
+        "call-graph": callGraphPrompt,
+        "dir-view": dirViewPrompt,
+        "diagram-component": componentPrompt
+      },
       createdAt: existing?.createdAt ?? timestampValue,
       updatedAt: timestampValue
     };
@@ -1497,23 +1564,21 @@ export class DiagramApplication {
     const range = entity.sourceRanges[rangeIndex];
     if (!range) throw new Error("unknown source range");
     assertSourceRange(range);
-    if (range.originalLines !== undefined) {
-      return {
-        path: range.path,
-        startLine: range.startLine,
-        lines: [...range.originalLines]
-      };
-    }
     const root = await realpath(set.sourceCheckoutRoot);
     const absolute = await realpath(path.resolve(root, range.path));
     if (absolute !== root && !absolute.startsWith(`${root}${path.sep}`)) {
       throw new Error("source range escapes repository root");
     }
     const lines = (await readFile(absolute, "utf8")).split(/\r?\n/);
+    if (range.originalLines) {
+      const start = range.startLine - 1;
+      while (lines.length < start) lines.push("");
+      lines.splice(start, range.endLine - range.startLine + 1, ...range.originalLines);
+    }
     return {
       path: range.path,
-      startLine: range.startLine,
-      lines: lines.slice(range.startLine - 1, range.endLine)
+      startLine: 1,
+      lines
     };
   }
 

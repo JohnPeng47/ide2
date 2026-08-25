@@ -56,9 +56,9 @@ The studio supports the waiting state, immutable collected CodeEntitiesSets,
 typed `@entity/`, `@diagram/`, and `@component/` references, N parallel agents,
 shared Terra/Sol model selection for generation and LLM editing, persisted and
 versioned generation system-prompt templates, and a resizable workspace. The
-header's Settings menu opens a template editor with Diagram and
-DiagramComponent variants, resolved previews, custom-template creation, and
-built-in reset. Template edits are atomically persisted in
+header's Settings menu opens a template editor with Diagram, Call Graph,
+Directory View, and DiagramComponent variants, resolved previews,
+custom-template creation, and built-in reset. Template edits are atomically persisted in
 `.diagrams/system-prompt-templates.json` and loaded again after restart.
 Prompt templates, including built-ins, can be deleted as long as at least one
 template remains; generation falls back to the first remaining template when
@@ -84,19 +84,31 @@ The Diagram Set picker exposes an `[x]` action for each set. After confirmation,
 deletion removes the set from the project index and moves its complete directory
 to `.diagrams/trash/diagram-sets/` for manual recovery; active agent runs block
 the operation.
-Diagram View keeps Code Entities and an ASCII
-artifact lineage in right-pane tabs; selecting a lineage node opens that
-diagram, and its display name can be edited without changing its stable
-`@diagram/` handle.
+Diagram View keeps Code Entities and an ASCII artifact lineage in right-pane
+tabs. Full ASCII artifacts are grouped as `[DIAGRAM]`, `[CALL-GRAPH]`, and
+`[DIR-VIEW]` candidates. Selecting a lineage node opens that candidate, and its
+display name can be edited without changing its stable `@diagram/` handle.
+The left-pane Diagram, Call Graph, and Dir View tabs open the starred candidate
+for their category. Each category has one independent star; a category with no
+star renders an explicit empty state instead of silently selecting a candidate.
 Root generation nodes group diagrams without ancestors, while derivative
 diagrams attach directly to their parent without intermediary generation nodes.
 Lineage branches can be collapsed with their hidden-diagram count retained in
 the toggle. Generated artifact rows expose a `prompt` action for inspecting the
-immutable generation inputs. `create derivative` restores the source prompt's
-selected entities, output kind, model, and system style, prepends the current
-artifact reference, and leaves unavailable historical references visible for
-resolution. Archiving through `[x]` removes a variant from active UI and prompt
-references while preserving its timestamped diagram JSON for future learning.
+immutable generation inputs. `generate` opens one shared interface for Diagram,
+Call Graph, Directory View, and DiagramComponent candidates. A Call Graph can
+be generated only after a main Diagram is starred. A Directory View additionally
+requires a starred Call Graph. The server injects the starred Diagram into Call
+Graph context, and injects both starred artifacts into Directory View context.
+Their attached CodeEntities are immutable inputs; Directory View also receives
+their sorted source-path inventory. The generation pane exposes these locked
+inputs and removes the CodeEntity inclusion checkbox for auxiliary targets.
+Call Graph and Directory View start from short, target-specific
+instructions without inheriting previous prompts or the DiagramSet's original
+request. Auxiliary candidates record the main Diagram separately as their
+foundation.
+Archiving through `[x]` removes a variant from active UI and prompt references,
+clears its category star, and preserves its timestamped JSON for future learning.
 
 `map code entities` runs an LLM over the active artifact and its declared
 CodeEntities, then persists exact character-span-to-source-range associations
@@ -106,11 +118,24 @@ pane to Code Entities, opens the mapped source range, scrolls it into view, and
 highlights its rendered lines. Running the action again replaces that artifact's
 mapping with a newly validated result.
 
+`select refs` enables a character-aligned rectangle over mapped ASCII. During
+the drag, intersecting mappings highlight and their `SelectableText` paths
+appear beside the rectangle and as pending entries in the reference tray.
+Releasing commits range-qualified CodeEntity IDs to a
+DiagramSet-scoped in-memory reference buffer; it does not write to an output
+channel. The buffer tray can independently copy exact `path:start-end` source
+locations, insert deduplicated `@entity/` tokens into the generation prompt,
+dispatch a versioned `new-diagram:reference-buffer` browser event for internal
+consumers, remove individual entries, or clear the buffer. `Ctrl`/`Cmd`-drag
+provides the same selection interaction without entering the explicit mode.
+`Escape` cancels an active rectangle, or exits explicit selection mode when no
+rectangle is active.
+
 `capture component` enables a character-aligned rectangle selector over the
 active Diagram. Releasing the pointer sends the bounds to the server, which
 crops and persists a distinct DiagramComponent under the lineage tree's
-Components section. Generation can switch between Diagram and DiagramComponent
-outputs; generated components remain source-backed, can derive from existing
+Components section. Generation can also switch to DiagramComponent outputs;
+generated components remain source-backed, can derive from existing
 components, and are available to later prompts through `@component/<handle>`.
 Selecting any component opens its ASCII in the main DiagramComponent view,
 where another rectangle can be captured recursively as a direct child.
@@ -151,3 +176,7 @@ remain local to the active DiagramSet. Legacy set-scoped imports migrate into
 the library on workspace load.
 
 For an offline deterministic fixture, set `NEW_DIAGRAM_AGENT=fake`.
+
+Run `npm test`, `npm run check:browser`, and `npm run check:aux-views` to cover
+the domain/API behavior, the existing studio workflow, and the focused
+empty-generate-star-toggle-reload flow for auxiliary views.

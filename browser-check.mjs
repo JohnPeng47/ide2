@@ -167,21 +167,49 @@ async function dragDivider(cdp) {
   await cdp.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: x - 120, y, button: "left", buttons: 0, clickCount: 1 });
 }
 
-async function dragBetween(cdp, startSelector, endSelector) {
-  const start = await elementClip(cdp, startSelector);
-  const end = await elementClip(cdp, endSelector);
-  const x1 = start.x + start.width / 2;
-  const y1 = start.y + start.height / 2;
-  const x2 = end.x + end.width / 2;
-  const y2 = end.y + end.height / 2;
+async function asciiGridPoint(cdp, line, column) {
+  const point = await evaluate(cdp, `(() => {
+    const grid = document.querySelector('.ascii-grid');
+    const bounds = grid?.getBoundingClientRect();
+    const cellWidth = Number(grid?.dataset.cellWidth);
+    const lineHeight = Number(grid?.dataset.lineHeight);
+    if (!bounds || !(cellWidth > 0) || !(lineHeight > 0)) return null;
+    return {
+      x: bounds.left + (${column} - 0.5) * cellWidth,
+      y: bounds.top + (${line} - 0.5) * lineHeight
+    };
+  })()`);
+  if (!point) throw new Error("ASCII grid cell metrics were unavailable");
+  return point;
+}
+
+async function dragAsciiBetween(cdp, start, end, beforeRelease = async () => {}, modifiers = 0) {
+  const { x: x1, y: y1 } = await asciiGridPoint(cdp, start.line, start.column);
+  const { x: x2, y: y2 } = await asciiGridPoint(cdp, end.line, end.column);
   await cdp.send("Input.dispatchMouseEvent", {
-    type: "mousePressed", x: x1, y: y1, button: "left", buttons: 1, clickCount: 1
+    type: "mousePressed", x: x1, y: y1, button: "left", buttons: 1, clickCount: 1, modifiers
   });
   await cdp.send("Input.dispatchMouseEvent", {
-    type: "mouseMoved", x: x2, y: y2, button: "left", buttons: 1
+    type: "mouseMoved", x: x2, y: y2, button: "left", buttons: 1, modifiers
   });
+  await beforeRelease();
   await cdp.send("Input.dispatchMouseEvent", {
-    type: "mouseReleased", x: x2, y: y2, button: "left", buttons: 0, clickCount: 1
+    type: "mouseReleased", x: x2, y: y2, button: "left", buttons: 0, clickCount: 1, modifiers
+  });
+}
+
+async function clickAsciiCell(cdp, line, column) {
+  const { x, y } = await asciiGridPoint(cdp, line, column);
+  await cdp.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", clickCount: 1 });
+  await cdp.send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", clickCount: 1 });
+}
+
+async function pressEscape(cdp) {
+  await cdp.send("Input.dispatchKeyEvent", {
+    type: "rawKeyDown", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27
+  });
+  await cdp.send("Input.dispatchKeyEvent", {
+    type: "keyUp", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27
   });
 }
 
@@ -194,7 +222,9 @@ const derivativeScreenshotPath = path.join(fixtureRoot, "derivative-references.p
 const promptSettingsScreenshotPath = path.join(fixtureRoot, "system-prompt-settings.png");
 const codeEntityPromptSettingsScreenshotPath = path.join(fixtureRoot, "code-entity-prompt-settings.png");
 const mappingScreenshotPath = path.join(fixtureRoot, "code-entity-mapping.png");
+const selectRectScreenshotPath = path.join(fixtureRoot, "select-rect.png");
 const setPickerScreenshotPath = path.join(fixtureRoot, "diagram-set-picker.png");
+const starredDiagramScreenshotPath = path.join(fixtureRoot, "starred-diagram.png");
 let archivedArtifactPath = "";
 let archivedComponentArtifactPath = "";
 let importedArtifactPath = "";
@@ -210,6 +240,10 @@ try {
       "  workspace.status = 'collecting';",
       "  workspace.status = 'ready';",
       "}",
+      ...Array.from(
+        { length: 80 },
+        (_, index) => `export const unrelatedLine${String(index + 1).padStart(3, "0")} = ${index + 1};`
+      ),
       ""
     ].join("\n"),
     "utf8"
@@ -459,8 +493,19 @@ try {
     const oldStripExists = await evaluate(cdp, `Boolean(document.querySelector('.diagram-tabs'))`);
     if (oldStripExists) throw new Error("horizontal diagram strip is still rendered");
     const asciiBeforeMapping = await evaluate(cdp, `document.querySelector('.ascii-stage pre').textContent`);
+    if (await evaluate(cdp, `document.querySelector('.select-refs').disabled`)) {
+      throw new Error("unmapped diagram hid the reason reference selection was unavailable");
+    }
+    await pointerClick(cdp, ".select-refs");
+    await waitFor(async () => (
+      await evaluate(cdp, `document.querySelector('.ref-selection-status')?.textContent`)
+    ) === "map code entities first", { message: "unmapped reference selection did not explain the required mapping" });
     await pointerClick(cdp, ".map-code-entities");
     await waitForSelector(cdp, ".mapped-element", { timeoutMs: 10000 });
+    const characterNodeCount = await evaluate(cdp, `document.querySelectorAll('.ascii-char').length`);
+    if (characterNodeCount !== 0) {
+      throw new Error(`ASCII grid rendered ${characterNodeCount} per-character nodes`);
+    }
     const asciiAfterMapping = await evaluate(cdp, `document.querySelector('.ascii-stage pre').textContent`);
     if (asciiAfterMapping !== asciiBeforeMapping) {
       throw new Error("mapping changed the diagram's ASCII text content");
@@ -470,192 +515,179 @@ try {
     if (!mappedTitle.includes("Workspace Store") || !mappedTitle.includes("fixture.ts:1-4")) {
       throw new Error(`mapped hover summary was incomplete: ${mappedTitle}`);
     }
+    const mappedBounds = await evaluate(cdp, `(() => {
+      const mapping = document.querySelector('.mapped-element').dataset;
+      return {
+        line: Number(mapping.line),
+        startColumn: Number(mapping.startColumn),
+        endColumn: Number(mapping.endColumn)
+      };
+    })()`);
+    await evaluate(cdp, `(async () => {
+      await navigator.clipboard.writeText('selection-sentinel');
+      window.__selectedReferenceEnvelope = null;
+      window.addEventListener('new-diagram:reference-buffer', (event) => {
+        window.__selectedReferenceEnvelope = event.detail;
+      }, { once: true });
+    })()`);
+    await pointerClick(cdp, ".select-refs");
+    await waitForSelector(cdp, ".ascii-selector--select-refs");
+    await waitForSelector(cdp, '.ref-buffer-tray[data-ref-buffer-count="0"]');
+    const cancelStart = await asciiGridPoint(cdp, mappedBounds.line, mappedBounds.startColumn);
+    const cancelEnd = await asciiGridPoint(cdp, mappedBounds.line, mappedBounds.endColumn);
+    await cdp.send("Input.dispatchMouseEvent", {
+      type: "mousePressed", x: cancelStart.x, y: cancelStart.y, button: "left", buttons: 1, clickCount: 1
+    });
+    await cdp.send("Input.dispatchMouseEvent", {
+      type: "mouseMoved", x: cancelEnd.x, y: cancelEnd.y, button: "left", buttons: 1
+    });
+    await waitForSelector(cdp, ".rect-selection-window");
+    await waitForSelector(cdp, '.ref-buffer-tray[data-ref-buffer-preview-count="1"] .ref-buffer-item.is-preview');
+    await pressEscape(cdp);
+    await waitFor(async () => !await evaluate(cdp, `Boolean(document.querySelector('.rect-selection-window'))`), {
+      message: "Escape did not cancel the active selection rectangle"
+    });
+    if (!await evaluate(cdp, `(() => {
+      const tray = document.querySelector('.ref-buffer-tray');
+      return tray?.dataset.refBufferCount === '0'
+        && tray?.dataset.refBufferPreviewCount === '0'
+        && !tray.querySelector('.ref-buffer-item');
+    })()`)) {
+      throw new Error("cancelling the active rectangle added a reference to the buffer");
+    }
+    await cdp.send("Input.dispatchMouseEvent", {
+      type: "mouseReleased", x: cancelEnd.x, y: cancelEnd.y, button: "left", buttons: 0, clickCount: 1
+    });
+    await waitForSelector(cdp, ".ascii-selector--select-refs");
+    await pressEscape(cdp);
+    await waitForSelector(cdp, ".ascii-selector--read");
+    await waitFor(async () => !await evaluate(cdp, `Boolean(document.querySelector('.ref-buffer-tray'))`), {
+      message: "empty reference buffer remained visible after leaving selection mode"
+    });
+    if (await evaluate(cdp, `document.querySelector('.select-refs').getAttribute('aria-pressed')`) !== "false") {
+      throw new Error("Escape did not cancel reference selection mode");
+    }
+    await pointerClick(cdp, ".select-refs");
+    await waitForSelector(cdp, ".ascii-selector--select-refs");
+    await dragAsciiBetween(
+      cdp,
+      { line: mappedBounds.line, column: mappedBounds.startColumn },
+      { line: mappedBounds.line, column: mappedBounds.endColumn },
+      async () => {
+        await waitForSelector(cdp, ".rect-selection-window");
+        await waitForSelector(cdp, ".mapped-element.is-selection-preview");
+        await waitForSelector(cdp, '.ref-buffer-tray[data-ref-buffer-preview-count="1"] .ref-buffer-item.is-preview');
+        const overlayText = await evaluate(cdp, `document.querySelector(
+          '.rect-selection-overlay__ref'
+        )?.textContent ?? ''`);
+        if (overlayText !== "fixture.ts") {
+          throw new Error(`selection overlay showed ${JSON.stringify(overlayText)} instead of fixture.ts`);
+        }
+        await captureScreenshot(cdp, { output: selectRectScreenshotPath });
+      }
+    );
+    await waitForSelector(cdp, '.ref-buffer-tray[data-ref-buffer-count="1"]');
+    if (await evaluate(cdp, `Boolean(document.querySelector('.rect-selection-window'))`)) {
+      throw new Error("selection rectangle remained after pointer release");
+    }
+    if (!await evaluate(cdp, `document.querySelector('.mapped-element').classList.contains('is-buffered-ref')`)) {
+      throw new Error("buffered mapping did not retain its committed highlight");
+    }
+    const clipboardAfterSelection = await evaluate(cdp, `navigator.clipboard.readText()`);
+    if (clipboardAfterSelection !== "selection-sentinel") {
+      throw new Error(`rectangle selection unexpectedly wrote ${clipboardAfterSelection} to the clipboard`);
+    }
+    await pointerClick(cdp, ".ref-buffer-actions button:nth-child(1)");
+    await waitFor(async () => (
+      await evaluate(cdp, `navigator.clipboard.readText()`)
+    ) === "fixture.ts:1-4", { message: "copy paths did not use the source-location representation" });
+    await pointerClick(cdp, ".ref-buffer-actions button:nth-child(3)");
+    await waitFor(async () => await evaluate(cdp, `(() => {
+      const envelope = window.__selectedReferenceEnvelope;
+      return envelope?.schemaVersion === 1
+        && envelope.references?.length === 1
+        && envelope.references[0].kind === 'code-entity'
+        && envelope.references[0].targetId === ${JSON.stringify(mappedEntityId)}
+        && envelope.references[0].sourceRangeIndex === 0;
+    })()`), { message: "internal reference envelope did not preserve the selected identity" });
+    await pointerClick(cdp, ".ref-buffer-actions button:nth-child(4)");
+    await waitFor(async () => await evaluate(cdp, `(() => {
+      const tray = document.querySelector('.ref-buffer-tray');
+      return tray?.dataset.refBufferCount === '0' && !tray.querySelector('.ref-buffer-item');
+    })()`), {
+      message: "clear did not empty the reference buffer"
+    });
+    await pointerClick(cdp, ".select-refs");
+    await waitForSelector(cdp, ".ascii-selector--read");
+    await waitFor(async () => !await evaluate(cdp, `Boolean(document.querySelector('.ref-buffer-tray'))`), {
+      message: "empty reference buffer remained visible after explicit selection mode"
+    });
+    await dragAsciiBetween(
+      cdp,
+      { line: mappedBounds.line, column: mappedBounds.startColumn },
+      { line: mappedBounds.line, column: mappedBounds.endColumn },
+      async () => {
+        await waitForSelector(cdp, ".rect-selection-window");
+      },
+      2
+    );
+    await waitForSelector(cdp, '.ref-buffer-tray[data-ref-buffer-count="1"]');
+    await pointerClick(cdp, ".ref-buffer-actions button:nth-child(4)");
+    await waitFor(async () => !await evaluate(cdp, `Boolean(document.querySelector('.ref-buffer-tray'))`), {
+      message: "clear did not empty the reference buffer after Ctrl-drag"
+    });
     await pointerHover(cdp, ".mapped-element");
     await pointerClick(cdp, ".mapped-element");
     await waitForSelector(cdp, ".source-workspace.is-revealed", { timeoutMs: 10000 });
     await waitForSelector(cdp, ".source-code-viewer", { timeoutMs: 10000 });
-    const revealedEntityId = await evaluate(cdp, `document.querySelector('.entity-context__body').dataset.activeEntityId`);
+    const revealedEntityId = await evaluate(cdp, `document.querySelector('.source-workspace').dataset.activeEntityId`);
     if (revealedEntityId !== mappedEntityId) {
       throw new Error(`mapped entity ${mappedEntityId} revealed ${revealedEntityId}`);
     }
     const entityTabSelected = await evaluate(cdp, `document.querySelector('#code-entities-tab').getAttribute('aria-selected')`);
     if (entityTabSelected !== "true") throw new Error("mapped element did not open the Code Entities tab");
-    await captureScreenshot(cdp, { output: mappingScreenshotPath });
-    await pointerClick(cdp, "#code-entities-tab");
-    await waitForSelector(cdp, ".source-fold-placeholder");
     const sourceLayout = await evaluate(cdp, `(() => {
       const root = document.querySelector('.entities-panel').getBoundingClientRect();
-      const context = document.querySelector('.entity-context').getBoundingClientRect();
       const source = document.querySelector('.source-workspace').getBoundingClientRect();
-      const divider = document.querySelector('.entity-context-divider');
       return {
-        contextRatio: context.height / root.height,
         sourceRatio: source.height / root.height,
         sourceWidthRatio: source.width / root.width,
-        splitValue: Number(divider.getAttribute('aria-valuenow'))
+        hasContext: Boolean(document.querySelector('.entity-context')),
+        hasDivider: Boolean(document.querySelector('.entity-context-divider')),
+        hasOriginalToggle: Boolean(document.querySelector('.source-original-toggle'))
       };
     })()`);
-    if (Math.abs(sourceLayout.contextRatio - 0.2) > 0.03
-      || sourceLayout.sourceRatio < 0.75
+    if (sourceLayout.sourceRatio < 0.99
       || sourceLayout.sourceWidthRatio < 0.99
-      || sourceLayout.splitValue !== 20) {
-      throw new Error(`source workspace did not render at full-width 20/80: ${JSON.stringify(sourceLayout)}`);
+      || sourceLayout.hasContext
+      || sourceLayout.hasDivider
+      || sourceLayout.hasOriginalToggle) {
+      throw new Error(`artifact source workspace was not source-only: ${JSON.stringify(sourceLayout)}`);
     }
     await waitFor(async () => (
       await evaluate(cdp, `document.querySelectorAll('.source-code-viewer[data-highlighted="true"] .source-token').length`)
     ) > 0, { message: "Shiki did not render syntax-highlighted tokens" });
-    const compactedLines = await evaluate(cdp, `Array.from(document.querySelectorAll(
-      '.source-call-graph-line > span:last-child, .source-call-graph-node > span:last-child'
-    )).map((node) => node.textContent)`);
-    const expectedCompactedLines = [
-      "  // [Lines 2-3 | 2 lines compacted]",
-      "  //",
-      "  // workspace",
-      "  //   |",
-      "  //   +--> status = 'collecting'",
-      "  //   \\--> status = 'ready'"
-    ];
-    if (JSON.stringify(compactedLines) !== JSON.stringify(expectedCompactedLines)) {
-      throw new Error(`collapsed source did not render an ASCII call graph comment: ${JSON.stringify(compactedLines)}`);
+    const fullSourceState = await evaluate(cdp, `({
+      text: document.querySelector('.source-code-content').textContent,
+      selectedLines: document.querySelectorAll('.source-code-line[data-selected="true"]').length,
+      renderedLines: document.querySelectorAll('.source-code-line').length,
+      foldedSections: document.querySelectorAll('.source-fold-placeholder').length,
+      compactedNodes: document.querySelectorAll('.source-call-graph-node').length
+    })`);
+    if (!fullSourceState.text.includes("unrelatedLine080")
+      || !fullSourceState.text.includes("2 lines compacted")
+      || fullSourceState.selectedLines !== 2
+      || fullSourceState.renderedLines !== 83
+      || fullSourceState.foldedSections !== 1
+      || fullSourceState.compactedNodes !== 3) {
+      throw new Error(`full source file did not retain its compacted range: ${JSON.stringify(fullSourceState)}`);
     }
-    const mappedNodeCount = await evaluate(cdp, `document.querySelectorAll('.source-call-graph-node').length`);
-    if (mappedNodeCount !== 3) throw new Error(`collapsed call graph did not render three mapped nodes: ${mappedNodeCount}`);
-    const compactedAlignment = await evaluate(cdp, `(() => {
-      const wholeToggle = document.querySelector('.source-section-fold-toggle').getBoundingClientRect();
-      const nodeToggle = document.querySelector('.source-call-graph-node-marker').getBoundingClientRect();
-      const retained = document.querySelector('.source-code-line[data-line="1"] .source-line-text').getBoundingClientRect();
-      const retainedLineNumberElement = document.querySelector('.source-code-line[data-line="1"] .source-line-number');
-      const comment = document.querySelector('.source-call-graph-line > span:last-child').getBoundingClientRect();
-      const foldGutterElement = document.querySelector('.source-fold-placeholder > .source-line-gutter');
-      const foldGutter = foldGutterElement.getBoundingClientRect();
-      const glyphRect = (root, pattern = /\\S/) => {
-        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-          const index = node.data.search(pattern);
-          if (index < 0) continue;
-          const range = document.createRange();
-          range.setStart(node, index);
-          range.setEnd(node, index + 1);
-          return range.getBoundingClientRect();
-        }
-        return null;
-      };
-      const textRect = (root) => {
-        const node = root.firstChild;
-        const start = node.data.search(/\\S/);
-        const end = node.data.search(/\\s*$/);
-        const range = document.createRange();
-        range.setStart(node, start);
-        range.setEnd(node, end);
-        return range.getBoundingClientRect();
-      };
-      const wholeGlyph = glyphRect(document.querySelector('.source-section-fold-toggle'));
-      const lineNumberGlyph = glyphRect(retainedLineNumberElement);
-      const nodeGlyph = glyphRect(document.querySelector('.source-call-graph-node-marker'));
-      const nodeCommentGlyph = glyphRect(document.querySelector('.source-call-graph-node > span:last-child'));
-      const wholeText = textRect(document.querySelector('.source-section-fold-toggle'));
-      const lineNumberText = textRect(retainedLineNumberElement);
-      const nodeText = textRect(document.querySelector('.source-call-graph-node-marker'));
-      const nodeComment = document.querySelector('.source-call-graph-node > span:last-child').getBoundingClientRect();
-      return {
-        wholeLineNumberColumnDelta: wholeText.right - lineNumberText.right,
-        nodeLineNumberColumnDelta: nodeText.right - lineNumberText.right,
-        commentDelta: comment.left - retained.left,
-        nodeVerticalDelta: nodeGlyph.top - nodeCommentGlyph.top,
-        nodeCenterDelta: (nodeToggle.top + nodeToggle.height / 2) - (nodeComment.top + nodeComment.height / 2),
-        wholeHeaderCenterDelta: (wholeToggle.top + wholeToggle.height / 2) - (comment.top + comment.height / 2),
-        gutterHeaderHeightDelta: foldGutter.height - comment.height,
-        gutterZIndex: Number(getComputedStyle(foldGutterElement).zIndex),
-        graphGutterZIndex: Number(getComputedStyle(document.querySelector('.source-call-graph-line > span:first-child')).zIndex)
-      };
-    })()`);
-    if (Math.abs(compactedAlignment.wholeLineNumberColumnDelta) > 0.5
-      || Math.abs(compactedAlignment.nodeLineNumberColumnDelta) > 0.5
-      || Math.abs(compactedAlignment.commentDelta) > 0.5
-      || Math.abs(compactedAlignment.nodeVerticalDelta) > 0.5
-      || Math.abs(compactedAlignment.nodeCenterDelta) > 0.5
-      || Math.abs(compactedAlignment.wholeHeaderCenterDelta) > 0.5
-      || Math.abs(compactedAlignment.gutterHeaderHeightDelta) > 0.5
-      || compactedAlignment.gutterZIndex <= compactedAlignment.graphGutterZIndex) {
-      throw new Error(`call graph controls or comments were misaligned: ${JSON.stringify(compactedAlignment)}`);
-    }
-    await captureScreenshot(cdp, { output: sourceScreenshotPath });
-    await pointerClick(cdp, '.source-call-graph-node[data-graph-line="3"]');
-    await waitForSelector(cdp, '.source-call-graph-node-source-line[data-line="2"]');
-    const nodeSourceText = await evaluate(cdp, `document.querySelector('.source-call-graph-node-source').textContent`);
-    if (!nodeSourceText.includes("workspace.status = 'collecting';")) {
-      throw new Error(`mapped graph node did not reveal its source block: ${nodeSourceText}`);
-    }
-    const sourceColumnAlignment = await evaluate(cdp, `(() => {
-      const retained = document.querySelector('.source-code-line[data-line="1"] .source-line-text').getBoundingClientRect();
-      const expanded = document.querySelector('.source-call-graph-node-source-line[data-line="2"] code').getBoundingClientRect();
-      return { retainedLeft: retained.left, expandedLeft: expanded.left, delta: expanded.left - retained.left };
-    })()`);
-    if (Math.abs(sourceColumnAlignment.delta) > 0.5) {
-      throw new Error(`expanded graph-node source did not align with retained source: ${JSON.stringify(sourceColumnAlignment)}`);
-    }
-    if (!await evaluate(cdp, `Boolean(document.querySelector('.source-call-graph-node[data-graph-line="4"]'))`)) {
-      throw new Error("expanding one graph node removed its independently compacted sibling");
-    }
-    await pointerClick(cdp, '.source-call-graph-node[data-graph-line="3"]');
-    await waitFor(async () => !await evaluate(cdp, `Boolean(document.querySelector('.source-call-graph-node-source'))`), {
-      message: "mapped graph node did not collapse independently"
-    });
-    const compactedCommentGlyphLeft = await evaluate(cdp, `(() => {
-      const root = document.querySelector('.source-call-graph-line > span:last-child');
-      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-        const index = node.data.search(/\\S/);
-        if (index < 0) continue;
-        const range = document.createRange();
-        range.setStart(node, index);
-        range.setEnd(node, index + 1);
-        return range.getBoundingClientRect().left;
-      }
-      return null;
-    })()`);
-    await pointerClick(cdp, ".source-section-fold-toggle");
-    await waitFor(async () => !await evaluate(cdp, `Boolean(document.querySelector('.source-fold-placeholder'))`), {
-      message: "source fold placeholder did not expand"
-    });
-    const revealedText = await evaluate(cdp, `document.querySelector('.source-code-content').textContent`);
-    if (!revealedText.includes("workspace.status = 'collecting';")) {
-      throw new Error("collapsed source did not reveal its original lines");
-    }
-    const revealedSourceGlyphLeft = await evaluate(cdp, `(() => {
-      const root = document.querySelector('.source-code-line[data-line="2"] code');
-      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-        const index = node.data.search(/\\S/);
-        if (index < 0) continue;
-        const range = document.createRange();
-        range.setStart(node, index);
-        range.setEnd(node, index + 1);
-        return range.getBoundingClientRect().left;
-      }
-      return null;
-    })()`);
-    if (compactedCommentGlyphLeft === null || revealedSourceGlyphLeft === null
-      || Math.abs(compactedCommentGlyphLeft - revealedSourceGlyphLeft) > 0.5) {
-      throw new Error(`compacted comment did not preserve source indentation: ${JSON.stringify({ compactedCommentGlyphLeft, revealedSourceGlyphLeft })}`);
-    }
-    await pointerClick(cdp, ".source-fold-toggle");
-    await waitForSelector(cdp, ".source-fold-placeholder");
-    await pointerClick(cdp, ".source-section-fold-toggle");
-    await waitFor(async () => !await evaluate(cdp, `Boolean(document.querySelector('.source-fold-placeholder'))`), {
-      message: "expanded source section did not support re-collapsing and reopening"
-    });
-    await pointerClick(cdp, ".source-original-toggle");
-    await waitFor(async () => (
-      await evaluate(cdp, `document.querySelector('.source-code-content').textContent`)
-    ).includes("workspace.status = 'ready';"), {
-      message: "peek original did not reveal the complete source range"
-    });
     const sourceBeforeTyping = await evaluate(cdp, `document.querySelector('.source-code-content').textContent`);
     await pointerClick(cdp, ".source-code-content");
     await cdp.send("Input.insertText", { text: "MUTATION" });
     const sourceAfterTyping = await evaluate(cdp, `document.querySelector('.source-code-content').textContent`);
     if (sourceAfterTyping !== sourceBeforeTyping) throw new Error("read-only source viewer accepted source edits");
+    await captureScreenshot(cdp, { output: mappingScreenshotPath });
     await captureScreenshot(cdp, { output: sourceScreenshotPath });
 
     await pointerClick(cdp, "#diagrams-tab");
@@ -721,6 +753,15 @@ try {
     }
     const handleAfterRename = await evaluate(cdp, `document.querySelector('.diagram-meta code').textContent`);
     if (handleAfterRename !== stableHandle) throw new Error("diagram rename changed its stable @ handle");
+    await pointerClick(cdp, ".diagram-star-toggle");
+    await waitFor(async () => await evaluate(cdp, `(async () => {
+      const workspace = await fetch('/api/workspace').then((response) => response.json());
+      const activeSet = workspace.diagramSets.find((set) => set.diagramIds.includes('${selection.id}'));
+      return document.querySelector('.diagram-star-toggle')?.getAttribute('aria-pressed') === 'true'
+        && document.querySelector('[data-diagram-id="${selection.id}"] .diagram-tree-star')?.textContent.trim() === '★'
+        && activeSet?.featuredViewIds?.diagram === '${selection.id}';
+    })()`), { message: "chosen diagram state did not reach the header, lineage, and persistence" });
+    await captureScreenshot(cdp, { output: starredDiagramScreenshotPath });
     await pointerHover(cdp, `[data-diagram-id="${selection.id}"]`);
     await pointerClick(cdp, `[data-diagram-id="${selection.id}"] .diagram-tree-prompt`);
     await waitForSelector(cdp, ".prompt-config-dialog");
@@ -736,10 +777,10 @@ try {
 
     await pointerClick(cdp, ".diagram-actions .button:first-child");
     await waitForSelector(cdp, ".ascii-selector");
-    await dragBetween(
+    await dragAsciiBetween(
       cdp,
-      '.ascii-char[data-line="1"][data-column="1"]',
-      '.ascii-char[data-line="3"][data-column="20"]'
+      { line: 1, column: 1 },
+      { line: 3, column: 20 }
     );
     await waitFor(async () => (
       await evaluate(cdp, `document.querySelectorAll('.diagram-tree-component').length`)
@@ -792,10 +833,10 @@ try {
     }
     await pointerClick(cdp, ".diagram-actions .button:first-child");
     await waitForSelector(cdp, ".ascii-selector");
-    await dragBetween(
+    await dragAsciiBetween(
       cdp,
-      '.ascii-char[data-line="1"][data-column="1"]',
-      '.ascii-char[data-line="2"][data-column="10"]'
+      { line: 1, column: 1 },
+      { line: 2, column: 10 }
     );
     await waitFor(async () => (
       await evaluate(cdp, `document.querySelectorAll('.diagram-tree-component').length`)
@@ -883,7 +924,7 @@ try {
         && draft.selectedCodeEntityIds.length === 0
         && draft.excludedReferenceKeys.includes('diagram:${selection.id}')
         && draft.count === 2
-        && draft.outputKind === 'diagram-component'
+        && draft.targetKind === 'diagram-component'
         && draft.modelId === 'gpt-5.6-terra'
         && draft.promptProfileId === 'default';
     })()`), { message: "complete derivative generation state was not saved" });
@@ -899,6 +940,13 @@ try {
     await waitFor(async () => (
       await evaluate(cdp, `document.querySelector('.diagram-panel .pane-header h2').textContent`)
     ) === renamedDiagram, { message: "source diagram did not reopen after reload" });
+    const restoredStarredState = await evaluate(cdp, `({
+      pressed: document.querySelector('.diagram-star-toggle')?.getAttribute('aria-pressed'),
+      marker: document.querySelector('[data-diagram-id="${selection.id}"] .diagram-tree-star')?.textContent.trim()
+    })`);
+    if (restoredStarredState.pressed !== "true" || restoredStarredState.marker !== "★") {
+      throw new Error(`chosen diagram state did not survive reload: ${JSON.stringify(restoredStarredState)}`);
+    }
     await pointerClick(cdp, ".diagram-actions .create-derivative");
     await waitForSelector(cdp, "#diagram-prompt");
     await waitForSelector(cdp, '.prompt-reference-controls input[type="checkbox"]');
@@ -1054,7 +1102,7 @@ try {
       await evaluate(cdp, `document.querySelectorAll('.operation-buffer li.is-applied').length`)
     ) === 1, { message: "manual edit was not added to the operation buffer" });
     await waitForSelector(cdp, ".ascii-selector.is-marking");
-    await pointerClick(cdp, '.ascii-char[data-line="1"][data-column="2"]');
+    await clickAsciiCell(cdp, 1, 2);
     await waitFor(async () => (
       await evaluate(cdp, `document.querySelector('#edit-prompt').value`)
     ) === "@` ", { message: "marker reference was not inserted into the LLM prompt" });
@@ -1129,10 +1177,12 @@ try {
       return {
         archivedAt: diagram?.archivedAt ?? '',
         setId: set?.id ?? '',
+        starredDiagramId: set?.featuredViewIds?.diagram ?? '',
         visibleDiagrams: document.querySelectorAll('.diagram-tree-diagram').length
       };
     })()`);
-    if (!archiveState.archivedAt || !archiveState.setId || archiveState.visibleDiagrams !== 7) {
+    if (!archiveState.archivedAt || !archiveState.setId || archiveState.starredDiagramId
+      || archiveState.visibleDiagrams !== 7) {
       throw new Error(`archive state was incomplete: ${JSON.stringify(archiveState)}`);
     }
     archivedArtifactPath = path.join(
@@ -1232,16 +1282,32 @@ try {
     if (!editedComponentState.heading.endsWith(" Edit") || editedComponentState.origin !== "EDITED") {
       throw new Error(`DiagramComponent edit was incomplete: ${JSON.stringify(editedComponentState)}`);
     }
+    await evaluate(cdp, `document.querySelector(
+      '[data-component-id="${capturedComponentId}"] .diagram-tree-archive'
+    ).scrollIntoView({ block: 'center' })`);
     await pointerClick(
       cdp,
       `[data-component-id="${capturedComponentId}"] .diagram-tree-archive`
     );
-    await waitFor(async () => (
-      await evaluate(cdp, `(
-        !document.querySelector('[data-component-id="${capturedComponentId}"]')
-        || Boolean(document.querySelector('.diagram-tree-error'))
-      )`)
-    ), { message: "DiagramComponent archive request did not settle" });
+    try {
+      await waitFor(async () => (
+        await evaluate(cdp, `(
+          !document.querySelector('[data-component-id="${capturedComponentId}"]')
+          || Boolean(document.querySelector('.diagram-tree-error'))
+        )`)
+      ), { message: "DiagramComponent archive request did not settle" });
+    } catch (error) {
+      const state = await evaluate(cdp, `(async () => {
+        const workspace = await fetch('/api/workspace').then((response) => response.json());
+        return {
+          archivedAt: workspace.diagramComponents['${capturedComponentId}']?.archivedAt ?? '',
+          rowCount: document.querySelectorAll('[data-component-id="${capturedComponentId}"]').length,
+          disabled: document.querySelector('[data-component-id="${capturedComponentId}"] .diagram-tree-archive')?.disabled,
+          alert: document.querySelector('.diagram-tree-error')?.textContent ?? ''
+        };
+      })()`);
+      throw new Error(`${error.message}: ${JSON.stringify(state)}`);
+    }
     const componentArchiveError = await evaluate(cdp, `document.querySelector(
       '.diagram-tree-error'
     )?.textContent ?? ''`);
@@ -1473,8 +1539,14 @@ try {
   }
   const mappingScreenshot = await readFile(mappingScreenshotPath);
   if (mappingScreenshot.length < 1000) throw new Error("code-entity mapping screenshot was unexpectedly small");
+  const selectRectScreenshot = await readFile(selectRectScreenshotPath);
+  if (selectRectScreenshot.length < 1000) throw new Error("rectangle selection screenshot was unexpectedly small");
   const setPickerScreenshot = await readFile(setPickerScreenshotPath);
   if (setPickerScreenshot.length < 1000) throw new Error("Diagram Set picker screenshot was unexpectedly small");
+  const starredDiagramScreenshot = await readFile(starredDiagramScreenshotPath);
+  if (starredDiagramScreenshot.length < 1000) {
+    throw new Error("starred diagram screenshot was unexpectedly small");
+  }
   const archivedArtifact = JSON.parse(await readFile(archivedArtifactPath, "utf8"));
   if (!archivedArtifact.archivedAt) throw new Error("archived diagram artifact was removed or unmarked");
   const archivedComponentArtifact = JSON.parse(await readFile(archivedComponentArtifactPath, "utf8"));

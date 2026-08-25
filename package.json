@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc --noEmit && vite build",
     "check:browser": "node browser-check.mjs",
+    "check:aux-views": "node browser-aux-views-check.mjs",
     "dev": "vite --host 127.0.0.1",
     "diagram": "tsx cli.ts",
     "preview": "vite preview --host 127.0.0.1",

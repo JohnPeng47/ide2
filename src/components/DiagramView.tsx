@@ -1,40 +1,75 @@
-import { useEffect, useMemo, useState, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   CodeEntityRecord,
   DiagramCodeEntityMapRecord,
   DiagramComponentRecord,
   DiagramElementMapping,
   DiagramRecord,
-  DiagramSelectionBounds
+  DiagramSelectionBounds,
+  DiagramViewKind
 } from "../domain";
+import { mappingsForSelection } from "../diagramSelection";
+import { referenceIdentityKey, referencesFromMappings } from "../refBuffer";
+import { resolveReference, type ReferenceResolutionContext } from "../referenceResolver";
+import { useRefBuffer } from "../ref-buffer/RefBufferContext";
+import { RefBufferTray } from "../ref-buffer/RefBufferTray";
+import { AsciiSelectionGrid, type AsciiGridMode } from "./AsciiSelectionGrid";
+import type { SelectionOverlayReference } from "./DiagramSelectionOverlay";
 
-interface CharacterPoint {
-  line: number;
-  column: number;
-}
+export const DIAGRAM_VIEW_OPTIONS: Array<{ kind: DiagramViewKind; label: string }> = [
+  { kind: "diagram", label: "DIAGRAM" },
+  { kind: "call-graph", label: "CALL GRAPH" },
+  { kind: "dir-view", label: "DIR VIEW" }
+];
 
-function pointFromTarget(target: Element | null): CharacterPoint | null {
-  const character = target?.closest<HTMLElement>("[data-ascii-char]");
-  if (!character) return null;
-  return {
-    line: Number(character.dataset.line),
-    column: Number(character.dataset.column)
-  };
+export function EmptyDiagramView(props: {
+  viewKind: DiagramViewKind;
+  viewCounts: Record<DiagramViewKind, number>;
+  onGenerate: () => void;
+}) {
+  const label = DIAGRAM_VIEW_OPTIONS.find((option) => option.kind === props.viewKind)?.label ?? "DIAGRAM";
+  const hasCandidates = props.viewCounts[props.viewKind] > 0;
+  return (
+    <div className="diagram-panel diagram-empty-panel">
+      <header className="pane-header diagram-pane-header">
+        <div className="diagram-heading">
+          <span className="eyebrow">{label} VIEW</span>
+          <h2>No starred {label.toLowerCase()}</h2>
+        </div>
+        <button type="button" className="button button--primary" onClick={props.onGenerate}>generate →</button>
+      </header>
+      <div className="diagram-empty-state">
+        <span className="eyebrow">{hasCandidates ? "CANDIDATE REQUIRED" : "NO CANDIDATES"}</span>
+        <h3>{hasCandidates ? `Choose and star a ${label.toLowerCase()} candidate.` : `Generate the first ${label.toLowerCase()} candidate.`}</h3>
+        <p>{hasCandidates
+          ? "Open a candidate from the Diagrams tree, then use its star control."
+          : "The generated candidates will appear in the Diagrams tree."}</p>
+        <button type="button" className="button button--primary" onClick={props.onGenerate}>generate {label.toLowerCase()} →</button>
+      </div>
+    </div>
+  );
 }
 
 export function DiagramView(props: {
   active: DiagramRecord | DiagramComponentRecord;
   artifactKind: "diagram" | "diagram-component";
-  onDerive: () => void;
+  onGenerate: () => void;
   onCapture: (bounds: DiagramSelectionBounds) => Promise<void>;
   editMode?: boolean;
   markerMode?: boolean;
   editBusy?: boolean;
   codeEntities: CodeEntityRecord[];
   codeEntityMap?: DiagramCodeEntityMapRecord;
+  referenceResolutionContext: ReferenceResolutionContext;
+  projectId: string;
+  diagramSetId: string;
+  onInsertReferenceTokens: (tokens: string) => void;
   mappingBusy?: boolean;
   mappingProgress?: string;
   mappingError?: string | null;
+  starred?: boolean;
+  starBusy?: boolean;
+  onToggleStarred?: () => void;
   onToggleEdit?: () => void;
   onMapCodeEntities?: () => void;
   onRevealCodeEntity?: (mapping: DiagramElementMapping) => void;
@@ -43,76 +78,74 @@ export function DiagramView(props: {
   onUndoEdit?: () => void;
   onRedoEdit?: () => void;
 }) {
+  const refBuffer = useRefBuffer();
   const [capturing, setCapturing] = useState(false);
-  const [dragging, setDragging] = useState(false);
-  const [anchor, setAnchor] = useState<CharacterPoint | null>(null);
-  const [focus, setFocus] = useState<CharacterPoint | null>(null);
+  const [selectingRefs, setSelectingRefs] = useState(false);
+  const [liveSelection, setLiveSelection] = useState<DiagramSelectionBounds | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectionStatus, setSelectionStatus] = useState("");
   const [draftAscii, setDraftAscii] = useState(props.active.ascii);
   useEffect(() => setDraftAscii(props.active.ascii), [props.active.ascii, props.active.id]);
-  const grid = useMemo(() => {
-    const lines = props.active.ascii.split("\n");
-    const width = Math.max(...lines.map((line) => line.length));
-    return lines.map((line) => line.padEnd(width, " "));
-  }, [props.active.ascii]);
+  useEffect(() => {
+    setCapturing(false);
+    setSelectingRefs(false);
+    setLiveSelection(null);
+    setSelectionStatus("");
+  }, [props.active.id, props.active.ascii, props.codeEntityMap?.producedByRunId]);
+  useEffect(() => {
+    if (!props.editMode && !props.markerMode) return;
+    setCapturing(false);
+    setSelectingRefs(false);
+    setLiveSelection(null);
+  }, [props.editMode, props.markerMode]);
 
-  const reset = () => {
-    setDragging(false);
-    setAnchor(null);
-    setFocus(null);
-    setError(null);
-  };
-
-  const selected = (line: number, column: number) => {
-    if (!anchor || !focus) return false;
-    return line >= Math.min(anchor.line, focus.line)
-      && line <= Math.max(anchor.line, focus.line)
-      && column >= Math.min(anchor.column, focus.column)
-      && column <= Math.max(anchor.column, focus.column);
-  };
-
-  const pointAtEvent = (event: PointerEvent<HTMLPreElement>) => (
-    pointFromTarget(document.elementFromPoint(event.clientX, event.clientY))
-    ?? pointFromTarget(event.target as Element)
+  const mappings = props.codeEntityMap?.mappings ?? [];
+  const liveMappings = useMemo(
+    () => liveSelection ? mappingsForSelection(mappings, liveSelection) : [],
+    [liveSelection, mappings]
   );
-
-  const startCapture = (event: PointerEvent<HTMLPreElement>) => {
-    if (!capturing || saving || event.button !== 0) return;
-    const point = pointAtEvent(event);
-    if (!point) return;
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setAnchor(point);
-    setFocus(point);
-    setDragging(true);
-    setError(null);
-  };
-
-  const moveCapture = (event: PointerEvent<HTMLPreElement>) => {
-    if (!dragging) return;
-    const point = pointAtEvent(event);
-    if (point) setFocus(point);
-  };
-
-  const finishCapture = async (event: PointerEvent<HTMLPreElement>) => {
-    if (!dragging || !anchor) return;
-    const end = pointAtEvent(event) ?? focus ?? anchor;
-    setFocus(end);
-    setDragging(false);
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
+  const liveReferences = useMemo(
+    () => referencesFromMappings(liveMappings),
+    [liveMappings]
+  );
+  const previewMappingIds = useMemo(
+    () => new Set(liveMappings.map((mapping) => mapping.id)),
+    [liveMappings]
+  );
+  const bufferedReferenceKeys = useMemo(
+    () => new Set(refBuffer.entries.map(referenceIdentityKey)),
+    [refBuffer.entries]
+  );
+  const overlayReferences = useMemo(() => {
+    const result: SelectionOverlayReference[] = [];
+    const seen = new Set<string>();
+    for (const identity of liveReferences) {
+      const key = referenceIdentityKey(identity);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const resolved = resolveReference(identity, props.referenceResolutionContext);
+      const text = resolved?.selectableText?.getSelectionText(identity);
+      if (text !== undefined) result.push({ key, identity, text });
     }
+    return result;
+  }, [liveReferences, props.referenceResolutionContext]);
+
+  const gridMode: AsciiGridMode = props.markerMode
+    ? "marker"
+    : capturing
+      ? "capture"
+      : selectingRefs
+        ? "select-refs"
+        : "read";
+
+  const saveCapture = async (bounds: DiagramSelectionBounds) => {
     setSaving(true);
     setError(null);
     try {
-      await props.onCapture({
-        startLine: Math.min(anchor.line, end.line),
-        endLine: Math.max(anchor.line, end.line),
-        startColumn: Math.min(anchor.column, end.column),
-        endColumn: Math.max(anchor.column, end.column)
-      });
+      await props.onCapture(bounds);
       setCapturing(false);
-      reset();
+      setSelectionStatus("");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "component capture failed");
     } finally {
@@ -120,43 +153,105 @@ export function DiagramView(props: {
     }
   };
 
+  const completeSelection = (
+    kind: "capture" | "select-refs",
+    bounds: DiagramSelectionBounds
+  ) => {
+    if (kind === "capture") {
+      void saveCapture(bounds);
+      return;
+    }
+    if (!props.codeEntityMap) {
+      setSelectionStatus("map code entities first");
+      return;
+    }
+    const selectedMappings = mappingsForSelection(mappings, bounds);
+    const refs = referencesFromMappings(selectedMappings);
+    refBuffer.add(refs);
+    setSelectionStatus(refs.length === 0
+      ? "no mapped references in selection"
+      : `added ${refs.length} mapped ref${refs.length === 1 ? "" : "s"}`);
+  };
+
   return (
     <div className={`diagram-panel ${props.artifactKind === "diagram-component" ? "diagram-component-panel" : ""}`}>
-      <header className="pane-header">
-        <div>
+      <header className="pane-header diagram-pane-header">
+        <div className="diagram-heading">
           <span className="eyebrow">
             {props.artifactKind === "diagram" ? "DIAGRAM VIEW" : "DIAGRAM COMPONENT VIEW"}
           </span>
-          <h2>{props.active.name}</h2>
+          <div className="diagram-heading__title">
+            <h2>{props.active.name}</h2>
+            {props.artifactKind === "diagram" ? (
+              <button
+                type="button"
+                className={`diagram-star-toggle${props.starred ? " is-starred" : ""}`}
+                aria-label={props.starred ? "Remove chosen diagram status" : "Choose this diagram"}
+                aria-pressed={Boolean(props.starred)}
+                title={props.starred
+                  ? "Chosen for downstream workflows; click to clear"
+                  : "Choose for downstream workflows"}
+                disabled={props.starBusy}
+                onClick={props.onToggleStarred}
+              >
+                <span aria-hidden="true">{props.starred ? "★" : "☆"}</span>
+              </button>
+            ) : null}
+          </div>
         </div>
         <div className="diagram-actions">
           <button
             type="button"
             className={capturing ? "button is-active" : "button"}
+            aria-keyshortcuts="Escape"
             disabled={saving || props.editMode}
             onClick={() => {
               setCapturing((current) => !current);
-              reset();
+              setSelectingRefs(false);
+              setError(null);
+              setSelectionStatus("");
             }}
           >
             {saving ? "saving component…" : capturing ? "cancel capture" : "capture component"}
           </button>
-          <button type="button" className="button create-derivative" disabled={props.editMode} onClick={props.onDerive}>
-            create derivative →
+          <button
+            type="button"
+            className={selectingRefs ? "button select-refs is-active" : "button select-refs"}
+            aria-pressed={selectingRefs}
+            aria-keyshortcuts="Escape"
+            disabled={saving || props.editMode || props.markerMode}
+            title={props.codeEntityMap ? "Drag over mapped elements to buffer their references" : "Map code entities first"}
+            onClick={() => {
+              if (!props.codeEntityMap) {
+                setSelectionStatus("map code entities first");
+                return;
+              }
+              setSelectingRefs((current) => !current);
+              setCapturing(false);
+              setError(null);
+              setSelectionStatus("");
+            }}
+          >{selectingRefs ? "cancel select" : "select refs"}</button>
+          <button type="button" className="button create-derivative" disabled={props.editMode} onClick={props.onGenerate}>
+            generate →
           </button>
           <button
             type="button"
             className={props.editMode ? "button edit-mode-toggle is-active" : "button edit-mode-toggle"}
             aria-pressed={Boolean(props.editMode)}
             disabled={saving || props.editBusy}
-            onClick={props.onToggleEdit}
+            onClick={() => {
+              setCapturing(false);
+              setSelectingRefs(false);
+              props.onToggleEdit?.();
+            }}
           >
             {props.editMode ? "exit edit" : "edit mode"}
           </button>
           <button
             type="button"
             className="button map-code-entities"
-            disabled={saving || props.editBusy || props.editMode || props.mappingBusy || props.active.codeEntityIds.length === 0}
+            disabled={saving || capturing || selectingRefs || props.editBusy || props.editMode || props.mappingBusy || props.active.codeEntityIds.length === 0}
             onClick={props.onMapCodeEntities}
           >
             {props.mappingBusy
@@ -169,7 +264,11 @@ export function DiagramView(props: {
       </header>
       {capturing ? (
         <div className="capture-instructions" role="status">
-          Drag a rectangle over the ASCII. Releasing saves a child component automatically.
+          Drag a rectangle over the ASCII. Releasing saves a child component automatically. Press Escape to cancel.
+        </div>
+      ) : selectingRefs ? (
+        <div className="capture-instructions ref-selection-instructions" role="status">
+          Drag over mapped elements to add their references to the buffer. Ctrl/Cmd-drag also works in read mode. Press Escape to cancel.
         </div>
       ) : null}
       {props.markerMode ? (
@@ -180,31 +279,18 @@ export function DiagramView(props: {
       {props.mappingProgress ? (
         <div className="mapping-status" role="status">{props.mappingProgress}</div>
       ) : null}
-      <div className={capturing || props.markerMode ? "ascii-stage is-capturing" : "ascii-stage"}>
-        {capturing || props.markerMode ? (
-          <pre
-            className={props.markerMode ? "ascii-selector is-marking" : "ascii-selector"}
-            onPointerDown={props.markerMode ? undefined : startCapture}
-            onPointerMove={props.markerMode ? undefined : moveCapture}
-            onPointerUp={props.markerMode ? undefined : (event) => void finishCapture(event)}
-          >
-            {grid.map((line, lineIndex) => (
-              <span className="ascii-line" key={lineIndex}>
-                {[...line].map((character, columnIndex) => (
-                  <span
-                    className={selected(lineIndex + 1, columnIndex + 1) ? "ascii-char is-selected" : "ascii-char"}
-                    data-ascii-char="true"
-                    data-line={lineIndex + 1}
-                    data-column={columnIndex + 1}
-                    key={columnIndex}
-                    onClick={props.markerMode ? () => props.onMarker?.(lineIndex + 1, columnIndex + 1) : undefined}
-                  >{character}</span>
-                ))}
-                {lineIndex < grid.length - 1 ? "\n" : null}
-              </span>
-            ))}
-          </pre>
-        ) : props.editMode ? (
+      {selectionStatus ? <div className="ref-selection-status" role="status">{selectionStatus}</div> : null}
+      <RefBufferTray
+        resolutionContext={props.referenceResolutionContext}
+        projectId={props.projectId}
+        diagramSetId={props.diagramSetId}
+        sourceArtifactId={props.active.id}
+        onInsertTokens={props.onInsertReferenceTokens}
+        previewEntries={capturing ? [] : liveReferences}
+        showWhenEmpty={selectingRefs || (!capturing && liveSelection !== null)}
+      />
+      <div className={gridMode === "read" ? "ascii-stage" : "ascii-stage is-capturing"}>
+        {props.editMode && !props.markerMode ? (
           <textarea
             className="ascii-editor"
             value={draftAscii}
@@ -212,9 +298,7 @@ export function DiagramView(props: {
             aria-label="ASCII diagram editor"
             wrap="off"
             spellCheck={false}
-            onChange={(event) => {
-              setDraftAscii(event.target.value);
-            }}
+            onChange={(event) => setDraftAscii(event.target.value)}
             onBlur={() => {
               if (draftAscii !== props.active.ascii) props.onManualEdit?.(draftAscii);
             }}
@@ -232,11 +316,24 @@ export function DiagramView(props: {
             }}
           />
         ) : (
-          <MappedAscii
+          <AsciiSelectionGrid
             ascii={props.active.ascii}
-            mapping={props.codeEntityMap}
+            mode={gridMode}
+            mappings={mappings}
             entities={props.codeEntities}
+            previewMappingIds={previewMappingIds}
+            bufferedReferenceKeys={bufferedReferenceKeys}
+            overlayReferences={overlayReferences}
+            onLiveSelection={setLiveSelection}
+            onSelectionComplete={completeSelection}
+            onCancelMode={(mode) => {
+              setCapturing(false);
+              setSelectingRefs(false);
+              setLiveSelection(null);
+              setSelectionStatus(mode === "select-refs" ? "selection cancelled" : "");
+            }}
             onReveal={props.onRevealCodeEntity}
+            onMarker={props.onMarker}
           />
         )}
       </div>
@@ -244,6 +341,7 @@ export function DiagramView(props: {
       {props.mappingError ? <p className="capture-error" role="alert">{props.mappingError}</p> : null}
       <footer className="diagram-meta">
         <code>@{props.artifactKind === "diagram" ? "diagram" : "component"}/{props.active.handle}</code>
+        {props.artifactKind === "diagram" ? <span>[{(props.active as DiagramRecord).viewKind.toUpperCase()}]</span> : null}
         <span>{props.active.codeEntityIds.length} code entities</span>
         <span>{props.artifactKind === "diagram"
           ? (props.active as DiagramRecord).origin === "imported"
@@ -252,60 +350,5 @@ export function DiagramView(props: {
           : (props.active as DiagramComponentRecord).origin.toUpperCase()}</span>
       </footer>
     </div>
-  );
-}
-
-function MappedAscii(props: {
-  ascii: string;
-  mapping?: DiagramCodeEntityMapRecord;
-  entities: CodeEntityRecord[];
-  onReveal?: (mapping: DiagramElementMapping) => void;
-}) {
-  if (!props.mapping) return <pre>{props.ascii}</pre>;
-  const entitiesById = new Map(props.entities.map((entity) => [entity.id, entity]));
-  const mappingsByLine = new Map<number, DiagramElementMapping[]>();
-  for (const mapping of props.mapping?.mappings ?? []) {
-    const lineMappings = mappingsByLine.get(mapping.line) ?? [];
-    lineMappings.push(mapping);
-    mappingsByLine.set(mapping.line, lineMappings);
-  }
-  for (const mappings of mappingsByLine.values()) {
-    mappings.sort((left, right) => left.startColumn - right.startColumn);
-  }
-  return (
-    <pre className="mapped-ascii">
-      {props.ascii.split("\n").map((line, lineIndex, lines) => {
-        const mappings = mappingsByLine.get(lineIndex + 1) ?? [];
-        const content: ReactNode[] = [];
-        let cursor = 0;
-        for (const mapping of mappings) {
-          const start = mapping.startColumn - 1;
-          const end = mapping.endColumn;
-          if (start > cursor) content.push(line.slice(cursor, start));
-          const entity = entitiesById.get(mapping.entityId);
-          const range = entity?.sourceRanges[mapping.sourceRangeIndex];
-          content.push(
-            <span className="mapped-element-wrap" key={mapping.id}>
-              <button
-                type="button"
-                className="mapped-element"
-                data-mapping-id={mapping.id}
-                data-entity-id={mapping.entityId}
-                aria-label={entity ? `Reveal ${entity.label} in Code Entities` : "Reveal mapped CodeEntity"}
-                title={entity
-                  ? `${entity.label}\n${entity.summary}${range ? `\n${range.path}:${range.startLine}-${range.endLine}` : ""}`
-                  : undefined}
-                onClick={() => props.onReveal?.(mapping)}
-              >
-                {line.slice(start, end)}
-              </button>
-            </span>
-          );
-          cursor = end;
-        }
-        if (cursor < line.length) content.push(line.slice(cursor));
-        return <span className="mapped-ascii-line" key={lineIndex}>{content}{lineIndex < lines.length - 1 ? "\n" : null}</span>;
-      })}
-    </pre>
   );
 }

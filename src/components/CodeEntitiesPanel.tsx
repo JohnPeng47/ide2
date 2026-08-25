@@ -47,7 +47,6 @@ export function CodeEntitiesPanel(props: {
   const [preview, setPreview] = useState<SourceSnippet | null>(null);
   const [sourceError, setSourceError] = useState<string | null>(null);
   const [sourceLoading, setSourceLoading] = useState(false);
-  const [showOriginal, setShowOriginal] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [contextPercent, setContextPercent] = useState(() => {
     const stored = Number(window.localStorage.getItem(CONTEXT_STORAGE_KEY));
@@ -63,7 +62,6 @@ export function CodeEntitiesPanel(props: {
   const selectEntity = useCallback((entityId: string, rangeIndex = 0) => {
     setActiveEntityId(entityId);
     setActiveRangeIndex(rangeIndex);
-    setShowOriginal(false);
   }, []);
 
   useEffect(() => {
@@ -120,14 +118,17 @@ export function CodeEntitiesPanel(props: {
   return (
     <div
       ref={rootRef}
-      className={dragging ? "entities-panel is-dragging" : "entities-panel"}
+      className={props.diagram
+        ? "entities-panel is-source-only"
+        : dragging ? "entities-panel is-dragging" : "entities-panel"}
       style={{ ["--entity-context-percent" as string]: `${contextPercent}%` }}
     >
+      {!props.diagram ? <>
       <section className="entity-context" aria-label="Code entity context">
         <header className="pane-header entity-context__header">
           <div>
             <span className="eyebrow">CODE ENTITIES · REV {props.codeEntities.revision}</span>
-            <h2>{props.diagram ? "Artifact context" : "Generation context"}</h2>
+            <h2>Generation context</h2>
           </div>
           <span className={`status-pill status-pill--${props.codeEntities.status}`}>
             {props.codeEntities.status}
@@ -162,7 +163,6 @@ export function CodeEntitiesPanel(props: {
                 value={activeRangeIndex}
                 onChange={(event) => {
                   setActiveRangeIndex(Number(event.target.value));
-                  setShowOriginal(false);
                 }}
               >
                 {activeEntity.sourceRanges.map((range, index) => (
@@ -226,10 +226,12 @@ export function CodeEntitiesPanel(props: {
           }
         }}
       ><span aria-hidden="true" /></div>
+      </> : null}
 
       <section
         className={props.reveal?.entityId === activeEntity?.id ? "source-workspace is-revealed" : "source-workspace"}
         aria-label="Source code"
+        data-active-entity-id={activeEntity?.id}
       >
         <header className="source-workspace__toolbar">
           <div>
@@ -238,16 +240,6 @@ export function CodeEntitiesPanel(props: {
           </div>
           <div className="source-workspace__actions">
             {preview ? <code>{sourceLanguageName(preview.path)}</code> : null}
-            {activeRange?.compactedSource ? (
-              <button
-                type="button"
-                className="source-original-toggle"
-                aria-pressed={showOriginal}
-                onClick={() => setShowOriginal((current) => !current)}
-              >
-                {showOriginal ? "show compacted" : "show original"}
-              </button>
-            ) : null}
           </div>
         </header>
         <div className="source-workspace__body">
@@ -257,7 +249,7 @@ export function CodeEntitiesPanel(props: {
             <SourceCodeView
               preview={preview}
               range={activeRange}
-              compacted={Boolean(activeRange.compactedSource) && !showOriginal}
+              compacted={Boolean(activeRange.compactedSource)}
               revealed={props.reveal?.entityId === activeEntity?.id}
               revealRequestId={props.reveal?.requestId}
             />

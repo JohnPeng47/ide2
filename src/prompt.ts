@@ -8,10 +8,12 @@ import {
   type CodeEntitiesSetRecord,
   type CodeEntityPromptTemplateRecord,
   type DiagramModelId,
+  type DiagramViewKind,
   type DiagramRecord,
   type DiagramComponentRecord,
   type DiagramSetRecord,
   type GenerationOutputKind,
+  type GenerationTargetKind,
   type GenerationDerivationRecord,
   type GenerationPromptConfigRecord,
   type GenerationPromptProfileId,
@@ -37,9 +39,22 @@ export interface GenerationPromptBuildResult {
 }
 
 const DIAGRAM_BASE = "Generate exactly one architecture diagram from the supplied explicit context. Give it a compact, specific name, ideally two to five words; omit redundant words such as the DiagramSet name.";
+const CALL_GRAPH_BASE = "Generate exactly one source-backed call graph from the supplied explicit context. Show invocation and control relationships, not general architecture or directory ownership. Give it a compact, specific name.";
+const DIR_VIEW_BASE = "Generate exactly one source-backed ASCII directory view from the supplied explicit context. Show the relevant repository hierarchy and connect files to their responsibilities without inventing paths. Give it a compact, specific name.";
 const COMPONENT_BASE = "Generate exactly one reusable DiagramComponent from the supplied explicit context. It is a fragment for a broader ASCII Diagram, not a complete diagram. Give it a compact, specific name.";
 const DIAGRAM_FINISH = "Never modify files. Use 7-bit ASCII only and finish through {{submissionTool}}.";
 const COMPONENT_FINISH = "Never modify files. Use 7-bit ASCII only and finish through {{submissionTool}}.";
+
+export const DEFAULT_AUXILIARY_INSTRUCTIONS = {
+  "call-graph": "Generate an ASCII call graph based on the foundation diagram.",
+  "dir-view": "Generate an ASCII directory view based on the foundation diagram."
+} as const;
+
+export function defaultGenerationInstruction(targetKind: GenerationTargetKind): string {
+  return targetKind === "call-graph" || targetKind === "dir-view"
+    ? DEFAULT_AUXILIARY_INSTRUCTIONS[targetKind]
+    : "";
+}
 
 export const DEFAULT_CODE_ENTITY_IDENTIFICATION_CRITERIA = `## Entity significance
 
@@ -120,10 +135,10 @@ All labels remain concise and source-backed. The server snapshots original
 source after validating the submitted coordinates.`;
 
 export const BUILT_IN_SYSTEM_PROMPT_TEMPLATES = [
-  { id: "default", label: "Default", description: "Balanced architecture diagram generation.", diagram: "", component: "Be creative." },
-  { id: "structure-first", label: "Structure first", description: "Prioritize ownership, boundaries, and hierarchy.", diagram: "Emphasize ownership, boundaries, and hierarchy.", component: "Emphasize a reusable structural relationship." },
-  { id: "flow-first", label: "Flow first", description: "Prioritize directional control and data flow.", diagram: "Emphasize directional control and data flow.", component: "Emphasize one clear input-to-output interaction." },
-  { id: "compact", label: "Compact", description: "Prefer small, dense, composable layouts.", diagram: "Prefer a dense layout with minimal crossing edges.", component: "Prefer a small fragment that composes cleanly." }
+  { id: "default", label: "Default", description: "Balanced architecture diagram generation.", diagram: "", callGraph: "", dirView: "", component: "Be creative." },
+  { id: "structure-first", label: "Structure first", description: "Prioritize ownership, boundaries, and hierarchy.", diagram: "Emphasize ownership, boundaries, and hierarchy.", callGraph: "Group calls by their owning subsystem.", dirView: "Emphasize meaningful directory boundaries.", component: "Emphasize a reusable structural relationship." },
+  { id: "flow-first", label: "Flow first", description: "Prioritize directional control and data flow.", diagram: "Emphasize directional control and data flow.", callGraph: "Emphasize the primary invocation path and branch points.", dirView: "Annotate files with concise data-flow responsibilities.", component: "Emphasize one clear input-to-output interaction." },
+  { id: "compact", label: "Compact", description: "Prefer small, dense, composable layouts.", diagram: "Prefer a dense layout with minimal crossing edges.", callGraph: "Prefer a compact graph with minimal crossing edges.", dirView: "Collapse irrelevant directory branches.", component: "Prefer a small fragment that composes cleanly." }
 ] as const;
 
 export function createBuiltInSystemPromptTemplates(createdAt: string): SystemPromptTemplateRecord[] {
@@ -136,6 +151,8 @@ export function createBuiltInSystemPromptTemplates(createdAt: string): SystemPro
     version: 1,
     prompts: {
       diagram: [DIAGRAM_BASE, template.diagram, DIAGRAM_FINISH].filter(Boolean).join(" "),
+      "call-graph": [CALL_GRAPH_BASE, template.callGraph, DIAGRAM_FINISH].filter(Boolean).join(" "),
+      "dir-view": [DIR_VIEW_BASE, template.dirView, DIAGRAM_FINISH].filter(Boolean).join(" "),
       "diagram-component": [COMPONENT_BASE, template.component, COMPONENT_FINISH].filter(Boolean).join(" ")
     },
     createdAt,
@@ -164,11 +181,17 @@ export function createBuiltInCodeEntityPromptTemplates(
 
 export function renderSystemPromptTemplate(
   template: string,
-  outputKind: GenerationOutputKind
+  targetKind: GenerationTargetKind
 ): string {
   const values: Record<string, string> = {
-    outputKind: outputKind === "diagram" ? "Diagram" : "DiagramComponent",
-    submissionTool: outputKind === "diagram" ? "submit_diagram" : "submit_diagram_component"
+    outputKind: targetKind === "diagram-component"
+      ? "DiagramComponent"
+      : targetKind === "call-graph"
+        ? "CallGraph"
+        : targetKind === "dir-view"
+          ? "DirectoryView"
+          : "Diagram",
+    submissionTool: targetKind === "diagram-component" ? "submit_diagram_component" : "submit_diagram"
   };
   const unknown = [...template.matchAll(/{{\s*([a-zA-Z][a-zA-Z0-9]*)\s*}}/g)]
     .map((match) => match[1])
@@ -179,9 +202,13 @@ export function renderSystemPromptTemplate(
 
 export function renderArtifactSystemPrompt(input: {
   outputKind: GenerationOutputKind;
+  viewKind?: DiagramViewKind;
   template: SystemPromptTemplateRecord;
 }): string {
-  return renderSystemPromptTemplate(input.template.prompts[input.outputKind], input.outputKind);
+  const targetKind: GenerationTargetKind = input.outputKind === "diagram-component"
+    ? "diagram-component"
+    : input.viewKind ?? "diagram";
+  return renderSystemPromptTemplate(input.template.prompts[targetKind], targetKind);
 }
 
 export function promptOptions(
@@ -221,6 +248,7 @@ export function createGenerationPromptConfig(input: {
   diagrams: DiagramRecord[];
   components: DiagramComponentRecord[];
   outputKind: GenerationOutputKind;
+  viewKind?: DiagramViewKind;
   modelId: DiagramModelId;
   profile: SystemPromptTemplateRecord;
   instruction: string;
@@ -239,6 +267,32 @@ export function createGenerationPromptConfig(input: {
   const allComponentsById = new Map(input.components.map((component) => [component.id, component]));
   const activeComponents = input.components.filter((component) => !isDiagramComponentArchived(component));
   const componentsById = new Map(activeComponents.map((component) => [component.id, component]));
+  const viewKind = input.outputKind === "diagram" ? input.viewKind ?? "diagram" : undefined;
+  const auxiliary = viewKind === "call-graph" || viewKind === "dir-view";
+  let foundationDiagram: DiagramRecord | undefined;
+  let companionCallGraph: DiagramRecord | undefined;
+  if (auxiliary) {
+    const foundationId = input.diagramSet.featuredViewIds.diagram;
+    foundationDiagram = foundationId ? diagramsById.get(foundationId) : undefined;
+    if (!foundationDiagram || foundationDiagram.viewKind !== "diagram") {
+      throw new Error("star a main Diagram before generating auxiliary views");
+    }
+    if (viewKind === "dir-view") {
+      const callGraphId = input.diagramSet.featuredViewIds["call-graph"];
+      companionCallGraph = callGraphId ? diagramsById.get(callGraphId) : undefined;
+      if (!companionCallGraph || companionCallGraph.viewKind !== "call-graph") {
+        throw new Error("star a Call Graph before generating a Directory View");
+      }
+    }
+    for (const id of [...new Set([
+      ...foundationDiagram.codeEntityIds,
+      ...(companionCallGraph?.codeEntityIds ?? [])
+    ])]) {
+      if (!entitiesById.has(id)) {
+        throw new Error(`immutable auxiliary context references unavailable CodeEntity: ${id}`);
+      }
+    }
+  }
   const options = promptOptions(input.codeEntities, input.diagrams, input.components);
   const optionsByTypedToken = new Map(options.map((option) => [option.token.toLowerCase(), option]));
   const optionsByHandle = new Map<string, PromptOption[]>();
@@ -259,7 +313,9 @@ export function createGenerationPromptConfig(input: {
     selectionsByToken.set(token, selection);
   }
 
-  const selected = [...new Set(input.selectedCodeEntityIds)];
+  const selected = [...new Set(auxiliary
+    ? [...foundationDiagram!.codeEntityIds, ...(companionCallGraph?.codeEntityIds ?? [])]
+    : input.selectedCodeEntityIds)];
   for (const id of selected) {
     if (!entitiesById.has(id)) throw new Error(`unknown selected CodeEntity: ${id}`);
   }
@@ -342,6 +398,30 @@ export function createGenerationPromptConfig(input: {
     });
   }
 
+  if (auxiliary) {
+    const immutableDiagrams = [foundationDiagram!, companionCallGraph]
+      .filter((diagram): diagram is DiagramRecord => Boolean(diagram));
+    for (const diagram of [...immutableDiagrams].reverse()) {
+      const key = `diagram:${diagram.id}`;
+      const omittedIndex = omittedReferences.findIndex((reference) => (
+        reference.kind === "diagram" && reference.targetId === diagram.id
+      ));
+      if (omittedIndex >= 0) omittedReferences.splice(omittedIndex, 1);
+      if (!references.some((reference) => (
+        reference.kind === "diagram" && reference.targetId === diagram.id
+      ))) {
+        seenReferences.add(key);
+        references.unshift({
+          kind: "diagram",
+          targetId: diagram.id,
+          token: `@diagram/${diagram.handle}`,
+          handle: diagram.handle,
+          promptRepresentation: new Diagram(diagram).prompt_str()
+        });
+      }
+    }
+  }
+
   const selectedFromReferences = references
     .filter((reference) => reference.kind === "code-entity")
     .map((reference) => reference.targetId);
@@ -368,9 +448,16 @@ export function createGenerationPromptConfig(input: {
   const componentBlocks = references
     .filter((reference) => reference.kind === "diagram-component")
     .map((reference) => reference.promptRepresentation);
+  const directoryPaths = [...new Set(allowedCodeEntityIds.flatMap((id) => (
+    entitiesById.get(id)?.sourceRanges.map((range) => range.path) ?? []
+  )))].sort();
   const outputInstruction = input.outputKind === "diagram-component"
-    ? "Generate one reusable DiagramComponent for use inside a broader ASCII Diagram. Explore a distinct version of the supplied component or context. Be creative, preserve source-backed meaning, and return only the component, not a complete diagram. Use only 7-bit ASCII."
-    : "Generate one architecture diagram. Use only 7-bit ASCII. Every code label must map to one of the supplied CodeEntity ids.";
+    ? "Generate one reusable DiagramComponent for use inside a broader ASCII Diagram. Explore a distinct version of the supplied component or context. Preserve source-backed meaning and return only the component. Use only 7-bit ASCII."
+    : viewKind === "call-graph"
+      ? "Generate one call graph. Represent source-backed calls, branches, joins, and entry points. Use only 7-bit ASCII. Every code label must map to a supplied CodeEntity id."
+      : viewKind === "dir-view"
+        ? "Generate one directory view. Use only the supplied repository paths, include only relevant branches, and annotate files with source-backed responsibilities. Use only 7-bit ASCII."
+        : "Generate one architecture diagram. Use only 7-bit ASCII. Every code label must map to one of the supplied CodeEntity ids.";
   let derivation: GenerationDerivationRecord | undefined;
   if (input.derivation) {
     const sourceExists = input.derivation.sourceArtifactKind === "diagram"
@@ -388,7 +475,31 @@ export function createGenerationPromptConfig(input: {
       };
     }
   }
-  const renderedContextPrompt = [
+  const immutableDiagramIds = new Set([
+    foundationDiagram?.id,
+    companionCallGraph?.id
+  ].filter((id): id is string => Boolean(id)));
+  const auxiliaryDiagramBlocks = references
+    .filter((reference) => reference.kind === "diagram" && !immutableDiagramIds.has(reference.targetId))
+    .map((reference) => reference.promptRepresentation);
+  const renderedContextPrompt = auxiliary ? [
+    `DiagramSet: ${input.diagramSet.name}`,
+    `Immutable foundation Diagram:\n${new Diagram(foundationDiagram!).prompt_str()}`,
+    ...(companionCallGraph
+      ? [`Immutable companion Call Graph:\n${new Diagram(companionCallGraph).prompt_str()}`]
+      : []),
+    `Immutable CodeEntities:\n${selectedBlocks.join("\n\n") || "none"}`,
+    ...(auxiliaryDiagramBlocks.length
+      ? [`Additional referenced Diagrams:\n${auxiliaryDiagramBlocks.join("\n\n")}`]
+      : []),
+    ...(componentBlocks.length
+      ? [`Referenced DiagramComponents:\n${componentBlocks.join("\n\n")}`]
+      : []),
+    ...(viewKind === "dir-view"
+      ? [`Immutable repository path inventory:\n${directoryPaths.map((path) => `- ${path}`).join("\n") || "none"}`]
+      : []),
+    `User instruction:\n${input.instruction.trim() || defaultGenerationInstruction(viewKind!)}`
+  ].join("\n\n") : [
     `DiagramSet: ${input.diagramSet.name}`,
     `Original request: ${input.diagramSet.initialPrompt || "none"}`,
     `User instruction:\n${input.instruction.trim() || "Create a clear diagram from the selected code entities."}`,
@@ -403,6 +514,7 @@ export function createGenerationPromptConfig(input: {
     id: input.id,
     diagramSetId: input.diagramSet.id,
     outputKind: input.outputKind,
+    ...(viewKind ? { viewKind } : {}),
     modelId: input.modelId,
     instruction: input.instruction,
     selectedCodeEntityIds: selected,
@@ -417,6 +529,7 @@ export function createGenerationPromptConfig(input: {
       profileVersion: input.profile.version,
       rendered: renderArtifactSystemPrompt({
         outputKind: input.outputKind,
+        viewKind,
         template: input.profile
       })
     },

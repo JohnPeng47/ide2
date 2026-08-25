@@ -5,6 +5,8 @@ export type CodeEntityCategory = "state" | "interface-data-struct" | "operation"
 export type SourceCompactionLevel = "low" | "medium" | "high";
 export type DiagramSetReadiness = "collecting" | "ready" | "failed";
 export type GenerationOutputKind = "diagram" | "diagram-component";
+export type DiagramViewKind = "diagram" | "call-graph" | "dir-view";
+export type GenerationTargetKind = DiagramViewKind | "diagram-component";
 export type CodeEntityPromptKind = "code-entity-identification" | "code-entity-compaction";
 export const DEFAULT_GENERATION_COUNT = 3;
 export const DIAGRAM_MODELS = [
@@ -25,6 +27,18 @@ export function isDiagramModelId(value: unknown): value is DiagramModelId {
 
 export function isGenerationPromptProfileId(value: unknown): value is GenerationPromptProfileId {
   return typeof value === "string" && /^[a-z0-9][a-z0-9-]*$/.test(value);
+}
+
+export function isDiagramViewKind(value: unknown): value is DiagramViewKind {
+  return value === "diagram" || value === "call-graph" || value === "dir-view";
+}
+
+export function isGenerationTargetKind(value: unknown): value is GenerationTargetKind {
+  return isDiagramViewKind(value) || value === "diagram-component";
+}
+
+export function outputKindForTarget(targetKind: GenerationTargetKind): GenerationOutputKind {
+  return targetKind === "diagram-component" ? "diagram-component" : "diagram";
 }
 export type AgentRunKind =
   | "collect-entities"
@@ -121,6 +135,8 @@ export interface DiagramSetRecord {
   sourceCheckoutRoot: string;
   gitRevision?: string;
   codeEntitiesSetId: string;
+  /** The preferred candidate for each full-diagram view category. */
+  featuredViewIds: Partial<Record<DiagramViewKind, string>>;
   diagramIds: string[];
   diagramComponentIds: string[];
   generationBatchIds: string[];
@@ -140,9 +156,15 @@ export interface ImportedArtifactLibraryRecord {
   updatedAt: string;
 }
 
-export interface PromptReference {
-  kind: "code-entity" | "diagram" | "diagram-component";
+export type ReferenceKind = "code-entity" | "diagram" | "diagram-component";
+
+export interface ReferenceIdentity {
+  kind: ReferenceKind;
   targetId: string;
+  sourceRangeIndex?: number;
+}
+
+export interface PromptReference extends ReferenceIdentity {
   token: string;
   handle: string;
 }
@@ -168,6 +190,8 @@ export interface GenerationPromptConfigRecord {
   id: string;
   diagramSetId: string;
   outputKind: GenerationOutputKind;
+  /** Required for full diagrams and omitted for DiagramComponents. */
+  viewKind?: DiagramViewKind;
   modelId: DiagramModelId;
   instruction: string;
   selectedCodeEntityIds: string[];
@@ -202,7 +226,7 @@ export interface PromptTemplateRecord<TPromptName extends string, TProfileId ext
 }
 
 export type SystemPromptTemplateRecord = PromptTemplateRecord<
-  GenerationOutputKind,
+  GenerationTargetKind,
   GenerationPromptProfileId
 >;
 
@@ -268,6 +292,9 @@ export interface DiagramRecord {
   schemaVersion: typeof SCHEMA_VERSION;
   id: string;
   diagramSetId: string;
+  viewKind: DiagramViewKind;
+  /** Main diagram that supplied mandatory context for an auxiliary view. */
+  basedOnDiagramId?: string;
   handle: string;
   name: string;
   ascii: string;
@@ -442,8 +469,20 @@ export interface AgentProgress {
   sessionId?: string;
 }
 
-export class CodeEntity {
+export interface SelectableText {
+  getSelectionText(reference: ReferenceIdentity): string | undefined;
+}
+
+export class CodeEntity implements SelectableText {
   constructor(readonly record: CodeEntityRecord) {}
+
+  getSelectionText(reference: ReferenceIdentity): string | undefined {
+    if (reference.kind !== "code-entity" || reference.targetId !== this.record.id) {
+      return undefined;
+    }
+    const rangeIndex = reference.sourceRangeIndex ?? 0;
+    return this.record.sourceRanges[rangeIndex]?.path;
+  }
 
   prompt_str(): string {
     const ranges = this.record.sourceRanges
@@ -479,7 +518,7 @@ export class Diagram {
     const derived = this.record.derivedFromDiagramIds.length
       ? this.record.derivedFromDiagramIds.join(", ")
       : "none";
-    return `Diagram @diagram/${this.record.handle}\nName: ${this.record.name}\nCodeEntity ids: ${this.record.codeEntityIds.join(", ") || "none"}\nDerived from: ${derived}\nASCII:\n${this.record.ascii}`;
+    return `Diagram @diagram/${this.record.handle}\nName: ${this.record.name}\nView: ${this.record.viewKind}\nCodeEntity ids: ${this.record.codeEntityIds.join(", ") || "none"}\nDerived from: ${derived}\nASCII:\n${this.record.ascii}`;
   }
 }
 

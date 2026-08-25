@@ -1,6 +1,10 @@
 import type { ServerResponse } from "node:http";
 import type { Connect, Plugin } from "vite";
-import type { GenerationDerivationRecord, GenerationReferenceSelection } from "../src/domain";
+import {
+  isDiagramViewKind,
+  type GenerationDerivationRecord,
+  type GenerationReferenceSelection
+} from "../src/domain";
 import { FakeDiagramAgentRuntime, PiDiagramAgentRuntime } from "./agentRuntime";
 import { DiagramApplication } from "./application";
 import { DiagramStore } from "./store";
@@ -87,6 +91,13 @@ function parseDiagram(pathname: string): { setId: string; diagramId: string } | 
 function parseDiagramArchive(pathname: string): { setId: string; diagramId: string } | null {
   const match = pathname.match(
     /^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/diagrams\/([a-z0-9][a-z0-9-]*)\/archive$/
+  );
+  return match ? { setId: match[1], diagramId: match[2] } : null;
+}
+
+function parseDiagramStar(pathname: string): { setId: string; diagramId: string } | null {
+  const match = pathname.match(
+    /^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/diagrams\/([a-z0-9][a-z0-9-]*)\/star$/
   );
   return match ? { setId: match[1], diagramId: match[2] } : null;
 }
@@ -384,6 +395,23 @@ export function diagramApi(projectRoot: string, diagramsDirectory = ".diagrams")
           await application.archiveDiagram(archive.setId, archive.diagramId)
         );
       }
+      const diagramStar = parseDiagramStar(url.pathname);
+      if (diagramStar) {
+        if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
+        const body = await readBody(request) as Record<string, unknown>;
+        if (typeof body.starred !== "boolean") {
+          return sendJson(response, 400, { error: "starred must be a boolean" });
+        }
+        return sendJson(
+          response,
+          200,
+          await application.setStarredDiagram(
+            diagramStar.setId,
+            diagramStar.diagramId,
+            body.starred
+          )
+        );
+      }
       const codeEntityMap = parseCodeEntityMap(url.pathname);
       if (codeEntityMap) {
         if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
@@ -532,6 +560,7 @@ export function diagramApi(projectRoot: string, diagramsDirectory = ".diagrams")
         ? body.selectedCodeEntityIds.filter((value): value is string => typeof value === "string")
         : [];
       const outputKind = body.outputKind;
+      const viewKind = body.viewKind;
       const modelId = typeof body.modelId === "string" ? body.modelId : undefined;
       const promptProfileId = typeof body.promptProfileId === "string"
         ? body.promptProfileId
@@ -573,6 +602,13 @@ export function diagramApi(projectRoot: string, diagramsDirectory = ".diagrams")
       if (outputKind !== "diagram" && outputKind !== "diagram-component") {
         return sendJson(response, 400, { error: "outputKind must be diagram or diagram-component" });
       }
+      if (outputKind === "diagram" && !isDiagramViewKind(viewKind ?? "diagram")) {
+        return sendJson(response, 400, { error: "viewKind must be diagram, call-graph, or dir-view" });
+      }
+      if (outputKind === "diagram-component" && viewKind !== undefined) {
+        return sendJson(response, 400, { error: "viewKind is not valid for DiagramComponents" });
+      }
+      const diagramViewKind = isDiagramViewKind(viewKind) ? viewKind : "diagram";
       response.statusCode = 200;
       response.setHeader("content-type", "application/x-ndjson; charset=utf-8");
       response.setHeader("cache-control", "no-cache, no-transform");
@@ -582,6 +618,7 @@ export function diagramApi(projectRoot: string, diagramsDirectory = ".diagrams")
         selectedCodeEntityIds,
         count,
         outputKind,
+        ...(outputKind === "diagram" ? { viewKind: diagramViewKind } : {}),
         modelId,
         promptProfileId,
         referenceSelections,

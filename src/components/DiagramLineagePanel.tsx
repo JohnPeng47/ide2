@@ -3,6 +3,7 @@ import type {
   DiagramComponentRecord,
   DiagramRecord,
   DiagramSetRecord,
+  DiagramViewKind,
   GenerationBatchRecord,
   GenerationPromptConfigRecord
 } from "../domain";
@@ -277,13 +278,15 @@ function parentDiagramId(
   diagramsById: Map<string, DiagramRecord>,
   promptConfigs: Record<string, GenerationPromptConfigRecord>
 ): string | undefined {
-  const referenced = promptConfigs[batch.promptConfigId]?.references.find(
-    (reference) => reference.kind === "diagram" && diagramsById.has(reference.targetId)
-  );
-  if (referenced) return referenced.targetId;
   const outputs = batch.outputDiagramIds
     .map((id) => diagramsById.get(id))
     .filter((diagram): diagram is DiagramRecord => Boolean(diagram));
+  const outputViewKind = outputs[0]?.viewKind;
+  const referenced = promptConfigs[batch.promptConfigId]?.references.find(
+    (reference) => reference.kind === "diagram"
+      && diagramsById.get(reference.targetId)?.viewKind === outputViewKind
+  );
+  if (referenced) return referenced.targetId;
   const first = outputs[0];
   return first?.derivedFromDiagramIds.find((parentId) => (
     diagramsById.has(parentId)
@@ -428,6 +431,7 @@ export function DiagramLineagePanel(props: {
     last: boolean
   ): ReactNode => {
     const current = diagram.id === props.activeDiagramId;
+    const starred = diagram.id === props.diagramSet.featuredViewIds[diagram.viewKind];
     const children = childDiagrams(diagram.id);
     const collapseId = `diagram:${diagram.id}`;
     const collapsed = collapsedIds.has(collapseId);
@@ -478,6 +482,13 @@ export function DiagramLineagePanel(props: {
                 {collapsed ? `[+${hiddenCount}]` : "[-]"}
               </button>
             ) : <span className="diagram-tree-toggle-spacer" />}
+            <span
+              className={`diagram-tree-star${starred ? " is-starred" : ""}`}
+              aria-label={starred ? "Chosen diagram" : undefined}
+              title={starred ? "Chosen for downstream workflows" : undefined}
+            >
+              {starred ? "★" : ""}
+            </span>
             <button
               type="button"
               className="diagram-tree-diagram__open"
@@ -486,6 +497,9 @@ export function DiagramLineagePanel(props: {
             >
               <strong>{String(number).padStart(2, "0")}</strong>
               <span className="diagram-tree-description">{diagram.name}</span>
+              {diagram.basedOnDiagramId ? (
+                <em>BASED ON {String(diagramNumber.get(diagram.basedOnDiagramId) ?? "?").padStart(2, "0")}</em>
+              ) : null}
               {diagram.diagramSetId === GLOBAL_IMPORTS_DIAGRAM_SET_ID ? <em>GLOBAL</em> : null}
               {current ? <em>CURRENT</em> : null}
             </button>
@@ -625,6 +639,56 @@ export function DiagramLineagePanel(props: {
     );
   };
 
+  const viewKinds: Array<{ kind: DiagramViewKind; label: string; description: string }> = [
+    { kind: "diagram", label: "[DIAGRAM]", description: "architecture candidates" },
+    { kind: "call-graph", label: "[CALL-GRAPH]", description: "invocation candidates" },
+    { kind: "dir-view", label: "[DIR-VIEW]", description: "repository layout candidates" }
+  ];
+
+  const renderViewSection = (
+    kind: DiagramViewKind,
+    label: string,
+    description: string
+  ): ReactNode => {
+    const categoryBatchIds = rootBatchIds.filter((batchId) => {
+      const config = props.generationPromptConfigs[batchesById.get(batchId)?.promptConfigId ?? ""];
+      return (config?.viewKind ?? "diagram") === kind;
+    });
+    const categoryOrphans = orphanDiagrams.filter((diagram) => diagram.viewKind === kind);
+    const categoryImports = kind === "diagram" ? importedDiagrams : [];
+    const categoryCount = props.diagrams.filter((diagram) => diagram.viewKind === kind).length;
+    const branchCount = categoryBatchIds.length + categoryOrphans.length + Number(categoryImports.length > 0);
+    let branchIndex = 0;
+    const isLastBranch = () => ++branchIndex === branchCount;
+    return (
+      <section className="diagram-view-lineage" aria-label={`${label} candidates`} key={kind}>
+        <div className="diagram-tree-section-title">
+          <strong>{label} · {categoryCount}</strong>
+          <span>{description}</span>
+        </div>
+        {categoryBatchIds.map((batchId) => (
+          <Fragment key={batchId}>
+            <TreeBridge prefix="" />
+            {renderRootBatch(batchId, "", isLastBranch())}
+          </Fragment>
+        ))}
+        {categoryOrphans.map((diagram) => (
+          <Fragment key={diagram.id}>
+            <TreeBridge prefix="" />
+            {renderDiagram(diagram, "", isLastBranch())}
+          </Fragment>
+        ))}
+        {categoryImports.length > 0 ? (
+          <Fragment>
+            <TreeBridge prefix="" />
+            {renderImports(isLastBranch())}
+          </Fragment>
+        ) : null}
+        {branchCount === 0 ? <p className="empty-copy">No candidates generated.</p> : null}
+      </section>
+    );
+  };
+
   return (
     <div className="diagram-lineage-panel">
       <header className="pane-header">
@@ -640,34 +704,9 @@ export function DiagramLineagePanel(props: {
           <span>{props.diagramSet.generationBatchIds.length} generations</span>
         </div>
         {actionError ? <p className="diagram-tree-error" role="alert">{actionError}</p> : null}
-        {rootBatchIds.map((batchId, index) => (
-          <Fragment key={batchId}>
-            <TreeBridge prefix="" />
-            {renderRootBatch(
-              batchId,
-              "",
-              index === rootBatchIds.length - 1
-                && orphanDiagrams.length === 0
-                && importedDiagrams.length === 0
-            )}
-          </Fragment>
+        {viewKinds.map(({ kind, label, description }) => (
+          renderViewSection(kind, label, description)
         ))}
-        {orphanDiagrams.map((diagram, index) => (
-          <Fragment key={diagram.id}>
-            <TreeBridge prefix="" />
-            {renderDiagram(
-              diagram,
-              "",
-              index === orphanDiagrams.length - 1 && importedDiagrams.length === 0
-            )}
-          </Fragment>
-        ))}
-        {importedDiagrams.length > 0 ? (
-          <Fragment>
-            <TreeBridge prefix="" />
-            {renderImports(true)}
-          </Fragment>
-        ) : null}
         <ComponentLineageSection
           diagramSet={props.diagramSet}
           components={props.components}

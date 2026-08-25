@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   applyLlmEdit,
   applyManualEdit,
@@ -25,16 +25,21 @@ import {
   resetCodeEntityPromptTemplate,
   saveCodeEntityPromptTemplate,
   saveSystemPromptTemplate,
+  setStarredDiagram,
   deleteSystemPromptTemplate,
   undoEdit
 } from "./api";
 import { DiagramContextPanel, type ContextTab } from "./components/DiagramContextPanel";
 import { DiagramSetPicker } from "./components/DiagramSetPicker";
 import type { CodeEntityReveal } from "./components/CodeEntitiesPanel";
-import { DiagramView } from "./components/DiagramView";
+import { DIAGRAM_VIEW_OPTIONS, DiagramView, EmptyDiagramView } from "./components/DiagramView";
 import { GeneratorOptions } from "./components/GeneratorOptions";
 import { ImportArtifactDialog } from "./components/ImportArtifactDialog";
-import { SplitPane } from "./components/SplitPane";
+import { PaneApi } from "./panes/api";
+import { PaneWorkspace, type PaneTabView } from "./panes/PaneWorkspace";
+import { addPane, createPaneLayout, findPaneSplit, parsePaneLayout, type PaneTab } from "./panes/model";
+import { useRefBuffer } from "./ref-buffer/RefBufferContext";
+import type { ReferenceResolutionContext } from "./referenceResolver";
 import {
   buildDerivativePrompt,
   diagramReferencesInPrompt,
@@ -60,32 +65,71 @@ import {
   DEFAULT_GENERATION_PROMPT_PROFILE_ID,
   isDiagramComponentArchived,
   isDiagramArchived,
+  outputKindForTarget,
   type ArtifactImportInput,
   type CodeEntityPromptTemplateRecord,
   type DiagramComponentRecord,
   type DiagramElementMapping,
   type DiagramRecord,
+  type DiagramViewKind,
   type DiagramSelectionBounds,
   type DiagramModelId,
   type GenerationOutputKind,
+  type GenerationTargetKind,
   type GenerationPromptProfileId,
   type PromptReference,
   type SystemPromptTemplateRecord,
   type WorkspaceSnapshot
 } from "./domain";
+import { defaultGenerationInstruction } from "./prompt";
 
 type Screen = "diagram" | "diagram-component" | "generation";
 
+const PRIMARY_PANE_ID = "primary";
+const CONTEXT_PANE_ID = "context";
+const ROOT_SPLIT_ID = "studio-root";
+const PANE_LAYOUT_STORAGE_KEY = "new-diagram:pane-layout";
+const LEGACY_SPLIT_STORAGE_KEY = "new-diagram:split-percent";
+
+function createStudioPaneApi(): PaneApi {
+  const restored = parsePaneLayout(window.localStorage.getItem(PANE_LAYOUT_STORAGE_KEY));
+  if (restored?.panes[PRIMARY_PANE_ID] && restored.panes[CONTEXT_PANE_ID]) {
+    return new PaneApi(restored);
+  }
+  const storedPercent = Number(window.localStorage.getItem(LEGACY_SPLIT_STORAGE_KEY));
+  const ratio = Number.isFinite(storedPercent) && storedPercent > 0
+    ? storedPercent / 100
+    : 0.62;
+  const primary = createPaneLayout({
+    id: PRIMARY_PANE_ID,
+    ariaLabel: "Primary workspace",
+    tabListClassName: "diagram-view-tabs",
+    tabs: [{ id: "generate", label: "Generate" }]
+  });
+  return new PaneApi(addPane(primary, {
+    id: CONTEXT_PANE_ID,
+    ariaLabel: "Diagram context",
+    tabListClassName: "context-tabs",
+    tabs: [
+      { id: "code-entities", label: "Code Entities", domId: "code-entities-tab" },
+      { id: "diagrams", label: "Diagrams", domId: "diagrams-tab" }
+    ]
+  }, PRIMARY_PANE_ID, { placement: "right", ratio, splitId: ROOT_SPLIT_ID }));
+}
+
 export function App() {
+  const refBuffer = useRefBuffer();
+  const [paneApi] = useState(createStudioPaneApi);
   const [workspace, setWorkspace] = useState<WorkspaceSnapshot | null>(null);
   const [activeSetId, setActiveSetId] = useState<string | null>(null);
   const [activeDiagramId, setActiveDiagramId] = useState<string | null>(null);
   const [activeComponentId, setActiveComponentId] = useState<string | null>(null);
+  const [activeViewKind, setActiveViewKind] = useState<DiagramViewKind>("diagram");
   const [screen, setScreen] = useState<Screen>("generation");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [prompt, setPrompt] = useState("");
   const [count, setCount] = useState(DEFAULT_GENERATION_COUNT);
-  const [outputKind, setOutputKind] = useState<GenerationOutputKind>("diagram");
+  const [targetKind, setTargetKind] = useState<GenerationTargetKind>("diagram");
   const [generationModelId, setGenerationModelId] = useState<DiagramModelId>(DEFAULT_DIAGRAM_MODEL_ID);
   const [promptProfileId, setPromptProfileId] = useState<GenerationPromptProfileId>(
     DEFAULT_GENERATION_PROMPT_PROFILE_ID
@@ -111,10 +155,20 @@ export function App() {
   const [mappingBusy, setMappingBusy] = useState(false);
   const [mappingProgress, setMappingProgress] = useState("");
   const [mappingError, setMappingError] = useState<string | null>(null);
+  const [starBusy, setStarBusy] = useState(false);
   const [codeEntityReveal, setCodeEntityReveal] = useState<CodeEntityReveal | undefined>();
   const revealRequestId = useRef(0);
   const editQueue = useRef<Promise<void>>(Promise.resolve());
   const editShortcutHandlers = useRef({ undo: () => {}, redo: () => {} });
+
+  useEffect(() => paneApi.subscribe(() => {
+    const paneState = paneApi.getState();
+    window.localStorage.setItem(PANE_LAYOUT_STORAGE_KEY, JSON.stringify(paneState));
+    const rootSplit = findPaneSplit(paneState.root, ROOT_SPLIT_ID);
+    if (rootSplit) {
+      window.localStorage.setItem(LEGACY_SPLIT_STORAGE_KEY, (rootSplit.ratio * 100).toFixed(2));
+    }
+  }), [paneApi]);
 
   const load = useCallback(async () => {
     try {
@@ -137,6 +191,16 @@ export function App() {
   const entitySet = activeSet && workspace
     ? workspace.codeEntitySets[activeSet.codeEntitiesSetId]
     : null;
+  const referenceResolutionContext = useMemo<ReferenceResolutionContext>(() => ({
+    codeEntities: entitySet?.entities ?? [],
+    diagrams: workspace?.diagrams ?? {},
+    components: workspace?.diagramComponents ?? {}
+  }), [entitySet?.entities, workspace?.diagramComponents, workspace?.diagrams]);
+  useEffect(() => {
+    refBuffer.setScope(workspace?.project && activeSet
+      ? `${workspace.project.id}:${activeSet.id}`
+      : null);
+  }, [activeSet, refBuffer.setScope, workspace?.project]);
   const diagrams = useMemo(() => activeSet && workspace
     ? [...activeSet.diagramIds, ...workspace.globalImports.diagramIds]
       .map((id) => workspace.diagrams[id])
@@ -149,6 +213,25 @@ export function App() {
         Boolean(component) && !isDiagramComponentArchived(component)
       ))
     : [], [activeSet, workspace]);
+  const foundationDiagram = activeSet?.featuredViewIds.diagram
+    ? diagrams.find((diagram) => diagram.id === activeSet.featuredViewIds.diagram)
+    : undefined;
+  const companionCallGraph = activeSet?.featuredViewIds["call-graph"]
+    ? diagrams.find((diagram) => diagram.id === activeSet.featuredViewIds["call-graph"])
+    : undefined;
+  const immutableCodeEntities = useMemo(() => {
+    if (!foundationDiagram || !entitySet) return [];
+    const byId = new Map(entitySet.entities.map((entity) => [entity.id, entity]));
+    const ids = targetKind === "dir-view"
+      ? [...new Set([...foundationDiagram.codeEntityIds, ...(companionCallGraph?.codeEntityIds ?? [])])]
+      : foundationDiagram.codeEntityIds;
+    return ids
+      .map((id) => byId.get(id))
+      .filter((entity): entity is NonNullable<typeof entity> => Boolean(entity));
+  }, [companionCallGraph, entitySet, foundationDiagram, targetKind]);
+  const foundationRepositoryPaths = useMemo(() => [...new Set(
+    immutableCodeEntities.flatMap((entity) => entity.sourceRanges.map((range) => range.path))
+  )].sort(), [immutableCodeEntities]);
   const promptDiagramReferences = useMemo(() => diagramReferencesInPrompt({
     prompt,
     diagrams: workspace?.diagrams ?? {},
@@ -192,7 +275,7 @@ export function App() {
     setSelectedIds(new Set(selectedCodeEntityIds));
     setExcludedReferenceKeys(new Set(stored?.excludedReferenceKeys ?? defaults.excludedReferenceKeys));
     setCount(stored?.count ?? defaults.count);
-    setOutputKind(stored?.outputKind ?? defaults.outputKind);
+    setTargetKind(stored?.targetKind ?? defaults.targetKind);
     setGenerationModelId(stored?.modelId ?? defaults.modelId);
     setPromptProfileId(restoredPromptProfileId);
     setRestoredGenerationDraftKey(draftKey);
@@ -213,9 +296,17 @@ export function App() {
       ? migrated
       : fallbackPromptProfileId);
   }, [fallbackPromptProfileId, promptProfiles, promptProfileId]);
-  const activeDiagram = diagrams.find((diagram) => diagram.id === activeDiagramId)
-    ?? diagrams.at(-1)
-    ?? null;
+  const activeDiagram = diagrams.find((diagram) => diagram.id === activeDiagramId) ?? null;
+  const viewCounts = useMemo(() => ({
+    diagram: diagrams.filter((diagram) => diagram.viewKind === "diagram").length,
+    "call-graph": diagrams.filter((diagram) => diagram.viewKind === "call-graph").length,
+    "dir-view": diagrams.filter((diagram) => diagram.viewKind === "dir-view").length
+  }), [diagrams]);
+  const featuredViewKinds = new Set<DiagramViewKind>(
+    (Object.keys(activeSet?.featuredViewIds ?? {}) as DiagramViewKind[]).filter(
+      (kind) => Boolean(activeSet?.featuredViewIds[kind])
+    )
+  );
   const activeComponent = components.find((component) => component.id === activeComponentId) ?? null;
   const selectedArtifact = screen === "diagram-component" ? activeComponent : activeDiagram;
   const selectedArtifactKind: GenerationOutputKind = screen === "diagram-component"
@@ -232,6 +323,32 @@ export function App() {
     && activeEditSession.sourceArtifactId === selectedArtifact?.id
     ? activeEditSession
     : null;
+
+  useLayoutEffect(() => {
+    const primaryTabs: PaneTab[] = screen === "generation"
+      ? [{ id: "generate", label: "Generate" }]
+      : screen === "diagram-component"
+        ? [{ id: "component", label: "Component" }]
+        : DIAGRAM_VIEW_OPTIONS.map(({ kind, label }) => ({
+          id: kind,
+          label,
+          badge: featuredViewKinds.has(kind) ? "★" : viewCounts[kind]
+        }));
+    const contextTabs: PaneTab[] = [
+      { id: "code-entities", label: "Code Entities", domId: "code-entities-tab" },
+      { id: "diagrams", label: "Diagrams", domId: "diagrams-tab" },
+      ...(editSession ? [{
+        id: "operations",
+        label: "Operations · ",
+        badge: editSession.operationCursor,
+        domId: "operations-tab"
+      }] : [])
+    ];
+    paneApi.setTabs(PRIMARY_PANE_ID, primaryTabs, screen === "generation"
+      ? "generate"
+      : screen === "diagram-component" ? "component" : activeViewKind);
+    paneApi.setTabs(CONTEXT_PANE_ID, contextTabs, contextTab);
+  }, [activeViewKind, contextTab, editSession, featuredViewKinds, paneApi, screen, viewCounts]);
   const collectionRun = activeSet && workspace
     ? [...activeSet.agentRunIds]
       .reverse()
@@ -269,12 +386,12 @@ export function App() {
         draftKey,
         legacyGenerationPromptDraftKey(workspace.project.id, activeSet.id),
         {
-          version: 1,
+          version: 3,
           prompt: "",
           selectedCodeEntityIds: entitySet.entities.map((entity) => entity.id),
           excludedReferenceKeys: [],
           count: DEFAULT_GENERATION_COUNT,
-          outputKind: "diagram",
+          targetKind: "diagram",
           modelId: DEFAULT_DIAGRAM_MODEL_ID,
           promptProfileId: fallbackPromptProfileId
         }
@@ -296,10 +413,11 @@ export function App() {
     setCodeEntityReveal(undefined);
     const activeDiagramIds = activeSet.diagramIds.filter((id) => {
       const diagram = workspace?.diagrams[id];
-      return diagram && !isDiagramArchived(diagram);
+      return diagram && diagram.viewKind === "diagram" && !isDiagramArchived(diagram);
     });
     if (activeSet.readiness === "ready" && activeDiagramIds.length > 0) {
-      setActiveDiagramId(activeDiagramIds.at(-1) ?? null);
+      setActiveViewKind("diagram");
+      setActiveDiagramId(activeSet.featuredViewIds.diagram ?? activeDiagramIds.at(-1) ?? null);
       setScreen("diagram");
     } else {
       setActiveDiagramId(null);
@@ -311,12 +429,12 @@ export function App() {
     if (!currentGenerationDraftKey
       || restoredGenerationDraftKey !== currentGenerationDraftKey) return;
     saveGenerationPageDraft(window.localStorage, currentGenerationDraftKey, {
-      version: 1,
+      version: 3,
       prompt,
       selectedCodeEntityIds: [...selectedIds],
       excludedReferenceKeys: [...excludedReferenceKeys],
       count,
-      outputKind,
+      targetKind,
       modelId: generationModelId,
       promptProfileId
     });
@@ -325,7 +443,7 @@ export function App() {
     currentGenerationDraftKey,
     excludedReferenceKeys,
     generationModelId,
-    outputKind,
+    targetKind,
     prompt,
     promptProfileId,
     restoredGenerationDraftKey,
@@ -333,16 +451,19 @@ export function App() {
   ]);
 
   useEffect(() => {
-    if (!activeSet || activeSet.readiness !== "ready" || activeDiagramId !== null) return;
+    if (!activeSet
+      || activeSet.readiness !== "ready"
+      || activeDiagramId !== null
+      || activeViewKind !== "diagram") return;
     const activeDiagramIds = activeSet.diagramIds.filter((id) => {
       const diagram = workspace?.diagrams[id];
-      return diagram && !isDiagramArchived(diagram);
+      return diagram && diagram.viewKind === "diagram" && !isDiagramArchived(diagram);
     });
     const latestDiagramId = activeDiagramIds.at(-1);
     if (!latestDiagramId) return;
-    setActiveDiagramId(latestDiagramId);
+    setActiveDiagramId(activeSet.featuredViewIds.diagram ?? latestDiagramId);
     setScreen("diagram");
-  }, [activeSet, activeDiagramId, workspace]);
+  }, [activeSet, activeDiagramId, activeViewKind, workspace]);
 
   useEffect(() => {
     const shouldPoll = workspace !== null && (
@@ -398,12 +519,16 @@ export function App() {
     setProgress("queuing generation batch");
     const beforeDiagrams = new Set(activeSet.diagramIds);
     const beforeComponents = new Set(activeSet.diagramComponentIds);
+    const outputKind = outputKindForTarget(targetKind);
     try {
       const next = await generateArtifacts(activeSet.id, {
         prompt,
-        selectedCodeEntityIds: [...selectedIds],
+        selectedCodeEntityIds: targetKind === "call-graph" || targetKind === "dir-view"
+          ? immutableCodeEntities.map((entity) => entity.id)
+          : [...selectedIds],
         count,
         outputKind,
+        ...(outputKind === "diagram" ? { viewKind: targetKind as DiagramViewKind } : {}),
         modelId: generationModelId,
         promptProfileId,
         referenceSelections: promptDiagramReferences.flatMap((reference) => (
@@ -427,6 +552,7 @@ export function App() {
         .filter((id) => !beforeComponents.has(id)) ?? [];
       if (outputKind === "diagram") {
         setActiveDiagramId(createdDiagrams[0] ?? nextSet?.diagramIds.at(-1) ?? null);
+        setActiveViewKind(targetKind as DiagramViewKind);
         setActiveComponentId(null);
         setScreen("diagram");
       } else {
@@ -435,7 +561,14 @@ export function App() {
       }
       setContextTab("diagrams");
       const created = outputKind === "diagram" ? createdDiagrams.length : createdComponents.length;
-      setProgress(`generated ${created} ${outputKind === "diagram" ? "diagrams" : "components"} with ${count} parallel agents`);
+      const label = targetKind === "call-graph"
+        ? "call graphs"
+        : targetKind === "dir-view"
+          ? "directory views"
+          : targetKind === "diagram-component"
+            ? "components"
+            : "diagrams";
+      setProgress(`generated ${created} ${label} with ${count} parallel agents`);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "generation failed");
     } finally {
@@ -448,16 +581,25 @@ export function App() {
     if (currentGenerationDraftKey
       && restoredGenerationDraftKey === currentGenerationDraftKey) {
       saveGenerationPageDraft(window.localStorage, currentGenerationDraftKey, {
-        version: 1,
+        version: 3,
         prompt: value,
         selectedCodeEntityIds: [...selectedIds],
         excludedReferenceKeys: [...excludedReferenceKeys],
         count,
-        outputKind,
+        targetKind,
         modelId: generationModelId,
         promptProfileId
       });
     }
+  };
+
+  const insertReferenceTokens = (tokens: string) => {
+    const normalized = tokens.trim();
+    if (!normalized) return;
+    updateGenerationPrompt(prompt.trim()
+      ? `${prompt.trimEnd()}\n\n${normalized}`
+      : normalized);
+    setProgress("inserted buffered references into the generation prompt");
   };
 
   const persistPromptTemplate = async (
@@ -526,9 +668,11 @@ export function App() {
         id: draft.id,
         label: draft.label,
         description: draft.description,
-        prompts: {
-          diagram: draft.prompts.diagram ?? "",
-          "diagram-component": draft.prompts["diagram-component"] ?? ""
+          prompts: {
+            diagram: draft.prompts.diagram ?? "",
+            "call-graph": draft.prompts["call-graph"] ?? "",
+            "dir-view": draft.prompts["dir-view"] ?? "",
+            "diagram-component": draft.prompts["diagram-component"] ?? ""
         }
       });
     }
@@ -552,6 +696,10 @@ export function App() {
   };
 
   const derive = (diagram: DiagramRecord) => {
+    if (diagram.viewKind === "call-graph" || diagram.viewKind === "dir-view") {
+      openGenerate(diagram.viewKind);
+      return;
+    }
     const config = diagram.generationPromptConfigId
       ? workspace.generationPromptConfigs[diagram.generationPromptConfigId]
       : undefined;
@@ -571,14 +719,16 @@ export function App() {
       draftKey,
       legacyGenerationPromptDraftKey(workspace.project!.id, activeSet.id, draft.derivation),
       {
-        version: 1,
+        version: 3,
         prompt: draft.prompt,
         selectedCodeEntityIds: workspace.globalImports.diagramIds.includes(diagram.id)
           ? [...selectedIds]
           : config?.selectedCodeEntityIds ?? diagram.codeEntityIds,
         excludedReferenceKeys: [],
         count: DEFAULT_GENERATION_COUNT,
-        outputKind: config?.outputKind ?? "diagram",
+        targetKind: config?.outputKind === "diagram-component"
+          ? "diagram-component"
+          : config?.viewKind ?? diagram.viewKind,
         modelId: config?.modelId ?? DEFAULT_DIAGRAM_MODEL_ID,
         promptProfileId: config?.systemPrompt.profileId ?? DEFAULT_GENERATION_PROMPT_PROFILE_ID
       }
@@ -608,14 +758,14 @@ export function App() {
       draftKey,
       legacyGenerationPromptDraftKey(workspace.project!.id, activeSet.id, draft.derivation),
       {
-        version: 1,
+        version: 3,
         prompt: draft.prompt,
         selectedCodeEntityIds: workspace.globalImports.diagramComponentIds.includes(component.id)
           ? [...selectedIds]
           : config?.selectedCodeEntityIds ?? component.codeEntityIds,
         excludedReferenceKeys: [],
         count: DEFAULT_GENERATION_COUNT,
-        outputKind: config?.outputKind ?? "diagram-component",
+        targetKind: config?.outputKind === "diagram" ? config.viewKind ?? "diagram" : "diagram-component",
         modelId: config?.modelId ?? DEFAULT_DIAGRAM_MODEL_ID,
         promptProfileId: config?.systemPrompt.profileId ?? DEFAULT_GENERATION_PROMPT_PROFILE_ID
       }
@@ -673,13 +823,14 @@ export function App() {
       : await archiveDiagram(activeSet.id, diagramId);
     setWorkspace(next);
     const nextSet = next.diagramSets.find((set) => set.id === activeSet.id);
+    const archivedViewKind = workspace.diagrams[diagramId]?.viewKind ?? activeViewKind;
     const nextActiveIds = [...(nextSet?.diagramIds ?? []), ...next.globalImports.diagramIds]
       .filter((id) => {
       const diagram = next.diagrams[id];
-      return diagram && !isDiagramArchived(diagram);
+      return diagram && diagram.viewKind === archivedViewKind && !isDiagramArchived(diagram);
       });
     setActiveDiagramId((current) => current === diagramId
-      ? nextActiveIds.at(-1) ?? null
+      ? nextSet?.featuredViewIds[archivedViewKind] ?? nextActiveIds.at(-1) ?? null
       : current);
     if (nextActiveIds.length === 0) {
       if (components.length > 0) {
@@ -688,6 +839,22 @@ export function App() {
       } else {
         setScreen("generation");
       }
+    }
+  };
+
+  const toggleStarred = async (diagramId: string) => {
+    setStarBusy(true);
+    setError(null);
+    try {
+      setWorkspace(await setStarredDiagram(
+        activeSet.id,
+        diagramId,
+        activeSet.featuredViewIds[workspace.diagrams[diagramId]?.viewKind ?? "diagram"] !== diagramId
+      ));
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "chosen diagram update failed");
+    } finally {
+      setStarBusy(false);
     }
   };
 
@@ -733,9 +900,46 @@ export function App() {
   };
 
   const selectDiagram = (diagramId: string) => {
+    const diagram = workspace.diagrams[diagramId];
+    if (diagram) setActiveViewKind(diagram.viewKind);
     setActiveDiagramId(diagramId);
     setActiveComponentId(null);
     setScreen("diagram");
+  };
+
+  const selectViewKind = (viewKind: DiagramViewKind) => {
+    setActiveViewKind(viewKind);
+    setActiveDiagramId(activeSet.featuredViewIds[viewKind] ?? null);
+    setActiveComponentId(null);
+    setScreen("diagram");
+  };
+
+  const openGenerate = (nextTargetKind: GenerationTargetKind) => {
+    setTargetKind(nextTargetKind);
+    if (nextTargetKind === "call-graph" || nextTargetKind === "dir-view") {
+      setPrompt(defaultGenerationInstruction(nextTargetKind));
+    } else if (targetKind === "call-graph" || targetKind === "dir-view") {
+      setPrompt("");
+    }
+    setDerivativeDraft(null);
+    setHistoricalReferences([]);
+    setExcludedReferenceKeys(new Set());
+    setScreen("generation");
+  };
+
+  const changeGenerationTarget = (nextTargetKind: GenerationTargetKind) => {
+    if (nextTargetKind === targetKind) return;
+    const nextAuxiliary = nextTargetKind === "call-graph" || nextTargetKind === "dir-view";
+    const currentAuxiliary = targetKind === "call-graph" || targetKind === "dir-view";
+    setTargetKind(nextTargetKind);
+    if (nextAuxiliary) {
+      setPrompt(defaultGenerationInstruction(nextTargetKind));
+      setDerivativeDraft(null);
+      setHistoricalReferences([]);
+      setExcludedReferenceKeys(new Set());
+    } else if (currentAuxiliary) {
+      setPrompt("");
+    }
   };
 
   const selectComponent = (componentId: string) => {
@@ -932,6 +1136,163 @@ export function App() {
     redo: () => void runEditAction(redoEdit)
   } : { undo: () => {}, redo: () => {} };
 
+  let primaryPaneContent: ReactNode;
+  if (screen === "generation") {
+    primaryPaneContent = <GeneratorOptions
+      codeEntities={entitySet}
+      diagrams={diagrams}
+      components={components}
+      targetKind={targetKind}
+      foundationDiagram={foundationDiagram}
+      companionCallGraph={companionCallGraph}
+      immutableCodeEntities={immutableCodeEntities}
+      foundationRepositoryPaths={foundationRepositoryPaths}
+      modelId={generationModelId}
+      promptProfileId={promptProfileId}
+      promptProfiles={promptProfiles}
+      historicalReferences={historicalReferences}
+      diagramReferences={promptDiagramReferences}
+      excludedReferenceKeys={excludedReferenceKeys}
+      derivativeSourceReferenceKey={derivativeDraft?.derivation.sourceArtifactKind === "diagram"
+        ? `diagram:${derivativeDraft.derivation.sourceArtifactId}`
+        : undefined}
+      prompt={prompt}
+      count={count}
+      generating={busy}
+      progress={progress}
+      error={error}
+      backLabel={derivativeDraft
+        ? `back to ${derivativeDraft.derivation.sourceArtifactKind === "diagram"
+          ? "diagram"
+          : "component"}`
+        : undefined}
+      onBack={derivativeDraft ? leaveDerivative : undefined}
+      onPrompt={updateGenerationPrompt}
+      onToggleDiagramReference={(key) => setExcludedReferenceKeys((current) => {
+        const next = new Set(current);
+        if (next.has(key)) next.delete(key);
+        else next.add(key);
+        return next;
+      })}
+      onCount={setCount}
+      onTargetKind={changeGenerationTarget}
+      onModel={setGenerationModelId}
+      onPromptProfile={setPromptProfileId}
+      onGenerate={() => void generate()}
+    />;
+  } else if (screen === "diagram-component" && activeComponent) {
+    primaryPaneContent = <DiagramView
+      active={editSession ? { ...activeComponent, ascii: editSession.workingAscii } : activeComponent}
+      artifactKind="diagram-component"
+      onGenerate={() => deriveComponent(activeComponent)}
+      onCapture={captureNested}
+      editMode={Boolean(editSession)}
+      markerMode={markerMode}
+      editBusy={editBusy}
+      codeEntities={entitySet.entities}
+      codeEntityMap={selectedCodeEntityMap}
+      referenceResolutionContext={referenceResolutionContext}
+      projectId={workspace.project.id}
+      diagramSetId={activeSet.id}
+      onInsertReferenceTokens={insertReferenceTokens}
+      mappingBusy={mappingBusy}
+      mappingProgress={mappingProgress}
+      mappingError={mappingError}
+      onToggleEdit={() => void (editSession ? leaveEdit() : startEdit())}
+      onMapCodeEntities={() => void generateCodeEntityMap()}
+      onRevealCodeEntity={revealCodeEntity}
+      onManualEdit={queueManualEdit}
+      onMarker={(line, column) => void markLocation(line, column)}
+      onUndoEdit={() => void runEditAction(undoEdit)}
+      onRedoEdit={() => void runEditAction(redoEdit)}
+    />;
+  } else if (activeDiagram) {
+    primaryPaneContent = <DiagramView
+      active={editSession ? { ...activeDiagram, ascii: editSession.workingAscii } : activeDiagram}
+      artifactKind="diagram"
+      onGenerate={() => derive(activeDiagram)}
+      onCapture={capture}
+      editMode={Boolean(editSession)}
+      markerMode={markerMode}
+      editBusy={editBusy}
+      codeEntities={entitySet.entities}
+      codeEntityMap={selectedCodeEntityMap}
+      referenceResolutionContext={referenceResolutionContext}
+      projectId={workspace.project.id}
+      diagramSetId={activeSet.id}
+      onInsertReferenceTokens={insertReferenceTokens}
+      mappingBusy={mappingBusy}
+      mappingProgress={mappingProgress}
+      mappingError={mappingError}
+      starred={activeSet.featuredViewIds[activeDiagram.viewKind] === activeDiagram.id}
+      starBusy={starBusy}
+      onToggleStarred={() => void toggleStarred(activeDiagram.id)}
+      onToggleEdit={() => void (editSession ? leaveEdit() : startEdit())}
+      onMapCodeEntities={() => void generateCodeEntityMap()}
+      onRevealCodeEntity={revealCodeEntity}
+      onManualEdit={queueManualEdit}
+      onMarker={(line, column) => void markLocation(line, column)}
+      onUndoEdit={() => void runEditAction(undoEdit)}
+      onRedoEdit={() => void runEditAction(redoEdit)}
+    />;
+  } else {
+    primaryPaneContent = <EmptyDiagramView
+      viewKind={activeViewKind}
+      viewCounts={viewCounts}
+      onGenerate={() => openGenerate(activeViewKind)}
+    />;
+  }
+
+  const renderContextPane = (tab: ContextTab) => <DiagramContextPanel
+    setId={activeSet.id}
+    codeEntities={entitySet}
+    diagramSet={activeSet}
+    diagrams={diagrams}
+    components={components}
+    generationBatches={workspace.generationBatches}
+    generationPromptConfigs={workspace.generationPromptConfigs}
+    activeDiagram={screen === "diagram" ? activeDiagram ?? undefined : undefined}
+    activeComponent={screen === "diagram-component" ? activeComponent ?? undefined : undefined}
+    editSession={editSession ?? undefined}
+    editPrompt={editPrompt}
+    editModelId={editModelId}
+    markerMode={markerMode}
+    editBusy={editBusy}
+    editProgress={editProgress}
+    editError={editError}
+    codeEntityReveal={codeEntityReveal}
+    selectedIds={screen === "generation" && targetKind !== "call-graph" && targetKind !== "dir-view"
+      ? selectedIds
+      : undefined}
+    onToggleEntity={screen === "generation" && targetKind !== "call-graph" && targetKind !== "dir-view"
+      ? toggleEntity
+      : undefined}
+    activeTab={tab}
+    onSelectDiagram={selectDiagram}
+    onSelectComponent={selectComponent}
+    onRenameDiagram={rename}
+    onArchiveDiagram={archive}
+    onArchiveComponent={archiveComponent}
+    onEditPrompt={setEditPrompt}
+    onEditModel={setEditModelId}
+    onMarkerMode={setMarkerMode}
+    onUndoEdit={() => void runEditAction(undoEdit)}
+    onRedoEdit={() => void runEditAction(redoEdit)}
+    onLlmEdit={() => void runLlmEdit()}
+    onFinishEdit={() => void saveEdit()}
+    onDiscardEdit={() => void leaveEdit()}
+  />;
+  const paneViews: Record<string, PaneTabView> = {
+    generate: { content: primaryPaneContent },
+    component: { content: primaryPaneContent },
+    diagram: { content: primaryPaneContent, onActivate: () => selectViewKind("diagram") },
+    "call-graph": { content: primaryPaneContent, onActivate: () => selectViewKind("call-graph") },
+    "dir-view": { content: primaryPaneContent, onActivate: () => selectViewKind("dir-view") },
+    "code-entities": { content: renderContextPane("code-entities"), onActivate: () => setContextTab("code-entities") },
+    diagrams: { content: renderContextPane("diagrams"), onActivate: () => setContextTab("diagrams") },
+    operations: { content: renderContextPane("operations"), onActivate: () => setContextTab("operations") }
+  };
+
   return (
     <main className="studio-shell">
       <header className="studio-header">
@@ -994,180 +1355,9 @@ export function App() {
           <code>{activeSet.sourceCheckoutRoot}</code>
           <button type="button" className="button" onClick={() => void load()}>refresh status</button>
         </section>
-      ) : screen === "generation" ? (
-        <SplitPane
-          left={<GeneratorOptions
-            codeEntities={entitySet}
-            diagrams={diagrams}
-            components={components}
-            outputKind={outputKind}
-            modelId={generationModelId}
-            promptProfileId={promptProfileId}
-            promptProfiles={promptProfiles}
-            historicalReferences={historicalReferences}
-            diagramReferences={promptDiagramReferences}
-            excludedReferenceKeys={excludedReferenceKeys}
-            derivativeSourceReferenceKey={derivativeDraft?.derivation.sourceArtifactKind === "diagram"
-              ? `diagram:${derivativeDraft.derivation.sourceArtifactId}`
-              : undefined}
-            prompt={prompt}
-            count={count}
-            generating={busy}
-            progress={progress}
-            error={error}
-            backLabel={derivativeDraft
-              ? `back to ${derivativeDraft.derivation.sourceArtifactKind === "diagram"
-                ? "diagram"
-                : "component"}`
-              : undefined}
-            onBack={derivativeDraft ? leaveDerivative : undefined}
-            onPrompt={updateGenerationPrompt}
-            onToggleDiagramReference={(key) => setExcludedReferenceKeys((current) => {
-              const next = new Set(current);
-              if (next.has(key)) next.delete(key);
-              else next.add(key);
-              return next;
-            })}
-            onCount={setCount}
-            onOutputKind={setOutputKind}
-            onModel={setGenerationModelId}
-            onPromptProfile={setPromptProfileId}
-            onGenerate={() => void generate()}
-          />}
-          right={<DiagramContextPanel
-            setId={activeSet.id}
-            codeEntities={entitySet}
-            diagramSet={activeSet}
-            diagrams={diagrams}
-            components={components}
-            generationBatches={workspace.generationBatches}
-            generationPromptConfigs={workspace.generationPromptConfigs}
-            selectedIds={selectedIds}
-            onToggleEntity={toggleEntity}
-            activeTab={contextTab}
-            onTab={setContextTab}
-            onSelectDiagram={selectDiagram}
-            onSelectComponent={selectComponent}
-            onRenameDiagram={rename}
-            onArchiveDiagram={archive}
-            onArchiveComponent={archiveComponent}
-          />}
-        />
-      ) : screen === "diagram-component" && activeComponent ? (
-        <SplitPane
-          left={<DiagramView
-            active={editSession ? { ...activeComponent, ascii: editSession.workingAscii } : activeComponent}
-            artifactKind="diagram-component"
-            onDerive={() => deriveComponent(activeComponent)}
-            onCapture={captureNested}
-            editMode={Boolean(editSession)}
-            markerMode={markerMode}
-            editBusy={editBusy}
-            codeEntities={entitySet.entities}
-            codeEntityMap={selectedCodeEntityMap}
-            mappingBusy={mappingBusy}
-            mappingProgress={mappingProgress}
-            mappingError={mappingError}
-            onToggleEdit={() => void (editSession ? leaveEdit() : startEdit())}
-            onMapCodeEntities={() => void generateCodeEntityMap()}
-            onRevealCodeEntity={revealCodeEntity}
-            onManualEdit={queueManualEdit}
-            onMarker={(line, column) => void markLocation(line, column)}
-            onUndoEdit={() => void runEditAction(undoEdit)}
-            onRedoEdit={() => void runEditAction(redoEdit)}
-          />}
-          right={<DiagramContextPanel
-            setId={activeSet.id}
-            codeEntities={entitySet}
-            diagramSet={activeSet}
-            diagrams={diagrams}
-            components={components}
-            generationBatches={workspace.generationBatches}
-            generationPromptConfigs={workspace.generationPromptConfigs}
-            activeComponent={activeComponent}
-            editSession={editSession ?? undefined}
-            editPrompt={editPrompt}
-            editModelId={editModelId}
-            markerMode={markerMode}
-            editBusy={editBusy}
-            editProgress={editProgress}
-            editError={editError}
-            codeEntityReveal={codeEntityReveal}
-            activeTab={contextTab}
-            onTab={setContextTab}
-            onSelectDiagram={selectDiagram}
-            onSelectComponent={selectComponent}
-            onRenameDiagram={rename}
-            onArchiveDiagram={archive}
-            onArchiveComponent={archiveComponent}
-            onEditPrompt={setEditPrompt}
-            onEditModel={setEditModelId}
-            onMarkerMode={setMarkerMode}
-            onUndoEdit={() => void runEditAction(undoEdit)}
-            onRedoEdit={() => void runEditAction(redoEdit)}
-            onLlmEdit={() => void runLlmEdit()}
-            onFinishEdit={() => void saveEdit()}
-            onDiscardEdit={() => void leaveEdit()}
-          />}
-        />
-      ) : activeDiagram ? (
-        <SplitPane
-          left={<DiagramView
-            active={editSession ? { ...activeDiagram, ascii: editSession.workingAscii } : activeDiagram}
-            artifactKind="diagram"
-            onDerive={() => derive(activeDiagram)}
-            onCapture={capture}
-            editMode={Boolean(editSession)}
-            markerMode={markerMode}
-            editBusy={editBusy}
-            codeEntities={entitySet.entities}
-            codeEntityMap={selectedCodeEntityMap}
-            mappingBusy={mappingBusy}
-            mappingProgress={mappingProgress}
-            mappingError={mappingError}
-            onToggleEdit={() => void (editSession ? leaveEdit() : startEdit())}
-            onMapCodeEntities={() => void generateCodeEntityMap()}
-            onRevealCodeEntity={revealCodeEntity}
-            onManualEdit={queueManualEdit}
-            onMarker={(line, column) => void markLocation(line, column)}
-            onUndoEdit={() => void runEditAction(undoEdit)}
-            onRedoEdit={() => void runEditAction(redoEdit)}
-          />}
-          right={<DiagramContextPanel
-            setId={activeSet.id}
-            codeEntities={entitySet}
-            diagramSet={activeSet}
-            diagrams={diagrams}
-            components={components}
-            generationBatches={workspace.generationBatches}
-            generationPromptConfigs={workspace.generationPromptConfigs}
-            activeDiagram={activeDiagram}
-            editSession={editSession ?? undefined}
-            editPrompt={editPrompt}
-            editModelId={editModelId}
-            markerMode={markerMode}
-            editBusy={editBusy}
-            editProgress={editProgress}
-            editError={editError}
-            codeEntityReveal={codeEntityReveal}
-            activeTab={contextTab}
-            onTab={setContextTab}
-            onSelectDiagram={selectDiagram}
-            onSelectComponent={selectComponent}
-            onRenameDiagram={rename}
-            onArchiveDiagram={archive}
-            onArchiveComponent={archiveComponent}
-            onEditPrompt={setEditPrompt}
-            onEditModel={setEditModelId}
-            onMarkerMode={setMarkerMode}
-            onUndoEdit={() => void runEditAction(undoEdit)}
-            onRedoEdit={() => void runEditAction(redoEdit)}
-            onLlmEdit={() => void runLlmEdit()}
-            onFinishEdit={() => void saveEdit()}
-            onDiscardEdit={() => void leaveEdit()}
-          />}
-        />
-      ) : null}
+      ) : (
+        <PaneWorkspace api={paneApi} views={paneViews} />
+      )}
       {importOpen ? (
         <ImportArtifactDialog
           onClose={() => setImportOpen(false)}

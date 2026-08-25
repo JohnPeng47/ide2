@@ -210,11 +210,16 @@ export function SourceCodeView(props: {
   }, [sourceIdentity, props.range.compactedSource]);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = 0;
-      scrollRef.current.scrollLeft = 0;
-    }
-  }, [props.revealRequestId, sourceIdentity]);
+    const viewer = scrollRef.current;
+    if (!viewer) return;
+    viewer.scrollLeft = 0;
+    const target = viewer.querySelector<HTMLElement>(
+      `.source-code-line[data-line="${props.range.startLine}"]`
+    );
+    viewer.scrollTop = target
+      ? Math.max(0, target.offsetTop - viewer.clientHeight * 0.2)
+      : 0;
+  }, [props.range.startLine, props.revealRequestId, sourceIdentity]);
 
   const tokenLines = highlighted?.tokens ?? [];
   const rows: ReactNode[] = [];
@@ -296,7 +301,16 @@ export function SourceCodeView(props: {
     }
 
     rows.push(
-      <div className="source-code-line" data-line={lineNumber} key={`line:${lineNumber}`}>
+      <div
+        className={lineNumber >= props.range.startLine && lineNumber <= props.range.endLine
+          ? "source-code-line is-selected"
+          : "source-code-line"}
+        data-line={lineNumber}
+        data-selected={lineNumber >= props.range.startLine && lineNumber <= props.range.endLine
+          ? "true"
+          : undefined}
+        key={`line:${lineNumber}`}
+      >
         <span className="source-line-gutter">
           {props.compacted && section && expanded ? (
             <button
