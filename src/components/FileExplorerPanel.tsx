@@ -1,11 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { fetchRepositoryDirectory } from "../api";
 import type {
   CodeEntityRecord,
@@ -18,36 +11,45 @@ import {
   diagramFileFilter,
   directoryPaths,
   flattenFileTree,
-  flattenRepositoryListings,
   parentRepositoryPath,
+  type DiagramFileEntityReference,
   type FileTreeRow
 } from "../fileTree";
 
-type FileExplorerMode = "all" | "diagram";
+type ExplorerDisplayRow = {
+  key: string;
+  kind: "repository";
+  row: FileTreeRow;
+} | {
+  key: string;
+  kind: "entity";
+  filePath: string;
+  level: number;
+  prefix: string;
+  entity: DiagramFileEntityReference;
+};
 
 export function FileExplorerPanel(props: {
   activeSetId: string;
   activeProjectId: string;
   codeEntities: readonly CodeEntityRecord[];
   artifact?: DiagramRecord | DiagramComponentRecord;
+  onRevealCodeEntity?: (target: { entityId: string; sourceRangeIndex: number }) => void;
 }) {
-  const [mode, setMode] = useState<FileExplorerMode>("all");
   const [listings, setListings] = useState<Record<string, RepositoryDirectoryListing>>({});
   const listingsRef = useRef(listings);
-  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const [filterCollapsedPaths, setFilterCollapsedPaths] = useState<Set<string>>(new Set());
-  const [loadingPaths, setLoadingPaths] = useState<Set<string>>(new Set());
-  const [directoryErrors, setDirectoryErrors] = useState<Record<string, string>>({});
   const [matchedFilterPaths, setMatchedFilterPaths] = useState<Set<string>>(new Set());
   const [unavailableFilterCount, setUnavailableFilterCount] = useState(0);
   const [filterLoading, setFilterLoading] = useState(false);
   const [filterError, setFilterError] = useState<string | null>(null);
-  const [focusedPath, setFocusedPath] = useState("");
+  const [expandedEntityPaths, setExpandedEntityPaths] = useState<Set<string>>(new Set());
+  const [focusedRowKey, setFocusedRowKey] = useState("");
   const controllers = useRef(new Map<string, AbortController>());
   const requests = useRef(new Map<string, Promise<RepositoryDirectoryListing>>());
   const requestGeneration = useRef(0);
   const filterGeneration = useRef(0);
-  const rowRefs = useRef(new Map<string, HTMLDivElement>());
+  const rowRefs = useRef(new Map<string, HTMLElement>());
 
   const updateListings = useCallback((next: Record<string, RepositoryDirectoryListing>) => {
     listingsRef.current = next;
@@ -62,12 +64,6 @@ export function FileExplorerPanel(props: {
     const generation = requestGeneration.current;
     const controller = new AbortController();
     controllers.current.set(directory, controller);
-    setLoadingPaths((current) => new Set(current).add(directory));
-    setDirectoryErrors((current) => {
-      const next = { ...current };
-      delete next[directory];
-      return next;
-    });
     const request = fetchRepositoryDirectory(props.activeSetId, directory, controller.signal)
       .then((listing) => {
         if (requestGeneration.current === generation) {
@@ -75,26 +71,9 @@ export function FileExplorerPanel(props: {
         }
         return listing;
       })
-      .catch((error) => {
-        if (error instanceof DOMException && error.name === "AbortError") throw error;
-        if (requestGeneration.current === generation) {
-          setDirectoryErrors((current) => ({
-            ...current,
-            [directory]: error instanceof Error ? error.message : "directory listing failed"
-          }));
-        }
-        throw error;
-      })
       .finally(() => {
         if (controllers.current.get(directory) === controller) controllers.current.delete(directory);
         if (requests.current.get(directory) === request) requests.current.delete(directory);
-        if (requestGeneration.current === generation) {
-          setLoadingPaths((current) => {
-            const next = new Set(current);
-            next.delete(directory);
-            return next;
-          });
-        }
       });
     requests.current.set(directory, request);
     return request;
@@ -107,15 +86,12 @@ export function FileExplorerPanel(props: {
     controllers.current.clear();
     requests.current.clear();
     updateListings({});
-    setExpandedPaths(new Set());
     setFilterCollapsedPaths(new Set());
-    setLoadingPaths(new Set());
-    setDirectoryErrors({});
     setMatchedFilterPaths(new Set());
     setUnavailableFilterCount(0);
     setFilterError(null);
-    setFocusedPath("");
-    void loadDirectory("").catch(() => undefined);
+    setExpandedEntityPaths(new Set());
+    setFocusedRowKey("");
     return () => {
       requestGeneration.current += 1;
       filterGeneration.current += 1;
@@ -129,17 +105,13 @@ export function FileExplorerPanel(props: {
     props.activeProjectId
   ) : {
     paths: [],
+    entitiesByPath: {},
     unresolvedEntityIds: [],
     foreignEntityIds: [],
     invalidPaths: []
   }, [props.activeProjectId, props.artifact, props.codeEntities]);
 
   useEffect(() => {
-    if (!props.artifact && mode === "diagram") setMode("all");
-  }, [mode, props.artifact]);
-
-  useEffect(() => {
-    if (mode !== "diagram") return;
     const generation = ++filterGeneration.current;
     setFilterLoading(true);
     setFilterError(null);
@@ -175,7 +147,7 @@ export function FileExplorerPanel(props: {
       setFilterError(failures[0] ?? null);
       setFilterLoading(false);
     })();
-  }, [filter, loadDirectory, mode]);
+  }, [filter, loadDirectory]);
 
   const filterTree = useMemo(
     () => buildFileTree([...matchedFilterPaths]),
@@ -184,82 +156,126 @@ export function FileExplorerPanel(props: {
   const filterExpandedPaths = useMemo(() => new Set(
     directoryPaths(filterTree).filter((directory) => !filterCollapsedPaths.has(directory))
   ), [filterCollapsedPaths, filterTree]);
-  const rows = useMemo(() => mode === "all"
-    ? flattenRepositoryListings(listings[""]?.entries ?? [], listings, expandedPaths)
-    : flattenFileTree(filterTree, filterExpandedPaths), [
-    expandedPaths,
-    filterExpandedPaths,
-    filterTree,
-    listings,
-    mode
-  ]);
+  const rows = useMemo(
+    () => flattenFileTree(filterTree, filterExpandedPaths),
+    [filterExpandedPaths, filterTree]
+  );
+
+  const displayRows = useMemo<ExplorerDisplayRow[]>(() => rows.flatMap((row) => {
+    const repositoryRow: ExplorerDisplayRow = { key: row.path, kind: "repository", row };
+    const references = row.kind === "file" ? filter.entitiesByPath[row.path] ?? [] : [];
+    if (!references.length || !expandedEntityPaths.has(row.path)) return [repositoryRow];
+    const basePrefix = row.level === 1 ? "" : row.prefix.slice(0, -4);
+    return [repositoryRow, ...references.map((entity, index): ExplorerDisplayRow => ({
+      key: `${row.path}::${entity.entityId}`,
+      kind: "entity",
+      filePath: row.path,
+      level: row.level + 1,
+      prefix: `${basePrefix}    ${index === references.length - 1 ? "`-- " : "+-- "}`,
+      entity
+    }))];
+  }), [expandedEntityPaths, filter.entitiesByPath, rows]);
 
   useEffect(() => {
-    if (rows.some((row) => row.path === focusedPath)) return;
-    setFocusedPath(rows[0]?.path ?? "");
-  }, [focusedPath, rows]);
+    if (displayRows.some((row) => row.key === focusedRowKey)) return;
+    setFocusedRowKey(displayRows[0]?.key ?? "");
+  }, [displayRows, focusedRowKey]);
 
-  const isExpanded = (row: FileTreeRow): boolean => row.kind === "directory" && (
-    mode === "all" ? expandedPaths.has(row.path) : filterExpandedPaths.has(row.path)
+  const isExpanded = (row: FileTreeRow): boolean => (
+    row.kind === "directory" && filterExpandedPaths.has(row.path)
   );
 
   const toggleDirectory = (row: FileTreeRow) => {
     if (row.kind !== "directory") return;
-    if (mode === "diagram") {
-      setFilterCollapsedPaths((current) => {
-        const next = new Set(current);
-        if (next.has(row.path)) next.delete(row.path);
-        else next.add(row.path);
-        return next;
-      });
-      return;
-    }
-    setExpandedPaths((current) => {
+    setFilterCollapsedPaths((current) => {
       const next = new Set(current);
-      if (next.has(row.path)) {
-        next.delete(row.path);
-        controllers.current.get(row.path)?.abort();
-      } else {
-        next.add(row.path);
-        void loadDirectory(row.path).catch(() => undefined);
-      }
+      if (next.has(row.path)) next.delete(row.path);
+      else next.add(row.path);
       return next;
     });
   };
 
-  const focusRow = (path: string) => {
-    setFocusedPath(path);
-    requestAnimationFrame(() => rowRefs.current.get(path)?.focus());
+  const focusRow = (key: string) => {
+    setFocusedRowKey(key);
+    requestAnimationFrame(() => rowRefs.current.get(key)?.focus());
   };
 
-  const onRowKeyDown = (event: KeyboardEvent<HTMLDivElement>, row: FileTreeRow, index: number) => {
-    if (event.key === "ArrowDown" && rows[index + 1]) {
+  const revealEntity = (entity: DiagramFileEntityReference) => {
+    props.onRevealCodeEntity?.({
+      entityId: entity.entityId,
+      sourceRangeIndex: entity.sourceRangeIndex
+    });
+  };
+
+  const toggleFileEntities = (filePath: string) => {
+    setExpandedEntityPaths((current) => {
+      const next = new Set(current);
+      if (next.has(filePath)) next.delete(filePath);
+      else next.add(filePath);
+      return next;
+    });
+  };
+
+  const onRowKeyDown = (event: KeyboardEvent<HTMLElement>, displayRow: ExplorerDisplayRow, index: number) => {
+    if (event.key === "ArrowDown" && displayRows[index + 1]) {
       event.preventDefault();
-      focusRow(rows[index + 1].path);
-    } else if (event.key === "ArrowUp" && rows[index - 1]) {
+      focusRow(displayRows[index + 1].key);
+    } else if (event.key === "ArrowUp" && displayRows[index - 1]) {
       event.preventDefault();
-      focusRow(rows[index - 1].path);
-    } else if (event.key === "Home" && rows[0]) {
+      focusRow(displayRows[index - 1].key);
+    } else if (event.key === "Home" && displayRows[0]) {
       event.preventDefault();
-      focusRow(rows[0].path);
-    } else if (event.key === "End" && rows.at(-1)) {
+      focusRow(displayRows[0].key);
+    } else if (event.key === "End" && displayRows.at(-1)) {
       event.preventDefault();
-      focusRow(rows.at(-1)!.path);
-    } else if (event.key === "ArrowRight" && row.kind === "directory") {
-      event.preventDefault();
-      if (!isExpanded(row)) toggleDirectory(row);
-      else if (rows[index + 1]?.parentPath === row.path) focusRow(rows[index + 1].path);
-    } else if (event.key === "ArrowLeft") {
-      if (row.kind === "directory" && isExpanded(row)) {
+      focusRow(displayRows.at(-1)!.key);
+    } else if (displayRow.kind === "entity") {
+      if (event.key === "ArrowLeft") {
         event.preventDefault();
-        toggleDirectory(row);
-      } else if (row.parentPath) {
+        focusRow(displayRow.filePath);
+      } else if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
-        focusRow(row.parentPath);
+        revealEntity(displayRow.entity);
       }
-    } else if ((event.key === "Enter" || event.key === " ") && row.kind === "directory") {
+    } else if (event.key === "ArrowRight" && displayRow.row.kind === "directory") {
       event.preventDefault();
-      toggleDirectory(row);
+      if (!isExpanded(displayRow.row)) toggleDirectory(displayRow.row);
+      else {
+        const nextRow = displayRows[index + 1];
+        if (nextRow?.kind === "repository" && nextRow.row.parentPath === displayRow.row.path) {
+          focusRow(nextRow.key);
+        }
+      }
+    } else if (event.key === "ArrowRight" && displayRow.row.kind === "file") {
+      const references = filter.entitiesByPath[displayRow.row.path] ?? [];
+      if (!references.length) return;
+      event.preventDefault();
+      if (!expandedEntityPaths.has(displayRow.row.path)) toggleFileEntities(displayRow.row.path);
+      else if (displayRows[index + 1]?.kind === "entity") focusRow(displayRows[index + 1].key);
+    } else if (event.key === "ArrowLeft") {
+      if (displayRow.row.kind === "directory" && isExpanded(displayRow.row)) {
+        event.preventDefault();
+        toggleDirectory(displayRow.row);
+      } else if (displayRow.row.kind === "file" && expandedEntityPaths.has(displayRow.row.path)) {
+        event.preventDefault();
+        toggleFileEntities(displayRow.row.path);
+      } else if (displayRow.row.parentPath) {
+        event.preventDefault();
+        focusRow(displayRow.row.parentPath);
+      }
+    } else if ((event.key === "Enter" || event.key === " ") && displayRow.row.kind === "directory") {
+      event.preventDefault();
+      toggleDirectory(displayRow.row);
+    } else if (event.key === "Enter" && displayRow.row.kind === "file") {
+      const firstEntity = filter.entitiesByPath[displayRow.row.path]?.[0];
+      if (firstEntity) {
+        event.preventDefault();
+        revealEntity(firstEntity);
+      }
+    } else if (event.key === " " && displayRow.row.kind === "file"
+      && filter.entitiesByPath[displayRow.row.path]?.length) {
+      event.preventDefault();
+      toggleFileEntities(displayRow.row.path);
     }
   };
 
@@ -267,99 +283,120 @@ export function FileExplorerPanel(props: {
     + filter.unresolvedEntityIds.length
     + filter.invalidPaths.length
     + unavailableFilterCount;
-  const rootError = directoryErrors[""];
-  const emptyMessage = mode === "diagram"
-    ? filterLoading
-      ? "Matching CodeEntity paths against the live checkout..."
-      : "No files in this checkout match the active artifact's CodeEntities."
-    : loadingPaths.has("")
-      ? "Loading repository files..."
-      : rootError ?? "This repository directory is empty.";
+  const emptyMessage = filterLoading
+    ? "Matching CodeEntity paths against the live checkout..."
+    : props.artifact
+      ? "No files in this checkout match the active artifact's CodeEntities."
+      : "Open a diagram to see its referenced files.";
 
   return (
-    <section className="file-explorer" aria-label="Repository files">
-      <div className="file-explorer__mode-bar" role="group" aria-label="File tree filter">
-        <div>
-          <button
-            type="button"
-            className={mode === "all" ? "is-active" : ""}
-            aria-pressed={mode === "all"}
-            onClick={() => setMode("all")}
-          >ALL FILES</button>
-          <button
-            type="button"
-            className={mode === "diagram" ? "is-active" : ""}
-            aria-pressed={mode === "diagram"}
-            disabled={!props.artifact}
-            title={props.artifact ? "Show files referenced by the active artifact" : "Open a diagram to filter its files"}
-            onClick={() => setMode("diagram")}
-          >DIAGRAM FILES</button>
-        </div>
-        <span aria-live="polite">{
-          mode === "diagram"
-            ? filterLoading ? "MATCHING" : `${matchedFilterPaths.size} MATCH${omittedCount ? ` · ${omittedCount} UNAVAILABLE` : ""}`
-            : `${rows.length} VISIBLE`
-        }</span>
+    <section className="file-explorer" aria-label="Diagram files">
+      <div className="file-explorer__mode-bar">
+        <strong>DIAGRAM FILES</strong>
+        <span aria-live="polite">{filterLoading
+          ? "MATCHING"
+          : `${matchedFilterPaths.size} MATCH${omittedCount ? ` · ${omittedCount} UNAVAILABLE` : ""}`}</span>
       </div>
       <div
         className="file-tree-scroller"
         role="tree"
-        aria-label={mode === "all" ? "All repository files" : "Diagram file filter results"}
-        aria-busy={loadingPaths.has("") || filterLoading}
+        aria-label="Diagram files"
+        aria-busy={filterLoading}
       >
-        {rows.map((row, index) => {
+        {displayRows.map((displayRow, index) => {
+          if (displayRow.kind === "entity") {
+            return (
+              <button
+                ref={(node) => {
+                  if (node) rowRefs.current.set(displayRow.key, node);
+                  else rowRefs.current.delete(displayRow.key);
+                }}
+                type="button"
+                key={displayRow.key}
+                className="file-tree-entity-row"
+                role="treeitem"
+                aria-level={displayRow.level}
+                tabIndex={focusedRowKey === displayRow.key ? 0 : -1}
+                title={`${displayRow.entity.label} · @entity/${displayRow.entity.handle}`}
+                data-entity-id={displayRow.entity.entityId}
+                data-file-path={displayRow.filePath}
+                onFocus={() => setFocusedRowKey(displayRow.key)}
+                onClick={() => {
+                  focusRow(displayRow.key);
+                  revealEntity(displayRow.entity);
+                }}
+                onKeyDown={(event) => onRowKeyDown(event, displayRow, index)}
+              >
+                <span className="file-tree-row__prefix" aria-hidden="true">{displayRow.prefix}</span>
+                <span className="file-tree-entity-row__handle">@entity/{displayRow.entity.handle}</span>
+                <span className="file-tree-entity-row__label">{displayRow.entity.label}</span>
+              </button>
+            );
+          }
+          const row = displayRow.row;
           const expanded = isExpanded(row);
-          const loading = loadingPaths.has(row.path);
-          const error = directoryErrors[row.path];
+          const entityReferences = row.kind === "file" ? filter.entitiesByPath[row.path] ?? [] : [];
+          const entitiesExpanded = entityReferences.length > 0 && expandedEntityPaths.has(row.path);
           return (
             <div
               ref={(node) => {
-                if (node) rowRefs.current.set(row.path, node);
-                else rowRefs.current.delete(row.path);
+                if (node) rowRefs.current.set(displayRow.key, node);
+                else rowRefs.current.delete(displayRow.key);
               }}
-              key={row.path}
+              key={displayRow.key}
               className={`file-tree-row file-tree-row--${row.kind}`}
               role="treeitem"
               aria-level={row.level}
-              aria-expanded={row.kind === "directory" ? expanded : undefined}
-              tabIndex={focusedPath === row.path ? 0 : -1}
+              aria-expanded={row.kind === "directory" ? expanded : entityReferences.length ? entitiesExpanded : undefined}
+              tabIndex={focusedRowKey === displayRow.key ? 0 : -1}
               title={row.path}
               data-path={row.path}
-              onFocus={() => setFocusedPath(row.path)}
+              onFocus={() => setFocusedRowKey(displayRow.key)}
               onClick={() => {
-                focusRow(row.path);
+                focusRow(displayRow.key);
                 if (row.kind === "directory") toggleDirectory(row);
               }}
-              onKeyDown={(event) => onRowKeyDown(event, row, index)}
+              onKeyDown={(event) => onRowKeyDown(event, displayRow, index)}
             >
               <span className="file-tree-row__prefix" aria-hidden="true">{row.prefix}</span>
-              <span className="file-tree-row__toggle" aria-hidden="true">{
-                row.kind === "directory" ? expanded ? "[-]" : "[+]" : "   "
-              }</span>
-              <span className="file-tree-row__name">{row.name}</span>
-              {loading ? <em>loading</em> : null}
-              {error ? (
+              {row.kind === "directory" ? (
+                <span className="file-tree-row__toggle" aria-hidden="true">{expanded ? "[-]" : "[+]"}</span>
+              ) : entityReferences.length ? (
                 <button
                   type="button"
-                  className="file-tree-retry"
+                  className="file-tree-entity-toggle"
+                  aria-label={`${entitiesExpanded ? "Hide" : "Show"} ${entityReferences.length} CodeEntities for ${row.name}`}
+                  aria-expanded={entitiesExpanded}
+                  tabIndex={-1}
                   onClick={(event) => {
                     event.stopPropagation();
-                    void loadDirectory(row.path).catch(() => undefined);
+                    focusRow(displayRow.key);
+                    toggleFileEntities(row.path);
                   }}
-                >retry</button>
-              ) : null}
+                >[{entityReferences.length}]</button>
+              ) : <span className="file-tree-row__toggle" aria-hidden="true">   </span>}
+              {row.kind === "file" && entityReferences.length ? (
+                <button
+                  type="button"
+                  className="file-tree-row__name file-tree-row__name-button"
+                  aria-label={`Open first CodeEntity for ${row.name}`}
+                  tabIndex={-1}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    focusRow(displayRow.key);
+                    revealEntity(entityReferences[0]);
+                  }}
+                >{row.name}</button>
+              ) : <span className="file-tree-row__name">{row.name}</span>}
             </div>
           );
         })}
         {rows.length === 0 ? (
           <div className="file-tree-empty">
             <p>{emptyMessage}</p>
-            {mode === "all" && rootError ? (
-              <button type="button" onClick={() => void loadDirectory("").catch(() => undefined)}>retry</button>
-            ) : null}
           </div>
         ) : null}
-        {mode === "diagram" && filterError ? (
+        {filterError ? (
           <p className="file-tree-warning" role="alert">Some repository paths could not be checked: {filterError}</p>
         ) : null}
       </div>

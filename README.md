@@ -93,7 +93,9 @@ branches, and results in those lines. Every semantic graph node maps to an exact
 source subrange and can reveal or re-collapse that block independently without
 expanding its sibling nodes; the fold gutter still expands the complete omitted
 range at once.
-The Diagram Set picker exposes an `[x]` action for each set. After confirmation,
+The left-hand `Diagram Sets` ASCII-tree tab selects sets and their diagrams and
+exposes an `[x]` action for each set. Starred diagrams carry a visible `★`.
+After confirmation,
 deletion removes the set from the project index and moves its complete directory
 to `.diagrams/trash/diagram-sets/` for manual recovery; active agent runs block
 the operation.
@@ -101,12 +103,14 @@ Diagram View keeps Code Entities and an ASCII artifact lineage in right-pane
 tabs. Full ASCII artifacts are grouped as `[DIAGRAM]`, `[CALL-GRAPH]`, and
 `[DIR-VIEW]` candidates. Selecting a lineage node opens that candidate, and its
 display name can be edited without changing its stable `@diagram/` handle.
-The standalone left-hand `Files` panel is a lazy, read-only explorer for the
-active DiagramSet checkout. It opens on `ALL FILES`; `DIAGRAM FILES` filters
-that same live tree to paths referenced by the active artifact's resolved,
-active-project CodeEntities. Foreign-project dependencies and paths absent from
+The standalone left-hand `Diagram Files` tab is a read-only tree of paths
+referenced by the active artifact's resolved, active-project CodeEntities.
+Foreign-project dependencies and paths absent from
 the current checkout are reported as unavailable rather than being mistaken
-for local files.
+for local files. Associated files carry a clickable `[n]` CodeEntity count;
+expanding it shows the entity handles, while clicking either a filename or an
+entity opens the corresponding source context in the right-hand Code Entities
+panel.
 The center-pane Diagram, Call Graph, and Dir View tabs open the starred candidate
 for their category. Each category has one independent star; a category with no
 star renders an explicit empty state instead of silently selecting a candidate.

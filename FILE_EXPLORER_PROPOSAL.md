@@ -81,6 +81,14 @@ Behavior:
    with the original path as a deterministic tie-breaker.
 7. Show loading and per-directory retry states. A failed folder must not blank
    already loaded siblings or valid matches from other directories.
+8. Prefix every live file associated with the active artifact with `[n]`, where
+   `n` is the number of distinct applicable CodeEntities that reference that
+   path. Clicking `[n]` expands or collapses those entities beneath the file.
+9. Clicking an associated filename reveals its first CodeEntity in the
+   right-hand `Code Entities` pane. Clicking an expanded `@entity/handle` row
+   reveals that specific entity and the first source range associated with that
+   file. This must activate and focus the Code Entities pane even when another
+   context or call-graph-focus tab is currently open.
 
 The file tree should share the lineage tree's colors and ASCII connector
 grammar, but it should not render the lineage tree's separate 8px bridge rows.
@@ -187,6 +195,9 @@ Algorithm:
 3. Flatten the applicable `sourceRanges[].path` values. Normalize separators to
    `/`, reject paths that are not repository-relative, dedupe by complete path,
    and sort deterministically.
+   Preserve a path-to-CodeEntity association list in artifact `codeEntityIds`
+   order. Deduplicate repeated ranges from the same entity and path, retaining
+   the first matching `sourceRangeIndex` for reveal navigation.
 4. Intersect those candidates with immediate live directory listings from the
    active `sourceCheckoutRoot`. Group candidates by parent directory so each
    parent is requested once and shares the normal explorer cache.
@@ -221,6 +232,10 @@ Algorithm:
   and the active Diagram or DiagramComponent.
 - Keep mode, one shared expansion state, loaded child listings, focus, loading,
   and error state local to the panel. Both modes consume the same listing cache.
+- Keep a separate expanded-file set for CodeEntity children. File and entity
+  rows participate in the same roving keyboard order; Enter reveals a file's
+  first entity, Space toggles children, and expanded entity rows can be
+  activated directly.
 - Abort or ignore stale requests when the set changes or a directory is
   collapsed while loading.
 - Render one flattened list of currently visible nodes; this simplifies
@@ -264,6 +279,9 @@ Algorithm:
   - it remains an `ALL FILES` repository explorer when no artifact is active;
   - `ALL FILES` is the default and includes unrelated live repository files;
   - `DIAGRAM FILES` filters that tree to the fake entity's `fixture.ts` path;
+  - `fixture.ts` has a clickable `[1]` prefix;
+  - clicking the filename or its expanded entity activates the right-hand Code
+    Entities pane and reveals the expected entity;
   - `ALL FILES` loads root entries and expands folders lazily;
   - the `ALL FILES` expansion state survives filter toggling;
   - keyboard expansion and navigation update ARIA state/focus;
@@ -285,6 +303,9 @@ Algorithm:
   not expose or traverse Git/Diagram metadata or paths outside the checkout.
 - Both modes use the same ASCII-tree vocabulary and theme as the Diagram
   lineage view.
+- Associated files display a clickable `[n]` count, can expand all distinct
+  CodeEntities for that path, and link both filenames and entity rows to the
+  correct right-hand source context.
 - Toggling modes is immediate after a directory has loaded and preserves each
   mode's expansion state.
 - The tree is keyboard-accessible and reports its hierarchy/expansion through
