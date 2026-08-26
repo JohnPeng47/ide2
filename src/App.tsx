@@ -34,7 +34,7 @@ import {
 import { CallGraphFocusTree } from "./call-graph-tree/CallGraphFocusTree";
 import type { CallGraphFocusRequest, CallGraphFocusResult } from "./callGraphFocus";
 import { DiagramContextPanel, type ContextTab } from "./components/DiagramContextPanel";
-import { DiagramSetPicker } from "./components/DiagramSetPicker";
+import { DiagramSetTreePanel } from "./components/DiagramSetTreePanel";
 import type { CodeEntityReveal } from "./components/CodeEntitiesPanel";
 import { DIAGRAM_VIEW_OPTIONS, DiagramView, EmptyDiagramView } from "./components/DiagramView";
 import { FileExplorerPanel } from "./components/FileExplorerPanel";
@@ -140,9 +140,12 @@ function createStudioPaneApi(): PaneApi {
     );
     return new PaneApi(addPane(withoutLegacyFilesTab, {
       id: FILES_PANE_ID,
-      ariaLabel: "Repository files",
+      ariaLabel: "Diagram navigation",
       tabListClassName: "file-pane-tabs",
-      tabs: [{ id: "files", label: "Files", domId: "files-tab" }]
+      tabs: [
+        { id: "files", label: "Diagram Files", domId: "files-tab" },
+        { id: "diagram-sets", label: "Diagram Sets", domId: "diagram-sets-tab" }
+      ]
     }, PRIMARY_PANE_ID, { placement: "left", ratio: 0.32, splitId: FILES_SPLIT_ID }));
   }
   const storedPercent = Number(window.localStorage.getItem(LEGACY_SPLIT_STORAGE_KEY));
@@ -166,9 +169,12 @@ function createStudioPaneApi(): PaneApi {
   }, PRIMARY_PANE_ID, { placement: "right", ratio, splitId: ROOT_SPLIT_ID });
   return new PaneApi(addPane(withContext, {
     id: FILES_PANE_ID,
-    ariaLabel: "Repository files",
+    ariaLabel: "Diagram navigation",
     tabListClassName: "file-pane-tabs",
-    tabs: [{ id: "files", label: "Files", domId: "files-tab" }]
+    tabs: [
+      { id: "files", label: "Diagram Files", domId: "files-tab" },
+      { id: "diagram-sets", label: "Diagram Sets", domId: "diagram-sets-tab" }
+    ]
   }, PRIMARY_PANE_ID, { placement: "left", ratio: 0.32, splitId: FILES_SPLIT_ID }));
 }
 
@@ -233,6 +239,7 @@ function StudioPage(props: { onExperiments: () => void }) {
   const [starBusy, setStarBusy] = useState(false);
   const [callGraphFocusViews, setCallGraphFocusViews] = useState<Record<string, CallGraphFocusResult>>({});
   const [codeEntityReveal, setCodeEntityReveal] = useState<CodeEntityReveal | undefined>();
+  const requestedDiagramIdRef = useRef<string | null>(null);
   const revealRequestId = useRef(0);
   const editQueue = useRef<Promise<void>>(Promise.resolve());
   const editShortcutHandlers = useRef({ undo: () => {}, redo: () => {} });
@@ -465,9 +472,11 @@ function StudioPage(props: { onExperiments: () => void }) {
     paneApi.setTabs(PRIMARY_PANE_ID, primaryTabs, screen === "generation"
       ? "generate"
       : screen === "diagram-component" ? "component" : activeViewKind);
+    const currentFilesTabId = paneApi.getState().panes[FILES_PANE_ID]?.activeTabId;
     paneApi.setTabs(FILES_PANE_ID, [
-      { id: "files", label: "Files", domId: "files-tab" }
-    ], "files");
+      { id: "files", label: "Diagram Files", domId: "files-tab" },
+      { id: "diagram-sets", label: "Diagram Sets", domId: "diagram-sets-tab" }
+    ], currentFilesTabId === "diagram-sets" ? "diagram-sets" : "files");
     paneApi.setTabs(CONTEXT_PANE_ID, contextTabs, desiredContextTabId);
   }, [
     activeViewKind,
@@ -545,7 +554,16 @@ function StudioPage(props: { onExperiments: () => void }) {
       const diagram = workspace?.diagrams[id];
       return diagram && diagram.viewKind === "diagram" && !isDiagramArchived(diagram);
     });
-    if (activeSet.readiness === "ready" && activeDiagramIds.length > 0) {
+    const requestedDiagramId = requestedDiagramIdRef.current;
+    const requestedDiagram = requestedDiagramId && activeSet.diagramIds.includes(requestedDiagramId)
+      ? workspace?.diagrams[requestedDiagramId]
+      : undefined;
+    requestedDiagramIdRef.current = null;
+    if (activeSet.readiness === "ready" && requestedDiagram && !isDiagramArchived(requestedDiagram)) {
+      setActiveViewKind(requestedDiagram.viewKind);
+      setActiveDiagramId(requestedDiagram.id);
+      setScreen("diagram");
+    } else if (activeSet.readiness === "ready" && activeDiagramIds.length > 0) {
       setActiveViewKind("diagram");
       setActiveDiagramId(activeSet.featuredViewIds.diagram ?? activeDiagramIds.at(-1) ?? null);
       setScreen("diagram");
@@ -1058,6 +1076,20 @@ function StudioPage(props: { onExperiments: () => void }) {
     setScreen("diagram");
   };
 
+  const selectDiagramSet = (setId: string) => {
+    requestedDiagramIdRef.current = null;
+    setActiveSetId(setId);
+  };
+
+  const selectDiagramFromSet = (setId: string, diagramId: string) => {
+    if (setId === activeSet.id) {
+      selectDiagram(diagramId);
+      return;
+    }
+    requestedDiagramIdRef.current = diagramId;
+    setActiveSetId(setId);
+  };
+
   const selectViewKind = (viewKind: DiagramViewKind) => {
     setActiveViewKind(viewKind);
     setActiveDiagramId(activeSet.featuredViewIds[viewKind] ?? null);
@@ -1303,12 +1335,15 @@ function StudioPage(props: { onExperiments: () => void }) {
     }
   };
 
-  const revealCodeEntity = (mapping: DiagramElementMapping) => {
+  const revealCodeEntity = (
+    target: Pick<DiagramElementMapping, "entityId" | "sourceRangeIndex">
+  ) => {
     revealRequestId.current += 1;
     setContextTab("code-entities");
+    paneApi.activateTab(CONTEXT_PANE_ID, "code-entities");
     setCodeEntityReveal({
-      entityId: mapping.entityId,
-      sourceRangeIndex: mapping.sourceRangeIndex,
+      entityId: target.entityId,
+      sourceRangeIndex: target.sourceRangeIndex,
       requestId: revealRequestId.current
     });
   };
@@ -1488,6 +1523,16 @@ function StudioPage(props: { onExperiments: () => void }) {
       activeProjectId={activeSet.projectId}
       codeEntities={resolutionEntities}
       artifact={contextArtifact ?? undefined}
+      onRevealCodeEntity={revealCodeEntity}
+    /> },
+    "diagram-sets": { content: <DiagramSetTreePanel
+      diagramSets={workspace.diagramSets}
+      diagrams={workspace.diagrams}
+      activeSetId={activeSet.id}
+      activeDiagramId={activeDiagramId ?? undefined}
+      onSelectSet={selectDiagramSet}
+      onSelectDiagram={selectDiagramFromSet}
+      onDeleteSet={removeDiagramSet}
     /> },
     diagrams: { content: renderContextPane("diagrams"), onActivate: () => setContextTab("diagrams") },
     operations: { content: renderContextPane("operations"), onActivate: () => setContextTab("operations") },
@@ -1501,12 +1546,6 @@ function StudioPage(props: { onExperiments: () => void }) {
           <span className="brand-mark">ND</span>
           <div><h1>NEW DIAGRAM</h1><p>{workspace.project.name}</p></div>
         </div>
-        <DiagramSetPicker
-          diagramSets={workspace.diagramSets}
-          activeSetId={activeSet.id}
-          onSelect={setActiveSetId}
-          onDelete={removeDiagramSet}
-        />
         <nav className="screen-tabs" aria-label="Workspace screens">
           <button
             type="button"

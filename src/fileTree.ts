@@ -8,9 +8,17 @@ import type {
 
 export interface DiagramFileFilter {
   paths: string[];
+  entitiesByPath: Record<string, DiagramFileEntityReference[]>;
   unresolvedEntityIds: string[];
   foreignEntityIds: string[];
   invalidPaths: string[];
+}
+
+export interface DiagramFileEntityReference {
+  entityId: string;
+  handle: string;
+  label: string;
+  sourceRangeIndex: number;
 }
 
 export interface FileTreeNode extends RepositoryEntry {
@@ -51,6 +59,7 @@ export function diagramFileFilter(
 ): DiagramFileFilter {
   const byId = new Map(codeEntities.map((entity) => [entity.id, entity]));
   const paths = new Set<string>();
+  const entitiesByPath = new Map<string, DiagramFileEntityReference[]>();
   const unresolvedEntityIds: string[] = [];
   const foreignEntityIds: string[] = [];
   const invalidPaths: string[] = [];
@@ -64,14 +73,30 @@ export function diagramFileFilter(
       foreignEntityIds.push(entityId);
       continue;
     }
-    for (const range of entity.sourceRanges) {
+    for (const [sourceRangeIndex, range] of entity.sourceRanges.entries()) {
       const path = normalizeRepositoryPath(range.path);
-      if (path) paths.add(path);
-      else invalidPaths.push(range.path);
+      if (!path) {
+        invalidPaths.push(range.path);
+        continue;
+      }
+      paths.add(path);
+      const references = entitiesByPath.get(path) ?? [];
+      if (!references.some((reference) => reference.entityId === entity.id)) {
+        references.push({
+          entityId: entity.id,
+          handle: entity.handle,
+          label: entity.label,
+          sourceRangeIndex
+        });
+        entitiesByPath.set(path, references);
+      }
     }
   }
   return {
     paths: [...paths].sort((left, right) => left.localeCompare(right)),
+    entitiesByPath: Object.fromEntries(
+      [...entitiesByPath.entries()].sort(([left], [right]) => left.localeCompare(right))
+    ),
     unresolvedEntityIds,
     foreignEntityIds,
     invalidPaths

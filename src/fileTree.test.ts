@@ -57,10 +57,28 @@ describe("file tree", () => {
   it("derives filter candidates from local and same-project global identities", () => {
     const result = diagramFileFilter(artifact, [
       entity("entity-local", "project-a", "set-a", ["src/worker.ts", "src/worker.ts"]),
-      entity("entity-same-project", "project-a", "set-b", ["docs/design.md"]),
+      entity("entity-same-project", "project-a", "set-b", ["docs/design.md", "src/worker.ts"]),
       entity("entity-foreign", "project-b", "set-c", ["src/worker.ts"])
     ], "project-a");
     expect(result.paths).toEqual(["docs/design.md", "src/worker.ts"]);
+    expect(result.entitiesByPath["src/worker.ts"]).toEqual([
+      {
+        entityId: "entity-local",
+        handle: "entity-local",
+        label: "entity-local",
+        sourceRangeIndex: 0
+      },
+      {
+        entityId: "entity-same-project",
+        handle: "entity-same-project",
+        label: "entity-same-project",
+        sourceRangeIndex: 1
+      }
+    ]);
+    expect(result.entitiesByPath["docs/design.md"]).toEqual([expect.objectContaining({
+      entityId: "entity-same-project",
+      sourceRangeIndex: 0
+    })]);
     expect(result.foreignEntityIds).toEqual(["entity-foreign"]);
     expect(result.unresolvedEntityIds).toEqual(["entity-missing"]);
   });

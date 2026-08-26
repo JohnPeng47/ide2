@@ -232,7 +232,7 @@ const promptSettingsScreenshotPath = path.join(fixtureRoot, "system-prompt-setti
 const codeEntityPromptSettingsScreenshotPath = path.join(fixtureRoot, "code-entity-prompt-settings.png");
 const mappingScreenshotPath = path.join(fixtureRoot, "code-entity-mapping.png");
 const selectRectScreenshotPath = path.join(fixtureRoot, "select-rect.png");
-const setPickerScreenshotPath = path.join(fixtureRoot, "diagram-set-picker.png");
+const setTreeScreenshotPath = path.join(fixtureRoot, "diagram-set-tree.png");
 const starredDiagramScreenshotPath = path.join(fixtureRoot, "starred-diagram.png");
 const fileExplorerScreenshotPath = path.join(fixtureRoot, "file-explorer.png");
 let archivedArtifactPath = "";
@@ -385,61 +385,72 @@ try {
       || fileExplorerLayout.filesTabInContext) {
       throw new Error(`file explorer was not a standalone left panel: ${JSON.stringify(fileExplorerLayout)}`);
     }
-    await waitFor(async () => (
-      await evaluate(cdp, `document.querySelectorAll('.file-tree-row').length`)
-    ) === 38, { message: "default file explorer did not show the complete repository root" });
-    const initialFileExplorerState = await evaluate(cdp, `(() => {
-      const activeMode = document.querySelector('.file-explorer__mode-bar button.is-active');
-      const paths = Array.from(document.querySelectorAll('.file-tree-row'), (row) => row.dataset.path);
-      const scroller = document.querySelector('.file-tree-scroller');
-      const bounds = scroller.getBoundingClientRect();
-      const style = getComputedStyle(scroller);
-      const top = bounds.top + parseFloat(style.paddingTop);
-      const bottom = bounds.bottom - parseFloat(style.paddingBottom);
-      const fullyVisible = Array.from(document.querySelectorAll('.file-tree-row')).filter((row) => {
-        const rowBounds = row.getBoundingClientRect();
-        return rowBounds.top >= top - 0.5 && rowBounds.bottom <= bottom + 0.5;
-      }).length;
-      return {
-        activeMode: activeMode?.textContent.trim() ?? '',
-        paths,
-        fullyVisible,
-        scrollHeight: scroller.scrollHeight,
-        clientHeight: scroller.clientHeight
-      };
-    })()`);
-    if (initialFileExplorerState.activeMode !== "ALL FILES"
-      || initialFileExplorerState.paths.includes(".git")
-      || initialFileExplorerState.paths.includes(".diagrams")
-      || initialFileExplorerState.fullyVisible !== 34
-      || initialFileExplorerState.scrollHeight <= initialFileExplorerState.clientHeight) {
-      throw new Error(`file explorer default or density was incorrect: ${JSON.stringify(initialFileExplorerState)}`);
-    }
-    await pointerClick(cdp, '.file-tree-row[data-path="src"]');
-    await waitForSelector(cdp, '.file-tree-row[data-path="src/nested"]');
-    await pressKey(cdp, "ArrowLeft", "ArrowLeft", 37);
-    await waitFor(async () => (
-      await evaluate(cdp, `document.querySelector('.file-tree-row[data-path="src"]').getAttribute('aria-expanded')`)
-    ) === "false", { message: "ArrowLeft did not collapse the repository directory" });
-    await pressKey(cdp, "ArrowRight", "ArrowRight", 39);
-    await waitForSelector(cdp, '.file-tree-row[data-path="src/nested"]');
-    await pressKey(cdp, "ArrowRight", "ArrowRight", 39);
-    await waitFor(async () => (
-      await evaluate(cdp, `document.activeElement?.dataset.path`)
-    ) === "src/nested", { message: "ArrowRight did not move focus into the expanded directory" });
-    await pointerClick(cdp, ".file-explorer__mode-bar button:nth-child(2)");
     await waitFor(async () => await evaluate(cdp, `(() => {
       const rows = Array.from(document.querySelectorAll('.file-tree-row'));
-      return document.querySelector('.file-explorer__mode-bar button:nth-child(2)').getAttribute('aria-pressed') === 'true'
+      return document.querySelector('#files-tab')?.getAttribute('aria-selected') === 'true'
         && rows.length === 1
         && rows[0].dataset.path === 'fixture.ts';
-    })()`), { message: "CodeEntity filter did not reduce the live tree to fixture.ts" });
-    await captureScreenshot(cdp, { output: fileExplorerScreenshotPath });
-    await pointerClick(cdp, ".file-explorer__mode-bar button:nth-child(1)");
+    })()`), { message: "default file explorer did not show only the active Diagram files" });
+    const initialFileExplorerState = await evaluate(cdp, `(() => {
+      const paths = Array.from(document.querySelectorAll('.file-tree-row'), (row) => row.dataset.path);
+      return {
+        heading: document.querySelector('.file-explorer__mode-bar strong')?.textContent.trim() ?? '',
+        paths,
+        hasModeButtons: Boolean(document.querySelector('.file-explorer__mode-bar button')),
+        headerPicker: Boolean(document.querySelector('.studio-header .set-picker'))
+      };
+    })()`);
+    if (initialFileExplorerState.heading !== "DIAGRAM FILES"
+      || initialFileExplorerState.hasModeButtons
+      || initialFileExplorerState.headerPicker
+      || initialFileExplorerState.paths.join(",") !== "fixture.ts") {
+      throw new Error(`file explorer default or density was incorrect: ${JSON.stringify(initialFileExplorerState)}`);
+    }
+    const diagramFileEntityId = await evaluate(cdp, `(async () => {
+      const workspace = await fetch('/api/workspace').then((response) => response.json());
+      const set = workspace.diagramSets[0];
+      const diagram = set.diagramIds.map((id) => workspace.diagrams[id])
+        .find((candidate) => candidate?.viewKind === 'diagram');
+      return diagram.codeEntityIds[0];
+    })()`);
+    const entityCountPrefix = await evaluate(cdp, `document.querySelector(
+      '.file-tree-row[data-path="fixture.ts"] .file-tree-entity-toggle'
+    )?.textContent`);
+    if (entityCountPrefix !== "[1]") {
+      throw new Error(`diagram file entity prefix was ${JSON.stringify(entityCountPrefix)}`);
+    }
+    await pointerClick(cdp, "#diagrams-tab");
+    await waitForSelector(cdp, ".diagram-lineage-panel");
+    await pointerClick(cdp, '.file-tree-row[data-path="fixture.ts"] .file-tree-row__name-button');
     await waitFor(async () => await evaluate(cdp, `(
-      document.querySelector('.file-tree-row[data-path="src"]')?.getAttribute('aria-expanded') === 'true'
-      && Boolean(document.querySelector('.file-tree-row[data-path="src/nested"]'))
-    )`), { message: "ALL FILES expansion state was not restored after filtering" });
+      document.querySelector('#code-entities-tab')?.getAttribute('aria-selected') === 'true'
+      && document.querySelector('[data-pane-id="context"]')?.classList.contains('is-focused')
+      && document.querySelector('.source-workspace')?.dataset.activeEntityId === ${JSON.stringify(diagramFileEntityId)}
+    )`), { message: "file name did not reveal its first CodeEntity in the right pane" });
+    await pointerClick(cdp, '.file-tree-row[data-path="fixture.ts"] .file-tree-entity-toggle');
+    await waitForSelector(cdp, `.file-tree-entity-row[data-entity-id="${diagramFileEntityId}"]`);
+    await pointerClick(cdp, "#diagrams-tab");
+    await waitForSelector(cdp, ".diagram-lineage-panel");
+    await pointerClick(cdp, `.file-tree-entity-row[data-entity-id="${diagramFileEntityId}"]`);
+    await waitFor(async () => await evaluate(cdp, `(
+      document.querySelector('#code-entities-tab')?.getAttribute('aria-selected') === 'true'
+      && document.querySelector('[data-pane-id="context"]')?.classList.contains('is-focused')
+      && document.querySelector('.source-workspace')?.dataset.activeEntityId === ${JSON.stringify(diagramFileEntityId)}
+    )`), { message: "file entity row did not reveal its CodeEntity in the right pane" });
+    await captureScreenshot(cdp, { output: fileExplorerScreenshotPath });
+    await pointerClick(cdp, "#diagram-sets-tab");
+    await waitForSelector(cdp, ".diagram-set-tree-panel");
+    const setTreeState = await evaluate(cdp, `({
+      sets: document.querySelectorAll('.diagram-set-tree-set').length,
+      diagrams: document.querySelectorAll('.diagram-set-tree-diagram').length,
+      stars: document.querySelectorAll('.diagram-set-tree-star.is-starred').length,
+      selectedTab: document.querySelector('#diagram-sets-tab')?.getAttribute('aria-selected')
+    })`);
+    if (setTreeState.sets !== 1
+      || setTreeState.diagrams !== initialDiagramCount
+      || setTreeState.selectedTab !== "true") {
+      throw new Error(`Diagram Set tree was incorrect: ${JSON.stringify(setTreeState)}`);
+    }
     await pointerClick(cdp, ".screen-tabs button:nth-child(2)");
     try {
       await waitForSelector(cdp, "#diagram-prompt");
@@ -884,6 +895,13 @@ try {
       })()`);
       throw new Error(`${error.message}: ${JSON.stringify(state)}`);
     }
+    await pointerClick(cdp, "#diagram-sets-tab");
+    await waitFor(async () => await evaluate(cdp, `(
+      document.querySelector('[data-set-diagram-id="${selection.id}"] .diagram-set-tree-star')
+        ?.textContent.trim() === '★'
+      && document.querySelector('[data-set-diagram-id="${selection.id}"] .diagram-set-tree-star')
+        ?.classList.contains('is-starred')
+    )`), { message: "starred diagram was not visibly marked in the Diagram Set tree" });
     await captureScreenshot(cdp, { output: starredDiagramScreenshotPath });
     await pointerHover(cdp, `[data-diagram-id="${selection.id}"]`);
     await pointerClick(cdp, `[data-diagram-id="${selection.id}"] .diagram-tree-prompt`);
@@ -1607,25 +1625,25 @@ try {
     await waitFor(async () => await evaluate(cdp, `Boolean(
       document.querySelector('[data-imports-branch] [data-diagram-id="${importedDiagramState.id}"]')
     )`), { message: "global import was not visible from the second Diagram Set" });
-    await pointerClick(cdp, ".set-picker__trigger");
+    await pointerClick(cdp, "#diagram-sets-tab");
     await waitFor(async () => (
-      await evaluate(cdp, `document.querySelectorAll('.set-picker__option').length`)
-    ) === 2, { message: "Diagram Set picker did not render both sets" });
+      await evaluate(cdp, `document.querySelectorAll('.diagram-set-tree-set').length`)
+    ) === 2, { message: "Diagram Set tree did not render both sets" });
     const deleteLabels = await evaluate(cdp, `Array.from(
-      document.querySelectorAll('.set-picker__delete'),
+      document.querySelectorAll('.diagram-set-tree-delete'),
       (button) => button.textContent
     )`);
     if (deleteLabels.some((label) => label !== "[x]")) {
       throw new Error(`Diagram Set delete controls were incomplete: ${JSON.stringify(deleteLabels)}`);
     }
-    await captureScreenshot(cdp, { output: setPickerScreenshotPath });
+    await captureScreenshot(cdp, { output: setTreeScreenshotPath });
     const confirmation = new Promise((resolve) => {
       const unsubscribe = cdp.on("Page.javascriptDialogOpening", (details) => {
         unsubscribe();
         resolve(details);
       });
     });
-    const deleteClick = pointerClick(cdp, ".set-picker__option.is-active .set-picker__delete");
+    const deleteClick = pointerClick(cdp, ".diagram-set-tree-set.is-current .diagram-set-tree-delete");
     const confirmationDetails = await confirmation;
     if (!confirmationDetails.message.includes("moved to .diagrams/trash")) {
       throw new Error(`delete confirmation omitted recovery details: ${confirmationDetails.message}`);
@@ -1664,8 +1682,8 @@ try {
   if (mappingScreenshot.length < 1000) throw new Error("code-entity mapping screenshot was unexpectedly small");
   const selectRectScreenshot = await readFile(selectRectScreenshotPath);
   if (selectRectScreenshot.length < 1000) throw new Error("rectangle selection screenshot was unexpectedly small");
-  const setPickerScreenshot = await readFile(setPickerScreenshotPath);
-  if (setPickerScreenshot.length < 1000) throw new Error("Diagram Set picker screenshot was unexpectedly small");
+  const setTreeScreenshot = await readFile(setTreeScreenshotPath);
+  if (setTreeScreenshot.length < 1000) throw new Error("Diagram Set tree screenshot was unexpectedly small");
   const starredDiagramScreenshot = await readFile(starredDiagramScreenshotPath);
   if (starredDiagramScreenshot.length < 1000) {
     throw new Error("starred diagram screenshot was unexpectedly small");
