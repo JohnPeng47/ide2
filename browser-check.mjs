@@ -229,16 +229,21 @@ const importScreenshotPath = path.join(fixtureRoot, "import-dialog.png");
 const generationScreenshotPath = path.join(fixtureRoot, "generation-model.png");
 const derivativeScreenshotPath = path.join(fixtureRoot, "derivative-references.png");
 const promptSettingsScreenshotPath = path.join(fixtureRoot, "system-prompt-settings.png");
+const referencePromptSettingsScreenshotPath = path.join(fixtureRoot, "reference-prompt-settings.png");
+const variableDefinitionsScreenshotPath = path.join(fixtureRoot, "prompt-variable-definitions.png");
+const importedSystemReferenceScreenshotPath = path.join(fixtureRoot, "imported-system-reference.png");
 const codeEntityPromptSettingsScreenshotPath = path.join(fixtureRoot, "code-entity-prompt-settings.png");
 const mappingScreenshotPath = path.join(fixtureRoot, "code-entity-mapping.png");
 const selectRectScreenshotPath = path.join(fixtureRoot, "select-rect.png");
 const setTreeScreenshotPath = path.join(fixtureRoot, "diagram-set-tree.png");
 const starredDiagramScreenshotPath = path.join(fixtureRoot, "starred-diagram.png");
+const candidateFeedbackScreenshotPath = path.join(fixtureRoot, "candidate-feedback.png");
 const fileExplorerScreenshotPath = path.join(fixtureRoot, "file-explorer.png");
 let archivedArtifactPath = "";
 let archivedComponentArtifactPath = "";
 let importedArtifactPath = "";
 let importedComponentArtifactPath = "";
+let rankedCandidateBatchPath = "";
 let deletedSetId = "";
 let serverProcess;
 try {
@@ -476,6 +481,45 @@ try {
     await pointerClick(cdp, ".mention-menu [role=option]");
     const prompt = await evaluate(cdp, `document.querySelector('#diagram-prompt').value`);
     if (!prompt.includes("@entity/")) throw new Error("mention selection did not insert a typed entity reference");
+    await pointerClick(cdp, "#diagram-prompt");
+    await controlKey(cdp, "End", "End", 35);
+    await cdp.send("Input.insertText", { text: " undo-main" });
+    await controlKey(cdp, "z", "KeyZ", 90);
+    await waitFor(async () => (
+      await evaluate(cdp, `document.querySelector('#diagram-prompt').value`)
+    ) === prompt, { message: "Ctrl+Z did not use native generation textarea history" });
+    await replaceText(cdp, "#diagram-reference-prompt", "Use the visual style of @");
+    await waitForSelector(cdp, '[aria-label="Reference follow-up prompt references"] [role=option]');
+    const referenceDiagramOptionIndex = await evaluate(cdp, `Array.from(document.querySelectorAll(
+      '[aria-label="Reference follow-up prompt references"] [role=option] code'
+    )).findIndex((node) => node.textContent.startsWith('@diagram/'))`);
+    if (referenceDiagramOptionIndex < 0) {
+      throw new Error("reference follow-up autocomplete did not offer a diagram");
+    }
+    await pointerClick(
+      cdp,
+      `[aria-label="Reference follow-up prompt references"] [role=option]:nth-child(${referenceDiagramOptionIndex + 1})`
+    );
+    await waitForSelector(cdp, '[aria-label="Reference follow-up diagrams"] input[type="checkbox"]');
+    const referencePromptState = await evaluate(cdp, `({
+      prompt: document.querySelector('#diagram-reference-prompt').value,
+      reference: document.querySelector('[aria-label="Reference follow-up diagrams"] code').textContent,
+      included: document.querySelector('[aria-label="Reference follow-up diagrams"] input').checked
+    })`);
+    if (!referencePromptState.prompt.includes("@diagram/")
+      || referencePromptState.reference !== referencePromptState.prompt.match(/@diagram\/[a-z0-9-]+/i)?.[0]
+      || !referencePromptState.included) {
+      throw new Error(`reference follow-up selection was incomplete: ${JSON.stringify(referencePromptState)}`);
+    }
+    await pointerClick(cdp, "#diagram-reference-prompt");
+    await controlKey(cdp, "End", "End", 35);
+    await cdp.send("Input.insertText", { text: " undo-reference" });
+    await controlKey(cdp, "z", "KeyZ", 90);
+    await waitFor(async () => (
+      await evaluate(cdp, `document.querySelector('#diagram-reference-prompt').value`)
+    ) === referencePromptState.prompt, {
+      message: "Ctrl+Z did not use native reference textarea history"
+    });
     const count = await evaluate(cdp, `document.querySelector('.counter output').textContent`);
     if (count !== "3") throw new Error(`expected default count 3, got ${count}`);
     await selectLastOption(cdp, "#generation-model");
@@ -493,10 +537,54 @@ try {
     const compactTemplate = await evaluate(cdp, `document.querySelector(
       '.prompt-template-editor textarea'
     ).value`);
+    await pointerClick(cdp, ".prompt-template-editor textarea");
+    await controlKey(cdp, "End", "End", 35);
+    await cdp.send("Input.insertText", { text: " undo-template" });
+    await controlKey(cdp, "z", "KeyZ", 90);
+    await waitFor(async () => (
+      await evaluate(cdp, `document.querySelector('.prompt-template-editor textarea').value`)
+    ) === compactTemplate, { message: "Ctrl+Z did not use native template textarea history" });
+    await pointerClick(cdp, '[aria-label="Prompt view"] button:nth-child(3)');
+    await waitForSelector(cdp, '[aria-label="Template variable definitions"]');
+    const outputKindOverride = '[aria-label="outputKind variable override"]';
+    await replaceText(cdp, outputKindOverride, "ARCHITECTURE MAP");
+    await controlKey(cdp, "z", "KeyZ", 90);
+    await waitFor(async () => (
+      await evaluate(cdp, `document.querySelector(${JSON.stringify(outputKindOverride)}).value`)
+    ) === "", { message: "Ctrl+Z did not use native variable textarea history" });
+    await replaceText(cdp, outputKindOverride, "ARCHITECTURE MAP");
+    await captureScreenshot(cdp, { output: variableDefinitionsScreenshotPath });
+    await pointerClick(cdp, '[aria-label="Generation prompt phase"] button:nth-child(2)');
+    await waitFor(async () => await evaluate(cdp, `(() => (
+      document.querySelectorAll('[aria-label="Template variable definitions"] label').length === 4
+      && document.querySelector('[aria-label="referenceInstruction variable override"]')
+        ?.placeholder.includes('@diagram/reference')
+    ))()`), { message: "reference runtime variables were not visible in the variables view" });
+    await pointerClick(cdp, '[aria-label="Generation prompt phase"] button:nth-child(1)');
+    await pointerClick(cdp, '[aria-label="Prompt view"] button:nth-child(1)');
+    await pointerClick(cdp, '[aria-label="Generation prompt phase"] button:nth-child(2)');
+    await waitFor(async () => (
+      await evaluate(cdp, `document.querySelector('.prompt-template-editor textarea').value`)
+    ).includes("{{referenceContext}}"), {
+      message: "reference follow-up prompt template did not become active"
+    });
+    const referenceTemplate = await evaluate(cdp, `document.querySelector(
+      '.prompt-template-editor textarea'
+    ).value`);
     await replaceText(
       cdp,
       ".prompt-template-editor textarea",
-      `${compactTemplate} Browser-persisted-template.`
+      `${referenceTemplate}\nBrowser-reference-template.`
+    );
+    await captureScreenshot(cdp, { output: referencePromptSettingsScreenshotPath });
+    await pointerClick(cdp, '[aria-label="Generation prompt phase"] button:nth-child(1)');
+    await waitFor(async () => (
+      await evaluate(cdp, `document.querySelector('.prompt-template-editor textarea').value`)
+    ) === compactTemplate, { message: "system prompt template did not return after phase switch" });
+    await replaceText(
+      cdp,
+      ".prompt-template-editor textarea",
+      `${compactTemplate} Browser-persisted-template {{outputKind}}.`
     );
     await captureScreenshot(cdp, { output: promptSettingsScreenshotPath });
     await pointerClick(cdp, '.prompt-settings-dialog button[type="submit"]');
@@ -508,7 +596,9 @@ try {
       return workspace.systemPromptTemplates.compact;
     })()`);
     if (savedTemplate?.version !== 2
-      || !savedTemplate?.prompts?.diagram?.includes("Browser-persisted-template.")) {
+      || !savedTemplate?.prompts?.diagram?.includes("Browser-persisted-template {{outputKind}}.")
+      || !savedTemplate?.referencePrompts?.diagram?.includes("Browser-reference-template.")
+      || savedTemplate?.variableOverrides?.diagram?.outputKind !== "ARCHITECTURE MAP") {
       throw new Error(`edited prompt template was not persisted: ${JSON.stringify(savedTemplate)}`);
     }
     await pointerClick(cdp, '[aria-label="Prompt family"] button:nth-child(2)');
@@ -577,6 +667,9 @@ try {
     await waitForSelector(cdp, ".diagram-panel", { timeoutMs: 10000 });
     await pointerClick(cdp, ".screen-tabs button:nth-child(2)");
     await waitForSelector(cdp, "#generation-prompt-profile");
+    await waitFor(async () => (
+      await evaluate(cdp, `document.querySelector('#diagram-reference-prompt').value`)
+    ).includes("@diagram/"), { message: "reference follow-up draft did not survive reload" });
     await selectLastOption(cdp, "#generation-model");
     await selectLastOption(cdp, "#generation-prompt-profile");
     await pointerClick(cdp, "#diagram-prompt");
@@ -596,7 +689,14 @@ try {
     if (generatedPromptConfig?.modelId !== "gpt-5.6-sol"
       || generatedPromptConfig?.systemPrompt?.profileId !== "compact"
       || generatedPromptConfig?.systemPrompt?.profileVersion !== 2
-      || !generatedPromptConfig?.systemPrompt?.rendered.includes("Browser-persisted-template.")) {
+      || !generatedPromptConfig?.systemPrompt?.rendered.includes(
+        "Browser-persisted-template ARCHITECTURE MAP."
+      )
+      || !generatedPromptConfig?.referencePrompt?.instruction?.includes("@diagram/")
+      || !generatedPromptConfig?.referencePrompt?.rendered?.includes("Browser-reference-template.")
+      || !generatedPromptConfig?.referencePrompt?.references?.some(
+        (reference) => reference.kind === "diagram"
+      )) {
       throw new Error(`generation prompt config was incomplete: ${JSON.stringify(generatedPromptConfig)}`);
     }
     const oldStripExists = await evaluate(cdp, `Boolean(document.querySelector('.diagram-tabs'))`);
@@ -609,7 +709,29 @@ try {
     await waitFor(async () => (
       await evaluate(cdp, `document.querySelector('.ref-selection-status')?.textContent`)
     ) === "map code entities first", { message: "unmapped reference selection did not explain the required mapping" });
-    await pointerClick(cdp, ".map-code-entities");
+    const mappingCandidateDiagramIds = await evaluate(cdp, `(async () => {
+      const workspace = await fetch('/api/workspace').then((response) => response.json());
+      const set = workspace.diagramSets[0];
+      const generationBatch = workspace.generationBatches[set.generationBatchIds.at(-1)];
+      return workspace.diagramCandidateBatches[generationBatch.diagramCandidateBatchId]?.diagramIds ?? [];
+    })()`);
+    if (mappingCandidateDiagramIds.length !== 3) {
+      throw new Error(`mapping batch contained ${mappingCandidateDiagramIds.length} diagrams instead of 3`);
+    }
+    const mapAllLabel = await evaluate(cdp, `document.querySelector('.map-all-code-entities')?.textContent`);
+    if (!mapAllLabel?.includes("map all unmapped (3)")) {
+      throw new Error(`map-all action showed an unexpected label: ${JSON.stringify(mapAllLabel)}`);
+    }
+    await pointerClick(cdp, ".map-all-code-entities");
+    await waitFor(async () => await evaluate(cdp, `(async () => {
+      const workspace = await fetch('/api/workspace').then((response) => response.json());
+      return ${JSON.stringify(mappingCandidateDiagramIds)}.every((id) => Boolean(
+        workspace.codeEntityMaps[id]
+      ));
+    })()`), { timeoutMs: 10000, message: "map-all did not persist every candidate mapping" });
+    await waitFor(async () => !await evaluate(cdp, `Boolean(document.querySelector('.map-all-code-entities'))`), {
+      message: "map-all action remained after every candidate was mapped"
+    });
     await waitForSelector(cdp, ".mapped-element", { timeoutMs: 10000 });
     const characterNodeCount = await evaluate(cdp, `document.querySelectorAll('.ascii-char').length`);
     if (characterNodeCount !== 0) {
@@ -809,6 +931,67 @@ try {
     await waitFor(async () => (
       await evaluate(cdp, `document.querySelectorAll('.diagram-tree-diagram').length`)
     ) === 6, { timeoutMs: 10000, message: "lineage tree did not render six diagrams" });
+    const feedbackBatchId = await evaluate(cdp, `document.querySelector(
+      '[data-candidate-batch-id]'
+    )?.dataset.candidateBatchId ?? ''`);
+    if (!feedbackBatchId) throw new Error("lineage tree did not render a DiagramCandidateBatch");
+    await pointerHover(cdp, `[data-candidate-batch-id="${feedbackBatchId}"]`);
+    await waitFor(async () => (
+      await evaluate(cdp, `getComputedStyle(document.querySelector(
+        '[data-candidate-batch-id="${feedbackBatchId}"] .diagram-tree-feedback'
+      )).opacity`)
+    ) === "1", { message: "candidate feedback action did not appear on hover" });
+    await pointerClick(
+      cdp,
+      `[data-candidate-batch-id="${feedbackBatchId}"] .diagram-tree-feedback`
+    );
+    await waitForSelector(cdp, `.candidate-feedback-dialog[data-candidate-batch-id="${feedbackBatchId}"]`);
+    const feedbackInputCount = await evaluate(cdp, `document.querySelectorAll(
+      '.candidate-feedback-list input'
+    ).length`);
+    if (feedbackInputCount !== 3) {
+      throw new Error(`feedback modal offered ${feedbackInputCount} candidates instead of 3`);
+    }
+    await replaceText(cdp, ".candidate-feedback-list label:nth-child(1) input", "1");
+    await replaceText(cdp, ".candidate-feedback-list label:nth-child(2) input", "1");
+    await replaceText(cdp, ".candidate-feedback-list label:nth-child(3) input", "2");
+    await captureScreenshot(cdp, { output: candidateFeedbackScreenshotPath });
+    await pointerClick(cdp, '.candidate-feedback-dialog button[type="submit"]');
+    await waitFor(async () => !await evaluate(cdp, `Boolean(document.querySelector(
+      '.candidate-feedback-dialog'
+    ))`), { message: "candidate feedback modal did not close after save" });
+    const rankedCandidateState = await evaluate(cdp, `(async () => {
+      const workspace = await fetch('/api/workspace').then((response) => response.json());
+      const candidateBatch = workspace.diagramCandidateBatches['${feedbackBatchId}'];
+      const ranks = candidateBatch.diagramIds.map((diagramId) => ({
+        persisted: candidateBatch.rankings[diagramId],
+        rendered: document.querySelector('[data-diagram-id="' + diagramId + '"] .diagram-tree-rank')
+          ?.textContent.trim() ?? ''
+      }));
+      return {
+        setId: candidateBatch.diagramSetId,
+        status: document.querySelector(
+          '[data-candidate-batch-id="${feedbackBatchId}"] .diagram-tree-feedback-status'
+        )?.textContent.trim(),
+        ranks
+      };
+    })()`);
+    if (rankedCandidateState.status !== "[RANKED]"
+      || JSON.stringify(rankedCandidateState.ranks) !== JSON.stringify([
+        { persisted: 1, rendered: "[R1]" },
+        { persisted: 1, rendered: "[R1]" },
+        { persisted: 2, rendered: "[R2]" }
+      ])) {
+      throw new Error(`candidate feedback was not reflected in the tree: ${JSON.stringify(rankedCandidateState)}`);
+    }
+    rankedCandidateBatchPath = path.join(
+      fixtureRoot,
+      ".diagrams",
+      "diagram-sets",
+      rankedCandidateState.setId,
+      "diagram-candidate-batches",
+      `${feedbackBatchId}.json`
+    );
     await pointerClick(cdp, "[data-generation-batch-id] .diagram-tree-toggle");
     await waitFor(async () => (
       await evaluate(cdp, `document.querySelectorAll('.diagram-tree-diagram').length`)
@@ -1006,16 +1189,16 @@ try {
 
     await pointerClick(cdp, ".diagram-actions .create-derivative");
     await waitForSelector(cdp, "#diagram-prompt");
-    await waitForSelector(cdp, '.prompt-reference-controls input[type="checkbox"]');
+    await waitForSelector(cdp, '[aria-label="Referenced diagrams"] input[type="checkbox"]');
     const derivativePromptState = await evaluate(cdp, `({
       instruction: document.querySelector('#diagram-prompt').value,
       model: document.querySelector('#generation-model').value,
       profile: document.querySelector('#generation-prompt-profile').value,
       output: document.querySelector('.output-kind [aria-checked="true"]').textContent.trim(),
-      reference: document.querySelector('.prompt-reference-controls code').textContent,
-      included: document.querySelector('.prompt-reference-controls input').checked
+      reference: document.querySelector('[aria-label="Referenced diagrams"] code').textContent,
+      included: document.querySelector('[aria-label="Referenced diagrams"] input').checked
     })`);
-    if (!derivativePromptState.instruction.startsWith("---- PREVIOUS PROMPT ----")
+    if (!derivativePromptState.instruction.startsWith("---- PREVIOUS PROMPT 1 ----")
       || !derivativePromptState.instruction.includes("-------------------------")
       || !derivativePromptState.instruction.includes(stableHandle)
       || !derivativePromptState.instruction.includes("@entity/")
@@ -1026,9 +1209,9 @@ try {
       || derivativePromptState.output !== "Diagram") {
       throw new Error(`derivative prompt was not rehydrated: ${JSON.stringify(derivativePromptState)}`);
     }
-    await pointerClick(cdp, '.prompt-reference-controls input[type="checkbox"]');
+    await pointerClick(cdp, '[aria-label="Referenced diagrams"] input[type="checkbox"]');
     await waitFor(async () => await evaluate(cdp, `(() => {
-      const root = document.querySelector('.prompt-reference-controls');
+      const root = document.querySelector('[aria-label="Referenced diagrams"]');
       return !root.querySelector('input').checked
         && root.querySelector('em').textContent.trim() === 'omitted'
         && Boolean(root.querySelector('.prompt-reference-warning'));
@@ -1088,11 +1271,20 @@ try {
     if (restoredStarredState.pressed !== "true" || restoredStarredState.marker !== "★") {
       throw new Error(`chosen diagram state did not survive reload: ${JSON.stringify(restoredStarredState)}`);
     }
+    const restoredFeedbackState = await evaluate(cdp, `({
+      status: document.querySelector(
+        '[data-candidate-batch-id="${feedbackBatchId}"] .diagram-tree-feedback-status'
+      )?.textContent.trim(),
+      rankCount: document.querySelectorAll('.diagram-tree-rank').length
+    })`);
+    if (restoredFeedbackState.status !== "[RANKED]" || restoredFeedbackState.rankCount < 3) {
+      throw new Error(`candidate feedback did not survive reload: ${JSON.stringify(restoredFeedbackState)}`);
+    }
     await pointerClick(cdp, ".diagram-actions .create-derivative");
     await waitForSelector(cdp, "#diagram-prompt");
-    await waitForSelector(cdp, '.prompt-reference-controls input[type="checkbox"]');
+    await waitForSelector(cdp, '[aria-label="Referenced diagrams"] input[type="checkbox"]');
     const restoredGenerationState = await evaluate(cdp, `(() => {
-      const references = document.querySelector('.prompt-reference-controls');
+      const references = document.querySelector('[aria-label="Referenced diagrams"]');
       return {
         prompt: document.querySelector('#diagram-prompt').value,
         referenceIncluded: references.querySelector('input').checked,
@@ -1132,14 +1324,14 @@ try {
       `document.querySelector('.entity-context__toggle input').checked`
     ), { message: "CodeEntity inclusion checkbox did not reset after persistence check" });
     await replaceText(cdp, "#diagram-prompt", derivativePromptState.instruction);
-    await pointerClick(cdp, '.prompt-reference-controls input[type="checkbox"]');
+    await pointerClick(cdp, '[aria-label="Referenced diagrams"] input[type="checkbox"]');
     await pointerClick(cdp, '[aria-label="Use one more agent"]');
     await pointerClick(cdp, '.output-kind [role="radio"]:first-of-type');
     await selectOptionAt(cdp, "#generation-model", 1);
     await selectOptionAt(cdp, "#generation-prompt-profile", 3);
     try {
       await waitFor(async () => await evaluate(cdp, `(() => {
-        const root = document.querySelector('.prompt-reference-controls');
+        const root = document.querySelector('[aria-label="Referenced diagrams"]');
         return document.querySelector('#diagram-prompt').value === ${JSON.stringify(derivativePromptState.instruction)}
           && root.querySelector('input').checked
           && root.querySelector('em').textContent.trim() === 'included'
@@ -1152,7 +1344,7 @@ try {
       })()`), { message: "generation controls did not reset after persistence check" });
     } catch (error) {
       const resetState = await evaluate(cdp, `(() => {
-        const root = document.querySelector('.prompt-reference-controls');
+        const root = document.querySelector('[aria-label="Referenced diagrams"]');
         return {
           prompt: document.querySelector('#diagram-prompt').value,
           referenceIncluded: root.querySelector('input').checked,
@@ -1199,14 +1391,27 @@ try {
     const lineageShape = await evaluate(cdp, `(() => {
       const selected = document.querySelector('[data-diagram-id="${selection.id}"]');
       const branch = selected?.closest('.diagram-tree-branch');
+      const childGeneration = branch?.querySelector(
+        ':scope > .diagram-tree-branch > [data-generation-batch-id]'
+      );
+      const generationBranch = childGeneration?.closest('.diagram-tree-branch');
+      const candidateBatch = generationBranch?.querySelector(
+        ':scope > .diagram-tree-branch > [data-candidate-batch-id]'
+      );
+      const candidateBranch = candidateBatch?.closest('.diagram-tree-branch');
       return {
         visibleGenerations: document.querySelectorAll('[data-generation-batch-id]').length,
-        directChildDiagrams: branch
-          ? branch.querySelectorAll(':scope > .diagram-tree-branch > .diagram-tree-diagram').length
+        directChildGenerations: childGeneration ? 1 : 0,
+        directCandidateBatches: candidateBatch ? 1 : 0,
+        directChildDiagrams: candidateBranch
+          ? candidateBranch.querySelectorAll(':scope > .diagram-tree-branch > .diagram-tree-diagram').length
           : 0
       };
     })()`);
-    if (lineageShape.visibleGenerations !== 2 || lineageShape.directChildDiagrams !== 1) {
+    if (lineageShape.visibleGenerations !== 3
+      || lineageShape.directChildGenerations !== 1
+      || lineageShape.directCandidateBatches !== 1
+      || lineageShape.directChildDiagrams !== 1) {
       throw new Error(`derivative lineage was not compact: ${JSON.stringify(lineageShape)}`);
     }
     const renamedInTree = await evaluate(cdp, `document.querySelector(
@@ -1588,6 +1793,54 @@ try {
       )
     )`), { message: "imported artifacts were not persisted across reload" });
 
+    await pointerClick(cdp, ".settings-menu-shell > button");
+    await waitForSelector(cdp, ".settings-menu [role=menuitem]");
+    await pointerClick(cdp, ".settings-menu [role=menuitem]");
+    await waitForSelector(cdp, ".prompt-settings-dialog");
+    await pointerClick(cdp, ".prompt-template-list > button:last-child");
+    await waitFor(async () => (
+      await evaluate(cdp, `document.querySelector('.prompt-template-fields input').value`)
+    ) === "Compact", { message: "compact template did not become active for imported reference" });
+    await pointerClick(cdp, '[aria-label="Generation prompt phase"] button:nth-child(1)');
+    await pointerClick(cdp, '[aria-label="Prompt view"] button:nth-child(1)');
+    await pointerClick(cdp, ".prompt-template-editor textarea");
+    await controlKey(cdp, "End", "End", 35);
+    await cdp.send("Input.insertText", { text: " Imported visual guide @" });
+    await waitForSelector(cdp, '[aria-label="System prompt artifact references"] [role=option]');
+    const importedDiagramOptionIndex = await evaluate(cdp, `Array.from(document.querySelectorAll(
+      '[aria-label="System prompt artifact references"] [role=option] code'
+    )).findIndex((node) => node.textContent.startsWith('@diagram/'))`);
+    if (importedDiagramOptionIndex < 0) {
+      throw new Error("system prompt autocomplete did not offer the imported Diagram");
+    }
+    await pointerClick(
+      cdp,
+      `[aria-label="System prompt artifact references"] [role=option]:nth-child(${importedDiagramOptionIndex + 1})`
+    );
+    await waitFor(async () => await evaluate(cdp, `(
+      !document.querySelector('[aria-label="System prompt artifact references"]')
+      && document.querySelector('.prompt-template-editor textarea').value.includes('@diagram/')
+    )`), { message: "imported Diagram reference was not inserted into the system prompt" });
+    const importedSystemReferenceToken = await evaluate(cdp, `(() => {
+      const value = document.querySelector('.prompt-template-editor textarea').value;
+      const start = value.lastIndexOf('@diagram/');
+      return start >= 0 ? value.slice(start).split(' ')[0] : '';
+    })()`);
+    await captureScreenshot(cdp, { output: importedSystemReferenceScreenshotPath });
+    await pointerClick(cdp, '.prompt-settings-dialog button[type="submit"]');
+    await waitFor(async () => (
+      await evaluate(cdp, `document.querySelector('.prompt-settings-dialog footer > span').textContent`)
+    ).includes("v3"), { message: "imported system reference template did not save revision three" });
+    const savedImportedSystemReference = await evaluate(cdp, `(async () => {
+      const workspace = await fetch('/api/workspace').then((response) => response.json());
+      return workspace.systemPromptTemplates.compact.prompts.diagram;
+    })()`);
+    if (!importedSystemReferenceToken
+      || !savedImportedSystemReference.includes(importedSystemReferenceToken)) {
+      throw new Error("imported Diagram reference was not persisted in the system template");
+    }
+    await pointerClick(cdp, '[aria-label="Close prompt settings"]');
+
     const disposableCollection = await execFileAsync("npm", [
       "run", "diagram", "--", "create",
       "--path", fixtureRoot,
@@ -1601,7 +1854,7 @@ try {
       encoding: "utf8"
     });
     if (!disposableCollection.stdout.includes('"promptTemplateId":"compact"')
-      || !disposableCollection.stdout.includes('"promptTemplateVersion":2')) {
+      || !disposableCollection.stdout.includes('"promptTemplateVersion":3')) {
       throw new Error(`CLI did not report the selected persisted template: ${disposableCollection.stdout}`);
     }
     await cdp.send("Page.reload", { ignoreCache: true });
@@ -1617,8 +1870,10 @@ try {
       return workspace.generationPromptConfigs[batch?.promptConfigId]?.systemPrompt ?? null;
     })()`);
     if (selectedInitialPrompt?.profileId !== "compact"
-      || selectedInitialPrompt?.profileVersion !== 2
-      || !selectedInitialPrompt?.rendered?.includes("Browser-persisted-template.")) {
+      || selectedInitialPrompt?.profileVersion !== 3
+      || !selectedInitialPrompt?.rendered?.includes("Browser-persisted-template ARCHITECTURE MAP.")
+      || selectedInitialPrompt?.references?.[0]?.targetId !== importedDiagramState.id
+      || !selectedInitialPrompt?.rendered?.includes("| imported |")) {
       throw new Error(`initial generation ignored CLI template selection: ${JSON.stringify(selectedInitialPrompt)}`);
     }
     await pointerClick(cdp, "#diagrams-tab");
@@ -1674,6 +1929,18 @@ try {
   if (generationScreenshot.length < 1000) throw new Error("generation model screenshot was unexpectedly small");
   const promptSettingsScreenshot = await readFile(promptSettingsScreenshotPath);
   if (promptSettingsScreenshot.length < 1000) throw new Error("system prompt settings screenshot was unexpectedly small");
+  const referencePromptSettingsScreenshot = await readFile(referencePromptSettingsScreenshotPath);
+  if (referencePromptSettingsScreenshot.length < 1000) {
+    throw new Error("reference prompt settings screenshot was unexpectedly small");
+  }
+  const variableDefinitionsScreenshot = await readFile(variableDefinitionsScreenshotPath);
+  if (variableDefinitionsScreenshot.length < 1000) {
+    throw new Error("prompt variable definitions screenshot was unexpectedly small");
+  }
+  const importedSystemReferenceScreenshot = await readFile(importedSystemReferenceScreenshotPath);
+  if (importedSystemReferenceScreenshot.length < 1000) {
+    throw new Error("imported system reference screenshot was unexpectedly small");
+  }
   const codeEntityPromptSettingsScreenshot = await readFile(codeEntityPromptSettingsScreenshotPath);
   if (codeEntityPromptSettingsScreenshot.length < 1000) {
     throw new Error("CodeEntity prompt settings screenshot was unexpectedly small");
@@ -1687,6 +1954,10 @@ try {
   const starredDiagramScreenshot = await readFile(starredDiagramScreenshotPath);
   if (starredDiagramScreenshot.length < 1000) {
     throw new Error("starred diagram screenshot was unexpectedly small");
+  }
+  const candidateFeedbackScreenshot = await readFile(candidateFeedbackScreenshotPath);
+  if (candidateFeedbackScreenshot.length < 1000) {
+    throw new Error("candidate feedback screenshot was unexpectedly small");
   }
   const fileExplorerScreenshot = await readFile(fileExplorerScreenshotPath);
   if (fileExplorerScreenshot.length < 1000) {
@@ -1703,6 +1974,10 @@ try {
   const importedComponentArtifact = JSON.parse(await readFile(importedComponentArtifactPath, "utf8"));
   if (importedComponentArtifact.origin !== "imported") {
     throw new Error("imported DiagramComponent was not persisted");
+  }
+  const rankedCandidateBatch = JSON.parse(await readFile(rankedCandidateBatchPath, "utf8"));
+  if (Object.keys(rankedCandidateBatch.rankings ?? {}).length !== 3) {
+    throw new Error("candidate feedback was not persisted to its batch record");
   }
   const trashEntries = await readdir(path.join(fixtureRoot, ".diagrams", "trash", "diagram-sets"));
   const deletedEntry = trashEntries.find((entry) => entry.startsWith(`${deletedSetId}-`));

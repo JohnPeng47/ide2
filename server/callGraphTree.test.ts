@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { CodeEntityRecord } from "../src/domain";
+import {
+  qualifiedCodeEntityPromptAlias,
+  type CodeEntityRecord
+} from "../src/domain";
 import { filterCallGraphTree, parseCallGraphTree } from "./callGraphTree";
 import { focusIdentityKey } from "../src/callGraphFocus";
 
@@ -64,6 +67,10 @@ describe("call graph tree", () => {
     const duplicate = { ...beta, handle: alpha.handle };
     expect(() => parseCallGraphTree("root [entity-alpha]", [alpha, duplicate]))
       .toThrow(/ambiguous/);
+    expect(parseCallGraphTree(
+      `root [${qualifiedCodeEntityPromptAlias(alpha)}]`,
+      [alpha, duplicate]
+    )[0].codeEntity?.targetId).toBe(alpha.id);
   });
 
   it("keeps minimal ancestry and full matched subtrees while dropping siblings", () => {

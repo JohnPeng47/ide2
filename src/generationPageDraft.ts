@@ -17,10 +17,12 @@ export interface GenerationDraftSource {
 }
 
 export interface GenerationPageDraft {
-  version: 3;
+  version: 4;
   prompt: string;
+  referencePrompt: string;
   selectedCodeEntityIds: string[];
   excludedReferenceKeys: string[];
+  excludedReferencePromptKeys: string[];
   count: number;
   targetKind: GenerationTargetKind;
   modelId: DiagramModelId;
@@ -52,19 +54,29 @@ export function readGenerationPageDraft(storage: Storage, key: string): Generati
     const raw = storage.getItem(key);
     if (!raw) return null;
     const value = JSON.parse(raw) as Record<string, unknown>;
-    if (value.version !== 3
+    if ((value.version !== 3 && value.version !== 4)
       || typeof value.prompt !== "string"
       || !Array.isArray(value.selectedCodeEntityIds)
       || !value.selectedCodeEntityIds.every((id) => typeof id === "string")
       || !Array.isArray(value.excludedReferenceKeys)
       || !value.excludedReferenceKeys.every((referenceKey) => typeof referenceKey === "string")
+      || (value.version === 4 && typeof value.referencePrompt !== "string")
+      || (value.version === 4 && (!Array.isArray(value.excludedReferencePromptKeys)
+        || !value.excludedReferencePromptKeys.every((referenceKey) => typeof referenceKey === "string")))
       || !Number.isInteger(value.count)
       || (value.count as number) < 1
       || (value.count as number) > 12
       || !isGenerationTargetKind(value.targetKind)
       || !isDiagramModelId(value.modelId)
       || !isGenerationPromptProfileId(value.promptProfileId)) return null;
-    return value as unknown as GenerationPageDraft;
+    return {
+      ...value,
+      version: 4,
+      referencePrompt: value.version === 4 ? value.referencePrompt as string : "",
+      excludedReferencePromptKeys: value.version === 4
+        ? value.excludedReferencePromptKeys as string[]
+        : []
+    } as unknown as GenerationPageDraft;
   } catch {
     return null;
   }

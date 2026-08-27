@@ -41,7 +41,8 @@ function usage(): never {
     + "  npm run diagram -- serve --path <repo> [--diagrams-dir <dir>] [--port <port>]\n"
     + "  npm run diagram -- prompt-templates [--server <url>]\n"
     + "  npm run diagram -- create --path <repo> --name <name> --prompt <prompt> "
-    + "[--prompt-template <id>] [--server <url>]"
+    + "[--prompt-template <id>] [--reference-prompt <prompt>] [--no-reference-prompt] "
+    + "[--server <url>]"
   );
 }
 
@@ -180,8 +181,13 @@ async function main(): Promise<void> {
   const name = option(args, "--name");
   const prompt = option(args, "--prompt") ?? "";
   const promptTemplateId = option(args, "--prompt-template");
+  const referencePrompt = option(args, "--reference-prompt");
+  const runReferencePrompt = !args.includes("--no-reference-prompt");
   const serverUrl = serverUrlFrom(args);
   if (!inputPath || !name) usage();
+  if (!runReferencePrompt && referencePrompt !== undefined) {
+    throw new Error("--reference-prompt cannot be combined with --no-reference-prompt");
+  }
 
   const endpoint = endpointFor(serverUrl);
   process.stdout.write(`${JSON.stringify({
@@ -197,6 +203,8 @@ async function main(): Promise<void> {
         path: inputPath,
         name,
         prompt,
+        runReferencePrompt,
+        ...(referencePrompt !== undefined ? { referencePrompt } : {}),
         ...(promptTemplateId ? { promptTemplateId } : {})
       })
     });

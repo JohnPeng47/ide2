@@ -49,6 +49,7 @@ npm --prefix /home/john/drone-interception/scripts/new-diagram run diagram -- cr
   --name <diagram-set-name> \
   --prompt <prompt> \
   [--prompt-template <template-id>] \
+  [--reference-prompt <reference-instruction> | --no-reference-prompt] \
   --server http://127.0.0.1:5173
 ```
 
@@ -59,6 +60,12 @@ npm --prefix /home/john/drone-interception/scripts/new-diagram run diagram -- cr
 `--prompt-template` selects the latest persisted revision of a system-prompt
 template. It does not accept a historical `GenerationPromptConfigRecord` id;
 that immutable record is created by the server when generation begins.
+
+CLI-created candidates run the selected template's Diagram reference prompt in
+a follow-up turn by default. Omit `--reference-prompt` to run that template with
+an empty runtime instruction, provide the option to populate
+`{{referenceInstruction}}`, or use `--no-reference-prompt` for one-turn
+generation.
 
 The server creates one DiagramSet and one CodeEntitiesSet, uses one read-only Pi
 agent to collect source-backed entities, then runs three Sol diagram agents in

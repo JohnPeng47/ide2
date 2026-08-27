@@ -60,10 +60,13 @@ CodeEntitiesSet, then immediately launches three Sol diagram agents with all
 collected entities selected. The CLI path must resolve to the same checkout
 passed to the server's `--path`. `--server` defaults to
 `http://127.0.0.1:5173` and can also be set with `NEW_DIAGRAM_SERVER_URL`.
-`--prompt-template` is optional and defaults to `default`. The final CLI event
-reports the exact template revision and immutable generation prompt-config id
-used for the initial diagrams, plus the CodeEntity template revision and
-immutable collection prompt-config id.
+`--prompt-template` is optional and defaults to `default`. Each CLI-created
+candidate runs the selected profile's Diagram reference prompt as a follow-up
+turn by default; `--reference-prompt <prompt>` supplies its optional runtime
+instruction, while `--no-reference-prompt` keeps one-turn generation. The final
+CLI event reports the exact template revision and immutable generation
+prompt-config id used for the initial diagrams, plus the CodeEntity template
+revision and immutable collection prompt-config id.
 
 The studio supports the waiting state, immutable collected CodeEntitiesSets,
 typed `@entity/`, `@diagram/`, and `@component/` references, N parallel agents,
@@ -114,8 +117,14 @@ panel.
 The center-pane Diagram, Call Graph, and Dir View tabs open the starred candidate
 for their category. Each category has one independent star; a category with no
 star renders an explicit empty state instead of silently selecting a candidate.
-Root generation nodes group diagrams without ancestors, while derivative
-diagrams attach directly to their parent without intermediary generation nodes.
+Generation nodes retain execution status and contain a DiagramCandidateBatch
+for each successful diagram-producing batch. Candidate batches retain their
+original membership even when a diagram is archived. Their hover-visible
+`feedback` action opens a modal for assigning positive integer ranks to every
+candidate; lower is better and ties are allowed. The latest rankings replace
+the batch's prior rankings, persist under `diagram-candidate-batches/`, and
+render as `[R1]`, `[R2]`, and similar markers in the tree. Nested derivative
+generations retain the same generation -> candidate batch -> diagram structure.
 Lineage branches can be collapsed with their hidden-diagram count retained in
 the toggle. Generated artifact rows expose a `prompt` action for inspecting the
 immutable generation inputs. `generate` opens one shared interface for Diagram,
@@ -139,7 +148,10 @@ in a sidecar record. Mapped ASCII text is visually marked without changing the
 underlying text. Hovering shows the entity summary; clicking switches the right
 pane to Code Entities, opens the mapped source range, scrolls it into view, and
 highlights its rendered lines. Running the action again replaces that artifact's
-mapping with a newly validated result.
+mapping with a newly validated result. `map all unmapped` maps the other
+candidates from the active generation batch through a bounded parallel worker
+pool. Progress and failures remain scoped to each artifact, so one failed map
+does not discard successful siblings or block mapping an unrelated artifact.
 
 `select refs` enables a character-aligned rectangle over mapped ASCII. During
 the drag, intersecting mappings highlight and their `SelectableText` paths

@@ -229,7 +229,7 @@ export class ExperimentRunner {
           sourceRoot: source.diagramSet.sourceCheckoutRoot,
           diagramSetName: source.diagramSet.name,
           promptConfig: built.config,
-          allowedCodeEntityIds: built.allowedCodeEntityIds,
+          allowedCodeEntityAliases: built.allowedCodeEntityAliases,
           allowedDiagramIds: [],
           allowedDiagramComponentIds: [],
           slot: replicate,

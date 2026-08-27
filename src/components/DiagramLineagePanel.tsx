@@ -1,6 +1,7 @@
 import { Fragment, useState, type FormEvent, type ReactNode } from "react";
 import type {
   DiagramComponentRecord,
+  DiagramCandidateBatchRecord,
   DiagramRecord,
   DiagramSetRecord,
   DiagramViewKind,
@@ -9,6 +10,7 @@ import type {
 } from "../domain";
 import { GLOBAL_IMPORTS_DIAGRAM_SET_ID } from "../domain";
 import { PromptConfigDialog } from "./PromptConfigDialog";
+import { DiagramCandidateFeedbackDialog } from "./DiagramCandidateFeedbackDialog";
 
 function connector(last: boolean): string {
   return last ? "`-- " : "+-- ";
@@ -301,8 +303,10 @@ function statusLabel(status: GenerationBatchRecord["status"]): string {
 export function DiagramLineagePanel(props: {
   diagramSet: DiagramSetRecord;
   diagrams: DiagramRecord[];
+  allDiagrams: Record<string, DiagramRecord>;
   components: DiagramComponentRecord[];
   generationBatches: Record<string, GenerationBatchRecord>;
+  diagramCandidateBatches: Record<string, DiagramCandidateBatchRecord>;
   generationPromptConfigs: Record<string, GenerationPromptConfigRecord>;
   activeDiagramId?: string;
   activeComponentId?: string;
@@ -311,6 +315,10 @@ export function DiagramLineagePanel(props: {
   onRename: (diagramId: string, name: string) => Promise<void>;
   onArchive: (diagramId: string) => Promise<void>;
   onArchiveComponent: (componentId: string) => Promise<void>;
+  onSaveCandidateRankings: (
+    candidateBatchId: string,
+    rankings: Array<{ diagramId: string; rank: number }>
+  ) => Promise<void>;
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
@@ -319,6 +327,7 @@ export function DiagramLineagePanel(props: {
   const [actionError, setActionError] = useState<string | null>(null);
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
   const [inspectedConfigId, setInspectedConfigId] = useState<string | null>(null);
+  const [feedbackBatchId, setFeedbackBatchId] = useState<string | null>(null);
   const diagramsById = new Map(props.diagrams.map((diagram) => [diagram.id, diagram]));
   const diagramNumber = new Map(
     [
@@ -331,12 +340,18 @@ export function DiagramLineagePanel(props: {
   const batches = props.diagramSet.generationBatchIds
     .map((id) => props.generationBatches[id])
     .filter((batch): batch is GenerationBatchRecord => Boolean(batch))
-    .filter((batch) => props.generationPromptConfigs[batch.promptConfigId]?.outputKind === "diagram")
-    .filter((batch) => (
-      batch.status !== "complete"
-      || batch.outputDiagramIds.some((diagramId) => diagramsById.has(diagramId))
-    ));
+    .filter((batch) => props.generationPromptConfigs[batch.promptConfigId]?.outputKind === "diagram");
   const batchesById = new Map(batches.map((batch) => [batch.id, batch]));
+  const candidateBatchIds = batches.flatMap((batch) => (
+    batch.diagramCandidateBatchId ? [batch.diagramCandidateBatchId] : []
+  ));
+  const candidateNumber = new Map(candidateBatchIds.map((id, index) => [id, index + 1]));
+  const rankByDiagramId = new Map(candidateBatchIds.flatMap((id) => {
+    const candidateBatch = props.diagramCandidateBatches[id];
+    return candidateBatch
+      ? Object.entries(candidateBatch.rankings).map(([diagramId, rank]) => [diagramId, rank] as const)
+      : [];
+  }));
   const childrenByDiagram = new Map<string, string[]>();
   const parentByBatch = new Map<string, string>();
   for (const batch of batches) {
@@ -425,6 +440,8 @@ export function DiagramLineagePanel(props: {
     }
   };
 
+  let renderGenerationBatch: (batchId: string, prefix: string, last: boolean) => ReactNode;
+
   const renderDiagram = (
     diagram: DiagramRecord,
     prefix: string,
@@ -432,7 +449,8 @@ export function DiagramLineagePanel(props: {
   ): ReactNode => {
     const current = diagram.id === props.activeDiagramId;
     const starred = diagram.id === props.diagramSet.featuredViewIds[diagram.viewKind];
-    const children = childDiagrams(diagram.id);
+    const childBatchIds = childrenByDiagram.get(diagram.id) ?? [];
+    const children = childBatchIds.flatMap(outputDiagrams);
     const collapseId = `diagram:${diagram.id}`;
     const collapsed = collapsedIds.has(collapseId);
     const hiddenCount = children.reduce(
@@ -495,6 +513,9 @@ export function DiagramLineagePanel(props: {
               aria-current={current ? "page" : undefined}
               onClick={() => props.onSelect(diagram.id)}
             >
+              {rankByDiagramId.has(diagram.id) ? (
+                <span className="diagram-tree-rank">[R{rankByDiagramId.get(diagram.id)}]</span>
+              ) : null}
               <strong>{String(number).padStart(2, "0")}</strong>
               <span className="diagram-tree-description">{diagram.name}</span>
               {diagram.basedOnDiagramId ? (
@@ -536,12 +557,16 @@ export function DiagramLineagePanel(props: {
             </span>
           </div>
         )}
-        {!collapsed && children.map((child, index) => {
+        {!collapsed && childBatchIds.map((batchId, index) => {
           const childPrefix = `${prefix}${continuation(last)}`;
           return (
-            <Fragment key={child.id}>
+            <Fragment key={batchId}>
               <TreeBridge prefix={childPrefix} />
-              {renderDiagram(child, childPrefix, index === children.length - 1)}
+              {renderGenerationBatch(
+                batchId,
+                childPrefix,
+                index === childBatchIds.length - 1
+              )}
             </Fragment>
           );
         })}
@@ -549,7 +574,75 @@ export function DiagramLineagePanel(props: {
     );
   };
 
-  const renderRootBatch = (
+  const renderCandidateBatch = (
+    candidateBatch: DiagramCandidateBatchRecord,
+    prefix: string,
+    last: boolean
+  ): ReactNode => {
+    const outputs = candidateBatch.diagramIds
+      .map((diagramId) => diagramsById.get(diagramId))
+      .filter((diagram): diagram is DiagramRecord => Boolean(diagram));
+    const archivedCount = candidateBatch.diagramIds.filter(
+      (diagramId) => Boolean(props.allDiagrams[diagramId]?.archivedAt)
+    ).length;
+    const batchNumber = candidateNumber.get(candidateBatch.id) ?? 0;
+    const ranked = candidateBatch.diagramIds.length > 0
+      && candidateBatch.diagramIds.every((diagramId) => (
+        Number.isInteger(candidateBatch.rankings[diagramId])
+      ));
+    const collapseId = `candidate-batch:${candidateBatch.id}`;
+    const collapsed = collapsedIds.has(collapseId);
+    const outputPrefix = `${prefix}${continuation(last)}`;
+    const hiddenCount = outputs.reduce(
+      (total, diagram) => total + subtreeSize(diagram, new Set()),
+      0
+    );
+    return (
+      <div className="diagram-tree-branch" key={candidateBatch.id}>
+        <div
+          className={`diagram-tree-line diagram-tree-candidate-batch${ranked ? " is-ranked" : ""}`}
+          data-candidate-batch-id={candidateBatch.id}
+        >
+          <TreePrefix prefix={prefix} last={last} />
+          {outputs.length > 0 ? (
+            <button
+              type="button"
+              className="diagram-tree-toggle"
+              aria-label={`${collapsed ? "Expand" : "Collapse"} candidate batch B${batchNumber}`}
+              aria-expanded={!collapsed}
+              onClick={() => toggleCollapsed(collapseId)}
+            >
+              {collapsed ? `[+${hiddenCount}]` : "[-]"}
+            </button>
+          ) : <span className="diagram-tree-toggle-spacer" />}
+          <strong>B{batchNumber}</strong>
+          <span className="diagram-tree-feedback-status">[{ranked ? "RANKED" : "UNRANKED"}]</span>
+          <span className="diagram-tree-description">
+            {candidateBatch.diagramIds.length} candidates
+            {archivedCount ? ` · ${archivedCount} archived` : ""}
+          </span>
+          <span className="diagram-tree-actions">
+            <button
+              type="button"
+              className="diagram-tree-feedback"
+              aria-label={`Provide feedback for candidate batch B${batchNumber}`}
+              onClick={() => setFeedbackBatchId(candidateBatch.id)}
+            >
+              feedback
+            </button>
+          </span>
+        </div>
+        {!collapsed && outputs.map((diagram, index) => (
+          <Fragment key={diagram.id}>
+            <TreeBridge prefix={outputPrefix} />
+            {renderDiagram(diagram, outputPrefix, index === outputs.length - 1)}
+          </Fragment>
+        ))}
+      </div>
+    );
+  };
+
+  renderGenerationBatch = (
     batchId: string,
     prefix: string,
     last: boolean
@@ -557,8 +650,11 @@ export function DiagramLineagePanel(props: {
     const batch = batchesById.get(batchId);
     if (!batch) return null;
     const batchNumber = props.diagramSet.generationBatchIds.indexOf(batch.id) + 1;
-    const outputPrefix = `${prefix}${continuation(last)}`;
     const outputs = outputDiagrams(batch.id);
+    const candidateBatch = batch.diagramCandidateBatchId
+      ? props.diagramCandidateBatches[batch.diagramCandidateBatchId]
+      : undefined;
+    const outputPrefix = `${prefix}${continuation(last)}`;
     const collapseId = `batch:${batch.id}`;
     const collapsed = collapsedIds.has(collapseId);
     const hiddenCount = outputs.reduce(
@@ -593,12 +689,12 @@ export function DiagramLineagePanel(props: {
               || `${batch.requestedCount} generated diagrams`}
           </span>
         </div>
-        {!collapsed && outputs.map((diagram, index) => (
-          <Fragment key={diagram.id}>
+        {!collapsed && candidateBatch ? (
+          <>
             <TreeBridge prefix={outputPrefix} />
-            {renderDiagram(diagram, outputPrefix, index === outputs.length - 1)}
-          </Fragment>
-        ))}
+            {renderCandidateBatch(candidateBatch, outputPrefix, true)}
+          </>
+        ) : null}
       </div>
     );
   };
@@ -669,7 +765,7 @@ export function DiagramLineagePanel(props: {
         {categoryBatchIds.map((batchId) => (
           <Fragment key={batchId}>
             <TreeBridge prefix="" />
-            {renderRootBatch(batchId, "", isLastBranch())}
+            {renderGenerationBatch(batchId, "", isLastBranch())}
           </Fragment>
         ))}
         {categoryOrphans.map((diagram) => (
@@ -722,6 +818,16 @@ export function DiagramLineagePanel(props: {
         <PromptConfigDialog
           config={props.generationPromptConfigs[inspectedConfigId]}
           onClose={() => setInspectedConfigId(null)}
+        />
+      ) : null}
+      {feedbackBatchId && props.diagramCandidateBatches[feedbackBatchId] ? (
+        <DiagramCandidateFeedbackDialog
+          key={feedbackBatchId}
+          batch={props.diagramCandidateBatches[feedbackBatchId]}
+          diagrams={props.allDiagrams}
+          batchLabel={`B${candidateNumber.get(feedbackBatchId) ?? 0}`}
+          onClose={() => setFeedbackBatchId(null)}
+          onSave={(rankings) => props.onSaveCandidateRankings(feedbackBatchId, rankings)}
         />
       ) : null}
     </div>

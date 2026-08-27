@@ -1,4 +1,9 @@
-import { CodeEntity, Diagram, DiagramComponent } from "../domain";
+import {
+  CodeEntity,
+  Diagram,
+  DiagramComponent,
+  createCodeEntityPromptAliases
+} from "../domain";
 import type { ResolvedReference } from "../referenceResolver";
 
 export type RefTextFormat = "prompt-token" | "source-location" | "prompt-context";
@@ -15,10 +20,10 @@ function promptToken(ref: ResolvedReference): string {
   return `@component/${ref.record.handle}`;
 }
 
-function promptContext(ref: ResolvedReference): string {
+function promptContext(ref: ResolvedReference, aliases: ReadonlyMap<string, string>): string {
   if (ref.kind === "code-entity") return new CodeEntity(ref.record).prompt_str();
-  if (ref.kind === "diagram") return new Diagram(ref.record).prompt_str();
-  return new DiagramComponent(ref.record).prompt_str();
+  if (ref.kind === "diagram") return new Diagram(ref.record).prompt_str(aliases);
+  return new DiagramComponent(ref.record).prompt_str(aliases);
 }
 
 function uniqueText(values: string[]): string[] {
@@ -29,8 +34,11 @@ export function formatReferences(refs: ResolvedReference[], format: RefTextForma
   if (format === "prompt-token") {
     return uniqueText(refs.map(promptToken)).join(" ");
   }
+  const aliases = new Map(createCodeEntityPromptAliases(
+    refs.filter((ref) => ref.kind === "code-entity").map((ref) => ref.record)
+  ).map(({ id, alias }) => [id, alias]));
   if (format === "prompt-context") {
-    return uniqueText(refs.map(promptContext)).join("\n\n");
+    return uniqueText(refs.map((ref) => promptContext(ref, aliases))).join("\n\n");
   }
   const unsupported = uniqueText(refs.filter((ref) => ref.kind !== "code-entity").map((ref) => ref.kind));
   if (unsupported.length > 0) throw new UnsupportedReferenceFormatError(format, unsupported);

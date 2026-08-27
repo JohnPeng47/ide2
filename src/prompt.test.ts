@@ -12,10 +12,42 @@ import {
   createBuiltInCodeEntityPromptTemplates,
   createBuiltInSystemPromptTemplates,
   promptOptions,
-  renderArtifactSystemPrompt
+  renderArtifactSystemPrompt,
+  renderReferencePromptTemplate,
+  resolvePromptTemplateVariableValues
 } from "./prompt";
 
 describe("prompt template records", () => {
+  it("defines a configurable reference follow-up for every generation target", () => {
+    const [template] = createBuiltInSystemPromptTemplates("2026-01-01T00:00:00Z");
+    expect(template.referencePrompts).toMatchObject({
+      diagram: expect.stringContaining("{{referenceContext}}"),
+      "call-graph": expect.stringContaining("{{referenceInstruction}}"),
+      "dir-view": expect.stringContaining("{{submissionTool}}"),
+      "diagram-component": expect.stringContaining("Regenerate")
+    });
+  });
+
+  it("exposes computed variables and applies per-target variable definitions", () => {
+    expect(resolvePromptTemplateVariableValues({
+      targetKind: "diagram-component",
+      phase: "system"
+    })).toMatchObject({
+      outputKind: "DiagramComponent",
+      submissionTool: "submit_diagram_component"
+    });
+    expect(renderReferencePromptTemplate({
+      template: "{{outputKind}}: {{referenceInstruction}} / {{referenceContext}}",
+      targetKind: "diagram",
+      instruction: "Runtime instruction",
+      referenceContext: "Runtime context",
+      variableOverrides: {
+        outputKind: "System map",
+        referenceInstruction: "Configured instruction"
+      }
+    })).toBe("System map: Configured instruction / Runtime context");
+  });
+
   it("defines CodeEntity criteria through the same versioned prompts interface", () => {
     const [template] = createBuiltInCodeEntityPromptTemplates("2026-01-01T00:00:00Z");
     expect(template).toMatchObject({
@@ -109,9 +141,12 @@ const buildPrompt = (input: {
   outputKind: "diagram" | "diagram-component";
   viewKind?: "diagram" | "call-graph" | "dir-view";
   instruction: string;
+  runReferencePrompt?: boolean;
+  referencePrompt?: string;
   selectedCodeEntityIds: string[];
   profileId?: string;
   referenceSelections?: Parameters<typeof createGenerationPromptConfig>[0]["referenceSelections"];
+  referencePromptSelections?: Parameters<typeof createGenerationPromptConfig>[0]["referencePromptSelections"];
   derivation?: Parameters<typeof createGenerationPromptConfig>[0]["derivation"];
 }) => createGenerationPromptConfig({
   id: "prompt-one",
@@ -125,13 +160,89 @@ const buildPrompt = (input: {
   profile: createBuiltInSystemPromptTemplates("2026-01-01T00:00:00Z")
     .find((profile) => profile.id === (input.profileId ?? "default"))!,
   instruction: input.instruction,
+  runReferencePrompt: input.runReferencePrompt,
+  referencePrompt: input.referencePrompt,
   selectedCodeEntityIds: input.selectedCodeEntityIds,
   referenceSelections: input.referenceSelections,
+  referencePromptSelections: input.referencePromptSelections,
   derivation: input.derivation,
   createdAt: "2026-01-01T00:00:00Z"
 });
 
 describe("createGenerationPromptConfig", () => {
+  it("runs the selected profile reference template without a per-generation instruction", () => {
+    const profile = createBuiltInSystemPromptTemplates("2026-01-01T00:00:00Z")[0];
+    profile.referencePrompts.diagram = "Restyle the previous submission using @diagram/current-flow.";
+    const result = createGenerationPromptConfig({
+      id: "prompt-default-reference",
+      diagramSet,
+      codeEntities,
+      diagrams: [diagram],
+      components: [component],
+      outputKind: "diagram",
+      viewKind: "diagram",
+      modelId: "gpt-5.6-sol",
+      profile,
+      instruction: "Create a new view",
+      runReferencePrompt: true,
+      selectedCodeEntityIds: ["entity-unused"],
+      createdAt: "2026-01-01T00:00:00Z"
+    });
+
+    expect(result.config.referencePrompt).toMatchObject({
+      instruction: "",
+      references: [expect.objectContaining({ targetId: diagram.id })]
+    });
+    expect(result.config.referencePrompt?.rendered).toContain("Restyle the previous submission");
+    expect(result.config.referencePrompt?.rendered).toContain(diagram.ascii);
+  });
+
+  it("renders reference textarea mentions only into a second prompt turn", () => {
+    const result = buildPrompt({
+      outputKind: "diagram",
+      instruction: "Show the unused operation",
+      referencePrompt: "Use the visual style of @diagram/current-flow",
+      selectedCodeEntityIds: ["entity-unused"]
+    });
+
+    expect(result.config.references).toEqual([]);
+    expect(result.config.contextPrompt.rendered).not.toContain("Diagram @diagram/current-flow");
+    expect(result.config.referencePrompt).toMatchObject({
+      instruction: "Use the visual style of @diagram/current-flow",
+      references: [expect.objectContaining({ targetId: diagram.id })]
+    });
+    expect(result.config.referencePrompt?.rendered).toContain(diagram.ascii);
+    expect(result.config.referencePrompt?.rendered).toContain("Regenerate the complete Diagram");
+    expect(result.allowedCodeEntityIds).toEqual(["entity-unused"]);
+  });
+
+  it("embeds artifact references declared by the system prompt without adding user lineage", () => {
+    const profile = createBuiltInSystemPromptTemplates("2026-01-01T00:00:00Z")[0];
+    profile.prompts.diagram = `${profile.prompts.diagram} Use @diagram/current-flow as a visual guide.`;
+    const result = createGenerationPromptConfig({
+      id: "prompt-system-reference",
+      diagramSet,
+      codeEntities,
+      diagrams: [diagram],
+      components: [component],
+      outputKind: "diagram",
+      viewKind: "diagram",
+      modelId: "gpt-5.6-sol",
+      profile,
+      instruction: "Create a new view",
+      selectedCodeEntityIds: [],
+      createdAt: "2026-01-01T00:00:00Z"
+    });
+
+    expect(result.config.references).toEqual([]);
+    expect(result.config.systemPrompt.references).toEqual([
+      expect.objectContaining({ kind: "diagram", targetId: diagram.id })
+    ]);
+    expect(result.config.systemPrompt.rendered).toContain("Use @diagram/current-flow as a visual guide");
+    expect(result.config.systemPrompt.rendered).toContain(diagram.ascii);
+    expect(result.allowedDiagramIds).toContain(diagram.id);
+  });
+
   it("resolves typed entity and diagram references through prompt_str", () => {
     const result = buildPrompt({
       outputKind: "diagram",
@@ -153,6 +264,40 @@ describe("createGenerationPromptConfig", () => {
         expect.stringContaining("CodeEntity @entity/queue"),
         expect.stringContaining("DiagramComponent @component/queue-fragment")
       ]));
+  });
+
+  it("keeps global CodeEntity ids out of model-facing artifact representations", () => {
+    const globalId = "entity-b71bc396-7637-4769-95af-b5b3f8f24dd6";
+    const globalEntities: CodeEntitiesSetRecord = {
+      ...codeEntities,
+      entities: [{ ...codeEntities.entities[0], id: globalId }]
+    };
+    const globalDiagram: DiagramRecord = {
+      ...diagram,
+      codeEntityIds: [globalId]
+    };
+    const result = createGenerationPromptConfig({
+      id: "prompt-global-id",
+      diagramSet,
+      codeEntities: globalEntities,
+      diagrams: [globalDiagram],
+      components: [],
+      outputKind: "diagram",
+      viewKind: "diagram",
+      modelId: "gpt-5.6-sol",
+      profile: createBuiltInSystemPromptTemplates("2026-01-01T00:00:00Z")[0],
+      instruction: "Refine @diagram/current-flow",
+      selectedCodeEntityIds: [],
+      createdAt: "2026-01-01T00:00:00Z"
+    });
+
+    expect(result.allowedCodeEntityIds).toEqual([globalId]);
+    expect(result.allowedCodeEntityAliases).toEqual([{
+      id: globalId,
+      alias: "entity-queue"
+    }]);
+    expect(result.config.contextPrompt.rendered).toContain("CodeEntity ids: entity-queue");
+    expect(result.config.contextPrompt.rendered).not.toContain(globalId);
   });
 
   it("persists omitted diagram decisions without adding their context or lineage", () => {

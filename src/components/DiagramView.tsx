@@ -74,6 +74,8 @@ export function DiagramView(props: {
   onToggleStarred?: () => void;
   onToggleEdit?: () => void;
   onMapCodeEntities?: () => void;
+  onMapAllCodeEntities?: () => void;
+  mapAllCodeEntitiesCount?: number;
   onRevealCodeEntity?: (mapping: DiagramElementMapping) => void;
   onManualEdit?: (ascii: string) => void;
   onMarker?: (line: number, column: number) => void;
@@ -285,6 +287,16 @@ export function DiagramView(props: {
                 ? "remap code entities"
                 : "map code entities"}
           </button>
+          {props.onMapAllCodeEntities && (props.mapAllCodeEntitiesCount ?? 0) > 0 ? (
+            <button
+              type="button"
+              className="button map-all-code-entities"
+              disabled={saving || capturing || selectingRefs || props.editBusy || props.editMode}
+              onClick={props.onMapAllCodeEntities}
+            >
+              map all unmapped ({props.mapAllCodeEntitiesCount})
+            </button>
+          ) : null}
         </div>
       </header>
       {capturing ? (

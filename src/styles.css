@@ -78,11 +78,27 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .prompt-template-toolbar button { border: 0; border-right: 1px solid var(--border); padding: 0 0.75rem; background: transparent; color: var(--muted); font: 600 9px var(--font-mono); letter-spacing: 0.09em; }
 .prompt-template-toolbar > div:last-child button { border-right: 0; border-left: 1px solid var(--border); }
 .prompt-template-toolbar button.is-active { box-shadow: inset 0 -2px var(--accent-purple); color: var(--accent-purple); }
-.prompt-template-editor { display: flex; min-height: 0; flex: 1; padding: 1rem 1.1rem; flex-direction: column; }
+.prompt-template-editor { position: relative; display: flex; min-height: 0; flex: 1; padding: 1rem 1.1rem; flex-direction: column; }
 .prompt-variable-row { display: flex; flex: none; align-items: center; gap: 0.45rem; margin-bottom: 0.55rem; color: var(--muted); font: 8px var(--font-mono); letter-spacing: 0.08em; }
+.prompt-variable-row .prompt-template-reference-hint { margin-left: auto; color: var(--accent-purple); white-space: nowrap; }
 .prompt-variable-row button { border: 1px solid var(--border); border-radius: 999px; padding: 0.25rem 0.45rem; background: transparent; color: var(--accent-cyan); font: 9px var(--font-mono); letter-spacing: 0; }
 .prompt-template-editor textarea { width: 100%; min-height: 0; flex: 1; resize: none; border: 1px solid var(--gutter); border-radius: 5px; padding: 0.85rem; background: transparent; font: 12px/1.55 var(--font-mono); }
+.prompt-template-reference-menu { right: 1.85rem; bottom: 1.85rem; left: 1.85rem; }
 .prompt-template-preview { min-height: 0; flex: 1; overflow: auto; margin: 1rem 1.1rem; border: 1px solid var(--border); border-radius: 5px; padding: 0.85rem; color: var(--accent-green); font: 12px/1.55 var(--font-mono); white-space: pre-wrap; }
+.prompt-template-variables { min-height: 0; flex: 1; overflow: auto; padding: 1rem 1.1rem; }
+.prompt-template-variables > header { margin-bottom: 0.8rem; }
+.prompt-template-variables > header p { margin-top: 0.3rem; color: var(--muted); font: 10px/1.45 var(--font-mono); }
+.prompt-template-variables > div { display: grid; gap: 0.65rem; }
+.prompt-template-variables label { display: grid; grid-template-columns: minmax(13rem, 0.65fr) minmax(14rem, 1fr); gap: 0.35rem 0.8rem; border: 1px solid var(--border); border-radius: 5px; padding: 0.75rem; }
+.prompt-template-variables label > span { display: flex; align-items: baseline; gap: 0.55rem; }
+.prompt-template-variables code { color: var(--accent-cyan); font: 11px var(--font-mono); }
+.prompt-template-variables em { color: var(--accent-purple); font: normal 8px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+.prompt-template-variables small { align-self: center; color: var(--muted); font: 10px/1.4 var(--font-mono); }
+.prompt-template-variables textarea { grid-column: 1 / -1; width: 100%; min-height: 3.25rem; resize: vertical; border: 1px solid var(--gutter); border-radius: 4px; padding: 0.55rem 0.65rem; background: transparent; font: 11px/1.45 var(--font-mono); }
+.prompt-template-variables label > footer { display: flex; grid-column: 1 / -1; align-items: center; justify-content: space-between; gap: 0.8rem; color: var(--muted); font: 8px/1.4 var(--font-mono); }
+.prompt-template-variables label > footer span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prompt-template-variables label > footer button { flex: none; border: 0; border-bottom: 1px dotted var(--gutter); padding: 0; background: transparent; color: var(--muted); font: 8px var(--font-mono); }
+.prompt-template-variables label > footer button:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
 .prompt-settings-layout form > footer { display: flex; min-height: 58px; flex: none; align-items: center; gap: 0.6rem; border-top: 1px solid var(--border); padding: 0.7rem 1.1rem; }
 .prompt-settings-layout form > footer > span { min-width: 0; margin-right: auto; overflow: hidden; color: var(--muted); font: 9px var(--font-mono); text-overflow: ellipsis; white-space: nowrap; }
 
@@ -211,6 +227,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .generation-repository-paths li { min-width: 0; }
 .generation-context-empty { color: var(--accent-red); font: 10px var(--font-mono); }
 
+.generation-prompts { min-height: 0; flex: 1; overflow: auto; }
+.generation-prompts > .prompt-field { min-height: 22rem; flex: none; }
 .prompt-field { position: relative; display: flex; min-height: 0; flex: 1; flex-direction: column; padding: 1.25rem; }
 .prompt-field label { margin-bottom: 0.6rem; }
 .generation-prompt-heading { display: flex; flex: none; align-items: end; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.6rem; }
@@ -218,6 +236,10 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .generation-prompt-selectors { display: flex; flex-wrap: wrap; justify-content: end; gap: 0.75rem; }
 .prompt-field textarea { width: 100%; min-height: 12rem; flex: 1; resize: none; border: 1px solid var(--border); border-radius: 6px; padding: 1rem; background: transparent; font: 13px/1.55 var(--font-mono); }
 .prompt-field textarea:hover { border-color: var(--gutter); }
+.generation-prompts > .reference-prompt-field { min-height: 16rem; }
+.reference-prompt-field { min-height: 11rem; flex: 0 1 auto; border-top: 1px solid var(--border); }
+.reference-prompt-field textarea { min-height: 7rem; max-height: 12rem; flex: 0 1 9rem; }
+.reference-prompt-field .generation-prompt-heading label span { color: var(--accent-purple); font-size: 8px; }
 .field-help { margin-top: 0.55rem; color: var(--muted); font: 11px/1.45 var(--font-mono); }
 .prompt-reference-controls { flex: none; margin-top: 0.75rem; border: 1px solid var(--border); border-radius: 5px; background: color-mix(in srgb, var(--panel) 82%, transparent); }
 .prompt-reference-controls > header { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--border); }
@@ -452,10 +474,19 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .diagram-tree-generation.status-validating .diagram-tree-status { color: var(--accent-yellow); animation: tree-status-pulse 1s steps(2, end) infinite; }
 .diagram-tree-generation.status-complete .diagram-tree-status { color: var(--accent-green); }
 .diagram-tree-generation.status-failed .diagram-tree-status { color: var(--accent-red); }
+.diagram-tree-candidate-batch { width: 100%; }
+.diagram-tree-candidate-batch > strong { color: var(--accent-cyan); }
+.diagram-tree-feedback-status { margin-right: 0.55rem; color: var(--muted); font-weight: 700; }
+.diagram-tree-candidate-batch.is-ranked .diagram-tree-feedback-status { color: var(--accent-purple); }
+.diagram-tree-feedback { border: 0; border-bottom: 1px dotted var(--gutter); background: transparent; color: var(--muted); opacity: 0; font: 9px var(--font-mono); }
+.diagram-tree-candidate-batch:hover .diagram-tree-feedback,
+.diagram-tree-feedback:focus-visible { opacity: 1; }
+.diagram-tree-feedback:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
 .diagram-tree-diagram { display: grid; width: 100%; grid-template-columns: auto auto auto minmax(0, 1fr) auto; align-items: baseline; }
 .diagram-tree-star { width: 1.7ch; flex: none; margin-right: 0.35rem; color: transparent; text-align: center; }
 .diagram-tree-star.is-starred { color: var(--accent-yellow); }
 .diagram-tree-diagram__open { display: flex; min-width: 0; align-items: baseline; border: 0; padding: 0; background: transparent; color: inherit; font: inherit; text-align: left; white-space: nowrap; cursor: pointer; }
+.diagram-tree-rank { flex: none; margin-right: 0.45rem; color: var(--accent-purple); font-weight: 700; }
 .diagram-tree-actions { display: flex; align-items: baseline; gap: 0.65rem; margin-left: 0.8rem; }
 .diagram-tree-rename, .diagram-tree-prompt, .diagram-tree-archive { border: 0; background: transparent; font: 9px var(--font-mono); }
 .diagram-tree-rename, .diagram-tree-prompt { border-bottom: 1px dotted var(--gutter); color: var(--muted); opacity: 0; }
@@ -507,6 +538,26 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .prompt-config-body li { display: flex; gap: 0.65rem; border-top: 1px solid var(--border); padding: 0.4rem 0; font: 10px var(--font-mono); }
 .prompt-config-body li code { color: var(--accent-cyan); }
 .prompt-config-body li span, .prompt-config-body section > p { color: var(--muted); }
+.candidate-feedback-backdrop { position: fixed; z-index: 30; display: grid; inset: 0; place-items: center; padding: 1.5rem; background: rgb(5 7 10 / 82%); backdrop-filter: blur(3px); }
+.candidate-feedback-dialog { display: flex; width: min(680px, 100%); max-height: min(820px, calc(100dvh - 3rem)); overflow: hidden; border: 1px solid var(--gutter); border-radius: 7px; background: var(--bg); box-shadow: 0 22px 80px rgb(0 0 0 / 48%); flex-direction: column; }
+.candidate-feedback-dialog > header { display: flex; flex: none; align-items: start; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--gutter); padding: 1rem 1.2rem; }
+.candidate-feedback-dialog > header h2 { margin-top: 0.3rem; font-size: 1.15rem; }
+.candidate-feedback-dialog > header p { margin-top: 0.3rem; color: var(--muted); font: 10px var(--font-mono); }
+.candidate-feedback-dialog > header button { border: 0; background: transparent; color: var(--muted); font: 10px var(--font-mono); }
+.candidate-feedback-list { min-height: 0; overflow: auto; padding: 0.65rem 1.2rem; }
+.candidate-feedback-list > label { display: grid; grid-template-columns: minmax(0, 1fr) 5.5rem; align-items: center; gap: 1rem; border-bottom: 1px solid var(--border); padding: 0.65rem 0; }
+.candidate-feedback-name { display: flex; min-width: 0; align-items: baseline; gap: 0.65rem; font: 10px var(--font-mono); }
+.candidate-feedback-name strong { color: var(--accent-cyan); }
+.candidate-feedback-name > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.candidate-feedback-name em { color: var(--accent-red); font: 700 8px var(--font-sans); font-style: normal; }
+.candidate-feedback-list input { width: 100%; border: 1px solid var(--gutter); border-radius: 4px; padding: 0.45rem 0.55rem; background: var(--bg); color: var(--fg); font: 11px var(--font-mono); }
+.candidate-feedback-list input:focus { border-color: var(--accent-cyan); outline: 1px solid var(--accent-cyan); }
+.candidate-feedback-error { margin: 0.5rem 1.2rem 0; color: var(--accent-red); font: 10px var(--font-mono); }
+.candidate-feedback-dialog > footer { display: flex; flex: none; align-items: center; justify-content: end; gap: 0.6rem; margin-top: 0.8rem; border-top: 1px solid var(--border); padding: 0.85rem 1.2rem; }
+.candidate-feedback-dialog > footer > span { margin-right: auto; color: var(--muted); font: 9px var(--font-mono); }
+.candidate-feedback-dialog > footer button { border: 1px solid var(--gutter); border-radius: 4px; padding: 0.45rem 0.7rem; background: transparent; color: var(--muted); font: 9px var(--font-mono); }
+.candidate-feedback-dialog > footer button[type="submit"] { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+.candidate-feedback-dialog button:hover:not(:disabled) { color: var(--fg); }
 .diagram-tree-edit { display: grid; grid-template-columns: auto auto auto minmax(10rem, 1fr) auto auto; gap: 0.4rem; padding-right: 0.65rem; }
 .diagram-tree-edit input { min-width: 0; border: 1px solid var(--accent-cyan); border-radius: 3px; padding: 0.2rem 0.35rem; background: var(--bg); color: var(--fg); font: 10px var(--font-mono); }
 .diagram-tree-edit button { border: 0; border-bottom: 1px dotted var(--gutter); background: transparent; color: var(--muted); font: 9px var(--font-mono); }

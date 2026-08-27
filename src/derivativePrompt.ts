@@ -16,6 +16,7 @@ type Artifact = DiagramRecord | DiagramComponentRecord;
 export interface DerivativePromptDraft {
   prompt: string;
   prefix: string;
+  sourceToken: string;
   historicalReferences: PromptReference[];
   derivation: Omit<GenerationDerivationRecord, "promptCorrection">;
 }
@@ -56,8 +57,23 @@ function parentReference(config: GenerationPromptConfigRecord): PromptReference 
     ?? config.references.find((reference) => reference.kind === "diagram-component");
 }
 
-function previousPromptBlock(instruction: string): string {
-  return `${PREVIOUS_PROMPT_HEADER}\n${instruction.trim()}\n${PREVIOUS_PROMPT_FOOTER}`;
+function sourceTokenForArtifact(kind: GenerationOutputKind, artifact: Artifact): string {
+  return kind === "diagram"
+    ? `@diagram/${artifact.handle}`
+    : `@component/${artifact.handle}`;
+}
+
+function correctionAfterSourceToken(instruction: string, sourceToken: string): string {
+  const escapedToken = sourceToken.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const markers = [...instruction.matchAll(new RegExp(`(?:^|\\n)${escapedToken}(?=\\s|$)`, "g"))];
+  const marker = markers.at(-1);
+  if (!marker || marker.index === undefined) return instruction.trim();
+  const tokenStart = marker.index + (marker[0].startsWith("\n") ? 1 : 0);
+  return instruction.slice(tokenStart + sourceToken.length).trim();
+}
+
+function previousPromptBlock(instruction: string, index: number): string {
+  return `---- PREVIOUS PROMPT ${index} ----\n${instruction.trim()}\n${PREVIOUS_PROMPT_FOOTER}`;
 }
 
 export function buildDerivativePrompt(input: {
@@ -81,7 +97,24 @@ export function buildDerivativePrompt(input: {
       : undefined;
     if (!config || seenPromptConfigs.has(config.id)) break;
     seenPromptConfigs.add(config.id);
-    const correction = config.derivation?.promptCorrection ?? config.instruction;
+    const parent = parentReference(config);
+    const parentArtifact = parent
+      ? artifactForReference(parent, input.diagrams, input.components)
+      : undefined;
+    const storedCorrection = config.derivation?.promptCorrection ?? config.instruction;
+    const storedSourceToken = config.derivation
+      ? [...config.references, ...(config.omittedReferences ?? [])].find((reference) => (
+        reference.kind === config.derivation!.sourceArtifactKind
+        && reference.targetId === config.derivation!.sourceArtifactId
+      ))?.token
+      : undefined;
+    const correction = config.derivation && parentArtifact
+      ? correctionAfterSourceToken(
+        storedCorrection,
+        storedSourceToken
+          || sourceTokenForArtifact(config.derivation.sourceArtifactKind, parentArtifact)
+      )
+      : storedCorrection.trim();
     if (correction.trim()) corrections.push(correction.trim());
     for (const reference of [...config.references, ...(config.omittedReferences ?? [])]) {
       const key = `${reference.kind}:${reference.targetId}:${reference.token.toLowerCase()}`;
@@ -89,21 +122,19 @@ export function buildDerivativePrompt(input: {
       seenReferences.add(key);
       historicalReferences.push(reference);
     }
-    const parent = parentReference(config);
-    artifact = parent
-      ? artifactForReference(parent, input.diagrams, input.components)
-      : undefined;
+    artifact = parentArtifact;
   }
 
   corrections.reverse();
-  const sourceToken = input.sourceArtifactKind === "diagram"
-    ? `@diagram/${input.sourceArtifact.handle}`
-    : `@component/${input.sourceArtifact.handle}`;
-  const history = corrections.map(previousPromptBlock).join("\n\n");
+  const sourceToken = sourceTokenForArtifact(input.sourceArtifactKind, input.sourceArtifact);
+  const history = corrections
+    .map((correction, index) => previousPromptBlock(correction, index + 1))
+    .join("\n\n");
   const prefix = history ? `${history}\n\n${sourceToken}\n\n` : `${sourceToken} `;
   return {
     prompt: prefix,
     prefix,
+    sourceToken,
     historicalReferences,
     derivation: {
       sourceArtifactKind: input.sourceArtifactKind,
@@ -118,7 +149,12 @@ export function buildDerivativePrompt(input: {
 export function promptCorrection(prompt: string, draft: DerivativePromptDraft): string {
   return prompt.startsWith(draft.prefix)
     ? prompt.slice(draft.prefix.length).trim()
-    : prompt.trim();
+    : correctionAfterSourceToken(prompt, draft.sourceToken);
+}
+
+export function rebaseDerivativePrompt(prompt: string, draft: DerivativePromptDraft): string {
+  const correction = promptCorrection(prompt, draft);
+  return correction ? `${draft.prefix}${correction}` : draft.prompt;
 }
 
 export function diagramReferencesInPrompt(input: {

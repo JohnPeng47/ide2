@@ -54,4 +54,84 @@ describe("call-graph focus HTTP API", () => {
       error: "unsupported call-graph focus request version: 2"
     });
   });
+
+  it("requires complete numerical candidate feedback through PUT", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-http-feedback-"));
+    roots.push(root);
+    let middleware: Connect.NextHandleFunction | undefined;
+    const server = createServer((request, response) => {
+      if (!middleware) throw new Error("middleware was not attached");
+      middleware(request, response, () => {
+        response.statusCode = 404;
+        response.end();
+      });
+    });
+    servers.push(server);
+    const configure = diagramApi(root).configureServer;
+    if (typeof configure !== "function") throw new Error("diagram API has no configure hook");
+    (configure as unknown as (server: unknown) => void)({
+      middlewares: { use: (handler: Connect.NextHandleFunction) => { middleware = handler; } },
+      httpServer: server
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address() as AddressInfo;
+    const endpoint = `http://127.0.0.1:${address.port}/api/diagram-sets/set-one/candidate-batches/candidate-batch-one/feedback`;
+
+    expect((await fetch(endpoint)).status).toBe(405);
+    const invalid = await fetch(endpoint, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ rankings: [{ diagramId: "diagram-one", rank: "first" }] })
+    });
+    expect(invalid.status).toBe(400);
+    await expect(invalid.json()).resolves.toEqual({
+      error: "rankings must contain a diagramId and numerical rank for every candidate"
+    });
+  });
+
+  it("validates code-entity mapping batches before opening the event stream", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-http-map-batch-"));
+    roots.push(root);
+    let middleware: Connect.NextHandleFunction | undefined;
+    const server = createServer((request, response) => {
+      if (!middleware) throw new Error("middleware was not attached");
+      middleware(request, response, () => {
+        response.statusCode = 404;
+        response.end();
+      });
+    });
+    servers.push(server);
+    const configure = diagramApi(root).configureServer;
+    if (typeof configure !== "function") throw new Error("diagram API has no configure hook");
+    (configure as unknown as (server: unknown) => void)({
+      middlewares: { use: (handler: Connect.NextHandleFunction) => { middleware = handler; } },
+      httpServer: server
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address() as AddressInfo;
+    const endpoint = `http://127.0.0.1:${address.port}/api/diagram-sets/set-one/code-entity-maps`;
+
+    expect((await fetch(endpoint)).status).toBe(405);
+    const empty = await fetch(endpoint, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ artifacts: [] })
+    });
+    expect(empty.status).toBe(400);
+    await expect(empty.json()).resolves.toEqual({
+      error: "at least one artifact is required for mapping"
+    });
+    const invalidConcurrency = await fetch(endpoint, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        artifacts: [{ artifactKind: "diagram", artifactId: "diagram-one" }],
+        concurrency: 7
+      })
+    });
+    expect(invalidConcurrency.status).toBe(400);
+    await expect(invalidConcurrency.json()).resolves.toEqual({
+      error: "mapping concurrency must be between 1 and 6"
+    });
+  });
 });

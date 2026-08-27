@@ -70,7 +70,7 @@ class ParallelRuntime implements DiagramAgentRuntime {
     return {
       name: `Worker ${request.slot}`,
       ascii: `[worker ${request.slot}]`,
-      codeEntityIds: request.allowedCodeEntityIds.slice(0, 1)
+      codeEntityIds: request.allowedCodeEntityAliases.slice(0, 1).map(({ id }) => id)
     };
   }
 
@@ -98,6 +98,43 @@ class ParallelRuntime implements DiagramAgentRuntime {
   }
 
   dispose(): void {}
+}
+
+class BatchMappingRuntime extends ParallelRuntime {
+  activeMappings = 0;
+  maxActiveMappings = 0;
+  startedMappings = 0;
+  private readonly releaseMappingGate: () => void;
+  private readonly mappingGate: Promise<void>;
+
+  constructor(
+    private readonly simultaneousStarts: number,
+    private readonly failingCall?: number
+  ) {
+    super();
+    let release!: () => void;
+    this.mappingGate = new Promise<void>((resolve) => { release = resolve; });
+    this.releaseMappingGate = release;
+  }
+
+  override async mapArtifactEntities(
+    request: ArtifactEntityMappingRequest,
+    onProgress?: (progress: AgentProgress) => void
+  ): Promise<DiagramElementMappingDraft[]> {
+    this.activeMappings += 1;
+    this.startedMappings += 1;
+    const call = this.startedMappings;
+    this.maxActiveMappings = Math.max(this.maxActiveMappings, this.activeMappings);
+    onProgress?.({ status: "generating", message: `mapping ${request.artifactHandle}` });
+    if (this.startedMappings === this.simultaneousStarts) this.releaseMappingGate();
+    try {
+      await this.mappingGate;
+      if (call === this.failingCall) throw new Error("synthetic mapping failure");
+      return await super.mapArtifactEntities(request);
+    } finally {
+      this.activeMappings -= 1;
+    }
+  }
 }
 
 async function createCallGraphFocusFixture() {
@@ -554,8 +591,9 @@ describe("DiagramApplication", () => {
     });
 
     await application.collectCodeEntities(set.id);
-    const workspace = await application.generateInitialDiagrams(set.id, {
-      promptTemplateId: "flow-first"
+    let workspace = await application.generateInitialDiagrams(set.id, {
+      promptTemplateId: "flow-first",
+      runReferencePrompt: true
     });
 
     expect(workspace.codeEntitySets[set.codeEntitiesSetId].status).toBe("finalized");
@@ -571,13 +609,34 @@ describe("DiagramApplication", () => {
     expect(workspace.diagramSets[0].readiness).toBe("ready");
     expect(workspace.diagramSets[0].diagramIds).toHaveLength(3);
     const initialBatch = workspace.generationBatches[workspace.diagramSets[0].generationBatchIds[0]];
-    expect(workspace.generationPromptConfigs[initialBatch.promptConfigId].systemPrompt)
+    const initialPromptConfig = workspace.generationPromptConfigs[initialBatch.promptConfigId];
+    expect(initialPromptConfig.systemPrompt)
       .toMatchObject({ profileId: "flow-first", profileVersion: 1 });
+    expect(initialPromptConfig.referencePrompt).toMatchObject({ instruction: "", references: [] });
     expect(runtime.requestedModels).toEqual([
       "gpt-5.6-sol",
       "gpt-5.6-sol",
       "gpt-5.6-sol"
     ]);
+    const styleDiagram = workspace.diagrams[workspace.diagramSets[0].diagramIds[0]];
+    workspace = await application.generate(set.id, {
+      prompt: "Show another worker view",
+      referencePrompt: `Use the visual style of @diagram/${styleDiagram.handle}`,
+      selectedCodeEntityIds: [workspace.codeEntitySets[set.codeEntitiesSetId].entities[0].id],
+      count: 1,
+      outputKind: "diagram",
+      modelId: "gpt-5.6-sol",
+      promptProfileId: "flow-first"
+    });
+    const referenceBatchId = workspace.diagramSets[0].generationBatchIds.at(-1)!;
+    const referenceConfig = workspace.generationPromptConfigs[
+      workspace.generationBatches[referenceBatchId].promptConfigId
+    ];
+    expect(referenceConfig.references).toEqual([]);
+    expect(referenceConfig.referencePrompt).toMatchObject({
+      instruction: `Use the visual style of @diagram/${styleDiagram.handle}`,
+      references: [expect.objectContaining({ targetId: styleDiagram.id })]
+    });
   });
 
   it("persists reversible edit sessions and publishes edited copies", async () => {
@@ -811,12 +870,14 @@ describe("DiagramApplication", () => {
       description: "A persisted test edit",
       prompts: {
         ...flowTemplate.prompts,
-        diagram: "CUSTOM FLOW. Finish through {{submissionTool}}."
-      }
+        diagram: "CUSTOM {{outputKind}}. Finish through {{submissionTool}}."
+      },
+      variableOverrides: { diagram: { outputKind: "SYSTEM MAP" } }
     });
     expect(workspace.systemPromptTemplates["flow-first"]).toMatchObject({
       version: 2,
-      description: "A persisted test edit"
+      description: "A persisted test edit",
+      variableOverrides: { diagram: { outputKind: "SYSTEM MAP" } }
     });
     expect((await new DiagramStore(root).loadWorkspace()).systemPromptTemplates["flow-first"])
       .toMatchObject({ version: 2, description: "A persisted test edit" });
@@ -842,7 +903,7 @@ describe("DiagramApplication", () => {
       systemPrompt: { profileId: "flow-first" }
     });
     expect(promptConfig.systemPrompt).toMatchObject({ profileVersion: 2 });
-    expect(promptConfig.systemPrompt.rendered).toBe("CUSTOM FLOW. Finish through submit_diagram.");
+    expect(promptConfig.systemPrompt.rendered).toBe("CUSTOM SYSTEM MAP. Finish through submit_diagram.");
     expect(runtime.requestedPromptConfigIds).toEqual([
       promptConfig.id,
       promptConfig.id,
@@ -890,6 +951,31 @@ describe("DiagramApplication", () => {
     ), "utf8");
     expect(diagramJson).toContain(`"generationPromptConfigId": "${promptConfig.id}"`);
     expect(diagramJson).not.toContain('"promptReferences"');
+    expect(batch.diagramCandidateBatchId).toBeTruthy();
+    const candidateBatchId = batch.diagramCandidateBatchId!;
+    expect(workspace.diagramCandidateBatches[candidateBatchId]).toMatchObject({
+      generationBatchId: batch.id,
+      diagramIds: workspace.diagramSets[0].diagramIds,
+      rankings: {}
+    });
+    await expect(application.rankDiagramCandidates(set.id, candidateBatchId, [
+      { diagramId, rank: 1 }
+    ])).rejects.toThrow(/rank every diagram candidate/);
+    await expect(application.rankDiagramCandidates(set.id, candidateBatchId,
+      workspace.diagramSets[0].diagramIds.map((id) => ({ diagramId: id, rank: 0 }))))
+      .rejects.toThrow(/positive integers/);
+    workspace = await application.rankDiagramCandidates(set.id, candidateBatchId,
+      workspace.diagramSets[0].diagramIds.map((id, index) => ({
+        diagramId: id,
+        rank: index < 2 ? 1 : 2
+      })));
+    expect(workspace.diagramCandidateBatches[candidateBatchId].rankings).toEqual({
+      [workspace.diagramSets[0].diagramIds[0]]: 1,
+      [workspace.diagramSets[0].diagramIds[1]]: 1,
+      [workspace.diagramSets[0].diagramIds[2]]: 2
+    });
+    expect((await new DiagramStore(root).loadWorkspace()).diagramCandidateBatches[candidateBatchId]
+      .rankings).toEqual(workspace.diagramCandidateBatches[candidateBatchId].rankings);
     const originalHandle = workspace.diagrams[diagramId].handle;
     workspace = await application.mapCodeEntities(set.id, "diagram", diagramId);
     expect(workspace.codeEntityMaps[diagramId]).toMatchObject({
@@ -997,6 +1083,7 @@ describe("DiagramApplication", () => {
     await expect(application.renameDiagram(set.id, diagramId, "   ")).rejects.toThrow(/name is required/);
     workspace = await application.archiveDiagram(set.id, diagramId);
     expect(workspace.diagrams[diagramId].archivedAt).toBeTruthy();
+    expect(workspace.diagramCandidateBatches[candidateBatchId].rankings[diagramId]).toBe(1);
     const archivedArtifact = JSON.parse(await readFile(path.join(
       root,
       ".diagrams",
@@ -1014,6 +1101,68 @@ describe("DiagramApplication", () => {
       count: 1,
       outputKind: "diagram"
     })).rejects.toThrow(/unknown prompt reference/);
+  });
+
+  it("maps an artifact batch with bounded concurrency and isolates failures", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-map-batch-"));
+    roots.push(root);
+    execFileSync("git", ["init", "-q", root]);
+    await writeFile(path.join(root, "fixture.ts"), "export const worker = () => true;\n", "utf8");
+    execFileSync("git", ["-C", root, "add", "fixture.ts"]);
+    execFileSync("git", [
+      "-C", root, "-c", "user.name=Test", "-c", "user.email=test@example.com",
+      "commit", "-qm", "fixture"
+    ]);
+    const runtime = new BatchMappingRuntime(2, 2);
+    const application = new DiagramApplication(new DiagramStore(root), runtime);
+    const set = await application.createDiagramSet({
+      path: root,
+      name: "Mapping batch",
+      prompt: "Show the worker"
+    });
+    await application.collectCodeEntities(set.id);
+    const entities = (await application.workspace()).codeEntitySets[set.codeEntitiesSetId].entities;
+    const generated = await application.generate(set.id, {
+      prompt: "Show the worker",
+      selectedCodeEntityIds: entities.map((entity) => entity.id),
+      count: 3,
+      outputKind: "diagram"
+    });
+    const diagramIds = generated.diagramSets[0].diagramIds;
+    const targets = diagramIds.map((artifactId) => ({
+      artifactKind: "diagram" as const,
+      artifactId
+    }));
+    const progressEvents: Array<{ artifactId?: string; status?: string }> = [];
+
+    const result = await application.mapCodeEntitiesBatch(
+      set.id,
+      targets,
+      2,
+      (event) => {
+        if (event.type === "progress") progressEvents.push(event);
+      }
+    );
+
+    expect(runtime.maxActiveMappings).toBe(2);
+    expect(result.results.map((item) => item.status)).toEqual([
+      "complete", "failed", "complete"
+    ]);
+    expect(result.results[1].error).toBe("synthetic mapping failure");
+    expect(progressEvents.filter((event) => event.status === "generating")
+      .map((event) => event.artifactId)).toEqual(diagramIds);
+    expect(Object.keys(result.workspace.codeEntityMaps)).toEqual(expect.arrayContaining([
+      diagramIds[0], diagramIds[2]
+    ]));
+    expect(result.workspace.codeEntityMaps[diagramIds[1]]).toBeUndefined();
+    const mappingRuns = Object.values(result.workspace.agentRuns)
+      .filter((run) => run.kind === "map-code-entities");
+    expect(mappingRuns).toHaveLength(3);
+    expect(mappingRuns.map((run) => run.status).sort()).toEqual([
+      "complete", "complete", "failed"
+    ]);
+    const attachedRunIds = result.workspace.diagramSets[0].agentRunIds;
+    expect(mappingRuns.every((run) => attachedRunIds.includes(run.id))).toBe(true);
   });
 
   it("round-trips a mapped artifact with foreign CodeEntity dependencies", async () => {

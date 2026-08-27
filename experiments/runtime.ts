@@ -204,7 +204,7 @@ export class FakeExperimentRuntime implements ExperimentRuntime {
     return {
       name: `${request.axis.label} ${request.value.toFixed(2)} r${request.replicate}`,
       ascii: semantic ? `+------------------------------------------------+\n| ${detail}\n+------------------------------------------------+` : route,
-      codeEntityIds: request.generation.allowedCodeEntityIds.slice(0, 1)
+      codeEntityIds: request.generation.allowedCodeEntityAliases.slice(0, 1).map(({ id }) => id)
     };
   }
 

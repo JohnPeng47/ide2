@@ -3,6 +3,7 @@ import type { Connect, Plugin } from "vite";
 import {
   isDiagramViewKind,
   type ArtifactImportInput,
+  type CodeEntityMappingTarget,
   type GenerationDerivationRecord,
   type GenerationReferenceSelection
 } from "../src/domain";
@@ -110,6 +111,15 @@ function parseDiagramStar(pathname: string): { setId: string; diagramId: string 
   return match ? { setId: match[1], diagramId: match[2] } : null;
 }
 
+function parseDiagramCandidateFeedback(
+  pathname: string
+): { setId: string; candidateBatchId: string } | null {
+  const match = pathname.match(
+    /^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/candidate-batches\/([a-z0-9][a-z0-9-]*)\/feedback$/
+  );
+  return match ? { setId: match[1], candidateBatchId: match[2] } : null;
+}
+
 function parseDiagramComponents(pathname: string): { setId: string; diagramId: string } | null {
   const match = pathname.match(
     /^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/diagrams\/([a-z0-9][a-z0-9-]*)\/components$/
@@ -131,6 +141,13 @@ function parseCodeEntityMap(pathname: string): {
     artifactKind: match[2] === "diagrams" ? "diagram" : "diagram-component",
     artifactId: match[3]
   };
+}
+
+function parseCodeEntityMapBatch(pathname: string): { setId: string } | null {
+  const match = pathname.match(
+    /^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/code-entity-maps$/
+  );
+  return match ? { setId: match[1] } : null;
 }
 
 function parseComponentAction(pathname: string): {
@@ -321,7 +338,9 @@ export function diagramApi(
         return sendJson(response, 200, await application.saveSystemPromptTemplate({
           label: body.label,
           description: body.description,
-          prompts: body.prompts
+          prompts: body.prompts,
+          referencePrompts: body.referencePrompts,
+          variableOverrides: body.variableOverrides
         }));
       }
       if (url.pathname === "/api/code-entity-prompt-templates") {
@@ -385,7 +404,9 @@ export function diagramApi(
           id: systemPromptTemplate.id,
           label: body.label,
           description: body.description,
-          prompts: body.prompts
+          prompts: body.prompts,
+          referencePrompts: body.referencePrompts,
+          variableOverrides: body.variableOverrides
         }));
       }
       if (url.pathname === "/api/diagram-sets") {
@@ -394,6 +415,10 @@ export function diagramApi(
         const inputPath = typeof body.path === "string" ? body.path : "";
         const name = typeof body.name === "string" ? body.name : "";
         const prompt = typeof body.prompt === "string" ? body.prompt : "";
+        const referencePrompt = typeof body.referencePrompt === "string"
+          ? body.referencePrompt
+          : undefined;
+        const runReferencePrompt = body.runReferencePrompt === true;
         const requestedPromptTemplateId = body.promptTemplateId;
         const requestedCodeEntityPromptTemplateId = body.codeEntityPromptTemplateId;
         if (!inputPath || !name.trim()) {
@@ -424,7 +449,11 @@ export function diagramApi(
         );
         const workspace = await application.generateInitialDiagrams(
           diagramSet.id,
-          { promptTemplateId: promptTemplate.id },
+          {
+            promptTemplateId: promptTemplate.id,
+            runReferencePrompt,
+            referencePrompt
+          },
           (event) => sendEvent(response, event)
         );
         const completedSet = workspace.diagramSets.find((set) => set.id === diagramSet.id);
@@ -548,6 +577,68 @@ export function diagramApi(
             body.starred
           )
         );
+      }
+      const candidateFeedback = parseDiagramCandidateFeedback(url.pathname);
+      if (candidateFeedback) {
+        if (request.method !== "PUT") return sendJson(response, 405, { error: "method not allowed" });
+        const body = await readBody(request) as Record<string, unknown>;
+        if (!Array.isArray(body.rankings) || !body.rankings.every((value) => {
+          if (!value || typeof value !== "object") return false;
+          const ranking = value as Record<string, unknown>;
+          return typeof ranking.diagramId === "string" && typeof ranking.rank === "number";
+        })) {
+          return sendJson(response, 400, {
+            error: "rankings must contain a diagramId and numerical rank for every candidate"
+          });
+        }
+        return sendJson(
+          response,
+          200,
+          await application.rankDiagramCandidates(
+            candidateFeedback.setId,
+            candidateFeedback.candidateBatchId,
+            body.rankings as Array<{ diagramId: string; rank: number }>
+          )
+        );
+      }
+      const codeEntityMapBatch = parseCodeEntityMapBatch(url.pathname);
+      if (codeEntityMapBatch) {
+        if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
+        const body = await readBody(request) as Record<string, unknown>;
+        const artifacts = Array.isArray(body.artifacts)
+          ? body.artifacts.flatMap((value): CodeEntityMappingTarget[] => {
+              if (!value || typeof value !== "object") return [];
+              const target = value as Record<string, unknown>;
+              if ((target.artifactKind !== "diagram" && target.artifactKind !== "diagram-component")
+                || typeof target.artifactId !== "string" || !target.artifactId.trim()) return [];
+              return [{ artifactKind: target.artifactKind, artifactId: target.artifactId }];
+            })
+          : [];
+        if (!Array.isArray(body.artifacts) || artifacts.length !== body.artifacts.length) {
+          return sendJson(response, 400, {
+            error: "artifacts must contain an artifactKind and artifactId for every target"
+          });
+        }
+        if (artifacts.length === 0) {
+          return sendJson(response, 400, { error: "at least one artifact is required for mapping" });
+        }
+        const concurrency = body.concurrency === undefined ? 3 : Number(body.concurrency);
+        if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 6) {
+          return sendJson(response, 400, { error: "mapping concurrency must be between 1 and 6" });
+        }
+        response.statusCode = 200;
+        response.setHeader("content-type", "application/x-ndjson; charset=utf-8");
+        response.setHeader("cache-control", "no-cache, no-transform");
+        response.flushHeaders();
+        const result = await application.mapCodeEntitiesBatch(
+          codeEntityMapBatch.setId,
+          artifacts,
+          concurrency,
+          (event) => sendEvent(response, event)
+        );
+        sendEvent(response, { type: "result", ...result });
+        response.end();
+        return;
       }
       const codeEntityMap = parseCodeEntityMap(url.pathname);
       if (codeEntityMap) {
@@ -702,10 +793,11 @@ export function diagramApi(
       const promptProfileId = typeof body.promptProfileId === "string"
         ? body.promptProfileId
         : undefined;
-      const referenceSelections: GenerationReferenceSelection[] | undefined = Array.isArray(body.referenceSelections)
-        ? body.referenceSelections.slice(0, 200).flatMap((value) => {
-          if (!value || typeof value !== "object") return [];
-          const selection = value as Record<string, unknown>;
+      const parseReferenceSelections = (value: unknown): GenerationReferenceSelection[] | undefined => (
+        Array.isArray(value)
+        ? value.slice(0, 200).flatMap((entry) => {
+          if (!entry || typeof entry !== "object") return [];
+          const selection = entry as Record<string, unknown>;
           const kind = selection.kind;
           if (kind !== "code-entity" && kind !== "diagram" && kind !== "diagram-component") return [];
           if (typeof selection.targetId !== "string"
@@ -720,7 +812,11 @@ export function diagramApi(
             included: selection.included
           }];
         })
-        : undefined;
+        : undefined
+      );
+      const referenceSelections = parseReferenceSelections(body.referenceSelections);
+      const referencePrompt = typeof body.referencePrompt === "string" ? body.referencePrompt : undefined;
+      const referencePromptSelections = parseReferenceSelections(body.referencePromptSelections);
       const rawDerivation = body.derivation;
       const derivation: GenerationDerivationRecord | undefined = rawDerivation && typeof rawDerivation === "object"
         ? (() => {
@@ -759,6 +855,8 @@ export function diagramApi(
         modelId,
         promptProfileId,
         referenceSelections,
+        referencePrompt,
+        referencePromptSelections,
         derivation
       }, (event) => sendEvent(response, event));
       sendEvent(response, { type: "result", workspace });

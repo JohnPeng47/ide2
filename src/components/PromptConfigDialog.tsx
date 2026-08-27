@@ -35,6 +35,20 @@ export function PromptConfigDialog(props: {
             <h3>Instruction</h3>
             <pre>{props.config.instruction || "(default instruction)"}</pre>
           </section>
+          {props.config.referencePrompt ? (
+            <section>
+              <h3>Reference follow-up</h3>
+              <pre>{props.config.referencePrompt.instruction}</pre>
+              {props.config.referencePrompt.references.length > 0 ? (
+                <ul>{props.config.referencePrompt.references.map((reference) => (
+                  <li key={`follow-up:${reference.kind}:${reference.targetId}`}>
+                    <code>{reference.token}</code>
+                    <span>{reference.kind} · included in follow-up</span>
+                  </li>
+                ))}</ul>
+              ) : <p>no resolved references</p>}
+            </section>
+          ) : null}
           <section>
             <h3>References</h3>
             {props.config.references.length > 0 ? (
@@ -54,6 +68,17 @@ export function PromptConfigDialog(props: {
               ))}</ul>
             ) : null}
           </section>
+          {props.config.systemPrompt.references?.length ? (
+            <section>
+              <h3>System template references</h3>
+              <ul>{props.config.systemPrompt.references.map((reference) => (
+                <li key={`system:${reference.kind}:${reference.targetId}`}>
+                  <code>{reference.token}</code>
+                  <span>{reference.kind} · supplied by prompt template</span>
+                </li>
+              ))}</ul>
+            </section>
+          ) : null}
           <details>
             <summary>Rendered context prompt</summary>
             <pre>{props.config.contextPrompt.rendered}</pre>
@@ -62,6 +87,12 @@ export function PromptConfigDialog(props: {
             <summary>Rendered system prompt</summary>
             <pre>{props.config.systemPrompt.rendered}</pre>
           </details>
+          {props.config.referencePrompt ? (
+            <details>
+              <summary>Rendered reference follow-up prompt</summary>
+              <pre>{props.config.referencePrompt.rendered}</pre>
+            </details>
+          ) : null}
         </div>
       </section>
     </div>

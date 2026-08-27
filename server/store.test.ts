@@ -219,6 +219,12 @@ describe("DiagramStore", () => {
       systemPrompt: { profileId: "default" }
     });
     expect(workspace.diagrams[diagram.id].generationPromptConfigId).toBe(config.id);
+    expect(batch.diagramCandidateBatchId).toMatch(/^candidate-batch-/);
+    expect(workspace.diagramCandidateBatches[batch.diagramCandidateBatchId!]).toMatchObject({
+      generationBatchId: batch.id,
+      diagramIds: [diagram.id],
+      rankings: {}
+    });
     const migratedBatch = await readFile(
       path.join(setRoot, "generation-batches", "batch-legacy.json"),
       "utf8"
@@ -229,6 +235,11 @@ describe("DiagramStore", () => {
       path.join(setRoot, "generation-prompts", `${config.id}.json`),
       "utf8"
     )).resolves.toContain('"legacy rendered context"');
+    await expect(readFile(path.join(
+      setRoot,
+      "diagram-candidate-batches",
+      `${batch.diagramCandidateBatchId}.json`
+    ), "utf8")).resolves.toContain(`"generationBatchId": "${batch.id}"`);
     await expect(store.saveGenerationPromptConfig({
       ...config,
       instruction: "mutated"

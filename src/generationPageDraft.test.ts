@@ -20,10 +20,12 @@ function memoryStorage(): Storage {
 }
 
 const draft: GenerationPageDraft = {
-  version: 3,
+  version: 4,
   prompt: "Refine @diagram/source",
+  referencePrompt: "Use the visual style of @diagram/reference",
   selectedCodeEntityIds: ["entity-a"],
   excludedReferenceKeys: ["diagram:diagram-source"],
+  excludedReferencePromptKeys: ["diagram:diagram-reference"],
   count: 2,
   targetKind: "diagram-component",
   modelId: "gpt-5.6-terra",
@@ -53,5 +55,16 @@ describe("generation page drafts", () => {
     expect(readGenerationPageDraft(storage, "draft")).toBeNull();
     storage.setItem("draft", "not json");
     expect(readGenerationPageDraft(storage, "draft")).toBeNull();
+  });
+
+  it("migrates version 3 drafts without a reference prompt", () => {
+    const storage = memoryStorage();
+    const { referencePrompt: _referencePrompt, excludedReferencePromptKeys: _excluded, ...legacy } = draft;
+    storage.setItem("draft", JSON.stringify({ ...legacy, version: 3 }));
+    expect(readGenerationPageDraft(storage, "draft")).toMatchObject({
+      version: 4,
+      referencePrompt: "",
+      excludedReferencePromptKeys: []
+    });
   });
 });

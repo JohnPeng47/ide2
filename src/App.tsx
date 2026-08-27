@@ -18,7 +18,7 @@ import {
   generateArtifacts,
   finishEdit,
   importGlobalArtifact,
-  mapCodeEntities,
+  mapCodeEntitiesBatch,
   placeEditMarker,
   redoEdit,
   renameDiagram,
@@ -26,6 +26,7 @@ import {
   resetSystemPromptTemplate,
   resetCodeEntityPromptTemplate,
   saveCodeEntityPromptTemplate,
+  saveDiagramCandidateRankings,
   saveSystemPromptTemplate,
   setStarredDiagram,
   deleteSystemPromptTemplate,
@@ -60,6 +61,7 @@ import {
   buildDerivativePrompt,
   diagramReferencesInPrompt,
   promptCorrection,
+  rebaseDerivativePrompt,
   type DerivativePromptDraft
 } from "./derivativePrompt";
 import {
@@ -83,6 +85,8 @@ import {
   isDiagramArchived,
   outputKindForTarget,
   type ArtifactImportInput,
+  type AgentRunStatus,
+  type CodeEntityMappingTarget,
   type CodeEntityPromptTemplateRecord,
   type DiagramComponentRecord,
   type DiagramElementMapping,
@@ -97,9 +101,40 @@ import {
   type SystemPromptTemplateRecord,
   type WorkspaceSnapshot
 } from "./domain";
-import { defaultGenerationInstruction } from "./prompt";
+import { defaultGenerationInstruction, type PromptOption } from "./prompt";
 
 type Screen = "diagram" | "diagram-component" | "generation";
+
+interface MappingJobState {
+  status: AgentRunStatus;
+  progress: string;
+  error?: string;
+}
+
+function mappingJobKey(setId: string, target: CodeEntityMappingTarget): string {
+  return `${setId}:${target.artifactKind}:${target.artifactId}`;
+}
+
+function mergeMappingWorkspace(
+  current: WorkspaceSnapshot | null,
+  incoming: WorkspaceSnapshot,
+  setId: string
+): WorkspaceSnapshot {
+  if (!current) return incoming;
+  const incomingSet = incoming.diagramSets.find((set) => set.id === setId);
+  return {
+    ...current,
+    diagramSets: current.diagramSets.map((set) => set.id === setId && incomingSet
+      ? {
+          ...set,
+          agentRunIds: [...new Set([...set.agentRunIds, ...incomingSet.agentRunIds])],
+          updatedAt: set.updatedAt > incomingSet.updatedAt ? set.updatedAt : incomingSet.updatedAt
+        }
+      : set),
+    agentRuns: { ...current.agentRuns, ...incoming.agentRuns },
+    codeEntityMaps: { ...current.codeEntityMaps, ...incoming.codeEntityMaps }
+  };
+}
 
 const PRIMARY_PANE_ID = "primary";
 const CONTEXT_PANE_ID = "context";
@@ -209,6 +244,7 @@ function StudioPage(props: { onExperiments: () => void }) {
   const [screen, setScreen] = useState<Screen>("generation");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [prompt, setPrompt] = useState("");
+  const [referencePrompt, setReferencePrompt] = useState("");
   const [count, setCount] = useState(DEFAULT_GENERATION_COUNT);
   const [targetKind, setTargetKind] = useState<GenerationTargetKind>("diagram");
   const [generationModelId, setGenerationModelId] = useState<DiagramModelId>(DEFAULT_DIAGRAM_MODEL_ID);
@@ -218,6 +254,7 @@ function StudioPage(props: { onExperiments: () => void }) {
   const [historicalReferences, setHistoricalReferences] = useState<PromptReference[]>([]);
   const [derivativeDraft, setDerivativeDraft] = useState<DerivativePromptDraft | null>(null);
   const [excludedReferenceKeys, setExcludedReferenceKeys] = useState<Set<string>>(new Set());
+  const [excludedReferencePromptKeys, setExcludedReferencePromptKeys] = useState<Set<string>>(new Set());
   const [restoredGenerationDraftKey, setRestoredGenerationDraftKey] = useState<string | null>(null);
   const [contextTab, setContextTab] = useState<ContextTab>("code-entities");
   const [progress, setProgress] = useState("");
@@ -233,9 +270,7 @@ function StudioPage(props: { onExperiments: () => void }) {
   const [editBusy, setEditBusy] = useState(false);
   const [editProgress, setEditProgress] = useState("");
   const [editError, setEditError] = useState<string | null>(null);
-  const [mappingBusy, setMappingBusy] = useState(false);
-  const [mappingProgress, setMappingProgress] = useState("");
-  const [mappingError, setMappingError] = useState<string | null>(null);
+  const [mappingJobs, setMappingJobs] = useState<Record<string, MappingJobState>>({});
   const [starBusy, setStarBusy] = useState(false);
   const [callGraphFocusViews, setCallGraphFocusViews] = useState<Record<string, CallGraphFocusResult>>({});
   const [codeEntityReveal, setCodeEntityReveal] = useState<CodeEntityReveal | undefined>();
@@ -315,6 +350,30 @@ function StudioPage(props: { onExperiments: () => void }) {
         Boolean(component) && !isDiagramComponentArchived(component)
       ))
     : [], [activeSet, workspace]);
+  const promptTemplateReferenceOptions = useMemo<PromptOption[]>(() => workspace ? [
+    ...workspace.globalImports.diagramIds.flatMap((id) => {
+      const diagram = workspace.diagrams[id];
+      return diagram && !isDiagramArchived(diagram) ? [{
+        kind: "diagram" as const,
+        id: diagram.id,
+        handle: diagram.handle,
+        label: diagram.name,
+        token: `@diagram/${diagram.handle}`,
+        ...(diagram.recordOrigin ? { origin: diagram.recordOrigin } : {})
+      }] : [];
+    }),
+    ...workspace.globalImports.diagramComponentIds.flatMap((id) => {
+      const component = workspace.diagramComponents[id];
+      return component && !isDiagramComponentArchived(component) ? [{
+        kind: "diagram-component" as const,
+        id: component.id,
+        handle: component.handle,
+        label: component.name,
+        token: `@component/${component.handle}`,
+        ...(component.recordOrigin ? { origin: component.recordOrigin } : {})
+      }] : [];
+    })
+  ] : [], [workspace]);
   const foundationDiagram = activeSet?.featuredViewIds.diagram
     ? diagrams.find((diagram) => diagram.id === activeSet.featuredViewIds.diagram)
     : undefined;
@@ -339,6 +398,11 @@ function StudioPage(props: { onExperiments: () => void }) {
     diagrams: workspace?.diagrams ?? {},
     historicalReferences
   }), [historicalReferences, prompt, workspace?.diagrams]);
+  const referencePromptDiagramReferences = useMemo(() => diagramReferencesInPrompt({
+    prompt: referencePrompt,
+    diagrams: workspace?.diagrams ?? {},
+    historicalReferences
+  }), [historicalReferences, referencePrompt, workspace?.diagrams]);
   const promptProfiles = useMemo(() => {
     const builtInOrder = ["default", "structure-first", "flow-first", "compact"];
     return Object.values(workspace?.systemPromptTemplates ?? {}).sort((left, right) => {
@@ -360,7 +424,8 @@ function StudioPage(props: { onExperiments: () => void }) {
   const restoreGenerationDraft = (
     draftKey: string,
     legacyPromptKey: string,
-    defaults: GenerationPageDraft
+    defaults: GenerationPageDraft,
+    transformPrompt: (value: string) => string = (value) => value
   ) => {
     const stored = readGenerationPageDraft(window.localStorage, draftKey);
     const availableEntityIds = new Set(entitySet?.entities.map((entity) => entity.id) ?? []);
@@ -371,11 +436,15 @@ function StudioPage(props: { onExperiments: () => void }) {
       && promptProfiles.some((profile) => profile.id === stored.promptProfileId)
       ? stored.promptProfileId
       : defaults.promptProfileId;
-    setPrompt(stored?.prompt
+    setPrompt(transformPrompt(stored?.prompt
       ?? readLegacyGenerationPromptDraft(window.localStorage, legacyPromptKey)
-      ?? defaults.prompt);
+      ?? defaults.prompt));
+    setReferencePrompt(stored?.referencePrompt ?? defaults.referencePrompt);
     setSelectedIds(new Set(selectedCodeEntityIds));
     setExcludedReferenceKeys(new Set(stored?.excludedReferenceKeys ?? defaults.excludedReferenceKeys));
+    setExcludedReferencePromptKeys(new Set(
+      stored?.excludedReferencePromptKeys ?? defaults.excludedReferencePromptKeys
+    ));
     setCount(stored?.count ?? defaults.count);
     setTargetKind(stored?.targetKind ?? defaults.targetKind);
     setGenerationModelId(stored?.modelId ?? defaults.modelId);
@@ -421,6 +490,32 @@ function StudioPage(props: { onExperiments: () => void }) {
     ? workspace.codeEntityMaps[`${activeSet.id}:${selectedArtifact.id}`]
       ?? workspace.codeEntityMaps[selectedArtifact.id]
     : undefined;
+  const selectedMappingTarget: CodeEntityMappingTarget | undefined = selectedArtifact
+    ? { artifactKind: selectedArtifactKind, artifactId: selectedArtifact.id }
+    : undefined;
+  const selectedMappingJob = selectedMappingTarget && activeSet
+    ? mappingJobs[mappingJobKey(activeSet.id, selectedMappingTarget)]
+    : undefined;
+  const selectedMappingBusy = selectedMappingJob
+    ? !["complete", "failed", "interrupted"].includes(selectedMappingJob.status)
+    : false;
+  const selectedCandidateBatch = activeDiagram && workspace
+    ? Object.values(workspace.diagramCandidateBatches).find(
+        (batch) => batch.diagramIds.includes(activeDiagram.id)
+      )
+    : undefined;
+  const unmappedCandidateTargets = activeSet && workspace && selectedCandidateBatch
+    ? selectedCandidateBatch.diagramIds.flatMap((diagramId): CodeEntityMappingTarget[] => {
+        const diagram = workspace.diagrams[diagramId];
+        if (!diagram || isDiagramArchived(diagram)) return [];
+        const target = { artifactKind: "diagram" as const, artifactId: diagramId };
+        const job = mappingJobs[mappingJobKey(activeSet.id, target)];
+        const running = job && !["complete", "failed", "interrupted"].includes(job.status);
+        const mapped = workspace.codeEntityMaps[`${activeSet.id}:${diagramId}`]
+          ?? workspace.codeEntityMaps[diagramId];
+        return running || mapped ? [] : [target];
+      })
+    : [];
   const activeEditSession = activeEditSessionId && workspace
     ? workspace.editSessions[activeEditSessionId] ?? null
     : null;
@@ -510,8 +605,6 @@ function StudioPage(props: { onExperiments: () => void }) {
     : undefined;
 
   useEffect(() => {
-    setMappingProgress("");
-    setMappingError(null);
     setCodeEntityReveal(undefined);
   }, [selectedArtifact?.id]);
 
@@ -525,10 +618,12 @@ function StudioPage(props: { onExperiments: () => void }) {
         draftKey,
         legacyGenerationPromptDraftKey(workspace.project.id, activeSet.id),
         {
-          version: 3,
+          version: 4,
           prompt: "",
+          referencePrompt: "",
           selectedCodeEntityIds: entitySet.entities.map((entity) => entity.id),
           excludedReferenceKeys: [],
+          excludedReferencePromptKeys: [],
           count: DEFAULT_GENERATION_COUNT,
           targetKind: "diagram",
           modelId: DEFAULT_DIAGRAM_MODEL_ID,
@@ -547,8 +642,7 @@ function StudioPage(props: { onExperiments: () => void }) {
     setActiveEditSessionId(null);
     setEditPrompt("");
     setMarkerMode(false);
-    setMappingProgress("");
-    setMappingError(null);
+    setMappingJobs({});
     setCodeEntityReveal(undefined);
     const activeDiagramIds = activeSet.diagramIds.filter((id) => {
       const diagram = workspace?.diagrams[id];
@@ -577,10 +671,12 @@ function StudioPage(props: { onExperiments: () => void }) {
     if (!currentGenerationDraftKey
       || restoredGenerationDraftKey !== currentGenerationDraftKey) return;
     saveGenerationPageDraft(window.localStorage, currentGenerationDraftKey, {
-      version: 3,
+      version: 4,
       prompt,
+      referencePrompt,
       selectedCodeEntityIds: [...selectedIds],
       excludedReferenceKeys: [...excludedReferenceKeys],
+      excludedReferencePromptKeys: [...excludedReferencePromptKeys],
       count,
       targetKind,
       modelId: generationModelId,
@@ -590,10 +686,12 @@ function StudioPage(props: { onExperiments: () => void }) {
     count,
     currentGenerationDraftKey,
     excludedReferenceKeys,
+    excludedReferencePromptKeys,
     generationModelId,
     targetKind,
     prompt,
     promptProfileId,
+    referencePrompt,
     restoredGenerationDraftKey,
     selectedIds
   ]);
@@ -628,7 +726,9 @@ function StudioPage(props: { onExperiments: () => void }) {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || !(event.ctrlKey || event.metaKey)) return;
-      if ((event.target as HTMLElement | null)?.closest("#edit-prompt")) return;
+      if ((event.target as HTMLElement | null)?.closest(
+        "textarea, input, [contenteditable='true'], [contenteditable='plaintext-only']"
+      )) return;
       if (event.key.toLowerCase() === "z" && !event.shiftKey) {
         event.preventDefault();
         editShortcutHandlers.current.undo();
@@ -662,16 +762,29 @@ function StudioPage(props: { onExperiments: () => void }) {
     || initialGenerationPending
     || activeSet.readiness === "failed";
 
-  const generate = async () => {
+  const generate = async (
+    instruction = prompt,
+    referenceInstruction = referencePrompt
+  ) => {
     setBusy(true);
     setError(null);
     setProgress("queuing generation batch");
     const beforeDiagrams = new Set(activeSet.diagramIds);
     const beforeComponents = new Set(activeSet.diagramComponentIds);
     const outputKind = outputKindForTarget(targetKind);
+    const generationDiagramReferences = diagramReferencesInPrompt({
+      prompt: instruction,
+      diagrams: workspace.diagrams,
+      historicalReferences
+    });
+    const generationReferencePromptDiagramReferences = diagramReferencesInPrompt({
+      prompt: referenceInstruction,
+      diagrams: workspace.diagrams,
+      historicalReferences
+    });
     try {
       const next = await generateArtifacts(activeSet.id, {
-        prompt,
+        prompt: instruction,
         selectedCodeEntityIds: targetKind === "call-graph" || targetKind === "dir-view"
           ? immutableCodeEntities.map((entity) => entity.id)
           : [...selectedIds],
@@ -680,7 +793,7 @@ function StudioPage(props: { onExperiments: () => void }) {
         ...(outputKind === "diagram" ? { viewKind: targetKind as DiagramViewKind } : {}),
         modelId: generationModelId,
         promptProfileId,
-        referenceSelections: promptDiagramReferences.flatMap((reference) => (
+        referenceSelections: generationDiagramReferences.flatMap((reference) => (
           reference.tokens.map((token) => ({
             kind: reference.kind,
             targetId: reference.targetId,
@@ -690,9 +803,22 @@ function StudioPage(props: { onExperiments: () => void }) {
             included: reference.available && !excludedReferenceKeys.has(reference.key)
           }))
         )),
+        ...(referenceInstruction.trim() ? {
+          referencePrompt: referenceInstruction,
+          referencePromptSelections: generationReferencePromptDiagramReferences.flatMap((reference) => (
+            reference.tokens.map((token) => ({
+              kind: reference.kind,
+              targetId: reference.targetId,
+              ...(reference.origin ? { origin: reference.origin } : {}),
+              token,
+              handle: reference.handle,
+              included: reference.available && !excludedReferencePromptKeys.has(reference.key)
+            }))
+          ))
+        } : {}),
         derivation: derivativeDraft ? {
           ...derivativeDraft.derivation,
-          promptCorrection: promptCorrection(prompt, derivativeDraft)
+          promptCorrection: promptCorrection(instruction, derivativeDraft)
         } : undefined
       }, setProgress);
       setWorkspace(next);
@@ -728,19 +854,10 @@ function StudioPage(props: { onExperiments: () => void }) {
 
   const updateGenerationPrompt = (value: string) => {
     setPrompt(value);
-    if (currentGenerationDraftKey
-      && restoredGenerationDraftKey === currentGenerationDraftKey) {
-      saveGenerationPageDraft(window.localStorage, currentGenerationDraftKey, {
-        version: 3,
-        prompt: value,
-        selectedCodeEntityIds: [...selectedIds],
-        excludedReferenceKeys: [...excludedReferenceKeys],
-        count,
-        targetKind,
-        modelId: generationModelId,
-        promptProfileId
-      });
-    }
+  };
+
+  const updateReferencePrompt = (value: string) => {
+    setReferencePrompt(value);
   };
 
   const insertReferenceTokens = (tokens: string) => {
@@ -753,7 +870,10 @@ function StudioPage(props: { onExperiments: () => void }) {
   };
 
   const persistPromptTemplate = async (
-    draft: Pick<SystemPromptTemplateRecord, "label" | "description" | "prompts"> & { id?: string }
+    draft: Pick<
+      SystemPromptTemplateRecord,
+      "label" | "description" | "prompts" | "referencePrompts" | "variableOverrides"
+    > & { id?: string }
   ): Promise<SystemPromptTemplateRecord> => {
     const beforeIds = new Set(Object.keys(workspace.systemPromptTemplates));
     const next = await saveSystemPromptTemplate(draft);
@@ -823,7 +943,14 @@ function StudioPage(props: { onExperiments: () => void }) {
             "call-graph": draft.prompts["call-graph"] ?? "",
             "dir-view": draft.prompts["dir-view"] ?? "",
             "diagram-component": draft.prompts["diagram-component"] ?? ""
-        }
+          },
+          referencePrompts: {
+            diagram: draft.referencePrompts?.diagram ?? "",
+            "call-graph": draft.referencePrompts?.["call-graph"] ?? "",
+            "dir-view": draft.referencePrompts?.["dir-view"] ?? "",
+            "diagram-component": draft.referencePrompts?.["diagram-component"] ?? ""
+          },
+          variableOverrides: draft.variableOverrides
       });
     }
     return persistCodeEntityPromptTemplate({
@@ -869,19 +996,22 @@ function StudioPage(props: { onExperiments: () => void }) {
       draftKey,
       legacyGenerationPromptDraftKey(workspace.project!.id, activeSet.id, draft.derivation),
       {
-        version: 3,
+        version: 4,
         prompt: draft.prompt,
+        referencePrompt: "",
         selectedCodeEntityIds: workspace.globalImports.diagramIds.includes(diagram.id)
           ? [...selectedIds]
           : config?.selectedCodeEntityIds ?? diagram.codeEntityIds,
         excludedReferenceKeys: [],
+        excludedReferencePromptKeys: [],
         count: DEFAULT_GENERATION_COUNT,
         targetKind: config?.outputKind === "diagram-component"
           ? "diagram-component"
           : config?.viewKind ?? diagram.viewKind,
         modelId: config?.modelId ?? DEFAULT_DIAGRAM_MODEL_ID,
         promptProfileId: config?.systemPrompt.profileId ?? DEFAULT_GENERATION_PROMPT_PROFILE_ID
-      }
+      },
+      (value) => rebaseDerivativePrompt(value, draft)
     );
     setHistoricalReferences(draft.historicalReferences);
     setDerivativeDraft(draft);
@@ -908,17 +1038,20 @@ function StudioPage(props: { onExperiments: () => void }) {
       draftKey,
       legacyGenerationPromptDraftKey(workspace.project!.id, activeSet.id, draft.derivation),
       {
-        version: 3,
+        version: 4,
         prompt: draft.prompt,
+        referencePrompt: "",
         selectedCodeEntityIds: workspace.globalImports.diagramComponentIds.includes(component.id)
           ? [...selectedIds]
           : config?.selectedCodeEntityIds ?? component.codeEntityIds,
         excludedReferenceKeys: [],
+        excludedReferencePromptKeys: [],
         count: DEFAULT_GENERATION_COUNT,
         targetKind: config?.outputKind === "diagram" ? config.viewKind ?? "diagram" : "diagram-component",
         modelId: config?.modelId ?? DEFAULT_DIAGRAM_MODEL_ID,
         promptProfileId: config?.systemPrompt.profileId ?? DEFAULT_GENERATION_PROMPT_PROFILE_ID
-      }
+      },
+      (value) => rebaseDerivativePrompt(value, draft)
     );
     setHistoricalReferences(draft.historicalReferences);
     setDerivativeDraft(draft);
@@ -1025,6 +1158,17 @@ function StudioPage(props: { onExperiments: () => void }) {
     } finally {
       setStarBusy(false);
     }
+  };
+
+  const saveCandidateRankings = async (
+    candidateBatchId: string,
+    rankings: Array<{ diagramId: string; rank: number }>
+  ) => {
+    setWorkspace(await saveDiagramCandidateRankings(
+      activeSet.id,
+      candidateBatchId,
+      rankings
+    ));
   };
 
   const archiveComponent = async (componentId: string) => {
@@ -1280,28 +1424,66 @@ function StudioPage(props: { onExperiments: () => void }) {
     setContextTab("code-entities");
   };
 
-  const generateCodeEntityMap = async () => {
-    if (!selectedArtifact) return;
-    setMappingBusy(true);
-    setMappingError(null);
-    setMappingProgress("queuing code-entity mapping");
+  const runCodeEntityMappings = async (targets: CodeEntityMappingTarget[]) => {
+    if (targets.length === 0) return;
+    const setId = activeSet.id;
+    setMappingJobs((current) => {
+      const next = { ...current };
+      for (const target of targets) {
+        next[mappingJobKey(setId, target)] = {
+          status: "queued",
+          progress: "queuing code-entity mapping"
+        };
+      }
+      return next;
+    });
     try {
-      const next = await mapCodeEntities(
-        activeSet.id,
-        selectedArtifactKind,
-        selectedArtifact.id,
-        setMappingProgress
+      const result = await mapCodeEntitiesBatch(
+        setId,
+        targets,
+        (event) => setMappingJobs((current) => ({
+          ...current,
+          [mappingJobKey(setId, event)]: {
+            status: event.status,
+            progress: event.message,
+            ...(event.status === "failed" ? { error: event.message } : {})
+          }
+        }))
       );
-      setWorkspace(next);
-      const count = (next.codeEntityMaps[`${activeSet.id}:${selectedArtifact.id}`]
-        ?? next.codeEntityMaps[selectedArtifact.id])?.mappings.length ?? 0;
-      setMappingProgress(`mapped ${count} diagram elements`);
+      setWorkspace((current) => mergeMappingWorkspace(current, result.workspace, setId));
+      setMappingJobs((current) => {
+        const next = { ...current };
+        for (const item of result.results) {
+          next[mappingJobKey(setId, item)] = item.status === "complete"
+            ? {
+                status: "complete",
+                progress: `mapped ${item.mappingCount ?? 0} diagram elements`
+              }
+            : {
+                status: "failed",
+                progress: "",
+                error: item.error ?? "code-entity mapping failed"
+              };
+        }
+        return next;
+      });
     } catch (caught) {
-      setMappingError(caught instanceof Error ? caught.message : "code-entity mapping failed");
-      setMappingProgress("");
-    } finally {
-      setMappingBusy(false);
+      const message = caught instanceof Error ? caught.message : "code-entity mapping failed";
+      setMappingJobs((current) => {
+        const next = { ...current };
+        for (const target of targets) {
+          const key = mappingJobKey(setId, target);
+          if (next[key]?.status === "complete") continue;
+          next[key] = { status: "failed", progress: "", error: message };
+        }
+        return next;
+      });
     }
+  };
+
+  const generateCodeEntityMap = async () => {
+    if (!selectedMappingTarget) return;
+    await runCodeEntityMappings([selectedMappingTarget]);
   };
 
   const openCallGraphFocus = async (request: CallGraphFocusRequest) => {
@@ -1370,10 +1552,13 @@ function StudioPage(props: { onExperiments: () => void }) {
       historicalReferences={historicalReferences}
       diagramReferences={promptDiagramReferences}
       excludedReferenceKeys={excludedReferenceKeys}
+      referencePromptDiagramReferences={referencePromptDiagramReferences}
+      excludedReferencePromptKeys={excludedReferencePromptKeys}
       derivativeSourceReferenceKey={derivativeDraft?.derivation.sourceArtifactKind === "diagram"
         ? `diagram:${derivativeDraft.derivation.sourceArtifactId}`
         : undefined}
       prompt={prompt}
+      referencePrompt={referencePrompt}
       count={count}
       generating={busy}
       progress={progress}
@@ -1385,7 +1570,14 @@ function StudioPage(props: { onExperiments: () => void }) {
         : undefined}
       onBack={derivativeDraft ? leaveDerivative : undefined}
       onPrompt={updateGenerationPrompt}
+      onReferencePrompt={updateReferencePrompt}
       onToggleDiagramReference={(key) => setExcludedReferenceKeys((current) => {
+        const next = new Set(current);
+        if (next.has(key)) next.delete(key);
+        else next.add(key);
+        return next;
+      })}
+      onToggleReferencePromptDiagramReference={(key) => setExcludedReferencePromptKeys((current) => {
         const next = new Set(current);
         if (next.has(key)) next.delete(key);
         else next.add(key);
@@ -1395,7 +1587,7 @@ function StudioPage(props: { onExperiments: () => void }) {
       onTargetKind={changeGenerationTarget}
       onModel={setGenerationModelId}
       onPromptProfile={setPromptProfileId}
-      onGenerate={() => void generate()}
+      onGenerate={(instruction, referenceInstruction) => void generate(instruction, referenceInstruction)}
     />;
   } else if (screen === "diagram-component" && activeComponent) {
     primaryPaneContent = <DiagramView
@@ -1413,9 +1605,9 @@ function StudioPage(props: { onExperiments: () => void }) {
       projectId={workspace.project.id}
       diagramSetId={activeSet.id}
       onInsertReferenceTokens={insertReferenceTokens}
-      mappingBusy={mappingBusy}
-      mappingProgress={mappingProgress}
-      mappingError={mappingError}
+      mappingBusy={selectedMappingBusy}
+      mappingProgress={selectedMappingJob?.progress ?? ""}
+      mappingError={selectedMappingJob?.error ?? null}
       onToggleEdit={() => void (editSession ? leaveEdit() : startEdit())}
       onMapCodeEntities={() => void generateCodeEntityMap()}
       onRevealCodeEntity={revealCodeEntity}
@@ -1440,14 +1632,16 @@ function StudioPage(props: { onExperiments: () => void }) {
       projectId={workspace.project.id}
       diagramSetId={activeSet.id}
       onInsertReferenceTokens={insertReferenceTokens}
-      mappingBusy={mappingBusy}
-      mappingProgress={mappingProgress}
-      mappingError={mappingError}
+      mappingBusy={selectedMappingBusy}
+      mappingProgress={selectedMappingJob?.progress ?? ""}
+      mappingError={selectedMappingJob?.error ?? null}
       starred={activeSet.featuredViewIds[activeDiagram.viewKind] === activeDiagram.id}
       starBusy={starBusy}
       onToggleStarred={() => void toggleStarred(activeDiagram.id)}
       onToggleEdit={() => void (editSession ? leaveEdit() : startEdit())}
       onMapCodeEntities={() => void generateCodeEntityMap()}
+      onMapAllCodeEntities={() => void runCodeEntityMappings(unmappedCandidateTargets)}
+      mapAllCodeEntitiesCount={unmappedCandidateTargets.length}
       onRevealCodeEntity={revealCodeEntity}
       onManualEdit={queueManualEdit}
       onMarker={(line, column) => void markLocation(line, column)}
@@ -1472,7 +1666,9 @@ function StudioPage(props: { onExperiments: () => void }) {
     diagramSet={activeSet}
     diagrams={diagrams}
     components={components}
+    allDiagrams={workspace.diagrams}
     generationBatches={workspace.generationBatches}
+    diagramCandidateBatches={workspace.diagramCandidateBatches}
     generationPromptConfigs={workspace.generationPromptConfigs}
     activeDiagram={screen === "diagram" ? activeDiagram ?? undefined : undefined}
     activeComponent={screen === "diagram-component" ? activeComponent ?? undefined : undefined}
@@ -1496,6 +1692,7 @@ function StudioPage(props: { onExperiments: () => void }) {
     onRenameDiagram={rename}
     onArchiveDiagram={archive}
     onArchiveComponent={archiveComponent}
+    onSaveCandidateRankings={saveCandidateRankings}
     onEditPrompt={setEditPrompt}
     onEditModel={setEditModelId}
     onMarkerMode={setMarkerMode}
@@ -1609,6 +1806,7 @@ function StudioPage(props: { onExperiments: () => void }) {
         <SystemPromptSettingsDialog
           generationTemplates={promptProfiles}
           codeEntityTemplates={codeEntityPromptProfiles}
+          referenceOptions={promptTemplateReferenceOptions}
           initialGenerationTemplateId={promptProfileId}
           onClose={() => setPromptSettingsOpen(false)}
           onSave={savePromptTemplate}

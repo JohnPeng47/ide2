@@ -7,6 +7,15 @@ export type DiagramSetReadiness = "collecting" | "ready" | "failed";
 export type GenerationOutputKind = "diagram" | "diagram-component";
 export type DiagramViewKind = "diagram" | "call-graph" | "dir-view";
 export type GenerationTargetKind = DiagramViewKind | "diagram-component";
+export type PromptTemplateVariable =
+  | "outputKind"
+  | "submissionTool"
+  | "referenceInstruction"
+  | "referenceContext";
+export type PromptTemplateVariableOverrides = Partial<Record<
+  GenerationTargetKind,
+  Partial<Record<PromptTemplateVariable, string>>
+>>;
 export type CodeEntityPromptKind = "code-entity-identification" | "code-entity-compaction";
 export const DEFAULT_GENERATION_COUNT = 3;
 export const DIAGRAM_MODELS = [
@@ -234,6 +243,15 @@ export interface GenerationPromptConfigRecord {
   references: GenerationPromptReference[];
   /** Mentioned references intentionally left out of the agent context. */
   omittedReferences?: PromptReference[];
+  /** Optional second user turn that restyles the first submitted artifact. */
+  referencePrompt?: {
+    templateVersion: 1;
+    instruction: string;
+    references: GenerationPromptReference[];
+    /** Mentioned follow-up references intentionally left out of model context. */
+    omittedReferences?: PromptReference[];
+    rendered: string;
+  };
   derivation?: GenerationDerivationRecord;
   contextPrompt: {
     templateVersion: 1;
@@ -244,6 +262,8 @@ export interface GenerationPromptConfigRecord {
     templateVersion: 1;
     profileId: GenerationPromptProfileId;
     profileVersion: number;
+    /** Artifact references declared by the selected system-prompt template. */
+    references?: GenerationPromptReference[];
     rendered: string;
   };
   createdAt: string;
@@ -261,10 +281,15 @@ export interface PromptTemplateRecord<TPromptName extends string, TProfileId ext
   updatedAt: string;
 }
 
-export type SystemPromptTemplateRecord = PromptTemplateRecord<
+export interface SystemPromptTemplateRecord extends PromptTemplateRecord<
   GenerationTargetKind,
   GenerationPromptProfileId
->;
+> {
+  /** User-message templates sent after the initial artifact submission. */
+  referencePrompts: Record<GenerationTargetKind, string>;
+  /** Optional literal replacements for the built-in or runtime template-variable values. */
+  variableOverrides?: PromptTemplateVariableOverrides;
+}
 
 export type CodeEntityPromptTemplateRecord = PromptTemplateRecord<
   CodeEntityPromptKind,
@@ -374,6 +399,17 @@ export interface DiagramCodeEntityMapRecord {
   createdAt: string;
 }
 
+export interface CodeEntityMappingTarget {
+  artifactKind: GenerationOutputKind;
+  artifactId: string;
+}
+
+export interface CodeEntityMappingResult extends CodeEntityMappingTarget {
+  status: "complete" | "failed";
+  mappingCount?: number;
+  error?: string;
+}
+
 export interface GenerationBatchRecord {
   schemaVersion: typeof SCHEMA_VERSION;
   id: string;
@@ -384,10 +420,25 @@ export interface GenerationBatchRecord {
   childRunIds: string[];
   outputDiagramIds: string[];
   outputDiagramComponentIds: string[];
+  /** Evaluation container created for successful diagram outputs. */
+  diagramCandidateBatchId?: string;
   status: GenerationBatchStatus;
   createdAt: string;
   updatedAt: string;
   error?: string;
+}
+
+export interface DiagramCandidateBatchRecord {
+  schemaVersion: typeof SCHEMA_VERSION;
+  id: string;
+  diagramSetId: string;
+  generationBatchId: string;
+  /** Immutable candidate membership in generation output order, including archived diagrams. */
+  diagramIds: string[];
+  /** One current rank per candidate. Empty until feedback is submitted. Lower is better. */
+  rankings: Record<string, number>;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AgentRunRecord {
@@ -469,6 +520,7 @@ export interface WorkspaceSnapshot {
   generationPromptConfigs: Record<string, GenerationPromptConfigRecord>;
   systemPromptTemplates: Record<string, SystemPromptTemplateRecord>;
   generationBatches: Record<string, GenerationBatchRecord>;
+  diagramCandidateBatches: Record<string, DiagramCandidateBatchRecord>;
   agentRuns: Record<string, AgentRunRecord>;
   editSessions: Record<string, EditSessionRecord>;
   codeEntityMaps: Record<string, DiagramCodeEntityMapRecord>;
@@ -486,6 +538,12 @@ export interface GeneratedArtifactDraft {
   name: string;
   ascii: string;
   codeEntityIds: string[];
+}
+
+/** A readable, prompt-only identifier that resolves to a persisted CodeEntity id. */
+export interface CodeEntityPromptAlias {
+  id: string;
+  alias: string;
 }
 
 export interface ArtifactEditDraft {
@@ -567,24 +625,100 @@ export class CodeEntity implements SelectableText {
   }
 }
 
+function promptAliasHash(value: string): string {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+export function qualifiedCodeEntityPromptAlias(entity: CodeEntityRecord): string {
+  const identity = entity.origin
+    ? `${entity.origin.projectId}/${entity.origin.diagramSetId}/${entity.origin.codeEntitiesSetId}/${entity.id}`
+    : entity.id;
+  return `entity-${entity.handle}--${promptAliasHash(identity)}`;
+}
+
+/**
+ * Recreates legacy handle-derived ids for prompt text. Only colliding handles
+ * receive a short deterministic qualifier; persisted ids never enter the text.
+ */
+export function createCodeEntityPromptAliases(
+  entities: readonly CodeEntityRecord[]
+): CodeEntityPromptAlias[] {
+  const uniqueEntities = [...new Map(entities.map((entity) => [entity.id, entity])).values()];
+  const handleCounts = new Map<string, number>();
+  for (const entity of uniqueEntities) {
+    const handle = entity.handle.toLowerCase();
+    handleCounts.set(handle, (handleCounts.get(handle) ?? 0) + 1);
+  }
+  return uniqueEntities.map((entity) => ({
+    id: entity.id,
+    alias: handleCounts.get(entity.handle.toLowerCase()) === 1
+      ? `entity-${entity.handle}`
+      : qualifiedCodeEntityPromptAlias(entity)
+  }));
+}
+
+export function resolveCodeEntityPromptAliases(
+  aliases: readonly string[],
+  allowed: readonly CodeEntityPromptAlias[]
+): string[] {
+  const idsByAlias = new Map<string, string>();
+  for (const entry of allowed) {
+    if (idsByAlias.has(entry.alias)) {
+      throw new Error(`ambiguous CodeEntity alias: ${entry.alias}`);
+    }
+    idsByAlias.set(entry.alias, entry.id);
+  }
+  return aliases.map((alias) => {
+    const id = idsByAlias.get(alias);
+    if (!id) throw new Error(`artifact references unavailable CodeEntity alias: ${alias}`);
+    return id;
+  });
+}
+
+function renderCodeEntityPromptAliases(
+  ids: readonly string[],
+  aliases: ReadonlyMap<string, string>
+): string {
+  return ids.map((id, index) => aliases.get(id) ?? `entity-reference-${index + 1}`).join(", ") || "none";
+}
+
+function renderArtifactPromptAscii(
+  ascii: string,
+  ids: readonly string[],
+  aliases: ReadonlyMap<string, string>
+): string {
+  const declaredIds = new Set(ids);
+  return ascii.replace(/\[([^\]]+)\]/g, (annotation, value: string) => {
+    const compact = value.replace(/\s+/g, "");
+    if (!declaredIds.has(compact)) return annotation;
+    const alias = aliases.get(compact);
+    return alias ? `[${alias}]` : annotation;
+  });
+}
+
 export class Diagram {
   constructor(readonly record: DiagramRecord) {}
 
-  prompt_str(): string {
+  prompt_str(codeEntityAliases: ReadonlyMap<string, string>): string {
     const derived = this.record.derivedFromDiagramIds.length
       ? this.record.derivedFromDiagramIds.join(", ")
       : "none";
-    return `Diagram @diagram/${this.record.handle}\nName: ${this.record.name}\nView: ${this.record.viewKind}\nCodeEntity ids: ${this.record.codeEntityIds.join(", ") || "none"}\nDerived from: ${derived}\nASCII:\n${this.record.ascii}`;
+    return `Diagram @diagram/${this.record.handle}\nName: ${this.record.name}\nView: ${this.record.viewKind}\nCodeEntity ids: ${renderCodeEntityPromptAliases(this.record.codeEntityIds, codeEntityAliases)}\nDerived from: ${derived}\nASCII:\n${renderArtifactPromptAscii(this.record.ascii, this.record.codeEntityIds, codeEntityAliases)}`;
   }
 }
 
 export class DiagramComponent {
   constructor(readonly record: DiagramComponentRecord) {}
 
-  prompt_str(): string {
+  prompt_str(codeEntityAliases: ReadonlyMap<string, string>): string {
     const diagrams = this.record.derivedFromDiagramIds.join(", ") || "none";
     const components = this.record.derivedFromDiagramComponentIds.join(", ") || "none";
-    return `DiagramComponent @component/${this.record.handle}\nName: ${this.record.name}\nCodeEntity ids: ${this.record.codeEntityIds.join(", ") || "none"}\nDerived from Diagrams: ${diagrams}\nDerived from DiagramComponents: ${components}\nASCII:\n${this.record.ascii}`;
+    return `DiagramComponent @component/${this.record.handle}\nName: ${this.record.name}\nCodeEntity ids: ${renderCodeEntityPromptAliases(this.record.codeEntityIds, codeEntityAliases)}\nDerived from Diagrams: ${diagrams}\nDerived from DiagramComponents: ${components}\nASCII:\n${renderArtifactPromptAscii(this.record.ascii, this.record.codeEntityIds, codeEntityAliases)}`;
   }
 }
 

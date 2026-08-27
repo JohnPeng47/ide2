@@ -11,6 +11,7 @@ import {
   GLOBAL_IMPORTS_DIAGRAM_SET_ID,
   SCHEMA_VERSION,
   assertSafeId,
+  createCodeEntityPromptAliases,
   isDiagramModelId,
   type AgentRunRecord,
   type CodeEntityPromptConfigRecord,
@@ -18,6 +19,7 @@ import {
   type CodeEntitiesSetRecord,
   type CodeEntityRecord,
   type DiagramCodeEntityMapRecord,
+  type DiagramCandidateBatchRecord,
   type DiagramComponentRecord,
   type DiagramRecord,
   type DiagramSetRecord,
@@ -181,6 +183,15 @@ export class DiagramStore {
   private batchPath(setId: string, batchId: string): string {
     assertSafeId(batchId, "GenerationBatch id");
     return path.join(this.setRoot(setId), "generation-batches", `${batchId}.json`);
+  }
+
+  private diagramCandidateBatchPath(setId: string, candidateBatchId: string): string {
+    assertSafeId(candidateBatchId, "DiagramCandidateBatch id");
+    return path.join(
+      this.setRoot(setId),
+      "diagram-candidate-batches",
+      `${candidateBatchId}.json`
+    );
   }
 
   private promptConfigPath(setId: string, promptConfigId: string): string {
@@ -488,21 +499,34 @@ export class DiagramStore {
   async loadSystemPromptTemplates(): Promise<SystemPromptTemplateRecord[]> {
     const stored = await readJsonIfExists<{
       schemaVersion: typeof SCHEMA_VERSION;
-      templates: SystemPromptTemplateRecord[];
+      templates: Array<Omit<SystemPromptTemplateRecord, "referencePrompts"> & {
+        referencePrompts?: SystemPromptTemplateRecord["referencePrompts"];
+      }>;
     }>(this.systemPromptTemplatesPath());
     if (stored) {
       const builtIns = new Map(createBuiltInSystemPromptTemplates(nowIso()).map((item) => [item.id, item]));
       let changed = false;
-      const templates = stored.templates.map((template) => {
-        if (template.prompts["call-graph"] && template.prompts["dir-view"]) return template;
-        changed = true;
+      const templates: SystemPromptTemplateRecord[] = stored.templates.map((template) => {
         const builtIn = builtIns.get(template.id);
+        const hasAuxiliaryPrompts = Boolean(template.prompts["call-graph"] && template.prompts["dir-view"]);
+        const hasReferencePrompts = Boolean(template.referencePrompts?.diagram
+          && template.referencePrompts["call-graph"]
+          && template.referencePrompts["dir-view"]
+          && template.referencePrompts["diagram-component"]);
+        if (hasAuxiliaryPrompts && hasReferencePrompts) return template as SystemPromptTemplateRecord;
+        changed = true;
+        const fallbackReferencePrompts = builtIn?.referencePrompts
+          ?? createBuiltInSystemPromptTemplates(nowIso())[0].referencePrompts;
         return {
           ...template,
           prompts: {
             ...template.prompts,
             "call-graph": builtIn?.prompts["call-graph"] ?? template.prompts.diagram,
             "dir-view": builtIn?.prompts["dir-view"] ?? template.prompts.diagram
+          },
+          referencePrompts: {
+            ...fallbackReferencePrompts,
+            ...template.referencePrompts
           }
         };
       });
@@ -714,16 +738,18 @@ export class DiagramStore {
     reference: PromptReference
   ): Promise<string> {
     try {
+      const entities = await this.loadCodeEntities(setId);
+      const aliases = new Map(createCodeEntityPromptAliases(entities.entities)
+        .map(({ id, alias }) => [id, alias]));
       if (reference.kind === "code-entity") {
-        const entities = await this.loadCodeEntities(setId);
         const entity = entities.entities.find((candidate) => candidate.id === reference.targetId);
         if (entity) return new CodeEntity(entity).prompt_str();
       } else if (reference.kind === "diagram") {
-        return new Diagram(await this.loadDiagram(setId, reference.targetId)).prompt_str();
+        return new Diagram(await this.loadDiagram(setId, reference.targetId)).prompt_str(aliases);
       } else {
         return new DiagramComponent(
           await this.loadDiagramComponent(setId, reference.targetId)
-        ).prompt_str();
+        ).prompt_str(aliases);
       }
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
@@ -758,16 +784,18 @@ export class DiagramStore {
         promptConfigId: stored.promptConfigId,
         outputDiagramComponentIds: stored.outputDiagramComponentIds ?? []
       };
+      const withCandidateBatch = await this.ensureDiagramCandidateBatch(normalized);
       if (!Array.isArray(stored.outputDiagramComponentIds)
         || _outputKind !== undefined
         || _modelId !== undefined
         || _userPrompt !== undefined
         || _selectedCodeEntityIds !== undefined
         || _promptReferences !== undefined
-        || _resolvedPrompt !== undefined) {
-        await writeJsonAtomic(this.batchPath(setId, batchId), normalized);
+        || _resolvedPrompt !== undefined
+        || withCandidateBatch.diagramCandidateBatchId !== stored.diagramCandidateBatchId) {
+        await writeJsonAtomic(this.batchPath(setId, batchId), withCandidateBatch);
       }
-      return normalized;
+      return withCandidateBatch;
     }
 
     const outputKind = stored.outputKind ?? "diagram";
@@ -843,8 +871,87 @@ export class DiagramStore {
       promptConfigId,
       outputDiagramComponentIds: stored.outputDiagramComponentIds ?? []
     };
-    await writeJsonAtomic(this.batchPath(setId, batchId), normalized);
-    return normalized;
+    const withCandidateBatch = await this.ensureDiagramCandidateBatch(normalized);
+    await writeJsonAtomic(this.batchPath(setId, batchId), withCandidateBatch);
+    return withCandidateBatch;
+  }
+
+  private async ensureDiagramCandidateBatch(
+    batch: GenerationBatchRecord
+  ): Promise<GenerationBatchRecord> {
+    if (batch.status !== "complete" || batch.outputDiagramIds.length === 0) return batch;
+    const candidateBatchId = batch.diagramCandidateBatchId
+      ?? stableScopedId("candidate-batch", batch.diagramSetId, batch.id);
+    const filePath = this.diagramCandidateBatchPath(batch.diagramSetId, candidateBatchId);
+    const existing = await readJsonIfExists<DiagramCandidateBatchRecord>(filePath);
+    if (existing) {
+      if (existing.diagramSetId !== batch.diagramSetId
+        || existing.generationBatchId !== batch.id
+        || JSON.stringify(existing.diagramIds) !== JSON.stringify(batch.outputDiagramIds)) {
+        throw new Error(`DiagramCandidateBatch membership does not match generation batch: ${batch.id}`);
+      }
+    } else {
+      const createdAt = batch.updatedAt;
+      await writeJsonAtomic(filePath, {
+        schemaVersion: SCHEMA_VERSION,
+        id: candidateBatchId,
+        diagramSetId: batch.diagramSetId,
+        generationBatchId: batch.id,
+        diagramIds: [...batch.outputDiagramIds],
+        rankings: {},
+        createdAt,
+        updatedAt: createdAt
+      } satisfies DiagramCandidateBatchRecord);
+    }
+    return batch.diagramCandidateBatchId === candidateBatchId
+      ? batch
+      : { ...batch, diagramCandidateBatchId: candidateBatchId };
+  }
+
+  async loadDiagramCandidateBatch(
+    setId: string,
+    candidateBatchId: string
+  ): Promise<DiagramCandidateBatchRecord> {
+    return readJson<DiagramCandidateBatchRecord>(
+      this.diagramCandidateBatchPath(setId, candidateBatchId)
+    );
+  }
+
+  async saveDiagramCandidateRankings(
+    setId: string,
+    candidateBatchId: string,
+    rankings: Array<{ diagramId: string; rank: number }>
+  ): Promise<DiagramCandidateBatchRecord> {
+    const candidateBatch = await this.loadDiagramCandidateBatch(setId, candidateBatchId);
+    if (candidateBatch.diagramSetId !== setId) {
+      throw new Error("DiagramCandidateBatch belongs to a different DiagramSet");
+    }
+    if (rankings.length !== candidateBatch.diagramIds.length) {
+      throw new Error("feedback must rank every diagram candidate");
+    }
+    const expected = new Set(candidateBatch.diagramIds);
+    const normalized: Record<string, number> = {};
+    for (const ranking of rankings) {
+      if (!expected.has(ranking.diagramId)) {
+        throw new Error(`diagram is not a member of this candidate batch: ${ranking.diagramId}`);
+      }
+      if (normalized[ranking.diagramId] !== undefined) {
+        throw new Error(`diagram candidate was ranked more than once: ${ranking.diagramId}`);
+      }
+      if (!Number.isInteger(ranking.rank) || ranking.rank < 1) {
+        throw new Error("diagram candidate ranks must be positive integers");
+      }
+      normalized[ranking.diagramId] = ranking.rank;
+    }
+    const missing = candidateBatch.diagramIds.find((diagramId) => normalized[diagramId] === undefined);
+    if (missing) throw new Error(`diagram candidate is missing a rank: ${missing}`);
+    const updated: DiagramCandidateBatchRecord = {
+      ...candidateBatch,
+      rankings: normalized,
+      updatedAt: nowIso()
+    };
+    await writeJsonAtomic(this.diagramCandidateBatchPath(setId, candidateBatchId), updated);
+    return updated;
   }
 
   async saveDiagramComponent(component: DiagramComponentRecord): Promise<void> {
@@ -946,12 +1053,17 @@ export class DiagramStore {
     });
   }
 
-  async attachRun(setId: string, runId: string): Promise<DiagramSetRecord> {
+  async attachRuns(setId: string, runIds: string[]): Promise<DiagramSetRecord> {
     const set = await this.loadDiagramSet(setId);
-    if (set.agentRunIds.includes(runId)) return set;
-    const updated = { ...set, agentRunIds: [...set.agentRunIds, runId], updatedAt: nowIso() };
+    const nextIds = [...new Set([...set.agentRunIds, ...runIds])];
+    if (nextIds.length === set.agentRunIds.length) return set;
+    const updated = { ...set, agentRunIds: nextIds, updatedAt: nowIso() };
     await writeJsonAtomic(this.setPath(setId), updated);
     return updated;
+  }
+
+  async attachRun(setId: string, runId: string): Promise<DiagramSetRecord> {
+    return this.attachRuns(setId, [runId]);
   }
 
   async beginCodeEntityCollection(config: CodeEntityPromptConfigRecord): Promise<void> {
@@ -1018,7 +1130,7 @@ export class DiagramStore {
     }
     await this.saveGenerationPromptConfig(promptConfig);
     for (const run of runs) await this.saveRun(run);
-    await this.saveBatch(batch);
+    await this.saveBatch(await this.ensureDiagramCandidateBatch(batch));
     const set = await this.loadDiagramSet(batch.diagramSetId);
     await writeJsonAtomic(this.setPath(batch.diagramSetId), {
       ...set,
@@ -1043,7 +1155,7 @@ export class DiagramStore {
     }
     for (const component of components) await this.saveDiagramComponent(component);
     for (const run of runs) await this.saveRun(run);
-    await this.saveBatch(batch);
+    await this.saveBatch(await this.ensureDiagramCandidateBatch(batch));
     const set = await this.loadDiagramSet(batch.diagramSetId);
     await writeJsonAtomic(this.setPath(batch.diagramSetId), {
       ...set,
@@ -1182,6 +1294,7 @@ export class DiagramStore {
         generationPromptConfigs: {},
         systemPromptTemplates: {},
         generationBatches: {},
+        diagramCandidateBatches: {},
         agentRuns: {},
         editSessions: {},
         codeEntityMaps: {}
@@ -1203,6 +1316,7 @@ export class DiagramStore {
       (await this.loadSystemPromptTemplates()).map((template) => [template.id, template])
     );
     const generationBatches: Record<string, GenerationBatchRecord> = {};
+    const diagramCandidateBatches: Record<string, DiagramCandidateBatchRecord> = {};
     const agentRuns: Record<string, AgentRunRecord> = {};
     const editSessions: Record<string, EditSessionRecord> = {};
     const codeEntityMaps: Record<string, DiagramCodeEntityMapRecord> = {};
@@ -1231,6 +1345,10 @@ export class DiagramStore {
       for (const id of set.generationBatchIds) {
         const batch = await this.loadGenerationBatch(set.id, id);
         generationBatches[id] = batch;
+        if (batch.diagramCandidateBatchId) {
+          diagramCandidateBatches[batch.diagramCandidateBatchId]
+            = await this.loadDiagramCandidateBatch(set.id, batch.diagramCandidateBatchId);
+        }
         generationPromptConfigs[batch.promptConfigId] = await this.loadGenerationPromptConfig(
           set.id,
           batch.promptConfigId
@@ -1270,6 +1388,7 @@ export class DiagramStore {
       generationPromptConfigs,
       systemPromptTemplates,
       generationBatches,
+      diagramCandidateBatches,
       agentRuns,
       editSessions,
       codeEntityMaps

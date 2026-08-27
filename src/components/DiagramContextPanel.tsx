@@ -1,5 +1,6 @@
 import type {
   CodeEntitiesSetRecord,
+  DiagramCandidateBatchRecord,
   DiagramComponentRecord,
   DiagramRecord,
   DiagramSetRecord,
@@ -20,8 +21,10 @@ export function DiagramContextPanel(props: {
   codeEntities: CodeEntitiesSetRecord;
   diagramSet: DiagramSetRecord;
   diagrams: DiagramRecord[];
+  allDiagrams: Record<string, DiagramRecord>;
   components: DiagramComponentRecord[];
   generationBatches: Record<string, GenerationBatchRecord>;
+  diagramCandidateBatches: Record<string, DiagramCandidateBatchRecord>;
   generationPromptConfigs: Record<string, GenerationPromptConfigRecord>;
   activeDiagram?: DiagramRecord;
   activeComponent?: DiagramComponentRecord;
@@ -41,6 +44,10 @@ export function DiagramContextPanel(props: {
   onRenameDiagram: (diagramId: string, name: string) => Promise<void>;
   onArchiveDiagram: (diagramId: string) => Promise<void>;
   onArchiveComponent: (componentId: string) => Promise<void>;
+  onSaveCandidateRankings: (
+    candidateBatchId: string,
+    rankings: Array<{ diagramId: string; rank: number }>
+  ) => Promise<void>;
   onEditPrompt?: (value: string) => void;
   onEditModel?: (value: DiagramModelId) => void;
   onMarkerMode?: (value: boolean) => void;
@@ -88,8 +95,10 @@ export function DiagramContextPanel(props: {
           <DiagramLineagePanel
             diagramSet={props.diagramSet}
             diagrams={props.diagrams}
+            allDiagrams={props.allDiagrams}
             components={props.components}
             generationBatches={props.generationBatches}
+            diagramCandidateBatches={props.diagramCandidateBatches}
             generationPromptConfigs={props.generationPromptConfigs}
             activeDiagramId={props.activeDiagram?.id}
             activeComponentId={props.activeComponent?.id}
@@ -98,6 +107,7 @@ export function DiagramContextPanel(props: {
             onRename={props.onRenameDiagram}
             onArchive={props.onArchiveDiagram}
             onArchiveComponent={props.onArchiveComponent}
+            onSaveCandidateRankings={props.onSaveCandidateRankings}
           />
         </div>
       )}

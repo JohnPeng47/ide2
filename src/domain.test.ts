@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { assertSourceRange, CodeEntity } from "./domain";
+import {
+  assertSourceRange,
+  CodeEntity,
+  Diagram,
+  SCHEMA_VERSION,
+  createCodeEntityPromptAliases,
+  resolveCodeEntityPromptAliases,
+  type CodeEntityRecord,
+  type DiagramRecord
+} from "./domain";
 
 const graph = [
   "collectEntities(request)",
@@ -7,6 +16,74 @@ const graph = [
   "  +--> model()",
   "  \\--> entities"
 ].join("\n");
+
+describe("prompt-facing CodeEntity aliases", () => {
+  const globalId = "entity-b71bc396-7637-4769-95af-b5b3f8f24dd6";
+  const entity: CodeEntityRecord = {
+    id: globalId,
+    origin: {
+      projectId: "project-a",
+      diagramSetId: "set-a",
+      codeEntitiesSetId: "entities-a"
+    },
+    handle: "sim-instance-generator",
+    label: "SimInstanceGenerator",
+    category: "operation",
+    summary: "Generates a simulation instance.",
+    sourceRanges: []
+  };
+
+  it("restores legacy handle-derived ids in artifact string representations", () => {
+    const aliases = createCodeEntityPromptAliases([entity]);
+    const aliasesById = new Map(aliases.map(({ id, alias }) => [id, alias]));
+    const diagram: DiagramRecord = {
+      schemaVersion: SCHEMA_VERSION,
+      id: "diagram-11111111-1111-4111-8111-111111111111",
+      diagramSetId: "set-a",
+      viewKind: "diagram",
+      handle: "simulation-flow",
+      name: "Simulation Flow",
+      ascii: [
+        "generator --> instance",
+        "[entity-b71bc396-7637-4769-",
+        " 95af-b5b3f8f24dd6]"
+      ].join("\n"),
+      codeEntityIds: [globalId],
+      origin: "generated",
+      derivedFromDiagramIds: [],
+      createdAt: "2026-01-01T00:00:00Z"
+    };
+
+    const rendered = new Diagram(diagram).prompt_str(aliasesById);
+    expect(rendered).toContain("CodeEntity ids: entity-sim-instance-generator");
+    expect(rendered).toContain("[entity-sim-instance-generator]");
+    expect(rendered).not.toContain("b71bc396");
+    expect(rendered).not.toContain(globalId);
+    expect(resolveCodeEntityPromptAliases(
+      ["entity-sim-instance-generator"],
+      aliases
+    )).toEqual([globalId]);
+  });
+
+  it("qualifies only aliases whose handles collide", () => {
+    const duplicate: CodeEntityRecord = {
+      ...entity,
+      id: "entity-22222222-2222-4222-8222-222222222222",
+      origin: {
+        projectId: "project-b",
+        diagramSetId: "set-b",
+        codeEntitiesSetId: "entities-b"
+      }
+    };
+    const aliases = createCodeEntityPromptAliases([entity, duplicate]);
+
+    expect(aliases.map(({ alias }) => alias)).toEqual([
+      expect.stringMatching(/^entity-sim-instance-generator--[a-f0-9]{8}$/),
+      expect.stringMatching(/^entity-sim-instance-generator--[a-f0-9]{8}$/)
+    ]);
+    expect(new Set(aliases.map(({ alias }) => alias)).size).toBe(2);
+  });
+});
 
 describe("compacted source call graphs", () => {
   it("keeps multiline graph structure in CodeEntity prompt context", () => {

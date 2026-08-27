@@ -1,4 +1,7 @@
-import type { CodeEntityRecord } from "../src/domain";
+import {
+  qualifiedCodeEntityPromptAlias,
+  type CodeEntityRecord
+} from "../src/domain";
 import {
   focusIdentityKey,
   type CallGraphFocusNode,
@@ -45,7 +48,11 @@ function buildAnnotationIndex(
   const aliases = new Map<string, CodeEntityFocusIdentity[]>();
   for (const entity of entities) {
     const identity = identityFor(entity);
-    for (const token of new Set([entity.id, `entity-${entity.handle}`])) {
+    for (const token of new Set([
+      entity.id,
+      `entity-${entity.handle}`,
+      qualifiedCodeEntityPromptAlias(entity)
+    ])) {
       const matches = aliases.get(token) ?? [];
       matches.push(identity);
       aliases.set(token, matches);

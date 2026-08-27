@@ -1,5 +1,8 @@
 import type {
   ArtifactImportInput,
+  AgentRunStatus,
+  CodeEntityMappingResult,
+  CodeEntityMappingTarget,
   CodeEntityPromptTemplateRecord,
   DiagramModelId,
   DiagramViewKind,
@@ -170,7 +173,11 @@ export async function deleteDiagramSet(setId: string): Promise<WorkspaceSnapshot
 }
 
 export async function saveSystemPromptTemplate(
-  template: Pick<SystemPromptTemplateRecord, "label" | "description" | "prompts"> & { id?: string }
+  template: Pick<
+    SystemPromptTemplateRecord,
+    "label" | "description" | "prompts" | "referencePrompts" | "variableOverrides"
+  >
+    & { id?: string }
 ): Promise<WorkspaceSnapshot> {
   const response = await fetch(
     template.id
@@ -285,6 +292,69 @@ export async function mapCodeEntities(
   }
   if (!workspace) throw new Error("mapping stream ended without a workspace result");
   return workspace;
+}
+
+export interface CodeEntityMappingProgress extends CodeEntityMappingTarget {
+  status: AgentRunStatus;
+  message: string;
+}
+
+export async function mapCodeEntitiesBatch(
+  setId: string,
+  artifacts: CodeEntityMappingTarget[],
+  onProgress: (event: CodeEntityMappingProgress) => void,
+  concurrency = 3
+): Promise<{ workspace: WorkspaceSnapshot; results: CodeEntityMappingResult[] }> {
+  const response = await fetch(
+    `/api/diagram-sets/${encodeURIComponent(setId)}/code-entity-maps`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ artifacts, concurrency })
+    }
+  );
+  if (!response.ok) throw await errorFrom(response);
+  if (!response.body) throw new Error("mapping response did not include a stream");
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let workspace: WorkspaceSnapshot | undefined;
+  let results: CodeEntityMappingResult[] | undefined;
+  const consume = (line: string) => {
+    if (!line.trim()) return;
+    const event = JSON.parse(line) as {
+      type: string;
+      message?: string;
+      error?: string;
+      artifactKind?: CodeEntityMappingTarget["artifactKind"];
+      artifactId?: string;
+      status?: AgentRunStatus;
+      workspace?: WorkspaceSnapshot;
+      results?: CodeEntityMappingResult[];
+    };
+    if (event.type === "error") throw new Error(event.error || "mapping failed");
+    if (event.artifactKind && event.artifactId && event.status && event.message) {
+      onProgress({
+        artifactKind: event.artifactKind,
+        artifactId: event.artifactId,
+        status: event.status,
+        message: event.message
+      });
+    }
+    if (event.workspace) workspace = event.workspace;
+    if (event.results) results = event.results;
+  };
+  while (true) {
+    const { done, value } = await reader.read();
+    buffer += decoder.decode(value, { stream: !done });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) consume(line);
+    if (done) break;
+  }
+  if (buffer.trim()) consume(buffer);
+  if (!workspace || !results) throw new Error("mapping stream ended without a batch result");
+  return { workspace, results };
 }
 
 async function editAction(
@@ -484,6 +554,23 @@ export async function setStarredDiagram(
   return response.json() as Promise<WorkspaceSnapshot>;
 }
 
+export async function saveDiagramCandidateRankings(
+  setId: string,
+  candidateBatchId: string,
+  rankings: Array<{ diagramId: string; rank: number }>
+): Promise<WorkspaceSnapshot> {
+  const response = await fetch(
+    `/api/diagram-sets/${encodeURIComponent(setId)}/candidate-batches/${encodeURIComponent(candidateBatchId)}/feedback`,
+    {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ rankings })
+    }
+  );
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<WorkspaceSnapshot>;
+}
+
 export async function captureDiagramComponent(
   setId: string,
   diagramId: string,
@@ -541,6 +628,8 @@ export async function generateArtifacts(
     modelId: DiagramModelId;
     promptProfileId: GenerationPromptProfileId;
     referenceSelections?: GenerationReferenceSelection[];
+    referencePrompt?: string;
+    referencePromptSelections?: GenerationReferenceSelection[];
     derivation?: GenerationDerivationRecord;
   },
   onProgress: (message: string) => void

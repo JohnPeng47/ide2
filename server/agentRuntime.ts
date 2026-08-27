@@ -14,9 +14,11 @@ import path from "node:path";
 import {
   assertSourceRange,
   DEFAULT_DIAGRAM_MODEL_ID,
+  resolveCodeEntityPromptAliases,
   type AgentProgress,
   type ArtifactEditDraft,
   type CodeEntityDraft,
+  type CodeEntityPromptAlias,
   type CodeEntityPromptConfigRecord,
   type CodeEntityRecord,
   type DiagramElementMappingDraft,
@@ -38,7 +40,7 @@ export interface ArtifactGenerationRequest {
   sourceRoot: string;
   diagramSetName: string;
   promptConfig: GenerationPromptConfigRecord;
-  allowedCodeEntityIds: string[];
+  allowedCodeEntityAliases: CodeEntityPromptAlias[];
   allowedDiagramIds: string[];
   allowedDiagramComponentIds: string[];
   slot: number;
@@ -101,6 +103,30 @@ function progressFor(event: AgentSessionEvent, model: string, sessionId: string)
     }
   }
   return undefined;
+}
+
+export async function runGenerationPromptTurns(input: {
+  initialPrompt: string;
+  referencePrompt?: string;
+  prompt(text: string): Promise<void>;
+  takeSubmission(): GeneratedArtifactDraft | undefined;
+  artifactLabel: string;
+  onReferenceTurn?(): void;
+}): Promise<GeneratedArtifactDraft> {
+  await input.prompt(input.initialPrompt);
+  const initialSubmission = input.takeSubmission();
+  if (!initialSubmission) {
+    throw new Error(`${input.artifactLabel} agent finished without submitting an artifact`);
+  }
+  if (!input.referencePrompt) return initialSubmission;
+
+  input.onReferenceTurn?.();
+  await input.prompt(input.referencePrompt);
+  const referenceSubmission = input.takeSubmission();
+  if (!referenceSubmission) {
+    throw new Error(`${input.artifactLabel} agent finished the reference turn without submitting an artifact`);
+  }
+  return referenceSubmission;
 }
 
 async function validateSubmittedSourceRanges(
@@ -283,7 +309,7 @@ export class PiDiagramAgentRuntime implements DiagramAgentRuntime {
     const componentMode = request.promptConfig.outputKind === "diagram-component";
     const artifactLabel = componentMode ? "DiagramComponent" : "diagram";
     const toolName = componentMode ? "submit_diagram_component" : "submit_diagram";
-    const state: { submission?: GeneratedArtifactDraft } = {};
+    const state: { submissions: GeneratedArtifactDraft[] } = { submissions: [] };
     const submit = defineTool({
       name: toolName,
       label: `Submit ${artifactLabel}`,
@@ -291,15 +317,21 @@ export class PiDiagramAgentRuntime implements DiagramAgentRuntime {
       promptSnippet: `Submit the final ASCII ${artifactLabel}`,
       promptGuidelines: [
         "Give the diagram a compact, specific name, ideally two to five words.",
-        `End by calling ${toolName} exactly once.`
+        `End each generation turn by calling ${toolName} exactly once.`
       ],
       parameters: Type.Object({
         name: Type.String({ minLength: 1, maxLength: 120 }),
         ascii: Type.String({ minLength: 1, maxLength: 20000 }),
-        codeEntityIds: Type.Array(Type.String(), { maxItems: 200 })
+        codeEntityIds: Type.Array(Type.String({
+          description: "Readable CodeEntity aliases used by this artifact, such as entity-request-handler."
+        }), { maxItems: 200 })
       }),
       async execute(_toolCallId, params) {
-        state.submission = params;
+        const codeEntityIds = resolveCodeEntityPromptAliases(
+          params.codeEntityIds,
+          request.allowedCodeEntityAliases
+        );
+        state.submissions.push({ ...params, codeEntityIds });
         return {
           content: [{ type: "text", text: `Recorded one ${artifactLabel}.` }],
           details: { name: params.name },
@@ -342,15 +374,26 @@ export class PiDiagramAgentRuntime implements DiagramAgentRuntime {
       if (progress) onProgress?.(progress);
     });
     try {
-      await session.prompt(`${request.promptConfig.contextPrompt.rendered}
+      return await runGenerationPromptTurns({
+        initialPrompt: `${request.promptConfig.contextPrompt.rendered}
 
 Parallel generation slot: ${request.slot} of ${request.total}.
 Independently choose a clear organizing shape for this slot. Return one ${artifactLabel} only.
-Allowed CodeEntity ids: ${request.allowedCodeEntityIds.join(", ") || "none"}
+Allowed CodeEntity aliases: ${request.allowedCodeEntityAliases.map(({ alias }) => alias).join(", ") || "none"}
+Use aliases in the codeEntityIds submission field. Never print persisted CodeEntity identifiers.
 Referenced Diagram ids: ${request.allowedDiagramIds.join(", ") || "none"}
-Referenced DiagramComponent ids: ${request.allowedDiagramComponentIds.join(", ") || "none"}`);
-      if (!state.submission) throw new Error(`${artifactLabel} agent finished without submitting an artifact`);
-      return state.submission;
+Referenced DiagramComponent ids: ${request.allowedDiagramComponentIds.join(", ") || "none"}`,
+        referencePrompt: request.promptConfig.referencePrompt?.rendered,
+        prompt: (text) => session.prompt(text),
+        takeSubmission: () => state.submissions.shift(),
+        artifactLabel,
+        onReferenceTurn: () => onProgress?.({
+          status: "generating",
+          message: "agent is applying the reference prompt in a follow-up turn",
+          model: modelName,
+          sessionId: session.sessionId
+        })
+      });
     } finally {
       unsubscribe();
       session.dispose();
@@ -603,9 +646,9 @@ export class FakeDiagramAgentRuntime implements DiagramAgentRuntime {
     onProgress?: (progress: AgentProgress) => void
   ): Promise<GeneratedArtifactDraft> {
     onProgress?.({ status: "generating", message: `generating fixture slot ${request.slot}`, model: "fake/test" });
-    const entityId = request.allowedCodeEntityIds[0];
-    const callGraphAscii = entityId
-      ? `parallel slot ${String(request.slot).padStart(2, "0")} [${entityId}]\n` +
+    const entity = request.allowedCodeEntityAliases[0];
+    const callGraphAscii = entity
+      ? `parallel slot ${String(request.slot).padStart(2, "0")} [${entity.alias}]\n` +
         "`--> internal step"
       : `parallel slot ${String(request.slot).padStart(2, "0")}`;
     return {
@@ -617,7 +660,7 @@ export class FakeDiagramAgentRuntime implements DiagramAgentRuntime {
         : request.promptConfig.viewKind === "call-graph"
           ? callGraphAscii
           : `+------------------+\n| parallel slot ${String(request.slot).padStart(2, "0")} |\n+------------------+`,
-      codeEntityIds: entityId ? [entityId] : []
+      codeEntityIds: entity ? [entity.id] : []
     };
   }
 

@@ -9,7 +9,8 @@ import {
   buildDerivativePrompt,
   diagramReferencesInPrompt,
   PREVIOUS_PROMPT_HEADER,
-  promptCorrection
+  promptCorrection,
+  rebaseDerivativePrompt
 } from "./derivativePrompt";
 
 const diagram = (
@@ -100,7 +101,10 @@ describe("derivative prompt composition", () => {
       promptConfigs
     });
 
-    expect(draft.prompt.match(new RegExp(PREVIOUS_PROMPT_HEADER, "g"))).toHaveLength(3);
+    expect(draft.prompt.match(/---- PREVIOUS PROMPT \d+ ----/g)).toHaveLength(3);
+    expect(draft.prompt).toContain("---- PREVIOUS PROMPT 1 ----\nShow ownership.");
+    expect(draft.prompt).toContain("---- PREVIOUS PROMPT 2 ----\nEmphasize queue flow.");
+    expect(draft.prompt).toContain("---- PREVIOUS PROMPT 3 ----\nRemove retry details.");
     expect(draft.prompt.indexOf("Show ownership.")).toBeLessThan(
       draft.prompt.indexOf("Emphasize queue flow.")
     );
@@ -110,6 +114,49 @@ describe("derivative prompt composition", () => {
     expect(draft.prompt).not.toContain("previously composed instruction");
     expect(draft.prompt).toMatch(/@diagram\/current\n\n$/);
     expect(promptCorrection(`${draft.prompt}Use fewer boxes.`, draft)).toBe("Use fewer boxes.");
+  });
+
+  it("flattens legacy derivative prompts that were saved as the full composed prompt", () => {
+    const root = diagram("diagram-root", "root", "prompt-root");
+    const current = diagram("diagram-current", "current", "prompt-current");
+    const legacyComposedPrompt = [
+      PREVIOUS_PROMPT_HEADER,
+      "Show ownership.",
+      "-------------------------",
+      "",
+      "@diagram/root Emphasize queue flow."
+    ].join("\n");
+    const promptConfigs = {
+      "prompt-root": config("prompt-root", "Show ownership.", undefined),
+      "prompt-current": config(
+        "prompt-current",
+        legacyComposedPrompt,
+        root,
+        legacyComposedPrompt
+      )
+    };
+
+    const draft = buildDerivativePrompt({
+      sourceArtifactKind: "diagram",
+      sourceArtifact: current,
+      diagrams: { [root.id]: root, [current.id]: current },
+      components: {},
+      promptConfigs
+    });
+
+    expect(draft.prompt.match(/---- PREVIOUS PROMPT \d+ ----/g)).toHaveLength(2);
+    expect(draft.prompt).toContain("---- PREVIOUS PROMPT 1 ----\nShow ownership.");
+    expect(draft.prompt).toContain("---- PREVIOUS PROMPT 2 ----\nEmphasize queue flow.");
+    expect(draft.prompt).not.toContain(PREVIOUS_PROMPT_HEADER);
+    expect(promptCorrection(
+      draft.prompt.replace(`${draft.sourceToken}\n\n`, `${draft.sourceToken} `)
+        + "Reduce explanatory text.",
+      draft
+    )).toBe("Reduce explanatory text.");
+    const staleDraft = `${legacyComposedPrompt}\n\n@diagram/current Reduce explanatory text.`;
+    expect(rebaseDerivativePrompt(staleDraft, draft)).toBe(
+      `${draft.prefix}Reduce explanatory text.`
+    );
   });
 
   it("discovers current and historical diagram mentions for one toggle per artifact", () => {

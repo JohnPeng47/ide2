@@ -21,6 +21,8 @@ import {
   type AgentRunRecord,
   type ArtifactImportInput,
   type CodeEntityDraft,
+  type CodeEntityMappingResult,
+  type CodeEntityMappingTarget,
   type CodeEntityPromptTemplateRecord,
   type CodeEntityRecord,
   type DiagramCodeEntityMapRecord,
@@ -34,9 +36,12 @@ import {
   type GeneratedArtifactDraft,
   type GenerationDerivationRecord,
   type GenerationOutputKind,
+  type GenerationTargetKind,
   type GenerationReferenceSelection,
   type GenerationBatchRecord,
   type MappedArtifactBundle,
+  type PromptTemplateVariable,
+  type PromptTemplateVariableOverrides,
   type RepositoryDirectoryListing,
   type SystemPromptTemplateRecord,
   type WorkspaceSnapshot
@@ -45,6 +50,7 @@ import {
   createBuiltInCodeEntityPromptTemplates,
   createBuiltInSystemPromptTemplates,
   createGenerationPromptConfig,
+  renderReferencePromptTemplate,
   renderSystemPromptTemplate
 } from "../src/prompt";
 import {
@@ -68,6 +74,9 @@ export interface ServiceEvent {
   type: "progress" | "workspace";
   message: string;
   workspace?: WorkspaceSnapshot;
+  artifactKind?: GenerationOutputKind;
+  artifactId?: string;
+  status?: AgentRunRecord["status"];
 }
 
 function timestamp(): string {
@@ -525,7 +534,11 @@ export class DiagramApplication {
 
   async generateInitialDiagrams(
     setId: string,
-    input: { promptTemplateId?: unknown } = {},
+    input: {
+      promptTemplateId?: unknown;
+      runReferencePrompt?: boolean;
+      referencePrompt?: string;
+    } = {},
     onEvent?: (event: ServiceEvent) => void
   ): Promise<WorkspaceSnapshot> {
     const entities = await this.store.loadCodeEntities(setId);
@@ -534,7 +547,9 @@ export class DiagramApplication {
       selectedCodeEntityIds: entities.entities.map((entity) => entity.id),
       count: DEFAULT_GENERATION_COUNT,
       outputKind: "diagram",
-      promptProfileId: input.promptTemplateId
+      promptProfileId: input.promptTemplateId,
+      runReferencePrompt: input.runReferencePrompt,
+      referencePrompt: input.referencePrompt
     }, onEvent);
   }
 
@@ -766,6 +781,16 @@ export class DiagramApplication {
     return this.workspace();
   }
 
+  async rankDiagramCandidates(
+    setId: string,
+    candidateBatchId: string,
+    rankings: Array<{ diagramId: string; rank: number }>
+  ): Promise<WorkspaceSnapshot> {
+    await this.store.loadDiagramSet(setId);
+    await this.store.saveDiagramCandidateRankings(setId, candidateBatchId, rankings);
+    return this.workspace();
+  }
+
   async archiveDiagram(setId: string, diagramId: string): Promise<WorkspaceSnapshot> {
     const set = await this.store.loadDiagramSet(setId);
     if (!set.diagramIds.includes(diagramId)) throw new Error(`unknown Diagram: ${diagramId}`);
@@ -809,107 +834,193 @@ export class DiagramApplication {
     artifactId: string,
     onEvent?: (event: ServiceEvent) => void
   ): Promise<WorkspaceSnapshot> {
-    const mappingKey = `${setId}:${artifactId}`;
-    if (this.activeMappings.has(mappingKey)) {
-      throw new Error("a code-entity mapping is already running for this artifact");
+    const batch = await this.mapCodeEntitiesBatch(
+      setId,
+      [{ artifactKind, artifactId }],
+      1,
+      onEvent
+    );
+    const failed = batch.results[0];
+    if (failed?.status === "failed") throw new Error(failed.error ?? "code-entity mapping failed");
+    return batch.workspace;
+  }
+
+  async mapCodeEntitiesBatch(
+    setId: string,
+    targets: CodeEntityMappingTarget[],
+    concurrency = 3,
+    onEvent?: (event: ServiceEvent) => void
+  ): Promise<{ workspace: WorkspaceSnapshot; results: CodeEntityMappingResult[] }> {
+    if (targets.length === 0) throw new Error("at least one artifact is required for mapping");
+    if (targets.length > 50) throw new Error("a mapping batch cannot exceed 50 artifacts");
+    if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 6) {
+      throw new Error("mapping concurrency must be between 1 and 6");
+    }
+    const targetKeys = targets.map(({ artifactKind, artifactId }) => `${artifactKind}:${artifactId}`);
+    if (new Set(targetKeys).size !== targetKeys.length) {
+      throw new Error("a mapping batch cannot contain duplicate artifacts");
     }
     const set = await this.store.loadDiagramSet(setId);
-    const { artifact, global } = await this.artifactForDiagramSet(setId, artifactKind, artifactId);
-    if (artifact.archivedAt) {
-      throw new Error("archived artifacts cannot be mapped");
-    }
     const entitySet = await this.store.loadCodeEntities(setId);
     if (entitySet.status !== "finalized") {
       throw new Error("CodeEntitiesSet must be finalized before mapping");
     }
-    const artifactEntityIds = new Set(artifact.codeEntityIds);
-    const entities = global
-      ? entitySet.entities
-      : entitySet.entities.filter((entity) => artifactEntityIds.has(entity.id));
-    if (entities.length === 0) throw new Error("artifact has no CodeEntities to map");
-
-    this.activeMappings.add(mappingKey);
-    const runId = this.store.ids.run();
-    let run: AgentRunRecord = {
-      schemaVersion: SCHEMA_VERSION,
-      id: runId,
-      diagramSetId: setId,
-      kind: "map-code-entities",
-      status: "queued",
-      statusMessage: "opening diagram mapping agent",
-      codeEntitiesRevision: entitySet.revision,
-      outputCodeEntityIds: entities.map((entity) => entity.id),
-      ...(artifactKind === "diagram"
-        ? { outputDiagramId: artifactId }
-        : { outputDiagramComponentId: artifactId }),
-      startedAt: timestamp(),
-      updatedAt: timestamp()
-    };
-    await this.store.saveRun(run);
-    await this.store.attachRun(setId, run.id);
-    let progressWrites = Promise.resolve();
-    const progress = (update: AgentProgress) => {
-      run = {
-        ...run,
-        status: update.status,
-        statusMessage: update.message,
-        model: update.model ?? run.model,
-        sessionId: update.sessionId ?? run.sessionId,
-        updatedAt: timestamp()
-      };
-      const snapshot = run;
-      progressWrites = progressWrites.then(() => this.store.saveRun(snapshot));
-      onEvent?.({ type: "progress", message: update.message });
-    };
-    try {
-      const drafts = await this.agents.mapArtifactEntities({
-        sourceRoot: set.sourceCheckoutRoot,
-        diagramSetName: set.name,
-        artifactKind,
-        artifactName: artifact.name,
-        artifactHandle: artifact.handle,
-        ascii: artifact.ascii,
-        codeEntities: entities
-      }, progress);
-      await progressWrites;
-      const mappings = validateDiagramMappings(artifact.ascii, drafts, entities);
-      const record: DiagramCodeEntityMapRecord = {
+    const prepared = await Promise.all(targets.map(async (target) => {
+      if (target.artifactKind !== "diagram" && target.artifactKind !== "diagram-component") {
+        throw new Error(`unsupported artifact kind: ${String(target.artifactKind)}`);
+      }
+      const bundle = await this.mappedArtifactBundle(setId, target.artifactKind, target.artifactId);
+      if (bundle.artifact.archivedAt) throw new Error("archived artifacts cannot be mapped");
+      if (bundle.codeEntities.length === 0) throw new Error("artifact has no CodeEntities to map");
+      const mappingKey = `${setId}:${target.artifactId}`;
+      if (this.activeMappings.has(mappingKey)) {
+        throw new Error(`a code-entity mapping is already running for ${target.artifactId}`);
+      }
+      const createdAt = timestamp();
+      const run: AgentRunRecord = {
         schemaVersion: SCHEMA_VERSION,
+        id: this.store.ids.run(),
         diagramSetId: setId,
-        artifactKind,
-        artifactId,
-        asciiSha256: createHash("sha256").update(artifact.ascii).digest("hex"),
-        mappings,
-        producedByRunId: runId,
-        createdAt: timestamp()
+        kind: "map-code-entities",
+        status: "queued",
+        statusMessage: "queued diagram mapping agent",
+        codeEntitiesRevision: entitySet.revision,
+        outputCodeEntityIds: bundle.codeEntities.map((entity) => entity.id),
+        ...(target.artifactKind === "diagram"
+          ? { outputDiagramId: target.artifactId }
+          : { outputDiagramComponentId: target.artifactId }),
+        startedAt: createdAt,
+        updatedAt: createdAt
       };
-      await this.store.saveCodeEntityMap(record);
-      run = {
-        ...run,
-        status: "complete",
-        statusMessage: `mapped ${mappings.length} diagram elements`,
-        updatedAt: timestamp(),
-        completedAt: timestamp()
+      return { target, mappingKey, artifact: bundle.artifact, entities: bundle.codeEntities, run };
+    }));
+
+    const conflictingJob = prepared.find((job) => this.activeMappings.has(job.mappingKey));
+    if (conflictingJob) {
+      throw new Error(
+        `a code-entity mapping is already running for ${conflictingJob.target.artifactId}`
+      );
+    }
+    for (const job of prepared) this.activeMappings.add(job.mappingKey);
+    try {
+      await Promise.all(prepared.map((job) => this.store.saveRun(job.run)));
+      await this.store.attachRuns(setId, prepared.map((job) => job.run.id));
+      for (const job of prepared) onEvent?.({
+        type: "progress",
+        artifactKind: job.target.artifactKind,
+        artifactId: job.target.artifactId,
+        status: "queued",
+        message: "queued code-entity mapping"
+      });
+
+      const results: CodeEntityMappingResult[] = new Array(prepared.length);
+      let cursor = 0;
+      const worker = async () => {
+        while (cursor < prepared.length) {
+          const index = cursor;
+          cursor += 1;
+          const job = prepared[index];
+          let run = job.run;
+          let progressWrites = Promise.resolve();
+          const progress = (update: AgentProgress) => {
+            run = {
+              ...run,
+              status: update.status,
+              statusMessage: update.message,
+              model: update.model ?? run.model,
+              sessionId: update.sessionId ?? run.sessionId,
+              updatedAt: timestamp()
+            };
+            const snapshot = run;
+            progressWrites = progressWrites.then(() => this.store.saveRun(snapshot));
+            onEvent?.({
+              type: "progress",
+              artifactKind: job.target.artifactKind,
+              artifactId: job.target.artifactId,
+              status: update.status,
+              message: update.message
+            });
+          };
+          try {
+            const drafts = await this.agents.mapArtifactEntities({
+              sourceRoot: set.sourceCheckoutRoot,
+              diagramSetName: set.name,
+              artifactKind: job.target.artifactKind,
+              artifactName: job.artifact.name,
+              artifactHandle: job.artifact.handle,
+              ascii: job.artifact.ascii,
+              codeEntities: job.entities
+            }, progress);
+            await progressWrites;
+            const mappings = validateDiagramMappings(job.artifact.ascii, drafts, job.entities);
+            const record: DiagramCodeEntityMapRecord = {
+              schemaVersion: SCHEMA_VERSION,
+              diagramSetId: setId,
+              artifactKind: job.target.artifactKind,
+              artifactId: job.target.artifactId,
+              asciiSha256: createHash("sha256").update(job.artifact.ascii).digest("hex"),
+              mappings,
+              producedByRunId: run.id,
+              createdAt: timestamp()
+            };
+            await this.store.saveCodeEntityMap(record);
+            const completedAt = timestamp();
+            run = {
+              ...run,
+              status: "complete",
+              statusMessage: `mapped ${mappings.length} diagram elements`,
+              updatedAt: completedAt,
+              completedAt
+            };
+            await this.store.saveRun(run);
+            results[index] = {
+              ...job.target,
+              status: "complete",
+              mappingCount: mappings.length
+            };
+            onEvent?.({
+              type: "progress",
+              ...job.target,
+              status: "complete",
+              message: run.statusMessage
+            });
+          } catch (error) {
+            await progressWrites.catch(() => undefined);
+            const message = error instanceof Error ? error.message : "code-entity mapping failed";
+            const completedAt = timestamp();
+            run = {
+              ...run,
+              status: "failed",
+              statusMessage: message,
+              error: message,
+              updatedAt: completedAt,
+              completedAt
+            };
+            await this.store.saveRun(run);
+            results[index] = { ...job.target, status: "failed", error: message };
+            onEvent?.({
+              type: "progress",
+              ...job.target,
+              status: "failed",
+              message
+            });
+          }
+        }
       };
-      await this.store.saveRun(run);
+      await Promise.all(Array.from(
+        { length: Math.min(concurrency, prepared.length) },
+        () => worker()
+      ));
       const workspace = await this.workspace();
-      onEvent?.({ type: "workspace", message: run.statusMessage, workspace });
-      return workspace;
-    } catch (error) {
-      await progressWrites.catch(() => undefined);
-      const message = error instanceof Error ? error.message : "code-entity mapping failed";
-      run = {
-        ...run,
-        status: "failed",
-        statusMessage: message,
-        error: message,
-        updatedAt: timestamp(),
-        completedAt: timestamp()
-      };
-      await this.store.saveRun(run);
-      throw error;
+      const completeCount = results.filter((result) => result.status === "complete").length;
+      onEvent?.({
+        type: "workspace",
+        message: `mapped ${completeCount} of ${results.length} artifacts`,
+        workspace
+      });
+      return { workspace, results };
     } finally {
-      this.activeMappings.delete(mappingKey);
+      for (const job of prepared) this.activeMappings.delete(job.mappingKey);
     }
   }
 
@@ -1327,6 +1438,8 @@ export class DiagramApplication {
     setId: string,
     input: {
       prompt: string;
+      runReferencePrompt?: boolean;
+      referencePrompt?: string;
       selectedCodeEntityIds: string[];
       count: number;
       outputKind: GenerationOutputKind;
@@ -1334,6 +1447,7 @@ export class DiagramApplication {
       modelId?: unknown;
       promptProfileId?: unknown;
       referenceSelections?: GenerationReferenceSelection[];
+      referencePromptSelections?: GenerationReferenceSelection[];
       derivation?: GenerationDerivationRecord;
     },
     onEvent?: (event: ServiceEvent) => void
@@ -1395,8 +1509,11 @@ export class DiagramApplication {
         modelId,
         profile: promptProfile,
         instruction: input.prompt,
+        runReferencePrompt: input.runReferencePrompt,
+        referencePrompt: input.referencePrompt,
         selectedCodeEntityIds: input.selectedCodeEntityIds,
         referenceSelections: input.referenceSelections,
+        referencePromptSelections: input.referencePromptSelections,
         derivation: input.derivation,
         createdAt
       });
@@ -1465,7 +1582,7 @@ export class DiagramApplication {
               sourceRoot: set.sourceCheckoutRoot,
               diagramSetName: set.name,
               promptConfig: persistedPromptConfig,
-              allowedCodeEntityIds: promptBuild.allowedCodeEntityIds,
+              allowedCodeEntityAliases: promptBuild.allowedCodeEntityAliases,
               allowedDiagramIds: promptBuild.allowedDiagramIds,
               allowedDiagramComponentIds: promptBuild.allowedDiagramComponentIds,
               slot: index + 1,
@@ -1635,6 +1752,8 @@ export class DiagramApplication {
     label: unknown;
     description: unknown;
     prompts: unknown;
+    referencePrompts?: unknown;
+    variableOverrides?: unknown;
   }): Promise<WorkspaceSnapshot> {
     const label = typeof input.label === "string" ? input.label.trim() : "";
     const description = typeof input.description === "string" ? input.description.trim() : "";
@@ -1651,25 +1770,125 @@ export class DiagramApplication {
     const componentPrompt = typeof prompts["diagram-component"] === "string"
       ? prompts["diagram-component"].trim()
       : "";
+    const defaultReferencePrompts = createBuiltInSystemPromptTemplates(timestamp())[0].referencePrompts;
+    const referencePrompts = input.referencePrompts && typeof input.referencePrompts === "object"
+      ? input.referencePrompts as Record<string, unknown>
+      : defaultReferencePrompts;
+    const diagramReferencePrompt = typeof referencePrompts.diagram === "string"
+      ? referencePrompts.diagram.trim()
+      : "";
+    const callGraphReferencePrompt = typeof referencePrompts["call-graph"] === "string"
+      ? referencePrompts["call-graph"].trim()
+      : "";
+    const dirViewReferencePrompt = typeof referencePrompts["dir-view"] === "string"
+      ? referencePrompts["dir-view"].trim()
+      : "";
+    const componentReferencePrompt = typeof referencePrompts["diagram-component"] === "string"
+      ? referencePrompts["diagram-component"].trim()
+      : "";
+    const parseVariableOverrides = (value: unknown): PromptTemplateVariableOverrides | undefined => {
+      if (value === undefined) return undefined;
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        throw new Error("template variable definitions must be an object");
+      }
+      const targetKinds: GenerationTargetKind[] = [
+        "diagram", "call-graph", "dir-view", "diagram-component"
+      ];
+      const variableNames: PromptTemplateVariable[] = [
+        "outputKind", "submissionTool", "referenceInstruction", "referenceContext"
+      ];
+      const inputOverrides = value as Record<string, unknown>;
+      const unknownTarget = Object.keys(inputOverrides).find(
+        (kind) => !targetKinds.includes(kind as GenerationTargetKind)
+      );
+      if (unknownTarget) throw new Error(`unknown template variable target: ${unknownTarget}`);
+      const parsed: PromptTemplateVariableOverrides = {};
+      for (const kind of targetKinds) {
+        const kindValue = inputOverrides[kind];
+        if (kindValue === undefined) continue;
+        if (!kindValue || typeof kindValue !== "object" || Array.isArray(kindValue)) {
+          throw new Error(`template variable definitions for ${kind} must be an object`);
+        }
+        const kindOverrides = kindValue as Record<string, unknown>;
+        const unknownVariable = Object.keys(kindOverrides).find(
+          (name) => !variableNames.includes(name as PromptTemplateVariable)
+        );
+        if (unknownVariable) throw new Error(`unknown template variable: {{${unknownVariable}}}`);
+        const normalized: Partial<Record<PromptTemplateVariable, string>> = {};
+        for (const name of variableNames) {
+          const definition = kindOverrides[name];
+          if (definition === undefined || definition === "") continue;
+          if (typeof definition !== "string") {
+            throw new Error(`template variable {{${name}}} must be a string`);
+          }
+          if (definition.length > 32000) {
+            throw new Error(`template variable {{${name}}} cannot exceed 32,000 characters`);
+          }
+          normalized[name] = definition;
+        }
+        if (Object.keys(normalized).length) parsed[kind] = normalized;
+      }
+      return parsed;
+    };
+    const requestedVariableOverrides = parseVariableOverrides(input.variableOverrides);
     if (!label) throw new Error("template name is required");
     if (label.length > 80) throw new Error("template name cannot exceed 80 characters");
     if (description.length > 240) throw new Error("template description cannot exceed 240 characters");
     if (!diagramPrompt || !callGraphPrompt || !dirViewPrompt || !componentPrompt) {
       throw new Error("all generation system prompts are required");
     }
-    if ([diagramPrompt, callGraphPrompt, dirViewPrompt, componentPrompt]
+    if (!diagramReferencePrompt || !callGraphReferencePrompt
+      || !dirViewReferencePrompt || !componentReferencePrompt) {
+      throw new Error("all generation reference prompts are required");
+    }
+    if ([
+      diagramPrompt, callGraphPrompt, dirViewPrompt, componentPrompt,
+      diagramReferencePrompt, callGraphReferencePrompt, dirViewReferencePrompt, componentReferencePrompt
+    ]
       .some((prompt) => prompt.length > 32000)) {
       throw new Error("system prompts cannot exceed 32,000 characters");
     }
-    renderSystemPromptTemplate(diagramPrompt, "diagram");
-    renderSystemPromptTemplate(callGraphPrompt, "call-graph");
-    renderSystemPromptTemplate(dirViewPrompt, "dir-view");
-    renderSystemPromptTemplate(componentPrompt, "diagram-component");
-
     const templates = await this.store.loadSystemPromptTemplates();
     const requestedId = typeof input.id === "string" ? input.id : undefined;
     const existing = requestedId ? templates.find((template) => template.id === requestedId) : undefined;
     if (requestedId && !existing) throw new Error(`unknown system prompt template: ${requestedId}`);
+    const variableOverrides = requestedVariableOverrides ?? existing?.variableOverrides;
+    renderSystemPromptTemplate(diagramPrompt, "diagram", variableOverrides?.diagram);
+    renderSystemPromptTemplate(callGraphPrompt, "call-graph", variableOverrides?.["call-graph"]);
+    renderSystemPromptTemplate(dirViewPrompt, "dir-view", variableOverrides?.["dir-view"]);
+    renderSystemPromptTemplate(
+      componentPrompt,
+      "diagram-component",
+      variableOverrides?.["diagram-component"]
+    );
+    renderReferencePromptTemplate({
+      template: diagramReferencePrompt,
+      targetKind: "diagram",
+      instruction: "Use @diagram/reference as the style reference.",
+      referenceContext: "Diagram reference",
+      variableOverrides: variableOverrides?.diagram
+    });
+    renderReferencePromptTemplate({
+      template: callGraphReferencePrompt,
+      targetKind: "call-graph",
+      instruction: "Use @diagram/reference as the style reference.",
+      referenceContext: "Diagram reference",
+      variableOverrides: variableOverrides?.["call-graph"]
+    });
+    renderReferencePromptTemplate({
+      template: dirViewReferencePrompt,
+      targetKind: "dir-view",
+      instruction: "Use @diagram/reference as the style reference.",
+      referenceContext: "Diagram reference",
+      variableOverrides: variableOverrides?.["dir-view"]
+    });
+    renderReferencePromptTemplate({
+      template: componentReferencePrompt,
+      targetKind: "diagram-component",
+      instruction: "Use @component/reference as the style reference.",
+      referenceContext: "DiagramComponent reference",
+      variableOverrides: variableOverrides?.["diagram-component"]
+    });
     const timestampValue = timestamp();
     let id = existing?.id ?? slugify(label, "custom-prompt");
     if (!existing) {
@@ -1691,6 +1910,15 @@ export class DiagramApplication {
         "dir-view": dirViewPrompt,
         "diagram-component": componentPrompt
       },
+      referencePrompts: {
+        diagram: diagramReferencePrompt,
+        "call-graph": callGraphReferencePrompt,
+        "dir-view": dirViewReferencePrompt,
+        "diagram-component": componentReferencePrompt
+      },
+      ...(variableOverrides && Object.keys(variableOverrides).length
+        ? { variableOverrides }
+        : {}),
       createdAt: existing?.createdAt ?? timestampValue,
       updatedAt: timestampValue
     };
