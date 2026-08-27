@@ -7,15 +7,6 @@ export type DiagramSetReadiness = "collecting" | "ready" | "failed";
 export type GenerationOutputKind = "diagram" | "diagram-component";
 export type DiagramViewKind = "diagram" | "call-graph" | "dir-view";
 export type GenerationTargetKind = DiagramViewKind | "diagram-component";
-export type PromptTemplateVariable =
-  | "outputKind"
-  | "submissionTool"
-  | "referenceInstruction"
-  | "referenceContext";
-export type PromptTemplateVariableOverrides = Partial<Record<
-  GenerationTargetKind,
-  Partial<Record<PromptTemplateVariable, string>>
->>;
 export type CodeEntityPromptKind = "code-entity-identification" | "code-entity-compaction";
 export const DEFAULT_GENERATION_COUNT = 3;
 export const DIAGRAM_MODELS = [
@@ -246,11 +237,20 @@ export interface GenerationPromptConfigRecord {
   /** Optional second user turn that restyles the first submitted artifact. */
   referencePrompt?: {
     templateVersion: 1;
+    /** Name of the persisted template selected for this workflow turn. */
+    promptName?: string;
     instruction: string;
     references: GenerationPromptReference[];
     /** Mentioned follow-up references intentionally left out of model context. */
     omittedReferences?: PromptReference[];
     rendered: string;
+  };
+  /** Mandatory final user turn that maps the final submitted artifact. */
+  mappingPrompt: {
+    templateVersion: 1;
+    /** Name of the persisted template selected for this workflow turn. */
+    promptName?: string;
+    template: string;
   };
   derivation?: GenerationDerivationRecord;
   contextPrompt: {
@@ -262,6 +262,8 @@ export interface GenerationPromptConfigRecord {
     templateVersion: 1;
     profileId: GenerationPromptProfileId;
     profileVersion: number;
+    /** Name of the persisted template selected for this workflow turn. */
+    promptName?: string;
     /** Artifact references declared by the selected system-prompt template. */
     references?: GenerationPromptReference[];
     rendered: string;
@@ -281,15 +283,25 @@ export interface PromptTemplateRecord<TPromptName extends string, TProfileId ext
   updatedAt: string;
 }
 
-export interface SystemPromptTemplateRecord extends PromptTemplateRecord<
-  GenerationTargetKind,
-  GenerationPromptProfileId
-> {
-  /** User-message templates sent after the initial artifact submission. */
-  referencePrompts: Record<GenerationTargetKind, string>;
-  /** Optional literal replacements for the built-in or runtime template-variable values. */
-  variableOverrides?: PromptTemplateVariableOverrides;
+export interface NamedPromptTemplate {
+  template: string;
+  description?: string;
 }
+
+/** A global, versioned dictionary of named prompts used by prompt workflows. */
+export interface PromptTemplateSetRecord<TProfileId extends string = string> {
+  schemaVersion: typeof SCHEMA_VERSION;
+  id: TProfileId;
+  label: string;
+  description: string;
+  builtIn: boolean;
+  version: number;
+  prompts: Record<string, NamedPromptTemplate>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type SystemPromptTemplateRecord = PromptTemplateSetRecord<GenerationPromptProfileId>;
 
 export type CodeEntityPromptTemplateRecord = PromptTemplateRecord<
   CodeEntityPromptKind,
@@ -538,6 +550,8 @@ export interface GeneratedArtifactDraft {
   name: string;
   ascii: string;
   codeEntityIds: string[];
+  /** Required on the final mapping-turn submission. */
+  mappings?: DiagramElementMappingDraft[];
 }
 
 /** A readable, prompt-only identifier that resolves to a persisted CodeEntity id. */

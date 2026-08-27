@@ -69,6 +69,7 @@ export function DiagramSetTreePanel(props: {
           const expanded = expandedSetIds.has(set.id);
           const active = set.id === props.activeSetId;
           const starredIds = new Set(Object.values(set.featuredViewIds));
+          const hasStarredDiagram = diagrams.some((diagram) => starredIds.has(diagram.id));
           return (
             <div className="diagram-set-tree-branch" role="treeitem" aria-expanded={expanded} aria-level={1} key={set.id}>
               <div
@@ -87,6 +88,11 @@ export function DiagramSetTreePanel(props: {
                   aria-current={active ? "true" : undefined}
                   onClick={() => props.onSelectSet(set.id)}
                 >
+                  <span
+                    className={`diagram-set-tree-set-star${hasStarredDiagram ? " is-starred" : ""}`}
+                    aria-label={hasStarredDiagram ? "Contains starred diagrams" : undefined}
+                    aria-hidden={hasStarredDiagram ? undefined : "true"}
+                  >{hasStarredDiagram ? "★" : "·"}</span>
                   <strong>{set.name}</strong>
                   {set.readiness === "failed" ? <em>FAILED</em> : null}
                 </button>

@@ -28,6 +28,7 @@ import {
   type GenerationBatchRecord,
   type GenerationOutputKind,
   type GenerationPromptConfigRecord,
+  type GenerationTargetKind,
   type ImportedArtifactLibraryRecord,
   type SystemPromptTemplateRecord,
   type PromptReference,
@@ -35,8 +36,11 @@ import {
   type WorkspaceSnapshot
 } from "../src/domain";
 import {
+  createSystemPromptTemplate,
   createBuiltInCodeEntityPromptTemplates,
   createBuiltInSystemPromptTemplates,
+  generationPromptBindings,
+  promptTemplate,
   renderArtifactSystemPrompt
 } from "../src/prompt";
 
@@ -499,36 +503,87 @@ export class DiagramStore {
   async loadSystemPromptTemplates(): Promise<SystemPromptTemplateRecord[]> {
     const stored = await readJsonIfExists<{
       schemaVersion: typeof SCHEMA_VERSION;
-      templates: Array<Omit<SystemPromptTemplateRecord, "referencePrompts"> & {
-        referencePrompts?: SystemPromptTemplateRecord["referencePrompts"];
-      }>;
+      templates: unknown[];
     }>(this.systemPromptTemplatesPath());
     if (stored) {
       const builtIns = new Map(createBuiltInSystemPromptTemplates(nowIso()).map((item) => [item.id, item]));
       let changed = false;
-      const templates: SystemPromptTemplateRecord[] = stored.templates.map((template) => {
-        const builtIn = builtIns.get(template.id);
-        const hasAuxiliaryPrompts = Boolean(template.prompts["call-graph"] && template.prompts["dir-view"]);
-        const hasReferencePrompts = Boolean(template.referencePrompts?.diagram
-          && template.referencePrompts["call-graph"]
-          && template.referencePrompts["dir-view"]
-          && template.referencePrompts["diagram-component"]);
-        if (hasAuxiliaryPrompts && hasReferencePrompts) return template as SystemPromptTemplateRecord;
+      const targetKinds: GenerationTargetKind[] = [
+        "diagram", "call-graph", "dir-view", "diagram-component"
+      ];
+      const migrateManagedVariables = (value: string) => value
+        .replace(/{{\s*outputKind\s*}}/g, "artifact")
+        .replace(/{{\s*submissionTool\s*}}/g, "the registered submission tool")
+        .replace(/{{\s*referenceInstruction\s*}}/g, "the system-managed reference instruction below")
+        .replace(/{{\s*referenceContext\s*}}/g, "the system-managed reference context below")
+        .replace(/{{\s*mappingArtifact\s*}}/g, "the system-managed final artifact below")
+        .replace(/{{\s*mappingEntities\s*}}/g, "the system-managed CodeEntity context below");
+      const templates: SystemPromptTemplateRecord[] = stored.templates.map((value) => {
+        if (!value || typeof value !== "object" || Array.isArray(value)) {
+          throw new Error("invalid stored system prompt template");
+        }
+        const template = value as Record<string, unknown>;
+        const id = typeof template.id === "string" ? template.id : "";
+        const rawPrompts = template.prompts && typeof template.prompts === "object"
+          ? template.prompts as Record<string, unknown>
+          : {};
+        const namedDictionary = Object.values(rawPrompts).every((entry) => (
+          Boolean(entry) && typeof entry === "object" && !Array.isArray(entry)
+          && typeof (entry as Record<string, unknown>).template === "string"
+        ));
+        if (namedDictionary && Object.keys(rawPrompts).length) {
+          const prompts = Object.fromEntries(Object.entries(rawPrompts).map(([name, entry]) => {
+            const prompt = entry as { template: string; description?: string };
+            const migratedTemplate = migrateManagedVariables(prompt.template);
+            if (migratedTemplate !== prompt.template) changed = true;
+            return [name, { ...prompt, template: migratedTemplate }];
+          }));
+          return createSystemPromptTemplate({
+            id,
+            label: typeof template.label === "string" ? template.label : id,
+            description: typeof template.description === "string" ? template.description : "",
+            builtIn: template.builtIn === true,
+            version: typeof template.version === "number" ? template.version : 1,
+            prompts,
+            createdAt: typeof template.createdAt === "string" ? template.createdAt : nowIso(),
+            updatedAt: typeof template.updatedAt === "string" ? template.updatedAt : nowIso()
+          });
+        }
+
         changed = true;
-        const fallbackReferencePrompts = builtIn?.referencePrompts
-          ?? createBuiltInSystemPromptTemplates(nowIso())[0].referencePrompts;
-        return {
-          ...template,
-          prompts: {
-            ...template.prompts,
-            "call-graph": builtIn?.prompts["call-graph"] ?? template.prompts.diagram,
-            "dir-view": builtIn?.prompts["dir-view"] ?? template.prompts.diagram
-          },
-          referencePrompts: {
-            ...fallbackReferencePrompts,
-            ...template.referencePrompts
-          }
-        };
+        const fallback = builtIns.get(id) ?? createBuiltInSystemPromptTemplates(nowIso())[0];
+        const legacyReferences = template.referencePrompts && typeof template.referencePrompts === "object"
+          ? template.referencePrompts as Record<string, unknown>
+          : {};
+        const legacyMappings = template.mappingPrompts && typeof template.mappingPrompts === "object"
+          ? template.mappingPrompts as Record<string, unknown>
+          : {};
+        const prompts: Record<string, string> = {};
+        for (const targetKind of targetKinds) {
+          const bindings = generationPromptBindings(targetKind);
+          const system = typeof rawPrompts[targetKind] === "string"
+            ? rawPrompts[targetKind] as string
+            : promptTemplate(fallback, bindings.system);
+          const reference = typeof legacyReferences[targetKind] === "string"
+            ? legacyReferences[targetKind] as string
+            : promptTemplate(fallback, bindings.reference!);
+          const mapping = typeof legacyMappings[targetKind] === "string"
+            ? legacyMappings[targetKind] as string
+            : promptTemplate(fallback, bindings.mapping);
+          prompts[bindings.system] = migrateManagedVariables(system);
+          prompts[bindings.reference!] = migrateManagedVariables(reference);
+          prompts[bindings.mapping] = migrateManagedVariables(mapping);
+        }
+        return createSystemPromptTemplate({
+          id,
+          label: typeof template.label === "string" ? template.label : id,
+          description: typeof template.description === "string" ? template.description : "",
+          builtIn: template.builtIn === true,
+          version: typeof template.version === "number" ? template.version : 1,
+          prompts,
+          createdAt: typeof template.createdAt === "string" ? template.createdAt : nowIso(),
+          updatedAt: typeof template.updatedAt === "string" ? template.updatedAt : nowIso()
+        });
       });
       if (changed) await this.saveSystemPromptTemplates(templates);
       return templates;
@@ -807,6 +862,11 @@ export class DiagramStore {
       promptRepresentation: await this.legacyPromptRepresentation(setId, reference)
     })));
     const promptConfigId = `prompt-${createHash("sha256").update(stored.id).digest("hex").slice(0, 16)}`;
+    const legacyTargetKind: GenerationTargetKind = outputKind === "diagram-component"
+      ? "diagram-component"
+      : "diagram";
+    const legacyTemplate = createBuiltInSystemPromptTemplates(stored.createdAt)[0];
+    const legacyBindings = generationPromptBindings(legacyTargetKind);
     const config: GenerationPromptConfigRecord = {
       schemaVersion: SCHEMA_VERSION,
       id: promptConfigId,
@@ -817,6 +877,11 @@ export class DiagramStore {
       instruction: stored.userPrompt ?? "",
       selectedCodeEntityIds: stored.selectedCodeEntityIds ?? [],
       references,
+      mappingPrompt: {
+        templateVersion: 1,
+        promptName: legacyBindings.mapping,
+        template: promptTemplate(legacyTemplate, legacyBindings.mapping)
+      },
       contextPrompt: {
         templateVersion: 1,
         rendered: stored.resolvedPrompt ?? ""
@@ -826,10 +891,11 @@ export class DiagramStore {
         templateVersion: 1,
         profileId: "default",
         profileVersion: 1,
+        promptName: legacyBindings.system,
         rendered: renderArtifactSystemPrompt({
           outputKind,
           ...(outputKind === "diagram" ? { viewKind: "diagram" as const } : {}),
-          template: createBuiltInSystemPromptTemplates(stored.createdAt)[0]
+          template: legacyTemplate
         })
       },
       createdAt: stored.createdAt
@@ -1144,7 +1210,8 @@ export class DiagramStore {
     batch: GenerationBatchRecord,
     runs: AgentRunRecord[],
     diagrams: DiagramRecord[],
-    components: DiagramComponentRecord[]
+    components: DiagramComponentRecord[],
+    codeEntityMaps: DiagramCodeEntityMapRecord[] = []
   ): Promise<void> {
     const entities = await this.loadCodeEntities(batch.diagramSetId);
     if (entities.status !== "finalized" || entities.revision !== batch.codeEntitiesRevision) {
@@ -1154,6 +1221,7 @@ export class DiagramStore {
       await writeJsonAtomic(this.diagramPath(diagram.diagramSetId, diagram.id), diagram);
     }
     for (const component of components) await this.saveDiagramComponent(component);
+    for (const mapping of codeEntityMaps) await this.saveCodeEntityMap(mapping);
     for (const run of runs) await this.saveRun(run);
     await this.saveBatch(await this.ensureDiagramCandidateBatch(batch));
     const set = await this.loadDiagramSet(batch.diagramSetId);

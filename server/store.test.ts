@@ -4,6 +4,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { DiagramStore } from "./store";
 import { SCHEMA_VERSION, type DiagramRecord } from "../src/domain";
+import { generationPromptBindings, promptTemplate } from "../src/prompt";
 
 const roots: string[] = [];
 
@@ -12,6 +13,90 @@ afterEach(async () => {
 });
 
 describe("DiagramStore", () => {
+  it("migrates runtime variables out of named prompt dictionaries", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-named-prompt-migration-"));
+    roots.push(root);
+    await mkdir(path.join(root, ".diagrams"), { recursive: true });
+    await writeFile(path.join(root, ".diagrams", "system-prompt-templates.json"), JSON.stringify({
+      schemaVersion: SCHEMA_VERSION,
+      templates: [{
+        schemaVersion: SCHEMA_VERSION,
+        id: "named",
+        label: "Named",
+        description: "Named dictionary with old runtime variables",
+        builtIn: false,
+        version: 1,
+        prompts: {
+          "diagram-system": { template: "Generate {{outputKind}}." },
+          "diagram-reference": {
+            template: "Use {{referenceInstruction}} with {{referenceContext}}."
+          },
+          "diagram-mapping": { template: "Map {{mappingArtifact}} to {{mappingEntities}}." }
+        },
+        createdAt: "2026-01-01T00:00:00Z",
+        updatedAt: "2026-01-01T00:00:00Z"
+      }]
+    }, null, 2));
+
+    const [template] = await new DiagramStore(root).loadSystemPromptTemplates();
+    expect(Object.values(template.prompts).every(({ template: body }) => !body.includes("{{")))
+      .toBe(true);
+    const persisted = await readFile(
+      path.join(root, ".diagrams", "system-prompt-templates.json"),
+      "utf8"
+    );
+    expect(persisted).not.toContain("{{");
+  });
+
+  it("migrates legacy generation profiles into named prompt dictionaries", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-prompt-migration-"));
+    roots.push(root);
+    await mkdir(path.join(root, ".diagrams"), { recursive: true });
+    const targetKinds = ["diagram", "call-graph", "dir-view", "diagram-component"] as const;
+    await writeFile(path.join(root, ".diagrams", "system-prompt-templates.json"), JSON.stringify({
+      schemaVersion: SCHEMA_VERSION,
+      templates: [{
+        schemaVersion: SCHEMA_VERSION,
+        id: "legacy",
+        label: "Legacy",
+        description: "Legacy shape",
+        builtIn: false,
+        version: 3,
+        prompts: Object.fromEntries(targetKinds.map((kind) => [
+          kind,
+          `Generate {{outputKind}} for ${kind} through {{submissionTool}}.`
+        ])),
+        referencePrompts: Object.fromEntries(targetKinds.map((kind) => [
+          kind,
+          "Reference {{referenceContext}} and call {{submissionTool}}."
+        ])),
+        mappingPrompts: Object.fromEntries(targetKinds.map((kind) => [
+          kind,
+          "Map {{mappingArtifact}} to {{mappingEntities}} through {{submissionTool}}."
+        ])),
+        createdAt: "2026-01-01T00:00:00Z",
+        updatedAt: "2026-01-01T00:00:00Z"
+      }]
+    }, null, 2));
+
+    const [template] = await new DiagramStore(root).loadSystemPromptTemplates();
+    const bindings = generationPromptBindings("diagram");
+    expect(promptTemplate(template, bindings.system)).toBe(
+      "Generate artifact for diagram through the registered submission tool."
+    );
+    expect(promptTemplate(template, bindings.reference!))
+      .toContain("the system-managed reference context below");
+    expect(promptTemplate(template, bindings.mapping))
+      .toContain("the system-managed final artifact below");
+    const persisted = await readFile(
+      path.join(root, ".diagrams", "system-prompt-templates.json"),
+      "utf8"
+    );
+    expect(persisted).toContain('"diagram-system"');
+    expect(persisted).not.toContain('"referencePrompts"');
+    expect(persisted).not.toContain("{{");
+  });
+
   it("moves a deleted Diagram Set to recoverable trash and updates the project index", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "new-diagram-store-trash-"));
     roots.push(root);

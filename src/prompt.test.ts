@@ -8,44 +8,86 @@ import {
   type DiagramSetRecord
 } from "./domain";
 import {
+  DEFAULT_REFERENCE_FOLLOW_UP_PROMPT,
   createGenerationPromptConfig,
   createBuiltInCodeEntityPromptTemplates,
   createBuiltInSystemPromptTemplates,
+  createSystemPromptTemplate,
+  generationPromptBindings,
+  promptTemplate,
   promptOptions,
   renderArtifactSystemPrompt,
+  renderMappingPromptTemplate,
   renderReferencePromptTemplate,
-  resolvePromptTemplateVariableValues
+  renderSystemPromptTemplate
 } from "./prompt";
 
 describe("prompt template records", () => {
-  it("defines a configurable reference follow-up for every generation target", () => {
-    const [template] = createBuiltInSystemPromptTemplates("2026-01-01T00:00:00Z");
-    expect(template.referencePrompts).toMatchObject({
-      diagram: expect.stringContaining("{{referenceContext}}"),
-      "call-graph": expect.stringContaining("{{referenceInstruction}}"),
-      "dir-view": expect.stringContaining("{{submissionTool}}"),
-      "diagram-component": expect.stringContaining("Regenerate")
+  it("constructs arbitrary named prompt dictionaries without imposing workflow names", () => {
+    const template = createSystemPromptTemplate({
+      id: "custom",
+      label: "Custom",
+      description: "Different workflow names",
+      createdAt: "2026-01-01T00:00:00Z",
+      prompts: {
+        "architecture-overview-system": "Overview instructions",
+        "map-overview": { template: "Map the supplied artifact." }
+      }
+    });
+    expect(template.prompts).toEqual({
+      "architecture-overview-system": { template: "Overview instructions" },
+      "map-overview": { template: "Map the supplied artifact." }
     });
   });
 
-  it("exposes computed variables and applies per-target variable definitions", () => {
-    expect(resolvePromptTemplateVariableValues({
-      targetKind: "diagram-component",
-      phase: "system"
-    })).toMatchObject({
-      outputKind: "DiagramComponent",
-      submissionTool: "submit_diagram_component"
+  it("constructs one named prompt dictionary for every generation profile", () => {
+    const [template] = createBuiltInSystemPromptTemplates("2026-01-01T00:00:00Z");
+    const diagram = generationPromptBindings("diagram");
+    const component = generationPromptBindings("diagram-component");
+    expect(promptTemplate(template, diagram.system)).toContain("architecture diagram");
+    expect(promptTemplate(template, diagram.reference!)).toContain("system-managed reference instruction");
+    expect(promptTemplate(template, diagram.mapping)).toContain("system-managed final artifact");
+    expect(promptTemplate(template, component.system)).toContain("DiagramComponent");
+    expect(Object.values(template.prompts).every(({ template: value }) => (
+      !value.includes("{{")
+    ))).toBe(true);
+  });
+
+  it("renders the hidden mapping follow-up with numbered ASCII and readable aliases", () => {
+    const [template] = createBuiltInSystemPromptTemplates("2026-01-01T00:00:00Z");
+    const bindings = generationPromptBindings("diagram");
+    const entity = codeEntities.entities[0];
+    const rendered = renderMappingPromptTemplate({
+      template: promptTemplate(template, bindings.mapping),
+      targetKind: "diagram",
+      artifact: {
+        name: "Queue",
+        ascii: "+-- Queue --+",
+        codeEntityIds: [entity.id]
+      },
+      codeEntities: [entity],
+      aliases: [{ id: entity.id, alias: "alias-readable-queue" }]
     });
-    expect(renderReferencePromptTemplate({
-      template: "{{outputKind}}: {{referenceInstruction}} / {{referenceContext}}",
+    expect(rendered).toContain("   1: +-- Queue --+");
+    expect(rendered).toContain("System-managed final artifact (read-only):");
+    expect(rendered).toContain("System-managed CodeEntities and source ranges (read-only):");
+    expect(rendered).toContain("alias-readable-queue:");
+    expect(rendered).toContain("submit_diagram");
+    expect(rendered).not.toContain(entity.id);
+  });
+
+  it("appends workflow context as read-only sections and rejects template variables", () => {
+    const rendered = renderReferencePromptTemplate({
+      template: "Apply the supplied visual reference.",
       targetKind: "diagram",
       instruction: "Runtime instruction",
-      referenceContext: "Runtime context",
-      variableOverrides: {
-        outputKind: "System map",
-        referenceInstruction: "Configured instruction"
-      }
-    })).toBe("System map: Configured instruction / Runtime context");
+      referenceContext: "Runtime context"
+    });
+    expect(rendered).toContain("System-managed reference instruction (read-only):\nRuntime instruction");
+    expect(rendered).toContain("System-managed reference context (read-only):\nRuntime context");
+    expect(rendered).toContain("System-managed output requirements (read-only):");
+    expect(() => renderSystemPromptTemplate("{{outputKind}}", "diagram"))
+      .toThrow("prompt template variables are not supported");
   });
 
   it("defines CodeEntity criteria through the same versioned prompts interface", () => {
@@ -170,9 +212,53 @@ const buildPrompt = (input: {
 });
 
 describe("createGenerationPromptConfig", () => {
+  it("binds workflow stages to arbitrary prompt names", () => {
+    const profile = createSystemPromptTemplate({
+      id: "higher",
+      label: "Higher",
+      description: "Higher-level flow",
+      createdAt: "2026-01-01T00:00:00Z",
+      prompts: {
+        "overview-system": "Create the architecture overview.",
+        "overview-reference": DEFAULT_REFERENCE_FOLLOW_UP_PROMPT,
+        "overview-mapping": "Map the supplied artifact."
+      }
+    });
+    const result = createGenerationPromptConfig({
+      id: "prompt-higher",
+      diagramSet,
+      codeEntities,
+      diagrams: [diagram],
+      components: [component],
+      outputKind: "diagram",
+      viewKind: "diagram",
+      modelId: "gpt-5.6-sol",
+      profile,
+      promptBindings: {
+        system: "overview-system",
+        reference: "overview-reference",
+        mapping: "overview-mapping"
+      },
+      instruction: "Create the higher layer",
+      selectedCodeEntityIds: ["entity-queue"],
+      createdAt: "2026-01-01T00:00:00Z"
+    });
+    expect(result.config.systemPrompt).toMatchObject({
+      profileId: "higher",
+      promptName: "overview-system"
+    });
+    expect(result.config.mappingPrompt).toMatchObject({
+      promptName: "overview-mapping",
+      template: "Map the supplied artifact."
+    });
+  });
+
   it("runs the selected profile reference template without a per-generation instruction", () => {
     const profile = createBuiltInSystemPromptTemplates("2026-01-01T00:00:00Z")[0];
-    profile.referencePrompts.diagram = "Restyle the previous submission using @diagram/current-flow.";
+    const bindings = generationPromptBindings("diagram");
+    profile.prompts[bindings.reference!] = {
+      template: "Restyle the previous submission using @diagram/current-flow."
+    };
     const result = createGenerationPromptConfig({
       id: "prompt-default-reference",
       diagramSet,
@@ -212,13 +298,16 @@ describe("createGenerationPromptConfig", () => {
       references: [expect.objectContaining({ targetId: diagram.id })]
     });
     expect(result.config.referencePrompt?.rendered).toContain(diagram.ascii);
-    expect(result.config.referencePrompt?.rendered).toContain("Regenerate the complete Diagram");
+    expect(result.config.referencePrompt?.rendered).toContain("Regenerate the complete artifact");
     expect(result.allowedCodeEntityIds).toEqual(["entity-unused"]);
   });
 
   it("embeds artifact references declared by the system prompt without adding user lineage", () => {
     const profile = createBuiltInSystemPromptTemplates("2026-01-01T00:00:00Z")[0];
-    profile.prompts.diagram = `${profile.prompts.diagram} Use @diagram/current-flow as a visual guide.`;
+    const bindings = generationPromptBindings("diagram");
+    profile.prompts[bindings.system] = {
+      template: `${promptTemplate(profile, bindings.system)} Use @diagram/current-flow as a visual guide.`
+    };
     const result = createGenerationPromptConfig({
       id: "prompt-system-reference",
       diagramSet,
@@ -375,13 +464,13 @@ describe("createGenerationPromptConfig", () => {
   it("renders the original default system prompts exactly", () => {
     const defaultTemplate = createBuiltInSystemPromptTemplates("2026-01-01T00:00:00Z")[0];
     expect(renderArtifactSystemPrompt({ outputKind: "diagram", template: defaultTemplate })).toBe(
-      "Generate exactly one architecture diagram from the supplied explicit context. Give it a compact, specific name, ideally two to five words; omit redundant words such as the DiagramSet name. Never modify files. Use 7-bit ASCII only and finish through submit_diagram."
+      "Generate exactly one architecture diagram from the supplied explicit context. Give it a compact, specific name, ideally two to five words; omit redundant words such as the DiagramSet name. Never modify files. Use 7-bit ASCII only.\n\nSystem-managed output requirements (read-only):\nReturn exactly one Diagram.\nFinish this turn by calling submit_diagram exactly once."
     );
     expect(renderArtifactSystemPrompt({
       outputKind: "diagram-component",
       template: defaultTemplate
     })).toBe(
-      "Generate exactly one reusable DiagramComponent from the supplied explicit context. It is a fragment for a broader ASCII Diagram, not a complete diagram. Give it a compact, specific name. Be creative. Never modify files. Use 7-bit ASCII only and finish through submit_diagram_component."
+      "Generate exactly one reusable DiagramComponent from the supplied explicit context. It is a fragment for a broader ASCII Diagram, not a complete diagram. Give it a compact, specific name. Be creative. Never modify files. Use 7-bit ASCII only.\n\nSystem-managed output requirements (read-only):\nReturn exactly one DiagramComponent.\nFinish this turn by calling submit_diagram_component exactly once."
     );
   });
 

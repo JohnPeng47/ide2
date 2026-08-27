@@ -4,6 +4,7 @@ import { spawn } from "node:child_process";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import type { WorkspaceSnapshot } from "./src/domain";
 
 const DEFAULT_SERVER_URL = "http://127.0.0.1:5173";
 const PACKAGE_ROOT = path.dirname(fileURLToPath(import.meta.url));
@@ -40,6 +41,7 @@ function usage(): never {
     "usage:\n"
     + "  npm run diagram -- serve --path <repo> [--diagrams-dir <dir>] [--port <port>]\n"
     + "  npm run diagram -- prompt-templates [--server <url>]\n"
+    + "  npm run diagram -- list-diagrams [--server <url>]\n"
     + "  npm run diagram -- create --path <repo> --name <name> --prompt <prompt> "
     + "[--prompt-template <id>] [--reference-prompt <prompt>] [--no-reference-prompt] "
     + "[--server <url>]"
@@ -140,6 +142,42 @@ async function listPromptTemplates(args: string[]): Promise<void> {
   })}\n`);
 }
 
+async function listDiagrams(args: string[]): Promise<void> {
+  const serverUrl = serverUrlFrom(args);
+  const endpoint = new URL("/api/workspace", endpointFor(serverUrl));
+  let response: Response;
+  try {
+    response = await fetch(endpoint, { headers: { accept: "application/json" } });
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new Error(`cannot reach diagram server at ${endpoint.origin}: ${reason}`);
+  }
+  if (!response.ok) throw await responseError(response);
+  const payload = await response.json() as WorkspaceSnapshot;
+  if (!Array.isArray(payload.diagramSets)
+    || !payload.diagrams
+    || typeof payload.diagrams !== "object") {
+    throw new Error("diagram server returned an invalid workspace");
+  }
+  const diagrams = payload.diagramSets.flatMap((set) => {
+    const starredIds = new Set(Object.values(set.featuredViewIds));
+    return set.diagramIds.flatMap((diagramId) => {
+      const diagram = payload.diagrams[diagramId];
+      if (!diagram) return [];
+      const status = diagram.archivedAt
+        ? "archived"
+        : starredIds.has(diagram.id) ? "starred" : "unstarred";
+      return [{ ...diagram, diagramSetName: set.name, status }];
+    });
+  });
+  process.stdout.write(`${JSON.stringify({
+    event: "diagrams",
+    serverUrl: endpoint.origin,
+    count: diagrams.length,
+    diagrams
+  })}\n`);
+}
+
 async function responseError(response: Response): Promise<Error> {
   const payload = await response.json().catch(() => ({})) as { error?: string };
   return new Error(payload.error || `diagram server request failed with ${response.status}`);
@@ -174,6 +212,10 @@ async function main(): Promise<void> {
   }
   if (command === "prompt-templates") {
     await listPromptTemplates(args);
+    return;
+  }
+  if (command === "list-diagrams") {
+    await listDiagrams(args);
     return;
   }
   if (command !== "create") usage();

@@ -42,6 +42,8 @@ describe("DiagramSetTreePanel", () => {
     expect(markup).toContain("`-- ");
     expect(markup).toContain("★");
     expect(markup).toContain('aria-label="Starred diagram"');
+    expect(markup).toContain('aria-label="Contains starred diagrams"');
+    expect(markup.match(/★/g)).toHaveLength(2);
     expect(markup).toContain("System map");
     expect(markup).not.toContain("Old map");
   });

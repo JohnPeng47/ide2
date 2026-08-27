@@ -8,7 +8,7 @@ import {
   type DiagramSetRecord,
   type SystemPromptTemplateRecord
 } from "../src/domain";
-import { createGenerationPromptConfig } from "../src/prompt";
+import { createGenerationPromptConfig, renderArtifactSystemPrompt } from "../src/prompt";
 import { aggregateScores, diagramMetrics, judgeSummary, validateRanking } from "./metrics";
 import { EXPERIMENT_MODEL_ID, type ExperimentRuntime } from "./runtime";
 import type {
@@ -157,7 +157,11 @@ export class ExperimentRunner {
       defaultPromptProfile: {
         id: profile.id,
         version: profile.version,
-        rendered: profile.prompts.diagram.replace("{{submissionTool}}", "submit_diagram")
+        rendered: renderArtifactSystemPrompt({
+          outputKind: "diagram",
+          viewKind: "diagram",
+          template: profile
+        })
       },
       iterations: ITERATIONS,
       axes: AXES,
@@ -230,6 +234,7 @@ export class ExperimentRunner {
           diagramSetName: source.diagramSet.name,
           promptConfig: built.config,
           allowedCodeEntityAliases: built.allowedCodeEntityAliases,
+          codeEntities: built.allowedCodeEntities,
           allowedDiagramIds: [],
           allowedDiagramComponentIds: [],
           slot: replicate,

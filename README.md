@@ -68,6 +68,17 @@ CLI event reports the exact template revision and immutable generation
 prompt-config id used for the initial diagrams, plus the CodeEntity template
 revision and immutable collection prompt-config id.
 
+Query every Diagram across all Diagram Sets as one JSON event:
+
+```bash
+npm --prefix scripts/new-diagram run diagram -- list-diagrams \
+  --server http://127.0.0.1:5173
+```
+
+The event includes `count` and a flat `diagrams` array. Each item is the complete
+Diagram record, including its ASCII and stable handle, with `diagramSetName`
+and a `status` of `starred`, `unstarred`, or `archived` added for filtering.
+
 The studio supports the waiting state, immutable collected CodeEntitiesSets,
 typed `@entity/`, `@diagram/`, and `@component/` references, N parallel agents,
 shared Terra/Sol model selection for generation and LLM editing, persisted and
@@ -76,6 +87,11 @@ header's Settings menu opens a template editor with Diagram, Call Graph,
 Directory View, and DiagramComponent variants, resolved previews,
 custom-template creation, and built-in reset. Template edits are atomically persisted in
 `.diagrams/system-prompt-templates.json` and loaded again after restart.
+Each generation template is a dictionary of named prompt bodies; workflows bind their
+system, reference, and mapping turns to those names. Submission-tool and output-kind
+requirements, reference instructions and context, and mapping artifact and CodeEntity
+context are appended by the application. They remain read-only and appear in the
+resolved Settings preview; editable prompt bodies do not use template variables.
 Prompt templates, including built-ins, can be deleted as long as at least one
 template remains; generation falls back to the first remaining template when
 the default has been removed.
@@ -89,7 +105,12 @@ built-in CodeEntity template is currently selected automatically for collection.
 Every generation persists one immutable prompt-config record containing the exact instruction,
 reference representations, selected entities, model, style, and rendered
 context/system prompts. The batch and all parallel outputs reference that one
-record; batches do not duplicate prompt fields.
+record; batches do not duplicate prompt fields. Each generation agent follows
+its initial submission and optional reference follow-up with a mandatory hidden
+mapping follow-up from the same selected template. That final turn calls the
+same artifact submission tool with an unchanged artifact plus its mappings.
+Mapping follow-ups are versioned and persisted with generation templates but
+are intentionally absent from the Settings editor.
 Compacted source ranges render omitted implementation as expandable, source-style
 comments containing concise 7-bit ASCII call graphs of the actual calls, loops,
 branches, and results in those lines. Every semantic graph node maps to an exact
@@ -142,9 +163,10 @@ foundation.
 Archiving through `[x]` removes a variant from active UI and prompt references,
 clears its category star, and preserves its timestamped JSON for future learning.
 
-`map code entities` runs an LLM over the active artifact and its declared
-CodeEntities, then persists exact character-span-to-source-range associations
-in a sidecar record. Mapped ASCII text is visually marked without changing the
+Generated artifacts arrive with exact character-span-to-source-range
+associations persisted in a sidecar record. `map code entities` remains a
+manual retry/remap action and uses the same locked full-artifact submission
+shape as automatic generation. Mapped ASCII text is visually marked without changing the
 underlying text. Hovering shows the entity summary; clicking switches the right
 pane to Code Entities, opens the mapped source range, scrolls it into view, and
 highlights its rendered lines. Running the action again replaces that artifact's

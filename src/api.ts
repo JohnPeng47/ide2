@@ -175,7 +175,7 @@ export async function deleteDiagramSet(setId: string): Promise<WorkspaceSnapshot
 export async function saveSystemPromptTemplate(
   template: Pick<
     SystemPromptTemplateRecord,
-    "label" | "description" | "prompts" | "referencePrompts" | "variableOverrides"
+    "label" | "description" | "prompts"
   >
     & { id?: string }
 ): Promise<WorkspaceSnapshot> {

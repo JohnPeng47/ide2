@@ -872,7 +872,7 @@ function StudioPage(props: { onExperiments: () => void }) {
   const persistPromptTemplate = async (
     draft: Pick<
       SystemPromptTemplateRecord,
-      "label" | "description" | "prompts" | "referencePrompts" | "variableOverrides"
+      "label" | "description" | "prompts"
     > & { id?: string }
   ): Promise<SystemPromptTemplateRecord> => {
     const beforeIds = new Set(Object.keys(workspace.systemPromptTemplates));
@@ -938,19 +938,10 @@ function StudioPage(props: { onExperiments: () => void }) {
         id: draft.id,
         label: draft.label,
         description: draft.description,
-          prompts: {
-            diagram: draft.prompts.diagram ?? "",
-            "call-graph": draft.prompts["call-graph"] ?? "",
-            "dir-view": draft.prompts["dir-view"] ?? "",
-            "diagram-component": draft.prompts["diagram-component"] ?? ""
-          },
-          referencePrompts: {
-            diagram: draft.referencePrompts?.diagram ?? "",
-            "call-graph": draft.referencePrompts?.["call-graph"] ?? "",
-            "dir-view": draft.referencePrompts?.["dir-view"] ?? "",
-            "diagram-component": draft.referencePrompts?.["diagram-component"] ?? ""
-          },
-          variableOverrides: draft.variableOverrides
+        prompts: Object.fromEntries(Object.entries(draft.prompts).map(([name, template]) => [
+          name,
+          { template: template ?? "" }
+        ]))
       });
     }
     return persistCodeEntityPromptTemplate({

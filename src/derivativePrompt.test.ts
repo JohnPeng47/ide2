@@ -54,6 +54,7 @@ const config = (
   instruction,
   selectedCodeEntityIds: [],
   references: source ? [reference(source)] : [],
+  mappingPrompt: { templateVersion: 1, template: "Map the final diagram." },
   ...(source && correction !== undefined ? {
     derivation: {
       sourceArtifactKind: "diagram" as const,

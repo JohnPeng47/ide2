@@ -3,18 +3,14 @@ import type {
   CodeEntityPromptKind,
   CodeEntityPromptTemplateRecord,
   GenerationTargetKind,
-  PromptTemplateVariable,
-  PromptTemplateVariableOverrides,
   SystemPromptTemplateRecord
 } from "../domain";
 import {
-  DEFAULT_REFERENCE_FOLLOW_UP_PROMPT,
-  PROMPT_TEMPLATE_VARIABLE_DEFINITIONS,
-  REFERENCE_PROMPT_TEMPLATE_VARIABLES,
-  SYSTEM_PROMPT_TEMPLATE_VARIABLES,
+  createBuiltInSystemPromptTemplates,
+  generationPromptBindings,
+  renderMappingPromptTemplate,
   renderReferencePromptTemplate,
   renderSystemPromptTemplate,
-  resolvePromptTemplateVariableValues,
   type PromptOption
 } from "../prompt";
 
@@ -26,9 +22,8 @@ export interface PromptTemplateDraft {
   id?: string;
   label: string;
   description: string;
-  prompts: Partial<Record<PromptKind, string>>;
-  referencePrompts?: Partial<Record<GenerationTargetKind, string>>;
-  variableOverrides?: PromptTemplateVariableOverrides;
+  /** Editable prompt bodies keyed by their persisted dictionary names. */
+  prompts: Record<string, string>;
 }
 
 const familyKinds: Record<PromptTemplateFamily, PromptKind[]> = {
@@ -50,31 +45,34 @@ function draftFrom(template: AnyTemplate): PromptTemplateDraft {
     id: template.id,
     label: template.label,
     description: template.description,
-    prompts: { ...template.prompts },
-    ...( "referencePrompts" in template
-      ? { referencePrompts: { ...template.referencePrompts } }
-      : {}),
-    ...( "variableOverrides" in template && template.variableOverrides
-      ? {
-          variableOverrides: Object.fromEntries(Object.entries(template.variableOverrides).map(
-            ([kind, values]) => [kind, { ...values }]
-          ))
-        }
-      : {})
+    prompts: Object.fromEntries(Object.entries(template.prompts).map(([name, value]) => [
+      name,
+      typeof value === "string" ? value : value.template
+    ]))
   };
 }
 
 function emptyDraft(family: PromptTemplateFamily): PromptTemplateDraft {
+  const prompts = family === "generation"
+    ? Object.fromEntries(Object.entries(
+        createBuiltInSystemPromptTemplates("1970-01-01T00:00:00.000Z")[0].prompts
+      ).map(([name, value]) => [name, value.template]))
+    : Object.fromEntries(familyKinds[family].map((kind) => [kind, ""]));
   return {
     label: "New template",
     description: "",
-    prompts: Object.fromEntries(familyKinds[family].map((kind) => [kind, ""])),
-    ...(family === "generation" ? {
-      referencePrompts: Object.fromEntries(
-        familyKinds.generation.map((kind) => [kind, DEFAULT_REFERENCE_FOLLOW_UP_PROMPT])
-      )
-    } : {})
+    prompts
   };
+}
+
+function promptNameFor(
+  family: PromptTemplateFamily,
+  kind: PromptKind,
+  phase: "system" | "reference"
+): string {
+  if (family === "code-entities") return kind;
+  const bindings = generationPromptBindings(kind as GenerationTargetKind);
+  return phase === "reference" ? bindings.reference! : bindings.system;
 }
 
 export function SystemPromptSettingsDialog(props: {
@@ -97,7 +95,7 @@ export function SystemPromptSettingsDialog(props: {
     : emptyDraft("generation"));
   const [promptKind, setPromptKind] = useState<PromptKind>("diagram");
   const [generationPhase, setGenerationPhase] = useState<"system" | "reference">("system");
-  const [view, setView] = useState<"editor" | "preview" | "variables">("editor");
+  const [view, setView] = useState<"editor" | "preview">("editor");
   const [referenceMentionQuery, setReferenceMentionQuery] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -112,8 +110,7 @@ export function SystemPromptSettingsDialog(props: {
   const selected = templates.find((template) => template.id === selectedId);
   const changed = selected
     ? JSON.stringify(draftFrom(selected)) !== JSON.stringify(draft)
-    : Boolean(draft.label || draft.description || Object.values(draft.prompts).some(Boolean)
-      || Object.values(draft.referencePrompts ?? {}).some(Boolean));
+    : Boolean(draft.label || draft.description || Object.values(draft.prompts).some(Boolean));
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -135,51 +132,42 @@ export function SystemPromptSettingsDialog(props: {
   const validationError = useMemo(() => {
     if (!draft.label.trim()) return "Template name is required.";
     const kinds = familyKinds[family];
-    if (kinds.some((kind) => !draft.prompts[kind]?.trim())) {
-      return family === "generation"
-        ? "Diagram, Call Graph, Dir View, and DiagramComponent prompts are required."
-        : "Both identification and compaction criteria are required.";
-    }
     if (family === "generation") {
       try {
-        renderSystemPromptTemplate(draft.prompts.diagram!, "diagram", draft.variableOverrides?.diagram);
-        renderSystemPromptTemplate(
-          draft.prompts["call-graph"]!,
-          "call-graph",
-          draft.variableOverrides?.["call-graph"]
-        );
-        renderSystemPromptTemplate(
-          draft.prompts["dir-view"]!,
-          "dir-view",
-          draft.variableOverrides?.["dir-view"]
-        );
-        renderSystemPromptTemplate(
-          draft.prompts["diagram-component"]!,
-          "diagram-component",
-          draft.variableOverrides?.["diagram-component"]
-        );
         for (const kind of familyKinds.generation as GenerationTargetKind[]) {
-          const template = draft.referencePrompts?.[kind];
-          if (!template?.trim()) throw new Error("All generation reference prompts are required.");
+          const bindings = generationPromptBindings(kind);
+          const system = draft.prompts[bindings.system];
+          const reference = draft.prompts[bindings.reference!];
+          const mapping = draft.prompts[bindings.mapping];
+          if (!system?.trim() || !reference?.trim() || !mapping?.trim()) {
+            throw new Error("System, reference, and mapping prompts are required for every artifact kind.");
+          }
+          renderSystemPromptTemplate(system, kind);
           renderReferencePromptTemplate({
-            template,
+            template: reference,
             targetKind: kind,
             instruction: "Use @diagram/reference as the style reference.",
-            referenceContext: "Diagram reference",
-            variableOverrides: draft.variableOverrides?.[kind]
+            referenceContext: "Diagram reference"
+          });
+          renderMappingPromptTemplate({
+            template: mapping,
+            targetKind: kind,
+            artifact: { name: "Preview", ascii: "+-- preview --+", codeEntityIds: [] },
+            codeEntities: [],
+            aliases: []
           });
         }
       } catch (caught) {
         return caught instanceof Error ? caught.message : "The prompt template is invalid.";
       }
+    } else if (kinds.some((kind) => !draft.prompts[kind]?.trim())) {
+      return "Both identification and compaction criteria are required.";
     }
     return null;
   }, [draft, family]);
 
   const preview = useMemo(() => {
-    const value = family === "generation" && generationPhase === "reference"
-      ? draft.referencePrompts?.[promptKind as GenerationTargetKind] ?? ""
-      : draft.prompts[promptKind] ?? "";
+    const value = draft.prompts[promptNameFor(family, promptKind, generationPhase)] ?? "";
     if (family === "code-entities") return value;
     try {
       return generationPhase === "reference"
@@ -187,18 +175,13 @@ export function SystemPromptSettingsDialog(props: {
             template: value,
             targetKind: promptKind as GenerationTargetKind,
             instruction: "Use @diagram/reference as the style reference.",
-            referenceContext: "Diagram @diagram/reference\nASCII:\n+-- reference --+",
-            variableOverrides: draft.variableOverrides?.[promptKind as GenerationTargetKind]
+            referenceContext: "Diagram @diagram/reference\nASCII:\n+-- reference --+"
           })
-        : renderSystemPromptTemplate(
-            value,
-            promptKind as GenerationTargetKind,
-            draft.variableOverrides?.[promptKind as GenerationTargetKind]
-          );
+        : renderSystemPromptTemplate(value, promptKind as GenerationTargetKind);
     } catch {
       return "Fix template errors to see the resolved prompt.";
     }
-  }, [draft.prompts, draft.referencePrompts, family, generationPhase, promptKind]);
+  }, [draft.prompts, family, generationPhase, promptKind]);
 
   const switchFamily = (nextFamily: PromptTemplateFamily) => {
     if (nextFamily === family) return;
@@ -227,19 +210,9 @@ export function SystemPromptSettingsDialog(props: {
     if (changed && !window.confirm("Discard unsaved template changes?")) return;
     setSelectedId("");
     setDraft(source ? {
-      label: `${source.label} copy`,
-      description: source.description,
-      prompts: { ...source.prompts },
-      ...( "referencePrompts" in source
-        ? { referencePrompts: { ...source.referencePrompts } }
-        : {}),
-      ...( "variableOverrides" in source && source.variableOverrides
-        ? {
-            variableOverrides: Object.fromEntries(Object.entries(source.variableOverrides).map(
-              ([kind, values]) => [kind, { ...values }]
-            ))
-          }
-        : {})
+      ...draftFrom(source),
+      id: undefined,
+      label: `${source.label} copy`
     } : emptyDraft(family));
     setView("editor");
     setError(null);
@@ -257,35 +230,6 @@ export function SystemPromptSettingsDialog(props: {
     }
   };
 
-  const insertVariable = (name: string) => {
-    const editor = editorRef.current;
-    const referencePhase = family === "generation" && generationPhase === "reference";
-    const value = referencePhase
-      ? draft.referencePrompts?.[promptKind as GenerationTargetKind] ?? ""
-      : draft.prompts[promptKind] ?? "";
-    const start = editor?.selectionStart ?? value.length;
-    const end = editor?.selectionEnd ?? start;
-    const token = `{{${name}}}`;
-    setDraft((current) => ({
-      ...current,
-      ...(referencePhase ? {
-        referencePrompts: {
-          ...current.referencePrompts,
-          [promptKind]: `${value.slice(0, start)}${token}${value.slice(end)}`
-        }
-      } : {
-        prompts: {
-          ...current.prompts,
-          [promptKind]: `${value.slice(0, start)}${token}${value.slice(end)}`
-        }
-      })
-    }));
-    requestAnimationFrame(() => {
-      editor?.focus();
-      editor?.setSelectionRange(start + token.length, start + token.length);
-    });
-  };
-
   const updateReferenceMentionQuery = (value: string, cursor: number) => {
     const before = value.slice(0, cursor);
     const match = before.match(/@[a-z0-9\/-]*$/i);
@@ -294,10 +238,8 @@ export function SystemPromptSettingsDialog(props: {
 
   const insertReference = (token: string) => {
     const editor = editorRef.current;
-    const referencePhase = family === "generation" && generationPhase === "reference";
-    const value = referencePhase
-      ? draft.referencePrompts?.[promptKind as GenerationTargetKind] ?? ""
-      : draft.prompts[promptKind] ?? "";
+    const promptName = promptNameFor(family, promptKind, generationPhase);
+    const value = draft.prompts[promptName] ?? "";
     const cursor = editor?.selectionStart ?? value.length;
     const before = value.slice(0, cursor);
     const match = before.match(/@[a-z0-9\/-]*$/i);
@@ -305,41 +247,13 @@ export function SystemPromptSettingsDialog(props: {
     const next = `${value.slice(0, start)}${token} ${value.slice(cursor)}`;
     setDraft((current) => ({
       ...current,
-      ...(referencePhase ? {
-        referencePrompts: { ...current.referencePrompts, [promptKind]: next }
-      } : {
-        prompts: { ...current.prompts, [promptKind]: next }
-      })
+      prompts: { ...current.prompts, [promptName]: next }
     }));
     setReferenceMentionQuery(null);
     requestAnimationFrame(() => {
       const nextCursor = start + token.length + 1;
       editor?.focus();
       editor?.setSelectionRange(nextCursor, nextCursor);
-    });
-  };
-
-  const activeGenerationKind = promptKind as GenerationTargetKind;
-  const activeVariableNames = generationPhase === "reference"
-    ? REFERENCE_PROMPT_TEMPLATE_VARIABLES
-    : SYSTEM_PROMPT_TEMPLATE_VARIABLES;
-  const activeVariableValues = resolvePromptTemplateVariableValues({
-    targetKind: activeGenerationKind,
-    phase: generationPhase,
-    variableOverrides: draft.variableOverrides?.[activeGenerationKind]
-  });
-  const setVariableOverride = (name: PromptTemplateVariable, value: string) => {
-    setDraft((current) => {
-      const kindOverrides = { ...current.variableOverrides?.[activeGenerationKind] };
-      if (value) kindOverrides[name] = value;
-      else delete kindOverrides[name];
-      const variableOverrides = { ...current.variableOverrides };
-      if (Object.keys(kindOverrides).length) variableOverrides[activeGenerationKind] = kindOverrides;
-      else delete variableOverrides[activeGenerationKind];
-      return {
-        ...current,
-        variableOverrides: Object.keys(variableOverrides).length ? variableOverrides : undefined
-      };
     });
   };
 
@@ -431,9 +345,6 @@ export function SystemPromptSettingsDialog(props: {
               <div role="tablist" aria-label="Prompt view">
                 <button type="button" role="tab" aria-selected={view === "editor"} className={view === "editor" ? "is-active" : ""} onClick={() => setView("editor")}>EDITOR</button>
                 <button type="button" role="tab" aria-selected={view === "preview"} className={view === "preview" ? "is-active" : ""} onClick={() => setView("preview")}>{family === "generation" ? "RESOLVED PREVIEW" : "PREVIEW"}</button>
-                {family === "generation" ? (
-                  <button type="button" role="tab" aria-selected={view === "variables"} className={view === "variables" ? "is-active" : ""} onClick={() => setView("variables")}>VARIABLES</button>
-                ) : null}
               </div>
             </div>
 
@@ -441,37 +352,23 @@ export function SystemPromptSettingsDialog(props: {
               <div className="prompt-template-editor">
                 {family === "generation" ? (
                   <div className="prompt-variable-row">
-                    <span>INSERT VARIABLE</span>
-                    <button type="button" onClick={() => insertVariable("outputKind")}>{"{{outputKind}}"}</button>
-                    <button type="button" onClick={() => insertVariable("submissionTool")}>{"{{submissionTool}}"}</button>
-                    {generationPhase === "reference" ? (
-                      <>
-                        <button type="button" onClick={() => insertVariable("referenceInstruction")}>{"{{referenceInstruction}}"}</button>
-                        <button type="button" onClick={() => insertVariable("referenceContext")}>{"{{referenceContext}}"}</button>
-                      </>
-                    ) : null}
+                    <span>WORKFLOW CONTEXT IS APPENDED BY THE SYSTEM</span>
                     <span className="prompt-template-reference-hint">TYPE @ FOR IMPORTED ARTIFACTS</span>
                   </div>
                 ) : null}
                 <textarea
                   ref={editorRef}
                   aria-label={`${kindLabels[promptKind]} ${generationPhase === "reference" ? "reference follow-up" : "system"} prompt`}
-                  value={family === "generation" && generationPhase === "reference"
-                    ? draft.referencePrompts?.[promptKind as GenerationTargetKind] ?? ""
-                    : draft.prompts[promptKind] ?? ""}
+                  value={draft.prompts[promptNameFor(family, promptKind, generationPhase)] ?? ""}
                   spellCheck={false}
                   onChange={(event) => {
                     const value = event.target.value;
                     updateReferenceMentionQuery(value, event.target.selectionStart);
-                    setDraft(family === "generation" && generationPhase === "reference"
-                      ? {
-                          ...draft,
-                          referencePrompts: { ...draft.referencePrompts, [promptKind]: value }
-                        }
-                      : {
-                          ...draft,
-                          prompts: { ...draft.prompts, [promptKind]: value }
-                        });
+                    const promptName = promptNameFor(family, promptKind, generationPhase);
+                    setDraft({
+                      ...draft,
+                      prompts: { ...draft.prompts, [promptName]: value }
+                    });
                   }}
                   onClick={(event) => updateReferenceMentionQuery(
                     event.currentTarget.value,
@@ -501,45 +398,8 @@ export function SystemPromptSettingsDialog(props: {
                   </div>
                 ) : null}
               </div>
-            ) : view === "preview" ? (
-              <pre className="prompt-template-preview">{preview}</pre>
             ) : (
-              <div className="prompt-template-variables" aria-label="Template variable definitions">
-                <header>
-                  <div>
-                    <span className="eyebrow">VARIABLE DEFINITIONS</span>
-                    <p>Overrides are stored for {kindLabels[activeGenerationKind]} and used wherever that variable appears. Clear a value to restore its computed or runtime definition.</p>
-                  </div>
-                </header>
-                <div>
-                  {activeVariableNames.map((name) => {
-                    const override = draft.variableOverrides?.[activeGenerationKind]?.[name];
-                    const definition = PROMPT_TEMPLATE_VARIABLE_DEFINITIONS[name];
-                    return (
-                      <label key={name}>
-                        <span>
-                          <code>{`{{${name}}}`}</code>
-                          <em>{definition.source}</em>
-                        </span>
-                        <small>{definition.description}</small>
-                        <textarea
-                          aria-label={`${name} variable override`}
-                          value={override ?? ""}
-                          placeholder={activeVariableValues[name]}
-                          spellCheck={false}
-                          onChange={(event) => setVariableOverride(name, event.target.value)}
-                        />
-                        <footer>
-                          <span>{override === undefined ? `Current: ${activeVariableValues[name]}` : "Custom definition active"}</span>
-                          {override !== undefined ? (
-                            <button type="button" onClick={() => setVariableOverride(name, "")}>restore default</button>
-                          ) : null}
-                        </footer>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
+              <pre className="prompt-template-preview">{preview}</pre>
             )}
 
             <footer>

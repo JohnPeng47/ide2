@@ -7,6 +7,7 @@ import {
   isDiagramComponentArchived,
   isDiagramArchived,
   type CodeEntitiesSetRecord,
+  type CodeEntityRecord,
   type CodeEntityPromptAlias,
   type CodeEntityPromptTemplateRecord,
   type DiagramModelId,
@@ -21,7 +22,8 @@ import {
   type GenerationPromptProfileId,
   type GenerationPromptReference,
   type GenerationReferenceSelection,
-  type PromptTemplateVariable,
+  type GeneratedArtifactDraft,
+  type NamedPromptTemplate,
   type SystemPromptTemplateRecord,
   type PromptReference
 } from "./domain";
@@ -39,6 +41,7 @@ export interface GenerationPromptBuildResult {
   config: GenerationPromptConfigRecord;
   allowedCodeEntityIds: string[];
   allowedCodeEntityAliases: CodeEntityPromptAlias[];
+  allowedCodeEntities: CodeEntityRecord[];
   allowedDiagramIds: string[];
   allowedDiagramComponentIds: string[];
 }
@@ -47,49 +50,48 @@ const DIAGRAM_BASE = "Generate exactly one architecture diagram from the supplie
 const CALL_GRAPH_BASE = "Generate exactly one source-backed call graph from the supplied explicit context. Show invocation and control relationships, not general architecture or directory ownership. Give it a compact, specific name.";
 const DIR_VIEW_BASE = "Generate exactly one source-backed ASCII directory view from the supplied explicit context. Show the relevant repository hierarchy and connect files to their responsibilities without inventing paths. Give it a compact, specific name.";
 const COMPONENT_BASE = "Generate exactly one reusable DiagramComponent from the supplied explicit context. It is a fragment for a broader ASCII Diagram, not a complete diagram. Give it a compact, specific name.";
-const DIAGRAM_FINISH = "Never modify files. Use 7-bit ASCII only and finish through {{submissionTool}}.";
-const COMPONENT_FINISH = "Never modify files. Use 7-bit ASCII only and finish through {{submissionTool}}.";
-export const DEFAULT_REFERENCE_FOLLOW_UP_PROMPT = `Regenerate the complete {{outputKind}} you submitted in the previous turn.
+const DIAGRAM_FINISH = "Never modify files. Use 7-bit ASCII only.";
+const COMPONENT_FINISH = "Never modify files. Use 7-bit ASCII only.";
+export const DEFAULT_REFERENCE_FOLLOW_UP_PROMPT = `Regenerate the complete artifact you submitted in the previous turn.
 
-Follow this reference instruction:
-{{referenceInstruction}}
+Use the system-managed reference instruction and context appended below. Treat referenced artifacts as visual style examples. Preserve the previous candidate's source-backed meaning, relationships, and CodeEntity coverage. Adopt visual grammar such as box shapes, connector style, spacing, density, grouping, and label placement, but do not copy unrelated labels, concepts, or repository-specific content. Return a complete replacement using 7-bit ASCII.`;
 
-Reference context:
-{{referenceContext}}
+export const DEFAULT_MAPPING_FOLLOW_UP_PROMPT = `Resubmit the complete artifact from the previous turn unchanged, including its name, ASCII, and CodeEntity aliases.
 
-Use referenced artifacts as visual style examples. Preserve the previous candidate's source-backed meaning, relationships, and CodeEntity coverage. Adopt visual grammar such as box shapes, connector style, spacing, density, grouping, and label placement, but do not copy unrelated labels, concepts, or repository-specific content. Return a complete replacement using 7-bit ASCII and end this turn by calling {{submissionTool}} exactly once.`;
+Use the system-managed final artifact and CodeEntity context appended below. Add mappings for the smallest exact visible text spans that name or clearly represent each CodeEntity. Map labels and words, not box borders, arrow shafts, or whitespace. A CodeEntity may have multiple mapped spans. Choose the sourceRangeIndex most directly represented by each span. Spans must stay on one line, contain non-whitespace text, and must not overlap. Use the readable CodeEntity aliases in mapping entityId fields. Do not change the artifact.`;
 
-export const PROMPT_TEMPLATE_VARIABLE_DEFINITIONS: Record<PromptTemplateVariable, {
-  description: string;
-  source: "computed" | "runtime";
-}> = {
-  outputKind: {
-    description: "Display name for the artifact type selected in this template tab.",
-    source: "computed"
+export interface GenerationPromptBindings {
+  system: string;
+  reference?: string;
+  mapping: string;
+}
+
+export const GENERATION_PROMPT_BINDINGS: Record<GenerationTargetKind, GenerationPromptBindings> = {
+  diagram: {
+    system: "diagram-system",
+    reference: "diagram-reference",
+    mapping: "diagram-mapping"
   },
-  submissionTool: {
-    description: "Tool name inserted into prompt text; this does not rename the registered agent tool.",
-    source: "computed"
+  "call-graph": {
+    system: "call-graph-system",
+    reference: "call-graph-reference",
+    mapping: "call-graph-mapping"
   },
-  referenceInstruction: {
-    description: "Reference follow-up text entered on the generation screen.",
-    source: "runtime"
+  "dir-view": {
+    system: "dir-view-system",
+    reference: "dir-view-reference",
+    mapping: "dir-view-mapping"
   },
-  referenceContext: {
-    description: "Resolved @ references included with the follow-up turn.",
-    source: "runtime"
+  "diagram-component": {
+    system: "diagram-component-system",
+    reference: "diagram-component-reference",
+    mapping: "diagram-component-mapping"
   }
 };
 
-export const SYSTEM_PROMPT_TEMPLATE_VARIABLES: PromptTemplateVariable[] = [
-  "outputKind",
-  "submissionTool"
-];
-export const REFERENCE_PROMPT_TEMPLATE_VARIABLES: PromptTemplateVariable[] = [
-  ...SYSTEM_PROMPT_TEMPLATE_VARIABLES,
-  "referenceInstruction",
-  "referenceContext"
-];
+export function generationPromptBindings(targetKind: GenerationTargetKind): GenerationPromptBindings {
+  return GENERATION_PROMPT_BINDINGS[targetKind];
+}
 
 export const DEFAULT_AUXILIARY_INSTRUCTIONS = {
   "call-graph": "Generate an ASCII call graph based on the foundation diagram.",
@@ -187,28 +189,81 @@ export const BUILT_IN_SYSTEM_PROMPT_TEMPLATES = [
   { id: "compact", label: "Compact", description: "Prefer small, dense, composable layouts.", diagram: "Prefer a dense layout with minimal crossing edges.", callGraph: "Prefer a compact graph with minimal crossing edges.", dirView: "Collapse irrelevant directory branches.", component: "Prefer a small fragment that composes cleanly." }
 ] as const;
 
-export function createBuiltInSystemPromptTemplates(createdAt: string): SystemPromptTemplateRecord[] {
-  return BUILT_IN_SYSTEM_PROMPT_TEMPLATES.map((template) => ({
+export interface CreateSystemPromptTemplateInput {
+  id: GenerationPromptProfileId;
+  label: string;
+  description: string;
+  builtIn?: boolean;
+  version?: number;
+  prompts: Record<string, string | NamedPromptTemplate>;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export function validatePromptTemplate(template: string): void {
+  renderPromptTemplate(template);
+}
+
+/** The single normalization path for persisted diagram-generation prompt sets. */
+export function createSystemPromptTemplate(
+  input: CreateSystemPromptTemplateInput
+): SystemPromptTemplateRecord {
+  const prompts = Object.fromEntries(Object.entries(input.prompts).map(([name, value]) => {
+    if (!/^[a-z0-9][a-z0-9._-]*$/.test(name)) {
+      throw new Error(`invalid prompt name: ${name}`);
+    }
+    const entry = typeof value === "string" ? { template: value } : value;
+    const template = entry.template.trim();
+    const description = typeof entry.description === "string" ? entry.description.trim() : "";
+    if (!template) throw new Error(`prompt ${name} cannot be blank`);
+    if (template.length > 32000) throw new Error(`prompt ${name} cannot exceed 32,000 characters`);
+    validatePromptTemplate(template);
+    return [name, {
+      template,
+      ...(description ? { description } : {})
+    }];
+  }));
+  if (!Object.keys(prompts).length) throw new Error("at least one named prompt is required");
+  return {
     schemaVersion: SCHEMA_VERSION,
+    id: input.id,
+    label: input.label.trim(),
+    description: input.description.trim(),
+    builtIn: input.builtIn ?? false,
+    version: input.version ?? 1,
+    prompts,
+    createdAt: input.createdAt,
+    updatedAt: input.updatedAt ?? input.createdAt
+  };
+}
+
+function builtInGenerationPrompts(template: typeof BUILT_IN_SYSTEM_PROMPT_TEMPLATES[number]) {
+  return {
+    "diagram-system": [DIAGRAM_BASE, template.diagram, DIAGRAM_FINISH].filter(Boolean).join(" "),
+    "call-graph-system": [CALL_GRAPH_BASE, template.callGraph, DIAGRAM_FINISH].filter(Boolean).join(" "),
+    "dir-view-system": [DIR_VIEW_BASE, template.dirView, DIAGRAM_FINISH].filter(Boolean).join(" "),
+    "diagram-component-system": [COMPONENT_BASE, template.component, COMPONENT_FINISH]
+      .filter(Boolean).join(" "),
+    "diagram-reference": DEFAULT_REFERENCE_FOLLOW_UP_PROMPT,
+    "call-graph-reference": DEFAULT_REFERENCE_FOLLOW_UP_PROMPT,
+    "dir-view-reference": DEFAULT_REFERENCE_FOLLOW_UP_PROMPT,
+    "diagram-component-reference": DEFAULT_REFERENCE_FOLLOW_UP_PROMPT,
+    "diagram-mapping": DEFAULT_MAPPING_FOLLOW_UP_PROMPT,
+    "call-graph-mapping": DEFAULT_MAPPING_FOLLOW_UP_PROMPT,
+    "dir-view-mapping": DEFAULT_MAPPING_FOLLOW_UP_PROMPT,
+    "diagram-component-mapping": DEFAULT_MAPPING_FOLLOW_UP_PROMPT
+  };
+}
+
+export function createBuiltInSystemPromptTemplates(createdAt: string): SystemPromptTemplateRecord[] {
+  return BUILT_IN_SYSTEM_PROMPT_TEMPLATES.map((template) => createSystemPromptTemplate({
     id: template.id,
     label: template.label,
     description: template.description,
     builtIn: true,
     version: 1,
-    prompts: {
-      diagram: [DIAGRAM_BASE, template.diagram, DIAGRAM_FINISH].filter(Boolean).join(" "),
-      "call-graph": [CALL_GRAPH_BASE, template.callGraph, DIAGRAM_FINISH].filter(Boolean).join(" "),
-      "dir-view": [DIR_VIEW_BASE, template.dirView, DIAGRAM_FINISH].filter(Boolean).join(" "),
-      "diagram-component": [COMPONENT_BASE, template.component, COMPONENT_FINISH].filter(Boolean).join(" ")
-    },
-    referencePrompts: {
-      diagram: DEFAULT_REFERENCE_FOLLOW_UP_PROMPT,
-      "call-graph": DEFAULT_REFERENCE_FOLLOW_UP_PROMPT,
-      "dir-view": DEFAULT_REFERENCE_FOLLOW_UP_PROMPT,
-      "diagram-component": DEFAULT_REFERENCE_FOLLOW_UP_PROMPT
-    },
-    createdAt,
-    updatedAt: createdAt
+    prompts: builtInGenerationPrompts(template),
+    createdAt
   }));
 }
 
@@ -233,53 +288,40 @@ export function createBuiltInCodeEntityPromptTemplates(
 
 export function renderSystemPromptTemplate(
   template: string,
-  targetKind: GenerationTargetKind,
-  variableOverrides: Partial<Record<PromptTemplateVariable, string>> = {}
+  targetKind: GenerationTargetKind
 ): string {
-  const values = resolvePromptTemplateVariableValues({
-    targetKind,
-    phase: "system",
-    variableOverrides
-  });
-  return renderPromptTemplate(template, values);
+  return appendSystemManagedOutputContract(renderPromptTemplate(template), targetKind);
 }
 
-export function resolvePromptTemplateVariableValues(input: {
-  targetKind: GenerationTargetKind;
-  phase: "system" | "reference";
-  instruction?: string;
-  referenceContext?: string;
-  variableOverrides?: Partial<Record<PromptTemplateVariable, string>>;
-}): Record<string, string> {
-  const defaults: Record<PromptTemplateVariable, string> = {
-    outputKind: input.targetKind === "diagram-component"
-      ? "DiagramComponent"
-      : input.targetKind === "call-graph"
-        ? "CallGraph"
-        : input.targetKind === "dir-view"
-          ? "DirectoryView"
-          : "Diagram",
-    submissionTool: input.targetKind === "diagram-component"
-      ? "submit_diagram_component"
-      : "submit_diagram",
-    referenceInstruction: input.instruction?.trim() ?? "Use @diagram/reference as the style reference.",
-    referenceContext: input.referenceContext ?? "Diagram @diagram/reference\nASCII:\n+-- reference --+"
-  };
-  const names = input.phase === "reference"
-    ? REFERENCE_PROMPT_TEMPLATE_VARIABLES
-    : SYSTEM_PROMPT_TEMPLATE_VARIABLES;
-  return Object.fromEntries(names.map((name) => [
-    name,
-    input.variableOverrides?.[name] ?? defaults[name]
-  ]));
+function renderPromptTemplate(template: string): string {
+  const variable = template.match(/{{\s*([^{}]+?)\s*}}/);
+  if (variable) throw new Error(`prompt template variables are not supported: {{${variable[1]}}}`);
+  return template;
 }
 
-function renderPromptTemplate(template: string, values: Record<string, string>): string {
-  const unknown = [...template.matchAll(/{{\s*([a-zA-Z][a-zA-Z0-9]*)\s*}}/g)]
-    .map((match) => match[1])
-    .filter((name) => values[name] === undefined);
-  if (unknown.length) throw new Error(`unknown system prompt variable: {{${unknown[0]}}}`);
-  return template.replace(/{{\s*([a-zA-Z][a-zA-Z0-9]*)\s*}}/g, (_match, name: string) => values[name]);
+export function systemManagedOutputContract(targetKind: GenerationTargetKind): string {
+  const artifactName = targetKind === "diagram-component"
+    ? "DiagramComponent"
+    : targetKind === "call-graph"
+      ? "CallGraph"
+      : targetKind === "dir-view"
+        ? "DirectoryView"
+        : "Diagram";
+  const submissionTool = targetKind === "diagram-component"
+    ? "submit_diagram_component"
+    : "submit_diagram";
+  return [
+    "System-managed output requirements (read-only):",
+    `Return exactly one ${artifactName}.`,
+    `Finish this turn by calling ${submissionTool} exactly once.`
+  ].join("\n");
+}
+
+function appendSystemManagedOutputContract(
+  rendered: string,
+  targetKind: GenerationTargetKind
+): string {
+  return `${rendered.trim()}\n\n${systemManagedOutputContract(targetKind)}`;
 }
 
 export function renderReferencePromptTemplate(input: {
@@ -287,30 +329,61 @@ export function renderReferencePromptTemplate(input: {
   targetKind: GenerationTargetKind;
   instruction: string;
   referenceContext: string;
-  variableOverrides?: Partial<Record<PromptTemplateVariable, string>>;
 }): string {
-  return renderPromptTemplate(input.template, resolvePromptTemplateVariableValues({
-    targetKind: input.targetKind,
-    phase: "reference",
-    instruction: input.instruction,
-    referenceContext: input.referenceContext,
-    variableOverrides: input.variableOverrides
-  }));
+  const instruction = input.instruction.trim() || "Use the supplied artifacts as visual references.";
+  const context = input.referenceContext.trim() || "none";
+  return appendSystemManagedOutputContract([
+    renderPromptTemplate(input.template),
+    `System-managed reference instruction (read-only):\n${instruction}`,
+    `System-managed reference context (read-only):\n${context}`
+  ].join("\n\n"), input.targetKind);
+}
+
+export function renderMappingPromptTemplate(input: {
+  template: string;
+  targetKind: GenerationTargetKind;
+  artifact: GeneratedArtifactDraft;
+  codeEntities: CodeEntityRecord[];
+  aliases: CodeEntityPromptAlias[];
+}): string {
+  const aliasesById = new Map(input.aliases.map(({ id, alias }) => [id, alias]));
+  const numberedAscii = input.artifact.ascii
+    .split("\n")
+    .map((line, index) => `${String(index + 1).padStart(4, " ")}: ${line}`)
+    .join("\n");
+  const entities = input.codeEntities.map((entity) => [
+    `${aliasesById.get(entity.id) ?? entity.handle}: ${entity.label} — ${entity.summary}`,
+    ...entity.sourceRanges.map((range, index) => (
+      `  sourceRangeIndex ${index}: ${range.path}:${range.startLine}-${range.endLine}${range.symbol ? ` (${range.symbol})` : ""}`
+    ))
+  ].join("\n")).join("\n\n") || "none";
+  return appendSystemManagedOutputContract([
+    renderPromptTemplate(input.template),
+    `System-managed final artifact (read-only):\n${numberedAscii}`,
+    `System-managed CodeEntities and source ranges (read-only):\n${entities}`
+  ].join("\n\n"), input.targetKind);
+}
+
+export function promptTemplate(
+  templateSet: SystemPromptTemplateRecord,
+  promptName: string
+): string {
+  const prompt = templateSet.prompts[promptName];
+  if (!prompt) throw new Error(`unknown prompt ${promptName} in template ${templateSet.id}`);
+  return prompt.template;
 }
 
 export function renderArtifactSystemPrompt(input: {
   outputKind: GenerationOutputKind;
   viewKind?: DiagramViewKind;
   template: SystemPromptTemplateRecord;
+  promptBindings?: GenerationPromptBindings;
 }): string {
   const targetKind: GenerationTargetKind = input.outputKind === "diagram-component"
     ? "diagram-component"
     : input.viewKind ?? "diagram";
-  return renderSystemPromptTemplate(
-    input.template.prompts[targetKind],
-    targetKind,
-    input.template.variableOverrides?.[targetKind]
-  );
+  const bindings = input.promptBindings ?? generationPromptBindings(targetKind);
+  return renderSystemPromptTemplate(promptTemplate(input.template, bindings.system), targetKind);
 }
 
 export function promptOptions(
@@ -356,6 +429,8 @@ export function createGenerationPromptConfig(input: {
   viewKind?: DiagramViewKind;
   modelId: DiagramModelId;
   profile: SystemPromptTemplateRecord;
+  /** Named prompts selected by the workflow. Defaults to the standard target bindings. */
+  promptBindings?: GenerationPromptBindings;
   instruction: string;
   runReferencePrompt?: boolean;
   referencePrompt?: string;
@@ -379,6 +454,12 @@ export function createGenerationPromptConfig(input: {
   const targetKind: GenerationTargetKind = input.outputKind === "diagram-component"
     ? "diagram-component"
     : viewKind ?? "diagram";
+  const promptBindings = input.promptBindings ?? generationPromptBindings(targetKind);
+  const systemPromptTemplate = promptTemplate(input.profile, promptBindings.system);
+  const referencePromptTemplate = promptBindings.reference
+    ? promptTemplate(input.profile, promptBindings.reference)
+    : undefined;
+  const mappingPromptTemplate = promptTemplate(input.profile, promptBindings.mapping);
   const auxiliary = viewKind === "call-graph" || viewKind === "dir-view";
   let foundationDiagram: DiagramRecord | undefined;
   let companionCallGraph: DiagramRecord | undefined;
@@ -521,13 +602,14 @@ export function createGenerationPromptConfig(input: {
     input.referencePrompt ?? "",
     input.referencePromptSelections ?? []
   );
-  const systemTemplateMentions = resolveMentions(input.profile.prompts[targetKind], []);
+  const systemTemplateMentions = resolveMentions(systemPromptTemplate, []);
   const shouldRunReferencePrompt = input.runReferencePrompt === true
     || Boolean(input.referencePrompt?.trim());
-  const referencePromptTemplate = input.profile.referencePrompts?.[targetKind]
-    ?? DEFAULT_REFERENCE_FOLLOW_UP_PROMPT;
+  if (shouldRunReferencePrompt && !referencePromptTemplate) {
+    throw new Error("the selected prompt workflow has no reference prompt binding");
+  }
   const referenceTemplateMentions = resolveMentions(
-    shouldRunReferencePrompt ? referencePromptTemplate : "",
+    shouldRunReferencePrompt ? referencePromptTemplate ?? "" : "",
     []
   );
   const uniqueReferences = (
@@ -707,18 +789,12 @@ export function createGenerationPromptConfig(input: {
     .map((reference) => reference.promptRepresentation)
     .join("\n\n");
   const renderedReferencePrompt = shouldRunReferencePrompt
-    ? [
-        renderReferencePromptTemplate({
-          template: referencePromptTemplate,
-          targetKind,
-          instruction: referenceInstruction,
-          referenceContext: referenceContext || "none",
-          variableOverrides: input.profile.variableOverrides?.[targetKind]
-        }),
-        ...(!/{{\s*referenceContext\s*}}/.test(referencePromptTemplate) && referenceContext
-          ? [`Referenced artifacts requested by this reference template:\n${referenceContext}`]
-          : [])
-      ].join("\n\n")
+    ? renderReferencePromptTemplate({
+        template: referencePromptTemplate!,
+        targetKind,
+        instruction: referenceInstruction,
+        referenceContext: referenceContext || "none"
+      })
     : undefined;
 
   const config: GenerationPromptConfigRecord = {
@@ -735,6 +811,7 @@ export function createGenerationPromptConfig(input: {
     ...(renderedReferencePrompt ? {
       referencePrompt: {
         templateVersion: 1,
+        promptName: promptBindings.reference,
         instruction: referenceInstruction,
         references: renderedFollowUpReferences,
         ...(followUpMentions.omittedReferences.length > 0
@@ -743,6 +820,11 @@ export function createGenerationPromptConfig(input: {
         rendered: renderedReferencePrompt
       }
     } : {}),
+    mappingPrompt: {
+      templateVersion: 1,
+      promptName: promptBindings.mapping,
+      template: mappingPromptTemplate
+    },
     ...(derivation ? { derivation } : {}),
     contextPrompt: { templateVersion: 1, rendered: renderedContextPrompt },
     systemPrompt: {
@@ -750,21 +832,18 @@ export function createGenerationPromptConfig(input: {
       templateVersion: 1,
       profileId: input.profile.id,
       profileVersion: input.profile.version,
+      promptName: promptBindings.system,
       ...(renderedSystemTemplateReferences.length
         ? { references: renderedSystemTemplateReferences }
         : {}),
-      rendered: [
-        renderArtifactSystemPrompt({
-          outputKind: input.outputKind,
-          viewKind,
-          template: input.profile
-        }),
+      rendered: renderSystemPromptTemplate([
+        systemPromptTemplate,
         ...(renderedSystemTemplateReferences.length ? [
           `Referenced artifacts requested by this system template:\n${renderedSystemTemplateReferences
             .map((reference) => reference.promptRepresentation)
             .join("\n\n")}`
         ] : [])
-      ].join("\n\n")
+      ].join("\n\n"), targetKind)
     },
     createdAt: input.createdAt
   };
@@ -772,6 +851,7 @@ export function createGenerationPromptConfig(input: {
     config,
     allowedCodeEntityIds,
     allowedCodeEntityAliases,
+    allowedCodeEntities: promptCodeEntities.filter((entity) => allowedIds.has(entity.id)),
     allowedDiagramIds: [...new Set([
       ...referencedDiagrams,
       ...followUpReferencedDiagrams,

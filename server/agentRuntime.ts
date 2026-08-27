@@ -13,6 +13,7 @@ import { readFile, realpath, stat } from "node:fs/promises";
 import path from "node:path";
 import {
   assertSourceRange,
+  createCodeEntityPromptAliases,
   DEFAULT_DIAGRAM_MODEL_ID,
   resolveCodeEntityPromptAliases,
   type AgentProgress,
@@ -29,6 +30,10 @@ import {
 } from "../src/domain";
 import { diagramMappingValidationError } from "./diagramMapping";
 import { createValidatedSubmission } from "./validatedSubmission";
+import {
+  DEFAULT_MAPPING_FOLLOW_UP_PROMPT,
+  renderMappingPromptTemplate
+} from "../src/prompt";
 
 export interface EntityCollectionRequest {
   sourceRoot: string;
@@ -41,6 +46,7 @@ export interface ArtifactGenerationRequest {
   diagramSetName: string;
   promptConfig: GenerationPromptConfigRecord;
   allowedCodeEntityAliases: CodeEntityPromptAlias[];
+  codeEntities: CodeEntityRecord[];
   allowedDiagramIds: string[];
   allowedDiagramComponentIds: string[];
   slot: number;
@@ -66,6 +72,7 @@ export interface ArtifactEntityMappingRequest {
   artifactName: string;
   artifactHandle: string;
   ascii: string;
+  codeEntityIds: string[];
   codeEntities: CodeEntityRecord[];
 }
 
@@ -108,25 +115,70 @@ function progressFor(event: AgentSessionEvent, model: string, sessionId: string)
 export async function runGenerationPromptTurns(input: {
   initialPrompt: string;
   referencePrompt?: string;
+  mappingPrompt(artifact: GeneratedArtifactDraft): string;
   prompt(text: string): Promise<void>;
   takeSubmission(): GeneratedArtifactDraft | undefined;
   artifactLabel: string;
   onReferenceTurn?(): void;
+  onMappingTurn?(artifact: GeneratedArtifactDraft): void;
 }): Promise<GeneratedArtifactDraft> {
   await input.prompt(input.initialPrompt);
   const initialSubmission = input.takeSubmission();
   if (!initialSubmission) {
     throw new Error(`${input.artifactLabel} agent finished without submitting an artifact`);
   }
-  if (!input.referencePrompt) return initialSubmission;
-
-  input.onReferenceTurn?.();
-  await input.prompt(input.referencePrompt);
-  const referenceSubmission = input.takeSubmission();
-  if (!referenceSubmission) {
-    throw new Error(`${input.artifactLabel} agent finished the reference turn without submitting an artifact`);
+  let finalArtifact = initialSubmission;
+  if (input.referencePrompt) {
+    input.onReferenceTurn?.();
+    await input.prompt(input.referencePrompt);
+    const referenceSubmission = input.takeSubmission();
+    if (!referenceSubmission) {
+      throw new Error(`${input.artifactLabel} agent finished the reference turn without submitting an artifact`);
+    }
+    finalArtifact = referenceSubmission;
   }
-  return referenceSubmission;
+
+  input.onMappingTurn?.(finalArtifact);
+  await input.prompt(input.mappingPrompt(finalArtifact));
+  const mappingSubmission = input.takeSubmission();
+  if (!mappingSubmission) {
+    throw new Error(`${input.artifactLabel} agent finished the mapping turn without submitting an artifact`);
+  }
+  if (!mappingSubmission.mappings) {
+    throw new Error(`${input.artifactLabel} agent submitted no mappings in the mapping turn`);
+  }
+  return mappingSubmission;
+}
+
+const artifactSubmissionParameters = () => Type.Object({
+  name: Type.String({ minLength: 1, maxLength: 120 }),
+  ascii: Type.String({ minLength: 1, maxLength: 20000 }),
+  codeEntityIds: Type.Array(Type.String({
+    description: "Readable CodeEntity aliases used by this artifact, such as entity-request-handler."
+  }), { maxItems: 200 }),
+  mappings: Type.Optional(Type.Array(Type.Object({
+    entityId: Type.String({
+      minLength: 1,
+      maxLength: 120,
+      description: "Readable CodeEntity alias represented by this exact ASCII span."
+    }),
+    sourceRangeIndex: Type.Integer({ minimum: 0 }),
+    line: Type.Integer({ minimum: 1 }),
+    startColumn: Type.Integer({ minimum: 1 }),
+    endColumn: Type.Integer({ minimum: 1 })
+  }), { maxItems: 200 }))
+});
+
+function unchangedArtifactError(
+  expected: GeneratedArtifactDraft,
+  candidate: GeneratedArtifactDraft
+): string | undefined {
+  if (candidate.name !== expected.name) return "mapping turn changed the artifact name";
+  if (candidate.ascii !== expected.ascii) return "mapping turn changed the artifact ASCII";
+  if (JSON.stringify(candidate.codeEntityIds) !== JSON.stringify(expected.codeEntityIds)) {
+    return "mapping turn changed the artifact CodeEntity list";
+  }
+  return undefined;
 }
 
 async function validateSubmittedSourceRanges(
@@ -309,7 +361,10 @@ export class PiDiagramAgentRuntime implements DiagramAgentRuntime {
     const componentMode = request.promptConfig.outputKind === "diagram-component";
     const artifactLabel = componentMode ? "DiagramComponent" : "diagram";
     const toolName = componentMode ? "submit_diagram_component" : "submit_diagram";
-    const state: { submissions: GeneratedArtifactDraft[] } = { submissions: [] };
+    const state: {
+      submissions: GeneratedArtifactDraft[];
+      mappingSource?: GeneratedArtifactDraft;
+    } = { submissions: [] };
     const submit = defineTool({
       name: toolName,
       label: `Submit ${artifactLabel}`,
@@ -319,22 +374,53 @@ export class PiDiagramAgentRuntime implements DiagramAgentRuntime {
         "Give the diagram a compact, specific name, ideally two to five words.",
         `End each generation turn by calling ${toolName} exactly once.`
       ],
-      parameters: Type.Object({
-        name: Type.String({ minLength: 1, maxLength: 120 }),
-        ascii: Type.String({ minLength: 1, maxLength: 20000 }),
-        codeEntityIds: Type.Array(Type.String({
-          description: "Readable CodeEntity aliases used by this artifact, such as entity-request-handler."
-        }), { maxItems: 200 })
-      }),
+      parameters: artifactSubmissionParameters(),
       async execute(_toolCallId, params) {
         const codeEntityIds = resolveCodeEntityPromptAliases(
           params.codeEntityIds,
           request.allowedCodeEntityAliases
         );
-        state.submissions.push({ ...params, codeEntityIds });
+        const mappingEntityIds = params.mappings
+          ? resolveCodeEntityPromptAliases(
+              params.mappings.map((mapping) => mapping.entityId),
+              request.allowedCodeEntityAliases
+            )
+          : undefined;
+        const candidate: GeneratedArtifactDraft = {
+          name: params.name,
+          ascii: params.ascii,
+          codeEntityIds,
+          ...(params.mappings ? {
+            mappings: params.mappings.map((mapping, index) => ({
+              ...mapping,
+              entityId: mappingEntityIds![index]
+            }))
+          } : {})
+        };
+        if (state.mappingSource) {
+          const artifactError = unchangedArtifactError(state.mappingSource, candidate);
+          const mappedEntities = request.codeEntities.filter(
+            (entity) => state.mappingSource!.codeEntityIds.includes(entity.id)
+          );
+          const mappingError = candidate.mappings
+            ? diagramMappingValidationError(candidate.ascii, candidate.mappings, mappedEntities)
+            : "mapping turn omitted mappings";
+          const validationError = artifactError ?? mappingError;
+          if (validationError) {
+            return {
+              content: [{
+                type: "text" as const,
+                text: `Submission rejected: ${validationError}. Resubmit the unchanged artifact with corrected mappings through ${toolName}.`
+              }],
+              details: { accepted: false, name: params.name },
+              terminate: false
+            };
+          }
+        }
+        state.submissions.push(candidate);
         return {
           content: [{ type: "text", text: `Recorded one ${artifactLabel}.` }],
-          details: { name: params.name },
+          details: { accepted: true, name: params.name },
           terminate: true
         };
       }
@@ -384,6 +470,15 @@ Use aliases in the codeEntityIds submission field. Never print persisted CodeEnt
 Referenced Diagram ids: ${request.allowedDiagramIds.join(", ") || "none"}
 Referenced DiagramComponent ids: ${request.allowedDiagramComponentIds.join(", ") || "none"}`,
         referencePrompt: request.promptConfig.referencePrompt?.rendered,
+        mappingPrompt: (artifact) => renderMappingPromptTemplate({
+          template: request.promptConfig.mappingPrompt.template,
+          targetKind: componentMode
+            ? "diagram-component"
+            : request.promptConfig.viewKind ?? "diagram",
+          artifact,
+          codeEntities: request.codeEntities.filter((entity) => artifact.codeEntityIds.includes(entity.id)),
+          aliases: request.allowedCodeEntityAliases
+        }),
         prompt: (text) => session.prompt(text),
         takeSubmission: () => state.submissions.shift(),
         artifactLabel,
@@ -392,7 +487,16 @@ Referenced DiagramComponent ids: ${request.allowedDiagramComponentIds.join(", ")
           message: "agent is applying the reference prompt in a follow-up turn",
           model: modelName,
           sessionId: session.sessionId
-        })
+        }),
+        onMappingTurn: (artifact) => {
+          state.mappingSource = artifact;
+          onProgress?.({
+            status: "generating",
+            message: "agent is mapping the final artifact in a follow-up turn",
+            model: modelName,
+            sessionId: session.sessionId
+          });
+        }
       });
     } finally {
       unsubscribe();
@@ -491,33 +595,70 @@ ${request.instruction}`);
     onProgress?: (progress: AgentProgress) => void
   ): Promise<DiagramElementMappingDraft[]> {
     const configured = await this.model();
-    const submission = createValidatedSubmission<{ mappings: DiagramElementMappingDraft[] }>({
-      toolName: "submit_code_entity_map",
-      validate: ({ mappings }) => diagramMappingValidationError(
-        request.ascii,
-        mappings,
-        request.codeEntities
-      ),
-      acceptedMessage: ({ mappings }) => `Recorded ${mappings.length} diagram mappings.`,
-      acceptedDetails: ({ mappings }) => ({ count: mappings.length }),
-      correctionPrompt: "Recalculate coordinates against the raw ASCII after the display-only line-number prefix."
-    });
+    const componentMode = request.artifactKind === "diagram-component";
+    const artifactLabel = componentMode ? "DiagramComponent" : "diagram";
+    const toolName = componentMode ? "submit_diagram_component" : "submit_diagram";
+    const aliases = createCodeEntityPromptAliases(request.codeEntities);
+    const expected: GeneratedArtifactDraft = {
+      name: request.artifactName,
+      ascii: request.ascii,
+      codeEntityIds: request.codeEntityIds
+    };
+    const state: { submission?: GeneratedArtifactDraft } = {};
     const submit = defineTool({
-      name: "submit_code_entity_map",
-      label: "Submit code entity map",
-      description: "Map exact visible ASCII text spans to CodeEntities and their source ranges.",
-      promptSnippet: "Submit the final diagram-to-code mapping",
-      promptGuidelines: [submission.promptGuideline],
-      parameters: Type.Object({
-        mappings: Type.Array(Type.Object({
-          entityId: Type.String({ minLength: 1, maxLength: 120 }),
-          sourceRangeIndex: Type.Integer({ minimum: 0 }),
-          line: Type.Integer({ minimum: 1 }),
-          startColumn: Type.Integer({ minimum: 1 }),
-          endColumn: Type.Integer({ minimum: 1 })
-        }), { minItems: 1, maxItems: 200 })
-      }),
-      execute: submission.execute
+      name: toolName,
+      label: `Submit ${artifactLabel}`,
+      description: `Resubmit the unchanged ${artifactLabel} with exact CodeEntity mappings.`,
+      promptSnippet: `Submit the complete mapped ${artifactLabel}`,
+      promptGuidelines: [`Call ${toolName} with the unchanged artifact and corrected mappings.`],
+      parameters: artifactSubmissionParameters(),
+      async execute(_toolCallId, params) {
+        let candidate: GeneratedArtifactDraft;
+        try {
+          const codeEntityIds = resolveCodeEntityPromptAliases(params.codeEntityIds, aliases);
+          const mappingEntityIds = params.mappings
+            ? resolveCodeEntityPromptAliases(params.mappings.map((mapping) => mapping.entityId), aliases)
+            : undefined;
+          candidate = {
+            name: params.name,
+            ascii: params.ascii,
+            codeEntityIds,
+            ...(params.mappings ? {
+              mappings: params.mappings.map((mapping, index) => ({
+                ...mapping,
+                entityId: mappingEntityIds![index]
+              }))
+            } : {})
+          };
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "invalid CodeEntity alias";
+          return {
+            content: [{ type: "text" as const, text: `Submission rejected: ${message}. Call ${toolName} again.` }],
+            details: { accepted: false, count: 0 },
+            terminate: false
+          };
+        }
+        const validationError = unchangedArtifactError(expected, candidate)
+          ?? (candidate.mappings
+            ? diagramMappingValidationError(candidate.ascii, candidate.mappings, request.codeEntities)
+            : "mapping turn omitted mappings");
+        if (validationError) {
+          return {
+            content: [{
+              type: "text" as const,
+              text: `Submission rejected: ${validationError}. Resubmit the unchanged artifact with corrected mappings through ${toolName}.`
+            }],
+            details: { accepted: false, count: 0 },
+            terminate: false
+          };
+        }
+        state.submission = candidate;
+        return {
+          content: [{ type: "text" as const, text: `Recorded ${candidate.mappings!.length} diagram mappings.` }],
+          details: { accepted: true, count: candidate.mappings!.length },
+          terminate: true
+        };
+      }
     });
     const settingsManager = SettingsManager.inMemory({
       defaultProvider: configured.provider,
@@ -533,7 +674,7 @@ ${request.instruction}`);
       noPromptTemplates: true,
       noThemes: true,
       noContextFiles: true,
-      systemPrompt: "Map visible semantic text in the supplied ASCII artifact to the supplied CodeEntities. Never modify files and finish through submit_code_entity_map."
+      systemPrompt: `Map visible semantic text in the supplied ASCII artifact to the supplied CodeEntities. Never modify files and finish through ${toolName}.`
     });
     await resourceLoader.reload();
     const { session } = await createAgentSession({
@@ -541,7 +682,7 @@ ${request.instruction}`);
       modelRuntime: configured.runtime,
       model: configured.model,
       thinkingLevel: "medium",
-      tools: ["submit_code_entity_map"],
+      tools: [toolName],
       customTools: [submit],
       resourceLoader,
       settingsManager,
@@ -553,31 +694,20 @@ ${request.instruction}`);
       const progress = progressFor(event, modelName, session.sessionId);
       if (progress) onProgress?.(progress);
     });
-    const numberedAscii = request.ascii
-      .split("\n")
-      .map((line, index) => `${String(index + 1).padStart(4, " ")}: ${line}`)
-      .join("\n");
-    const entities = request.codeEntities.map((entity) => [
-      `${entity.id}: ${entity.label} — ${entity.summary}`,
-      ...entity.sourceRanges.map((range, index) => (
-        `  sourceRangeIndex ${index}: ${range.path}:${range.startLine}-${range.endLine}${range.symbol ? ` (${range.symbol})` : ""}`
-      ))
-    ].join("\n")).join("\n\n");
     try {
       await session.prompt(`DiagramSet: ${request.diagramSetName}
 Artifact: ${request.artifactKind === "diagram" ? "Diagram" : "DiagramComponent"} @${request.artifactKind === "diagram" ? "diagram" : "component"}/${request.artifactHandle}
 Name: ${request.artifactName}
 
-ASCII with 1-based line numbers. The six-character "NNNN: " prefix is display-only and is not part of the ASCII. Mapping columns are 1-based within the raw ASCII after that prefix, so column 1 is the first character after ": ":
-${numberedAscii}
-
-Available CodeEntities and source ranges:
-${entities}
-
-Map the smallest exact visible text span that names or clearly represents each CodeEntity. Map labels and words, not box borders, arrow shafts, or whitespace. A CodeEntity may have multiple mapped spans. Choose the sourceRangeIndex most directly represented by each span. Spans must stay on one line, contain non-whitespace text, and must not overlap.`);
-      const accepted = submission.value;
-      if (!accepted) throw new Error("mapping agent finished without submitting mappings");
-      return accepted.mappings;
+${renderMappingPromptTemplate({
+  template: DEFAULT_MAPPING_FOLLOW_UP_PROMPT,
+  targetKind: componentMode ? "diagram-component" : "diagram",
+  artifact: expected,
+  codeEntities: request.codeEntities,
+  aliases
+})}`);
+      if (!state.submission?.mappings) throw new Error("mapping agent finished without submitting mappings");
+      return state.submission.mappings;
     } finally {
       unsubscribe();
       session.dispose();
@@ -651,16 +781,27 @@ export class FakeDiagramAgentRuntime implements DiagramAgentRuntime {
       ? `parallel slot ${String(request.slot).padStart(2, "0")} [${entity.alias}]\n` +
         "`--> internal step"
       : `parallel slot ${String(request.slot).padStart(2, "0")}`;
+    const ascii = request.promptConfig.outputKind === "diagram-component"
+      ? `+-------------------+\n| component slot ${String(request.slot).padStart(2, "0")} |\n+-------------------+`
+      : request.promptConfig.viewKind === "call-graph"
+        ? callGraphAscii
+        : `+------------------+\n| parallel slot ${String(request.slot).padStart(2, "0")} |\n+------------------+`;
+    const lines = ascii.split("\n");
+    const lineIndex = lines.findIndex((line) => /[A-Za-z]/.test(line));
+    const match = lineIndex >= 0 ? /[A-Za-z][A-Za-z0-9_-]*/.exec(lines[lineIndex]) : null;
     return {
       name: request.promptConfig.outputKind === "diagram-component"
         ? `Component ${request.slot}`
         : `Diagram ${request.slot}`,
-      ascii: request.promptConfig.outputKind === "diagram-component"
-        ? `+-------------------+\n| component slot ${String(request.slot).padStart(2, "0")} |\n+-------------------+`
-        : request.promptConfig.viewKind === "call-graph"
-          ? callGraphAscii
-          : `+------------------+\n| parallel slot ${String(request.slot).padStart(2, "0")} |\n+------------------+`,
-      codeEntityIds: entity ? [entity.id] : []
+      ascii,
+      codeEntityIds: entity ? [entity.id] : [],
+      mappings: entity && match ? [{
+        entityId: entity.id,
+        sourceRangeIndex: 0,
+        line: lineIndex + 1,
+        startColumn: match.index + 1,
+        endColumn: match.index + match[0].length
+      }] : []
     };
   }
 

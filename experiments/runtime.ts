@@ -201,10 +201,22 @@ export class FakeExperimentRuntime implements ExperimentRuntime {
     const semantic = request.axis.id === "semantic_zoom";
     const detail = semantic && request.value >= 0.5 ? "parse_config() -> TrainingConfig.reward.weights" : "Training setup";
     const route = !semantic && request.value >= 0.5 ? "+--> branch A --+\n|              +--> join\n+--> branch B --+" : "input --> process --> output";
+    const ascii = semantic ? `+------------------------------------------------+\n| ${detail}\n+------------------------------------------------+` : route;
+    const entityId = request.generation.allowedCodeEntityAliases[0]?.id;
+    const lines = ascii.split("\n");
+    const lineIndex = lines.findIndex((line) => /[A-Za-z]/.test(line));
+    const match = lineIndex >= 0 ? /[A-Za-z][A-Za-z0-9_-]*/.exec(lines[lineIndex]) : null;
     return {
       name: `${request.axis.label} ${request.value.toFixed(2)} r${request.replicate}`,
-      ascii: semantic ? `+------------------------------------------------+\n| ${detail}\n+------------------------------------------------+` : route,
-      codeEntityIds: request.generation.allowedCodeEntityAliases.slice(0, 1).map(({ id }) => id)
+      ascii,
+      codeEntityIds: entityId ? [entityId] : [],
+      mappings: entityId && match ? [{
+        entityId,
+        sourceRangeIndex: 0,
+        line: lineIndex + 1,
+        startColumn: match.index + 1,
+        endColumn: match.index + match[0].length
+      }] : []
     };
   }
 

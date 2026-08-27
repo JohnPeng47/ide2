@@ -9,7 +9,10 @@ export function validateDiagramMappings(
   drafts: DiagramElementMappingDraft[],
   entities: CodeEntityRecord[]
 ): DiagramElementMapping[] {
-  if (drafts.length === 0) throw new Error("mapping agent submitted no diagram elements");
+  if (drafts.length === 0) {
+    if (entities.length === 0) return [];
+    throw new Error("mapping agent submitted no diagram elements");
+  }
   const lines = ascii.split("\n");
   const entitiesById = new Map(entities.map((entity) => [entity.id, entity]));
   const occupied = new Set<string>();

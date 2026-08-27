@@ -13,6 +13,7 @@ import type {
   GeneratedArtifactDraft
 } from "../src/domain";
 import type { CallGraphFocusRequest } from "../src/callGraphFocus";
+import { generationPromptBindings } from "../src/prompt";
 import type {
   ArtifactGenerationRequest,
   ArtifactEditRequest,
@@ -70,7 +71,14 @@ class ParallelRuntime implements DiagramAgentRuntime {
     return {
       name: `Worker ${request.slot}`,
       ascii: `[worker ${request.slot}]`,
-      codeEntityIds: request.allowedCodeEntityAliases.slice(0, 1).map(({ id }) => id)
+      codeEntityIds: request.allowedCodeEntityAliases.slice(0, 1).map(({ id }) => id),
+      mappings: request.allowedCodeEntityAliases.slice(0, 1).map(({ id }) => ({
+        entityId: id,
+        sourceRangeIndex: 0,
+        line: 1,
+        startColumn: 2,
+        endColumn: 7
+      }))
     };
   }
 
@@ -608,11 +616,15 @@ describe("DiagramApplication", () => {
       .toHaveProperty("code-entity-compaction");
     expect(workspace.diagramSets[0].readiness).toBe("ready");
     expect(workspace.diagramSets[0].diagramIds).toHaveLength(3);
+    expect(workspace.diagramSets[0].diagramIds.every((id) => (
+      workspace.codeEntityMaps[id]?.producedByRunId === workspace.diagrams[id].producedByRunId
+    ))).toBe(true);
     const initialBatch = workspace.generationBatches[workspace.diagramSets[0].generationBatchIds[0]];
     const initialPromptConfig = workspace.generationPromptConfigs[initialBatch.promptConfigId];
     expect(initialPromptConfig.systemPrompt)
       .toMatchObject({ profileId: "flow-first", profileVersion: 1 });
     expect(initialPromptConfig.referencePrompt).toMatchObject({ instruction: "", references: [] });
+    expect(initialPromptConfig.mappingPrompt.template).toContain("system-managed final artifact");
     expect(runtime.requestedModels).toEqual([
       "gpt-5.6-sol",
       "gpt-5.6-sol",
@@ -637,6 +649,9 @@ describe("DiagramApplication", () => {
       instruction: `Use the visual style of @diagram/${styleDiagram.handle}`,
       references: [expect.objectContaining({ targetId: styleDiagram.id })]
     });
+    const generatedWithReference = workspace.diagramSets[0].diagramIds.at(-1)!;
+    expect(workspace.codeEntityMaps[generatedWithReference]?.producedByRunId)
+      .toBe(workspace.diagrams[generatedWithReference].producedByRunId);
   });
 
   it("persists reversible edit sessions and publishes edited copies", async () => {
@@ -864,21 +879,25 @@ describe("DiagramApplication", () => {
         ]
       });
     const flowTemplate = workspace.systemPromptTemplates["flow-first"];
+    const diagramPrompts = generationPromptBindings("diagram");
     workspace = await application.saveSystemPromptTemplate({
       id: flowTemplate.id,
       label: flowTemplate.label,
       description: "A persisted test edit",
       prompts: {
         ...flowTemplate.prompts,
-        diagram: "CUSTOM {{outputKind}}. Finish through {{submissionTool}}."
-      },
-      variableOverrides: { diagram: { outputKind: "SYSTEM MAP" } }
+        [diagramPrompts.system]: { template: "CUSTOM SYSTEM MAP." },
+        "future-higher-system": { template: "Generate a higher-level view." }
+      }
     });
     expect(workspace.systemPromptTemplates["flow-first"]).toMatchObject({
       version: 2,
-      description: "A persisted test edit",
-      variableOverrides: { diagram: { outputKind: "SYSTEM MAP" } }
+      description: "A persisted test edit"
     });
+    expect(workspace.systemPromptTemplates["flow-first"].prompts[diagramPrompts.mapping])
+      .toEqual(flowTemplate.prompts[diagramPrompts.mapping]);
+    expect(workspace.systemPromptTemplates["flow-first"].prompts["future-higher-system"])
+      .toEqual({ template: "Generate a higher-level view." });
     expect((await new DiagramStore(root).loadWorkspace()).systemPromptTemplates["flow-first"])
       .toMatchObject({ version: 2, description: "A persisted test edit" });
     workspace = await application.generate(set.id, {
@@ -903,7 +922,9 @@ describe("DiagramApplication", () => {
       systemPrompt: { profileId: "flow-first" }
     });
     expect(promptConfig.systemPrompt).toMatchObject({ profileVersion: 2 });
-    expect(promptConfig.systemPrompt.rendered).toBe("CUSTOM SYSTEM MAP. Finish through submit_diagram.");
+    expect(promptConfig.systemPrompt.rendered).toBe(
+      "CUSTOM SYSTEM MAP.\n\nSystem-managed output requirements (read-only):\nReturn exactly one Diagram.\nFinish this turn by calling submit_diagram exactly once."
+    );
     expect(runtime.requestedPromptConfigIds).toEqual([
       promptConfig.id,
       promptConfig.id,
@@ -1154,7 +1175,11 @@ describe("DiagramApplication", () => {
     expect(Object.keys(result.workspace.codeEntityMaps)).toEqual(expect.arrayContaining([
       diagramIds[0], diagramIds[2]
     ]));
-    expect(result.workspace.codeEntityMaps[diagramIds[1]]).toBeUndefined();
+    expect(result.workspace.codeEntityMaps[diagramIds[1]]).toBeDefined();
+    const preservedRun = result.workspace.agentRuns[
+      result.workspace.codeEntityMaps[diagramIds[1]].producedByRunId
+    ];
+    expect(preservedRun.kind).toBe("generate-one-diagram");
     const mappingRuns = Object.values(result.workspace.agentRuns)
       .filter((run) => run.kind === "map-code-entities");
     expect(mappingRuns).toHaveLength(3);

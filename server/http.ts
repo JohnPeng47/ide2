@@ -338,9 +338,7 @@ export function diagramApi(
         return sendJson(response, 200, await application.saveSystemPromptTemplate({
           label: body.label,
           description: body.description,
-          prompts: body.prompts,
-          referencePrompts: body.referencePrompts,
-          variableOverrides: body.variableOverrides
+          prompts: body.prompts
         }));
       }
       if (url.pathname === "/api/code-entity-prompt-templates") {
@@ -404,9 +402,7 @@ export function diagramApi(
           id: systemPromptTemplate.id,
           label: body.label,
           description: body.description,
-          prompts: body.prompts,
-          referencePrompts: body.referencePrompts,
-          variableOverrides: body.variableOverrides
+          prompts: body.prompts
         }));
       }
       if (url.pathname === "/api/diagram-sets") {

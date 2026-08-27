@@ -40,8 +40,7 @@ import {
   type GenerationReferenceSelection,
   type GenerationBatchRecord,
   type MappedArtifactBundle,
-  type PromptTemplateVariable,
-  type PromptTemplateVariableOverrides,
+  type NamedPromptTemplate,
   type RepositoryDirectoryListing,
   type SystemPromptTemplateRecord,
   type WorkspaceSnapshot
@@ -50,6 +49,10 @@ import {
   createBuiltInCodeEntityPromptTemplates,
   createBuiltInSystemPromptTemplates,
   createGenerationPromptConfig,
+  createSystemPromptTemplate,
+  generationPromptBindings,
+  promptTemplate,
+  renderMappingPromptTemplate,
   renderReferencePromptTemplate,
   renderSystemPromptTemplate
 } from "../src/prompt";
@@ -949,6 +952,7 @@ export class DiagramApplication {
               artifactName: job.artifact.name,
               artifactHandle: job.artifact.handle,
               ascii: job.artifact.ascii,
+              codeEntityIds: job.artifact.codeEntityIds,
               codeEntities: job.entities
             }, progress);
             await progressWrites;
@@ -1583,6 +1587,7 @@ export class DiagramApplication {
               diagramSetName: set.name,
               promptConfig: persistedPromptConfig,
               allowedCodeEntityAliases: promptBuild.allowedCodeEntityAliases,
+              codeEntities: promptBuild.allowedCodeEntities,
               allowedDiagramIds: promptBuild.allowedDiagramIds,
               allowedDiagramComponentIds: promptBuild.allowedDiagramComponentIds,
               slot: index + 1,
@@ -1596,7 +1601,11 @@ export class DiagramApplication {
               });
               onEvent?.({ type: "progress", message: `slot ${index + 1}: ${progress.message}` });
             });
-            this.validateGeneratedArtifactDraft(draft, promptBuild.allowedCodeEntityIds);
+            this.validateGeneratedArtifactDraft(
+              draft,
+              promptBuild.allowedCodeEntityIds,
+              promptBuild.allowedCodeEntities
+            );
             return { index, draft };
           } catch (error) {
             return { index, error: error instanceof Error ? error.message : "diagram generation failed" };
@@ -1714,6 +1723,28 @@ export class DiagramApplication {
           createdAt: timestamp()
         }))
         : [];
+      const artifacts = input.outputKind === "diagram" ? diagrams : components;
+      const codeEntityMaps: DiagramCodeEntityMapRecord[] = generated.map(({ run, draft }, index) => {
+        const artifact = artifacts[index];
+        const mappedEntities = promptBuild.allowedCodeEntities.filter(
+          (entity) => artifact.codeEntityIds.includes(entity.id)
+        );
+        const mappings = validateDiagramMappings(
+          artifact.ascii,
+          draft.mappings ?? [],
+          mappedEntities
+        );
+        return {
+          schemaVersion: SCHEMA_VERSION,
+          diagramSetId: setId,
+          artifactKind: input.outputKind,
+          artifactId: artifact.id,
+          asciiSha256: createHash("sha256").update(artifact.ascii).digest("hex"),
+          mappings,
+          producedByRunId: run.id,
+          createdAt: timestamp()
+        };
+      });
       runs = runs.map((run, index) => ({
         ...run,
         status: "complete",
@@ -1734,7 +1765,7 @@ export class DiagramApplication {
         error: undefined,
         updatedAt: timestamp()
       };
-      await this.store.completeBatch(batch, runs, diagrams, components);
+      await this.store.completeBatch(batch, runs, diagrams, components, codeEntityMaps);
       const workspace = await this.workspace();
       onEvent?.({
         type: "workspace",
@@ -1752,143 +1783,43 @@ export class DiagramApplication {
     label: unknown;
     description: unknown;
     prompts: unknown;
-    referencePrompts?: unknown;
-    variableOverrides?: unknown;
   }): Promise<WorkspaceSnapshot> {
     const label = typeof input.label === "string" ? input.label.trim() : "";
     const description = typeof input.description === "string" ? input.description.trim() : "";
-    const prompts = input.prompts && typeof input.prompts === "object"
-      ? input.prompts as Record<string, unknown>
-      : {};
-    const diagramPrompt = typeof prompts.diagram === "string" ? prompts.diagram.trim() : "";
-    const callGraphPrompt = typeof prompts["call-graph"] === "string"
-      ? prompts["call-graph"].trim()
-      : "";
-    const dirViewPrompt = typeof prompts["dir-view"] === "string"
-      ? prompts["dir-view"].trim()
-      : "";
-    const componentPrompt = typeof prompts["diagram-component"] === "string"
-      ? prompts["diagram-component"].trim()
-      : "";
-    const defaultReferencePrompts = createBuiltInSystemPromptTemplates(timestamp())[0].referencePrompts;
-    const referencePrompts = input.referencePrompts && typeof input.referencePrompts === "object"
-      ? input.referencePrompts as Record<string, unknown>
-      : defaultReferencePrompts;
-    const diagramReferencePrompt = typeof referencePrompts.diagram === "string"
-      ? referencePrompts.diagram.trim()
-      : "";
-    const callGraphReferencePrompt = typeof referencePrompts["call-graph"] === "string"
-      ? referencePrompts["call-graph"].trim()
-      : "";
-    const dirViewReferencePrompt = typeof referencePrompts["dir-view"] === "string"
-      ? referencePrompts["dir-view"].trim()
-      : "";
-    const componentReferencePrompt = typeof referencePrompts["diagram-component"] === "string"
-      ? referencePrompts["diagram-component"].trim()
-      : "";
-    const parseVariableOverrides = (value: unknown): PromptTemplateVariableOverrides | undefined => {
-      if (value === undefined) return undefined;
-      if (!value || typeof value !== "object" || Array.isArray(value)) {
-        throw new Error("template variable definitions must be an object");
-      }
-      const targetKinds: GenerationTargetKind[] = [
-        "diagram", "call-graph", "dir-view", "diagram-component"
-      ];
-      const variableNames: PromptTemplateVariable[] = [
-        "outputKind", "submissionTool", "referenceInstruction", "referenceContext"
-      ];
-      const inputOverrides = value as Record<string, unknown>;
-      const unknownTarget = Object.keys(inputOverrides).find(
-        (kind) => !targetKinds.includes(kind as GenerationTargetKind)
-      );
-      if (unknownTarget) throw new Error(`unknown template variable target: ${unknownTarget}`);
-      const parsed: PromptTemplateVariableOverrides = {};
-      for (const kind of targetKinds) {
-        const kindValue = inputOverrides[kind];
-        if (kindValue === undefined) continue;
-        if (!kindValue || typeof kindValue !== "object" || Array.isArray(kindValue)) {
-          throw new Error(`template variable definitions for ${kind} must be an object`);
-        }
-        const kindOverrides = kindValue as Record<string, unknown>;
-        const unknownVariable = Object.keys(kindOverrides).find(
-          (name) => !variableNames.includes(name as PromptTemplateVariable)
-        );
-        if (unknownVariable) throw new Error(`unknown template variable: {{${unknownVariable}}}`);
-        const normalized: Partial<Record<PromptTemplateVariable, string>> = {};
-        for (const name of variableNames) {
-          const definition = kindOverrides[name];
-          if (definition === undefined || definition === "") continue;
-          if (typeof definition !== "string") {
-            throw new Error(`template variable {{${name}}} must be a string`);
-          }
-          if (definition.length > 32000) {
-            throw new Error(`template variable {{${name}}} cannot exceed 32,000 characters`);
-          }
-          normalized[name] = definition;
-        }
-        if (Object.keys(normalized).length) parsed[kind] = normalized;
-      }
-      return parsed;
-    };
-    const requestedVariableOverrides = parseVariableOverrides(input.variableOverrides);
     if (!label) throw new Error("template name is required");
     if (label.length > 80) throw new Error("template name cannot exceed 80 characters");
     if (description.length > 240) throw new Error("template description cannot exceed 240 characters");
-    if (!diagramPrompt || !callGraphPrompt || !dirViewPrompt || !componentPrompt) {
-      throw new Error("all generation system prompts are required");
+    if (!input.prompts || typeof input.prompts !== "object" || Array.isArray(input.prompts)) {
+      throw new Error("named prompts must be an object");
     }
-    if (!diagramReferencePrompt || !callGraphReferencePrompt
-      || !dirViewReferencePrompt || !componentReferencePrompt) {
-      throw new Error("all generation reference prompts are required");
-    }
-    if ([
-      diagramPrompt, callGraphPrompt, dirViewPrompt, componentPrompt,
-      diagramReferencePrompt, callGraphReferencePrompt, dirViewReferencePrompt, componentReferencePrompt
-    ]
-      .some((prompt) => prompt.length > 32000)) {
-      throw new Error("system prompts cannot exceed 32,000 characters");
+    const rawPrompts = input.prompts as Record<string, unknown>;
+    const prompts: Record<string, NamedPromptTemplate> = {};
+    for (const [name, value] of Object.entries(rawPrompts)) {
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        throw new Error(`prompt ${name} must be an object with a template string`);
+      }
+      const entry = value as Record<string, unknown>;
+      if (typeof entry.template !== "string") {
+        throw new Error(`prompt ${name} must include a template string`);
+      }
+      if (entry.description !== undefined && typeof entry.description !== "string") {
+        throw new Error(`prompt ${name} description must be a string`);
+      }
+      prompts[name] = {
+        template: entry.template,
+        ...(typeof entry.description === "string" ? { description: entry.description } : {})
+      };
     }
     const templates = await this.store.loadSystemPromptTemplates();
     const requestedId = typeof input.id === "string" ? input.id : undefined;
     const existing = requestedId ? templates.find((template) => template.id === requestedId) : undefined;
     if (requestedId && !existing) throw new Error(`unknown system prompt template: ${requestedId}`);
-    const variableOverrides = requestedVariableOverrides ?? existing?.variableOverrides;
-    renderSystemPromptTemplate(diagramPrompt, "diagram", variableOverrides?.diagram);
-    renderSystemPromptTemplate(callGraphPrompt, "call-graph", variableOverrides?.["call-graph"]);
-    renderSystemPromptTemplate(dirViewPrompt, "dir-view", variableOverrides?.["dir-view"]);
-    renderSystemPromptTemplate(
-      componentPrompt,
-      "diagram-component",
-      variableOverrides?.["diagram-component"]
-    );
-    renderReferencePromptTemplate({
-      template: diagramReferencePrompt,
-      targetKind: "diagram",
-      instruction: "Use @diagram/reference as the style reference.",
-      referenceContext: "Diagram reference",
-      variableOverrides: variableOverrides?.diagram
-    });
-    renderReferencePromptTemplate({
-      template: callGraphReferencePrompt,
-      targetKind: "call-graph",
-      instruction: "Use @diagram/reference as the style reference.",
-      referenceContext: "Diagram reference",
-      variableOverrides: variableOverrides?.["call-graph"]
-    });
-    renderReferencePromptTemplate({
-      template: dirViewReferencePrompt,
-      targetKind: "dir-view",
-      instruction: "Use @diagram/reference as the style reference.",
-      referenceContext: "Diagram reference",
-      variableOverrides: variableOverrides?.["dir-view"]
-    });
-    renderReferencePromptTemplate({
-      template: componentReferencePrompt,
-      targetKind: "diagram-component",
-      instruction: "Use @component/reference as the style reference.",
-      referenceContext: "DiagramComponent reference",
-      variableOverrides: variableOverrides?.["diagram-component"]
-    });
+    const persistedPrompts = Object.fromEntries(Object.entries(prompts).map(([name, entry]) => [
+      name,
+      entry.description === undefined && existing?.prompts[name]?.description
+        ? { ...entry, description: existing.prompts[name].description }
+        : entry
+    ]));
     const timestampValue = timestamp();
     let id = existing?.id ?? slugify(label, "custom-prompt");
     if (!existing) {
@@ -1897,31 +1828,53 @@ export class DiagramApplication {
       let suffix = 2;
       while (ids.has(id)) id = `${baseId}-${suffix++}`;
     }
-    const template: SystemPromptTemplateRecord = {
-      schemaVersion: SCHEMA_VERSION,
+    const template = createSystemPromptTemplate({
       id,
       label,
       description,
       builtIn: existing?.builtIn ?? false,
       version: (existing?.version ?? 0) + 1,
-      prompts: {
-        diagram: diagramPrompt,
-        "call-graph": callGraphPrompt,
-        "dir-view": dirViewPrompt,
-        "diagram-component": componentPrompt
-      },
-      referencePrompts: {
-        diagram: diagramReferencePrompt,
-        "call-graph": callGraphReferencePrompt,
-        "dir-view": dirViewReferencePrompt,
-        "diagram-component": componentReferencePrompt
-      },
-      ...(variableOverrides && Object.keys(variableOverrides).length
-        ? { variableOverrides }
-        : {}),
+      prompts: persistedPrompts,
       createdAt: existing?.createdAt ?? timestampValue,
       updatedAt: timestampValue
-    };
+    });
+    const targetKinds: GenerationTargetKind[] = [
+      "diagram", "call-graph", "dir-view", "diagram-component"
+    ];
+    const requiredStandardPromptNames = targetKinds.flatMap((targetKind) => {
+      const bindings = generationPromptBindings(targetKind);
+      return [bindings.system, bindings.reference!, bindings.mapping];
+    });
+    const existingWasStandard = Boolean(existing && requiredStandardPromptNames.every(
+      (name) => existing.prompts[name]
+    ));
+    const submittedStandardName = requiredStandardPromptNames.some((name) => template.prompts[name]);
+    if ((existingWasStandard || submittedStandardName) && !requiredStandardPromptNames.every(
+      (name) => template.prompts[name]
+    )) {
+      throw new Error("standard generation prompt sets require every system, reference, and mapping prompt");
+    }
+    for (const targetKind of (existingWasStandard || submittedStandardName ? targetKinds : [])) {
+      const bindings = generationPromptBindings(targetKind);
+      renderSystemPromptTemplate(promptTemplate(template, bindings.system), targetKind);
+      renderReferencePromptTemplate({
+        template: promptTemplate(template, bindings.reference!),
+        targetKind,
+        instruction: targetKind === "diagram-component"
+          ? "Use @component/reference as the style reference."
+          : "Use @diagram/reference as the style reference.",
+        referenceContext: targetKind === "diagram-component"
+          ? "DiagramComponent reference"
+          : "Diagram reference"
+      });
+      renderMappingPromptTemplate({
+        template: promptTemplate(template, bindings.mapping),
+        targetKind,
+        artifact: { name: "Preview", ascii: "+-- preview --+", codeEntityIds: [] },
+        codeEntities: [],
+        aliases: []
+      });
+    }
     await this.store.saveSystemPromptTemplates(existing
       ? templates.map((candidate) => candidate.id === id ? template : candidate)
       : [...templates, template]);
@@ -2049,7 +2002,8 @@ export class DiagramApplication {
 
   private validateGeneratedArtifactDraft(
     draft: GeneratedArtifactDraft,
-    allowedCodeEntityIds: string[]
+    allowedCodeEntityIds: string[],
+    allowedCodeEntities: CodeEntityRecord[]
   ): void {
     if (!draft.name.trim()) throw new Error("generated artifact name cannot be blank");
     assertSevenBitAscii(draft.ascii);
@@ -2057,6 +2011,9 @@ export class DiagramApplication {
     for (const id of draft.codeEntityIds) {
       if (!allowedEntities.has(id)) throw new Error(`artifact references unavailable CodeEntity: ${id}`);
     }
+    if (!draft.mappings) throw new Error("generated artifact is missing its final entity mappings");
+    const mappedEntities = allowedCodeEntities.filter((entity) => draft.codeEntityIds.includes(entity.id));
+    validateDiagramMappings(draft.ascii, draft.mappings, mappedEntities);
   }
 
   async sourceSnippet(setId: string, entityId: string, rangeIndex: number): Promise<{

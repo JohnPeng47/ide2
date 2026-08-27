@@ -229,6 +229,7 @@ const importScreenshotPath = path.join(fixtureRoot, "import-dialog.png");
 const generationScreenshotPath = path.join(fixtureRoot, "generation-model.png");
 const derivativeScreenshotPath = path.join(fixtureRoot, "derivative-references.png");
 const promptSettingsScreenshotPath = path.join(fixtureRoot, "system-prompt-settings.png");
+const compactPromptSettingsScreenshotPath = path.join(fixtureRoot, "compact-prompt-settings.png");
 const referencePromptSettingsScreenshotPath = path.join(fixtureRoot, "reference-prompt-settings.png");
 const variableDefinitionsScreenshotPath = path.join(fixtureRoot, "prompt-variable-definitions.png");
 const importedSystemReferenceScreenshotPath = path.join(fixtureRoot, "imported-system-reference.png");
@@ -534,6 +535,45 @@ try {
     await waitForSelector(cdp, ".settings-menu [role=menuitem]");
     await pointerClick(cdp, ".settings-menu [role=menuitem]");
     await waitForSelector(cdp, ".prompt-settings-dialog");
+    await cdp.send("Emulation.setDeviceMetricsOverride", {
+      width: 600,
+      height: 600,
+      deviceScaleFactor: 1,
+      mobile: false
+    });
+    const compactPromptLayout = await evaluate(cdp, `(() => {
+      const metrics = (selector) => {
+        const element = document.querySelector(selector);
+        return element && {
+          clientWidth: element.clientWidth,
+          scrollWidth: element.scrollWidth,
+          overflowX: getComputedStyle(element).overflowX
+        };
+      };
+      return {
+        viewport: { clientWidth: document.documentElement.clientWidth, scrollWidth: document.documentElement.scrollWidth },
+        dialog: metrics('.prompt-settings-dialog'),
+        layout: metrics('.prompt-settings-layout'),
+        form: metrics('.prompt-settings-layout > form'),
+        toolbar: metrics('.prompt-template-toolbar'),
+        editor: metrics('.prompt-template-editor')
+      };
+    })()`);
+    if (compactPromptLayout.viewport.scrollWidth > compactPromptLayout.viewport.clientWidth
+      || compactPromptLayout.dialog.scrollWidth > compactPromptLayout.dialog.clientWidth
+      || compactPromptLayout.layout.scrollWidth > compactPromptLayout.layout.clientWidth
+      || compactPromptLayout.form.scrollWidth > compactPromptLayout.form.clientWidth
+      || compactPromptLayout.toolbar.scrollWidth > compactPromptLayout.toolbar.clientWidth
+      || compactPromptLayout.editor.scrollWidth > compactPromptLayout.editor.clientWidth) {
+      throw new Error(`prompt settings overflowed a compact viewport: ${JSON.stringify(compactPromptLayout)}`);
+    }
+    await captureScreenshot(cdp, { output: compactPromptSettingsScreenshotPath });
+    await cdp.send("Emulation.setDeviceMetricsOverride", {
+      width: 1440,
+      height: 900,
+      deviceScaleFactor: 1,
+      mobile: false
+    });
     const compactTemplate = await evaluate(cdp, `document.querySelector(
       '.prompt-template-editor textarea'
     ).value`);
@@ -544,28 +584,31 @@ try {
     await waitFor(async () => (
       await evaluate(cdp, `document.querySelector('.prompt-template-editor textarea').value`)
     ) === compactTemplate, { message: "Ctrl+Z did not use native template textarea history" });
-    await pointerClick(cdp, '[aria-label="Prompt view"] button:nth-child(3)');
-    await waitForSelector(cdp, '[aria-label="Template variable definitions"]');
-    const outputKindOverride = '[aria-label="outputKind variable override"]';
-    await replaceText(cdp, outputKindOverride, "ARCHITECTURE MAP");
-    await controlKey(cdp, "z", "KeyZ", 90);
+    await pointerClick(cdp, '[aria-label="Prompt view"] button:nth-child(2)');
     await waitFor(async () => (
-      await evaluate(cdp, `document.querySelector(${JSON.stringify(outputKindOverride)}).value`)
-    ) === "", { message: "Ctrl+Z did not use native variable textarea history" });
-    await replaceText(cdp, outputKindOverride, "ARCHITECTURE MAP");
+      await evaluate(cdp, `document.querySelector('.prompt-template-preview').textContent`)
+    ).includes("System-managed output requirements (read-only):"), {
+      message: "resolved preview did not include the read-only output contract"
+    });
     await captureScreenshot(cdp, { output: variableDefinitionsScreenshotPath });
+    if (await evaluate(cdp, `document.querySelectorAll(
+      '[aria-label="Prompt view"] button'
+    ).length`) !== 2) {
+      throw new Error("prompt editor should only expose Editor and Preview views");
+    }
     await pointerClick(cdp, '[aria-label="Generation prompt phase"] button:nth-child(2)');
-    await waitFor(async () => await evaluate(cdp, `(() => (
-      document.querySelectorAll('[aria-label="Template variable definitions"] label').length === 4
-      && document.querySelector('[aria-label="referenceInstruction variable override"]')
-        ?.placeholder.includes('@diagram/reference')
-    ))()`), { message: "reference runtime variables were not visible in the variables view" });
-    await pointerClick(cdp, '[aria-label="Generation prompt phase"] button:nth-child(1)');
+    await waitFor(async () => await evaluate(cdp, `(() => {
+      const preview = document.querySelector('.prompt-template-preview')?.textContent ?? '';
+      return preview.includes('System-managed reference instruction (read-only):')
+        && preview.includes('System-managed reference context (read-only):')
+        && preview.includes('@diagram/reference');
+    })()`), { message: "reference workflow context was not visible in the resolved preview" });
     await pointerClick(cdp, '[aria-label="Prompt view"] button:nth-child(1)');
-    await pointerClick(cdp, '[aria-label="Generation prompt phase"] button:nth-child(2)');
-    await waitFor(async () => (
-      await evaluate(cdp, `document.querySelector('.prompt-template-editor textarea').value`)
-    ).includes("{{referenceContext}}"), {
+    await waitFor(async () => await evaluate(cdp, `(() => {
+      const value = document.querySelector('.prompt-template-editor textarea')?.value ?? '';
+      return value.includes('system-managed reference instruction and context')
+        && !value.includes('{{');
+    })()`), {
       message: "reference follow-up prompt template did not become active"
     });
     const referenceTemplate = await evaluate(cdp, `document.querySelector(
@@ -584,7 +627,7 @@ try {
     await replaceText(
       cdp,
       ".prompt-template-editor textarea",
-      `${compactTemplate} Browser-persisted-template {{outputKind}}.`
+      `${compactTemplate} Browser-persisted-template.`
     );
     await captureScreenshot(cdp, { output: promptSettingsScreenshotPath });
     await pointerClick(cdp, '.prompt-settings-dialog button[type="submit"]');
@@ -596,9 +639,8 @@ try {
       return workspace.systemPromptTemplates.compact;
     })()`);
     if (savedTemplate?.version !== 2
-      || !savedTemplate?.prompts?.diagram?.includes("Browser-persisted-template {{outputKind}}.")
-      || !savedTemplate?.referencePrompts?.diagram?.includes("Browser-reference-template.")
-      || savedTemplate?.variableOverrides?.diagram?.outputKind !== "ARCHITECTURE MAP") {
+      || !savedTemplate?.prompts?.["diagram-system"]?.template?.includes("Browser-persisted-template.")
+      || !savedTemplate?.prompts?.["diagram-reference"]?.template?.includes("Browser-reference-template.")) {
       throw new Error(`edited prompt template was not persisted: ${JSON.stringify(savedTemplate)}`);
     }
     await pointerClick(cdp, '[aria-label="Prompt family"] button:nth-child(2)');
@@ -689,8 +731,12 @@ try {
     if (generatedPromptConfig?.modelId !== "gpt-5.6-sol"
       || generatedPromptConfig?.systemPrompt?.profileId !== "compact"
       || generatedPromptConfig?.systemPrompt?.profileVersion !== 2
+      || generatedPromptConfig?.systemPrompt?.promptName !== "diagram-system"
       || !generatedPromptConfig?.systemPrompt?.rendered.includes(
-        "Browser-persisted-template ARCHITECTURE MAP."
+        "Browser-persisted-template."
+      )
+      || !generatedPromptConfig?.systemPrompt?.rendered.includes(
+        "System-managed output requirements (read-only):"
       )
       || !generatedPromptConfig?.referencePrompt?.instruction?.includes("@diagram/")
       || !generatedPromptConfig?.referencePrompt?.rendered?.includes("Browser-reference-template.")
@@ -703,12 +749,8 @@ try {
     if (oldStripExists) throw new Error("horizontal diagram strip is still rendered");
     const asciiBeforeMapping = await evaluate(cdp, `document.querySelector('.ascii-stage pre').textContent`);
     if (await evaluate(cdp, `document.querySelector('.select-refs').disabled`)) {
-      throw new Error("unmapped diagram hid the reason reference selection was unavailable");
+      throw new Error("automatically mapped diagram disabled reference selection");
     }
-    await pointerClick(cdp, ".select-refs");
-    await waitFor(async () => (
-      await evaluate(cdp, `document.querySelector('.ref-selection-status')?.textContent`)
-    ) === "map code entities first", { message: "unmapped reference selection did not explain the required mapping" });
     const mappingCandidateDiagramIds = await evaluate(cdp, `(async () => {
       const workspace = await fetch('/api/workspace').then((response) => response.json());
       const set = workspace.diagramSets[0];
@@ -718,19 +760,14 @@ try {
     if (mappingCandidateDiagramIds.length !== 3) {
       throw new Error(`mapping batch contained ${mappingCandidateDiagramIds.length} diagrams instead of 3`);
     }
-    const mapAllLabel = await evaluate(cdp, `document.querySelector('.map-all-code-entities')?.textContent`);
-    if (!mapAllLabel?.includes("map all unmapped (3)")) {
-      throw new Error(`map-all action showed an unexpected label: ${JSON.stringify(mapAllLabel)}`);
-    }
-    await pointerClick(cdp, ".map-all-code-entities");
     await waitFor(async () => await evaluate(cdp, `(async () => {
       const workspace = await fetch('/api/workspace').then((response) => response.json());
       return ${JSON.stringify(mappingCandidateDiagramIds)}.every((id) => Boolean(
         workspace.codeEntityMaps[id]
       ));
-    })()`), { timeoutMs: 10000, message: "map-all did not persist every candidate mapping" });
+    })()`), { timeoutMs: 10000, message: "generation did not persist every candidate mapping" });
     await waitFor(async () => !await evaluate(cdp, `Boolean(document.querySelector('.map-all-code-entities'))`), {
-      message: "map-all action remained after every candidate was mapped"
+      message: "map-all action appeared even though generation mapped every candidate"
     });
     await waitForSelector(cdp, ".mapped-element", { timeoutMs: 10000 });
     const characterNodeCount = await evaluate(cdp, `document.querySelectorAll('.ascii-char').length`);
@@ -1084,7 +1121,28 @@ try {
         ?.textContent.trim() === '★'
       && document.querySelector('[data-set-diagram-id="${selection.id}"] .diagram-set-tree-star')
         ?.classList.contains('is-starred')
+      && document.querySelector('.diagram-set-tree-set.is-current .diagram-set-tree-set-star')
+        ?.textContent.trim() === '★'
+      && document.querySelector('.diagram-set-tree-set.is-current .diagram-set-tree-set-star')
+        ?.classList.contains('is-starred')
     )`), { message: "starred diagram was not visibly marked in the Diagram Set tree" });
+    const diagramListCliResult = await execFileAsync("npm", [
+      "run", "diagram", "--", "list-diagrams", "--server", url
+    ], { cwd: PACKAGE_ROOT, encoding: "utf8" });
+    const diagramListCliEvent = JSON.parse(diagramListCliResult.stdout.trim().split("\n").at(-1));
+    const queriedDiagram = diagramListCliEvent.diagrams?.find((diagram) => diagram.id === selection.id);
+    const statuses = diagramListCliEvent.diagrams?.map((diagram) => diagram.status).sort();
+    if (diagramListCliEvent.event !== "diagrams"
+      || diagramListCliEvent.count !== diagramListCliEvent.diagrams?.length
+      || diagramListCliEvent.count < initialDiagramCount
+      || queriedDiagram?.name !== renamedDiagram
+      || queriedDiagram?.diagramSetName !== "Browser fixture"
+      || queriedDiagram?.status !== "starred"
+      || statuses?.filter((status) => status === "starred").length !== 1
+      || statuses?.filter((status) => status === "unstarred").length !== diagramListCliEvent.count - 1
+      || typeof queriedDiagram?.ascii !== "string") {
+      throw new Error(`Diagram CLI list was incorrect: ${diagramListCliResult.stdout}`);
+    }
     await captureScreenshot(cdp, { output: starredDiagramScreenshotPath });
     await pointerHover(cdp, `[data-diagram-id="${selection.id}"]`);
     await pointerClick(cdp, `[data-diagram-id="${selection.id}"] .diagram-tree-prompt`);
@@ -1833,7 +1891,7 @@ try {
     ).includes("v3"), { message: "imported system reference template did not save revision three" });
     const savedImportedSystemReference = await evaluate(cdp, `(async () => {
       const workspace = await fetch('/api/workspace').then((response) => response.json());
-      return workspace.systemPromptTemplates.compact.prompts.diagram;
+      return workspace.systemPromptTemplates.compact.prompts["diagram-system"].template;
     })()`);
     if (!importedSystemReferenceToken
       || !savedImportedSystemReference.includes(importedSystemReferenceToken)) {
@@ -1871,7 +1929,8 @@ try {
     })()`);
     if (selectedInitialPrompt?.profileId !== "compact"
       || selectedInitialPrompt?.profileVersion !== 3
-      || !selectedInitialPrompt?.rendered?.includes("Browser-persisted-template ARCHITECTURE MAP.")
+      || selectedInitialPrompt?.promptName !== "diagram-system"
+      || !selectedInitialPrompt?.rendered?.includes("Browser-persisted-template.")
       || selectedInitialPrompt?.references?.[0]?.targetId !== importedDiagramState.id
       || !selectedInitialPrompt?.rendered?.includes("| imported |")) {
       throw new Error(`initial generation ignored CLI template selection: ${JSON.stringify(selectedInitialPrompt)}`);
@@ -1929,6 +1988,10 @@ try {
   if (generationScreenshot.length < 1000) throw new Error("generation model screenshot was unexpectedly small");
   const promptSettingsScreenshot = await readFile(promptSettingsScreenshotPath);
   if (promptSettingsScreenshot.length < 1000) throw new Error("system prompt settings screenshot was unexpectedly small");
+  const compactPromptSettingsScreenshot = await readFile(compactPromptSettingsScreenshotPath);
+  if (compactPromptSettingsScreenshot.length < 1000) {
+    throw new Error("compact prompt settings screenshot was unexpectedly small");
+  }
   const referencePromptSettingsScreenshot = await readFile(referencePromptSettingsScreenshotPath);
   if (referencePromptSettingsScreenshot.length < 1000) {
     throw new Error("reference prompt settings screenshot was unexpectedly small");
