@@ -16,7 +16,7 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html, body, #root { width: 100%; min-width: 0; height: 100%; min-height: 0; }
+html, body, #root { width: 100%; min-width: 0; height: 100%; min-height: 0; overflow: hidden; }
 body { overflow: hidden; background: var(--bg); color: var(--fg); font-family: var(--font-sans); }
 button, input, textarea, select { color: inherit; font: inherit; }
 button { cursor: pointer; }
@@ -25,14 +25,14 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   outline: 2px solid var(--accent-cyan); outline-offset: 2px;
 }
 
-.studio-shell { display: grid; height: 100dvh; grid-template-rows: 58px minmax(0, 1fr); background: var(--bg); }
-.studio-header { display: grid; grid-template-columns: minmax(220px, 1fr) auto; align-items: center; gap: 1.5rem; border-bottom: 1px solid var(--gutter); padding: 0 1rem; }
+.studio-shell { display: grid; width: 100%; min-width: 0; height: 100dvh; overflow: hidden; grid-template-rows: 58px minmax(0, 1fr); background: var(--bg); }
+.studio-header { display: grid; min-width: 0; grid-template-columns: minmax(220px, 1fr) auto; align-items: center; gap: 1.5rem; border-bottom: 1px solid var(--gutter); padding: 0 1rem; }
 .brand { display: flex; min-width: 0; align-items: center; gap: 0.75rem; }
 .brand-mark { display: grid; width: 30px; height: 30px; place-items: center; border: 1px solid var(--accent-cyan); color: var(--accent-cyan); font: 600 11px var(--font-mono); }
 .brand h1 { font-size: 0.9rem; letter-spacing: 0.16em; }
 .brand p { overflow: hidden; color: var(--muted); font: 11px var(--font-mono); text-overflow: ellipsis; white-space: nowrap; }
 .eyebrow, .prompt-field label { color: var(--muted); font: 600 10px var(--font-mono); letter-spacing: 0.13em; text-transform: uppercase; }
-.screen-tabs { display: flex; align-self: stretch; }
+.screen-tabs { display: flex; min-width: 0; max-width: 100%; align-self: stretch; }
 .screen-tabs button { border: 0; border-left: 1px solid var(--border); padding: 0 0.9rem; background: transparent; color: var(--muted); font: 600 10px var(--font-mono); letter-spacing: 0.12em; }
 .screen-tabs button:last-child { border-right: 1px solid var(--border); }
 .screen-tabs button.is-active { border-bottom: 2px solid var(--accent-cyan); color: var(--accent-cyan); }

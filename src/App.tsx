@@ -145,6 +145,11 @@ const LEGACY_CALL_GRAPH_FOCUS_PANE_PREFIX = "call-graph-focus-pane-";
 const CALL_GRAPH_FOCUS_VIEW_PREFIX = "call-graph-focus-view-";
 const PANE_LAYOUT_STORAGE_KEY = "new-diagram:pane-layout";
 const LEGACY_SPLIT_STORAGE_KEY = "new-diagram:split-percent";
+const STUDIO_PANE_MINIMUM_SIZES = {
+  [FILES_PANE_ID]: { width: 220 },
+  [PRIMARY_PANE_ID]: { width: 480 },
+  [CONTEXT_PANE_ID]: { width: 320 }
+};
 
 function withoutTransientCallGraphFocus(state: PaneLayoutState): PaneLayoutState {
   let next = Object.keys(state.panes)
@@ -1785,7 +1790,11 @@ function StudioPage(props: { onExperiments: () => void }) {
           <button type="button" className="button" onClick={() => void load()}>refresh status</button>
         </section>
       ) : (
-        <PaneWorkspace api={paneApi} views={paneViews} />
+        <PaneWorkspace
+          api={paneApi}
+          views={paneViews}
+          paneMinimumSizes={STUDIO_PANE_MINIMUM_SIZES}
+        />
       )}
       {importOpen ? (
         <ImportArtifactDialog

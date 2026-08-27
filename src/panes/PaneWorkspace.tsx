@@ -3,6 +3,7 @@ import {
   cloneElement,
   useCallback,
   useContext,
+  useLayoutEffect,
   useRef,
   useState,
   useSyncExternalStore,
@@ -10,11 +11,34 @@ import {
   type ReactNode
 } from "react";
 import { PaneApi } from "./api";
-import { clampPaneRatio, type Pane, type PaneNode, type PaneTab } from "./model";
+import { clampPaneRatioToSizes, type Pane, type PaneNode, type PaneOrientation, type PaneTab } from "./model";
 
 export interface PaneTabView {
   content: ReactNode;
   onActivate?: () => void;
+}
+
+export interface PaneMinimumSize {
+  width?: number;
+  height?: number;
+}
+
+const DIVIDER_SIZE = 9;
+
+function minimumNodeSize(
+  node: PaneNode,
+  orientation: PaneOrientation,
+  paneMinimumSizes: Record<string, PaneMinimumSize | undefined>
+): number {
+  if (node.kind === "pane") {
+    const minimum = paneMinimumSizes[node.paneId];
+    return orientation === "horizontal" ? minimum?.width ?? 0 : minimum?.height ?? 0;
+  }
+  const first = minimumNodeSize(node.first, orientation, paneMinimumSizes);
+  const second = minimumNodeSize(node.second, orientation, paneMinimumSizes);
+  return node.orientation === orientation
+    ? first + DIVIDER_SIZE + second
+    : Math.max(first, second);
 }
 
 const PaneApiContext = createContext<PaneApi | null>(null);
@@ -95,19 +119,61 @@ function PaneFrame(props: {
 function SplitNode(props: {
   node: Extract<PaneNode, { kind: "split" }>;
   api: PaneApi;
+  paneMinimumSizes: Record<string, PaneMinimumSize | undefined>;
   renderNode: (node: PaneNode) => ReactNode;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
   const verticalDivider = props.node.orientation === "horizontal";
+  const firstMinimumSize = minimumNodeSize(
+    props.node.first,
+    props.node.orientation,
+    props.paneMinimumSizes
+  );
+  const secondMinimumSize = minimumNodeSize(
+    props.node.second,
+    props.node.orientation,
+    props.paneMinimumSizes
+  );
+  const constrainedRatio = useCallback((requestedRatio: number) => {
+    const bounds = rootRef.current?.getBoundingClientRect();
+    if (!bounds) return requestedRatio;
+    return clampPaneRatioToSizes(
+      requestedRatio,
+      verticalDivider ? bounds.width : bounds.height,
+      firstMinimumSize,
+      secondMinimumSize,
+      DIVIDER_SIZE
+    );
+  }, [firstMinimumSize, secondMinimumSize, verticalDivider]);
+  const enforceMinimumSizes = useCallback(() => {
+    const ratio = constrainedRatio(props.node.ratio);
+    if (Math.abs(ratio - props.node.ratio) > 0.0001) {
+      props.api.resizeSplit(props.node.id, ratio);
+    }
+  }, [constrainedRatio, props.api, props.node.id, props.node.ratio]);
+
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!root) return undefined;
+    enforceMinimumSizes();
+    const observer = new ResizeObserver(enforceMinimumSizes);
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, [enforceMinimumSizes]);
+
   const updateFromPointer = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
     const bounds = rootRef.current?.getBoundingClientRect();
     if (!bounds) return;
-    const ratio = verticalDivider
-      ? (event.clientX - bounds.left) / bounds.width
-      : (event.clientY - bounds.top) / bounds.height;
-    props.api.resizeSplit(props.node.id, ratio);
-  }, [props.api, props.node.id, verticalDivider]);
+    const usableSize = Math.max(1, (verticalDivider ? bounds.width : bounds.height) - DIVIDER_SIZE);
+    const pointerOffset = verticalDivider
+      ? event.clientX - bounds.left
+      : event.clientY - bounds.top;
+    const ratio = (pointerOffset - (DIVIDER_SIZE / 2)) / usableSize;
+    props.api.resizeSplit(props.node.id, constrainedRatio(ratio));
+  }, [constrainedRatio, props.api, props.node.id, verticalDivider]);
+  const minimumRatio = constrainedRatio(0);
+  const maximumRatio = constrainedRatio(1);
   const gridStyle = verticalDivider
     ? { gridTemplateColumns: `minmax(0, ${props.node.ratio}fr) 9px minmax(0, ${1 - props.node.ratio}fr)` }
     : { gridTemplateRows: `minmax(0, ${props.node.ratio}fr) 9px minmax(0, ${1 - props.node.ratio}fr)` };
@@ -125,8 +191,8 @@ function SplitNode(props: {
         role="separator"
         aria-label={`Resize panes ${verticalDivider ? "horizontally" : "vertically"}`}
         aria-orientation={verticalDivider ? "vertical" : "horizontal"}
-        aria-valuemin={10}
-        aria-valuemax={90}
+        aria-valuemin={Math.round(minimumRatio * 100)}
+        aria-valuemax={Math.round(maximumRatio * 100)}
         aria-valuenow={Math.round(props.node.ratio * 100)}
         tabIndex={0}
         onPointerDown={(event) => {
@@ -149,13 +215,16 @@ function SplitNode(props: {
           const increase = verticalDivider ? event.key === "ArrowRight" : event.key === "ArrowDown";
           if (decrease || increase) {
             event.preventDefault();
-            props.api.resizeSplit(props.node.id, props.node.ratio + (increase ? 0.02 : -0.02));
+            props.api.resizeSplit(
+              props.node.id,
+              constrainedRatio(props.node.ratio + (increase ? 0.02 : -0.02))
+            );
           } else if (event.key === "Home") {
             event.preventDefault();
-            props.api.resizeSplit(props.node.id, clampPaneRatio(0));
+            props.api.resizeSplit(props.node.id, minimumRatio);
           } else if (event.key === "End") {
             event.preventDefault();
-            props.api.resizeSplit(props.node.id, clampPaneRatio(1));
+            props.api.resizeSplit(props.node.id, maximumRatio);
           }
         }}
       ><span aria-hidden="true" /></div>
@@ -168,6 +237,7 @@ export function PaneWorkspace(props: {
   api: PaneApi;
   views: Record<string, PaneTabView | undefined>;
   className?: string;
+  paneMinimumSizes?: Record<string, PaneMinimumSize | undefined>;
 }) {
   const state = useSyncExternalStore(props.api.subscribe, props.api.getState, props.api.getState);
   const renderNode = (node: PaneNode): ReactNode => node.kind === "pane" ? (
@@ -178,7 +248,12 @@ export function PaneWorkspace(props: {
       views={props.views}
     />
   ) : (
-    <SplitNode node={node} api={props.api} renderNode={renderNode} />
+    <SplitNode
+      node={node}
+      api={props.api}
+      paneMinimumSizes={props.paneMinimumSizes ?? {}}
+      renderNode={renderNode}
+    />
   );
   return (
     <PaneApiContext.Provider value={props.api}>

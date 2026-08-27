@@ -3,6 +3,7 @@ import {
   activatePaneTab,
   addPane,
   addPaneTab,
+  clampPaneRatioToSizes,
   closePaneTab,
   createPaneLayout,
   findPaneSplit,
@@ -69,6 +70,16 @@ describe("pane layout engine", () => {
 
     expect(findPaneSplit(resizePaneSplit(split, "root", 5).root, "root")?.ratio).toBe(0.9);
     expect(findPaneSplit(resizePaneSplit(split, "root", -2).root, "root")?.ratio).toBe(0.1);
+  });
+
+  it("clamps persisted ratios to rendered pane minimums", () => {
+    expect(clampPaneRatioToSizes(0.88, 1280, 709, 320)).toBeCloseTo(951 / 1271);
+    expect(clampPaneRatioToSizes(0.12, 1280, 320, 709)).toBeCloseTo(320 / 1271);
+    expect(clampPaneRatioToSizes(0.62, 1920, 709, 320)).toBe(0.62);
+  });
+
+  it("falls back to proportional minimums when the viewport cannot fit both panes", () => {
+    expect(clampPaneRatioToSizes(0.9, 700, 480, 320)).toBe(0.6);
   });
 
   it("restores valid persisted trees and rejects dangling pane references", () => {

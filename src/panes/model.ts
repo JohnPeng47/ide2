@@ -67,6 +67,30 @@ export function clampPaneRatio(ratio: number): number {
   return Math.max(MIN_RATIO, Math.min(MAX_RATIO, ratio));
 }
 
+/** Clamp a split ratio so both children keep their requested rendered size. */
+export function clampPaneRatioToSizes(
+  ratio: number,
+  containerSize: number,
+  firstMinimumSize: number,
+  secondMinimumSize: number,
+  dividerSize = 9
+): number {
+  const usableSize = Math.max(0, containerSize - dividerSize);
+  if (usableSize === 0) return clampPaneRatio(ratio);
+
+  const normalizedFirstMinimum = Math.max(0, firstMinimumSize);
+  const normalizedSecondMinimum = Math.max(0, secondMinimumSize);
+  const minimumRatio = normalizedFirstMinimum / usableSize;
+  const maximumRatio = 1 - (normalizedSecondMinimum / usableSize);
+  if (minimumRatio > maximumRatio) {
+    const requestedSize = normalizedFirstMinimum + normalizedSecondMinimum;
+    return clampPaneRatio(requestedSize > 0
+      ? normalizedFirstMinimum / requestedSize
+      : ratio);
+  }
+  return Math.max(minimumRatio, Math.min(maximumRatio, clampPaneRatio(ratio)));
+}
+
 function uniqueTabs(tabs: PaneTab[]): PaneTab[] {
   const seen = new Set<string>();
   return tabs.filter((tab) => {
