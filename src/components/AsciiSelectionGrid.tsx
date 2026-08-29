@@ -17,6 +17,7 @@ import {
   normalizeDiagramSelection,
   type DiagramGridPoint
 } from "../diagramSelection";
+import { hiddenAsciiTreeLines, parseAsciiTree } from "../asciiTree";
 import { referenceFromMapping, referenceIdentityKey } from "../refBuffer";
 import { DiagramSelectionOverlay, type SelectionOverlayRect, type SelectionOverlayReference } from "./DiagramSelectionOverlay";
 
@@ -53,6 +54,8 @@ export function AsciiSelectionGrid(props: {
   entities: readonly CodeEntityRecord[];
   previewMappingIds: ReadonlySet<string>;
   bufferedReferenceKeys: ReadonlySet<string>;
+  highlightedMappingIds: ReadonlySet<string>;
+  highlightBusyMappingIds: ReadonlySet<string>;
   overlayReferences: SelectionOverlayReference[];
   onLiveSelection: (bounds: DiagramSelectionBounds | null) => void;
   onSelectionComplete: (
@@ -62,6 +65,7 @@ export function AsciiSelectionGrid(props: {
   ) => void;
   onCancelMode?: (mode: "capture" | "select-refs") => void;
   onReveal?: (mapping: DiagramElementMapping) => void;
+  onToggleHighlight?: (mapping: DiagramElementMapping) => void;
   onMarker?: (line: number, column: number) => void;
 }) {
   const preRef = useRef<HTMLPreElement>(null);
@@ -73,11 +77,21 @@ export function AsciiSelectionGrid(props: {
   const suppressClickRef = useRef(false);
   const [liveSelection, setLiveSelection] = useState<DiagramSelectionBounds | null>(null);
   const [cellMetrics, setCellMetrics] = useState<CellMetrics>({ width: 0, height: 0 });
+  const [collapsedNodeLines, setCollapsedNodeLines] = useState<Set<number>>(new Set());
   const entitiesById = useMemo(
     () => new Map(props.entities.map((entity) => [entity.id, entity])),
     [props.entities]
   );
   const rawLines = useMemo(() => props.ascii.split("\n"), [props.ascii]);
+  const treeNodes = useMemo(() => parseAsciiTree(props.ascii), [props.ascii]);
+  const treeNodesByLine = useMemo(
+    () => new Map(treeNodes.map((node) => [node.line, node])),
+    [treeNodes]
+  );
+  const hiddenLines = useMemo(
+    () => props.mode === "read" ? hiddenAsciiTreeLines(props.ascii, collapsedNodeLines) : new Set<number>(),
+    [collapsedNodeLines, props.ascii, props.mode]
+  );
   const columnCount = useMemo(
     () => Math.max(0, ...rawLines.map((line) => line.length)),
     [rawLines]
@@ -151,6 +165,8 @@ export function AsciiSelectionGrid(props: {
   useEffect(() => {
     if (activeRef.current) cancelRectangle();
   }, [cancelRectangle, props.ascii, props.mode]);
+
+  useEffect(() => setCollapsedNodeLines(new Set()), [props.ascii]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -278,14 +294,45 @@ export function AsciiSelectionGrid(props: {
         onPointerCancel={cancelRectangle}
         onClickCapture={onClickCapture}
       >
-        {lines.map((line, lineIndex) => {
-          const lineNumber = lineIndex + 1;
+        {lines.map((line, lineIndex) => ({ line, lineNumber: lineIndex + 1 }))
+          .filter(({ lineNumber }) => !hiddenLines.has(lineNumber))
+          .map(({ line, lineNumber }, visibleIndex, visibleLines) => {
           const mappings = mappingsByLine.get(lineNumber) ?? [];
+          const treeNode = treeNodesByLine.get(lineNumber);
+          const canCollapse = props.mode === "read" && Boolean(treeNode?.descendantLines.length);
+          const collapseColumn = canCollapse ? treeNode!.textColumn - 1 : undefined;
           const content = [];
           let cursor = 0;
+          let collapseInserted = false;
+          const insertCollapse = () => {
+            if (collapseColumn === undefined || collapseInserted) return;
+            if (collapseColumn > cursor) content.push(line.slice(cursor, collapseColumn));
+            const collapsed = collapsedNodeLines.has(lineNumber);
+            content.push(
+              <button
+                type="button"
+                className="tree-node-collapse"
+                key={`collapse:${lineNumber}`}
+                data-collapse-line={lineNumber}
+                aria-label={`${collapsed ? "Expand" : "Collapse"} ${treeNode!.text}`}
+                aria-expanded={!collapsed}
+                title={`${collapsed ? "Expand" : "Collapse"} this tree node`}
+                onClick={() => setCollapsedNodeLines((current) => {
+                  const next = new Set(current);
+                  if (next.has(lineNumber)) next.delete(lineNumber);
+                  else next.add(lineNumber);
+                  return next;
+                })}
+              >[{collapsed ? "+" : "-"}]</button>
+            );
+            content.push(" ");
+            cursor = collapseColumn;
+            collapseInserted = true;
+          };
           for (const mapping of mappings) {
             const start = mapping.startColumn - 1;
             const end = mapping.endColumn;
+            if (collapseColumn !== undefined && collapseColumn <= start) insertCollapse();
             if (start > cursor) content.push(line.slice(cursor, start));
             const entity = entitiesById.get(mapping.entityId);
             const range = mapping.sourceRangeId
@@ -298,6 +345,17 @@ export function AsciiSelectionGrid(props: {
             ].filter(Boolean).join(" ");
             content.push(
               <span className="mapped-element-wrap" key={mapping.id}>
+                <button
+                  type="button"
+                  className={`mapped-highlight-toggle${props.highlightedMappingIds.has(mapping.id) ? " is-highlighted" : ""}`}
+                  data-highlight-mapping-id={mapping.id}
+                  aria-label={`${props.highlightedMappingIds.has(mapping.id) ? "Remove" : "Add"} ${entity?.label ?? "mapped node"} ${props.highlightedMappingIds.has(mapping.id) ? "from" : "to"} highlights`}
+                  aria-pressed={props.highlightedMappingIds.has(mapping.id)}
+                  disabled={props.highlightBusyMappingIds.has(mapping.id)}
+                  title={props.highlightedMappingIds.has(mapping.id) ? "Remove from highlights" : "Add to highlights"}
+                  onClick={() => props.onToggleHighlight?.(mapping)}
+                >[{props.highlightedMappingIds.has(mapping.id) ? "★" : "☆"}]</button>
+                {" "}
                 <button
                   type="button"
                   className={`${classes} mapped-element-marker`}
@@ -320,10 +378,11 @@ export function AsciiSelectionGrid(props: {
             );
             cursor = end;
           }
+          if (!collapseInserted) insertCollapse();
           if (cursor < line.length) content.push(line.slice(cursor));
           return (
-            <span className="ascii-line mapped-ascii-line" key={lineIndex}>
-              {content}{lineIndex < lines.length - 1 ? "\n" : null}
+            <span className="ascii-line mapped-ascii-line" data-ascii-line={lineNumber} key={lineNumber}>
+              {content}{visibleIndex < visibleLines.length - 1 ? "\n" : null}
             </span>
           );
         })}

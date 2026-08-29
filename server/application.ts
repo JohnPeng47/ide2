@@ -27,6 +27,7 @@ import {
   type CodeEntityRecord,
   type DiagramCodeEntityMapRecord,
   type DiagramComponentRecord,
+  type DiagramHighlightRecord,
   type DiagramRecord,
   type DiagramSelectionBounds,
   type DiagramSetRecord,
@@ -68,6 +69,7 @@ import { filterCallGraphTree, parseCallGraphTree } from "./callGraphTree";
 import { createCodeEntityPromptConfig } from "./codeEntityPrompt";
 import { validateDiagramMappings } from "./diagramMapping";
 import { DiagramStore, discoverRepository } from "./store";
+import { asciiTreeLineage } from "../src/asciiTree";
 
 const MAX_GENERATION_COUNT = 12;
 const MAX_ATTEMPTS = 3;
@@ -2044,6 +2046,70 @@ export class DiagramApplication {
       startLine: 1,
       lines
     };
+  }
+
+  async addHighlight(input: {
+    diagramSetId: unknown;
+    artifactKind: unknown;
+    artifactId: unknown;
+    mappingId: unknown;
+  }): Promise<WorkspaceSnapshot> {
+    const diagramSetId = typeof input.diagramSetId === "string" ? input.diagramSetId : "";
+    const artifactId = typeof input.artifactId === "string" ? input.artifactId : "";
+    const mappingId = typeof input.mappingId === "string" ? input.mappingId : "";
+    const artifactKind = input.artifactKind;
+    if (!diagramSetId || !artifactId || !mappingId) throw new Error("highlight target is incomplete");
+    if (artifactKind !== "diagram" && artifactKind !== "diagram-component") {
+      throw new Error("highlight artifact kind must be diagram or diagram-component");
+    }
+    const set = await this.store.loadDiagramSet(diagramSetId);
+    const bundle = await this.mappedArtifactBundle(diagramSetId, artifactKind, artifactId);
+    const mapping = bundle.codeEntityMap?.mappings.find((candidate) => candidate.id === mappingId);
+    if (!mapping) throw new Error(`unknown mapped tree node: ${mappingId}`);
+    const entity = bundle.codeEntities.find((candidate) => candidate.id === mapping.entityId);
+    if (!entity) throw new Error(`unknown mapped CodeEntity: ${mapping.entityId}`);
+    const range = mapping.sourceRangeId
+      ? entity.sourceRanges.find((candidate) => candidate.id === mapping.sourceRangeId)
+      : entity.sourceRanges[mapping.sourceRangeIndex];
+    if (!range) throw new Error("mapped source range was not found");
+    if (!range.originalLines) throw new Error("mapped source range has no immutable transcript snapshot");
+    const lineage = asciiTreeLineage(bundle.artifact.ascii, mapping.line);
+    const rawLine = bundle.artifact.ascii.replace(/\r\n?/g, "\n").split("\n")[mapping.line - 1] ?? "";
+    const nodeText = lineage.at(-1)?.text || rawLine.trim();
+    if (!nodeText) throw new Error("mapped tree node has no display text");
+    const highlight: DiagramHighlightRecord = {
+      schemaVersion: SCHEMA_VERSION,
+      id: this.store.ids.highlight(),
+      projectId: set.projectId,
+      diagramSetId,
+      artifactKind,
+      artifactId,
+      artifactName: bundle.artifact.name,
+      mappingId,
+      entityId: entity.id,
+      ...(range.id ? { sourceRangeId: range.id } : {}),
+      sourceRangeIndex: mapping.sourceRangeIndex,
+      graphLine: mapping.line,
+      nodeText,
+      lineage: (lineage.length ? lineage : [{ line: mapping.line, text: nodeText }]).map((node) => ({
+        graphLine: node.line,
+        text: node.text
+      })),
+      transcript: {
+        path: range.path,
+        startLine: range.startLine,
+        endLine: range.endLine,
+        lines: [...range.originalLines]
+      },
+      createdAt: timestamp()
+    };
+    await this.store.saveHighlight(highlight);
+    return this.workspace();
+  }
+
+  async deleteHighlight(highlightId: string): Promise<WorkspaceSnapshot> {
+    await this.store.deleteHighlight(highlightId);
+    return this.workspace();
   }
 
   async listRepositoryDirectory(

@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "highlights": [
+    {
+      "schemaVersion": 1,
+      "id": "highlight-93862397-70cd-4ee8-a6f3-ee8b0170d0aa",
+      "projectId": "project-ce67f2af4410",
+      "diagramSetId": "set-brendan-foody-20vc",
+      "artifactKind": "diagram",
+      "artifactId": "diagram-brendan-foody-20vc-call-graph",
+      "artifactName": "Brendan Foody Interview Call Graph",
+      "mappingId": "map-29",
+      "entityId": "entity-7125f1f466adf26ab3a5f93a7faa59e0",
+      "sourceRangeId": "range-72cc182b9f8764279b742edda7047475",
+      "sourceRangeIndex": 0,
+      "graphLine": 56,
+      "nodeText": "researchers may not understand fifth-year banking or specialist work",
+      "lineage": [
+        {
+          "graphLine": 34,
+          "text": "[10:14-18:46] what Mercor believes the human-data market has become"
+        },
+        {
+          "graphLine": 37,
+          "text": "Foody rejects that characterization of Mercor"
+        },
+        {
+          "graphLine": 54,
+          "text": "why expert interpretation matters"
+        },
+        {
+          "graphLine": 56,
+          "text": "researchers may not understand fifth-year banking or specialist work"
+        }
+      ],
+      "transcript": {
+        "path": ".diagrams/sources/brendan-foody-20vc-transcript.txt",
+        "startLine": 152,
+        "endLine": 152,
+        "lines": [
+          "But when we're dealing with the kind of work that a Goldman associate would do in their fifth year, it means that the researchers can't interpret the evals and they can't interpret all of the data that they need to hill climb and ultimately improve model capabilities. So it was really that trend around a different engagement model and higher caliber work that caused us to take off and really catalyze this meteoric growth."
+        ]
+      },
+      "createdAt": "2026-08-29T05:33:06.508Z"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "highlight-392c3fcb-f875-41e9-abee-4818f94258c7",
+      "projectId": "project-ce67f2af4410",
+      "diagramSetId": "set-brendan-foody-20vc",
+      "artifactKind": "diagram",
+      "artifactId": "diagram-brendan-foody-20vc-call-graph",
+      "artifactName": "Brendan Foody Interview Call Graph",
+      "mappingId": "map-35",
+      "entityId": "entity-04e7d79550ccdc869a411f40f7f2bf08",
+      "sourceRangeId": "range-5ebafa8fae3d3b43798606d7a171e34f",
+      "sourceRangeIndex": 0,
+      "graphLine": 66,
+      "nodeText": "models and algorithms assess data quality",
+      "lineage": [
+        {
+          "graphLine": 34,
+          "text": "[10:14-18:46] what Mercor believes the human-data market has become"
+        },
+        {
+          "graphLine": 37,
+          "text": "Foody rejects that characterization of Mercor"
+        },
+        {
+          "graphLine": 65,
+          "text": "[MOAT] technology and research partnership"
+        },
+        {
+          "graphLine": 66,
+          "text": "models and algorithms assess data quality"
+        }
+      ],
+      "transcript": {
+        "path": ".diagrams/sources/brendan-foody-20vc-transcript.txt",
+        "startLine": 198,
+        "endLine": 198,
+        "lines": [
+          "That's not true at all. In fact, we use all sorts of models and algorithms to assess the quality."
+        ]
+      },
+      "createdAt": "2026-08-29T05:33:17.912Z"
+    }
+  ]
+}

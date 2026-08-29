@@ -64,6 +64,11 @@ function parseRepositoryFiles(pathname: string): { setId: string } | null {
   return match ? { setId: match[1] } : null;
 }
 
+function parseHighlight(pathname: string): { highlightId: string } | null {
+  const match = pathname.match(/^\/api\/highlights\/([a-z0-9][a-z0-9-]*)$/);
+  return match ? { highlightId: match[1] } : null;
+}
+
 function parseSystemPromptTemplate(pathname: string): { id: string; reset: boolean } | null {
   const match = pathname.match(/^\/api\/system-prompt-templates\/([a-z0-9][a-z0-9-]*)(\/reset)?$/);
   return match ? { id: match[1], reset: Boolean(match[2]) } : null;
@@ -303,6 +308,21 @@ export function diagramApi(
       if (url.pathname === "/api/workspace") {
         if (request.method !== "GET") return sendJson(response, 405, { error: "method not allowed" });
         return sendJson(response, 200, await application.workspace());
+      }
+      if (url.pathname === "/api/highlights") {
+        if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
+        const body = await readBody(request) as Record<string, unknown>;
+        return sendJson(response, 201, await application.addHighlight({
+          diagramSetId: body.diagramSetId,
+          artifactKind: body.artifactKind,
+          artifactId: body.artifactId,
+          mappingId: body.mappingId
+        }));
+      }
+      const highlight = parseHighlight(url.pathname);
+      if (highlight) {
+        if (request.method !== "DELETE") return sendJson(response, 405, { error: "method not allowed" });
+        return sendJson(response, 200, await application.deleteHighlight(highlight.highlightId));
       }
       if (url.pathname === "/api/artifact-bundle") {
         if (request.method !== "GET") return sendJson(response, 405, { error: "method not allowed" });

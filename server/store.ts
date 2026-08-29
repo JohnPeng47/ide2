@@ -21,6 +21,7 @@ import {
   type DiagramCodeEntityMapRecord,
   type DiagramCandidateBatchRecord,
   type DiagramComponentRecord,
+  type DiagramHighlightRecord,
   type DiagramRecord,
   type DiagramSetRecord,
   type DiagramViewKind,
@@ -123,6 +124,10 @@ export class DiagramStore {
 
   private projectPath(): string {
     return path.join(this.storeRoot, "project.json");
+  }
+
+  private highlightsPath(): string {
+    return path.join(this.storeRoot, "highlights.json");
   }
 
   private systemPromptTemplatesPath(): string {
@@ -1109,6 +1114,36 @@ export class DiagramStore {
     );
   }
 
+  async loadHighlights(): Promise<DiagramHighlightRecord[]> {
+    const stored = await readJsonIfExists<{
+      schemaVersion: typeof SCHEMA_VERSION;
+      highlights: DiagramHighlightRecord[];
+    }>(this.highlightsPath());
+    return stored?.highlights ?? [];
+  }
+
+  async saveHighlight(highlight: DiagramHighlightRecord): Promise<void> {
+    const highlights = await this.loadHighlights();
+    const withoutDuplicate = highlights.filter((candidate) => !(
+      candidate.diagramSetId === highlight.diagramSetId
+      && candidate.artifactId === highlight.artifactId
+      && candidate.mappingId === highlight.mappingId
+    ));
+    await writeJsonAtomic(this.highlightsPath(), {
+      schemaVersion: SCHEMA_VERSION,
+      highlights: [...withoutDuplicate, highlight]
+    });
+  }
+
+  async deleteHighlight(highlightId: string): Promise<void> {
+    assertSafeId(highlightId, "highlight id");
+    const highlights = await this.loadHighlights();
+    await writeJsonAtomic(this.highlightsPath(), {
+      schemaVersion: SCHEMA_VERSION,
+      highlights: highlights.filter((highlight) => highlight.id !== highlightId)
+    });
+  }
+
   async addEditSession(session: EditSessionRecord): Promise<void> {
     await this.saveEditSession(session);
     const set = await this.loadDiagramSet(session.diagramSetId);
@@ -1365,7 +1400,8 @@ export class DiagramStore {
         diagramCandidateBatches: {},
         agentRuns: {},
         editSessions: {},
-        codeEntityMaps: {}
+        codeEntityMaps: {},
+        highlights: []
       };
     }
     let diagramSets = await Promise.all(project.diagramSetIds.map((id) => this.loadDiagramSet(id)));
@@ -1459,7 +1495,8 @@ export class DiagramStore {
       diagramCandidateBatches,
       agentRuns,
       editSessions,
-      codeEntityMaps
+      codeEntityMaps,
+      highlights: await this.loadHighlights()
     };
   }
 
@@ -1473,6 +1510,7 @@ export class DiagramStore {
     codeEntity: () => makeId("entity"),
     sourceRange: () => makeId("range"),
     editSession: () => makeId("edit"),
-    editOperation: () => makeId("operation")
+    editOperation: () => makeId("operation"),
+    highlight: () => makeId("highlight")
   };
 }

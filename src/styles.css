@@ -334,6 +334,23 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .diagram-set-tree-empty { display: flex; height: 22px; align-items: center; gap: 2ch; padding: 0 0.65rem 0 1.5ch; color: var(--muted); font: 10px/22px var(--font-mono); }
 .diagram-set-tree-empty > span:first-child { color: var(--gutter); }
 .diagram-set-tree-error { flex: none; border-bottom: 1px solid var(--accent-red); padding: 0.5rem 0.7rem; color: var(--accent-red); font: 9px/1.4 var(--font-mono); }
+.highlights-panel { display: flex; min-width: 0; min-height: 0; overflow: hidden; flex-direction: column; }
+.highlights-summary { display: flex; min-height: 42px; flex: none; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--gutter); padding: 0 0.75rem 0 0.8rem; }
+.highlights-summary strong { color: var(--accent-yellow); font: 700 9px var(--font-mono); letter-spacing: 0.09em; }
+.highlights-summary span { color: var(--muted); font: 8px var(--font-mono); }
+.highlight-tree { min-width: 0; min-height: 0; flex: 1; overflow: auto; padding: 5px 0; font: 11px/22px var(--font-mono); }
+.highlight-tree-branch { min-width: max-content; }
+.highlight-tree-row { display: flex; width: max-content; min-width: 100%; height: 22px; align-items: center; padding: 0 0.65rem; white-space: nowrap; }
+.highlight-tree-row:hover { background: rgb(255 255 255 / 3%); }
+.highlight-tree-prefix { flex: none; color: var(--gutter); white-space: pre; }
+.highlight-tree-toggle, .highlight-tree-label, .highlight-tree-remove { border: 0; padding: 0; background: transparent; font: inherit; line-height: inherit; }
+.highlight-tree-toggle { width: 4ch; flex: none; color: var(--accent-yellow); text-align: left; }
+.highlight-tree-label { max-width: 48ch; overflow: hidden; color: var(--fg); text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+button.highlight-tree-label { color: var(--accent-cyan); cursor: pointer; }
+button.highlight-tree-label:hover, button.highlight-tree-label:focus-visible { outline: 0; color: var(--accent-green); }
+.highlight-tree-remove { margin-left: 0.75rem; color: var(--gutter); cursor: pointer; }
+.highlight-tree-remove:hover, .highlight-tree-remove:focus-visible { outline: 0; color: var(--accent-red); }
+.highlight-tree-empty { display: grid; min-height: 100%; place-content: center; padding: 1rem; color: var(--muted); font: 10px/1.45 var(--font-mono); text-align: center; white-space: normal; }
 .entity-context { display: flex; min-width: 0; min-height: 0; overflow: hidden; flex-direction: column; }
 .entity-context__header { min-height: 58px; padding: 0.65rem 1rem; }
 .entity-context__header h2 { font-size: 0.95rem; }
@@ -416,6 +433,12 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .ascii-line { white-space: pre; }
 .mapped-ascii-line { white-space: pre; }
 .mapped-element-wrap { position: relative; display: inline; }
+.tree-node-collapse, .mapped-highlight-toggle { border: 0; border-radius: 2px; padding: 0; background: transparent; color: var(--muted); font: inherit; line-height: inherit; white-space: pre; cursor: pointer; }
+.tree-node-collapse { color: var(--accent-yellow); }
+.mapped-highlight-toggle { color: #777; }
+.mapped-highlight-toggle.is-highlighted { color: var(--accent-yellow); }
+.tree-node-collapse:hover, .tree-node-collapse:focus-visible, .mapped-highlight-toggle:hover, .mapped-highlight-toggle:focus-visible { outline: 0; background: rgb(255 255 255 / 8%); color: var(--fg); }
+.mapped-highlight-toggle:disabled { cursor: wait; opacity: 0.55; }
 .mapped-element { border: 0; padding: 0; background: transparent; color: var(--accent-cyan); font: inherit; line-height: inherit; white-space: pre; cursor: pointer; }
 .mapped-element-marker { border-radius: 2px; }
 .mapped-element-copy { color: inherit; }

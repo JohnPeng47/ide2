@@ -43,6 +43,29 @@ export async function fetchWorkspace(): Promise<WorkspaceSnapshot> {
   return response.json() as Promise<WorkspaceSnapshot>;
 }
 
+export async function addDiagramHighlight(input: {
+  diagramSetId: string;
+  artifactKind: GenerationOutputKind;
+  artifactId: string;
+  mappingId: string;
+}): Promise<WorkspaceSnapshot> {
+  const response = await apiFetch("/api/highlights", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input)
+  });
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<WorkspaceSnapshot>;
+}
+
+export async function deleteDiagramHighlight(highlightId: string): Promise<WorkspaceSnapshot> {
+  const response = await apiFetch(`/api/highlights/${encodeURIComponent(highlightId)}`, {
+    method: "DELETE"
+  });
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<WorkspaceSnapshot>;
+}
+
 export async function fetchRepositoryDirectory(
   setId: string,
   directory: string,

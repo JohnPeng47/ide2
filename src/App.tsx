@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import {
   applyLlmEdit,
   applyManualEdit,
+  addDiagramHighlight,
   archiveDiagram,
   archiveDiagramComponent,
   archiveImportedDiagram,
@@ -11,6 +12,7 @@ import {
   createEditSession,
   deleteCodeEntityPromptTemplate,
   deleteDiagramSet,
+  deleteDiagramHighlight,
   discardEdit,
   fetchCallGraphFocus,
   fetchMappedArtifactBundle,
@@ -41,6 +43,7 @@ import { DIAGRAM_VIEW_OPTIONS, DiagramView, EmptyDiagramView } from "./component
 import { FileExplorerPanel } from "./components/FileExplorerPanel";
 import { ExperimentViewerPage } from "./components/ExperimentViewerPage";
 import { GeneratorOptions } from "./components/GeneratorOptions";
+import { HighlightsTreePanel } from "./components/HighlightsTreePanel";
 import { ImportArtifactDialog } from "./components/ImportArtifactDialog";
 import { PaneApi } from "./panes/api";
 import { PaneWorkspace, type PaneTabView } from "./panes/PaneWorkspace";
@@ -90,6 +93,7 @@ import {
   type CodeEntityPromptTemplateRecord,
   type DiagramComponentRecord,
   type DiagramElementMapping,
+  type DiagramHighlightRecord,
   type DiagramRecord,
   type DiagramViewKind,
   type DiagramSelectionBounds,
@@ -184,7 +188,8 @@ function createStudioPaneApi(): PaneApi {
       tabListClassName: "file-pane-tabs",
       tabs: [
         { id: "files", label: "Diagram Files", domId: "files-tab" },
-        { id: "diagram-sets", label: "Diagram Sets", domId: "diagram-sets-tab" }
+        { id: "diagram-sets", label: "Diagram Sets", domId: "diagram-sets-tab" },
+        { id: "highlights", label: "Highlights", domId: "highlights-tab" }
       ]
     }, PRIMARY_PANE_ID, { placement: "left", ratio: 0.32, splitId: FILES_SPLIT_ID }));
   }
@@ -213,7 +218,8 @@ function createStudioPaneApi(): PaneApi {
     tabListClassName: "file-pane-tabs",
     tabs: [
       { id: "files", label: "Diagram Files", domId: "files-tab" },
-      { id: "diagram-sets", label: "Diagram Sets", domId: "diagram-sets-tab" }
+      { id: "diagram-sets", label: "Diagram Sets", domId: "diagram-sets-tab" },
+      { id: "highlights", label: "Highlights", domId: "highlights-tab" }
     ]
   }, PRIMARY_PANE_ID, { placement: "left", ratio: 0.32, splitId: FILES_SPLIT_ID }));
 }
@@ -277,6 +283,7 @@ function StudioPage(props: { onExperiments: () => void }) {
   const [editError, setEditError] = useState<string | null>(null);
   const [mappingJobs, setMappingJobs] = useState<Record<string, MappingJobState>>({});
   const [starBusy, setStarBusy] = useState(false);
+  const [highlightBusyMappingIds, setHighlightBusyMappingIds] = useState<Set<string>>(new Set());
   const [callGraphFocusViews, setCallGraphFocusViews] = useState<Record<string, CallGraphFocusResult>>({});
   const [codeEntityReveal, setCodeEntityReveal] = useState<CodeEntityReveal | undefined>();
   const requestedDiagramIdRef = useRef<string | null>(null);
@@ -498,6 +505,12 @@ function StudioPage(props: { onExperiments: () => void }) {
   const selectedMappingTarget: CodeEntityMappingTarget | undefined = selectedArtifact
     ? { artifactKind: selectedArtifactKind, artifactId: selectedArtifact.id }
     : undefined;
+  const selectedHighlightedMappingIds = useMemo(() => new Set(
+    (workspace?.highlights ?? [])
+      .filter((highlight) => highlight.diagramSetId === activeSet?.id
+        && highlight.artifactId === selectedArtifact?.id)
+      .map((highlight) => highlight.mappingId)
+  ), [activeSet?.id, selectedArtifact?.id, workspace?.highlights]);
   const selectedMappingJob = selectedMappingTarget && activeSet
     ? mappingJobs[mappingJobKey(activeSet.id, selectedMappingTarget)]
     : undefined;
@@ -575,8 +588,11 @@ function StudioPage(props: { onExperiments: () => void }) {
     const currentFilesTabId = paneApi.getState().panes[FILES_PANE_ID]?.activeTabId;
     paneApi.setTabs(FILES_PANE_ID, [
       { id: "files", label: "Diagram Files", domId: "files-tab" },
-      { id: "diagram-sets", label: "Diagram Sets", domId: "diagram-sets-tab" }
-    ], currentFilesTabId === "diagram-sets" ? "diagram-sets" : "files");
+      { id: "diagram-sets", label: "Diagram Sets", domId: "diagram-sets-tab" },
+      { id: "highlights", label: "Highlights", domId: "highlights-tab" }
+    ], currentFilesTabId === "diagram-sets" || currentFilesTabId === "highlights"
+      ? currentFilesTabId
+      : "files");
     paneApi.setTabs(CONTEXT_PANE_ID, contextTabs, desiredContextTabId);
   }, [
     activeViewKind,
@@ -1526,6 +1542,54 @@ function StudioPage(props: { onExperiments: () => void }) {
     });
   };
 
+  const toggleHighlight = async (mapping: DiagramElementMapping) => {
+    if (!selectedArtifact || !activeSet || highlightBusyMappingIds.has(mapping.id)) return;
+    const existing = (workspace.highlights ?? []).find((highlight) => (
+      highlight.diagramSetId === activeSet.id
+      && highlight.artifactId === selectedArtifact.id
+      && highlight.mappingId === mapping.id
+    ));
+    setHighlightBusyMappingIds((current) => new Set(current).add(mapping.id));
+    setError(null);
+    try {
+      const next = existing
+        ? await deleteDiagramHighlight(existing.id)
+        : await addDiagramHighlight({
+          diagramSetId: activeSet.id,
+          artifactKind: selectedArtifactKind,
+          artifactId: selectedArtifact.id,
+          mappingId: mapping.id
+        });
+      setWorkspace(next);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "highlight update failed");
+    } finally {
+      setHighlightBusyMappingIds((current) => {
+        const next = new Set(current);
+        next.delete(mapping.id);
+        return next;
+      });
+    }
+  };
+
+  const revealHighlight = (highlight: DiagramHighlightRecord) => {
+    if (highlight.artifactKind === "diagram") selectDiagram(highlight.artifactId);
+    else selectComponent(highlight.artifactId);
+    revealCodeEntity({
+      entityId: highlight.entityId,
+      sourceRangeIndex: highlight.sourceRangeIndex
+    });
+  };
+
+  const removeHighlight = async (highlight: DiagramHighlightRecord) => {
+    setError(null);
+    try {
+      setWorkspace(await deleteDiagramHighlight(highlight.id));
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "highlight removal failed");
+    }
+  };
+
   editShortcutHandlers.current = editSession ? {
     undo: () => void runEditAction(undoEdit),
     redo: () => void runEditAction(redoEdit)
@@ -1607,6 +1671,9 @@ function StudioPage(props: { onExperiments: () => void }) {
       onToggleEdit={() => void (editSession ? leaveEdit() : startEdit())}
       onMapCodeEntities={() => void generateCodeEntityMap()}
       onRevealCodeEntity={revealCodeEntity}
+      highlightedMappingIds={selectedHighlightedMappingIds}
+      highlightBusyMappingIds={highlightBusyMappingIds}
+      onToggleHighlight={(mapping) => void toggleHighlight(mapping)}
       onManualEdit={queueManualEdit}
       onMarker={(line, column) => void markLocation(line, column)}
       onUndoEdit={() => void runEditAction(undoEdit)}
@@ -1639,6 +1706,9 @@ function StudioPage(props: { onExperiments: () => void }) {
       onMapAllCodeEntities={() => void runCodeEntityMappings(unmappedCandidateTargets)}
       mapAllCodeEntitiesCount={unmappedCandidateTargets.length}
       onRevealCodeEntity={revealCodeEntity}
+      highlightedMappingIds={selectedHighlightedMappingIds}
+      highlightBusyMappingIds={highlightBusyMappingIds}
+      onToggleHighlight={(mapping) => void toggleHighlight(mapping)}
       onManualEdit={queueManualEdit}
       onMarker={(line, column) => void markLocation(line, column)}
       onUndoEdit={() => void runEditAction(undoEdit)}
@@ -1726,6 +1796,12 @@ function StudioPage(props: { onExperiments: () => void }) {
       onSelectSet={selectDiagramSet}
       onSelectDiagram={selectDiagramFromSet}
       onDeleteSet={removeDiagramSet}
+    /> },
+    highlights: { content: <HighlightsTreePanel
+      highlights={workspace.highlights ?? []}
+      activeSetId={activeSet.id}
+      onReveal={revealHighlight}
+      onRemove={(highlight) => void removeHighlight(highlight)}
     /> },
     diagrams: { content: renderContextPane("diagrams"), onActivate: () => setContextTab("diagrams") },
     operations: { content: renderContextPane("operations"), onActivate: () => setContextTab("operations") },

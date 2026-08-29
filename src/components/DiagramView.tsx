@@ -77,6 +77,9 @@ export function DiagramView(props: {
   onMapAllCodeEntities?: () => void;
   mapAllCodeEntitiesCount?: number;
   onRevealCodeEntity?: (mapping: DiagramElementMapping) => void;
+  highlightedMappingIds?: ReadonlySet<string>;
+  highlightBusyMappingIds?: ReadonlySet<string>;
+  onToggleHighlight?: (mapping: DiagramElementMapping) => void;
   onManualEdit?: (ascii: string) => void;
   onMarker?: (line: number, column: number) => void;
   onUndoEdit?: () => void;
@@ -363,6 +366,8 @@ export function DiagramView(props: {
             entities={props.codeEntities}
             previewMappingIds={previewMappingIds}
             bufferedReferenceKeys={bufferedReferenceKeys}
+            highlightedMappingIds={props.highlightedMappingIds ?? new Set()}
+            highlightBusyMappingIds={props.highlightBusyMappingIds ?? new Set()}
             overlayReferences={overlayReferences}
             onLiveSelection={setLiveSelection}
             onSelectionComplete={completeSelection}
@@ -373,6 +378,7 @@ export function DiagramView(props: {
               setSelectionStatus(mode === "select-refs" ? "selection cancelled" : "");
             }}
             onReveal={props.onRevealCodeEntity}
+            onToggleHighlight={props.onToggleHighlight}
             onMarker={props.onMarker}
           />
         )}

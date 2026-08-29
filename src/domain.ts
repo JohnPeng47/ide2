@@ -411,6 +411,38 @@ export interface DiagramCodeEntityMapRecord {
   createdAt: string;
 }
 
+export interface DiagramHighlightLineageNode {
+  graphLine: number;
+  text: string;
+}
+
+export interface DiagramHighlightTranscript {
+  path: string;
+  startLine: number;
+  endLine: number;
+  lines: string[];
+}
+
+/** Persistent snapshot created from one mapped node in an ASCII tree. */
+export interface DiagramHighlightRecord {
+  schemaVersion: typeof SCHEMA_VERSION;
+  id: string;
+  projectId: string;
+  diagramSetId: string;
+  artifactKind: GenerationOutputKind;
+  artifactId: string;
+  artifactName: string;
+  mappingId: string;
+  entityId: string;
+  sourceRangeId?: string;
+  sourceRangeIndex: number;
+  graphLine: number;
+  nodeText: string;
+  lineage: DiagramHighlightLineageNode[];
+  transcript: DiagramHighlightTranscript;
+  createdAt: string;
+}
+
 export interface CodeEntityMappingTarget {
   artifactKind: GenerationOutputKind;
   artifactId: string;
@@ -536,6 +568,8 @@ export interface WorkspaceSnapshot {
   agentRuns: Record<string, AgentRunRecord>;
   editSessions: Record<string, EditSessionRecord>;
   codeEntityMaps: Record<string, DiagramCodeEntityMapRecord>;
+  /** Optional for compatibility with workspaces persisted before highlights existed. */
+  highlights?: DiagramHighlightRecord[];
 }
 
 export interface CodeEntityDraft {
