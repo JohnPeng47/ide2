@@ -14,6 +14,10 @@ const EXPERIMENTS_ROOT = path.resolve(
 const DATASET_COLLECTIONS_ROOT = path.resolve(
   process.env.NEW_DIAGRAM_COLLECTIONS_ROOT || path.join(EXPERIMENTS_ROOT, "diagram-collections")
 );
+const PREVIEW_ALLOWED_HOSTS = (process.env.NEW_DIAGRAM_ALLOWED_HOSTS || "")
+  .split(",")
+  .map((host) => host.trim())
+  .filter(Boolean);
 
 export default defineConfig({
   root: ROOT,
@@ -24,5 +28,8 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true
-  }
+  },
+  preview: PREVIEW_ALLOWED_HOSTS.length
+    ? { allowedHosts: PREVIEW_ALLOWED_HOSTS }
+    : undefined
 });
