@@ -300,7 +300,7 @@ export function AsciiSelectionGrid(props: {
               <span className="mapped-element-wrap" key={mapping.id}>
                 <button
                   type="button"
-                  className={classes}
+                  className={`${classes} mapped-element-marker`}
                   data-mapping-id={mapping.id}
                   data-entity-id={mapping.entityId}
                   data-reference-key={mappingReferenceKey(mapping, props.entities)}
@@ -313,8 +313,9 @@ export function AsciiSelectionGrid(props: {
                     : undefined}
                   onClick={() => props.onReveal?.(mapping)}
                 >
-                  {line.slice(start, end)}
+                  [(**)]
                 </button>
+                <span className="mapped-element-copy"> {line.slice(start, end)}</span>
               </span>
             );
             cursor = end;

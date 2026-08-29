@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "set-brendan-foody-20vc",
+  "projectId": "project-ce67f2af4410",
+  "name": "Brendan Foody 20VC Interview",
+  "initialPrompt": "Represent Brendan Foody's 20VC interview as a detailed chronological ASCII tree and link its claims to the formatted plaintext transcript.",
+  "sourceCheckoutRoot": "/home/john/.herdr/worktrees/new-diagram/worktree-transcripts",
+  "gitRevision": "36a8ae3828decd660780ae00c77fb241b2e1f677",
+  "codeEntitiesSetId": "entities-brendan-foody-20vc",
+  "featuredViewIds": {
+    "diagram": "diagram-brendan-foody-20vc-call-graph"
+  },
+  "diagramIds": [
+    "diagram-brendan-foody-20vc-call-graph"
+  ],
+  "diagramComponentIds": [],
+  "generationBatchIds": [],
+  "agentRunIds": [
+    "run-brendan-foody-20vc-mapping"
+  ],
+  "editSessionIds": [],
+  "readiness": "ready",
+  "createdAt": "2026-08-29T00:00:00.000Z",
+  "updatedAt": "2026-08-29T00:00:00.000Z"
+}

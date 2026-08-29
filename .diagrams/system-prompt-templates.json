@@ -1,0 +1,197 @@
+{
+  "schemaVersion": 1,
+  "templates": [
+    {
+      "schemaVersion": 1,
+      "id": "default",
+      "label": "Default",
+      "description": "Balanced architecture diagram generation.",
+      "builtIn": true,
+      "version": 1,
+      "prompts": {
+        "diagram-system": {
+          "template": "Generate exactly one architecture diagram from the supplied explicit context. Give it a compact, specific name, ideally two to five words; omit redundant words such as the DiagramSet name. Never modify files. Use 7-bit ASCII only."
+        },
+        "call-graph-system": {
+          "template": "Generate exactly one source-backed call graph from the supplied explicit context. Show invocation and control relationships, not general architecture or directory ownership. Give it a compact, specific name. Never modify files. Use 7-bit ASCII only."
+        },
+        "dir-view-system": {
+          "template": "Generate exactly one source-backed ASCII directory view from the supplied explicit context. Show the relevant repository hierarchy and connect files to their responsibilities without inventing paths. Give it a compact, specific name. Never modify files. Use 7-bit ASCII only."
+        },
+        "diagram-component-system": {
+          "template": "Generate exactly one reusable DiagramComponent from the supplied explicit context. It is a fragment for a broader ASCII Diagram, not a complete diagram. Give it a compact, specific name. Be creative. Never modify files. Use 7-bit ASCII only."
+        },
+        "diagram-reference": {
+          "template": "Regenerate the complete artifact you submitted in the previous turn.\n\nUse the system-managed reference instruction and context appended below. Treat referenced artifacts as visual style examples. Preserve the previous candidate's source-backed meaning, relationships, and CodeEntity coverage. Adopt visual grammar such as box shapes, connector style, spacing, density, grouping, and label placement, but do not copy unrelated labels, concepts, or repository-specific content. Return a complete replacement using 7-bit ASCII."
+        },
+        "call-graph-reference": {
+          "template": "Regenerate the complete artifact you submitted in the previous turn.\n\nUse the system-managed reference instruction and context appended below. Treat referenced artifacts as visual style examples. Preserve the previous candidate's source-backed meaning, relationships, and CodeEntity coverage. Adopt visual grammar such as box shapes, connector style, spacing, density, grouping, and label placement, but do not copy unrelated labels, concepts, or repository-specific content. Return a complete replacement using 7-bit ASCII."
+        },
+        "dir-view-reference": {
+          "template": "Regenerate the complete artifact you submitted in the previous turn.\n\nUse the system-managed reference instruction and context appended below. Treat referenced artifacts as visual style examples. Preserve the previous candidate's source-backed meaning, relationships, and CodeEntity coverage. Adopt visual grammar such as box shapes, connector style, spacing, density, grouping, and label placement, but do not copy unrelated labels, concepts, or repository-specific content. Return a complete replacement using 7-bit ASCII."
+        },
+        "diagram-component-reference": {
+          "template": "Regenerate the complete artifact you submitted in the previous turn.\n\nUse the system-managed reference instruction and context appended below. Treat referenced artifacts as visual style examples. Preserve the previous candidate's source-backed meaning, relationships, and CodeEntity coverage. Adopt visual grammar such as box shapes, connector style, spacing, density, grouping, and label placement, but do not copy unrelated labels, concepts, or repository-specific content. Return a complete replacement using 7-bit ASCII."
+        },
+        "diagram-mapping": {
+          "template": "Resubmit the complete artifact from the previous turn unchanged, including its name, ASCII, and CodeEntity aliases.\n\nUse the system-managed final artifact and CodeEntity context appended below. Add mappings for the smallest exact visible text spans that name or clearly represent each CodeEntity. Map labels and words, not box borders, arrow shafts, or whitespace. A CodeEntity may have multiple mapped spans. Choose the sourceRangeIndex most directly represented by each span. Spans must stay on one line, contain non-whitespace text, and must not overlap. Use the readable CodeEntity aliases in mapping entityId fields. Do not change the artifact."
+        },
+        "call-graph-mapping": {
+          "template": "Resubmit the complete artifact from the previous turn unchanged, including its name, ASCII, and CodeEntity aliases.\n\nUse the system-managed final artifact and CodeEntity context appended below. Add mappings for the smallest exact visible text spans that name or clearly represent each CodeEntity. Map labels and words, not box borders, arrow shafts, or whitespace. A CodeEntity may have multiple mapped spans. Choose the sourceRangeIndex most directly represented by each span. Spans must stay on one line, contain non-whitespace text, and must not overlap. Use the readable CodeEntity aliases in mapping entityId fields. Do not change the artifact."
+        },
+        "dir-view-mapping": {
+          "template": "Resubmit the complete artifact from the previous turn unchanged, including its name, ASCII, and CodeEntity aliases.\n\nUse the system-managed final artifact and CodeEntity context appended below. Add mappings for the smallest exact visible text spans that name or clearly represent each CodeEntity. Map labels and words, not box borders, arrow shafts, or whitespace. A CodeEntity may have multiple mapped spans. Choose the sourceRangeIndex most directly represented by each span. Spans must stay on one line, contain non-whitespace text, and must not overlap. Use the readable CodeEntity aliases in mapping entityId fields. Do not change the artifact."
+        },
+        "diagram-component-mapping": {
+          "template": "Resubmit the complete artifact from the previous turn unchanged, including its name, ASCII, and CodeEntity aliases.\n\nUse the system-managed final artifact and CodeEntity context appended below. Add mappings for the smallest exact visible text spans that name or clearly represent each CodeEntity. Map labels and words, not box borders, arrow shafts, or whitespace. A CodeEntity may have multiple mapped spans. Choose the sourceRangeIndex most directly represented by each span. Spans must stay on one line, contain non-whitespace text, and must not overlap. Use the readable CodeEntity aliases in mapping entityId fields. Do not change the artifact."
+        }
+      },
+      "createdAt": "2026-08-29T04:36:49.275Z",
+      "updatedAt": "2026-08-29T04:36:49.275Z"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "structure-first",
+      "label": "Structure first",
+      "description": "Prioritize ownership, boundaries, and hierarchy.",
+      "builtIn": true,
+      "version": 1,
+      "prompts": {
+        "diagram-system": {
+          "template": "Generate exactly one architecture diagram from the supplied explicit context. Give it a compact, specific name, ideally two to five words; omit redundant words such as the DiagramSet name. Emphasize ownership, boundaries, and hierarchy. Never modify files. Use 7-bit ASCII only."
+        },
+        "call-graph-system": {
+          "template": "Generate exactly one source-backed call graph from the supplied explicit context. Show invocation and control relationships, not general architecture or directory ownership. Give it a compact, specific name. Group calls by their owning subsystem. Never modify files. Use 7-bit ASCII only."
+        },
+        "dir-view-system": {
+          "template": "Generate exactly one source-backed ASCII directory view from the supplied explicit context. Show the relevant repository hierarchy and connect files to their responsibilities without inventing paths. Give it a compact, specific name. Emphasize meaningful directory boundaries. Never modify files. Use 7-bit ASCII only."
+        },
+        "diagram-component-system": {
+          "template": "Generate exactly one reusable DiagramComponent from the supplied explicit context. It is a fragment for a broader ASCII Diagram, not a complete diagram. Give it a compact, specific name. Emphasize a reusable structural relationship. Never modify files. Use 7-bit ASCII only."
+        },
+        "diagram-reference": {
+          "template": "Regenerate the complete artifact you submitted in the previous turn.\n\nUse the system-managed reference instruction and context appended below. Treat referenced artifacts as visual style examples. Preserve the previous candidate's source-backed meaning, relationships, and CodeEntity coverage. Adopt visual grammar such as box shapes, connector style, spacing, density, grouping, and label placement, but do not copy unrelated labels, concepts, or repository-specific content. Return a complete replacement using 7-bit ASCII."
+        },
+        "call-graph-reference": {
+          "template": "Regenerate the complete artifact you submitted in the previous turn.\n\nUse the system-managed reference instruction and context appended below. Treat referenced artifacts as visual style examples. Preserve the previous candidate's source-backed meaning, relationships, and CodeEntity coverage. Adopt visual grammar such as box shapes, connector style, spacing, density, grouping, and label placement, but do not copy unrelated labels, concepts, or repository-specific content. Return a complete replacement using 7-bit ASCII."
+        },
+        "dir-view-reference": {
+          "template": "Regenerate the complete artifact you submitted in the previous turn.\n\nUse the system-managed reference instruction and context appended below. Treat referenced artifacts as visual style examples. Preserve the previous candidate's source-backed meaning, relationships, and CodeEntity coverage. Adopt visual grammar such as box shapes, connector style, spacing, density, grouping, and label placement, but do not copy unrelated labels, concepts, or repository-specific content. Return a complete replacement using 7-bit ASCII."
+        },
+        "diagram-component-reference": {
+          "template": "Regenerate the complete artifact you submitted in the previous turn.\n\nUse the system-managed reference instruction and context appended below. Treat referenced artifacts as visual style examples. Preserve the previous candidate's source-backed meaning, relationships, and CodeEntity coverage. Adopt visual grammar such as box shapes, connector style, spacing, density, grouping, and label placement, but do not copy unrelated labels, concepts, or repository-specific content. Return a complete replacement using 7-bit ASCII."
+        },
+        "diagram-mapping": {
+          "template": "Resubmit the complete artifact from the previous turn unchanged, including its name, ASCII, and CodeEntity aliases.\n\nUse the system-managed final artifact and CodeEntity context appended below. Add mappings for the smallest exact visible text spans that name or clearly represent each CodeEntity. Map labels and words, not box borders, arrow shafts, or whitespace. A CodeEntity may have multiple mapped spans. Choose the sourceRangeIndex most directly represented by each span. Spans must stay on one line, contain non-whitespace text, and must not overlap. Use the readable CodeEntity aliases in mapping entityId fields. Do not change the artifact."
+        },
+        "call-graph-mapping": {
+          "template": "Resubmit the complete artifact from the previous turn unchanged, including its name, ASCII, and CodeEntity aliases.\n\nUse the system-managed final artifact and CodeEntity context appended below. Add mappings for the smallest exact visible text spans that name or clearly represent each CodeEntity. Map labels and words, not box borders, arrow shafts, or whitespace. A CodeEntity may have multiple mapped spans. Choose the sourceRangeIndex most directly represented by each span. Spans must stay on one line, contain non-whitespace text, and must not overlap. Use the readable CodeEntity aliases in mapping entityId fields. Do not change the artifact."
+        },
+        "dir-view-mapping": {
+          "template": "Resubmit the complete artifact from the previous turn unchanged, including its name, ASCII, and CodeEntity aliases.\n\nUse the system-managed final artifact and CodeEntity context appended below. Add mappings for the smallest exact visible text spans that name or clearly represent each CodeEntity. Map labels and words, not box borders, arrow shafts, or whitespace. A CodeEntity may have multiple mapped spans. Choose the sourceRangeIndex most directly represented by each span. Spans must stay on one line, contain non-whitespace text, and must not overlap. Use the readable CodeEntity aliases in mapping entityId fields. Do not change the artifact."
+        },
+        "diagram-component-mapping": {
+          "template": "Resubmit the complete artifact from the previous turn unchanged, including its name, ASCII, and CodeEntity aliases.\n\nUse the system-managed final artifact and CodeEntity context appended below. Add mappings for the smallest exact visible text spans that name or clearly represent each CodeEntity. Map labels and words, not box borders, arrow shafts, or whitespace. A CodeEntity may have multiple mapped spans. Choose the sourceRangeIndex most directly represented by each span. Spans must stay on one line, contain non-whitespace text, and must not overlap. Use the readable CodeEntity aliases in mapping entityId fields. Do not change the artifact."
+        }
+      },
+      "createdAt": "2026-08-29T04:36:49.275Z",
+      "updatedAt": "2026-08-29T04:36:49.275Z"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "flow-first",
+      "label": "Flow first",
+      "description": "Prioritize directional control and data flow.",
+      "builtIn": true,
+      "version": 1,
+      "prompts": {
+        "diagram-system": {
+          "template": "Generate exactly one architecture diagram from the supplied explicit context. Give it a compact, specific name, ideally two to five words; omit redundant words such as the DiagramSet name. Emphasize directional control and data flow. Never modify files. Use 7-bit ASCII only."
+        },
+        "call-graph-system": {
+          "template": "Generate exactly one source-backed call graph from the supplied explicit context. Show invocation and control relationships, not general architecture or directory ownership. Give it a compact, specific name. Emphasize the primary invocation path and branch points. Never modify files. Use 7-bit ASCII only."
+        },
+        "dir-view-system": {
+          "template": "Generate exactly one source-backed ASCII directory view from the supplied explicit context. Show the relevant repository hierarchy and connect files to their responsibilities without inventing paths. Give it a compact, specific name. Annotate files with concise data-flow responsibilities. Never modify files. Use 7-bit ASCII only."
+        },
+        "diagram-component-system": {
+          "template": "Generate exactly one reusable DiagramComponent from the supplied explicit context. It is a fragment for a broader ASCII Diagram, not a complete diagram. Give it a compact, specific name. Emphasize one clear input-to-output interaction. Never modify files. Use 7-bit ASCII only."
+        },
+        "diagram-reference": {
+          "template": "Regenerate the complete artifact you submitted in the previous turn.\n\nUse the system-managed reference instruction and context appended below. Treat referenced artifacts as visual style examples. Preserve the previous candidate's source-backed meaning, relationships, and CodeEntity coverage. Adopt visual grammar such as box shapes, connector style, spacing, density, grouping, and label placement, but do not copy unrelated labels, concepts, or repository-specific content. Return a complete replacement using 7-bit ASCII."
+        },
+        "call-graph-reference": {
+          "template": "Regenerate the complete artifact you submitted in the previous turn.\n\nUse the system-managed reference instruction and context appended below. Treat referenced artifacts as visual style examples. Preserve the previous candidate's source-backed meaning, relationships, and CodeEntity coverage. Adopt visual grammar such as box shapes, connector style, spacing, density, grouping, and label placement, but do not copy unrelated labels, concepts, or repository-specific content. Return a complete replacement using 7-bit ASCII."
+        },
+        "dir-view-reference": {
+          "template": "Regenerate the complete artifact you submitted in the previous turn.\n\nUse the system-managed reference instruction and context appended below. Treat referenced artifacts as visual style examples. Preserve the previous candidate's source-backed meaning, relationships, and CodeEntity coverage. Adopt visual grammar such as box shapes, connector style, spacing, density, grouping, and label placement, but do not copy unrelated labels, concepts, or repository-specific content. Return a complete replacement using 7-bit ASCII."
+        },
+        "diagram-component-reference": {
+          "template": "Regenerate the complete artifact you submitted in the previous turn.\n\nUse the system-managed reference instruction and context appended below. Treat referenced artifacts as visual style examples. Preserve the previous candidate's source-backed meaning, relationships, and CodeEntity coverage. Adopt visual grammar such as box shapes, connector style, spacing, density, grouping, and label placement, but do not copy unrelated labels, concepts, or repository-specific content. Return a complete replacement using 7-bit ASCII."
+        },
+        "diagram-mapping": {
+          "template": "Resubmit the complete artifact from the previous turn unchanged, including its name, ASCII, and CodeEntity aliases.\n\nUse the system-managed final artifact and CodeEntity context appended below. Add mappings for the smallest exact visible text spans that name or clearly represent each CodeEntity. Map labels and words, not box borders, arrow shafts, or whitespace. A CodeEntity may have multiple mapped spans. Choose the sourceRangeIndex most directly represented by each span. Spans must stay on one line, contain non-whitespace text, and must not overlap. Use the readable CodeEntity aliases in mapping entityId fields. Do not change the artifact."
+        },
+        "call-graph-mapping": {
+          "template": "Resubmit the complete artifact from the previous turn unchanged, including its name, ASCII, and CodeEntity aliases.\n\nUse the system-managed final artifact and CodeEntity context appended below. Add mappings for the smallest exact visible text spans that name or clearly represent each CodeEntity. Map labels and words, not box borders, arrow shafts, or whitespace. A CodeEntity may have multiple mapped spans. Choose the sourceRangeIndex most directly represented by each span. Spans must stay on one line, contain non-whitespace text, and must not overlap. Use the readable CodeEntity aliases in mapping entityId fields. Do not change the artifact."
+        },
+        "dir-view-mapping": {
+          "template": "Resubmit the complete artifact from the previous turn unchanged, including its name, ASCII, and CodeEntity aliases.\n\nUse the system-managed final artifact and CodeEntity context appended below. Add mappings for the smallest exact visible text spans that name or clearly represent each CodeEntity. Map labels and words, not box borders, arrow shafts, or whitespace. A CodeEntity may have multiple mapped spans. Choose the sourceRangeIndex most directly represented by each span. Spans must stay on one line, contain non-whitespace text, and must not overlap. Use the readable CodeEntity aliases in mapping entityId fields. Do not change the artifact."
+        },
+        "diagram-component-mapping": {
+          "template": "Resubmit the complete artifact from the previous turn unchanged, including its name, ASCII, and CodeEntity aliases.\n\nUse the system-managed final artifact and CodeEntity context appended below. Add mappings for the smallest exact visible text spans that name or clearly represent each CodeEntity. Map labels and words, not box borders, arrow shafts, or whitespace. A CodeEntity may have multiple mapped spans. Choose the sourceRangeIndex most directly represented by each span. Spans must stay on one line, contain non-whitespace text, and must not overlap. Use the readable CodeEntity aliases in mapping entityId fields. Do not change the artifact."
+        }
+      },
+      "createdAt": "2026-08-29T04:36:49.275Z",
+      "updatedAt": "2026-08-29T04:36:49.275Z"
+    },
+    {
+      "schemaVersion": 1,
+      "id": "compact",
+      "label": "Compact",
+      "description": "Prefer small, dense, composable layouts.",
+      "builtIn": true,
+      "version": 1,
+      "prompts": {
+        "diagram-system": {
+          "template": "Generate exactly one architecture diagram from the supplied explicit context. Give it a compact, specific name, ideally two to five words; omit redundant words such as the DiagramSet name. Prefer a dense layout with minimal crossing edges. Never modify files. Use 7-bit ASCII only."
+        },
+        "call-graph-system": {
+          "template": "Generate exactly one source-backed call graph from the supplied explicit context. Show invocation and control relationships, not general architecture or directory ownership. Give it a compact, specific name. Prefer a compact graph with minimal crossing edges. Never modify files. Use 7-bit ASCII only."
+        },
+        "dir-view-system": {
+          "template": "Generate exactly one source-backed ASCII directory view from the supplied explicit context. Show the relevant repository hierarchy and connect files to their responsibilities without inventing paths. Give it a compact, specific name. Collapse irrelevant directory branches. Never modify files. Use 7-bit ASCII only."
+        },
+        "diagram-component-system": {
+          "template": "Generate exactly one reusable DiagramComponent from the supplied explicit context. It is a fragment for a broader ASCII Diagram, not a complete diagram. Give it a compact, specific name. Prefer a small fragment that composes cleanly. Never modify files. Use 7-bit ASCII only."
+        },
+        "diagram-reference": {
+          "template": "Regenerate the complete artifact you submitted in the previous turn.\n\nUse the system-managed reference instruction and context appended below. Treat referenced artifacts as visual style examples. Preserve the previous candidate's source-backed meaning, relationships, and CodeEntity coverage. Adopt visual grammar such as box shapes, connector style, spacing, density, grouping, and label placement, but do not copy unrelated labels, concepts, or repository-specific content. Return a complete replacement using 7-bit ASCII."
+        },
+        "call-graph-reference": {
+          "template": "Regenerate the complete artifact you submitted in the previous turn.\n\nUse the system-managed reference instruction and context appended below. Treat referenced artifacts as visual style examples. Preserve the previous candidate's source-backed meaning, relationships, and CodeEntity coverage. Adopt visual grammar such as box shapes, connector style, spacing, density, grouping, and label placement, but do not copy unrelated labels, concepts, or repository-specific content. Return a complete replacement using 7-bit ASCII."
+        },
+        "dir-view-reference": {
+          "template": "Regenerate the complete artifact you submitted in the previous turn.\n\nUse the system-managed reference instruction and context appended below. Treat referenced artifacts as visual style examples. Preserve the previous candidate's source-backed meaning, relationships, and CodeEntity coverage. Adopt visual grammar such as box shapes, connector style, spacing, density, grouping, and label placement, but do not copy unrelated labels, concepts, or repository-specific content. Return a complete replacement using 7-bit ASCII."
+        },
+        "diagram-component-reference": {
+          "template": "Regenerate the complete artifact you submitted in the previous turn.\n\nUse the system-managed reference instruction and context appended below. Treat referenced artifacts as visual style examples. Preserve the previous candidate's source-backed meaning, relationships, and CodeEntity coverage. Adopt visual grammar such as box shapes, connector style, spacing, density, grouping, and label placement, but do not copy unrelated labels, concepts, or repository-specific content. Return a complete replacement using 7-bit ASCII."
+        },
+        "diagram-mapping": {
+          "template": "Resubmit the complete artifact from the previous turn unchanged, including its name, ASCII, and CodeEntity aliases.\n\nUse the system-managed final artifact and CodeEntity context appended below. Add mappings for the smallest exact visible text spans that name or clearly represent each CodeEntity. Map labels and words, not box borders, arrow shafts, or whitespace. A CodeEntity may have multiple mapped spans. Choose the sourceRangeIndex most directly represented by each span. Spans must stay on one line, contain non-whitespace text, and must not overlap. Use the readable CodeEntity aliases in mapping entityId fields. Do not change the artifact."
+        },
+        "call-graph-mapping": {
+          "template": "Resubmit the complete artifact from the previous turn unchanged, including its name, ASCII, and CodeEntity aliases.\n\nUse the system-managed final artifact and CodeEntity context appended below. Add mappings for the smallest exact visible text spans that name or clearly represent each CodeEntity. Map labels and words, not box borders, arrow shafts, or whitespace. A CodeEntity may have multiple mapped spans. Choose the sourceRangeIndex most directly represented by each span. Spans must stay on one line, contain non-whitespace text, and must not overlap. Use the readable CodeEntity aliases in mapping entityId fields. Do not change the artifact."
+        },
+        "dir-view-mapping": {
+          "template": "Resubmit the complete artifact from the previous turn unchanged, including its name, ASCII, and CodeEntity aliases.\n\nUse the system-managed final artifact and CodeEntity context appended below. Add mappings for the smallest exact visible text spans that name or clearly represent each CodeEntity. Map labels and words, not box borders, arrow shafts, or whitespace. A CodeEntity may have multiple mapped spans. Choose the sourceRangeIndex most directly represented by each span. Spans must stay on one line, contain non-whitespace text, and must not overlap. Use the readable CodeEntity aliases in mapping entityId fields. Do not change the artifact."
+        },
+        "diagram-component-mapping": {
+          "template": "Resubmit the complete artifact from the previous turn unchanged, including its name, ASCII, and CodeEntity aliases.\n\nUse the system-managed final artifact and CodeEntity context appended below. Add mappings for the smallest exact visible text spans that name or clearly represent each CodeEntity. Map labels and words, not box borders, arrow shafts, or whitespace. A CodeEntity may have multiple mapped spans. Choose the sourceRangeIndex most directly represented by each span. Spans must stay on one line, contain non-whitespace text, and must not overlap. Use the readable CodeEntity aliases in mapping entityId fields. Do not change the artifact."
+        }
+      },
+      "createdAt": "2026-08-29T04:36:49.275Z",
+      "updatedAt": "2026-08-29T04:36:49.275Z"
+    }
+  ]
+}

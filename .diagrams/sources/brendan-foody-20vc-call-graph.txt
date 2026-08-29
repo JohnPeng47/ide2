@@ -1,0 +1,361 @@
+20VC: Brendan Foody / Mercor -- From $1M to $500M in 17 Months
+[interview-map | published 2025-09-15 | duration 01:01:16]
+|
++--> [00:00-04:31] headline claims and show setup
+|    |
+|    +--> [KEY CLAIM] Mercor grew from $1M to $500M revenue run rate in 17 months
+|    |    `--> Foody calls this the fastest such growth, one month faster than Cursor
+|    +--> [KEY CLAIM] business was already at a nine-figure run rate before Scale's acquisition
+|    +--> [KEY CLAIM] business quadrupled after the Scale acquisition
+|    +--> [KEY CLAIM] demand could double immediately if Mercor could supply the capacity
+|    `--> [THESIS] RL environments could eventually "subsume the entire economy"
+|
++--> [04:31-10:44] founder formation and early commercial instinct
+|    |
+|    +--> middle-school donut resale business
+|    |    +--> bought donuts at roughly $5/dozen; sold them for $2 each
+|    |    +--> paid his mother $20 for transport to scale inventory
+|    |    +--> temporarily cut prices when a higher-quality competitor appeared
+|    |    `--> moved sales just off school property after the principal intervened
+|    +--> mother feared entrepreneurial instinct could turn toward drugs
+|    |    `--> sent him to Catholic high school despite the family not being Catholic
+|    +--> met his future co-founders at that high school
+|    +--> high-school sneaker-reseller consulting
+|    |    +--> noticed resellers were eligible for unused AWS credits
+|    |    +--> built websites and helped them apply for startup promotions
+|    |    `--> [KEY CLAIM] made hundreds of thousands of dollars while in high school
+|    +--> initially saw college as economically and educationally unnecessary
+|    |    +--> online lectures already supplied much of the formal knowledge
+|    |    +--> AI further reduces the scarcity of organized information
+|    |    `--> college retains social value more than educational value
+|    `--> [FOUNDER PROFILE] ambitious and commercially aggressive, but says Mercor's scale
+|         and speed were beyond what he could have predicted
+|
++--> [10:14-18:46] what Mercor believes the human-data market has become
+|    |
+|    +--> Harry introduces Edwin Chen's claim that competitors are "body shops"
+|    `--> Foody rejects that characterization of Mercor
+|         |
+|         +--> [MARKET SHIFT] crowdsourcing -> sourcing and vetting elite professionals
+|         |    |
+|         |    +--> old requirement
+|         |    |    `--> large volumes of low/medium-skill text for early LLMs
+|         |    `--> new requirement
+|         |         +--> Goldman bankers and McKinsey consultants
+|         |         +--> FAANG engineers
+|         |         +--> doctors and lawyers
+|         |         `--> experts capable of producing and interpreting frontier-level work
+|         |
+|         +--> Mercor's entry path
+|         |    +--> Scale used Mercor's platform to hire thousands of people
+|         |    +--> Mercor observed demand migrating toward expert sourcing
+|         |    `--> Mercor moved from hiring infrastructure into direct data partnerships
+|         |
+|         +--> why expert interpretation matters
+|         |    +--> researchers could inspect undergraduate-level math errors themselves
+|         |    +--> researchers may not understand fifth-year banking or specialist work
+|         |    `--> domain experts therefore help create data, interpret evals, and diagnose failures
+|         |
+|         +--> [MOAT] contributor outcomes follow a power law
+|         |    +--> [KEY CLAIM] top 10-20% may produce most of the model improvement
+|         |    +--> identify the exceptional contributors
+|         |    +--> match each contributor to work where they excel
+|         |    `--> retain/referral-loop those contributors into future projects
+|         |
+|         +--> [MOAT] technology and research partnership
+|         |    +--> models and algorithms assess data quality
+|         |    +--> data is used in training to measure capability improvement
+|         |    `--> Mercor claims to work closely with frontier-lab researchers
+|         |
+|         `--> [POSITIONING] intersection of two systems
+|              +--> labor marketplace: source, vet, match, compensate, retain
+|              `--> AI research partner: evaluate data and connect it to model outcomes
+|
++--> [12:24-27:58] how Foody thinks the expert-data flywheel works
+|    |
+|    +--> apparent problem: smarter models need increasingly scarce, smarter humans
+|    `--> Foody's answer: increase task complexity faster than models improve
+|         |
+|         +--> initial RL-environment project
+|         |    +--> model used one tool on a task taking a human several hours
+|         |    +--> began with roughly 100 useful contributors
+|         |    `--> model improvement reduced useful supply to roughly 20 contributors
+|         |
+|         +--> expand the environment
+|         |    +--> add Google Drive, calendar, Gmail, Slack, and other tools
+|         |    +--> move from single actions to long trajectories
+|         |    +--> model tasks that may take humans 10 or 100 hours
+|         |    `--> more humans can again find failures and contribute useful supervision
+|         |
+|         +--> [TAM BOUNDARY]
+|         |    `--> all economically desired tasks humans can perform better than models
+|         |
+|         +--> [HUMAN-TO-MODEL PIPELINE]
+|         |    |
+|         |    +--> select a real professional workflow
+|         |    +--> represent its tools, information, actions, and constraints
+|         |    +--> ask experts to create tasks, rubrics, verifiers, and correct trajectories
+|         |    +--> run models through the environment and expose failures
+|         |    +--> use expert data/evaluation to improve model capability
+|         |    `--> raise workflow complexity as the model catches up
+|         |
+|         +--> [SYNTHETIC DATA]
+|         |    +--> synthetic review/augmentation can make human work more efficient
+|         |    `--> a human reference remains necessary while humans retain capabilities models lack
+|         |
+|         +--> [SUPERINTELLIGENCE CONDITION]
+|         |    +--> if models exceed humans at everything, humans cease defining the frontier
+|         |    `--> Foody believes that point remains far away
+|         |
+|         `--> evidence offered for the remaining gap
+|              +--> models can win Olympiad math and outperform PhDs on some reasoning tests
+|              `--> yet still fail ordinary multi-tool work such as email and scheduling
+|
++--> [14:02-18:46] differentiation, quality, and vendor consolidation
+|    |
+|    +--> model progress is not plateauing
+|    |    +--> source of improvement is changing
+|    |    +--> less low-quality data at brute-force scale
+|    |    `--> more curated datasets, expert work, and RL environments
+|    |
+|    +--> proprietary supply advantages
+|    |    +--> contributor network and referrals
+|    |    +--> matching infrastructure
+|    |    `--> accumulated knowledge of who performs well on which tasks
+|    |
+|    +--> frontier labs initially diversify vendors
+|    |    `--> avoids dependency and tests relative performance
+|    |
+|    `--> [CONSOLIDATION THESIS]
+|         +--> labs ultimately prioritize model performance over vendor diversification
+|         +--> weak data from secondary vendors creates a capability trade-off
+|         +--> fixed investments in expert networks and matching favor scale
+|         `--> customers may concentrate most work with the strongest provider
+|
++--> [19:38-24:49] customer concentration and the Scale acquisition shock
+|    |
+|    +--> [KEY CLAIM] Mercor's largest-customer concentration resembles Nvidia's
+|    |    `--> exact customer and percentage not disclosed
+|    +--> defense of concentration
+|    |    +--> frontier labs are the market's most important customers
+|    |    `--> creating large value for a few excellent customers can still build a huge company
+|    |
+|    +--> Scale acquisition
+|    |    +--> Mercor already had deep relationships across frontier labs
+|    |    +--> acquisition caused a major demand acceleration
+|    |    +--> [KEY CLAIM] company quadrupled after the transaction
+|    |    `--> [KEY CLAIM] growth was still accelerating at a $500M run rate
+|    |
+|    +--> Foody's assessment of Scale
+|    |    +--> Alex Wang was strong in sales and distribution
+|    |    `--> Scale allegedly lost focus on product and scalable quality
+|    |
+|    `--> Mercor's alternative quality loop
+|         +--> hire unusually capable people
+|         +--> treat and compensate them well
+|         +--> produce strong contributor satisfaction
+|         +--> encourage referrals of other capable people
+|         `--> [KEY CLAIM] average marketplace pay about $95/hour
+|              `--> Foody contrasts this with roughly $30/hour at Scale and Surge
+|
++--> [25:39-27:58] evals: academic scores -> economically useful performance
+|    |
+|    +--> criticism of prevailing evals
+|    |    +--> Humanity's Last Exam, Olympiad math, and PhD reasoning are narrow
+|    |    `--> scores can be disconnected from consumer and enterprise outcomes
+|    |
+|    +--> examples of desired capabilities
+|    |    +--> construct a financial model like a Goldman banker
+|    |    +--> build a research deck like a consultant
+|    |    `--> build a web application like a strong engineer
+|    |
+|    +--> [REAL-TO-SIM BRIDGE]
+|    |    +--> sample real tasks from actual jobs
+|    |    +--> preserve their tools, information sources, and multi-step structure
+|    |    +--> create rubrics resembling expert grading of an essay
+|    |    `--> hill-climb against capabilities users actually value
+|    |
+|    `--> [PRODUCT CLAIM]
+|         +--> model = product
+|         +--> eval = product requirements document
+|         `--> enterprise "vibe spending" occurs when buyers deploy AI without defining success
+|
++--> [27:58-34:39] growth, financing, and valuation history
+|    |
+|    +--> [KEY FACT ABOUT GUEST] Foody was 22 at recording
+|    +--> [KEY CLAIM] Mercor started in January 2023
+|    +--> [REVENUE TRAJECTORY]
+|    |    +--> approximately $1.5M run rate when Mercor met Benchmark's Victor Lazarte
+|    |    +--> slightly above $2M when the term sheet arrived
+|    |    +--> approximately $20M at the Series B term sheet
+|    |    +--> approximately $500M at interview time
+|    |    `--> [KEY CLAIM] $1M -> $500M in 17 months
+|    |
+|    +--> [VALUATION TRAJECTORY]
+|    |    +--> early financing reportedly valued Mercor at roughly $250M
+|    |    |    `--> more than 100x the then-current revenue run rate
+|    |    +--> Series B reportedly priced near 100x the then-current run rate
+|    |    `--> business later became 25x larger than at the Series B revenue point
+|    |
+|    +--> [KEY CLAIM] averaged 54% month-over-month growth for a period
+|    +--> profitability
+|    |    +--> company described as highly profitable
+|    |    +--> does not need financing to fund normal operations
+|    |    `--> says it remains profitable despite trying to invest aggressively
+|    |
+|    +--> prospective financing
+|    |    +--> unsolicited investor interest around a rumored $10B valuation
+|    |    +--> possible low-dilution financing
+|    |    +--> capital itself would not materially alter investment pace
+|    |    `--> primary benefit would be market-leadership signaling and a fortress balance sheet
+|    |
+|    +--> IPO/private-company choice
+|    |    +--> no near-term IPO priority stated
+|    |    +--> Jack Dorsey advised staying private as long as possible
+|    |    `--> rationale: protect long-term decisions from quarterly market pressure
+|    |
+|    `--> private-market view
+|         +--> likely frothy when judged over three years
+|         +--> great AI companies may still look cheap over ten years
+|         `--> unresolved analogy: is the market closer to 1996 or 1997?
+|
++--> [34:55-40:54] AI adoption, application economics, and engineering
+|    |
+|    +--> enterprise AI failure
+|    |    +--> impressive benchmark scores do not prove workplace utility
+|    |    +--> [KEY CLAIM] many enterprise implementations fail
+|    |    `--> missing task-specific evals prevent buyers from measuring success
+|    |
+|    +--> how to assess AI application companies
+|    |    +--> inspect pilot conversion and retention
+|    |    +--> interview customers about realized value
+|    |    `--> distinguish easy initial adoption from durable product-market fit
+|    |
+|    +--> margins
+|    |    +--> Mercor claims positive gross and net margins
+|    |    +--> temporarily poor inference margins can be rational if model costs fall
+|    |    `--> subsidies are dangerous in low-switching-cost categories
+|    |
+|    +--> capex
+|    |    +--> broadly bullish over a ten-year horizon
+|    |    `--> still expects pockets of exuberance and poor long-term ROI
+|    |
+|    +--> coding tools inside Mercor
+|    |    +--> employees choose their preferred tool
+|    |    +--> Cursor reportedly leads usage, followed by Claude Code
+|    |    `--> switching costs remain surprisingly low
+|    |
+|    +--> effect on engineering employment
+|    |    +--> [PREDICTION] Mercor will employ more engineers in five years
+|    |    +--> engineering demand is elastic
+|    |    `--> 10x productivity may cause vastly more software to be attempted
+|    |
+|    `--> foundation-model entrants
+|         +--> Foody leans toward today's largest providers remaining largest
+|         +--> compute, data, and research teams create enormous entry costs
+|         `--> but allows for startup breakthroughs that change the cost/capability curve
+|
++--> [41:30-45:49] talent, model structure, and sovereignty
+|    |
+|    +--> frontier AI compensation is extreme
+|    |    +--> startups must approach economic parity
+|    |    +--> equity can compete with enormous cash offers
+|    |    `--> purpose helps create "missionaries, not mercenaries"
+|    |
+|    +--> model ecosystem
+|    |    +--> OpenAI receives consumer attention through ChatGPT
+|    |    +--> Anthropic receives coding attention through Claude Code
+|    |    +--> xAI is more consumer-facing
+|    |    `--> Gemini Flash models are identified as underappreciated
+|    |
+|    +--> general models vs specialized models
+|    |    +--> previous belief: many specialized models
+|    |    +--> updated belief: both general and specialized models
+|    |    +--> o3 and GPT-5 increased his confidence in generalization
+|    |    `--> enterprise customization remains a major future market
+|    |
+|    `--> sovereign models
+|         +--> can win bounded geographic or legal niches
+|         `--> unlikely, by sovereignty alone, to become the largest global providers
+|
++--> [45:49-52:36] culture, intensity, and capital allocation
+|    |
+|    +--> 996 clarification
+|    |    +--> Mercor never formally mandated fixed hours
+|    |    +--> 996 described how the early team voluntarily worked
+|    |    +--> company sometimes wanted early employees to work less and rest
+|    |    `--> emphasis shifted from face time toward measurable output
+|    |
+|    +--> hiring philosophy
+|    |    +--> seek people who care intensely about the work
+|    |    `--> intensity and office hours are correlated but not identical
+|    |
+|    +--> what Foody might do with less fear
+|    |    `--> consider spending far more aggressively instead of maximizing durability
+|    |
+|    +--> hypothetical use of $100M
+|    |    +--> hire talent
+|    |    +--> subsidize marketplace supply
+|    |    `--> subsidize customer projects
+|    |
+|    +--> why Mercor has not done so
+|    |    +--> no demonstrated need to buy growth
+|    |    +--> capital efficiency protects durability through market cycles
+|    |    `--> Peter Thiel is described as favoring this position
+|    |
+|    +--> [CURRENT BOTTLENECK]
+|    |    +--> [KEY CLAIM] projects are declined every day
+|    |    +--> Mercor prioritizes top customers and quality over accepting everything
+|    |    +--> [KEY CLAIM] sufficient capacity could support twice the current demand
+|    |    `--> scaling delivery capacity is Foody's largest immediate focus
+|    |
+|    `--> founder liquidity
+|         +--> Foody took only a very small secondary
+|         `--> rationale: demonstrate that Mercor is intended as decades-long life's work
+|
++--> [52:36-57:14] quick-fire conclusions and market allocation
+|    |
+|    +--> [AGI TIMELINE]
+|    |    `--> rejects superintelligence better than humans at everything within three years
+|    |
+|    +--> OpenAI strategy
+|    |    +--> raw API access has low switching costs and limited pricing power
+|    |    `--> deeper model customization could create a better business
+|    |
+|    +--> durability test for every AI company
+|    |    `--> will dramatically better models in 1-2 years strengthen or destroy the business?
+|    |
+|    +--> change of mind
+|    |    +--> now assigns more weight to generalization
+|    |    `--> still expects a major customization layer around general models
+|    |
+|    +--> desired investor
+|    |    `--> Jeff Bezos, because of Amazon's early clarity and long-term orientation
+|    |
+|    +--> advice to January 2023 self
+|    |    `--> focus on foundation-model labs 9-12 months sooner
+|    |
+|    +--> human-data market segmentation
+|    |    +--> RLHF
+|    |    |    `--> Foody identifies Surge as the largest player
+|    |    `--> RL environments
+|    |         +--> newer, workflow-oriented data category
+|    |         `--> [KEY CLAIM] Mercor holds roughly 50-60% of this market
+|    |
+|    `--> [END-STATE THESIS] RL environments subsume the economy
+|         |
+|         +--> humans repeatedly perform costly knowledge-work workflows
+|         +--> experts encode frameworks, rubrics, tools, and successful trajectories
+|         +--> models learn those workflows inside increasingly realistic environments
+|         +--> models execute the learned work repeatedly at lower marginal cost
+|         `--> human effort migrates from repeating tasks to constructing the training framework
+|
+`--> [57:14-61:16] interview ends; outro and sponsor material
+
+Legend
+|
++--> [KEY CLAIM] notable quantitative or market statement made by Foody in the interview;
+|    it is not independently verified by this tree
++--> [THESIS] Foody's interpretation or prediction
++--> [MOAT] claimed source of durable competitive advantage
+`--> time ranges refer to the downloaded auto-transcript and may be approximate
