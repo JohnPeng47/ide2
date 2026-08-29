@@ -26,13 +26,19 @@ import type {
 } from "./datasetDomain";
 import type { CallGraphFocusRequest, CallGraphFocusResult } from "./callGraphFocus";
 
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+function apiFetch(path: string, init?: RequestInit): Promise<Response> {
+  return fetch(`${basePath}${path}`, init);
+}
+
 async function errorFrom(response: Response): Promise<Error> {
   const payload = await response.json().catch(() => ({})) as { error?: string };
   return new Error(payload.error || `request failed with ${response.status}`);
 }
 
 export async function fetchWorkspace(): Promise<WorkspaceSnapshot> {
-  const response = await fetch("/api/workspace", { cache: "no-store" });
+  const response = await apiFetch("/api/workspace", { cache: "no-store" });
   if (!response.ok) throw await errorFrom(response);
   return response.json() as Promise<WorkspaceSnapshot>;
 }
@@ -43,7 +49,7 @@ export async function fetchRepositoryDirectory(
   signal?: AbortSignal
 ): Promise<RepositoryDirectoryListing> {
   const params = new URLSearchParams({ path: directory });
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/diagram-sets/${encodeURIComponent(setId)}/files?${params.toString()}`,
     { cache: "no-store", signal }
   );
@@ -54,7 +60,7 @@ export async function fetchRepositoryDirectory(
 export async function fetchCallGraphFocus(
   request: CallGraphFocusRequest
 ): Promise<CallGraphFocusResult> {
-  const response = await fetch("/api/call-graph-focus", {
+  const response = await apiFetch("/api/call-graph-focus", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(request)
@@ -69,13 +75,13 @@ export async function fetchMappedArtifactBundle(
   artifactId: string
 ): Promise<MappedArtifactBundle> {
   const params = new URLSearchParams({ setId, artifactKind, artifactId });
-  const response = await fetch(`/api/artifact-bundle?${params.toString()}`, { cache: "no-store" });
+  const response = await apiFetch(`/api/artifact-bundle?${params.toString()}`, { cache: "no-store" });
   if (!response.ok) throw await errorFrom(response);
   return response.json() as Promise<MappedArtifactBundle>;
 }
 
 export async function fetchExperiments(): Promise<ExperimentCatalogSnapshot> {
-  const response = await fetch("/api/experiments", { cache: "no-store" });
+  const response = await apiFetch("/api/experiments", { cache: "no-store" });
   if (!response.ok) throw await errorFrom(response);
   return response.json() as Promise<ExperimentCatalogSnapshot>;
 }
@@ -93,7 +99,7 @@ export async function fetchExperimentArtifact(input: {
     value: input.value.toFixed(2),
     replicate: String(input.replicate)
   });
-  const response = await fetch(`/api/experiments/${encodeURIComponent(input.catalogId)}/artifact?${query}`, {
+  const response = await apiFetch(`/api/experiments/${encodeURIComponent(input.catalogId)}/artifact?${query}`, {
     cache: "no-store"
   });
   if (!response.ok) throw await errorFrom(response);
@@ -101,13 +107,13 @@ export async function fetchExperimentArtifact(input: {
 }
 
 export async function fetchDiagramDatasets(): Promise<DiagramDatasetCatalogSnapshot> {
-  const response = await fetch("/api/diagram-datasets", { cache: "no-store" });
+  const response = await apiFetch("/api/diagram-datasets", { cache: "no-store" });
   if (!response.ok) throw await errorFrom(response);
   return response.json() as Promise<DiagramDatasetCatalogSnapshot>;
 }
 
 export async function createDiagramDataset(name: string): Promise<DiagramDatasetSummary> {
-  const response = await fetch("/api/diagram-datasets", {
+  const response = await apiFetch("/api/diagram-datasets", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ name })
@@ -120,7 +126,7 @@ export async function addDiagramDatasetItem(
   datasetId: string,
   input: AddDiagramDatasetItemInput
 ): Promise<AddDiagramDatasetItemResult> {
-  const response = await fetch(`/api/diagram-datasets/${encodeURIComponent(datasetId)}/items`, {
+  const response = await apiFetch(`/api/diagram-datasets/${encodeURIComponent(datasetId)}/items`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(input)
@@ -130,7 +136,7 @@ export async function addDiagramDatasetItem(
 }
 
 export async function fetchDiagramDatasetItem(datasetId: string, itemId: string): Promise<DiagramDatasetItemRecord> {
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/diagram-datasets/${encodeURIComponent(datasetId)}/items/${encodeURIComponent(itemId)}`,
     { cache: "no-store" }
   );
@@ -143,7 +149,7 @@ export async function updateDiagramDatasetItemLabels(
   itemId: string,
   labels: string[]
 ): Promise<DiagramDatasetSummary> {
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/diagram-datasets/${encodeURIComponent(datasetId)}/items/${encodeURIComponent(itemId)}`,
     {
       method: "PATCH",
@@ -156,7 +162,7 @@ export async function updateDiagramDatasetItemLabels(
 }
 
 export async function removeDiagramDatasetItem(datasetId: string, itemId: string): Promise<DiagramDatasetSummary> {
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/diagram-datasets/${encodeURIComponent(datasetId)}/items/${encodeURIComponent(itemId)}`,
     { method: "DELETE" }
   );
@@ -165,7 +171,7 @@ export async function removeDiagramDatasetItem(datasetId: string, itemId: string
 }
 
 export async function deleteDiagramSet(setId: string): Promise<WorkspaceSnapshot> {
-  const response = await fetch(`/api/diagram-sets/${encodeURIComponent(setId)}`, {
+  const response = await apiFetch(`/api/diagram-sets/${encodeURIComponent(setId)}`, {
     method: "DELETE"
   });
   if (!response.ok) throw await errorFrom(response);
@@ -179,7 +185,7 @@ export async function saveSystemPromptTemplate(
   >
     & { id?: string }
 ): Promise<WorkspaceSnapshot> {
-  const response = await fetch(
+  const response = await apiFetch(
     template.id
       ? `/api/system-prompt-templates/${encodeURIComponent(template.id)}`
       : "/api/system-prompt-templates",
@@ -194,7 +200,7 @@ export async function saveSystemPromptTemplate(
 }
 
 export async function resetSystemPromptTemplate(id: string): Promise<WorkspaceSnapshot> {
-  const response = await fetch(`/api/system-prompt-templates/${encodeURIComponent(id)}/reset`, {
+  const response = await apiFetch(`/api/system-prompt-templates/${encodeURIComponent(id)}/reset`, {
     method: "POST"
   });
   if (!response.ok) throw await errorFrom(response);
@@ -202,7 +208,7 @@ export async function resetSystemPromptTemplate(id: string): Promise<WorkspaceSn
 }
 
 export async function deleteSystemPromptTemplate(id: string): Promise<WorkspaceSnapshot> {
-  const response = await fetch(`/api/system-prompt-templates/${encodeURIComponent(id)}`, {
+  const response = await apiFetch(`/api/system-prompt-templates/${encodeURIComponent(id)}`, {
     method: "DELETE"
   });
   if (!response.ok) throw await errorFrom(response);
@@ -212,7 +218,7 @@ export async function deleteSystemPromptTemplate(id: string): Promise<WorkspaceS
 export async function saveCodeEntityPromptTemplate(
   template: Pick<CodeEntityPromptTemplateRecord, "label" | "description" | "prompts"> & { id?: string }
 ): Promise<WorkspaceSnapshot> {
-  const response = await fetch(
+  const response = await apiFetch(
     template.id
       ? `/api/code-entity-prompt-templates/${encodeURIComponent(template.id)}`
       : "/api/code-entity-prompt-templates",
@@ -227,7 +233,7 @@ export async function saveCodeEntityPromptTemplate(
 }
 
 export async function resetCodeEntityPromptTemplate(id: string): Promise<WorkspaceSnapshot> {
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/code-entity-prompt-templates/${encodeURIComponent(id)}/reset`,
     { method: "POST" }
   );
@@ -236,7 +242,7 @@ export async function resetCodeEntityPromptTemplate(id: string): Promise<Workspa
 }
 
 export async function deleteCodeEntityPromptTemplate(id: string): Promise<WorkspaceSnapshot> {
-  const response = await fetch(`/api/code-entity-prompt-templates/${encodeURIComponent(id)}`, {
+  const response = await apiFetch(`/api/code-entity-prompt-templates/${encodeURIComponent(id)}`, {
     method: "DELETE"
   });
   if (!response.ok) throw await errorFrom(response);
@@ -250,7 +256,7 @@ export async function mapCodeEntities(
   onProgress: (message: string) => void
 ): Promise<WorkspaceSnapshot> {
   const collection = artifactKind === "diagram" ? "diagrams" : "components";
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/diagram-sets/${encodeURIComponent(setId)}/${collection}/${encodeURIComponent(artifactId)}/code-entity-map`,
     { method: "POST" }
   );
@@ -305,7 +311,7 @@ export async function mapCodeEntitiesBatch(
   onProgress: (event: CodeEntityMappingProgress) => void,
   concurrency = 3
 ): Promise<{ workspace: WorkspaceSnapshot; results: CodeEntityMappingResult[] }> {
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/diagram-sets/${encodeURIComponent(setId)}/code-entity-maps`,
     {
       method: "POST",
@@ -363,7 +369,7 @@ async function editAction(
   action: string,
   body?: unknown
 ): Promise<WorkspaceSnapshot> {
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/diagram-sets/${encodeURIComponent(setId)}/edit-sessions/${encodeURIComponent(sessionId)}/${action}`,
     {
       method: "POST",
@@ -380,7 +386,7 @@ export async function createEditSession(
   artifactKind: GenerationOutputKind,
   artifactId: string
 ): Promise<WorkspaceSnapshot> {
-  const response = await fetch(`/api/diagram-sets/${encodeURIComponent(setId)}/edit-sessions`, {
+  const response = await apiFetch(`/api/diagram-sets/${encodeURIComponent(setId)}/edit-sessions`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ artifactKind, artifactId })
@@ -399,7 +405,7 @@ export async function placeEditMarker(
   line: number,
   column: number
 ): Promise<{ workspace: WorkspaceSnapshot; markerToken: string }> {
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/diagram-sets/${encodeURIComponent(setId)}/edit-sessions/${encodeURIComponent(sessionId)}/marker`,
     {
       method: "POST",
@@ -423,7 +429,7 @@ export async function applyLlmEdit(
   modelId: DiagramModelId,
   onProgress: (message: string) => void
 ): Promise<WorkspaceSnapshot> {
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/diagram-sets/${encodeURIComponent(setId)}/edit-sessions/${encodeURIComponent(sessionId)}/llm`,
     {
       method: "POST",
@@ -466,7 +472,7 @@ export async function applyLlmEdit(
 }
 
 export async function importGlobalArtifact(input: ArtifactImportInput): Promise<WorkspaceSnapshot> {
-  const response = await fetch("/api/imports", {
+  const response = await apiFetch("/api/imports", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(input)
@@ -479,7 +485,7 @@ export async function renameImportedDiagram(
   diagramId: string,
   name: string
 ): Promise<WorkspaceSnapshot> {
-  const response = await fetch(`/api/imports/diagrams/${encodeURIComponent(diagramId)}`, {
+  const response = await apiFetch(`/api/imports/diagrams/${encodeURIComponent(diagramId)}`, {
     method: "PATCH",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ name })
@@ -489,7 +495,7 @@ export async function renameImportedDiagram(
 }
 
 export async function archiveImportedDiagram(diagramId: string): Promise<WorkspaceSnapshot> {
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/imports/diagrams/${encodeURIComponent(diagramId)}/archive`,
     { method: "POST" }
   );
@@ -500,7 +506,7 @@ export async function archiveImportedDiagram(diagramId: string): Promise<Workspa
 export async function archiveImportedDiagramComponent(
   componentId: string
 ): Promise<WorkspaceSnapshot> {
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/imports/diagram-components/${encodeURIComponent(componentId)}/archive`,
     { method: "POST" }
   );
@@ -513,7 +519,7 @@ export async function renameDiagram(
   diagramId: string,
   name: string
 ): Promise<WorkspaceSnapshot> {
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/diagram-sets/${encodeURIComponent(setId)}/diagrams/${encodeURIComponent(diagramId)}`,
     {
       method: "PATCH",
@@ -529,7 +535,7 @@ export async function archiveDiagram(
   setId: string,
   diagramId: string
 ): Promise<WorkspaceSnapshot> {
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/diagram-sets/${encodeURIComponent(setId)}/diagrams/${encodeURIComponent(diagramId)}/archive`,
     { method: "POST" }
   );
@@ -542,7 +548,7 @@ export async function setStarredDiagram(
   diagramId: string,
   starred: boolean
 ): Promise<WorkspaceSnapshot> {
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/diagram-sets/${encodeURIComponent(setId)}/diagrams/${encodeURIComponent(diagramId)}/star`,
     {
       method: "POST",
@@ -559,7 +565,7 @@ export async function saveDiagramCandidateRankings(
   candidateBatchId: string,
   rankings: Array<{ diagramId: string; rank: number }>
 ): Promise<WorkspaceSnapshot> {
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/diagram-sets/${encodeURIComponent(setId)}/candidate-batches/${encodeURIComponent(candidateBatchId)}/feedback`,
     {
       method: "PUT",
@@ -576,7 +582,7 @@ export async function captureDiagramComponent(
   diagramId: string,
   bounds: DiagramSelectionBounds
 ): Promise<WorkspaceSnapshot> {
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/diagram-sets/${encodeURIComponent(setId)}/diagrams/${encodeURIComponent(diagramId)}/components`,
     {
       method: "POST",
@@ -592,7 +598,7 @@ export async function archiveDiagramComponent(
   setId: string,
   componentId: string
 ): Promise<WorkspaceSnapshot> {
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/diagram-sets/${encodeURIComponent(setId)}/components/${encodeURIComponent(componentId)}/archive`,
     { method: "POST" }
   );
@@ -605,7 +611,7 @@ export async function captureNestedDiagramComponent(
   componentId: string,
   bounds: DiagramSelectionBounds
 ): Promise<WorkspaceSnapshot> {
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/diagram-sets/${encodeURIComponent(setId)}/components/${encodeURIComponent(componentId)}/components`,
     {
       method: "POST",
@@ -634,7 +640,7 @@ export async function generateArtifacts(
   },
   onProgress: (message: string) => void
 ): Promise<WorkspaceSnapshot> {
-  const response = await fetch(`/api/diagram-sets/${encodeURIComponent(setId)}/generate`, {
+  const response = await apiFetch(`/api/diagram-sets/${encodeURIComponent(setId)}/generate`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(input)
@@ -685,7 +691,7 @@ export async function fetchSourceSnippet(
   rangeIndex: number
 ): Promise<SourceSnippet> {
   const params = new URLSearchParams({ setId, entityId, range: String(rangeIndex) });
-  const response = await fetch(`/api/source?${params.toString()}`, { cache: "no-store" });
+  const response = await apiFetch(`/api/source?${params.toString()}`, { cache: "no-store" });
   if (!response.ok) throw await errorFrom(response);
   return response.json() as Promise<SourceSnippet>;
 }
