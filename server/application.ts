@@ -1,4 +1,3 @@
-import { lstat, readFile, readdir, realpath, stat } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import {
@@ -46,6 +45,8 @@ import {
   type SystemPromptTemplateRecord,
   type WorkspaceSnapshot
 } from "../src/domain";
+import type { BuiltInDomainProfileId, CorpusBinding } from "../src/domainProfile";
+import { representationKindForArtifact, resolveDomainProfile } from "../src/domainProfiles";
 import {
   createBuiltInCodeEntityPromptTemplates,
   createBuiltInSystemPromptTemplates,
@@ -68,7 +69,9 @@ import type { DiagramAgentRuntime } from "./agentRuntime";
 import { filterCallGraphTree, parseCallGraphTree } from "./callGraphTree";
 import { createCodeEntityPromptConfig } from "./codeEntityPrompt";
 import { validateDiagramMappings } from "./diagramMapping";
-import { DiagramStore, discoverRepository } from "./store";
+import { corpusProvider, readCorpusDocumentLines } from "./corpus";
+import { isBuiltInDomainProfileId } from "./domainProfiles";
+import { DiagramStore, discoverDomainCorpus, type RepositoryLocation } from "./store";
 import { asciiTreeLineage } from "../src/asciiTree";
 
 const MAX_GENERATION_COUNT = 12;
@@ -238,7 +241,22 @@ export class DiagramApplication {
   private readonly activeBatches = new Set<string>();
   private readonly activeMappings = new Set<string>();
 
-  constructor(readonly store: DiagramStore, private readonly agents: DiagramAgentRuntime) {}
+  constructor(
+    readonly store: DiagramStore,
+    private readonly agents: DiagramAgentRuntime,
+    private readonly defaultDomainProfileId: BuiltInDomainProfileId = "source-code"
+  ) {}
+
+  private async projectCorpus(set?: DiagramSetRecord): Promise<{
+    domainProfileId: BuiltInDomainProfileId;
+    corpus: CorpusBinding;
+  }> {
+    const project = await this.store.loadProject();
+    if (!project) throw new Error("project corpus is not initialized");
+    if (set && set.projectId !== project.id) throw new Error("DiagramSet belongs to another project");
+    const domainProfileId = project.domainProfileId === "document" ? "document" : "source-code";
+    return { domainProfileId, corpus: project.corpus };
+  }
 
   private async artifactForDiagramSet(
     setId: string,
@@ -396,16 +414,26 @@ export class DiagramApplication {
   }
 
   async codeEntityPromptTemplates(): Promise<CodeEntityPromptTemplateRecord[]> {
-    return this.store.loadCodeEntityPromptTemplates();
+    const project = await this.store.loadProject();
+    const domain = project?.domainProfileId === "document"
+      ? "document"
+      : this.defaultDomainProfileId;
+    return this.store.loadCodeEntityPromptTemplates(domain);
   }
 
-  async resolveCodeEntityPromptTemplate(id?: unknown): Promise<CodeEntityPromptTemplateRecord> {
+  async resolveCodeEntityPromptTemplate(
+    id?: unknown,
+    requestedDomain?: BuiltInDomainProfileId
+  ): Promise<CodeEntityPromptTemplateRecord> {
     const useDefault = id === undefined || id === null;
     const requestedId = useDefault ? DEFAULT_CODE_ENTITY_PROMPT_PROFILE_ID : id;
     if (typeof requestedId !== "string") {
       throw new Error(`unsupported CodeEntity prompt template: ${String(requestedId)}`);
     }
-    const templates = await this.store.loadCodeEntityPromptTemplates();
+    const project = await this.store.loadProject();
+    const domain = requestedDomain
+      ?? (project?.domainProfileId === "document" ? "document" : this.defaultDomainProfileId);
+    const templates = await this.store.loadCodeEntityPromptTemplates(domain);
     const template = templates.find((candidate) => candidate.id === requestedId)
       ?? (useDefault ? templates[0] : undefined);
     if (!template) {
@@ -440,12 +468,14 @@ export class DiagramApplication {
     return template;
   }
 
-  async createDiagramSet(input: { path: string; name: string; prompt: string }): Promise<DiagramSetRecord> {
+  async createDiagramSet(input: {
+    path: string;
+    name: string;
+    prompt: string;
+    domainProfileId?: unknown;
+  }): Promise<DiagramSetRecord> {
     if (!input.name.trim()) throw new Error("DiagramSet name is required");
-    const location = await discoverRepository(input.path);
-    if (path.resolve(location.checkoutRoot) !== this.store.checkoutRoot) {
-      throw new Error(`application store is rooted at ${this.store.checkoutRoot}, not ${location.checkoutRoot}`);
-    }
+    const location = await this.validateDiagramSetTarget(input.path, input.domainProfileId);
     const project = await this.store.ensureProject(location);
     const created = await this.store.createDiagramSet({
       project,
@@ -456,12 +486,43 @@ export class DiagramApplication {
     return created.diagramSet;
   }
 
+  /** Validate corpus/domain ownership without migrating templates or writing project state. */
+  async validateDiagramSetTarget(
+    inputPath: string,
+    requestedDomainValue?: unknown
+  ): Promise<RepositoryLocation> {
+    const existingProject = await this.store.loadProject();
+    const requestedDomain = requestedDomainValue
+      ?? existingProject?.domainProfileId
+      ?? this.defaultDomainProfileId;
+    if (!isBuiltInDomainProfileId(requestedDomain)) {
+      throw new Error(`unsupported domain profile: ${String(requestedDomain)}`);
+    }
+    const location = await discoverDomainCorpus(inputPath, requestedDomain);
+    if (path.resolve(location.checkoutRoot) !== this.store.checkoutRoot) {
+      throw new Error(`application store is rooted at ${this.store.checkoutRoot}, not ${location.checkoutRoot}`);
+    }
+    if (existingProject) {
+      const sameDocumentRoot = existingProject.domainProfileId === "document"
+        && requestedDomain === "document"
+        && path.resolve(existingProject.corpus.root) === path.resolve(location.checkoutRoot);
+      if (existingProject.repositoryIdentity !== location.repositoryIdentity && !sameDocumentRoot) {
+        throw new Error(".diagrams belongs to a different corpus identity");
+      }
+      if (existingProject.domainProfileId !== requestedDomain) {
+        throw new Error(`.diagrams belongs to the ${existingProject.domainProfileId} domain`);
+      }
+    }
+    return location;
+  }
+
   async collectCodeEntities(
     setId: string,
     input: { promptTemplateId?: unknown } = {},
     onEvent?: (event: ServiceEvent) => void
   ): Promise<void> {
     const set = await this.store.loadDiagramSet(setId);
+    const { domainProfileId, corpus } = await this.projectCorpus(set);
     const entitySet = await this.store.loadCodeEntities(setId);
     if (entitySet.status === "finalized") throw new Error("CodeEntitiesSet is immutable after finalization");
     const template = await this.resolveCodeEntityPromptTemplate(input.promptTemplateId);
@@ -469,6 +530,7 @@ export class DiagramApplication {
       id: this.store.ids.promptConfig(),
       diagramSet: set,
       template,
+      domainProfileId,
       createdAt: timestamp()
     });
     await this.store.beginCodeEntityCollection(promptConfig);
@@ -479,7 +541,9 @@ export class DiagramApplication {
       diagramSetId: setId,
       kind: "collect-entities",
       status: "queued",
-      statusMessage: "opening code-entity collector",
+      statusMessage: domainProfileId === "document"
+        ? "opening document evidence collector"
+        : "opening code-entity collector",
       codeEntitiesRevision: entitySet.revision,
       outputCodeEntityIds: [],
       startedAt: timestamp(),
@@ -504,6 +568,8 @@ export class DiagramApplication {
     try {
       const drafts = await this.agents.collectEntities({
         sourceRoot: set.sourceCheckoutRoot,
+        domainProfileId,
+        corpus,
         diagramSetName: set.name,
         promptConfig
       }, progress);
@@ -513,7 +579,9 @@ export class DiagramApplication {
       run = {
         ...run,
         status: "complete",
-        statusMessage: `collected ${entities.length} code entities`,
+        statusMessage: domainProfileId === "document"
+          ? `collected ${entities.length} evidence entities`
+          : `collected ${entities.length} code entities`,
         outputCodeEntityIds: entities.map((entity) => entity.id),
         updatedAt: timestamp(),
         completedAt: timestamp()
@@ -564,7 +632,7 @@ export class DiagramApplication {
   ): Promise<CodeEntityRecord[]> {
     if (drafts.length === 0) throw new Error("collector submitted no CodeEntities");
     const handles = new Set<string>();
-    const sourceRoot = await realpath(set.sourceCheckoutRoot);
+    const { corpus } = await this.projectCorpus(set);
     const entities: CodeEntityRecord[] = [];
     for (const [index, draft] of drafts.entries()) {
       const baseHandle = slugify(draft.handle || draft.label, `entity-${index + 1}`);
@@ -583,13 +651,8 @@ export class DiagramApplication {
       const sourceRanges: CodeEntityRecord["sourceRanges"] = [];
       for (const range of draft.sourceRanges) {
         assertSourceRange(range);
-        const absolute = await realpath(path.resolve(sourceRoot, range.path)).catch(() => null);
-        if (!absolute || (absolute !== sourceRoot && !absolute.startsWith(`${sourceRoot}${path.sep}`))) {
-          throw new Error(`source range escapes or does not exist: ${range.path}`);
-        }
-        const info = await stat(absolute);
-        if (!info.isFile()) throw new Error(`source range is not a file: ${range.path}`);
-        const sourceLines = (await readFile(absolute, "utf8")).split(/\r?\n/);
+        const sourceLines = await readCorpusDocumentLines(corpus, range.path).catch(() => null);
+        if (!sourceLines) throw new Error(`evidence range escapes or does not exist: ${range.path}`);
         const lineCount = sourceLines.length;
         if (range.startLine > lineCount) {
           throw new Error(`source range starts beyond ${range.path} (${lineCount} lines)`);
@@ -653,12 +716,19 @@ export class DiagramApplication {
         if (entity.sourceRanges.some((range) => !range.id)) {
           throw new Error(`CodeEntity ${entity.id} has a source range without an id`);
         }
-        await this.store.addImportedCodeEntity(entity);
       }
       if (bundle.codeEntityMap) {
         if (bundle.codeEntityMap.artifactId !== bundle.artifact.id
           || bundle.codeEntityMap.artifactKind !== input.artifactKind) {
           throw new Error("mapped artifact bundle has a mismatched CodeEntity map");
+        }
+        const asciiSha256 = createHash("sha256").update(ascii).digest("hex");
+        if (bundle.codeEntityMap.asciiSha256 !== asciiSha256) {
+          throw new Error("mapped artifact bundle has stale ASCII mapping bounds");
+        }
+        const mappingIds = bundle.codeEntityMap.mappings.map((mapping) => mapping.id);
+        if (new Set(mappingIds).size !== mappingIds.length) {
+          throw new Error("mapped artifact bundle has duplicate mapping ids");
         }
         for (const mapping of bundle.codeEntityMap.mappings) {
           const entity = dependencies.get(mapping.entityId);
@@ -674,7 +744,9 @@ export class DiagramApplication {
             throw new Error(`CodeEntity map has a mismatched source range identity: ${mapping.entityId}`);
           }
         }
+        validateDiagramMappings(ascii, bundle.codeEntityMap.mappings, bundle.codeEntities);
       }
+      for (const entity of bundle.codeEntities) await this.store.addImportedCodeEntity(entity);
     }
     const existing = input.artifactKind === "diagram"
       ? Object.values(workspace.diagrams)
@@ -697,6 +769,9 @@ export class DiagramApplication {
         },
         diagramSetId: GLOBAL_IMPORTS_DIAGRAM_SET_ID,
         viewKind: bundle && "viewKind" in bundle.artifact ? bundle.artifact.viewKind : "diagram",
+        representationKind: bundle
+          ? representationKindForArtifact(bundle.artifact as DiagramRecord)
+          : "diagram",
         handle,
         name,
         ascii,
@@ -722,6 +797,9 @@ export class DiagramApplication {
         handle,
         name,
         ascii,
+        representationKind: bundle
+          ? representationKindForArtifact(bundle.artifact)
+          : "diagram",
         codeEntityIds: bundle?.artifact.codeEntityIds ?? [],
         origin: "imported",
         derivedFromDiagramIds: bundle?.artifact.derivedFromDiagramIds ?? [],
@@ -866,6 +944,7 @@ export class DiagramApplication {
       throw new Error("a mapping batch cannot contain duplicate artifacts");
     }
     const set = await this.store.loadDiagramSet(setId);
+    const { domainProfileId } = await this.projectCorpus(set);
     const entitySet = await this.store.loadCodeEntities(setId);
     if (entitySet.status !== "finalized") {
       throw new Error("CodeEntitiesSet must be finalized before mapping");
@@ -955,7 +1034,8 @@ export class DiagramApplication {
               artifactHandle: job.artifact.handle,
               ascii: job.artifact.ascii,
               codeEntityIds: job.artifact.codeEntityIds,
-              codeEntities: job.entities
+              codeEntities: job.entities,
+              domainProfileId
             }, progress);
             await progressWrites;
             const mappings = validateDiagramMappings(job.artifact.ascii, drafts, job.entities);
@@ -1313,6 +1393,7 @@ export class DiagramApplication {
         recordOrigin: { projectId: set.projectId, diagramSetId: set.id },
         diagramSetId: setId,
         viewKind: (source as DiagramRecord).viewKind,
+        representationKind: representationKindForArtifact(source as DiagramRecord),
         ...((source as DiagramRecord).basedOnDiagramId
           ? { basedOnDiagramId: (source as DiagramRecord).basedOnDiagramId }
           : {}),
@@ -1337,6 +1418,7 @@ export class DiagramApplication {
         handle,
         name,
         ascii: session.workingAscii,
+        representationKind: representationKindForArtifact(component),
         codeEntityIds: [...session.codeEntityIds],
         origin: "edited",
         generationPromptConfigId: component.generationPromptConfigId,
@@ -1419,6 +1501,7 @@ export class DiagramApplication {
       handle,
       name: `${source.artifact.name} - Component ${sequence}`,
       ascii,
+      representationKind: representationKindForArtifact(source.artifact),
       codeEntityIds: [...source.artifact.codeEntityIds],
       origin: "selection",
       ...(source.kind === "diagram"
@@ -1470,12 +1553,17 @@ export class DiagramApplication {
     if (input.outputKind === "diagram-component" && input.viewKind !== undefined) {
       throw new Error("DiagramComponents do not have a view kind");
     }
+    const set = await this.store.loadDiagramSet(setId);
+    const { domainProfileId } = await this.projectCorpus(set);
+    if (input.outputKind === "diagram"
+      && !resolveDomainProfile(domainProfileId).workspace.diagramViews.includes(input.viewKind ?? "diagram")) {
+      throw new Error(`${input.viewKind ?? "diagram"} is not available in the ${domainProfileId} domain`);
+    }
     const modelId = input.modelId ?? DEFAULT_DIAGRAM_MODEL_ID;
     if (!isDiagramModelId(modelId)) throw new Error(`unsupported generation model: ${String(modelId)}`);
     if (this.activeBatches.has(setId)) throw new Error("a generation batch is already active for this DiagramSet");
     this.activeBatches.add(setId);
     try {
-      const set = await this.store.loadDiagramSet(setId);
       const entities = await this.store.loadCodeEntities(setId);
       const promptProfile = await this.resolveSystemPromptTemplate(input.promptProfileId);
       if (entities.status !== "finalized" || set.readiness !== "ready") {
@@ -1514,6 +1602,7 @@ export class DiagramApplication {
         viewKind: input.viewKind,
         modelId,
         profile: promptProfile,
+        domainProfileId,
         instruction: input.prompt,
         runReferencePrompt: input.runReferencePrompt,
         referencePrompt: input.referencePrompt,
@@ -1693,6 +1782,7 @@ export class DiagramApplication {
           recordOrigin: { projectId: set.projectId, diagramSetId: set.id },
           diagramSetId: setId,
           viewKind: outputViewKind!,
+          representationKind: outputViewKind === "diagram" ? "diagram" : "tree",
           ...(outputViewKind !== "diagram" && set.featuredViewIds.diagram
             ? { basedOnDiagramId: set.featuredViewIds.diagram }
             : {}),
@@ -1716,6 +1806,14 @@ export class DiagramApplication {
           handle,
           name: draft.name.trim(),
           ascii: normalizeAscii(draft.ascii),
+          representationKind: (() => {
+            const sourceId = input.derivation?.sourceArtifactId;
+            if (!sourceId) return "diagram" as const;
+            const source = input.derivation?.sourceArtifactKind === "diagram"
+              ? existingDiagrams.find((artifact) => artifact.id === sourceId)
+              : existingComponents.find((artifact) => artifact.id === sourceId);
+            return source ? representationKindForArtifact(source) : "diagram";
+          })(),
           codeEntityIds: [...new Set(draft.codeEntityIds)],
           origin: "generated",
           producedByRunId: run.id,
@@ -1976,7 +2074,9 @@ export class DiagramApplication {
     const templates = await this.store.loadCodeEntityPromptTemplates();
     const existing = templates.find((template) => template.id === id);
     if (!existing?.builtIn) throw new Error(`built-in CodeEntity prompt template not found: ${id}`);
-    const original = createBuiltInCodeEntityPromptTemplates(existing.createdAt)
+    const project = await this.store.loadProject();
+    const domain = project?.domainProfileId === "document" ? "document" : "source-code";
+    const original = createBuiltInCodeEntityPromptTemplates(existing.createdAt, domain)
       .find((template) => template.id === id);
     if (!original) throw new Error(`built-in CodeEntity prompt template not found: ${id}`);
     const reset: CodeEntityPromptTemplateRecord = {
@@ -2030,12 +2130,8 @@ export class DiagramApplication {
     const range = entity.sourceRanges[rangeIndex];
     if (!range) throw new Error("unknown source range");
     assertSourceRange(range);
-    const root = await realpath(set.sourceCheckoutRoot);
-    const absolute = await realpath(path.resolve(root, range.path));
-    if (absolute !== root && !absolute.startsWith(`${root}${path.sep}`)) {
-      throw new Error("source range escapes repository root");
-    }
-    const lines = (await readFile(absolute, "utf8")).split(/\r?\n/);
+    const { corpus } = await this.projectCorpus(set);
+    const lines = await readCorpusDocumentLines(corpus, range.path);
     if (range.originalLines) {
       const start = range.startLine - 1;
       while (lines.length < start) lines.push("");
@@ -2117,50 +2213,16 @@ export class DiagramApplication {
     relativeDirectory: string
   ): Promise<RepositoryDirectoryListing> {
     const set = await this.store.loadDiagramSet(setId);
-    if (relativeDirectory.includes("\0") || relativeDirectory.includes("\\")) {
-      throw new Error("repository directory path is invalid");
-    }
-    if (path.posix.isAbsolute(relativeDirectory) || path.win32.isAbsolute(relativeDirectory)) {
-      throw new Error("repository directory path must be relative");
-    }
-    const segments = relativeDirectory === "" ? [] : relativeDirectory.split("/");
-    if (segments.some((segment) => !segment || segment === "." || segment === "..")) {
-      throw new Error("repository directory path is invalid");
-    }
-    const root = await realpath(set.sourceCheckoutRoot);
-    let directoryPath = root;
-    for (const segment of segments) {
-      directoryPath = path.join(directoryPath, segment);
-      const info = await lstat(directoryPath).catch(() => null);
-      if (!info) throw new Error(`unknown repository directory: ${relativeDirectory}`);
-      if (info.isSymbolicLink()) throw new Error("symbolic-link directories cannot be traversed");
-      if (!info.isDirectory()) throw new Error(`repository path is not a directory: ${relativeDirectory}`);
-    }
-    if (directoryPath !== root && !directoryPath.startsWith(`${root}${path.sep}`)) {
-      throw new Error("repository directory escapes checkout root");
-    }
+    const { corpus } = await this.projectCorpus(set);
+    const listing = await corpusProvider(corpus).listDirectory(corpus, relativeDirectory);
     const storeRoot = path.resolve(this.store.storeRoot);
-    const entries = (await readdir(directoryPath, { withFileTypes: true }))
-      .filter((entry) => entry.name !== ".git")
-      .filter((entry) => path.resolve(directoryPath, entry.name) !== storeRoot)
-      .map((entry) => {
-        const childPath = path.relative(root, path.join(directoryPath, entry.name))
-          .split(path.sep)
-          .join("/");
-        return {
-          path: childPath,
-          name: entry.name,
-          kind: entry.isDirectory() && !entry.isSymbolicLink()
-            ? "directory" as const
-            : "file" as const
-        };
-      })
-      .sort((left, right) => (
-        (left.kind === right.kind ? 0 : left.kind === "directory" ? -1 : 1)
-        || left.name.localeCompare(right.name, undefined, { sensitivity: "base" })
-        || left.path.localeCompare(right.path)
-      ));
-    return { directory: segments.join("/"), entries };
+    const root = path.resolve(corpus.root);
+    return {
+      directory: listing.directory,
+      entries: listing.entries.filter(
+        (entry) => path.resolve(root, entry.path) !== storeRoot
+      )
+    };
   }
 
   workspace(): Promise<WorkspaceSnapshot> {

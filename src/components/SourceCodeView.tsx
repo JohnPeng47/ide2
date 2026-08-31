@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNod
 import type { ThemedToken, TokensResult } from "shiki";
 import type { SourceSnippet } from "../api";
 import type { CompactedSourceNode, CompactedSourceSection, SourceRange } from "../domain";
+import type { ContentPresentation } from "../domainProfile";
 
 const SHIKI_THEME = "dark-plus";
 const TOKEN_CACHE_LIMIT = 40;
@@ -68,6 +69,10 @@ function languageForPath(path: string): { id: string; name: string } {
 
 export function sourceLanguageName(path: string): string {
   return languageForPath(path).name;
+}
+
+export function contentLanguageName(path: string, presentation: ContentPresentation): string {
+  return presentation.syntaxHighlighting === "code" ? sourceLanguageName(path) : "Plain text";
 }
 
 async function tokenizeSource(path: string, source: string): Promise<TokensResult> {
@@ -173,6 +178,7 @@ export function SourceCodeView(props: {
   preview: SourceSnippet;
   range: SourceRange;
   compacted: boolean;
+  presentation: ContentPresentation;
   revealed?: boolean;
   revealRequestId?: number;
 }) {
@@ -196,13 +202,14 @@ export function SourceCodeView(props: {
     let cancelled = false;
     setHighlighted(null);
     setHighlightFailed(false);
+    if (props.presentation.syntaxHighlighting === "plain") return undefined;
     void tokenizeSource(props.preview.path, source).then((result) => {
       if (!cancelled) setHighlighted(result);
     }).catch(() => {
       if (!cancelled) setHighlightFailed(true);
     });
     return () => { cancelled = true; };
-  }, [props.preview.path, source]);
+  }, [props.presentation.syntaxHighlighting, props.preview.path, source]);
 
   useEffect(() => {
     setExpandedSections(new Set());
@@ -229,7 +236,7 @@ export function SourceCodeView(props: {
     const key = section ? sectionKey(section) : "";
     const expanded = section ? expandedSections.has(key) : false;
 
-    if (props.compacted && section && !expanded) {
+    if (props.presentation.sourceCompaction && props.compacted && section && !expanded) {
       const graphLines = section.comment.replace(/\r\n?/g, "\n").split("\n");
       const nodesByGraphLine = new Map(section.nodes?.map((node) => [node.graphLine, node]) ?? []);
       const sourceIndent = props.preview.lines[index]?.match(/^\s*/)?.[0] ?? "";
@@ -312,7 +319,7 @@ export function SourceCodeView(props: {
         key={`line:${lineNumber}`}
       >
         <span className="source-line-gutter">
-          {props.compacted && section && expanded ? (
+          {props.presentation.sourceCompaction && props.compacted && section && expanded ? (
             <button
               type="button"
               className="source-fold-toggle"
@@ -325,7 +332,7 @@ export function SourceCodeView(props: {
               })}
             >[-]</button>
           ) : <span className="source-fold-spacer" aria-hidden="true" />}
-          {props.compacted && section && expanded ? null : (
+          {props.presentation.sourceCompaction && props.compacted && section && expanded ? null : (
             <span className="source-line-number" aria-hidden="true">{lineNumber}</span>
           )}
         </span>
@@ -347,10 +354,14 @@ export function SourceCodeView(props: {
       ref={scrollRef}
       className={props.revealed ? "source-code-viewer is-revealed" : "source-code-viewer"}
       data-highlighted={highlighted ? "true" : "false"}
-      data-language={sourceLanguageName(props.preview.path)}
+      data-language={contentLanguageName(props.preview.path, props.presentation)}
+      data-presentation={props.presentation.syntaxHighlighting}
+      data-wrap={props.presentation.wrap ? "true" : "false"}
       data-highlight-error={highlightFailed ? "true" : undefined}
-      aria-label={`Read-only ${sourceLanguageName(props.preview.path)} source code`}
-      aria-busy={!highlighted && !highlightFailed}
+      aria-label={props.presentation.syntaxHighlighting === "code"
+        ? `Read-only ${sourceLanguageName(props.preview.path)} source code`
+        : "Read-only plain text document"}
+      aria-busy={props.presentation.syntaxHighlighting === "code" && !highlighted && !highlightFailed}
       tabIndex={0}
       style={rootStyle}
     >

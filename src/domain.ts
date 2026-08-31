@@ -135,6 +135,10 @@ export interface ProjectRecord {
   name: string;
   repositoryIdentity: string;
   canonicalRepoRoot: string;
+  /** Application semantics for this corpus. Missing only while reading legacy records. */
+  domainProfileId: import("./domainProfile").DomainProfileId;
+  /** Concrete content source. Missing legacy records normalize to the canonical git worktree. */
+  corpus: import("./domainProfile").CorpusBinding;
   diagramSetIds: string[];
   createdAt: string;
   updatedAt: string;
@@ -225,6 +229,8 @@ export interface GenerationPromptConfigRecord {
   schemaVersion: typeof SCHEMA_VERSION;
   id: string;
   diagramSetId: string;
+  /** Domain used to render evidence terminology. Missing legacy values mean source-code. */
+  domainProfileId?: "source-code" | "document";
   outputKind: GenerationOutputKind;
   /** Required for full diagrams and omitted for DiagramComponents. */
   viewKind?: DiagramViewKind;
@@ -345,6 +351,8 @@ export interface DiagramComponentRecord {
   handle: string;
   name: string;
   ascii: string;
+  /** Presentation semantics. Optional only on legacy records. */
+  representationKind?: "tree" | "diagram";
   codeEntityIds: string[];
   origin: "selection" | "generated" | "imported" | "edited";
   sourceDiagramId?: string;
@@ -375,6 +383,8 @@ export interface DiagramRecord {
   handle: string;
   name: string;
   ascii: string;
+  /** Presentation semantics. Optional only on legacy records. */
+  representationKind?: "tree" | "diagram";
   codeEntityIds: string[];
   origin: "generated" | "imported" | "edited";
   producedByRunId?: string;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { asciiTreeLineage, hiddenAsciiTreeLines, parseAsciiTree } from "./asciiTree";
+import { asciiTreeLineage, asciiTreeSubtree, hiddenAsciiTreeLines, parseAsciiTree } from "./asciiTree";
 
 const ascii = [
   "title",
@@ -28,5 +28,14 @@ describe("ASCII tree", () => {
   it("hides only a collapsed node's subtree", () => {
     expect([...hiddenAsciiTreeLines(ascii, new Set([3]))]).toEqual([4]);
     expect([...hiddenAsciiTreeLines(ascii, new Set([2]))]).toEqual([3, 4, 5]);
+  });
+
+  it("returns a structural subtree in display order", () => {
+    expect(asciiTreeSubtree(ascii, 3).map((node) => node.text)).toEqual(["beta", "gamma"]);
+    expect(asciiTreeSubtree(ascii, 99)).toEqual([]);
+  });
+
+  it("reports the exact text column when a branch uses extra spacing", () => {
+    expect(parseAsciiTree("+-->   spaced")[0]).toMatchObject({ text: "spaced", textColumn: 8 });
   });
 });

@@ -4,16 +4,49 @@ import {
   type CodeEntityPromptTemplateRecord,
   type DiagramSetRecord
 } from "../src/domain";
+import type { BuiltInDomainProfileId } from "../src/domainProfile";
 
 export interface CodeEntityPromptInput {
   diagramSetName: string;
   initialPrompt: string;
   codeEntityIdentificationCriteria: string;
   codeEntityCompactionCriteria: string;
+  domainProfileId?: BuiltInDomainProfileId;
 }
 
 /** Action-oriented workflow composed from independently configurable criteria. */
 export function codeEntityCollectionPrompt(input: CodeEntityPromptInput): string {
+  if (input.domainProfileId === "document") {
+    return `Collect evidence entities for "${input.diagramSetName}".
+
+Request:
+${input.initialPrompt || "Map the requested document concepts."}
+
+## Identify Evidence
+
+Inspect the documents and identify concepts that satisfy these criteria:
+
+${input.codeEntityIdentificationCriteria}
+
+For each match, return its classification, concise label and summary, optional
+document symbol or timestamp, and exact corpus-relative evidence ranges.
+
+## Present Evidence
+
+Create a compactedSource evidence presentation for every identified document
+range, following these criteria:
+
+${input.codeEntityCompactionCriteria}
+
+Return retained passage sections, collapsed-comment sections, and exact
+evidence-node mappings.
+
+## Submission
+
+Submit all identified evidence entities together.
+
+Finish by calling submit_code_entities. If the submission is rejected, correct the reported issues and call it again.`;
+  }
   return `Collect code entities for "${input.diagramSetName}".
 
 Request:
@@ -50,6 +83,7 @@ export function createCodeEntityPromptConfig(input: {
   diagramSet: DiagramSetRecord;
   template: CodeEntityPromptTemplateRecord;
   createdAt: string;
+  domainProfileId?: BuiltInDomainProfileId;
 }): CodeEntityPromptConfigRecord {
   const identificationCriteria = input.template.prompts["code-entity-identification"].trim();
   const compactionCriteria = input.template.prompts["code-entity-compaction"].trim();
@@ -60,7 +94,8 @@ export function createCodeEntityPromptConfig(input: {
     diagramSetName: input.diagramSet.name,
     initialPrompt: input.diagramSet.initialPrompt,
     codeEntityIdentificationCriteria: identificationCriteria,
-    codeEntityCompactionCriteria: compactionCriteria
+    codeEntityCompactionCriteria: compactionCriteria,
+    domainProfileId: input.domainProfileId
   });
   return {
     schemaVersion: SCHEMA_VERSION,

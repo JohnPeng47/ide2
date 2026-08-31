@@ -27,6 +27,8 @@ import {
   type SystemPromptTemplateRecord,
   type PromptReference
 } from "./domain";
+import type { BuiltInDomainProfileId } from "./domainProfile";
+import { resolveDomainProfile } from "./domainProfiles";
 
 export interface PromptOption {
   kind: PromptReference["kind"];
@@ -46,12 +48,27 @@ export interface GenerationPromptBuildResult {
   allowedDiagramComponentIds: string[];
 }
 
+function evidencePromptRepresentation(
+  record: CodeEntityRecord,
+  domainProfileId: BuiltInDomainProfileId
+): string {
+  if (domainProfileId === "source-code") return new CodeEntity(record).prompt_str();
+  const evidence = resolveDomainProfile(domainProfileId).evidenceSchema.fromCodeEntity(record);
+  const ranges = evidence.anchors.map((range) => {
+    const symbol = range.symbol ? ` (${range.symbol})` : "";
+    return `- ${range.path}:${range.startLine}-${range.endLine}${symbol}`;
+  }).join("\n");
+  return `Evidence @entity/${evidence.handle}\nLabel: ${evidence.label}\nKind: ${evidence.kind}\nSummary: ${evidence.summary}\nDocument ranges:\n${ranges}`;
+}
+
 const DIAGRAM_BASE = "Generate exactly one architecture diagram from the supplied explicit context. Give it a compact, specific name, ideally two to five words; omit redundant words such as the DiagramSet name.";
 const CALL_GRAPH_BASE = "Generate exactly one source-backed call graph from the supplied explicit context. Show invocation and control relationships, not general architecture or directory ownership. Give it a compact, specific name.";
 const DIR_VIEW_BASE = "Generate exactly one source-backed ASCII directory view from the supplied explicit context. Show the relevant repository hierarchy and connect files to their responsibilities without inventing paths. Give it a compact, specific name.";
 const COMPONENT_BASE = "Generate exactly one reusable DiagramComponent from the supplied explicit context. It is a fragment for a broader ASCII Diagram, not a complete diagram. Give it a compact, specific name.";
 const DIAGRAM_FINISH = "Never modify files. Use 7-bit ASCII only.";
 const COMPONENT_FINISH = "Never modify files. Use 7-bit ASCII only.";
+const DOCUMENT_GENERATION_GUIDANCE = `Document-domain requirements take precedence over reusable template terminology. Treat the supplied entities as document evidence, not source code. Build a visual representation of supported claims, events, chronology, or relationships; do not invent program architecture, calls, or repository structure.`;
+const DOCUMENT_MAPPING_GUIDANCE = `Document-domain mapping requirements take precedence over reusable template terminology. Interpret CodeEntity as an evidence item, source-backed as document-grounded, and source range as document range. Map the smallest exact visible semantic spans to the passages that support them.`;
 export const DEFAULT_REFERENCE_FOLLOW_UP_PROMPT = `Regenerate the complete artifact you submitted in the previous turn.
 
 Use the system-managed reference instruction and context appended below. Treat referenced artifacts as visual style examples. Preserve the previous candidate's source-backed meaning, relationships, and CodeEntity coverage. Adopt visual grammar such as box shapes, connector style, spacing, density, grouping, and label placement, but do not copy unrelated labels, concepts, or repository-specific content. Return a complete replacement using 7-bit ASCII.`;
@@ -182,6 +199,35 @@ surrounding retained code do not extend node ranges outside the collapsed span.
 All labels remain concise and source-backed. The server snapshots original
 source after validating the submitted coordinates.`;
 
+export const DEFAULT_DOCUMENT_EVIDENCE_IDENTIFICATION_CRITERIA = `## Evidence significance
+
+A useful evidence entity is a diagram-relevant concept grounded in the supplied
+documents. It helps explain the requested chronology, argument, relationship,
+event, decision, or recurring theme.
+
+An evidence entity may cover multiple related passages when they collectively
+support one concept. Give each entity a concise label and summary and exact
+corpus-relative document ranges. Descriptions must stay within what those
+passages support.
+
+Strong candidates include claims, decisions, events, actors, definitions,
+contrasts, causal links, and transitions that connect the requested diagram
+concepts.`;
+
+export const DEFAULT_DOCUMENT_EVIDENCE_COMPACTION_CRITERIA = `## Evidence presentation
+
+Preserve the meaningful statements, surrounding context, chronology, and
+relationships in each cited passage while omitting unrelated detail.
+
+For every evidence range, provide a continuous compactedSource presentation.
+Retained sections quote the relevant document lines. Collapsed-comment sections
+summarize only material supported by their exact span using concise 7-bit ASCII.
+Map each semantic summary node to the exact lines that support it. Blank and
+connector-only lines have no mapping.
+
+The server snapshots the original document lines after validating every
+submitted coordinate.`;
+
 export const BUILT_IN_SYSTEM_PROMPT_TEMPLATES = [
   { id: "default", label: "Default", description: "Balanced architecture diagram generation.", diagram: "", callGraph: "", dirView: "", component: "Be creative." },
   { id: "structure-first", label: "Structure first", description: "Prioritize ownership, boundaries, and hierarchy.", diagram: "Emphasize ownership, boundaries, and hierarchy.", callGraph: "Group calls by their owning subsystem.", dirView: "Emphasize meaningful directory boundaries.", component: "Emphasize a reusable structural relationship." },
@@ -268,18 +314,26 @@ export function createBuiltInSystemPromptTemplates(createdAt: string): SystemPro
 }
 
 export function createBuiltInCodeEntityPromptTemplates(
-  createdAt: string
+  createdAt: string,
+  domainProfileId: BuiltInDomainProfileId = "source-code"
 ): CodeEntityPromptTemplateRecord[] {
+  const documentMode = domainProfileId === "document";
   return [{
     schemaVersion: SCHEMA_VERSION,
     id: "default-code-entities",
-    label: "Default Code Entities",
-    description: "Source-backed entity identification and continuous source compaction.",
+    label: documentMode ? "Default Document Evidence" : "Default Code Entities",
+    description: documentMode
+      ? "Document-grounded evidence identification and passage presentation."
+      : "Source-backed entity identification and continuous source compaction.",
     builtIn: true,
     version: 1,
     prompts: {
-      "code-entity-identification": DEFAULT_CODE_ENTITY_IDENTIFICATION_CRITERIA,
-      "code-entity-compaction": DEFAULT_CODE_ENTITY_COMPACTION_CRITERIA
+      "code-entity-identification": documentMode
+        ? DEFAULT_DOCUMENT_EVIDENCE_IDENTIFICATION_CRITERIA
+        : DEFAULT_CODE_ENTITY_IDENTIFICATION_CRITERIA,
+      "code-entity-compaction": documentMode
+        ? DEFAULT_DOCUMENT_EVIDENCE_COMPACTION_CRITERIA
+        : DEFAULT_CODE_ENTITY_COMPACTION_CRITERIA
     },
     createdAt,
     updatedAt: createdAt
@@ -345,7 +399,12 @@ export function renderMappingPromptTemplate(input: {
   artifact: GeneratedArtifactDraft;
   codeEntities: CodeEntityRecord[];
   aliases: CodeEntityPromptAlias[];
+  domainProfileId?: BuiltInDomainProfileId;
 }): string {
+  const domainProfile = resolveDomainProfile(input.domainProfileId);
+  const evidenceSchema = domainProfile.evidenceSchema;
+  const documentMode = domainProfile.id === "document";
+  const evidenceCollectionLabel = documentMode ? evidenceSchema.label : "CodeEntities";
   const aliasesById = new Map(input.aliases.map(({ id, alias }) => [id, alias]));
   const numberedAscii = input.artifact.ascii
     .split("\n")
@@ -358,9 +417,10 @@ export function renderMappingPromptTemplate(input: {
     ))
   ].join("\n")).join("\n\n") || "none";
   return appendSystemManagedOutputContract([
+    ...(documentMode ? [DOCUMENT_MAPPING_GUIDANCE] : []),
     renderPromptTemplate(input.template),
     `System-managed final artifact (read-only):\n${numberedAscii}`,
-    `System-managed CodeEntities and source ranges (read-only):\n${entities}`
+    `System-managed ${evidenceCollectionLabel} and ${documentMode ? "document" : "source"} ranges (read-only):\n${entities}`
   ].join("\n\n"), input.targetKind);
 }
 
@@ -439,6 +499,7 @@ export function createGenerationPromptConfig(input: {
   referencePromptSelections?: GenerationReferenceSelection[];
   derivation?: GenerationDerivationRecord;
   createdAt: string;
+  domainProfileId?: BuiltInDomainProfileId;
 }): GenerationPromptBuildResult {
   if (input.codeEntities.status !== "finalized") {
     throw new Error("CodeEntitiesSet must be finalized before generation");
@@ -455,6 +516,11 @@ export function createGenerationPromptConfig(input: {
     ? "diagram-component"
     : viewKind ?? "diagram";
   const promptBindings = input.promptBindings ?? generationPromptBindings(targetKind);
+  const domainProfileId = input.domainProfileId ?? "source-code";
+  const domainProfile = resolveDomainProfile(domainProfileId);
+  const evidenceSchema = domainProfile.evidenceSchema;
+  const documentMode = domainProfileId === "document";
+  const evidenceCollectionLabel = documentMode ? evidenceSchema.label : "CodeEntities";
   const systemPromptTemplate = promptTemplate(input.profile, promptBindings.system);
   const referencePromptTemplate = promptBindings.reference
     ? promptTemplate(input.profile, promptBindings.reference)
@@ -707,7 +773,7 @@ export function createGenerationPromptConfig(input: {
   ): GenerationPromptReference[] => values.map((reference) => ({
       ...reference,
       promptRepresentation: reference.kind === "code-entity"
-        ? new CodeEntity(entitiesById.get(reference.targetId)!).prompt_str()
+        ? evidencePromptRepresentation(entitiesById.get(reference.targetId)!, domainProfileId)
         : reference.kind === "diagram"
           ? new Diagram(diagramsById.get(reference.targetId)!).prompt_str(codeEntityAliasesById)
           : new DiagramComponent(componentsById.get(reference.targetId)!).prompt_str(codeEntityAliasesById)
@@ -717,7 +783,7 @@ export function createGenerationPromptConfig(input: {
   const renderedSystemTemplateReferences = renderReferences(systemTemplateMentions.references);
 
   const selectedBlocks = [...new Set([...selected, ...selectedFromReferences])]
-    .map((id) => new CodeEntity(entitiesById.get(id)!).prompt_str());
+    .map((id) => evidencePromptRepresentation(entitiesById.get(id)!, domainProfileId));
   const diagramBlocks = renderedReferences
     .filter((reference) => reference.kind === "diagram")
     .map((reference) => reference.promptRepresentation);
@@ -727,7 +793,13 @@ export function createGenerationPromptConfig(input: {
   const directoryPaths = [...new Set(allowedCodeEntityIds.flatMap((id) => (
     entitiesById.get(id)?.sourceRanges.map((range) => range.path) ?? []
   )))].sort();
-  const outputInstruction = input.outputKind === "diagram-component"
+  const outputInstruction = documentMode
+    ? input.outputKind === "diagram-component"
+      ? "Generate one reusable document-grounded DiagramComponent. Preserve the meaning supported by the supplied evidence and return only the component. Use only 7-bit ASCII."
+      : viewKind === "call-graph"
+        ? "Generate one document-grounded hierarchical tree. Represent claims, events, chronology, and relationships supported by the supplied evidence. Use only 7-bit ASCII. Map visible semantic nodes to the supplied evidence aliases; never print persisted identifiers."
+        : "Generate one document-grounded diagram. Use only 7-bit ASCII. Map every evidence-backed label to a supplied evidence alias in submission metadata, but do not print identifiers."
+    : input.outputKind === "diagram-component"
     ? "Generate one reusable DiagramComponent for use inside a broader ASCII Diagram. Explore a distinct version of the supplied component or context. Preserve source-backed meaning and return only the component. Use only 7-bit ASCII."
     : viewKind === "call-graph"
       ? "Generate one call graph. Represent source-backed calls, branches, joins, and entry points. Use only 7-bit ASCII. Map nodes with readable supplied CodeEntity aliases such as [entity-handle]; never print persisted identifiers."
@@ -764,7 +836,7 @@ export function createGenerationPromptConfig(input: {
     ...(companionCallGraph
       ? [`Immutable companion Call Graph:\n${new Diagram(companionCallGraph).prompt_str(codeEntityAliasesById)}`]
       : []),
-    `Immutable CodeEntities:\n${selectedBlocks.join("\n\n") || "none"}`,
+    `Immutable ${evidenceCollectionLabel}:\n${selectedBlocks.join("\n\n") || "none"}`,
     ...(auxiliaryDiagramBlocks.length
       ? [`Additional referenced Diagrams:\n${auxiliaryDiagramBlocks.join("\n\n")}`]
       : []),
@@ -774,12 +846,12 @@ export function createGenerationPromptConfig(input: {
     ...(viewKind === "dir-view"
       ? [`Immutable repository path inventory:\n${directoryPaths.map((path) => `- ${path}`).join("\n") || "none"}`]
       : []),
-    `User instruction:\n${input.instruction.trim() || defaultGenerationInstruction(viewKind!)}`
+    `User instruction:\n${input.instruction.trim() || (documentMode ? "Create a clear visual representation from the supplied evidence." : defaultGenerationInstruction(viewKind!))}`
   ].join("\n\n") : [
     `DiagramSet: ${input.diagramSet.name}`,
     `Original request: ${input.diagramSet.initialPrompt || "none"}`,
-    `User instruction:\n${input.instruction.trim() || "Create a clear diagram from the selected code entities."}`,
-    `Selected CodeEntities:\n${selectedBlocks.join("\n\n") || "none"}`,
+    `User instruction:\n${input.instruction.trim() || (documentMode ? "Create a clear visual representation from the selected evidence." : "Create a clear diagram from the selected code entities.")}`,
+    `Selected ${evidenceCollectionLabel}:\n${selectedBlocks.join("\n\n") || "none"}`,
     `Referenced Diagrams:\n${diagramBlocks.join("\n\n") || "none"}`,
     `Referenced DiagramComponents:\n${componentBlocks.join("\n\n") || "none"}`,
     outputInstruction
@@ -801,6 +873,7 @@ export function createGenerationPromptConfig(input: {
     schemaVersion: SCHEMA_VERSION,
     id: input.id,
     diagramSetId: input.diagramSet.id,
+    domainProfileId,
     outputKind: input.outputKind,
     ...(viewKind ? { viewKind } : {}),
     modelId: input.modelId,
@@ -837,6 +910,7 @@ export function createGenerationPromptConfig(input: {
         ? { references: renderedSystemTemplateReferences }
         : {}),
       rendered: renderSystemPromptTemplate([
+        ...(documentMode ? [DOCUMENT_GENERATION_GUIDANCE] : []),
         systemPromptTemplate,
         ...(renderedSystemTemplateReferences.length ? [
           `Referenced artifacts requested by this system template:\n${renderedSystemTemplateReferences

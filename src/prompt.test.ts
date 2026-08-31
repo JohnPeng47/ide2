@@ -187,6 +187,7 @@ const buildPrompt = (input: {
   referencePrompt?: string;
   selectedCodeEntityIds: string[];
   profileId?: string;
+  domainProfileId?: "source-code" | "document";
   referenceSelections?: Parameters<typeof createGenerationPromptConfig>[0]["referenceSelections"];
   referencePromptSelections?: Parameters<typeof createGenerationPromptConfig>[0]["referencePromptSelections"];
   derivation?: Parameters<typeof createGenerationPromptConfig>[0]["derivation"];
@@ -201,6 +202,7 @@ const buildPrompt = (input: {
   modelId: "gpt-5.6-sol",
   profile: createBuiltInSystemPromptTemplates("2026-01-01T00:00:00Z")
     .find((profile) => profile.id === (input.profileId ?? "default"))!,
+  domainProfileId: input.domainProfileId,
   instruction: input.instruction,
   runReferencePrompt: input.runReferencePrompt,
   referencePrompt: input.referencePrompt,
@@ -212,6 +214,30 @@ const buildPrompt = (input: {
 });
 
 describe("createGenerationPromptConfig", () => {
+  it("uses document evidence terminology through generation and mapping", () => {
+    const result = buildPrompt({
+      outputKind: "diagram",
+      viewKind: "diagram",
+      instruction: "Show the argument",
+      selectedCodeEntityIds: ["entity-queue"],
+      domainProfileId: "document"
+    });
+    expect(result.config.domainProfileId).toBe("document");
+    expect(result.config.systemPrompt.rendered).toContain("Treat the supplied entities as document evidence");
+    expect(result.config.contextPrompt.rendered).toContain("Selected Document evidence:");
+    expect(result.config.contextPrompt.rendered).toContain("Document ranges:");
+    const mapping = renderMappingPromptTemplate({
+      template: result.config.mappingPrompt.template,
+      targetKind: "diagram",
+      artifact: { name: "Argument", ascii: "claim", codeEntityIds: ["entity-queue"] },
+      codeEntities: result.allowedCodeEntities,
+      aliases: result.allowedCodeEntityAliases,
+      domainProfileId: result.config.domainProfileId
+    });
+    expect(mapping).toContain("Interpret CodeEntity as an evidence item");
+    expect(mapping).toContain("Document evidence and document ranges");
+  });
+
   it("binds workflow stages to arbitrary prompt names", () => {
     const profile = createSystemPromptTemplate({
       id: "higher",

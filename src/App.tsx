@@ -106,6 +106,12 @@ import {
   type WorkspaceSnapshot
 } from "./domain";
 import { defaultGenerationInstruction, type PromptOption } from "./prompt";
+import type { DomainProfile } from "./domainProfile";
+import {
+  profileSupportsCommand,
+  representationKindForArtifact,
+  resolveDomainProfile
+} from "./domainProfiles";
 
 type Screen = "diagram" | "diagram-component" | "generation";
 
@@ -149,6 +155,7 @@ const LEGACY_CALL_GRAPH_FOCUS_PANE_PREFIX = "call-graph-focus-pane-";
 const CALL_GRAPH_FOCUS_VIEW_PREFIX = "call-graph-focus-view-";
 const PANE_LAYOUT_STORAGE_KEY = "new-diagram:pane-layout";
 const LEGACY_SPLIT_STORAGE_KEY = "new-diagram:split-percent";
+const PANE_PROFILE_STORAGE_KEY = "new-diagram:pane-domain-profile";
 const STUDIO_PANE_MINIMUM_SIZES = {
   [FILES_PANE_ID]: { width: 220 },
   [PRIMARY_PANE_ID]: { width: 480 },
@@ -168,11 +175,26 @@ function withoutTransientCallGraphFocus(state: PaneLayoutState): PaneLayoutState
   return next;
 }
 
-function createStudioPaneApi(): PaneApi {
-  const restored = parsePaneLayout(window.localStorage.getItem(PANE_LAYOUT_STORAGE_KEY));
+function explorerPaneTabs(profile: DomainProfile): PaneTab[] {
+  return profile.workspace.explorerTabs.map((tab) => ({ ...tab }));
+}
+
+export function createStudioPaneState(
+  profile: DomainProfile,
+  restored: PaneLayoutState | null,
+  storedPercent = Number.NaN
+): PaneLayoutState {
   if (restored?.panes[PRIMARY_PANE_ID] && restored.panes[CONTEXT_PANE_ID]) {
-    const withoutTransient = withoutTransientCallGraphFocus(restored);
-    if (withoutTransient.panes[FILES_PANE_ID]) return new PaneApi(withoutTransient);
+    let withoutTransient = withoutTransientCallGraphFocus(restored);
+    if (withoutTransient.panes[FILES_PANE_ID]) {
+      const activeExplorerTab = withoutTransient.panes[FILES_PANE_ID].activeTabId;
+      return setPaneTabs(
+        withoutTransient,
+        FILES_PANE_ID,
+        explorerPaneTabs(profile),
+        activeExplorerTab
+      );
+    }
     const contextTabs = withoutTransient.panes[CONTEXT_PANE_ID].tabs.filter((tab) => tab.id !== "files");
     const withoutLegacyFilesTab = setPaneTabs(
       withoutTransient,
@@ -182,18 +204,13 @@ function createStudioPaneApi(): PaneApi {
         ? "code-entities"
         : withoutTransient.panes[CONTEXT_PANE_ID].activeTabId
     );
-    return new PaneApi(addPane(withoutLegacyFilesTab, {
+    return addPane(withoutLegacyFilesTab, {
       id: FILES_PANE_ID,
       ariaLabel: "Diagram navigation",
       tabListClassName: "file-pane-tabs",
-      tabs: [
-        { id: "files", label: "Diagram Files", domId: "files-tab" },
-        { id: "diagram-sets", label: "Diagram Sets", domId: "diagram-sets-tab" },
-        { id: "highlights", label: "Highlights", domId: "highlights-tab" }
-      ]
-    }, PRIMARY_PANE_ID, { placement: "left", ratio: 0.32, splitId: FILES_SPLIT_ID }));
+      tabs: explorerPaneTabs(profile)
+    }, PRIMARY_PANE_ID, { placement: "left", ratio: 0.32, splitId: FILES_SPLIT_ID });
   }
-  const storedPercent = Number(window.localStorage.getItem(LEGACY_SPLIT_STORAGE_KEY));
   const ratio = Number.isFinite(storedPercent) && storedPercent > 0
     ? storedPercent / 100
     : 0.62;
@@ -212,16 +229,18 @@ function createStudioPaneApi(): PaneApi {
       { id: "diagrams", label: "Diagrams", domId: "diagrams-tab" }
     ]
   }, PRIMARY_PANE_ID, { placement: "right", ratio, splitId: ROOT_SPLIT_ID });
-  return new PaneApi(addPane(withContext, {
+  return addPane(withContext, {
     id: FILES_PANE_ID,
     ariaLabel: "Diagram navigation",
     tabListClassName: "file-pane-tabs",
-    tabs: [
-      { id: "files", label: "Diagram Files", domId: "files-tab" },
-      { id: "diagram-sets", label: "Diagram Sets", domId: "diagram-sets-tab" },
-      { id: "highlights", label: "Highlights", domId: "highlights-tab" }
-    ]
-  }, PRIMARY_PANE_ID, { placement: "left", ratio: 0.32, splitId: FILES_SPLIT_ID }));
+    tabs: explorerPaneTabs(profile)
+  }, PRIMARY_PANE_ID, { placement: "left", ratio: 0.32, splitId: FILES_SPLIT_ID });
+}
+
+function createStudioPaneApi(profile: DomainProfile): PaneApi {
+  const restored = parsePaneLayout(window.localStorage.getItem(PANE_LAYOUT_STORAGE_KEY));
+  const storedPercent = Number(window.localStorage.getItem(LEGACY_SPLIT_STORAGE_KEY));
+  return new PaneApi(createStudioPaneState(profile, restored, storedPercent));
 }
 
 function pageFromPath(): "studio" | "experiments" {
@@ -246,7 +265,9 @@ export function App() {
 
 function StudioPage(props: { onExperiments: () => void }) {
   const refBuffer = useRefBuffer();
-  const [paneApi] = useState(createStudioPaneApi);
+  const [paneApi] = useState(() => createStudioPaneApi(resolveDomainProfile(
+    window.localStorage.getItem(PANE_PROFILE_STORAGE_KEY)
+  )));
   const [workspace, setWorkspace] = useState<WorkspaceSnapshot | null>(null);
   const [activeSetId, setActiveSetId] = useState<string | null>(null);
   const [activeDiagramId, setActiveDiagramId] = useState<string | null>(null);
@@ -290,6 +311,7 @@ function StudioPage(props: { onExperiments: () => void }) {
   const revealRequestId = useRef(0);
   const editQueue = useRef<Promise<void>>(Promise.resolve());
   const editShortcutHandlers = useRef({ undo: () => {}, redo: () => {} });
+  const domainProfile = resolveDomainProfile(workspace?.project?.domainProfileId);
 
   useEffect(() => paneApi.subscribe(() => {
     const paneState = paneApi.getState();
@@ -485,6 +507,17 @@ function StudioPage(props: { onExperiments: () => void }) {
     "call-graph": diagrams.filter((diagram) => diagram.viewKind === "call-graph").length,
     "dir-view": diagrams.filter((diagram) => diagram.viewKind === "dir-view").length
   }), [diagrams]);
+  const availableDiagramViewOptions = useMemo(
+    () => DIAGRAM_VIEW_OPTIONS.filter(({ kind }) => domainProfile.workspace.diagramViews.includes(kind)),
+    [domainProfile]
+  );
+  const availableGenerationTargets = useMemo<readonly GenerationTargetKind[]>(
+    () => [...domainProfile.workspace.diagramViews, "diagram-component"],
+    [domainProfile]
+  );
+  useEffect(() => {
+    if (!availableGenerationTargets.includes(targetKind)) setTargetKind("diagram");
+  }, [availableGenerationTargets, targetKind]);
   const featuredViewKinds = new Set<DiagramViewKind>(
     (Object.keys(activeSet?.featuredViewIds ?? {}) as DiagramViewKind[]).filter(
       (kind) => Boolean(activeSet?.featuredViewIds[kind])
@@ -492,6 +525,9 @@ function StudioPage(props: { onExperiments: () => void }) {
   );
   const activeComponent = components.find((component) => component.id === activeComponentId) ?? null;
   const selectedArtifact = screen === "diagram-component" ? activeComponent : activeDiagram;
+  const selectedRepresentationKind = selectedArtifact
+    ? representationKindForArtifact(selectedArtifact)
+    : "diagram";
   const contextArtifact = screen === "diagram-component"
     ? activeComponent
     : screen === "diagram" ? activeDiagram : null;
@@ -547,7 +583,7 @@ function StudioPage(props: { onExperiments: () => void }) {
       ? [{ id: "generate", label: "Generate" }]
       : screen === "diagram-component"
         ? [{ id: "component", label: "Component" }]
-        : DIAGRAM_VIEW_OPTIONS.map(({ kind, label }) => ({
+        : availableDiagramViewOptions.map(({ kind, label }) => ({
           id: kind,
           label,
           badge: featuredViewKinds.has(kind) ? "★" : viewCounts[kind]
@@ -585,14 +621,15 @@ function StudioPage(props: { onExperiments: () => void }) {
     paneApi.setTabs(PRIMARY_PANE_ID, primaryTabs, screen === "generation"
       ? "generate"
       : screen === "diagram-component" ? "component" : activeViewKind);
-    const currentFilesTabId = paneApi.getState().panes[FILES_PANE_ID]?.activeTabId;
-    paneApi.setTabs(FILES_PANE_ID, [
-      { id: "files", label: "Diagram Files", domId: "files-tab" },
-      { id: "diagram-sets", label: "Diagram Sets", domId: "diagram-sets-tab" },
-      { id: "highlights", label: "Highlights", domId: "highlights-tab" }
-    ], currentFilesTabId === "diagram-sets" || currentFilesTabId === "highlights"
-      ? currentFilesTabId
-      : "files");
+    if (workspace?.project) {
+      window.localStorage.setItem(PANE_PROFILE_STORAGE_KEY, domainProfile.id);
+      const currentFilesTabId = paneApi.getState().panes[FILES_PANE_ID]?.activeTabId;
+      paneApi.setTabs(
+        FILES_PANE_ID,
+        explorerPaneTabs(domainProfile),
+        currentFilesTabId
+      );
+    }
     paneApi.setTabs(CONTEXT_PANE_ID, contextTabs, desiredContextTabId);
   }, [
     activeViewKind,
@@ -600,9 +637,12 @@ function StudioPage(props: { onExperiments: () => void }) {
     contextTab,
     editSession,
     featuredViewKinds,
+    domainProfile,
+    availableDiagramViewOptions,
     paneApi,
     screen,
-    viewCounts
+    viewCounts,
+    workspace?.project
   ]);
   const collectionRun = activeSet && workspace
     ? [...activeSet.agentRunIds]
@@ -1602,6 +1642,7 @@ function StudioPage(props: { onExperiments: () => void }) {
       diagrams={diagrams}
       components={components}
       targetKind={targetKind}
+      availableTargetKinds={availableGenerationTargets}
       foundationDiagram={foundationDiagram}
       companionCallGraph={companionCallGraph}
       immutableCodeEntities={immutableCodeEntities}
@@ -1653,6 +1694,7 @@ function StudioPage(props: { onExperiments: () => void }) {
     primaryPaneContent = <DiagramView
       active={editSession ? { ...activeComponent, ascii: editSession.workingAscii } : activeComponent}
       artifactKind="diagram-component"
+      representationKind={selectedRepresentationKind}
       onGenerate={() => deriveComponent(activeComponent)}
       onExport={() => exportMappedArtifact("diagram-component", activeComponent)}
       onCapture={captureNested}
@@ -1673,7 +1715,14 @@ function StudioPage(props: { onExperiments: () => void }) {
       onRevealCodeEntity={revealCodeEntity}
       highlightedMappingIds={selectedHighlightedMappingIds}
       highlightBusyMappingIds={highlightBusyMappingIds}
-      onToggleHighlight={(mapping) => void toggleHighlight(mapping)}
+      onToggleHighlight={profileSupportsCommand(domainProfile, "toggle-highlight", selectedRepresentationKind)
+        ? (mapping) => void toggleHighlight(mapping)
+        : undefined}
+      collapseSubtrees={profileSupportsCommand(
+        domainProfile,
+        "collapse-subtree",
+        selectedRepresentationKind
+      )}
       onManualEdit={queueManualEdit}
       onMarker={(line, column) => void markLocation(line, column)}
       onUndoEdit={() => void runEditAction(undoEdit)}
@@ -1683,6 +1732,7 @@ function StudioPage(props: { onExperiments: () => void }) {
     primaryPaneContent = <DiagramView
       active={editSession ? { ...activeDiagram, ascii: editSession.workingAscii } : activeDiagram}
       artifactKind="diagram"
+      representationKind={selectedRepresentationKind}
       onGenerate={() => derive(activeDiagram)}
       onExport={() => exportMappedArtifact("diagram", activeDiagram)}
       onCapture={capture}
@@ -1708,7 +1758,16 @@ function StudioPage(props: { onExperiments: () => void }) {
       onRevealCodeEntity={revealCodeEntity}
       highlightedMappingIds={selectedHighlightedMappingIds}
       highlightBusyMappingIds={highlightBusyMappingIds}
-      onToggleHighlight={(mapping) => void toggleHighlight(mapping)}
+      onToggleHighlight={profileSupportsCommand(
+        domainProfile,
+        "toggle-highlight",
+        selectedRepresentationKind
+      ) ? (mapping) => void toggleHighlight(mapping) : undefined}
+      collapseSubtrees={profileSupportsCommand(
+        domainProfile,
+        "collapse-subtree",
+        selectedRepresentationKind
+      )}
       onManualEdit={queueManualEdit}
       onMarker={(line, column) => void markLocation(line, column)}
       onUndoEdit={() => void runEditAction(undoEdit)}
@@ -1729,6 +1788,7 @@ function StudioPage(props: { onExperiments: () => void }) {
   const renderContextPane = (tab: ContextTab) => <DiagramContextPanel
     setId={activeSet.id}
     codeEntities={contextCodeEntities}
+    contentPresentation={domainProfile.content}
     diagramSet={activeSet}
     diagrams={diagrams}
     components={components}

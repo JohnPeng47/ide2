@@ -13,6 +13,58 @@ afterEach(async () => {
 });
 
 describe("DiagramStore", () => {
+  it("normalizes legacy projects to an explicit source-code corpus", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-legacy-project-"));
+    roots.push(root);
+    await mkdir(path.join(root, ".diagrams"));
+    await writeFile(path.join(root, ".diagrams", "project.json"), JSON.stringify({
+      schemaVersion: SCHEMA_VERSION,
+      id: "project-legacy",
+      name: "Legacy",
+      repositoryIdentity: path.join(root, ".git"),
+      canonicalRepoRoot: root,
+      diagramSetIds: [],
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z"
+    }));
+
+    await expect(new DiagramStore(root).loadProject()).resolves.toMatchObject({
+      domainProfileId: "source-code",
+      corpus: { kind: "git-worktree", root }
+    });
+  });
+
+  it("persists a document profile and filesystem corpus for a non-git directory", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-document-project-"));
+    roots.push(root);
+    const store = new DiagramStore(root);
+    const location = {
+      checkoutRoot: root,
+      repositoryIdentity: `filesystem-documents:${root}`,
+      domainProfileId: "document" as const,
+      corpus: { kind: "filesystem-documents" as const, root }
+    };
+    const project = await store.ensureProject(location);
+
+    expect(project).toMatchObject({
+      domainProfileId: "document",
+      corpus: { kind: "filesystem-documents", root }
+    });
+    await expect(readFile(path.join(root, ".diagrams", "project.json"), "utf8"))
+      .resolves.toContain('"domainProfileId": "document"');
+  });
+
+  it("migrates an untouched source built-in prompt when a document project reads it", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-document-prompt-"));
+    roots.push(root);
+    const store = new DiagramStore(root);
+    await store.loadCodeEntityPromptTemplates("source-code");
+
+    const [template] = await store.loadCodeEntityPromptTemplates("document");
+
+    expect(template.label).toBe("Default Document Evidence");
+    expect(template.prompts["code-entity-identification"]).toMatch(/supplied\s+documents/);
+  });
   it("migrates runtime variables out of named prompt dictionaries", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "new-diagram-named-prompt-migration-"));
     roots.push(root);

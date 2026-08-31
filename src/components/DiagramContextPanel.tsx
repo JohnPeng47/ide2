@@ -10,6 +10,7 @@ import type {
   GenerationPromptConfigRecord
 } from "../domain";
 import { DEFAULT_DIAGRAM_MODEL_ID } from "../domain";
+import type { ContentPresentation } from "../domainProfile";
 import { CodeEntitiesPanel, type CodeEntityReveal } from "./CodeEntitiesPanel";
 import { DiagramLineagePanel } from "./DiagramLineagePanel";
 import { EditOperationsPanel } from "./EditOperationsPanel";
@@ -19,6 +20,7 @@ export type ContextTab = "code-entities" | "diagrams" | "operations";
 export function DiagramContextPanel(props: {
   setId: string;
   codeEntities: CodeEntitiesSetRecord;
+  contentPresentation: ContentPresentation;
   diagramSet: DiagramSetRecord;
   diagrams: DiagramRecord[];
   allDiagrams: Record<string, DiagramRecord>;
@@ -84,6 +86,7 @@ export function DiagramContextPanel(props: {
           <CodeEntitiesPanel
             setId={props.setId}
             codeEntities={props.codeEntities}
+            contentPresentation={props.contentPresentation}
             diagram={props.activeDiagram ?? props.activeComponent}
             selectedIds={props.selectedIds}
             onToggle={props.onToggleEntity}

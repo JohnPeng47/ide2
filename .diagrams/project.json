@@ -4,6 +4,11 @@
   "name": "worktree-transcripts",
   "repositoryIdentity": "/home/john/drone-interception/scripts/new-diagram/.git",
   "canonicalRepoRoot": "/home/john/.herdr/worktrees/new-diagram/worktree-transcripts",
+  "domainProfileId": "document",
+  "corpus": {
+    "kind": "filesystem-documents",
+    "root": "/home/john/.herdr/worktrees/new-diagram/worktree-transcripts"
+  },
   "diagramSetIds": [
     "set-brendan-foody-20vc"
   ],

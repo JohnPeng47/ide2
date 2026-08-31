@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import type { GeneratedArtifactDraft } from "../src/domain";
-import { runGenerationPromptTurns } from "./agentRuntime";
+import { documentCorpusTools, runGenerationPromptTurns } from "./agentRuntime";
 
 describe("generation prompt turns", () => {
   it("returns the mapped final artifact after generation and reference follow-up turns", async () => {
@@ -52,5 +55,30 @@ describe("generation prompt turns", () => {
     expect(promptCount).toBe(2);
     expect(result.name).toBe("Initial");
     expect(result.mappings).toEqual([]);
+  });
+});
+
+describe("document corpus agent tools", () => {
+  it("read only through the configured corpus boundary", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-agent-corpus-"));
+    const outside = await mkdtemp(path.join(tmpdir(), "new-diagram-agent-outside-"));
+    try {
+      await writeFile(path.join(root, "transcript.txt"), "first\nsecond", "utf8");
+      await writeFile(path.join(outside, "secret.txt"), "secret\n", "utf8");
+      const tools = documentCorpusTools({ kind: "filesystem-documents", root });
+      expect(tools.map((tool) => tool.name)).toEqual([
+        "read_corpus", "list_corpus", "search_corpus"
+      ]);
+      const read = tools.find((tool) => tool.name === "read_corpus")!;
+      const execute = read.execute as (...args: unknown[]) => Promise<unknown>;
+      await expect(execute("call", { path: "transcript.txt" }))
+        .resolves.toMatchObject({ content: [{ text: "1: first\n2: second" }] });
+      await expect(execute("call", { path: "../secret.txt" })).rejects.toThrow(/invalid/);
+      await expect(execute("call", { path: path.join(outside, "secret.txt") }))
+        .rejects.toThrow(/relative/);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+      await rm(outside, { recursive: true, force: true });
+    }
   });
 });

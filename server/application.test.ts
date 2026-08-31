@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -270,6 +271,47 @@ describe("DiagramApplication", () => {
       .rejects.toThrow(/invalid/);
     await expect(application.listRepositoryDirectory(set.id, root))
       .rejects.toThrow(/must be relative/);
+  });
+
+  it("creates and collects document evidence from an ordinary non-git directory", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-document-"));
+    roots.push(root);
+    await writeFile(path.join(root, "interview.txt"), "first claim\nsecond claim\n", "utf8");
+    const runtime = new ParallelRuntime();
+    runtime.entityDrafts = [{
+      handle: "second-claim",
+      label: "Second claim",
+      category: "state",
+      summary: "The interview makes a second claim.",
+      sourceRanges: [{ path: "interview.txt", startLine: 2, endLine: 2 }]
+    }];
+    const application = new DiagramApplication(new DiagramStore(root), runtime, "document");
+    const set = await application.createDiagramSet({
+      path: root,
+      name: "Interview",
+      prompt: "Map the claims",
+      domainProfileId: "document"
+    });
+
+    await application.collectCodeEntities(set.id);
+    const workspace = await application.workspace();
+
+    expect(workspace.project).toMatchObject({
+      domainProfileId: "document",
+      corpus: { kind: "filesystem-documents", root }
+    });
+    expect(workspace.codeEntitySets[set.codeEntitiesSetId].entities[0].sourceRanges[0])
+      .toMatchObject({ path: "interview.txt", originalLines: ["second claim"] });
+    const promptConfigId = workspace.codeEntitySets[set.codeEntitiesSetId].promptConfigId!;
+    expect(workspace.codeEntityPromptConfigs[promptConfigId].contextPrompt.rendered)
+      .toContain("Inspect the documents");
+    await expect(application.generate(set.id, {
+      prompt: "Show a repository tree",
+      selectedCodeEntityIds: [],
+      count: 1,
+      outputKind: "diagram",
+      viewKind: "dir-view"
+    })).rejects.toThrow(/not available in the document domain/);
   });
 
   it("focuses a featured call graph using qualified imported CodeEntity identities", async () => {
@@ -1256,6 +1298,16 @@ describe("DiagramApplication", () => {
 
     await expect(target.application.importArtifact({
       artifactKind: "diagram",
+      name: "Stale foreign map",
+      ascii: bundle.artifact.ascii,
+      bundle: {
+        ...bundle,
+        codeEntityMap: { ...bundle.codeEntityMap!, asciiSha256: "0".repeat(64) }
+      }
+    })).rejects.toThrow(/stale ASCII mapping bounds/);
+
+    await expect(target.application.importArtifact({
+      artifactKind: "diagram",
       name: "Invalid foreign map",
       ascii: bundle.artifact.ascii,
       bundle: {
@@ -1269,5 +1321,34 @@ describe("DiagramApplication", () => {
         }
       }
     })).rejects.toThrow(/unavailable source range/);
+
+    const invalidCoordinates = structuredClone(bundle);
+    invalidCoordinates.codeEntityMap!.mappings[0].line = 999;
+    await expect(target.application.importArtifact({
+      artifactKind: "diagram",
+      name: "Invalid coordinates",
+      ascii: invalidCoordinates.artifact.ascii,
+      bundle: invalidCoordinates
+    })).rejects.toThrow(/outside the ASCII/);
+
+    const duplicateIds = structuredClone(bundle);
+    duplicateIds.codeEntityMap!.mappings.push({ ...duplicateIds.codeEntityMap!.mappings[0] });
+    await expect(target.application.importArtifact({
+      artifactKind: "diagram",
+      name: "Duplicate mapping ids",
+      ascii: duplicateIds.artifact.ascii,
+      bundle: duplicateIds
+    })).rejects.toThrow(/duplicate mapping ids/);
+
+    const nonCanonical = structuredClone(bundle);
+    nonCanonical.artifact.ascii = `${nonCanonical.artifact.ascii}\r\n`;
+    nonCanonical.codeEntityMap!.asciiSha256 = createHash("sha256")
+      .update(nonCanonical.artifact.ascii).digest("hex");
+    await expect(target.application.importArtifact({
+      artifactKind: "diagram",
+      name: "Non-canonical ASCII",
+      ascii: nonCanonical.artifact.ascii,
+      bundle: nonCanonical
+    })).rejects.toThrow(/stale ASCII mapping bounds/);
   });
 });

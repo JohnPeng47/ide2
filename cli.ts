@@ -5,6 +5,7 @@ import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { WorkspaceSnapshot } from "./src/domain";
+import type { BuiltInDomainProfileId } from "./src/domainProfile";
 
 const DEFAULT_SERVER_URL = "http://127.0.0.1:5173";
 const PACKAGE_ROOT = path.dirname(fileURLToPath(import.meta.url));
@@ -21,6 +22,7 @@ interface ServerEvent {
   codeEntityPromptTemplateId?: string;
   codeEntityPromptTemplateVersion?: number;
   codeEntityPromptConfigId?: string;
+  domainProfileId?: BuiltInDomainProfileId;
 }
 
 interface PromptTemplateSummary {
@@ -39,17 +41,24 @@ function option(args: string[], name: string): string | undefined {
 function usage(): never {
   throw new Error(
     "usage:\n"
-    + "  npm run diagram -- serve --path <repo> [--diagrams-dir <dir>] [--port <port>]\n"
+    + "  npm run diagram -- serve --path <corpus> [--domain source-code|document] [--diagrams-dir <dir>] [--port <port>]\n"
     + "  npm run diagram -- prompt-templates [--server <url>]\n"
     + "  npm run diagram -- list-diagrams [--server <url>]\n"
-    + "  npm run diagram -- create --path <repo> --name <name> --prompt <prompt> "
+    + "  npm run diagram -- create --path <corpus> --name <name> --prompt <prompt> [--domain source-code|document] "
     + "[--prompt-template <id>] [--reference-prompt <prompt>] [--no-reference-prompt] "
     + "[--server <url>]"
   );
 }
 
+function domainOption(args: string[], fallback?: BuiltInDomainProfileId): BuiltInDomainProfileId | undefined {
+  const value = option(args, "--domain") ?? fallback;
+  if (value === undefined || value === "source-code" || value === "document") return value;
+  throw new Error(`invalid domain: ${value}; expected source-code or document`);
+}
+
 async function serve(args: string[]): Promise<void> {
   const projectRoot = path.resolve(option(args, "--path") ?? process.cwd());
+  const domainProfileId = domainOption(args);
   const diagramsDirectory = option(args, "--diagrams-dir") ?? ".diagrams";
   const host = option(args, "--host") ?? "127.0.0.1";
   const portText = option(args, "--port") ?? "5173";
@@ -64,6 +73,7 @@ async function serve(args: string[]): Promise<void> {
     event: "server-starting",
     serverUrl,
     projectRoot,
+    ...(domainProfileId ? { domainProfileId } : {}),
     diagramsRoot
   })}\n`);
 
@@ -80,6 +90,7 @@ async function serve(args: string[]): Promise<void> {
       env: {
         ...process.env,
         NEW_DIAGRAM_PROJECT_ROOT: projectRoot,
+        ...(domainProfileId ? { NEW_DIAGRAM_DOMAIN: domainProfileId } : {}),
         NEW_DIAGRAMS_DIR: diagramsDirectory
       },
       stdio: "inherit"
@@ -223,6 +234,7 @@ async function main(): Promise<void> {
   const name = option(args, "--name");
   const prompt = option(args, "--prompt") ?? "";
   const promptTemplateId = option(args, "--prompt-template");
+  const domainProfileId = domainOption(args);
   const referencePrompt = option(args, "--reference-prompt");
   const runReferencePrompt = !args.includes("--no-reference-prompt");
   const serverUrl = serverUrlFrom(args);
@@ -246,6 +258,7 @@ async function main(): Promise<void> {
         name,
         prompt,
         runReferencePrompt,
+        ...(domainProfileId ? { domainProfileId } : {}),
         ...(referencePrompt !== undefined ? { referencePrompt } : {}),
         ...(promptTemplateId ? { promptTemplateId } : {})
       })

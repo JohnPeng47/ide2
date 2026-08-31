@@ -390,10 +390,10 @@ button.highlight-tree-label:hover, button.highlight-tree-label:focus-visible { o
 .source-line-number { display: flex; min-height: 1.55em; grid-column: 2; align-items: center; justify-content: flex-end; }
 .source-line-text, .source-fold-copy { display: block; min-width: max-content; padding: 0 var(--source-copy-padding); font: inherit; }
 .source-token { white-space: pre; }
-.source-code-viewer[data-language="Plain text"] .source-code-content { width: 100%; min-width: 0; }
-.source-code-viewer[data-language="Plain text"] .source-code-line { min-width: 0; grid-template-columns: var(--source-gutter-width) minmax(0, 1fr); white-space: normal; }
-.source-code-viewer[data-language="Plain text"] .source-line-text { min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
-.source-code-viewer[data-language="Plain text"] .source-token { white-space: inherit; }
+.source-code-viewer[data-wrap="true"] .source-code-content { width: 100%; min-width: 0; }
+.source-code-viewer[data-wrap="true"] .source-code-line { min-width: 0; grid-template-columns: var(--source-gutter-width) minmax(0, 1fr); white-space: normal; }
+.source-code-viewer[data-wrap="true"] .source-line-text { min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.source-code-viewer[data-wrap="true"] .source-token { white-space: inherit; }
 .source-fold-placeholder { align-items: start; padding: 0.2rem 0; color: #9cdcfe; }
 .source-fold-placeholder:hover { background: rgb(78 201 176 / 4%); }
 .source-fold-placeholder:focus-within { box-shadow: inset 0 0 0 1px rgb(78 201 176 / 45%); }

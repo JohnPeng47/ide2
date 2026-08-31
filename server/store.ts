@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { execFile } from "node:child_process";
-import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, realpath, rename, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import {
@@ -44,6 +44,8 @@ import {
   promptTemplate,
   renderArtifactSystemPrompt
 } from "../src/prompt";
+import type { BuiltInDomainProfileId, CorpusBinding } from "../src/domainProfile";
+import { isBuiltInDomainProfileId } from "./domainProfiles";
 
 const execFileAsync = promisify(execFile);
 
@@ -51,6 +53,8 @@ export interface RepositoryLocation {
   checkoutRoot: string;
   repositoryIdentity: string;
   gitRevision?: string;
+  domainProfileId?: BuiltInDomainProfileId;
+  corpus?: CorpusBinding;
 }
 
 export async function discoverRepository(inputPath: string): Promise<RepositoryLocation> {
@@ -65,12 +69,55 @@ export async function discoverRepository(inputPath: string): Promise<RepositoryL
   const commonDirRaw = await git("rev-parse", "--git-common-dir");
   const repositoryIdentity = path.resolve(checkoutRoot, commonDirRaw);
   const gitRevision = await git("rev-parse", "HEAD").catch(() => undefined);
-  return { checkoutRoot, repositoryIdentity, gitRevision };
+  return {
+    checkoutRoot,
+    repositoryIdentity,
+    gitRevision,
+    domainProfileId: "source-code",
+    corpus: { kind: "git-worktree", root: checkoutRoot, ...(gitRevision ? { revision: gitRevision } : {}) }
+  };
+}
+
+export async function discoverDocumentCorpus(inputPath: string): Promise<RepositoryLocation> {
+  const resolved = path.resolve(inputPath);
+  const info = await stat(resolved).catch(() => null);
+  if (!info?.isDirectory()) throw new Error(`document corpus path is not a directory: ${resolved}`);
+  const checkoutRoot = await realpath(resolved);
+  return {
+    checkoutRoot,
+    repositoryIdentity: `filesystem-documents:${checkoutRoot}`,
+    domainProfileId: "document",
+    corpus: { kind: "filesystem-documents", root: checkoutRoot }
+  };
+}
+
+export async function discoverDomainCorpus(
+  inputPath: string,
+  domainProfileId: BuiltInDomainProfileId
+): Promise<RepositoryLocation> {
+  return domainProfileId === "document"
+    ? discoverDocumentCorpus(inputPath)
+    : discoverRepository(inputPath);
 }
 
 export function projectIdFor(repositoryIdentity: string): string {
   const digest = createHash("sha256").update(repositoryIdentity).digest("hex").slice(0, 12);
   return `project-${digest}`;
+}
+
+function normalizedProject(project: ProjectRecord): ProjectRecord {
+  const stored = project as ProjectRecord & {
+    domainProfileId?: unknown;
+    corpus?: CorpusBinding;
+  };
+  const domainProfileId = isBuiltInDomainProfileId(stored.domainProfileId)
+    ? stored.domainProfileId
+    : "source-code";
+  const corpus = stored.corpus ?? {
+    kind: "git-worktree" as const,
+    root: stored.canonicalRepoRoot
+  };
+  return { ...stored, domainProfileId, corpus };
 }
 
 function nowIso(): string {
@@ -231,11 +278,28 @@ export class DiagramStore {
   async ensureProject(location: RepositoryLocation): Promise<ProjectRecord> {
     const existing = await readJsonIfExists<ProjectRecord>(this.projectPath());
     if (existing) {
-      if (existing.repositoryIdentity !== location.repositoryIdentity) {
-        throw new Error(".diagrams belongs to a different repository identity");
+      const normalized = normalizedProject(existing);
+      const requestedDomain = location.domainProfileId ?? "source-code";
+      const sameDocumentRoot = normalized.domainProfileId === "document"
+        && requestedDomain === "document"
+        && path.resolve(normalized.corpus.root) === path.resolve(location.checkoutRoot);
+      if (normalized.repositoryIdentity !== location.repositoryIdentity && !sameDocumentRoot) {
+        throw new Error(".diagrams belongs to a different corpus identity");
       }
-      return existing;
+      if (normalized.domainProfileId !== requestedDomain) {
+        throw new Error(`.diagrams belongs to the ${normalized.domainProfileId} domain`);
+      }
+      if (!existing.domainProfileId || !existing.corpus) {
+        await writeJsonAtomic(this.projectPath(), normalized);
+      }
+      return normalized;
     }
+    const domainProfileId = location.domainProfileId ?? "source-code";
+    const corpus = location.corpus ?? {
+      kind: "git-worktree" as const,
+      root: location.checkoutRoot,
+      ...(location.gitRevision ? { revision: location.gitRevision } : {})
+    };
     const timestamp = nowIso();
     const project: ProjectRecord = {
       schemaVersion: SCHEMA_VERSION,
@@ -243,6 +307,8 @@ export class DiagramStore {
       name: path.basename(location.checkoutRoot),
       repositoryIdentity: location.repositoryIdentity,
       canonicalRepoRoot: location.checkoutRoot,
+      domainProfileId,
+      corpus,
       diagramSetIds: [],
       createdAt: timestamp,
       updatedAt: timestamp
@@ -330,7 +396,8 @@ export class DiagramStore {
   }
 
   async loadProject(): Promise<ProjectRecord | null> {
-    return readJsonIfExists<ProjectRecord>(this.projectPath());
+    const project = await readJsonIfExists<ProjectRecord>(this.projectPath());
+    return project ? normalizedProject(project) : null;
   }
 
   async loadImportedArtifactLibrary(): Promise<ImportedArtifactLibraryRecord> {
@@ -608,13 +675,32 @@ export class DiagramStore {
     });
   }
 
-  async loadCodeEntityPromptTemplates(): Promise<CodeEntityPromptTemplateRecord[]> {
+  async loadCodeEntityPromptTemplates(
+    domainProfileId: BuiltInDomainProfileId = "source-code"
+  ): Promise<CodeEntityPromptTemplateRecord[]> {
     const stored = await readJsonIfExists<{
       schemaVersion: typeof SCHEMA_VERSION;
       templates: CodeEntityPromptTemplateRecord[];
     }>(this.codeEntityPromptTemplatesPath());
-    if (stored) return stored.templates;
-    const templates = createBuiltInCodeEntityPromptTemplates(nowIso());
+    if (stored) {
+      if (domainProfileId !== "document") return stored.templates;
+      const sourceBuiltIn = createBuiltInCodeEntityPromptTemplates("legacy", "source-code")[0];
+      let changed = false;
+      const templates = stored.templates.map((template) => {
+        const isUnmodifiedSourceBuiltIn = template.id === sourceBuiltIn.id
+          && template.builtIn
+          && template.label === sourceBuiltIn.label
+          && template.description === sourceBuiltIn.description
+          && JSON.stringify(template.prompts) === JSON.stringify(sourceBuiltIn.prompts);
+        if (!isUnmodifiedSourceBuiltIn) return template;
+        changed = true;
+        const migrated = createBuiltInCodeEntityPromptTemplates(template.createdAt, "document")[0];
+        return { ...migrated, version: template.version, updatedAt: template.updatedAt };
+      });
+      if (changed) await this.saveCodeEntityPromptTemplates(templates);
+      return templates;
+    }
+    const templates = createBuiltInCodeEntityPromptTemplates(nowIso(), domainProfileId);
     await writeJsonAtomic(this.codeEntityPromptTemplatesPath(), {
       schemaVersion: SCHEMA_VERSION,
       templates
@@ -1413,7 +1499,9 @@ export class DiagramStore {
     const diagramComponents: Record<string, DiagramComponentRecord> = {};
     const codeEntityPromptConfigs: Record<string, CodeEntityPromptConfigRecord> = {};
     const codeEntityPromptTemplates = Object.fromEntries(
-      (await this.loadCodeEntityPromptTemplates()).map((template) => [template.id, template])
+      (await this.loadCodeEntityPromptTemplates(project.domainProfileId === "document"
+        ? "document"
+        : "source-code")).map((template) => [template.id, template])
     );
     const generationPromptConfigs: Record<string, GenerationPromptConfigRecord> = {};
     const systemPromptTemplates = Object.fromEntries(

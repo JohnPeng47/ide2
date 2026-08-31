@@ -12,6 +12,8 @@ import type {
 import { mappingsForSelection } from "../diagramSelection";
 import { referenceIdentityKey, referencesFromMappings } from "../refBuffer";
 import { resolveReference, type ReferenceResolutionContext } from "../referenceResolver";
+import { buildRepresentationIndex } from "../representationIndex";
+import { asciiSha256 } from "../asciiSha256";
 import { useRefBuffer } from "../ref-buffer/RefBufferContext";
 import { RefBufferTray } from "../ref-buffer/RefBufferTray";
 import { AsciiSelectionGrid, type AsciiGridMode } from "./AsciiSelectionGrid";
@@ -54,6 +56,7 @@ export function EmptyDiagramView(props: {
 export function DiagramView(props: {
   active: DiagramRecord | DiagramComponentRecord;
   artifactKind: "diagram" | "diagram-component";
+  representationKind: "tree" | "diagram";
   onGenerate: () => void;
   onExport: () => Promise<void>;
   onCapture: (bounds: DiagramSelectionBounds) => Promise<void>;
@@ -80,6 +83,7 @@ export function DiagramView(props: {
   highlightedMappingIds?: ReadonlySet<string>;
   highlightBusyMappingIds?: ReadonlySet<string>;
   onToggleHighlight?: (mapping: DiagramElementMapping) => void;
+  collapseSubtrees?: boolean;
   onManualEdit?: (ascii: string) => void;
   onMarker?: (line: number, column: number) => void;
   onUndoEdit?: () => void;
@@ -109,7 +113,30 @@ export function DiagramView(props: {
     setLiveSelection(null);
   }, [props.editMode, props.markerMode]);
 
-  const mappings = props.codeEntityMap?.mappings ?? [];
+  // Edit sessions change ASCII under the source artifact id. Never reuse persisted
+  // evidence bounds against that mutable working copy.
+  const activeAsciiSha256 = useMemo(() => asciiSha256(props.active.ascii), [props.active.ascii]);
+  const currentCodeEntityMap = props.editMode
+    || props.codeEntityMap?.artifactId !== props.active.id
+    || props.codeEntityMap.asciiSha256 !== activeAsciiSha256
+    ? undefined
+    : props.codeEntityMap;
+  const mappings = currentCodeEntityMap?.mappings ?? [];
+  const representationIndex = useMemo(() => {
+    try {
+      return buildRepresentationIndex({
+        kind: props.representationKind,
+        revision: {
+          artifactId: props.active.id,
+          asciiSha256: activeAsciiSha256
+        },
+        ascii: props.active.ascii,
+        codeEntityMap: currentCodeEntityMap
+      });
+    } catch {
+      return undefined;
+    }
+  }, [activeAsciiSha256, currentCodeEntityMap, props.active.ascii, props.active.id, props.representationKind]);
   const liveMappings = useMemo(
     () => liveSelection ? mappingsForSelection(mappings, liveSelection) : [],
     [liveSelection, mappings]
@@ -361,6 +388,7 @@ export function DiagramView(props: {
         ) : (
           <AsciiSelectionGrid
             ascii={props.active.ascii}
+            representationIndex={representationIndex}
             mode={gridMode}
             mappings={mappings}
             entities={props.codeEntities}
@@ -379,6 +407,7 @@ export function DiagramView(props: {
             }}
             onReveal={props.onRevealCodeEntity}
             onToggleHighlight={props.onToggleHighlight}
+            collapseSubtrees={props.collapseSubtrees}
             onMarker={props.onMarker}
           />
         )}

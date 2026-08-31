@@ -19,6 +19,10 @@ import {
 } from "../diagramSelection";
 import { hiddenAsciiTreeLines, parseAsciiTree } from "../asciiTree";
 import { referenceFromMapping, referenceIdentityKey } from "../refBuffer";
+import {
+  representationElementIdForMapping,
+  type RepresentationIndex
+} from "../representationIndex";
 import { DiagramSelectionOverlay, type SelectionOverlayRect, type SelectionOverlayReference } from "./DiagramSelectionOverlay";
 
 export type AsciiGridMode = "read" | "capture" | "select-refs" | "marker";
@@ -49,6 +53,7 @@ function mappingReferenceKey(
 
 export function AsciiSelectionGrid(props: {
   ascii: string;
+  representationIndex?: RepresentationIndex;
   mode: AsciiGridMode;
   mappings: readonly DiagramElementMapping[];
   entities: readonly CodeEntityRecord[];
@@ -66,6 +71,7 @@ export function AsciiSelectionGrid(props: {
   onCancelMode?: (mode: "capture" | "select-refs") => void;
   onReveal?: (mapping: DiagramElementMapping) => void;
   onToggleHighlight?: (mapping: DiagramElementMapping) => void;
+  collapseSubtrees?: boolean;
   onMarker?: (line: number, column: number) => void;
 }) {
   const preRef = useRef<HTMLPreElement>(null);
@@ -77,17 +83,32 @@ export function AsciiSelectionGrid(props: {
   const suppressClickRef = useRef(false);
   const [liveSelection, setLiveSelection] = useState<DiagramSelectionBounds | null>(null);
   const [cellMetrics, setCellMetrics] = useState<CellMetrics>({ width: 0, height: 0 });
-  const [collapsedNodeLines, setCollapsedNodeLines] = useState<Set<number>>(new Set());
+  const [collapsedNodeIds, setCollapsedNodeIds] = useState<Set<string>>(new Set());
   const entitiesById = useMemo(
     () => new Map(props.entities.map((entity) => [entity.id, entity])),
     [props.entities]
   );
   const rawLines = useMemo(() => props.ascii.split("\n"), [props.ascii]);
-  const treeNodes = useMemo(() => parseAsciiTree(props.ascii), [props.ascii]);
+  const treeNodes = useMemo(
+    () => props.representationIndex?.kind === "tree" ? parseAsciiTree(props.ascii) : [],
+    [props.ascii, props.representationIndex]
+  );
   const treeNodesByLine = useMemo(
     () => new Map(treeNodes.map((node) => [node.line, node])),
     [treeNodes]
   );
+  const indexedTreeNodesByLine = useMemo(() => new Map(
+    props.representationIndex?.kind === "tree"
+      ? Object.values(props.representationIndex.nodes).map((node) => [node.line, node] as const)
+      : []
+  ), [props.representationIndex]);
+  const collapsedNodeLines = useMemo(() => new Set(
+    [...collapsedNodeIds].flatMap((nodeId) => {
+      if (props.representationIndex?.kind !== "tree") return [];
+      const node = props.representationIndex.nodes[nodeId];
+      return node ? [node.line] : [];
+    })
+  ), [collapsedNodeIds, props.representationIndex]);
   const hiddenLines = useMemo(
     () => props.mode === "read" ? hiddenAsciiTreeLines(props.ascii, collapsedNodeLines) : new Set<number>(),
     [collapsedNodeLines, props.ascii, props.mode]
@@ -166,7 +187,7 @@ export function AsciiSelectionGrid(props: {
     if (activeRef.current) cancelRectangle();
   }, [cancelRectangle, props.ascii, props.mode]);
 
-  useEffect(() => setCollapsedNodeLines(new Set()), [props.ascii]);
+  useEffect(() => setCollapsedNodeIds(new Set()), [props.ascii, props.representationIndex?.revision]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -299,7 +320,10 @@ export function AsciiSelectionGrid(props: {
           .map(({ line, lineNumber }, visibleIndex, visibleLines) => {
           const mappings = mappingsByLine.get(lineNumber) ?? [];
           const treeNode = treeNodesByLine.get(lineNumber);
-          const canCollapse = props.mode === "read" && Boolean(treeNode?.descendantLines.length);
+          const indexedTreeNode = indexedTreeNodesByLine.get(lineNumber);
+          const canCollapse = props.collapseSubtrees !== false
+            && props.mode === "read"
+            && Boolean(treeNode && indexedTreeNode?.childIds.length);
           const collapseColumn = canCollapse ? treeNode!.textColumn - 1 : undefined;
           const content = [];
           let cursor = 0;
@@ -307,20 +331,22 @@ export function AsciiSelectionGrid(props: {
           const insertCollapse = () => {
             if (collapseColumn === undefined || collapseInserted) return;
             if (collapseColumn > cursor) content.push(line.slice(cursor, collapseColumn));
-            const collapsed = collapsedNodeLines.has(lineNumber);
+            const elementId = indexedTreeNode!.id;
+            const collapsed = collapsedNodeIds.has(elementId);
             content.push(
               <button
                 type="button"
                 className="tree-node-collapse"
-                key={`collapse:${lineNumber}`}
+                key={`collapse:${elementId}`}
                 data-collapse-line={lineNumber}
+                data-representation-element-id={elementId}
                 aria-label={`${collapsed ? "Expand" : "Collapse"} ${treeNode!.text}`}
                 aria-expanded={!collapsed}
                 title={`${collapsed ? "Expand" : "Collapse"} this tree node`}
-                onClick={() => setCollapsedNodeLines((current) => {
+                onClick={() => setCollapsedNodeIds((current) => {
                   const next = new Set(current);
-                  if (next.has(lineNumber)) next.delete(lineNumber);
-                  else next.add(lineNumber);
+                  if (next.has(elementId)) next.delete(elementId);
+                  else next.add(elementId);
                   return next;
                 })}
               >[{collapsed ? "+" : "-"}]</button>
@@ -343,19 +369,28 @@ export function AsciiSelectionGrid(props: {
               props.previewMappingIds.has(mapping.id) ? "is-selection-preview" : "",
               props.bufferedReferenceKeys.has(mappingReferenceKey(mapping, props.entities)) ? "is-buffered-ref" : ""
             ].filter(Boolean).join(" ");
+            const representationElementId = props.representationIndex
+              ? representationElementIdForMapping(props.representationIndex, mapping.id)
+              : undefined;
             content.push(
-              <span className="mapped-element-wrap" key={mapping.id}>
-                <button
-                  type="button"
-                  className={`mapped-highlight-toggle${props.highlightedMappingIds.has(mapping.id) ? " is-highlighted" : ""}`}
-                  data-highlight-mapping-id={mapping.id}
-                  aria-label={`${props.highlightedMappingIds.has(mapping.id) ? "Remove" : "Add"} ${entity?.label ?? "mapped node"} ${props.highlightedMappingIds.has(mapping.id) ? "from" : "to"} highlights`}
-                  aria-pressed={props.highlightedMappingIds.has(mapping.id)}
-                  disabled={props.highlightBusyMappingIds.has(mapping.id)}
-                  title={props.highlightedMappingIds.has(mapping.id) ? "Remove from highlights" : "Add to highlights"}
-                  onClick={() => props.onToggleHighlight?.(mapping)}
-                >[{props.highlightedMappingIds.has(mapping.id) ? "★" : "☆"}]</button>
-                {" "}
+              <span
+                className="mapped-element-wrap"
+                data-representation-element-id={representationElementId}
+                key={mapping.id}
+              >
+                {props.onToggleHighlight ? <>
+                  <button
+                    type="button"
+                    className={`mapped-highlight-toggle${props.highlightedMappingIds.has(mapping.id) ? " is-highlighted" : ""}`}
+                    data-highlight-mapping-id={mapping.id}
+                    aria-label={`${props.highlightedMappingIds.has(mapping.id) ? "Remove" : "Add"} ${entity?.label ?? "mapped node"} ${props.highlightedMappingIds.has(mapping.id) ? "from" : "to"} highlights`}
+                    aria-pressed={props.highlightedMappingIds.has(mapping.id)}
+                    disabled={props.highlightBusyMappingIds.has(mapping.id)}
+                    title={props.highlightedMappingIds.has(mapping.id) ? "Remove from highlights" : "Add to highlights"}
+                    onClick={() => props.onToggleHighlight?.(mapping)}
+                  >[{props.highlightedMappingIds.has(mapping.id) ? "★" : "☆"}]</button>
+                  {" "}
+                </> : null}
                 <button
                   type="button"
                   className={`${classes} mapped-element-marker`}

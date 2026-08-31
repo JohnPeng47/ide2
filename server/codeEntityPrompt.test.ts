@@ -53,4 +53,24 @@ describe("createCodeEntityPromptConfig", () => {
     expect(config.contextPrompt.rendered).toContain("Create a compactedSource presentation");
     expect(config.contextPrompt.rendered).toContain("If the submission is rejected");
   });
+
+  it("uses document and evidence language for document collection", () => {
+    const template = createBuiltInCodeEntityPromptTemplates(
+      "2026-01-01T00:00:00Z",
+      "document"
+    )[0];
+    const config = createCodeEntityPromptConfig({
+      id: "prompt-documents",
+      diagramSet,
+      template,
+      domainProfileId: "document",
+      createdAt: "2026-01-01T00:00:00Z"
+    });
+
+    expect(config.contextPrompt.rendered).toContain("Collect evidence entities");
+    expect(config.contextPrompt.rendered).toContain("Inspect the documents");
+    expect(config.contextPrompt.rendered).toContain("corpus-relative evidence ranges");
+    expect(config.contextPrompt.rendered).not.toContain("Inspect the repository");
+    expect(config.identificationCriteria.rendered).toMatch(/grounded in the supplied\s+documents/);
+  });
 });

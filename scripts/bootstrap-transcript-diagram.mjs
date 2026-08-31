@@ -75,12 +75,7 @@ function timestampAtLine(lineNumber) {
   return "00:00";
 }
 
-const repositoryIdentityRaw = execFileSync(
-  "git",
-  ["rev-parse", "--git-common-dir"],
-  { cwd: root, encoding: "utf8" }
-).trim();
-const repositoryIdentity = path.resolve(root, repositoryIdentityRaw);
+const repositoryIdentity = `filesystem-documents:${root}`;
 const gitRevision = execFileSync(
   "git",
   ["rev-parse", "HEAD"],
@@ -88,6 +83,33 @@ const gitRevision = execFileSync(
 ).trim();
 
 const createdAt = "2026-08-29T00:00:00.000Z";
+const documentIdentificationCriteria = `## Evidence significance
+
+A useful evidence entity is a diagram-relevant concept grounded in the supplied
+documents. It helps explain the requested chronology, argument, relationship,
+event, decision, or recurring theme.
+
+An evidence entity may cover multiple related passages when they collectively
+support one concept. Give each entity a concise label and summary and exact
+corpus-relative document ranges. Descriptions must stay within what those
+passages support.
+
+Strong candidates include claims, decisions, events, actors, definitions,
+contrasts, causal links, and transitions that connect the requested diagram
+concepts.`;
+const documentCompactionCriteria = `## Evidence presentation
+
+Preserve the meaningful statements, surrounding context, chronology, and
+relationships in each cited passage while omitting unrelated detail.
+
+For every evidence range, provide a continuous compactedSource presentation.
+Retained sections quote the relevant document lines. Collapsed-comment sections
+summarize only material supported by their exact span using concise 7-bit ASCII.
+Map each semantic summary node to the exact lines that support it. Blank and
+connector-only lines have no mapping.
+
+The server snapshots the original document lines after validating every
+submitted coordinate.`;
 const projectId = `project-${digest(repositoryIdentity, 12)}`;
 const setId = "set-brendan-foody-20vc";
 const codeEntitiesSetId = "entities-brendan-foody-20vc";
@@ -180,6 +202,8 @@ writeJson(path.join(storeRoot, "project.json"), {
   name: path.basename(root),
   repositoryIdentity,
   canonicalRepoRoot: root,
+  domainProfileId: "document",
+  corpus: { kind: "filesystem-documents", root },
   diagramSetIds: [setId],
   createdAt,
   updatedAt: createdAt
@@ -205,6 +229,24 @@ writeJson(path.join(diagramDirectory, "diagram-set.json"), {
   updatedAt: createdAt
 });
 
+writeJson(path.join(storeRoot, "code-entity-prompt-templates.json"), {
+  schemaVersion: 1,
+  templates: [{
+    schemaVersion: 1,
+    id: "default-code-entities",
+    label: "Default Document Evidence",
+    description: "Document-grounded evidence identification and passage presentation.",
+    builtIn: true,
+    version: 1,
+    prompts: {
+      "code-entity-identification": documentIdentificationCriteria,
+      "code-entity-compaction": documentCompactionCriteria
+    },
+    createdAt,
+    updatedAt: createdAt
+  }]
+});
+
 writeJson(path.join(diagramDirectory, "code-entities.json"), {
   schemaVersion: 1,
   id: codeEntitiesSetId,
@@ -224,6 +266,7 @@ writeJson(path.join(diagramDirectory, "diagrams", `${diagramId}.json`), {
   handle: "brendan-foody-20vc-call-graph",
   name: "Brendan Foody Interview Call Graph",
   ascii: graph,
+  representationKind: "tree",
   codeEntityIds: entities.map((entity) => entity.id),
   // A local persisted artifact must not use `imported`: the store reserves that
   // value for legacy artifacts that it migrates into the global import library.

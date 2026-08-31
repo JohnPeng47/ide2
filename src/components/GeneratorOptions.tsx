@@ -20,6 +20,7 @@ export function GeneratorOptions(props: {
   diagrams: DiagramRecord[];
   components: DiagramComponentRecord[];
   targetKind: GenerationTargetKind;
+  availableTargetKinds: readonly GenerationTargetKind[];
   foundationDiagram?: DiagramRecord;
   companionCallGraph?: DiagramRecord;
   immutableCodeEntities: CodeEntityRecord[];
@@ -221,15 +222,15 @@ export function GeneratorOptions(props: {
 
       <div className="output-kind" role="radiogroup" aria-label="Generated output type">
         <span className="eyebrow">OUTPUT</span>
-        <button
+        {props.availableTargetKinds.includes("diagram") ? <button
           type="button"
           role="radio"
           aria-checked={props.targetKind === "diagram"}
           className={props.targetKind === "diagram" ? "is-active" : ""}
           disabled={props.generating}
           onClick={() => props.onTargetKind("diagram")}
-        >Diagram</button>
-        <button
+        >Diagram</button> : null}
+        {props.availableTargetKinds.includes("call-graph") ? <button
           type="button"
           role="radio"
           aria-checked={props.targetKind === "call-graph"}
@@ -237,8 +238,8 @@ export function GeneratorOptions(props: {
           disabled={props.generating || !props.foundationDiagram}
           title={props.foundationDiagram ? undefined : "Star a main Diagram first"}
           onClick={() => props.onTargetKind("call-graph")}
-        >Call Graph</button>
-        <button
+        >Call Graph</button> : null}
+        {props.availableTargetKinds.includes("dir-view") ? <button
           type="button"
           role="radio"
           aria-checked={props.targetKind === "dir-view"}
@@ -250,15 +251,15 @@ export function GeneratorOptions(props: {
               ? "Generate and star a Call Graph first"
               : undefined}
           onClick={() => props.onTargetKind("dir-view")}
-        >Dir View</button>
-        <button
+        >Dir View</button> : null}
+        {props.availableTargetKinds.includes("diagram-component") ? <button
           type="button"
           role="radio"
           aria-checked={props.targetKind === "diagram-component"}
           className={props.targetKind === "diagram-component" ? "is-active" : ""}
           disabled={props.generating}
           onClick={() => props.onTargetKind("diagram-component")}
-        >DiagramComponent</button>
+        >DiagramComponent</button> : null}
       </div>
       {auxiliary ? (
         <section className={`generation-immutable-context${auxiliaryReady ? "" : " is-missing"}`} aria-label="Immutable generation context">

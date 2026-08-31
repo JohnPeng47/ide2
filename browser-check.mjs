@@ -1496,7 +1496,9 @@ try {
     await waitFor(async () => (
       await evaluate(cdp, `document.querySelector('.diagram-panel .pane-header h2').textContent`)
     ) === renamedDiagram, { message: "diagram did not settle before edit mode" });
-    const sourceAsciiBeforeEdit = await evaluate(cdp, `document.querySelector('.ascii-stage pre').textContent`);
+    const sourceAsciiBeforeEdit = await evaluate(cdp, `(async () => (
+      await fetch('/api/workspace').then((response) => response.json())
+    ).diagrams['${selection.id}'].ascii)()`);
     await pointerClick(cdp, ".edit-mode-toggle");
     await waitForSelector(cdp, "#operations-tab.is-active");
     await waitForSelector(cdp, ".ascii-editor");

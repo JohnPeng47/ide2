@@ -7,7 +7,7 @@ export interface AsciiTreeNode {
   descendantLines: number[];
 }
 
-const BRANCH_LINE = /^([| ]*)(?:\+|`)-->\s+(.*)$/;
+const BRANCH_LINE = /^([| ]*)(?:\+|`)-->(\s+)(.*)$/;
 
 /** Parse the indentation-based branches used by ASCII diagram trees. */
 export function parseAsciiTree(ascii: string): AsciiTreeNode[] {
@@ -22,8 +22,9 @@ export function parseAsciiTree(ascii: string): AsciiTreeNode[] {
     const node: AsciiTreeNode = {
       line: index + 1,
       branchColumn,
-      textColumn: branchColumn + 6,
-      text: match[2].trim(),
+      // Coordinates exposed by diagram mappings are one-based and inclusive.
+      textColumn: branchColumn + 5 + match[2].length,
+      text: match[3].trimEnd(),
       ...(parent ? { parentLine: parent.line } : {}),
       descendantLines: []
     };
@@ -44,6 +45,15 @@ export function asciiTreeLineage(ascii: string, line: number): AsciiTreeNode[] {
     node = node.parentLine === undefined ? undefined : byLine.get(node.parentLine);
   }
   return lineage;
+}
+
+/** Return a node and all of its descendants in display (pre-order) order. */
+export function asciiTreeSubtree(ascii: string, line: number): AsciiTreeNode[] {
+  const nodes = parseAsciiTree(ascii);
+  const root = nodes.find((node) => node.line === line);
+  if (!root) return [];
+  const descendantLines = new Set(root.descendantLines);
+  return nodes.filter((node) => node.line === line || descendantLines.has(node.line));
 }
 
 export function hiddenAsciiTreeLines(

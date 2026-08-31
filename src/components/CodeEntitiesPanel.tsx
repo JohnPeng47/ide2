@@ -6,7 +6,8 @@ import type {
   DiagramComponentRecord,
   DiagramRecord
 } from "../domain";
-import { SourceCodeView, sourceLanguageName } from "./SourceCodeView";
+import type { ContentPresentation } from "../domainProfile";
+import { contentLanguageName, SourceCodeView } from "./SourceCodeView";
 
 const CONTEXT_STORAGE_KEY = "new-diagram:code-context-percent";
 const DEFAULT_CONTEXT_PERCENT = 20;
@@ -31,6 +32,7 @@ export interface CodeEntityReveal {
 export function CodeEntitiesPanel(props: {
   setId: string;
   codeEntities: CodeEntitiesSetRecord;
+  contentPresentation: ContentPresentation;
   selectedIds?: Set<string>;
   onToggle?: (id: string) => void;
   diagram?: DiagramRecord | DiagramComponentRecord;
@@ -253,7 +255,7 @@ export function CodeEntitiesPanel(props: {
             {activeRange?.symbol ? <span>{activeRange.symbol}</span> : null}
           </div>
           <div className="source-workspace__actions">
-            {preview ? <code>{sourceLanguageName(preview.path)}</code> : null}
+            {preview ? <code>{contentLanguageName(preview.path, props.contentPresentation)}</code> : null}
           </div>
         </header>
         <div className="source-workspace__body">
@@ -264,6 +266,7 @@ export function CodeEntitiesPanel(props: {
               preview={preview}
               range={activeRange}
               compacted={Boolean(activeRange.compactedSource)}
+              presentation={props.contentPresentation}
               revealed={props.reveal?.entityId === activeEntity?.id}
               revealRequestId={props.reveal?.requestId}
             />

@@ -9,8 +9,6 @@ import {
   type AgentSessionEvent
 } from "@earendil-works/pi-coding-agent";
 import { Type, type Model } from "@earendil-works/pi-ai";
-import { readFile, realpath, stat } from "node:fs/promises";
-import path from "node:path";
 import {
   assertSourceRange,
   createCodeEntityPromptAliases,
@@ -28,7 +26,10 @@ import {
   type GenerationOutputKind,
   type GenerationPromptConfigRecord
 } from "../src/domain";
+import type { BuiltInDomainProfileId, CorpusBinding } from "../src/domainProfile";
+import { resolveDomainProfile } from "../src/domainProfiles";
 import { diagramMappingValidationError } from "./diagramMapping";
+import { corpusProvider } from "./corpus";
 import { createValidatedSubmission } from "./validatedSubmission";
 import {
   DEFAULT_MAPPING_FOLLOW_UP_PROMPT,
@@ -37,6 +38,8 @@ import {
 
 export interface EntityCollectionRequest {
   sourceRoot: string;
+  domainProfileId: BuiltInDomainProfileId;
+  corpus: CorpusBinding;
   diagramSetName: string;
   promptConfig: CodeEntityPromptConfigRecord;
 }
@@ -74,6 +77,7 @@ export interface ArtifactEntityMappingRequest {
   ascii: string;
   codeEntityIds: string[];
   codeEntities: CodeEntityRecord[];
+  domainProfileId?: BuiltInDomainProfileId;
 }
 
 export interface DiagramAgentRuntime {
@@ -150,17 +154,17 @@ export async function runGenerationPromptTurns(input: {
   return mappingSubmission;
 }
 
-const artifactSubmissionParameters = () => Type.Object({
+const artifactSubmissionParameters = (entityNoun = "CodeEntity") => Type.Object({
   name: Type.String({ minLength: 1, maxLength: 120 }),
   ascii: Type.String({ minLength: 1, maxLength: 20000 }),
   codeEntityIds: Type.Array(Type.String({
-    description: "Readable CodeEntity aliases used by this artifact, such as entity-request-handler."
+    description: `Readable ${entityNoun} aliases used by this artifact, such as entity-request-handler.`
   }), { maxItems: 200 }),
   mappings: Type.Optional(Type.Array(Type.Object({
     entityId: Type.String({
       minLength: 1,
       maxLength: 120,
-      description: "Readable CodeEntity alias represented by this exact ASCII span."
+      description: `Readable ${entityNoun} alias represented by this exact ASCII span.`
     }),
     sourceRangeIndex: Type.Integer({ minimum: 0 }),
     line: Type.Integer({ minimum: 1 }),
@@ -182,10 +186,10 @@ function unchangedArtifactError(
 }
 
 async function validateSubmittedSourceRanges(
-  sourceRoot: string,
+  corpus: CorpusBinding,
   entities: CodeEntityDraft[]
 ): Promise<string | undefined> {
-  const canonicalRoot = await realpath(sourceRoot);
+  const provider = corpusProvider(corpus);
   for (const entity of entities) {
     for (const range of entity.sourceRanges) {
       try {
@@ -193,18 +197,103 @@ async function validateSubmittedSourceRanges(
       } catch (error) {
         return error instanceof Error ? error.message : `invalid source range for ${range.path}`;
       }
-      const absolute = await realpath(path.resolve(canonicalRoot, range.path)).catch(() => null);
-      if (!absolute || (absolute !== canonicalRoot && !absolute.startsWith(`${canonicalRoot}${path.sep}`))) {
-        return `${range.path} does not resolve to a repository file`;
-      }
-      if (!(await stat(absolute)).isFile()) return `${range.path} is not a file`;
-      const lineCount = (await readFile(absolute, "utf8")).split(/\r?\n/).length;
-      if (range.endLine > lineCount) {
-        return `${range.path}:${range.startLine}-${range.endLine} exceeds the file's ${lineCount} lines`;
+      const lines = await provider.readLines(corpus, range).catch(() => null);
+      if (!lines) return `${range.path} does not resolve to a corpus file`;
+      const lineCount = lines.length;
+      const requestedLineCount = range.endLine - range.startLine + 1;
+      if (lineCount < requestedLineCount) {
+        return `${range.path}:${range.startLine}-${range.endLine} exceeds the document bounds`;
       }
     }
   }
   return undefined;
+}
+
+export function documentCorpusTools(binding: CorpusBinding) {
+  const provider = corpusProvider(binding);
+  const read = defineTool({
+    name: "read_corpus",
+    label: "Read corpus document",
+    description: "Read a corpus-relative text document. Absolute paths and parent traversal are rejected.",
+    parameters: Type.Object({
+      path: Type.String({ minLength: 1, maxLength: 500 }),
+      startLine: Type.Optional(Type.Integer({ minimum: 1 })),
+      endLine: Type.Optional(Type.Integer({ minimum: 1 }))
+    }),
+    async execute(_toolCallId, params) {
+      const lines = await provider.readDocumentLines(binding, params.path);
+      const startLine = params.startLine ?? 1;
+      const requestedEnd = params.endLine ?? Math.min(lines.length, startLine + 1999);
+      if (requestedEnd < startLine) throw new Error("endLine must not precede startLine");
+      const endLine = Math.min(lines.length, requestedEnd, startLine + 1999);
+      const text = lines.slice(startLine - 1, endLine)
+        .map((line, index) => `${startLine + index}: ${line}`)
+        .join("\n");
+      return {
+        content: [{ type: "text" as const, text }],
+        details: { path: params.path, startLine, endLine, totalLines: lines.length }
+      };
+    }
+  });
+  const list = defineTool({
+    name: "list_corpus",
+    label: "List corpus",
+    description: "List one corpus-relative directory. Absolute paths and parent traversal are rejected.",
+    parameters: Type.Object({
+      directory: Type.Optional(Type.String({ maxLength: 500 }))
+    }),
+    async execute(_toolCallId, params) {
+      const listing = await provider.listDirectory(binding, params.directory ?? "");
+      const text = listing.entries
+        .map((entry) => `${entry.kind === "directory" ? "[dir]" : "[file]"} ${entry.path}`)
+        .join("\n");
+      return {
+        content: [{ type: "text" as const, text }],
+        details: { directory: listing.directory, count: listing.entries.length }
+      };
+    }
+  });
+  const search = defineTool({
+    name: "search_corpus",
+    label: "Search corpus",
+    description: "Search text documents inside the corpus using a literal case-insensitive query.",
+    parameters: Type.Object({
+      query: Type.String({ minLength: 1, maxLength: 200 }),
+      directory: Type.Optional(Type.String({ maxLength: 500 })),
+      limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 200 }))
+    }),
+    async execute(_toolCallId, params) {
+      const pending = [params.directory ?? ""];
+      const files: string[] = [];
+      while (pending.length && files.length < 500) {
+        const directory = pending.shift()!;
+        const listing = await provider.listDirectory(binding, directory);
+        for (const entry of listing.entries) {
+          if (entry.kind === "directory") pending.push(entry.path);
+          else files.push(entry.path);
+          if (files.length >= 500) break;
+        }
+      }
+      const query = params.query.toLocaleLowerCase();
+      const limit = params.limit ?? 100;
+      const matches: string[] = [];
+      for (const file of files) {
+        const lines = await provider.readDocumentLines(binding, file).catch(() => null);
+        if (!lines) continue;
+        for (const [index, line] of lines.entries()) {
+          if (!line.toLocaleLowerCase().includes(query)) continue;
+          matches.push(`${file}:${index + 1}: ${line}`);
+          if (matches.length >= limit) break;
+        }
+        if (matches.length >= limit) break;
+      }
+      return {
+        content: [{ type: "text" as const, text: matches.join("\n") }],
+        details: { query: params.query, matches: matches.length, filesScanned: files.length }
+      };
+    }
+  });
+  return [read, list, search];
 }
 
 export class PiDiagramAgentRuntime implements DiagramAgentRuntime {
@@ -238,18 +327,23 @@ export class PiDiagramAgentRuntime implements DiagramAgentRuntime {
     onProgress?: (progress: AgentProgress) => void
   ): Promise<CodeEntityDraft[]> {
     const configured = await this.model();
+    const documentMode = request.domainProfileId === "document";
+    const corpusTools = documentMode ? documentCorpusTools(request.corpus) : [];
+    const entityLabel = documentMode ? "evidence entities" : "code entities";
     const submission = createValidatedSubmission<{ entities: CodeEntityDraft[] }>({
       toolName: "submit_code_entities",
-      validate: ({ entities }) => validateSubmittedSourceRanges(request.sourceRoot, entities),
-      acceptedMessage: ({ entities }) => `Recorded ${entities.length} code entities.`,
+      validate: ({ entities }) => validateSubmittedSourceRanges(request.corpus, entities),
+      acceptedMessage: ({ entities }) => `Recorded ${entities.length} ${entityLabel}.`,
       acceptedDetails: ({ entities }) => ({ count: entities.length }),
       correctionPrompt: "Inspect the current file and correct the source coordinates."
     });
     const submit = defineTool({
       name: "submit_code_entities",
-      label: "Submit code entities",
-      description: "Submit the source-backed code entities for this diagram set.",
-      promptSnippet: "Submit the final code entity set",
+      label: documentMode ? "Submit evidence entities" : "Submit code entities",
+      description: documentMode
+        ? "Submit the document-grounded evidence entities for this diagram set."
+        : "Submit the source-backed code entities for this diagram set.",
+      promptSnippet: documentMode ? "Submit the final evidence set" : "Submit the final code entity set",
       promptGuidelines: [submission.promptGuideline],
       parameters: Type.Object({
         entities: Type.Array(Type.Object({
@@ -321,7 +415,9 @@ export class PiDiagramAgentRuntime implements DiagramAgentRuntime {
       noPromptTemplates: true,
       noThemes: true,
       noContextFiles: true,
-      systemPrompt: "Inspect repository source without modifying it. Collect source-backed CodeEntities with compacted source presentations and finish through submit_code_entities."
+      systemPrompt: request.domainProfileId === "document"
+        ? "Inspect documents without modifying them. Use only read_corpus, list_corpus, and search_corpus to inspect corpus content. Collect document-grounded evidence entities with exact evidence ranges and finish through submit_code_entities."
+        : "Inspect repository source without modifying it. Collect source-backed CodeEntities with compacted source presentations and finish through submit_code_entities."
     });
     await resourceLoader.reload();
     const { session } = await createAgentSession({
@@ -329,8 +425,10 @@ export class PiDiagramAgentRuntime implements DiagramAgentRuntime {
       modelRuntime: configured.runtime,
       model: configured.model,
       thinkingLevel: "medium",
-      tools: ["read", "grep", "find", "ls", "submit_code_entities"],
-      customTools: [submit],
+      tools: documentMode
+        ? ["read_corpus", "list_corpus", "search_corpus", "submit_code_entities"]
+        : ["read", "grep", "find", "ls", "submit_code_entities"],
+      customTools: [...corpusTools, submit],
       resourceLoader,
       settingsManager,
       sessionManager: SessionManager.inMemory(request.sourceRoot)
@@ -344,7 +442,7 @@ export class PiDiagramAgentRuntime implements DiagramAgentRuntime {
     try {
       await session.prompt(request.promptConfig.contextPrompt.rendered);
       const accepted = submission.value;
-      if (!accepted) throw new Error("collector finished without submitting code entities");
+      if (!accepted) throw new Error(`collector finished without submitting ${entityLabel}`);
       return accepted.entities;
     } finally {
       unsubscribe();
@@ -359,6 +457,8 @@ export class PiDiagramAgentRuntime implements DiagramAgentRuntime {
   ): Promise<GeneratedArtifactDraft> {
     const configured = await this.model(request.promptConfig.modelId);
     const componentMode = request.promptConfig.outputKind === "diagram-component";
+    const domainProfile = resolveDomainProfile(request.promptConfig.domainProfileId);
+    const evidenceNoun = domainProfile.evidenceSchema.entityNoun;
     const artifactLabel = componentMode ? "DiagramComponent" : "diagram";
     const toolName = componentMode ? "submit_diagram_component" : "submit_diagram";
     const state: {
@@ -368,13 +468,13 @@ export class PiDiagramAgentRuntime implements DiagramAgentRuntime {
     const submit = defineTool({
       name: toolName,
       label: `Submit ${artifactLabel}`,
-      description: `Submit exactly one source-backed 7-bit ASCII ${artifactLabel}.`,
+      description: `Submit exactly one ${domainProfile.id === "document" ? "document-grounded" : "source-backed"} 7-bit ASCII ${artifactLabel}.`,
       promptSnippet: `Submit the final ASCII ${artifactLabel}`,
       promptGuidelines: [
         "Give the diagram a compact, specific name, ideally two to five words.",
         `End each generation turn by calling ${toolName} exactly once.`
       ],
-      parameters: artifactSubmissionParameters(),
+      parameters: artifactSubmissionParameters(evidenceNoun),
       async execute(_toolCallId, params) {
         const codeEntityIds = resolveCodeEntityPromptAliases(
           params.codeEntityIds,
@@ -465,8 +565,8 @@ export class PiDiagramAgentRuntime implements DiagramAgentRuntime {
 
 Parallel generation slot: ${request.slot} of ${request.total}.
 Independently choose a clear organizing shape for this slot. Return one ${artifactLabel} only.
-Allowed CodeEntity aliases: ${request.allowedCodeEntityAliases.map(({ alias }) => alias).join(", ") || "none"}
-Use aliases in the codeEntityIds submission field. Never print persisted CodeEntity identifiers.
+Allowed ${domainProfile.evidenceSchema.label} aliases: ${request.allowedCodeEntityAliases.map(({ alias }) => alias).join(", ") || "none"}
+Use aliases in the codeEntityIds submission field. Never print persisted ${evidenceNoun} identifiers.
 Referenced Diagram ids: ${request.allowedDiagramIds.join(", ") || "none"}
 Referenced DiagramComponent ids: ${request.allowedDiagramComponentIds.join(", ") || "none"}`,
         referencePrompt: request.promptConfig.referencePrompt?.rendered,
@@ -477,7 +577,8 @@ Referenced DiagramComponent ids: ${request.allowedDiagramComponentIds.join(", ")
             : request.promptConfig.viewKind ?? "diagram",
           artifact,
           codeEntities: request.codeEntities.filter((entity) => artifact.codeEntityIds.includes(entity.id)),
-          aliases: request.allowedCodeEntityAliases
+          aliases: request.allowedCodeEntityAliases,
+          domainProfileId: request.promptConfig.domainProfileId
         }),
         prompt: (text) => session.prompt(text),
         takeSubmission: () => state.submissions.shift(),
@@ -596,6 +697,8 @@ ${request.instruction}`);
   ): Promise<DiagramElementMappingDraft[]> {
     const configured = await this.model();
     const componentMode = request.artifactKind === "diagram-component";
+    const domainProfile = resolveDomainProfile(request.domainProfileId);
+    const evidenceNoun = domainProfile.evidenceSchema.entityNoun;
     const artifactLabel = componentMode ? "DiagramComponent" : "diagram";
     const toolName = componentMode ? "submit_diagram_component" : "submit_diagram";
     const aliases = createCodeEntityPromptAliases(request.codeEntities);
@@ -608,10 +711,10 @@ ${request.instruction}`);
     const submit = defineTool({
       name: toolName,
       label: `Submit ${artifactLabel}`,
-      description: `Resubmit the unchanged ${artifactLabel} with exact CodeEntity mappings.`,
+      description: `Resubmit the unchanged ${artifactLabel} with exact ${evidenceNoun} mappings.`,
       promptSnippet: `Submit the complete mapped ${artifactLabel}`,
       promptGuidelines: [`Call ${toolName} with the unchanged artifact and corrected mappings.`],
-      parameters: artifactSubmissionParameters(),
+      parameters: artifactSubmissionParameters(evidenceNoun),
       async execute(_toolCallId, params) {
         let candidate: GeneratedArtifactDraft;
         try {
@@ -674,7 +777,7 @@ ${request.instruction}`);
       noPromptTemplates: true,
       noThemes: true,
       noContextFiles: true,
-      systemPrompt: `Map visible semantic text in the supplied ASCII artifact to the supplied CodeEntities. Never modify files and finish through ${toolName}.`
+      systemPrompt: `Map visible semantic text in the supplied ASCII artifact to the supplied ${domainProfile.evidenceSchema.collectionNoun}. Never modify files and finish through ${toolName}.`
     });
     await resourceLoader.reload();
     const { session } = await createAgentSession({
@@ -704,7 +807,8 @@ ${renderMappingPromptTemplate({
   targetKind: componentMode ? "diagram-component" : "diagram",
   artifact: expected,
   codeEntities: request.codeEntities,
-  aliases
+  aliases,
+  domainProfileId: request.domainProfileId
 })}`);
       if (!state.submission?.mappings) throw new Error("mapping agent finished without submitting mappings");
       return state.submission.mappings;

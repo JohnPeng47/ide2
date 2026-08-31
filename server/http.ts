@@ -12,6 +12,8 @@ import { DiagramApplication } from "./application";
 import { DiagramDatasetStore } from "./diagramDatasetStore";
 import { ExperimentCatalog } from "./experimentCatalog";
 import { DiagramStore } from "./store";
+import type { BuiltInDomainProfileId } from "../src/domainProfile";
+import { isBuiltInDomainProfileId } from "./domainProfiles";
 
 const MAX_REQUEST_BYTES = 10 * 1024 * 1024;
 
@@ -209,14 +211,18 @@ export function diagramApi(
   projectRoot: string,
   diagramsDirectory = ".diagrams",
   experimentsRoot = `${projectRoot}/.datasets`,
-  datasetCollectionsRoot = `${experimentsRoot}/diagram-collections`
+  datasetCollectionsRoot = `${experimentsRoot}/diagram-collections`,
+  configuredDomainProfileId: BuiltInDomainProfileId | undefined = isBuiltInDomainProfileId(
+    process.env.NEW_DIAGRAM_DOMAIN
+  ) ? process.env.NEW_DIAGRAM_DOMAIN : undefined
 ): Plugin {
   const runtime = process.env.NEW_DIAGRAM_AGENT === "fake"
     ? new FakeDiagramAgentRuntime()
     : new PiDiagramAgentRuntime();
   const application = new DiagramApplication(
     new DiagramStore(projectRoot, diagramsDirectory),
-    runtime
+    runtime,
+    configuredDomainProfileId ?? "source-code"
   );
   const experimentCatalog = new ExperimentCatalog(experimentsRoot);
   const datasetStore = new DiagramDatasetStore(datasetCollectionsRoot);
@@ -431,6 +437,17 @@ export function diagramApi(
         const inputPath = typeof body.path === "string" ? body.path : "";
         const name = typeof body.name === "string" ? body.name : "";
         const prompt = typeof body.prompt === "string" ? body.prompt : "";
+        const existingProject = await application.store.loadProject();
+        const requestedDomain = body.domainProfileId
+          ?? body.domain
+          ?? configuredDomainProfileId
+          ?? existingProject?.domainProfileId
+          ?? "source-code";
+        if (!isBuiltInDomainProfileId(requestedDomain)) {
+          return sendJson(response, 400, {
+            error: `unsupported domain profile: ${String(requestedDomain)}`
+          });
+        }
         const referencePrompt = typeof body.referencePrompt === "string"
           ? body.referencePrompt
           : undefined;
@@ -438,23 +455,31 @@ export function diagramApi(
         const requestedPromptTemplateId = body.promptTemplateId;
         const requestedCodeEntityPromptTemplateId = body.codeEntityPromptTemplateId;
         if (!inputPath || !name.trim()) {
-          return sendJson(response, 400, { error: "repository path and DiagramSet name are required" });
+          return sendJson(response, 400, { error: "corpus path and DiagramSet name are required" });
         }
+        await application.validateDiagramSetTarget(inputPath, requestedDomain);
         const promptTemplate = await application.resolveSystemPromptTemplate(
           requestedPromptTemplateId
         );
         const codeEntityPromptTemplate = await application.resolveCodeEntityPromptTemplate(
-          requestedCodeEntityPromptTemplateId
+          requestedCodeEntityPromptTemplateId,
+          requestedDomain
         );
         response.statusCode = 200;
         response.setHeader("content-type", "application/x-ndjson; charset=utf-8");
         response.setHeader("cache-control", "no-cache, no-transform");
         response.flushHeaders();
-        const diagramSet = await application.createDiagramSet({ path: inputPath, name, prompt });
+        const diagramSet = await application.createDiagramSet({
+          path: inputPath,
+          name,
+          prompt,
+          domainProfileId: requestedDomain
+        });
         sendEvent(response, {
           type: "created",
           diagramSetId: diagramSet.id,
           projectRoot: diagramSet.sourceCheckoutRoot,
+          domainProfileId: requestedDomain,
           promptTemplateId: promptTemplate.id,
           codeEntityPromptTemplateId: codeEntityPromptTemplate.id
         });
