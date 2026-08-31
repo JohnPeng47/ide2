@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "set-1361dd6c-21dd-40f9-8969-d7398a77f0af",
+  "projectId": "project-ce67f2af4410",
+  "name": "MARKDOWN Plan Implementation Call Graph",
+  "initialPrompt": "Read MARKDOWN.md and collect source-backed evidence for one implementation call graph of the Compositional Domain Architecture Plan. Trace dependency and execution order from characterization through per-DiagramSet DomainProfile composition, corpus and evidence facades, recipe and surface registries, generic highlights, the representation graph, stable element indexes, scoped agent progress, compatibility adapters, migrations, acceptance gates, and final cleanup. Capture branch points and the contracts passed between phases; map every graph node to exact MARKDOWN.md line ranges. Favor implementation/control dependencies over restating every interface field.",
+  "sourceCheckoutRoot": "/home/john/.herdr/worktrees/new-diagram/worktree-transcripts",
+  "codeEntitiesSetId": "entities-c1f15126-f6dc-47e2-bc9f-d81cc4840675",
+  "featuredViewIds": {},
+  "diagramIds": [],
+  "diagramComponentIds": [],
+  "generationBatchIds": [],
+  "agentRunIds": [
+    "run-52f9322d-987e-4b8e-9855-9b5304424ba1"
+  ],
+  "editSessionIds": [],
+  "readiness": "failed",
+  "createdAt": "2026-08-31T16:05:05.642Z",
+  "updatedAt": "2026-08-31T16:05:55.918Z",
+  "error": "collector finished without submitting evidence entities"
+}

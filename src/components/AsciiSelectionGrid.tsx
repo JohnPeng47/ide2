@@ -23,6 +23,7 @@ import {
   representationElementIdForMapping,
   type RepresentationIndex
 } from "../representationIndex";
+import type { RepresentationPresentation } from "../representationPresentation";
 import { DiagramSelectionOverlay, type SelectionOverlayRect, type SelectionOverlayReference } from "./DiagramSelectionOverlay";
 
 export type AsciiGridMode = "read" | "capture" | "select-refs" | "marker";
@@ -54,6 +55,8 @@ function mappingReferenceKey(
 export function AsciiSelectionGrid(props: {
   ascii: string;
   representationIndex?: RepresentationIndex;
+  presentation: RepresentationPresentation;
+  spatialProgressByElementId?: ReadonlyMap<string, "current" | "visited" | "complete" | "failed">;
   mode: AsciiGridMode;
   mappings: readonly DiagramElementMapping[];
   entities: readonly CodeEntityRecord[];
@@ -302,6 +305,63 @@ export function AsciiSelectionGrid(props: {
   return (
     <div className="ascii-grid-shell">
       <span className="ascii-cell-probe" ref={probeRef} aria-hidden="true">0000000000</span>
+      {props.mode === "read" ? (
+        <span className="representation-control-gutter" aria-label="Representation controls">
+          {lines.map((line, lineIndex) => ({ line, lineNumber: lineIndex + 1 }))
+            .filter(({ lineNumber }) => !hiddenLines.has(lineNumber))
+            .map(({ lineNumber }) => {
+              const mappings = mappingsByLine.get(lineNumber) ?? [];
+              const treeNode = treeNodesByLine.get(lineNumber);
+              const indexedTreeNode = indexedTreeNodesByLine.get(lineNumber);
+              const canCollapse = props.presentation.controls.collapse === "gutter"
+                && props.collapseSubtrees !== false
+                && Boolean(treeNode && indexedTreeNode?.childIds.length);
+              const collapsed = Boolean(indexedTreeNode && collapsedNodeIds.has(indexedTreeNode.id));
+              const spatialStatus = indexedTreeNode
+                ? props.spatialProgressByElementId?.get(indexedTreeNode.id)
+                : undefined;
+              return (
+                <span className="representation-line-controls" data-control-line={lineNumber} key={lineNumber}>
+                  {canCollapse ? (
+                    <button
+                      type="button"
+                      className={`tree-node-collapse${spatialStatus ? ` has-agent-${spatialStatus}` : ""}`}
+                      data-collapse-line={lineNumber}
+                      data-representation-element-id={indexedTreeNode!.id}
+                      aria-label={`${collapsed ? "Expand" : "Collapse"} ${treeNode!.text}`}
+                      aria-expanded={!collapsed}
+                      title={`${collapsed ? "Expand" : "Collapse"} this tree node`}
+                      onClick={() => setCollapsedNodeIds((current) => {
+                        const next = new Set(current);
+                        if (next.has(indexedTreeNode!.id)) next.delete(indexedTreeNode!.id);
+                        else next.add(indexedTreeNode!.id);
+                        return next;
+                      })}
+                    >[{collapsed ? "+" : "-"}]</button>
+                  ) : null}
+                  {props.presentation.controls.savedHighlight === "gutter" && props.onToggleHighlight
+                    ? mappings.map((mapping) => {
+                      const entity = entitiesById.get(mapping.entityId);
+                      const highlighted = props.highlightedMappingIds.has(mapping.id);
+                      return (
+                        <button
+                          type="button"
+                          className={`mapped-highlight-toggle${highlighted ? " is-highlighted" : ""}`}
+                          data-highlight-mapping-id={mapping.id}
+                          aria-label={`${highlighted ? "Remove" : "Add"} ${entity?.label ?? "mapped node"} ${highlighted ? "from" : "to"} highlights`}
+                          aria-pressed={highlighted}
+                          disabled={props.highlightBusyMappingIds.has(mapping.id)}
+                          title={highlighted ? "Remove from highlights" : "Add to highlights"}
+                          onClick={() => props.onToggleHighlight?.(mapping)}
+                        >[{highlighted ? "★" : "☆"}]</button>
+                      );
+                    })
+                    : null}
+                </span>
+              );
+            })}
+        </span>
+      ) : null}
       <pre
         ref={preRef}
         className={`ascii-grid${props.mode === "read" ? "" : " ascii-selector"} ascii-selector--${props.mode}${props.mode === "marker" ? " is-marking" : ""}${activeRef.current ? " is-dragging" : ""}`}
@@ -319,46 +379,12 @@ export function AsciiSelectionGrid(props: {
           .filter(({ lineNumber }) => !hiddenLines.has(lineNumber))
           .map(({ line, lineNumber }, visibleIndex, visibleLines) => {
           const mappings = mappingsByLine.get(lineNumber) ?? [];
-          const treeNode = treeNodesByLine.get(lineNumber);
           const indexedTreeNode = indexedTreeNodesByLine.get(lineNumber);
-          const canCollapse = props.collapseSubtrees !== false
-            && props.mode === "read"
-            && Boolean(treeNode && indexedTreeNode?.childIds.length);
-          const collapseColumn = canCollapse ? treeNode!.textColumn - 1 : undefined;
           const content = [];
           let cursor = 0;
-          let collapseInserted = false;
-          const insertCollapse = () => {
-            if (collapseColumn === undefined || collapseInserted) return;
-            if (collapseColumn > cursor) content.push(line.slice(cursor, collapseColumn));
-            const elementId = indexedTreeNode!.id;
-            const collapsed = collapsedNodeIds.has(elementId);
-            content.push(
-              <button
-                type="button"
-                className="tree-node-collapse"
-                key={`collapse:${elementId}`}
-                data-collapse-line={lineNumber}
-                data-representation-element-id={elementId}
-                aria-label={`${collapsed ? "Expand" : "Collapse"} ${treeNode!.text}`}
-                aria-expanded={!collapsed}
-                title={`${collapsed ? "Expand" : "Collapse"} this tree node`}
-                onClick={() => setCollapsedNodeIds((current) => {
-                  const next = new Set(current);
-                  if (next.has(elementId)) next.delete(elementId);
-                  else next.add(elementId);
-                  return next;
-                })}
-              >[{collapsed ? "+" : "-"}]</button>
-            );
-            content.push(" ");
-            cursor = collapseColumn;
-            collapseInserted = true;
-          };
           for (const mapping of mappings) {
             const start = mapping.startColumn - 1;
             const end = mapping.endColumn;
-            if (collapseColumn !== undefined && collapseColumn <= start) insertCollapse();
             if (start > cursor) content.push(line.slice(cursor, start));
             const entity = entitiesById.get(mapping.entityId);
             const range = mapping.sourceRangeId
@@ -372,51 +398,51 @@ export function AsciiSelectionGrid(props: {
             const representationElementId = props.representationIndex
               ? representationElementIdForMapping(props.representationIndex, mapping.id)
               : undefined;
+            const spatialStatus = representationElementId
+              ? props.spatialProgressByElementId?.get(representationElementId)
+              : undefined;
             content.push(
               <span
-                className="mapped-element-wrap"
+                className={`mapped-element-wrap${spatialStatus ? ` has-agent-${spatialStatus}` : ""}`}
                 data-representation-element-id={representationElementId}
+                data-agent-progress={spatialStatus}
                 key={mapping.id}
               >
-                {props.onToggleHighlight ? <>
+                {props.onReveal ? (
                   <button
                     type="button"
-                    className={`mapped-highlight-toggle${props.highlightedMappingIds.has(mapping.id) ? " is-highlighted" : ""}`}
-                    data-highlight-mapping-id={mapping.id}
-                    aria-label={`${props.highlightedMappingIds.has(mapping.id) ? "Remove" : "Add"} ${entity?.label ?? "mapped node"} ${props.highlightedMappingIds.has(mapping.id) ? "from" : "to"} highlights`}
-                    aria-pressed={props.highlightedMappingIds.has(mapping.id)}
-                    disabled={props.highlightBusyMappingIds.has(mapping.id)}
-                    title={props.highlightedMappingIds.has(mapping.id) ? "Remove from highlights" : "Add to highlights"}
-                    onClick={() => props.onToggleHighlight?.(mapping)}
-                  >[{props.highlightedMappingIds.has(mapping.id) ? "★" : "☆"}]</button>
-                  {" "}
-                </> : null}
-                <button
-                  type="button"
-                  className={`${classes} mapped-element-marker`}
-                  data-mapping-id={mapping.id}
-                  data-entity-id={mapping.entityId}
-                  data-reference-key={mappingReferenceKey(mapping, props.entities)}
-                  data-line={mapping.line}
-                  data-start-column={mapping.startColumn}
-                  data-end-column={mapping.endColumn}
-                  aria-label={entity ? `Reveal ${entity.label} in Code Entities` : "Reveal mapped CodeEntity"}
-                  title={entity
-                    ? `${entity.label}\n${entity.summary}${range ? `\n${range.path}:${range.startLine}-${range.endLine}` : ""}`
-                    : undefined}
-                  onClick={() => props.onReveal?.(mapping)}
-                >
-                  [(**)]
-                </button>
-                <span className="mapped-element-copy"> {line.slice(start, end)}</span>
+                    className={`${classes} representation-link--${props.presentation.evidenceLinks.kind}`}
+                    data-mapping-id={mapping.id}
+                    data-entity-id={mapping.entityId}
+                    data-reference-key={mappingReferenceKey(mapping, props.entities)}
+                    data-line={mapping.line}
+                    data-start-column={mapping.startColumn}
+                    data-end-column={mapping.endColumn}
+                    aria-label={entity ? `Reveal ${entity.label} in Code Entities` : "Reveal mapped CodeEntity"}
+                    title={entity
+                      ? `${entity.label}\n${entity.summary}${range ? `\n${range.path}:${range.startLine}-${range.endLine}` : ""}`
+                      : undefined}
+                    onClick={() => props.onReveal?.(mapping)}
+                  >
+                    {line.slice(start, end)}
+                  </button>
+                ) : line.slice(start, end)}
               </span>
             );
             cursor = end;
           }
-          if (!collapseInserted) insertCollapse();
           if (cursor < line.length) content.push(line.slice(cursor));
+          const lineSpatialStatus = indexedTreeNode
+            ? props.spatialProgressByElementId?.get(indexedTreeNode.id)
+            : undefined;
           return (
-            <span className="ascii-line mapped-ascii-line" data-ascii-line={lineNumber} key={lineNumber}>
+            <span
+              className={`ascii-line mapped-ascii-line${lineSpatialStatus ? ` has-agent-${lineSpatialStatus}` : ""}`}
+              data-ascii-line={lineNumber}
+              data-representation-element-id={indexedTreeNode?.id}
+              data-agent-progress={lineSpatialStatus}
+              key={lineNumber}
+            >
               {content}{visibleIndex < visibleLines.length - 1 ? "\n" : null}
             </span>
           );

@@ -13,7 +13,12 @@ import { mappingsForSelection } from "../diagramSelection";
 import { referenceIdentityKey, referencesFromMappings } from "../refBuffer";
 import { resolveReference, type ReferenceResolutionContext } from "../referenceResolver";
 import { buildRepresentationIndex } from "../representationIndex";
+import { presentationForRepresentation } from "../representationPresentation";
 import { asciiSha256 } from "../asciiSha256";
+import {
+  validateSpatialProgressState,
+  type SpatialProgressState
+} from "../agentWork";
 import { useRefBuffer } from "../ref-buffer/RefBufferContext";
 import { RefBufferTray } from "../ref-buffer/RefBufferTray";
 import { AsciiSelectionGrid, type AsciiGridMode } from "./AsciiSelectionGrid";
@@ -65,6 +70,7 @@ export function DiagramView(props: {
   editBusy?: boolean;
   codeEntities: CodeEntityRecord[];
   codeEntityMap?: DiagramCodeEntityMapRecord;
+  spatialProgress?: readonly SpatialProgressState[];
   referenceResolutionContext: ReferenceResolutionContext;
   projectId: string;
   diagramSetId: string;
@@ -137,6 +143,22 @@ export function DiagramView(props: {
       return undefined;
     }
   }, [activeAsciiSha256, currentCodeEntityMap, props.active.ascii, props.active.id, props.representationKind]);
+  const representationPresentation = useMemo(
+    () => presentationForRepresentation(props.representationKind),
+    [props.representationKind]
+  );
+  const spatialProgressByElementId = useMemo(() => {
+    const result = new Map<string, "current" | "visited" | "complete" | "failed">();
+    if (!representationIndex) return result;
+    for (const state of props.spatialProgress ?? []) {
+      if (!validateSpatialProgressState(state, representationIndex).valid) continue;
+      const visitedStatus = state.status === "failed" ? "failed" as const : "visited" as const;
+      for (const elementId of state.visitedElementIds) result.set(elementId, visitedStatus);
+      for (const elementId of state.completedElementIds) result.set(elementId, "complete");
+      for (const elementId of state.currentElementIds) result.set(elementId, "current");
+    }
+    return result;
+  }, [props.spatialProgress, representationIndex]);
   const liveMappings = useMemo(
     () => liveSelection ? mappingsForSelection(mappings, liveSelection) : [],
     [liveSelection, mappings]
@@ -389,6 +411,8 @@ export function DiagramView(props: {
           <AsciiSelectionGrid
             ascii={props.active.ascii}
             representationIndex={representationIndex}
+            presentation={representationPresentation}
+            spatialProgressByElementId={spatialProgressByElementId}
             mode={gridMode}
             mappings={mappings}
             entities={props.codeEntities}

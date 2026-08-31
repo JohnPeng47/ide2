@@ -14,8 +14,13 @@ import type { ContentPresentation } from "../domainProfile";
 import { CodeEntitiesPanel, type CodeEntityReveal } from "./CodeEntitiesPanel";
 import { DiagramLineagePanel } from "./DiagramLineagePanel";
 import { EditOperationsPanel } from "./EditOperationsPanel";
+import { RepresentationLayersPanel } from "./RepresentationLayersPanel";
+import type {
+  RepresentationFeedbackTarget,
+  RepresentationGraphRecord
+} from "../representationGraph";
 
-export type ContextTab = "code-entities" | "diagrams" | "operations";
+export type ContextTab = "code-entities" | "diagrams" | "layers" | "operations";
 
 export function DiagramContextPanel(props: {
   setId: string;
@@ -31,6 +36,12 @@ export function DiagramContextPanel(props: {
   activeDiagram?: DiagramRecord;
   activeComponent?: DiagramComponentRecord;
   editSession?: EditSessionRecord;
+  representationGraph?: RepresentationGraphRecord;
+  representationFeedbackBusy?: boolean;
+  onRepresentationFeedback?: (
+    target: RepresentationFeedbackTarget,
+    comment: string
+  ) => Promise<void>;
   editPrompt?: string;
   editModelId?: DiagramModelId;
   markerMode?: boolean;
@@ -79,6 +90,15 @@ export function DiagramContextPanel(props: {
             onLlmEdit={() => props.onLlmEdit?.()}
             onFinish={() => props.onFinishEdit?.()}
             onDiscard={() => props.onDiscardEdit?.()}
+          />
+        </div>
+      ) : props.activeTab === "layers" && props.representationGraph ? (
+        <div className="context-tabpanel">
+          <RepresentationLayersPanel
+            graph={props.representationGraph}
+            busy={props.representationFeedbackBusy}
+            onFeedback={(target, comment) => props.onRepresentationFeedback?.(target, comment)
+              ?? Promise.reject(new Error("representation feedback is unavailable"))}
           />
         </div>
       ) : props.activeTab === "code-entities" ? (

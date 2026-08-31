@@ -426,6 +426,8 @@ button.highlight-tree-label:hover, button.highlight-tree-label:focus-visible { o
 .mapping-status { flex: none; border-bottom: 1px solid var(--accent-cyan); padding: 0.55rem 1.25rem; background: rgb(136 192 208 / 6%); color: var(--accent-cyan); font: 10px var(--font-mono); }
 .ascii-stage.is-capturing { cursor: crosshair; place-items: center; }
 .ascii-grid-shell { position: relative; display: inline-block; min-width: max-content; }
+.representation-control-gutter { position: absolute; top: 0; right: calc(100% + 0.55rem); display: grid; min-width: 8ch; grid-auto-rows: 1.4em; justify-items: end; color: var(--muted); font: 13px/1.4 var(--font-mono); }
+.representation-line-controls { display: flex; height: 1.4em; align-items: baseline; justify-content: flex-end; gap: 0.4ch; white-space: nowrap; }
 .ascii-grid { position: relative; z-index: 1; }
 .ascii-cell-probe { position: absolute; visibility: hidden; pointer-events: none; font: 13px/1.4 var(--font-mono); white-space: pre; }
 .ascii-selector--capture, .ascii-selector--select-refs, .ascii-selector--marker, .ascii-selector.is-dragging { touch-action: none; user-select: none; }
@@ -433,15 +435,29 @@ button.highlight-tree-label:hover, button.highlight-tree-label:focus-visible { o
 .ascii-line { white-space: pre; }
 .mapped-ascii-line { white-space: pre; }
 .mapped-element-wrap { position: relative; display: inline; }
+.ascii-line.has-agent-current, .mapped-element-wrap.has-agent-current { background: rgb(79 193 255 / 12%); box-shadow: inset 2px 0 rgb(79 193 255 / 75%); }
+.ascii-line.has-agent-visited, .mapped-element-wrap.has-agent-visited { background: rgb(79 193 255 / 5%); }
+.ascii-line.has-agent-complete, .mapped-element-wrap.has-agent-complete { background: rgb(92 201 132 / 7%); box-shadow: inset 2px 0 rgb(92 201 132 / 38%); }
+.ascii-line.has-agent-failed, .mapped-element-wrap.has-agent-failed { background: rgb(255 96 96 / 9%); box-shadow: inset 2px 0 rgb(255 96 96 / 55%); }
+.tree-node-collapse.has-agent-current { color: rgb(79 193 255); }
+.tree-node-collapse.has-agent-complete { color: rgb(92 201 132); }
+.tree-node-collapse.has-agent-failed { color: rgb(255 112 112); }
+.representation-layers-panel { padding: 12px; overflow: auto; }
+.representation-layers-panel > header { display: flex; justify-content: space-between; color: var(--muted); }
+.representation-layers-panel ol { margin: 14px 0 0; padding: 0; list-style: none; }
+.representation-layers-panel li { position: relative; padding: 0 0 18px 18px; border-left: 1px solid rgb(255 255 255 / 14%); }
+.representation-layer-card { display: grid; gap: 4px; padding: 9px 10px; background: rgb(255 255 255 / 3%); border: 1px solid rgb(255 255 255 / 9%); }
+.representation-layer-card code { color: var(--muted); overflow: hidden; text-overflow: ellipsis; }
+.representation-transition-feedback { display: grid; gap: 5px; margin-top: 8px; color: var(--muted); }
+.representation-transition-feedback textarea { min-height: 54px; resize: vertical; background: rgb(0 0 0 / 18%); color: var(--fg); border: 1px solid rgb(255 255 255 / 12%); }
+.representation-transition-feedback button { justify-self: start; }
 .tree-node-collapse, .mapped-highlight-toggle { border: 0; border-radius: 2px; padding: 0; background: transparent; color: var(--muted); font: inherit; line-height: inherit; white-space: pre; cursor: pointer; }
 .tree-node-collapse { color: var(--accent-yellow); }
 .mapped-highlight-toggle { color: #777; }
 .mapped-highlight-toggle.is-highlighted { color: var(--accent-yellow); }
 .tree-node-collapse:hover, .tree-node-collapse:focus-visible, .mapped-highlight-toggle:hover, .mapped-highlight-toggle:focus-visible { outline: 0; background: rgb(255 255 255 / 8%); color: var(--fg); }
 .mapped-highlight-toggle:disabled { cursor: wait; opacity: 0.55; }
-.mapped-element { border: 0; padding: 0; background: transparent; color: var(--accent-cyan); font: inherit; line-height: inherit; white-space: pre; cursor: pointer; }
-.mapped-element-marker { border-radius: 2px; }
-.mapped-element-copy { color: inherit; }
+.mapped-element { appearance: none; display: inline; border: 0; border-bottom: 1px dotted var(--accent-cyan); margin: 0; padding: 0; background: rgb(136 192 208 / 8%); color: inherit; font: inherit; letter-spacing: inherit; line-height: inherit; white-space: pre; cursor: pointer; }
 .mapped-element:hover, .mapped-element:focus-visible { outline: 0; background: var(--accent-cyan); color: var(--bg); }
 .mapped-element.is-selection-preview { background: var(--accent-cyan); color: var(--bg); box-shadow: 0 0 0 1px var(--accent-cyan); }
 .mapped-element.is-buffered-ref { background: rgb(180 142 173 / 16%); color: var(--accent-purple); box-shadow: inset 0 0 0 1px var(--accent-purple); }

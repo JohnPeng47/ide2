@@ -25,6 +25,11 @@ import type {
   DiagramDatasetSummary
 } from "./datasetDomain";
 import type { CallGraphFocusRequest, CallGraphFocusResult } from "./callGraphFocus";
+import type {
+  RepresentationFeedbackTarget,
+  RepresentationGraphRecord
+} from "./representationGraph";
+import type { SpatialProgressState } from "./agentWork";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -39,6 +44,64 @@ async function errorFrom(response: Response): Promise<Error> {
 
 export async function fetchWorkspace(): Promise<WorkspaceSnapshot> {
   const response = await apiFetch("/api/workspace", { cache: "no-store" });
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<WorkspaceSnapshot>;
+}
+
+export async function fetchRepresentationGraph(setId: string): Promise<RepresentationGraphRecord> {
+  const response = await apiFetch(
+    `/api/diagram-sets/${encodeURIComponent(setId)}/representation-graph`,
+    { cache: "no-store" }
+  );
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<RepresentationGraphRecord>;
+}
+
+export async function saveRepresentationGraph(
+  setId: string,
+  graph: RepresentationGraphRecord
+): Promise<WorkspaceSnapshot> {
+  const response = await apiFetch(
+    `/api/diagram-sets/${encodeURIComponent(setId)}/representation-graph`,
+    {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(graph)
+    }
+  );
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<WorkspaceSnapshot>;
+}
+
+export async function addRepresentationFeedback(
+  setId: string,
+  input: { target: RepresentationFeedbackTarget; comment: string }
+): Promise<WorkspaceSnapshot> {
+  const response = await apiFetch(
+    `/api/diagram-sets/${encodeURIComponent(setId)}/representation-graph/feedback`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(input)
+    }
+  );
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<WorkspaceSnapshot>;
+}
+
+export async function saveAgentSpatialProgress(
+  setId: string,
+  runId: string,
+  state: SpatialProgressState
+): Promise<WorkspaceSnapshot> {
+  const response = await apiFetch(
+    `/api/diagram-sets/${encodeURIComponent(setId)}/agent-runs/${encodeURIComponent(runId)}/spatial-progress`,
+    {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(state)
+    }
+  );
   if (!response.ok) throw await errorFrom(response);
   return response.json() as Promise<WorkspaceSnapshot>;
 }

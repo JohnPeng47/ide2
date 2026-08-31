@@ -45,6 +45,19 @@ import {
   renderArtifactSystemPrompt
 } from "../src/prompt";
 import type { BuiltInDomainProfileId, CorpusBinding } from "../src/domainProfile";
+import type { SpatialProgressState } from "../src/agentWork";
+import {
+  assertRepresentationGraph,
+  normalizeRepresentationGraph,
+  type RepresentationGraphRecord
+} from "../src/representationGraph";
+import {
+  isHighlightRecordV2,
+  validateHighlightRecordV2,
+  type HighlightRecordV2
+} from "../src/highlights";
+
+type PersistedHighlight = DiagramHighlightRecord | HighlightRecordV2;
 import { isBuiltInDomainProfileId } from "./domainProfiles";
 
 const execFileAsync = promisify(execFile);
@@ -177,6 +190,10 @@ export class DiagramStore {
     return path.join(this.storeRoot, "highlights.json");
   }
 
+  private spatialProgressPath(): string {
+    return path.join(this.storeRoot, "spatial-progress.json");
+  }
+
   private systemPromptTemplatesPath(): string {
     return path.join(this.storeRoot, "system-prompt-templates.json");
   }
@@ -273,6 +290,10 @@ export class DiagramStore {
   private codeEntityMapPath(setId: string, artifactId: string): string {
     assertSafeId(artifactId, "artifact id");
     return path.join(this.setRoot(setId), "code-entity-maps", `${artifactId}.json`);
+  }
+
+  private representationGraphPath(setId: string): string {
+    return path.join(this.setRoot(setId), "representation-graph.json");
   }
 
   async ensureProject(location: RepositoryLocation): Promise<ProjectRecord> {
@@ -1172,6 +1193,10 @@ export class DiagramStore {
     await writeJsonAtomic(this.runPath(run.diagramSetId, run.id), run);
   }
 
+  async loadRun(setId: string, runId: string): Promise<AgentRunRecord> {
+    return readJson<AgentRunRecord>(this.runPath(setId, runId));
+  }
+
   async saveBatch(batch: GenerationBatchRecord): Promise<void> {
     await writeJsonAtomic(this.batchPath(batch.diagramSetId, batch.id), batch);
   }
@@ -1200,20 +1225,64 @@ export class DiagramStore {
     );
   }
 
-  async loadHighlights(): Promise<DiagramHighlightRecord[]> {
-    const stored = await readJsonIfExists<{
-      schemaVersion: typeof SCHEMA_VERSION;
-      highlights: DiagramHighlightRecord[];
-    }>(this.highlightsPath());
-    return stored?.highlights ?? [];
+  async loadRepresentationGraph(setId: string): Promise<RepresentationGraphRecord | null> {
+    assertSafeId(setId, "DiagramSet id");
+    const graph = await readJsonIfExists<RepresentationGraphRecord>(
+      this.representationGraphPath(setId)
+    );
+    if (!graph) return null;
+    assertRepresentationGraph(graph);
+    return normalizeRepresentationGraph(graph);
   }
 
-  async saveHighlight(highlight: DiagramHighlightRecord): Promise<void> {
+  async saveRepresentationGraph(graph: RepresentationGraphRecord): Promise<void> {
+    if (!graph.diagramSetId) throw new Error("representation graph must belong to a DiagramSet");
+    assertSafeId(graph.diagramSetId, "DiagramSet id");
+    assertRepresentationGraph(graph);
+    await writeJsonAtomic(this.representationGraphPath(graph.diagramSetId), {
+      schemaVersion: SCHEMA_VERSION,
+      ...normalizeRepresentationGraph(graph)
+    });
+  }
+
+  async loadHighlights(): Promise<PersistedHighlight[]> {
+    const stored = await readJsonIfExists<{
+      schemaVersion: typeof SCHEMA_VERSION;
+      highlights: PersistedHighlight[];
+    }>(this.highlightsPath());
+    const highlights = stored?.highlights ?? [];
+    for (const highlight of highlights) {
+      if (isHighlightRecordV2(highlight)) validateHighlightRecordV2(highlight);
+    }
+    return highlights;
+  }
+
+  async loadSpatialProgress(): Promise<Record<string, SpatialProgressState>> {
+    const stored = await readJsonIfExists<{
+      schemaVersion: typeof SCHEMA_VERSION;
+      states: Record<string, SpatialProgressState>;
+    }>(this.spatialProgressPath());
+    return stored?.states ?? {};
+  }
+
+  async saveSpatialProgress(runId: string, state: SpatialProgressState): Promise<void> {
+    assertSafeId(runId, "AgentRun id");
+    const states = await this.loadSpatialProgress();
+    await writeJsonAtomic(this.spatialProgressPath(), {
+      schemaVersion: SCHEMA_VERSION,
+      states: { ...states, [runId]: state }
+    });
+  }
+
+  async saveHighlight(highlight: PersistedHighlight): Promise<void> {
+    if (isHighlightRecordV2(highlight)) validateHighlightRecordV2(highlight);
     const highlights = await this.loadHighlights();
     const withoutDuplicate = highlights.filter((candidate) => !(
       candidate.diagramSetId === highlight.diagramSetId
       && candidate.artifactId === highlight.artifactId
-      && candidate.mappingId === highlight.mappingId
+      && (candidate.mappingId === highlight.mappingId
+        || (isHighlightRecordV2(candidate) && isHighlightRecordV2(highlight)
+          && candidate.representationElementId === highlight.representationElementId))
     ));
     await writeJsonAtomic(this.highlightsPath(), {
       schemaVersion: SCHEMA_VERSION,
@@ -1512,6 +1581,7 @@ export class DiagramStore {
     const agentRuns: Record<string, AgentRunRecord> = {};
     const editSessions: Record<string, EditSessionRecord> = {};
     const codeEntityMaps: Record<string, DiagramCodeEntityMapRecord> = {};
+    const representationGraphs: Record<string, RepresentationGraphRecord> = {};
     for (const id of globalImports.codeEntityIds ?? []) {
       importedCodeEntities[id] = await this.loadImportedCodeEntity(id);
     }
@@ -1526,6 +1596,8 @@ export class DiagramStore {
       if (mapping) codeEntityMaps[id] = mapping;
     }
     for (const set of diagramSets) {
+      const representationGraph = await this.loadRepresentationGraph(set.id);
+      if (representationGraph) representationGraphs[set.id] = representationGraph;
       const codeEntities = await this.loadCodeEntities(set.id);
       codeEntitySets[set.codeEntitiesSetId] = codeEntities;
       if (codeEntities.promptConfigId) {
@@ -1582,6 +1654,8 @@ export class DiagramStore {
       generationBatches,
       diagramCandidateBatches,
       agentRuns,
+      spatialProgress: await this.loadSpatialProgress(),
+      representationGraphs,
       editSessions,
       codeEntityMaps,
       highlights: await this.loadHighlights()
@@ -1599,6 +1673,7 @@ export class DiagramStore {
     sourceRange: () => makeId("range"),
     editSession: () => makeId("edit"),
     editOperation: () => makeId("operation"),
-    highlight: () => makeId("highlight")
+    highlight: () => makeId("highlight"),
+    representationFeedback: () => makeId("feedback")
   };
 }

@@ -1,18 +1,22 @@
 import { useMemo, useState, type ReactNode } from "react";
-import type { DiagramHighlightRecord } from "../domain";
+import {
+  highlightTreeViewLabel,
+  isHighlightRecordV2,
+  type PersistedHighlightRecord
+} from "../highlights";
 
 interface HighlightTreeNode {
   key: string;
   text: string;
   children: HighlightTreeNode[];
-  highlight?: DiagramHighlightRecord;
+  highlight?: PersistedHighlightRecord;
 }
 
 function truncate(text: string, limit = 48): string {
   return text.length <= limit ? text : `${text.slice(0, limit - 1).trimEnd()}…`;
 }
 
-function buildTree(highlights: readonly DiagramHighlightRecord[]): HighlightTreeNode[] {
+function buildTree(highlights: readonly PersistedHighlightRecord[]): HighlightTreeNode[] {
   const artifacts = new Map<string, HighlightTreeNode>();
   for (const highlight of highlights) {
     const artifactKey = `${highlight.diagramSetId}:${highlight.artifactId}`;
@@ -22,14 +26,19 @@ function buildTree(highlights: readonly DiagramHighlightRecord[]): HighlightTree
       artifacts.set(artifactKey, artifact);
     }
     let parent = artifact;
-    for (const [index, lineage] of highlight.lineage.entries()) {
-      const key = `${artifactKey}:${lineage.graphLine}:${lineage.text}`;
+    const lineageNodes = isHighlightRecordV2(highlight)
+      ? highlight.representationKind === "tree"
+        ? highlight.treeLineage.map((node) => ({ key: node.representationElementId, text: node.text }))
+        : [{ key: highlight.representationElementId, text: highlightTreeViewLabel(highlight) }]
+      : highlight.lineage.map((node) => ({ key: `${node.graphLine}:${node.text}`, text: node.text }));
+    for (const [index, lineage] of lineageNodes.entries()) {
+      const key = `${artifactKey}:${lineage.key}`;
       let node = parent.children.find((candidate) => candidate.key === key);
       if (!node) {
         node = { key, text: lineage.text, children: [] };
         parent.children.push(node);
       }
-      if (index === highlight.lineage.length - 1) node.highlight = highlight;
+      if (index === lineageNodes.length - 1) node.highlight = highlight;
       parent = node;
     }
   }
@@ -37,10 +46,10 @@ function buildTree(highlights: readonly DiagramHighlightRecord[]): HighlightTree
 }
 
 export function HighlightsTreePanel(props: {
-  highlights: readonly DiagramHighlightRecord[];
+  highlights: readonly PersistedHighlightRecord[];
   activeSetId: string;
-  onReveal: (highlight: DiagramHighlightRecord) => void;
-  onRemove: (highlight: DiagramHighlightRecord) => void;
+  onReveal: (highlight: PersistedHighlightRecord) => void;
+  onRemove: (highlight: PersistedHighlightRecord) => void;
 }) {
   const highlights = props.highlights.filter((highlight) => highlight.diagramSetId === props.activeSetId);
   const roots = useMemo(() => buildTree(highlights), [highlights]);

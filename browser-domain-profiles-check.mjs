@@ -105,7 +105,7 @@ try {
     });
 
     await waitForSelector(cdp, ".diagram-panel");
-    await waitForSelector(cdp, ".mapped-element-marker");
+    await waitForSelector(cdp, ".mapped-element");
     await waitForSelector(cdp, ".tree-node-collapse");
     await waitForSelector(cdp, ".mapped-highlight-toggle");
     const explorerTabs = await evaluate(cdp, `[...document.querySelectorAll(
@@ -126,6 +126,33 @@ try {
       throw new Error(`tree controls did not resolve stable structural IDs: ${JSON.stringify(stableIds)}`);
     }
 
+    await waitFor(async () => Number(await evaluate(cdp, `
+      document.querySelector('.ascii-grid')?.dataset.cellWidth ?? 0
+    `)) > 0, { message: "ASCII cell metrics were not measured" });
+    const representationLayout = await evaluate(cdp, `(() => {
+      const pre = document.querySelector('.ascii-grid');
+      const preBounds = pre.getBoundingClientRect();
+      const cellWidth = Number(pre.dataset.cellWidth);
+      const mapped = [...pre.querySelectorAll('.mapped-element')];
+      const controls = [...document.querySelectorAll('.representation-control-gutter button')];
+      return {
+        containsInjectedMarker: pre.textContent.includes('[(**)]'),
+        containsInjectedHighlight: pre.textContent.includes('[☆]') || pre.textContent.includes('[★]'),
+        mappedWidthsMatchText: mapped.every((element) => (
+          Math.abs(element.getBoundingClientRect().width - element.textContent.length * cellWidth) < 1.5
+        )),
+        controlsOutsideAscii: controls.every((element) => (
+          element.getBoundingClientRect().right <= preBounds.left + 0.5
+        ))
+      };
+    })()`);
+    if (representationLayout.containsInjectedMarker
+      || representationLayout.containsInjectedHighlight
+      || !representationLayout.mappedWidthsMatchText
+      || !representationLayout.controlsOutsideAscii) {
+      throw new Error(`representation controls changed ASCII geometry: ${JSON.stringify(representationLayout)}`);
+    }
+
     const linesBeforeCollapse = await evaluate(cdp, `document.querySelectorAll('.ascii-line').length`);
     await click(cdp, ".tree-node-collapse");
     await waitFor(async () => (
@@ -136,7 +163,7 @@ try {
       await evaluate(cdp, `document.querySelectorAll('.ascii-line').length`)
     ) === linesBeforeCollapse, { message: "tree did not expand through its structural element" });
 
-    await click(cdp, ".mapped-element-marker");
+    await click(cdp, ".mapped-element");
     await waitForSelector(cdp, '.source-code-viewer[data-presentation="plain"][data-wrap="true"]');
     const documentView = await evaluate(cdp, `({
       language: document.querySelector('.source-code-viewer').dataset.language,

@@ -61,6 +61,20 @@ function parseDiagramSet(pathname: string): { setId: string } | null {
   return match ? { setId: match[1] } : null;
 }
 
+function parseRepresentationGraph(pathname: string): { setId: string; feedback: boolean } | null {
+  const match = pathname.match(
+    /^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/representation-graph(\/feedback)?$/
+  );
+  return match ? { setId: match[1], feedback: Boolean(match[2]) } : null;
+}
+
+function parseSpatialProgress(pathname: string): { setId: string; runId: string } | null {
+  const match = pathname.match(
+    /^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/agent-runs\/([a-z0-9][a-z0-9-]*)\/spatial-progress$/
+  );
+  return match ? { setId: match[1], runId: match[2] } : null;
+}
+
 function parseRepositoryFiles(pathname: string): { setId: string } | null {
   const match = pathname.match(/^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/files$/);
   return match ? { setId: match[1] } : null;
@@ -324,6 +338,50 @@ export function diagramApi(
           artifactId: body.artifactId,
           mappingId: body.mappingId
         }));
+      }
+      const representationGraph = parseRepresentationGraph(url.pathname);
+      if (representationGraph) {
+        if (request.method !== "PUT" && request.method !== "POST" && request.method !== "GET") {
+          return sendJson(response, 405, { error: "method not allowed" });
+        }
+        if (!representationGraph.feedback && request.method === "GET") {
+          const graph = await application.store.loadRepresentationGraph(representationGraph.setId);
+          return graph
+            ? sendJson(response, 200, graph)
+            : sendJson(response, 404, { error: "representation graph not found" });
+        }
+        const body = await readBody(request) as Record<string, unknown>;
+        if (representationGraph.feedback) {
+          if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
+          const target = body.target as { kind?: unknown; layerId?: unknown; transitionId?: unknown } | undefined;
+          const normalizedTarget = target?.kind === "layer" && typeof target.layerId === "string"
+            ? { kind: "layer" as const, layerId: target.layerId }
+            : target?.kind === "transition" && typeof target.transitionId === "string"
+              ? { kind: "transition" as const, transitionId: target.transitionId }
+              : null;
+          if (!normalizedTarget || typeof body.comment !== "string") {
+            return sendJson(response, 400, { error: "feedback target and comment are required" });
+          }
+          return sendJson(response, 201, await application.addRepresentationFeedback(
+            representationGraph.setId,
+            { target: normalizedTarget, comment: body.comment }
+          ));
+        }
+        if (request.method !== "PUT") return sendJson(response, 405, { error: "method not allowed" });
+        return sendJson(response, 200, await application.saveRepresentationGraph(
+          representationGraph.setId,
+          body as unknown as import("../src/representationGraph").RepresentationGraphRecord
+        ));
+      }
+      const spatialProgress = parseSpatialProgress(url.pathname);
+      if (spatialProgress) {
+        if (request.method !== "PUT") return sendJson(response, 405, { error: "method not allowed" });
+        const body = await readBody(request);
+        return sendJson(response, 200, await application.saveAgentSpatialProgress(
+          spatialProgress.setId,
+          spatialProgress.runId,
+          body as import("../src/agentWork").SpatialProgressState
+        ));
       }
       const highlight = parseHighlight(url.pathname);
       if (highlight) {

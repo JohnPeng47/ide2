@@ -1055,6 +1055,58 @@ describe("DiagramApplication", () => {
     expect(workspace.codeEntityMaps[diagramId].asciiSha256).toMatch(/^[a-f0-9]{64}$/);
     expect(Object.values(workspace.agentRuns).filter((run) => run.kind === "map-code-entities"))
       .toHaveLength(1);
+    const mappingRun = Object.values(workspace.agentRuns)
+      .find((run) => run.kind === "map-code-entities")!;
+    expect(workspace.spatialProgress?.[mappingRun.id]).toMatchObject({
+      status: "complete",
+      scope: {
+        representationKind: "diagram",
+        revision: { artifactId: diagramId },
+        target: { kind: "artifact" }
+      }
+    });
+    expect(workspace.spatialProgress?.[mappingRun.id].completedElementIds).toHaveLength(1);
+
+    workspace = await application.addHighlight({
+      diagramSetId: set.id,
+      artifactKind: "diagram",
+      artifactId: diagramId,
+      mappingId: workspace.codeEntityMaps[diagramId].mappings[0].id
+    });
+    expect(workspace.highlights?.[0]).toMatchObject({
+      schemaVersion: 2,
+      representationKind: "diagram",
+      artifactId: diagramId,
+      mappingId: workspace.codeEntityMaps[diagramId].mappings[0].id,
+      evidence: { evidenceId: entitySet.entities[0].id },
+      documentExcerpt: { path: "fixture.ts" }
+    });
+
+    const secondDiagramId = workspace.diagramSets[0].diagramIds[1];
+    workspace = await application.saveRepresentationGraph(set.id, {
+      id: "graph-main",
+      projectId: set.projectId,
+      diagramSetId: set.id,
+      layers: [diagramId, secondDiagramId].map((artifactId, index) => ({
+        id: `layer-${index + 1}`,
+        label: `Layer ${index + 1}`,
+        informationRank: index,
+        representationKind: "diagram" as const,
+        artifactRevision: {
+          artifactId,
+          asciiSha256: createHash("sha256").update(workspace.diagrams[artifactId].ascii).digest("hex")
+        }
+      })),
+      transitions: [{ id: "transition-main", fromLayerId: "layer-1", toLayerId: "layer-2" }]
+    });
+    expect(workspace.representationGraphs?.[set.id].layers.map((layer) => layer.id))
+      .toEqual(["layer-1", "layer-2"]);
+    workspace = await application.addRepresentationFeedback(set.id, {
+      target: { kind: "transition", transitionId: "transition-main" },
+      comment: "Keep the intermediate layer more compact."
+    });
+    expect(workspace.representationGraphs?.[set.id].feedback?.[0].comment)
+      .toContain("intermediate layer");
     runtime.mappingDrafts = [{
       entityId: entitySet.entities[0].id,
       sourceRangeIndex: 0,

@@ -26,7 +26,6 @@ import {
   type CodeEntityRecord,
   type DiagramCodeEntityMapRecord,
   type DiagramComponentRecord,
-  type DiagramHighlightRecord,
   type DiagramRecord,
   type DiagramSelectionBounds,
   type DiagramSetRecord,
@@ -72,7 +71,25 @@ import { validateDiagramMappings } from "./diagramMapping";
 import { corpusProvider, readCorpusDocumentLines } from "./corpus";
 import { isBuiltInDomainProfileId } from "./domainProfiles";
 import { DiagramStore, discoverDomainCorpus, type RepositoryLocation } from "./store";
-import { asciiTreeLineage } from "../src/asciiTree";
+import {
+  buildRepresentationIndex,
+  representationElementIdForMapping,
+  treeRepresentationLineage
+} from "../src/representationIndex";
+import {
+  assertSpatialProgressState,
+  createSpatialProgressState,
+  representationElementIds,
+  updateSpatialProgressState,
+  type SpatialProgressState
+} from "../src/agentWork";
+import {
+  appendRepresentationFeedback,
+  assertRepresentationGraph,
+  type RepresentationFeedbackTarget,
+  type RepresentationGraphRecord
+} from "../src/representationGraph";
+import type { HighlightRecordV2 } from "../src/highlights";
 
 const MAX_GENERATION_COUNT = 12;
 const MAX_ATTEMPTS = 3;
@@ -411,6 +428,91 @@ export class DiagramApplication {
 
   async systemPromptTemplates(): Promise<SystemPromptTemplateRecord[]> {
     return this.store.loadSystemPromptTemplates();
+  }
+
+  async saveRepresentationGraph(
+    setId: string,
+    input: RepresentationGraphRecord
+  ): Promise<WorkspaceSnapshot> {
+    const set = await this.store.loadDiagramSet(setId);
+    if (input.diagramSetId && input.diagramSetId !== setId) {
+      throw new Error("representation graph belongs to another DiagramSet");
+    }
+    if (input.projectId && input.projectId !== set.projectId) {
+      throw new Error("representation graph belongs to another project");
+    }
+    const graph: RepresentationGraphRecord = {
+      ...input,
+      projectId: set.projectId,
+      diagramSetId: setId,
+      updatedAt: timestamp()
+    };
+    assertRepresentationGraph(graph);
+    const workspace = await this.workspace();
+    for (const layer of graph.layers) {
+      const artifact = workspace.diagrams[layer.artifactRevision.artifactId]
+        ?? workspace.diagramComponents[layer.artifactRevision.artifactId];
+      if (!artifact || (artifact.diagramSetId !== setId && artifact.origin !== "imported")) {
+        throw new Error(`representation layer references an unavailable artifact: ${layer.id}`);
+      }
+      const asciiSha256 = createHash("sha256").update(artifact.ascii).digest("hex");
+      if (asciiSha256 !== layer.artifactRevision.asciiSha256) {
+        throw new Error(`representation layer has a stale artifact revision: ${layer.id}`);
+      }
+      if (representationKindForArtifact(artifact) !== layer.representationKind) {
+        throw new Error(`representation layer kind does not match its artifact: ${layer.id}`);
+      }
+    }
+    await this.store.saveRepresentationGraph(graph);
+    return this.workspace();
+  }
+
+  async addRepresentationFeedback(
+    setId: string,
+    input: { target: RepresentationFeedbackTarget; comment: string }
+  ): Promise<WorkspaceSnapshot> {
+    const graph = await this.store.loadRepresentationGraph(setId);
+    if (!graph) throw new Error("representation graph has not been created");
+    const next = appendRepresentationFeedback(graph, {
+      id: this.store.ids.representationFeedback(),
+      target: input.target,
+      comment: input.comment,
+      createdAt: timestamp()
+    });
+    await this.store.saveRepresentationGraph({ ...next, updatedAt: timestamp() });
+    return this.workspace();
+  }
+
+  async saveAgentSpatialProgress(
+    setId: string,
+    runId: string,
+    state: SpatialProgressState
+  ): Promise<WorkspaceSnapshot> {
+    const set = await this.store.loadDiagramSet(setId);
+    if (!set.agentRunIds.includes(runId)) throw new Error("AgentRun does not belong to this DiagramSet");
+    await this.store.loadRun(setId, runId);
+    const workspace = await this.workspace();
+    const artifactId = state.scope.revision.artifactId;
+    const artifact = workspace.diagrams[artifactId] ?? workspace.diagramComponents[artifactId];
+    if (!artifact) throw new Error(`spatial progress artifact was not found: ${artifactId}`);
+    const representationKind = representationKindForArtifact(artifact);
+    if (state.scope.representationKind !== representationKind) {
+      throw new Error("spatial progress representation kind does not match the artifact");
+    }
+    const codeEntityMap = workspace.codeEntityMaps[`${setId}:${artifactId}`]
+      ?? workspace.codeEntityMaps[artifactId];
+    const index = buildRepresentationIndex({
+      kind: representationKind,
+      revision: {
+        artifactId,
+        asciiSha256: createHash("sha256").update(artifact.ascii).digest("hex")
+      },
+      ascii: artifact.ascii,
+      codeEntityMap
+    });
+    assertSpatialProgressState(state, index);
+    await this.store.saveSpatialProgress(runId, state);
+    return this.workspace();
   }
 
   async codeEntityPromptTemplates(): Promise<CodeEntityPromptTemplateRecord[]> {
@@ -976,7 +1078,31 @@ export class DiagramApplication {
         startedAt: createdAt,
         updatedAt: createdAt
       };
-      return { target, mappingKey, artifact: bundle.artifact, entities: bundle.codeEntities, run };
+      const revision = {
+        artifactId: bundle.artifact.id,
+        asciiSha256: createHash("sha256").update(bundle.artifact.ascii).digest("hex")
+      };
+      const representationKind = representationKindForArtifact(bundle.artifact);
+      const representationIndex = buildRepresentationIndex({
+        kind: representationKind,
+        revision,
+        ascii: bundle.artifact.ascii,
+        codeEntityMap: bundle.codeEntityMap
+      });
+      const spatialProgress = createSpatialProgressState({
+        revision,
+        representationKind,
+        target: { kind: "artifact" }
+      }, representationIndex);
+      return {
+        target,
+        mappingKey,
+        artifact: bundle.artifact,
+        entities: bundle.codeEntities,
+        run,
+        representationIndex,
+        spatialProgress
+      };
     }));
 
     const conflictingJob = prepared.find((job) => this.activeMappings.has(job.mappingKey));
@@ -987,7 +1113,10 @@ export class DiagramApplication {
     }
     for (const job of prepared) this.activeMappings.add(job.mappingKey);
     try {
-      await Promise.all(prepared.map((job) => this.store.saveRun(job.run)));
+      await Promise.all(prepared.flatMap((job) => [
+        this.store.saveRun(job.run),
+        this.store.saveSpatialProgress(job.run.id, job.spatialProgress)
+      ]));
       await this.store.attachRuns(setId, prepared.map((job) => job.run.id));
       for (const job of prepared) onEvent?.({
         type: "progress",
@@ -1005,6 +1134,11 @@ export class DiagramApplication {
           cursor += 1;
           const job = prepared[index];
           let run = job.run;
+          let spatialProgress = updateSpatialProgressState(job.spatialProgress, {
+            status: "running",
+            currentElementIds: representationElementIds(job.representationIndex)
+          }, job.representationIndex);
+          await this.store.saveSpatialProgress(run.id, spatialProgress);
           let progressWrites = Promise.resolve();
           const progress = (update: AgentProgress) => {
             run = {
@@ -1050,6 +1184,23 @@ export class DiagramApplication {
               createdAt: timestamp()
             };
             await this.store.saveCodeEntityMap(record);
+            const completedIndex = buildRepresentationIndex({
+              kind: job.spatialProgress.scope.representationKind,
+              revision: job.spatialProgress.scope.revision,
+              ascii: job.artifact.ascii,
+              codeEntityMap: record
+            });
+            spatialProgress = createSpatialProgressState(job.spatialProgress.scope, completedIndex);
+            const completedElementIds = representationElementIds(completedIndex);
+            spatialProgress = updateSpatialProgressState(spatialProgress, {
+              status: "running",
+              currentElementIds: completedElementIds
+            }, completedIndex);
+            spatialProgress = updateSpatialProgressState(spatialProgress, {
+              status: "complete",
+              completedElementIds
+            }, completedIndex);
+            await this.store.saveSpatialProgress(run.id, spatialProgress);
             const completedAt = timestamp();
             run = {
               ...run,
@@ -1083,6 +1234,13 @@ export class DiagramApplication {
               completedAt
             };
             await this.store.saveRun(run);
+            spatialProgress = updateSpatialProgressState(
+              createSpatialProgressState(job.spatialProgress.scope, job.representationIndex), {
+              status: "failed",
+              error: message
+              }, job.representationIndex
+            );
+            await this.store.saveSpatialProgress(run.id, spatialProgress);
             results[index] = { ...job.target, status: "failed", error: message };
             onEvent?.({
               type: "progress",
@@ -2168,37 +2326,61 @@ export class DiagramApplication {
       ? entity.sourceRanges.find((candidate) => candidate.id === mapping.sourceRangeId)
       : entity.sourceRanges[mapping.sourceRangeIndex];
     if (!range) throw new Error("mapped source range was not found");
-    if (!range.originalLines) throw new Error("mapped source range has no immutable transcript snapshot");
-    const lineage = asciiTreeLineage(bundle.artifact.ascii, mapping.line);
+    const revision = {
+      artifactId: bundle.artifact.id,
+      asciiSha256: createHash("sha256").update(bundle.artifact.ascii).digest("hex")
+    };
+    const representationKind = representationKindForArtifact(bundle.artifact);
+    const representationIndex = buildRepresentationIndex({
+      kind: representationKind,
+      revision,
+      ascii: bundle.artifact.ascii,
+      codeEntityMap: bundle.codeEntityMap
+    });
+    const representationElementId = representationElementIdForMapping(representationIndex, mappingId);
+    if (!representationElementId) throw new Error(`mapped representation element was not found: ${mappingId}`);
     const rawLine = bundle.artifact.ascii.replace(/\r\n?/g, "\n").split("\n")[mapping.line - 1] ?? "";
-    const nodeText = lineage.at(-1)?.text || rawLine.trim();
-    if (!nodeText) throw new Error("mapped tree node has no display text");
-    const highlight: DiagramHighlightRecord = {
-      schemaVersion: SCHEMA_VERSION,
+    const elementText = representationIndex.kind === "tree"
+      ? representationIndex.nodes[representationElementId]?.text ?? rawLine.trim()
+      : rawLine.slice(mapping.startColumn - 1, mapping.endColumn).trim();
+    if (!elementText) throw new Error("mapped representation element has no display text");
+    const highlightBase = {
+      schemaVersion: 2 as const,
       id: this.store.ids.highlight(),
       projectId: set.projectId,
       diagramSetId,
       artifactKind,
       artifactId,
       artifactName: bundle.artifact.name,
+      artifactRevision: revision,
+      representationElementId,
       mappingId,
-      entityId: entity.id,
-      ...(range.id ? { sourceRangeId: range.id } : {}),
-      sourceRangeIndex: mapping.sourceRangeIndex,
-      graphLine: mapping.line,
-      nodeText,
-      lineage: (lineage.length ? lineage : [{ line: mapping.line, text: nodeText }]).map((node) => ({
-        graphLine: node.line,
-        text: node.text
-      })),
-      transcript: {
+      elementText,
+      evidence: {
+        evidenceId: entity.id,
+        ...(range.id ? { sourceRangeId: range.id } : {}),
+        sourceRangeIndex: mapping.sourceRangeIndex
+      },
+      ...(range.originalLines ? { documentExcerpt: {
         path: range.path,
         startLine: range.startLine,
         endLine: range.endLine,
         lines: [...range.originalLines]
-      },
+      } } : {}),
       createdAt: timestamp()
     };
+    const highlight: HighlightRecordV2 = representationIndex.kind === "tree"
+      ? {
+          ...highlightBase,
+          representationKind: "tree",
+          treeLineage: treeRepresentationLineage(representationIndex, representationElementId)
+            .map((node) => ({
+              representationElementId: node.id,
+              line: node.line,
+              text: node.text
+            }))
+        }
+      : { ...highlightBase, representationKind: "diagram" };
     await this.store.saveHighlight(highlight);
     return this.workspace();
   }

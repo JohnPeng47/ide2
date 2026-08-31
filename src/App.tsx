@@ -3,6 +3,7 @@ import {
   applyLlmEdit,
   applyManualEdit,
   addDiagramHighlight,
+  addRepresentationFeedback,
   archiveDiagram,
   archiveDiagramComponent,
   archiveImportedDiagram,
@@ -93,7 +94,6 @@ import {
   type CodeEntityPromptTemplateRecord,
   type DiagramComponentRecord,
   type DiagramElementMapping,
-  type DiagramHighlightRecord,
   type DiagramRecord,
   type DiagramViewKind,
   type DiagramSelectionBounds,
@@ -105,6 +105,8 @@ import {
   type SystemPromptTemplateRecord,
   type WorkspaceSnapshot
 } from "./domain";
+import { isHighlightRecordV2, type PersistedHighlightRecord } from "./highlights";
+import type { RepresentationFeedbackTarget } from "./representationGraph";
 import { defaultGenerationInstruction, type PromptOption } from "./prompt";
 import type { DomainProfile } from "./domainProfile";
 import {
@@ -142,6 +144,7 @@ function mergeMappingWorkspace(
         }
       : set),
     agentRuns: { ...current.agentRuns, ...incoming.agentRuns },
+    spatialProgress: { ...current.spatialProgress, ...incoming.spatialProgress },
     codeEntityMaps: { ...current.codeEntityMaps, ...incoming.codeEntityMaps }
   };
 }
@@ -305,6 +308,7 @@ function StudioPage(props: { onExperiments: () => void }) {
   const [mappingJobs, setMappingJobs] = useState<Record<string, MappingJobState>>({});
   const [starBusy, setStarBusy] = useState(false);
   const [highlightBusyMappingIds, setHighlightBusyMappingIds] = useState<Set<string>>(new Set());
+  const [representationFeedbackBusy, setRepresentationFeedbackBusy] = useState(false);
   const [callGraphFocusViews, setCallGraphFocusViews] = useState<Record<string, CallGraphFocusResult>>({});
   const [codeEntityReveal, setCodeEntityReveal] = useState<CodeEntityReveal | undefined>();
   const requestedDiagramIdRef = useRef<string | null>(null);
@@ -355,6 +359,9 @@ function StudioPage(props: { onExperiments: () => void }) {
   }, [load]);
 
   const activeSet = workspace?.diagramSets.find((set) => set.id === activeSetId) ?? null;
+  const activeRepresentationGraph = activeSet
+    ? workspace?.representationGraphs?.[activeSet.id]
+    : undefined;
   const entitySet = activeSet && workspace
     ? workspace.codeEntitySets[activeSet.codeEntitiesSetId]
     : null;
@@ -538,6 +545,11 @@ function StudioPage(props: { onExperiments: () => void }) {
     ? workspace.codeEntityMaps[`${activeSet.id}:${selectedArtifact.id}`]
       ?? workspace.codeEntityMaps[selectedArtifact.id]
     : undefined;
+  const selectedSpatialProgress = useMemo(() => selectedArtifact
+    ? Object.values(workspace?.spatialProgress ?? {}).filter(
+        (state) => state.scope.revision.artifactId === selectedArtifact.id
+      )
+    : [], [selectedArtifact, workspace?.spatialProgress]);
   const selectedMappingTarget: CodeEntityMappingTarget | undefined = selectedArtifact
     ? { artifactKind: selectedArtifactKind, artifactId: selectedArtifact.id }
     : undefined;
@@ -546,6 +558,7 @@ function StudioPage(props: { onExperiments: () => void }) {
       .filter((highlight) => highlight.diagramSetId === activeSet?.id
         && highlight.artifactId === selectedArtifact?.id)
       .map((highlight) => highlight.mappingId)
+      .filter((mappingId): mappingId is string => Boolean(mappingId))
   ), [activeSet?.id, selectedArtifact?.id, workspace?.highlights]);
   const selectedMappingJob = selectedMappingTarget && activeSet
     ? mappingJobs[mappingJobKey(activeSet.id, selectedMappingTarget)]
@@ -591,6 +604,11 @@ function StudioPage(props: { onExperiments: () => void }) {
     const baseContextTabs: PaneTab[] = [
       { id: "code-entities", label: "Code Entities", domId: "code-entities-tab" },
       { id: "diagrams", label: "Diagrams", domId: "diagrams-tab" },
+      ...(activeRepresentationGraph ? [{
+        id: "layers",
+        label: "Layers",
+        domId: "layers-tab"
+      }] : []),
       ...(editSession ? [{
         id: "operations",
         label: "Operations · ",
@@ -633,6 +651,7 @@ function StudioPage(props: { onExperiments: () => void }) {
     paneApi.setTabs(CONTEXT_PANE_ID, contextTabs, desiredContextTabId);
   }, [
     activeViewKind,
+    activeRepresentationGraph,
     callGraphFocusViews,
     contextTab,
     editSession,
@@ -1612,21 +1631,37 @@ function StudioPage(props: { onExperiments: () => void }) {
     }
   };
 
-  const revealHighlight = (highlight: DiagramHighlightRecord) => {
+  const revealHighlight = (highlight: PersistedHighlightRecord) => {
     if (highlight.artifactKind === "diagram") selectDiagram(highlight.artifactId);
     else selectComponent(highlight.artifactId);
+    const evidence = isHighlightRecordV2(highlight)
+      ? highlight.evidence
+      : { evidenceId: highlight.entityId, sourceRangeIndex: highlight.sourceRangeIndex };
     revealCodeEntity({
-      entityId: highlight.entityId,
-      sourceRangeIndex: highlight.sourceRangeIndex
+      entityId: evidence.evidenceId,
+      sourceRangeIndex: evidence.sourceRangeIndex
     });
   };
 
-  const removeHighlight = async (highlight: DiagramHighlightRecord) => {
+  const removeHighlight = async (highlight: PersistedHighlightRecord) => {
     setError(null);
     try {
       setWorkspace(await deleteDiagramHighlight(highlight.id));
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "highlight removal failed");
+    }
+  };
+
+  const saveRepresentationFeedback = async (
+    target: RepresentationFeedbackTarget,
+    comment: string
+  ) => {
+    if (!activeSet) return;
+    setRepresentationFeedbackBusy(true);
+    try {
+      setWorkspace(await addRepresentationFeedback(activeSet.id, { target, comment }));
+    } finally {
+      setRepresentationFeedbackBusy(false);
     }
   };
 
@@ -1703,6 +1738,7 @@ function StudioPage(props: { onExperiments: () => void }) {
       editBusy={editBusy}
       codeEntities={resolutionEntities}
       codeEntityMap={selectedCodeEntityMap}
+      spatialProgress={selectedSpatialProgress}
       referenceResolutionContext={referenceResolutionContext}
       projectId={workspace.project.id}
       diagramSetId={activeSet.id}
@@ -1741,6 +1777,7 @@ function StudioPage(props: { onExperiments: () => void }) {
       editBusy={editBusy}
       codeEntities={resolutionEntities}
       codeEntityMap={selectedCodeEntityMap}
+      spatialProgress={selectedSpatialProgress}
       referenceResolutionContext={referenceResolutionContext}
       projectId={workspace.project.id}
       diagramSetId={activeSet.id}
@@ -1799,6 +1836,9 @@ function StudioPage(props: { onExperiments: () => void }) {
     activeDiagram={screen === "diagram" ? activeDiagram ?? undefined : undefined}
     activeComponent={screen === "diagram-component" ? activeComponent ?? undefined : undefined}
     editSession={editSession ?? undefined}
+    representationGraph={activeRepresentationGraph}
+    representationFeedbackBusy={representationFeedbackBusy}
+    onRepresentationFeedback={saveRepresentationFeedback}
     editPrompt={editPrompt}
     editModelId={editModelId}
     markerMode={markerMode}

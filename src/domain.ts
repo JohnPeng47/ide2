@@ -1,3 +1,7 @@
+import type { SpatialProgressState } from "./agentWork";
+import type { RepresentationGraphRecord } from "./representationGraph";
+import type { HighlightRecordV2 } from "./highlights";
+
 export const SCHEMA_VERSION = 1 as const;
 export const GLOBAL_IMPORTS_DIAGRAM_SET_ID = "global-imports";
 
@@ -576,10 +580,14 @@ export interface WorkspaceSnapshot {
   generationBatches: Record<string, GenerationBatchRecord>;
   diagramCandidateBatches: Record<string, DiagramCandidateBatchRecord>;
   agentRuns: Record<string, AgentRunRecord>;
+  /** Spatial progress keyed by the AgentRun that owns the work scope. */
+  spatialProgress?: Record<string, SpatialProgressState>;
+  /** User-refined visual layers keyed by DiagramSet. */
+  representationGraphs?: Record<string, RepresentationGraphRecord>;
   editSessions: Record<string, EditSessionRecord>;
   codeEntityMaps: Record<string, DiagramCodeEntityMapRecord>;
   /** Optional for compatibility with workspaces persisted before highlights existed. */
-  highlights?: DiagramHighlightRecord[];
+  highlights?: Array<DiagramHighlightRecord | HighlightRecordV2>;
 }
 
 export interface CodeEntityDraft {
