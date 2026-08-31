@@ -50,6 +50,7 @@ const SOURCE_CODE_PROFILE: DomainProfile = {
   },
   content: {
     syntaxHighlighting: "code",
+    markdownRendering: "source",
     wrap: false,
     sourceCompaction: true
   },
@@ -74,11 +75,13 @@ const DOCUMENT_PROFILE: DomainProfile = {
     diagramViews: ["diagram", "call-graph"],
     explorerTabs: [
       { id: "files", label: "Diagram Files", domId: "files-tab" },
+      { id: "markdown-sections", label: "Sections", domId: "markdown-sections-tab" },
       { id: "highlights", label: "Highlights", domId: "highlights-tab" }
     ]
   },
   content: {
     syntaxHighlighting: "plain",
+    markdownRendering: "terminal",
     wrap: true,
     sourceCompaction: false
   },

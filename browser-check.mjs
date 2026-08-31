@@ -1572,10 +1572,27 @@ try {
       throw new Error(`diagram edit session was incomplete: ${JSON.stringify({ ...diagramEditState, sourceAsciiBeforeEdit })}`);
     }
 
+    await evaluate(cdp, `document.querySelector(
+      '[data-diagram-id="${selection.id}"] .diagram-tree-archive'
+    ).scrollIntoView({ block: 'center' })`);
     await pointerClick(cdp, `[data-diagram-id="${selection.id}"] .diagram-tree-archive`);
-    await waitFor(async () => (
-      await evaluate(cdp, `!document.querySelector('[data-diagram-id="${selection.id}"]')`)
-    ), { message: "archived diagram remained in the lineage" });
+    try {
+      await waitFor(async () => (
+        await evaluate(cdp, `!document.querySelector('[data-diagram-id="${selection.id}"]')`)
+      ), { message: "archived diagram remained in the lineage" });
+    } catch (error) {
+      const state = await evaluate(cdp, `(async () => {
+        const workspace = await fetch('/api/workspace').then((response) => response.json());
+        return {
+          archivedAt: workspace.diagrams['${selection.id}']?.archivedAt ?? '',
+          alert: document.querySelector('[role="alert"]')?.textContent ?? '',
+          buttonDisabled: document.querySelector(
+            '[data-diagram-id="${selection.id}"] .diagram-tree-archive'
+          )?.disabled ?? null
+        };
+      })()`);
+      throw new Error(`${error.message}: ${JSON.stringify(state)}`);
+    }
     const archiveState = await evaluate(cdp, `(async () => {
       const workspace = await fetch('/api/workspace').then((response) => response.json());
       const diagram = workspace.diagrams['${selection.id}'];

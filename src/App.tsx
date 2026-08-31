@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode
+} from "react";
 import {
   applyLlmEdit,
   applyManualEdit,
@@ -45,8 +54,12 @@ import { FileExplorerPanel } from "./components/FileExplorerPanel";
 import { ExperimentViewerPage } from "./components/ExperimentViewerPage";
 import { GeneratorOptions } from "./components/GeneratorOptions";
 import { HighlightsTreePanel } from "./components/HighlightsTreePanel";
+import { MarkdownSectionsPanel } from "./components/MarkdownSectionsPanel";
 import { ImportArtifactDialog } from "./components/ImportArtifactDialog";
 import { PaneApi } from "./panes/api";
+import {
+  PaneNavigationApi
+} from "./panes/navigation";
 import { PaneWorkspace, type PaneTabView } from "./panes/PaneWorkspace";
 import {
   addPane,
@@ -114,8 +127,26 @@ import {
   representationKindForArtifact,
   resolveDomainProfile
 } from "./domainProfiles";
+import type {
+  TerminalMarkdownOutline,
+  TerminalMarkdownSection
+} from "./terminalMarkdown/toc";
 
 type Screen = "diagram" | "diagram-component" | "generation";
+
+type SourceLocationJumpPayload = {
+  type: "code-entity";
+  entityId: string;
+  sourceRangeIndex: number;
+  path?: string;
+  line?: number;
+} | {
+  type: "markdown-section";
+  path: string;
+  line: number;
+  startLine: number;
+  endLine: number;
+};
 
 interface MappingJobState {
   status: AgentRunStatus;
@@ -271,6 +302,8 @@ function StudioPage(props: { onExperiments: () => void }) {
   const [paneApi] = useState(() => createStudioPaneApi(resolveDomainProfile(
     window.localStorage.getItem(PANE_PROFILE_STORAGE_KEY)
   )));
+  const [paneNavigation] = useState(() => new PaneNavigationApi(paneApi));
+  const jumpHistory = useSyncExternalStore(paneNavigation.subscribe, paneNavigation.getHistory);
   const [workspace, setWorkspace] = useState<WorkspaceSnapshot | null>(null);
   const [activeSetId, setActiveSetId] = useState<string | null>(null);
   const [activeDiagramId, setActiveDiagramId] = useState<string | null>(null);
@@ -311,11 +344,45 @@ function StudioPage(props: { onExperiments: () => void }) {
   const [representationFeedbackBusy, setRepresentationFeedbackBusy] = useState(false);
   const [callGraphFocusViews, setCallGraphFocusViews] = useState<Record<string, CallGraphFocusResult>>({});
   const [codeEntityReveal, setCodeEntityReveal] = useState<CodeEntityReveal | undefined>();
+  const [markdownOutline, setMarkdownOutline] = useState<(TerminalMarkdownOutline & { path: string }) | null>(null);
+  const [activeMarkdownSection, setActiveMarkdownSection] = useState<{ path: string; id: string } | null>(null);
   const requestedDiagramIdRef = useRef<string | null>(null);
   const revealRequestId = useRef(0);
   const editQueue = useRef<Promise<void>>(Promise.resolve());
   const editShortcutHandlers = useRef({ undo: () => {}, redo: () => {} });
   const domainProfile = resolveDomainProfile(workspace?.project?.domainProfileId);
+
+  useEffect(() => paneNavigation.registerHandler("source-location", (destination) => {
+    const payload = destination.payload as SourceLocationJumpPayload;
+    revealRequestId.current += 1;
+    setContextTab("code-entities");
+    setCodeEntityReveal(payload.type === "code-entity" ? {
+      entityId: payload.entityId,
+      sourceRangeIndex: payload.sourceRangeIndex,
+      requestId: revealRequestId.current
+    } : {
+      path: payload.path,
+      targetLine: payload.line,
+      highlightRange: { startLine: payload.startLine, endLine: payload.endLine },
+      requestId: revealRequestId.current
+    });
+  }), [paneNavigation]);
+
+  const handleMarkdownOutlineChange = useCallback((outline: (TerminalMarkdownOutline & { path: string }) | null) => {
+    setMarkdownOutline(outline);
+    if (!outline) setActiveMarkdownSection(null);
+  }, []);
+
+  const handleMarkdownActiveSectionChange = useCallback((section: {
+    path: string;
+    id: string;
+    line: number;
+    scrollTop: number;
+  }) => {
+    setActiveMarkdownSection((current) => current?.path === section.path && current.id === section.id
+      ? current
+      : { path: section.path, id: section.id });
+  }, []);
 
   useEffect(() => paneApi.subscribe(() => {
     const paneState = paneApi.getState();
@@ -365,6 +432,10 @@ function StudioPage(props: { onExperiments: () => void }) {
   const entitySet = activeSet && workspace
     ? workspace.codeEntitySets[activeSet.codeEntitiesSetId]
     : null;
+  useEffect(() => {
+    setMarkdownOutline(null);
+    setActiveMarkdownSection(null);
+  }, [activeSet?.id]);
   const resolutionEntities = useMemo(() => [
     ...(entitySet?.entities ?? []),
     ...Object.values(workspace?.importedCodeEntities ?? {})
@@ -724,12 +795,14 @@ function StudioPage(props: { onExperiments: () => void }) {
     setMarkerMode(false);
     setMappingJobs({});
     setCodeEntityReveal(undefined);
-    const activeDiagramIds = activeSet.diagramIds.filter((id) => {
+    const availableDiagramIds = activeSet.diagramIds.filter((id) => {
       const diagram = workspace?.diagrams[id];
-      return diagram && diagram.viewKind === "diagram" && !isDiagramArchived(diagram);
+      return diagram
+        && domainProfile.workspace.diagramViews.includes(diagram.viewKind)
+        && !isDiagramArchived(diagram);
     });
     const requestedDiagramId = requestedDiagramIdRef.current;
-    const requestedDiagram = requestedDiagramId && activeSet.diagramIds.includes(requestedDiagramId)
+    const requestedDiagram = requestedDiagramId && availableDiagramIds.includes(requestedDiagramId)
       ? workspace?.diagrams[requestedDiagramId]
       : undefined;
     requestedDiagramIdRef.current = null;
@@ -737,15 +810,24 @@ function StudioPage(props: { onExperiments: () => void }) {
       setActiveViewKind(requestedDiagram.viewKind);
       setActiveDiagramId(requestedDiagram.id);
       setScreen("diagram");
-    } else if (activeSet.readiness === "ready" && activeDiagramIds.length > 0) {
-      setActiveViewKind("diagram");
-      setActiveDiagramId(activeSet.featuredViewIds.diagram ?? activeDiagramIds.at(-1) ?? null);
+    } else if (activeSet.readiness === "ready" && availableDiagramIds.length > 0) {
+      const preferredDiagramId = activeSet.featuredViewIds.diagram
+        ?? domainProfile.workspace.diagramViews
+          .map((viewKind) => activeSet.featuredViewIds[viewKind])
+          .find((id) => id && availableDiagramIds.includes(id))
+        ?? availableDiagramIds.at(-1)
+        ?? null;
+      const preferredDiagram = preferredDiagramId
+        ? workspace?.diagrams[preferredDiagramId]
+        : undefined;
+      setActiveViewKind(preferredDiagram?.viewKind ?? "diagram");
+      setActiveDiagramId(preferredDiagramId);
       setScreen("diagram");
     } else {
       setActiveDiagramId(null);
       setScreen("generation");
     }
-  }, [activeSet?.id, entitySet?.id]);
+  }, [activeSet?.id, domainProfile.id, entitySet?.id]);
 
   useEffect(() => {
     if (!currentGenerationDraftKey
@@ -1591,13 +1673,41 @@ function StudioPage(props: { onExperiments: () => void }) {
   const revealCodeEntity = (
     target: Pick<DiagramElementMapping, "entityId" | "sourceRangeIndex">
   ) => {
-    revealRequestId.current += 1;
-    setContextTab("code-entities");
-    paneApi.activateTab(CONTEXT_PANE_ID, "code-entities");
-    setCodeEntityReveal({
-      entityId: target.entityId,
-      sourceRangeIndex: target.sourceRangeIndex,
-      requestId: revealRequestId.current
+    const entity = resolutionEntities.find((candidate) => candidate.id === target.entityId);
+    const range = entity?.sourceRanges[target.sourceRangeIndex];
+    paneNavigation.jump({
+      key: `code-entity:${activeSet.id}:${target.entityId}:${target.sourceRangeIndex}`,
+      kind: "source-location",
+      paneId: CONTEXT_PANE_ID,
+      tabId: "code-entities",
+      label: entity?.label ?? target.entityId,
+      detail: range ? `${range.path}:L${range.startLine}` : undefined,
+      payload: {
+        type: "code-entity",
+        entityId: target.entityId,
+        sourceRangeIndex: target.sourceRangeIndex,
+        path: range?.path,
+        line: range?.startLine
+      } satisfies SourceLocationJumpPayload
+    });
+  };
+
+  const jumpToMarkdownSection = (section: TerminalMarkdownSection) => {
+    if (!markdownOutline) return;
+    paneNavigation.jump({
+      key: `markdown-section:${activeSet.id}:${markdownOutline.path}:${section.id}`,
+      kind: "source-location",
+      paneId: CONTEXT_PANE_ID,
+      tabId: "code-entities",
+      label: section.label,
+      detail: `${markdownOutline.path}:L${section.startLine}`,
+      payload: {
+        type: "markdown-section",
+        path: markdownOutline.path,
+        line: section.startLine,
+        startLine: section.startLine,
+        endLine: section.startLine
+      } satisfies SourceLocationJumpPayload
     });
   };
 
@@ -1846,6 +1956,8 @@ function StudioPage(props: { onExperiments: () => void }) {
     editProgress={editProgress}
     editError={editError}
     codeEntityReveal={codeEntityReveal}
+    onMarkdownOutlineChange={handleMarkdownOutlineChange}
+    onMarkdownActiveSectionChange={handleMarkdownActiveSectionChange}
     selectedIds={screen === "generation" && targetKind !== "call-graph" && targetKind !== "dir-view"
       ? selectedIds
       : undefined}
@@ -1896,6 +2008,18 @@ function StudioPage(props: { onExperiments: () => void }) {
       onSelectSet={selectDiagramSet}
       onSelectDiagram={selectDiagramFromSet}
       onDeleteSet={removeDiagramSet}
+    /> },
+    "markdown-sections": { content: <MarkdownSectionsPanel
+      path={markdownOutline?.path}
+      title={markdownOutline?.title}
+      sections={markdownOutline?.sections ?? []}
+      activeSectionId={activeMarkdownSection && activeMarkdownSection.path === markdownOutline?.path
+        ? activeMarkdownSection.id
+        : undefined}
+      jumpHistory={jumpHistory}
+      onJumpSection={jumpToMarkdownSection}
+      onReplayJump={(entry) => paneNavigation.jump(entry)}
+      onClearHistory={() => paneNavigation.clearHistory()}
     /> },
     highlights: { content: <HighlightsTreePanel
       highlights={workspace.highlights ?? []}

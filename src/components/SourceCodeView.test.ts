@@ -65,6 +65,7 @@ describe("SourceCodeView presentations", () => {
   it("renders source code with syntax highlighting, no wrap, and compaction enabled", () => {
     const presentation = {
       syntaxHighlighting: "code" as const,
+      markdownRendering: "source" as const,
       wrap: false,
       sourceCompaction: true
     };
@@ -84,6 +85,7 @@ describe("SourceCodeView presentations", () => {
   it("renders document content as wrapping plain text without code compaction", () => {
     const presentation = {
       syntaxHighlighting: "plain" as const,
+      markdownRendering: "terminal" as const,
       wrap: true,
       sourceCompaction: false
     };

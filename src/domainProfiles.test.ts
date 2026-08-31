@@ -16,6 +16,7 @@ describe("domain profiles", () => {
     expect(profile.workspace.diagramViews).toEqual(["diagram", "call-graph", "dir-view"]);
     expect(profile.content).toEqual({
       syntaxHighlighting: "code",
+      markdownRendering: "source",
       wrap: false,
       sourceCompaction: true
     });
@@ -28,11 +29,13 @@ describe("domain profiles", () => {
 
     expect(profile.workspace.explorerTabs.map(({ id, label }) => ({ id, label }))).toEqual([
       { id: "files", label: "Diagram Files" },
+      { id: "markdown-sections", label: "Sections" },
       { id: "highlights", label: "Highlights" }
     ]);
     expect(profile.workspace.diagramViews).toEqual(["diagram", "call-graph"]);
     expect(profile.content).toEqual({
       syntaxHighlighting: "plain",
+      markdownRendering: "terminal",
       wrap: true,
       sourceCompaction: false
     });

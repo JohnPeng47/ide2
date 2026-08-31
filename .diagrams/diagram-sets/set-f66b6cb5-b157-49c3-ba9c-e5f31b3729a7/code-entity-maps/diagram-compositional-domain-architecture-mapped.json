@@ -1,0 +1,776 @@
+{
+  "schemaVersion": 1,
+  "diagramSetId": "set-f66b6cb5-b157-49c3-ba9c-e5f31b3729a7",
+  "artifactKind": "diagram",
+  "artifactId": "diagram-compositional-domain-architecture-mapped",
+  "asciiSha256": "5e357c9719df36f83fbd99c5106f5ea3889108590c25d9f897109d37e4097fab",
+  "mappings": [
+    {
+      "entityId": "entity-compositional-architecture",
+      "sourceRangeIndex": 0,
+      "line": 1,
+      "startColumn": 1,
+      "endColumn": 33,
+      "sourceRangeId": "range-compositional-architecture",
+      "id": "map-1"
+    },
+    {
+      "entityId": "entity-compositional-diagram-set",
+      "sourceRangeIndex": 0,
+      "line": 3,
+      "startColumn": 8,
+      "endColumn": 26,
+      "sourceRangeId": "range-compositional-diagram-set",
+      "id": "map-2"
+    },
+    {
+      "entityId": "entity-compositional-domain-profile",
+      "sourceRangeIndex": 0,
+      "line": 5,
+      "startColumn": 13,
+      "endColumn": 33,
+      "sourceRangeId": "range-compositional-domain-profile",
+      "id": "map-3"
+    },
+    {
+      "entityId": "entity-compositional-compatibility-default",
+      "sourceRangeIndex": 0,
+      "line": 6,
+      "startColumn": 18,
+      "endColumn": 69,
+      "sourceRangeId": "range-compositional-compatibility-default",
+      "id": "map-4"
+    },
+    {
+      "entityId": "entity-compositional-registered-services",
+      "sourceRangeIndex": 0,
+      "line": 7,
+      "startColumn": 18,
+      "endColumn": 44,
+      "sourceRangeId": "range-compositional-registered-services",
+      "id": "map-5"
+    },
+    {
+      "entityId": "entity-compositional-corpus-provider",
+      "sourceRangeIndex": 0,
+      "line": 9,
+      "startColumn": 23,
+      "endColumn": 36,
+      "sourceRangeId": "range-compositional-corpus-provider",
+      "id": "map-6"
+    },
+    {
+      "entityId": "entity-compositional-git-worktree",
+      "sourceRangeIndex": 0,
+      "line": 10,
+      "startColumn": 28,
+      "endColumn": 39,
+      "sourceRangeId": "range-compositional-git-worktree",
+      "id": "map-7"
+    },
+    {
+      "entityId": "entity-compositional-filesystem-documents",
+      "sourceRangeIndex": 0,
+      "line": 11,
+      "startColumn": 28,
+      "endColumn": 47,
+      "sourceRangeId": "range-compositional-filesystem-documents",
+      "id": "map-8"
+    },
+    {
+      "entityId": "entity-compositional-evidence-schema",
+      "sourceRangeIndex": 0,
+      "line": 13,
+      "startColumn": 23,
+      "endColumn": 36,
+      "sourceRangeId": "range-compositional-evidence-schema",
+      "id": "map-9"
+    },
+    {
+      "entityId": "entity-compositional-source-evidence-types",
+      "sourceRangeIndex": 0,
+      "line": 14,
+      "startColumn": 28,
+      "endColumn": 67,
+      "sourceRangeId": "range-compositional-source-evidence-types",
+      "id": "map-10"
+    },
+    {
+      "entityId": "entity-compositional-document-evidence-types",
+      "sourceRangeIndex": 0,
+      "line": 15,
+      "startColumn": 28,
+      "endColumn": 66,
+      "sourceRangeId": "range-compositional-document-evidence-types",
+      "id": "map-11"
+    },
+    {
+      "entityId": "entity-compositional-representation-recipes",
+      "sourceRangeIndex": 0,
+      "line": 17,
+      "startColumn": 23,
+      "endColumn": 44,
+      "sourceRangeId": "range-compositional-representation-recipes",
+      "id": "map-12"
+    },
+    {
+      "entityId": "entity-compositional-code-recipes",
+      "sourceRangeIndex": 0,
+      "line": 18,
+      "startColumn": 28,
+      "endColumn": 68,
+      "sourceRangeId": "range-compositional-code-recipes",
+      "id": "map-13"
+    },
+    {
+      "entityId": "entity-compositional-document-recipes",
+      "sourceRangeIndex": 0,
+      "line": 19,
+      "startColumn": 28,
+      "endColumn": 63,
+      "sourceRangeId": "range-compositional-document-recipes",
+      "id": "map-14"
+    },
+    {
+      "entityId": "entity-compositional-surface-profile",
+      "sourceRangeIndex": 0,
+      "line": 21,
+      "startColumn": 23,
+      "endColumn": 45,
+      "sourceRangeId": "range-compositional-surface-profile",
+      "id": "map-15"
+    },
+    {
+      "entityId": "entity-compositional-code-surfaces",
+      "sourceRangeIndex": 0,
+      "line": 22,
+      "startColumn": 28,
+      "endColumn": 61,
+      "sourceRangeId": "range-compositional-code-surfaces",
+      "id": "map-16"
+    },
+    {
+      "entityId": "entity-compositional-document-surfaces",
+      "sourceRangeIndex": 0,
+      "line": 23,
+      "startColumn": 28,
+      "endColumn": 59,
+      "sourceRangeId": "range-compositional-document-surfaces",
+      "id": "map-17"
+    },
+    {
+      "entityId": "entity-compositional-shared-core",
+      "sourceRangeIndex": 0,
+      "line": 25,
+      "startColumn": 13,
+      "endColumn": 44,
+      "sourceRangeId": "range-compositional-shared-core",
+      "id": "map-18"
+    },
+    {
+      "entityId": "entity-compositional-generation-feedback",
+      "sourceRangeIndex": 0,
+      "line": 26,
+      "startColumn": 18,
+      "endColumn": 40,
+      "sourceRangeId": "range-compositional-generation-feedback",
+      "id": "map-19"
+    },
+    {
+      "entityId": "entity-compositional-mappings-references",
+      "sourceRangeIndex": 0,
+      "line": 27,
+      "startColumn": 18,
+      "endColumn": 40,
+      "sourceRangeId": "range-compositional-mappings-references",
+      "id": "map-20"
+    },
+    {
+      "entityId": "entity-compositional-editing-candidates",
+      "sourceRangeIndex": 0,
+      "line": 28,
+      "startColumn": 18,
+      "endColumn": 39,
+      "sourceRangeId": "range-compositional-editing-candidates",
+      "id": "map-21"
+    },
+    {
+      "entityId": "entity-compositional-persistence",
+      "sourceRangeIndex": 0,
+      "line": 29,
+      "startColumn": 18,
+      "endColumn": 28,
+      "sourceRangeId": "range-compositional-persistence",
+      "id": "map-22"
+    },
+    {
+      "entityId": "entity-compositional-pane-layout",
+      "sourceRangeIndex": 0,
+      "line": 30,
+      "startColumn": 18,
+      "endColumn": 47,
+      "sourceRangeId": "range-compositional-pane-layout",
+      "id": "map-23"
+    },
+    {
+      "entityId": "entity-compositional-content-access",
+      "sourceRangeIndex": 0,
+      "line": 32,
+      "startColumn": 8,
+      "endColumn": 21,
+      "sourceRangeId": "range-compositional-content-access",
+      "id": "map-24"
+    },
+    {
+      "entityId": "entity-compositional-corpus-binding",
+      "sourceRangeIndex": 0,
+      "line": 34,
+      "startColumn": 13,
+      "endColumn": 25,
+      "sourceRangeId": "range-compositional-corpus-binding",
+      "id": "map-25"
+    },
+    {
+      "entityId": "entity-compositional-provider-access",
+      "sourceRangeIndex": 0,
+      "line": 35,
+      "startColumn": 18,
+      "endColumn": 63,
+      "sourceRangeId": "range-compositional-provider-access",
+      "id": "map-26"
+    },
+    {
+      "entityId": "entity-compositional-resource-content",
+      "sourceRangeIndex": 0,
+      "line": 37,
+      "startColumn": 13,
+      "endColumn": 28,
+      "sourceRangeId": "range-compositional-resource-content",
+      "id": "map-27"
+    },
+    {
+      "entityId": "entity-compositional-content-anchor",
+      "sourceRangeIndex": 0,
+      "line": 38,
+      "startColumn": 18,
+      "endColumn": 30,
+      "sourceRangeId": "range-compositional-content-anchor",
+      "id": "map-28"
+    },
+    {
+      "entityId": "entity-compositional-evidence-ranges",
+      "sourceRangeIndex": 0,
+      "line": 39,
+      "startColumn": 23,
+      "endColumn": 37,
+      "sourceRangeId": "range-compositional-evidence-ranges",
+      "id": "map-29"
+    },
+    {
+      "entityId": "entity-compositional-saved-snapshots",
+      "sourceRangeIndex": 0,
+      "line": 40,
+      "startColumn": 23,
+      "endColumn": 37,
+      "sourceRangeId": "range-compositional-saved-snapshots",
+      "id": "map-30"
+    },
+    {
+      "entityId": "entity-compositional-source-reveal",
+      "sourceRangeIndex": 0,
+      "line": 41,
+      "startColumn": 23,
+      "endColumn": 35,
+      "sourceRangeId": "range-compositional-source-reveal",
+      "id": "map-31"
+    },
+    {
+      "entityId": "entity-compositional-presentation-resolver",
+      "sourceRangeIndex": 0,
+      "line": 43,
+      "startColumn": 13,
+      "endColumn": 39,
+      "sourceRangeId": "range-compositional-presentation-resolver",
+      "id": "map-32"
+    },
+    {
+      "entityId": "entity-compositional-code-presentation",
+      "sourceRangeIndex": 0,
+      "line": 44,
+      "startColumn": 18,
+      "endColumn": 60,
+      "sourceRangeId": "range-compositional-code-presentation",
+      "id": "map-33"
+    },
+    {
+      "entityId": "entity-compositional-document-presentation",
+      "sourceRangeIndex": 0,
+      "line": 45,
+      "startColumn": 18,
+      "endColumn": 62,
+      "sourceRangeId": "range-compositional-document-presentation",
+      "id": "map-34"
+    },
+    {
+      "entityId": "entity-compositional-evidence-flow",
+      "sourceRangeIndex": 0,
+      "line": 47,
+      "startColumn": 8,
+      "endColumn": 20,
+      "sourceRangeId": "range-compositional-evidence-flow",
+      "id": "map-35"
+    },
+    {
+      "entityId": "entity-compositional-legacy-code-entity",
+      "sourceRangeIndex": 0,
+      "line": 49,
+      "startColumn": 13,
+      "endColumn": 37,
+      "sourceRangeId": "range-compositional-legacy-code-entity",
+      "id": "map-36"
+    },
+    {
+      "entityId": "entity-compositional-evidence-adapter",
+      "sourceRangeIndex": 0,
+      "line": 50,
+      "startColumn": 18,
+      "endColumn": 56,
+      "sourceRangeId": "range-compositional-evidence-adapter",
+      "id": "map-37"
+    },
+    {
+      "entityId": "entity-compositional-active-schema",
+      "sourceRangeIndex": 0,
+      "line": 52,
+      "startColumn": 13,
+      "endColumn": 33,
+      "sourceRangeId": "range-compositional-active-schema",
+      "id": "map-38"
+    },
+    {
+      "entityId": "entity-compositional-collection-prompt",
+      "sourceRangeIndex": 0,
+      "line": 53,
+      "startColumn": 18,
+      "endColumn": 41,
+      "sourceRangeId": "range-compositional-collection-prompt",
+      "id": "map-39"
+    },
+    {
+      "entityId": "entity-compositional-anchor-validation",
+      "sourceRangeIndex": 0,
+      "line": 54,
+      "startColumn": 18,
+      "endColumn": 57,
+      "sourceRangeId": "range-compositional-anchor-validation",
+      "id": "map-40"
+    },
+    {
+      "entityId": "entity-compositional-compaction-policy",
+      "sourceRangeIndex": 0,
+      "line": 55,
+      "startColumn": 18,
+      "endColumn": 58,
+      "sourceRangeId": "range-compositional-compaction-policy",
+      "id": "map-41"
+    },
+    {
+      "entityId": "entity-compositional-evidence-entities",
+      "sourceRangeIndex": 0,
+      "line": 57,
+      "startColumn": 13,
+      "endColumn": 28,
+      "sourceRangeId": "range-compositional-evidence-entities",
+      "id": "map-42"
+    },
+    {
+      "entityId": "entity-compositional-shared-pipeline",
+      "sourceRangeIndex": 0,
+      "line": 58,
+      "startColumn": 18,
+      "endColumn": 55,
+      "sourceRangeId": "range-compositional-shared-pipeline",
+      "id": "map-43"
+    },
+    {
+      "entityId": "entity-compositional-representation-flow",
+      "sourceRangeIndex": 0,
+      "line": 60,
+      "startColumn": 8,
+      "endColumn": 26,
+      "sourceRangeId": "range-compositional-representation-flow",
+      "id": "map-44"
+    },
+    {
+      "entityId": "entity-compositional-selected-recipe",
+      "sourceRangeIndex": 0,
+      "line": 62,
+      "startColumn": 13,
+      "endColumn": 27,
+      "sourceRangeId": "range-compositional-selected-recipe",
+      "id": "map-45"
+    },
+    {
+      "entityId": "entity-compositional-representation-layer",
+      "sourceRangeIndex": 0,
+      "line": 63,
+      "startColumn": 18,
+      "endColumn": 45,
+      "sourceRangeId": "range-compositional-representation-layer",
+      "id": "map-46"
+    },
+    {
+      "entityId": "entity-compositional-representation-graph",
+      "sourceRangeIndex": 0,
+      "line": 65,
+      "startColumn": 13,
+      "endColumn": 31,
+      "sourceRangeId": "range-compositional-representation-graph",
+      "id": "map-47"
+    },
+    {
+      "entityId": "entity-compositional-expands",
+      "sourceRangeIndex": 0,
+      "line": 66,
+      "startColumn": 18,
+      "endColumn": 46,
+      "sourceRangeId": "range-compositional-expands",
+      "id": "map-48"
+    },
+    {
+      "entityId": "entity-compositional-refines",
+      "sourceRangeIndex": 0,
+      "line": 67,
+      "startColumn": 18,
+      "endColumn": 49,
+      "sourceRangeId": "range-compositional-refines",
+      "id": "map-49"
+    },
+    {
+      "entityId": "entity-compositional-grounds",
+      "sourceRangeIndex": 0,
+      "line": 68,
+      "startColumn": 18,
+      "endColumn": 43,
+      "sourceRangeId": "range-compositional-grounds",
+      "id": "map-50"
+    },
+    {
+      "entityId": "entity-compositional-branching",
+      "sourceRangeIndex": 0,
+      "line": 70,
+      "startColumn": 13,
+      "endColumn": 30,
+      "sourceRangeId": "range-compositional-branching",
+      "id": "map-51"
+    },
+    {
+      "entityId": "entity-compositional-code-branch",
+      "sourceRangeIndex": 0,
+      "line": 71,
+      "startColumn": 18,
+      "endColumn": 60,
+      "sourceRangeId": "range-compositional-code-branch",
+      "id": "map-52"
+    },
+    {
+      "entityId": "entity-compositional-document-branch",
+      "sourceRangeIndex": 0,
+      "line": 72,
+      "startColumn": 18,
+      "endColumn": 51,
+      "sourceRangeId": "range-compositional-document-branch",
+      "id": "map-53"
+    },
+    {
+      "entityId": "entity-compositional-generated-artifact",
+      "sourceRangeIndex": 0,
+      "line": 74,
+      "startColumn": 13,
+      "endColumn": 30,
+      "sourceRangeId": "range-compositional-generated-artifact",
+      "id": "map-54"
+    },
+    {
+      "entityId": "entity-compositional-element-index",
+      "sourceRangeIndex": 0,
+      "line": 75,
+      "startColumn": 18,
+      "endColumn": 43,
+      "sourceRangeId": "range-compositional-element-index",
+      "id": "map-55"
+    },
+    {
+      "entityId": "entity-compositional-stable-elements",
+      "sourceRangeIndex": 0,
+      "line": 76,
+      "startColumn": 23,
+      "endColumn": 61,
+      "sourceRangeId": "range-compositional-stable-elements",
+      "id": "map-56"
+    },
+    {
+      "entityId": "entity-compositional-element-targets",
+      "sourceRangeIndex": 0,
+      "line": 77,
+      "startColumn": 23,
+      "endColumn": 65,
+      "sourceRangeId": "range-compositional-element-targets",
+      "id": "map-57"
+    },
+    {
+      "entityId": "entity-compositional-interaction-flow",
+      "sourceRangeIndex": 0,
+      "line": 79,
+      "startColumn": 8,
+      "endColumn": 23,
+      "sourceRangeId": "range-compositional-interaction-flow",
+      "id": "map-58"
+    },
+    {
+      "entityId": "entity-compositional-stable-selection",
+      "sourceRangeIndex": 0,
+      "line": 81,
+      "startColumn": 13,
+      "endColumn": 35,
+      "sourceRangeId": "range-compositional-stable-selection",
+      "id": "map-59"
+    },
+    {
+      "entityId": "entity-compositional-recipe-commands",
+      "sourceRangeIndex": 0,
+      "line": 82,
+      "startColumn": 18,
+      "endColumn": 51,
+      "sourceRangeId": "range-compositional-recipe-commands",
+      "id": "map-60"
+    },
+    {
+      "entityId": "entity-compositional-command-branch",
+      "sourceRangeIndex": 0,
+      "line": 84,
+      "startColumn": 13,
+      "endColumn": 26,
+      "sourceRangeId": "range-compositional-command-branch",
+      "id": "map-61"
+    },
+    {
+      "entityId": "entity-compositional-reveal-evidence",
+      "sourceRangeIndex": 0,
+      "line": 85,
+      "startColumn": 18,
+      "endColumn": 32,
+      "sourceRangeId": "range-compositional-reveal-evidence",
+      "id": "map-62"
+    },
+    {
+      "entityId": "entity-compositional-collapse-subtree",
+      "sourceRangeIndex": 0,
+      "line": 86,
+      "startColumn": 18,
+      "endColumn": 33,
+      "sourceRangeId": "range-compositional-collapse-subtree",
+      "id": "map-63"
+    },
+    {
+      "entityId": "entity-compositional-toggle-highlight",
+      "sourceRangeIndex": 0,
+      "line": 87,
+      "startColumn": 18,
+      "endColumn": 33,
+      "sourceRangeId": "range-compositional-toggle-highlight",
+      "id": "map-64"
+    },
+    {
+      "entityId": "entity-compositional-drill-down",
+      "sourceRangeIndex": 0,
+      "line": 88,
+      "startColumn": 18,
+      "endColumn": 27,
+      "sourceRangeId": "range-compositional-drill-down",
+      "id": "map-65"
+    },
+    {
+      "entityId": "entity-compositional-buffer-reference",
+      "sourceRangeIndex": 0,
+      "line": 89,
+      "startColumn": 18,
+      "endColumn": 33,
+      "sourceRangeId": "range-compositional-buffer-reference",
+      "id": "map-66"
+    },
+    {
+      "entityId": "entity-compositional-highlight-record",
+      "sourceRangeIndex": 0,
+      "line": 91,
+      "startColumn": 13,
+      "endColumn": 27,
+      "sourceRangeId": "range-compositional-highlight-record",
+      "id": "map-67"
+    },
+    {
+      "entityId": "entity-compositional-highlight-lineage",
+      "sourceRangeIndex": 0,
+      "line": 92,
+      "startColumn": 18,
+      "endColumn": 46,
+      "sourceRangeId": "range-compositional-highlight-lineage",
+      "id": "map-68"
+    },
+    {
+      "entityId": "entity-compositional-highlight-snapshots",
+      "sourceRangeIndex": 0,
+      "line": 93,
+      "startColumn": 18,
+      "endColumn": 44,
+      "sourceRangeId": "range-compositional-highlight-snapshots",
+      "id": "map-69"
+    },
+    {
+      "entityId": "entity-compositional-agent-activity",
+      "sourceRangeIndex": 0,
+      "line": 95,
+      "startColumn": 8,
+      "endColumn": 21,
+      "sourceRangeId": "range-compositional-agent-activity",
+      "id": "map-70"
+    },
+    {
+      "entityId": "entity-compositional-agent-work-scope",
+      "sourceRangeIndex": 0,
+      "line": 97,
+      "startColumn": 13,
+      "endColumn": 44,
+      "sourceRangeId": "range-compositional-agent-work-scope",
+      "id": "map-71"
+    },
+    {
+      "entityId": "entity-compositional-scope-layer",
+      "sourceRangeIndex": 0,
+      "line": 98,
+      "startColumn": 18,
+      "endColumn": 34,
+      "sourceRangeId": "range-compositional-scope-layer",
+      "id": "map-72"
+    },
+    {
+      "entityId": "entity-compositional-scope-subtree",
+      "sourceRangeIndex": 0,
+      "line": 99,
+      "startColumn": 18,
+      "endColumn": 32,
+      "sourceRangeId": "range-compositional-scope-subtree",
+      "id": "map-73"
+    },
+    {
+      "entityId": "entity-compositional-scope-evidence",
+      "sourceRangeIndex": 0,
+      "line": 100,
+      "startColumn": 18,
+      "endColumn": 45,
+      "sourceRangeId": "range-compositional-scope-evidence",
+      "id": "map-74"
+    },
+    {
+      "entityId": "entity-compositional-progress-projection",
+      "sourceRangeIndex": 0,
+      "line": 102,
+      "startColumn": 13,
+      "endColumn": 40,
+      "sourceRangeId": "range-compositional-progress-projection",
+      "id": "map-75"
+    },
+    {
+      "entityId": "entity-compositional-queued",
+      "sourceRangeIndex": 0,
+      "line": 103,
+      "startColumn": 18,
+      "endColumn": 23,
+      "sourceRangeId": "range-compositional-queued",
+      "id": "map-76"
+    },
+    {
+      "entityId": "entity-compositional-active",
+      "sourceRangeIndex": 0,
+      "line": 104,
+      "startColumn": 18,
+      "endColumn": 23,
+      "sourceRangeId": "range-compositional-active",
+      "id": "map-77"
+    },
+    {
+      "entityId": "entity-compositional-verified",
+      "sourceRangeIndex": 0,
+      "line": 105,
+      "startColumn": 18,
+      "endColumn": 25,
+      "sourceRangeId": "range-compositional-verified",
+      "id": "map-78"
+    },
+    {
+      "entityId": "entity-compositional-failed",
+      "sourceRangeIndex": 0,
+      "line": 106,
+      "startColumn": 18,
+      "endColumn": 23,
+      "sourceRangeId": "range-compositional-failed",
+      "id": "map-79"
+    },
+    {
+      "entityId": "entity-compositional-migration",
+      "sourceRangeIndex": 0,
+      "line": 108,
+      "startColumn": 8,
+      "endColumn": 27,
+      "sourceRangeId": "range-compositional-migration",
+      "id": "map-80"
+    },
+    {
+      "entityId": "entity-compositional-characterize",
+      "sourceRangeIndex": 0,
+      "line": 110,
+      "startColumn": 13,
+      "endColumn": 60,
+      "sourceRangeId": "range-compositional-characterize",
+      "id": "map-81"
+    },
+    {
+      "entityId": "entity-compositional-legacy-adapters",
+      "sourceRangeIndex": 0,
+      "line": 111,
+      "startColumn": 13,
+      "endColumn": 70,
+      "sourceRangeId": "range-compositional-legacy-adapters",
+      "id": "map-82"
+    },
+    {
+      "entityId": "entity-compositional-stable-ids",
+      "sourceRangeIndex": 0,
+      "line": 112,
+      "startColumn": 13,
+      "endColumn": 64,
+      "sourceRangeId": "range-compositional-stable-ids",
+      "id": "map-83"
+    },
+    {
+      "entityId": "entity-compositional-profile-switching",
+      "sourceRangeIndex": 0,
+      "line": 113,
+      "startColumn": 13,
+      "endColumn": 51,
+      "sourceRangeId": "range-compositional-profile-switching",
+      "id": "map-84"
+    },
+    {
+      "entityId": "entity-compositional-legacy-cleanup",
+      "sourceRangeIndex": 0,
+      "line": 114,
+      "startColumn": 13,
+      "endColumn": 69,
+      "sourceRangeId": "range-compositional-legacy-cleanup",
+      "id": "map-85"
+    }
+  ],
+  "producedByRunId": "run-import-compositional-domain",
+  "createdAt": "2026-08-31T16:48:34.453Z"
+}

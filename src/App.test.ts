@@ -10,7 +10,7 @@ function explorerIds(profileId: "source-code" | "document") {
 describe("profile-driven studio panes", () => {
   it("creates the exact source-code and document explorer tabs", () => {
     expect(explorerIds("source-code")).toEqual(["files", "diagram-sets"]);
-    expect(explorerIds("document")).toEqual(["files", "highlights"]);
+    expect(explorerIds("document")).toEqual(["files", "markdown-sections", "highlights"]);
   });
 
   it("removes a restored tab that is invalid for source-code and falls back safely", () => {

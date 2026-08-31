@@ -113,6 +113,7 @@ try {
     )].map((tab) => ({ id: tab.id, label: tab.textContent.trim() }))`);
     if (JSON.stringify(explorerTabs) !== JSON.stringify([
       { id: "files-tab", label: "Diagram Files" },
+      { id: "markdown-sections-tab", label: "Sections" },
       { id: "highlights-tab", label: "Highlights" }
     ])) {
       throw new Error(`document explorer tabs were incorrect: ${JSON.stringify(explorerTabs)}`);
@@ -187,6 +188,53 @@ try {
     await cdp.send("Page.reload", { ignoreCache: true });
     await waitForSelector(cdp, ".highlight-tree-row.is-highlight");
     if (pageErrors.length) throw new Error(`browser page errors: ${JSON.stringify(pageErrors)}`);
+    removeExceptionListener();
+  });
+
+  const markdownSetId = "set-f66b6cb5-b157-49c3-ba9c-e5f31b3729a7";
+  await cp(path.join(packageRoot, "MARKDOWN.md"), path.join(fixtureRoot, "MARKDOWN.md"));
+  project.diagramSetIds = [markdownSetId];
+  await writeFile(projectPath, `${JSON.stringify(project, null, 2)}\n`, "utf8");
+  const markdownSetPath = path.join(
+    fixtureRoot,
+    ".diagrams",
+    "diagram-sets",
+    markdownSetId,
+    "diagram-set.json"
+  );
+  const markdownSet = JSON.parse(await readFile(markdownSetPath, "utf8"));
+  markdownSet.sourceCheckoutRoot = fixtureRoot;
+  await writeFile(markdownSetPath, `${JSON.stringify(markdownSet, null, 2)}\n`, "utf8");
+
+  await withHeadlessBrowser({ url, width: 1440, height: 900 }, async ({ cdp }) => {
+    await cdp.send("Page.enable");
+    await cdp.send("Runtime.enable");
+    const pageErrors = [];
+    const removeExceptionListener = cdp.on("Runtime.exceptionThrown", ({ exceptionDetails }) => {
+      pageErrors.push(exceptionDetails.exception?.description ?? exceptionDetails.text);
+    });
+
+    await waitForSelector(cdp, ".diagram-panel");
+    await click(cdp, ".mapped-element");
+    await waitForSelector(cdp, ".terminal-markdown-frame");
+    await click(cdp, "#markdown-sections-tab");
+    await waitForSelector(cdp, ".markdown-section-row .markdown-section-label");
+    const sectionCount = await evaluate(cdp, `document.querySelectorAll(
+      '.markdown-section-row .markdown-section-label'
+    ).length`);
+    if (sectionCount < 1) throw new Error("terminal Markdown outline did not populate the Sections tab");
+
+    await click(cdp, ".markdown-section-row .markdown-section-label");
+    await waitFor(async () => await evaluate(cdp, `
+      document.querySelector('#code-entities-tab')?.getAttribute('aria-selected') === 'true'
+    `), { message: "section jump did not activate the evidence pane" });
+    await click(cdp, "#markdown-sections-tab");
+    await waitForSelector(cdp, ".markdown-section-jump");
+    const jumpLabel = await evaluate(cdp, `document.querySelector('.markdown-section-jump')?.textContent`);
+    if (jumpLabel?.trim() !== "[J1]") {
+      throw new Error(`section jump history was incorrect: ${JSON.stringify(jumpLabel)}`);
+    }
+    if (pageErrors.length) throw new Error(`Markdown browser page errors: ${JSON.stringify(pageErrors)}`);
     removeExceptionListener();
   });
 
