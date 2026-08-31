@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc --noEmit && vite build",
     "check:browser": "node browser-check.mjs",
+    "check:markdown": "tsx browser-markdown-check.mjs",
     "check:aux-views": "node browser-aux-views-check.mjs",
     "dev": "vite --host 127.0.0.1",
     "diagram": "tsx cli.ts",
@@ -18,6 +19,7 @@
     "@earendil-works/pi-ai": "^0.84.2",
     "@earendil-works/pi-coding-agent": "^0.84.2",
     "@vitejs/plugin-react": "^5.1.1",
+    "markdown-it": "^15.0.1",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "shiki": "^4.4.3",

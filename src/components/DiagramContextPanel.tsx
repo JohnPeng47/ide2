@@ -13,6 +13,7 @@ import { DEFAULT_DIAGRAM_MODEL_ID } from "../domain";
 import { CodeEntitiesPanel, type CodeEntityReveal } from "./CodeEntitiesPanel";
 import { DiagramLineagePanel } from "./DiagramLineagePanel";
 import { EditOperationsPanel } from "./EditOperationsPanel";
+import type { TerminalMarkdownOutline } from "../terminalMarkdown/toc";
 
 export type ContextTab = "code-entities" | "diagrams" | "operations";
 
@@ -36,6 +37,13 @@ export function DiagramContextPanel(props: {
   editProgress?: string;
   editError?: string | null;
   codeEntityReveal?: CodeEntityReveal;
+  onMarkdownOutlineChange?: (outline: TerminalMarkdownOutline & { path: string }) => void;
+  onMarkdownActiveSectionChange?: (section: {
+    path: string;
+    id: string;
+    line: number;
+    scrollTop: number;
+  }) => void;
   selectedIds?: Set<string>;
   onToggleEntity?: (id: string) => void;
   activeTab: ContextTab;
@@ -88,6 +96,8 @@ export function DiagramContextPanel(props: {
             selectedIds={props.selectedIds}
             onToggle={props.onToggleEntity}
             reveal={props.codeEntityReveal}
+            onMarkdownOutlineChange={props.onMarkdownOutlineChange}
+            onMarkdownActiveSectionChange={props.onMarkdownActiveSectionChange}
           />
         </div>
       ) : (
