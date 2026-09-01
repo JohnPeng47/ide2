@@ -18,6 +18,43 @@ afterEach(async () => {
 });
 
 describe("call-graph focus HTTP API", () => {
+  it("requires CodeEntities alongside ASCII in materialized creation mode", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-http-materialized-"));
+    roots.push(root);
+    let middleware: Connect.NextHandleFunction | undefined;
+    const server = createServer((request, response) => {
+      if (!middleware) throw new Error("middleware was not attached");
+      middleware(request, response, () => {
+        response.statusCode = 404;
+        response.end();
+      });
+    });
+    servers.push(server);
+    const configure = diagramApi(root).configureServer;
+    if (typeof configure !== "function") throw new Error("diagram API has no configure hook");
+    (configure as unknown as (server: unknown) => void)({
+      middlewares: { use: (handler: Connect.NextHandleFunction) => { middleware = handler; } },
+      httpServer: server
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address() as AddressInfo;
+    const response = await fetch(`http://127.0.0.1:${address.port}/api/diagram-sets`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        creationMode: "materialized",
+        path: root,
+        name: "Missing entities",
+        codeEntities: [],
+        diagrams: [{ key: "diagram", name: "Diagram", ascii: "diagram", codeEntityKeys: [] }]
+      })
+    });
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "materialized DiagramSet creation requires at least one CodeEntity"
+    });
+  });
+
   it("exposes a POST-only endpoint and validates the request version", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "new-diagram-http-focus-"));
     roots.push(root);

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 import { spawn } from "node:child_process";
-import { mkdir } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { WorkspaceSnapshot } from "./src/domain";
+import type { MaterializedDiagramSetInput, WorkspaceSnapshot } from "./src/domain";
 import type { BuiltInDomainProfileId } from "./src/domainProfile";
 
 const DEFAULT_SERVER_URL = "http://127.0.0.1:5173";
@@ -23,6 +23,9 @@ interface ServerEvent {
   codeEntityPromptTemplateVersion?: number;
   codeEntityPromptConfigId?: string;
   domainProfileId?: BuiltInDomainProfileId;
+  creationMode?: "generate" | "materialized";
+  codeEntityIdsByKey?: Record<string, string>;
+  diagramIdsByKey?: Record<string, string>;
 }
 
 interface PromptTemplateSummary {
@@ -44,6 +47,7 @@ function usage(): never {
     + "  npm run diagram -- serve --path <corpus> [--domain source-code|document] [--diagrams-dir <dir>] [--port <port>]\n"
     + "  npm run diagram -- prompt-templates [--server <url>]\n"
     + "  npm run diagram -- list-diagrams [--server <url>]\n"
+    + "  npm run diagram -- create-materialized --input <manifest.json> [--server <url>]\n"
     + "  npm run diagram -- create --path <corpus> --name <name> --prompt <prompt> [--domain source-code|document] "
     + "[--prompt-template <id>] [--reference-prompt <prompt>] [--no-reference-prompt] "
     + "[--server <url>]"
@@ -215,6 +219,39 @@ async function consumeEvents(
   if (buffer.trim()) onEvent(JSON.parse(buffer) as ServerEvent);
 }
 
+async function createMaterialized(args: string[]): Promise<void> {
+  const inputFile = option(args, "--input");
+  if (!inputFile) usage();
+  const manifest = JSON.parse(await readFile(path.resolve(inputFile), "utf8")) as MaterializedDiagramSetInput;
+  const endpoint = endpointFor(serverUrlFrom(args));
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ ...manifest, creationMode: "materialized" })
+    });
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new Error(`cannot reach diagram server at ${endpoint.origin}: ${reason}`);
+  }
+  if (!response.ok) throw await responseError(response);
+  let result: ServerEvent | undefined;
+  await consumeEvents(response, (event) => {
+    if (event.type === "error") throw new Error(event.error || "materialized DiagramSet creation failed");
+    if (event.type === "result") result = event;
+  });
+  if (!result?.diagramSetId) throw new Error("diagram server did not return a materialized DiagramSet");
+  process.stdout.write(`${JSON.stringify({
+    event: "ready",
+    creationMode: "materialized",
+    serverUrl: endpoint.origin,
+    diagramSetId: result.diagramSetId,
+    codeEntityIdsByKey: result.codeEntityIdsByKey,
+    diagramIdsByKey: result.diagramIdsByKey
+  })}\n`);
+}
+
 async function main(): Promise<void> {
   const [command, ...args] = process.argv.slice(2);
   if (command === "serve") {
@@ -227,6 +264,10 @@ async function main(): Promise<void> {
   }
   if (command === "list-diagrams") {
     await listDiagrams(args);
+    return;
+  }
+  if (command === "create-materialized") {
+    await createMaterialized(args);
     return;
   }
   if (command !== "create") usage();

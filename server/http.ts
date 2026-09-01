@@ -5,7 +5,8 @@ import {
   type ArtifactImportInput,
   type CodeEntityMappingTarget,
   type GenerationDerivationRecord,
-  type GenerationReferenceSelection
+  type GenerationReferenceSelection,
+  type MaterializedDiagramSetInput
 } from "../src/domain";
 import { FakeDiagramAgentRuntime, PiDiagramAgentRuntime } from "./agentRuntime";
 import { DiagramApplication } from "./application";
@@ -514,6 +515,63 @@ export function diagramApi(
         const requestedCodeEntityPromptTemplateId = body.codeEntityPromptTemplateId;
         if (!inputPath || !name.trim()) {
           return sendJson(response, 400, { error: "corpus path and DiagramSet name are required" });
+        }
+        const creationMode = body.creationMode ?? "generate";
+        if (creationMode !== "generate" && creationMode !== "materialized") {
+          return sendJson(response, 400, { error: "creationMode must be generate or materialized" });
+        }
+        if (creationMode === "materialized") {
+          if (!Array.isArray(body.codeEntities) || body.codeEntities.length === 0) {
+            return sendJson(response, 400, {
+              error: "materialized DiagramSet creation requires at least one CodeEntity"
+            });
+          }
+          if (!Array.isArray(body.diagrams) || body.diagrams.length === 0) {
+            return sendJson(response, 400, {
+              error: "materialized DiagramSet creation requires at least one ASCII Diagram"
+            });
+          }
+          if (body.promptTemplateId !== undefined
+            || body.codeEntityPromptTemplateId !== undefined
+            || body.referencePrompt !== undefined
+            || body.runReferencePrompt !== undefined) {
+            return sendJson(response, 400, {
+              error: "prompt-generation fields are not valid in materialized mode"
+            });
+          }
+          const materialized = await application.createMaterializedDiagramSet({
+            ...body,
+            creationMode: "materialized",
+            path: inputPath,
+            name,
+            domainProfileId: requestedDomain
+          } as unknown as MaterializedDiagramSetInput);
+          response.statusCode = 200;
+          response.setHeader("content-type", "application/x-ndjson; charset=utf-8");
+          response.setHeader("cache-control", "no-cache, no-transform");
+          response.flushHeaders();
+          sendEvent(response, {
+            type: "created",
+            creationMode,
+            diagramSetId: materialized.diagramSetId,
+            projectRoot: inputPath,
+            domainProfileId: requestedDomain
+          });
+          sendEvent(response, {
+            type: "result",
+            creationMode,
+            diagramSetId: materialized.diagramSetId,
+            codeEntityIdsByKey: materialized.codeEntityIdsByKey,
+            diagramIdsByKey: materialized.diagramIdsByKey,
+            workspace: materialized.workspace
+          });
+          response.end();
+          return;
+        }
+        if (body.codeEntities !== undefined || body.diagrams !== undefined || body.featuredViews !== undefined) {
+          return sendJson(response, 400, {
+            error: "materialized CodeEntities and Diagrams require creationMode=materialized"
+          });
         }
         await application.validateDiagramSetTarget(inputPath, requestedDomain);
         const promptTemplate = await application.resolveSystemPromptTemplate(

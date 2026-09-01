@@ -39,6 +39,8 @@ import {
   type GenerationReferenceSelection,
   type GenerationBatchRecord,
   type MappedArtifactBundle,
+  type MaterializedDiagramSetInput,
+  type MaterializedDiagramSetResult,
   type NamedPromptTemplate,
   type RepositoryDirectoryListing,
   type SystemPromptTemplateRecord,
@@ -106,6 +108,12 @@ export interface ServiceEvent {
 
 function timestamp(): string {
   return new Date().toISOString();
+}
+
+function assertMaterializedKey(value: unknown, label: string): asserts value is string {
+  if (typeof value !== "string" || !/^[a-z0-9][a-z0-9-]{0,127}$/.test(value)) {
+    throw new Error(`${label} must be a lowercase letter/digit key with optional hyphens`);
+  }
 }
 
 function textPatch(before: string, after: string): EditOperationRecord["patch"] {
@@ -583,9 +591,225 @@ export class DiagramApplication {
       project,
       name: input.name,
       initialPrompt: input.prompt,
-      location
+      location,
+      creationMode: "generate"
     });
     return created.diagramSet;
+  }
+
+  async createMaterializedDiagramSet(
+    input: MaterializedDiagramSetInput
+  ): Promise<MaterializedDiagramSetResult> {
+    if (!input || input.creationMode !== "materialized") {
+      throw new Error("materialized DiagramSet creation requires creationMode=materialized");
+    }
+    if (typeof input.path !== "string" || !input.path) throw new Error("corpus path is required");
+    if (typeof input.name !== "string" || !input.name.trim()) throw new Error("DiagramSet name is required");
+    if (input.name.trim().length > 120) throw new Error("DiagramSet name cannot exceed 120 characters");
+    if (!Array.isArray(input.codeEntities) || input.codeEntities.length === 0) {
+      throw new Error("materialized DiagramSet creation requires at least one CodeEntity");
+    }
+    if (!Array.isArray(input.diagrams) || input.diagrams.length === 0) {
+      throw new Error("materialized DiagramSet creation requires at least one ASCII Diagram");
+    }
+    if (input.codeEntities.length > 500) throw new Error("a materialized DiagramSet cannot exceed 500 CodeEntities");
+    if (input.diagrams.length > 100) throw new Error("a materialized DiagramSet cannot exceed 100 Diagrams");
+
+    const entityKeys = new Set<string>();
+    for (const [entityIndex, entity] of input.codeEntities.entries()) {
+      if (!entity || typeof entity !== "object") throw new Error(`CodeEntity ${entityIndex + 1} is invalid`);
+      assertMaterializedKey(entity.key, `CodeEntity ${entityIndex + 1} key`);
+      if (entityKeys.has(entity.key)) throw new Error(`duplicate CodeEntity key: ${entity.key}`);
+      entityKeys.add(entity.key);
+      if (!Array.isArray(entity.sourceRanges) || entity.sourceRanges.length === 0) {
+        throw new Error(`CodeEntity ${entity.key} must include at least one source range`);
+      }
+      const rangeKeys = new Set<string>();
+      for (const [rangeIndex, range] of entity.sourceRanges.entries()) {
+        if (!range || typeof range !== "object") {
+          throw new Error(`CodeEntity ${entity.key} source range ${rangeIndex + 1} is invalid`);
+        }
+        assertMaterializedKey(range.key, `CodeEntity ${entity.key} source range key`);
+        if (rangeKeys.has(range.key)) {
+          throw new Error(`duplicate source range key for CodeEntity ${entity.key}: ${range.key}`);
+        }
+        rangeKeys.add(range.key);
+      }
+    }
+
+    const diagramKeys = new Set<string>();
+    for (const [diagramIndex, diagram] of input.diagrams.entries()) {
+      if (!diagram || typeof diagram !== "object") throw new Error(`Diagram ${diagramIndex + 1} is invalid`);
+      assertMaterializedKey(diagram.key, `Diagram ${diagramIndex + 1} key`);
+      if (diagramKeys.has(diagram.key)) throw new Error(`duplicate Diagram key: ${diagram.key}`);
+      diagramKeys.add(diagram.key);
+      if (!Array.isArray(diagram.codeEntityKeys) || diagram.codeEntityKeys.length === 0) {
+        throw new Error(`materialized Diagram ${diagram.key} must include at least one CodeEntity`);
+      }
+      for (const entityKey of diagram.codeEntityKeys) {
+        if (typeof entityKey !== "string" || !entityKeys.has(entityKey)) {
+          throw new Error(`Diagram ${diagram.key} references unknown CodeEntity key: ${String(entityKey)}`);
+        }
+      }
+      if (diagram.mappings !== undefined && !Array.isArray(diagram.mappings)) {
+        throw new Error(`Diagram ${diagram.key} mappings must be an array`);
+      }
+    }
+
+    const location = await this.validateDiagramSetTarget(input.path, input.domainProfileId);
+    const project = await this.store.ensureProject(location);
+    const { diagramSet } = await this.store.createDiagramSet({
+      project,
+      name: input.name,
+      initialPrompt: typeof input.description === "string" ? input.description : "",
+      location,
+      creationMode: "materialized"
+    });
+
+    try {
+      const entityDrafts: CodeEntityDraft[] = input.codeEntities.map((entity) => ({
+        handle: entity.handle,
+        label: entity.label,
+        category: entity.category,
+        summary: entity.summary,
+        sourceRanges: entity.sourceRanges.map(({ key: _key, ...range }) => range)
+      }));
+      const entities = await this.validateEntityDrafts(diagramSet, entityDrafts);
+      const entityByKey = new Map(input.codeEntities.map((entity, index) => [entity.key, entities[index]]));
+      const codeEntityIdsByKey = Object.fromEntries(
+        [...entityByKey].map(([key, entity]) => [key, entity.id])
+      );
+      const profile = resolveDomainProfile(project.domainProfileId);
+      const diagramHandles = new Set<string>();
+      const createdAt = timestamp();
+      const diagrams: DiagramRecord[] = [];
+      const maps: DiagramCodeEntityMapRecord[] = [];
+      const diagramIdsByKey: Record<string, string> = {};
+
+      for (const [index, supplied] of input.diagrams.entries()) {
+        if (typeof supplied.name !== "string" || !supplied.name.trim()) {
+          throw new Error(`Diagram ${supplied.key} name is required`);
+        }
+        if (supplied.name.trim().length > 120) {
+          throw new Error(`Diagram ${supplied.key} name cannot exceed 120 characters`);
+        }
+        if (typeof supplied.ascii !== "string" || !supplied.ascii.trim()) {
+          throw new Error(`Diagram ${supplied.key} ASCII is required`);
+        }
+        const ascii = normalizeAscii(supplied.ascii);
+        assertSevenBitAscii(ascii);
+        if (ascii.length > 20000) throw new Error(`Diagram ${supplied.key} ASCII cannot exceed 20,000 characters`);
+        const viewKind = supplied.viewKind ?? "diagram";
+        if (!isDiagramViewKind(viewKind) || !profile.workspace.diagramViews.includes(viewKind)) {
+          throw new Error(`Diagram ${supplied.key} view kind is unavailable in the ${profile.id} domain`);
+        }
+        if (supplied.representationKind !== undefined
+          && supplied.representationKind !== "tree"
+          && supplied.representationKind !== "diagram") {
+          throw new Error(`Diagram ${supplied.key} representation kind is invalid`);
+        }
+        const representationKind = supplied.representationKind
+          ?? (viewKind === "diagram" ? "diagram" : "tree");
+        const selectedEntities = [...new Set(supplied.codeEntityKeys)].map((key) => entityByKey.get(key)!);
+        let handle = slugify(supplied.handle || supplied.name, `diagram-${index + 1}`);
+        const baseHandle = handle;
+        let suffix = 2;
+        while (diagramHandles.has(handle)) handle = `${baseHandle}-${suffix++}`;
+        diagramHandles.add(handle);
+        const id = this.store.ids.diagram();
+        diagramIdsByKey[supplied.key] = id;
+        const diagram: DiagramRecord = {
+          schemaVersion: SCHEMA_VERSION,
+          id,
+          recordOrigin: { projectId: project.id, diagramSetId: diagramSet.id },
+          diagramSetId: diagramSet.id,
+          viewKind,
+          handle,
+          name: supplied.name.trim(),
+          ascii,
+          representationKind,
+          codeEntityIds: selectedEntities.map((entity) => entity.id),
+          origin: "materialized",
+          derivedFromDiagramIds: [],
+          createdAt
+        };
+        diagrams.push(diagram);
+
+        if (supplied.mappings !== undefined) {
+          const selectedKeys = new Set(supplied.codeEntityKeys);
+          const drafts = supplied.mappings.map((mapping, mappingIndex) => {
+            if (!mapping || typeof mapping !== "object") {
+              throw new Error(`Diagram ${supplied.key} mapping ${mappingIndex + 1} is invalid`);
+            }
+            if (!selectedKeys.has(mapping.entityKey)) {
+              throw new Error(
+                `Diagram ${supplied.key} mapping references a CodeEntity not included by the Diagram: ${mapping.entityKey}`
+              );
+            }
+            const sourceEntity = input.codeEntities.find((entity) => entity.key === mapping.entityKey)!;
+            const sourceRangeIndex = sourceEntity.sourceRanges.findIndex(
+              (range) => range.key === mapping.sourceRangeKey
+            );
+            if (sourceRangeIndex < 0) {
+              throw new Error(
+                `Diagram ${supplied.key} mapping references unknown source range ${mapping.sourceRangeKey} for ${mapping.entityKey}`
+              );
+            }
+            return {
+              entityId: entityByKey.get(mapping.entityKey)!.id,
+              sourceRangeIndex,
+              line: mapping.line,
+              startColumn: mapping.startColumn,
+              endColumn: mapping.endColumn
+            };
+          });
+          maps.push({
+            schemaVersion: SCHEMA_VERSION,
+            diagramSetId: diagramSet.id,
+            artifactKind: "diagram",
+            artifactId: diagram.id,
+            asciiSha256: createHash("sha256").update(diagram.ascii).digest("hex"),
+            mappings: validateDiagramMappings(diagram.ascii, drafts, selectedEntities),
+            origin: "materialized",
+            createdAt
+          });
+        }
+      }
+
+      const featuredViewIds: Partial<Record<DiagramViewKind, string>> = {};
+      if (input.featuredViews !== undefined) {
+        if (!input.featuredViews || typeof input.featuredViews !== "object") {
+          throw new Error("featuredViews must be an object");
+        }
+        for (const [kind, key] of Object.entries(input.featuredViews)) {
+          if (!isDiagramViewKind(kind) || typeof key !== "string") {
+            throw new Error("featuredViews contains an invalid view kind or Diagram key");
+          }
+          const id = diagramIdsByKey[key];
+          const diagram = diagrams.find((candidate) => candidate.id === id);
+          if (!diagram || diagram.viewKind !== kind) {
+            throw new Error(`featured ${kind} view references an unavailable Diagram: ${key}`);
+          }
+          featuredViewIds[kind] = id;
+        }
+      }
+
+      await this.store.completeCollection(diagramSet.id, entities);
+      for (const diagram of diagrams) await this.store.addDiagram(diagram);
+      for (const mapping of maps) await this.store.saveCodeEntityMap(mapping);
+      for (const [kind, id] of Object.entries(featuredViewIds)) {
+        await this.store.setFeaturedView(diagramSet.id, kind as DiagramViewKind, id);
+      }
+      return {
+        diagramSetId: diagramSet.id,
+        codeEntityIdsByKey,
+        diagramIdsByKey,
+        workspace: await this.workspace()
+      };
+    } catch (error) {
+      await this.store.moveDiagramSetToTrash(diagramSet.id).catch(() => undefined);
+      throw error;
+    }
   }
 
   /** Validate corpus/domain ownership without migrating templates or writing project state. */
@@ -1178,10 +1402,11 @@ export class DiagramApplication {
               diagramSetId: setId,
               artifactKind: job.target.artifactKind,
               artifactId: job.target.artifactId,
-              asciiSha256: createHash("sha256").update(job.artifact.ascii).digest("hex"),
-              mappings,
-              producedByRunId: run.id,
-              createdAt: timestamp()
+            asciiSha256: createHash("sha256").update(job.artifact.ascii).digest("hex"),
+            mappings,
+            producedByRunId: run.id,
+            origin: "agent",
+            createdAt: timestamp()
             };
             await this.store.saveCodeEntityMap(record);
             const completedIndex = buildRepresentationIndex({
@@ -2000,6 +2225,7 @@ export class DiagramApplication {
           asciiSha256: createHash("sha256").update(artifact.ascii).digest("hex"),
           mappings,
           producedByRunId: run.id,
+          origin: "agent",
           createdAt: timestamp()
         };
       });

@@ -165,6 +165,8 @@ export interface DiagramSetRecord {
   agentRunIds: string[];
   editSessionIds: string[];
   readiness: DiagramSetReadiness;
+  /** How the initial evidence and diagrams entered this set. Missing legacy values mean generated. */
+  creationMode?: "generate" | "materialized";
   createdAt: string;
   updatedAt: string;
   error?: string;
@@ -358,7 +360,7 @@ export interface DiagramComponentRecord {
   /** Presentation semantics. Optional only on legacy records. */
   representationKind?: "tree" | "diagram";
   codeEntityIds: string[];
-  origin: "selection" | "generated" | "imported" | "edited";
+  origin: "selection" | "generated" | "imported" | "edited" | "materialized";
   sourceDiagramId?: string;
   sourceDiagramComponentId?: string;
   selectionBounds?: DiagramSelectionBounds;
@@ -390,7 +392,7 @@ export interface DiagramRecord {
   /** Presentation semantics. Optional only on legacy records. */
   representationKind?: "tree" | "diagram";
   codeEntityIds: string[];
-  origin: "generated" | "imported" | "edited";
+  origin: "generated" | "imported" | "edited" | "materialized";
   producedByRunId?: string;
   generationPromptConfigId?: string;
   editSessionId?: string;
@@ -421,7 +423,10 @@ export interface DiagramCodeEntityMapRecord {
   artifactId: string;
   asciiSha256: string;
   mappings: DiagramElementMapping[];
-  producedByRunId: string;
+  /** Present for agent-produced maps; materialized maps have no synthetic AgentRun. */
+  producedByRunId?: string;
+  /** Missing legacy values mean agent-produced. */
+  origin?: "agent" | "materialized";
   createdAt: string;
 }
 
@@ -622,6 +627,64 @@ export interface DiagramElementMappingDraft {
   line: number;
   startColumn: number;
   endColumn: number;
+}
+
+/** Request-local source range supplied during materialized DiagramSet creation. */
+export interface MaterializedSourceRangeInput extends Omit<SourceRange, "id" | "originalLines"> {
+  key: string;
+}
+
+/** Request-local CodeEntity supplied during materialized DiagramSet creation. */
+export interface MaterializedCodeEntityInput {
+  key: string;
+  handle: string;
+  label: string;
+  category: CodeEntityCategory;
+  summary: string;
+  sourceRanges: MaterializedSourceRangeInput[];
+}
+
+/** Request-local mapping; keys resolve to server-owned persisted identities. */
+export interface MaterializedDiagramMappingInput {
+  entityKey: string;
+  sourceRangeKey: string;
+  line: number;
+  startColumn: number;
+  endColumn: number;
+}
+
+/** Fully composed ASCII Diagram supplied without invoking a generation agent. */
+export interface MaterializedDiagramInput {
+  key: string;
+  handle?: string;
+  name: string;
+  ascii: string;
+  viewKind?: DiagramViewKind;
+  representationKind?: "tree" | "diagram";
+  /** Required and non-empty in materialized mode. */
+  codeEntityKeys: string[];
+  mappings?: MaterializedDiagramMappingInput[];
+}
+
+export interface MaterializedDiagramSetInput {
+  creationMode: "materialized";
+  path: string;
+  name: string;
+  domainProfileId?: import("./domainProfile").BuiltInDomainProfileId;
+  description?: string;
+  /** Required and non-empty in materialized mode. */
+  codeEntities: MaterializedCodeEntityInput[];
+  /** Required and non-empty; every Diagram must include one or more CodeEntities. */
+  diagrams: MaterializedDiagramInput[];
+  /** Values are request-local Diagram keys. */
+  featuredViews?: Partial<Record<DiagramViewKind, string>>;
+}
+
+export interface MaterializedDiagramSetResult {
+  diagramSetId: string;
+  codeEntityIdsByKey: Record<string, string>;
+  diagramIdsByKey: Record<string, string>;
+  workspace: WorkspaceSnapshot;
 }
 
 export interface ArtifactImportInput {

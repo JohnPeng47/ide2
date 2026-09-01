@@ -227,6 +227,91 @@ async function createCallGraphFocusFixture() {
 }
 
 describe("DiagramApplication", () => {
+  it("materializes supplied ASCII only when every Diagram includes supplied CodeEntities", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-materialized-"));
+    roots.push(root);
+    execFileSync("git", ["init", "-q", root]);
+    await writeFile(path.join(root, "fixture.ts"), [
+      "export function worker() {",
+      "  return true;",
+      "}"
+    ].join("\n"), "utf8");
+    execFileSync("git", ["-C", root, "add", "fixture.ts"]);
+    execFileSync("git", [
+      "-C", root, "-c", "user.name=Test", "-c", "user.email=test@example.com",
+      "commit", "-qm", "fixture"
+    ]);
+    const runtime = new ParallelRuntime();
+    const application = new DiagramApplication(new DiagramStore(root), runtime);
+
+    const result = await application.createMaterializedDiagramSet({
+      creationMode: "materialized",
+      path: root,
+      name: "Materialized",
+      codeEntities: [{
+        key: "worker",
+        handle: "worker",
+        label: "Worker",
+        category: "operation",
+        summary: "Runs one job.",
+        sourceRanges: [{
+          key: "worker-function",
+          path: "fixture.ts",
+          startLine: 1,
+          endLine: 3,
+          symbol: "worker"
+        }]
+      }],
+      diagrams: [{
+        key: "worker-flow",
+        name: "Worker flow",
+        ascii: "[worker]",
+        codeEntityKeys: ["worker"],
+        mappings: [{
+          entityKey: "worker",
+          sourceRangeKey: "worker-function",
+          line: 1,
+          startColumn: 2,
+          endColumn: 7
+        }]
+      }],
+      featuredViews: { diagram: "worker-flow" }
+    });
+
+    const set = result.workspace.diagramSets.find((candidate) => candidate.id === result.diagramSetId)!;
+    const entitySet = result.workspace.codeEntitySets[set.codeEntitiesSetId];
+    const diagram = result.workspace.diagrams[result.diagramIdsByKey["worker-flow"]];
+    const mapping = result.workspace.codeEntityMaps[diagram.id];
+    expect(set).toMatchObject({ creationMode: "materialized", readiness: "ready" });
+    expect(set.featuredViewIds.diagram).toBe(diagram.id);
+    expect(entitySet.status).toBe("finalized");
+    expect(entitySet.promptConfigId).toBeUndefined();
+    expect(entitySet.entities[0].sourceRanges[0].originalLines).toEqual([
+      "export function worker() {", "  return true;", "}"
+    ]);
+    expect(diagram).toMatchObject({ origin: "materialized", codeEntityIds: [entitySet.entities[0].id] });
+    expect(mapping).toMatchObject({ origin: "materialized", artifactId: diagram.id });
+    expect(mapping.producedByRunId).toBeUndefined();
+    expect(runtime.started).toBe(0);
+    expect(result.workspace.agentRuns).toEqual({});
+    expect(result.workspace.generationBatches).toEqual({});
+  });
+
+  it("rejects materialized ASCII without included CodeEntities", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-materialized-required-"));
+    roots.push(root);
+    execFileSync("git", ["init", "-q", root]);
+    const application = new DiagramApplication(new DiagramStore(root), new ParallelRuntime());
+
+    await expect(application.createMaterializedDiagramSet({
+      creationMode: "materialized",
+      path: root,
+      name: "Missing entities",
+      codeEntities: [],
+      diagrams: [{ key: "empty", name: "Empty", ascii: "empty", codeEntityKeys: [] }]
+    })).rejects.toThrow("requires at least one CodeEntity");
+  });
+
   it("lists one live repository directory without exposing metadata or traversing links", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "new-diagram-file-listing-"));
     roots.push(root);
@@ -1271,7 +1356,7 @@ describe("DiagramApplication", () => {
     ]));
     expect(result.workspace.codeEntityMaps[diagramIds[1]]).toBeDefined();
     const preservedRun = result.workspace.agentRuns[
-      result.workspace.codeEntityMaps[diagramIds[1]].producedByRunId
+      result.workspace.codeEntityMaps[diagramIds[1]].producedByRunId!
     ];
     expect(preservedRun.kind).toBe("generate-one-diagram");
     const mappingRuns = Object.values(result.workspace.agentRuns)

@@ -343,6 +343,7 @@ export class DiagramStore {
     name: string;
     initialPrompt: string;
     location: RepositoryLocation;
+    creationMode?: "generate" | "materialized";
   }): Promise<{ diagramSet: DiagramSetRecord; codeEntities: CodeEntitiesSetRecord }> {
     const timestamp = nowIso();
     const setId = makeId("set");
@@ -363,6 +364,7 @@ export class DiagramStore {
       agentRunIds: [],
       editSessionIds: [],
       readiness: "collecting",
+      creationMode: input.creationMode ?? "generate",
       createdAt: timestamp,
       updatedAt: timestamp
     };

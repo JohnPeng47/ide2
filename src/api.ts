@@ -12,6 +12,8 @@ import type {
   GenerationPromptProfileId,
   GenerationReferenceSelection,
   MappedArtifactBundle,
+  MaterializedDiagramSetInput,
+  MaterializedDiagramSetResult,
   RepositoryDirectoryListing,
   SystemPromptTemplateRecord,
   WorkspaceSnapshot
@@ -46,6 +48,38 @@ export async function fetchWorkspace(): Promise<WorkspaceSnapshot> {
   const response = await apiFetch("/api/workspace", { cache: "no-store" });
   if (!response.ok) throw await errorFrom(response);
   return response.json() as Promise<WorkspaceSnapshot>;
+}
+
+export async function createMaterializedDiagramSet(
+  input: MaterializedDiagramSetInput
+): Promise<MaterializedDiagramSetResult> {
+  const response = await apiFetch("/api/diagram-sets", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ ...input, creationMode: "materialized" })
+  });
+  if (!response.ok) throw await errorFrom(response);
+  const text = await response.text();
+  const events = text.split("\n").filter(Boolean).map((line) => JSON.parse(line) as {
+    type: string;
+    error?: string;
+    diagramSetId?: string;
+    codeEntityIdsByKey?: Record<string, string>;
+    diagramIdsByKey?: Record<string, string>;
+    workspace?: WorkspaceSnapshot;
+  });
+  const failed = events.find((event) => event.type === "error");
+  if (failed) throw new Error(failed.error || "materialized DiagramSet creation failed");
+  const result = events.find((event) => event.type === "result");
+  if (!result?.diagramSetId || !result.codeEntityIdsByKey || !result.diagramIdsByKey || !result.workspace) {
+    throw new Error("materialized DiagramSet response is incomplete");
+  }
+  return {
+    diagramSetId: result.diagramSetId,
+    codeEntityIdsByKey: result.codeEntityIdsByKey,
+    diagramIdsByKey: result.diagramIdsByKey,
+    workspace: result.workspace
+  };
 }
 
 export async function fetchRepresentationGraph(setId: string): Promise<RepresentationGraphRecord> {
