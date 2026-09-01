@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "set-71c0fa9c-2762-415a-a69e-9a5b8c33c4f5",
+  "projectId": "project-ce67f2af4410",
+  "name": "Domain-Adapted Project and Generation Orchestration",
+  "initialPrompt": "A source-backed parent view of domain discovery, evidence collection, prompt construction, parallel generation, validation, and persistence.",
+  "sourceCheckoutRoot": "/home/john/.herdr/worktrees/new-diagram/worktree-transcripts",
+  "gitRevision": "4caa91d5915ce56f643d05115062b275069784d2",
+  "codeEntitiesSetId": "entities-4203787d-ec3f-4446-ae88-c1ae5ce8434f",
+  "featuredViewIds": {
+    "diagram": "diagram-1fd70b74-e8f6-469a-a888-f5b607f82e45"
+  },
+  "diagramIds": [
+    "diagram-1fd70b74-e8f6-469a-a888-f5b607f82e45"
+  ],
+  "diagramComponentIds": [],
+  "generationBatchIds": [],
+  "agentRunIds": [],
+  "editSessionIds": [],
+  "readiness": "ready",
+  "creationMode": "materialized",
+  "createdAt": "2026-09-01T16:19:31.754Z",
+  "updatedAt": "2026-09-01T16:19:31.791Z"
+}

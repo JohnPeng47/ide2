@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "set-dfdefa6d-9e98-4a71-9569-7fc503524d9a",
+  "projectId": "project-ce67f2af4410",
+  "name": "Representation Interaction",
+  "initialPrompt": "Use REPOSITORY_DIAGRAM_DECOMPOSITION.md as the authoritative document. Create only the R1 - Representation Interaction diagram. Explain how a user selects DiagramSets, lineage candidates, starred views, components, and Representation layers; interacts through DiagramView and AsciiSelectionGrid; and uses stable RepresentationIndex elements for hover, mapped Evidence reveal, rectangle selection, collapse subtree, toggle highlight, buffer reference, call-graph focus, layer feedback, component capture, and edit mode. Show reversible pane navigation and enforce Representation -> Evidence -> Corpus as the only grounding path. Include concise source file and symbol references in visible labels. Do not depict evidence collection, agent generation, reference follow-up, mapping prompt execution, or persistence layout.",
+  "sourceCheckoutRoot": "/home/john/.herdr/worktrees/new-diagram/worktree-transcripts",
+  "codeEntitiesSetId": "entities-8bc8e1c7-6d47-486a-b5b8-1713fc425dc1",
+  "featuredViewIds": {},
+  "diagramIds": [
+    "diagram-fa73e5ab-bb5d-4e3e-96ba-b8f8dfd0ee1f",
+    "diagram-35b1d494-47b9-491f-9662-28c42648dc7e",
+    "diagram-0b426853-79ef-4739-8043-48c5d0304bb5"
+  ],
+  "diagramComponentIds": [],
+  "generationBatchIds": [
+    "batch-e3a67380-2ee8-4d14-87c5-a3201a4db5f9"
+  ],
+  "agentRunIds": [
+    "run-058613c0-a236-4d73-a9b5-35010c573539",
+    "run-8ecac029-1470-46bb-ae9a-81cd579625c2",
+    "run-3c8e383a-ba13-4731-a9c1-3ad90ce9e41f",
+    "run-608d8aed-9b70-4969-a9eb-5cd6f3ecdf9c"
+  ],
+  "editSessionIds": [],
+  "readiness": "ready",
+  "createdAt": "2026-09-01T00:00:33.788Z",
+  "updatedAt": "2026-09-01T00:09:23.013Z"
+}

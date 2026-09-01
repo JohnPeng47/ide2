@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "diagram-060febc4-eaac-4dfc-bf52-68626f843e43",
+  "recordOrigin": {
+    "projectId": "project-ce67f2af4410",
+    "diagramSetId": "set-e2ab0628-530f-47a5-b8fe-cc4b789d986b"
+  },
+  "diagramSetId": "set-e2ab0628-530f-47a5-b8fe-cc4b789d986b",
+  "viewKind": "diagram",
+  "representationKind": "diagram",
+  "handle": "evidence-interaction-hinge-3",
+  "name": "Evidence Interaction Hinge",
+  "ascii": "Legend: `[D]` = data/state, `(O)` = operation, `[!]` = missing interaction.\n\n                         EVIDENCE INTERACTION HINGE\n\n [D] Representation element / `DiagramElementMapping`\n      |\n      | hover: Evidence label, summary, and source location\n      v\n (O) Mapped element -> Evidence reveal\n     `AsciiSelectionGrid.tsx:385-425`\n      |\n      | activate -> `App.revealCodeEntity` (`App.tsx:1673-1693`)\n      +---------------------------+\n      |                           |\n      |                           +---- rectangle drag ----> (O) Rectangle -> Evidence reference buffer\n      |                                source-range-aware refs; tray copy / insert / dispatch / remove / clear\n      |                                `DiagramView.tsx:223-241`; `refBuffer.ts:58-83`\n      |\n      v\n+--------------------------------------------------------------------------------------+\n|  [D] Evidence - user-interaction hinge                                               |\n|      Representation grounding lands here before any Corpus reveal.                  |\n|                                                                                      |\n|  [D] `EvidenceEntity`                                                               |\n|      stable `id`, handle, label, kind, summary, and `SourceRange[]`                  |\n|          Evidence-to-CodeEntity compatibility boundary                              |\n|          `EvidenceSchema.fromCodeEntity` (`domainProfiles.ts:10-31`)                 |\n|  [D] persisted `CodeEntityRecord` (`domain.ts:99-129`)                               |\n|                                                                                      |\n|  (O) Inspect Evidence and choose source range                                        |\n|      `CodeEntitiesPanel` shows metadata and `path:line` choices                      |\n|      stable `sourceRangeId` preferred; range index remains legacy-compatible         |\n+--------------------------------------------------------------------------------------+\n      |\n      | active range -> `sourceSnippet`\n      v\n (O) Evidence -> authoritative Corpus reveal\n     `CodeEntitiesPanel.tsx:150-189`; `application.ts:2279-2303`\n      |\n      v\n [D] Authoritative Corpus passage: source or Markdown, with immutable snapshot overlay\n     Direct Corpus access bypasses the hinge only during explicit browsing.\n\n                         ASSOCIATED EVIDENCE CONTEXT\n\n [D] File paths group Evidence by normalized SourceRange path\n     `fileTree.ts:55-103`; select exact range in `FileExplorerPanel:203-217`\n      |\n      v\n [D] Selected Evidence / exact entity and range\n     preserves source Diagram provenance in buffered references\n      |\n      +---- selected refs ----> (O) Focus selected Evidence in call graph\n                                 verify both artifacts; return matches + ancestors\n\n [D] Representation revision + stable element identity\n     + [D] Evidence identity/range + optional excerpt/tree lineage\n      |\n      v\n [D] Persistent Evidence-backed highlight\n     `HighlightRecordV2` (`highlights.ts:20-56`); `application.ts:2320-2385`\n\n                              CURRENT GAP\n\n [!] Missing Evidence -> all Representations navigation action\n\n [D] Selected Evidence - - - - - - X - - - - - -> [D] All Representations\n     Resolver lookup exists: `RepresentationIndex.resolveEvidence/resolveElement`.\n     No current `CodeEntitiesPanel` universal action; this interaction is FUTURE.",
+  "codeEntityIds": [
+    "entity-7b6a484b-cca6-4e91-8f28-3f23d5b4fbfa",
+    "entity-c84d4c83-9308-4c69-8fc9-eecd03448efa",
+    "entity-515a2005-8de4-485d-9647-55e93c3fbcba",
+    "entity-eff723af-5a4c-45ee-85cc-86ffe5c1af09",
+    "entity-be0cd175-205f-41bc-83b8-7c3894474b87",
+    "entity-33d8b22c-2b3b-4ee3-ab2c-0aa372c8808e",
+    "entity-55e54d8b-23e5-4f81-b4d6-db31b4667ee5",
+    "entity-c00f7848-2bf2-4879-ae4a-e0c50e790002",
+    "entity-28a571f6-078e-4cc6-a20b-acbccccf1fc6",
+    "entity-c8606ff5-d7f8-4881-a733-a8dc1dc424bd"
+  ],
+  "origin": "generated",
+  "producedByRunId": "run-9e6df217-b543-4075-8009-c878593cb02b",
+  "generationPromptConfigId": "prompt-ebed6b06-0b15-410d-ad39-df82a133b9cf",
+  "derivedFromDiagramIds": [],
+  "createdAt": "2026-09-01T00:00:11.444Z"
+}

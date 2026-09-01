@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "diagram-0b426853-79ef-4739-8043-48c5d0304bb5",
+  "recordOrigin": {
+    "projectId": "project-ce67f2af4410",
+    "diagramSetId": "set-dfdefa6d-9e98-4a71-9569-7fc503524d9a"
+  },
+  "diagramSetId": "set-dfdefa6d-9e98-4a71-9569-7fc503524d9a",
+  "viewKind": "diagram",
+  "representationKind": "diagram",
+  "handle": "r1-grounded-interaction",
+  "name": "R1 Grounded Interaction",
+  "ascii": "Legend: [D] = interaction data/surface, (O) = user operation. Back/Forward arrows are pane history.\n\n                         R1 REPRESENTATION INTERACTION\n\n (O) Select DiagramSet (`DiagramSetTreePanel`)\n       |\n       v\n (O) Navigate grouped lineage (`DiagramLineagePanel`)\n       |\n       +-- candidate batches / ranked lineage candidates\n       +-- diagram variants / call graphs / directory views / edits / derivatives / imports\n       +-- select a component or information-ranked Representation layer\n       `-- star the preferred view (`DiagramCandidateFeedbackDialog`)\n       |\n       v\n+-----------------------------------------------------------------------------------+\n| [D] Active Representation                                                        |\n|     orientation and manipulation surface                                         |\n|                                                                                   |\n|  (O) DiagramView renders the active artifact                                      |\n|       |                                                                           |\n|       v                                                                           |\n|  (O) AsciiSelectionGrid presents selectable ASCII                                 |\n|       |                                                                           |\n|       v                                                                           |\n|  [D] revision-scoped RepresentationIndex (`representationIndex`)                  |\n|      stable tree-node and mapped-element identities                               |\n|      mapped / highlighted presentation state                                      |\n+-----------------------------------------------------------------------------------+\n       |\n       v\n [D] Stable RepresentationIndex element\n       |\n       +----> (O) Pointer and selection (`DiagramSelectionOverlay`)\n       |            +-- hover a stable mapped element\n       |            +-- click a mapped element -> resolve Evidence\n       |            +-- rectangle selection\n       |            `-- display mapped / highlighted state\n       |\n       +----> (O) Mapped-element commands (`ElementCommandId`, App handlers)\n       |            +-- reveal Evidence ------> grounding path below\n       |            +-- collapse subtree -----> presentation-only\n       |            +-- toggle highlight -----> durable grounded context\n       |            `-- buffer reference -----> mapped Evidence in temporary tray\n       |\n       +----> (O) Progressive disclosure (`callGraphFocus`, `representationGraph`)\n       |            +-- collapse by stable subtree identity\n       |            +-- selected Evidence -> focused Call Graph in transient pane\n       |            `-- layer / transition feedback (`RepresentationLayersPanel`)\n       |\n       `----> (O) Artifact manipulation (`diagramSelection`, `EditOperationsPanel`)\n                    +-- selected rectangle -> capture DiagramComponent\n                    `-- edit mode: markers; manual/LLM edits; undo/redo;\n                        publish an immutable lineage child\n\n Transient panes, layers, components, and focused views return to the active Representation.\n\n                 ONLY GROUNDED SOURCE-REVEAL PATH\n\n+------------------------+   mapped element   +----------------------+   authoritative ranges   +------------------+\n| [D] REPRESENTATION     | -----------------> | [D] EVIDENCE         | -----------------------> | [D] CORPUS       |\n| orient / manipulate    | <----------------- | grounded hinge       | <----------------------- | verify claims    |\n+------------------------+   pane Back/Forward+----------------------+    pane Back/Forward     +------------------+\n                 Reversible pane history returns through Evidence to Representation.\n\nRule: every Representation-initiated source reveal must pass through Evidence; no direct jump to Corpus.\nExplicit Corpus browsing is separate from a Representation-initiated reveal.\n\nR1 BOUNDARY: interaction begins only after a Representation appears.\nExcluded: evidence collection; agent generation; reference follow-up; mapping prompt execution;\n          persistence layout.",
+  "codeEntityIds": [
+    "entity-2dfbae85-53a6-4646-8d66-535ddc5c7ada",
+    "entity-9cc5ea7b-78b9-4738-b071-c03c38840e40",
+    "entity-c7478745-143b-444e-bb59-4ff394175034",
+    "entity-f8479dfa-5b9f-4878-97b6-144aa1b4e137",
+    "entity-2687ed16-1d3d-4432-9ded-15b21a9e71a6",
+    "entity-f492e41f-5dc8-4437-a80a-4474a453474e",
+    "entity-d496279d-5407-499d-a404-72e2381bb7bd",
+    "entity-d9c70557-02ec-4a91-a8de-d0863790d19c",
+    "entity-b5f55a56-fd8a-4c04-b274-51ff200f2715",
+    "entity-d4e077f9-5942-402e-b01e-61c3597bed98"
+  ],
+  "origin": "generated",
+  "producedByRunId": "run-608d8aed-9b70-4969-a9eb-5cd6f3ecdf9c",
+  "generationPromptConfigId": "prompt-52de21c3-042b-481f-b7e4-7075c8df6021",
+  "derivedFromDiagramIds": [],
+  "createdAt": "2026-09-01T00:09:22.993Z"
+}

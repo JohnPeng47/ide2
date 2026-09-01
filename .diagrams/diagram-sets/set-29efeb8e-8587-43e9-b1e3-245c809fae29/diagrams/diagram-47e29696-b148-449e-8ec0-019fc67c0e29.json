@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "diagram-47e29696-b148-449e-8ec0-019fc67c0e29",
+  "recordOrigin": {
+    "projectId": "project-ce67f2af4410",
+    "diagramSetId": "set-29efeb8e-8587-43e9-b1e3-245c809fae29"
+  },
+  "diagramSetId": "set-29efeb8e-8587-43e9-b1e3-245c809fae29",
+  "viewKind": "diagram",
+  "representationKind": "diagram",
+  "handle": "corpus-browse-and-verify",
+  "name": "Corpus Browse and Verify",
+  "ascii": "Legend: [D] = carried state/data; (O) = user-visible operation or source symbol.\n\nCORPUS INTERACTION: BROWSE, REVEAL, VERIFY, RETURN\n\n[D] DomainProfile  [domainProfile.ts: DomainProfile]\n       |\n       +--> [D] SOURCE_CODE_PROFILE  [domainProfiles.ts]\n       |         Diagram Files / Diagram Sets; highlighted, unwrapped\n       |\n       +--> [D] DOCUMENT_PROFILE  [domainProfiles.ts]\n                 Diagram Files / Sections / Highlights; plain, wrapped, TTY\n       |\n       | explorer tabs + ContentPresentation policy\n       v\n+----------------------------------------------------------------------------+\n|                         WORKSPACE ENTRY POINTS                             |\n|                                                                            |\n| (O) diagramFileFilter  [fileTree.ts]                                       |\n|     artifact Evidence IDs -> normalized, live local Corpus paths           |\n|     excludes unresolved or foreign-provenance entities                     |\n|          |                                                                 |\n|          v                                                                 |\n| (O) FileExplorerPanel  [FileExplorerPanel.tsx: loadDirectory/revealEntity] |\n|     expandable checked-out repository hierarchy                            |\n|          +-- explicit file selection ----------------------> [A] DIRECT    |\n|          |                                                                 |\n|          +-- associated Evidence row: entity ID + range ----> [B] MEDIATED |\n|                                                                            |\n| (O) TerminalMarkdownView outline callbacks  [TerminalMarkdownView.tsx]     |\n|     parsed outline + active-section feedback                               |\n|          |                                                                 |\n|          v                                                                 |\n| (O) MarkdownSectionsPanel  [MarkdownSectionsPanel.tsx]                     |\n|     heading hierarchy; most-specific active/jump section                    |\n|          +-- jumpToMarkdownSection(path, line, range) ------> [A] DIRECT   |\n|          +-- mapJumpHistoryToSections: replay / clear controls             |\n+----------------------------------------------------------------------------+\n\n                         PERSISTENT CORPUS ENTRY\n\n[D] HighlightRecordV2  [highlights.ts]\n     artifact revision + visual element + Evidence identity/source range\n     optional document excerpt or tree lineage\n       |\n       v\n(O) HighlightsTreePanel  [HighlightsTreePanel.tsx: buildTree]\n       |\n       v\n(O) revealHighlight  [App.tsx]\n     restore artifact -> recover Evidence ID/range -> [B] MEDIATED\n\nMapped visual claim\n       |\n       v\n(O) revealCodeEntity  [App.tsx]\n     Evidence entity ID + source-range index -> [B] MEDIATED\n\n[B] EVIDENCE INTERMEDIARY\n+----------------------------------------------------------------------------+\n| [D] EvidenceEntity  [domainProfile.ts]                                     |\n|     identity / handle / label / kind / summary                             |\n|     stable SourceRange anchors into the authoritative Corpus               |\n|          |                                                                 |\n|          v                                                                 |\n| (O) CodeEntitiesPanel  [CodeEntitiesPanel.tsx]                             |\n|     select associated Evidence and its exact range                         |\n|          |                                                                 |\n|          v                                                                 |\n| (O) fetchSourceSnippet  [CodeEntitiesPanel.tsx]                            |\n|     local active range; captured original lines for foreign Evidence       |\n+----------------------------------------------------------------------------+\n       |\n       +-------------------------------------------------------> [A]\n\n[A] SOURCE PRESENTATION - governed by ContentPresentation\n+----------------------------------------------------------------------------+\n| (O) renderer dispatch  [CodeEntitiesPanel.tsx]                             |\n|       |                                                                    |\n|       +--> (O) SourceCodeView  [SourceCodeView.tsx]                        |\n|       |        syntax or plain; selected-range scroll; wrapping policy     |\n|       |        optional compaction with independently expandable context   |\n|       |                                                                    |\n|       +--> (O) TerminalMarkdownView  [TerminalMarkdownView.tsx]            |\n|                sandboxed Markdown; target line/range scroll + highlight    |\n|                repository links; outline and active-section reports        |\n+----------------------------------------------------------------------------+\n                                |\n                                v\n                  USER READS AND VERIFIES CORPUS\n                                |\n                                v\n+----------------------------------------------------------------------------+\n| (O) PaneNavigationApi  [navigation.ts]                                     |\n|     activate destination tab/pane; de-duplicate recent destinations        |\n|     registerHandler -> scheduled destination-specific scroll/focus         |\n|     jump -> replay; clearHistory -> remove recorded jumps                   |\n+----------------------------------------------------------------------------+\n       ^\n       +------ reversible return to a prior claim, section, or Corpus view",
+  "codeEntityIds": [
+    "entity-91680eca-a2a6-4748-ba92-fbbf09bd94b0",
+    "entity-8d9b462e-d666-405f-b490-8226030cc1c1",
+    "entity-d962fe97-892e-4e40-83d7-33016337003b",
+    "entity-ed2f8338-fd1f-40c0-9cd3-fb0938d46c7c",
+    "entity-3fd68461-519d-47b5-a207-c06ef23ff87d",
+    "entity-4eb8a405-b3af-4849-848e-e8f384681db6",
+    "entity-8380086d-499f-4fd5-8367-972ee9c24069",
+    "entity-d006c796-e230-4286-a97e-7c23289d13eb",
+    "entity-54976897-a288-4a21-83bf-c1c057b73d80",
+    "entity-be33d9ff-3f8a-41da-8f78-fbbfd0413a50",
+    "entity-4a31f20b-88cd-4a73-a3ea-6ef8194e4e70",
+    "entity-aa72d988-f21b-4fc1-aab4-940a4f3636d4",
+    "entity-5a4aab8f-8d13-453b-8c93-23c52e7026b5",
+    "entity-983479dd-b42f-47b7-b1c8-ac9fe5a7a138",
+    "entity-2b6cd15e-f4b8-4aab-9ead-d9aa3623b2c1",
+    "entity-f193498e-35cb-42b4-9789-031ef010b711",
+    "entity-13e6d17b-11ae-4e8c-93a3-88aa23f3671e"
+  ],
+  "origin": "generated",
+  "producedByRunId": "run-13083490-8084-40d9-b073-3b95adb8a5ac",
+  "generationPromptConfigId": "prompt-87107522-fc11-47f9-9c49-ceabab31dd3b",
+  "derivedFromDiagramIds": [],
+  "createdAt": "2026-08-31T23:47:45.795Z"
+}

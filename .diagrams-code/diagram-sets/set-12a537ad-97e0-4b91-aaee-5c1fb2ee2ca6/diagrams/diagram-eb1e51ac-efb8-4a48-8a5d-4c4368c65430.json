@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "diagram-eb1e51ac-efb8-4a48-8a5d-4c4368c65430",
+  "recordOrigin": {
+    "projectId": "project-ce67f2af4410",
+    "diagramSetId": "set-12a537ad-97e0-4b91-aaee-5c1fb2ee2ca6"
+  },
+  "diagramSetId": "set-12a537ad-97e0-4b91-aaee-5c1fb2ee2ca6",
+  "viewKind": "diagram",
+  "representationKind": "diagram",
+  "handle": "indexed-representation-interaction-2",
+  "name": "Indexed Representation Interaction",
+  "ascii": "Legend: [D] = data structure, (O) = operation\n\n USER SELECTS ACTIVE CONTEXT\n\n     (O) DiagramSetTreePanel.tsx:DiagramSetTreePanel\n         DiagramSet or Diagram; current and starred entries\n\n     (O) DiagramLineagePanel.tsx:renderCandidateBatch/renderDiagram\n         ranked candidate batch, candidate, view kind, or featured star\n\n     (O) DiagramLineagePanel.tsx:ComponentLineageSection\n         captured/generated DiagramComponent\n\n     (O) RepresentationLayersPanel.tsx:RepresentationLayersPanel\n         revision-bound layer ordered by informationRank; transition feedback\n\n                 +---------------- choices converge ----------------+\n                                                                    |\n                                                                    v\n     (O) DiagramView.tsx:DiagramView\n         validate active ASCII revision and map; derive tree/diagram index and gridMode\n                              |\n                              v\n+---------------------------------------------------------------------------------------+\n| ACTIVE REPRESENTATION                                                                |\n|                                                                                       |\n|  [D] representationIndex.ts:buildRepresentationIndex                                  |\n|      stable revision-scoped tree nodes and visual elementId values                    |\n|      stale-map rejection; structural/persisted IDs; element <-> Evidence resolution  |\n|                               |                                                       |\n|                               v                                                       |\n|  (O) AsciiSelectionGrid.tsx:AsciiSelectionGrid                                        |\n|      indexed hover and exact source location; mapped Evidence reveal                 |\n|      collapse subtree; toggle highlight                                               |\n+-------------------------------+-------------------------------------------------------+\n                                |\n             stable element IDs and current revision govern every branch\n                                |\n       +------------------------+----------------------+----------------------+\n       |                        |                      |                      |\n       v                        v                      v                      v\n|  (O) DiagramView.tsx:completeSelection      |  (O) DiagramView.tsx:saveCapture/editMode\n|      normalize drag rectangle               |      capture: released rectangle -> component\n|      intersect current mappings             |      completion -> component lineage\n|      Evidence refs -> scoped buffer preview |      edit: exclude stale mappings; disable\n|                 |                           |      incompatible actions; grid -> ASCII editor\n|                 v                           |      start or exit edit session\n|  [D] scoped reference buffer                |\n|                 |                           +-------------------------------------------+\n|                 v\n|  (O) RefBufferTray.tsx:displayCallGraph\n|      active-Diagram refs -> validate/dedup CodeEntities\n|      -> CallGraphFocusRequest -> focused call-graph view\n|\n+---- layer transition -> ordered layer target -> feedback to RepresentationLayersPanel\n|\n+---- mapped activation\n          |\n          v\n     (O) App.tsx:revealCodeEntity\n          | stable mapping ID + Evidence identity + sourceRangeIndex\n          v\n     +-----------------------+\n     | [D] Evidence selection|\n     +-----------+-----------+\n                 | load authoritative source snippet\n                 v\n     +-----------------------+\n     | [D] Corpus content    |\n     | source/markdown view  |\n     +-----------------------+\n\n REQUIRED GROUNDING: Representation -> Evidence -> Corpus. No direct shortcut.\n\n (O) panes/navigation.ts:PaneNavigationApi\n     activate/focus destination; bounded deduplicated history; post-render delivery\n     replay previous entry or clear\n <======== reversible pane movement across Representation, Evidence, and Corpus ========>",
+  "codeEntityIds": [
+    "entity-7d09077d-4197-479b-b276-633be0778987",
+    "entity-b708368c-62a2-4388-b82c-62759dc9fbb7",
+    "entity-0d7387b5-7200-4320-9d63-3bbdcdb706fa",
+    "entity-40965b03-a2d2-4e89-85de-84c4cba943cb",
+    "entity-fe9e8afe-4cfc-4d2f-8235-37ab78cf8f69",
+    "entity-df4b89a2-cc19-4927-aea8-e6624b15fa66",
+    "entity-8a7618c0-79db-41af-87ef-3d57b963e710",
+    "entity-9bf80159-ed3e-44c2-9e40-bc335b410736",
+    "entity-d0576e3a-18b2-46d1-a077-3701dc3b6305",
+    "entity-71ce3f68-f56a-4326-be38-1e9a6a22a7ff",
+    "entity-18c27ef4-43bf-4bca-8bc3-d0d0e50a75f3",
+    "entity-821d8680-e279-417c-b382-a7387585dd58"
+  ],
+  "origin": "generated",
+  "producedByRunId": "run-4c60b394-211d-4632-9c13-4446de6decae",
+  "generationPromptConfigId": "prompt-50ae703c-70c1-4919-a770-355c6006d0b9",
+  "derivedFromDiagramIds": [
+    "diagram-5b048a30-bab2-410f-808d-ed93f8283ebc",
+    "diagram-fb1fac68-ac02-4a1f-b9cc-cc4e8bc5f5e8"
+  ],
+  "createdAt": "2026-09-01T14:54:59.534Z"
+}

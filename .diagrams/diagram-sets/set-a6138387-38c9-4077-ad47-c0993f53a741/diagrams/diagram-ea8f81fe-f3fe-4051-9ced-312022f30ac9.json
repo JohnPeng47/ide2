@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "diagram-ea8f81fe-f3fe-4051-9ced-312022f30ac9",
+  "recordOrigin": {
+    "projectId": "project-ce67f2af4410",
+    "diagramSetId": "set-a6138387-38c9-4077-ad47-c0993f53a741"
+  },
+  "diagramSetId": "set-a6138387-38c9-4077-ad47-c0993f53a741",
+  "viewKind": "diagram",
+  "representationKind": "diagram",
+  "handle": "h0-core-triad",
+  "name": "H0 Core Triad",
+  "ascii": "H0 - CORE ABSTRACTION SYSTEM\n\n       +------------------+                         +------------------------+\n       | POLICY + RECIPES |                         | AGENT + PROMPT RUNTIME |\n       | configures C/E/R |                         | collect/generate/revise|\n       +--------+---------+                         +-----------+------------+\n                \\                                               /\n                 v                                             v\n+----------------------------------------------------------------------------------------------------------------+\n|                                      CORE ABSTRACTION TRIAD                                                    |\n|                                                                                                                |\n|       collect + validate                                  generate + ground                                    |\n| +---------------+ ----------------------------> +---------------+ ----------------------------> +------------------+ |\n| |    CORPUS     |                               |   EVIDENCE    |                               |  REPRESENTATION  | |\n| +---------------+ <---------------------------- +---------------+ <---------------------------- +--------+---------+ |\n|                       resolve anchors                                  mapped reveal                      |           |\n|                                                                                           refine revision+----+      |\n|                                                                                                           ^    |      |\n|                                                                                                           +----+      |\n|                                                                                                                |\n| Grounding bridge: REPRESENTATION -> EVIDENCE -> CORPUS                                                         |\n| Forbidden direct grounding: REPRESENTATION -X-> CORPUS                                                         |\n+----------------------------------------------------------------------------------------------------------------+\n          ^  |                                                                                   ^  |\n          |  v                                                                                   |  v\n+---------+-----------------+                                                          +----------+--------------------+\n| PERSISTENCE + PROVENANCE |                                                          | WORKSPACE + API             |\n| bidirectional save/load  |                                                          | select/inspect/reveal/revise|\n| bindings, maps, history  |                                                          | Corpus only browse/resolve  |\n+---------------------------+                                                          +-----------------------------+\n\nSECTION MAP (REPOSITORY_DIAGRAM_DECOMPOSITION.md)\nH0 Core Abstraction Triad: Composition (7-17); H0 - Core Abstraction System / Question / Required composition (158-173)\nCORPUS: Semantic contract / Corpus (31-38); H0 / Required composition (168-176)\nEVIDENCE: Semantic contract / Evidence (40-50); H0 / Required composition (168-179)\nREPRESENTATION: Semantic contract / Representation (52-61); H0 / Required composition (168-180)\nCorpus -> Evidence: Collect and Validate: Core invariants (63-69); H0 / Required core interactions (174-177)\nEvidence -> Corpus: Resolve Anchors: Core invariants (65-68); H0 / Required core interactions (174-178)\nEvidence -> Representation: Generate and Ground: Core invariants (68-72); H0 / Required core interactions (174-179)\nRepresentation -> Evidence: Mapped Reveal: Core invariants (71-73); H0 / Required core interactions (174-183)\nRepresentation -> Representation: Refine Revision: Core invariants (74-76); H0 / Required core interactions (174-180)\nEvidence-Only Grounding Bridge: Semantic contract / Representation (52-61); Core invariants (71-78); H0 / Required composition (182-183)\nPOLICY + RECIPES: External collaborators / Policy and recipes (82-103); H0 / Required external links (185-189)\nAGENT + PROMPT RUNTIME: External collaborators / Agent and prompt runtime (105-121); H0 / Required external links (185-191)\nPERSISTENCE + PROVENANCE: External collaborators / Persistence and provenance (123-137); H0 / Required external links (185-192)\nWORKSPACE + API: External collaborators / Workspace and API (139-156); H0 / Required external links (185-195)",
+  "codeEntityIds": [
+    "entity-4d2544b8-5244-4621-a82b-63519e0000ec",
+    "entity-53a99eea-b95a-4fd5-9010-b18a20a68339",
+    "entity-1dbe4012-332e-46e8-83eb-c7b6204e2de8",
+    "entity-41e545cb-b303-4e71-b560-d415d2c86ffa",
+    "entity-a3e87770-3af6-4bc6-a8a1-f2daa51df939",
+    "entity-ecc75590-ac25-4b3b-889c-84ead74772c8",
+    "entity-5f7d8d0c-67dd-4f78-a744-90ba5371a920",
+    "entity-6ec39583-ec11-496a-8b9d-cc67af2fbce8",
+    "entity-75f79f22-ef3d-4c2e-bca3-13255bf6ab66",
+    "entity-012abc05-0f7f-46cf-b9fe-fd1ffd9fab0c",
+    "entity-247796d3-6248-45d5-b894-5b0aba196f0e",
+    "entity-cebe7b38-b38a-430d-9443-524a375ad649",
+    "entity-bb27f6f6-45ed-47f2-b7ee-842ae38eacdc",
+    "entity-688ca9f6-0cba-4b3c-a5b6-9e7f6f3c23a1"
+  ],
+  "origin": "generated",
+  "producedByRunId": "run-954c5057-6f28-4cc9-b8bd-456816edc6ae",
+  "generationPromptConfigId": "prompt-e7150681-f138-49d1-998b-8e71863bab63",
+  "derivedFromDiagramIds": [],
+  "createdAt": "2026-08-31T22:36:40.697Z"
+}

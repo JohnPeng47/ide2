@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "set-a6138387-38c9-4077-ad47-c0993f53a741",
+  "projectId": "project-ce67f2af4410",
+  "name": "Core Abstraction System",
+  "initialPrompt": "Use REPOSITORY_DIAGRAM_DECOMPOSITION.md as the authoritative document and generate only H0 - Core Abstraction System. Make CORPUS, EVIDENCE, and REPRESENTATION the dominant central layer. Show Corpus-to-Evidence collection and anchor validation, Evidence-to-Corpus resolution, Evidence-to-Representation generation and grounding, Representation-to-Evidence mapped reveal, and Representation-to-Representation refinement. Enforce that Representation never grounds directly to Corpus. Link POLICY + RECIPES, AGENT + PROMPT RUNTIME, PERSISTENCE + PROVENANCE, and WORKSPACE + API as external collaborators. Map the core nodes and interactions to their exact Markdown sections. Do not generate C1, E1, R1, or any N-series candidate diagram.",
+  "sourceCheckoutRoot": "/home/john/.herdr/worktrees/new-diagram/worktree-transcripts",
+  "codeEntitiesSetId": "entities-7890da79-ab39-498f-ae7d-e1b42b4d7b6a",
+  "featuredViewIds": {},
+  "diagramIds": [
+    "diagram-ea8f81fe-f3fe-4051-9ced-312022f30ac9",
+    "diagram-e8d85d88-f75c-4768-92b2-06d7e4f727cc",
+    "diagram-8bcaa801-03d3-40c6-af08-2a1688f23c57"
+  ],
+  "diagramComponentIds": [],
+  "generationBatchIds": [
+    "batch-29bd4c2a-8139-47f7-8f08-2ee42cd65e53"
+  ],
+  "agentRunIds": [
+    "run-29f50651-0833-42ee-b383-8ced3ab53451",
+    "run-954c5057-6f28-4cc9-b8bd-456816edc6ae",
+    "run-4dcf7700-e7c2-44cd-ba30-f425697de43b",
+    "run-09523d40-a68a-4892-bfdc-b11c1ed90d02"
+  ],
+  "editSessionIds": [],
+  "readiness": "ready",
+  "createdAt": "2026-08-31T22:26:18.952Z",
+  "updatedAt": "2026-08-31T22:36:40.717Z"
+}

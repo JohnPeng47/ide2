@@ -1,0 +1,206 @@
+{
+  "creationMode": "materialized",
+  "path": "/home/john/.herdr/worktrees/new-diagram/worktree-transcripts",
+  "name": "Prompt, Reference, Lineage, and Portability",
+  "domainProfileId": "source-code",
+  "description": "How mapped evidence becomes prompt references, generation context, derivative lineage, and portable mapped artifact bundles.",
+  "codeEntities": [
+    {
+      "key": "diagram-code-entity-map-record",
+      "handle": "diagram-code-entity-map-record",
+      "label": "DiagramCodeEntityMapRecord",
+      "category": "interface-data-struct",
+      "summary": "Persists the revision-scoped spatial mappings that connect an ASCII artifact to source-backed CodeEntities.",
+      "sourceRanges": [
+        { "key": "diagram-code-entity-map-record-definition", "path": "src/domain.ts", "startLine": 419, "endLine": 431, "symbol": "DiagramCodeEntityMapRecord" }
+      ]
+    },
+    {
+      "key": "diagram-element-mapping",
+      "handle": "diagram-element-mapping",
+      "label": "DiagramElementMapping",
+      "category": "interface-data-struct",
+      "summary": "Identifies one visible ASCII span and the CodeEntity source range represented by that span.",
+      "sourceRanges": [
+        { "key": "diagram-element-mapping-definition", "path": "src/domain.ts", "startLine": 408, "endLine": 417, "symbol": "DiagramElementMapping" }
+      ]
+    },
+    {
+      "key": "reference-from-mapping",
+      "handle": "reference-from-mapping",
+      "label": "referenceFromMapping",
+      "category": "operation",
+      "summary": "Converts a spatial mapping into a provenance-aware reference identity with stable source-range identity.",
+      "sourceRanges": [
+        { "key": "reference-from-mapping-function", "path": "src/refBuffer.ts", "startLine": 58, "endLine": 76, "symbol": "referenceFromMapping" }
+      ]
+    },
+    {
+      "key": "reference-identity",
+      "handle": "reference-identity",
+      "label": "ReferenceIdentity",
+      "category": "interface-data-struct",
+      "summary": "Carries the kind, target identity, provenance, and optional source-range address of a selected reference.",
+      "sourceRanges": [
+        { "key": "reference-identity-definition", "path": "src/domain.ts", "startLine": 202, "endLine": 210, "symbol": "ReferenceIdentity" }
+      ]
+    },
+    {
+      "key": "resolve-reference",
+      "handle": "resolve-reference",
+      "label": "resolveReference",
+      "category": "operation",
+      "summary": "Resolves a persisted reference identity against available evidence and artifact records while checking provenance.",
+      "sourceRanges": [
+        { "key": "resolve-reference-function", "path": "src/referenceResolver.ts", "startLine": 56, "endLine": 90, "symbol": "resolveReference" }
+      ]
+    },
+    {
+      "key": "generation-prompt-reference",
+      "handle": "generation-prompt-reference",
+      "label": "GenerationPromptReference",
+      "category": "interface-data-struct",
+      "summary": "Persists a reference together with the exact prompt representation supplied to the generation agent.",
+      "sourceRanges": [
+        { "key": "generation-prompt-reference-definition", "path": "src/domain.ts", "startLine": 217, "endLine": 220, "symbol": "GenerationPromptReference" }
+      ]
+    },
+    {
+      "key": "create-generation-prompt-config",
+      "handle": "create-generation-prompt-config",
+      "label": "createGenerationPromptConfig",
+      "category": "operation",
+      "summary": "Validates selected evidence and references, renders their prompt representations, and builds immutable generation context.",
+      "sourceRanges": [
+        { "key": "create-generation-prompt-config-function", "path": "src/prompt.ts", "startLine": 482, "endLine": 946, "symbol": "createGenerationPromptConfig" }
+      ]
+    },
+    {
+      "key": "generation-prompt-config-record",
+      "handle": "generation-prompt-config-record",
+      "label": "GenerationPromptConfigRecord",
+      "category": "state",
+      "summary": "Persists the rendered system, context, reference, mapping, and derivation inputs for one generation.",
+      "sourceRanges": [
+        { "key": "generation-prompt-config-record-definition", "path": "src/domain.ts", "startLine": 234, "endLine": 284, "symbol": "GenerationPromptConfigRecord" }
+      ]
+    },
+    {
+      "key": "run-generation-prompt-turns",
+      "handle": "run-generation-prompt-turns",
+      "label": "runGenerationPromptTurns",
+      "category": "operation",
+      "summary": "Executes the initial, optional reference, and mandatory mapping prompt turns while preserving the final artifact.",
+      "sourceRanges": [
+        { "key": "run-generation-prompt-turns-function", "path": "server/agentRuntime.ts", "startLine": 119, "endLine": 155, "symbol": "runGenerationPromptTurns" }
+      ]
+    },
+    {
+      "key": "diagram-record",
+      "handle": "diagram-record",
+      "label": "DiagramRecord",
+      "category": "state",
+      "summary": "Persists a generated or materialized diagram together with its evidence dependencies and derivation lineage.",
+      "sourceRanges": [
+        { "key": "diagram-record-definition", "path": "src/domain.ts", "startLine": 380, "endLine": 402, "symbol": "DiagramRecord" }
+      ]
+    },
+    {
+      "key": "build-derivative-prompt",
+      "handle": "build-derivative-prompt",
+      "label": "buildDerivativePrompt",
+      "category": "operation",
+      "summary": "Walks artifact and prompt-config lineage to reconstruct prior corrections and historical references for a derivative.",
+      "sourceRanges": [
+        { "key": "build-derivative-prompt-function", "path": "src/derivativePrompt.ts", "startLine": 79, "endLine": 147, "symbol": "buildDerivativePrompt" }
+      ]
+    },
+    {
+      "key": "mapped-artifact-bundle",
+      "handle": "mapped-artifact-bundle",
+      "label": "MappedArtifactBundle",
+      "category": "interface-data-struct",
+      "summary": "Defines a portable artifact package containing the artifact, its evidence dependencies, and its optional spatial map.",
+      "sourceRanges": [
+        { "key": "mapped-artifact-bundle-definition", "path": "src/domain.ts", "startLine": 698, "endLine": 704, "symbol": "MappedArtifactBundle" }
+      ]
+    },
+    {
+      "key": "mapped-artifact-bundle-operation",
+      "handle": "mapped-artifact-bundle-operation",
+      "label": "mappedArtifactBundle",
+      "category": "operation",
+      "summary": "Collects an artifact, all of its resolvable evidence dependencies, and its current mapping into a transfer bundle.",
+      "sourceRanges": [
+        { "key": "mapped-artifact-bundle-method", "path": "server/application.ts", "startLine": 319, "endLine": 350, "symbol": "DiagramApplication.mappedArtifactBundle" }
+      ]
+    },
+    {
+      "key": "import-artifact",
+      "handle": "import-artifact",
+      "label": "importArtifact",
+      "category": "operation",
+      "summary": "Validates and persists an imported ASCII artifact and, when supplied, its provenance, evidence, and spatial mapping bundle.",
+      "sourceRanges": [
+        { "key": "import-artifact-method", "path": "server/application.ts", "startLine": 1013, "endLine": 1141, "symbol": "DiagramApplication.importArtifact" }
+      ]
+    },
+    {
+      "key": "imported-artifact-library-record",
+      "handle": "imported-artifact-library-record",
+      "label": "ImportedArtifactLibraryRecord",
+      "category": "state",
+      "summary": "Indexes globally imported diagrams, components, evidence dependencies, and mapped artifact identities.",
+      "sourceRanges": [
+        { "key": "imported-artifact-library-record-definition", "path": "src/domain.ts", "startLine": 188, "endLine": 198, "symbol": "ImportedArtifactLibraryRecord" }
+      ]
+    }
+  ],
+  "diagrams": [
+    {
+      "key": "prompt-reference-lineage-portability",
+      "handle": "prompt-reference-lineage-portability",
+      "name": "Prompt, Reference, Lineage, and Portability",
+      "viewKind": "diagram",
+      "representationKind": "diagram",
+      "ascii": "                    PROMPT, REFERENCE, LINEAGE, AND PORTABILITY\n\n [P] DiagramCodeEntityMapRecord\n              |\n              | DiagramElementMapping\n              v\n [R] referenceFromMapping()          User-entered @entity/@diagram/@component\n              |                                      |\n              v                                      v\n [R] ReferenceIdentity[]                    [R] typed prompt options\n kind                                         typed tokens\n targetId                                           |\n origin                                             |\n sourceRange identity                               |\n              |                                     |\n              v                                     v\n       [R] scoped reference buffer          [R] mention resolution\n       project/set scoped                           |\n              |                                     |\n              +------------------+------------------+\n                                 |\n                                 v\n                    [R] resolveReference()\n                    checks target ID + origin\n                                 ^\n                                 |\n                   [P] available workspace records\n                   evidence entities\n                   DiagramRecord{}\n                   artifact components\n                                 |\n                                 v\n                [R] createGenerationPromptConfig()\n                                 |\n              +------------------+-------------------+\n              |                                      |\n              v                                      v\n [P] GenerationPromptReference[]       [P] omittedReferences[]\n token + target + origin               known but excluded\n exact promptRepresentation\n              |\n              v\n [P] GenerationPromptConfigRecord\n system prompt\n context prompt\n optional reference prompt\n mandatory mapping prompt\n optional derivation\n              |\n              v\n [R] runGenerationPromptTurns()\n              |\n       +------+------+----------------+\n       |             |                |\n       v             v                v\n initial turn   reference turn   mapping turn\n                optional          mandatory\n       |             |                |\n       +-------------+----------------+\n                     |\n                     v\n           [P] DiagramRecord / Component\n           recordOrigin\n           generationPromptConfigId\n           derivedFromDiagramIds[]\n           derivedFromDiagramComponentIds[]\n                     |\n                     v\n           [R] buildDerivativePrompt()\n           walks artifacts and prompt configs\n           reconstructs previous corrections\n                     |\n                     v\n             Next derivative prompt\n\n\n PORTABILITY BRANCH\n\n [P] DiagramRecord / Component\n              |\n              +--> evidence dependencies\n              |\n              +--> DiagramCodeEntityMapRecord\n              |\n              v\n [R] DiagramApplication.mappedArtifactBundle()\n              |\n              v\n [P] MappedArtifactBundle\n artifact + evidence + spatial mapping\n              |\n      GET /api/artifact-bundle\n              |\n              v\n       [X] Transfer boundary\n              |\n       POST /api/imports\n              |\n              v\n [R] DiagramApplication.importArtifact()\n validates provenance, dependencies,\n ASCII hash, range identities and bounds\n              |\n              v\n [P] ImportedArtifactLibraryRecord\n              |\n       +------+----------------+\n       |                       |\n       v                       v\n imported artifacts     imported evidence/maps\n       |                       |\n       +-----------+-----------+\n                   |\n                   v\n       Available to future prompt composition",
+      "codeEntityKeys": [
+        "diagram-code-entity-map-record",
+        "diagram-element-mapping",
+        "reference-from-mapping",
+        "reference-identity",
+        "resolve-reference",
+        "generation-prompt-reference",
+        "create-generation-prompt-config",
+        "generation-prompt-config-record",
+        "run-generation-prompt-turns",
+        "diagram-record",
+        "build-derivative-prompt",
+        "mapped-artifact-bundle",
+        "mapped-artifact-bundle-operation",
+        "import-artifact",
+        "imported-artifact-library-record"
+      ],
+      "mappings": [
+        { "entityKey": "diagram-code-entity-map-record", "sourceRangeKey": "diagram-code-entity-map-record-definition", "line": 3, "startColumn": 6, "endColumn": 31 },
+        { "entityKey": "diagram-element-mapping", "sourceRangeKey": "diagram-element-mapping-definition", "line": 5, "startColumn": 17, "endColumn": 37 },
+        { "entityKey": "reference-from-mapping", "sourceRangeKey": "reference-from-mapping-function", "line": 7, "startColumn": 6, "endColumn": 25 },
+        { "entityKey": "reference-identity", "sourceRangeKey": "reference-identity-definition", "line": 10, "startColumn": 6, "endColumn": 22 },
+        { "entityKey": "resolve-reference", "sourceRangeKey": "resolve-reference-function", "line": 23, "startColumn": 25, "endColumn": 40 },
+        { "entityKey": "diagram-record", "sourceRangeKey": "diagram-record-definition", "line": 29, "startColumn": 20, "endColumn": 32 },
+        { "entityKey": "create-generation-prompt-config", "sourceRangeKey": "create-generation-prompt-config-function", "line": 33, "startColumn": 21, "endColumn": 48 },
+        { "entityKey": "generation-prompt-reference", "sourceRangeKey": "generation-prompt-reference-definition", "line": 38, "startColumn": 6, "endColumn": 30 },
+        { "entityKey": "generation-prompt-config-record", "sourceRangeKey": "generation-prompt-config-record-definition", "line": 43, "startColumn": 6, "endColumn": 33 },
+        { "entityKey": "run-generation-prompt-turns", "sourceRangeKey": "run-generation-prompt-turns-function", "line": 51, "startColumn": 6, "endColumn": 29 },
+        { "entityKey": "build-derivative-prompt", "sourceRangeKey": "build-derivative-prompt-function", "line": 69, "startColumn": 16, "endColumn": 36 },
+        { "entityKey": "mapped-artifact-bundle-operation", "sourceRangeKey": "mapped-artifact-bundle-method", "line": 86, "startColumn": 25, "endColumn": 44 },
+        { "entityKey": "mapped-artifact-bundle", "sourceRangeKey": "mapped-artifact-bundle-definition", "line": 89, "startColumn": 6, "endColumn": 25 },
+        { "entityKey": "import-artifact", "sourceRangeKey": "import-artifact-method", "line": 100, "startColumn": 25, "endColumn": 38 },
+        { "entityKey": "imported-artifact-library-record", "sourceRangeKey": "imported-artifact-library-record-definition", "line": 105, "startColumn": 6, "endColumn": 34 }
+      ]
+    }
+  ],
+  "featuredViews": {
+    "diagram": "prompt-reference-lineage-portability"
+  }
+}

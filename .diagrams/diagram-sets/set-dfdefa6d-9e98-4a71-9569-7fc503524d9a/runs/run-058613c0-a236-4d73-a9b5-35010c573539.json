@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "run-058613c0-a236-4d73-a9b5-35010c573539",
+  "diagramSetId": "set-dfdefa6d-9e98-4a71-9569-7fc503524d9a",
+  "kind": "collect-entities",
+  "status": "complete",
+  "statusMessage": "collected 10 evidence entities",
+  "codeEntitiesRevision": 1,
+  "outputCodeEntityIds": [
+    "entity-2dfbae85-53a6-4646-8d66-535ddc5c7ada",
+    "entity-9cc5ea7b-78b9-4738-b071-c03c38840e40",
+    "entity-c7478745-143b-444e-bb59-4ff394175034",
+    "entity-f8479dfa-5b9f-4878-97b6-144aa1b4e137",
+    "entity-2687ed16-1d3d-4432-9ded-15b21a9e71a6",
+    "entity-f492e41f-5dc8-4437-a80a-4474a453474e",
+    "entity-d496279d-5407-499d-a404-72e2381bb7bd",
+    "entity-d9c70557-02ec-4a91-a8de-d0863790d19c",
+    "entity-b5f55a56-fd8a-4c04-b274-51ff200f2715",
+    "entity-d4e077f9-5942-402e-b01e-61c3597bed98"
+  ],
+  "startedAt": "2026-09-01T00:00:33.802Z",
+  "updatedAt": "2026-09-01T00:01:37.594Z",
+  "model": "openai-codex/gpt-5.6-sol",
+  "sessionId": "01a05a44-8014-7d29-8512-26057794ecf1",
+  "completedAt": "2026-09-01T00:01:37.594Z"
+}

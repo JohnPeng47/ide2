@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "diagram-1bf97816-a776-4bbd-bbb4-df4868d282c5",
+  "recordOrigin": {
+    "projectId": "project-ce67f2af4410",
+    "diagramSetId": "set-73a6e1e3-2fe8-4aac-9709-ee21e6f72fbf"
+  },
+  "diagramSetId": "set-73a6e1e3-2fe8-4aac-9709-ee21e6f72fbf",
+  "viewKind": "diagram",
+  "handle": "interactive-studio-panes-navigation",
+  "name": "Interactive Studio, Panes, and Navigation",
+  "ascii": "                  INTERACTIVE STUDIO, PANES, AND NAVIGATION\n\n                         [X] Browser\n                              |\n                              v\n                         [R] App\n                              |\n                     fetchWorkspace()\n                              |\n                              v\n                    [P] WorkspaceSnapshot\n                              |\n         +--------------------+--------------------+\n         |                    |                    |\n         v                    v                    v\n active DiagramSet      active artifact      DomainProfile\n entity/map lookup      screen/view kind     surface policy\n         |                    |                    |\n         +--------------------+--------------------+\n                              |\n                              v\n                    [R] PaneLayoutState\n                    PaneNode split tree\n                    Pane records + tabs\n                              |\n                    [R] PaneApi / PaneWorkspace\n                              |\n        +---------------------+----------------------+\n        |                     |                      |\n        v                     v                      v\n   FILES PANE            PRIMARY PANE            CONTEXT PANE\n\n FileExplorerPanel       GeneratorOptions        CodeEntitiesPanel\n DiagramSetTreePanel     DiagramView             DiagramLineagePanel\n MarkdownSectionsPanel   AsciiSelectionGrid      RepresentationLayersPanel\n HighlightsTreePanel     SelectionOverlay        EditOperationsPanel\n        |                     |                      |\n        |                     | mapped element       |\n        |                     v                      |\n        |             DiagramElementMapping         |\n        |                     |                      |\n        |                     v                      |\n        |             App.revealCodeEntity()         |\n        |                     |                      |\n        |                     v                      |\n        |             [R] PaneNavigationApi --------+\n        |             activate tab\n        |             focus pane\n        |             retain jump history\n        |                     |\n        |                     v\n        |             CodeEntitiesPanel\n        |                     |\n        |              fetchSourceSnippet()\n        |                     |\n        |                     v\n        |         SourceCodeView / TerminalMarkdownView\n        |\n        | selections and mappings\n        v\n [R] RefBufferState\n        |\n        v\n generation prompt references\n\n\n SERVICE BOUNDARY\n\n React event\n     |\n     v\n [R] src/api.ts\n     |\n     v\n [R] server/http.ts\n route parsing + NDJSON progress\n     |\n     v\n [R] DiagramApplication\n     |\n +---+-------------------+\n |                       |\n v                       v\n[P] DiagramStore   [R] DiagramAgentRuntime",
+  "representationKind": "diagram",
+  "codeEntityIds": [
+    "entity-25b6f38a-26a3-4c35-931e-66e7ca3cb70a",
+    "entity-bc7dcbfb-f4e3-4b9b-93d1-b94ca88888ff",
+    "entity-614ad1c3-6cab-4fa3-8fa2-8e87f5405cff",
+    "entity-1044bf09-65e7-4c0b-a628-a0ec3d8cd720",
+    "entity-9ffbed17-c22b-44fb-a772-413639fe6cd1",
+    "entity-a7662e50-7297-482c-95d9-4482562c3ffe",
+    "entity-5198948e-5a27-48c7-b207-61e564f3316b",
+    "entity-1f09eab3-c2cd-4039-864c-5f834c710a91",
+    "entity-861d3d21-d0cf-440e-a164-09e29a686ada",
+    "entity-45f661d7-11d7-4966-88ea-5e882889f105",
+    "entity-14c00212-0b4a-46e9-89fc-6ba9653d0896",
+    "entity-2d075a81-8ffc-4de1-a790-5cdec12cc8fd",
+    "entity-44c81953-bea2-49ec-b3bd-7530a28bda59",
+    "entity-947f1cc3-eb81-4fd2-82b1-f2937963a0dc",
+    "entity-3bbf3b0b-3ce1-4ef6-a2da-aa6f2e830a9c"
+  ],
+  "origin": "materialized",
+  "derivedFromDiagramIds": [],
+  "createdAt": "2026-09-01T16:22:04.757Z"
+}

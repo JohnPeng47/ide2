@@ -1,0 +1,554 @@
+{
+  "schemaVersion": 1,
+  "id": "entities-8bc8e1c7-6d47-486a-b5b8-1713fc425dc1",
+  "diagramSetId": "set-dfdefa6d-9e98-4a71-9569-7fc503524d9a",
+  "revision": 1,
+  "status": "finalized",
+  "entities": [
+    {
+      "id": "entity-2dfbae85-53a6-4646-8d66-535ddc5c7ada",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-dfdefa6d-9e98-4a71-9569-7fc503524d9a",
+        "codeEntitiesSetId": "entities-8bc8e1c7-6d47-486a-b5b8-1713fc425dc1"
+      },
+      "handle": "representation-user-model",
+      "label": "Representation is the orientation and manipulation surface",
+      "category": "state",
+      "summary": "The user model distinguishes Corpus as the verification surface, Evidence as the grounded semantic hinge, and Representation as the visual structure users navigate and manipulate. R1 specifically covers interaction after a Representation appears. Sources: REPOSITORY_DIAGRAM_DECOMPOSITION.md user model and R1 Purpose.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 9,
+          "endLine": 14,
+          "symbol": "User model",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 9,
+                "endLine": 14
+              }
+            ]
+          },
+          "id": "range-ddb6ce65-10cb-4dbe-88b2-459f1fb15e19",
+          "originalLines": [
+            "The system has three central abstractions viewed through user interaction:",
+            "",
+            "- Corpus is what the user browses, reads, and verifies.",
+            "- Evidence is the grounded semantic layer the user inspects, selects,",
+            "  references, and saves.",
+            "- Representation is the visual structure the user navigates and manipulates."
+          ]
+        },
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 282,
+          "endLine": 287,
+          "symbol": "R1 - Representation Interaction / Purpose",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 282,
+                "endLine": 287
+              }
+            ]
+          },
+          "id": "range-03df68f4-acf7-4182-a902-a4242348cf28",
+          "originalLines": [
+            "## R1 - Representation Interaction",
+            "",
+            "### Purpose",
+            "",
+            "Explain what users can select, inspect, navigate, and manipulate after a",
+            "Representation appears in the workspace."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-9cc5ea7b-78b9-4738-b071-c03c38840e40",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-dfdefa6d-9e98-4a71-9569-7fc503524d9a",
+        "codeEntitiesSetId": "entities-8bc8e1c7-6d47-486a-b5b8-1713fc425dc1"
+      },
+      "handle": "diagramset-lineage-selection",
+      "label": "Select DiagramSet, candidate, starred view, or component (DiagramLineagePanel)",
+      "category": "operation",
+      "summary": "The user first selects a DiagramSet, then navigates grouped lineage containing candidate batches, diagram variants, call graphs, directory views, components, edits, derivatives, and imports. Candidate choice, ranking, starring a preferred view, and component navigation lead toward the active artifact. Relevant UI: DiagramSetTreePanel, DiagramLineagePanel, DiagramCandidateFeedbackDialog, and App selection handlers.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 289,
+          "endLine": 306,
+          "symbol": "Representation selection and lineage",
+          "compactedSource": {
+            "level": "medium",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 289,
+                "endLine": 294
+              },
+              {
+                "kind": "collapsed-comment",
+                "startLine": 296,
+                "endLine": 298,
+                "comment": "Users can choose, rename, or archive a candidate; rank its batch; star a preferred view; and navigate to a related component.",
+                "nodes": [
+                  {
+                    "graphLine": 1,
+                    "startLine": 296,
+                    "endLine": 298
+                  }
+                ]
+              },
+              {
+                "kind": "source",
+                "startLine": 300,
+                "endLine": 306
+              }
+            ]
+          },
+          "id": "range-452d52d3-7074-4c27-b44a-1eedaa909765",
+          "originalLines": [
+            "### Representation selection and lineage",
+            "",
+            "The user selects a DiagramSet and then navigates its artifact lineage.",
+            "`DiagramLineagePanel` groups generation runs, candidate batches, Diagram",
+            "variants, Call Graphs, Directory Views, Components, edits, derivatives, and",
+            "global imports.",
+            "",
+            "The user may choose a candidate, rename it, archive it, rank its candidate",
+            "batch, star a preferred view, inspect immutable prompt provenance, or navigate",
+            "to a related component.",
+            "",
+            "Relevant code:",
+            "",
+            "- `src/components/DiagramSetTreePanel.tsx`.",
+            "- `src/components/DiagramLineagePanel.tsx`.",
+            "- `src/components/DiagramCandidateFeedbackDialog.tsx`.",
+            "- `src/components/PromptConfigDialog.tsx`.",
+            "- `src/App.tsx`: DiagramSet, Diagram, component, and view selection."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-c7478745-143b-444e-bb59-4ff394175034",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-dfdefa6d-9e98-4a71-9569-7fc503524d9a",
+        "codeEntitiesSetId": "entities-8bc8e1c7-6d47-486a-b5b8-1713fc425dc1"
+      },
+      "handle": "diagram-interaction-surface",
+      "label": "DiagramView -> AsciiSelectionGrid -> stable RepresentationIndex",
+      "category": "interface-data-struct",
+      "summary": "DiagramView renders the active artifact through AsciiSelectionGrid. A revision-scoped RepresentationIndex supplies stable identities for tree nodes or mapped diagram elements, enabling hover, click, rectangle selection, subtree collapse, and mapped/highlighted-state display. Sources: DiagramView, AsciiSelectionGrid, DiagramSelectionOverlay, representationIndex, representationPresentation, and asciiTree.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 308,
+          "endLine": 315,
+          "symbol": "Visual interaction",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 308,
+                "endLine": 315
+              }
+            ]
+          },
+          "id": "range-a4f25612-e671-4673-a562-b5bf6e2134f2",
+          "originalLines": [
+            "### Visual interaction",
+            "",
+            "`DiagramView` renders the active artifact through `AsciiSelectionGrid`. A",
+            "revision-scoped RepresentationIndex gives stable identities to tree nodes or",
+            "mapped diagram elements.",
+            "",
+            "The user may hover a mapped element, click it, select a rectangular region,",
+            "collapse a tree branch, view mapped/highlighted state, or observe spatial agent"
+          ]
+        },
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 318,
+          "endLine": 325,
+          "symbol": "Visual interaction / Relevant code",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 318,
+                "endLine": 325
+              }
+            ]
+          },
+          "id": "range-1e585d71-d199-460a-b57f-193c39a1065e",
+          "originalLines": [
+            "Relevant code:",
+            "",
+            "- `src/components/DiagramView.tsx`.",
+            "- `src/components/AsciiSelectionGrid.tsx`.",
+            "- `src/components/DiagramSelectionOverlay.tsx`.",
+            "- `src/representationIndex.ts`.",
+            "- `src/representationPresentation.ts`.",
+            "- `src/asciiTree.ts`."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-f8479dfa-5b9f-4878-97b6-144aa1b4e137",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-dfdefa6d-9e98-4a71-9569-7fc503524d9a",
+        "codeEntitiesSetId": "entities-8bc8e1c7-6d47-486a-b5b8-1713fc425dc1"
+      },
+      "handle": "element-command-dispatch",
+      "label": "Mapped-element commands (ElementCommandId)",
+      "category": "operation",
+      "summary": "The active DomainProfile contributes Representation-kind commands: reveal Evidence, collapse subtree, toggle highlight, and buffer reference. Reveal uses the mandated grounding chain; collapse is presentation-only; highlight records durable grounded context; buffer reference adds mapped Evidence to the temporary tray. Sources: domainProfile ElementCommandId, domainProfiles command contributions, and App handlers.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 328,
+          "endLine": 342,
+          "symbol": "Element commands",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 328,
+                "endLine": 342
+              }
+            ]
+          },
+          "id": "range-3df0951e-f4cf-4ca3-a624-f449e2d7b602",
+          "originalLines": [
+            "### Element commands",
+            "",
+            "The active DomainProfile contributes commands appropriate to the",
+            "Representation kind. Current commands are reveal Evidence, collapse subtree,",
+            "toggle highlight, and buffer reference.",
+            "",
+            "Reveal follows `Representation -> Evidence -> Corpus`. Collapse changes only",
+            "presentation. Highlight stores durable grounded context. Buffer Reference adds",
+            "the mapped Evidence to the temporary reference tray.",
+            "",
+            "Relevant code:",
+            "",
+            "- `src/domainProfile.ts`: `ElementCommandId` and command contributions.",
+            "- `src/domainProfiles.ts`: profile-specific commands.",
+            "- `src/App.tsx`: reveal and highlight handlers."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-2687ed16-1d3d-4432-9ded-15b21a9e71a6",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-dfdefa6d-9e98-4a71-9569-7fc503524d9a",
+        "codeEntitiesSetId": "entities-8bc8e1c7-6d47-486a-b5b8-1713fc425dc1"
+      },
+      "handle": "representation-progressive-disclosure",
+      "label": "Call-graph focus and Representation-layer feedback",
+      "category": "operation",
+      "summary": "Stable subtree identity supports collapsed tree views; selected Evidence can open a focused Call Graph in a transient pane. Representation layers order related artifacts by information rank and accept feedback on either a layer or transition. Sources: representationIndex, callGraphFocus, CallGraphFocusTree, representationGraph, and RepresentationLayersPanel.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 344,
+          "endLine": 356,
+          "symbol": "Progressive disclosure",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 344,
+                "endLine": 356
+              }
+            ]
+          },
+          "id": "range-0badbcb0-3cf7-4ba5-92bd-216e9af8599f",
+          "originalLines": [
+            "### Progressive disclosure",
+            "",
+            "Tree Representations may be collapsed by stable subtree identity. Selected",
+            "Evidence may open a focused Call Graph in a transient pane. Representation",
+            "layers order related artifacts by information rank and accept feedback on a",
+            "layer or transition.",
+            "",
+            "Relevant code:",
+            "",
+            "- `src/representationIndex.ts`: tree lineage and subtree operations.",
+            "- `src/callGraphFocus.ts` and `src/call-graph-tree/CallGraphFocusTree.tsx`.",
+            "- `src/representationGraph.ts`.",
+            "- `src/components/RepresentationLayersPanel.tsx`."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-f492e41f-5dc8-4437-a80a-4474a453474e",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-dfdefa6d-9e98-4a71-9569-7fc503524d9a",
+        "codeEntitiesSetId": "entities-8bc8e1c7-6d47-486a-b5b8-1713fc425dc1"
+      },
+      "handle": "component-capture-edit-mode",
+      "label": "Rectangle component capture and edit mode",
+      "category": "operation",
+      "summary": "From the active Representation, advanced destinations include capturing a rectangular DiagramComponent and opening an edit session with markers, manual or LLM edits, undo/redo, and publication as a new immutable lineage child. R1 should show these destinations without expanding agent or persistence mechanics. Sources: diagramSelection, EditOperationsPanel, and App edit/capture handlers.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 358,
+          "endLine": 371,
+          "symbol": "Artifact manipulation",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 358,
+                "endLine": 371
+              }
+            ]
+          },
+          "id": "range-88d60679-34f6-4da6-b501-fe018128bd06",
+          "originalLines": [
+            "### Artifact manipulation",
+            "",
+            "Advanced user actions include capturing a rectangular DiagramComponent,",
+            "opening an edit session, placing markers, applying manual or LLM edits,",
+            "undoing/redoing operations, and publishing a new immutable lineage child.",
+            "",
+            "These actions should appear as destinations from the active Representation,",
+            "without expanding the agent or persistence mechanics.",
+            "",
+            "Relevant code:",
+            "",
+            "- `src/diagramSelection.ts`.",
+            "- `src/components/EditOperationsPanel.tsx`.",
+            "- edit and capture handlers in `src/App.tsx`."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-d496279d-5407-499d-a404-72e2381bb7bd",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-dfdefa6d-9e98-4a71-9569-7fc503524d9a",
+        "codeEntitiesSetId": "entities-8bc8e1c7-6d47-486a-b5b8-1713fc425dc1"
+      },
+      "handle": "reversible-grounding-navigation",
+      "label": "Reversible pane path: Representation -> Evidence -> Corpus",
+      "category": "operation",
+      "summary": "The investigation loop opens and inspects a Representation, selects a mapped element, resolves it to Evidence, inspects its metadata and ranges, reveals the authoritative Corpus passage, verifies the claim, and returns through pane history. Any Representation-initiated source reveal must pass through Evidence; direct Corpus access is only explicit browsing.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 16,
+          "endLine": 29,
+          "symbol": "Primary investigation loop",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 16,
+                "endLine": 29
+              }
+            ]
+          },
+          "id": "range-b58b6c5a-9505-4f6f-8690-b1df64ffd323",
+          "originalLines": [
+            "The primary investigation loop is:",
+            "",
+            "1. Open a Representation.",
+            "2. Inspect its visual structure.",
+            "3. Select a mapped element.",
+            "4. Resolve that element to Evidence.",
+            "5. Inspect the Evidence label, summary, and source ranges.",
+            "6. Reveal the authoritative Corpus passage.",
+            "7. Verify the visual claim against the content.",
+            "8. Return through pane navigation history.",
+            "",
+            "A Representation-initiated source reveal must always follow",
+            "`Representation -> Evidence -> Corpus`. Direct Workspace-to-Corpus access is",
+            "allowed only for explicit browsing, such as opening a file or Markdown section."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-d9c70557-02ec-4a91-a8de-d0863790d19c",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-dfdefa6d-9e98-4a71-9569-7fc503524d9a",
+        "codeEntitiesSetId": "entities-8bc8e1c7-6d47-486a-b5b8-1713fc425dc1"
+      },
+      "handle": "r1-interaction-contract",
+      "label": "R1 required interaction contract",
+      "category": "state",
+      "summary": "The R1 diagram must connect DiagramSet/lineage selection to the active artifact; show DiagramView, AsciiSelectionGrid, and stable RepresentationIndex elements; cover hover/click mapped Evidence, reveal, collapse, highlight, buffering, call-graph focus, layers, capture, edit mode, and reversible Evidence/Corpus navigation; and enforce Representation -> Evidence -> Corpus.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 373,
+          "endLine": 385,
+          "symbol": "R1 Required interactions",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 373,
+                "endLine": 385
+              }
+            ]
+          },
+          "id": "range-8584c1e1-196b-434e-88c4-bcd0c1362e66",
+          "originalLines": [
+            "### Required interactions",
+            "",
+            "The Representation diagram must show:",
+            "",
+            "- DiagramSet and lineage selection leading to the active artifact.",
+            "- DiagramView and AsciiSelectionGrid as the interaction surface.",
+            "- RepresentationIndex providing stable visual elements.",
+            "- Hover and click resolving mapped Evidence.",
+            "- Reveal Evidence, collapse subtree, toggle highlight, and buffer reference.",
+            "- Call-graph focus and Representation layers as progressive disclosure.",
+            "- Component capture and edit mode as advanced actions.",
+            "- Reversible pane navigation to Evidence and Corpus.",
+            "- `Representation -> Evidence -> Corpus` as the only grounding path."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-b5f55a56-fd8a-4c04-b274-51ff200f2715",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-dfdefa6d-9e98-4a71-9569-7fc503524d9a",
+        "codeEntitiesSetId": "entities-8bc8e1c7-6d47-486a-b5b8-1713fc425dc1"
+      },
+      "handle": "r1-scope-exclusions",
+      "label": "R1 boundary: interaction, not generation or persistence",
+      "category": "state",
+      "summary": "R1 excludes evidence collection, agent generation, reference follow-up, mapping prompt execution, and persistence layout. The generation plan also says Representation Interaction is a separate DiagramSet using only R1 as its logical brief.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 387,
+          "endLine": 390,
+          "symbol": "R1 Exclusions",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 387,
+                "endLine": 390
+              }
+            ]
+          },
+          "id": "range-dbf8a6c3-e800-47bd-9bdd-51f92b299e50",
+          "originalLines": [
+            "### Exclusions",
+            "",
+            "Do not depict evidence collection, agent generation, reference follow-up,",
+            "mapping prompt execution, or persistence layout."
+          ]
+        },
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 392,
+          "endLine": 398,
+          "symbol": "Generation plan",
+          "compactedSource": {
+            "level": "medium",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 392,
+                "endLine": 398
+              }
+            ]
+          },
+          "id": "range-56ea3ed4-4cf1-4e7d-86c9-1354a616139f",
+          "originalLines": [
+            "## Generation plan",
+            "",
+            "Create three separate DiagramSets:",
+            "",
+            "1. Corpus Interaction, using only the C1 section as its logical brief.",
+            "2. Evidence Interaction, using only the E1 section as its logical brief.",
+            "3. Representation Interaction, using only the R1 section as its logical brief."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-d4e077f9-5942-402e-b01e-61c3597bed98",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-dfdefa6d-9e98-4a71-9569-7fc503524d9a",
+        "codeEntitiesSetId": "entities-8bc8e1c7-6d47-486a-b5b8-1713fc425dc1"
+      },
+      "handle": "representation-acceptance-rules",
+      "label": "Visible labels, verification, hinge, reversibility",
+      "category": "state",
+      "summary": "Acceptance requires user-behavior diagrams with concise source file or symbol references where useful. Corpus remains the verification surface, Evidence the interaction hinge, and Representation the orientation/manipulation surface; Representation source reveal passes through Evidence and pane navigation makes movement reversible.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 404,
+          "endLine": 415,
+          "symbol": "Acceptance criteria",
+          "compactedSource": {
+            "level": "medium",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 404,
+                "endLine": 415
+              }
+            ]
+          },
+          "id": "range-2edac312-6b1a-4598-94c8-1f5ec9f1d846",
+          "originalLines": [
+            "## Acceptance criteria",
+            "",
+            "- Each DiagramSet contains exactly one logical interaction brief and three",
+            "  variants.",
+            "- Diagrams describe user behavior rather than generation internals.",
+            "- Labels include concise source file or symbol references where useful.",
+            "- Corpus is the verification surface.",
+            "- Evidence is the interaction hinge.",
+            "- Representation is the orientation and manipulation surface.",
+            "- Representation-initiated source reveal always passes through Evidence.",
+            "- Pane navigation makes cross-layer movement reversible.",
+            "- Every semantic visual label maps to an exact range in this document."
+          ]
+        }
+      ]
+    }
+  ],
+  "promptConfigId": "prompt-d437ca0d-377c-4b4f-998f-7dcfe7f19171",
+  "finalizedAt": "2026-09-01T00:01:37.588Z"
+}

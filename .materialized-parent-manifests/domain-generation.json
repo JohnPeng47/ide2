@@ -1,0 +1,174 @@
+{
+  "creationMode": "materialized",
+  "path": "/home/john/.herdr/worktrees/new-diagram/worktree-transcripts",
+  "name": "Domain-Adapted Project and Generation Orchestration",
+  "domainProfileId": "source-code",
+  "description": "A source-backed parent view of domain discovery, evidence collection, prompt construction, parallel generation, validation, and persistence.",
+  "codeEntities": [
+    {
+      "key": "discover-domain-corpus",
+      "handle": "discover-domain-corpus",
+      "label": "discoverDomainCorpus",
+      "category": "operation",
+      "summary": "Selects repository or document corpus discovery from the requested built-in domain profile.",
+      "sourceRanges": [{ "key": "definition", "path": "server/store.ts", "startLine": 107, "endLine": 114, "symbol": "discoverDomainCorpus" }]
+    },
+    {
+      "key": "diagram-application-create-set",
+      "handle": "diagram-application-create-set",
+      "label": "DiagramApplication.createDiagramSet",
+      "category": "operation",
+      "summary": "Validates a creation target, ensures its project, and initializes a generated DiagramSet.",
+      "sourceRanges": [{ "key": "definition", "path": "server/application.ts", "startLine": 581, "endLine": 598, "symbol": "DiagramApplication.createDiagramSet" }]
+    },
+    {
+      "key": "diagram-store-ensure-project",
+      "handle": "diagram-store-ensure-project",
+      "label": "DiagramStore.ensureProject",
+      "category": "operation",
+      "summary": "Loads or creates the persisted ProjectRecord while enforcing corpus identity and domain ownership.",
+      "sourceRanges": [{ "key": "definition", "path": "server/store.ts", "startLine": 299, "endLine": 339, "symbol": "DiagramStore.ensureProject" }]
+    },
+    {
+      "key": "resolve-domain-profile",
+      "handle": "resolve-domain-profile",
+      "label": "resolveDomainProfile",
+      "category": "operation",
+      "summary": "Resolves persisted or legacy domain metadata to one of the built-in runtime profiles.",
+      "sourceRanges": [{ "key": "definition", "path": "src/domainProfiles.ts", "startLine": 101, "endLine": 104, "symbol": "resolveDomainProfile" }]
+    },
+    {
+      "key": "diagram-set-record",
+      "handle": "diagram-set-record",
+      "label": "DiagramSetRecord",
+      "category": "interface-data-struct",
+      "summary": "Aggregates the evidence collection, artifacts, generation batches, runs, readiness, and creation provenance for one set.",
+      "sourceRanges": [{ "key": "definition", "path": "src/domain.ts", "startLine": 151, "endLine": 173, "symbol": "DiagramSetRecord" }]
+    },
+    {
+      "key": "code-entities-set-record",
+      "handle": "code-entities-set-record",
+      "label": "CodeEntitiesSetRecord",
+      "category": "interface-data-struct",
+      "summary": "Owns the revisioned CodeEntity collection and its collecting, finalized, or failed lifecycle state.",
+      "sourceRanges": [{ "key": "definition", "path": "src/domain.ts", "startLine": 123, "endLine": 134, "symbol": "CodeEntitiesSetRecord" }]
+    },
+    {
+      "key": "create-code-entity-prompt-config",
+      "handle": "create-code-entity-prompt-config",
+      "label": "createCodeEntityPromptConfig",
+      "category": "operation",
+      "summary": "Renders identification, compaction, and context prompts into an immutable collection prompt configuration.",
+      "sourceRanges": [{ "key": "definition", "path": "server/codeEntityPrompt.ts", "startLine": 81, "endLine": 113, "symbol": "createCodeEntityPromptConfig" }]
+    },
+    {
+      "key": "diagram-agent-runtime-collect-entities",
+      "handle": "diagram-agent-runtime-collect-entities",
+      "label": "DiagramAgentRuntime.collectEntities",
+      "category": "operation",
+      "summary": "Defines the runtime boundary that collects source-backed CodeEntity drafts from an agent session.",
+      "sourceRanges": [{ "key": "definition", "path": "server/agentRuntime.ts", "startLine": 84, "endLine": 87, "symbol": "DiagramAgentRuntime.collectEntities" }]
+    },
+    {
+      "key": "validate-entity-drafts",
+      "handle": "validate-entity-drafts",
+      "label": "DiagramApplication.validateEntityDrafts",
+      "category": "operation",
+      "summary": "Checks entity metadata and source ranges, snapshots corpus lines, and creates persisted CodeEntity records.",
+      "sourceRanges": [{ "key": "definition", "path": "server/application.ts", "startLine": 955, "endLine": 1011, "symbol": "DiagramApplication.validateEntityDrafts" }]
+    },
+    {
+      "key": "create-generation-prompt-config",
+      "handle": "create-generation-prompt-config",
+      "label": "createGenerationPromptConfig",
+      "category": "operation",
+      "summary": "Resolves selected evidence and references into a revision-pinned, domain-adapted generation prompt configuration.",
+      "sourceRanges": [{ "key": "definition", "path": "src/prompt.ts", "startLine": 482, "endLine": 946, "symbol": "createGenerationPromptConfig" }]
+    },
+    {
+      "key": "generation-batch-record",
+      "handle": "generation-batch-record",
+      "label": "GenerationBatchRecord",
+      "category": "interface-data-struct",
+      "summary": "Tracks one parallel generation request, its child runs, evidence revision, output artifacts, and completion state.",
+      "sourceRanges": [{ "key": "definition", "path": "src/domain.ts", "startLine": 476, "endLine": 492, "symbol": "GenerationBatchRecord" }]
+    },
+    {
+      "key": "agent-run-record",
+      "handle": "agent-run-record",
+      "label": "AgentRunRecord",
+      "category": "interface-data-struct",
+      "summary": "Records the status, model session, parallel slot, and output identity of one agent operation.",
+      "sourceRanges": [{ "key": "definition", "path": "src/domain.ts", "startLine": 507, "endLine": 526, "symbol": "AgentRunRecord" }]
+    },
+    {
+      "key": "diagram-agent-runtime-generate-artifact",
+      "handle": "diagram-agent-runtime-generate-artifact",
+      "label": "DiagramAgentRuntime.generateArtifact",
+      "category": "operation",
+      "summary": "Defines the runtime boundary that generates and maps one ASCII artifact for a parallel batch slot.",
+      "sourceRanges": [{ "key": "definition", "path": "server/agentRuntime.ts", "startLine": 88, "endLine": 91, "symbol": "DiagramAgentRuntime.generateArtifact" }]
+    },
+    {
+      "key": "diagram-code-entity-map-record",
+      "handle": "diagram-code-entity-map-record",
+      "label": "DiagramCodeEntityMapRecord",
+      "category": "interface-data-struct",
+      "summary": "Persists revision-bound spatial mappings from an artifact's ASCII coordinates to its CodeEntity evidence.",
+      "sourceRanges": [{ "key": "definition", "path": "src/domain.ts", "startLine": 419, "endLine": 431, "symbol": "DiagramCodeEntityMapRecord" }]
+    },
+    {
+      "key": "diagram-store-complete-batch",
+      "handle": "diagram-store-complete-batch",
+      "label": "DiagramStore.completeBatch",
+      "category": "operation",
+      "summary": "Commits validated artifacts, mappings, runs, and candidate-batch state, then attaches outputs to the DiagramSet.",
+      "sourceRanges": [{ "key": "definition", "path": "server/store.ts", "startLine": 1401, "endLine": 1429, "symbol": "DiagramStore.completeBatch" }]
+    }
+  ],
+  "diagrams": [
+    {
+      "key": "domain-generation-orchestration",
+      "handle": "domain-generation-orchestration",
+      "name": "Domain-Adapted Project and Generation Orchestration",
+      "viewKind": "diagram",
+      "representationKind": "diagram",
+      "ascii": "                 DOMAIN-ADAPTED PROJECT AND GENERATION ORCHESTRATION\n\n [X] Repository or document directory\n                    |\n                    v\n       [R] discoverDomainCorpus()\n                    |\n                    v\n          [R] RepositoryLocation\n          checkoutRoot\n          repositoryIdentity\n          domainProfileId\n          CorpusBinding\n                    |\n                    v\n     [R] DiagramApplication.createDiagramSet()\n                    |\n                    v\n          [P] DiagramStore.ensureProject()\n                    |\n          +---------+----------+\n          |                    |\n          v                    v\n [P] ProjectRecord      [R] resolveDomainProfile()\n domainProfileId              |\n corpus                       +--> corpusKind\n diagramSetIds[]              +--> evidenceSchema\n          |                   +--> diagramViews\n          |                   +--> explorerTabs\n          |                   +--> content presentation\n          |                   `--> element commands\n          |\n          v\n [P] DiagramSetRecord\n codeEntitiesSetId\n generationBatchIds[]\n agentRunIds[]\n          |\n          v\n [P] CodeEntitiesSetRecord\n status: collecting\n          |\n          |   [P] CodeEntityPromptTemplateRecord\n          |                 |\n          |                 v\n          +----> [R] createCodeEntityPromptConfig()\n                            |\n                            v\n               [P] CodeEntityPromptConfigRecord\n                            |\n                            v\n               [R] DiagramAgentRuntime.collectEntities()\n                            |\n                            v\n                 [X] Agent/model session\n                            |\n                            v\n                    CodeEntityDraft[]\n                            |\n                  validateEntityDrafts()\n                            |\n                            v\n               [P] CodeEntityRecord[]\n               CodeEntitiesSet: finalized\n               DiagramSet: ready\n                            |\n                            |\n        [P] SystemPromptTemplateRecord\n                            |\n                            v\n             [R] createGenerationPromptConfig()\n             entities + references + domain policy\n                            |\n                            v\n             [P] GenerationPromptConfigRecord\n                            |\n                            v\n                [P] GenerationBatchRecord\n                childRunIds[]\n                            |\n          +-----------------+-----------------+\n          |                 |                 |\n          v                 v                 v\n [P] AgentRunRecord  [P] AgentRunRecord  [P] AgentRunRecord\n      slot 1              slot 2              slot N\n          |                 |                 |\n          +-----------------+-----------------+\n                            |\n             [R] parallel generateArtifact()\n                            |\n                    [X] Agent sessions\n                            |\n                            v\n                 GeneratedArtifactDraft[]\n                            |\n             normalize + validate mappings\n                            |\n                +-----------+-----------+\n                |                       |\n                v                       v\n       [P] DiagramRecord       [P] DiagramComponentRecord\n                |                       |\n                +-----------+-----------+\n                            |\n                            v\n             [P] DiagramCodeEntityMapRecord\n                            |\n                            v\n                [P] completeBatch()\n                runs: complete\n                output artifact IDs\n                candidate batch",
+      "codeEntityKeys": [
+        "discover-domain-corpus",
+        "diagram-application-create-set",
+        "diagram-store-ensure-project",
+        "resolve-domain-profile",
+        "diagram-set-record",
+        "code-entities-set-record",
+        "create-code-entity-prompt-config",
+        "diagram-agent-runtime-collect-entities",
+        "validate-entity-drafts",
+        "create-generation-prompt-config",
+        "generation-batch-record",
+        "agent-run-record",
+        "diagram-agent-runtime-generate-artifact",
+        "diagram-code-entity-map-record",
+        "diagram-store-complete-batch"
+      ],
+      "mappings": [
+        { "entityKey": "discover-domain-corpus", "sourceRangeKey": "definition", "line": 6, "startColumn": 12, "endColumn": 33 },
+        { "entityKey": "diagram-application-create-set", "sourceRangeKey": "definition", "line": 16, "startColumn": 10, "endColumn": 46 },
+        { "entityKey": "diagram-store-ensure-project", "sourceRangeKey": "definition", "line": 19, "startColumn": 15, "endColumn": 42 },
+        { "entityKey": "resolve-domain-profile", "sourceRangeKey": "definition", "line": 24, "startColumn": 29, "endColumn": 50 },
+        { "entityKey": "diagram-set-record", "sourceRangeKey": "definition", "line": 34, "startColumn": 6, "endColumn": 21 },
+        { "entityKey": "code-entities-set-record", "sourceRangeKey": "definition", "line": 40, "startColumn": 6, "endColumn": 26 },
+        { "entityKey": "create-code-entity-prompt-config", "sourceRangeKey": "definition", "line": 46, "startColumn": 22, "endColumn": 51 },
+        { "entityKey": "diagram-agent-runtime-collect-entities", "sourceRangeKey": "definition", "line": 52, "startColumn": 20, "endColumn": 56 },
+        { "entityKey": "validate-entity-drafts", "sourceRangeKey": "definition", "line": 60, "startColumn": 19, "endColumn": 40 },
+        { "entityKey": "create-generation-prompt-config", "sourceRangeKey": "definition", "line": 71, "startColumn": 18, "endColumn": 47 },
+        { "entityKey": "generation-batch-record", "sourceRangeKey": "definition", "line": 78, "startColumn": 21, "endColumn": 41 },
+        { "entityKey": "agent-run-record", "sourceRangeKey": "definition", "line": 84, "startColumn": 6, "endColumn": 19 },
+        { "entityKey": "diagram-agent-runtime-generate-artifact", "sourceRangeKey": "definition", "line": 89, "startColumn": 27, "endColumn": 44 },
+        { "entityKey": "diagram-code-entity-map-record", "sourceRangeKey": "definition", "line": 106, "startColumn": 18, "endColumn": 43 },
+        { "entityKey": "diagram-store-complete-batch", "sourceRangeKey": "definition", "line": 109, "startColumn": 21, "endColumn": 35 }
+      ]
+    }
+  ],
+  "featuredViews": { "diagram": "domain-generation-orchestration" }
+}

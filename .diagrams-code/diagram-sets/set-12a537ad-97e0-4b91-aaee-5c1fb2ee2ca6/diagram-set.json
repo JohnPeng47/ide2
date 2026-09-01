@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "set-12a537ad-97e0-4b91-aaee-5c1fb2ee2ca6",
+  "projectId": "project-ce67f2af4410",
+  "name": "Representation Interaction",
+  "initialPrompt": "Create only the Representation Interaction diagram for this repository. Explain how a user selects DiagramSets, lineage candidate batches, starred views, DiagramComponents, and Representation layers; interacts through DiagramView and AsciiSelectionGrid; and relies on stable RepresentationIndex elements for hover, mapped Evidence reveal, rectangle selection, collapse subtree, toggle highlight, buffer reference, call-graph focus, layer feedback, component capture, and edit mode. Show reversible PaneNavigationApi movement and enforce Representation -> Evidence -> Corpus as the grounding path. Include concise exact source file and symbol references in visible labels. Do not depict evidence collection agents, diagram generation, reference follow-up, mapping prompt execution, or persistence layout.",
+  "sourceCheckoutRoot": "/home/john/.herdr/worktrees/new-diagram/worktree-transcripts",
+  "gitRevision": "4caa91d5915ce56f643d05115062b275069784d2",
+  "codeEntitiesSetId": "entities-43ff095a-0cd6-4a3a-8967-f6f9bcaf9f80",
+  "featuredViewIds": {},
+  "diagramIds": [
+    "diagram-f9f25665-94d3-40a5-b988-026015f4d1b9",
+    "diagram-89244900-7aba-4dca-b41c-5e223e743e0a",
+    "diagram-5b048a30-bab2-410f-808d-ed93f8283ebc",
+    "diagram-91aac5c3-7729-40f0-9abf-10c6c61f756e",
+    "diagram-eb1e51ac-efb8-4a48-8a5d-4c4368c65430",
+    "diagram-5cd92298-ae56-4ce9-b52f-ddfe51b15db3"
+  ],
+  "diagramComponentIds": [],
+  "generationBatchIds": [
+    "batch-6f286dd2-91b8-41e0-82a5-27e6de6d867b",
+    "batch-3fdfc969-0a03-420c-861e-b5d90256cb69"
+  ],
+  "agentRunIds": [
+    "run-4c2ccd01-a1b0-4dcd-a744-824eb54f2ff1",
+    "run-d70be5c8-8105-40f9-9972-ab24b80d1a3c",
+    "run-d342703a-caed-439e-aef2-be3b9282b1a4",
+    "run-0a6803e8-e724-4f3e-a939-83d5920fb2c3",
+    "run-a0bc256d-f610-4dbd-a190-06aea579c9c6",
+    "run-4c60b394-211d-4632-9c13-4446de6decae",
+    "run-95c4f058-dded-4ab5-b4c4-89a82ffa44bd"
+  ],
+  "editSessionIds": [],
+  "readiness": "ready",
+  "createdAt": "2026-09-01T01:41:20.315Z",
+  "updatedAt": "2026-09-01T14:54:59.573Z"
+}

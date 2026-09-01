@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "diagram-1fd70b74-e8f6-469a-a888-f5b607f82e45",
+  "recordOrigin": {
+    "projectId": "project-ce67f2af4410",
+    "diagramSetId": "set-71c0fa9c-2762-415a-a69e-9a5b8c33c4f5"
+  },
+  "diagramSetId": "set-71c0fa9c-2762-415a-a69e-9a5b8c33c4f5",
+  "viewKind": "diagram",
+  "handle": "domain-generation-orchestration",
+  "name": "Domain-Adapted Project and Generation Orchestration",
+  "ascii": "                 DOMAIN-ADAPTED PROJECT AND GENERATION ORCHESTRATION\n\n [X] Repository or document directory\n                    |\n                    v\n       [R] discoverDomainCorpus()\n                    |\n                    v\n          [R] RepositoryLocation\n          checkoutRoot\n          repositoryIdentity\n          domainProfileId\n          CorpusBinding\n                    |\n                    v\n     [R] DiagramApplication.createDiagramSet()\n                    |\n                    v\n          [P] DiagramStore.ensureProject()\n                    |\n          +---------+----------+\n          |                    |\n          v                    v\n [P] ProjectRecord      [R] resolveDomainProfile()\n domainProfileId              |\n corpus                       +--> corpusKind\n diagramSetIds[]              +--> evidenceSchema\n          |                   +--> diagramViews\n          |                   +--> explorerTabs\n          |                   +--> content presentation\n          |                   `--> element commands\n          |\n          v\n [P] DiagramSetRecord\n codeEntitiesSetId\n generationBatchIds[]\n agentRunIds[]\n          |\n          v\n [P] CodeEntitiesSetRecord\n status: collecting\n          |\n          |   [P] CodeEntityPromptTemplateRecord\n          |                 |\n          |                 v\n          +----> [R] createCodeEntityPromptConfig()\n                            |\n                            v\n               [P] CodeEntityPromptConfigRecord\n                            |\n                            v\n               [R] DiagramAgentRuntime.collectEntities()\n                            |\n                            v\n                 [X] Agent/model session\n                            |\n                            v\n                    CodeEntityDraft[]\n                            |\n                  validateEntityDrafts()\n                            |\n                            v\n               [P] CodeEntityRecord[]\n               CodeEntitiesSet: finalized\n               DiagramSet: ready\n                            |\n                            |\n        [P] SystemPromptTemplateRecord\n                            |\n                            v\n             [R] createGenerationPromptConfig()\n             entities + references + domain policy\n                            |\n                            v\n             [P] GenerationPromptConfigRecord\n                            |\n                            v\n                [P] GenerationBatchRecord\n                childRunIds[]\n                            |\n          +-----------------+-----------------+\n          |                 |                 |\n          v                 v                 v\n [P] AgentRunRecord  [P] AgentRunRecord  [P] AgentRunRecord\n      slot 1              slot 2              slot N\n          |                 |                 |\n          +-----------------+-----------------+\n                            |\n             [R] parallel generateArtifact()\n                            |\n                    [X] Agent sessions\n                            |\n                            v\n                 GeneratedArtifactDraft[]\n                            |\n             normalize + validate mappings\n                            |\n                +-----------+-----------+\n                |                       |\n                v                       v\n       [P] DiagramRecord       [P] DiagramComponentRecord\n                |                       |\n                +-----------+-----------+\n                            |\n                            v\n             [P] DiagramCodeEntityMapRecord\n                            |\n                            v\n                [P] completeBatch()\n                runs: complete\n                output artifact IDs\n                candidate batch",
+  "representationKind": "diagram",
+  "codeEntityIds": [
+    "entity-718b2dd5-8c81-4e3b-8eab-1acc1d11089a",
+    "entity-fc666613-3374-4f2a-9b5f-0274dbae3f9d",
+    "entity-6c709ee8-0ef4-4d88-96d1-59c0c6b5eea6",
+    "entity-190e6a6f-71ff-44db-8fdd-92c07c8d00af",
+    "entity-5b7876c5-8be7-42ad-8e37-75927c9c90cf",
+    "entity-b6eed662-af56-426c-b4da-d4d4ce7e1f10",
+    "entity-b6e80ea8-a938-4765-bdb9-fddc29307863",
+    "entity-a099625a-f4d3-4ec6-ab76-a6e7962418b0",
+    "entity-c2ac8ad2-851c-4eb2-a13d-e7e54ee3dcdb",
+    "entity-84b6cf68-5cc1-4990-bb5e-1ad16bf8cff7",
+    "entity-4d74b8f4-db90-40dd-bbdd-b9c695f962ad",
+    "entity-880a7426-621b-4106-a67c-e26468c516b7",
+    "entity-54fd351d-17a9-4923-a514-22fb641a0176",
+    "entity-450d07c2-1300-4a23-bca3-edac0f6983e5",
+    "entity-07da7222-cf50-4dcf-b019-df130364d70c"
+  ],
+  "origin": "materialized",
+  "derivedFromDiagramIds": [],
+  "createdAt": "2026-09-01T16:19:31.778Z"
+}

@@ -1,0 +1,176 @@
+{
+  "creationMode": "materialized",
+  "path": "/home/john/.herdr/worktrees/new-diagram/worktree-transcripts",
+  "name": "Artifact Refinement and Curation",
+  "domainProfileId": "source-code",
+  "description": "Selection, edit-session history, immutable edited outputs, evidence remapping, and candidate curation.",
+  "codeEntities": [
+    {
+      "key": "diagram-record",
+      "handle": "diagram-record",
+      "label": "DiagramRecord",
+      "category": "interface-data-struct",
+      "summary": "Persists a full ASCII diagram, its evidence membership, provenance, lineage, and archive state.",
+      "sourceRanges": [{ "key": "diagram-record-definition", "path": "src/domain.ts", "startLine": 380, "endLine": 402, "symbol": "DiagramRecord" }]
+    },
+    {
+      "key": "diagram-component-record",
+      "handle": "diagram-component-record",
+      "label": "DiagramComponentRecord",
+      "category": "interface-data-struct",
+      "summary": "Persists a selected or edited ASCII component together with source selection and derivation lineage.",
+      "sourceRanges": [{ "key": "diagram-component-record-definition", "path": "src/domain.ts", "startLine": 351, "endLine": 374, "symbol": "DiagramComponentRecord" }]
+    },
+    {
+      "key": "diagram-selection-bounds",
+      "handle": "diagram-selection-bounds",
+      "label": "DiagramSelectionBounds",
+      "category": "interface-data-struct",
+      "summary": "Defines the inclusive line and column coordinates used to capture an ASCII selection.",
+      "sourceRanges": [{ "key": "diagram-selection-bounds-definition", "path": "src/domain.ts", "startLine": 344, "endLine": 349, "symbol": "DiagramSelectionBounds" }]
+    },
+    {
+      "key": "crop-ascii-selection",
+      "handle": "crop-ascii-selection",
+      "label": "cropAsciiSelection",
+      "category": "operation",
+      "summary": "Normalizes selection bounds, crops occupied ASCII cells, and rejects blank or invalid selections.",
+      "sourceRanges": [{ "key": "crop-ascii-selection-function", "path": "server/application.ts", "startLine": 155, "endLine": 190, "symbol": "cropAsciiSelection" }]
+    },
+    {
+      "key": "create-edit-session",
+      "handle": "create-edit-session",
+      "label": "createEditSession",
+      "category": "operation",
+      "summary": "Starts an edit session from an immutable source artifact and copies its ASCII and evidence membership.",
+      "sourceRanges": [{ "key": "create-edit-session-method", "path": "server/application.ts", "startLine": 1508, "endLine": 1536, "symbol": "createEditSession" }]
+    },
+    {
+      "key": "edit-session-record",
+      "handle": "edit-session-record",
+      "label": "EditSessionRecord",
+      "category": "interface-data-struct",
+      "summary": "Stores base and working ASCII, ordered edit operations, cursor position, revision, and commit status.",
+      "sourceRanges": [{ "key": "edit-session-record-definition", "path": "src/domain.ts", "startLine": 551, "endLine": 570, "symbol": "EditSessionRecord" }]
+    },
+    {
+      "key": "llm-edit",
+      "handle": "llm-edit",
+      "label": "llmEdit",
+      "category": "operation",
+      "summary": "Runs an artifact-edit agent with current ASCII and markers, then records the resulting LLM patch.",
+      "sourceRanges": [{ "key": "llm-edit-method", "path": "server/application.ts", "startLine": 1641, "endLine": 1737, "symbol": "llmEdit" }]
+    },
+    {
+      "key": "edit-operation-record",
+      "handle": "edit-operation-record",
+      "label": "EditOperationRecord",
+      "category": "interface-data-struct",
+      "summary": "Describes one reversible manual or LLM edit as a text patch with optional marker and agent metadata.",
+      "sourceRanges": [{ "key": "edit-operation-record-definition", "path": "src/domain.ts", "startLine": 534, "endLine": 549, "symbol": "EditOperationRecord" }]
+    },
+    {
+      "key": "finish-edit",
+      "handle": "finish-edit",
+      "label": "finishEdit",
+      "category": "operation",
+      "summary": "Commits the working copy as a new edited artifact with derivation lineage and no reused spatial map.",
+      "sourceRanges": [{ "key": "finish-edit-method", "path": "server/application.ts", "startLine": 1739, "endLine": 1824, "symbol": "finishEdit" }]
+    },
+    {
+      "key": "capture-component-selection",
+      "handle": "capture-component-selection",
+      "label": "captureComponentSelection",
+      "category": "operation",
+      "summary": "Persists cropped ASCII as a selection-origin DiagramComponent with source bounds and lineage.",
+      "sourceRanges": [{ "key": "capture-component-selection-method", "path": "server/application.ts", "startLine": 1855, "endLine": 1907, "symbol": "captureComponentSelection" }]
+    },
+    {
+      "key": "map-code-entities-batch",
+      "handle": "map-code-entities-batch",
+      "label": "mapCodeEntitiesBatch",
+      "category": "operation",
+      "summary": "Runs revision-scoped evidence mapping for one or more refined artifacts.",
+      "sourceRanges": [{ "key": "map-code-entities-batch-method", "path": "server/application.ts", "startLine": 1257, "endLine": 1494, "symbol": "mapCodeEntitiesBatch" }]
+    },
+    {
+      "key": "diagram-code-entity-map-record",
+      "handle": "diagram-code-entity-map-record",
+      "label": "DiagramCodeEntityMapRecord",
+      "category": "interface-data-struct",
+      "summary": "Binds an exact artifact ASCII revision to its spatial evidence mappings.",
+      "sourceRanges": [{ "key": "diagram-code-entity-map-record-definition", "path": "src/domain.ts", "startLine": 419, "endLine": 430, "symbol": "DiagramCodeEntityMapRecord" }]
+    },
+    {
+      "key": "archive-diagram",
+      "handle": "archive-diagram",
+      "label": "archiveDiagram",
+      "category": "operation",
+      "summary": "Archives a DiagramSet-owned diagram and returns the refreshed workspace.",
+      "sourceRanges": [{ "key": "archive-diagram-method", "path": "server/application.ts", "startLine": 1203, "endLine": 1208, "symbol": "archiveDiagram" }]
+    },
+    {
+      "key": "diagram-set-record",
+      "handle": "diagram-set-record",
+      "label": "DiagramSetRecord",
+      "category": "interface-data-struct",
+      "summary": "Owns featured view references and the artifact, edit-session, generation, and agent collections for a set.",
+      "sourceRanges": [{ "key": "diagram-set-record-definition", "path": "src/domain.ts", "startLine": 151, "endLine": 173, "symbol": "DiagramSetRecord" }]
+    },
+    {
+      "key": "diagram-candidate-batch-record",
+      "handle": "diagram-candidate-batch-record",
+      "label": "DiagramCandidateBatchRecord",
+      "category": "interface-data-struct",
+      "summary": "Persists immutable candidate membership and the current user-supplied rank for each candidate.",
+      "sourceRanges": [{ "key": "diagram-candidate-batch-record-definition", "path": "src/domain.ts", "startLine": 494, "endLine": 505, "symbol": "DiagramCandidateBatchRecord" }]
+    }
+  ],
+  "diagrams": [
+    {
+      "key": "artifact-refinement-and-curation",
+      "handle": "artifact-refinement-and-curation",
+      "name": "Artifact Refinement and Curation",
+      "viewKind": "diagram",
+      "representationKind": "diagram",
+      "ascii": "                       ARTIFACT REFINEMENT AND CURATION\n\n            [P] DiagramRecord or DiagramComponentRecord\n                              |\n               +--------------+--------------+\n               |                             |\n         SELECTION PATH                  EDIT PATH\n               |                             |\n               v                             v\n [R] DiagramSelectionOverlay      [R] createEditSession()\n               |                             |\n               v                             v\n [R] DiagramSelectionBounds          [P] EditSessionRecord\n               |                     baseAscii\n               v                     workingAscii\n [R] cropAsciiSelection()            operations[]\n               |                     operationCursor\n               |                     revision\n               v                             |\n [R] captureComponentSelection()             |\n               |                             |\n               v                             |\n [P] DiagramComponentRecord                  |\n origin: selection            +--------------+--------------+\n sourceDiagramId              |              |              |\n sourceComponentId            v              v              v\n selectionBounds       manualEdit()   placeEditMarker()  llmEdit()\n derivedFrom IDs              |              |              |\n               |              |              | [R] DiagramAgentRuntime\n               |              +--------------+--------------+\n               |                             |\n               |                             v\n               |                  [P] EditOperationRecord\n               |                  kind: manual | llm\n               |                  TextPatch\n               |                  optional marker/model/run\n               |                             |\n               |                   applyPatch() / reverse\n               |                             |\n               |                  +----------+----------+\n               |                  |                     |\n               |                  v                     v\n               |              undoEdit()             redoEdit()\n               |                  |                     |\n               |                  +----------+----------+\n               |                             |\n               |                             v\n               |                    workingAscii + cursor\n               |                             |\n               |                 +-----------+-----------+\n               |                 |                       |\n               |                 v                       v\n               |            finishEdit()             discardEdit()\n               |                 |                       |\n               |                 v                       v\n               |      [P] DiagramRecord /          status: discarded\n               |          DiagramComponentRecord\n               |      editSessionId\n               |      derivedFrom source\n               |      source mapping not reused\n               |                 |\n               +-----------------+\n                                 |\n                                 v\n                [R] mapCodeEntitiesBatch() if needed\n                                 |\n                                 v\n                [P] DiagramCodeEntityMapRecord\n                                 |\n                    +------------+-------------+\n                    |            |             |\n                    v            v             v\n          setStarredDiagram() rankDiagramCandidates() archiveDiagram()\n                    |            |             |\n                    v            v             v\n       [P] DiagramSetRecord  [P] DiagramCandidateBatchRecord  [P] DiagramRecord\n           featuredViewIds       rankings                           archivedAt",
+      "codeEntityKeys": [
+        "diagram-record",
+        "diagram-component-record",
+        "diagram-selection-bounds",
+        "crop-ascii-selection",
+        "create-edit-session",
+        "edit-session-record",
+        "llm-edit",
+        "edit-operation-record",
+        "finish-edit",
+        "capture-component-selection",
+        "map-code-entities-batch",
+        "diagram-code-entity-map-record",
+        "archive-diagram",
+        "diagram-set-record",
+        "diagram-candidate-batch-record"
+      ],
+      "mappings": [
+        { "entityKey": "diagram-record", "sourceRangeKey": "diagram-record-definition", "line": 3, "startColumn": 17, "endColumn": 29 },
+        { "entityKey": "diagram-component-record", "sourceRangeKey": "diagram-component-record-definition", "line": 3, "startColumn": 34, "endColumn": 55 },
+        { "entityKey": "create-edit-session", "sourceRangeKey": "create-edit-session-method", "line": 10, "startColumn": 39, "endColumn": 55 },
+        { "entityKey": "diagram-selection-bounds", "sourceRangeKey": "diagram-selection-bounds-definition", "line": 13, "startColumn": 6, "endColumn": 27 },
+        { "entityKey": "edit-session-record", "sourceRangeKey": "edit-session-record-definition", "line": 13, "startColumn": 42, "endColumn": 58 },
+        { "entityKey": "crop-ascii-selection", "sourceRangeKey": "crop-ascii-selection-function", "line": 16, "startColumn": 6, "endColumn": 23 },
+        { "entityKey": "capture-component-selection", "sourceRangeKey": "capture-component-selection-method", "line": 20, "startColumn": 6, "endColumn": 30 },
+        { "entityKey": "llm-edit", "sourceRangeKey": "llm-edit-method", "line": 27, "startColumn": 58, "endColumn": 64 },
+        { "entityKey": "edit-operation-record", "sourceRangeKey": "edit-operation-record-definition", "line": 33, "startColumn": 39, "endColumn": 57 },
+        { "entityKey": "finish-edit", "sourceRangeKey": "finish-edit-method", "line": 53, "startColumn": 29, "endColumn": 38 },
+        { "entityKey": "map-code-entities-batch", "sourceRangeKey": "map-code-entities-batch-method", "line": 65, "startColumn": 21, "endColumn": 40 },
+        { "entityKey": "diagram-code-entity-map-record", "sourceRangeKey": "diagram-code-entity-map-record-definition", "line": 68, "startColumn": 21, "endColumn": 46 },
+        { "entityKey": "archive-diagram", "sourceRangeKey": "archive-diagram-method", "line": 73, "startColumn": 55, "endColumn": 68 },
+        { "entityKey": "diagram-set-record", "sourceRangeKey": "diagram-set-record-definition", "line": 76, "startColumn": 12, "endColumn": 27 },
+        { "entityKey": "diagram-candidate-batch-record", "sourceRangeKey": "diagram-candidate-batch-record-definition", "line": 76, "startColumn": 34, "endColumn": 60 }
+      ]
+    }
+  ],
+  "featuredViews": {
+    "diagram": "artifact-refinement-and-curation"
+  }
+}

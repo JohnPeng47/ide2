@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "diagram-4a205a14-3d54-4172-8d7e-5bb996813b4e",
+  "recordOrigin": {
+    "projectId": "project-ce67f2af4410",
+    "diagramSetId": "set-e2ab0628-530f-47a5-b8fe-cc4b789d986b"
+  },
+  "diagramSetId": "set-e2ab0628-530f-47a5-b8fe-cc4b789d986b",
+  "viewKind": "diagram",
+  "representationKind": "diagram",
+  "handle": "evidence-interaction-hinge-2",
+  "name": "Evidence Interaction Hinge",
+  "ascii": "Legend: `[D]` = grounded data/state, `(O)` = user-visible operation.\n\n                         EVIDENCE-CENTERED INVESTIGATION\n\n (O) Mapped Representation Element\n       | `AsciiSelectionGrid` mapping button: Evidence tooltip + source location\n       | `App.revealCodeEntity(mapping)`: entity + source-range index\n       v\n+------------------------------------------------------------------------------------------+\n| [D] Evidence Interaction Hinge                                                           |\n|     `REPOSITORY_DIAGRAM_DECOMPOSITION.md` E1: Representation -> Evidence -> Corpus       |\n|                                                                                          |\n|              EVIDENCE / CODEENTITY COMPATIBILITY BOUNDARY                                |\n|  +--------------------------------------+       +--------------------------------------+  |\n|  | [D] EvidenceEntity                   |<=====>| [D] CodeEntityRecord                 |  |\n|  | id / handle / label / kind / summary |       | persisted compatibility shape        |  |\n|  | SourceRange anchors                  |       | `src/domain.ts`                      |  |\n|  +--------------------------------------+       +--------------------------------------+  |\n|       `src/domainProfile.ts EvidenceSchema.fromCodeEntity` adapter                       |\n|                                                                                          |\n| (O) Inspect Evidence and Choose Range                                                     |\n|     `src/components/CodeEntitiesPanel.tsx`: metadata + `path:line` controls              |\n|     `src/referenceResolver.ts resolveReference`: stable sourceRangeId preferred          |\n|     range index remains legacy-compatible; requested range becomes the jump target       |\n+------------------------------------------------------------------------------------------+\n       |\n       | active Evidence entity / chosen SourceRange\n       v\n (O) Authoritative Corpus Reveal\n       | `CodeEntitiesPanel` -> `server/application.ts Application.sourceSnippet`\n       |\n       v\n [D] Authoritative Corpus Passage\n       validate range; read project document; overlay anchored immutable snapshot\n       render source or Markdown\n\n (O) Explicit Corpus Browse ----------------------------------------------> [D] Corpus\n       allowed direct access; not the mapped-Representation grounding path\n\n                         EVIDENCE INTERACTION FAN\n\n From the hinge: Evidence identity plus chosen SourceRange\n       |\n       +---- visual rectangle ----> (O) Rectangle Selection into Reference Buffer\n       |       `DiagramView.completeSelection`; `refBuffer.referenceFromMapping`\n       |       ReferenceIdentity -> DiagramSet RefBuffer: copy | token | dispatch | remove | clear\n       |\n       +---- saved mapping -------> [D] Persistent Evidence-backed Highlight\n       |       `highlights.ts HighlightRecordV2`; `Application.addHighlight`\n       |       artifact revision + stable element -> Evidence/range + excerpt + lineage\n       |\n       +---- normalized path -----> [D] File / Evidence Associations\n       |       `fileTree.ts diagramFileFilter`; `FileExplorerPanel`\n       |       project-local Evidence rows reveal their exact source ranges\n       |\n       +---- selected refs -------> (O) Selected Evidence Call Graph Focus\n       |       `createCallGraphFocusRequest`; `RefBufferTray.displayCallGraph`\n       |       validate both artifacts; retain matching nodes, ancestors, and provenance\n       |\n       '- - no current action - - > (O) Universal Evidence-to-All-Representations Navigation\n               `RepresentationIndex.resolveEvidence <-> resolveElement` supports lookup\n               FUTURE: no universal `CodeEntitiesPanel` action exists today",
+  "codeEntityIds": [
+    "entity-7b6a484b-cca6-4e91-8f28-3f23d5b4fbfa",
+    "entity-c84d4c83-9308-4c69-8fc9-eecd03448efa",
+    "entity-515a2005-8de4-485d-9647-55e93c3fbcba",
+    "entity-eff723af-5a4c-45ee-85cc-86ffe5c1af09",
+    "entity-be0cd175-205f-41bc-83b8-7c3894474b87",
+    "entity-33d8b22c-2b3b-4ee3-ab2c-0aa372c8808e",
+    "entity-55e54d8b-23e5-4f81-b4d6-db31b4667ee5",
+    "entity-c00f7848-2bf2-4879-ae4a-e0c50e790002",
+    "entity-28a571f6-078e-4cc6-a20b-acbccccf1fc6",
+    "entity-c8606ff5-d7f8-4881-a733-a8dc1dc424bd"
+  ],
+  "origin": "generated",
+  "producedByRunId": "run-5569c98f-a1c1-4e71-af55-903ed4e46c10",
+  "generationPromptConfigId": "prompt-ebed6b06-0b15-410d-ad39-df82a133b9cf",
+  "derivedFromDiagramIds": [],
+  "createdAt": "2026-09-01T00:00:11.444Z"
+}

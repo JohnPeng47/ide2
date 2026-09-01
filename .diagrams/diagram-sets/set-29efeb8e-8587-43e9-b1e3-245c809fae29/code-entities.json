@@ -1,0 +1,2311 @@
+{
+  "schemaVersion": 1,
+  "id": "entities-0c504834-1912-4666-a611-fa1505bcd46e",
+  "diagramSetId": "set-29efeb8e-8587-43e9-b1e3-245c809fae29",
+  "revision": 1,
+  "status": "finalized",
+  "entities": [
+    {
+      "id": "entity-91680eca-a2a6-4748-ba92-fbbf09bd94b0",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-29efeb8e-8587-43e9-b1e3-245c809fae29",
+        "codeEntitiesSetId": "entities-0c504834-1912-4666-a611-fa1505bcd46e"
+      },
+      "handle": "corpus-verification-loop",
+      "label": "Corpus verification loop - REPOSITORY_DIAGRAM_DECOMPOSITION.md:L9-29",
+      "category": "operation",
+      "summary": "Corpus is the authoritative material the user browses, reads, and verifies. A mapped visual claim is verified by resolving Representation to Evidence, inspecting its source anchors, revealing the Corpus passage, and returning through navigation history; only explicit file or section browsing may go directly from Workspace to Corpus.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 9,
+          "endLine": 29,
+          "symbol": "User model / primary investigation loop",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 9,
+                "endLine": 29
+              }
+            ]
+          },
+          "id": "range-b54be934-393c-4009-b8f8-1cffde9a2a6c",
+          "originalLines": [
+            "The system has three central abstractions viewed through user interaction:",
+            "",
+            "- Corpus is what the user browses, reads, and verifies.",
+            "- Evidence is the grounded semantic layer the user inspects, selects,",
+            "  references, and saves.",
+            "- Representation is the visual structure the user navigates and manipulates.",
+            "",
+            "The primary investigation loop is:",
+            "",
+            "1. Open a Representation.",
+            "2. Inspect its visual structure.",
+            "3. Select a mapped element.",
+            "4. Resolve that element to Evidence.",
+            "5. Inspect the Evidence label, summary, and source ranges.",
+            "6. Reveal the authoritative Corpus passage.",
+            "7. Verify the visual claim against the content.",
+            "8. Return through pane navigation history.",
+            "",
+            "A Representation-initiated source reveal must always follow",
+            "`Representation -> Evidence -> Corpus`. Direct Workspace-to-Corpus access is",
+            "allowed only for explicit browsing, such as opening a file or Markdown section."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-8d9b462e-d666-405f-b490-8226030cc1c1",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-29efeb8e-8587-43e9-b1e3-245c809fae29",
+        "codeEntitiesSetId": "entities-0c504834-1912-4666-a611-fa1505bcd46e"
+      },
+      "handle": "domain-surface-policy",
+      "label": "DomainProfile surface + renderer policy - domainProfile.ts:WorkspaceSurfaceProfile/ContentPresentation",
+      "category": "state",
+      "summary": "The active DomainProfile contributes explorer tabs and content presentation settings. Content policy controls code-versus-plain syntax, source-versus-terminal Markdown, wrapping, and source compaction.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 38,
+          "endLine": 54,
+          "symbol": "C1 / User-facing surfaces",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 38,
+                "endLine": 54
+              }
+            ]
+          },
+          "id": "range-812b55c8-e5c7-44fe-ac98-1f34679ad371",
+          "originalLines": [
+            "### User-facing surfaces",
+            "",
+            "The Corpus interaction surface is contributed by the active DomainProfile.",
+            "",
+            "The source-code profile exposes Diagram Files and Diagram Sets. Source content",
+            "is syntax highlighted, unwrapped, and may contain expandable compacted ranges.",
+            "",
+            "The document profile exposes Diagram Files, Markdown Sections, and Highlights.",
+            "Markdown content is wrapped and rendered in the terminal reader. Plain text is",
+            "shown without syntax semantics.",
+            "",
+            "Relevant configuration:",
+            "",
+            "- `src/domainProfile.ts`: `ContentPresentation`, `WorkspaceSurfaceProfile`, and",
+            "  `WorkspaceSurfaceContribution`.",
+            "- `src/domainProfiles.ts`: source-code and document profile contributions.",
+            "- `src/App.tsx`: `explorerPaneTabs`, `paneViews`, and active profile selection."
+          ]
+        },
+        {
+          "path": "src/domainProfile.ts",
+          "startLine": 46,
+          "endLine": 64,
+          "symbol": "WorkspaceSurfaceContribution; WorkspaceSurfaceProfile; ContentPresentation",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 46,
+                "endLine": 64
+              }
+            ]
+          },
+          "id": "range-0750bda4-2b96-401e-97ae-338d4e9d359a",
+          "originalLines": [
+            "export type ExplorerSurfaceId = \"files\" | \"diagram-sets\" | \"markdown-sections\" | \"highlights\";",
+            "",
+            "export interface WorkspaceSurfaceContribution {",
+            "  id: ExplorerSurfaceId;",
+            "  label: string;",
+            "  domId: string;",
+            "}",
+            "",
+            "export interface WorkspaceSurfaceProfile {",
+            "  explorerTabs: readonly WorkspaceSurfaceContribution[];",
+            "  diagramViews: readonly DiagramViewKind[];",
+            "}",
+            "",
+            "export interface ContentPresentation {",
+            "  syntaxHighlighting: \"code\" | \"plain\";",
+            "  markdownRendering: \"source\" | \"terminal\";",
+            "  wrap: boolean;",
+            "  sourceCompaction: boolean;",
+            "}"
+          ]
+        },
+        {
+          "path": "src/domainProfile.ts",
+          "startLine": 78,
+          "endLine": 86,
+          "symbol": "DomainProfile",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 78,
+                "endLine": 86
+              }
+            ]
+          },
+          "id": "range-83c5f7e4-646a-4874-8fbd-e0b9fe835de3",
+          "originalLines": [
+            "export interface DomainProfile {",
+            "  id: DomainProfileId;",
+            "  label: string;",
+            "  corpusKind: CorpusBinding[\"kind\"];",
+            "  evidenceSchema: EvidenceSchema;",
+            "  workspace: WorkspaceSurfaceProfile;",
+            "  content: ContentPresentation;",
+            "  commands: readonly ElementCommandContribution[];",
+            "}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-d962fe97-892e-4e40-83d7-33016337003b",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-29efeb8e-8587-43e9-b1e3-245c809fae29",
+        "codeEntitiesSetId": "entities-0c504834-1912-4666-a611-fa1505bcd46e"
+      },
+      "handle": "built-in-profile-surfaces",
+      "label": "Source-code vs document surfaces - domainProfiles.ts:SOURCE_CODE_PROFILE/DOCUMENT_PROFILE",
+      "category": "state",
+      "summary": "The source-code profile contributes Diagram Files and Diagram Sets with highlighted, unwrapped, compactable source. The document profile contributes Diagram Files, Sections, and Highlights with plain, wrapped, terminal-rendered content.",
+      "sourceRanges": [
+        {
+          "path": "src/domainProfiles.ts",
+          "startLine": 34,
+          "endLine": 61,
+          "symbol": "SOURCE_CODE_PROFILE",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 34,
+                "endLine": 61
+              }
+            ]
+          },
+          "id": "range-04524c94-1451-4483-b268-90242964e61c",
+          "originalLines": [
+            "const SOURCE_CODE_PROFILE: DomainProfile = {",
+            "  id: \"source-code\",",
+            "  label: \"Source code\",",
+            "  corpusKind: \"git-worktree\",",
+            "  evidenceSchema: evidenceSchema(",
+            "    \"code-entities\",",
+            "    \"Code entities\",",
+            "    \"code entity\",",
+            "    \"code entities\"",
+            "  ),",
+            "  workspace: {",
+            "    diagramViews: [\"diagram\", \"call-graph\", \"dir-view\"],",
+            "    explorerTabs: [",
+            "      { id: \"files\", label: \"Diagram Files\", domId: \"files-tab\" },",
+            "      { id: \"diagram-sets\", label: \"Diagram Sets\", domId: \"diagram-sets-tab\" }",
+            "    ]",
+            "  },",
+            "  content: {",
+            "    syntaxHighlighting: \"code\",",
+            "    markdownRendering: \"source\",",
+            "    wrap: false,",
+            "    sourceCompaction: true",
+            "  },",
+            "  commands: [",
+            "    { id: \"reveal-evidence\", representationKinds: [\"tree\", \"diagram\"], requiresEvidence: true },",
+            "    { id: \"collapse-subtree\", representationKinds: [\"tree\"] },",
+            "    { id: \"buffer-reference\", representationKinds: [\"tree\", \"diagram\"], requiresEvidence: true }",
+            "  ]"
+          ]
+        },
+        {
+          "path": "src/domainProfiles.ts",
+          "startLine": 64,
+          "endLine": 93,
+          "symbol": "DOCUMENT_PROFILE",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 64,
+                "endLine": 93
+              }
+            ]
+          },
+          "id": "range-9fa9135f-8cb6-460b-98ea-f27e7a56b91a",
+          "originalLines": [
+            "const DOCUMENT_PROFILE: DomainProfile = {",
+            "  id: \"document\",",
+            "  label: \"Document\",",
+            "  corpusKind: \"filesystem-documents\",",
+            "  evidenceSchema: evidenceSchema(",
+            "    \"document-evidence\",",
+            "    \"Document evidence\",",
+            "    \"evidence item\",",
+            "    \"evidence\"",
+            "  ),",
+            "  workspace: {",
+            "    diagramViews: [\"diagram\", \"call-graph\"],",
+            "    explorerTabs: [",
+            "      { id: \"files\", label: \"Diagram Files\", domId: \"files-tab\" },",
+            "      { id: \"markdown-sections\", label: \"Sections\", domId: \"markdown-sections-tab\" },",
+            "      { id: \"highlights\", label: \"Highlights\", domId: \"highlights-tab\" }",
+            "    ]",
+            "  },",
+            "  content: {",
+            "    syntaxHighlighting: \"plain\",",
+            "    markdownRendering: \"terminal\",",
+            "    wrap: true,",
+            "    sourceCompaction: false",
+            "  },",
+            "  commands: [",
+            "    { id: \"reveal-evidence\", representationKinds: [\"tree\", \"diagram\"], requiresEvidence: true },",
+            "    { id: \"collapse-subtree\", representationKinds: [\"tree\"] },",
+            "    { id: \"toggle-highlight\", representationKinds: [\"tree\"], requiresEvidence: true },",
+            "    { id: \"buffer-reference\", representationKinds: [\"tree\", \"diagram\"], requiresEvidence: true }",
+            "  ]"
+          ]
+        },
+        {
+          "path": "src/App.tsx",
+          "startLine": 212,
+          "endLine": 214,
+          "symbol": "explorerPaneTabs",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 212,
+                "endLine": 214
+              }
+            ]
+          },
+          "id": "range-ede2f84b-0117-4db5-a0d2-19a5acb6e246",
+          "originalLines": [
+            "function explorerPaneTabs(profile: DomainProfile): PaneTab[] {",
+            "  return profile.workspace.explorerTabs.map((tab) => ({ ...tab }));",
+            "}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-ed2f8338-fd1f-40c0-9cd3-fb0938d46c7c",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-29efeb8e-8587-43e9-b1e3-245c809fae29",
+        "codeEntitiesSetId": "entities-0c504834-1912-4666-a611-fa1505bcd46e"
+      },
+      "handle": "evidence-source-anchors",
+      "label": "Associated Evidence anchors - domainProfile.ts:EvidenceEntity",
+      "category": "interface-data-struct",
+      "summary": "The domain-neutral Evidence surface carries stable identity, handle, label, kind, summary, and Corpus SourceRange anchors. These anchors are the intermediary used to reveal supporting Corpus passages.",
+      "sourceRanges": [
+        {
+          "path": "src/domainProfile.ts",
+          "startLine": 28,
+          "endLine": 44,
+          "symbol": "EvidenceEntity; EvidenceSchema",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 28,
+                "endLine": 44
+              }
+            ]
+          },
+          "id": "range-d562bb54-c143-4fdc-8b0e-986213f61898",
+          "originalLines": [
+            "/** Domain-neutral evidence view over today's persisted CodeEntity records. */",
+            "export interface EvidenceEntity {",
+            "  id: string;",
+            "  handle: string;",
+            "  label: string;",
+            "  kind: string;",
+            "  summary: string;",
+            "  anchors: SourceRange[];",
+            "}",
+            "",
+            "export interface EvidenceSchema {",
+            "  id: string;",
+            "  label: string;",
+            "  entityNoun: string;",
+            "  collectionNoun: string;",
+            "  fromCodeEntity(record: CodeEntityRecord): EvidenceEntity;",
+            "}"
+          ]
+        },
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 102,
+          "endLine": 104,
+          "symbol": "C1 / Source presentation",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 102,
+                "endLine": 104
+              }
+            ]
+          },
+          "id": "range-0f772f6e-7866-45bb-87ad-e3960b35b878",
+          "originalLines": [
+            "`CodeEntitiesPanel` resolves an Evidence source range through",
+            "`fetchSourceSnippet`. It then chooses a renderer from the active content",
+            "presentation policy."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-3fd68461-519d-47b5-a207-c06ef23ff87d",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-29efeb8e-8587-43e9-b1e3-245c809fae29",
+        "codeEntitiesSetId": "entities-0c504834-1912-4666-a611-fa1505bcd46e"
+      },
+      "handle": "artifact-file-filter",
+      "label": "Evidence-filtered live Corpus paths - fileTree.ts:diagramFileFilter",
+      "category": "operation",
+      "summary": "File exploration starts from the active artifact's declared Evidence IDs, excludes unresolved or foreign-provenance entities, normalizes each source path, and associates each accepted file with Evidence handle, label, and source-range index.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 56,
+          "endLine": 60,
+          "symbol": "C1 / File exploration",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 56,
+                "endLine": 60
+              }
+            ]
+          },
+          "id": "range-00a5056b-aa93-49f3-956d-5400397798e3",
+          "originalLines": [
+            "### File exploration",
+            "",
+            "`FileExplorerPanel` shows the live corpus paths referenced by the active",
+            "artifact's Evidence. It derives its filter from the artifact's declared",
+            "Evidence IDs and the active project's provenance."
+          ]
+        },
+        {
+          "path": "src/fileTree.ts",
+          "startLine": 55,
+          "endLine": 103,
+          "symbol": "diagramFileFilter",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 55,
+                "endLine": 103
+              }
+            ]
+          },
+          "id": "range-601eb35d-1c41-426e-93e6-b824c00655f0",
+          "originalLines": [
+            "export function diagramFileFilter(",
+            "  artifact: DiagramRecord | DiagramComponentRecord,",
+            "  codeEntities: readonly CodeEntityRecord[],",
+            "  activeProjectId: string",
+            "): DiagramFileFilter {",
+            "  const byId = new Map(codeEntities.map((entity) => [entity.id, entity]));",
+            "  const paths = new Set<string>();",
+            "  const entitiesByPath = new Map<string, DiagramFileEntityReference[]>();",
+            "  const unresolvedEntityIds: string[] = [];",
+            "  const foreignEntityIds: string[] = [];",
+            "  const invalidPaths: string[] = [];",
+            "  for (const entityId of new Set(artifact.codeEntityIds)) {",
+            "    const entity = byId.get(entityId);",
+            "    if (!entity) {",
+            "      unresolvedEntityIds.push(entityId);",
+            "      continue;",
+            "    }",
+            "    if (!entity.origin || entity.origin.projectId !== activeProjectId) {",
+            "      foreignEntityIds.push(entityId);",
+            "      continue;",
+            "    }",
+            "    for (const [sourceRangeIndex, range] of entity.sourceRanges.entries()) {",
+            "      const path = normalizeRepositoryPath(range.path);",
+            "      if (!path) {",
+            "        invalidPaths.push(range.path);",
+            "        continue;",
+            "      }",
+            "      paths.add(path);",
+            "      const references = entitiesByPath.get(path) ?? [];",
+            "      if (!references.some((reference) => reference.entityId === entity.id)) {",
+            "        references.push({",
+            "          entityId: entity.id,",
+            "          handle: entity.handle,",
+            "          label: entity.label,",
+            "          sourceRangeIndex",
+            "        });",
+            "        entitiesByPath.set(path, references);",
+            "      }",
+            "    }",
+            "  }",
+            "  return {",
+            "    paths: [...paths].sort((left, right) => left.localeCompare(right)),",
+            "    entitiesByPath: Object.fromEntries(",
+            "      [...entitiesByPath.entries()].sort(([left], [right]) => left.localeCompare(right))",
+            "    ),",
+            "    unresolvedEntityIds,",
+            "    foreignEntityIds,",
+            "    invalidPaths",
+            "  };"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-4eb8a405-b3af-4849-848e-e8f384681db6",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-29efeb8e-8587-43e9-b1e3-245c809fae29",
+        "codeEntitiesSetId": "entities-0c504834-1912-4666-a611-fa1505bcd46e"
+      },
+      "handle": "file-explorer-browse-reveal",
+      "label": "Browse file tree -> Evidence handle -> exact range - FileExplorerPanel.tsx",
+      "category": "operation",
+      "summary": "FileExplorerPanel loads and checks repository directories against the live checkout, renders an expandable hierarchy, expands files into associated Evidence rows, and reveals a selected row by entity ID and source-range index.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 62,
+          "endLine": 68,
+          "symbol": "C1 / File exploration user actions",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 62,
+                "endLine": 68
+              }
+            ]
+          },
+          "id": "range-1975d315-fca9-4555-9381-bce6a0addb22",
+          "originalLines": [
+            "The user may:",
+            "",
+            "- expand and collapse directories;",
+            "- select a referenced file;",
+            "- inspect the Evidence count associated with the file;",
+            "- expand the file into Evidence handles; and",
+            "- select an Evidence handle to open its exact source range."
+          ]
+        },
+        {
+          "path": "src/components/FileExplorerPanel.tsx",
+          "startLine": 59,
+          "endLine": 80,
+          "symbol": "FileExplorerPanel.loadDirectory",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 59,
+                "endLine": 80
+              }
+            ]
+          },
+          "id": "range-eff97e29-2fc3-4409-b42d-66756f1eac8b",
+          "originalLines": [
+            "  const loadDirectory = useCallback((directory: string): Promise<RepositoryDirectoryListing> => {",
+            "    const cached = listingsRef.current[directory];",
+            "    if (cached) return Promise.resolve(cached);",
+            "    const pending = requests.current.get(directory);",
+            "    if (pending) return pending;",
+            "    const generation = requestGeneration.current;",
+            "    const controller = new AbortController();",
+            "    controllers.current.set(directory, controller);",
+            "    const request = fetchRepositoryDirectory(props.activeSetId, directory, controller.signal)",
+            "      .then((listing) => {",
+            "        if (requestGeneration.current === generation) {",
+            "          updateListings({ ...listingsRef.current, [directory]: listing });",
+            "        }",
+            "        return listing;",
+            "      })",
+            "      .finally(() => {",
+            "        if (controllers.current.get(directory) === controller) controllers.current.delete(directory);",
+            "        if (requests.current.get(directory) === request) requests.current.delete(directory);",
+            "      });",
+            "    requests.current.set(directory, request);",
+            "    return request;",
+            "  }, [props.activeSetId, updateListings]);"
+          ]
+        },
+        {
+          "path": "src/components/FileExplorerPanel.tsx",
+          "startLine": 102,
+          "endLine": 150,
+          "symbol": "FileExplorerPanel live filter",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 102,
+                "endLine": 150
+              }
+            ]
+          },
+          "id": "range-603e9ece-0c95-40d8-aa6c-4846af17712a",
+          "originalLines": [
+            "  const filter = useMemo(() => props.artifact ? diagramFileFilter(",
+            "    props.artifact,",
+            "    props.codeEntities,",
+            "    props.activeProjectId",
+            "  ) : {",
+            "    paths: [],",
+            "    entitiesByPath: {},",
+            "    unresolvedEntityIds: [],",
+            "    foreignEntityIds: [],",
+            "    invalidPaths: []",
+            "  }, [props.activeProjectId, props.artifact, props.codeEntities]);",
+            "",
+            "  useEffect(() => {",
+            "    const generation = ++filterGeneration.current;",
+            "    setFilterLoading(true);",
+            "    setFilterError(null);",
+            "    void (async () => {",
+            "      const byParent = new Map<string, string[]>();",
+            "      for (const filePath of filter.paths) {",
+            "        const parent = parentRepositoryPath(filePath);",
+            "        byParent.set(parent, [...(byParent.get(parent) ?? []), filePath]);",
+            "      }",
+            "      const matches = new Set<string>();",
+            "      let unavailable = 0;",
+            "      const failures: string[] = [];",
+            "      await Promise.all([...byParent.entries()].map(async ([parent, paths]) => {",
+            "        try {",
+            "          const listing = await loadDirectory(parent);",
+            "          const liveFiles = new Set(",
+            "            listing.entries.filter((entry) => entry.kind === \"file\").map((entry) => entry.path)",
+            "          );",
+            "          for (const filePath of paths) {",
+            "            if (liveFiles.has(filePath)) matches.add(filePath);",
+            "            else unavailable += 1;",
+            "          }",
+            "        } catch (error) {",
+            "          if (!(error instanceof DOMException && error.name === \"AbortError\")) {",
+            "            unavailable += paths.length;",
+            "            failures.push(error instanceof Error ? error.message : \"directory listing failed\");",
+            "          }",
+            "        }",
+            "      }));",
+            "      if (filterGeneration.current !== generation) return;",
+            "      setMatchedFilterPaths(matches);",
+            "      setUnavailableFilterCount(unavailable);",
+            "      setFilterError(failures[0] ?? null);",
+            "      setFilterLoading(false);",
+            "    })();",
+            "  }, [filter, loadDirectory]);"
+          ]
+        },
+        {
+          "path": "src/components/FileExplorerPanel.tsx",
+          "startLine": 164,
+          "endLine": 177,
+          "symbol": "FileExplorerPanel.displayRows",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 164,
+                "endLine": 177
+              }
+            ]
+          },
+          "id": "range-7b11a48e-d7ad-4ca1-898c-5b163f0f9d08",
+          "originalLines": [
+            "  const displayRows = useMemo<ExplorerDisplayRow[]>(() => rows.flatMap((row) => {",
+            "    const repositoryRow: ExplorerDisplayRow = { key: row.path, kind: \"repository\", row };",
+            "    const references = row.kind === \"file\" ? filter.entitiesByPath[row.path] ?? [] : [];",
+            "    if (!references.length || !expandedEntityPaths.has(row.path)) return [repositoryRow];",
+            "    const basePrefix = row.level === 1 ? \"\" : row.prefix.slice(0, -4);",
+            "    return [repositoryRow, ...references.map((entity, index): ExplorerDisplayRow => ({",
+            "      key: `${row.path}::${entity.entityId}`,",
+            "      kind: \"entity\",",
+            "      filePath: row.path,",
+            "      level: row.level + 1,",
+            "      prefix: `${basePrefix}    ${index === references.length - 1 ? \"`-- \" : \"+-- \"}`,",
+            "      entity",
+            "    }))];",
+            "  }), [expandedEntityPaths, filter.entitiesByPath, rows]);"
+          ]
+        },
+        {
+          "path": "src/components/FileExplorerPanel.tsx",
+          "startLine": 203,
+          "endLine": 217,
+          "symbol": "revealEntity; toggleFileEntities",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 203,
+                "endLine": 217
+              }
+            ]
+          },
+          "id": "range-98db3937-f877-437d-8d47-ba09d51c7753",
+          "originalLines": [
+            "  const revealEntity = (entity: DiagramFileEntityReference) => {",
+            "    props.onRevealCodeEntity?.({",
+            "      entityId: entity.entityId,",
+            "      sourceRangeIndex: entity.sourceRangeIndex",
+            "    });",
+            "  };",
+            "",
+            "  const toggleFileEntities = (filePath: string) => {",
+            "    setExpandedEntityPaths((current) => {",
+            "      const next = new Set(current);",
+            "      if (next.has(filePath)) next.delete(filePath);",
+            "      else next.add(filePath);",
+            "      return next;",
+            "    });",
+            "  };"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-8380086d-499f-4fd5-8367-972ee9c24069",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-29efeb8e-8587-43e9-b1e3-245c809fae29",
+        "codeEntitiesSetId": "entities-0c504834-1912-4666-a611-fa1505bcd46e"
+      },
+      "handle": "markdown-outline-feedback",
+      "label": "Reader outline + active section feedback - TerminalMarkdownView.tsx",
+      "category": "operation",
+      "summary": "When Markdown is open, TerminalMarkdownView parses and reports its outline and emits active-section changes from the rendered reader. StudioPage stores those callbacks, and MarkdownSectionsPanel receives the outline and current section for its navigable tree.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 79,
+          "endLine": 83,
+          "symbol": "C1 / Markdown section navigation",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 79,
+                "endLine": 83
+              }
+            ]
+          },
+          "id": "range-c0eb39c7-29e5-43eb-86ee-0f489bfdb2e4",
+          "originalLines": [
+            "### Markdown section navigation",
+            "",
+            "When a Markdown document is open, `TerminalMarkdownView` reports its parsed",
+            "outline and active section to `StudioPage`. `MarkdownSectionsPanel` renders the",
+            "outline as a navigable tree."
+          ]
+        },
+        {
+          "path": "src/components/TerminalMarkdownView.tsx",
+          "startLine": 18,
+          "endLine": 50,
+          "symbol": "TerminalMarkdownView outline callback",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 18,
+                "endLine": 50
+              }
+            ]
+          },
+          "id": "range-c411d70b-f234-4640-98d1-ce01383fca2c",
+          "originalLines": [
+            "export function TerminalMarkdownView(props: {",
+            "  source: string;",
+            "  path: string;",
+            "  targetLine?: number;",
+            "  targetRange?: { startLine: number; endLine: number };",
+            "  jumpRequestId?: number;",
+            "  onOpenRepositoryFile?: (path: string) => void;",
+            "  onOutlineChange?: (outline: TerminalMarkdownOutline & { path: string }) => void;",
+            "  onActiveSectionChange?: (section: { id: string; line: number; scrollTop: number }) => void;",
+            "}) {",
+            "  const frameRef = useRef<HTMLIFrameElement | null>(null);",
+            "  const [document, setDocument] = useState<string | null>(null);",
+            "",
+            "  useEffect(() => {",
+            "    let cancelled = false;",
+            "    setDocument(null);",
+            "    try {",
+            "      props.onOutlineChange?.({ path: props.path, ...parseTerminalMarkdownOutline(props.source) });",
+            "    } catch {",
+            "      // The renderer below owns the visible validation error.",
+            "    }",
+            "    void renderTerminalMarkdownDocument(props.source, props.path)",
+            "      .then((rendered) => {",
+            "        if (!cancelled) setDocument(rendered);",
+            "      })",
+            "      .catch((caught) => {",
+            "        if (!cancelled) {",
+            "          const message = caught instanceof Error ? caught.message : \"Markdown rendering failed\";",
+            "          setDocument(renderTerminalMarkdownErrorDocument(message));",
+            "        }",
+            "      });",
+            "    return () => { cancelled = true; };",
+            "  }, [props.path, props.source, props.onOutlineChange]);"
+          ]
+        },
+        {
+          "path": "src/components/TerminalMarkdownView.tsx",
+          "startLine": 52,
+          "endLine": 76,
+          "symbol": "TerminalMarkdownView active section message",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 52,
+                "endLine": 76
+              }
+            ]
+          },
+          "id": "range-f9a13a52-ae38-4a04-9198-6497334d14a8",
+          "originalLines": [
+            "  useEffect(() => {",
+            "    const onMessage = (event: MessageEvent<unknown>) => {",
+            "      if (event.source !== frameRef.current?.contentWindow) return;",
+            "      if (!event.data || typeof event.data !== \"object\") return;",
+            "      const payload = event.data as {",
+            "        type?: unknown;",
+            "        path?: unknown;",
+            "        id?: unknown;",
+            "        line?: unknown;",
+            "        scrollTop?: unknown;",
+            "      };",
+            "      if (payload.type === TERMINAL_MARKDOWN_OPEN_FILE_MESSAGE",
+            "        && typeof payload.path === \"string\"",
+            "        && props.onOpenRepositoryFile) {",
+            "        props.onOpenRepositoryFile(payload.path);",
+            "      } else if (payload.type === TERMINAL_MARKDOWN_ACTIVE_SECTION_MESSAGE",
+            "        && typeof payload.id === \"string\"",
+            "        && typeof payload.line === \"number\"",
+            "        && typeof payload.scrollTop === \"number\") {",
+            "        props.onActiveSectionChange?.({ id: payload.id, line: payload.line, scrollTop: payload.scrollTop });",
+            "      }",
+            "    };",
+            "    window.addEventListener(\"message\", onMessage);",
+            "    return () => window.removeEventListener(\"message\", onMessage);",
+            "  }, [props.onActiveSectionChange, props.onOpenRepositoryFile]);"
+          ]
+        },
+        {
+          "path": "src/App.tsx",
+          "startLine": 371,
+          "endLine": 385,
+          "symbol": "handleMarkdownOutlineChange; handleMarkdownActiveSectionChange",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 371,
+                "endLine": 385
+              }
+            ]
+          },
+          "id": "range-689e909c-0120-416a-b299-e65244a947a3",
+          "originalLines": [
+            "  const handleMarkdownOutlineChange = useCallback((outline: (TerminalMarkdownOutline & { path: string }) | null) => {",
+            "    setMarkdownOutline(outline);",
+            "    if (!outline) setActiveMarkdownSection(null);",
+            "  }, []);",
+            "",
+            "  const handleMarkdownActiveSectionChange = useCallback((section: {",
+            "    path: string;",
+            "    id: string;",
+            "    line: number;",
+            "    scrollTop: number;",
+            "  }) => {",
+            "    setActiveMarkdownSection((current) => current?.path === section.path && current.id === section.id",
+            "      ? current",
+            "      : { path: section.path, id: section.id });",
+            "  }, []);"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-d006c796-e230-4286-a97e-7c23289d13eb",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-29efeb8e-8587-43e9-b1e3-245c809fae29",
+        "codeEntitiesSetId": "entities-0c504834-1912-4666-a611-fa1505bcd46e"
+      },
+      "handle": "markdown-section-direct-jump",
+      "label": "Direct section browse - App.tsx:jumpToMarkdownSection",
+      "category": "operation",
+      "summary": "Selecting a Markdown section is the explicit direct-browsing path: it creates a source-location destination containing document path, target line, and section range, then activates the Code Entities source context so the reader can scroll to and highlight that location.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 85,
+          "endLine": 88,
+          "symbol": "C1 / Selecting a section",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 85,
+                "endLine": 88
+              }
+            ]
+          },
+          "id": "range-daf85d33-9019-4f06-8898-6706e17ddac4",
+          "originalLines": [
+            "Selecting a section creates a source-location jump containing its path, target",
+            "line, and section range. `PaneNavigationApi` activates the source context,",
+            "scrolls to the section, highlights it, and records the destination in jump",
+            "history."
+          ]
+        },
+        {
+          "path": "src/App.tsx",
+          "startLine": 1695,
+          "endLine": 1712,
+          "symbol": "jumpToMarkdownSection",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 1695,
+                "endLine": 1712
+              }
+            ]
+          },
+          "id": "range-6a026351-b692-43cb-ac07-8d1cb0adaea4",
+          "originalLines": [
+            "  const jumpToMarkdownSection = (section: TerminalMarkdownSection) => {",
+            "    if (!markdownOutline) return;",
+            "    paneNavigation.jump({",
+            "      key: `markdown-section:${activeSet.id}:${markdownOutline.path}:${section.id}`,",
+            "      kind: \"source-location\",",
+            "      paneId: CONTEXT_PANE_ID,",
+            "      tabId: \"code-entities\",",
+            "      label: section.label,",
+            "      detail: `${markdownOutline.path}:L${section.startLine}`,",
+            "      payload: {",
+            "        type: \"markdown-section\",",
+            "        path: markdownOutline.path,",
+            "        line: section.startLine,",
+            "        startLine: section.startLine,",
+            "        endLine: section.startLine",
+            "      } satisfies SourceLocationJumpPayload",
+            "    });",
+            "  };"
+          ]
+        },
+        {
+          "path": "src/App.tsx",
+          "startLine": 355,
+          "endLine": 369,
+          "symbol": "source-location PaneNavigationApi handler",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 355,
+                "endLine": 369
+              }
+            ]
+          },
+          "id": "range-d2fa7125-b313-4dc8-9bb2-8e51dc0b3622",
+          "originalLines": [
+            "  useEffect(() => paneNavigation.registerHandler(\"source-location\", (destination) => {",
+            "    const payload = destination.payload as SourceLocationJumpPayload;",
+            "    revealRequestId.current += 1;",
+            "    setContextTab(\"code-entities\");",
+            "    setCodeEntityReveal(payload.type === \"code-entity\" ? {",
+            "      entityId: payload.entityId,",
+            "      sourceRangeIndex: payload.sourceRangeIndex,",
+            "      requestId: revealRequestId.current",
+            "    } : {",
+            "      path: payload.path,",
+            "      targetLine: payload.line,",
+            "      highlightRange: { startLine: payload.startLine, endLine: payload.endLine },",
+            "      requestId: revealRequestId.current",
+            "    });",
+            "  }), [paneNavigation]);"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-54976897-a288-4a21-83bf-c1c057b73d80",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-29efeb8e-8587-43e9-b1e3-245c809fae29",
+        "codeEntitiesSetId": "entities-0c504834-1912-4666-a611-fa1505bcd46e"
+      },
+      "handle": "markdown-sections-tree-history",
+      "label": "Section tree + jump replay - MarkdownSectionsPanel.tsx",
+      "category": "operation",
+      "summary": "MarkdownSectionsPanel builds a heading hierarchy, marks jumps against the most specific containing section, allows section selection, and exposes replay and clear-history controls.",
+      "sourceRanges": [
+        {
+          "path": "src/components/MarkdownSectionsPanel.tsx",
+          "startLine": 16,
+          "endLine": 55,
+          "symbol": "buildMarkdownSectionTree; mapJumpHistoryToSections",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 16,
+                "endLine": 55
+              }
+            ]
+          },
+          "id": "range-7ee236ce-70c2-4d66-8cb8-5cb79c6d61d2",
+          "originalLines": [
+            "export function buildMarkdownSectionTree(",
+            "  sections: readonly TerminalMarkdownSection[]",
+            "): MarkdownSectionTreeNode[] {",
+            "  const roots: MarkdownSectionTreeNode[] = [];",
+            "  const stack: MarkdownSectionTreeNode[] = [];",
+            "  for (const section of sections) {",
+            "    const node = { section, children: [] } satisfies MarkdownSectionTreeNode;",
+            "    while (stack.length > 0 && stack.at(-1)!.section.level >= section.level) stack.pop();",
+            "    const parent = stack.at(-1);",
+            "    if (parent) parent.children.push(node);",
+            "    else roots.push(node);",
+            "    stack.push(node);",
+            "  }",
+            "  return roots;",
+            "}",
+            "",
+            "function jumpSourceLocation(entry: PaneJumpHistoryEntry): { path: string; line: number } | null {",
+            "  if (!entry.payload || typeof entry.payload !== \"object\") return null;",
+            "  const payload = entry.payload as { path?: unknown; line?: unknown };",
+            "  return typeof payload.path === \"string\" && typeof payload.line === \"number\"",
+            "    ? { path: payload.path, line: payload.line }",
+            "    : null;",
+            "}",
+            "",
+            "/** Assigns recent jumps to the most specific Markdown section containing them. */",
+            "export function mapJumpHistoryToSections(",
+            "  path: string | undefined,",
+            "  sections: readonly TerminalMarkdownSection[],",
+            "  jumpHistory: readonly PaneJumpHistoryEntry[]",
+            "): MarkdownSectionJumpMarker[] {",
+            "  if (!path) return [];",
+            "  return jumpHistory.flatMap((entry, index) => {",
+            "    const location = jumpSourceLocation(entry);",
+            "    if (!location || location.path !== path) return [];",
+            "    const section = sections",
+            "      .filter((candidate) => candidate.startLine <= location.line && location.line <= candidate.endLine)",
+            "      .sort((left, right) => right.level - left.level || right.startLine - left.startLine)[0];",
+            "    return section ? [{ entry, rank: index + 1, sectionId: section.id }] : [];",
+            "  });",
+            "}"
+          ]
+        },
+        {
+          "path": "src/components/MarkdownSectionsPanel.tsx",
+          "startLine": 76,
+          "endLine": 99,
+          "symbol": "MarkdownSectionsPanel",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 76,
+                "endLine": 99
+              }
+            ]
+          },
+          "id": "range-989b4163-600d-4ad9-a19a-2773fbb05c18",
+          "originalLines": [
+            "export function MarkdownSectionsPanel(props: {",
+            "  path?: string;",
+            "  title?: string;",
+            "  sections: readonly TerminalMarkdownSection[];",
+            "  activeSectionId?: string;",
+            "  jumpHistory: readonly PaneJumpHistoryEntry[];",
+            "  onJumpSection: (section: TerminalMarkdownSection) => void;",
+            "  onReplayJump: (entry: PaneJumpHistoryEntry) => void;",
+            "  onClearHistory?: () => void;",
+            "}) {",
+            "  const roots = useMemo(() => buildMarkdownSectionTree(props.sections), [props.sections]);",
+            "  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());",
+            "  const [documentCollapsed, setDocumentCollapsed] = useState(false);",
+            "  const jumpMarkers = useMemo(",
+            "    () => mapJumpHistoryToSections(props.path, props.sections, props.jumpHistory),",
+            "    [props.jumpHistory, props.path, props.sections]",
+            "  );",
+            "  const markersBySection = useMemo(() => {",
+            "    const mapped = new Map<string, MarkdownSectionJumpMarker[]>();",
+            "    jumpMarkers.forEach((marker) => {",
+            "      mapped.set(marker.sectionId, [...(mapped.get(marker.sectionId) ?? []), marker]);",
+            "    });",
+            "    return mapped;",
+            "  }, [jumpMarkers]);"
+          ]
+        },
+        {
+          "path": "src/components/MarkdownSectionsPanel.tsx",
+          "startLine": 150,
+          "endLine": 170,
+          "symbol": "MarkdownSectionsPanel jump replay and section selection",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 150,
+                "endLine": 170
+              }
+            ]
+          },
+          "id": "range-5ac81210-2bf4-42c5-8742-5ec127485b68",
+          "originalLines": [
+            "          {markers.length > 0 ? (",
+            "            <span className=\"markdown-section-jumps\" aria-label=\"Recent jumps\">",
+            "              {markers.map((marker) => (",
+            "                <button",
+            "                  type=\"button\"",
+            "                  className=\"markdown-section-jump\"",
+            "                  data-jump-rank={marker.rank}",
+            "                  key={marker.entry.jumpId}",
+            "                  title={`Replay jump ${marker.rank}: ${marker.entry.label}${marker.entry.detail ? ` · ${marker.entry.detail}` : \"\"}`}",
+            "                  onClick={() => props.onReplayJump(marker.entry)}",
+            "                >[J{marker.rank}]</button>",
+            "              ))}",
+            "            </span>",
+            "          ) : null}",
+            "          <button",
+            "            type=\"button\"",
+            "            className=\"markdown-section-label\"",
+            "            title={`${node.section.label} · lines ${node.section.startLine}-${node.section.endLine}`}",
+            "            onClick={() => props.onJumpSection(node.section)}",
+            "          >{truncate(node.section.label)}</button>",
+            "          <span className=\"markdown-section-line\">L{node.section.startLine}</span>"
+          ]
+        },
+        {
+          "path": "src/App.tsx",
+          "startLine": 2012,
+          "endLine": 2023,
+          "symbol": "paneViews.markdown-sections",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 2012,
+                "endLine": 2023
+              }
+            ]
+          },
+          "id": "range-1287f53f-337f-4450-bdd4-3efe1cfe0868",
+          "originalLines": [
+            "    \"markdown-sections\": { content: <MarkdownSectionsPanel",
+            "      path={markdownOutline?.path}",
+            "      title={markdownOutline?.title}",
+            "      sections={markdownOutline?.sections ?? []}",
+            "      activeSectionId={activeMarkdownSection && activeMarkdownSection.path === markdownOutline?.path",
+            "        ? activeMarkdownSection.id",
+            "        : undefined}",
+            "      jumpHistory={jumpHistory}",
+            "      onJumpSection={jumpToMarkdownSection}",
+            "      onReplayJump={(entry) => paneNavigation.jump(entry)}",
+            "      onClearHistory={() => paneNavigation.clearHistory()}",
+            "    /> },"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-be33d9ff-3f8a-41da-8f78-fbbfd0413a50",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-29efeb8e-8587-43e9-b1e3-245c809fae29",
+        "codeEntitiesSetId": "entities-0c504834-1912-4666-a611-fa1505bcd46e"
+      },
+      "handle": "reversible-pane-jumps",
+      "label": "Reversible jump history - navigation.ts:PaneNavigationApi",
+      "category": "operation",
+      "summary": "PaneNavigationApi activates the destination tab and pane, records recent de-duplicated destinations, schedules delivery to the destination-specific scroll/focus handler, and supports replay via jump plus clearing history. This provides the return/replay path after Corpus verification.",
+      "sourceRanges": [
+        {
+          "path": "src/panes/navigation.ts",
+          "startLine": 28,
+          "endLine": 50,
+          "symbol": "PaneNavigationApi",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 28,
+                "endLine": 50
+              }
+            ]
+          },
+          "id": "range-f7b4dc8c-88d9-4e6e-9fc6-b113826886f8",
+          "originalLines": [
+            "/**",
+            " * Coordinates navigation across panes without coupling the pane layout to any",
+            " * destination type. Feature views register handlers for their jump kind and",
+            " * remain responsible for the final focus/scroll animation.",
+            " */",
+            "export class PaneNavigationApi {",
+            "  private readonly listeners = new Set<Listener>();",
+            "  private readonly handlers = new Map<string, PaneJumpHandler>();",
+            "  private readonly pending = new Map<string, PaneJumpDestination>();",
+            "  private history: PaneJumpHistoryEntry[] = [];",
+            "  private nextJumpId = 1;",
+            "",
+            "  constructor(",
+            "    private readonly panes: PaneApi,",
+            "    private readonly historyLimit = DEFAULT_HISTORY_LIMIT,",
+            "    private readonly schedule: Schedule = afterPaneRender",
+            "  ) {}",
+            "",
+            "  getHistory = (): readonly PaneJumpHistoryEntry[] => this.history;",
+            "",
+            "  subscribe = (listener: Listener): (() => void) => {",
+            "    this.listeners.add(listener);",
+            "    return () => this.listeners.delete(listener);"
+          ]
+        },
+        {
+          "path": "src/panes/navigation.ts",
+          "startLine": 53,
+          "endLine": 85,
+          "symbol": "PaneNavigationApi.registerHandler; jump; clearHistory",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 53,
+                "endLine": 85
+              }
+            ]
+          },
+          "id": "range-41e07b76-da4e-45da-b37a-72c08718527a",
+          "originalLines": [
+            "  registerHandler(kind: string, handler: PaneJumpHandler): () => void {",
+            "    this.handlers.set(kind, handler);",
+            "    const pending = this.pending.get(kind);",
+            "    if (pending) this.schedule(() => this.deliver(pending));",
+            "    return () => {",
+            "      if (this.handlers.get(kind) === handler) this.handlers.delete(kind);",
+            "    };",
+            "  }",
+            "",
+            "  jump(destination: PaneJumpDestination, options: { record?: boolean } = {}): void {",
+            "    this.panes.activateTab(destination.paneId, destination.tabId);",
+            "    this.panes.focusPane(destination.paneId);",
+            "    if (options.record !== false && this.historyLimit > 0) {",
+            "      const entry: PaneJumpHistoryEntry = {",
+            "        ...destination,",
+            "        jumpId: this.nextJumpId,",
+            "        jumpedAt: Date.now()",
+            "      };",
+            "      this.nextJumpId += 1;",
+            "      this.history = [",
+            "        entry,",
+            "        ...this.history.filter((candidate) => candidate.key !== destination.key)",
+            "      ].slice(0, this.historyLimit);",
+            "      this.listeners.forEach((listener) => listener());",
+            "    }",
+            "    this.pending.set(destination.kind, destination);",
+            "    this.schedule(() => this.deliver(destination));",
+            "  }",
+            "",
+            "  clearHistory(): void {",
+            "    if (this.history.length === 0) return;",
+            "    this.history = [];",
+            "    this.listeners.forEach((listener) => listener());"
+          ]
+        },
+        {
+          "path": "src/App.tsx",
+          "startLine": 2019,
+          "endLine": 2022,
+          "symbol": "Markdown section history controls",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 2019,
+                "endLine": 2022
+              }
+            ]
+          },
+          "id": "range-dcfce938-9d9e-4e7e-92ff-6416e71e047d",
+          "originalLines": [
+            "      jumpHistory={jumpHistory}",
+            "      onJumpSection={jumpToMarkdownSection}",
+            "      onReplayJump={(entry) => paneNavigation.jump(entry)}",
+            "      onClearHistory={() => paneNavigation.clearHistory()}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-4a31f20b-88cd-4a73-a3ea-6ef8194e4e70",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-29efeb8e-8587-43e9-b1e3-245c809fae29",
+        "codeEntitiesSetId": "entities-0c504834-1912-4666-a611-fa1505bcd46e"
+      },
+      "handle": "representation-evidence-corpus-reveal",
+      "label": "Evidence-mediated reveal - App.tsx:revealCodeEntity -> CodeEntitiesPanel",
+      "category": "operation",
+      "summary": "A Representation-initiated source reveal is addressed by Evidence entity ID and source-range index. revealCodeEntity creates a recorded source-location jump to the Code Entities tab; CodeEntitiesPanel selects that Evidence and its exact range before presenting Corpus content.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 27,
+          "endLine": 29,
+          "symbol": "Representation -> Evidence -> Corpus rule",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 27,
+                "endLine": 29
+              }
+            ]
+          },
+          "id": "range-7e256745-793d-4bba-9f7a-c6651537c4bd",
+          "originalLines": [
+            "A Representation-initiated source reveal must always follow",
+            "`Representation -> Evidence -> Corpus`. Direct Workspace-to-Corpus access is",
+            "allowed only for explicit browsing, such as opening a file or Markdown section."
+          ]
+        },
+        {
+          "path": "src/App.tsx",
+          "startLine": 1673,
+          "endLine": 1693,
+          "symbol": "revealCodeEntity",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 1673,
+                "endLine": 1693
+              }
+            ]
+          },
+          "id": "range-96c07f69-29b9-4209-9bec-6c1aa60d771c",
+          "originalLines": [
+            "  const revealCodeEntity = (",
+            "    target: Pick<DiagramElementMapping, \"entityId\" | \"sourceRangeIndex\">",
+            "  ) => {",
+            "    const entity = resolutionEntities.find((candidate) => candidate.id === target.entityId);",
+            "    const range = entity?.sourceRanges[target.sourceRangeIndex];",
+            "    paneNavigation.jump({",
+            "      key: `code-entity:${activeSet.id}:${target.entityId}:${target.sourceRangeIndex}`,",
+            "      kind: \"source-location\",",
+            "      paneId: CONTEXT_PANE_ID,",
+            "      tabId: \"code-entities\",",
+            "      label: entity?.label ?? target.entityId,",
+            "      detail: range ? `${range.path}:L${range.startLine}` : undefined,",
+            "      payload: {",
+            "        type: \"code-entity\",",
+            "        entityId: target.entityId,",
+            "        sourceRangeIndex: target.sourceRangeIndex,",
+            "        path: range?.path,",
+            "        line: range?.startLine",
+            "      } satisfies SourceLocationJumpPayload",
+            "    });",
+            "  };"
+          ]
+        },
+        {
+          "path": "src/components/CodeEntitiesPanel.tsx",
+          "startLine": 109,
+          "endLine": 143,
+          "symbol": "CodeEntitiesPanel reveal handling",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 109,
+                "endLine": 143
+              }
+            ]
+          },
+          "id": "range-3ef93bab-d43c-41ec-997d-a3f959615e1b",
+          "originalLines": [
+            "  useEffect(() => {",
+            "    if (!props.reveal) return;",
+            "    if (props.reveal.entityId) {",
+            "      const entity = visible.find((candidate) => candidate.id === props.reveal?.entityId);",
+            "      const rangeIndex = props.reveal.sourceRangeIndex ?? 0;",
+            "      const range = entity?.sourceRanges[rangeIndex];",
+            "      if (!entity || !range) return;",
+            "      selectEntity(entity.id, rangeIndex);",
+            "      setJumpTarget({",
+            "        requestId: props.reveal.requestId,",
+            "        line: props.reveal.targetLine ?? range.startLine,",
+            "        startLine: props.reveal.highlightRange?.startLine ?? range.startLine,",
+            "        endLine: props.reveal.highlightRange?.endLine ?? range.endLine",
+            "      });",
+            "      return;",
+            "    }",
+            "    if (!props.reveal.path || !props.reveal.targetLine) return;",
+            "    const matches = visible.flatMap((entity) => entity.sourceRanges.flatMap((range, rangeIndex) => (",
+            "      range.path === props.reveal?.path ? [{ entity, range, rangeIndex }] : []",
+            "    )));",
+            "    const target = matches",
+            "      .filter(({ range }) => range.startLine <= props.reveal!.targetLine!",
+            "        && props.reveal!.targetLine! <= range.endLine)",
+            "      .sort((left, right) => (",
+            "        (left.range.endLine - left.range.startLine) - (right.range.endLine - right.range.startLine)",
+            "      ))[0] ?? matches[0];",
+            "    if (!target) return;",
+            "    selectEntity(target.entity.id, target.rangeIndex);",
+            "    setJumpTarget({",
+            "      requestId: props.reveal.requestId,",
+            "      line: props.reveal.targetLine,",
+            "      startLine: props.reveal.highlightRange?.startLine ?? props.reveal.targetLine,",
+            "      endLine: props.reveal.highlightRange?.endLine ?? props.reveal.targetLine",
+            "    });",
+            "  }, [props.reveal?.requestId, selectEntity, visible]);"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-aa72d988-f21b-4fc1-aab4-940a4f3636d4",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-29efeb8e-8587-43e9-b1e3-245c809fae29",
+        "codeEntitiesSetId": "entities-0c504834-1912-4666-a611-fa1505bcd46e"
+      },
+      "handle": "evidence-range-source-resolution",
+      "label": "Selected Evidence range -> fetchSourceSnippet - CodeEntitiesPanel.tsx",
+      "category": "operation",
+      "summary": "CodeEntitiesPanel exposes Evidence label, summary, handle, and source-range selection. For a local active range it calls fetchSourceSnippet; foreign Evidence can instead use its captured original lines, after which the supporting Corpus preview is ready for verification.",
+      "sourceRanges": [
+        {
+          "path": "src/components/CodeEntitiesPanel.tsx",
+          "startLine": 78,
+          "endLine": 101,
+          "symbol": "activeEntity; activeRange; selectEntity; openLinkedAnchor",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 78,
+                "endLine": 101
+              }
+            ]
+          },
+          "id": "range-dbdfe4df-d35e-4a92-b028-e797cd629911",
+          "originalLines": [
+            "  const activeEntity = visible.find((entity) => entity.id === activeEntityId) ?? visible[0];",
+            "  const activeRange = activeEntity?.sourceRanges[activeRangeIndex] ?? activeEntity?.sourceRanges[0];",
+            "  const selected = activeEntity ? props.selectedIds?.has(activeEntity.id) ?? true : false;",
+            "  const markdownAnchor = Boolean(",
+            "    preview",
+            "    && props.contentPresentation.markdownRendering === \"terminal\"",
+            "    && isMarkdownDocumentPath(preview.path)",
+            "  );",
+            "",
+            "  const selectEntity = useCallback((entityId: string, rangeIndex = 0) => {",
+            "    setActiveEntityId(entityId);",
+            "    setActiveRangeIndex(rangeIndex);",
+            "    setJumpTarget(null);",
+            "  }, []);",
+            "",
+            "  const openLinkedAnchor = useCallback((path: string) => {",
+            "    for (const entity of visible) {",
+            "      const rangeIndex = entity.sourceRanges.findIndex((range) => range.path === path);",
+            "      if (rangeIndex >= 0) {",
+            "        selectEntity(entity.id, rangeIndex);",
+            "        return;",
+            "      }",
+            "    }",
+            "    setSourceError(`Linked file is not available as a CodeEntity anchor: ${path}`);"
+          ]
+        },
+        {
+          "path": "src/components/CodeEntitiesPanel.tsx",
+          "startLine": 150,
+          "endLine": 189,
+          "symbol": "fetchSourceSnippet resolution",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 150,
+                "endLine": 189
+              }
+            ]
+          },
+          "id": "range-b131e92c-4a39-466e-80c2-88e1b7c64d0e",
+          "originalLines": [
+            "  useEffect(() => {",
+            "    if (!activeEntity || !activeRange) {",
+            "      setPreview(null);",
+            "      return;",
+            "    }",
+            "    let cancelled = false;",
+            "    // Keep an already-rendered document mounted while jumping between ranges",
+            "    // in that same file. This lets smooth scrolling begin at the reader's",
+            "    // current position instead of recreating the iframe at scroll position 0.",
+            "    setPreview((current) => current?.path === activeRange.path ? current : null);",
+            "    setSourceError(null);",
+            "    if (activeEntity.origin && activeEntity.origin.diagramSetId !== props.setId) {",
+            "      if (activeRange.originalLines) {",
+            "        setPreview({",
+            "          path: activeRange.path,",
+            "          startLine: activeRange.startLine,",
+            "          lines: activeRange.originalLines",
+            "        });",
+            "        setSourceLoading(false);",
+            "      } else {",
+            "        setSourceError(\"The foreign CodeEntity does not include a captured source snapshot.\");",
+            "        setSourceLoading(false);",
+            "      }",
+            "      return;",
+            "    }",
+            "    setSourceLoading(true);",
+            "    void fetchSourceSnippet(props.setId, activeEntity.id, activeRangeIndex)",
+            "      .then((result) => {",
+            "        if (!cancelled) setPreview(result);",
+            "      })",
+            "      .catch((caught) => {",
+            "        if (!cancelled) {",
+            "          setSourceError(caught instanceof Error ? caught.message : \"source preview failed\");",
+            "        }",
+            "      })",
+            "      .finally(() => {",
+            "        if (!cancelled) setSourceLoading(false);",
+            "      });",
+            "    return () => { cancelled = true; };",
+            "  }, [activeEntity?.id, activeRange, activeRangeIndex, props.setId]);"
+          ]
+        },
+        {
+          "path": "src/components/CodeEntitiesPanel.tsx",
+          "startLine": 225,
+          "endLine": 261,
+          "symbol": "Evidence inspection controls",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 225,
+                "endLine": 261
+              }
+            ]
+          },
+          "id": "range-7da21efb-9a87-44ab-9255-bc05d14d3f49",
+          "originalLines": [
+            "        {activeEntity ? (",
+            "          <div className=\"entity-context__body\" data-active-entity-id={activeEntity.id}>",
+            "            <label className=\"entity-context__select\">",
+            "              <span>Entity</span>",
+            "              <select",
+            "                aria-label=\"Active code entity\"",
+            "                value={activeEntity.id}",
+            "                onChange={(event) => selectEntity(event.target.value)}",
+            "              >",
+            "                {visible.map((entity) => (",
+            "                  <option value={entity.id} key={entity.id}>{entity.label}</option>",
+            "                ))}",
+            "              </select>",
+            "            </label>",
+            "            <div className=\"entity-context__description\">",
+            "              <div>",
+            "                <strong>{activeEntity.label}</strong>",
+            "                <code>{categoryLabel(activeEntity)}</code>",
+            "              </div>",
+            "              <p>{activeEntity.summary}</p>",
+            "              <code className=\"entity-handle\">@entity/{activeEntity.handle}</code>",
+            "            </div>",
+            "            <label className=\"entity-context__select entity-context__range\">",
+            "              <span>Source range</span>",
+            "              <select",
+            "                aria-label=\"Active source range\"",
+            "                value={activeRangeIndex}",
+            "                onChange={(event) => {",
+            "                  setActiveRangeIndex(Number(event.target.value));",
+            "                }}",
+            "              >",
+            "                {activeEntity.sourceRanges.map((range, index) => (",
+            "                  <option value={index} key={`${range.path}:${range.startLine}:${index}`}>",
+            "                    {range.path}:{range.startLine}-{range.endLine}",
+            "                  </option>",
+            "                ))}",
+            "              </select>"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-5a4aab8f-8d13-453b-8c93-23c52e7026b5",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-29efeb8e-8587-43e9-b1e3-245c809fae29",
+        "codeEntitiesSetId": "entities-0c504834-1912-4666-a611-fa1505bcd46e"
+      },
+      "handle": "source-renderer-dispatch",
+      "label": "Policy dispatch -> SourceCodeView | TerminalMarkdownView - CodeEntitiesPanel.tsx",
+      "category": "operation",
+      "summary": "After loading a source preview, CodeEntitiesPanel consults ContentPresentation and the file type. Terminal-rendered Markdown is sent to TerminalMarkdownView with line/range targets and outline callbacks; other content is sent to SourceCodeView with compaction and presentation policy.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 100,
+          "endLine": 109,
+          "symbol": "C1 / Source presentation",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 100,
+                "endLine": 109
+              }
+            ]
+          },
+          "id": "range-de583f1b-4093-41ad-82db-750114b808f8",
+          "originalLines": [
+            "### Source presentation",
+            "",
+            "`CodeEntitiesPanel` resolves an Evidence source range through",
+            "`fetchSourceSnippet`. It then chooses a renderer from the active content",
+            "presentation policy.",
+            "",
+            "`SourceCodeView` provides syntax highlighting, compacted source, expandable",
+            "omitted sections, and semantic call-graph nodes. `TerminalMarkdownView`",
+            "provides rendered Markdown, headings, links, sidenotes, and highlighted code",
+            "fences."
+          ]
+        },
+        {
+          "path": "src/components/CodeEntitiesPanel.tsx",
+          "startLine": 78,
+          "endLine": 85,
+          "symbol": "markdownAnchor",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 78,
+                "endLine": 85
+              }
+            ]
+          },
+          "id": "range-a971c37e-ecb0-4a08-9625-c2db65d09a13",
+          "originalLines": [
+            "  const activeEntity = visible.find((entity) => entity.id === activeEntityId) ?? visible[0];",
+            "  const activeRange = activeEntity?.sourceRanges[activeRangeIndex] ?? activeEntity?.sourceRanges[0];",
+            "  const selected = activeEntity ? props.selectedIds?.has(activeEntity.id) ?? true : false;",
+            "  const markdownAnchor = Boolean(",
+            "    preview",
+            "    && props.contentPresentation.markdownRendering === \"terminal\"",
+            "    && isMarkdownDocumentPath(preview.path)",
+            "  );"
+          ]
+        },
+        {
+          "path": "src/components/CodeEntitiesPanel.tsx",
+          "startLine": 319,
+          "endLine": 364,
+          "symbol": "CodeEntitiesPanel renderer dispatch",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 319,
+                "endLine": 364
+              }
+            ]
+          },
+          "id": "range-b5c17d81-8ec2-45b2-9a7b-60f889a02f67",
+          "originalLines": [
+            "      <section",
+            "        className={props.reveal?.entityId === activeEntity?.id ? \"source-workspace is-revealed\" : \"source-workspace\"}",
+            "        aria-label=\"Source code\"",
+            "        data-active-entity-id={activeEntity?.id}",
+            "      >",
+            "        <header className=\"source-workspace__toolbar\">",
+            "          <div>",
+            "            <strong>{preview?.path ?? activeRange?.path ?? \"No source selected\"}</strong>",
+            "            {activeRange?.symbol ? <span>{activeRange.symbol}</span> : null}",
+            "          </div>",
+            "          <div className=\"source-workspace__actions\">",
+            "            {preview ? <code>{markdownAnchor",
+            "              ? \"Terminal Markdown\"",
+            "              : contentLanguageName(preview.path, props.contentPresentation)}</code> : null}",
+            "          </div>",
+            "        </header>",
+            "        <div className=\"source-workspace__body\">",
+            "          {sourceLoading ? <p className=\"source-state\">Loading source...</p> : null}",
+            "          {sourceError ? <p className=\"source-state inline-error\">{sourceError}</p> : null}",
+            "          {preview && activeRange && markdownAnchor ? (",
+            "            <TerminalMarkdownView",
+            "              source={preview.lines.join(\"\\n\")}",
+            "              path={preview.path}",
+            "              targetLine={jumpTarget?.line ?? activeRange.startLine}",
+            "              targetRange={jumpTarget ?? {",
+            "                startLine: activeRange.startLine,",
+            "                endLine: activeRange.endLine",
+            "              }}",
+            "              jumpRequestId={jumpTarget?.requestId}",
+            "              onOpenRepositoryFile={openLinkedAnchor}",
+            "              onOutlineChange={props.onMarkdownOutlineChange}",
+            "              onActiveSectionChange={(section) => props.onMarkdownActiveSectionChange?.({",
+            "                path: preview.path,",
+            "                ...section",
+            "              })}",
+            "            />",
+            "          ) : preview && activeRange ? (",
+            "            <SourceCodeView",
+            "              preview={preview}",
+            "              range={activeRange}",
+            "              compacted={Boolean(activeRange.compactedSource)}",
+            "              presentation={props.contentPresentation}",
+            "              revealed={props.reveal?.entityId === activeEntity?.id}",
+            "              revealRequestId={props.reveal?.requestId}",
+            "            />",
+            "          ) : null}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-983479dd-b42f-47b7-b1c8-ac9fe5a7a138",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-29efeb8e-8587-43e9-b1e3-245c809fae29",
+        "codeEntitiesSetId": "entities-0c504834-1912-4666-a611-fa1505bcd46e"
+      },
+      "handle": "source-code-presentation",
+      "label": "Code presentation + expandable compaction - SourceCodeView.tsx:SourceCodeView",
+      "category": "operation",
+      "summary": "SourceCodeView applies syntax highlighting unless policy says plain, scrolls to the selected range, and can replace compacted source spans with semantic call-graph comments whose omitted source sections and mapped graph nodes are independently expandable.",
+      "sourceRanges": [
+        {
+          "path": "src/components/SourceCodeView.tsx",
+          "startLine": 177,
+          "endLine": 229,
+          "symbol": "SourceCodeView",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 177,
+                "endLine": 229
+              }
+            ]
+          },
+          "id": "range-3ff422f5-f8d4-42e6-8b42-3a7f466bb293",
+          "originalLines": [
+            "export function SourceCodeView(props: {",
+            "  preview: SourceSnippet;",
+            "  range: SourceRange;",
+            "  compacted: boolean;",
+            "  presentation: ContentPresentation;",
+            "  revealed?: boolean;",
+            "  revealRequestId?: number;",
+            "}) {",
+            "  const scrollRef = useRef<HTMLDivElement | null>(null);",
+            "  const [highlighted, setHighlighted] = useState<TokensResult | null>(null);",
+            "  const [highlightFailed, setHighlightFailed] = useState(false);",
+            "  const [expandedSections, setExpandedSections] = useState<Set<string>>(() => new Set());",
+            "  const [expandedGraphNodes, setExpandedGraphNodes] = useState<Set<string>>(() => new Set());",
+            "  const source = useMemo(() => props.preview.lines.join(\"\\n\"), [props.preview.lines]);",
+            "  const sourceIdentity = `${props.preview.path}:${props.preview.startLine}:${source}`;",
+            "  const sections = useMemo(",
+            "    () => collapsedSections(props.range, props.preview),",
+            "    [props.preview, props.range]",
+            "  );",
+            "  const sectionsByStart = useMemo(",
+            "    () => new Map(sections.map((section) => [section.startLine, section])),",
+            "    [sections]",
+            "  );",
+            "",
+            "  useEffect(() => {",
+            "    let cancelled = false;",
+            "    setHighlighted(null);",
+            "    setHighlightFailed(false);",
+            "    if (props.presentation.syntaxHighlighting === \"plain\") return undefined;",
+            "    void tokenizeSource(props.preview.path, source).then((result) => {",
+            "      if (!cancelled) setHighlighted(result);",
+            "    }).catch(() => {",
+            "      if (!cancelled) setHighlightFailed(true);",
+            "    });",
+            "    return () => { cancelled = true; };",
+            "  }, [props.presentation.syntaxHighlighting, props.preview.path, source]);",
+            "",
+            "  useEffect(() => {",
+            "    setExpandedSections(new Set());",
+            "    setExpandedGraphNodes(new Set());",
+            "  }, [sourceIdentity, props.range.compactedSource]);",
+            "",
+            "  useEffect(() => {",
+            "    const viewer = scrollRef.current;",
+            "    if (!viewer) return;",
+            "    viewer.scrollLeft = 0;",
+            "    const target = viewer.querySelector<HTMLElement>(",
+            "      `.source-code-line[data-line=\"${props.range.startLine}\"]`",
+            "    );",
+            "    viewer.scrollTop = target",
+            "      ? Math.max(0, target.offsetTop - viewer.clientHeight * 0.2)",
+            "      : 0;",
+            "  }, [props.range.startLine, props.revealRequestId, sourceIdentity]);"
+          ]
+        },
+        {
+          "path": "src/components/SourceCodeView.tsx",
+          "startLine": 239,
+          "endLine": 260,
+          "symbol": "SourceCodeView compacted section",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 239,
+                "endLine": 260
+              }
+            ]
+          },
+          "id": "range-bee69b52-3b09-404a-ad3f-72d27d6d963d",
+          "originalLines": [
+            "    if (props.presentation.sourceCompaction && props.compacted && section && !expanded) {",
+            "      const graphLines = section.comment.replace(/\\r\\n?/g, \"\\n\").split(\"\\n\");",
+            "      const nodesByGraphLine = new Map(section.nodes?.map((node) => [node.graphLine, node]) ?? []);",
+            "      const sourceIndent = props.preview.lines[index]?.match(/^\\s*/)?.[0] ?? \"\";",
+            "      rows.push(",
+            "        <div",
+            "          className=\"source-fold-placeholder\"",
+            "          key={`fold:${key}`}",
+            "        >",
+            "          <span className=\"source-line-gutter\">",
+            "            <button",
+            "              type=\"button\"",
+            "              className=\"source-fold-marker source-section-fold-toggle\"",
+            "              aria-label={`Reveal all original lines ${section.startLine} through ${section.endLine}`}",
+            "              title={`Reveal all lines ${section.startLine}-${section.endLine}`}",
+            "              onClick={() => setExpandedSections((current) => new Set(current).add(key))}",
+            "            >[+]</button>",
+            "          </span>",
+            "          <div className=\"source-fold-copy\">",
+            "            <div className=\"source-call-graph-line\">",
+            "              <span aria-hidden=\"true\" />",
+            "              <span>{`${sourceIndent}// [Lines ${section.startLine}-${section.endLine} | ${section.endLine - section.startLine + 1} lines compacted]`}</span>"
+          ]
+        },
+        {
+          "path": "src/components/SourceCodeView.tsx",
+          "startLine": 266,
+          "endLine": 299,
+          "symbol": "SourceCodeView semantic graph node expansion",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 266,
+                "endLine": 299
+              }
+            ]
+          },
+          "id": "range-2ff9cf6f-dfa4-419b-aa76-765a334e3181",
+          "originalLines": [
+            "            {graphLines.map((line, graphIndex) => {",
+            "              const graphLine = graphIndex + 1;",
+            "              const node = nodesByGraphLine.get(graphLine);",
+            "              if (!node) {",
+            "                return (",
+            "                  <div className=\"source-call-graph-line\" key={`graph:${key}:${graphLine}`}>",
+            "                    <span aria-hidden=\"true\" />",
+            "                    <span>{`${sourceIndent}//${line ? ` ${line}` : \"\"}`}</span>",
+            "                  </div>",
+            "                );",
+            "              }",
+            "              const nodeKey = `${key}:${graphLine}`;",
+            "              const nodeExpanded = expandedGraphNodes.has(nodeKey);",
+            "              return (",
+            "                <div className=\"source-call-graph-node-wrap\" key={`graph:${nodeKey}`}>",
+            "                  <button",
+            "                    type=\"button\"",
+            "                    className=\"source-call-graph-node\"",
+            "                    data-graph-line={graphLine}",
+            "                    aria-expanded={nodeExpanded}",
+            "                    aria-label={`${nodeExpanded ? \"Collapse\" : \"Reveal\"} source lines ${node.startLine} through ${node.endLine} for graph node ${line.trim()}`}",
+            "                    onClick={() => setExpandedGraphNodes((current) => {",
+            "                      const next = new Set(current);",
+            "                      if (next.has(nodeKey)) next.delete(nodeKey);",
+            "                      else next.add(nodeKey);",
+            "                      return next;",
+            "                    })}",
+            "                  >",
+            "                    <span className=\"source-call-graph-node-marker\" aria-hidden=\"true\">{nodeExpanded ? \"[-]\" : \"[+]\"}</span>",
+            "                    <span>{`${sourceIndent}//${line ? ` ${line}` : \"\"}`}</span>",
+            "                  </button>",
+            "                  {nodeExpanded ? (",
+            "                    <GraphNodeSource node={node} preview={props.preview} tokenLines={tokenLines} />",
+            "                  ) : null}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-2b6cd15e-f4b8-4aab-9ead-d9aa3623b2c1",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-29efeb8e-8587-43e9-b1e3-245c809fae29",
+        "codeEntitiesSetId": "entities-0c504834-1912-4666-a611-fa1505bcd46e"
+      },
+      "handle": "terminal-markdown-presentation",
+      "label": "Rendered document + highlighted target - TerminalMarkdownView.tsx",
+      "category": "operation",
+      "summary": "TerminalMarkdownView renders Markdown in a sandboxed terminal reader, reports its outline and active section, supports repository-file links, and posts a target line and range to the reader so direct section jumps or Evidence reveals scroll to and highlight the supporting passage.",
+      "sourceRanges": [
+        {
+          "path": "src/components/TerminalMarkdownView.tsx",
+          "startLine": 31,
+          "endLine": 50,
+          "symbol": "TerminalMarkdownView render and outline",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 31,
+                "endLine": 50
+              }
+            ]
+          },
+          "id": "range-a152a78a-3679-45c0-bd83-4c6747850e5d",
+          "originalLines": [
+            "  useEffect(() => {",
+            "    let cancelled = false;",
+            "    setDocument(null);",
+            "    try {",
+            "      props.onOutlineChange?.({ path: props.path, ...parseTerminalMarkdownOutline(props.source) });",
+            "    } catch {",
+            "      // The renderer below owns the visible validation error.",
+            "    }",
+            "    void renderTerminalMarkdownDocument(props.source, props.path)",
+            "      .then((rendered) => {",
+            "        if (!cancelled) setDocument(rendered);",
+            "      })",
+            "      .catch((caught) => {",
+            "        if (!cancelled) {",
+            "          const message = caught instanceof Error ? caught.message : \"Markdown rendering failed\";",
+            "          setDocument(renderTerminalMarkdownErrorDocument(message));",
+            "        }",
+            "      });",
+            "    return () => { cancelled = true; };",
+            "  }, [props.path, props.source, props.onOutlineChange]);"
+          ]
+        },
+        {
+          "path": "src/components/TerminalMarkdownView.tsx",
+          "startLine": 63,
+          "endLine": 86,
+          "symbol": "TerminalMarkdownView messages and revealTargetLine",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 63,
+                "endLine": 86
+              }
+            ]
+          },
+          "id": "range-84edd97f-9ff4-447b-a8c3-ab5027e4cceb",
+          "originalLines": [
+            "      if (payload.type === TERMINAL_MARKDOWN_OPEN_FILE_MESSAGE",
+            "        && typeof payload.path === \"string\"",
+            "        && props.onOpenRepositoryFile) {",
+            "        props.onOpenRepositoryFile(payload.path);",
+            "      } else if (payload.type === TERMINAL_MARKDOWN_ACTIVE_SECTION_MESSAGE",
+            "        && typeof payload.id === \"string\"",
+            "        && typeof payload.line === \"number\"",
+            "        && typeof payload.scrollTop === \"number\") {",
+            "        props.onActiveSectionChange?.({ id: payload.id, line: payload.line, scrollTop: payload.scrollTop });",
+            "      }",
+            "    };",
+            "    window.addEventListener(\"message\", onMessage);",
+            "    return () => window.removeEventListener(\"message\", onMessage);",
+            "  }, [props.onActiveSectionChange, props.onOpenRepositoryFile]);",
+            "",
+            "  const revealTargetLine = () => {",
+            "    if (!props.targetLine) return;",
+            "    frameRef.current?.contentWindow?.postMessage({",
+            "      type: TERMINAL_MARKDOWN_REVEAL_LINE_MESSAGE,",
+            "      line: props.targetLine,",
+            "      startLine: props.targetRange?.startLine,",
+            "      endLine: props.targetRange?.endLine,",
+            "      behavior: props.jumpRequestId ? \"smooth\" : \"auto\"",
+            "    }, \"*\");"
+          ]
+        },
+        {
+          "path": "src/components/TerminalMarkdownView.tsx",
+          "startLine": 89,
+          "endLine": 109,
+          "symbol": "TerminalMarkdownView rendered iframe",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 89,
+                "endLine": 109
+              }
+            ]
+          },
+          "id": "range-d8a10026-8010-4de0-9cac-5e3b05ebb0de",
+          "originalLines": [
+            "  useEffect(() => {",
+            "    if (document) revealTargetLine();",
+            "  }, [",
+            "    document,",
+            "    props.jumpRequestId,",
+            "    props.targetLine,",
+            "    props.targetRange?.endLine,",
+            "    props.targetRange?.startLine",
+            "  ]);",
+            "",
+            "  if (!document) return <p className=\"source-state\">Rendering Markdown...</p>;",
+            "  return (",
+            "    <iframe",
+            "      ref={frameRef}",
+            "      className=\"terminal-markdown-frame\"",
+            "      title={`Rendered Markdown: ${props.path}`}",
+            "      sandbox=\"allow-scripts allow-popups\"",
+            "      srcDoc={document}",
+            "      onLoad={revealTargetLine}",
+            "    />",
+            "  );"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-f193498e-35cb-42b4-9789-031ef010b711",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-29efeb8e-8587-43e9-b1e3-245c809fae29",
+        "codeEntitiesSetId": "entities-0c504834-1912-4666-a611-fa1505bcd46e"
+      },
+      "handle": "persistent-highlight-entry",
+      "label": "Saved mapped context - highlights.ts:HighlightRecordV2",
+      "category": "interface-data-struct",
+      "summary": "A persistent highlight anchors an artifact revision and Representation element to Evidence identity and source range, with an optional document excerpt or tree lineage. It therefore preserves a durable entry point back to supporting Corpus context.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 119,
+          "endLine": 124,
+          "symbol": "C1 / Highlights as Corpus entry points",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 119,
+                "endLine": 124
+              }
+            ]
+          },
+          "id": "range-5cfc54a7-7535-4fef-b3ef-c973cdd2d7f1",
+          "originalLines": [
+            "### Highlights as Corpus entry points",
+            "",
+            "`HighlightsTreePanel` lets a user reopen saved mapped context. A highlight",
+            "retains the artifact and Evidence identity plus an anchored document excerpt or",
+            "tree lineage. Revealing it restores the associated Representation/Evidence",
+            "context and opens the supporting content."
+          ]
+        },
+        {
+          "path": "src/highlights.ts",
+          "startLine": 10,
+          "endLine": 56,
+          "symbol": "HighlightRecordV2; HighlightDocumentExcerpt; HighlightTreeLineageNode",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 10,
+                "endLine": 56
+              }
+            ]
+          },
+          "id": "range-ed9625ed-365a-46dc-a06a-f9e365913f0f",
+          "originalLines": [
+            "export const HIGHLIGHT_RECORD_VERSION = 2 as const;",
+            "",
+            "export interface HighlightTreeLineageNode {",
+            "  /** Revision-scoped structural identity, never a rendered line/column address. */",
+            "  representationElementId: string;",
+            "  /** Creation-time coordinate retained only as snapshot metadata. */",
+            "  line: number;",
+            "  text: string;",
+            "}",
+            "",
+            "export interface HighlightDocumentExcerpt {",
+            "  path: string;",
+            "  startLine: number;",
+            "  endLine: number;",
+            "  lines: string[];",
+            "}",
+            "",
+            "interface HighlightRecordBase {",
+            "  schemaVersion: typeof HIGHLIGHT_RECORD_VERSION;",
+            "  id: string;",
+            "  projectId: string;",
+            "  diagramSetId: string;",
+            "  artifactKind: string;",
+            "  artifactId: string;",
+            "  artifactName: string;",
+            "  artifactRevision: RepresentationRevision;",
+            "  representationElementId: string;",
+            "  /** Creation-time mapping identity retained for toggle compatibility. */",
+            "  mappingId?: string;",
+            "  elementText: string;",
+            "  evidence: EvidenceElementLink;",
+            "  documentExcerpt?: HighlightDocumentExcerpt;",
+            "  createdAt: string;",
+            "}",
+            "",
+            "export type HighlightRecordV2 = HighlightRecordBase & (",
+            "  | {",
+            "      representationKind: \"tree\";",
+            "      treeLineage: HighlightTreeLineageNode[];",
+            "    }",
+            "  | {",
+            "      representationKind: \"diagram\";",
+            "      treeLineage?: never;",
+            "    }",
+            ");",
+            "",
+            "export type PersistedHighlightRecord = DiagramHighlightRecord | HighlightRecordV2;"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-13e6d17b-11ae-4e8c-93a3-88aa23f3671e",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-29efeb8e-8587-43e9-b1e3-245c809fae29",
+        "codeEntitiesSetId": "entities-0c504834-1912-4666-a611-fa1505bcd46e"
+      },
+      "handle": "highlight-restore-context",
+      "label": "HighlightsTreePanel -> restore artifact/Evidence/source - App.tsx:revealHighlight",
+      "category": "operation",
+      "summary": "HighlightsTreePanel groups saved highlights by artifact and lineage and invokes reveal on a saved leaf. revealHighlight restores the saved artifact, extracts its Evidence identity and source-range index, and reuses the Evidence-mediated reveal path to open supporting Corpus content.",
+      "sourceRanges": [
+        {
+          "path": "src/components/HighlightsTreePanel.tsx",
+          "startLine": 19,
+          "endLine": 45,
+          "symbol": "buildTree",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 19,
+                "endLine": 45
+              }
+            ]
+          },
+          "id": "range-239294b3-6fe6-4c06-a806-a96798880fa6",
+          "originalLines": [
+            "function buildTree(highlights: readonly PersistedHighlightRecord[]): HighlightTreeNode[] {",
+            "  const artifacts = new Map<string, HighlightTreeNode>();",
+            "  for (const highlight of highlights) {",
+            "    const artifactKey = `${highlight.diagramSetId}:${highlight.artifactId}`;",
+            "    let artifact = artifacts.get(artifactKey);",
+            "    if (!artifact) {",
+            "      artifact = { key: artifactKey, text: highlight.artifactName, children: [] };",
+            "      artifacts.set(artifactKey, artifact);",
+            "    }",
+            "    let parent = artifact;",
+            "    const lineageNodes = isHighlightRecordV2(highlight)",
+            "      ? highlight.representationKind === \"tree\"",
+            "        ? highlight.treeLineage.map((node) => ({ key: node.representationElementId, text: node.text }))",
+            "        : [{ key: highlight.representationElementId, text: highlightTreeViewLabel(highlight) }]",
+            "      : highlight.lineage.map((node) => ({ key: `${node.graphLine}:${node.text}`, text: node.text }));",
+            "    for (const [index, lineage] of lineageNodes.entries()) {",
+            "      const key = `${artifactKey}:${lineage.key}`;",
+            "      let node = parent.children.find((candidate) => candidate.key === key);",
+            "      if (!node) {",
+            "        node = { key, text: lineage.text, children: [] };",
+            "        parent.children.push(node);",
+            "      }",
+            "      if (index === lineageNodes.length - 1) node.highlight = highlight;",
+            "      parent = node;",
+            "    }",
+            "  }",
+            "  return [...artifacts.values()];"
+          ]
+        },
+        {
+          "path": "src/components/HighlightsTreePanel.tsx",
+          "startLine": 48,
+          "endLine": 55,
+          "symbol": "HighlightsTreePanel",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 48,
+                "endLine": 55
+              }
+            ]
+          },
+          "id": "range-8610144b-c458-421d-814d-c4241f84b44c",
+          "originalLines": [
+            "export function HighlightsTreePanel(props: {",
+            "  highlights: readonly PersistedHighlightRecord[];",
+            "  activeSetId: string;",
+            "  onReveal: (highlight: PersistedHighlightRecord) => void;",
+            "  onRemove: (highlight: PersistedHighlightRecord) => void;",
+            "}) {",
+            "  const highlights = props.highlights.filter((highlight) => highlight.diagramSetId === props.activeSetId);",
+            "  const roots = useMemo(() => buildTree(highlights), [highlights]);"
+          ]
+        },
+        {
+          "path": "src/components/HighlightsTreePanel.tsx",
+          "startLine": 88,
+          "endLine": 103,
+          "symbol": "HighlightsTreePanel reveal/remove controls",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 88,
+                "endLine": 103
+              }
+            ]
+          },
+          "id": "range-2dad93a2-eec8-4496-ad87-82fac400c7ba",
+          "originalLines": [
+            "          {node.highlight ? (",
+            "            <button",
+            "              type=\"button\"",
+            "              className=\"highlight-tree-label\"",
+            "              onClick={() => props.onReveal(node.highlight!)}",
+            "            >{truncate(node.text)}</button>",
+            "          ) : <span className=\"highlight-tree-label\">{truncate(node.text)}</span>}",
+            "          {node.highlight ? (",
+            "            <button",
+            "              type=\"button\"",
+            "              className=\"highlight-tree-remove\"",
+            "              aria-label={`Remove ${node.text} from highlights`}",
+            "              title=\"Remove highlight\"",
+            "              onClick={() => props.onRemove(node.highlight!)}",
+            "            >[x]</button>",
+            "          ) : null}"
+          ]
+        },
+        {
+          "path": "src/App.tsx",
+          "startLine": 1744,
+          "endLine": 1754,
+          "symbol": "revealHighlight",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 1744,
+                "endLine": 1754
+              }
+            ]
+          },
+          "id": "range-4acf1ec4-e63a-4f1e-9783-8cf8de6fb699",
+          "originalLines": [
+            "  const revealHighlight = (highlight: PersistedHighlightRecord) => {",
+            "    if (highlight.artifactKind === \"diagram\") selectDiagram(highlight.artifactId);",
+            "    else selectComponent(highlight.artifactId);",
+            "    const evidence = isHighlightRecordV2(highlight)",
+            "      ? highlight.evidence",
+            "      : { evidenceId: highlight.entityId, sourceRangeIndex: highlight.sourceRangeIndex };",
+            "    revealCodeEntity({",
+            "      entityId: evidence.evidenceId,",
+            "      sourceRangeIndex: evidence.sourceRangeIndex",
+            "    });",
+            "  };"
+          ]
+        }
+      ]
+    }
+  ],
+  "promptConfigId": "prompt-7f0efd4d-ae18-4a18-9951-4506241b996a",
+  "finalizedAt": "2026-08-31T23:39:58.746Z"
+}

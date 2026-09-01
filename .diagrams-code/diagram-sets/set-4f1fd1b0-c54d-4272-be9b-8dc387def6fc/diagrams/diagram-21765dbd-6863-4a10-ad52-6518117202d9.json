@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "diagram-21765dbd-6863-4a10-ad52-6518117202d9",
+  "recordOrigin": {
+    "projectId": "project-ce67f2af4410",
+    "diagramSetId": "set-4f1fd1b0-c54d-4272-be9b-8dc387def6fc"
+  },
+  "diagramSetId": "set-4f1fd1b0-c54d-4272-be9b-8dc387def6fc",
+  "viewKind": "diagram",
+  "representationKind": "diagram",
+  "handle": "corpus-verification-paths",
+  "name": "Corpus Verification Paths",
+  "ascii": "Legend: `[D]` = policy/data, `(O)` = operation. Named code labels map to source.\n\n                         CORPUS INTERACTION AND VERIFICATION\n                         ===================================\n\n [User]\n    |\n    v\n [D] DomainProfile / DOCUMENT_PROFILE (src/domainProfiles.ts:9-94)\n       | selects Corpus kind, Evidence schema, and explorer tabs\n       | document mode contributes Sections and persistent Highlights\n       ` controls source-code versus sandboxed-Markdown presentation\n\n (O) FileExplorerPanel.revealEntity (src/components/FileExplorerPanel.tsx:103-214)\n       | live bounded tree; match artifact CodeEntity paths to Corpus files\n       |\n       +-- ordinary file/path --> bounded Corpus list/read below\n       |\n       `-- associated file/entity --> Evidence range in workspace below\n\n (O) HighlightsTreePanel (src/components/HighlightsTreePanel.tsx:13-128)\n       | group persistent artifact lineage and linked Evidence\n       `-- restore artifact + reveal linked source range\n\n                    associated selection / highlight reveal\n                                      |\n                                      v\n (O) CodeEntitiesPanel.selectEntity / openLinkedAnchor (src/components/CodeEntitiesPanel.tsx:76-194)\n       | select CodeEntity ranges, resolve a visible linked path, fetch source\n       | validated Evidence anchor; profile controls presentation dispatch\n       v\n+--------------------------------------------------------------------------------+\n|                    CORPUS - AUTHORITATIVE VERIFICATION SURFACE                 |\n|                                                                                |\n|  (O) FilesystemCorpusProvider (server/corpus.ts:10-122)                        |\n|       canonical-root list/read; reject escapes; serve bounded content          |\n|  (O) DiagramApplication.sourceSnippet (server/application.ts:2279-2303)        |\n|       validate the Evidence anchor and read its complete document              |\n|       overlay captured Evidence lines for comparison with authoritative text   |\n|                                                                                |\n|       presentation policy selects one verification view:                       |\n|       +-- source code --------------------------------------------------+       |\n|  (O) SourceCodeView (src/components/SourceCodeView.tsx:179-361)         |       |\n|       select/highlight exact lines; reveal compacted spans or mapped nodes      |\n|                                                                                |\n|       +-- Markdown -----------------------------------------------------+       |\n|  (O) TerminalMarkdownView (src/components/TerminalMarkdownView.tsx:13-106)     |\n|       render sandboxed Markdown; report outline and active section             |\n|       |                                                                        |\n|       +-- outline / active section                                             |\n|  (O) MarkdownSectionsPanel (src/components/MarkdownSectionsPanel.tsx:76-216)   |\n|       build the section tree; select sections; replay recent section jumps     |\n+--------------------------------------------------------------------------------+\n\n       line selection / section selection / mapped-source reveal\n                                      |\n                                      v\n (O) PaneNavigationApi (src/panes/navigation.ts:3-96)\n       | activate and focus; delay delivery until a destination handler exists\n       | record bounded, deduplicated source/section jump history\n       `-- replay previous jump or clear; return to Explorer, workspace, or view\n                                      |\n                                      +---------------> reversible navigation",
+  "codeEntityIds": [
+    "entity-fd23e95b-bb1d-4ba4-8407-a4d28e282edc",
+    "entity-88474f3b-5a74-444c-8b90-718cfd284096",
+    "entity-8265eea0-05cc-44f0-994f-86902471b76f",
+    "entity-765bd620-e352-45ab-a5c1-e0d464c0fed8",
+    "entity-db354eca-8483-4e88-a670-e8fa7d969d05",
+    "entity-24516d4e-bf75-41de-873d-0bddb87cc031",
+    "entity-7e09bf2d-9ddf-43e4-8746-d63a1a93a2a7",
+    "entity-29e662c3-e8db-4930-8a4c-81f35ae042a7"
+  ],
+  "origin": "generated",
+  "producedByRunId": "run-c7a5bda9-450b-4a15-8019-cc917b494348",
+  "generationPromptConfigId": "prompt-16f4c8cb-7352-476a-addb-c9e86a3f065b",
+  "derivedFromDiagramIds": [],
+  "createdAt": "2026-09-01T01:34:40.125Z"
+}

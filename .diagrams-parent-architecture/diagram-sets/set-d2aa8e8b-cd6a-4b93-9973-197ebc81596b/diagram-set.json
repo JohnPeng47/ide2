@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "set-d2aa8e8b-cd6a-4b93-9973-197ebc81596b",
+  "projectId": "project-ce67f2af4410",
+  "name": "Artifact Refinement and Curation",
+  "initialPrompt": "Selection, edit-session history, immutable edited outputs, evidence remapping, and candidate curation.",
+  "sourceCheckoutRoot": "/home/john/.herdr/worktrees/new-diagram/worktree-transcripts",
+  "gitRevision": "4caa91d5915ce56f643d05115062b275069784d2",
+  "codeEntitiesSetId": "entities-5d08efa1-884a-4187-883c-90f2a03eea2d",
+  "featuredViewIds": {
+    "diagram": "diagram-e4940933-85f9-413a-b882-9287be0a9c8e"
+  },
+  "diagramIds": [
+    "diagram-e4940933-85f9-413a-b882-9287be0a9c8e"
+  ],
+  "diagramComponentIds": [],
+  "generationBatchIds": [],
+  "agentRunIds": [],
+  "editSessionIds": [],
+  "readiness": "ready",
+  "creationMode": "materialized",
+  "createdAt": "2026-09-01T16:19:38.121Z",
+  "updatedAt": "2026-09-01T16:19:38.157Z"
+}

@@ -1,0 +1,166 @@
+{
+  "creationMode": "materialized",
+  "path": "/home/john/.herdr/worktrees/new-diagram/worktree-transcripts",
+  "name": "Experiment Evaluation and Dataset Curation",
+  "domainProfileId": "source-code",
+  "description": "Experiment filesystem discovery, evaluated artifact retrieval, and deduplicated curation into persistent diagram datasets.",
+  "codeEntities": [
+    {
+      "key": "experiment-catalog",
+      "handle": "experiment-catalog",
+      "label": "ExperimentCatalog",
+      "category": "state",
+      "summary": "Reads experiment directories and exposes summarized experiments and individual generated artifacts.",
+      "sourceRanges": [{ "key": "experiment-catalog-class", "path": "server/experimentCatalog.ts", "startLine": 41, "endLine": 185, "symbol": "ExperimentCatalog" }]
+    },
+    {
+      "key": "summarize-experiment",
+      "handle": "summarize-experiment",
+      "label": "summarize",
+      "category": "operation",
+      "summary": "Combines the experiment manifest, project metadata, analyses, generations, and metrics into one summary.",
+      "sourceRanges": [{ "key": "summarize-experiment-method", "path": "server/experimentCatalog.ts", "startLine": 67, "endLine": 140, "symbol": "summarize" }]
+    },
+    {
+      "key": "experiment-summary",
+      "handle": "experiment-summary",
+      "label": "ExperimentSummary",
+      "category": "interface-data-struct",
+      "summary": "Describes an experiment, its project, status, model, axes, and iteration summaries.",
+      "sourceRanges": [{ "key": "experiment-summary-definition", "path": "src/experimentDomain.ts", "startLine": 71, "endLine": 84, "symbol": "ExperimentSummary" }]
+    },
+    {
+      "key": "load-experiment-artifact",
+      "handle": "load-experiment-artifact",
+      "label": "artifact",
+      "category": "operation",
+      "summary": "Validates experiment coordinates and loads one generation record as a complete diagram artifact.",
+      "sourceRanges": [{ "key": "load-experiment-artifact-method", "path": "server/experimentCatalog.ts", "startLine": 151, "endLine": 184, "symbol": "artifact" }]
+    },
+    {
+      "key": "experiment-diagram-artifact",
+      "handle": "experiment-diagram-artifact",
+      "label": "ExperimentDiagramArtifact",
+      "category": "interface-data-struct",
+      "summary": "Carries generated ASCII, CodeEntity IDs, metrics, prompt configuration, and model identity.",
+      "sourceRanges": [{ "key": "experiment-diagram-artifact-definition", "path": "src/experimentDomain.ts", "startLine": 90, "endLine": 98, "symbol": "ExperimentDiagramArtifact" }]
+    },
+    {
+      "key": "experiment-viewer-page",
+      "handle": "experiment-viewer-page",
+      "label": "ExperimentViewerPage",
+      "category": "operation",
+      "summary": "Loads experiment and dataset catalogs, presents evaluated artifacts, and initiates dataset curation actions.",
+      "sourceRanges": [{ "key": "experiment-viewer-page-component", "path": "src/components/ExperimentViewerPage.tsx", "startLine": 376, "endLine": 617, "symbol": "ExperimentViewerPage" }]
+    },
+    {
+      "key": "diagram-dataset-store",
+      "handle": "diagram-dataset-store",
+      "label": "DiagramDatasetStore",
+      "category": "state",
+      "summary": "Persists curated dataset collections and provides listing, insertion, labeling, and removal operations.",
+      "sourceRanges": [{ "key": "diagram-dataset-store-class", "path": "server/diagramDatasetStore.ts", "startLine": 61, "endLine": 168, "symbol": "DiagramDatasetStore" }]
+    },
+    {
+      "key": "add-dataset-item",
+      "handle": "add-dataset-item",
+      "label": "addItem",
+      "category": "operation",
+      "summary": "Normalizes a curated item, deduplicates it by experiment source, and atomically persists the dataset.",
+      "sourceRanges": [{ "key": "add-dataset-item-method", "path": "server/diagramDatasetStore.ts", "startLine": 131, "endLine": 144, "symbol": "addItem" }]
+    },
+    {
+      "key": "diagram-dataset-item-record",
+      "handle": "diagram-dataset-item-record",
+      "label": "DiagramDatasetItemRecord",
+      "category": "interface-data-struct",
+      "summary": "Stores a curated diagram's ASCII, evidence IDs, source coordinates, evaluation metrics, model, prompt, and labels.",
+      "sourceRanges": [{ "key": "diagram-dataset-item-record-definition", "path": "src/datasetDomain.ts", "startLine": 24, "endLine": 30, "symbol": "DiagramDatasetItemRecord" }]
+    },
+    {
+      "key": "diagram-dataset-record",
+      "handle": "diagram-dataset-record",
+      "label": "DiagramDatasetRecord",
+      "category": "interface-data-struct",
+      "summary": "Defines the private persisted dataset document containing its metadata and curated items.",
+      "sourceRanges": [{ "key": "diagram-dataset-record-definition", "path": "server/diagramDatasetStore.ts", "startLine": 12, "endLine": 19, "symbol": "DiagramDatasetRecord" }]
+    },
+    {
+      "key": "list-diagram-datasets",
+      "handle": "list-diagram-datasets",
+      "label": "list",
+      "category": "operation",
+      "summary": "Reads all dataset documents and returns summaries ordered by their latest update time.",
+      "sourceRanges": [{ "key": "list-diagram-datasets-method", "path": "server/diagramDatasetStore.ts", "startLine": 85, "endLine": 108, "symbol": "list" }]
+    },
+    {
+      "key": "update-dataset-labels",
+      "handle": "update-dataset-labels",
+      "label": "updateLabels",
+      "category": "operation",
+      "summary": "Normalizes and replaces labels on a selected dataset item, then atomically saves the collection.",
+      "sourceRanges": [{ "key": "update-dataset-labels-method", "path": "server/diagramDatasetStore.ts", "startLine": 146, "endLine": 158, "symbol": "updateLabels" }]
+    },
+    {
+      "key": "remove-dataset-item",
+      "handle": "remove-dataset-item",
+      "label": "removeItem",
+      "category": "operation",
+      "summary": "Removes a selected item from its dataset and atomically saves the updated collection.",
+      "sourceRanges": [{ "key": "remove-dataset-item-method", "path": "server/diagramDatasetStore.ts", "startLine": 160, "endLine": 167, "symbol": "removeItem" }]
+    },
+    {
+      "key": "diagram-dataset-catalog-snapshot",
+      "handle": "diagram-dataset-catalog-snapshot",
+      "label": "DiagramDatasetCatalogSnapshot",
+      "category": "interface-data-struct",
+      "summary": "Provides the UI-facing collection of diagram dataset summaries.",
+      "sourceRanges": [{ "key": "diagram-dataset-catalog-snapshot-definition", "path": "src/datasetDomain.ts", "startLine": 41, "endLine": 43, "symbol": "DiagramDatasetCatalogSnapshot" }]
+    }
+  ],
+  "diagrams": [
+    {
+      "key": "experiment-evaluation-and-dataset-curation",
+      "handle": "experiment-evaluation-and-dataset-curation",
+      "name": "Experiment Evaluation and Dataset Curation",
+      "viewKind": "diagram",
+      "representationKind": "diagram",
+      "ascii": "                     EXPERIMENT EVALUATION AND DATASET CURATION\n\n [X] Experiment run directories\n experiment.json\n analysis.json\n generation records\n metrics\n              |\n              v\n [R] ExperimentCatalog\n reads experiment filesystem\n              |\n       +------+--------------------+\n       |                           |\n       v                           v\n [R] summarize()             [R] artifact()\n       |                           |\n       v                           v\n [P] ExperimentSummary       [P] ExperimentDiagramArtifact\n axes                          ASCII\n iterations                    codeEntityIds\n aggregate metrics             modelId\n prompt analysis               promptConfigId\n diagram summaries             metrics\n       |                           |\n       v                           |\n GET /api/experiments             |\n       |                           |\n       v                           |\n [R] ExperimentViewerPage         |\n       |                           |\n       | select experiment output |\n       +-------------+-------------+\n                     |\n                     v\n POST /api/diagram-datasets/:datasetId/items\n                     |\n        validate catalog/axis/iteration/value\n                     |\n                     v\n           [R] ExperimentCatalog.artifact()\n                     |\n                     v\n            [R] DiagramDatasetStore.addItem()\n                     |\n                     v\n            [P] DiagramDatasetItemRecord\n            source:\n              catalog/project/axis/iteration\n            artifact:\n              ASCII + CodeEntity IDs\n            evaluation:\n              metrics + tested prompt\n            generation:\n              model + prompt config\n            curation:\n              labels\n                     |\n             deduplicate by source\n                     |\n                     v\n             [P] DiagramDatasetRecord\n             name\n             items[]\n             createdAt/updatedAt\n                     |\n          +----------+-----------+\n          |          |           |\n          v          v           v\n       list()    updateLabels() removeItem()\n          |          |           |\n          +----------+-----------+\n                     |\n                     v\n        [R] DiagramDatasetCatalogSnapshot",
+      "codeEntityKeys": [
+        "experiment-catalog",
+        "summarize-experiment",
+        "experiment-summary",
+        "load-experiment-artifact",
+        "experiment-diagram-artifact",
+        "experiment-viewer-page",
+        "diagram-dataset-store",
+        "add-dataset-item",
+        "diagram-dataset-item-record",
+        "diagram-dataset-record",
+        "list-diagram-datasets",
+        "update-dataset-labels",
+        "remove-dataset-item",
+        "diagram-dataset-catalog-snapshot"
+      ],
+      "mappings": [
+        { "entityKey": "experiment-catalog", "sourceRangeKey": "experiment-catalog-class", "line": 10, "startColumn": 6, "endColumn": 22 },
+        { "entityKey": "summarize-experiment", "sourceRangeKey": "summarize-experiment-method", "line": 16, "startColumn": 6, "endColumn": 14 },
+        { "entityKey": "load-experiment-artifact", "sourceRangeKey": "load-experiment-artifact-method", "line": 16, "startColumn": 34, "endColumn": 41 },
+        { "entityKey": "experiment-summary", "sourceRangeKey": "experiment-summary-definition", "line": 19, "startColumn": 6, "endColumn": 22 },
+        { "entityKey": "experiment-diagram-artifact", "sourceRangeKey": "experiment-diagram-artifact-definition", "line": 19, "startColumn": 34, "endColumn": 58 },
+        { "entityKey": "experiment-viewer-page", "sourceRangeKey": "experiment-viewer-page-component", "line": 30, "startColumn": 6, "endColumn": 25 },
+        { "entityKey": "diagram-dataset-store", "sourceRangeKey": "diagram-dataset-store-class", "line": 44, "startColumn": 17, "endColumn": 35 },
+        { "entityKey": "add-dataset-item", "sourceRangeKey": "add-dataset-item-method", "line": 44, "startColumn": 37, "endColumn": 43 },
+        { "entityKey": "diagram-dataset-item-record", "sourceRangeKey": "diagram-dataset-item-record-definition", "line": 47, "startColumn": 17, "endColumn": 40 },
+        { "entityKey": "diagram-dataset-record", "sourceRangeKey": "diagram-dataset-record-definition", "line": 62, "startColumn": 18, "endColumn": 37 },
+        { "entityKey": "list-diagram-datasets", "sourceRangeKey": "list-diagram-datasets-method", "line": 70, "startColumn": 8, "endColumn": 11 },
+        { "entityKey": "update-dataset-labels", "sourceRangeKey": "update-dataset-labels-method", "line": 70, "startColumn": 18, "endColumn": 29 },
+        { "entityKey": "remove-dataset-item", "sourceRangeKey": "remove-dataset-item-method", "line": 70, "startColumn": 33, "endColumn": 42 },
+        { "entityKey": "diagram-dataset-catalog-snapshot", "sourceRangeKey": "diagram-dataset-catalog-snapshot-definition", "line": 75, "startColumn": 13, "endColumn": 41 }
+      ]
+    }
+  ],
+  "featuredViews": {
+    "diagram": "experiment-evaluation-and-dataset-curation"
+  }
+}

@@ -1,0 +1,758 @@
+{
+  "schemaVersion": 1,
+  "id": "entities-8b189680-d1f2-4845-9083-10760d1a7b13",
+  "diagramSetId": "set-67b9fe77-5cee-4570-ac72-287cdcc6a2f0",
+  "revision": 1,
+  "status": "finalized",
+  "entities": [
+    {
+      "id": "entity-ec2cf07f-170a-4607-b531-8f6bb9e51be4",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-67b9fe77-5cee-4570-ac72-287cdcc6a2f0",
+        "codeEntitiesSetId": "entities-8b189680-d1f2-4845-9083-10760d1a7b13"
+      },
+      "handle": "companion-tree-contract",
+      "label": "Companion ASCII tree contract",
+      "category": "interface-data-struct",
+      "summary": "The single companion artifact is an independently generated mapped tree rooted at `NEW DIAGRAM REPOSITORY`. It exposes exact D0-D9 labels, places D1-D5 under `RUNTIME CORE`, D6-D8 under `INTERACTIVE STUDIO`, and D9 under `EVALUATION AND TOOLING`, shows the dependency spine without duplicate detail nodes, annotates primary source boundaries, and maps every diagram label to its matching Markdown section.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 394,
+          "endLine": 405,
+          "symbol": "Companion ASCII tree contract",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 394,
+                "endLine": 405
+              }
+            ]
+          },
+          "id": "range-7f76b430-66ce-4663-967f-3b075180ee7f",
+          "originalLines": [
+            "## Companion ASCII tree contract",
+            "",
+            "The companion tree is generated independently from this Markdown document and",
+            "persisted as a mapped Diagram artifact. It should:",
+            "",
+            "- have one root named `NEW DIAGRAM REPOSITORY`;",
+            "- expose D0 through D9 using the exact labels in this plan;",
+            "- group D1 through D5 under `RUNTIME CORE`, D6 through D8 under",
+            "  `INTERACTIVE STUDIO`, and D9 under `EVALUATION AND TOOLING`;",
+            "- show the dependency spine without duplicating detail nodes;",
+            "- annotate each diagram branch with its primary source boundary; and",
+            "- map every diagram label to the corresponding section in this document."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-e6a64ab2-91df-4bbd-a1ea-05b67a6a6918",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-67b9fe77-5cee-4570-ac72-287cdcc6a2f0",
+        "codeEntitiesSetId": "entities-8b189680-d1f2-4845-9083-10760d1a7b13"
+      },
+      "handle": "d0-repository-map",
+      "label": "D0 - Repository map",
+      "category": "interface-data-struct",
+      "summary": "D0 asks which major subsystems and dependencies connect them. It is the portfolio navigation tree, distinguishes server, shared-domain, client, and offline-tooling boundaries, and carries only the dependency spine; method-level control flow is excluded in favor of links to D1-D9.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 61,
+          "endLine": 89,
+          "symbol": "D0 - Repository map",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 61,
+                "endLine": 89
+              }
+            ]
+          },
+          "id": "range-337cf757-02c9-4b40-ae6f-4892ea4fae40",
+          "originalLines": [
+            "### D0 - Repository map",
+            "",
+            "Question: What are the major subsystems, and which dependencies connect them?",
+            "",
+            "This is the navigation tree for the portfolio. It should show D1 through D9 as",
+            "stable branches, distinguish server, shared-domain, client, and offline tooling",
+            "boundaries, and show only the dependency spine between them.",
+            "",
+            "Primary source anchors:",
+            "",
+            "- `cli.ts`",
+            "- `vite.config.ts`",
+            "- `server/http.ts`",
+            "- `server/application.ts`",
+            "- `server/agentRuntime.ts`",
+            "- `server/store.ts`",
+            "- `src/domain.ts`",
+            "- `src/api.ts`",
+            "- `src/App.tsx`",
+            "- `experiments/runner.ts`",
+            "",
+            "Exclude method-level control flow. D0 points to detail diagrams instead of",
+            "repeating them.",
+            "",
+            "Suggested generation instruction:",
+            "",
+            "> Map the repository as an ASCII navigation tree. Show D1 through D9, their",
+            "> owning runtime boundaries, and the minimum dependency edges needed to choose",
+            "> the next detail diagram."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-8147fb29-532d-4d80-8651-f5a79badfb94",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-67b9fe77-5cee-4570-ac72-287cdcc6a2f0",
+        "codeEntitiesSetId": "entities-8b189680-d1f2-4845-9083-10760d1a7b13"
+      },
+      "handle": "d1-workspace-bootstrap-transport",
+      "label": "D1 - Workspace bootstrap and transport",
+      "category": "operation",
+      "summary": "D1 traces CLI and browser entry into an application operation: CLI configuration, Vite middleware, HTTP parsing and NDJSON progress, application validation/orchestration, browser HTTP adaptation, and React mounting. Its source boundary is `cli.ts`, `vite.config.ts`, `server/http.ts`, relevant `server/application.ts`, `src/api.ts`, and `src/main.tsx`.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 91,
+          "endLine": 117,
+          "symbol": "D1 - Workspace bootstrap and transport",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 91,
+                "endLine": 117
+              }
+            ]
+          },
+          "id": "range-09ef5d12-8f84-4282-8dd7-2629549fdfb0",
+          "originalLines": [
+            "### D1 - Workspace bootstrap and transport",
+            "",
+            "Question: How does a CLI or browser request enter the studio and reach an",
+            "application operation?",
+            "",
+            "Trace both startup and request paths:",
+            "",
+            "- `cli.ts` resolves paths, domains, ports, and create options;",
+            "- `vite.config.ts` installs the HTTP middleware with configured roots;",
+            "- `server/http.ts` parses endpoints, validates transport-shaped input, and",
+            "  streams NDJSON progress;",
+            "- `server/application.ts` validates the corpus target and starts the requested",
+            "  use case;",
+            "- `src/api.ts` is the browser-side HTTP adapter; and",
+            "- `src/main.tsx` mounts the React application.",
+            "",
+            "Important boundary symbols include `serve`, `diagramApi`,",
+            "`validateDiagramSetTarget`, `createDiagramSet`, `fetchWorkspace`, and",
+            "`generateArtifacts`.",
+            "",
+            "Exclude collection heuristics, prompt construction, and filesystem layouts;",
+            "those belong to D2 through D4.",
+            "",
+            "Suggested generation instruction:",
+            "",
+            "> Show the CLI create stream and browser request path through transport into",
+            "> DiagramApplication, including where validation ends and orchestration begins."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-6ec37fd7-9983-4b23-8cb1-50494fcfb1f4",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-67b9fe77-5cee-4570-ac72-287cdcc6a2f0",
+        "codeEntitiesSetId": "entities-8b189680-d1f2-4845-9083-10760d1a7b13"
+      },
+      "handle": "d2-evidence-prompt-provenance",
+      "label": "D2 - Evidence collection and prompt provenance",
+      "category": "operation",
+      "summary": "D2 traces a request into immutable source-backed evidence with reproducible prompt configuration. Its boundary covers collection prompts and profiles, agent collection/corpus tools, `collectCodeEntities`, shared records, and prompt/config persistence, while distinguishing template revision from rendered config and collecting state from finalized `CodeEntitiesSet`.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 119,
+          "endLine": 145,
+          "symbol": "D2 - Evidence collection and prompt provenance",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 119,
+                "endLine": 145
+              }
+            ]
+          },
+          "id": "range-fdc46a07-3ef3-457e-8a66-fd672fdd39be",
+          "originalLines": [
+            "### D2 - Evidence collection and prompt provenance",
+            "",
+            "Question: How does a user request become an immutable, source-backed evidence",
+            "set with reproducible prompt configuration?",
+            "",
+            "Primary source anchors:",
+            "",
+            "- `server/codeEntityPrompt.ts`",
+            "- `src/prompt.ts`",
+            "- `server/agentRuntime.ts` collection contracts and corpus tools",
+            "- `server/application.ts` `collectCodeEntities`",
+            "- `server/corpus.ts`",
+            "- `src/domainProfiles.ts`",
+            "- `src/domainProfile.ts`",
+            "- the prompt-config and CodeEntity records in `src/domain.ts`",
+            "- prompt/config persistence methods in `server/store.ts`",
+            "",
+            "The diagram should distinguish the persisted template revision from the",
+            "immutable rendered prompt config, and the mutable collecting set from the",
+            "finalized CodeEntitiesSet. It should also show the source-code and document",
+            "evidence vocabularies as two profile-selected policies over the shared flow.",
+            "",
+            "Suggested generation instruction:",
+            "",
+            "> Trace collection from the DiagramSet request through template resolution,",
+            "> agent corpus tools, server validation, source snapshots, prompt provenance,",
+            "> and CodeEntitiesSet finalization."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-fdb8eea1-ea38-4c9f-811b-e15f6a4a1b38",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-67b9fe77-5cee-4570-ac72-287cdcc6a2f0",
+        "codeEntitiesSetId": "entities-8b189680-d1f2-4845-9083-10760d1a7b13"
+      },
+      "handle": "d3-artifact-generation-mapping",
+      "label": "D3 - Artifact generation, references, and mapping",
+      "category": "operation",
+      "summary": "D3 transforms selected evidence and references into validated mapped ASCII. Its boundary includes generation and mapping application methods, agent turns, prompt rendering, submission validation, diagram mapping, derivative/reference resolution, and generation/artifact/mapping records; it preserves candidate batch, Diagram, and mapping-sidecar distinctions.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 147,
+          "endLine": 172,
+          "symbol": "D3 - Artifact generation, references, and mapping",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 147,
+                "endLine": 172
+              }
+            ]
+          },
+          "id": "range-32d4ec21-137c-42f6-b6f1-f3a386dc9e6c",
+          "originalLines": [
+            "### D3 - Artifact generation, references, and mapping",
+            "",
+            "Question: How are selected evidence and references transformed into a",
+            "validated, mapped ASCII artifact?",
+            "",
+            "Primary source anchors:",
+            "",
+            "- `server/application.ts` `generateInitialDiagrams`, `generate`,",
+            "  `mapCodeEntities`, and `mapCodeEntitiesBatch`",
+            "- `server/agentRuntime.ts` generation and mapping turns",
+            "- `src/prompt.ts` generation, reference, and mapping prompt rendering",
+            "- `server/validatedSubmission.ts`",
+            "- `server/diagramMapping.ts`",
+            "- `src/derivativePrompt.ts`",
+            "- `src/referenceResolver.ts`",
+            "- generation, batch, artifact, and mapping records in `src/domain.ts`",
+            "",
+            "Show the three-turn lifecycle when enabled: initial artifact submission,",
+            "reference follow-up, and mandatory mapping follow-up. Preserve the distinction",
+            "between a candidate batch, a Diagram record, and its mapping sidecar.",
+            "",
+            "Suggested generation instruction:",
+            "",
+            "> Trace one generation batch from selected evidence and typed references to",
+            "> parallel candidates, validated ASCII, persisted artifacts, and exact mapping",
+            "> sidecars, including failure isolation."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-750a88f7-a308-4502-a70c-3407b57bb590",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-67b9fe77-5cee-4570-ac72-287cdcc6a2f0",
+        "codeEntitiesSetId": "entities-8b189680-d1f2-4845-9083-10760d1a7b13"
+      },
+      "handle": "d4-persistence-provenance-imports",
+      "label": "D4 - Persistence, corpus, provenance, and imports",
+      "category": "operation",
+      "summary": "D4 explains durable records, storage, and resolvable local/imported identities. Its boundary centers on store and corpus modules, persisted domain/highlight/representation records, import and mapped-bundle operations, API import/export, and migrations, including project ownership, global imports, recovery, and provenance keys.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 174,
+          "endLine": 204,
+          "symbol": "D4 - Persistence, corpus, provenance, and imports",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 174,
+                "endLine": 204
+              }
+            ]
+          },
+          "id": "range-7fe736d7-f23c-460b-8d23-68a6e75655a5",
+          "originalLines": [
+            "### D4 - Persistence, corpus, provenance, and imports",
+            "",
+            "Question: Which records are durable, where are they stored, and how do local",
+            "and imported identities remain resolvable?",
+            "",
+            "Primary source anchors:",
+            "",
+            "- `server/store.ts`",
+            "- `server/corpus.ts`",
+            "- persisted record types in `src/domain.ts`",
+            "- highlight records in `src/highlights.ts`",
+            "- representation graph records in `src/representationGraph.ts`",
+            "- `server/application.ts` `importArtifact` and `mappedArtifactBundle`",
+            "- import/export functions in `src/api.ts`",
+            "- migration scripts under `scripts/`",
+            "",
+            "The diagram should show atomic JSON writes, the project index, DiagramSet-owned",
+            "records, global import-library records, trash/recovery, and the provenance keys",
+            "that prevent foreign artifacts from being treated as local source.",
+            "",
+            "Current constraint: a persistence root is bound to one project domain and one",
+            "corpus. The existing `.diagrams` root is document-oriented. Code-backed detail",
+            "diagrams should therefore use a separate source-code root, such as",
+            "`.diagrams-code`, then enter the document workspace through exported mapped",
+            "bundles when a combined view is useful.",
+            "",
+            "Suggested generation instruction:",
+            "",
+            "> Map durable ownership from project.json through DiagramSets and global",
+            "> imports, emphasizing atomic writes, provenance, corpus boundaries, and",
+            "> recoverable deletion."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-1920dc86-c3f7-4c4d-9ec1-17fb6ed2d144",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-67b9fe77-5cee-4570-ac72-287cdcc6a2f0",
+        "codeEntitiesSetId": "entities-8b189680-d1f2-4845-9083-10760d1a7b13"
+      },
+      "handle": "d5-representation-spatial-interaction",
+      "label": "D5 - Representation semantics and spatial interaction",
+      "category": "operation",
+      "summary": "D5 shows how ASCII gains stable structure, evidence links, feedback, highlights, and progress. Its source boundary includes ASCII tree/index/graph/presentation, highlights, agent work, call-graph focus/tree, and related application operations; stable elements derive from artifact-scoped ancestry or mappings rather than display coordinates.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 206,
+          "endLine": 234,
+          "symbol": "D5 - Representation semantics and spatial interaction",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 206,
+                "endLine": 234
+              }
+            ]
+          },
+          "id": "range-802014fc-b75a-4dff-a811-a8cc7e47d43e",
+          "originalLines": [
+            "### D5 - Representation semantics and spatial interaction",
+            "",
+            "Question: How does rendered ASCII acquire stable structure, evidence links,",
+            "feedback, highlights, and agent progress?",
+            "",
+            "Primary source anchors:",
+            "",
+            "- `src/asciiTree.ts`",
+            "- `src/representationIndex.ts`",
+            "- `src/representationGraph.ts`",
+            "- `src/representationPresentation.ts`",
+            "- `src/highlights.ts`",
+            "- `src/agentWork.ts`",
+            "- `src/callGraphFocus.ts`",
+            "- `server/callGraphTree.ts`",
+            "- representation, highlight, focus, and progress operations in",
+            "  `server/application.ts`",
+            "",
+            "Distinguish the immutable artifact revision from its derived structural index.",
+            "Tree element IDs come from ancestry paths scoped to the artifact hash; diagram",
+            "element IDs come from mappings. Representation layers form an acyclic graph of",
+            "increasing information rank. Highlights and progress target these stable",
+            "elements rather than raw display coordinates.",
+            "",
+            "Suggested generation instruction:",
+            "",
+            "> Show how ASCII plus a mapping sidecar becomes a revision-scoped",
+            "> RepresentationIndex, then supports graph layers, evidence resolution,",
+            "> highlights, focused trees, feedback, and spatial agent status."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-57df9c6c-f37b-47a2-9426-5a05e21e135a",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-67b9fe77-5cee-4570-ac72-287cdcc6a2f0",
+        "codeEntitiesSetId": "entities-8b189680-d1f2-4845-9083-10760d1a7b13"
+      },
+      "handle": "d6-studio-workspace-navigation",
+      "label": "D6 - Studio workspace and pane navigation",
+      "category": "operation",
+      "summary": "D6 treats `StudioPage` as the React state-and-routing shell that turns a `WorkspaceSnapshot` into a domain-specific navigable studio. Its boundary covers app/API, pane model and navigation, pane workspace, and tree/lineage/view/context panels; generation, editing, and renderer internals remain with D3, D7, and D8.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 236,
+          "endLine": 263,
+          "symbol": "D6 - Studio workspace and pane navigation",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 236,
+                "endLine": 263
+              }
+            ]
+          },
+          "id": "range-dcf7bb95-168c-416c-bce8-e7a822b1fe61",
+          "originalLines": [
+            "### D6 - Studio workspace and pane navigation",
+            "",
+            "Question: How does the React client turn one WorkspaceSnapshot into a",
+            "domain-specific, navigable studio?",
+            "",
+            "Primary source anchors:",
+            "",
+            "- `src/App.tsx`, especially `StudioPage`",
+            "- `src/api.ts`",
+            "- `src/panes/model.ts`",
+            "- `src/panes/api.ts`",
+            "- `src/panes/navigation.ts`",
+            "- `src/panes/PaneWorkspace.tsx`",
+            "- `src/components/DiagramSetTreePanel.tsx`",
+            "- `src/components/DiagramLineagePanel.tsx`",
+            "- `src/components/DiagramView.tsx`",
+            "- `src/components/DiagramContextPanel.tsx`",
+            "",
+            "Show snapshot loading, active DiagramSet/artifact/view selection, pane layout",
+            "state, tab contributions, context-pane routing, and jump history. Avoid",
+            "expanding generation, editing, or renderer internals; D3, D7, and D8 own those",
+            "flows.",
+            "",
+            "Suggested generation instruction:",
+            "",
+            "> Map StudioPage as a state-and-routing shell: WorkspaceSnapshot in, domain",
+            "> surfaces and pane tabs derived, user selection routed, and context jumps",
+            "> recorded without coupling panes to each other."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-3b3f7c09-18ff-4342-8116-d69a6b25b8a3",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-67b9fe77-5cee-4570-ac72-287cdcc6a2f0",
+        "codeEntitiesSetId": "entities-8b189680-d1f2-4845-9083-10760d1a7b13"
+      },
+      "handle": "d7-domain-evidence-presentation",
+      "label": "D7 - Domain profiles and evidence presentation",
+      "category": "operation",
+      "summary": "D7 compares how the same workspace presents source code and documents through profile-selected corpus, evidence, explorer, renderer, surface, and command policies. Its boundary includes client/server profiles, corpus and file tree, evidence/explorer/readers/highlights UI, and terminal Markdown modules; persisted evidence ranges remain navigation anchors.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 265,
+          "endLine": 294,
+          "symbol": "D7 - Domain profiles and evidence presentation",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 265,
+                "endLine": 294
+              }
+            ]
+          },
+          "id": "range-64f89eb2-6740-4d99-b335-bdced5b5fba2",
+          "originalLines": [
+            "### D7 - Domain profiles and evidence presentation",
+            "",
+            "Question: How does the same workspace present source code and documents with",
+            "different explorers and renderers?",
+            "",
+            "Primary source anchors:",
+            "",
+            "- `src/domainProfile.ts`",
+            "- `src/domainProfiles.ts`",
+            "- `server/domainProfiles.ts`",
+            "- `server/corpus.ts`",
+            "- `src/fileTree.ts`",
+            "- `src/components/FileExplorerPanel.tsx`",
+            "- `src/components/CodeEntitiesPanel.tsx`",
+            "- `src/components/SourceCodeView.tsx`",
+            "- `src/components/TerminalMarkdownView.tsx`",
+            "- `src/components/MarkdownSectionsPanel.tsx`",
+            "- `src/components/HighlightsTreePanel.tsx`",
+            "- modules under `src/terminalMarkdown/`",
+            "",
+            "Show profile resolution, corpus binding, evidence-schema vocabulary, workspace",
+            "surface contributions, content presentation, and command availability.",
+            "Markdown section parsing is client-side presentation; evidence ranges remain",
+            "the persisted navigation anchors.",
+            "",
+            "Suggested generation instruction:",
+            "",
+            "> Compare the source-code and document profiles as compositions of corpus,",
+            "> evidence, workspace, renderer, and command policies, then trace one reveal in",
+            "> each mode."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-3089c5b9-33e0-4d2e-8488-24c1abcac071",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-67b9fe77-5cee-4570-ac72-287cdcc6a2f0",
+        "codeEntitiesSetId": "entities-8b189680-d1f2-4845-9083-10760d1a7b13"
+      },
+      "handle": "d8-artifact-authoring-editing",
+      "label": "D8 - Artifact authoring, components, editing, and references",
+      "category": "operation",
+      "summary": "D8 traces artifact selection into either durable component capture or buffered evidence references, and traces immutable-source editing through a working session to a newly published lineage child. Its boundary includes selection UI/model, generator/edit/import UI, ref-buffer modules, application capture/edit/import/derivative methods, and edit/component records.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 296,
+          "endLine": 324,
+          "symbol": "D8 - Artifact authoring, components, editing, and references",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 296,
+                "endLine": 324
+              }
+            ]
+          },
+          "id": "range-5a441f5b-5344-49f8-aca0-98bdd89620f5",
+          "originalLines": [
+            "### D8 - Artifact authoring, components, editing, and references",
+            "",
+            "Question: How does a user select part of an artifact, reuse it, edit it, and",
+            "carry its evidence into another generation?",
+            "",
+            "Primary source anchors:",
+            "",
+            "- `src/components/AsciiSelectionGrid.tsx`",
+            "- `src/components/DiagramSelectionOverlay.tsx`",
+            "- `src/diagramSelection.ts`",
+            "- `src/components/GeneratorOptions.tsx`",
+            "- `src/components/EditOperationsPanel.tsx`",
+            "- `src/components/ImportArtifactDialog.tsx`",
+            "- modules under `src/ref-buffer/`",
+            "- `src/refBuffer.ts`",
+            "- capture, edit-session, import, and derivative methods in",
+            "  `server/application.ts`",
+            "- edit and component records in `src/domain.ts`",
+            "",
+            "Show two distinct selection outcomes: capturing a durable DiagramComponent and",
+            "buffering evidence references. The edit path should retain the immutable source",
+            "artifact, keep undo/redo operations in a working session, and publish a new",
+            "lineage child only on finish.",
+            "",
+            "Suggested generation instruction:",
+            "",
+            "> Trace rectangle selection into component capture or reference buffering, and",
+            "> trace immutable artifact editing through markers, manual/LLM operations,",
+            "> undo/redo, and published lineage."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-245c927d-0743-4fd2-818a-2c34952db754",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-67b9fe77-5cee-4570-ac72-287cdcc6a2f0",
+        "codeEntitiesSetId": "entities-8b189680-d1f2-4845-9083-10760d1a7b13"
+      },
+      "handle": "d9-experiments-verification",
+      "label": "D9 - Experiments, datasets, and verification",
+      "category": "operation",
+      "summary": "D9 covers generated-diagram evaluation, grouping, and regression protection outside the main studio flow. Its boundary comprises experiments, catalog and dataset stores/domain records, the experiment viewer, browser checks, and unit tests, separating offline generation/judgment from read-only catalog and user-curated datasets.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 326,
+          "endLine": 352,
+          "symbol": "D9 - Experiments, datasets, and verification",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 326,
+                "endLine": 352
+              }
+            ]
+          },
+          "id": "range-722a5671-8f7c-4cb4-816a-7b4180a38133",
+          "originalLines": [
+            "### D9 - Experiments, datasets, and verification",
+            "",
+            "Question: How are generated diagrams evaluated, grouped, and regression-tested",
+            "outside the primary studio flow?",
+            "",
+            "Primary source anchors:",
+            "",
+            "- modules under `experiments/`",
+            "- `server/experimentCatalog.ts`",
+            "- `server/diagramDatasetStore.ts`",
+            "- `src/experimentDomain.ts`",
+            "- `src/datasetDomain.ts`",
+            "- `src/components/ExperimentViewerPage.tsx`",
+            "- `browser-check.mjs`",
+            "- `browser-aux-views-check.mjs`",
+            "- `browser-domain-profiles-check.mjs`",
+            "- `browser-markdown-check.mjs`",
+            "- colocated unit tests",
+            "",
+            "Separate offline experiment generation and judgment from the read-only catalog",
+            "and user-curated dataset features. Browser checks should appear as acceptance",
+            "boundaries around complete user flows, not as part of runtime data flow.",
+            "",
+            "Suggested generation instruction:",
+            "",
+            "> Show the offline experiment pipeline, catalog ingestion, dataset curation,",
+            "> metrics/judgments, and the test layers that protect studio behavior."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-191844d8-5b7a-4495-829c-191fe1c08eb9",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-67b9fe77-5cee-4570-ac72-287cdcc6a2f0",
+        "codeEntitiesSetId": "entities-8b189680-d1f2-4845-9083-10760d1a7b13"
+      },
+      "handle": "portfolio-dependency-spine",
+      "label": "Portfolio dependency spine",
+      "category": "operation",
+      "summary": "The concise principal spine is `D1 -> D2 -> D3 -> D5 -> D6 -> D7/D8`; D4 underpins D1-D8, while D9 consumes outputs from D3 and D4. The generation order further explains that evidence precedes generation, mapped artifacts precede stable representations, and the studio shell precedes specialized D7/D8 interactions.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 354,
+          "endLine": 372,
+          "symbol": "Dependency order",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 354,
+                "endLine": 372
+              }
+            ]
+          },
+          "id": "range-94b1f04e-9efd-47b5-b114-328fe3f4b674",
+          "originalLines": [
+            "## Dependency order",
+            "",
+            "Generate and review the portfolio in this order:",
+            "",
+            "1. Draft D0 as the initial index.",
+            "2. Generate D1 and D4 to establish execution and persistence boundaries.",
+            "3. Generate D2, then D3, because generation consumes finalized evidence and",
+            "   immutable prompt provenance.",
+            "4. Generate D5 after D3 because stable representation elements depend on",
+            "   artifacts and mapping sidecars.",
+            "5. Generate D6, then D7 and D8, because the specialized interactions are",
+            "   mounted by the studio shell.",
+            "6. Generate D9 after artifact and persistence terminology is stable.",
+            "7. Refine D0 using the starred artifacts from D1 through D9 as references.",
+            "",
+            "The principal dependency spine is:",
+            "",
+            "`D1 -> D2 -> D3 -> D5 -> D6 -> D7/D8`, with D4 underpinning D1 through D8 and",
+            "D9 consuming outputs from D3 and D4."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-76c2384e-cde0-4693-af96-82389bf78aa6",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-67b9fe77-5cee-4570-ac72-287cdcc6a2f0",
+        "codeEntitiesSetId": "entities-8b189680-d1f2-4845-9083-10760d1a7b13"
+      },
+      "handle": "mapped-section-navigation",
+      "label": "Mapped tree-to-section navigation",
+      "category": "operation",
+      "summary": "Selecting a mapped companion-tree node in the document studio opens `REPOSITORY_DIAGRAM_DECOMPOSITION.md` in the terminal Markdown reader at the matching D-section. The Sections explorer is derived from Markdown headings and does not require a separately persisted outline.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 407,
+          "endLine": 410,
+          "symbol": "Companion ASCII tree contract navigation",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 407,
+                "endLine": 410
+              }
+            ]
+          },
+          "id": "range-d3585442-4b79-4c8a-bcf3-6f3ca666c799",
+          "originalLines": [
+            "In the document studio, selecting a mapped tree node should open this file in",
+            "the terminal Markdown reader at the matching D-section. The Sections explorer",
+            "is derived from the Markdown headings and therefore does not need a separate",
+            "persisted outline."
+          ]
+        }
+      ]
+    }
+  ],
+  "promptConfigId": "prompt-9caf74c6-99e3-437b-8c22-8e8918429d62",
+  "finalizedAt": "2026-08-31T21:59:40.492Z"
+}

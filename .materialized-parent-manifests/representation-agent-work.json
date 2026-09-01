@@ -1,0 +1,206 @@
+{
+  "creationMode": "materialized",
+  "path": "/home/john/.herdr/worktrees/new-diagram/worktree-transcripts",
+  "name": "Representation Evolution, Feedback, and Spatial Agent Work",
+  "domainProfileId": "source-code",
+  "description": "How immutable ASCII revisions become indexed representation layers, evolve through feedback and recipes, and scope spatial agent progress.",
+  "codeEntities": [
+    {
+      "key": "diagram-code-entity-map-record",
+      "handle": "diagram-code-entity-map-record",
+      "label": "DiagramCodeEntityMapRecord",
+      "category": "interface-data-struct",
+      "summary": "Persists the ASCII revision hash and spatial evidence mappings used to build a representation index.",
+      "sourceRanges": [
+        { "key": "diagram-code-entity-map-record-definition", "path": "src/domain.ts", "startLine": 419, "endLine": 431, "symbol": "DiagramCodeEntityMapRecord" }
+      ]
+    },
+    {
+      "key": "build-representation-index",
+      "handle": "build-representation-index",
+      "label": "buildRepresentationIndex",
+      "category": "operation",
+      "summary": "Builds the requested tree or diagram index after checking that its mapping belongs to the current artifact revision.",
+      "sourceRanges": [
+        { "key": "build-representation-index-function", "path": "src/representationIndex.ts", "startLine": 249, "endLine": 254, "symbol": "buildRepresentationIndex" }
+      ]
+    },
+    {
+      "key": "representation-index",
+      "handle": "representation-index",
+      "label": "RepresentationIndex",
+      "category": "interface-data-struct",
+      "summary": "Unifies stable tree-node and exact diagram-element indexes under one revision-bound representation type.",
+      "sourceRanges": [
+        { "key": "representation-index-definition", "path": "src/representationIndex.ts", "startLine": 50, "endLine": 50, "symbol": "RepresentationIndex" }
+      ]
+    },
+    {
+      "key": "representation-graph-record",
+      "handle": "representation-graph-record",
+      "label": "RepresentationGraphRecord",
+      "category": "state",
+      "summary": "Persists a representation graph's layers, directed transitions, revisioned recipes, and user feedback.",
+      "sourceRanges": [
+        { "key": "representation-graph-record-definition", "path": "src/representationGraph.ts", "startLine": 67, "endLine": 78, "symbol": "RepresentationGraphRecord" }
+      ]
+    },
+    {
+      "key": "representation-layer-record",
+      "handle": "representation-layer-record",
+      "label": "RepresentationLayerRecord",
+      "category": "state",
+      "summary": "Binds an information rank and representation kind to one immutable artifact revision and its evidence references.",
+      "sourceRanges": [
+        { "key": "representation-layer-record-definition", "path": "src/representationGraph.ts", "startLine": 25, "endLine": 35, "symbol": "RepresentationLayerRecord" }
+      ]
+    },
+    {
+      "key": "representation-transition-record",
+      "handle": "representation-transition-record",
+      "label": "RepresentationTransitionRecord",
+      "category": "state",
+      "summary": "Defines a directed refinement edge between two representation layers with optional evidence and recipe bindings.",
+      "sourceRanges": [
+        { "key": "representation-transition-record-definition", "path": "src/representationGraph.ts", "startLine": 37, "endLine": 44, "symbol": "RepresentationTransitionRecord" }
+      ]
+    },
+    {
+      "key": "assert-representation-graph",
+      "handle": "assert-representation-graph",
+      "label": "assertRepresentationGraph",
+      "category": "operation",
+      "summary": "Enforces graph identity, acyclicity, increasing information rank, valid feedback targets, and valid recipe revisions.",
+      "sourceRanges": [
+        { "key": "assert-representation-graph-function", "path": "src/representationGraph.ts", "startLine": 142, "endLine": 213, "symbol": "assertRepresentationGraph" }
+      ]
+    },
+    {
+      "key": "representation-feedback-record",
+      "handle": "representation-feedback-record",
+      "label": "RepresentationFeedbackRecord",
+      "category": "state",
+      "summary": "Persists a timestamped user comment targeting one representation layer or transition.",
+      "sourceRanges": [
+        { "key": "representation-feedback-record-definition", "path": "src/representationGraph.ts", "startLine": 50, "endLine": 55, "symbol": "RepresentationFeedbackRecord" }
+      ]
+    },
+    {
+      "key": "representation-recipe",
+      "handle": "representation-recipe",
+      "label": "RepresentationRecipe",
+      "category": "state",
+      "summary": "Persists one revision of the instruction used to produce or refine a layer or transition.",
+      "sourceRanges": [
+        { "key": "representation-recipe-definition", "path": "src/representationGraph.ts", "startLine": 57, "endLine": 65, "symbol": "RepresentationRecipe" }
+      ]
+    },
+    {
+      "key": "revise-representation-recipe",
+      "handle": "revise-representation-recipe",
+      "label": "reviseRepresentationRecipe",
+      "category": "operation",
+      "summary": "Creates the next recipe revision while verifying and recording incorporated feedback for the same target.",
+      "sourceRanges": [
+        { "key": "revise-representation-recipe-function", "path": "src/representationGraph.ts", "startLine": 257, "endLine": 281, "symbol": "reviseRepresentationRecipe" }
+      ]
+    },
+    {
+      "key": "agent-work-scope",
+      "handle": "agent-work-scope",
+      "label": "AgentWorkScope",
+      "category": "interface-data-struct",
+      "summary": "Pins agent work to an immutable representation revision and an artifact, structural element, subtree, or evidence target.",
+      "sourceRanges": [
+        { "key": "agent-work-scope-definition", "path": "src/agentWork.ts", "startLine": 30, "endLine": 46, "symbol": "AgentWorkScope" }
+      ]
+    },
+    {
+      "key": "resolve-agent-work-scope",
+      "handle": "resolve-agent-work-scope",
+      "label": "resolveAgentWorkScope",
+      "category": "operation",
+      "summary": "Resolves an ID-only work scope into stable ordered element identities and tree or grid locations.",
+      "sourceRanges": [
+        { "key": "resolve-agent-work-scope-function", "path": "src/agentWork.ts", "startLine": 206, "endLine": 241, "symbol": "resolveAgentWorkScope" }
+      ]
+    },
+    {
+      "key": "spatial-progress-state",
+      "handle": "spatial-progress-state",
+      "label": "SpatialProgressState",
+      "category": "state",
+      "summary": "Tracks the current, visited, and completed representation elements for one scoped agent run.",
+      "sourceRanges": [
+        { "key": "spatial-progress-state-definition", "path": "src/agentWork.ts", "startLine": 245, "endLine": 252, "symbol": "SpatialProgressState" }
+      ]
+    },
+    {
+      "key": "update-spatial-progress-state",
+      "handle": "update-spatial-progress-state",
+      "label": "updateSpatialProgressState",
+      "category": "operation",
+      "summary": "Applies a validated progress event while preserving monotonic visited and completed sets in representation order.",
+      "sourceRanges": [
+        { "key": "update-spatial-progress-state-function", "path": "src/agentWork.ts", "startLine": 437, "endLine": 486, "symbol": "updateSpatialProgressState" }
+      ]
+    },
+    {
+      "key": "map-code-entities-batch",
+      "handle": "map-code-entities-batch",
+      "label": "mapCodeEntitiesBatch",
+      "category": "operation",
+      "summary": "Runs bounded concurrent mapping agents and persists revision-bound mappings and per-run spatial progress.",
+      "sourceRanges": [
+        { "key": "map-code-entities-batch-method", "path": "server/application.ts", "startLine": 1257, "endLine": 1494, "symbol": "DiagramApplication.mapCodeEntitiesBatch" }
+      ]
+    }
+  ],
+  "diagrams": [
+    {
+      "key": "representation-evolution-feedback-agent-work",
+      "handle": "representation-evolution-feedback-agent-work",
+      "name": "Representation Evolution, Feedback, and Spatial Agent Work",
+      "viewKind": "diagram",
+      "representationKind": "diagram",
+      "ascii": "              REPRESENTATION EVOLUTION, FEEDBACK, AND SPATIAL AGENT WORK\n\n [P] DiagramRecord / Component        [P] DiagramCodeEntityMapRecord\n ASCII + representationKind           artifactId + asciiSha256\n                 |                              |\n                 +---------------+--------------+\n                                 |\n                                 v\n                  [R] buildRepresentationIndex()\n                                 |\n                                 v\n                    [R] RepresentationIndex\n                    stable tree nodes or\n                    exact diagram elements\n                                 |\n                 +---------------+----------------+\n                 |                                |\n                 v                                v\n       REPRESENTATION GRAPH                 AGENT WORK\n\n [P] RepresentationGraphRecord       [R] AgentWorkScope\n diagramSetId                        immutable artifact revision\n layers[]                            representationKind\n transitions[]                       target:\n         |                              artifact\n         |                              node/subtree\n         v                              diagram element\n [P] RepresentationLayerRecord            evidence\n informationRank                         |\n artifactRevision                         v\n evidenceReferences             [R] resolveAgentWorkScope()\n recipe revision                         |\n         |                                v\n         v                     stable ordered element locations\n [P] RepresentationTransition                 |\n fromLayerId -> toLayerId                    |\n must increase informationRank               |\n         |                                    |\n         v                                    |\n [R] assertRepresentationGraph()              |\n acyclic graph                               |\n valid references                            |\n revision ordering                           |\n         |                                   |\n         v                                   |\n [R] DiagramApplication                      |\n     .saveRepresentationGraph()              |\n verifies artifact availability              |\n ASCII SHA and representation kind           |\n         |                                   |\n         v                                   |\n [R] RepresentationLayersPanel               |\n         |                                   |\n user feedback                               |\n         v                                   |\n [R] addRepresentationFeedback()             |\n         |                                   |\n         v                                   |\n [P] RepresentationFeedbackRecord            |\n targets layer or transition                 |\n         |                                   |\n         v                                   |\n [R] reviseRepresentationRecipe()            |\n domain-level revision operation             |\n         |                                   |\n         v                                   |\n [P] RepresentationRecipe -------------------+\n instruction + incorporated feedback\n supersedesRevision                          |\n                                             |\n                       [R] mapCodeEntitiesBatch()\n                       creates mapping AgentRun\n                                             |\n                                             v\n                                 [R] updateSpatialProgressState()\n                                             |\n                                             v\n                                 [P] SpatialProgressState\n                                 progress keyed by AgentRun",
+      "codeEntityKeys": [
+        "diagram-code-entity-map-record",
+        "build-representation-index",
+        "representation-index",
+        "representation-graph-record",
+        "representation-layer-record",
+        "representation-transition-record",
+        "assert-representation-graph",
+        "representation-feedback-record",
+        "representation-recipe",
+        "revise-representation-recipe",
+        "agent-work-scope",
+        "resolve-agent-work-scope",
+        "spatial-progress-state",
+        "update-spatial-progress-state",
+        "map-code-entities-batch"
+      ],
+      "mappings": [
+        { "entityKey": "diagram-code-entity-map-record", "sourceRangeKey": "diagram-code-entity-map-record-definition", "line": 3, "startColumn": 43, "endColumn": 68 },
+        { "entityKey": "build-representation-index", "sourceRangeKey": "build-representation-index-function", "line": 9, "startColumn": 23, "endColumn": 46 },
+        { "entityKey": "representation-index", "sourceRangeKey": "representation-index-definition", "line": 12, "startColumn": 25, "endColumn": 43 },
+        { "entityKey": "representation-graph-record", "sourceRangeKey": "representation-graph-record-definition", "line": 21, "startColumn": 6, "endColumn": 30 },
+        { "entityKey": "agent-work-scope", "sourceRangeKey": "agent-work-scope-definition", "line": 21, "startColumn": 42, "endColumn": 55 },
+        { "entityKey": "representation-layer-record", "sourceRangeKey": "representation-layer-record-definition", "line": 28, "startColumn": 6, "endColumn": 30 },
+        { "entityKey": "resolve-agent-work-scope", "sourceRangeKey": "resolve-agent-work-scope-function", "line": 31, "startColumn": 37, "endColumn": 57 },
+        { "entityKey": "representation-transition-record", "sourceRangeKey": "representation-transition-record-definition", "line": 35, "startColumn": 6, "endColumn": 29 },
+        { "entityKey": "assert-representation-graph", "sourceRangeKey": "assert-representation-graph-function", "line": 40, "startColumn": 6, "endColumn": 30 },
+        { "entityKey": "representation-feedback-record", "sourceRangeKey": "representation-feedback-record-definition", "line": 59, "startColumn": 6, "endColumn": 33 },
+        { "entityKey": "revise-representation-recipe", "sourceRangeKey": "revise-representation-recipe-function", "line": 63, "startColumn": 6, "endColumn": 31 },
+        { "entityKey": "representation-recipe", "sourceRangeKey": "representation-recipe-definition", "line": 67, "startColumn": 6, "endColumn": 25 },
+        { "entityKey": "map-code-entities-batch", "sourceRangeKey": "map-code-entities-batch-method", "line": 71, "startColumn": 28, "endColumn": 47 },
+        { "entityKey": "update-spatial-progress-state", "sourceRangeKey": "update-spatial-progress-state-function", "line": 75, "startColumn": 38, "endColumn": 63 },
+        { "entityKey": "spatial-progress-state", "sourceRangeKey": "spatial-progress-state-definition", "line": 78, "startColumn": 38, "endColumn": 57 }
+      ]
+    }
+  ],
+  "featuredViews": {
+    "diagram": "representation-evolution-feedback-agent-work"
+  }
+}

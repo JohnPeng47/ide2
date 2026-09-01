@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "set-e2ab0628-530f-47a5-b8fe-cc4b789d986b",
+  "projectId": "project-ce67f2af4410",
+  "name": "Evidence Interaction",
+  "initialPrompt": "Use REPOSITORY_DIAGRAM_DECOMPOSITION.md as the authoritative document. Create only the E1 - Evidence Interaction diagram. Present Evidence as the user-interaction hinge between Representation and Corpus. Show a mapped Representation element resolving to Evidence, inspection and source-range choice in CodeEntitiesPanel, authoritative Corpus reveal, rectangle selection into the reference buffer, persistent Evidence-backed highlights, file associations, and selected Evidence focusing a call graph. Make the Evidence-to-CodeEntity compatibility boundary and the missing universal Evidence-to-all-Representations navigation action explicit. Include concise source file and symbol references in visible labels. Do not depict evidence collection agents, prompt construction, parallel generation, mapping prompts, or persistence layout.",
+  "sourceCheckoutRoot": "/home/john/.herdr/worktrees/new-diagram/worktree-transcripts",
+  "codeEntitiesSetId": "entities-a71bc082-36fc-448a-a663-883e3d167a19",
+  "featuredViewIds": {},
+  "diagramIds": [
+    "diagram-9630384d-70c5-4d36-adea-6568f910f380",
+    "diagram-4a205a14-3d54-4172-8d7e-5bb996813b4e",
+    "diagram-060febc4-eaac-4dfc-bf52-68626f843e43"
+  ],
+  "diagramComponentIds": [],
+  "generationBatchIds": [
+    "batch-24abcf32-11b0-4a90-8767-88a91197ccf4"
+  ],
+  "agentRunIds": [
+    "run-ea5af890-37cd-47d1-b4c4-ce930bfcfb7e",
+    "run-53e5fbb2-e933-4431-9aaf-d4d515dcd206",
+    "run-5569c98f-a1c1-4e71-af55-903ed4e46c10",
+    "run-9e6df217-b543-4075-8009-c878593cb02b"
+  ],
+  "editSessionIds": [],
+  "readiness": "ready",
+  "createdAt": "2026-08-31T23:48:05.700Z",
+  "updatedAt": "2026-09-01T00:00:11.463Z"
+}

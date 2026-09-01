@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "templates": [
+    {
+      "schemaVersion": 1,
+      "id": "default-code-entities",
+      "label": "Default Code Entities",
+      "description": "Source-backed entity identification and continuous source compaction.",
+      "builtIn": true,
+      "version": 1,
+      "prompts": {
+        "code-entity-identification": "## Entity significance\n\nA useful CodeEntity is a diagram-relevant concept backed by repository source.\nIt represents State, an Interface / Data Struct, or an Operation and helps\nexplain the requested architecture, ownership, behavior, or data flow.\n\nThese categories are intentionally broad. A CodeEntity may cover multiple\nrelated source ranges when they collectively implement one architectural\nconcept.\n\n## Source grounding\n\nEach CodeEntity has a concise label and summary, an appropriate source symbol,\nand exact repo-relative source ranges. Its description reflects behavior\nvisible in those ranges without inventing responsibilities.\n\nStrong candidates include declarations, interfaces, state boundaries, important\noperations, control-flow boundaries, and transformations that connect the\nrequested diagram concepts.",
+        "code-entity-compaction": "## Source structure\n\nA good compactedSource preserves declarations, important boundaries, calls,\nvalidations, and data flow while omitting secondary implementation detail.\n\nLow compaction retains most implementation detail. Medium preserves structure\nand important operations. High keeps mainly declarations, boundaries, and\ncritical calls. Retained and collapsed sections form a continuous program:\n\n    visible inputs -> compacted transformation -> visible consumers\n\nA useful boundary leaves setup values visible above and the code consuming the\ncompacted result visible below. If visible code consumes an unexplained value,\nthe boundary moves or more source remains visible.\n\n## ASCII summaries\n\nEach collapsed span is a concise, source-backed 7-bit ASCII data/control-flow\ngraph. It names important inputs, calls, branches, transformations, errors, and\nthe exact outputs made available to surrounding code.\n\nThis rendered presentation is the target shape:\n\n      values = point.values\n      camera_cfg = config[\"camera\"]\n      scenario = config[\"scenario\"]\n\n      body_to_camera = np.asarray(\n          camera_cfg.get(\"body_to_camera\", np.eye(3)), dtype=float\n      ).reshape(3, 3)\n      target_dir_c = _camera_ray_from_fov_fraction(camera_cfg, values)\n\n      // [Lines 388-405 | 18 lines compacted]\n      //\n      // select an orientation source and produce common frame outputs\n      //   |\n      //   +--[camera angles]--> camera_forward_w -> rotation_wc\n      //   |                                          +--> los_w\n      //   |                                          \\--> rotation_wb\n      //   \\--[LOS angles]----> los_w -> rotation_wb -> camera_forward_w\n\n      target_position_w = _array(scenario[\"target_origin_w\"], length=3)\n      pursuer_position_w = target_position_w - float(values[\"range_m\"]) * los_w\n      relative_velocity_w = values[\"forward_speed_mps\"] * camera_forward_w\n\nThe UI adds the heading and comment prefixes shown in the example; only the\ngraph body belongs in a collapsed-comment value.\n\n## Mapping requirements\n\nEvery graph line describing an operation, branch, transformation, error, or\noutput has a semantic node mapped to exact lines inside its collapsed section.\nBlank and connector-only lines have no mapping. Contextual references to\nsurrounding retained code do not extend node ranges outside the collapsed span.\n\nAll labels remain concise and source-backed. The server snapshots original\nsource after validating the submitted coordinates."
+      },
+      "createdAt": "2026-09-01T00:55:12.447Z",
+      "updatedAt": "2026-09-01T00:55:12.447Z"
+    }
+  ]
+}

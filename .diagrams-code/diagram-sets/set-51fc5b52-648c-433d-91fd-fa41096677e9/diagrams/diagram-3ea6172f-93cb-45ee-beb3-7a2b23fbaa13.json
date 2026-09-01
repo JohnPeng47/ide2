@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "diagram-3ea6172f-93cb-45ee-beb3-7a2b23fbaa13",
+  "recordOrigin": {
+    "projectId": "project-ce67f2af4410",
+    "diagramSetId": "set-51fc5b52-648c-433d-91fd-fa41096677e9"
+  },
+  "diagramSetId": "set-51fc5b52-648c-433d-91fd-fa41096677e9",
+  "viewKind": "diagram",
+  "representationKind": "diagram",
+  "handle": "evidence-interaction-hinge",
+  "name": "Evidence Interaction Hinge",
+  "ascii": "Legend: [D] = data structure/state, (O) = operation. Every named node maps to source code.\n\n                              EVIDENCE INTERACTION HINGE\n\n (O) Mapped ASCII hinge\n     src/components/AsciiSelectionGrid.tsx:AsciiSelectionGrid\n       |\n       +---- pointer-drag rectangle ---->\n       |\n       |    (O) Rectangle -> RefBufferContext\n       |        src/components/DiagramView.tsx:completeSelection\n       |        src/ref-buffer/RefBufferContext.tsx:RefBufferProvider\n       |        normalize; intersect mapped spans in visual order; deduplicate\n       |                 | selected mapped references\n       |                 v\n       |    (O) Selected Evidence -> call-graph focus\n       |        src/callGraphFocus.ts:createCallGraphFocusRequest\n       |        active diagram + provenance required -> focused context tab\n       |\n       | click mapped span / onReveal(mapping)\n       v\n [D] Visual-to-Evidence map\n     src/domain.ts:DiagramCodeEntityMapRecord\n     artifact + ASCII SHA-256 revision; span -> entity id + range address\n       | revision-checked mapping\n       v\n (O) RepresentationIndex resolver\n     src/representationIndex.ts:spatialEvidenceResolver\n     visual element <-> EvidenceElementLink in one explicit index\n       |\n       +---- caller chooses one index ---->\n       |    [D] No universal Evidence navigation\n       |        src/representationIndex.ts:SpatialEvidenceResolver\n       |        src/domainProfile.ts:ElementCommandContribution\n       |        resolve only inside the caller-chosen RepresentationIndex\n       |        commands support current tree/diagram; X no Evidence -> all representations\n       |\n       | resolved EvidenceElementLink\n       v\n+-------------------------------------------------------------------------------+\n| CODEENTITY-BACKED EVIDENCE HINGE                                              |\n|                                                                               |\n|  [D] Evidence -> CodeEntity compatibility                                     |\n|      src/domainProfile.ts:EvidenceSchema; src/domainProfiles.ts:evidenceSchema |\n|                                                                               |\n|      built-in adapter: CodeEntityRecord => EvidenceEntity                     |\n|      preserves identity, description, category, and source-range anchors      |\n+-------------------------------------------------------------------------------+\n       | entity + source-range identity\n       |\n       +---- toggle mapping-backed record ---->\n       |    [D] Persistent Evidence highlights\n       |        src/highlights.ts:HighlightRecordV2\n       |        persisted revision + element + EvidenceElementLink\n       |        reveal returns to the artifact and exact source range\n       |\n       +---- normalize repository path ------>\n       |    (O) Evidence file associations\n       |        src/fileTree.ts:diagramFileFilter\n       |        local anchors indexed; missing, foreign, and invalid separated\n       |\n       v\n (O) Inspect Evidence and reveal source\n     src/components/CodeEntitiesPanel.tsx:CodeEntitiesPanel\n     src/App.tsx:revealCodeEntity\n     user selects entity and exact range; mapped reveal preselects that range\n       | CorpusProvider read, or captured foreign snapshot\n       v\n [D] Authoritative corpus anchors\n     src/domain.ts:SourceRange / CodeEntityRecord\n     src/domainProfile.ts:CorpusProvider\n     reveal path, inclusive lines, symbol, and immutable original-line snapshot",
+  "codeEntityIds": [
+    "entity-bc923776-c36b-49a2-87ed-731b899f17e1",
+    "entity-f248456e-e213-45a3-8879-cf0768798525",
+    "entity-1332563c-3314-44f8-8255-44c0cf6e32d7",
+    "entity-63f9ff5f-3f99-464f-bf6f-882d94b1446b",
+    "entity-4dcac5c6-c3b0-47cf-a990-5f9bcafdeaa3",
+    "entity-00109383-4a6b-4d4e-b17a-44e802122281",
+    "entity-d2d0d260-43e2-4079-8958-b72c75e70f87",
+    "entity-f4ed7336-ecef-4e6c-8125-e12dc9ce9e25",
+    "entity-16c426e8-a049-4533-b36b-e2c78e0e1a15",
+    "entity-8c78bef5-f371-49d9-9b42-72013554aa1e",
+    "entity-0eba7b5e-d4e9-4f55-a5a6-f904ba4ee21b"
+  ],
+  "origin": "generated",
+  "producedByRunId": "run-15b418a0-31c8-464b-9577-91ad66699bc3",
+  "generationPromptConfigId": "prompt-be87e840-d922-4960-bdd4-e1b1a01cb064",
+  "derivedFromDiagramIds": [],
+  "createdAt": "2026-09-01T01:40:52.867Z"
+}

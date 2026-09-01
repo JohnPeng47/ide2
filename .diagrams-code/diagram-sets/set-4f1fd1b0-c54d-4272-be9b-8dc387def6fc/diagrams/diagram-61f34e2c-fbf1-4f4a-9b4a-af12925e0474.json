@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "diagram-61f34e2c-fbf1-4f4a-9b4a-af12925e0474",
+  "recordOrigin": {
+    "projectId": "project-ce67f2af4410",
+    "diagramSetId": "set-4f1fd1b0-c54d-4272-be9b-8dc387def6fc"
+  },
+  "diagramSetId": "set-4f1fd1b0-c54d-4272-be9b-8dc387def6fc",
+  "viewKind": "diagram",
+  "representationKind": "diagram",
+  "handle": "corpus-verification-paths-2",
+  "name": "Corpus Verification Paths",
+  "ascii": "Legend: `[D]` = policy/data, `(O)` = operation. Tagged labels map to source code.\n\n                         CORPUS INTERACTION AND VERIFICATION\n\n [D] DomainProfile / SOURCE_CODE_PROFILE / DOCUMENT_PROFILE\n     src/domainProfiles.ts\n       |\n       | explorer tabs + Corpus/Evidence schema + source/Markdown presentation\n       v\n (O) FileExplorerPanel.revealEntity\n     src/components/FileExplorerPanel.tsx\n       |\n       +---- direct Corpus browse: filtered path/list -------------------------------+\n       |                                                                            |\n       +---- associated file/entity ---> CodeEntities as Evidence                   |\n                                             | linked path + exact ranges            |\n                                             v                                       |\n (O) CodeEntitiesPanel.selectEntity / openLinkedAnchor                              |\n     src/components/CodeEntitiesPanel.tsx                                            |\n       | validate anchor / request `DiagramApplication.sourceSnippet`                |\n       +---------------------------------------------+-------------------------------+\n                                                     v\n+--------------------------------------------------------------------------------------------------+\n| [D] CORPUS = BOUNDED AUTHORITATIVE VERIFICATION SURFACE                                          |\n|                                                                                                  |\n|  (O) FilesystemCorpusProvider / bounded verification                                             |\n|      server/corpus.ts                                                                            |\n|      rejects traversal; safely lists and reads only content inside the configured Corpus         |\n|      direct path: `listRepositoryDirectory`; Evidence path: validated `sourceSnippet`            |\n|                                                                                                  |\n|  owns the full document and dispatches its presentation under DomainProfile policy               |\n|       |                                                                                          |\n|       +---- source code ----> (O) SourceCodeView                                                  |\n|       |                       src/components/SourceCodeView.tsx                                   |\n|       |                       exact line selection/highlight; reversible compacted-span reveal    |\n|       |                                                                                          |\n|       +---- document -------> (O) TerminalMarkdownView / MarkdownSectionsPanel                    |\n|                               src/components/TerminalMarkdownView.tsx                             |\n|                               src/components/MarkdownSectionsPanel.tsx                            |\n|                               sandboxed render + outline/active section + section/recent jumps    |\n+--------------------------------------------------------------------------------------------------+\n\n (O) HighlightsTreePanel.revealHighlight\n     src/components/HighlightsTreePanel.tsx; src/App.tsx\n       | persistent artifact lineage + Evidence link\n       | restore artifact + open linked source range\n       +-----------------------------------------+\n                                                 |\n Markdown section selection / recent-jump replay +\n                                                 v\n (O) PaneNavigationApi\n     src/panes/navigation.ts\n       | activate/focus; bounded deduplicated history; delay until handler; replay/clear\n       |\n       +---- source-location / Evidence replay ----> exact source workspace ----> Corpus\n       |\n       +---- section replay ------------------------> sandboxed Markdown document\n       |\n       +<---------------- reversible prior-jump navigation ----------------------+",
+  "codeEntityIds": [
+    "entity-fd23e95b-bb1d-4ba4-8407-a4d28e282edc",
+    "entity-88474f3b-5a74-444c-8b90-718cfd284096",
+    "entity-8265eea0-05cc-44f0-994f-86902471b76f",
+    "entity-765bd620-e352-45ab-a5c1-e0d464c0fed8",
+    "entity-db354eca-8483-4e88-a670-e8fa7d969d05",
+    "entity-24516d4e-bf75-41de-873d-0bddb87cc031",
+    "entity-7e09bf2d-9ddf-43e4-8746-d63a1a93a2a7",
+    "entity-29e662c3-e8db-4930-8a4c-81f35ae042a7"
+  ],
+  "origin": "generated",
+  "producedByRunId": "run-d6f8f176-687b-4cf1-a858-f567e10c333c",
+  "generationPromptConfigId": "prompt-16f4c8cb-7352-476a-addb-c9e86a3f065b",
+  "derivedFromDiagramIds": [],
+  "createdAt": "2026-09-01T01:34:40.125Z"
+}

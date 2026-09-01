@@ -1,0 +1,1025 @@
+{
+  "schemaVersion": 1,
+  "id": "entities-7890da79-ab39-498f-ae7d-e1b42b4d7b6a",
+  "diagramSetId": "set-a6138387-38c9-4077-ad47-c0993f53a741",
+  "revision": 1,
+  "status": "finalized",
+  "entities": [
+    {
+      "id": "entity-4d2544b8-5244-4621-a82b-63519e0000ec",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-a6138387-38c9-4077-ad47-c0993f53a741",
+        "codeEntitiesSetId": "entities-7890da79-ab39-498f-ae7d-e1b42b4d7b6a"
+      },
+      "handle": "h0-core-triad",
+      "label": "H0 Core Abstraction Triad",
+      "category": "state",
+      "summary": "H0 organizes the system around CORPUS, EVIDENCE, and REPRESENTATION as the reusable central layers; other systems configure, transform, store, or interact with this core.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 7,
+          "endLine": 17,
+          "symbol": "Composition",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 7,
+                "endLine": 17
+              }
+            ]
+          },
+          "id": "range-f6d5e558-8518-4b7e-a1fc-31b3106e7eb2",
+          "originalLines": [
+            "## Composition",
+            "",
+            "Organize the repository around three central abstraction layers:",
+            "",
+            "1. **Corpus** - authoritative, addressable content.",
+            "2. **Evidence** - grounded semantic claims anchored to corpus ranges.",
+            "3. **Representation** - navigable visual projections grounded through evidence.",
+            "",
+            "These layers are the reusable core of the system. Transport, generation agents,",
+            "persistence, and UI features exist to configure, transform, store, or interact",
+            "with them."
+          ]
+        },
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 158,
+          "endLine": 173,
+          "symbol": "H0 - Core Abstraction System / Question / Required composition",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 158,
+                "endLine": 173
+              }
+            ]
+          },
+          "id": "range-ced92aef-e247-47e6-a78e-baa822c9a3d4",
+          "originalLines": [
+            "## H0 - Core Abstraction System",
+            "",
+            "### Question",
+            "",
+            "How do Corpus, Evidence, and Representation form the central abstraction",
+            "system, and how do policy, runtime, persistence, and interaction systems",
+            "collaborate with them?",
+            "",
+            "### Required composition",
+            "",
+            "The diagram should place these three nodes in the center:",
+            "",
+            "- `CORPUS`",
+            "- `EVIDENCE`",
+            "- `REPRESENTATION`",
+            ""
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-53a99eea-b95a-4fd5-9010-b18a20a68339",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-a6138387-38c9-4077-ad47-c0993f53a741",
+        "codeEntitiesSetId": "entities-7890da79-ab39-498f-ae7d-e1b42b4d7b6a"
+      },
+      "handle": "h0-corpus",
+      "label": "CORPUS",
+      "category": "state",
+      "summary": "The authoritative, addressable source-of-truth layer. A corpus has identity, root, and a provider for listing and reading resources, but does not determine semantic importance or visualization.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 31,
+          "endLine": 38,
+          "symbol": "Semantic contract / Corpus",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 31,
+                "endLine": 38
+              }
+            ]
+          },
+          "id": "range-97a76ffa-c1a5-49e7-9b03-e41c47807af6",
+          "originalLines": [
+            "### Corpus",
+            "",
+            "Corpus is the source of truth. A corpus has an identity, a root, and a provider",
+            "capable of listing and reading addressable resources. Current bindings are a",
+            "Git worktree and a filesystem document collection.",
+            "",
+            "Corpus does not know which concepts are important and does not know how they",
+            "will be visualized."
+          ]
+        },
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 168,
+          "endLine": 176,
+          "symbol": "H0 / Required composition",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 168,
+                "endLine": 176
+              }
+            ]
+          },
+          "id": "range-bd69305b-0d0a-4d26-a84a-31bf7ba00338",
+          "originalLines": [
+            "The diagram should place these three nodes in the center:",
+            "",
+            "- `CORPUS`",
+            "- `EVIDENCE`",
+            "- `REPRESENTATION`",
+            "",
+            "Required core interactions:",
+            "",
+            "- `Corpus -> Evidence`: collect, validate anchors, snapshot source."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-1dbe4012-332e-46e8-83eb-c7b6204e2de8",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-a6138387-38c9-4077-ad47-c0993f53a741",
+        "codeEntitiesSetId": "entities-7890da79-ab39-498f-ae7d-e1b42b4d7b6a"
+      },
+      "handle": "h0-evidence",
+      "label": "EVIDENCE",
+      "category": "state",
+      "summary": "The semantic layer of labels, summaries, classifications, anchors, snapshots, and optional compacted presentations, grounded in exact corpus ranges; a finalized collection is immutable for one DiagramSet and owns no visual coordinates or workspace layout.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 40,
+          "endLine": 50,
+          "symbol": "Semantic contract / Evidence",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 40,
+                "endLine": 50
+              }
+            ]
+          },
+          "id": "range-cf508868-3875-4bc7-9947-d030593cf081",
+          "originalLines": [
+            "### Evidence",
+            "",
+            "Evidence is a semantic interpretation grounded in one or more exact corpus",
+            "ranges. Today it is persisted as `CodeEntityRecord` and exposed through the",
+            "domain-neutral `EvidenceEntity` facade.",
+            "",
+            "Evidence owns labels, summaries, classifications, anchors, source snapshots,",
+            "and optional compacted presentations. A finalized `CodeEntitiesSetRecord` is an",
+            "immutable evidence collection for one DiagramSet.",
+            "",
+            "Evidence does not own ASCII coordinates or workspace layout."
+          ]
+        },
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 168,
+          "endLine": 179,
+          "symbol": "H0 / Required composition",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 168,
+                "endLine": 179
+              }
+            ]
+          },
+          "id": "range-d03d2ef5-f7d5-4cbc-9b67-870b8ba4bcea",
+          "originalLines": [
+            "The diagram should place these three nodes in the center:",
+            "",
+            "- `CORPUS`",
+            "- `EVIDENCE`",
+            "- `REPRESENTATION`",
+            "",
+            "Required core interactions:",
+            "",
+            "- `Corpus -> Evidence`: collect, validate anchors, snapshot source.",
+            "- `Evidence -> Corpus`: resolve anchors and read source.",
+            "- `Evidence -> Representation`: select, generate, and ground.",
+            "- `Representation -> Evidence`: resolve mapped element and reveal evidence."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-41e545cb-b303-4e71-b560-d415d2c86ffa",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-a6138387-38c9-4077-ad47-c0993f53a741",
+        "codeEntitiesSetId": "entities-7890da79-ab39-498f-ae7d-e1b42b4d7b6a"
+      },
+      "handle": "h0-representation",
+      "label": "REPRESENTATION",
+      "category": "state",
+      "summary": "A revisioned visual projection of selected evidence. Mappings connect visual spans to evidence and source ranges, while indexes and graphs organize spatial identities, layers, transitions, recipes, and feedback; grounding always resolves through Evidence.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 52,
+          "endLine": 61,
+          "symbol": "Semantic contract / Representation",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 52,
+                "endLine": 61
+              }
+            ]
+          },
+          "id": "range-f48e4200-3eb0-45b8-85e6-573bc9854b9b",
+          "originalLines": [
+            "### Representation",
+            "",
+            "Representation is a revisioned projection of selected evidence. Its visible",
+            "form is an ASCII Diagram or DiagramComponent. A mapping sidecar connects visual",
+            "spans to evidence and exact source ranges. A RepresentationIndex gives those",
+            "spans stable spatial identities, while a RepresentationGraph organizes layers,",
+            "transitions, recipes, and feedback.",
+            "",
+            "Representation does not establish truth directly from corpus content. Its",
+            "grounding always resolves through Evidence."
+          ]
+        },
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 168,
+          "endLine": 180,
+          "symbol": "H0 / Required composition",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 168,
+                "endLine": 180
+              }
+            ]
+          },
+          "id": "range-5bd2283d-01cb-4496-9b2e-b0d5b5817892",
+          "originalLines": [
+            "The diagram should place these three nodes in the center:",
+            "",
+            "- `CORPUS`",
+            "- `EVIDENCE`",
+            "- `REPRESENTATION`",
+            "",
+            "Required core interactions:",
+            "",
+            "- `Corpus -> Evidence`: collect, validate anchors, snapshot source.",
+            "- `Evidence -> Corpus`: resolve anchors and read source.",
+            "- `Evidence -> Representation`: select, generate, and ground.",
+            "- `Representation -> Evidence`: resolve mapped element and reveal evidence.",
+            "- `Representation -> Representation`: refine, expand, derive, or edit revision."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-a3e87770-3af6-4bc6-a8a1-f2daa51df939",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-a6138387-38c9-4077-ad47-c0993f53a741",
+        "codeEntitiesSetId": "entities-7890da79-ab39-498f-ae7d-e1b42b4d7b6a"
+      },
+      "handle": "h0-collect-evidence",
+      "label": "Corpus -> Evidence: Collect and Validate",
+      "category": "operation",
+      "summary": "Collection transforms corpus content into evidence by validating at least one exact corpus anchor per evidence entity and snapshotting the source used for that evidence revision.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 63,
+          "endLine": 69,
+          "symbol": "Core invariants",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 63,
+                "endLine": 69
+              }
+            ]
+          },
+          "id": "range-3370b99f-fe76-4ac7-b853-e518e3b606c6",
+          "originalLines": [
+            "## Core invariants",
+            "",
+            "1. Corpus is authoritative content; snapshots preserve the content used for a",
+            "   particular evidence revision.",
+            "2. Evidence must contain at least one validated corpus anchor.",
+            "3. A persisted evidence collection becomes immutable before generation starts.",
+            "4. Representation generation consumes selected evidence from that finalized"
+          ]
+        },
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 174,
+          "endLine": 177,
+          "symbol": "H0 / Required core interactions",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 174,
+                "endLine": 177
+              }
+            ]
+          },
+          "id": "range-f1120893-bf91-4be1-96fa-ddd15e154edc",
+          "originalLines": [
+            "Required core interactions:",
+            "",
+            "- `Corpus -> Evidence`: collect, validate anchors, snapshot source.",
+            "- `Evidence -> Corpus`: resolve anchors and read source."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-ecc75590-ac25-4b3b-889c-84ead74772c8",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-a6138387-38c9-4077-ad47-c0993f53a741",
+        "codeEntitiesSetId": "entities-7890da79-ab39-498f-ae7d-e1b42b4d7b6a"
+      },
+      "handle": "h0-resolve-corpus",
+      "label": "Evidence -> Corpus: Resolve Anchors",
+      "category": "operation",
+      "summary": "Evidence resolves its validated anchors back to authoritative corpus ranges and reads the corresponding source content.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 65,
+          "endLine": 68,
+          "symbol": "Core invariants",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 65,
+                "endLine": 68
+              }
+            ]
+          },
+          "id": "range-07f2222e-203e-4896-90a6-6960ff415db5",
+          "originalLines": [
+            "1. Corpus is authoritative content; snapshots preserve the content used for a",
+            "   particular evidence revision.",
+            "2. Evidence must contain at least one validated corpus anchor.",
+            "3. A persisted evidence collection becomes immutable before generation starts."
+          ]
+        },
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 174,
+          "endLine": 178,
+          "symbol": "H0 / Required core interactions",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 174,
+                "endLine": 178
+              }
+            ]
+          },
+          "id": "range-10bc24ac-9504-460b-9d78-9bc1ab0a0283",
+          "originalLines": [
+            "Required core interactions:",
+            "",
+            "- `Corpus -> Evidence`: collect, validate anchors, snapshot source.",
+            "- `Evidence -> Corpus`: resolve anchors and read source.",
+            "- `Evidence -> Representation`: select, generate, and ground."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-5f7d8d0c-67dd-4f78-a744-90ba5371a920",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-a6138387-38c9-4077-ad47-c0993f53a741",
+        "codeEntitiesSetId": "entities-7890da79-ab39-498f-ae7d-e1b42b4d7b6a"
+      },
+      "handle": "h0-generate-representation",
+      "label": "Evidence -> Representation: Generate and Ground",
+      "category": "operation",
+      "summary": "Generation selects evidence from a finalized immutable collection, creates a representation, and grounds its meaningful mapped spans in evidence entities and valid source ranges.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 68,
+          "endLine": 72,
+          "symbol": "Core invariants",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 68,
+                "endLine": 72
+              }
+            ]
+          },
+          "id": "range-f2c1399d-583a-4365-9c08-14fa1e3fa8bd",
+          "originalLines": [
+            "3. A persisted evidence collection becomes immutable before generation starts.",
+            "4. Representation generation consumes selected evidence from that finalized",
+            "   collection.",
+            "5. Every meaningful mapped representation span resolves to an evidence entity",
+            "   and a valid source range."
+          ]
+        },
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 174,
+          "endLine": 179,
+          "symbol": "H0 / Required core interactions",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 174,
+                "endLine": 179
+              }
+            ]
+          },
+          "id": "range-c6a8c11c-7fcc-4ebc-8d7f-a82b71f8fc04",
+          "originalLines": [
+            "Required core interactions:",
+            "",
+            "- `Corpus -> Evidence`: collect, validate anchors, snapshot source.",
+            "- `Evidence -> Corpus`: resolve anchors and read source.",
+            "- `Evidence -> Representation`: select, generate, and ground.",
+            "- `Representation -> Evidence`: resolve mapped element and reveal evidence."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-6ec39583-ec11-496a-8b9d-cc67af2fbce8",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-a6138387-38c9-4077-ad47-c0993f53a741",
+        "codeEntitiesSetId": "entities-7890da79-ab39-498f-ae7d-e1b42b4d7b6a"
+      },
+      "handle": "h0-reveal-evidence",
+      "label": "Representation -> Evidence: Mapped Reveal",
+      "category": "operation",
+      "summary": "A mapped visual element resolves first to its evidence entity; source reveal then continues from Evidence to Corpus rather than grounding the visual element directly in Corpus.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 71,
+          "endLine": 73,
+          "symbol": "Core invariants",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 71,
+                "endLine": 73
+              }
+            ]
+          },
+          "id": "range-228bcbe4-a98d-418b-ac15-f9a5c8aa52c9",
+          "originalLines": [
+            "5. Every meaningful mapped representation span resolves to an evidence entity",
+            "   and a valid source range.",
+            "6. Revealing source follows `Representation -> Evidence -> Corpus`."
+          ]
+        },
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 174,
+          "endLine": 183,
+          "symbol": "H0 / Required core interactions",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 174,
+                "endLine": 183
+              }
+            ]
+          },
+          "id": "range-8b97d688-5483-4508-9391-1b3b206cc1b1",
+          "originalLines": [
+            "Required core interactions:",
+            "",
+            "- `Corpus -> Evidence`: collect, validate anchors, snapshot source.",
+            "- `Evidence -> Corpus`: resolve anchors and read source.",
+            "- `Evidence -> Representation`: select, generate, and ground.",
+            "- `Representation -> Evidence`: resolve mapped element and reveal evidence.",
+            "- `Representation -> Representation`: refine, expand, derive, or edit revision.",
+            "",
+            "There should be no direct grounding edge from Corpus to Representation. Any",
+            "source reveal initiated from a visual element must pass through Evidence."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-75f79f22-ef3d-4c2e-bca3-13255bf6ab66",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-a6138387-38c9-4077-ad47-c0993f53a741",
+        "codeEntitiesSetId": "entities-7890da79-ab39-498f-ae7d-e1b42b4d7b6a"
+      },
+      "handle": "h0-refine-representation",
+      "label": "Representation -> Representation: Refine Revision",
+      "category": "operation",
+      "summary": "A representation can refine, expand, derive, or edit a further revision. Such graph-based refinement may expand visual knowledge but cannot replace evidence grounding, and revisions remain scoped by artifact identity and ASCII hash.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 74,
+          "endLine": 76,
+          "symbol": "Core invariants",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 74,
+                "endLine": 76
+              }
+            ]
+          },
+          "id": "range-b65d4d77-6581-450c-887d-f26fb066e19a",
+          "originalLines": [
+            "7. Representation revisions are scoped by artifact identity and ASCII hash.",
+            "8. A RepresentationGraph may refine or expand visual knowledge, but it cannot",
+            "   replace evidence grounding."
+          ]
+        },
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 174,
+          "endLine": 180,
+          "symbol": "H0 / Required core interactions",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 174,
+                "endLine": 180
+              }
+            ]
+          },
+          "id": "range-1d40a379-484c-4b01-8de4-d30355bbd6ae",
+          "originalLines": [
+            "Required core interactions:",
+            "",
+            "- `Corpus -> Evidence`: collect, validate anchors, snapshot source.",
+            "- `Evidence -> Corpus`: resolve anchors and read source.",
+            "- `Evidence -> Representation`: select, generate, and ground.",
+            "- `Representation -> Evidence`: resolve mapped element and reveal evidence.",
+            "- `Representation -> Representation`: refine, expand, derive, or edit revision."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-012abc05-0f7f-46cf-b9fe-fd1ffd9fab0c",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-a6138387-38c9-4077-ad47-c0993f53a741",
+        "codeEntitiesSetId": "entities-7890da79-ab39-498f-ae7d-e1b42b4d7b6a"
+      },
+      "handle": "h0-evidence-only-bridge",
+      "label": "Evidence-Only Grounding Bridge",
+      "category": "state",
+      "summary": "Representation never establishes truth or grounding directly from Corpus. Every source reveal from a visual element must follow Representation -> Evidence -> Corpus, and representation refinement cannot replace that grounding contract.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 52,
+          "endLine": 61,
+          "symbol": "Semantic contract / Representation",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 52,
+                "endLine": 61
+              }
+            ]
+          },
+          "id": "range-115d930c-c7ff-461d-b908-bff865886c48",
+          "originalLines": [
+            "### Representation",
+            "",
+            "Representation is a revisioned projection of selected evidence. Its visible",
+            "form is an ASCII Diagram or DiagramComponent. A mapping sidecar connects visual",
+            "spans to evidence and exact source ranges. A RepresentationIndex gives those",
+            "spans stable spatial identities, while a RepresentationGraph organizes layers,",
+            "transitions, recipes, and feedback.",
+            "",
+            "Representation does not establish truth directly from corpus content. Its",
+            "grounding always resolves through Evidence."
+          ]
+        },
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 71,
+          "endLine": 78,
+          "symbol": "Core invariants",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 71,
+                "endLine": 78
+              }
+            ]
+          },
+          "id": "range-7cd5be19-a2cd-497c-9232-195002923de9",
+          "originalLines": [
+            "5. Every meaningful mapped representation span resolves to an evidence entity",
+            "   and a valid source range.",
+            "6. Revealing source follows `Representation -> Evidence -> Corpus`.",
+            "7. Representation revisions are scoped by artifact identity and ASCII hash.",
+            "8. A RepresentationGraph may refine or expand visual knowledge, but it cannot",
+            "   replace evidence grounding.",
+            "9. Domain vocabulary and presentation policy may change without changing the",
+            "   Corpus-Evidence-Representation contract."
+          ]
+        },
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 182,
+          "endLine": 183,
+          "symbol": "H0 / Required composition",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 182,
+                "endLine": 183
+              }
+            ]
+          },
+          "id": "range-98580c36-9134-4fe1-bf8d-d1722a83aa55",
+          "originalLines": [
+            "There should be no direct grounding edge from Corpus to Representation. Any",
+            "source reveal initiated from a visual element must pass through Evidence."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-247796d3-6248-45d5-b894-5b0aba196f0e",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-a6138387-38c9-4077-ad47-c0993f53a741",
+        "codeEntitiesSetId": "entities-7890da79-ab39-498f-ae7d-e1b42b4d7b6a"
+      },
+      "handle": "h0-policy-recipes",
+      "label": "POLICY + RECIPES",
+      "category": "interface-data-struct",
+      "summary": "An external configuration plane that chooses corpus kind and evidence vocabulary, controls available workspace surfaces, renderers, and commands, and guides representation layers and revisions; it configures all three core abstractions without becoming a fourth data layer.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 82,
+          "endLine": 103,
+          "symbol": "External collaborators / Policy and recipes",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 82,
+                "endLine": 103
+              }
+            ]
+          },
+          "id": "range-27aa5dc5-49e4-4c33-a0a3-92c4e6cf30ad",
+          "originalLines": [
+            "## External collaborators",
+            "",
+            "H0 should link four systems outside the central abstraction triangle.",
+            "",
+            "### Policy and recipes",
+            "",
+            "`DomainProfile`, `EvidenceSchema`, content presentation, command contributions,",
+            "and representation recipes configure how the core abstractions behave.",
+            "",
+            "Policy chooses the corpus kind and evidence vocabulary. It also controls which",
+            "workspace surfaces, renderers, and element commands are available. Recipe",
+            "records guide representation layers and revisions.",
+            "",
+            "This is a configuration plane, not a fourth data layer.",
+            "",
+            "Primary source anchors:",
+            "",
+            "- `src/domainProfile.ts`",
+            "- `src/domainProfiles.ts`",
+            "- `server/domainProfiles.ts`",
+            "- `src/representationGraph.ts` recipe records",
+            "- `src/prompt.ts` template and prompt bindings"
+          ]
+        },
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 185,
+          "endLine": 189,
+          "symbol": "H0 / Required external links",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 185,
+                "endLine": 189
+              }
+            ]
+          },
+          "id": "range-ed8a1097-f228-41b7-a44f-b276ad273c5c",
+          "originalLines": [
+            "Required external links:",
+            "",
+            "- `POLICY + RECIPES -> Corpus/Evidence/Representation`: configure behavior.",
+            "- `AGENT + PROMPT RUNTIME`: execute collection, generation, mapping, and",
+            "  revision transformations."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-cebe7b38-b38a-430d-9443-524a375ad649",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-a6138387-38c9-4077-ad47-c0993f53a741",
+        "codeEntitiesSetId": "entities-7890da79-ab39-498f-ae7d-e1b42b4d7b6a"
+      },
+      "handle": "h0-agent-prompt-runtime",
+      "label": "AGENT + PROMPT RUNTIME",
+      "category": "operation",
+      "summary": "The external runtime executes Corpus-to-Evidence collection and validation, Evidence-to-Representation generation, mapping follow-up, and feedback-driven representation revision; immutable prompt configs record each requested transformation.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 105,
+          "endLine": 121,
+          "symbol": "External collaborators / Agent and prompt runtime",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 105,
+                "endLine": 121
+              }
+            ]
+          },
+          "id": "range-1a1b15f1-68eb-4bc9-b7e3-c5700922d7d5",
+          "originalLines": [
+            "### Agent and prompt runtime",
+            "",
+            "The runtime performs the transformations between layers:",
+            "",
+            "- Corpus to Evidence through collection tools and validation.",
+            "- Evidence to Representation through generation.",
+            "- Representation to mapped Representation through the mapping follow-up.",
+            "- Feedback plus prior Representation to a revised Representation.",
+            "",
+            "Immutable prompt configs record exactly how each transformation was requested.",
+            "",
+            "Primary source anchors:",
+            "",
+            "- `server/agentRuntime.ts`",
+            "- `server/codeEntityPrompt.ts`",
+            "- `src/prompt.ts`",
+            "- generation and mapping methods in `server/application.ts`"
+          ]
+        },
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 185,
+          "endLine": 191,
+          "symbol": "H0 / Required external links",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 185,
+                "endLine": 191
+              }
+            ]
+          },
+          "id": "range-b5fbae66-dac7-46ae-8dad-8d0d931b377d",
+          "originalLines": [
+            "Required external links:",
+            "",
+            "- `POLICY + RECIPES -> Corpus/Evidence/Representation`: configure behavior.",
+            "- `AGENT + PROMPT RUNTIME`: execute collection, generation, mapping, and",
+            "  revision transformations.",
+            "- `PERSISTENCE + PROVENANCE <-> Corpus/Evidence/Representation`: store and",
+            "  reload identities and revisions."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-bb27f6f6-45ed-47f2-b7ee-842ae38eacdc",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-a6138387-38c9-4077-ad47-c0993f53a741",
+        "codeEntitiesSetId": "entities-7890da79-ab39-498f-ae7d-e1b42b4d7b6a"
+      },
+      "handle": "h0-persistence-provenance",
+      "label": "PERSISTENCE + PROVENANCE",
+      "category": "interface-data-struct",
+      "summary": "The bidirectional storage collaborator persists and reloads corpus bindings, evidence collections, prompt configurations, artifacts, mappings, representation graphs, highlights, and imported dependencies while provenance records project and DiagramSet ownership. Import/export remains an exchange port, not a core abstraction.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 123,
+          "endLine": 137,
+          "symbol": "External collaborators / Persistence and provenance",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 123,
+                "endLine": 137
+              }
+            ]
+          },
+          "id": "range-c0c0f72e-aef1-4adc-bbe9-f5bb6356a5a1",
+          "originalLines": [
+            "### Persistence and provenance",
+            "",
+            "The store persists the project corpus binding, evidence collections, prompt",
+            "configs, artifacts, mapping sidecars, representation graphs, highlights, and",
+            "imported dependencies. Provenance identifies which project and DiagramSet own",
+            "each record.",
+            "",
+            "Import/export is an exchange port on this collaborator. It should not appear as",
+            "a separate core abstraction in H0.",
+            "",
+            "Primary source anchors:",
+            "",
+            "- `server/store.ts`",
+            "- persisted records in `src/domain.ts`",
+            "- `server/application.ts` `importArtifact` and `mappedArtifactBundle`"
+          ]
+        },
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 185,
+          "endLine": 192,
+          "symbol": "H0 / Required external links",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 185,
+                "endLine": 192
+              }
+            ]
+          },
+          "id": "range-9ddce8cd-dfb0-4553-8003-5a0a3facc58d",
+          "originalLines": [
+            "Required external links:",
+            "",
+            "- `POLICY + RECIPES -> Corpus/Evidence/Representation`: configure behavior.",
+            "- `AGENT + PROMPT RUNTIME`: execute collection, generation, mapping, and",
+            "  revision transformations.",
+            "- `PERSISTENCE + PROVENANCE <-> Corpus/Evidence/Representation`: store and",
+            "  reload identities and revisions.",
+            "- `WORKSPACE + API <-> Evidence/Representation`: select, command, inspect, and"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-688ca9f6-0cba-4b3c-a5b6-9e7f6f3c23a1",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-a6138387-38c9-4077-ad47-c0993f53a741",
+        "codeEntitiesSetId": "entities-7890da79-ab39-498f-ae7d-e1b42b4d7b6a"
+      },
+      "handle": "h0-workspace-api",
+      "label": "WORKSPACE + API",
+      "category": "interface-data-struct",
+      "summary": "The external interaction plane selects evidence, commands generation or revision, inspects mappings, reveals corpus content, supplies feedback, and saves highlights. It interacts bidirectionally with Evidence and Representation and accesses Corpus only for explicit browsing or resolved reads, never for representation grounding.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 139,
+          "endLine": 156,
+          "symbol": "External collaborators / Workspace and API",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 139,
+                "endLine": 156
+              }
+            ]
+          },
+          "id": "range-e8d92738-681d-4bb9-81c6-b340be68675d",
+          "originalLines": [
+            "### Workspace and API",
+            "",
+            "The interaction plane lets callers select evidence, generate or revise a",
+            "representation, inspect mappings, reveal corpus content, add feedback, and save",
+            "highlights. The UI is a consumer and controller of the core model; it is not",
+            "the model itself.",
+            "",
+            "Primary source anchors:",
+            "",
+            "- `server/http.ts`",
+            "- `src/api.ts`",
+            "- `src/App.tsx`",
+            "- `src/components/DiagramView.tsx`",
+            "- `src/components/CodeEntitiesPanel.tsx`",
+            "- `src/components/RepresentationLayersPanel.tsx`",
+            "",
+            "An external user or CLI may connect to Workspace and API, but user-interface",
+            "details should remain outside H0."
+          ]
+        },
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 185,
+          "endLine": 195,
+          "symbol": "H0 / Required external links",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 185,
+                "endLine": 195
+              }
+            ]
+          },
+          "id": "range-6f39f28b-815f-4af5-a741-ae10b4ec7086",
+          "originalLines": [
+            "Required external links:",
+            "",
+            "- `POLICY + RECIPES -> Corpus/Evidence/Representation`: configure behavior.",
+            "- `AGENT + PROMPT RUNTIME`: execute collection, generation, mapping, and",
+            "  revision transformations.",
+            "- `PERSISTENCE + PROVENANCE <-> Corpus/Evidence/Representation`: store and",
+            "  reload identities and revisions.",
+            "- `WORKSPACE + API <-> Evidence/Representation`: select, command, inspect, and",
+            "  provide feedback.",
+            "- `WORKSPACE + API -> Corpus` only for explicit browsing or resolved source",
+            "  reads, never as representation grounding."
+          ]
+        }
+      ]
+    }
+  ],
+  "promptConfigId": "prompt-761cd106-469b-4416-a9f4-a15f2e83fa07",
+  "finalizedAt": "2026-08-31T22:28:31.097Z"
+}

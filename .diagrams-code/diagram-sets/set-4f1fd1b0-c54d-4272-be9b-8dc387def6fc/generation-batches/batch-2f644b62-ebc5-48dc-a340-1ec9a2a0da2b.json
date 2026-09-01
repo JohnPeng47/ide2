@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "batch-2f644b62-ebc5-48dc-a340-1ec9a2a0da2b",
+  "diagramSetId": "set-4f1fd1b0-c54d-4272-be9b-8dc387def6fc",
+  "requestedCount": 3,
+  "promptConfigId": "prompt-16f4c8cb-7352-476a-addb-c9e86a3f065b",
+  "codeEntitiesRevision": 1,
+  "childRunIds": [
+    "run-c7a5bda9-450b-4a15-8019-cc917b494348",
+    "run-d6f8f176-687b-4cf1-a858-f567e10c333c",
+    "run-7f44b4c7-1555-4ae7-9fd9-30d566773277"
+  ],
+  "outputDiagramIds": [
+    "diagram-21765dbd-6863-4a10-ad52-6518117202d9",
+    "diagram-61f34e2c-fbf1-4f4a-9b4a-af12925e0474",
+    "diagram-635c6de5-e0fc-435d-b60f-75cf0f345ea9"
+  ],
+  "outputDiagramComponentIds": [],
+  "status": "complete",
+  "createdAt": "2026-09-01T01:30:16.876Z",
+  "updatedAt": "2026-09-01T01:34:40.125Z",
+  "diagramCandidateBatchId": "candidate-batch-39f4123db8a70d848fe0dc1a34e4dd47"
+}

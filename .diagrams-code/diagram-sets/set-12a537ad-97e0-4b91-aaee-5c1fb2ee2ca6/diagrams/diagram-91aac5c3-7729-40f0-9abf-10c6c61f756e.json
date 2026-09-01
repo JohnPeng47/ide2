@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "diagram-91aac5c3-7729-40f0-9abf-10c6c61f756e",
+  "recordOrigin": {
+    "projectId": "project-ce67f2af4410",
+    "diagramSetId": "set-12a537ad-97e0-4b91-aaee-5c1fb2ee2ca6"
+  },
+  "diagramSetId": "set-12a537ad-97e0-4b91-aaee-5c1fb2ee2ca6",
+  "viewKind": "diagram",
+  "representationKind": "diagram",
+  "handle": "indexed-representation-interaction",
+  "name": "Indexed Representation Interaction",
+  "ascii": "Legend: [D] = data structure; (O) = operation; source file:symbol labels are inline.\n\n+--------------------------------------------------------------------------------------------------+\n| USER SELECTIONS -> ACTIVE REPRESENTATION                                                        |\n|                                                                                                  |\n|  (O) DiagramSetTreePanel.tsx:DiagramSetTreePanel                                                 |\n|      DiagramSet / Diagram; current and starred entries                                           |\n|                                                                                                  |\n|  (O) DiagramLineagePanel.tsx:renderCandidateBatch/renderDiagram                                  |\n|      ranked candidate batches and candidates; view kind and featured star                        |\n|                                                                                                  |\n|  (O) DiagramLineagePanel.tsx:ComponentLineageSection                                             |\n|      captured/generated DiagramComponent -> component Representation                              |\n|                                                                                                  |\n|  (O) RepresentationLayersPanel.tsx:RepresentationLayersPanel                                      |\n|      ordered revision layer -> transition feedback                                                |\n+-----------------------------------------------+--------------------------------------------------+\n                                                |\n                  activates selected Diagram, component, or Representation layer\n                                                v\n (O) DiagramView.tsx:DiagramView\n     validate the ASCII revision and map; derive interaction mode\n     choose tree or diagram index -> wire the active grid surface\n                                                |\n                                                v\n+--------------------------------------------------------------------------------------------------+\n| ACTIVE REPRESENTATION                                                                           |\n|                                                                                                  |\n|  [D] representationIndex.ts:buildRepresentationIndex                                             |\n|      stable, revision-scoped tree nodes and visual element IDs                                   |\n|      reject stale maps; structural/persisted identity; element <-> Evidence resolver             |\n|                                                                                                  |\n|  (O) AsciiSelectionGrid.tsx:AsciiSelectionGrid                                                   |\n|      render indexed lines, mappings, controls, pointer selection, and hover state                |\n+-----------------------------------------------+--------------------------------------------------+\n                                                |\n                 every command consumes current revision and stable indexed elements\n                                                |\n +-- hover / mapped Evidence reveal\n |      exact source location; activation follows the grounding path below\n |      collapse indexed subtree; toggle mapped highlight\n |\n +-- rectangle selection -> buffer reference\n |   (O) DiagramView.tsx:completeSelection\n |       normalize drag bounds; intersect current mappings; preview mapped references\n |   (O) refBuffer.ts:referencesFromMappings\n |       add Evidence identities to the scoped reference buffer\n |   (O) RefBufferTray.tsx:displayCallGraph\n |       active-Diagram refs -> validate/dedup CodeEntities -> focused call graph\n |\n +-- component capture\n |   (O) DiagramView.tsx:saveCapture\n |       released rectangle -> captured component -> completion feedback -> component lineage\n |\n +-- edit mode\n |   (O) DiagramView.tsx:editMode\n |       exclude stale mappings; disable incompatible commands; grid -> ASCII editor; start/exit\n |\n +-- layer feedback\n |       same indexed revision -> ordered layer transition target -> feedback\n |\n +-- mapped Evidence activation\n     |\n     v\n (O) App.tsx:revealCodeEntity\n     Representation mapping + Evidence identity + source-range index\n     |\n     v\n [D] Evidence selection\n (O) CodeEntitiesPanel.tsx:CodeEntitiesPanel\n     select the Evidence range and load its authoritative source snippet\n     |\n     v\n [D] Corpus content\n     source or markdown render surface\n\n REQUIRED GROUNDING: Representation -> Evidence -> Corpus; no direct shortcut.\n\n (O) panes/navigation.ts:PaneNavigationApi\n     activate/focus pane; bounded deduplicated jump history; delayed delivery; replay or clear\n <======= reversible pane movement across Representation, Evidence, and Corpus =======>\n         navigation may replay movement; grounding never bypasses Evidence.",
+  "codeEntityIds": [
+    "entity-7d09077d-4197-479b-b276-633be0778987",
+    "entity-b708368c-62a2-4388-b82c-62759dc9fbb7",
+    "entity-0d7387b5-7200-4320-9d63-3bbdcdb706fa",
+    "entity-40965b03-a2d2-4e89-85de-84c4cba943cb",
+    "entity-fe9e8afe-4cfc-4d2f-8235-37ab78cf8f69",
+    "entity-df4b89a2-cc19-4927-aea8-e6624b15fa66",
+    "entity-8a7618c0-79db-41af-87ef-3d57b963e710",
+    "entity-9bf80159-ed3e-44c2-9e40-bc335b410736",
+    "entity-d0576e3a-18b2-46d1-a077-3701dc3b6305",
+    "entity-71ce3f68-f56a-4326-be38-1e9a6a22a7ff",
+    "entity-18c27ef4-43bf-4bca-8bc3-d0d0e50a75f3",
+    "entity-821d8680-e279-417c-b382-a7387585dd58"
+  ],
+  "origin": "generated",
+  "producedByRunId": "run-a0bc256d-f610-4dbd-a190-06aea579c9c6",
+  "generationPromptConfigId": "prompt-50ae703c-70c1-4919-a770-355c6006d0b9",
+  "derivedFromDiagramIds": [
+    "diagram-5b048a30-bab2-410f-808d-ed93f8283ebc",
+    "diagram-fb1fac68-ac02-4a1f-b9cc-cc4e8bc5f5e8"
+  ],
+  "createdAt": "2026-09-01T14:54:59.534Z"
+}

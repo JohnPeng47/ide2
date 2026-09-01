@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "diagram-fa73e5ab-bb5d-4e3e-96ba-b8f8dfd0ee1f",
+  "recordOrigin": {
+    "projectId": "project-ce67f2af4410",
+    "diagramSetId": "set-dfdefa6d-9e98-4a71-9569-7fc503524d9a"
+  },
+  "diagramSetId": "set-dfdefa6d-9e98-4a71-9569-7fc503524d9a",
+  "viewKind": "diagram",
+  "representationKind": "diagram",
+  "handle": "r1-interaction-grounding",
+  "name": "R1 Interaction Grounding",
+  "ascii": "Legend: [D] = interaction state/surface, (O) = user operation.\n\n                         R1 REPRESENTATION INTERACTION\n\n (O) Select a DiagramSet\n       |    `DiagramSetTreePanel`\n       v\n (O) Navigate grouped lineage\n       |    `DiagramLineagePanel`\n       |    candidate batches / variants / call graphs / directory views\n       |    rank candidates / star preferred view\n       +---- select component\n       +---- choose layer by information rank ----> (O) layer / transition feedback\n       |                                      `RepresentationLayersPanel`\n       |\n       v\n [D] Active immutable Representation artifact\n\n+-----------------------------------------------------------------------------+\n| [D] REPRESENTATION - orientation and manipulation surface                   |\n|                                                                             |\n|  [D] DiagramView                                                            |\n|        |                                                                    |\n|        v                                                                    |\n|  [D] AsciiSelectionGrid + DiagramSelectionOverlay                           |\n|        |                                                                    |\n|        v                                                                    |\n|  [D] stable RepresentationIndex - revision-scoped element identity          |\n|      `representationIndex` / `representationPresentation` / `asciiTree`     |\n|                                                                             |\n|  (O) hover / click mapped element / rectangle selection                     |\n|  (O) show mapped and highlighted state                                      |\n+-----------------------------------------------------------------------------+\n       | stable mapped element identity\n       v\n (O) Dispatch mapped-element command\n       `DomainProfile.ElementCommandId` / App handlers\n       |\n       +---- reveal Evidence\n       +---- collapse subtree (presentation only)\n       +---- toggle highlight (durable grounded context)\n       +---- buffer reference ----> mapped Evidence temporary tray\n       +---- selected Evidence ---> (O) focused Call Graph\n       |                              `callGraphFocus`\n       +---- rectangle selection -> [D] DiagramComponent capture\n       |                              `diagramSelection`\n       +---- edit mode -----------> markers / manual or LLM edits\n                                      undo / redo\n                                      publish immutable lineage child\n                                      `EditOperationsPanel`\n\n                         ONLY GROUNDING PATH\n\n[Representation] --mapped reveal--> [Evidence] --authoritative ranges--> [Corpus]\n       ^                         pane Back / Forward                         |\n       +--------------------------------------------------------------------+\nEvidence inspection: metadata + mapped ranges; Corpus passage verifies claim.\nGrounding rule: Representation -> Evidence -> Corpus only.\nNo Representation -> Corpus source reveal; direct Corpus access is explicit browsing.\n\nBOUNDARY: no evidence collection, agent generation, reference follow-up,\n          mapping prompt execution, or persistence layout.",
+  "codeEntityIds": [
+    "entity-2dfbae85-53a6-4646-8d66-535ddc5c7ada",
+    "entity-9cc5ea7b-78b9-4738-b071-c03c38840e40",
+    "entity-c7478745-143b-444e-bb59-4ff394175034",
+    "entity-f8479dfa-5b9f-4878-97b6-144aa1b4e137",
+    "entity-2687ed16-1d3d-4432-9ded-15b21a9e71a6",
+    "entity-f492e41f-5dc8-4437-a80a-4474a453474e",
+    "entity-d496279d-5407-499d-a404-72e2381bb7bd",
+    "entity-d9c70557-02ec-4a91-a8de-d0863790d19c",
+    "entity-b5f55a56-fd8a-4c04-b274-51ff200f2715",
+    "entity-d4e077f9-5942-402e-b01e-61c3597bed98"
+  ],
+  "origin": "generated",
+  "producedByRunId": "run-8ecac029-1470-46bb-ae9a-81cd579625c2",
+  "generationPromptConfigId": "prompt-52de21c3-042b-481f-b7e4-7075c8df6021",
+  "derivedFromDiagramIds": [],
+  "createdAt": "2026-09-01T00:09:22.993Z"
+}

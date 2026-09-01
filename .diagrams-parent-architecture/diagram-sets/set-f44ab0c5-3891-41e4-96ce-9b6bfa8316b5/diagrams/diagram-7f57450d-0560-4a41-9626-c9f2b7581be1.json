@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "diagram-7f57450d-0560-4a41-9626-c9f2b7581be1",
+  "recordOrigin": {
+    "projectId": "project-ce67f2af4410",
+    "diagramSetId": "set-f44ab0c5-3891-41e4-96ce-9b6bfa8316b5"
+  },
+  "diagramSetId": "set-f44ab0c5-3891-41e4-96ce-9b6bfa8316b5",
+  "viewKind": "diagram",
+  "handle": "experiment-evaluation-and-dataset-curation",
+  "name": "Experiment Evaluation and Dataset Curation",
+  "ascii": "                     EXPERIMENT EVALUATION AND DATASET CURATION\n\n [X] Experiment run directories\n experiment.json\n analysis.json\n generation records\n metrics\n              |\n              v\n [R] ExperimentCatalog\n reads experiment filesystem\n              |\n       +------+--------------------+\n       |                           |\n       v                           v\n [R] summarize()             [R] artifact()\n       |                           |\n       v                           v\n [P] ExperimentSummary       [P] ExperimentDiagramArtifact\n axes                          ASCII\n iterations                    codeEntityIds\n aggregate metrics             modelId\n prompt analysis               promptConfigId\n diagram summaries             metrics\n       |                           |\n       v                           |\n GET /api/experiments             |\n       |                           |\n       v                           |\n [R] ExperimentViewerPage         |\n       |                           |\n       | select experiment output |\n       +-------------+-------------+\n                     |\n                     v\n POST /api/diagram-datasets/:datasetId/items\n                     |\n        validate catalog/axis/iteration/value\n                     |\n                     v\n           [R] ExperimentCatalog.artifact()\n                     |\n                     v\n            [R] DiagramDatasetStore.addItem()\n                     |\n                     v\n            [P] DiagramDatasetItemRecord\n            source:\n              catalog/project/axis/iteration\n            artifact:\n              ASCII + CodeEntity IDs\n            evaluation:\n              metrics + tested prompt\n            generation:\n              model + prompt config\n            curation:\n              labels\n                     |\n             deduplicate by source\n                     |\n                     v\n             [P] DiagramDatasetRecord\n             name\n             items[]\n             createdAt/updatedAt\n                     |\n          +----------+-----------+\n          |          |           |\n          v          v           v\n       list()    updateLabels() removeItem()\n          |          |           |\n          +----------+-----------+\n                     |\n                     v\n        [R] DiagramDatasetCatalogSnapshot",
+  "representationKind": "diagram",
+  "codeEntityIds": [
+    "entity-b6b91396-0eea-44e2-8348-61a038a470b9",
+    "entity-e197e48a-de27-4dd4-ac4c-540823f64364",
+    "entity-f5f8b345-8aee-4189-b189-2e4cbde75539",
+    "entity-0f19a4de-296b-4087-b211-60e71416e53d",
+    "entity-4df39a12-dfcf-4214-b5c0-a068772bb61a",
+    "entity-0d74e41a-57dc-4a12-850e-f44cd8a399da",
+    "entity-45ef8ae4-60e8-40c5-85aa-273fc927e5b7",
+    "entity-44537337-55b4-4772-9b01-cb9d07eebe64",
+    "entity-00b141a4-2eb2-4d2b-ac6f-b12ec37b699c",
+    "entity-988f6f8f-e466-4a82-8fdb-77bbb8fd458f",
+    "entity-2d277290-0b1f-4abf-96af-edaf19105675",
+    "entity-660d86bc-89bd-43fd-ac54-4932f20f42b7",
+    "entity-4fb40329-f76d-49b5-94a6-a10c5608091d",
+    "entity-5c540725-22ad-4c91-9a80-ede0b36be945"
+  ],
+  "origin": "materialized",
+  "derivedFromDiagramIds": [],
+  "createdAt": "2026-09-01T16:21:33.868Z"
+}

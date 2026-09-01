@@ -1,0 +1,2163 @@
+{
+  "schemaVersion": 1,
+  "id": "entities-a71bc082-36fc-448a-a663-883e3d167a19",
+  "diagramSetId": "set-e2ab0628-530f-47a5-b8fe-cc4b789d986b",
+  "revision": 1,
+  "status": "finalized",
+  "entities": [
+    {
+      "id": "entity-7b6a484b-cca6-4e91-8f28-3f23d5b4fbfa",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-e2ab0628-530f-47a5-b8fe-cc4b789d986b",
+        "codeEntitiesSetId": "entities-a71bc082-36fc-448a-a663-883e3d167a19"
+      },
+      "handle": "evidence-hinge",
+      "label": "Evidence hinge - REPOSITORY_DIAGRAM_DECOMPOSITION.md E1",
+      "category": "state",
+      "summary": "Evidence is the user-interaction hinge: users move from a mapped Representation element to grounded Evidence and then reveal the authoritative Corpus passage. Representation-initiated grounding must follow Representation -> Evidence -> Corpus; direct Corpus access is reserved for explicit browsing.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 9,
+          "endLine": 29,
+          "symbol": "User model / primary investigation loop",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 9,
+                "endLine": 29
+              }
+            ]
+          },
+          "id": "range-0d755a6a-2aad-4cd2-8c68-2212da1da567",
+          "originalLines": [
+            "The system has three central abstractions viewed through user interaction:",
+            "",
+            "- Corpus is what the user browses, reads, and verifies.",
+            "- Evidence is the grounded semantic layer the user inspects, selects,",
+            "  references, and saves.",
+            "- Representation is the visual structure the user navigates and manipulates.",
+            "",
+            "The primary investigation loop is:",
+            "",
+            "1. Open a Representation.",
+            "2. Inspect its visual structure.",
+            "3. Select a mapped element.",
+            "4. Resolve that element to Evidence.",
+            "5. Inspect the Evidence label, summary, and source ranges.",
+            "6. Reveal the authoritative Corpus passage.",
+            "7. Verify the visual claim against the content.",
+            "8. Return through pane navigation history.",
+            "",
+            "A Representation-initiated source reveal must always follow",
+            "`Representation -> Evidence -> Corpus`. Direct Workspace-to-Corpus access is",
+            "allowed only for explicit browsing, such as opening a file or Markdown section."
+          ]
+        },
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 151,
+          "endLine": 168,
+          "symbol": "E1 - Evidence as the interaction hinge",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 151,
+                "endLine": 168
+              }
+            ]
+          },
+          "id": "range-3f26e5ef-a3a8-4890-8bf1-244f02ff12d8",
+          "originalLines": [
+            "## E1 - Evidence Interaction",
+            "",
+            "### Purpose",
+            "",
+            "Explain how Evidence connects visual elements, grounded source passages,",
+            "references, highlights, file associations, and focused views.",
+            "",
+            "### Evidence as the interaction hinge",
+            "",
+            "Evidence answers both of the user's grounding questions:",
+            "",
+            "- Which source supports this visual element?",
+            "- Which visual or navigational operations can reuse this source-backed concept?",
+            "",
+            "The domain-neutral `EvidenceEntity` contains a stable identity, handle, label,",
+            "kind, summary, and `SourceRange` anchors. Persistence and several APIs still",
+            "use `CodeEntityRecord` and `CodeEntitiesSetRecord`; `EvidenceSchema` adapts",
+            "those records into the user-facing Evidence model."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-c84d4c83-9308-4c69-8fc9-eecd03448efa",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-e2ab0628-530f-47a5-b8fe-cc4b789d986b",
+        "codeEntitiesSetId": "entities-a71bc082-36fc-448a-a663-883e3d167a19"
+      },
+      "handle": "evidence-codeentity-boundary",
+      "label": "EvidenceEntity <-> CodeEntity compatibility - src/domainProfile.ts EvidenceSchema",
+      "category": "interface-data-struct",
+      "summary": "The user-facing, domain-neutral EvidenceEntity carries stable id, handle, label, kind, summary, and SourceRange anchors. EvidenceSchema.fromCodeEntity adapts persisted CodeEntityRecord fields into that model, making the Evidence-to-CodeEntity compatibility boundary explicit.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 165,
+          "endLine": 175,
+          "symbol": "Evidence-to-CodeEntity compatibility boundary",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 165,
+                "endLine": 175
+              }
+            ]
+          },
+          "id": "range-64fb8c4a-bad2-4306-b0a1-75048d809507",
+          "originalLines": [
+            "The domain-neutral `EvidenceEntity` contains a stable identity, handle, label,",
+            "kind, summary, and `SourceRange` anchors. Persistence and several APIs still",
+            "use `CodeEntityRecord` and `CodeEntitiesSetRecord`; `EvidenceSchema` adapts",
+            "those records into the user-facing Evidence model.",
+            "",
+            "Relevant code:",
+            "",
+            "- `src/domainProfile.ts`: `EvidenceEntity` and `EvidenceSchema`.",
+            "- `src/domainProfiles.ts`: `evidenceSchema` and `fromCodeEntity`.",
+            "- `src/domain.ts`: `SourceRange`, `CodeEntityRecord`, and",
+            "  `CodeEntitiesSetRecord`."
+          ]
+        },
+        {
+          "path": "src/domainProfile.ts",
+          "startLine": 28,
+          "endLine": 44,
+          "symbol": "EvidenceEntity; EvidenceSchema",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 28,
+                "endLine": 44
+              }
+            ]
+          },
+          "id": "range-1ed51ab7-e84c-4a4e-acca-244c0dc2b3dd",
+          "originalLines": [
+            "/** Domain-neutral evidence view over today's persisted CodeEntity records. */",
+            "export interface EvidenceEntity {",
+            "  id: string;",
+            "  handle: string;",
+            "  label: string;",
+            "  kind: string;",
+            "  summary: string;",
+            "  anchors: SourceRange[];",
+            "}",
+            "",
+            "export interface EvidenceSchema {",
+            "  id: string;",
+            "  label: string;",
+            "  entityNoun: string;",
+            "  collectionNoun: string;",
+            "  fromCodeEntity(record: CodeEntityRecord): EvidenceEntity;",
+            "}"
+          ]
+        },
+        {
+          "path": "src/domainProfiles.ts",
+          "startLine": 10,
+          "endLine": 31,
+          "symbol": "evidenceSchema.fromCodeEntity",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 10,
+                "endLine": 31
+              }
+            ]
+          },
+          "id": "range-99e42aa9-4280-4eab-8666-708afea88815",
+          "originalLines": [
+            "function evidenceSchema(",
+            "  id: string,",
+            "  label: string,",
+            "  entityNoun: string,",
+            "  collectionNoun: string",
+            "): EvidenceSchema {",
+            "  return {",
+            "    id,",
+            "    label,",
+            "    entityNoun,",
+            "    collectionNoun,",
+            "    fromCodeEntity(record: CodeEntityRecord) {",
+            "      return {",
+            "        id: record.id,",
+            "        handle: record.handle,",
+            "        label: record.label,",
+            "        kind: record.category,",
+            "        summary: record.summary,",
+            "        anchors: record.sourceRanges",
+            "      };",
+            "    }",
+            "  };"
+          ]
+        },
+        {
+          "path": "src/domain.ts",
+          "startLine": 99,
+          "endLine": 129,
+          "symbol": "SourceRange; CodeEntityRecord; CodeEntitiesSetRecord",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 99,
+                "endLine": 129
+              }
+            ]
+          },
+          "id": "range-4ea2a700-b79a-4743-a787-bf9f064aa936",
+          "originalLines": [
+            "export interface SourceRange {",
+            "  /** Globally unique on new records. Optional only while reading legacy records. */",
+            "  id?: string;",
+            "  path: string;",
+            "  startLine: number;",
+            "  endLine: number;",
+            "  symbol?: string;",
+            "  /** Immutable source snapshot captured when this CodeEntity was collected. */",
+            "  originalLines?: string[];",
+            "  /** Optional presentation map; absent ranges render as their complete source. */",
+            "  compactedSource?: CompactedSource;",
+            "}",
+            "",
+            "export interface CodeEntityRecord {",
+            "  id: string;",
+            "  /** Exact immutable collection that owns this entity. Optional on legacy records. */",
+            "  origin?: CodeEntityOrigin;",
+            "  handle: string;",
+            "  label: string;",
+            "  category: CodeEntityCategory;",
+            "  summary: string;",
+            "  sourceRanges: SourceRange[];",
+            "}",
+            "",
+            "export interface CodeEntitiesSetRecord {",
+            "  schemaVersion: typeof SCHEMA_VERSION;",
+            "  id: string;",
+            "  diagramSetId: string;",
+            "  revision: number;",
+            "  status: \"collecting\" | \"finalized\" | \"failed\";",
+            "  entities: CodeEntityRecord[];"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-515a2005-8de4-485d-9647-55e93c3fbcba",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-e2ab0628-530f-47a5-b8fe-cc4b789d986b",
+        "codeEntitiesSetId": "entities-a71bc082-36fc-448a-a663-883e3d167a19"
+      },
+      "handle": "mapped-element-reveal",
+      "label": "Mapped element -> Evidence - AsciiSelectionGrid / App.revealCodeEntity",
+      "category": "operation",
+      "summary": "AsciiSelectionGrid renders each DiagramElementMapping as a visible button whose hover title includes the Evidence label, summary, and source location. Activation passes the mapping to App.revealCodeEntity, which jumps to the Code Entities tab with the mapped entity and source-range index.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 177,
+          "endLine": 189,
+          "symbol": "Representation-to-Evidence reveal",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 177,
+                "endLine": 189
+              }
+            ]
+          },
+          "id": "range-cf29ccad-d98d-4532-a171-41a906a1b304",
+          "originalLines": [
+            "### Representation-to-Evidence reveal",
+            "",
+            "`AsciiSelectionGrid` associates visible text spans with",
+            "`DiagramElementMapping` records. Hovering a mapping shows the Evidence summary.",
+            "Clicking it calls `revealCodeEntity`, switches the context to Code Entities,",
+            "selects the requested Evidence range, and records a pane jump.",
+            "",
+            "Relevant code:",
+            "",
+            "- `src/components/AsciiSelectionGrid.tsx`: mapping hover and activation.",
+            "- `src/domain.ts`: `DiagramElementMapping`.",
+            "- `src/App.tsx`: `revealCodeEntity`.",
+            "- `src/components/CodeEntitiesPanel.tsx`: `CodeEntityReveal` handling."
+          ]
+        },
+        {
+          "path": "src/components/AsciiSelectionGrid.tsx",
+          "startLine": 385,
+          "endLine": 425,
+          "symbol": "AsciiSelectionGrid mapped element rendering",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 385,
+                "endLine": 425
+              }
+            ]
+          },
+          "id": "range-ccda7bb6-308f-4155-bfd2-453f9882a130",
+          "originalLines": [
+            "          for (const mapping of mappings) {",
+            "            const start = mapping.startColumn - 1;",
+            "            const end = mapping.endColumn;",
+            "            if (start > cursor) content.push(line.slice(cursor, start));",
+            "            const entity = entitiesById.get(mapping.entityId);",
+            "            const range = mapping.sourceRangeId",
+            "              ? entity?.sourceRanges.find((candidate) => candidate.id === mapping.sourceRangeId)",
+            "              : entity?.sourceRanges[mapping.sourceRangeIndex];",
+            "            const classes = [",
+            "              \"mapped-element\",",
+            "              props.previewMappingIds.has(mapping.id) ? \"is-selection-preview\" : \"\",",
+            "              props.bufferedReferenceKeys.has(mappingReferenceKey(mapping, props.entities)) ? \"is-buffered-ref\" : \"\"",
+            "            ].filter(Boolean).join(\" \");",
+            "            const representationElementId = props.representationIndex",
+            "              ? representationElementIdForMapping(props.representationIndex, mapping.id)",
+            "              : undefined;",
+            "            const spatialStatus = representationElementId",
+            "              ? props.spatialProgressByElementId?.get(representationElementId)",
+            "              : undefined;",
+            "            content.push(",
+            "              <span",
+            "                className={`mapped-element-wrap${spatialStatus ? ` has-agent-${spatialStatus}` : \"\"}`}",
+            "                data-representation-element-id={representationElementId}",
+            "                data-agent-progress={spatialStatus}",
+            "                key={mapping.id}",
+            "              >",
+            "                {props.onReveal ? (",
+            "                  <button",
+            "                    type=\"button\"",
+            "                    className={`${classes} representation-link--${props.presentation.evidenceLinks.kind}`}",
+            "                    data-mapping-id={mapping.id}",
+            "                    data-entity-id={mapping.entityId}",
+            "                    data-reference-key={mappingReferenceKey(mapping, props.entities)}",
+            "                    data-line={mapping.line}",
+            "                    data-start-column={mapping.startColumn}",
+            "                    data-end-column={mapping.endColumn}",
+            "                    aria-label={entity ? `Reveal ${entity.label} in Code Entities` : \"Reveal mapped CodeEntity\"}",
+            "                    title={entity",
+            "                      ? `${entity.label}\\n${entity.summary}${range ? `\\n${range.path}:${range.startLine}-${range.endLine}` : \"\"}`",
+            "                      : undefined}",
+            "                    onClick={() => props.onReveal?.(mapping)}"
+          ]
+        },
+        {
+          "path": "src/App.tsx",
+          "startLine": 1673,
+          "endLine": 1693,
+          "symbol": "revealCodeEntity",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 1673,
+                "endLine": 1693
+              }
+            ]
+          },
+          "id": "range-9c024b3d-7eab-494b-a722-94d63331c0b0",
+          "originalLines": [
+            "  const revealCodeEntity = (",
+            "    target: Pick<DiagramElementMapping, \"entityId\" | \"sourceRangeIndex\">",
+            "  ) => {",
+            "    const entity = resolutionEntities.find((candidate) => candidate.id === target.entityId);",
+            "    const range = entity?.sourceRanges[target.sourceRangeIndex];",
+            "    paneNavigation.jump({",
+            "      key: `code-entity:${activeSet.id}:${target.entityId}:${target.sourceRangeIndex}`,",
+            "      kind: \"source-location\",",
+            "      paneId: CONTEXT_PANE_ID,",
+            "      tabId: \"code-entities\",",
+            "      label: entity?.label ?? target.entityId,",
+            "      detail: range ? `${range.path}:L${range.startLine}` : undefined,",
+            "      payload: {",
+            "        type: \"code-entity\",",
+            "        entityId: target.entityId,",
+            "        sourceRangeIndex: target.sourceRangeIndex,",
+            "        path: range?.path,",
+            "        line: range?.startLine",
+            "      } satisfies SourceLocationJumpPayload",
+            "    });",
+            "  };"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-eff723af-5a4c-45ee-85cc-86ffe5c1af09",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-e2ab0628-530f-47a5-b8fe-cc4b789d986b",
+        "codeEntitiesSetId": "entities-a71bc082-36fc-448a-a663-883e3d167a19"
+      },
+      "handle": "evidence-inspection-range-choice",
+      "label": "Inspect Evidence and choose range - CodeEntitiesPanel",
+      "category": "operation",
+      "summary": "CodeEntitiesPanel selects an Evidence/CodeEntity, displays its label, category, summary, and @entity handle, and lets the user choose among path:line source ranges. Reveal requests select the requested entity/range and establish the highlighted jump target; stable sourceRangeId is the preferred reference identity while range index remains legacy-compatible.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 191,
+          "endLine": 209,
+          "symbol": "Evidence inspection",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 191,
+                "endLine": 209
+              }
+            ]
+          },
+          "id": "range-ed26da5a-c34e-4274-bc4f-8d85a4b46c4d",
+          "originalLines": [
+            "### Evidence inspection",
+            "",
+            "`CodeEntitiesPanel` lets the user:",
+            "",
+            "- inspect the Evidence label, summary, and category;",
+            "- move among multiple source ranges;",
+            "- reveal the selected Corpus passage;",
+            "- view original snapshots or compacted source; and",
+            "- select Evidence for another workspace action.",
+            "",
+            "The active range may be addressed by stable `sourceRangeId` or by the legacy",
+            "range index.",
+            "",
+            "Relevant code:",
+            "",
+            "- `src/components/CodeEntitiesPanel.tsx`.",
+            "- `src/api.ts`: `fetchSourceSnippet`.",
+            "- `server/application.ts`: `sourceSnippet`.",
+            "- `src/referenceResolver.ts`: stable reference resolution."
+          ]
+        },
+        {
+          "path": "src/components/CodeEntitiesPanel.tsx",
+          "startLine": 78,
+          "endLine": 102,
+          "symbol": "CodeEntitiesPanel activeEntity/activeRange/selectEntity",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 78,
+                "endLine": 102
+              }
+            ]
+          },
+          "id": "range-dbdc8ead-877f-4e16-9ba8-3af4ed45e137",
+          "originalLines": [
+            "  const activeEntity = visible.find((entity) => entity.id === activeEntityId) ?? visible[0];",
+            "  const activeRange = activeEntity?.sourceRanges[activeRangeIndex] ?? activeEntity?.sourceRanges[0];",
+            "  const selected = activeEntity ? props.selectedIds?.has(activeEntity.id) ?? true : false;",
+            "  const markdownAnchor = Boolean(",
+            "    preview",
+            "    && props.contentPresentation.markdownRendering === \"terminal\"",
+            "    && isMarkdownDocumentPath(preview.path)",
+            "  );",
+            "",
+            "  const selectEntity = useCallback((entityId: string, rangeIndex = 0) => {",
+            "    setActiveEntityId(entityId);",
+            "    setActiveRangeIndex(rangeIndex);",
+            "    setJumpTarget(null);",
+            "  }, []);",
+            "",
+            "  const openLinkedAnchor = useCallback((path: string) => {",
+            "    for (const entity of visible) {",
+            "      const rangeIndex = entity.sourceRanges.findIndex((range) => range.path === path);",
+            "      if (rangeIndex >= 0) {",
+            "        selectEntity(entity.id, rangeIndex);",
+            "        return;",
+            "      }",
+            "    }",
+            "    setSourceError(`Linked file is not available as a CodeEntity anchor: ${path}`);",
+            "  }, [selectEntity, visible]);"
+          ]
+        },
+        {
+          "path": "src/components/CodeEntitiesPanel.tsx",
+          "startLine": 109,
+          "endLine": 143,
+          "symbol": "CodeEntitiesPanel CodeEntityReveal handling",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 109,
+                "endLine": 143
+              }
+            ]
+          },
+          "id": "range-b12a23fc-eb0b-4c2f-8891-7ecaf6e6c82a",
+          "originalLines": [
+            "  useEffect(() => {",
+            "    if (!props.reveal) return;",
+            "    if (props.reveal.entityId) {",
+            "      const entity = visible.find((candidate) => candidate.id === props.reveal?.entityId);",
+            "      const rangeIndex = props.reveal.sourceRangeIndex ?? 0;",
+            "      const range = entity?.sourceRanges[rangeIndex];",
+            "      if (!entity || !range) return;",
+            "      selectEntity(entity.id, rangeIndex);",
+            "      setJumpTarget({",
+            "        requestId: props.reveal.requestId,",
+            "        line: props.reveal.targetLine ?? range.startLine,",
+            "        startLine: props.reveal.highlightRange?.startLine ?? range.startLine,",
+            "        endLine: props.reveal.highlightRange?.endLine ?? range.endLine",
+            "      });",
+            "      return;",
+            "    }",
+            "    if (!props.reveal.path || !props.reveal.targetLine) return;",
+            "    const matches = visible.flatMap((entity) => entity.sourceRanges.flatMap((range, rangeIndex) => (",
+            "      range.path === props.reveal?.path ? [{ entity, range, rangeIndex }] : []",
+            "    )));",
+            "    const target = matches",
+            "      .filter(({ range }) => range.startLine <= props.reveal!.targetLine!",
+            "        && props.reveal!.targetLine! <= range.endLine)",
+            "      .sort((left, right) => (",
+            "        (left.range.endLine - left.range.startLine) - (right.range.endLine - right.range.startLine)",
+            "      ))[0] ?? matches[0];",
+            "    if (!target) return;",
+            "    selectEntity(target.entity.id, target.rangeIndex);",
+            "    setJumpTarget({",
+            "      requestId: props.reveal.requestId,",
+            "      line: props.reveal.targetLine,",
+            "      startLine: props.reveal.highlightRange?.startLine ?? props.reveal.targetLine,",
+            "      endLine: props.reveal.highlightRange?.endLine ?? props.reveal.targetLine",
+            "    });",
+            "  }, [props.reveal?.requestId, selectEntity, visible]);"
+          ]
+        },
+        {
+          "path": "src/components/CodeEntitiesPanel.tsx",
+          "startLine": 225,
+          "endLine": 262,
+          "symbol": "CodeEntitiesPanel Evidence metadata and range controls",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 225,
+                "endLine": 262
+              }
+            ]
+          },
+          "id": "range-f65970f4-8026-4d93-9a24-7d364a69d3d9",
+          "originalLines": [
+            "        {activeEntity ? (",
+            "          <div className=\"entity-context__body\" data-active-entity-id={activeEntity.id}>",
+            "            <label className=\"entity-context__select\">",
+            "              <span>Entity</span>",
+            "              <select",
+            "                aria-label=\"Active code entity\"",
+            "                value={activeEntity.id}",
+            "                onChange={(event) => selectEntity(event.target.value)}",
+            "              >",
+            "                {visible.map((entity) => (",
+            "                  <option value={entity.id} key={entity.id}>{entity.label}</option>",
+            "                ))}",
+            "              </select>",
+            "            </label>",
+            "            <div className=\"entity-context__description\">",
+            "              <div>",
+            "                <strong>{activeEntity.label}</strong>",
+            "                <code>{categoryLabel(activeEntity)}</code>",
+            "              </div>",
+            "              <p>{activeEntity.summary}</p>",
+            "              <code className=\"entity-handle\">@entity/{activeEntity.handle}</code>",
+            "            </div>",
+            "            <label className=\"entity-context__select entity-context__range\">",
+            "              <span>Source range</span>",
+            "              <select",
+            "                aria-label=\"Active source range\"",
+            "                value={activeRangeIndex}",
+            "                onChange={(event) => {",
+            "                  setActiveRangeIndex(Number(event.target.value));",
+            "                }}",
+            "              >",
+            "                {activeEntity.sourceRanges.map((range, index) => (",
+            "                  <option value={index} key={`${range.path}:${range.startLine}:${index}`}>",
+            "                    {range.path}:{range.startLine}-{range.endLine}",
+            "                  </option>",
+            "                ))}",
+            "              </select>",
+            "            </label>"
+          ]
+        },
+        {
+          "path": "src/referenceResolver.ts",
+          "startLine": 56,
+          "endLine": 78,
+          "symbol": "resolveReference",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 56,
+                "endLine": 78
+              }
+            ]
+          },
+          "id": "range-5831f04e-81f5-4922-96b6-ef1e26e4655c",
+          "originalLines": [
+            "export function resolveReference(",
+            "  identity: ReferenceIdentity,",
+            "  context: ReferenceResolutionContext",
+            "): ResolvedReference | null {",
+            "  if (identity.kind === \"code-entity\") {",
+            "    const record = context.codeEntities.find((entity) => (",
+            "      entity.id === identity.targetId && sameOrigin(identity.origin, entity.origin)",
+            "    ));",
+            "    if (!record) return null;",
+            "    const sourceRange = identity.sourceRangeId",
+            "      ? record.sourceRanges.find((range) => range.id === identity.sourceRangeId)",
+            "      : identity.sourceRangeIndex === undefined",
+            "        ? undefined",
+            "        : record.sourceRanges[identity.sourceRangeIndex];",
+            "    if ((identity.sourceRangeId !== undefined || identity.sourceRangeIndex !== undefined)",
+            "      && !sourceRange) return null;",
+            "    return {",
+            "      identity,",
+            "      kind: \"code-entity\",",
+            "      record,",
+            "      ...(sourceRange ? { sourceRange } : {}),",
+            "      selectableText: new CodeEntity(record)",
+            "    };"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-be0cd175-205f-41bc-83b8-7c3894474b87",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-e2ab0628-530f-47a5-b8fe-cc4b789d986b",
+        "codeEntitiesSetId": "entities-a71bc082-36fc-448a-a663-883e3d167a19"
+      },
+      "handle": "authoritative-corpus-reveal",
+      "label": "Evidence -> authoritative Corpus - CodeEntitiesPanel / sourceSnippet",
+      "category": "operation",
+      "summary": "After Evidence range choice, CodeEntitiesPanel fetches the source snippet for the active entity and range. server/application.ts sourceSnippet validates the range, reads the project Corpus document, overlays any immutable original snapshot for the anchored range, and returns the content for source or Markdown presentation.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 100,
+          "endLine": 117,
+          "symbol": "Source presentation",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 100,
+                "endLine": 117
+              }
+            ]
+          },
+          "id": "range-45584b41-ed55-40df-a2db-6e09049dc44e",
+          "originalLines": [
+            "### Source presentation",
+            "",
+            "`CodeEntitiesPanel` resolves an Evidence source range through",
+            "`fetchSourceSnippet`. It then chooses a renderer from the active content",
+            "presentation policy.",
+            "",
+            "`SourceCodeView` provides syntax highlighting, compacted source, expandable",
+            "omitted sections, and semantic call-graph nodes. `TerminalMarkdownView`",
+            "provides rendered Markdown, headings, links, sidenotes, and highlighted code",
+            "fences.",
+            "",
+            "Relevant code:",
+            "",
+            "- `src/components/CodeEntitiesPanel.tsx`: range selection and content loading.",
+            "- `src/components/SourceCodeView.tsx`: source presentation.",
+            "- `src/components/TerminalMarkdownView.tsx`: Markdown presentation.",
+            "- `src/terminalMarkdown/render.ts`: Markdown rendering and outline parsing.",
+            "- `server/application.ts`: `sourceSnippet`."
+          ]
+        },
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 193,
+          "endLine": 209,
+          "symbol": "Evidence inspection and Corpus reveal",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 193,
+                "endLine": 209
+              }
+            ]
+          },
+          "id": "range-2bf489ac-4b75-48e0-af34-dd9f8e6eb5f8",
+          "originalLines": [
+            "`CodeEntitiesPanel` lets the user:",
+            "",
+            "- inspect the Evidence label, summary, and category;",
+            "- move among multiple source ranges;",
+            "- reveal the selected Corpus passage;",
+            "- view original snapshots or compacted source; and",
+            "- select Evidence for another workspace action.",
+            "",
+            "The active range may be addressed by stable `sourceRangeId` or by the legacy",
+            "range index.",
+            "",
+            "Relevant code:",
+            "",
+            "- `src/components/CodeEntitiesPanel.tsx`.",
+            "- `src/api.ts`: `fetchSourceSnippet`.",
+            "- `server/application.ts`: `sourceSnippet`.",
+            "- `src/referenceResolver.ts`: stable reference resolution."
+          ]
+        },
+        {
+          "path": "src/components/CodeEntitiesPanel.tsx",
+          "startLine": 150,
+          "endLine": 189,
+          "symbol": "CodeEntitiesPanel source loading",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 150,
+                "endLine": 189
+              }
+            ]
+          },
+          "id": "range-c2035334-36ed-44ee-b31f-082a5c537eb1",
+          "originalLines": [
+            "  useEffect(() => {",
+            "    if (!activeEntity || !activeRange) {",
+            "      setPreview(null);",
+            "      return;",
+            "    }",
+            "    let cancelled = false;",
+            "    // Keep an already-rendered document mounted while jumping between ranges",
+            "    // in that same file. This lets smooth scrolling begin at the reader's",
+            "    // current position instead of recreating the iframe at scroll position 0.",
+            "    setPreview((current) => current?.path === activeRange.path ? current : null);",
+            "    setSourceError(null);",
+            "    if (activeEntity.origin && activeEntity.origin.diagramSetId !== props.setId) {",
+            "      if (activeRange.originalLines) {",
+            "        setPreview({",
+            "          path: activeRange.path,",
+            "          startLine: activeRange.startLine,",
+            "          lines: activeRange.originalLines",
+            "        });",
+            "        setSourceLoading(false);",
+            "      } else {",
+            "        setSourceError(\"The foreign CodeEntity does not include a captured source snapshot.\");",
+            "        setSourceLoading(false);",
+            "      }",
+            "      return;",
+            "    }",
+            "    setSourceLoading(true);",
+            "    void fetchSourceSnippet(props.setId, activeEntity.id, activeRangeIndex)",
+            "      .then((result) => {",
+            "        if (!cancelled) setPreview(result);",
+            "      })",
+            "      .catch((caught) => {",
+            "        if (!cancelled) {",
+            "          setSourceError(caught instanceof Error ? caught.message : \"source preview failed\");",
+            "        }",
+            "      })",
+            "      .finally(() => {",
+            "        if (!cancelled) setSourceLoading(false);",
+            "      });",
+            "    return () => { cancelled = true; };",
+            "  }, [activeEntity?.id, activeRange, activeRangeIndex, props.setId]);"
+          ]
+        },
+        {
+          "path": "server/application.ts",
+          "startLine": 2279,
+          "endLine": 2303,
+          "symbol": "Application.sourceSnippet",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 2279,
+                "endLine": 2303
+              }
+            ]
+          },
+          "id": "range-8f28fead-ae4a-4647-8465-f3a27ee8759a",
+          "originalLines": [
+            "  async sourceSnippet(setId: string, entityId: string, rangeIndex: number): Promise<{",
+            "    path: string;",
+            "    startLine: number;",
+            "    lines: string[];",
+            "  }> {",
+            "    const set = await this.store.loadDiagramSet(setId);",
+            "    const entities = await this.store.loadCodeEntities(setId);",
+            "    const entity = entities.entities.find((candidate) => candidate.id === entityId);",
+            "    if (!entity) throw new Error(`unknown CodeEntity: ${entityId}`);",
+            "    const range = entity.sourceRanges[rangeIndex];",
+            "    if (!range) throw new Error(\"unknown source range\");",
+            "    assertSourceRange(range);",
+            "    const { corpus } = await this.projectCorpus(set);",
+            "    const lines = await readCorpusDocumentLines(corpus, range.path);",
+            "    if (range.originalLines) {",
+            "      const start = range.startLine - 1;",
+            "      while (lines.length < start) lines.push(\"\");",
+            "      lines.splice(start, range.endLine - range.startLine + 1, ...range.originalLines);",
+            "    }",
+            "    return {",
+            "      path: range.path,",
+            "      startLine: 1,",
+            "      lines",
+            "    };",
+            "  }"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-33d8b22c-2b3b-4ee3-ab2c-0aa372c8808e",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-e2ab0628-530f-47a5-b8fe-cc4b789d986b",
+        "codeEntitiesSetId": "entities-a71bc082-36fc-448a-a663-883e3d167a19"
+      },
+      "handle": "rectangle-reference-buffer",
+      "label": "Rectangle -> Evidence refs - DiagramView.completeSelection / RefBuffer",
+      "category": "operation",
+      "summary": "A live rectangle intersects visual mappings, previews their resolved Evidence references, and on completion converts selected mappings to source-range-aware code-entity ReferenceIdentity values and adds them to the DiagramSet-scoped reference buffer. The tray supports copy, typed-token insertion, dispatch, per-entry removal, and clear.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 211,
+          "endLine": 227,
+          "symbol": "Reference buffering",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 211,
+                "endLine": 227
+              }
+            ]
+          },
+          "id": "range-74125403-c55f-4999-a10d-b03bf15e6cd6",
+          "originalLines": [
+            "### Reference buffering",
+            "",
+            "Rectangle selection over a Representation intersects visual mappings and",
+            "resolves them to Evidence ranges. The pending selection is committed to the",
+            "DiagramSet-scoped reference buffer.",
+            "",
+            "The user may copy exact source locations, insert typed `@entity/` references",
+            "into a prompt, dispatch the selection to another consumer, remove one entry, or",
+            "clear the buffer.",
+            "",
+            "Relevant code:",
+            "",
+            "- `src/refBuffer.ts`.",
+            "- `src/ref-buffer/RefBufferContext.tsx`.",
+            "- `src/ref-buffer/RefBufferTray.tsx`.",
+            "- `src/ref-buffer/refFormatters.ts`.",
+            "- `src/ref-buffer/refOutputSinks.ts`."
+          ]
+        },
+        {
+          "path": "src/components/AsciiSelectionGrid.tsx",
+          "startLine": 232,
+          "endLine": 279,
+          "symbol": "AsciiSelectionGrid rectangle selection",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 232,
+                "endLine": 279
+              }
+            ]
+          },
+          "id": "range-c804e6a4-b0ad-4f42-baf5-33c180b05d02",
+          "originalLines": [
+            "  const onPointerDown = (event: PointerEvent<HTMLPreElement>) => {",
+            "    if (event.button !== 0 || props.mode === \"marker\") return;",
+            "    const kind = props.mode === \"capture\"",
+            "      ? \"capture\"",
+            "      : props.mode === \"select-refs\" || (props.mode === \"read\" && (event.ctrlKey || event.metaKey))",
+            "        ? \"select-refs\"",
+            "        : null;",
+            "    if (!kind) return;",
+            "    const anchor = pointAtClient(event.clientX, event.clientY, true);",
+            "    if (!anchor) return;",
+            "    event.preventDefault();",
+            "    event.currentTarget.setPointerCapture(event.pointerId);",
+            "    activeRef.current = { pointerId: event.pointerId, kind, anchor, alt: event.altKey };",
+            "    suppressClickRef.current = true;",
+            "    updateLiveSelection(normalizeDiagramSelection(anchor, anchor));",
+            "  };",
+            "",
+            "  const onPointerMove = (event: PointerEvent<HTMLPreElement>) => {",
+            "    const active = activeRef.current;",
+            "    if (!active || active.pointerId !== event.pointerId) return;",
+            "    const focus = pointAtClient(event.clientX, event.clientY);",
+            "    if (!focus) return;",
+            "    pendingPointRef.current = focus;",
+            "    if (animationFrameRef.current !== null) return;",
+            "    animationFrameRef.current = requestAnimationFrame(() => {",
+            "      animationFrameRef.current = null;",
+            "      const pendingPoint = pendingPointRef.current;",
+            "      const current = activeRef.current;",
+            "      pendingPointRef.current = null;",
+            "      if (pendingPoint && current) {",
+            "        updateLiveSelection(normalizeDiagramSelection(current.anchor, pendingPoint));",
+            "      }",
+            "    });",
+            "  };",
+            "",
+            "  const finishRectangle = (event: PointerEvent<HTMLPreElement>) => {",
+            "    const active = activeRef.current;",
+            "    if (!active || active.pointerId !== event.pointerId) return;",
+            "    const focus = pointAtClient(event.clientX, event.clientY) ?? active.anchor;",
+            "    const bounds = normalizeDiagramSelection(active.anchor, focus);",
+            "    activeRef.current = null;",
+            "    clearPendingFrame();",
+            "    if (event.currentTarget.hasPointerCapture(event.pointerId)) {",
+            "      event.currentTarget.releasePointerCapture(event.pointerId);",
+            "    }",
+            "    updateLiveSelection(null);",
+            "    props.onSelectionComplete(active.kind, bounds, { alt: active.alt });",
+            "  };"
+          ]
+        },
+        {
+          "path": "src/components/DiagramView.tsx",
+          "startLine": 162,
+          "endLine": 194,
+          "symbol": "DiagramView live mapping/reference preview",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 162,
+                "endLine": 194
+              }
+            ]
+          },
+          "id": "range-b42594d2-4242-46d6-8ab1-872ba3d5a991",
+          "originalLines": [
+            "  const liveMappings = useMemo(",
+            "    () => liveSelection ? mappingsForSelection(mappings, liveSelection) : [],",
+            "    [liveSelection, mappings]",
+            "  );",
+            "  const liveReferences = useMemo(",
+            "    () => referencesFromMappings(liveMappings, props.codeEntities),",
+            "    [liveMappings, props.codeEntities]",
+            "  );",
+            "  const previewMappingIds = useMemo(",
+            "    () => new Set(liveMappings.map((mapping) => mapping.id)),",
+            "    [liveMappings]",
+            "  );",
+            "  const bufferedReferenceKeys = useMemo(",
+            "    () => new Set(refBuffer.entries.map(referenceIdentityKey)),",
+            "    [refBuffer.entries]",
+            "  );",
+            "  const mappedReferenceKeys = useMemo(",
+            "    () => new Set(referencesFromMappings(mappings, props.codeEntities).map(referenceIdentityKey)),",
+            "    [mappings, props.codeEntities]",
+            "  );",
+            "  const overlayReferences = useMemo(() => {",
+            "    const result: SelectionOverlayReference[] = [];",
+            "    const seen = new Set<string>();",
+            "    for (const identity of liveReferences) {",
+            "      const key = referenceIdentityKey(identity);",
+            "      if (seen.has(key)) continue;",
+            "      seen.add(key);",
+            "      const resolved = resolveReference(identity, props.referenceResolutionContext);",
+            "      const text = resolved?.selectableText?.getSelectionText(identity);",
+            "      if (text !== undefined) result.push({ key, identity, text });",
+            "    }",
+            "    return result;",
+            "  }, [liveReferences, props.referenceResolutionContext]);"
+          ]
+        },
+        {
+          "path": "src/components/DiagramView.tsx",
+          "startLine": 223,
+          "endLine": 241,
+          "symbol": "DiagramView.completeSelection",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 223,
+                "endLine": 241
+              }
+            ]
+          },
+          "id": "range-8e835192-24bf-4201-b003-4f3bf00b92bb",
+          "originalLines": [
+            "  const completeSelection = (",
+            "    kind: \"capture\" | \"select-refs\",",
+            "    bounds: DiagramSelectionBounds",
+            "  ) => {",
+            "    if (kind === \"capture\") {",
+            "      void saveCapture(bounds);",
+            "      return;",
+            "    }",
+            "    if (!props.codeEntityMap) {",
+            "      setSelectionStatus(\"map code entities first\");",
+            "      return;",
+            "    }",
+            "    const selectedMappings = mappingsForSelection(mappings, bounds);",
+            "    const refs = referencesFromMappings(selectedMappings, props.codeEntities);",
+            "    refBuffer.add(refs);",
+            "    setSelectionStatus(refs.length === 0",
+            "      ? \"no mapped references in selection\"",
+            "      : `added ${refs.length} mapped ref${refs.length === 1 ? \"\" : \"s\"}`);",
+            "  };"
+          ]
+        },
+        {
+          "path": "src/refBuffer.ts",
+          "startLine": 58,
+          "endLine": 83,
+          "symbol": "referenceFromMapping; referencesFromMappings",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 58,
+                "endLine": 83
+              }
+            ]
+          },
+          "id": "range-48c1ae94-f1ca-46ea-a94c-ffd027f26315",
+          "originalLines": [
+            "export function referenceFromMapping(",
+            "  mapping: DiagramElementMapping,",
+            "  entities: readonly CodeEntityRecord[]",
+            "): ReferenceIdentity {",
+            "  const entity = entities.find((candidate) => candidate.id === mapping.entityId);",
+            "  const range = mapping.sourceRangeId",
+            "    ? entity?.sourceRanges.find((candidate) => candidate.id === mapping.sourceRangeId)",
+            "    : entity?.sourceRanges[mapping.sourceRangeIndex];",
+            "  return {",
+            "    kind: \"code-entity\",",
+            "    targetId: mapping.entityId,",
+            "    ...(entity?.origin ? { origin: entity.origin } : {}),",
+            "    ...(range?.id",
+            "      ? { sourceRangeId: range.id }",
+            "      : mapping.sourceRangeId",
+            "        ? { sourceRangeId: mapping.sourceRangeId }",
+            "        : { sourceRangeIndex: mapping.sourceRangeIndex })",
+            "  };",
+            "}",
+            "",
+            "export function referencesFromMappings(",
+            "  mappings: DiagramElementMapping[],",
+            "  entities: readonly CodeEntityRecord[] = []",
+            "): ReferenceIdentity[] {",
+            "  return mappings.map((mapping) => referenceFromMapping(mapping, entities));",
+            "}"
+          ]
+        },
+        {
+          "path": "src/ref-buffer/RefBufferContext.tsx",
+          "startLine": 12,
+          "endLine": 42,
+          "symbol": "RefBufferApi; RefBufferProvider",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 12,
+                "endLine": 42
+              }
+            ]
+          },
+          "id": "range-f1f3cb94-cf7d-4cc2-bf25-5737a9c230e9",
+          "originalLines": [
+            "export interface RefBufferApi {",
+            "  entries: ReferenceIdentity[];",
+            "  setScope(scopeKey: string | null): void;",
+            "  add(refs: ReferenceIdentity[]): void;",
+            "  remove(ref: ReferenceIdentity): void;",
+            "  clear(): void;",
+            "  replace(refs: ReferenceIdentity[]): void;",
+            "  contains(ref: ReferenceIdentity): boolean;",
+            "}",
+            "",
+            "const RefBufferContext = createContext<RefBufferApi | null>(null);",
+            "",
+            "export function RefBufferProvider(props: { children: ReactNode }) {",
+            "  const [state, dispatch] = useReducer(reduceRefBuffer, EMPTY_REF_BUFFER);",
+            "  const setScope = useCallback((scopeKey: string | null) => dispatch({ type: \"scope\", scopeKey }), []);",
+            "  const add = useCallback((refs: ReferenceIdentity[]) => dispatch({ type: \"add\", refs }), []);",
+            "  const remove = useCallback((ref: ReferenceIdentity) => dispatch({ type: \"remove\", ref }), []);",
+            "  const clear = useCallback(() => dispatch({ type: \"clear\" }), []);",
+            "  const replace = useCallback((refs: ReferenceIdentity[]) => dispatch({ type: \"replace\", refs }), []);",
+            "  const keys = useMemo(() => new Set(state.entries.map(referenceIdentityKey)), [state.entries]);",
+            "  const contains = useCallback((ref: ReferenceIdentity) => keys.has(referenceIdentityKey(ref)), [keys]);",
+            "  const value = useMemo<RefBufferApi>(() => ({",
+            "    entries: state.entries,",
+            "    setScope,",
+            "    add,",
+            "    remove,",
+            "    clear,",
+            "    replace,",
+            "    contains",
+            "  }), [add, clear, contains, remove, replace, setScope, state.entries]);",
+            "  return <RefBufferContext.Provider value={value}>{props.children}</RefBufferContext.Provider>;"
+          ]
+        },
+        {
+          "path": "src/ref-buffer/RefBufferTray.tsx",
+          "startLine": 105,
+          "endLine": 150,
+          "symbol": "RefBufferTray actions",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 105,
+                "endLine": 150
+              }
+            ]
+          },
+          "id": "range-f77deacc-ae67-4b6f-850d-565860995aa5",
+          "originalLines": [
+            "      <header>",
+            "        <strong>",
+            "          SELECTED REFS ({buffer.entries.length})",
+            "          {previewEntries.length > 0 ? ` · ${previewEntries.length} IN RECT` : \"\"}",
+            "        </strong>",
+            "        <div className=\"ref-buffer-actions\">",
+            "          <button",
+            "            type=\"button\"",
+            "            disabled={outputDisabled}",
+            "            onClick={() => void run(async () => {",
+            "              const text = formatReferences(resolution.resolved, \"source-location\");",
+            "              await clipboardSink.send(text);",
+            "              return `copied ${resolution.resolved.length} source ref${resolution.resolved.length === 1 ? \"\" : \"s\"}`;",
+            "            })}",
+            "          >copy paths</button>",
+            "          <button",
+            "            type=\"button\"",
+            "            disabled={outputDisabled}",
+            "            onClick={() => void run(async () => {",
+            "              const tokens = formatReferences(resolution.resolved, \"prompt-token\");",
+            "              props.onInsertTokens(tokens);",
+            "              return \"inserted prompt refs\";",
+            "            })}",
+            "          >insert tokens</button>",
+            "          <button",
+            "            type=\"button\"",
+            "            disabled={outputDisabled}",
+            "            onClick={() => void run(async () => {",
+            "              const envelope = createReferenceEnvelope({",
+            "                projectId: props.projectId,",
+            "                diagramSetId: props.diagramSetId,",
+            "                ...(props.sourceArtifactId ? { sourceArtifactId: props.sourceArtifactId } : {}),",
+            "                references: buffer.entries",
+            "              });",
+            "              await (props.internalSink ?? defaultInternalSink).send(envelope);",
+            "              return `sent ${buffer.entries.length} internal ref${buffer.entries.length === 1 ? \"\" : \"s\"}`;",
+            "            })}",
+            "          >send</button>",
+            "          <button type=\"button\" onClick={buffer.clear}>clear</button>",
+            "          {canDisplayCallGraph ? (",
+            "            <button",
+            "              type=\"button\"",
+            "              className=\"display-call-graph\"",
+            "              disabled={callGraphPending || resolvedCodeEntityReferences.length === 0}",
+            "              onClick={() => void displayCallGraph()}",
+            "            >{callGraphPending ? \"displaying…\" : \"display call-graph\"}</button>"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-55e54d8b-23e5-4f81-b4d6-db31b4667ee5",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-e2ab0628-530f-47a5-b8fe-cc4b789d986b",
+        "codeEntitiesSetId": "entities-a71bc082-36fc-448a-a663-883e3d167a19"
+      },
+      "handle": "evidence-backed-highlight",
+      "label": "Persistent Evidence highlight - highlights.ts HighlightRecordV2",
+      "category": "state",
+      "summary": "A saved mapped highlight durably binds artifact revision and stable Representation element identity to Evidence identity/range, optional anchored document excerpt, and tree lineage. The server derives these fields from the mapped artifact and persists the validated highlight, allowing later restoration of Representation/Evidence context.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 229,
+          "endLine": 240,
+          "symbol": "Evidence-backed highlights",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 229,
+                "endLine": 240
+              }
+            ]
+          },
+          "id": "range-c7844928-532e-4734-b530-2e9ccf070bf6",
+          "originalLines": [
+            "### Evidence-backed highlights",
+            "",
+            "Toggling a mapped highlight stores the artifact revision, Representation",
+            "element, Evidence identity, source range, source excerpt, and tree lineage when",
+            "available. The Highlights explorer later uses this record as a durable entry",
+            "point back into the investigation.",
+            "",
+            "Relevant code:",
+            "",
+            "- `src/highlights.ts`: `HighlightRecordV2` and validation.",
+            "- `src/App.tsx`: `toggleHighlight`.",
+            "- `server/application.ts`: `addHighlight` and `deleteHighlight`."
+          ]
+        },
+        {
+          "path": "src/highlights.ts",
+          "startLine": 20,
+          "endLine": 56,
+          "symbol": "HighlightDocumentExcerpt; HighlightRecordV2",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 20,
+                "endLine": 56
+              }
+            ]
+          },
+          "id": "range-79791f36-21da-4c11-bef7-da5ad3e846d8",
+          "originalLines": [
+            "export interface HighlightDocumentExcerpt {",
+            "  path: string;",
+            "  startLine: number;",
+            "  endLine: number;",
+            "  lines: string[];",
+            "}",
+            "",
+            "interface HighlightRecordBase {",
+            "  schemaVersion: typeof HIGHLIGHT_RECORD_VERSION;",
+            "  id: string;",
+            "  projectId: string;",
+            "  diagramSetId: string;",
+            "  artifactKind: string;",
+            "  artifactId: string;",
+            "  artifactName: string;",
+            "  artifactRevision: RepresentationRevision;",
+            "  representationElementId: string;",
+            "  /** Creation-time mapping identity retained for toggle compatibility. */",
+            "  mappingId?: string;",
+            "  elementText: string;",
+            "  evidence: EvidenceElementLink;",
+            "  documentExcerpt?: HighlightDocumentExcerpt;",
+            "  createdAt: string;",
+            "}",
+            "",
+            "export type HighlightRecordV2 = HighlightRecordBase & (",
+            "  | {",
+            "      representationKind: \"tree\";",
+            "      treeLineage: HighlightTreeLineageNode[];",
+            "    }",
+            "  | {",
+            "      representationKind: \"diagram\";",
+            "      treeLineage?: never;",
+            "    }",
+            ");",
+            "",
+            "export type PersistedHighlightRecord = DiagramHighlightRecord | HighlightRecordV2;"
+          ]
+        },
+        {
+          "path": "server/application.ts",
+          "startLine": 2320,
+          "endLine": 2385,
+          "symbol": "Application.addHighlight",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 2320,
+                "endLine": 2385
+              }
+            ]
+          },
+          "id": "range-9fa5cb3b-ffdf-4391-ad17-6e67a0fcbb12",
+          "originalLines": [
+            "    const bundle = await this.mappedArtifactBundle(diagramSetId, artifactKind, artifactId);",
+            "    const mapping = bundle.codeEntityMap?.mappings.find((candidate) => candidate.id === mappingId);",
+            "    if (!mapping) throw new Error(`unknown mapped tree node: ${mappingId}`);",
+            "    const entity = bundle.codeEntities.find((candidate) => candidate.id === mapping.entityId);",
+            "    if (!entity) throw new Error(`unknown mapped CodeEntity: ${mapping.entityId}`);",
+            "    const range = mapping.sourceRangeId",
+            "      ? entity.sourceRanges.find((candidate) => candidate.id === mapping.sourceRangeId)",
+            "      : entity.sourceRanges[mapping.sourceRangeIndex];",
+            "    if (!range) throw new Error(\"mapped source range was not found\");",
+            "    const revision = {",
+            "      artifactId: bundle.artifact.id,",
+            "      asciiSha256: createHash(\"sha256\").update(bundle.artifact.ascii).digest(\"hex\")",
+            "    };",
+            "    const representationKind = representationKindForArtifact(bundle.artifact);",
+            "    const representationIndex = buildRepresentationIndex({",
+            "      kind: representationKind,",
+            "      revision,",
+            "      ascii: bundle.artifact.ascii,",
+            "      codeEntityMap: bundle.codeEntityMap",
+            "    });",
+            "    const representationElementId = representationElementIdForMapping(representationIndex, mappingId);",
+            "    if (!representationElementId) throw new Error(`mapped representation element was not found: ${mappingId}`);",
+            "    const rawLine = bundle.artifact.ascii.replace(/\\r\\n?/g, \"\\n\").split(\"\\n\")[mapping.line - 1] ?? \"\";",
+            "    const elementText = representationIndex.kind === \"tree\"",
+            "      ? representationIndex.nodes[representationElementId]?.text ?? rawLine.trim()",
+            "      : rawLine.slice(mapping.startColumn - 1, mapping.endColumn).trim();",
+            "    if (!elementText) throw new Error(\"mapped representation element has no display text\");",
+            "    const highlightBase = {",
+            "      schemaVersion: 2 as const,",
+            "      id: this.store.ids.highlight(),",
+            "      projectId: set.projectId,",
+            "      diagramSetId,",
+            "      artifactKind,",
+            "      artifactId,",
+            "      artifactName: bundle.artifact.name,",
+            "      artifactRevision: revision,",
+            "      representationElementId,",
+            "      mappingId,",
+            "      elementText,",
+            "      evidence: {",
+            "        evidenceId: entity.id,",
+            "        ...(range.id ? { sourceRangeId: range.id } : {}),",
+            "        sourceRangeIndex: mapping.sourceRangeIndex",
+            "      },",
+            "      ...(range.originalLines ? { documentExcerpt: {",
+            "        path: range.path,",
+            "        startLine: range.startLine,",
+            "        endLine: range.endLine,",
+            "        lines: [...range.originalLines]",
+            "      } } : {}),",
+            "      createdAt: timestamp()",
+            "    };",
+            "    const highlight: HighlightRecordV2 = representationIndex.kind === \"tree\"",
+            "      ? {",
+            "          ...highlightBase,",
+            "          representationKind: \"tree\",",
+            "          treeLineage: treeRepresentationLineage(representationIndex, representationElementId)",
+            "            .map((node) => ({",
+            "              representationElementId: node.id,",
+            "              line: node.line,",
+            "              text: node.text",
+            "            }))",
+            "        }",
+            "      : { ...highlightBase, representationKind: \"diagram\" };",
+            "    await this.store.saveHighlight(highlight);",
+            "    return this.workspace();"
+          ]
+        },
+        {
+          "path": "src/App.tsx",
+          "startLine": 1744,
+          "endLine": 1754,
+          "symbol": "revealHighlight",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 1744,
+                "endLine": 1754
+              }
+            ]
+          },
+          "id": "range-d5615231-58b1-4559-a349-a759011523d8",
+          "originalLines": [
+            "  const revealHighlight = (highlight: PersistedHighlightRecord) => {",
+            "    if (highlight.artifactKind === \"diagram\") selectDiagram(highlight.artifactId);",
+            "    else selectComponent(highlight.artifactId);",
+            "    const evidence = isHighlightRecordV2(highlight)",
+            "      ? highlight.evidence",
+            "      : { evidenceId: highlight.entityId, sourceRangeIndex: highlight.sourceRangeIndex };",
+            "    revealCodeEntity({",
+            "      entityId: evidence.evidenceId,",
+            "      sourceRangeIndex: evidence.sourceRangeIndex",
+            "    });",
+            "  };"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-c00f7848-2bf2-4879-ae4a-e0c50e790002",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-e2ab0628-530f-47a5-b8fe-cc4b789d986b",
+        "codeEntitiesSetId": "entities-a71bc082-36fc-448a-a663-883e3d167a19"
+      },
+      "handle": "file-evidence-association",
+      "label": "File paths group Evidence - fileTree.ts diagramFileFilter",
+      "category": "state",
+      "summary": "diagramFileFilter groups artifact-declared, project-local Evidence/CodeEntities by normalized SourceRange path, retaining entity id, handle, label, and range index. FileExplorerPanel expands a file into these Evidence rows and selecting one reveals its exact range.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 56,
+          "endLine": 75,
+          "symbol": "File exploration",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 56,
+                "endLine": 75
+              }
+            ]
+          },
+          "id": "range-d76e965d-ff52-40ca-a468-a8a31c67b87c",
+          "originalLines": [
+            "### File exploration",
+            "",
+            "`FileExplorerPanel` shows the live corpus paths referenced by the active",
+            "artifact's Evidence. It derives its filter from the artifact's declared",
+            "Evidence IDs and the active project's provenance.",
+            "",
+            "The user may:",
+            "",
+            "- expand and collapse directories;",
+            "- select a referenced file;",
+            "- inspect the Evidence count associated with the file;",
+            "- expand the file into Evidence handles; and",
+            "- select an Evidence handle to open its exact source range.",
+            "",
+            "Relevant code:",
+            "",
+            "- `src/components/FileExplorerPanel.tsx`: `FileExplorerPanel`,",
+            "  `loadDirectory`, `diagramFileFilter`, and `revealEntity`.",
+            "- `src/fileTree.ts`: `buildFileTree`, `diagramFileFilter`, and",
+            "  `flattenFileTree`."
+          ]
+        },
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 265,
+          "endLine": 275,
+          "symbol": "E1 required interactions",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 265,
+                "endLine": 275
+              }
+            ]
+          },
+          "id": "range-92f25220-e6d4-49a1-a2d9-03b420fd9336",
+          "originalLines": [
+            "The Evidence diagram must show:",
+            "",
+            "- A mapped Representation element resolving to Evidence.",
+            "- CodeEntitiesPanel inspecting labels, summaries, and ranges.",
+            "- Evidence resolving to authoritative Corpus content.",
+            "- Rectangle selection adding Evidence to the reference buffer.",
+            "- Evidence-backed persistent highlights.",
+            "- File paths grouping related Evidence.",
+            "- Selected Evidence focusing a related call graph.",
+            "- The Evidence-to-CodeEntity compatibility boundary.",
+            "- The missing universal Evidence-to-all-Representations navigation action."
+          ]
+        },
+        {
+          "path": "src/fileTree.ts",
+          "startLine": 9,
+          "endLine": 22,
+          "symbol": "DiagramFileFilter; DiagramFileEntityReference",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 9,
+                "endLine": 22
+              }
+            ]
+          },
+          "id": "range-df0263cb-5a6f-4771-942b-fff860462da9",
+          "originalLines": [
+            "export interface DiagramFileFilter {",
+            "  paths: string[];",
+            "  entitiesByPath: Record<string, DiagramFileEntityReference[]>;",
+            "  unresolvedEntityIds: string[];",
+            "  foreignEntityIds: string[];",
+            "  invalidPaths: string[];",
+            "}",
+            "",
+            "export interface DiagramFileEntityReference {",
+            "  entityId: string;",
+            "  handle: string;",
+            "  label: string;",
+            "  sourceRangeIndex: number;",
+            "}"
+          ]
+        },
+        {
+          "path": "src/fileTree.ts",
+          "startLine": 55,
+          "endLine": 103,
+          "symbol": "diagramFileFilter",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 55,
+                "endLine": 103
+              }
+            ]
+          },
+          "id": "range-a53d28f8-a0af-4d80-914e-9f5369d2c2d0",
+          "originalLines": [
+            "export function diagramFileFilter(",
+            "  artifact: DiagramRecord | DiagramComponentRecord,",
+            "  codeEntities: readonly CodeEntityRecord[],",
+            "  activeProjectId: string",
+            "): DiagramFileFilter {",
+            "  const byId = new Map(codeEntities.map((entity) => [entity.id, entity]));",
+            "  const paths = new Set<string>();",
+            "  const entitiesByPath = new Map<string, DiagramFileEntityReference[]>();",
+            "  const unresolvedEntityIds: string[] = [];",
+            "  const foreignEntityIds: string[] = [];",
+            "  const invalidPaths: string[] = [];",
+            "  for (const entityId of new Set(artifact.codeEntityIds)) {",
+            "    const entity = byId.get(entityId);",
+            "    if (!entity) {",
+            "      unresolvedEntityIds.push(entityId);",
+            "      continue;",
+            "    }",
+            "    if (!entity.origin || entity.origin.projectId !== activeProjectId) {",
+            "      foreignEntityIds.push(entityId);",
+            "      continue;",
+            "    }",
+            "    for (const [sourceRangeIndex, range] of entity.sourceRanges.entries()) {",
+            "      const path = normalizeRepositoryPath(range.path);",
+            "      if (!path) {",
+            "        invalidPaths.push(range.path);",
+            "        continue;",
+            "      }",
+            "      paths.add(path);",
+            "      const references = entitiesByPath.get(path) ?? [];",
+            "      if (!references.some((reference) => reference.entityId === entity.id)) {",
+            "        references.push({",
+            "          entityId: entity.id,",
+            "          handle: entity.handle,",
+            "          label: entity.label,",
+            "          sourceRangeIndex",
+            "        });",
+            "        entitiesByPath.set(path, references);",
+            "      }",
+            "    }",
+            "  }",
+            "  return {",
+            "    paths: [...paths].sort((left, right) => left.localeCompare(right)),",
+            "    entitiesByPath: Object.fromEntries(",
+            "      [...entitiesByPath.entries()].sort(([left], [right]) => left.localeCompare(right))",
+            "    ),",
+            "    unresolvedEntityIds,",
+            "    foreignEntityIds,",
+            "    invalidPaths",
+            "  };"
+          ]
+        },
+        {
+          "path": "src/components/FileExplorerPanel.tsx",
+          "startLine": 164,
+          "endLine": 177,
+          "symbol": "FileExplorerPanel displayRows",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 164,
+                "endLine": 177
+              }
+            ]
+          },
+          "id": "range-5d8e6de7-26e2-4286-98b5-0828da655069",
+          "originalLines": [
+            "  const displayRows = useMemo<ExplorerDisplayRow[]>(() => rows.flatMap((row) => {",
+            "    const repositoryRow: ExplorerDisplayRow = { key: row.path, kind: \"repository\", row };",
+            "    const references = row.kind === \"file\" ? filter.entitiesByPath[row.path] ?? [] : [];",
+            "    if (!references.length || !expandedEntityPaths.has(row.path)) return [repositoryRow];",
+            "    const basePrefix = row.level === 1 ? \"\" : row.prefix.slice(0, -4);",
+            "    return [repositoryRow, ...references.map((entity, index): ExplorerDisplayRow => ({",
+            "      key: `${row.path}::${entity.entityId}`,",
+            "      kind: \"entity\",",
+            "      filePath: row.path,",
+            "      level: row.level + 1,",
+            "      prefix: `${basePrefix}    ${index === references.length - 1 ? \"`-- \" : \"+-- \"}`,",
+            "      entity",
+            "    }))];",
+            "  }), [expandedEntityPaths, filter.entitiesByPath, rows]);"
+          ]
+        },
+        {
+          "path": "src/components/FileExplorerPanel.tsx",
+          "startLine": 203,
+          "endLine": 217,
+          "symbol": "FileExplorerPanel.revealEntity",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 203,
+                "endLine": 217
+              }
+            ]
+          },
+          "id": "range-ab75c3ea-af30-4d4f-b5ff-ec295789fee2",
+          "originalLines": [
+            "  const revealEntity = (entity: DiagramFileEntityReference) => {",
+            "    props.onRevealCodeEntity?.({",
+            "      entityId: entity.entityId,",
+            "      sourceRangeIndex: entity.sourceRangeIndex",
+            "    });",
+            "  };",
+            "",
+            "  const toggleFileEntities = (filePath: string) => {",
+            "    setExpandedEntityPaths((current) => {",
+            "      const next = new Set(current);",
+            "      if (next.has(filePath)) next.delete(filePath);",
+            "      else next.add(filePath);",
+            "      return next;",
+            "    });",
+            "  };"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-28a571f6-078e-4cc6-a20b-acbccccf1fc6",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-e2ab0628-530f-47a5-b8fe-cc4b789d986b",
+        "codeEntitiesSetId": "entities-a71bc082-36fc-448a-a663-883e3d167a19"
+      },
+      "handle": "selected-evidence-callgraph-focus",
+      "label": "Selected Evidence -> focused call graph - createCallGraphFocusRequest",
+      "category": "operation",
+      "summary": "Evidence-backed code-entity references selected from the source Diagram create a provenance-preserving CallGraphFocusRequest. The server verifies the source Diagram and featured Call Graph relationship, requires each selected entity in both artifacts, and returns only matching call-graph nodes plus their connecting ancestors for a focused companion view.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 242,
+          "endLine": 253,
+          "symbol": "Focused Representation",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 242,
+                "endLine": 253
+              }
+            ]
+          },
+          "id": "range-11eb7663-f671-4f23-bf31-54e53a955da6",
+          "originalLines": [
+            "### Focused Representation",
+            "",
+            "Selected Evidence can focus a companion call graph. The request preserves",
+            "Evidence and artifact provenance, validates that selected entities belong to",
+            "both the source Diagram and featured Call Graph, and returns a filtered tree.",
+            "",
+            "Relevant code:",
+            "",
+            "- `src/callGraphFocus.ts`.",
+            "- `server/callGraphTree.ts`.",
+            "- `server/application.ts`: `callGraphFocus`.",
+            "- `src/call-graph-tree/CallGraphFocusTree.tsx`."
+          ]
+        },
+        {
+          "path": "src/callGraphFocus.ts",
+          "startLine": 22,
+          "endLine": 44,
+          "symbol": "CallGraphFocusRequest; CallGraphFocusResult",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 22,
+                "endLine": 44
+              }
+            ]
+          },
+          "id": "range-9af01194-3659-40d1-95ac-74cacef1cda3",
+          "originalLines": [
+            "export interface CallGraphFocusRequest {",
+            "  version: typeof CALL_GRAPH_FOCUS_VERSION;",
+            "  /** DiagramSet whose featured call graph should be collapsed. */",
+            "  diagramSetId: string;",
+            "  sourceDiagram: DiagramFocusIdentity;",
+            "  selectedCodeEntities: readonly CodeEntityFocusIdentity[];",
+            "}",
+            "",
+            "export interface CallGraphFocusNode {",
+            "  id: string;",
+            "  label: string;",
+            "  codeEntity?: CodeEntityFocusIdentity;",
+            "  children: CallGraphFocusNode[];",
+            "}",
+            "",
+            "export interface CallGraphFocusResult {",
+            "  version: typeof CALL_GRAPH_FOCUS_VERSION;",
+            "  diagramSetId: string;",
+            "  sourceDiagram: DiagramFocusIdentity;",
+            "  callGraph: DiagramFocusIdentity;",
+            "  callGraphName: string;",
+            "  roots: CallGraphFocusNode[];",
+            "}"
+          ]
+        },
+        {
+          "path": "src/callGraphFocus.ts",
+          "startLine": 63,
+          "endLine": 100,
+          "symbol": "createCallGraphFocusRequest",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 63,
+                "endLine": 100
+              }
+            ]
+          },
+          "id": "range-7f7e7f65-c5c7-4162-b045-cbf65a8c92d4",
+          "originalLines": [
+            "export function createCallGraphFocusRequest(input: {",
+            "  diagramSetId: string;",
+            "  sourceDiagram: DiagramRecord;",
+            "  references: Iterable<ReferenceIdentity>;",
+            "}): CallGraphFocusRequest {",
+            "  if (!input.diagramSetId) throw new Error(\"a call-graph focus request requires a DiagramSet\");",
+            "  if (!input.sourceDiagram.recordOrigin) {",
+            "    throw new Error(\"the source Diagram is missing provenance\");",
+            "  }",
+            "  const selected = new Map<string, CodeEntityFocusIdentity>();",
+            "  for (const reference of input.references) {",
+            "    if (reference.kind !== \"code-entity\") continue;",
+            "    if (!isCodeEntityOrigin(reference.origin)) {",
+            "      throw new Error(`CodeEntity ${reference.targetId} is missing provenance`);",
+            "    }",
+            "    const identity: CodeEntityFocusIdentity = {",
+            "      kind: \"code-entity\",",
+            "      targetId: reference.targetId,",
+            "      origin: reference.origin",
+            "    };",
+            "    selected.set(codeEntityIdentityKey(identity), identity);",
+            "  }",
+            "  const selectedCodeEntities = [...selected.entries()]",
+            "    .sort(([left], [right]) => left.localeCompare(right))",
+            "    .map(([, identity]) => identity);",
+            "  if (selectedCodeEntities.length === 0) {",
+            "    throw new Error(\"a call-graph focus request requires at least one mapped CodeEntity\");",
+            "  }",
+            "  return {",
+            "    version: CALL_GRAPH_FOCUS_VERSION,",
+            "    diagramSetId: input.diagramSetId,",
+            "    sourceDiagram: {",
+            "      kind: \"diagram\",",
+            "      targetId: input.sourceDiagram.id,",
+            "      origin: input.sourceDiagram.recordOrigin",
+            "    },",
+            "    selectedCodeEntities",
+            "  };"
+          ]
+        },
+        {
+          "path": "src/ref-buffer/RefBufferTray.tsx",
+          "startLine": 70,
+          "endLine": 97,
+          "symbol": "RefBufferTray.displayCallGraph",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 70,
+                "endLine": 97
+              }
+            ]
+          },
+          "id": "range-90814a28-150d-4ebf-8c7f-47eb32ee2cc0",
+          "originalLines": [
+            "  const outputDisabled = resolution.unresolved.length > 0 || resolution.resolved.length === 0;",
+            "  const resolvedCodeEntityReferences = resolution.resolved",
+            "    .filter((reference) => reference.kind === \"code-entity\"",
+            "      && props.callGraphFocusReferenceKeys?.has(referenceIdentityKey(reference.identity)))",
+            "    .map((reference) => reference.identity);",
+            "  const canDisplayCallGraph = Boolean(props.sourceDiagram && props.onOpenCallGraphFocus);",
+            "  const displayCallGraph = async () => {",
+            "    if (!props.sourceDiagram || !props.onOpenCallGraphFocus || callGraphPendingRef.current) return;",
+            "    callGraphPendingRef.current = true;",
+            "    setCallGraphPending(true);",
+            "    setError(\"\");",
+            "    setStatus(\"displaying call graph…\");",
+            "    try {",
+            "      const request = createCallGraphFocusRequest({",
+            "        diagramSetId: props.diagramSetId,",
+            "        sourceDiagram: props.sourceDiagram,",
+            "        references: resolvedCodeEntityReferences",
+            "      });",
+            "      await props.onOpenCallGraphFocus(request);",
+            "      setStatus(`displayed call graph for ${request.selectedCodeEntities.length} code entit${request.selectedCodeEntities.length === 1 ? \"y\" : \"ies\"}`);",
+            "    } catch (caught) {",
+            "      setStatus(\"\");",
+            "      setError(caught instanceof Error ? caught.message : \"call graph display failed\");",
+            "    } finally {",
+            "      callGraphPendingRef.current = false;",
+            "      setCallGraphPending(false);",
+            "    }",
+            "  };"
+          ]
+        },
+        {
+          "path": "server/application.ts",
+          "startLine": 344,
+          "endLine": 374,
+          "symbol": "Application.callGraphFocus source/call-graph validation",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 344,
+                "endLine": 374
+              }
+            ]
+          },
+          "id": "range-9526b642-f869-44ae-9a38-d7c420434962",
+          "originalLines": [
+            "  async callGraphFocus(input: unknown): Promise<CallGraphFocusResult> {",
+            "    const request = parseCallGraphFocusRequest(input);",
+            "    const set = await this.store.loadDiagramSet(request.diagramSetId);",
+            "    const { artifact: sourceArtifact } = await this.artifactForDiagramSet(",
+            "      set.id,",
+            "      \"diagram\",",
+            "      request.sourceDiagram.targetId",
+            "    );",
+            "    const sourceDiagram = sourceArtifact as DiagramRecord;",
+            "    if (sourceDiagram.viewKind !== \"diagram\") {",
+            "      throw new Error(\"source Diagram must have diagram viewKind\");",
+            "    }",
+            "    if (!sourceDiagram.recordOrigin",
+            "      || !sameArtifactOrigin(sourceDiagram.recordOrigin, request.sourceDiagram.origin)) {",
+            "      throw new Error(\"source Diagram provenance does not match the requested identity\");",
+            "    }",
+            "",
+            "    const callGraphId = set.featuredViewIds[\"call-graph\"];",
+            "    if (!callGraphId) throw new Error(\"DiagramSet has no featured call graph\");",
+            "    const { artifact: callGraphArtifact } = await this.artifactForDiagramSet(",
+            "      set.id,",
+            "      \"diagram\",",
+            "      callGraphId",
+            "    );",
+            "    const callGraph = callGraphArtifact as DiagramRecord;",
+            "    if (callGraph.viewKind !== \"call-graph\") {",
+            "      throw new Error(\"featured call graph does not have call-graph viewKind\");",
+            "    }",
+            "    if (callGraph.basedOnDiagramId !== sourceDiagram.id) {",
+            "      throw new Error(\"featured call graph is based on another Diagram\");",
+            "    }"
+          ]
+        },
+        {
+          "path": "server/application.ts",
+          "startLine": 391,
+          "endLine": 426,
+          "symbol": "Application.callGraphFocus Evidence validation and result",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 391,
+                "endLine": 426
+              }
+            ]
+          },
+          "id": "range-384b0fca-adaf-4e5a-bf73-43f10d8ad605",
+          "originalLines": [
+            "    const selected = new Map<string, CodeEntityFocusIdentity>();",
+            "    for (const identity of request.selectedCodeEntities) {",
+            "      const entity = available.get(identity.targetId);",
+            "      if (!entity) throw new Error(`unknown selected CodeEntity: ${identity.targetId}`);",
+            "      if (!entity.origin || focusIdentityKey(identity) !== focusIdentityKey(identityForRecord(entity))) {",
+            "        throw new Error(`selected CodeEntity provenance does not match: ${identity.targetId}`);",
+            "      }",
+            "      if (!sourceDiagram.codeEntityIds.includes(identity.targetId)) {",
+            "        throw new Error(`selected CodeEntity is not declared by the source Diagram: ${identity.targetId}`);",
+            "      }",
+            "      if (!callGraph.codeEntityIds.includes(identity.targetId)) {",
+            "        throw new Error(`selected CodeEntity is not declared by the featured call graph: ${identity.targetId}`);",
+            "      }",
+            "      selected.set(focusIdentityKey(identity), identity);",
+            "    }",
+            "",
+            "    const roots = parseCallGraphTree(",
+            "      callGraph.ascii,",
+            "      declaredEntities.filter((entity): entity is CodeEntityRecord => Boolean(entity))",
+            "    );",
+            "    const filteredRoots = filterCallGraphTree(roots, new Set(selected.keys()));",
+            "    if (filteredRoots.length === 0) {",
+            "      throw new Error(\"featured call graph contains no nodes for the selected CodeEntities\");",
+            "    }",
+            "    return {",
+            "      version: CALL_GRAPH_FOCUS_VERSION,",
+            "      diagramSetId: set.id,",
+            "      sourceDiagram: request.sourceDiagram,",
+            "      callGraph: {",
+            "        kind: \"diagram\",",
+            "        targetId: callGraph.id,",
+            "        origin: callGraph.recordOrigin",
+            "      },",
+            "      callGraphName: callGraph.name,",
+            "      roots: filteredRoots",
+            "    };"
+          ]
+        },
+        {
+          "path": "server/callGraphTree.ts",
+          "startLine": 147,
+          "endLine": 160,
+          "symbol": "filterCallGraphTree",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 147,
+                "endLine": 160
+              }
+            ]
+          },
+          "id": "range-59e708c2-82cd-4c8a-ba73-60400bfe3249",
+          "originalLines": [
+            "export function filterCallGraphTree(",
+            "  roots: readonly CallGraphFocusNode[],",
+            "  selected: ReadonlySet<string>",
+            "): CallGraphFocusNode[] {",
+            "  const filterNode = (node: CallGraphFocusNode): CallGraphFocusNode | null => {",
+            "    const matches = node.codeEntity !== undefined && selected.has(focusIdentityKey(node.codeEntity));",
+            "    if (matches) return cloneNode(node);",
+            "    const children = node.children",
+            "      .map(filterNode)",
+            "      .filter((child): child is CallGraphFocusNode => child !== null);",
+            "    return children.length > 0 ? { ...node, children } : null;",
+            "  };",
+            "  return roots.map(filterNode).filter((node): node is CallGraphFocusNode => node !== null);",
+            "}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-c8606ff5-d7f8-4881-a733-a8dc1dc424bd",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-e2ab0628-530f-47a5-b8fe-cc4b789d986b",
+        "codeEntitiesSetId": "entities-a71bc082-36fc-448a-a663-883e3d167a19"
+      },
+      "handle": "missing-evidence-all-representations-action",
+      "label": "Missing Evidence -> all Representations action - RepresentationIndex resolver only",
+      "category": "state",
+      "summary": "RepresentationIndex already supports bidirectional lookup: resolveEvidence finds visual elements for an Evidence id and resolveElement returns an element's Evidence links. However, CodeEntitiesPanel has no universal user action to navigate to every occurrence of one Evidence entity across all Representations; this must be shown as a future interaction, not current behavior.",
+      "sourceRanges": [
+        {
+          "path": "REPOSITORY_DIAGRAM_DECOMPOSITION.md",
+          "startLine": 255,
+          "endLine": 275,
+          "symbol": "Current interaction gap / E1 required interactions",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 255,
+                "endLine": 275
+              }
+            ]
+          },
+          "id": "range-84c71c51-26cd-4a1e-bcc8-f83b639091a2",
+          "originalLines": [
+            "### Current interaction gap",
+            "",
+            "Representation can reveal Evidence, and the underlying RepresentationIndex can",
+            "resolve Evidence identities back to visual elements. The Evidence panel does",
+            "not yet expose a universal action to show every occurrence of one Evidence",
+            "entity across all Representations. The diagram should identify this as a",
+            "future interaction, not current behavior.",
+            "",
+            "### Required interactions",
+            "",
+            "The Evidence diagram must show:",
+            "",
+            "- A mapped Representation element resolving to Evidence.",
+            "- CodeEntitiesPanel inspecting labels, summaries, and ranges.",
+            "- Evidence resolving to authoritative Corpus content.",
+            "- Rectangle selection adding Evidence to the reference buffer.",
+            "- Evidence-backed persistent highlights.",
+            "- File paths grouping related Evidence.",
+            "- Selected Evidence focusing a related call graph.",
+            "- The Evidence-to-CodeEntity compatibility boundary.",
+            "- The missing universal Evidence-to-all-Representations navigation action."
+          ]
+        },
+        {
+          "path": "src/representationIndex.ts",
+          "startLine": 52,
+          "endLine": 61,
+          "symbol": "SpatialEvidenceResolver",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 52,
+                "endLine": 61
+              }
+            ]
+          },
+          "id": "range-2608731f-970e-4452-9ddc-f5d54c657c9f",
+          "originalLines": [
+            "export interface ResolvedEvidenceElement {",
+            "  representationKind: RepresentationIndex[\"kind\"];",
+            "  elementId: string;",
+            "  evidence: EvidenceElementLink;",
+            "}",
+            "",
+            "export interface SpatialEvidenceResolver {",
+            "  resolveEvidence(index: RepresentationIndex, evidenceId: string): ResolvedEvidenceElement[];",
+            "  resolveElement(index: RepresentationIndex, elementId: string): ResolvedEvidenceElement[];",
+            "}"
+          ]
+        },
+        {
+          "path": "src/representationIndex.ts",
+          "startLine": 289,
+          "endLine": 328,
+          "symbol": "spatialEvidenceResolver; resolveEvidenceElements; resolveElementEvidence",
+          "compactedSource": {
+            "level": "low",
+            "sections": [
+              {
+                "kind": "source",
+                "startLine": 289,
+                "endLine": 328
+              }
+            ]
+          },
+          "id": "range-3ee64a5d-f31d-4316-96f7-be66da612d7e",
+          "originalLines": [
+            "function elementsOf(index: RepresentationIndex): Record<string, {",
+            "  id: string;",
+            "  evidence: EvidenceElementLink[];",
+            "}> {",
+            "  return index.kind === \"tree\" ? index.nodes : index.elements;",
+            "}",
+            "",
+            "/** Stateless bidirectional resolver shared by tree and free-form diagram indexes. */",
+            "export const spatialEvidenceResolver: SpatialEvidenceResolver = {",
+            "  resolveEvidence(index, evidenceId) {",
+            "    return Object.values(elementsOf(index)).flatMap((element) => (",
+            "      element.evidence",
+            "        .filter((evidence) => evidence.evidenceId === evidenceId)",
+            "        .map((evidence) => ({ representationKind: index.kind, elementId: element.id, evidence }))",
+            "    ));",
+            "  },",
+            "  resolveElement(index, elementId) {",
+            "    const element = elementsOf(index)[elementId];",
+            "    if (!element) return [];",
+            "    return element.evidence.map((evidence) => ({",
+            "      representationKind: index.kind,",
+            "      elementId,",
+            "      evidence",
+            "    }));",
+            "  }",
+            "};",
+            "",
+            "export function resolveEvidenceElements(",
+            "  index: RepresentationIndex,",
+            "  evidenceId: string",
+            "): ResolvedEvidenceElement[] {",
+            "  return spatialEvidenceResolver.resolveEvidence(index, evidenceId);",
+            "}",
+            "",
+            "export function resolveElementEvidence(",
+            "  index: RepresentationIndex,",
+            "  elementId: string",
+            "): ResolvedEvidenceElement[] {",
+            "  return spatialEvidenceResolver.resolveElement(index, elementId);",
+            "}"
+          ]
+        }
+      ]
+    }
+  ],
+  "promptConfigId": "prompt-ca043712-1677-4469-b43c-1477ac4c0272",
+  "finalizedAt": "2026-08-31T23:50:05.378Z"
+}

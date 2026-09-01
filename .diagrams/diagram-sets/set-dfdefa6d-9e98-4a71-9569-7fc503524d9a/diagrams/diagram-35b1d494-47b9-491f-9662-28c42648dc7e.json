@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "diagram-35b1d494-47b9-491f-9662-28c42648dc7e",
+  "recordOrigin": {
+    "projectId": "project-ce67f2af4410",
+    "diagramSetId": "set-dfdefa6d-9e98-4a71-9569-7fc503524d9a"
+  },
+  "diagramSetId": "set-dfdefa6d-9e98-4a71-9569-7fc503524d9a",
+  "viewKind": "diagram",
+  "representationKind": "diagram",
+  "handle": "r1-interaction-path",
+  "name": "R1 Interaction Path",
+  "ascii": "Legend: [S] = user surface, [I] = stable index, (O) = user operation; `name` = source/symbol reference.\n\n                         R1 REPRESENTATION INTERACTION\n\n (O) Select a DiagramSet                         `DiagramSetTreePanel`\n       |\n       +----> navigate grouped lineage --------> `DiagramLineagePanel`\n       |     candidate batch / rank / star preferred view\n       |     variants / call graphs / directory views / components / edits\n       |     derivatives / imports\n       +----> choose active artifact ----------> `App` selection handlers\n       |\n       v\n+--------------------------------------------------------------------------+\n| [S] ACTIVE REPRESENTATION - orientation and manipulation surface         |\n|                                                                          |\n|  (O) `DiagramView`                                                       |\n|          |                                                               |\n|          v                                                               |\n|  (O) `AsciiSelectionGrid`                                                |\n|          |                                                               |\n|          v                                                               |\n|  [I] `RepresentationIndex` - stable revision-scoped element identities   |\n|      mapped/highlighted presentation; stable subtree identity            |\n+----------+---------------------------------------------------------------+\n           |\n       +----> hover / click mapped elements and display mapped/highlighted state\n       +----> rectangle selection ----> `DiagramComponent` capture\n       +----> mapped-element commands             `ElementCommandId`\n       |       +-- reveal Evidence (only grounding entry)\n       |       +-- collapse subtree (presentation only)\n       |       +-- toggle highlight (durable grounded context)\n       |       +-- buffer reference (mapped Evidence tray)\n       +----> selected Evidence ----> transient call-graph focus pane\n       |      (`callGraphFocus` / `CallGraphFocusTree`)\n       +----> Representation layers: information rank and layer/transition feedback\n       |      (`representationGraph` / `RepresentationLayersPanel`)\n       +----> edit mode: markers; manual/LLM edits; undo/redo\n       |       ----> publish new immutable lineage child (`EditOperationsPanel`)\n\n (O) Reveal mapped Evidence\n       |\n       v\n[S] Representation -- mapped reveal --> [H] Evidence -- authoritative ranges --> [V] Corpus\n    orientation/manipulation          grounded semantic hinge              verification surface\n\nReverse with pane history: [S] Representation <-> [H] Evidence <-> [V] Corpus\nONLY source-grounding path: Representation -> Evidence -> Corpus\nNo Representation-to-Corpus shortcut; direct Corpus access is explicit browsing only.",
+  "codeEntityIds": [
+    "entity-2dfbae85-53a6-4646-8d66-535ddc5c7ada",
+    "entity-9cc5ea7b-78b9-4738-b071-c03c38840e40",
+    "entity-c7478745-143b-444e-bb59-4ff394175034",
+    "entity-f8479dfa-5b9f-4878-97b6-144aa1b4e137",
+    "entity-2687ed16-1d3d-4432-9ded-15b21a9e71a6",
+    "entity-f492e41f-5dc8-4437-a80a-4474a453474e",
+    "entity-d496279d-5407-499d-a404-72e2381bb7bd",
+    "entity-d9c70557-02ec-4a91-a8de-d0863790d19c",
+    "entity-d4e077f9-5942-402e-b01e-61c3597bed98"
+  ],
+  "origin": "generated",
+  "producedByRunId": "run-3c8e383a-ba13-4731-a9c1-3ad90ce9e41f",
+  "generationPromptConfigId": "prompt-52de21c3-042b-481f-b7e4-7075c8df6021",
+  "derivedFromDiagramIds": [],
+  "createdAt": "2026-09-01T00:09:22.993Z"
+}

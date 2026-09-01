@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "diagram-fbf87f78-e5e6-48e1-bef1-a577638e5652",
+  "recordOrigin": {
+    "projectId": "project-ce67f2af4410",
+    "diagramSetId": "set-67b9fe77-5cee-4570-ac72-287cdcc6a2f0"
+  },
+  "diagramSetId": "set-67b9fe77-5cee-4570-ac72-287cdcc6a2f0",
+  "viewKind": "diagram",
+  "representationKind": "diagram",
+  "handle": "repository-portfolio-map",
+  "name": "Repository Portfolio Map",
+  "ascii": "NEW DIAGRAM REPOSITORY\n|\n+-- D0 - Repository map\n|   |   section: REPOSITORY_DIAGRAM_DECOMPOSITION.md:61-89\n|   `-- boundary: server | shared-domain | client | offline-tooling\n|\n+-- RUNTIME CORE\n|   +-- D1 - Workspace bootstrap and transport\n|   |   |   section: REPOSITORY_DIAGRAM_DECOMPOSITION.md:91-117\n|   |   `-- source: cli.ts; vite.config.ts; server/http.ts; server/application.ts; src/api.ts; src/main.tsx\n|   +-- D2 - Evidence collection and prompt provenance\n|   |   |   section: REPOSITORY_DIAGRAM_DECOMPOSITION.md:119-145\n|   |   `-- source: collection prompts/profiles; agent corpus tools; collectCodeEntities; shared records; prompt/config persistence\n|   +-- D3 - Artifact generation, references, and mapping\n|   |   |   section: REPOSITORY_DIAGRAM_DECOMPOSITION.md:147-172\n|   |   `-- source: generation/mapping methods; agent turns; prompt rendering; validation; references; artifact/mapping records\n|   +-- D4 - Persistence, corpus, provenance, and imports\n|   |   |   section: REPOSITORY_DIAGRAM_DECOMPOSITION.md:174-204\n|   |   `-- source: store/corpus modules; persisted records; imports/bundles; API import/export; migrations\n|   `-- D5 - Representation semantics and spatial interaction\n|       |   section: REPOSITORY_DIAGRAM_DECOMPOSITION.md:206-234\n|       `-- source: ASCII tree/index/graph/presentation; highlights; agent work; call-graph focus/tree; app operations\n|\n+-- INTERACTIVE STUDIO\n|   +-- D6 - Studio workspace and pane navigation\n|   |   |   section: REPOSITORY_DIAGRAM_DECOMPOSITION.md:236-263\n|   |   `-- source: app/API; pane model/navigation/workspace; tree, lineage, view, and context panels\n|   +-- D7 - Domain profiles and evidence presentation\n|   |   |   section: REPOSITORY_DIAGRAM_DECOMPOSITION.md:265-294\n|   |   `-- source: client/server profiles; corpus/file tree; evidence/explorer/readers/highlights UI; terminal Markdown\n|   `-- D8 - Artifact authoring, components, editing, and references\n|       |   section: REPOSITORY_DIAGRAM_DECOMPOSITION.md:296-324\n|       `-- source: selection UI/model; generator/edit/import UI; ref buffers; capture/edit/import/derivative methods; records\n|\n+-- EVALUATION AND TOOLING\n|   `-- D9 - Experiments, datasets, and verification\n|       |   section: REPOSITORY_DIAGRAM_DECOMPOSITION.md:326-352\n|       `-- source: experiments; catalog/dataset stores and records; viewer; browser checks; unit tests\n|\n+-- Portfolio dependency spine\n|   |   D1 -> D2 -> D3 -> D5 -> D6 -> D7/D8\n|   `-- D4 underpins D1-D8; D3 + D4 -> D9\n|\n`-- Mapped tree-to-section navigation\n    `-- select any D-label -> its matching Markdown D-section; headings drive the Sections explorer",
+  "codeEntityIds": [
+    "entity-ec2cf07f-170a-4607-b531-8f6bb9e51be4",
+    "entity-e6a64ab2-91df-4bbd-a1ea-05b67a6a6918",
+    "entity-8147fb29-532d-4d80-8651-f5a79badfb94",
+    "entity-6ec37fd7-9983-4b23-8cb1-50494fcfb1f4",
+    "entity-fdb8eea1-ea38-4c9f-811b-e15f6a4a1b38",
+    "entity-750a88f7-a308-4502-a70c-3407b57bb590",
+    "entity-1920dc86-c3f7-4c4d-9ec1-17fb6ed2d144",
+    "entity-57df9c6c-f37b-47a2-9426-5a05e21e135a",
+    "entity-3b3f7c09-18ff-4342-8116-d69a6b25b8a3",
+    "entity-3089c5b9-33e0-4d2e-8488-24c1abcac071",
+    "entity-245c927d-0743-4fd2-818a-2c34952db754",
+    "entity-191844d8-5b7a-4495-829c-191fe1c08eb9",
+    "entity-76c2384e-cde0-4693-af96-82389bf78aa6"
+  ],
+  "origin": "generated",
+  "producedByRunId": "run-6fad955b-5be1-4891-b37b-92ce737005e6",
+  "generationPromptConfigId": "prompt-00fcae49-0e20-4b75-b17b-2cb6ec39e221",
+  "derivedFromDiagramIds": [],
+  "createdAt": "2026-08-31T22:06:19.584Z"
+}

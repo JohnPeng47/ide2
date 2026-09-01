@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "set-67b9fe77-5cee-4570-ac72-287cdcc6a2f0",
+  "projectId": "project-ce67f2af4410",
+  "name": "Repository Diagram Decomposition",
+  "initialPrompt": "Use REPOSITORY_DIAGRAM_DECOMPOSITION.md as the authoritative document. Generate the single D0 repository map described by its Companion ASCII tree contract: a navigable ASCII tree rooted at NEW DIAGRAM REPOSITORY, with D0 through D9 grouped under the stated runtime, studio, and tooling boundaries, concise dependency-spine annotations, and exact mappings from each diagram label to its corresponding Markdown section. Do not generate any D1-D9 detail diagram.",
+  "sourceCheckoutRoot": "/home/john/.herdr/worktrees/new-diagram/worktree-transcripts",
+  "codeEntitiesSetId": "entities-8b189680-d1f2-4845-9083-10760d1a7b13",
+  "featuredViewIds": {},
+  "diagramIds": [
+    "diagram-fbf87f78-e5e6-48e1-bef1-a577638e5652",
+    "diagram-e68a4f84-5621-4a23-855e-3dae9d28c0c3",
+    "diagram-7f62ab92-643f-4644-81b0-f748dd62d1c5"
+  ],
+  "diagramComponentIds": [],
+  "generationBatchIds": [
+    "batch-0197485a-388b-4ccc-9dc9-e876b6e2b1b0"
+  ],
+  "agentRunIds": [
+    "run-40fac470-e574-4cfe-ba44-7725f2910727",
+    "run-6fad955b-5be1-4891-b37b-92ce737005e6",
+    "run-5f976161-8562-4196-a413-0d2fb09987f8",
+    "run-5986e7ac-1197-4b9b-9076-9f983740723a"
+  ],
+  "editSessionIds": [],
+  "readiness": "ready",
+  "createdAt": "2026-08-31T21:57:54.531Z",
+  "updatedAt": "2026-08-31T22:06:19.607Z"
+}

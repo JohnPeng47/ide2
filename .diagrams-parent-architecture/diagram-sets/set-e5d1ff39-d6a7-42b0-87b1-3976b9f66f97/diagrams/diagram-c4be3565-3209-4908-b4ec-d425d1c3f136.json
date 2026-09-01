@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "diagram-c4be3565-3209-4908-b4ec-d425d1c3f136",
+  "recordOrigin": {
+    "projectId": "project-ce67f2af4410",
+    "diagramSetId": "set-e5d1ff39-d6a7-42b0-87b1-3976b9f66f97"
+  },
+  "diagramSetId": "set-e5d1ff39-d6a7-42b0-87b1-3976b9f66f97",
+  "viewKind": "diagram",
+  "handle": "representation-evolution-feedback-agent-work",
+  "name": "Representation Evolution, Feedback, and Spatial Agent Work",
+  "ascii": "              REPRESENTATION EVOLUTION, FEEDBACK, AND SPATIAL AGENT WORK\n\n [P] DiagramRecord / Component        [P] DiagramCodeEntityMapRecord\n ASCII + representationKind           artifactId + asciiSha256\n                 |                              |\n                 +---------------+--------------+\n                                 |\n                                 v\n                  [R] buildRepresentationIndex()\n                                 |\n                                 v\n                    [R] RepresentationIndex\n                    stable tree nodes or\n                    exact diagram elements\n                                 |\n                 +---------------+----------------+\n                 |                                |\n                 v                                v\n       REPRESENTATION GRAPH                 AGENT WORK\n\n [P] RepresentationGraphRecord       [R] AgentWorkScope\n diagramSetId                        immutable artifact revision\n layers[]                            representationKind\n transitions[]                       target:\n         |                              artifact\n         |                              node/subtree\n         v                              diagram element\n [P] RepresentationLayerRecord            evidence\n informationRank                         |\n artifactRevision                         v\n evidenceReferences             [R] resolveAgentWorkScope()\n recipe revision                         |\n         |                                v\n         v                     stable ordered element locations\n [P] RepresentationTransition                 |\n fromLayerId -> toLayerId                    |\n must increase informationRank               |\n         |                                    |\n         v                                    |\n [R] assertRepresentationGraph()              |\n acyclic graph                               |\n valid references                            |\n revision ordering                           |\n         |                                   |\n         v                                   |\n [R] DiagramApplication                      |\n     .saveRepresentationGraph()              |\n verifies artifact availability              |\n ASCII SHA and representation kind           |\n         |                                   |\n         v                                   |\n [R] RepresentationLayersPanel               |\n         |                                   |\n user feedback                               |\n         v                                   |\n [R] addRepresentationFeedback()             |\n         |                                   |\n         v                                   |\n [P] RepresentationFeedbackRecord            |\n targets layer or transition                 |\n         |                                   |\n         v                                   |\n [R] reviseRepresentationRecipe()            |\n domain-level revision operation             |\n         |                                   |\n         v                                   |\n [P] RepresentationRecipe -------------------+\n instruction + incorporated feedback\n supersedesRevision                          |\n                                             |\n                       [R] mapCodeEntitiesBatch()\n                       creates mapping AgentRun\n                                             |\n                                             v\n                                 [R] updateSpatialProgressState()\n                                             |\n                                             v\n                                 [P] SpatialProgressState\n                                 progress keyed by AgentRun",
+  "representationKind": "diagram",
+  "codeEntityIds": [
+    "entity-ed402009-e938-480c-8f34-377a82e7a962",
+    "entity-8969f701-4502-4d52-91cf-eee6694438cc",
+    "entity-b650f8cd-5ec7-4194-b1b2-cebed8321f6d",
+    "entity-e090db04-7355-4f47-941e-c51ae0381fdf",
+    "entity-2f53087c-1300-4585-8650-cc807bb4b558",
+    "entity-f56e2ebc-c31a-4fa0-b50a-c978907662aa",
+    "entity-a65aeab4-550d-4061-a664-7e50eab72b58",
+    "entity-7b1f8910-b689-4962-853d-8cb371bcad86",
+    "entity-f4dcecec-e8f3-422c-adce-4e9561b8cde5",
+    "entity-9023b416-e00f-4dc1-b717-c1ae4e5c6884",
+    "entity-88c7d7c1-e9c6-4684-8da0-ab773d398e78",
+    "entity-d606905d-6d7b-4ad8-968b-9a05229c8051",
+    "entity-befc0727-2010-43ab-bad6-e715e7d649b3",
+    "entity-728c7405-c2b4-4ca3-8f2e-362fba7e6c8a",
+    "entity-d4dcf5dc-6d69-419d-b729-fb7068737db8"
+  ],
+  "origin": "materialized",
+  "derivedFromDiagramIds": [],
+  "createdAt": "2026-09-01T16:22:00.000Z"
+}

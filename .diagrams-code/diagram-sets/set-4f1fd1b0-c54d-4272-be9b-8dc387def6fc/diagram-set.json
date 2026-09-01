@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "set-4f1fd1b0-c54d-4272-be9b-8dc387def6fc",
+  "projectId": "project-ce67f2af4410",
+  "name": "Corpus Interaction",
+  "initialPrompt": "Create only the Corpus Interaction diagram for this repository. Explain how a user browses and verifies authoritative source content through FileExplorerPanel, SourceCodeView, TerminalMarkdownView, MarkdownSectionsPanel, and HighlightsTreePanel. Show DomainProfile explorer and presentation policy, file and section selection, associated CodeEntities as Evidence, direct Corpus browsing versus Evidence-mediated source reveal, persistent highlight entry points, and reversible PaneNavigationApi jump history. Include concise exact source file and symbol references in visible labels. Treat Corpus as the verification surface. Do not depict evidence collection agents, diagram generation, reference follow-up, mapping prompts, or persistence layout.",
+  "sourceCheckoutRoot": "/home/john/.herdr/worktrees/new-diagram/worktree-transcripts",
+  "gitRevision": "4caa91d5915ce56f643d05115062b275069784d2",
+  "codeEntitiesSetId": "entities-abdc77b1-710f-44f3-abaa-9712f7c062d3",
+  "featuredViewIds": {},
+  "diagramIds": [
+    "diagram-21765dbd-6863-4a10-ad52-6518117202d9",
+    "diagram-61f34e2c-fbf1-4f4a-9b4a-af12925e0474",
+    "diagram-635c6de5-e0fc-435d-b60f-75cf0f345ea9"
+  ],
+  "diagramComponentIds": [],
+  "generationBatchIds": [
+    "batch-2f644b62-ebc5-48dc-a340-1ec9a2a0da2b"
+  ],
+  "agentRunIds": [
+    "run-0fbb526f-a500-4c88-a1d4-77a17b6dd9c7",
+    "run-c7a5bda9-450b-4a15-8019-cc917b494348",
+    "run-d6f8f176-687b-4cf1-a858-f567e10c333c",
+    "run-7f44b4c7-1555-4ae7-9fd9-30d566773277"
+  ],
+  "editSessionIds": [],
+  "readiness": "ready",
+  "createdAt": "2026-09-01T01:25:25.147Z",
+  "updatedAt": "2026-09-01T01:34:40.146Z"
+}

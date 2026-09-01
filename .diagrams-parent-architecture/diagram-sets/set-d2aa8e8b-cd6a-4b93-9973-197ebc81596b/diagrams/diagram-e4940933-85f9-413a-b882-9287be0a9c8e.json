@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "diagram-e4940933-85f9-413a-b882-9287be0a9c8e",
+  "recordOrigin": {
+    "projectId": "project-ce67f2af4410",
+    "diagramSetId": "set-d2aa8e8b-cd6a-4b93-9973-197ebc81596b"
+  },
+  "diagramSetId": "set-d2aa8e8b-cd6a-4b93-9973-197ebc81596b",
+  "viewKind": "diagram",
+  "handle": "artifact-refinement-and-curation",
+  "name": "Artifact Refinement and Curation",
+  "ascii": "                       ARTIFACT REFINEMENT AND CURATION\n\n            [P] DiagramRecord or DiagramComponentRecord\n                              |\n               +--------------+--------------+\n               |                             |\n         SELECTION PATH                  EDIT PATH\n               |                             |\n               v                             v\n [R] DiagramSelectionOverlay      [R] createEditSession()\n               |                             |\n               v                             v\n [R] DiagramSelectionBounds          [P] EditSessionRecord\n               |                     baseAscii\n               v                     workingAscii\n [R] cropAsciiSelection()            operations[]\n               |                     operationCursor\n               |                     revision\n               v                             |\n [R] captureComponentSelection()             |\n               |                             |\n               v                             |\n [P] DiagramComponentRecord                  |\n origin: selection            +--------------+--------------+\n sourceDiagramId              |              |              |\n sourceComponentId            v              v              v\n selectionBounds       manualEdit()   placeEditMarker()  llmEdit()\n derivedFrom IDs              |              |              |\n               |              |              | [R] DiagramAgentRuntime\n               |              +--------------+--------------+\n               |                             |\n               |                             v\n               |                  [P] EditOperationRecord\n               |                  kind: manual | llm\n               |                  TextPatch\n               |                  optional marker/model/run\n               |                             |\n               |                   applyPatch() / reverse\n               |                             |\n               |                  +----------+----------+\n               |                  |                     |\n               |                  v                     v\n               |              undoEdit()             redoEdit()\n               |                  |                     |\n               |                  +----------+----------+\n               |                             |\n               |                             v\n               |                    workingAscii + cursor\n               |                             |\n               |                 +-----------+-----------+\n               |                 |                       |\n               |                 v                       v\n               |            finishEdit()             discardEdit()\n               |                 |                       |\n               |                 v                       v\n               |      [P] DiagramRecord /          status: discarded\n               |          DiagramComponentRecord\n               |      editSessionId\n               |      derivedFrom source\n               |      source mapping not reused\n               |                 |\n               +-----------------+\n                                 |\n                                 v\n                [R] mapCodeEntitiesBatch() if needed\n                                 |\n                                 v\n                [P] DiagramCodeEntityMapRecord\n                                 |\n                    +------------+-------------+\n                    |            |             |\n                    v            v             v\n          setStarredDiagram() rankDiagramCandidates() archiveDiagram()\n                    |            |             |\n                    v            v             v\n       [P] DiagramSetRecord  [P] DiagramCandidateBatchRecord  [P] DiagramRecord\n           featuredViewIds       rankings                           archivedAt",
+  "representationKind": "diagram",
+  "codeEntityIds": [
+    "entity-5a9cd967-695f-425e-8758-47665dd64e6a",
+    "entity-60ea4ba2-5b63-4384-a1da-91ccf56910f7",
+    "entity-81da6b7c-5cc9-48f8-abb4-37e8632fab67",
+    "entity-386ef228-9cd6-4d5d-82fe-b9e9b8d48efc",
+    "entity-0bf012dd-16b3-4c14-94e2-c5263778fd9f",
+    "entity-90acc450-6cf0-4b14-9850-48b07bd29c83",
+    "entity-748f567d-baf8-46cd-a399-32ef71cb9bbe",
+    "entity-00f5ed6e-6af7-49c0-969a-99e99ced6496",
+    "entity-39e2974b-8f65-4509-a716-0adc9d0c176a",
+    "entity-678497ba-10ac-43d9-ad3e-dd92b02559c8",
+    "entity-588e0626-2508-4222-95b8-b318f66fc7a4",
+    "entity-19909089-68c8-4b7c-a05c-e8dac006047a",
+    "entity-c2723490-d7e8-4ee0-97be-e3263dfb1646",
+    "entity-f90b495c-3c42-41f3-93d5-467c437ae5de",
+    "entity-efce62bd-dbf8-41eb-8f87-4afa21adde74"
+  ],
+  "origin": "materialized",
+  "derivedFromDiagramIds": [],
+  "createdAt": "2026-09-01T16:19:38.146Z"
+}

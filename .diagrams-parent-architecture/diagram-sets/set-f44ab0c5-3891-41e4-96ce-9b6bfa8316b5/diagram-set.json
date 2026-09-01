@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "set-f44ab0c5-3891-41e4-96ce-9b6bfa8316b5",
+  "projectId": "project-ce67f2af4410",
+  "name": "Experiment Evaluation and Dataset Curation",
+  "initialPrompt": "Experiment filesystem discovery, evaluated artifact retrieval, and deduplicated curation into persistent diagram datasets.",
+  "sourceCheckoutRoot": "/home/john/.herdr/worktrees/new-diagram/worktree-transcripts",
+  "gitRevision": "4caa91d5915ce56f643d05115062b275069784d2",
+  "codeEntitiesSetId": "entities-756481ac-eac6-452a-bd78-925b0a6c5e6c",
+  "featuredViewIds": {
+    "diagram": "diagram-7f57450d-0560-4a41-9626-c9f2b7581be1"
+  },
+  "diagramIds": [
+    "diagram-7f57450d-0560-4a41-9626-c9f2b7581be1"
+  ],
+  "diagramComponentIds": [],
+  "generationBatchIds": [],
+  "agentRunIds": [],
+  "editSessionIds": [],
+  "readiness": "ready",
+  "creationMode": "materialized",
+  "createdAt": "2026-09-01T16:21:33.852Z",
+  "updatedAt": "2026-09-01T16:21:33.879Z"
+}

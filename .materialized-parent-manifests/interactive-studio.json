@@ -1,0 +1,177 @@
+{
+  "creationMode": "materialized",
+  "path": "/home/john/.herdr/worktrees/new-diagram/worktree-transcripts",
+  "name": "Interactive Studio, Panes, and Navigation",
+  "domainProfileId": "source-code",
+  "description": "A source-backed parent view of workspace loading, pane composition, diagram interaction, evidence reveal navigation, and the browser-to-application service boundary.",
+  "codeEntities": [
+    {
+      "key": "interactive-studio-app",
+      "handle": "interactive-studio-app",
+      "label": "App and revealCodeEntity",
+      "category": "operation",
+      "summary": "Selects the browser page and coordinates studio-level cross-pane evidence reveals from mapped diagram elements.",
+      "sourceRanges": [
+        { "key": "app-entry", "path": "src/App.tsx", "startLine": 284, "endLine": 298, "symbol": "App" },
+        { "key": "reveal-code-entity", "path": "src/App.tsx", "startLine": 1670, "endLine": 1690, "symbol": "revealCodeEntity" }
+      ]
+    },
+    {
+      "key": "fetch-workspace",
+      "handle": "fetch-workspace",
+      "label": "fetchWorkspace",
+      "category": "operation",
+      "summary": "Loads the complete workspace snapshot from the browser API without using a cached response.",
+      "sourceRanges": [{ "key": "definition", "path": "src/api.ts", "startLine": 47, "endLine": 51, "symbol": "fetchWorkspace" }]
+    },
+    {
+      "key": "workspace-snapshot",
+      "handle": "workspace-snapshot",
+      "label": "WorkspaceSnapshot",
+      "category": "interface-data-struct",
+      "summary": "Aggregates projects, DiagramSets, evidence, artifacts, runs, mappings, and refinement state for the studio UI.",
+      "sourceRanges": [{ "key": "definition", "path": "src/domain.ts", "startLine": 572, "endLine": 596, "symbol": "WorkspaceSnapshot" }]
+    },
+    {
+      "key": "create-studio-pane-state",
+      "handle": "create-studio-pane-state",
+      "label": "createStudioPaneState",
+      "category": "operation",
+      "summary": "Builds or normalizes the files, primary, and context pane topology using the active domain profile and restored layout.",
+      "sourceRanges": [{ "key": "definition", "path": "src/App.tsx", "startLine": 216, "endLine": 272, "symbol": "createStudioPaneState" }]
+    },
+    {
+      "key": "pane-layout-state",
+      "handle": "pane-layout-state",
+      "label": "PaneLayoutState",
+      "category": "interface-data-struct",
+      "summary": "Stores the pane split tree, pane records, and currently focused pane.",
+      "sourceRanges": [{ "key": "definition", "path": "src/panes/model.ts", "startLine": 38, "endLine": 44, "symbol": "PaneLayoutState" }]
+    },
+    {
+      "key": "pane-api",
+      "handle": "pane-api",
+      "label": "PaneApi",
+      "category": "operation",
+      "summary": "Provides the mutable command surface for creating, focusing, tabbing, moving, and resizing panes.",
+      "sourceRanges": [{ "key": "definition", "path": "src/panes/api.ts", "startLine": 19, "endLine": 76, "symbol": "PaneApi" }]
+    },
+    {
+      "key": "pane-workspace",
+      "handle": "pane-workspace",
+      "label": "PaneWorkspace",
+      "category": "operation",
+      "summary": "Recursively renders PaneLayoutState and supplies PaneApi to pane frames and split nodes.",
+      "sourceRanges": [{ "key": "definition", "path": "src/panes/PaneWorkspace.tsx", "startLine": 236, "endLine": 267, "symbol": "PaneWorkspace" }]
+    },
+    {
+      "key": "file-explorer-panel",
+      "handle": "file-explorer-panel",
+      "label": "FileExplorerPanel",
+      "category": "operation",
+      "summary": "Builds the repository file tree and rolls DiagramSet evidence labels onto matching source nodes.",
+      "sourceRanges": [{ "key": "definition", "path": "src/components/FileExplorerPanel.tsx", "startLine": 21, "endLine": 319, "symbol": "FileExplorerPanel" }]
+    },
+    {
+      "key": "diagram-view",
+      "handle": "diagram-view",
+      "label": "DiagramView",
+      "category": "operation",
+      "summary": "Coordinates diagram rendering, revision-safe evidence mappings, selections, references, highlighting, and edit interactions.",
+      "sourceRanges": [{ "key": "definition", "path": "src/components/DiagramView.tsx", "startLine": 61, "endLine": 453, "symbol": "DiagramView" }]
+    },
+    {
+      "key": "ascii-selection-grid",
+      "handle": "ascii-selection-grid",
+      "label": "AsciiSelectionGrid",
+      "category": "operation",
+      "summary": "Renders ASCII as an interactive coordinate grid and turns mapped spans into evidence-reveal controls.",
+      "sourceRanges": [{ "key": "definition", "path": "src/components/AsciiSelectionGrid.tsx", "startLine": 55, "endLine": 456, "symbol": "AsciiSelectionGrid" }]
+    },
+    {
+      "key": "diagram-element-mapping",
+      "handle": "diagram-element-mapping",
+      "label": "DiagramElementMapping",
+      "category": "interface-data-struct",
+      "summary": "Links one visible ASCII coordinate span to a CodeEntity and a stable or indexed source range.",
+      "sourceRanges": [{ "key": "definition", "path": "src/domain.ts", "startLine": 408, "endLine": 417, "symbol": "DiagramElementMapping" }]
+    },
+    {
+      "key": "pane-navigation-api",
+      "handle": "pane-navigation-api",
+      "label": "PaneNavigationApi",
+      "category": "operation",
+      "summary": "Activates and focuses destination panes, retains jump history, and delivers typed jumps to registered feature handlers.",
+      "sourceRanges": [{ "key": "definition", "path": "src/panes/navigation.ts", "startLine": 28, "endLine": 95, "symbol": "PaneNavigationApi" }]
+    },
+    {
+      "key": "code-entities-panel",
+      "handle": "code-entities-panel",
+      "label": "CodeEntitiesPanel",
+      "category": "operation",
+      "summary": "Selects evidence entities and ranges, responds to navigation jumps, and loads source or document previews.",
+      "sourceRanges": [{ "key": "definition", "path": "src/components/CodeEntitiesPanel.tsx", "startLine": 37, "endLine": 369, "symbol": "CodeEntitiesPanel" }]
+    },
+    {
+      "key": "fetch-source-snippet",
+      "handle": "fetch-source-snippet",
+      "label": "fetchSourceSnippet",
+      "category": "operation",
+      "summary": "Requests a selected CodeEntity source range through the browser API and returns its source-preview payload.",
+      "sourceRanges": [{ "key": "definition", "path": "src/api.ts", "startLine": 808, "endLine": 817, "symbol": "fetchSourceSnippet" }]
+    },
+    {
+      "key": "diagram-application-source-snippet",
+      "handle": "diagram-application-source-snippet",
+      "label": "DiagramApplication.sourceSnippet",
+      "category": "operation",
+      "summary": "Resolves a DiagramSet CodeEntity range against its corpus and overlays its captured source snapshot for display.",
+      "sourceRanges": [{ "key": "definition", "path": "server/application.ts", "startLine": 2505, "endLine": 2529, "symbol": "DiagramApplication.sourceSnippet" }]
+    }
+  ],
+  "diagrams": [
+    {
+      "key": "interactive-studio-panes-navigation",
+      "handle": "interactive-studio-panes-navigation",
+      "name": "Interactive Studio, Panes, and Navigation",
+      "viewKind": "diagram",
+      "representationKind": "diagram",
+      "ascii": "                  INTERACTIVE STUDIO, PANES, AND NAVIGATION\n\n                         [X] Browser\n                              |\n                              v\n                         [R] App\n                              |\n                     fetchWorkspace()\n                              |\n                              v\n                    [P] WorkspaceSnapshot\n                              |\n         +--------------------+--------------------+\n         |                    |                    |\n         v                    v                    v\n active DiagramSet      active artifact      DomainProfile\n entity/map lookup      screen/view kind     surface policy\n         |                    |                    |\n         +--------------------+--------------------+\n                              |\n                              v\n                    [R] PaneLayoutState\n                    PaneNode split tree\n                    Pane records + tabs\n                              |\n                    [R] PaneApi / PaneWorkspace\n                              |\n        +---------------------+----------------------+\n        |                     |                      |\n        v                     v                      v\n   FILES PANE            PRIMARY PANE            CONTEXT PANE\n\n FileExplorerPanel       GeneratorOptions        CodeEntitiesPanel\n DiagramSetTreePanel     DiagramView             DiagramLineagePanel\n MarkdownSectionsPanel   AsciiSelectionGrid      RepresentationLayersPanel\n HighlightsTreePanel     SelectionOverlay        EditOperationsPanel\n        |                     |                      |\n        |                     | mapped element       |\n        |                     v                      |\n        |             DiagramElementMapping         |\n        |                     |                      |\n        |                     v                      |\n        |             App.revealCodeEntity()         |\n        |                     |                      |\n        |                     v                      |\n        |             [R] PaneNavigationApi --------+\n        |             activate tab\n        |             focus pane\n        |             retain jump history\n        |                     |\n        |                     v\n        |             CodeEntitiesPanel\n        |                     |\n        |              fetchSourceSnippet()\n        |                     |\n        |                     v\n        |         SourceCodeView / TerminalMarkdownView\n        |\n        | selections and mappings\n        v\n [R] RefBufferState\n        |\n        v\n generation prompt references\n\n\n SERVICE BOUNDARY\n\n React event\n     |\n     v\n [R] src/api.ts\n     |\n     v\n [R] server/http.ts\n route parsing + NDJSON progress\n     |\n     v\n [R] DiagramApplication\n     |\n +---+-------------------+\n |                       |\n v                       v\n[P] DiagramStore   [R] DiagramAgentRuntime",
+      "codeEntityKeys": [
+        "interactive-studio-app",
+        "fetch-workspace",
+        "workspace-snapshot",
+        "create-studio-pane-state",
+        "pane-layout-state",
+        "pane-api",
+        "pane-workspace",
+        "file-explorer-panel",
+        "diagram-view",
+        "ascii-selection-grid",
+        "diagram-element-mapping",
+        "pane-navigation-api",
+        "code-entities-panel",
+        "fetch-source-snippet",
+        "diagram-application-source-snippet"
+      ],
+      "mappings": [
+        { "entityKey": "interactive-studio-app", "sourceRangeKey": "app-entry", "line": 6, "startColumn": 30, "endColumn": 32 },
+        { "entityKey": "interactive-studio-app", "sourceRangeKey": "reveal-code-entity", "line": 43, "startColumn": 23, "endColumn": 44 },
+        { "entityKey": "fetch-workspace", "sourceRangeKey": "definition", "line": 8, "startColumn": 22, "endColumn": 37 },
+        { "entityKey": "workspace-snapshot", "sourceRangeKey": "definition", "line": 11, "startColumn": 25, "endColumn": 41 },
+        { "entityKey": "pane-layout-state", "sourceRangeKey": "definition", "line": 22, "startColumn": 25, "endColumn": 39 },
+        { "entityKey": "pane-api", "sourceRangeKey": "definition", "line": 26, "startColumn": 25, "endColumn": 31 },
+        { "entityKey": "pane-workspace", "sourceRangeKey": "definition", "line": 26, "startColumn": 35, "endColumn": 47 },
+        { "entityKey": "file-explorer-panel", "sourceRangeKey": "definition", "line": 33, "startColumn": 2, "endColumn": 18 },
+        { "entityKey": "diagram-view", "sourceRangeKey": "definition", "line": 34, "startColumn": 26, "endColumn": 36 },
+        { "entityKey": "ascii-selection-grid", "sourceRangeKey": "definition", "line": 35, "startColumn": 26, "endColumn": 43 },
+        { "entityKey": "diagram-element-mapping", "sourceRangeKey": "definition", "line": 40, "startColumn": 23, "endColumn": 43 },
+        { "entityKey": "pane-navigation-api", "sourceRangeKey": "definition", "line": 46, "startColumn": 27, "endColumn": 43 },
+        { "entityKey": "code-entities-panel", "sourceRangeKey": "definition", "line": 52, "startColumn": 23, "endColumn": 39 },
+        { "entityKey": "fetch-source-snippet", "sourceRangeKey": "definition", "line": 54, "startColumn": 24, "endColumn": 43 },
+        { "entityKey": "diagram-application-source-snippet", "sourceRangeKey": "definition", "line": 79, "startColumn": 6, "endColumn": 23 }
+      ]
+    }
+  ],
+  "featuredViews": { "diagram": "interactive-studio-panes-navigation" }
+}

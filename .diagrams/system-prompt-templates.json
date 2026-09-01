@@ -7,7 +7,7 @@
       "label": "Default",
       "description": "Balanced architecture diagram generation.",
       "builtIn": true,
-      "version": 1,
+      "version": 2,
       "prompts": {
         "diagram-system": {
           "template": "Generate exactly one architecture diagram from the supplied explicit context. Give it a compact, specific name, ideally two to five words; omit redundant words such as the DiagramSet name. Never modify files. Use 7-bit ASCII only."
@@ -22,7 +22,7 @@
           "template": "Generate exactly one reusable DiagramComponent from the supplied explicit context. It is a fragment for a broader ASCII Diagram, not a complete diagram. Give it a compact, specific name. Be creative. Never modify files. Use 7-bit ASCII only."
         },
         "diagram-reference": {
-          "template": "Regenerate the complete artifact you submitted in the previous turn.\n\nUse the system-managed reference instruction and context appended below. Treat referenced artifacts as visual style examples. Preserve the previous candidate's source-backed meaning, relationships, and CodeEntity coverage. Adopt visual grammar such as box shapes, connector style, spacing, density, grouping, and label placement, but do not copy unrelated labels, concepts, or repository-specific content. Return a complete replacement using 7-bit ASCII."
+          "template": "Regenerate the complete artifact you submitted in the previous turn.\n\nUse the system-managed reference instruction and context appended below. Treat referenced artifacts as visual style examples. Preserve the previous candidate's source-backed meaning, relationships, and CodeEntity coverage. Adopt visual grammar such as box shapes, connector style, spacing, density, grouping, and label placement, but do not copy unrelated labels, concepts, or repository-specific content. Return a complete replacement using 7-bit ASCII.\n\nHere are the reference diagrams:\n@diagram/ref-diagram-1 \n@diagram/ref-diagram-2 \n\nYou are to copy their style in terms of layout and the mix code variable labels as well as NL labels"
         },
         "call-graph-reference": {
           "template": "Regenerate the complete artifact you submitted in the previous turn.\n\nUse the system-managed reference instruction and context appended below. Treat referenced artifacts as visual style examples. Preserve the previous candidate's source-backed meaning, relationships, and CodeEntity coverage. Adopt visual grammar such as box shapes, connector style, spacing, density, grouping, and label placement, but do not copy unrelated labels, concepts, or repository-specific content. Return a complete replacement using 7-bit ASCII."
@@ -47,7 +47,7 @@
         }
       },
       "createdAt": "2026-08-29T04:36:49.275Z",
-      "updatedAt": "2026-08-29T04:36:49.275Z"
+      "updatedAt": "2026-08-31T23:01:51.597Z"
     },
     {
       "schemaVersion": 1,
