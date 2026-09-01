@@ -292,6 +292,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .file-tree-row:hover, .file-tree-entity-row:hover { background: rgb(255 255 255 / 3%); }
 .file-tree-row:focus-visible, .file-tree-entity-row:focus-visible { outline-offset: -2px; background: rgb(136 192 208 / 6%); }
 .file-tree-row--directory { color: var(--accent-cyan); cursor: pointer; }
+.file-tree-row__set-labels { flex: none; overflow: hidden; margin-right: 0.75rem; color: var(--accent-green); font-weight: 700; text-overflow: clip; white-space: pre; }
 .file-tree-row__prefix { flex: none; color: var(--gutter); white-space: pre; }
 .file-tree-row__toggle, .file-tree-entity-toggle { min-width: 3ch; flex: none; margin-right: 0.55rem; color: var(--accent-yellow); white-space: pre; }
 .file-tree-entity-toggle { border: 0; padding: 0; background: transparent; font: inherit; line-height: inherit; cursor: pointer; }

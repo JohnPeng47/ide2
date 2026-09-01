@@ -1,7 +1,10 @@
 import type {
+  CodeEntitiesSetRecord,
   CodeEntityRecord,
+  DiagramCodeEntityMapRecord,
   DiagramComponentRecord,
   DiagramRecord,
+  DiagramSetRecord,
   RepositoryDirectoryListing,
   RepositoryEntry
 } from "./domain";
@@ -19,6 +22,21 @@ export interface DiagramFileEntityReference {
   handle: string;
   label: string;
   sourceRangeIndex: number;
+}
+
+export interface DiagramSetFileEntityReference extends DiagramFileEntityReference {
+  diagramSetId: string;
+  diagramId: string;
+}
+
+export interface DiagramSetFileIndex {
+  paths: string[];
+  labels: Array<{ diagramSetId: string; label: string; name: string }>;
+  labelsByPath: Record<string, string[]>;
+  entitiesByPath: Record<string, DiagramSetFileEntityReference[]>;
+  unresolvedEntityIds: string[];
+  foreignEntityIds: string[];
+  invalidPaths: string[];
 }
 
 export interface FileTreeNode extends RepositoryEntry {
@@ -101,6 +119,149 @@ export function diagramFileFilter(
     foreignEntityIds,
     invalidPaths
   };
+}
+
+/** Compact, stable labels for displaying DiagramSets beside repository nodes. */
+export function diagramSetFileLabels(
+  diagramSets: readonly Pick<DiagramSetRecord, "id" | "name">[]
+): Array<{ diagramSetId: string; label: string; name: string }> {
+  const normalized = diagramSets.map((set) => ({
+    set,
+    value: set.name.toUpperCase().replace(/[^A-Z0-9]/g, "") || "SET"
+  }));
+  return normalized.map(({ set, value }) => {
+    let label = value;
+    for (let length = 1; length <= value.length; length += 1) {
+      const candidate = value.slice(0, length);
+      if (normalized.every((other) => (
+        other.set.id === set.id || !other.value.startsWith(candidate)
+      ))) {
+        label = candidate;
+        break;
+      }
+    }
+    return { diagramSetId: set.id, label, name: set.name };
+  });
+}
+
+/** Build one file index from exact mappings across every local DiagramSet. */
+export function diagramSetFileIndex(input: {
+  projectId: string;
+  diagramSets: readonly DiagramSetRecord[];
+  diagrams: Readonly<Record<string, DiagramRecord>>;
+  codeEntitySets: Readonly<Record<string, CodeEntitiesSetRecord>>;
+  codeEntityMaps: Readonly<Record<string, DiagramCodeEntityMapRecord>>;
+}): DiagramSetFileIndex {
+  const labels = diagramSetFileLabels(input.diagramSets);
+  const labelBySetId = new Map(labels.map((label) => [label.diagramSetId, label.label]));
+  const labelsByPath = new Map<string, Set<string>>();
+  const entitiesByPath = new Map<string, DiagramSetFileEntityReference[]>();
+  const unresolvedEntityIds = new Set<string>();
+  const foreignEntityIds = new Set<string>();
+  const invalidPaths = new Set<string>();
+
+  for (const diagramSet of input.diagramSets) {
+    const label = labelBySetId.get(diagramSet.id);
+    const entitySet = input.codeEntitySets[diagramSet.codeEntitiesSetId];
+    if (!label || !entitySet) continue;
+    const entitiesById = new Map(entitySet.entities.map((entity) => [entity.id, entity]));
+    for (const diagramId of diagramSet.diagramIds) {
+      const diagram = input.diagrams[diagramId];
+      if (!diagram || diagram.archivedAt) continue;
+      const entityMap = input.codeEntityMaps[`${diagramSet.id}:${diagramId}`]
+        ?? input.codeEntityMaps[diagramId];
+      if (!entityMap || entityMap.diagramSetId !== diagramSet.id) continue;
+      for (const mapping of entityMap.mappings) {
+        const entity = entitiesById.get(mapping.entityId);
+        if (!entity) {
+          unresolvedEntityIds.add(mapping.entityId);
+          continue;
+        }
+        if (entity.origin && entity.origin.projectId !== input.projectId) {
+          foreignEntityIds.add(entity.id);
+          continue;
+        }
+        const identifiedRangeIndex = mapping.sourceRangeId
+          ? entity.sourceRanges.findIndex((range) => range.id === mapping.sourceRangeId)
+          : -1;
+        const sourceRangeIndex = identifiedRangeIndex >= 0
+          ? identifiedRangeIndex
+          : mapping.sourceRangeIndex;
+        const range = entity.sourceRanges[sourceRangeIndex];
+        if (!range) {
+          unresolvedEntityIds.add(entity.id);
+          continue;
+        }
+        const repositoryPath = normalizeRepositoryPath(range.path);
+        if (!repositoryPath) {
+          invalidPaths.add(range.path);
+          continue;
+        }
+        const pathLabels = labelsByPath.get(repositoryPath) ?? new Set<string>();
+        pathLabels.add(label);
+        labelsByPath.set(repositoryPath, pathLabels);
+        const references = entitiesByPath.get(repositoryPath) ?? [];
+        if (!references.some((reference) => (
+          reference.diagramSetId === diagramSet.id
+          && reference.entityId === entity.id
+          && reference.sourceRangeIndex === sourceRangeIndex
+        ))) {
+          references.push({
+            diagramSetId: diagramSet.id,
+            diagramId,
+            entityId: entity.id,
+            handle: entity.handle,
+            label: entity.label,
+            sourceRangeIndex
+          });
+          entitiesByPath.set(repositoryPath, references);
+        }
+      }
+    }
+  }
+
+  const labelOrder = new Map(labels.map(({ label }, index) => [label, index]));
+  const sortLabels = (values: Iterable<string>) => [...values].sort(
+    (left, right) => (labelOrder.get(left) ?? 0) - (labelOrder.get(right) ?? 0)
+  );
+  return {
+    paths: [...labelsByPath.keys()].sort((left, right) => left.localeCompare(right)),
+    labels,
+    labelsByPath: Object.fromEntries(
+      [...labelsByPath.entries()].map(([filePath, values]) => [filePath, sortLabels(values)])
+    ),
+    entitiesByPath: Object.fromEntries(
+      [...entitiesByPath.entries()].sort(([left], [right]) => left.localeCompare(right))
+    ),
+    unresolvedEntityIds: [...unresolvedEntityIds],
+    foreignEntityIds: [...foreignEntityIds],
+    invalidPaths: [...invalidPaths]
+  };
+}
+
+/** Roll direct file labels up to every ancestor directory in the displayed tree. */
+export function rollUpFileTreeLabels(
+  filePaths: readonly string[],
+  labelsByFilePath: Readonly<Record<string, readonly string[]>>,
+  orderedLabels: readonly string[]
+): Record<string, string[]> {
+  const labelsByNode = new Map<string, Set<string>>();
+  for (const filePath of filePaths) {
+    const labels = labelsByFilePath[filePath] ?? [];
+    const segments = filePath.split("/");
+    let nodePath = "";
+    for (const segment of segments) {
+      nodePath = nodePath ? `${nodePath}/${segment}` : segment;
+      const nodeLabels = labelsByNode.get(nodePath) ?? new Set<string>();
+      for (const label of labels) nodeLabels.add(label);
+      labelsByNode.set(nodePath, nodeLabels);
+    }
+  }
+  const order = new Map(orderedLabels.map((label, index) => [label, index]));
+  return Object.fromEntries([...labelsByNode.entries()].map(([nodePath, labels]) => [
+    nodePath,
+    [...labels].sort((left, right) => (order.get(left) ?? 0) - (order.get(right) ?? 0))
+  ]));
 }
 
 export function parentRepositoryPath(filePath: string): string {

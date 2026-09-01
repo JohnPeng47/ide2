@@ -606,9 +606,6 @@ function StudioPage(props: { onExperiments: () => void }) {
   const selectedRepresentationKind = selectedArtifact
     ? representationKindForArtifact(selectedArtifact)
     : "diagram";
-  const contextArtifact = screen === "diagram-component"
-    ? activeComponent
-    : screen === "diagram" ? activeDiagram : null;
   const selectedArtifactKind: GenerationOutputKind = screen === "diagram-component"
     ? "diagram-component"
     : "diagram";
@@ -1996,8 +1993,10 @@ function StudioPage(props: { onExperiments: () => void }) {
     files: { content: <FileExplorerPanel
       activeSetId={activeSet.id}
       activeProjectId={activeSet.projectId}
-      codeEntities={resolutionEntities}
-      artifact={contextArtifact ?? undefined}
+      diagramSets={workspace.diagramSets}
+      diagrams={workspace.diagrams}
+      codeEntitySets={workspace.codeEntitySets}
+      codeEntityMaps={workspace.codeEntityMaps}
       onRevealCodeEntity={revealCodeEntity}
     /> },
     "diagram-sets": { content: <DiagramSetTreePanel
