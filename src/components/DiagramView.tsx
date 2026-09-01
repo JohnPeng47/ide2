@@ -21,6 +21,7 @@ import {
 } from "../agentWork";
 import { useRefBuffer } from "../ref-buffer/RefBufferContext";
 import { RefBufferTray } from "../ref-buffer/RefBufferTray";
+import type { PartialDiffDefinition } from "../partialDiff";
 import { AsciiSelectionGrid, type AsciiGridMode } from "./AsciiSelectionGrid";
 import type { SelectionOverlayReference } from "./DiagramSelectionOverlay";
 
@@ -95,6 +96,7 @@ export function DiagramView(props: {
   onUndoEdit?: () => void;
   onRedoEdit?: () => void;
   onOpenCallGraphFocus?: OpenCallGraphFocus;
+  partialDiff?: PartialDiffDefinition;
 }) {
   const refBuffer = useRefBuffer();
   const [capturing, setCapturing] = useState(false);
@@ -421,6 +423,7 @@ export function DiagramView(props: {
             highlightedMappingIds={props.highlightedMappingIds ?? new Set()}
             highlightBusyMappingIds={props.highlightBusyMappingIds ?? new Set()}
             overlayReferences={overlayReferences}
+            partialDiff={props.partialDiff}
             onLiveSelection={setLiveSelection}
             onSelectionComplete={completeSelection}
             onCancelMode={(mode) => {

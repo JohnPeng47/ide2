@@ -46,6 +46,7 @@ import {
 } from "./api";
 import { CallGraphFocusTree } from "./call-graph-tree/CallGraphFocusTree";
 import type { CallGraphFocusRequest, CallGraphFocusResult } from "./callGraphFocus";
+import { partialDiffForDiagram } from "./artifactPartialDiffs";
 import { DiagramContextPanel, type ContextTab } from "./components/DiagramContextPanel";
 import { DiagramSetTreePanel } from "./components/DiagramSetTreePanel";
 import type { CodeEntityReveal } from "./components/CodeEntitiesPanel";
@@ -1876,6 +1877,7 @@ function StudioPage(props: { onExperiments: () => void }) {
       active={editSession ? { ...activeDiagram, ascii: editSession.workingAscii } : activeDiagram}
       artifactKind="diagram"
       representationKind={selectedRepresentationKind}
+      partialDiff={partialDiffForDiagram(activeDiagram)}
       onGenerate={() => derive(activeDiagram)}
       onExport={() => exportMappedArtifact("diagram", activeDiagram)}
       onCapture={capture}

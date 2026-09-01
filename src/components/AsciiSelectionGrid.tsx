@@ -24,7 +24,9 @@ import {
   type RepresentationIndex
 } from "../representationIndex";
 import type { RepresentationPresentation } from "../representationPresentation";
+import type { PartialDiffDefinition } from "../partialDiff";
 import { DiagramSelectionOverlay, type SelectionOverlayRect, type SelectionOverlayReference } from "./DiagramSelectionOverlay";
+import { DiagramPartialDiffOverlay } from "./DiagramPartialDiffOverlay";
 
 export type AsciiGridMode = "read" | "capture" | "select-refs" | "marker";
 
@@ -65,6 +67,7 @@ export function AsciiSelectionGrid(props: {
   highlightedMappingIds: ReadonlySet<string>;
   highlightBusyMappingIds: ReadonlySet<string>;
   overlayReferences: SelectionOverlayReference[];
+  partialDiff?: PartialDiffDefinition;
   onLiveSelection: (bounds: DiagramSelectionBounds | null) => void;
   onSelectionComplete: (
     kind: ActiveRectangle["kind"],
@@ -448,6 +451,9 @@ export function AsciiSelectionGrid(props: {
           );
         })}
       </pre>
+      {props.mode === "read" && props.partialDiff && cellMetrics.width > 0 && cellMetrics.height > 0 ? (
+        <DiagramPartialDiffOverlay diff={props.partialDiff} cell={cellMetrics} />
+      ) : null}
       {overlayRect && liveSelection ? (
         <DiagramSelectionOverlay rect={overlayRect} references={props.overlayReferences} />
       ) : null}
