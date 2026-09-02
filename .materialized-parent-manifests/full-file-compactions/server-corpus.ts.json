@@ -1,0 +1,99 @@
+{
+  "key": "server-corpus-ts-full-file",
+  "handle": "server-corpus-ts-full-file",
+  "label": "server/corpus.ts full-file compaction",
+  "category": "operation",
+  "summary": "Validates corpus paths, enforces root and symlink boundaries, implements filesystem-backed directory and line access, and exposes provider selection and document-reading facades.",
+  "sourceRanges": [
+    {
+      "key": "full-file",
+      "path": "server/corpus.ts",
+      "startLine": 1,
+      "endLine": 122,
+      "symbol": "FilesystemCorpusProvider / corpus access",
+      "compactedSource": {
+        "level": "high",
+        "sections": [
+          {
+            "kind": "collapsed-comment",
+            "startLine": 1,
+            "endLine": 56,
+            "comment": "CorpusPathSecurity\n|\n+--> DEPENDENCIES\n|    `--> filesystem metadata + canonical paths + domain contracts\n|\n+--> VALIDATE RELATIVE PATH\n|    `--> function relativeSegments(...)\n|         +--[invalid]--> reject NUL, backslashes, absolute/empty/dot segments\n|         `--[valid]----> split normalized POSIX segments\n|\n+--> CANONICAL ROOT\n|    `--> async function canonicalBindingRoot(...)\n|         +--> require provider binding kind\n|         `--> realpath(root) -> require directory\n|\n`--> RESOLVE WITHIN ROOT\n     `--> async function resolveWithoutSymlinks(...)\n          +--> relativeSegments(...) -> lstat each path component\n          +--[missing/link/escape]--> reject traversal\n          `--[safe]----------------> resolved filesystem path",
+            "nodes": [
+              { "graphLine": 1, "startLine": 1, "endLine": 56 },
+              { "graphLine": 3, "startLine": 1, "endLine": 8 },
+              { "graphLine": 4, "startLine": 1, "endLine": 8 },
+              { "graphLine": 6, "startLine": 10, "endLine": 22 },
+              { "graphLine": 7, "startLine": 10, "endLine": 22 },
+              { "graphLine": 8, "startLine": 11, "endLine": 20 },
+              { "graphLine": 9, "startLine": 17, "endLine": 21 },
+              { "graphLine": 11, "startLine": 24, "endLine": 33 },
+              { "graphLine": 12, "startLine": 24, "endLine": 33 },
+              { "graphLine": 13, "startLine": 25, "endLine": 27 },
+              { "graphLine": 14, "startLine": 28, "endLine": 32 },
+              { "graphLine": 16, "startLine": 35, "endLine": 56 },
+              { "graphLine": 17, "startLine": 35, "endLine": 56 },
+              { "graphLine": 18, "startLine": 40, "endLine": 44 },
+              { "graphLine": 19, "startLine": 45, "endLine": 53 },
+              { "graphLine": 20, "startLine": 55, "endLine": 55 }
+            ]
+          },
+          {
+            "kind": "collapsed-comment",
+            "startLine": 58,
+            "endLine": 102,
+            "comment": "FilesystemCorpusAccess\n|\n+--> PROVIDER CONTRACT\n|    `--> class FilesystemCorpusProvider implements CorpusProvider\n|         `--> constructor(...)\n|\n+--> LIST\n|    `--> async listDirectory(...)\n|         +--> canonical root -> safe directory path\n|         +--> readdir -> omit .git -> classify directories/files\n|         `--> directory-first stable sort -> normalized listing\n|\n+--> READ RANGE\n|    `--> async readLines(...)\n|         +--[invalid range]--> reject\n|         `--> readDocumentLines(...) -> inclusive slice\n|\n`--> READ DOCUMENT\n     `--> async readDocumentLines(...)\n          +--> canonical root -> safe file path -> require file\n          `--> UTF-8 read -> newline split",
+            "nodes": [
+              { "graphLine": 1, "startLine": 58, "endLine": 102 },
+              { "graphLine": 3, "startLine": 58, "endLine": 60 },
+              { "graphLine": 4, "startLine": 58, "endLine": 102 },
+              { "graphLine": 5, "startLine": 59, "endLine": 59 },
+              { "graphLine": 7, "startLine": 61, "endLine": 85 },
+              { "graphLine": 8, "startLine": 61, "endLine": 85 },
+              { "graphLine": 9, "startLine": 65, "endLine": 69 },
+              { "graphLine": 10, "startLine": 70, "endLine": 78 },
+              { "graphLine": 11, "startLine": 79, "endLine": 84 },
+              { "graphLine": 13, "startLine": 87, "endLine": 94 },
+              { "graphLine": 14, "startLine": 87, "endLine": 94 },
+              { "graphLine": 15, "startLine": 88, "endLine": 91 },
+              { "graphLine": 16, "startLine": 92, "endLine": 93 },
+              { "graphLine": 18, "startLine": 96, "endLine": 101 },
+              { "graphLine": 19, "startLine": 96, "endLine": 101 },
+              { "graphLine": 20, "startLine": 97, "endLine": 99 },
+              { "graphLine": 21, "startLine": 100, "endLine": 100 }
+            ]
+          },
+          {
+            "kind": "collapsed-comment",
+            "startLine": 104,
+            "endLine": 115,
+            "comment": "CorpusProviderRegistry\n|\n+--> PUBLIC CAPABILITY\n|    `--> type ReadableCorpusProvider = CorpusProvider + readDocumentLines(...)\n|\n+--> INSTANCES\n|    `--> const providers = { git-worktree, filesystem-documents }\n|         `--> each binding kind -> FilesystemCorpusProvider\n|\n`--> SELECT\n     `--> export function corpusProvider(...)\n          `--> binding.kind -> matching readable provider",
+            "nodes": [
+              { "graphLine": 1, "startLine": 104, "endLine": 115 },
+              { "graphLine": 3, "startLine": 104, "endLine": 106 },
+              { "graphLine": 4, "startLine": 104, "endLine": 106 },
+              { "graphLine": 6, "startLine": 108, "endLine": 111 },
+              { "graphLine": 7, "startLine": 108, "endLine": 111 },
+              { "graphLine": 8, "startLine": 109, "endLine": 110 },
+              { "graphLine": 10, "startLine": 113, "endLine": 115 },
+              { "graphLine": 11, "startLine": 113, "endLine": 115 },
+              { "graphLine": 12, "startLine": 114, "endLine": 114 }
+            ]
+          },
+          {
+            "kind": "collapsed-comment",
+            "startLine": 117,
+            "endLine": 122,
+            "comment": "CorpusReadFacade\n|\n`--> READ\n     `--> export async function readCorpusDocumentLines(...)\n          `--> corpusProvider(binding).readDocumentLines(...)\n",
+            "nodes": [
+              { "graphLine": 1, "startLine": 117, "endLine": 122 },
+              { "graphLine": 3, "startLine": 117, "endLine": 122 },
+              { "graphLine": 4, "startLine": 117, "endLine": 122 },
+              { "graphLine": 5, "startLine": 121, "endLine": 121 }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

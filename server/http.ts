@@ -1,6 +1,7 @@
 import type { ServerResponse } from "node:http";
 import type { Connect, Plugin } from "vite";
 import {
+  SCHEMA_VERSION,
   isDiagramViewKind,
   type ArtifactImportInput,
   type CodeEntityMappingTarget,
@@ -8,6 +9,7 @@ import {
   type GenerationReferenceSelection,
   type MaterializedDiagramSetInput
 } from "../src/domain";
+import { unavailablePlanSelection, validatePlanRecord } from "../src/plans";
 import { FakeDiagramAgentRuntime, PiDiagramAgentRuntime } from "./agentRuntime";
 import { DiagramApplication } from "./application";
 import { DiagramDatasetStore } from "./diagramDatasetStore";
@@ -84,6 +86,11 @@ function parseRepositoryFiles(pathname: string): { setId: string } | null {
 function parseHighlight(pathname: string): { highlightId: string } | null {
   const match = pathname.match(/^\/api\/highlights\/([a-z0-9][a-z0-9-]*)$/);
   return match ? { highlightId: match[1] } : null;
+}
+
+function parsePlan(pathname: string): { planId: string } | null {
+  const match = pathname.match(/^\/api\/plans\/([a-z0-9][a-z0-9-]*)$/);
+  return match ? { planId: match[1] } : null;
 }
 
 function parseSystemPromptTemplate(pathname: string): { id: string; reset: boolean } | null {
@@ -326,9 +333,90 @@ export function diagramApi(
         }));
       }
       await ensureRecovered();
+      if (url.pathname === "/api/plans") {
+        if (request.method === "GET") return sendJson(response, 200, await application.store.loadPlans());
+        if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
+        const body = await readBody(request) as Record<string, unknown>;
+        const project = await application.store.loadProject();
+        if (!project) return sendJson(response, 409, { error: "project is not initialized" });
+        const timestamp = new Date().toISOString();
+        const plan = validatePlanRecord({
+          schemaVersion: SCHEMA_VERSION,
+          id: typeof body.id === "string" ? body.id : application.store.ids.plan(),
+          projectId: project.id,
+          title: body.title,
+          status: body.status ?? "draft",
+          markdown: body.markdown,
+          selection: body.selection ?? unavailablePlanSelection(),
+          changes: body.changes ?? [],
+          createdAt: timestamp,
+          updatedAt: timestamp
+        });
+        return sendJson(response, 201, await application.store.savePlan(plan));
+      }
+      const planRoute = parsePlan(url.pathname);
+      if (planRoute) {
+        if (request.method === "GET") {
+          return sendJson(response, 200, await application.store.loadPlan(planRoute.planId));
+        }
+        if (request.method !== "PATCH") return sendJson(response, 405, { error: "method not allowed" });
+        const current = await application.store.loadPlan(planRoute.planId);
+        const body = await readBody(request) as Record<string, unknown>;
+        const plan = validatePlanRecord({
+          ...current,
+          ...(body.title === undefined ? {} : { title: body.title }),
+          ...(body.status === undefined ? {} : { status: body.status }),
+          ...(body.markdown === undefined ? {} : { markdown: body.markdown }),
+          ...(body.selection === undefined ? {} : { selection: body.selection }),
+          ...(body.changes === undefined ? {} : { changes: body.changes }),
+          updatedAt: new Date().toISOString()
+        });
+        return sendJson(response, 200, await application.store.savePlan(plan));
+      }
       if (url.pathname === "/api/workspace") {
         if (request.method !== "GET") return sendJson(response, 405, { error: "method not allowed" });
         return sendJson(response, 200, await application.workspace());
+      }
+      if (url.pathname === "/api/project/corpus-compactions") {
+        const project = await application.store.loadProject();
+        if (!project) return sendJson(response, 409, { error: "project is not initialized" });
+        if (request.method === "GET") {
+          return sendJson(
+            response,
+            200,
+            await application.store.projectCatalogs.loadCompactionCatalog(project.id)
+          );
+        }
+        if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
+        const body = await readBody(request);
+        return sendJson(response, 201, await application.upsertProjectFileCompaction(
+          body as import("../src/projectCatalog").ProjectFileCompactionInput
+        ));
+      }
+      if (url.pathname === "/api/project/representations") {
+        if (request.method !== "GET") return sendJson(response, 405, { error: "method not allowed" });
+        const project = await application.store.loadProject();
+        if (!project) return sendJson(response, 409, { error: "project is not initialized" });
+        return sendJson(
+          response,
+          200,
+          await application.store.projectCatalogs.loadRepresentationCatalog(project.id)
+        );
+      }
+      if (url.pathname === "/api/project/representations/promote") {
+        if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
+        const body = await readBody(request) as Record<string, unknown>;
+        if (typeof body.diagramSetId !== "string" || typeof body.diagramId !== "string") {
+          return sendJson(response, 400, { error: "diagramSetId and diagramId are required" });
+        }
+        return sendJson(response, 201, await application.promoteProjectRepresentation({
+          diagramSetId: body.diagramSetId,
+          diagramId: body.diagramId,
+          ...(typeof body.representationId === "string"
+            ? { representationId: body.representationId }
+            : {}),
+          ...(typeof body.makeActive === "boolean" ? { makeActive: body.makeActive } : {})
+        }));
       }
       if (url.pathname === "/api/highlights") {
         if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });

@@ -868,7 +868,19 @@ try {
     await pointerClick(cdp, ".ref-buffer-actions button:nth-child(1)");
     await waitFor(async () => (
       await evaluate(cdp, `navigator.clipboard.readText()`)
-    ) === "fixture.ts:1-4", { message: "copy paths did not use the source-location representation" });
+    ) !== "selection-sentinel", { message: "copy paths did not write to the clipboard" });
+    const copiedDiagramSelection = await evaluate(cdp, `navigator.clipboard.readText()`);
+    const normalizedDiagramSelection = copiedDiagramSelection.replaceAll("\r\n", "\n");
+    const selectionWidth = mappedBounds.endColumn - mappedBounds.startColumn + 1;
+    const expectedSelectedAscii = asciiBeforeMapping.split("\n")
+      .slice(mappedBounds.line - 1, mappedBounds.line)
+      .map((line) => line.padEnd(mappedBounds.endColumn, " ")
+        .slice(mappedBounds.startColumn - 1, mappedBounds.startColumn - 1 + selectionWidth))
+      .join("\n");
+    const expectedDiagramSelection = `${expectedSelectedAscii}\nAssociated Code Entities:\nWorkspace Store: fixture.ts:1-4`;
+    if (normalizedDiagramSelection !== expectedDiagramSelection) {
+      throw new Error(`copy paths did not include the selected ASCII and associated source location: ${JSON.stringify(copiedDiagramSelection)}`);
+    }
     await pointerClick(cdp, ".ref-buffer-actions button:nth-child(3)");
     await waitFor(async () => await evaluate(cdp, `(() => {
       const envelope = window.__selectedReferenceEnvelope;

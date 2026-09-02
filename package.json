@@ -6,11 +6,13 @@
   "scripts": {
     "build": "tsc --noEmit && vite build",
     "check:browser": "node browser-check.mjs",
+    "check:canvas": "node browser-diagram-canvas-check.mjs",
     "check:domain-profiles": "node browser-domain-profiles-check.mjs",
     "check:markdown": "tsx browser-markdown-check.mjs",
     "check:aux-views": "node browser-aux-views-check.mjs",
     "dev": "vite --host 127.0.0.1",
     "diagram": "tsx cli.ts",
+    "migrate:plans": "tsx migrate-plans.ts",
     "experiment": "tsx experiments/cli.ts",
     "preview": "vite preview --host 127.0.0.1",
     "test": "vitest run",

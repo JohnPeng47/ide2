@@ -9,7 +9,7 @@ import type {
   DiagramSelectionBounds,
   DiagramViewKind
 } from "../domain";
-import { mappingsForSelection } from "../diagramSelection";
+import { asciiForSelection, mappingsForSelection } from "../diagramSelection";
 import { referenceIdentityKey, referencesFromMappings } from "../refBuffer";
 import { resolveReference, type ReferenceResolutionContext } from "../referenceResolver";
 import { buildRepresentationIndex } from "../representationIndex";
@@ -23,6 +23,7 @@ import { useRefBuffer } from "../ref-buffer/RefBufferContext";
 import { RefBufferTray } from "../ref-buffer/RefBufferTray";
 import type { PartialDiffDefinition } from "../partialDiff";
 import { AsciiSelectionGrid, type AsciiGridMode } from "./AsciiSelectionGrid";
+import { DraggableDiagramCanvas } from "./DraggableDiagramCanvas";
 import type { SelectionOverlayReference } from "./DiagramSelectionOverlay";
 
 export const DIAGRAM_VIEW_OPTIONS: Array<{ kind: DiagramViewKind; label: string }> = [
@@ -43,15 +44,15 @@ export function EmptyDiagramView(props: {
       <header className="pane-header diagram-pane-header">
         <div className="diagram-heading">
           <span className="eyebrow">{label} VIEW</span>
-          <h2>No starred {label.toLowerCase()}</h2>
+          <h2>No active {label.toLowerCase()} representation</h2>
         </div>
         <button type="button" className="button button--primary" onClick={props.onGenerate}>generate →</button>
       </header>
       <div className="diagram-empty-state">
         <span className="eyebrow">{hasCandidates ? "CANDIDATE REQUIRED" : "NO CANDIDATES"}</span>
-        <h3>{hasCandidates ? `Choose and star a ${label.toLowerCase()} candidate.` : `Generate the first ${label.toLowerCase()} candidate.`}</h3>
+        <h3>{hasCandidates ? `Promote a ${label.toLowerCase()} candidate.` : `Generate the first ${label.toLowerCase()} candidate.`}</h3>
         <p>{hasCandidates
-          ? "Open a candidate from the Diagrams tree, then use its star control."
+          ? "Open a candidate from the generation session, then promote it."
           : "The generated candidates will appear in the Diagrams tree."}</p>
         <button type="button" className="button button--primary" onClick={props.onGenerate}>generate {label.toLowerCase()} →</button>
       </div>
@@ -101,6 +102,7 @@ export function DiagramView(props: {
   const refBuffer = useRefBuffer();
   const [capturing, setCapturing] = useState(false);
   const [selectingRefs, setSelectingRefs] = useState(false);
+  const [canvasMode, setCanvasMode] = useState(false);
   const [liveSelection, setLiveSelection] = useState<DiagramSelectionBounds | null>(null);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -236,7 +238,10 @@ export function DiagramView(props: {
     }
     const selectedMappings = mappingsForSelection(mappings, bounds);
     const refs = referencesFromMappings(selectedMappings, props.codeEntities);
-    refBuffer.add(refs);
+    refBuffer.add(refs, {
+      sourceArtifactId: props.active.id,
+      ascii: asciiForSelection(props.active.ascii, bounds)
+    });
     setSelectionStatus(refs.length === 0
       ? "no mapped references in selection"
       : `added ${refs.length} mapped ref${refs.length === 1 ? "" : "s"}`);
@@ -255,11 +260,11 @@ export function DiagramView(props: {
               <button
                 type="button"
                 className={`diagram-star-toggle${props.starred ? " is-starred" : ""}`}
-                aria-label={props.starred ? "Remove chosen diagram status" : "Choose this diagram"}
+                aria-label={props.starred ? "Remove from settled Representations" : "Promote this candidate"}
                 aria-pressed={Boolean(props.starred)}
                 title={props.starred
-                  ? "Chosen for downstream workflows; click to clear"
-                  : "Choose for downstream workflows"}
+                  ? "Settled Project representation; click to remove"
+                  : "Promote to the Project representation catalog"}
                 disabled={props.starBusy}
                 onClick={props.onToggleStarred}
               >
@@ -269,6 +274,16 @@ export function DiagramView(props: {
           </div>
         </div>
         <div className="diagram-actions">
+          <button
+            type="button"
+            className={canvasMode ? "button canvas-mode-toggle is-active" : "button canvas-mode-toggle"}
+            aria-pressed={canvasMode}
+            disabled={saving || capturing || selectingRefs || props.editMode || props.markerMode}
+            title={canvasMode ? "Disable diagram pan and zoom" : "Enable diagram pan and zoom"}
+            onClick={() => setCanvasMode((enabled) => !enabled)}
+          >
+            {canvasMode ? "canvas on" : "canvas mode"}
+          </button>
           <button
             type="button"
             className="button export-mapped-artifact"
@@ -383,8 +398,8 @@ export function DiagramView(props: {
         onOpenCallGraphFocus={callGraphFocusSource ? props.onOpenCallGraphFocus : undefined}
         callGraphFocusReferenceKeys={callGraphFocusSource ? mappedReferenceKeys : undefined}
       />
-      <div className={gridMode === "read" ? "ascii-stage" : "ascii-stage is-capturing"}>
-        {props.editMode && !props.markerMode ? (
+      {props.editMode && !props.markerMode ? (
+        <div className="ascii-stage">
           <textarea
             className="ascii-editor"
             value={draftAscii}
@@ -409,7 +424,13 @@ export function DiagramView(props: {
               }
             }}
           />
-        ) : (
+        </div>
+      ) : (
+        <DraggableDiagramCanvas
+          className={gridMode === "read" ? "ascii-stage" : "ascii-stage is-capturing"}
+          enabled={canvasMode && gridMode === "read"}
+          resetKey={`${props.active.id}:${activeAsciiSha256}`}
+        >
           <AsciiSelectionGrid
             ascii={props.active.ascii}
             representationIndex={representationIndex}
@@ -437,8 +458,8 @@ export function DiagramView(props: {
             collapseSubtrees={props.collapseSubtrees}
             onMarker={props.onMarker}
           />
-        )}
-      </div>
+        </DraggableDiagramCanvas>
+      )}
       {error ? <p className="capture-error" role="alert">{error}</p> : null}
       {props.mappingError ? <p className="capture-error" role="alert">{props.mappingError}</p> : null}
       <footer className="diagram-meta">

@@ -2,12 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 import {
   isDiagramArchived,
   type DiagramRecord,
-  type DiagramSetRecord
+  type DiagramSetRecord,
+  type PlanRecord
 } from "../domain";
+import { partialDiffForDiagram } from "../artifactPartialDiffs";
 
 export function DiagramSetTreePanel(props: {
   diagramSets: DiagramSetRecord[];
   diagrams: Record<string, DiagramRecord>;
+  plans: readonly PlanRecord[];
   activeSetId: string;
   activeDiagramId?: string;
   onSelectSet: (setId: string) => void;
@@ -42,7 +45,7 @@ export function DiagramSetTreePanel(props: {
 
   const remove = async (set: DiagramSetRecord) => {
     const confirmed = window.confirm(
-      `Delete Diagram Set “${set.name}”?\n\nIts files will be moved to .diagrams/trash and can be manually recovered.`
+      `Delete Generation Session “${set.name}”?\n\nIts files will be moved to .diagrams/trash and can be manually recovered.`
     );
     if (!confirmed) return;
     setDeletingId(set.id);
@@ -50,26 +53,24 @@ export function DiagramSetTreePanel(props: {
     try {
       await props.onDeleteSet(set.id);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Diagram Set deletion failed");
+      setError(caught instanceof Error ? caught.message : "Generation Session deletion failed");
     } finally {
       setDeletingId(null);
     }
   };
 
   return (
-    <section className="diagram-set-tree-panel" aria-label="Diagram Sets">
+    <section className="diagram-set-tree-panel" aria-label="Generation Sessions">
       <div className="diagram-set-tree-summary">
-        <strong>DIAGRAM SETS</strong>
-        <span>{props.diagramSets.length} SET{props.diagramSets.length === 1 ? "" : "S"}</span>
+        <strong>GENERATION SESSIONS</strong>
+        <span>{props.diagramSets.length} SESSION{props.diagramSets.length === 1 ? "" : "S"}</span>
       </div>
       {error ? <p className="diagram-set-tree-error" role="alert">{error}</p> : null}
-      <div className="diagram-set-tree" role="tree" aria-label="Diagram Sets and diagrams">
+      <div className="diagram-set-tree" role="tree" aria-label="Generation Sessions and candidates">
         {props.diagramSets.map((set) => {
           const diagrams = diagramsBySet.get(set.id) ?? [];
           const expanded = expandedSetIds.has(set.id);
           const active = set.id === props.activeSetId;
-          const starredIds = new Set(Object.values(set.featuredViewIds));
-          const hasStarredDiagram = diagrams.some((diagram) => starredIds.has(diagram.id));
           return (
             <div className="diagram-set-tree-branch" role="treeitem" aria-expanded={expanded} aria-level={1} key={set.id}>
               <div
@@ -88,18 +89,13 @@ export function DiagramSetTreePanel(props: {
                   aria-current={active ? "true" : undefined}
                   onClick={() => props.onSelectSet(set.id)}
                 >
-                  <span
-                    className={`diagram-set-tree-set-star${hasStarredDiagram ? " is-starred" : ""}`}
-                    aria-label={hasStarredDiagram ? "Contains starred diagrams" : undefined}
-                    aria-hidden={hasStarredDiagram ? undefined : "true"}
-                  >{hasStarredDiagram ? "★" : "·"}</span>
                   <strong>{set.name}</strong>
                   {set.readiness === "failed" ? <em>FAILED</em> : null}
                 </button>
                 <button
                   type="button"
                   className="diagram-set-tree-delete"
-                  aria-label={`Delete Diagram Set ${set.name}`}
+                  aria-label={`Delete Generation Session ${set.name}`}
                   title={`Delete ${set.name}`}
                   disabled={deletingId !== null || set.readiness === "collecting"}
                   onClick={() => void remove(set)}
@@ -108,8 +104,8 @@ export function DiagramSetTreePanel(props: {
               {expanded ? (
                 <div role="group">
                   {diagrams.map((diagram, index) => {
-                    const starred = starredIds.has(diagram.id);
                     const current = active && diagram.id === props.activeDiagramId;
+                    const hasPartialDiff = Boolean(partialDiffForDiagram(diagram, props.plans));
                     return (
                       <button
                         type="button"
@@ -119,18 +115,21 @@ export function DiagramSetTreePanel(props: {
                         className={`diagram-set-tree-row diagram-set-tree-diagram${current ? " is-current" : ""}`}
                         data-set-diagram-id={diagram.id}
                         key={diagram.id}
-                        title={`${diagram.name}${starred ? " · starred" : ""}`}
+                        title={`${diagram.name}${hasPartialDiff ? " · partial diff" : ""}`}
                         onClick={() => props.onSelectDiagram(set.id, diagram.id)}
                       >
                         <span className="diagram-set-tree-prefix" aria-hidden="true">{
                           index === diagrams.length - 1 ? "`-- " : "+-- "
                         }</span>
-                        <span
-                          className={`diagram-set-tree-star${starred ? " is-starred" : ""}`}
-                          aria-label={starred ? "Starred diagram" : undefined}
-                          aria-hidden={starred ? undefined : "true"}
-                        >{starred ? "★" : "·"}</span>
                         <span className="diagram-set-tree-name">{diagram.name}</span>
+                        {hasPartialDiff ? (
+                          <span
+                            className="diagram-set-tree-diff-status"
+                            aria-label="Has partial diff"
+                            title="Has partial diff"
+                            data-partial-diff-status="true"
+                          >[diff]</span>
+                        ) : null}
                         <em>{diagram.viewKind.toUpperCase()}</em>
                       </button>
                     );

@@ -41,6 +41,21 @@ export function mappingsForSelection(
     ));
 }
 
+/** Extracts the exact rectangular ASCII region, rebased to its left edge. */
+export function asciiForSelection(
+  ascii: string,
+  selection: DiagramSelectionBounds
+): string {
+  const width = selection.endColumn - selection.startColumn + 1;
+  return ascii
+    .split("\n")
+    .slice(selection.startLine - 1, selection.endLine)
+    .map((line) => line.replace(/\r$/, "")
+      .padEnd(selection.endColumn, " ")
+      .slice(selection.startColumn - 1, selection.startColumn - 1 + width))
+    .join("\n");
+}
+
 export function selectionContainsPoint(
   selection: DiagramSelectionBounds | null,
   line: number,

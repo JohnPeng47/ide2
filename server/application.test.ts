@@ -212,7 +212,7 @@ async function createCallGraphFocusFixture() {
     createdAt
   };
   await store.addDiagram(callGraph);
-  await store.setFeaturedView(set.id, "call-graph", callGraph.id);
+  await application.setStarredDiagram(set.id, callGraph.id, true);
   const request: CallGraphFocusRequest = {
     version: 1,
     diagramSetId: set.id,
@@ -283,7 +283,8 @@ describe("DiagramApplication", () => {
     const diagram = result.workspace.diagrams[result.diagramIdsByKey["worker-flow"]];
     const mapping = result.workspace.codeEntityMaps[diagram.id];
     expect(set).toMatchObject({ creationMode: "materialized", readiness: "ready" });
-    expect(set.featuredViewIds.diagram).toBe(diagram.id);
+    expect(set.featuredViewIds.diagram).toBeUndefined();
+    expect(result.workspace.representationCatalog?.activeByKind.diagram).toBeTruthy();
     expect(entitySet.status).toBe("finalized");
     expect(entitySet.promptConfigId).toBeUndefined();
     expect(entitySet.entities[0].sourceRanges[0].originalLines).toEqual([
@@ -310,6 +311,57 @@ describe("DiagramApplication", () => {
       codeEntities: [],
       diagrams: [{ key: "empty", name: "Empty", ascii: "empty", codeEntityKeys: [] }]
     })).rejects.toThrow("requires at least one CodeEntity");
+  });
+
+  it("treats a terminal newline as the terminator of the final compacted source line", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-project-compaction-"));
+    roots.push(root);
+    execFileSync("git", ["init", "-q", root]);
+    await writeFile(path.join(root, "fixture.ts"), "export const fixture = true;\n", "utf8");
+    execFileSync("git", ["-C", root, "add", "fixture.ts"]);
+    execFileSync("git", [
+      "-C", root, "-c", "user.name=Test", "-c", "user.email=test@example.com",
+      "commit", "-qm", "fixture"
+    ]);
+    const application = new DiagramApplication(new DiagramStore(root), new ParallelRuntime());
+    await application.createMaterializedDiagramSet({
+      creationMode: "materialized",
+      path: root,
+      name: "Compaction fixture",
+      codeEntities: [{
+        key: "fixture",
+        handle: "fixture",
+        label: "Fixture",
+        category: "state",
+        summary: "Fixture state.",
+        sourceRanges: [{ key: "fixture", path: "fixture.ts", startLine: 1, endLine: 1 }]
+      }],
+      diagrams: [{
+        key: "fixture",
+        name: "Fixture",
+        ascii: "[fixture]",
+        codeEntityKeys: ["fixture"]
+      }]
+    });
+
+    const workspace = await application.upsertProjectFileCompaction({
+      path: "fixture.ts",
+      startLine: 1,
+      endLine: 1,
+      originalLines: ["export const fixture = true;"],
+      compactedSource: {
+        level: "high",
+        sections: [{
+          kind: "collapsed-comment",
+          startLine: 1,
+          endLine: 1,
+          comment: "Fixture\n`--> const fixture",
+          nodes: [{ graphLine: 2, startLine: 1, endLine: 1 }]
+        }]
+      }
+    });
+
+    expect(workspace.corpusCompactions?.activeByPath["fixture.ts"]).toBeTruthy();
   });
 
   it("lists one live repository directory without exposing metadata or traversing links", async () => {
@@ -399,7 +451,7 @@ describe("DiagramApplication", () => {
     })).rejects.toThrow(/not available in the document domain/);
   });
 
-  it("focuses a featured call graph using qualified imported CodeEntity identities", async () => {
+  it("focuses a settled call graph using qualified imported CodeEntity identities", async () => {
     const { application, set, source, callGraph, foreignEntity, request } =
       await createCallGraphFocusFixture();
 
@@ -452,14 +504,11 @@ describe("DiagramApplication", () => {
       sourceDiagram: { ...request.sourceDiagram, targetId: callGraph.id }
     })).rejects.toThrow(/source Diagram must have diagram viewKind/);
 
-    await store.setFeaturedView(set.id, "call-graph", source.id);
-    await expect(application.callGraphFocus(request)).rejects.toThrow(/call-graph viewKind/);
-
-    await store.setFeaturedView(set.id, "call-graph");
-    await expect(application.callGraphFocus(request)).rejects.toThrow(/no featured call graph/);
+    await application.setStarredDiagram(set.id, callGraph.id, false);
+    await expect(application.callGraphFocus(request)).rejects.toThrow(/no settled call graph/);
   });
 
-  it("rejects a featured call graph based on another Diagram and selections outside its context", async () => {
+  it("rejects a settled call graph based on another Diagram and selections outside its context", async () => {
     const { application, store, set, source, callGraph, request } = await createCallGraphFocusFixture();
     const otherSource: DiagramRecord = {
       ...source,
@@ -476,7 +525,7 @@ describe("DiagramApplication", () => {
       basedOnDiagramId: otherSource.id
     };
     await store.addDiagram(wrongBase);
-    await store.setFeaturedView(set.id, "call-graph", wrongBase.id);
+    await application.setStarredDiagram(set.id, wrongBase.id, true);
     await expect(application.callGraphFocus(request)).rejects.toThrow(/based on another Diagram/);
 
     const absentEntity: CodeEntityRecord = {
@@ -493,7 +542,7 @@ describe("DiagramApplication", () => {
       sourceRanges: []
     };
     await store.addImportedCodeEntity(absentEntity);
-    await store.setFeaturedView(set.id, "call-graph", callGraph.id);
+    await application.setStarredDiagram(set.id, callGraph.id, true);
     await expect(application.callGraphFocus({
       ...request,
       selectedCodeEntities: [{ kind: "code-entity", targetId: absentEntity.id, origin: absentEntity.origin! }]
@@ -515,12 +564,12 @@ describe("DiagramApplication", () => {
       basedOnDiagramId: expandedSource.id
     };
     await store.addDiagram(narrowGraph);
-    await store.setFeaturedView(set.id, "call-graph", narrowGraph.id);
+    await application.setStarredDiagram(set.id, narrowGraph.id, true);
     await expect(application.callGraphFocus({
       ...request,
       sourceDiagram: { ...request.sourceDiagram, targetId: expandedSource.id },
       selectedCodeEntities: [{ kind: "code-entity", targetId: absentEntity.id, origin: absentEntity.origin! }]
-    })).rejects.toThrow(/not declared by the featured call graph/);
+    })).rejects.toThrow(/not declared by the settled call graph/);
   });
 
   it("generates and independently stars call-graph and directory-view candidates", async () => {
@@ -541,7 +590,7 @@ describe("DiagramApplication", () => {
       count: 1,
       outputKind: "diagram",
       viewKind: "call-graph"
-    })).rejects.toThrow(/star a main Diagram/);
+    })).rejects.toThrow(/settle a main Diagram/);
 
     let workspace = await application.generate(set.id, {
       prompt: "Show architecture",
@@ -559,7 +608,7 @@ describe("DiagramApplication", () => {
       count: 1,
       outputKind: "diagram",
       viewKind: "dir-view"
-    })).rejects.toThrow(/star a Call Graph/);
+    })).rejects.toThrow(/settle a Call Graph/);
 
     workspace = await application.generate(set.id, {
       prompt: "Show calls",
@@ -585,16 +634,11 @@ describe("DiagramApplication", () => {
     const dirConfig = workspace.generationPromptConfigs[dirView.generationPromptConfigId!];
     expect(dirConfig.references.map((reference) => reference.targetId)).toEqual([mainId, callGraph.id]);
     workspace = await application.setStarredDiagram(set.id, dirView.id, true);
-    expect(workspace.diagramSets[0].featuredViewIds).toEqual({
-      diagram: mainId,
-      "call-graph": callGraph.id,
-      "dir-view": dirView.id
-    });
+    expect(workspace.diagramSets[0].featuredViewIds).toEqual({});
+    expect(Object.values(workspace.representationCatalog?.representations ?? {})
+      .filter((representation) => representation.status === "settled")).toHaveLength(3);
     workspace = await application.archiveDiagram(set.id, callGraph.id);
-    expect(workspace.diagramSets[0].featuredViewIds).toEqual({
-      diagram: mainId,
-      "dir-view": dirView.id
-    });
+    expect(workspace.diagramSets[0].featuredViewIds).toEqual({});
   });
 
   it("blocks deletion during collection and removes a ready Diagram Set", async () => {
@@ -886,17 +930,28 @@ describe("DiagramApplication", () => {
     const secondDiagramId = workspace.globalImports.diagramIds[1];
     expect(workspace.diagrams[secondDiagramId].handle).toBe("pursuer-update-2");
     workspace = await application.setStarredDiagram(set.id, diagramId, true);
-    expect(workspace.diagramSets[0].featuredViewIds.diagram).toBe(diagramId);
+    expect(workspace.diagramSets[0].featuredViewIds.diagram).toBeUndefined();
+    const firstRepresentationId = workspace.representationCatalog?.activeByKind.diagram;
+    expect(firstRepresentationId).toBeTruthy();
+    expect(workspace.representationCatalog?.representations[firstRepresentationId!]).toMatchObject({
+      name: "Pursuer update",
+      status: "settled"
+    });
     const persistedSet = JSON.parse(await readFile(path.join(
       root, ".diagrams", "diagram-sets", set.id, "diagram-set.json"
     ), "utf8")) as { featuredViewIds?: { diagram?: string } };
-    expect(persistedSet.featuredViewIds?.diagram).toBe(diagramId);
+    expect(persistedSet.featuredViewIds?.diagram).toBeUndefined();
     workspace = await application.setStarredDiagram(set.id, secondDiagramId, true);
-    expect(workspace.diagramSets[0].featuredViewIds.diagram).toBe(secondDiagramId);
+    expect(workspace.diagramSets[0].featuredViewIds.diagram).toBeUndefined();
+    expect(workspace.representationCatalog?.activeByKind.diagram).not.toBe(firstRepresentationId);
     workspace = await application.setStarredDiagram(set.id, diagramId, false);
-    expect(workspace.diagramSets[0].featuredViewIds.diagram).toBe(secondDiagramId);
+    expect(workspace.diagramSets[0].featuredViewIds.diagram).toBeUndefined();
     workspace = await application.setStarredDiagram(set.id, secondDiagramId, false);
     expect(workspace.diagramSets[0].featuredViewIds.diagram).toBeUndefined();
+    expect(workspace.representationCatalog?.activeByKind.diagram).toBeUndefined();
+    expect(Object.keys(workspace.representationCatalog?.representations ?? {})).toHaveLength(2);
+    expect(Object.values(workspace.representationCatalog?.representations ?? {})
+      .every((representation) => representation.status === "archived")).toBe(true);
     await expect(application.setStarredDiagram(set.id, "diagram-missing", true))
       .rejects.toThrow(/unknown diagram/);
     await expect(readFile(path.join(

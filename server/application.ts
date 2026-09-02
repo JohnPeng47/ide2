@@ -47,6 +47,12 @@ import {
   type WorkspaceSnapshot
 } from "../src/domain";
 import type { BuiltInDomainProfileId, CorpusBinding } from "../src/domainProfile";
+import type {
+  ProjectFileCompactionInput,
+  ProjectRepresentationEvidenceRecord,
+  ProjectRepresentationMappingRecord,
+  PromoteProjectRepresentationInput
+} from "../src/projectCatalog";
 import { representationKindForArtifact, resolveDomainProfile } from "../src/domainProfiles";
 import {
   createBuiltInCodeEntityPromptTemplates,
@@ -262,6 +268,11 @@ function identityForRecord(entity: CodeEntityRecord): CodeEntityFocusIdentity {
   return { kind: "code-entity", targetId: entity.id, origin: entity.origin };
 }
 
+function stableProjectId(prefix: string, ...parts: string[]): string {
+  const digest = createHash("sha256").update(parts.join("\0")).digest("hex").slice(0, 32);
+  return `${prefix}-${digest}`;
+}
+
 export class DiagramApplication {
   private readonly activeBatches = new Set<string>();
   private readonly activeMappings = new Set<string>();
@@ -281,6 +292,164 @@ export class DiagramApplication {
     if (set && set.projectId !== project.id) throw new Error("DiagramSet belongs to another project");
     const domainProfileId = project.domainProfileId === "document" ? "document" : "source-code";
     return { domainProfileId, corpus: project.corpus };
+  }
+
+  private async settledViewIdsForSession(
+    set: DiagramSetRecord
+  ): Promise<Partial<Record<DiagramViewKind, string>>> {
+    const project = await this.store.loadProject();
+    if (!project) throw new Error("project corpus is not initialized");
+    const catalog = await this.store.projectCatalogs.loadRepresentationCatalog(project.id);
+    const result: Partial<Record<DiagramViewKind, string>> = {};
+    const settled = Object.values(catalog.representations)
+      .filter((representation) => representation.status === "settled")
+      .sort((left, right) => left.updatedAt.localeCompare(right.updatedAt));
+    for (const representation of settled) {
+      const revision = catalog.revisions[representation.currentRevisionId];
+      if (revision?.provenance?.diagramSetId === set.id) {
+        result[representation.viewKind] = revision.provenance.artifactId;
+      }
+    }
+    for (const [viewKind, representationId] of Object.entries(catalog.activeByKind)) {
+      const representation = representationId ? catalog.representations[representationId] : undefined;
+      const revision = representation
+        ? catalog.revisions[representation.currentRevisionId]
+        : undefined;
+      if (representation?.status === "settled" && revision?.provenance?.diagramSetId === set.id) {
+        result[viewKind as DiagramViewKind] = revision.provenance.artifactId;
+      }
+    }
+    return result;
+  }
+
+  async upsertProjectFileCompaction(input: ProjectFileCompactionInput): Promise<WorkspaceSnapshot> {
+    const project = await this.store.loadProject();
+    if (!project) throw new Error("project corpus is not initialized");
+    if (input.makeActive !== false) {
+      const documentLines = await readCorpusDocumentLines(project.corpus, input.path);
+      // Source coordinates count the final newline as the terminator of the last
+      // source line, not as an additional empty line.
+      const liveLines = documentLines.at(-1) === "" ? documentLines.slice(0, -1) : documentLines;
+      const captured = liveLines.slice(input.startLine - 1, input.endLine);
+      if (JSON.stringify(captured) !== JSON.stringify(input.originalLines)) {
+        throw new Error(`active compaction snapshot is stale for ${input.path}`);
+      }
+      if (input.startLine === 1 && input.originalLines.length === input.endLine
+        && liveLines.length !== input.endLine) {
+        throw new Error(`active full-file compaction does not cover current ${input.path}`);
+      }
+    }
+    await this.store.projectCatalogs.upsertFileCompaction(project.id, input);
+    return this.workspace();
+  }
+
+  async promoteProjectRepresentation(
+    input: PromoteProjectRepresentationInput
+  ): Promise<WorkspaceSnapshot> {
+    const project = await this.store.loadProject();
+    if (!project) throw new Error("project corpus is not initialized");
+    const set = await this.store.loadDiagramSet(input.diagramSetId);
+    if (set.projectId !== project.id) throw new Error("generation session belongs to another Project");
+    const { artifact, global } = await this.artifactForDiagramSet(set.id, "diagram", input.diagramId);
+    const diagram = artifact as DiagramRecord;
+    if (isDiagramArchived(diagram)) throw new Error("archived diagrams cannot be promoted");
+    const local = await this.store.loadCodeEntities(set.id);
+    const library = await this.store.loadImportedArtifactLibrary();
+    const imported = await Promise.all(
+      (library.codeEntityIds ?? []).map((id) => this.store.loadImportedCodeEntity(id))
+    );
+    const available = new Map([...local.entities, ...imported].map((entity) => [entity.id, entity]));
+    const compactions = await this.store.projectCatalogs.loadCompactionCatalog(project.id);
+    const evidence: Record<string, ProjectRepresentationEvidenceRecord> = {};
+    const evidenceIdByEntityId = new Map<string, string>();
+    const rangeIdByLegacyAddress = new Map<string, string>();
+    for (const entityId of diagram.codeEntityIds) {
+      const entity = available.get(entityId);
+      if (!entity) throw new Error(`promoted Diagram references unavailable evidence: ${entityId}`);
+      const evidenceId = stableProjectId("evidence", project.id, diagram.id, entity.id);
+      evidenceIdByEntityId.set(entity.id, evidenceId);
+      const ranges = await Promise.all(entity.sourceRanges.map(async (range, index) => {
+        let originalLines = range.originalLines;
+        if (!originalLines) {
+          const liveLines = await readCorpusDocumentLines(project.corpus, range.path);
+          originalLines = liveLines.slice(range.startLine - 1, range.endLine);
+        }
+        const rangeId = stableProjectId(
+          "evidence-range",
+          evidenceId,
+          range.id ?? String(index),
+          range.path,
+          String(range.startLine),
+          String(range.endLine)
+        );
+        rangeIdByLegacyAddress.set(`${entity.id}:${range.id ?? index}`, rangeId);
+        rangeIdByLegacyAddress.set(`${entity.id}:${index}`, rangeId);
+        const activeCompactionId = compactions.activeByPath[range.path];
+        const activeCompaction = activeCompactionId
+          ? compactions.compactions[activeCompactionId]
+          : undefined;
+        const rangeSha256 = createHash("sha256").update(originalLines.join("\n")).digest("hex");
+        const compactionId = activeCompaction
+          && activeCompaction.sourceSha256 === rangeSha256
+          && activeCompaction.startLine === range.startLine
+          && activeCompaction.endLine === range.endLine
+          ? activeCompaction.id
+          : undefined;
+        return {
+          id: rangeId,
+          path: range.path,
+          startLine: range.startLine,
+          endLine: range.endLine,
+          ...(range.symbol ? { symbol: range.symbol } : {}),
+          originalLines: [...originalLines],
+          ...(compactionId ? { compactionId } : {})
+        };
+      }));
+      evidence[evidenceId] = {
+        id: evidenceId,
+        handle: entity.handle,
+        label: entity.label,
+        category: entity.category,
+        summary: entity.summary,
+        sourceRanges: ranges
+      };
+    }
+    const legacyMap = global
+      ? await this.store.loadImportedCodeEntityMap(diagram.id)
+      : await this.store.loadCodeEntityMap(set.id, diagram.id);
+    const mappings: ProjectRepresentationMappingRecord[] = (legacyMap?.mappings ?? []).map((mapping) => {
+      const sourceEntity = available.get(mapping.entityId);
+      if (!sourceEntity) throw new Error(`mapping references unavailable evidence: ${mapping.entityId}`);
+      const sourceRange = sourceEntity.sourceRanges[mapping.sourceRangeIndex];
+      const sourceRangeId = rangeIdByLegacyAddress.get(
+        `${mapping.entityId}:${mapping.sourceRangeId ?? sourceRange?.id ?? mapping.sourceRangeIndex}`
+      ) ?? rangeIdByLegacyAddress.get(`${mapping.entityId}:${mapping.sourceRangeIndex}`);
+      const evidenceId = evidenceIdByEntityId.get(mapping.entityId);
+      if (!sourceRangeId || !evidenceId) throw new Error(`mapping evidence was not promoted: ${mapping.id}`);
+      return {
+        id: stableProjectId("representation-map", project.id, diagram.id, mapping.id),
+        evidenceId,
+        sourceRangeId,
+        line: mapping.line,
+        startColumn: mapping.startColumn,
+        endColumn: mapping.endColumn
+      };
+    });
+    await this.store.projectCatalogs.promoteRepresentation({
+      projectId: project.id,
+      ...(input.representationId ? { representationId: input.representationId } : {}),
+      handle: diagram.handle,
+      name: diagram.name,
+      viewKind: diagram.viewKind,
+      representationKind: representationKindForArtifact(diagram),
+      ascii: diagram.ascii,
+      asciiSha256: createHash("sha256").update(diagram.ascii).digest("hex"),
+      evidence,
+      mappings,
+      provenance: { diagramSetId: set.id, artifactId: diagram.id },
+      makeActive: input.makeActive !== false
+    });
+    return this.workspace();
   }
 
   private async artifactForDiagramSet(
@@ -366,8 +535,9 @@ export class DiagramApplication {
       throw new Error("source Diagram provenance does not match the requested identity");
     }
 
-    const callGraphId = set.featuredViewIds["call-graph"];
-    if (!callGraphId) throw new Error("DiagramSet has no featured call graph");
+    const settledViewIds = await this.settledViewIdsForSession(set);
+    const callGraphId = settledViewIds["call-graph"];
+    if (!callGraphId) throw new Error("generation session has no settled call graph");
     const { artifact: callGraphArtifact } = await this.artifactForDiagramSet(
       set.id,
       "diagram",
@@ -375,12 +545,12 @@ export class DiagramApplication {
     );
     const callGraph = callGraphArtifact as DiagramRecord;
     if (callGraph.viewKind !== "call-graph") {
-      throw new Error("featured call graph does not have call-graph viewKind");
+      throw new Error("settled call graph does not have call-graph viewKind");
     }
     if (callGraph.basedOnDiagramId !== sourceDiagram.id) {
-      throw new Error("featured call graph is based on another Diagram");
+      throw new Error("settled call graph is based on another Diagram");
     }
-    if (!callGraph.recordOrigin) throw new Error("featured call graph is missing provenance");
+    if (!callGraph.recordOrigin) throw new Error("settled call graph is missing provenance");
 
     const local = await this.store.loadCodeEntities(set.id);
     const library = await this.store.loadImportedArtifactLibrary();
@@ -393,7 +563,7 @@ export class DiagramApplication {
     const declaredEntities = callGraph.codeEntityIds.map((id) => available.get(id));
     const missingDependency = callGraph.codeEntityIds.find((_, index) => !declaredEntities[index]);
     if (missingDependency) {
-      throw new Error(`featured call graph has unresolved CodeEntity dependency: ${missingDependency}`);
+      throw new Error(`settled call graph has unresolved CodeEntity dependency: ${missingDependency}`);
     }
 
     const selected = new Map<string, CodeEntityFocusIdentity>();
@@ -407,7 +577,7 @@ export class DiagramApplication {
         throw new Error(`selected CodeEntity is not declared by the source Diagram: ${identity.targetId}`);
       }
       if (!callGraph.codeEntityIds.includes(identity.targetId)) {
-        throw new Error(`selected CodeEntity is not declared by the featured call graph: ${identity.targetId}`);
+        throw new Error(`selected CodeEntity is not declared by the settled call graph: ${identity.targetId}`);
       }
       selected.set(focusIdentityKey(identity), identity);
     }
@@ -418,7 +588,7 @@ export class DiagramApplication {
     );
     const filteredRoots = filterCallGraphTree(roots, new Set(selected.keys()));
     if (filteredRoots.length === 0) {
-      throw new Error("featured call graph contains no nodes for the selected CodeEntities");
+      throw new Error("settled call graph contains no nodes for the selected CodeEntities");
     }
     return {
       version: CALL_GRAPH_FOCUS_VERSION,
@@ -797,8 +967,12 @@ export class DiagramApplication {
       await this.store.completeCollection(diagramSet.id, entities);
       for (const diagram of diagrams) await this.store.addDiagram(diagram);
       for (const mapping of maps) await this.store.saveCodeEntityMap(mapping);
-      for (const [kind, id] of Object.entries(featuredViewIds)) {
-        await this.store.setFeaturedView(diagramSet.id, kind as DiagramViewKind, id);
+      for (const id of Object.values(featuredViewIds)) {
+        await this.promoteProjectRepresentation({
+          diagramSetId: diagramSet.id,
+          diagramId: id,
+          makeActive: true
+        });
       }
       return {
         diagramSetId: diagramSet.id,
@@ -1176,16 +1350,28 @@ export class DiagramApplication {
     diagramId: string,
     starred: boolean
   ): Promise<WorkspaceSnapshot> {
-    const set = await this.store.loadDiagramSet(setId);
+    await this.store.loadDiagramSet(setId);
     const { artifact } = await this.artifactForDiagramSet(setId, "diagram", diagramId);
     const diagram = artifact as DiagramRecord;
+    const project = await this.store.loadProject();
+    if (!project) throw new Error("project corpus is not initialized");
+    const catalog = await this.store.projectCatalogs.loadRepresentationCatalog(project.id);
+    const representation = this.store.projectCatalogs.representationForSource(
+      catalog,
+      setId,
+      diagramId
+    );
     if (starred) {
       if (isDiagramArchived(diagram)) {
         throw new Error("archived diagrams cannot be starred");
       }
-      await this.store.setFeaturedView(setId, diagram.viewKind, diagramId);
-    } else if (set.featuredViewIds[diagram.viewKind] === diagramId) {
-      await this.store.setFeaturedView(setId, diagram.viewKind);
+      await this.promoteProjectRepresentation({
+        diagramSetId: setId,
+        diagramId,
+        makeActive: true
+      });
+    } else if (representation?.status === "settled") {
+      await this.store.projectCatalogs.archiveRepresentation(project.id, representation.id);
     }
     return this.workspace();
   }
@@ -1962,6 +2148,7 @@ export class DiagramApplication {
       );
       const existingDiagrams = [...storedDiagrams, ...importedDiagrams]
         .filter((diagram) => !isDiagramArchived(diagram));
+      const settledViewIds = await this.settledViewIdsForSession(set);
       const storedComponents = await Promise.all(
         set.diagramComponentIds.map((id) => this.store.loadDiagramComponent(setId, id))
       );
@@ -1974,7 +2161,7 @@ export class DiagramApplication {
       const createdAt = timestamp();
       const promptBuild = createGenerationPromptConfig({
         id: this.store.ids.promptConfig(),
-        diagramSet: set,
+        diagramSet: { ...set, featuredViewIds: settledViewIds },
         codeEntities: {
           ...entities,
           entities: [...entities.entities, ...importedCodeEntities]
@@ -2166,8 +2353,8 @@ export class DiagramApplication {
           diagramSetId: setId,
           viewKind: outputViewKind!,
           representationKind: outputViewKind === "diagram" ? "diagram" : "tree",
-          ...(outputViewKind !== "diagram" && set.featuredViewIds.diagram
-            ? { basedOnDiagramId: set.featuredViewIds.diagram }
+          ...(outputViewKind !== "diagram" && settledViewIds.diagram
+            ? { basedOnDiagramId: settledViewIds.diagram }
             : {}),
           handle,
           name: draft.name.trim(),

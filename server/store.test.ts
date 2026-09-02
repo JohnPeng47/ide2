@@ -3,7 +3,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { DiagramStore } from "./store";
-import { SCHEMA_VERSION, type DiagramRecord } from "../src/domain";
+import { SCHEMA_VERSION, type DiagramRecord, type PlanRecord } from "../src/domain";
+import { asciiSha256 } from "../src/asciiSha256";
 import { generationPromptBindings, promptTemplate } from "../src/prompt";
 
 const roots: string[] = [];
@@ -13,6 +14,218 @@ afterEach(async () => {
 });
 
 describe("DiagramStore", () => {
+  it("persists Plan manifests separately from their Markdown documents", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-plan-store-"));
+    roots.push(root);
+    await mkdir(path.join(root, ".git"));
+    const store = new DiagramStore(root);
+    const project = await store.ensureProject({
+      checkoutRoot: root,
+      repositoryIdentity: path.join(root, ".git")
+    });
+    const plan: PlanRecord = {
+      schemaVersion: SCHEMA_VERSION,
+      id: "plan-one",
+      projectId: project.id,
+      title: "Plan one",
+      status: "active",
+      markdown: "# Plan one\n\nRead-only projections.",
+      selection: {
+        availability: "recorded",
+        affectedCodeEntities: [],
+        diagramCandidates: [],
+        selectedDiagramIds: []
+      },
+      changes: [],
+      createdAt: "2026-09-01T00:00:00.000Z",
+      updatedAt: "2026-09-01T00:00:00.000Z"
+    };
+
+    await store.savePlan(plan);
+
+    await expect(store.loadPlans()).resolves.toEqual([plan]);
+    await expect(readFile(path.join(root, ".diagrams", "plans", "plan-one", "plan.md"), "utf8"))
+      .resolves.toBe(plan.markdown);
+    const manifest = await readFile(
+      path.join(root, ".diagrams", "plans", "plan-one", "plan.json"),
+      "utf8"
+    );
+    expect(manifest).toContain('"markdownPath": "plan.md"');
+    expect(manifest).toContain('"selectionPath": "selection.json"');
+    expect(manifest).not.toContain("Read-only projections.");
+  });
+
+  it("persists modified Diagram bases, outputs, and diffs as referenced Plan artifacts", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-plan-artifacts-"));
+    roots.push(root);
+    await mkdir(path.join(root, ".git"));
+    const store = new DiagramStore(root);
+    const project = await store.ensureProject({
+      checkoutRoot: root,
+      repositoryIdentity: path.join(root, ".git")
+    });
+    const baseAscii = "before target after";
+    const baseDiagram: DiagramRecord = {
+      schemaVersion: SCHEMA_VERSION,
+      id: "diagram-one",
+      diagramSetId: "set-one",
+      viewKind: "diagram",
+      handle: "diagram-one",
+      name: "Diagram one",
+      ascii: baseAscii,
+      representationKind: "diagram",
+      codeEntityIds: [],
+      origin: "materialized",
+      derivedFromDiagramIds: [],
+      createdAt: "2026-09-01T00:00:00.000Z"
+    };
+    const plan: PlanRecord = {
+      schemaVersion: SCHEMA_VERSION,
+      id: "plan-artifacts",
+      projectId: project.id,
+      title: "Persisted proposal",
+      status: "active",
+      markdown: "# Persisted proposal",
+      selection: {
+        availability: "recorded",
+        affectedCodeEntities: [],
+        diagramCandidates: [{ diagramId: baseDiagram.id, decision: "include", reason: "Affected" }],
+        selectedDiagramIds: [baseDiagram.id]
+      },
+      changes: [{
+        id: "change-one",
+        kind: "diagram-modified",
+        mode: "partial",
+        diagramSetId: baseDiagram.diagramSetId,
+        diagramId: baseDiagram.id,
+        label: baseDiagram.name,
+        baseDiagram,
+        baseAsciiSha256: asciiSha256(baseAscii),
+        patch: { start: 7, deletedText: "target", insertedText: "output" },
+        outputAscii: "before output after"
+      }],
+      createdAt: "2026-09-01T00:00:00.000Z",
+      updatedAt: "2026-09-01T00:00:00.000Z"
+    };
+
+    await store.savePlan(plan);
+
+    await expect(store.loadPlan(plan.id)).resolves.toEqual(plan);
+    const planRoot = path.join(root, ".diagrams", "plans", plan.id);
+    await expect(readFile(path.join(planRoot, "changes", "change-one", "base.txt"), "utf8"))
+      .resolves.toBe(baseAscii);
+    await expect(readFile(path.join(planRoot, "changes", "change-one", "output.txt"), "utf8"))
+      .resolves.toBe("before output after");
+    const manifest = await readFile(path.join(planRoot, "plan.json"), "utf8");
+    expect(manifest).toContain('"path": "changes/change-one/change.json"');
+    expect(manifest).not.toContain("before output after");
+  });
+
+  it("round-trips complete updates, added Diagrams, and CodeEntity compaction artifacts", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-plan-change-kinds-"));
+    roots.push(root);
+    await mkdir(path.join(root, ".git"));
+    const store = new DiagramStore(root);
+    const project = await store.ensureProject({
+      checkoutRoot: root,
+      repositoryIdentity: path.join(root, ".git")
+    });
+    const baseDiagram: DiagramRecord = {
+      schemaVersion: SCHEMA_VERSION,
+      id: "diagram-complete",
+      diagramSetId: "set-one",
+      viewKind: "diagram",
+      handle: "complete",
+      name: "Complete",
+      ascii: "old composition",
+      representationKind: "diagram",
+      codeEntityIds: ["entity-one"],
+      origin: "materialized",
+      derivedFromDiagramIds: [],
+      createdAt: "2026-09-01T00:00:00.000Z"
+    };
+    const baseEntity = {
+      id: "entity-one",
+      handle: "entity-one",
+      label: "Entity one",
+      category: "operation" as const,
+      summary: "Entity one",
+      sourceRanges: [{ id: "range-one", path: "src/one.ts", startLine: 1, endLine: 5 }]
+    };
+    const compactedSource = {
+      level: "high" as const,
+      sections: [{
+        kind: "collapsed-comment" as const,
+        startLine: 1,
+        endLine: 5,
+        comment: "Implementation details"
+      }]
+    };
+    const plan: PlanRecord = {
+      schemaVersion: SCHEMA_VERSION,
+      id: "plan-all-change-kinds",
+      projectId: project.id,
+      title: "All change kinds",
+      status: "active",
+      markdown: "# All change kinds",
+      selection: {
+        availability: "recorded",
+        affectedCodeEntities: [{ id: baseEntity.id, sourceRanges: ["src/one.ts:1-5"] }],
+        diagramCandidates: [{ diagramId: baseDiagram.id, decision: "include", reason: "Affected" }],
+        selectedDiagramIds: [baseDiagram.id]
+      },
+      changes: [{
+        id: "complete-update",
+        kind: "diagram-modified",
+        mode: "complete",
+        diagramSetId: baseDiagram.diagramSetId,
+        diagramId: baseDiagram.id,
+        label: baseDiagram.name,
+        baseDiagram,
+        baseAsciiSha256: asciiSha256(baseDiagram.ascii),
+        patch: { start: 0, deletedText: baseDiagram.ascii, insertedText: "new composition" },
+        outputAscii: "new composition"
+      }, {
+        id: "added-diagram",
+        kind: "diagram-added",
+        label: "New relationship",
+        draft: {
+          diagramSetId: "set-one",
+          viewKind: "diagram",
+          representationKind: "diagram",
+          handle: "new-relationship",
+          name: "New relationship",
+          ascii: "new diagram",
+          codeEntityIds: [baseEntity.id]
+        }
+      }, {
+        id: "compaction-change",
+        kind: "code-entity-compaction",
+        diagramSetId: "set-one",
+        codeEntityId: baseEntity.id,
+        sourceRangeId: "range-one",
+        label: baseEntity.label,
+        baseEntity,
+        compactedSource
+      }],
+      createdAt: "2026-09-01T00:00:00.000Z",
+      updatedAt: "2026-09-01T00:00:00.000Z"
+    };
+
+    await store.savePlan(plan);
+
+    await expect(store.loadPlan(plan.id)).resolves.toEqual(plan);
+    const changesRoot = path.join(root, ".diagrams", "plans", plan.id, "changes");
+    await expect(readFile(path.join(changesRoot, "complete-update", "output.txt"), "utf8"))
+      .resolves.toBe("new composition");
+    await expect(readFile(path.join(changesRoot, "added-diagram", "output.txt"), "utf8"))
+      .resolves.toBe("new diagram");
+    await expect(readFile(path.join(changesRoot, "compaction-change", "base.json"), "utf8"))
+      .resolves.toContain('"compactedSource": null');
+    await expect(readFile(path.join(changesRoot, "compaction-change", "output.json"), "utf8"))
+      .resolves.toContain("Implementation details");
+  });
+
   it("normalizes legacy projects to an explicit source-code corpus", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "new-diagram-legacy-project-"));
     roots.push(root);

@@ -172,6 +172,9 @@ export interface DiagramSetRecord {
   error?: string;
 }
 
+/** Compatibility name while persisted DiagramSet records are reinterpreted as generation sessions. */
+export type GenerationSessionRecord = DiagramSetRecord;
+
 /** One immediate child of a live repository directory. */
 export interface RepositoryEntry {
   path: string;
@@ -569,8 +572,113 @@ export interface EditSessionRecord {
   updatedAt: string;
 }
 
+export type PlanStatus = "draft" | "active" | "complete";
+
+export interface PlanAffectedCodeEntity {
+  id: string;
+  sourceRanges: string[];
+}
+
+export interface PlanDiagramCandidate {
+  diagramId: string;
+  decision: "include" | "exclude";
+  reason: string;
+}
+
+export interface PlanDiagramSelection {
+  availability: "recorded" | "unavailable";
+  affectedCodeEntities: PlanAffectedCodeEntity[];
+  diagramCandidates: PlanDiagramCandidate[];
+  selectedDiagramIds: string[];
+}
+
+export interface PlanGenerationMetadata {
+  availability: "recorded" | "unavailable";
+  prompt?: string;
+  contextDiagramIds: string[];
+  agentRunId?: string;
+}
+
+export interface PlanMigrationMetadata {
+  sourceFormat: "legacy-inline-plan";
+  migratedAt: string;
+  missingMetadata: Array<"diagram-selection" | "generation-prompt" | "generation-context">;
+}
+
+export interface PlanModifiedDiagramChange {
+  id: string;
+  kind: "diagram-modified";
+  mode: "partial" | "complete";
+  diagramSetId: string;
+  diagramId: string;
+  label: string;
+  /** Immutable diagram snapshot used to render this proposal without consulting canonical state. */
+  baseDiagram: DiagramRecord;
+  baseAsciiSha256: string;
+  patch: TextPatch;
+  /** Fully materialized proposal output. */
+  outputAscii: string;
+  semanticDiff?: import("./partialDiff").PartialDiffDefinition;
+  generation?: PlanGenerationMetadata;
+}
+
+export interface PlanAddedDiagramDraft {
+  diagramSetId: string;
+  viewKind: DiagramViewKind;
+  representationKind: "tree" | "diagram";
+  handle: string;
+  name: string;
+  ascii: string;
+  codeEntityIds: string[];
+}
+
+export interface PlanAddedDiagramChange {
+  id: string;
+  kind: "diagram-added";
+  label: string;
+  draft: PlanAddedDiagramDraft;
+  generation?: PlanGenerationMetadata;
+}
+
+export interface PlanCodeEntityCompactionChange {
+  id: string;
+  kind: "code-entity-compaction";
+  diagramSetId: string;
+  codeEntityId: string;
+  sourceRangeId: string;
+  label: string;
+  /** Immutable entity snapshot used to render this proposal without canonical entity state. */
+  baseEntity: CodeEntityRecord;
+  baseCompactedSource?: CompactedSource;
+  compactedSource: CompactedSource;
+}
+
+export type PlanChange =
+  | PlanModifiedDiagramChange
+  | PlanAddedDiagramChange
+  | PlanCodeEntityCompactionChange;
+
+/** A proposal container. Its changes are projected for display and never canonical records. */
+export interface PlanRecord {
+  schemaVersion: typeof SCHEMA_VERSION;
+  id: string;
+  projectId: string;
+  title: string;
+  status: PlanStatus;
+  markdown: string;
+  selection: PlanDiagramSelection;
+  changes: PlanChange[];
+  migration?: PlanMigrationMetadata;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface WorkspaceSnapshot {
   project: ProjectRecord | null;
+  /** Project-scoped corpus presentation shared by every generation session. */
+  corpusCompactions?: import("./projectCatalog").ProjectCorpusCompactionCatalogRecord;
+  /** Settled Project representations, independent from their source generation sessions. */
+  representationCatalog?: import("./projectCatalog").ProjectRepresentationCatalogRecord;
   diagramSets: DiagramSetRecord[];
   globalImports: ImportedArtifactLibraryRecord;
   codeEntitySets: Record<string, CodeEntitiesSetRecord>;
@@ -593,6 +701,8 @@ export interface WorkspaceSnapshot {
   codeEntityMaps: Record<string, DiagramCodeEntityMapRecord>;
   /** Optional for compatibility with workspaces persisted before highlights existed. */
   highlights?: Array<DiagramHighlightRecord | HighlightRecordV2>;
+  /** Project-side proposals; absent in workspaces persisted before Plans existed. */
+  plans?: PlanRecord[];
 }
 
 export interface CodeEntityDraft {

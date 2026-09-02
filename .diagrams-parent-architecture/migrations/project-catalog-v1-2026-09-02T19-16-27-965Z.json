@@ -1,0 +1,22 @@
+{
+  "migration": "project-catalog-v1",
+  "mode": "purge-only",
+  "sourceSetId": "set-55bf33cb-1b5e-4d00-b3e8-eb4c80c479b6",
+  "supersededSetIds": [
+    "set-c5a8baa9-dcf7-4882-8e10-7483e9437687",
+    "set-2734923b-c97a-41f5-a224-aa320279c869",
+    "set-a6c18f14-2db6-4aea-9af0-5aef5db782d1",
+    "set-08ffa322-7c6a-49c2-b674-867370d907b6",
+    "set-55bf33cb-1b5e-4d00-b3e8-eb4c80c479b6"
+  ],
+  "migrated": [],
+  "deleted": [],
+  "purged": [
+    "set-08ffa322-7c6a-49c2-b674-867370d907b6-2026-09-02T19-15-16-633Z",
+    "set-2734923b-c97a-41f5-a224-aa320279c869-2026-09-02T19-15-16-418Z",
+    "set-55bf33cb-1b5e-4d00-b3e8-eb4c80c479b6-2026-09-02T19-15-16-712Z",
+    "set-a6c18f14-2db6-4aea-9af0-5aef5db782d1-2026-09-02T19-15-16-544Z",
+    "set-c5a8baa9-dcf7-4882-8e10-7483e9437687-2026-09-02T19-15-16-300Z"
+  ],
+  "completedAt": "2026-09-02T19:16:27.965Z"
+}

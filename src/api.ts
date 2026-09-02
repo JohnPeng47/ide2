@@ -14,6 +14,10 @@ import type {
   MappedArtifactBundle,
   MaterializedDiagramSetInput,
   MaterializedDiagramSetResult,
+  PlanChange,
+  PlanDiagramSelection,
+  PlanRecord,
+  PlanStatus,
   RepositoryDirectoryListing,
   SystemPromptTemplateRecord,
   WorkspaceSnapshot
@@ -32,6 +36,12 @@ import type {
   RepresentationGraphRecord
 } from "./representationGraph";
 import type { SpatialProgressState } from "./agentWork";
+import type {
+  ProjectCorpusCompactionCatalogRecord,
+  ProjectFileCompactionInput,
+  ProjectRepresentationCatalogRecord,
+  PromoteProjectRepresentationInput
+} from "./projectCatalog";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -48,6 +58,78 @@ export async function fetchWorkspace(): Promise<WorkspaceSnapshot> {
   const response = await apiFetch("/api/workspace", { cache: "no-store" });
   if (!response.ok) throw await errorFrom(response);
   return response.json() as Promise<WorkspaceSnapshot>;
+}
+
+export async function fetchProjectCorpusCompactions(): Promise<ProjectCorpusCompactionCatalogRecord> {
+  const response = await apiFetch("/api/project/corpus-compactions", { cache: "no-store" });
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<ProjectCorpusCompactionCatalogRecord>;
+}
+
+export async function upsertProjectFileCompaction(
+  input: ProjectFileCompactionInput
+): Promise<WorkspaceSnapshot> {
+  const response = await apiFetch("/api/project/corpus-compactions", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input)
+  });
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<WorkspaceSnapshot>;
+}
+
+export async function fetchProjectRepresentations(): Promise<ProjectRepresentationCatalogRecord> {
+  const response = await apiFetch("/api/project/representations", { cache: "no-store" });
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<ProjectRepresentationCatalogRecord>;
+}
+
+export async function promoteProjectRepresentation(
+  input: PromoteProjectRepresentationInput
+): Promise<WorkspaceSnapshot> {
+  const response = await apiFetch("/api/project/representations/promote", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input)
+  });
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<WorkspaceSnapshot>;
+}
+
+export async function fetchPlans(): Promise<PlanRecord[]> {
+  const response = await apiFetch("/api/plans", { cache: "no-store" });
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<PlanRecord[]>;
+}
+
+export async function createPlan(input: {
+  id?: string;
+  title: string;
+  status?: PlanStatus;
+  markdown: string;
+  selection?: PlanDiagramSelection;
+  changes?: PlanChange[];
+}): Promise<PlanRecord> {
+  const response = await apiFetch("/api/plans", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input)
+  });
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<PlanRecord>;
+}
+
+export async function updatePlan(
+  planId: string,
+  input: Partial<Pick<PlanRecord, "title" | "status" | "markdown" | "selection" | "changes">>
+): Promise<PlanRecord> {
+  const response = await apiFetch(`/api/plans/${encodeURIComponent(planId)}`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(input)
+  });
+  if (!response.ok) throw await errorFrom(response);
+  return response.json() as Promise<PlanRecord>;
 }
 
 export async function createMaterializedDiagramSet(

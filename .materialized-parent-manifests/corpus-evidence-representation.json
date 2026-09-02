@@ -1,0 +1,586 @@
+{
+  "creationMode": "materialized",
+  "path": "/home/john/.herdr/worktrees/new-diagram/worktree-transcripts",
+  "name": "Code-Level Corpus, Evidence, and Representation Graph",
+  "domainProfileId": "source-code",
+  "description": "Project-scoped corpus compactions and settled Representation revisions, with DiagramSets retained only as candidate-generation sessions.",
+  "codeEntities": [
+    {
+      "key": "diagram-store",
+      "handle": "diagram-store",
+      "label": "DiagramStore",
+      "category": "state",
+      "summary": "Owns the filesystem-backed persistence root and the operations that read and write workspace records.",
+      "sourceRanges": [
+        {
+          "key": "definition",
+          "path": "server/store.ts",
+          "startLine": 176,
+          "endLine": 183,
+          "symbol": "DiagramStore"
+        }
+      ]
+    },
+    {
+      "key": "diagram-store-load-workspace",
+      "handle": "diagram-store-load-workspace",
+      "label": "DiagramStore.loadWorkspace",
+      "category": "operation",
+      "summary": "Materializes the project, DiagramSets, evidence collections, artifacts, mappings, runs, and refinement state into one snapshot.",
+      "sourceRanges": [
+        {
+          "key": "definition",
+          "path": "server/store.ts",
+          "startLine": 1527,
+          "endLine": 1665,
+          "symbol": "DiagramStore.loadWorkspace"
+        }
+      ]
+    },
+    {
+      "key": "workspace-snapshot",
+      "handle": "workspace-snapshot",
+      "label": "WorkspaceSnapshot",
+      "category": "interface-data-struct",
+      "summary": "Aggregates the persisted and imported records consumed by the application UI.",
+      "sourceRanges": [
+        {
+          "key": "definition",
+          "path": "src/domain.ts",
+          "startLine": 572,
+          "endLine": 596,
+          "symbol": "WorkspaceSnapshot"
+        }
+      ]
+    },
+    {
+      "key": "project-record",
+      "handle": "project-record",
+      "label": "ProjectRecord",
+      "category": "interface-data-struct",
+      "summary": "Persists repository identity, domain profile, concrete corpus binding, and owned DiagramSet identifiers.",
+      "sourceRanges": [
+        {
+          "key": "definition",
+          "path": "src/domain.ts",
+          "startLine": 136,
+          "endLine": 149,
+          "symbol": "ProjectRecord"
+        }
+      ]
+    },
+    {
+      "key": "diagram-set-record",
+      "handle": "diagram-set-record",
+      "label": "DiagramSetRecord",
+      "category": "interface-data-struct",
+      "summary": "Joins one evidence collection to its diagrams, components, runs, batches, and readiness lifecycle.",
+      "sourceRanges": [
+        {
+          "key": "definition",
+          "path": "src/domain.ts",
+          "startLine": 151,
+          "endLine": 173,
+          "symbol": "DiagramSetRecord"
+        }
+      ]
+    },
+    {
+      "key": "corpus-binding",
+      "handle": "corpus-binding",
+      "label": "CorpusBinding",
+      "category": "interface-data-struct",
+      "summary": "Discriminates Git-worktree and filesystem-document corpora and records their concrete roots.",
+      "sourceRanges": [
+        {
+          "key": "definition",
+          "path": "src/domainProfile.ts",
+          "startLine": 7,
+          "endLine": 9,
+          "symbol": "CorpusBinding"
+        }
+      ]
+    },
+    {
+      "key": "corpus-provider",
+      "handle": "corpus-provider",
+      "label": "corpusProvider",
+      "category": "operation",
+      "summary": "Selects the readable runtime provider for a persisted corpus binding.",
+      "sourceRanges": [
+        {
+          "key": "definition",
+          "path": "server/corpus.ts",
+          "startLine": 108,
+          "endLine": 115,
+          "symbol": "corpusProvider"
+        }
+      ]
+    },
+    {
+      "key": "code-entities-set-record",
+      "handle": "code-entities-set-record",
+      "label": "CodeEntitiesSetRecord",
+      "category": "interface-data-struct",
+      "summary": "Owns the revisioned CodeEntity evidence collection and its collection lifecycle state.",
+      "sourceRanges": [
+        {
+          "key": "definition",
+          "path": "src/domain.ts",
+          "startLine": 123,
+          "endLine": 134,
+          "symbol": "CodeEntitiesSetRecord"
+        }
+      ]
+    },
+    {
+      "key": "code-entity-record",
+      "handle": "code-entity-record",
+      "label": "CodeEntityRecord",
+      "category": "interface-data-struct",
+      "summary": "Persists one named evidence entity together with ownership, category, summary, and source anchors.",
+      "sourceRanges": [
+        {
+          "key": "definition",
+          "path": "src/domain.ts",
+          "startLine": 112,
+          "endLine": 121,
+          "symbol": "CodeEntityRecord"
+        }
+      ]
+    },
+    {
+      "key": "source-range",
+      "handle": "source-range",
+      "label": "SourceRange",
+      "category": "interface-data-struct",
+      "summary": "Anchors evidence to exact corpus lines and optionally retains immutable source and compaction metadata.",
+      "sourceRanges": [
+        {
+          "key": "definition",
+          "path": "src/domain.ts",
+          "startLine": 99,
+          "endLine": 110,
+          "symbol": "SourceRange"
+        }
+      ]
+    },
+    {
+      "key": "diagram-record",
+      "handle": "diagram-record",
+      "label": "DiagramRecord",
+      "category": "interface-data-struct",
+      "summary": "Persists complete ASCII, representation semantics, evidence membership, provenance, and derivation lineage.",
+      "sourceRanges": [
+        {
+          "key": "definition",
+          "path": "src/domain.ts",
+          "startLine": 380,
+          "endLine": 402,
+          "symbol": "DiagramRecord"
+        }
+      ]
+    },
+    {
+      "key": "diagram-code-entity-map-record",
+      "handle": "diagram-code-entity-map-record",
+      "label": "DiagramCodeEntityMapRecord",
+      "category": "interface-data-struct",
+      "summary": "Binds an exact artifact revision to its spatial evidence mappings using artifact identity and ASCII hash.",
+      "sourceRanges": [
+        {
+          "key": "definition",
+          "path": "src/domain.ts",
+          "startLine": 419,
+          "endLine": 431,
+          "symbol": "DiagramCodeEntityMapRecord"
+        }
+      ]
+    },
+    {
+      "key": "diagram-element-mapping",
+      "handle": "diagram-element-mapping",
+      "label": "DiagramElementMapping",
+      "category": "interface-data-struct",
+      "summary": "Connects one visible ASCII span to a CodeEntity and one of its stable or indexed source ranges.",
+      "sourceRanges": [
+        {
+          "key": "definition",
+          "path": "src/domain.ts",
+          "startLine": 408,
+          "endLine": 417,
+          "symbol": "DiagramElementMapping"
+        }
+      ]
+    },
+    {
+      "key": "build-representation-index",
+      "handle": "build-representation-index",
+      "label": "buildRepresentationIndex",
+      "category": "operation",
+      "summary": "Builds the explicitly requested tree or diagram runtime index for one revision-pinned ASCII artifact.",
+      "sourceRanges": [
+        {
+          "key": "definition",
+          "path": "src/representationIndex.ts",
+          "startLine": 249,
+          "endLine": 254,
+          "symbol": "buildRepresentationIndex"
+        }
+      ]
+    },
+    {
+      "key": "representation-index",
+      "handle": "representation-index",
+      "label": "RepresentationIndex",
+      "category": "interface-data-struct",
+      "summary": "Unifies the tree and free-form diagram indexes produced for a representation revision.",
+      "sourceRanges": [
+        {
+          "key": "definition",
+          "path": "src/representationIndex.ts",
+          "startLine": 44,
+          "endLine": 50,
+          "symbol": "RepresentationIndex"
+        }
+      ]
+    },
+    {
+      "key": "tree-representation-node",
+      "handle": "tree-representation-node",
+      "label": "TreeRepresentationNode",
+      "category": "interface-data-struct",
+      "summary": "Represents one stable tree node with hierarchy, spatial line identity, mappings, and evidence links.",
+      "sourceRanges": [
+        {
+          "key": "definition",
+          "path": "src/representationIndex.ts",
+          "startLine": 15,
+          "endLine": 26,
+          "symbol": "TreeRepresentationNode"
+        }
+      ]
+    },
+    {
+      "key": "diagram-representation-element",
+      "handle": "diagram-representation-element",
+      "label": "DiagramRepresentationElement",
+      "category": "interface-data-struct",
+      "summary": "Represents one exact free-form diagram element and its evidence links at ASCII coordinates.",
+      "sourceRanges": [
+        {
+          "key": "definition",
+          "path": "src/representationIndex.ts",
+          "startLine": 35,
+          "endLine": 42,
+          "symbol": "DiagramRepresentationElement"
+        }
+      ]
+    },
+    {
+      "key": "evidence-element-link",
+      "handle": "evidence-element-link",
+      "label": "EvidenceElementLink",
+      "category": "interface-data-struct",
+      "summary": "Carries the evidence identity and stable or indexed source-range identity attached to a representation element.",
+      "sourceRanges": [
+        {
+          "key": "definition",
+          "path": "src/representationIndex.ts",
+          "startLine": 9,
+          "endLine": 13,
+          "symbol": "EvidenceElementLink"
+        }
+      ]
+    },
+    {
+      "key": "generation-session-record",
+      "handle": "generation-session-record",
+      "label": "GenerationSessionRecord",
+      "category": "interface-data-struct",
+      "summary": "Names DiagramSet compatibility records by their peripheral role: collecting Evidence and producing candidate artifacts.",
+      "sourceRanges": [
+        {
+          "key": "definition",
+          "path": "src/domain.ts",
+          "startLine": 176,
+          "endLine": 176,
+          "symbol": "GenerationSessionRecord"
+        }
+      ]
+    },
+    {
+      "key": "project-file-compaction-record",
+      "handle": "project-file-compaction-record",
+      "label": "ProjectFileCompactionRecord",
+      "category": "interface-data-struct",
+      "summary": "Stores one immutable, source-hashed file compaction independently of a generation session.",
+      "sourceRanges": [
+        {
+          "key": "definition",
+          "path": "src/projectCatalog.ts",
+          "startLine": 16,
+          "endLine": 34,
+          "symbol": "ProjectFileCompactionRecord"
+        }
+      ]
+    },
+    {
+      "key": "project-corpus-compaction-catalog",
+      "handle": "project-corpus-compaction-catalog",
+      "label": "ProjectCorpusCompactionCatalogRecord",
+      "category": "interface-data-struct",
+      "summary": "Owns Project-wide compaction history and the active compaction for each corpus path.",
+      "sourceRanges": [
+        {
+          "key": "definition",
+          "path": "src/projectCatalog.ts",
+          "startLine": 36,
+          "endLine": 44,
+          "symbol": "ProjectCorpusCompactionCatalogRecord"
+        }
+      ]
+    },
+    {
+      "key": "project-representation-revision",
+      "handle": "project-representation-revision",
+      "label": "ProjectRepresentationRevisionRecord",
+      "category": "interface-data-struct",
+      "summary": "Snapshots immutable settled ASCII, Evidence, spatial mappings, and optional source-session provenance.",
+      "sourceRanges": [
+        {
+          "key": "definition",
+          "path": "src/projectCatalog.ts",
+          "startLine": 90,
+          "endLine": 106,
+          "symbol": "ProjectRepresentationRevisionRecord"
+        }
+      ]
+    },
+    {
+      "key": "project-representation-record",
+      "handle": "project-representation-record",
+      "label": "ProjectRepresentationRecord",
+      "category": "interface-data-struct",
+      "summary": "Provides the durable settled Representation identity and current immutable revision.",
+      "sourceRanges": [
+        {
+          "key": "definition",
+          "path": "src/projectCatalog.ts",
+          "startLine": 108,
+          "endLine": 121,
+          "symbol": "ProjectRepresentationRecord"
+        }
+      ]
+    },
+    {
+      "key": "project-representation-catalog",
+      "handle": "project-representation-catalog",
+      "label": "ProjectRepresentationCatalogRecord",
+      "category": "interface-data-struct",
+      "summary": "Owns settled Representations and active selections by view kind at Project scope.",
+      "sourceRanges": [
+        {
+          "key": "definition",
+          "path": "src/projectCatalog.ts",
+          "startLine": 123,
+          "endLine": 131,
+          "symbol": "ProjectRepresentationCatalogRecord"
+        }
+      ]
+    },
+    {
+      "key": "project-catalog-store",
+      "handle": "project-catalog-store",
+      "label": "ProjectCatalogStore",
+      "category": "state",
+      "summary": "Persists Project-level corpus compactions and settled Representation revisions outside generation sessions.",
+      "sourceRanges": [
+        {
+          "key": "definition",
+          "path": "server/projectCatalogStore.ts",
+          "startLine": 94,
+          "endLine": 299,
+          "symbol": "ProjectCatalogStore"
+        }
+      ]
+    },
+    {
+      "key": "upsert-file-compaction",
+      "handle": "upsert-file-compaction",
+      "label": "ProjectCatalogStore.upsertFileCompaction",
+      "category": "operation",
+      "summary": "Content-addresses and persists a file compaction, optionally selecting it for the live Project path.",
+      "sourceRanges": [
+        {
+          "key": "definition",
+          "path": "server/projectCatalogStore.ts",
+          "startLine": 118,
+          "endLine": 187,
+          "symbol": "upsertFileCompaction"
+        }
+      ]
+    },
+    {
+      "key": "promote-representation",
+      "handle": "promote-representation",
+      "label": "ProjectCatalogStore.promoteRepresentation",
+      "category": "operation",
+      "summary": "Creates or reuses an immutable settled revision and updates the Project Representation catalog.",
+      "sourceRanges": [
+        {
+          "key": "definition",
+          "path": "server/projectCatalogStore.ts",
+          "startLine": 203,
+          "endLine": 272,
+          "symbol": "promoteRepresentation"
+        }
+      ]
+    },
+    {
+      "key": "promote-project-representation",
+      "handle": "promote-project-representation",
+      "label": "DiagramApplication.promoteProjectRepresentation",
+      "category": "operation",
+      "summary": "Snapshots a generated candidate and its Evidence/mappings into the settled Project catalog.",
+      "sourceRanges": [
+        {
+          "key": "definition",
+          "path": "server/application.ts",
+          "startLine": 318,
+          "endLine": 426,
+          "symbol": "promoteProjectRepresentation"
+        }
+      ]
+    }
+  ],
+  "diagrams": [
+    {
+      "key": "project-corpus-settled-representations",
+      "handle": "project-corpus-settled-representations",
+      "name": "Project Corpus and Settled Representations",
+      "viewKind": "diagram",
+      "representationKind": "diagram",
+      "ascii": "Legend: [P] persisted, [R] runtime, [X] external content.\n\n             PROJECT-SCOPED CORPUS AND SETTLED REPRESENTATIONS\n\n[P] ProjectRecord\n |\n +--> corpus -----------------------> [P] CorpusBinding\n |                                        |\n |                              [R] function corpusProvider(...)\n |                                        |\n |                                        v\n |                             [X] Git worktree / documents\n |\n +--> catalogs ---------------------> [R] ProjectCatalogStore\n |                                        |\n |              +-------------------------+-------------------------+\n |              |                                                   |\n |              v                                                   v\n | [P] ProjectCorpusCompactionCatalogRecord       [P] ProjectRepresentationCatalogRecord\n |     activeByPath[path]                              activeByKind[viewKind]\n |              |                                                   |\n |              v                                                   v\n | [P] ProjectFileCompactionRecord                  [P] ProjectRepresentationRecord\n |     source hash + profile + sections                  currentRevisionId\n |              ^                                                   |\n |              | method upsertFileCompaction(...)                  v\n |              |                               [P] ProjectRepresentationRevisionRecord\n |              |                                   immutable ASCII + Evidence + mappings\n |              |                                                   |\n |              |                                                   v\n |              |                                [R] function buildRepresentationIndex(...)\n |\n `--> [P] GenerationSessionRecord\n      compatibility storage: DiagramSetRecord\n      owns CodeEntities + candidate Diagrams + runs\n                         |\n                         | method promoteProjectRepresentation(...)\n                         v\n                  [R] ProjectCatalogStore\n                         |\n                         `--> method promoteRepresentation(...)\n                              snapshots candidate + Evidence + mappings\n                              into the immutable settled revision above\n\nSESSION DELETION BOUNDARY\nGeneration Session removed ----X----> Project compactions / settled Representations",
+      "codeEntityKeys": [
+        "project-record",
+        "corpus-binding",
+        "corpus-provider",
+        "project-catalog-store",
+        "project-corpus-compaction-catalog",
+        "project-representation-catalog",
+        "project-file-compaction-record",
+        "project-representation-record",
+        "upsert-file-compaction",
+        "project-representation-revision",
+        "build-representation-index",
+        "generation-session-record",
+        "promote-project-representation",
+        "promote-representation"
+      ],
+      "mappings": [
+        {
+          "entityKey": "project-record",
+          "sourceRangeKey": "definition",
+          "line": 5,
+          "startColumn": 5,
+          "endColumn": 17
+        },
+        {
+          "entityKey": "corpus-binding",
+          "sourceRangeKey": "definition",
+          "line": 7,
+          "startColumn": 43,
+          "endColumn": 55
+        },
+        {
+          "entityKey": "corpus-provider",
+          "sourceRangeKey": "definition",
+          "line": 9,
+          "startColumn": 46,
+          "endColumn": 59
+        },
+        {
+          "entityKey": "project-catalog-store",
+          "sourceRangeKey": "definition",
+          "line": 14,
+          "startColumn": 43,
+          "endColumn": 61
+        },
+        {
+          "entityKey": "project-corpus-compaction-catalog",
+          "sourceRangeKey": "definition",
+          "line": 19,
+          "startColumn": 8,
+          "endColumn": 43
+        },
+        {
+          "entityKey": "project-representation-catalog",
+          "sourceRangeKey": "definition",
+          "line": 19,
+          "startColumn": 55,
+          "endColumn": 88
+        },
+        {
+          "entityKey": "project-file-compaction-record",
+          "sourceRangeKey": "definition",
+          "line": 23,
+          "startColumn": 8,
+          "endColumn": 34
+        },
+        {
+          "entityKey": "project-representation-record",
+          "sourceRangeKey": "definition",
+          "line": 23,
+          "startColumn": 57,
+          "endColumn": 83
+        },
+        {
+          "entityKey": "upsert-file-compaction",
+          "sourceRangeKey": "definition",
+          "line": 26,
+          "startColumn": 26,
+          "endColumn": 45
+        },
+        {
+          "entityKey": "project-representation-revision",
+          "sourceRangeKey": "definition",
+          "line": 27,
+          "startColumn": 53,
+          "endColumn": 87
+        },
+        {
+          "entityKey": "build-representation-index",
+          "sourceRangeKey": "definition",
+          "line": 31,
+          "startColumn": 63,
+          "endColumn": 86
+        },
+        {
+          "entityKey": "generation-session-record",
+          "sourceRangeKey": "definition",
+          "line": 33,
+          "startColumn": 11,
+          "endColumn": 33
+        },
+        {
+          "entityKey": "promote-project-representation",
+          "sourceRangeKey": "definition",
+          "line": 37,
+          "startColumn": 35,
+          "endColumn": 62
+        },
+        {
+          "entityKey": "promote-representation",
+          "sourceRangeKey": "definition",
+          "line": 41,
+          "startColumn": 38,
+          "endColumn": 58
+        }
+      ]
+    }
+  ],
+  "featuredViews": {
+    "diagram": "project-corpus-settled-representations"
+  }
+}

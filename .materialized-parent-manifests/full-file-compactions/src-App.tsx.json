@@ -1,0 +1,881 @@
+{
+  "key": "src-app-tsx-full-file",
+  "handle": "src-app-tsx-full-file",
+  "label": "src/App.tsx full-file compaction",
+  "category": "operation",
+  "summary": "Coordinates the New Diagram studio shell, pane topology, workspace-derived state, generation, artifact lifecycle, editing, evidence navigation, mapping, highlights, and rendered views.",
+  "sourceRanges": [
+    {
+      "key": "full-file",
+      "path": "src/App.tsx",
+      "startLine": 1,
+      "endLine": 2184,
+      "symbol": "App / StudioPage",
+      "compactedSource": {
+        "level": "high",
+        "sections": [
+          {
+            "kind": "collapsed-comment",
+            "startLine": 166,
+            "endLine": 288,
+            "comment": "ApplicationBootstrap\n|\n+--> WORKSPACE MERGE\n|    `--> function mergeMappingWorkspace(...)\n|         +--[!current]--> return incoming\n|         `--> merge target set + run/progress/map dictionaries\n|\n+--> PANE TOPOLOGY\n|    +--> stable pane IDs + storage compatibility keys\n|    +--> function withoutTransientCallGraphFocus(...)\n|    |    `--> remove legacy focus panes -> close transient focus tabs\n|    +--> function explorerPaneTabs(...)\n|    |    `--> clone profile.workspace.explorerTabs\n|    `--> export function createStudioPaneState(...)\n|         +--[restored]--> sanitize -> refresh/migrate Files pane\n|         `--[fresh]----> primary -> context(right) -> files(left)\n|\n+--> RESTORE\n|    `--> function createStudioPaneApi(...)\n|         `--> localStorage layout + legacy split -> PaneApi\n|\n`--> ROUTE\n     `--> function pageFromPath(...)\n          `--> pathname -> \"studio\" | \"experiments\"",
+            "nodes": [
+              {
+                "graphLine": 1,
+                "startLine": 166,
+                "endLine": 288
+              },
+              {
+                "graphLine": 3,
+                "startLine": 166,
+                "endLine": 186
+              },
+              {
+                "graphLine": 4,
+                "startLine": 166,
+                "endLine": 186
+              },
+              {
+                "graphLine": 5,
+                "startLine": 166,
+                "endLine": 186
+              },
+              {
+                "graphLine": 6,
+                "startLine": 166,
+                "endLine": 186
+              },
+              {
+                "graphLine": 8,
+                "startLine": 188,
+                "endLine": 277
+              },
+              {
+                "graphLine": 9,
+                "startLine": 188,
+                "endLine": 277
+              },
+              {
+                "graphLine": 10,
+                "startLine": 204,
+                "endLine": 215
+              },
+              {
+                "graphLine": 11,
+                "startLine": 204,
+                "endLine": 215
+              },
+              {
+                "graphLine": 12,
+                "startLine": 217,
+                "endLine": 219
+              },
+              {
+                "graphLine": 13,
+                "startLine": 217,
+                "endLine": 219
+              },
+              {
+                "graphLine": 14,
+                "startLine": 221,
+                "endLine": 277
+              },
+              {
+                "graphLine": 15,
+                "startLine": 221,
+                "endLine": 277
+              },
+              {
+                "graphLine": 16,
+                "startLine": 221,
+                "endLine": 277
+              },
+              {
+                "graphLine": 18,
+                "startLine": 279,
+                "endLine": 283
+              },
+              {
+                "graphLine": 19,
+                "startLine": 279,
+                "endLine": 283
+              },
+              {
+                "graphLine": 20,
+                "startLine": 279,
+                "endLine": 283
+              },
+              {
+                "graphLine": 22,
+                "startLine": 285,
+                "endLine": 287
+              },
+              {
+                "graphLine": 23,
+                "startLine": 285,
+                "endLine": 287
+              },
+              {
+                "graphLine": 24,
+                "startLine": 285,
+                "endLine": 287
+              }
+            ]
+          },
+          {
+            "kind": "collapsed-comment",
+            "startLine": 306,
+            "endLine": 955,
+            "comment": "StudioWorkspaceLifecycle\n|\n+--> INITIALIZE\n|    +--> refBuffer + paneApi + paneNavigation\n|    +--> workspace/selection/generation/edit/mapping state\n|    +--> plan selection + stale plan-change projections\n|    +--> const handleMarkdownOutlineChange = useCallback(...)\n|    `--> const handleMarkdownActiveSectionChange = useCallback(...)\n|\n+--> LOAD\n|    `--> const load = useCallback(async (...)\n|         `--> fetchWorkspace() -> workspace -> current/latest DiagramSet\n|\n+--> DERIVE\n|    +--> activeSet -> entitySet + diagrams + components\n|    +--> resolutionEntities -> immutableCodeEntities -> repository paths\n|    +--> prompt profiles + Diagram references\n|    `--> selected artifact -> map/progress/highlights/edit session\n|\n+--> RESTORE DRAFT\n|    `--> const restoreGenerationDraft = (...)\n|         `--> stored/default prompt + valid entities/profile/model -> generation state\n|\n+--> SYNCHRONIZE\n|    +--> pane layout -> localStorage; closed tabs -> prune focus views\n|    +--> active set -> requested/featured/latest artifact or Generation\n|    +--> generation inputs -> persisted page draft\n|    +--> stale selection -> latest viable Diagram/Component\n|    +--> pending collection/generation -> poll load()\n|    `--> const onKeyDown = (...)\n|         `--> Ctrl/Cmd+Z and Shift+Z/Y -> edit undo/redo\n|\n`--> READY BOUNDARY\n     +--[!workspace]-----------------> loading shell\n     +--[!activeSet || !entitySet]---> null\n     `--[ready]----------------------> waiting status + StudioPage actions",
+            "nodes": [
+              {
+                "graphLine": 1,
+                "startLine": 306,
+                "endLine": 955
+              },
+              {
+                "graphLine": 3,
+                "startLine": 306,
+                "endLine": 432
+              },
+              {
+                "graphLine": 4,
+                "startLine": 306,
+                "endLine": 432
+              },
+              {
+                "graphLine": 5,
+                "startLine": 306,
+                "endLine": 432
+              },
+              {
+                "graphLine": 6,
+                "startLine": 306,
+                "endLine": 432
+              },
+              {
+                "graphLine": 7,
+                "startLine": 394,
+                "endLine": 397
+              },
+              {
+                "graphLine": 8,
+                "startLine": 399,
+                "endLine": 408
+              },
+              {
+                "graphLine": 10,
+                "startLine": 434,
+                "endLine": 449
+              },
+              {
+                "graphLine": 11,
+                "startLine": 434,
+                "endLine": 445
+              },
+              {
+                "graphLine": 12,
+                "startLine": 434,
+                "endLine": 445
+              },
+              {
+                "graphLine": 14,
+                "startLine": 451,
+                "endLine": 787
+              },
+              {
+                "graphLine": 15,
+                "startLine": 451,
+                "endLine": 787
+              },
+              {
+                "graphLine": 16,
+                "startLine": 451,
+                "endLine": 787
+              },
+              {
+                "graphLine": 17,
+                "startLine": 451,
+                "endLine": 787
+              },
+              {
+                "graphLine": 18,
+                "startLine": 451,
+                "endLine": 787
+              },
+              {
+                "graphLine": 20,
+                "startLine": 559,
+                "endLine": 604
+              },
+              {
+                "graphLine": 21,
+                "startLine": 559,
+                "endLine": 588
+              },
+              {
+                "graphLine": 22,
+                "startLine": 559,
+                "endLine": 588
+              },
+              {
+                "graphLine": 24,
+                "startLine": 410,
+                "endLine": 933
+              },
+              {
+                "graphLine": 25,
+                "startLine": 410,
+                "endLine": 933
+              },
+              {
+                "graphLine": 26,
+                "startLine": 410,
+                "endLine": 933
+              },
+              {
+                "graphLine": 27,
+                "startLine": 410,
+                "endLine": 933
+              },
+              {
+                "graphLine": 28,
+                "startLine": 410,
+                "endLine": 933
+              },
+              {
+                "graphLine": 29,
+                "startLine": 410,
+                "endLine": 933
+              },
+              {
+                "graphLine": 30,
+                "startLine": 918,
+                "endLine": 930
+              },
+              {
+                "graphLine": 31,
+                "startLine": 918,
+                "endLine": 930
+              },
+              {
+                "graphLine": 33,
+                "startLine": 935,
+                "endLine": 955
+              },
+              {
+                "graphLine": 34,
+                "startLine": 935,
+                "endLine": 955
+              },
+              {
+                "graphLine": 35,
+                "startLine": 935,
+                "endLine": 955
+              },
+              {
+                "graphLine": 36,
+                "startLine": 935,
+                "endLine": 955
+              }
+            ]
+          },
+          {
+            "kind": "collapsed-comment",
+            "startLine": 956,
+            "endLine": 1474,
+            "comment": "ArtifactOperations\n|\n+--> CREATE\n|    `--> const generate = async (...)\n|         +--> prompt + selected Evidence + references + model/profile\n|         +--> generateArtifacts(...)\n|         +--> workspace -> select created Diagram/Component\n|         `--[error/finally]--> message + clear busy state\n|\n+--> PROMPT TEMPLATES\n|    +--> EDIT\n|    |    +--> const updateGenerationPrompt = (...)\n|    |    +--> const updateReferencePrompt = (...)\n|    |    `--> const insertReferenceTokens = (...)\n|    +--> SAVE\n|    |    +--> const persistPromptTemplate = async (...)\n|    |    +--> const persistCodeEntityPromptTemplate = async (...)\n|    |    `--> const savePromptTemplate = (...)\n|    |         +--[generation]--> persistPromptTemplate(...)\n|    |         `--[code entity]--> persistCodeEntityPromptTemplate(...)\n|    +--> RESTORE\n|    |    +--> const restorePromptTemplate = async (...)\n|    |    `--> const restoreCodeEntityPromptTemplate = async (...)\n|    `--> DELETE\n|         +--> const removePromptTemplate = async (...) -> fallback profile\n|         `--> const removeCodeEntityPromptTemplate = async (...)\n|\n+--> DELETE SET\n|    `--> const removeDiagramSet = async (...) -> preserve/fallback active set\n|\n+--> DERIVE\n|    +--> const derive = (...)\n|    |    +--[call graph / directory]--> openGenerate(...)\n|    |    `--[diagram]----------------> buildDerivativePrompt(...) -> restore draft\n|    +--> const deriveComponent = (...) -> build prompt -> restore draft\n|    `--> const leaveDerivative = (...) -> source artifact screen\n|\n+--> TRANSFER\n|    +--> const importArtifact = async (...) -> import -> select artifact\n|    `--> const exportMappedArtifact = async (...) -> bundle -> download\n|\n+--> MANAGE\n|    +--> const rename = async (...)\n|    +--> const archive = async (...)\n|    +--> const toggleStarred = async (...)\n|    +--> const saveCandidateRankings = async (...)\n|    +--> const archiveComponent = async (...)\n|    +--> const capture = async (...)\n|    `--> const captureNested = async (...)\n|\n`--> NAVIGATE\n     +--> const selectDiagram = (...)\n     +--> const selectDiagramSet = (...)\n     +--> const selectDiagramFromSet = (...)\n     +--> const selectViewKind = (...)\n     +--> const openGenerate = (...)\n     +--> const changeGenerationTarget = (...)\n     +--> const selectComponent = (...)\n     +--> const selectPlanNode = (...)\n     `--> const toggleEntity = (...)",
+            "nodes": [
+              {
+                "graphLine": 1,
+                "startLine": 956,
+                "endLine": 1474
+              },
+              {
+                "graphLine": 3,
+                "startLine": 956,
+                "endLine": 1044
+              },
+              {
+                "graphLine": 4,
+                "startLine": 956,
+                "endLine": 1044
+              },
+              {
+                "graphLine": 5,
+                "startLine": 956,
+                "endLine": 1044
+              },
+              {
+                "graphLine": 6,
+                "startLine": 956,
+                "endLine": 1044
+              },
+              {
+                "graphLine": 7,
+                "startLine": 956,
+                "endLine": 1044
+              },
+              {
+                "graphLine": 8,
+                "startLine": 956,
+                "endLine": 1044
+              },
+              {
+                "graphLine": 10,
+                "startLine": 1046,
+                "endLine": 1147
+              },
+              {
+                "graphLine": 11,
+                "startLine": 1046,
+                "endLine": 1061
+              },
+              {
+                "graphLine": 12,
+                "startLine": 1046,
+                "endLine": 1048
+              },
+              {
+                "graphLine": 13,
+                "startLine": 1050,
+                "endLine": 1052
+              },
+              {
+                "graphLine": 14,
+                "startLine": 1054,
+                "endLine": 1061
+              },
+              {
+                "graphLine": 15,
+                "startLine": 1063,
+                "endLine": 1147
+              },
+              {
+                "graphLine": 16,
+                "startLine": 1063,
+                "endLine": 1078
+              },
+              {
+                "graphLine": 17,
+                "startLine": 1097,
+                "endLine": 1108
+              },
+              {
+                "graphLine": 18,
+                "startLine": 1123,
+                "endLine": 1147
+              },
+              {
+                "graphLine": 19,
+                "startLine": 1123,
+                "endLine": 1147
+              },
+              {
+                "graphLine": 20,
+                "startLine": 1123,
+                "endLine": 1147
+              },
+              {
+                "graphLine": 21,
+                "startLine": 1080,
+                "endLine": 1116
+              },
+              {
+                "graphLine": 22,
+                "startLine": 1080,
+                "endLine": 1084
+              },
+              {
+                "graphLine": 23,
+                "startLine": 1110,
+                "endLine": 1116
+              },
+              {
+                "graphLine": 24,
+                "startLine": 1086,
+                "endLine": 1121
+              },
+              {
+                "graphLine": 25,
+                "startLine": 1086,
+                "endLine": 1095
+              },
+              {
+                "graphLine": 26,
+                "startLine": 1118,
+                "endLine": 1121
+              },
+              {
+                "graphLine": 28,
+                "startLine": 1149,
+                "endLine": 1155
+              },
+              {
+                "graphLine": 29,
+                "startLine": 1149,
+                "endLine": 1155
+              },
+              {
+                "graphLine": 31,
+                "startLine": 1157,
+                "endLine": 1254
+              },
+              {
+                "graphLine": 32,
+                "startLine": 1157,
+                "endLine": 1201
+              },
+              {
+                "graphLine": 33,
+                "startLine": 1157,
+                "endLine": 1201
+              },
+              {
+                "graphLine": 34,
+                "startLine": 1157,
+                "endLine": 1201
+              },
+              {
+                "graphLine": 35,
+                "startLine": 1203,
+                "endLine": 1241
+              },
+              {
+                "graphLine": 36,
+                "startLine": 1243,
+                "endLine": 1254
+              },
+              {
+                "graphLine": 38,
+                "startLine": 1256,
+                "endLine": 1296
+              },
+              {
+                "graphLine": 39,
+                "startLine": 1256,
+                "endLine": 1277
+              },
+              {
+                "graphLine": 40,
+                "startLine": 1279,
+                "endLine": 1296
+              },
+              {
+                "graphLine": 42,
+                "startLine": 1298,
+                "endLine": 1395
+              },
+              {
+                "graphLine": 43,
+                "startLine": 1298,
+                "endLine": 1302
+              },
+              {
+                "graphLine": 44,
+                "startLine": 1304,
+                "endLine": 1327
+              },
+              {
+                "graphLine": 45,
+                "startLine": 1329,
+                "endLine": 1343
+              },
+              {
+                "graphLine": 46,
+                "startLine": 1345,
+                "endLine": 1354
+              },
+              {
+                "graphLine": 47,
+                "startLine": 1356,
+                "endLine": 1374
+              },
+              {
+                "graphLine": 48,
+                "startLine": 1376,
+                "endLine": 1382
+              },
+              {
+                "graphLine": 49,
+                "startLine": 1384,
+                "endLine": 1395
+              },
+              {
+                "graphLine": 51,
+                "startLine": 1397,
+                "endLine": 1473
+              },
+              {
+                "graphLine": 52,
+                "startLine": 1397,
+                "endLine": 1404
+              },
+              {
+                "graphLine": 53,
+                "startLine": 1406,
+                "endLine": 1410
+              },
+              {
+                "graphLine": 54,
+                "startLine": 1412,
+                "endLine": 1419
+              },
+              {
+                "graphLine": 55,
+                "startLine": 1421,
+                "endLine": 1427
+              },
+              {
+                "graphLine": 56,
+                "startLine": 1429,
+                "endLine": 1441
+              },
+              {
+                "graphLine": 57,
+                "startLine": 1443,
+                "endLine": 1456
+              },
+              {
+                "graphLine": 58,
+                "startLine": 1458,
+                "endLine": 1462
+              },
+              {
+                "graphLine": 59,
+                "startLine": 1464,
+                "endLine": 1466
+              },
+              {
+                "graphLine": 60,
+                "startLine": 1468,
+                "endLine": 1473
+              }
+            ]
+          },
+          {
+            "kind": "collapsed-comment",
+            "startLine": 1475,
+            "endLine": 1820,
+            "comment": "ArtifactInteraction\n|\n+--> EDIT\n|    +--> START\n|    |    `--> const startEdit = async (...)\n|    |         +--[active session]--> reuse\n|    |         `--[none]-----------> createEditSession(...)\n|    +--> APPLY\n|    |    +--> const queueManualEdit = (...)\n|    |    +--> const markLocation = async (...)\n|    |    +--> const runLlmEdit = async (...)\n|    |    `--> const runEditAction = async (...)\n|    |         `--> editQueue -> action -> workspace\n|    `--> FINISH\n|         +--> const saveEdit = async (...)\n|         |    `--> finishEdit -> select output artifact\n|         `--> const leaveEdit = async (...)\n|              `--> discardEdit -> Code Entities\n|\n+--> MAP\n|    +--> const generateCodeEntityMap = async (...)\n|    `--> const runCodeEntityMappings = async (...)\n|         +--> queue target jobs\n|         +--> mapCodeEntitiesBatch(...)\n|         +--> mergeMappingWorkspace(...)\n|         `--> complete or fail remaining jobs\n|\n`--> EVIDENCE\n     +--> NAVIGATE\n     |    +--> const revealCodeEntity = (...)\n     |    +--> const jumpToMarkdownSection = (...)\n     |    `--> const openCallGraphFocus = async (...)\n     `--> HIGHLIGHT\n          +--> const toggleHighlight = async (...)\n          |    +--[existing]--> delete\n          |    `--[new]------> create\n          +--> const revealHighlight = (...)\n          +--> const removeHighlight = async (...)\n          `--> const saveRepresentationFeedback = async (...)",
+            "nodes": [
+              {
+                "graphLine": 1,
+                "startLine": 1475,
+                "endLine": 1820
+              },
+              {
+                "graphLine": 3,
+                "startLine": 1475,
+                "endLine": 1616
+              },
+              {
+                "graphLine": 4,
+                "startLine": 1475,
+                "endLine": 1508
+              },
+              {
+                "graphLine": 5,
+                "startLine": 1475,
+                "endLine": 1508
+              },
+              {
+                "graphLine": 6,
+                "startLine": 1475,
+                "endLine": 1508
+              },
+              {
+                "graphLine": 7,
+                "startLine": 1475,
+                "endLine": 1508
+              },
+              {
+                "graphLine": 8,
+                "startLine": 1510,
+                "endLine": 1577
+              },
+              {
+                "graphLine": 9,
+                "startLine": 1510,
+                "endLine": 1519
+              },
+              {
+                "graphLine": 10,
+                "startLine": 1537,
+                "endLine": 1553
+              },
+              {
+                "graphLine": 11,
+                "startLine": 1555,
+                "endLine": 1577
+              },
+              {
+                "graphLine": 12,
+                "startLine": 1521,
+                "endLine": 1535
+              },
+              {
+                "graphLine": 13,
+                "startLine": 1521,
+                "endLine": 1535
+              },
+              {
+                "graphLine": 14,
+                "startLine": 1579,
+                "endLine": 1616
+              },
+              {
+                "graphLine": 15,
+                "startLine": 1579,
+                "endLine": 1607
+              },
+              {
+                "graphLine": 16,
+                "startLine": 1579,
+                "endLine": 1607
+              },
+              {
+                "graphLine": 17,
+                "startLine": 1609,
+                "endLine": 1616
+              },
+              {
+                "graphLine": 18,
+                "startLine": 1609,
+                "endLine": 1616
+              },
+              {
+                "graphLine": 20,
+                "startLine": 1618,
+                "endLine": 1678
+              },
+              {
+                "graphLine": 21,
+                "startLine": 1675,
+                "endLine": 1678
+              },
+              {
+                "graphLine": 22,
+                "startLine": 1618,
+                "endLine": 1673
+              },
+              {
+                "graphLine": 23,
+                "startLine": 1618,
+                "endLine": 1673
+              },
+              {
+                "graphLine": 24,
+                "startLine": 1618,
+                "endLine": 1673
+              },
+              {
+                "graphLine": 25,
+                "startLine": 1618,
+                "endLine": 1673
+              },
+              {
+                "graphLine": 26,
+                "startLine": 1618,
+                "endLine": 1673
+              },
+              {
+                "graphLine": 28,
+                "startLine": 1680,
+                "endLine": 1814
+              },
+              {
+                "graphLine": 29,
+                "startLine": 1680,
+                "endLine": 1814
+              },
+              {
+                "graphLine": 30,
+                "startLine": 1711,
+                "endLine": 1731
+              },
+              {
+                "graphLine": 31,
+                "startLine": 1733,
+                "endLine": 1750
+              },
+              {
+                "graphLine": 32,
+                "startLine": 1680,
+                "endLine": 1709
+              },
+              {
+                "graphLine": 33,
+                "startLine": 1680,
+                "endLine": 1709
+              },
+              {
+                "graphLine": 34,
+                "startLine": 1752,
+                "endLine": 1780
+              },
+              {
+                "graphLine": 35,
+                "startLine": 1752,
+                "endLine": 1780
+              },
+              {
+                "graphLine": 36,
+                "startLine": 1752,
+                "endLine": 1780
+              },
+              {
+                "graphLine": 37,
+                "startLine": 1782,
+                "endLine": 1792
+              },
+              {
+                "graphLine": 38,
+                "startLine": 1794,
+                "endLine": 1801
+              },
+              {
+                "graphLine": 39,
+                "startLine": 1803,
+                "endLine": 1814
+              }
+            ]
+          },
+          {
+            "kind": "collapsed-comment",
+            "startLine": 1821,
+            "endLine": 2183,
+            "comment": "StudioPresentation\n|\n+--> PRIMARY ARTIFACT\n|    +--[generation]-------> <GeneratorOptions ... />\n|    +--[component]--------> <DiagramView artifactKind=\"diagram-component\" ... />\n|    +--[diagram]----------> <DiagramView artifactKind=\"diagram\" ... />\n|    `--[no artifact]------> <EmptyDiagramView ... />\n|\n+--> CONTEXT\n|    `--> const renderContextPane = (...)\n|         `--> <DiagramContextPanel artifact + Evidence + representation + commands />\n|\n+--> PANE REGISTRY\n|    +--> primary views -> primaryPaneContent\n|    +--> context views -> renderContextPane(...)\n|    +--> files -> <FileExplorerPanel />\n|    +--> DiagramSets -> <DiagramSetTreePanel />\n|    +--> markdown -> <MarkdownSectionsPanel />\n|    +--> highlights -> <HighlightsTreePanel />\n|    +--> plans -> <PlansTreePanel />\n|    +--> plan-preview -> <PlanPreview />\n|    `--> dynamic focus -> <CallGraphFocusTree />\n|\n`--> RENDER SHELL\n     +--> header -> navigation/import/experiments/settings\n     +--[waiting]--------> collection/generation/failure status\n     +--[ready]----------> <PaneWorkspace ... />\n     +--[import open]-----> <ImportArtifactDialog ... />\n     `--[settings open]---> <SystemPromptSettingsDialog ... />",
+            "nodes": [
+              {
+                "graphLine": 1,
+                "startLine": 1821,
+                "endLine": 2183
+              },
+              {
+                "graphLine": 3,
+                "startLine": 1821,
+                "endLine": 1973
+              },
+              {
+                "graphLine": 4,
+                "startLine": 1821,
+                "endLine": 1973
+              },
+              {
+                "graphLine": 5,
+                "startLine": 1821,
+                "endLine": 1973
+              },
+              {
+                "graphLine": 6,
+                "startLine": 1821,
+                "endLine": 1973
+              },
+              {
+                "graphLine": 7,
+                "startLine": 1821,
+                "endLine": 1973
+              },
+              {
+                "graphLine": 9,
+                "startLine": 1974,
+                "endLine": 2021
+              },
+              {
+                "graphLine": 10,
+                "startLine": 1974,
+                "endLine": 2021
+              },
+              {
+                "graphLine": 11,
+                "startLine": 1974,
+                "endLine": 2021
+              },
+              {
+                "graphLine": 13,
+                "startLine": 2022,
+                "endLine": 2088
+              },
+              {
+                "graphLine": 14,
+                "startLine": 2022,
+                "endLine": 2088
+              },
+              {
+                "graphLine": 15,
+                "startLine": 2022,
+                "endLine": 2088
+              },
+              {
+                "graphLine": 16,
+                "startLine": 2022,
+                "endLine": 2088
+              },
+              {
+                "graphLine": 17,
+                "startLine": 2022,
+                "endLine": 2088
+              },
+              {
+                "graphLine": 18,
+                "startLine": 2022,
+                "endLine": 2088
+              },
+              {
+                "graphLine": 19,
+                "startLine": 2022,
+                "endLine": 2088
+              },
+              {
+                "graphLine": 20,
+                "startLine": 2022,
+                "endLine": 2088
+              },
+              {
+                "graphLine": 21,
+                "startLine": 2022,
+                "endLine": 2088
+              },
+              {
+                "graphLine": 22,
+                "startLine": 2022,
+                "endLine": 2088
+              },
+              {
+                "graphLine": 24,
+                "startLine": 2090,
+                "endLine": 2183
+              },
+              {
+                "graphLine": 25,
+                "startLine": 2090,
+                "endLine": 2183
+              },
+              {
+                "graphLine": 26,
+                "startLine": 2090,
+                "endLine": 2183
+              },
+              {
+                "graphLine": 27,
+                "startLine": 2090,
+                "endLine": 2183
+              },
+              {
+                "graphLine": 28,
+                "startLine": 2090,
+                "endLine": 2183
+              },
+              {
+                "graphLine": 29,
+                "startLine": 2090,
+                "endLine": 2183
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

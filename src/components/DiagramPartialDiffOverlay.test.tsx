@@ -2,7 +2,11 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { definePartialDiff } from "../partialDiff";
-import { DiagramPartialDiffOverlay, diagramPixelRect } from "./DiagramPartialDiffOverlay";
+import {
+  DiagramPartialDiffOverlay,
+  PARTIAL_DIFF_DIALOG_HEADING,
+  diagramPixelRect
+} from "./DiagramPartialDiffOverlay";
 
 const diff = definePartialDiff({
   id: "ownership",
@@ -31,5 +35,9 @@ describe("DiagramPartialDiffOverlay", () => {
     expect(markup).toContain("left:32px;top:36px;width:80px;height:108px");
     expect(markup).toContain("class=\"partial-diff-trigger\"");
     expect(markup).toContain("aria-controls=\"ownership-dialog\"");
+  });
+
+  it("uses a feature-neutral dialog heading", () => {
+    expect(PARTIAL_DIFF_DIALOG_HEADING).toBe("SEMANTIC PARTIAL DIFF");
   });
 });

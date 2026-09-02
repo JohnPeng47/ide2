@@ -9,8 +9,12 @@ function explorerIds(profileId: "source-code" | "document") {
 
 describe("profile-driven studio panes", () => {
   it("creates the exact source-code and document explorer tabs", () => {
-    expect(explorerIds("source-code")).toEqual(["files", "diagram-sets"]);
-    expect(explorerIds("document")).toEqual(["files", "markdown-sections", "highlights"]);
+    expect(explorerIds("source-code")).toEqual([
+      "files",
+      "representations",
+      "plans"
+    ]);
+    expect(explorerIds("document")).toEqual(["files", "markdown-sections", "highlights", "plans"]);
   });
 
   it("removes a restored tab that is invalid for source-code and falls back safely", () => {
@@ -21,7 +25,11 @@ describe("profile-driven studio panes", () => {
     ], "highlights");
     const normalized = createStudioPaneState(resolveDomainProfile("source-code"), restored);
 
-    expect(normalized.panes.files.tabs.map((tab) => tab.id)).toEqual(["files", "diagram-sets"]);
+    expect(normalized.panes.files.tabs.map((tab) => tab.id)).toEqual([
+      "files",
+      "representations",
+      "plans"
+    ]);
     expect(normalized.panes.files.activeTabId).toBe("files");
   });
 

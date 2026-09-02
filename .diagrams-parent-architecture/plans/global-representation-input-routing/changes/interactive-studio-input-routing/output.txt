@@ -1,0 +1,89 @@
+                  INTERACTIVE STUDIO, PANES, AND NAVIGATION
+
+                         [X] Browser
+                              |
+                              v
+                         [R] App
+                              |
+                     fetchWorkspace()
+                              |
+                              v
+                    [P] WorkspaceSnapshot
+                              |
+         +--------------------+--------------------+
+         |                    |                    |
+         v                    v                    v
+ active DiagramSet      active artifact      DomainProfile
+ entity/map lookup      screen/view kind     surface policy
+         |                    |                    |
+         +--------------------+--------------------+
+                              |
+                              v
+                    [R] PaneLayoutState
+                    PaneNode split tree
+                    Pane records + tabs
+                              |
+                    [X] window keydown
+                              |
+                    [R] RepresentationInputRegistry
+                    route by focused representation
+                              |
+                    [R] PaneApi / PaneWorkspace
+                              |
+        +---------------------+----------------------+
+        |                     |                      |
+        v                     v                      v
+   FILES PANE            PRIMARY PANE            CONTEXT PANE
+
+ FileExplorerPanel       GeneratorOptions        CodeEntitiesPanel
+ DiagramSetTreePanel     DiagramView             DiagramLineagePanel
+ MarkdownSectionsPanel   AsciiSelectionGrid      RepresentationLayersPanel
+ HighlightsTreePanel     SelectionOverlay        EditOperationsPanel
+        |                     |                      |
+        |                     | mapped element       |
+        |                     v                      |
+        |             DiagramElementMapping         |
+        |                     |                      |
+        |                     v                      |
+        |             App.revealCodeEntity()         |
+        |                     |                      |
+        |                     v                      |
+        |             [R] PaneNavigationApi --------+
+        |             activate tab
+        |             focus pane
+        |             retain jump history
+        |                     |
+        |                     v
+        |             CodeEntitiesPanel
+        |                     |
+        |              fetchSourceSnippet()
+        |                     |
+        |                     v
+        |         SourceCodeView / TerminalMarkdownView
+        |
+        | selections and mappings
+        v
+ [R] RefBufferState
+        |
+        v
+ generation prompt references
+
+
+ SERVICE BOUNDARY
+
+ React event
+     |
+     v
+ [R] src/api.ts
+     |
+     v
+ [R] server/http.ts
+ route parsing + NDJSON progress
+     |
+     v
+ [R] DiagramApplication
+     |
+ +---+-------------------+
+ |                       |
+ v                       v
+[P] DiagramStore   [R] DiagramAgentRuntime

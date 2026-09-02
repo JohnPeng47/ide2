@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { CodeEntityRecord, DiagramRecord } from "../domain";
 import { resolveReferences, type ReferenceResolutionContext } from "../referenceResolver";
-import { formatReferences, UnsupportedReferenceFormatError } from "./refFormatters";
+import {
+  formatDiagramReferenceClipboard,
+  formatReferences,
+  UnsupportedReferenceFormatError
+} from "./refFormatters";
 
 const entity: CodeEntityRecord = {
   id: "entity-a",
@@ -51,5 +55,19 @@ describe("reference formatters", () => {
   it("uses existing prompt representations for prompt context", () => {
     const resolved = resolveReferences([{ kind: "code-entity", targetId: entity.id }], context).resolved;
     expect(formatReferences(resolved, "prompt-context")).toContain("CodeEntity @entity/worker");
+  });
+
+  it("formats selected ASCII above one associated source location per line", () => {
+    const resolved = resolveReferences([
+      { kind: "code-entity", targetId: entity.id, sourceRangeIndex: 0 },
+      { kind: "code-entity", targetId: entity.id, sourceRangeIndex: 1 }
+    ], context).resolved;
+    expect(formatDiagramReferenceClipboard([{
+      sourceArtifactId: "diagram-a",
+      ascii: "+----+\n| AB |\n+----+",
+      referenceKeys: ["first", "second"]
+    }], resolved)).toBe(
+      "+----+\n| AB |\n+----+\nAssociated Code Entities:\nWorker: src/worker.ts:2-8\nWorker: src/queue.ts:10-14"
+    );
   });
 });

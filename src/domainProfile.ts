@@ -43,7 +43,12 @@ export interface EvidenceSchema {
   fromCodeEntity(record: CodeEntityRecord): EvidenceEntity;
 }
 
-export type ExplorerSurfaceId = "files" | "diagram-sets" | "markdown-sections" | "highlights";
+export type ExplorerSurfaceId =
+  | "files"
+  | "representations"
+  | "markdown-sections"
+  | "highlights"
+  | "plans";
 
 export interface WorkspaceSurfaceContribution {
   id: ExplorerSurfaceId;

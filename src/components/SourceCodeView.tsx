@@ -179,6 +179,7 @@ export function SourceCodeView(props: {
   range: SourceRange;
   compacted: boolean;
   presentation: ContentPresentation;
+  targetLine?: number;
   revealed?: boolean;
   revealRequestId?: number;
 }) {
@@ -221,12 +222,12 @@ export function SourceCodeView(props: {
     if (!viewer) return;
     viewer.scrollLeft = 0;
     const target = viewer.querySelector<HTMLElement>(
-      `.source-code-line[data-line="${props.range.startLine}"]`
+      `[data-line="${props.targetLine ?? props.range.startLine}"]`
     );
     viewer.scrollTop = target
       ? Math.max(0, target.offsetTop - viewer.clientHeight * 0.2)
       : 0;
-  }, [props.range.startLine, props.revealRequestId, sourceIdentity]);
+  }, [props.range.startLine, props.revealRequestId, props.targetLine, sourceIdentity]);
 
   const tokenLines = highlighted?.tokens ?? [];
   const rows: ReactNode[] = [];
@@ -243,6 +244,7 @@ export function SourceCodeView(props: {
       rows.push(
         <div
           className="source-fold-placeholder"
+          data-line={section.startLine}
           key={`fold:${key}`}
         >
           <span className="source-line-gutter">

@@ -5,6 +5,7 @@ import {
   createCodeEntityPromptAliases
 } from "../domain";
 import type { ResolvedReference } from "../referenceResolver";
+import type { BufferedDiagramSelection } from "../refBuffer";
 
 export type RefTextFormat = "prompt-token" | "source-location" | "prompt-context";
 
@@ -30,6 +31,41 @@ function uniqueText(values: string[]): string[] {
   return [...new Set(values)];
 }
 
+function sourceLocations(refs: ResolvedReference[]): string[] {
+  const unsupported = uniqueText(refs.filter((ref) => ref.kind !== "code-entity").map((ref) => ref.kind));
+  if (unsupported.length > 0) throw new UnsupportedReferenceFormatError("source-location", unsupported);
+  return uniqueText(refs.flatMap((ref) => {
+    if (ref.kind !== "code-entity") return [];
+    const ranges = ref.sourceRange ? [ref.sourceRange] : ref.record.sourceRanges;
+    return ranges.map((range) => `${range.path}:${range.startLine}-${range.endLine}`);
+  }));
+}
+
+function labeledSourceLocations(refs: ResolvedReference[]): string[] {
+  const unsupported = uniqueText(refs.filter((ref) => ref.kind !== "code-entity").map((ref) => ref.kind));
+  if (unsupported.length > 0) throw new UnsupportedReferenceFormatError("source-location", unsupported);
+  return uniqueText(refs.flatMap((ref) => {
+    if (ref.kind !== "code-entity") return [];
+    const ranges = ref.sourceRange ? [ref.sourceRange] : ref.record.sourceRanges;
+    return ranges.map((range) => (
+      `${ref.record.label}: ${range.path}:${range.startLine}-${range.endLine}`
+    ));
+  }));
+}
+
+export function formatDiagramReferenceClipboard(
+  selections: readonly BufferedDiagramSelection[],
+  refs: ResolvedReference[]
+): string {
+  const locations = sourceLocations(refs);
+  if (selections.length === 0) return locations.join(" ");
+  return [
+    selections.map((selection) => selection.ascii).join("\n\n"),
+    "Associated Code Entities:",
+    ...labeledSourceLocations(refs)
+  ].join("\n");
+}
+
 export function formatReferences(refs: ResolvedReference[], format: RefTextFormat): string {
   if (format === "prompt-token") {
     return uniqueText(refs.map(promptToken)).join(" ");
@@ -40,14 +76,7 @@ export function formatReferences(refs: ResolvedReference[], format: RefTextForma
   if (format === "prompt-context") {
     return uniqueText(refs.map((ref) => promptContext(ref, aliases))).join("\n\n");
   }
-  const unsupported = uniqueText(refs.filter((ref) => ref.kind !== "code-entity").map((ref) => ref.kind));
-  if (unsupported.length > 0) throw new UnsupportedReferenceFormatError(format, unsupported);
-  const locations = refs.flatMap((ref) => {
-    if (ref.kind !== "code-entity") return [];
-    const ranges = ref.sourceRange ? [ref.sourceRange] : ref.record.sourceRanges;
-    return ranges.map((range) => `${range.path}:${range.startLine}-${range.endLine}`);
-  });
-  return uniqueText(locations).join(" ");
+  return sourceLocations(refs).join(" ");
 }
 
 export function displayTextForReference(ref: ResolvedReference): string {

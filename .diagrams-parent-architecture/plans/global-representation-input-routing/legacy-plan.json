@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "global-representation-input-routing",
+  "projectId": "project-ce67f2af4410",
+  "title": "Global Representation Input Routing",
+  "status": "active",
+  "changes": [
+    {
+      "id": "interactive-studio-input-routing",
+      "kind": "diagram-modified",
+      "diagramSetId": "set-73a6e1e3-2fe8-4aac-9709-ee21e6f72fbf",
+      "diagramId": "diagram-1bf97816-a776-4bbd-bbb4-df4868d282c5",
+      "label": "Interactive Studio, Panes, and Navigation",
+      "baseAsciiSha256": "1871ece1a429981ddfc167ceaca29a25465a2b06ffc39b9f8a1e77f34dcda9dc",
+      "patch": {
+        "start": 1003,
+        "deletedText": "                    [R] PaneApi / PaneWorkspace\n                              |",
+        "insertedText": "                    [X] window keydown\n                              |\n                    [R] RepresentationInputRegistry\n                    route by focused representation\n                              |\n                    [R] PaneApi / PaneWorkspace\n                              |"
+      },
+      "semanticDiff": {
+        "id": "interactive-studio-input-routing",
+        "label": "Open representation input-routing diff",
+        "region": {
+          "startLine": 15,
+          "startColumn": 2,
+          "endLine": 36,
+          "endColumn": 67
+        },
+        "expandedAscii": " BEFORE                                                       \n                                                              \n   [R] PaneLayoutState -> [R] PaneApi / PaneWorkspace         \n             focusedPaneId + active tab       |               \n                                              v               \n   FILES PANE -> FileExplorerPanel -> active artifact tree    \n                                                              \n CHANGE                                                       \n                                                              \n   1. Intercept keys once                                     \n   2. Route by focused representation                         \n   3. Register Ctrl+G in File Explorer                        \n   4. Choose current or global tree                           \n                                                              \n AFTER                                                        \n                                                              \n   [X] window keydown                                         \n        |                                                     \n        v                                                     \n   [R] RepresentationInputRegistry                            \n       normalize + resolve focused representation             \n        |                                                     \n        v                                                     \n   [R] PaneWorkspace / PaneFrame scope                        \n        |                                                     \n        v                                                     \n   [R] FileExplorerPanel                                      \n       registers Ctrl+G -> open view menu                     \n                           +-- current: active artifact tree  \n                           `-- alternate: all DiagramSets tree",
+        "padding": {
+          "columns": 3,
+          "lines": 2
+        }
+      }
+    }
+  ],
+  "createdAt": "2026-09-02T03:53:52.000Z",
+  "updatedAt": "2026-09-02T04:17:38.657Z",
+  "markdownPath": "plan.md"
+}

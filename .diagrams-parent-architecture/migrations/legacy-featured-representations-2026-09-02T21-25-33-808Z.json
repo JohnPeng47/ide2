@@ -1,0 +1,65 @@
+{
+  "migration": "legacy-featured-to-project-representations-v1",
+  "featuredCount": 7,
+  "migrated": [
+    {
+      "diagramSetId": "set-71c0fa9c-2762-415a-a69e-9a5b8c33c4f5",
+      "diagramSetName": "Domain-Adapted Project and Generation Orchestration",
+      "diagramId": "diagram-1fd70b74-e8f6-469a-a888-f5b607f82e45",
+      "diagramName": "Domain-Adapted Project and Generation Orchestration",
+      "viewKind": "diagram"
+    },
+    {
+      "diagramSetId": "set-783e522d-1ffc-4528-bda5-70ae8ac10c14",
+      "diagramSetName": "Prompt, Reference, Lineage, and Portability",
+      "diagramId": "diagram-6adcbe89-d767-4544-8fef-cc6029fa18e4",
+      "diagramName": "Prompt, Reference, Lineage, and Portability",
+      "viewKind": "diagram"
+    },
+    {
+      "diagramSetId": "set-d2aa8e8b-cd6a-4b93-9973-197ebc81596b",
+      "diagramSetName": "Artifact Refinement and Curation",
+      "diagramId": "diagram-e4940933-85f9-413a-b882-9287be0a9c8e",
+      "diagramName": "Artifact Refinement and Curation",
+      "viewKind": "diagram"
+    },
+    {
+      "diagramSetId": "set-f44ab0c5-3891-41e4-96ce-9b6bfa8316b5",
+      "diagramSetName": "Experiment Evaluation and Dataset Curation",
+      "diagramId": "diagram-7f57450d-0560-4a41-9626-c9f2b7581be1",
+      "diagramName": "Experiment Evaluation and Dataset Curation",
+      "viewKind": "diagram"
+    },
+    {
+      "diagramSetId": "set-e5d1ff39-d6a7-42b0-87b1-3976b9f66f97",
+      "diagramSetName": "Representation Evolution, Feedback, and Spatial Agent Work",
+      "diagramId": "diagram-c4be3565-3209-4908-b4ec-d425d1c3f136",
+      "diagramName": "Representation Evolution, Feedback, and Spatial Agent Work",
+      "viewKind": "diagram"
+    },
+    {
+      "diagramSetId": "set-73a6e1e3-2fe8-4aac-9709-ee21e6f72fbf",
+      "diagramSetName": "Interactive Studio, Panes, and Navigation",
+      "diagramId": "diagram-1bf97816-a776-4bbd-bbb4-df4868d282c5",
+      "diagramName": "Interactive Studio, Panes, and Navigation",
+      "viewKind": "diagram"
+    }
+  ],
+  "skippedAlreadySettled": [
+    {
+      "diagramSetId": "set-5071af75-ec47-4222-b24b-fcbf2d00d36d",
+      "diagramSetName": "Code-Level Corpus, Evidence, and Representation Graph",
+      "diagramId": "diagram-project-catalog-architecture-v1",
+      "diagramName": "Project Corpus and Settled Representations",
+      "viewKind": "diagram"
+    }
+  ],
+  "activeByKindBefore": {
+    "diagram": "representation-332820e4c284d34474fed442d4461c60"
+  },
+  "activeByKindAfter": {
+    "diagram": "representation-332820e4c284d34474fed442d4461c60"
+  },
+  "representationCount": 7,
+  "completedAt": "2026-09-02T21:25:33.808Z"
+}

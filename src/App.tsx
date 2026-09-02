@@ -21,7 +21,6 @@ import {
   captureNestedDiagramComponent,
   createEditSession,
   deleteCodeEntityPromptTemplate,
-  deleteDiagramSet,
   deleteDiagramHighlight,
   discardEdit,
   fetchCallGraphFocus,
@@ -48,7 +47,6 @@ import { CallGraphFocusTree } from "./call-graph-tree/CallGraphFocusTree";
 import type { CallGraphFocusRequest, CallGraphFocusResult } from "./callGraphFocus";
 import { partialDiffForDiagram } from "./artifactPartialDiffs";
 import { DiagramContextPanel, type ContextTab } from "./components/DiagramContextPanel";
-import { DiagramSetTreePanel } from "./components/DiagramSetTreePanel";
 import type { CodeEntityReveal } from "./components/CodeEntitiesPanel";
 import { DIAGRAM_VIEW_OPTIONS, DiagramView, EmptyDiagramView } from "./components/DiagramView";
 import { FileExplorerPanel } from "./components/FileExplorerPanel";
@@ -56,6 +54,9 @@ import { ExperimentViewerPage } from "./components/ExperimentViewerPage";
 import { GeneratorOptions } from "./components/GeneratorOptions";
 import { HighlightsTreePanel } from "./components/HighlightsTreePanel";
 import { MarkdownSectionsPanel } from "./components/MarkdownSectionsPanel";
+import { PlanCorpusPreview, PlanDiagramPreview } from "./components/PlanPreview";
+import { PlansTreePanel } from "./components/PlansTreePanel";
+import { RepresentationsPanel } from "./components/RepresentationsPage";
 import { ImportArtifactDialog } from "./components/ImportArtifactDialog";
 import { PaneApi } from "./panes/api";
 import {
@@ -104,6 +105,7 @@ import {
   outputKindForTarget,
   type ArtifactImportInput,
   type AgentRunStatus,
+  type CodeEntityRecord,
   type CodeEntityMappingTarget,
   type CodeEntityPromptTemplateRecord,
   type DiagramComponentRecord,
@@ -132,8 +134,10 @@ import type {
   TerminalMarkdownOutline,
   TerminalMarkdownSection
 } from "./terminalMarkdown/toc";
+import { projectPlanCompaction, projectPlanDiagram } from "./plans";
 
 type Screen = "diagram" | "diagram-component" | "generation";
+type PlanSelection = { planId: string; changeId?: string };
 
 type SourceLocationJumpPayload = {
   type: "code-entity";
@@ -347,11 +351,53 @@ function StudioPage(props: { onExperiments: () => void }) {
   const [codeEntityReveal, setCodeEntityReveal] = useState<CodeEntityReveal | undefined>();
   const [markdownOutline, setMarkdownOutline] = useState<(TerminalMarkdownOutline & { path: string }) | null>(null);
   const [activeMarkdownSection, setActiveMarkdownSection] = useState<{ path: string; id: string } | null>(null);
+  const [planSelection, setPlanSelection] = useState<PlanSelection | null>(null);
   const requestedDiagramIdRef = useRef<string | null>(null);
   const revealRequestId = useRef(0);
   const editQueue = useRef<Promise<void>>(Promise.resolve());
   const editShortcutHandlers = useRef({ undo: () => {}, redo: () => {} });
+  const requestedPaneTabIdsRef = useRef<Partial<Record<"primary" | "context", string>>>({});
   const domainProfile = resolveDomainProfile(workspace?.project?.domainProfileId);
+  const selectedPlan = (workspace?.plans ?? []).find((plan) => plan.id === planSelection?.planId);
+  const selectedPlanChange = selectedPlan?.changes.find(
+    (change) => change.id === planSelection?.changeId
+  );
+  const selectedPlanDiagramChange = selectedPlanChange?.kind === "diagram-modified"
+    || selectedPlanChange?.kind === "diagram-added"
+    ? selectedPlanChange
+    : undefined;
+  const selectedPlanDiagramSetId = selectedPlanDiagramChange?.kind === "diagram-modified"
+    ? selectedPlanDiagramChange.diagramSetId
+    : selectedPlanDiagramChange?.draft.diagramSetId;
+  const selectedPlanDiagramSet = workspace?.diagramSets.find(
+    (set) => set.id === selectedPlanDiagramSetId
+  );
+  const selectedPlanCodeEntities = [
+    ...(selectedPlanDiagramSet
+      ? workspace?.codeEntitySets[selectedPlanDiagramSet.codeEntitiesSetId]?.entities ?? []
+      : []),
+    ...Object.values(workspace?.importedCodeEntities ?? {})
+  ];
+  const selectedPlanCodeEntityMap = selectedPlanDiagramChange?.kind === "diagram-modified"
+    ? workspace?.codeEntityMaps[
+      `${selectedPlanDiagramChange.diagramSetId}:${selectedPlanDiagramChange.diagramId}`
+    ] ?? workspace?.codeEntityMaps[selectedPlanDiagramChange.diagramId]
+    : undefined;
+  const showPlanDiagramPreview = Boolean(selectedPlan && selectedPlanDiagramChange);
+  const showPlanCorpusPreview = Boolean(selectedPlan);
+  const stalePlanChangeIds = useMemo(() => {
+    const stale = new Set<string>();
+    if (!workspace) return stale;
+    for (const plan of workspace.plans ?? []) {
+      for (const change of plan.changes) {
+        const projection = change.kind === "code-entity-compaction"
+          ? projectPlanCompaction(workspace, change)
+          : projectPlanDiagram(workspace, plan, change);
+        if (projection.stale) stale.add(`${plan.id}:${change.id}`);
+      }
+    }
+    return stale;
+  }, [workspace]);
 
   useEffect(() => paneNavigation.registerHandler("source-location", (destination) => {
     const payload = destination.payload as SourceLocationJumpPayload;
@@ -360,6 +406,7 @@ function StudioPage(props: { onExperiments: () => void }) {
     setCodeEntityReveal(payload.type === "code-entity" ? {
       entityId: payload.entityId,
       sourceRangeIndex: payload.sourceRangeIndex,
+      targetLine: payload.line,
       requestId: revealRequestId.current
     } : {
       path: payload.path,
@@ -441,6 +488,40 @@ function StudioPage(props: { onExperiments: () => void }) {
     ...(entitySet?.entities ?? []),
     ...Object.values(workspace?.importedCodeEntities ?? {})
   ], [entitySet?.entities, workspace?.importedCodeEntities]);
+  const projectCompactionEntities = useMemo<CodeEntityRecord[]>(() => {
+    const project = workspace?.project;
+    const catalog = workspace?.corpusCompactions;
+    if (!project || !catalog) return [];
+    return Object.entries(catalog.activeByPath).flatMap(([filePath, compactionId]) => {
+      const compaction = catalog.compactions[compactionId];
+      if (!compaction) return [];
+      const entityId = `project-${compaction.id}`;
+      return [{
+        id: entityId,
+        origin: {
+          projectId: project.id,
+          diagramSetId: "project-catalog",
+          codeEntitiesSetId: "project-compactions"
+        },
+        handle: `compacted-${filePath.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "").toLowerCase()}`,
+        label: filePath,
+        category: "state" as const,
+        summary: `Project-level compacted source for ${filePath}.`,
+        sourceRanges: [{
+          id: `${entityId}-range`,
+          path: filePath,
+          startLine: compaction.startLine,
+          endLine: compaction.endLine,
+          originalLines: [...compaction.originalLines],
+          compactedSource: compaction.compactedSource
+        }]
+      }];
+    }).sort((left, right) => left.label.localeCompare(right.label));
+  }, [workspace?.corpusCompactions, workspace?.project]);
+  const fileExplorerEntities = useMemo(
+    () => [...resolutionEntities, ...projectCompactionEntities],
+    [projectCompactionEntities, resolutionEntities]
+  );
   const referenceResolutionContext = useMemo<ReferenceResolutionContext>(() => ({
     codeEntities: resolutionEntities,
     diagrams: workspace?.diagrams ?? {},
@@ -487,11 +568,39 @@ function StudioPage(props: { onExperiments: () => void }) {
       }] : [];
     })
   ] : [], [workspace]);
-  const foundationDiagram = activeSet?.featuredViewIds.diagram
-    ? diagrams.find((diagram) => diagram.id === activeSet.featuredViewIds.diagram)
+  const settledDiagramIdsByViewKind = useMemo(() => {
+    const settled: Partial<Record<DiagramViewKind, string>> = {};
+    const catalog = workspace?.representationCatalog;
+    if (!activeSet || !catalog) return settled;
+    const availableIds = new Set(diagrams.map((diagram) => diagram.id));
+    const records = Object.values(catalog.representations)
+      .filter((representation) => representation.status === "settled")
+      .sort((left, right) => left.updatedAt.localeCompare(right.updatedAt));
+    for (const representation of records) {
+      const revision = catalog.revisions[representation.currentRevisionId];
+      if (revision?.provenance?.diagramSetId === activeSet.id
+        && availableIds.has(revision.provenance.artifactId)) {
+        settled[representation.viewKind] = revision.provenance.artifactId;
+      }
+    }
+    for (const [viewKind, representationId] of Object.entries(catalog.activeByKind)) {
+      const representation = representationId ? catalog.representations[representationId] : undefined;
+      const revision = representation
+        ? catalog.revisions[representation.currentRevisionId]
+        : undefined;
+      if (representation?.status === "settled"
+        && revision?.provenance?.diagramSetId === activeSet.id
+        && availableIds.has(revision.provenance.artifactId)) {
+        settled[viewKind as DiagramViewKind] = revision.provenance.artifactId;
+      }
+    }
+    return settled;
+  }, [activeSet, diagrams, workspace?.representationCatalog]);
+  const foundationDiagram = settledDiagramIdsByViewKind.diagram
+    ? diagrams.find((diagram) => diagram.id === settledDiagramIdsByViewKind.diagram)
     : undefined;
-  const companionCallGraph = activeSet?.featuredViewIds["call-graph"]
-    ? diagrams.find((diagram) => diagram.id === activeSet.featuredViewIds["call-graph"])
+  const companionCallGraph = settledDiagramIdsByViewKind["call-graph"]
+    ? diagrams.find((diagram) => diagram.id === settledDiagramIdsByViewKind["call-graph"])
     : undefined;
   const immutableCodeEntities = useMemo(() => {
     if (!foundationDiagram || !entitySet) return [];
@@ -581,6 +690,17 @@ function StudioPage(props: { onExperiments: () => void }) {
       : fallbackPromptProfileId);
   }, [fallbackPromptProfileId, promptProfiles, promptProfileId]);
   const activeDiagram = diagrams.find((diagram) => diagram.id === activeDiagramId) ?? null;
+  const representationCatalog = workspace?.representationCatalog;
+  const settledRepresentation = activeDiagram && representationCatalog
+    ? Object.values(representationCatalog.representations).find((representation) => {
+        if (representation.status !== "settled") return false;
+        const revision = representationCatalog.revisions[representation.currentRevisionId];
+        const provenance = revision?.provenance;
+        return Boolean(provenance
+          && provenance.diagramSetId === activeSet?.id
+          && provenance.artifactId === activeDiagram.id);
+      })
+    : undefined;
   const viewCounts = useMemo(() => ({
     diagram: diagrams.filter((diagram) => diagram.viewKind === "diagram").length,
     "call-graph": diagrams.filter((diagram) => diagram.viewKind === "call-graph").length,
@@ -597,16 +717,16 @@ function StudioPage(props: { onExperiments: () => void }) {
   useEffect(() => {
     if (!availableGenerationTargets.includes(targetKind)) setTargetKind("diagram");
   }, [availableGenerationTargets, targetKind]);
-  const featuredViewKinds = new Set<DiagramViewKind>(
-    (Object.keys(activeSet?.featuredViewIds ?? {}) as DiagramViewKind[]).filter(
-      (kind) => Boolean(activeSet?.featuredViewIds[kind])
-    )
-  );
   const activeComponent = components.find((component) => component.id === activeComponentId) ?? null;
-  const selectedArtifact = screen === "diagram-component" ? activeComponent : activeDiagram;
+  const selectedArtifact = screen === "diagram-component"
+    ? activeComponent
+    : screen === "diagram" ? activeDiagram : null;
   const selectedRepresentationKind = selectedArtifact
     ? representationKindForArtifact(selectedArtifact)
     : "diagram";
+  const contextArtifact = screen === "diagram-component"
+    ? activeComponent
+    : screen === "diagram" ? activeDiagram : null;
   const selectedArtifactKind: GenerationOutputKind = screen === "diagram-component"
     ? "diagram-component"
     : "diagram";
@@ -661,15 +781,29 @@ function StudioPage(props: { onExperiments: () => void }) {
     : null;
 
   useLayoutEffect(() => {
-    const primaryTabs: PaneTab[] = screen === "generation"
+    const requestedPaneTabIds = requestedPaneTabIdsRef.current;
+    requestedPaneTabIdsRef.current = {};
+    const canonicalPrimaryTabs: PaneTab[] = screen === "generation"
       ? [{ id: "generate", label: "Generate" }]
       : screen === "diagram-component"
         ? [{ id: "component", label: "Component" }]
         : availableDiagramViewOptions.map(({ kind, label }) => ({
           id: kind,
           label,
-          badge: featuredViewKinds.has(kind) ? "★" : viewCounts[kind]
+          badge: viewCounts[kind]
         }));
+    const primaryTabs: PaneTab[] = showPlanDiagramPreview
+      ? [...canonicalPrimaryTabs, { id: "plan-preview", label: "Plan" }]
+      : canonicalPrimaryTabs;
+    const currentPrimaryPane = paneApi.getState().panes[PRIMARY_PANE_ID];
+    const requestedPrimaryTabId = requestedPaneTabIds.primary;
+    const canonicalPrimaryTabId = screen === "generation"
+      ? "generate"
+      : screen === "diagram-component" ? "component" : activeViewKind;
+    const desiredPrimaryTabId = requestedPrimaryTabId
+      ?? (primaryTabs.some((tab) => tab.id === currentPrimaryPane?.activeTabId)
+        ? currentPrimaryPane?.activeTabId
+        : canonicalPrimaryTabId);
     const baseContextTabs: PaneTab[] = [
       { id: "code-entities", label: "Code Entities", domId: "code-entities-tab" },
       { id: "diagrams", label: "Diagrams", domId: "diagrams-tab" },
@@ -683,6 +817,11 @@ function StudioPage(props: { onExperiments: () => void }) {
         label: "Operations · ",
         badge: editSession.operationCursor,
         domId: "operations-tab"
+      }] : []),
+      ...(showPlanCorpusPreview ? [{
+        id: "plan-corpus",
+        label: "Plan",
+        domId: "plan-corpus-tab"
       }] : [])
     ];
     const focusTabs: PaneTab[] = Object.entries(callGraphFocusViews).map(([viewId, result]) => ({
@@ -701,13 +840,12 @@ function StudioPage(props: { onExperiments: () => void }) {
       if (!contextTabs.some((candidate) => candidate.id === tab.id)) contextTabs.push(tab);
     }
     const currentContextTabId = currentContextPane?.activeTabId;
-    const desiredContextTabId = currentContextTabId?.startsWith(CALL_GRAPH_FOCUS_VIEW_PREFIX)
-      && contextTabs.some((tab) => tab.id === currentContextTabId)
-      ? currentContextTabId
-      : contextTab;
-    paneApi.setTabs(PRIMARY_PANE_ID, primaryTabs, screen === "generation"
-      ? "generate"
-      : screen === "diagram-component" ? "component" : activeViewKind);
+    const requestedContextTabId = requestedPaneTabIds.context;
+    const desiredContextTabId = requestedContextTabId
+      ?? (contextTabs.some((tab) => tab.id === currentContextTabId)
+        ? currentContextTabId
+        : contextTabs.some((tab) => tab.id === contextTab) ? contextTab : contextTabs[0]?.id);
+    paneApi.setTabs(PRIMARY_PANE_ID, primaryTabs, desiredPrimaryTabId);
     if (workspace?.project) {
       window.localStorage.setItem(PANE_PROFILE_STORAGE_KEY, domainProfile.id);
       const currentFilesTabId = paneApi.getState().panes[FILES_PANE_ID]?.activeTabId;
@@ -724,11 +862,12 @@ function StudioPage(props: { onExperiments: () => void }) {
     callGraphFocusViews,
     contextTab,
     editSession,
-    featuredViewKinds,
     domainProfile,
     availableDiagramViewOptions,
     paneApi,
     screen,
+    showPlanCorpusPreview,
+    showPlanDiagramPreview,
     viewCounts,
     workspace?.project
   ]);
@@ -809,9 +948,9 @@ function StudioPage(props: { onExperiments: () => void }) {
       setActiveDiagramId(requestedDiagram.id);
       setScreen("diagram");
     } else if (activeSet.readiness === "ready" && availableDiagramIds.length > 0) {
-      const preferredDiagramId = activeSet.featuredViewIds.diagram
+      const preferredDiagramId = settledDiagramIdsByViewKind.diagram
         ?? domainProfile.workspace.diagramViews
-          .map((viewKind) => activeSet.featuredViewIds[viewKind])
+          .map((viewKind) => settledDiagramIdsByViewKind[viewKind])
           .find((id) => id && availableDiagramIds.includes(id))
         ?? availableDiagramIds.at(-1)
         ?? null;
@@ -867,9 +1006,9 @@ function StudioPage(props: { onExperiments: () => void }) {
     });
     const latestDiagramId = activeDiagramIds.at(-1);
     if (!latestDiagramId) return;
-    setActiveDiagramId(activeSet.featuredViewIds.diagram ?? latestDiagramId);
+    setActiveDiagramId(settledDiagramIdsByViewKind.diagram ?? latestDiagramId);
     setScreen("diagram");
-  }, [activeSet, activeDiagramId, activeViewKind, workspace]);
+  }, [activeSet, activeDiagramId, activeViewKind, settledDiagramIdsByViewKind, workspace]);
 
   useEffect(() => {
     const shouldPoll = workspace !== null && (
@@ -1115,14 +1254,6 @@ function StudioPage(props: { onExperiments: () => void }) {
     });
   };
 
-  const removeDiagramSet = async (setId: string): Promise<void> => {
-    const next = await deleteDiagramSet(setId);
-    setWorkspace(next);
-    setActiveSetId((current) => current && next.diagramSets.some((set) => set.id === current)
-      ? current
-      : next.diagramSets.at(-1)?.id ?? null);
-  };
-
   const derive = (diagram: DiagramRecord) => {
     if (diagram.viewKind === "call-graph" || diagram.viewKind === "dir-view") {
       openGenerate(diagram.viewKind);
@@ -1283,7 +1414,7 @@ function StudioPage(props: { onExperiments: () => void }) {
       return diagram && diagram.viewKind === archivedViewKind && !isDiagramArchived(diagram);
       });
     setActiveDiagramId((current) => current === diagramId
-      ? nextSet?.featuredViewIds[archivedViewKind] ?? nextActiveIds.at(-1) ?? null
+      ? nextActiveIds.at(-1) ?? null
       : current);
     if (nextActiveIds.length === 0) {
       if (components.length > 0) {
@@ -1302,7 +1433,7 @@ function StudioPage(props: { onExperiments: () => void }) {
       setWorkspace(await setStarredDiagram(
         activeSet.id,
         diagramId,
-        activeSet.featuredViewIds[workspace.diagrams[diagramId]?.viewKind ?? "diagram"] !== diagramId
+        !settledRepresentation
       ));
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "chosen diagram update failed");
@@ -1363,36 +1494,31 @@ function StudioPage(props: { onExperiments: () => void }) {
     setProgress("Child DiagramComponent captured and saved");
   };
 
+  const leavePlanDiagramPreview = () => {
+    if (selectedPlan && selectedPlanDiagramChange) {
+      setPlanSelection({ planId: selectedPlan.id });
+    }
+  };
+
   const selectDiagram = (diagramId: string) => {
     const diagram = workspace.diagrams[diagramId];
     if (diagram) setActiveViewKind(diagram.viewKind);
+    leavePlanDiagramPreview();
     setActiveDiagramId(diagramId);
     setActiveComponentId(null);
     setScreen("diagram");
   };
 
-  const selectDiagramSet = (setId: string) => {
-    requestedDiagramIdRef.current = null;
-    setActiveSetId(setId);
-  };
-
-  const selectDiagramFromSet = (setId: string, diagramId: string) => {
-    if (setId === activeSet.id) {
-      selectDiagram(diagramId);
-      return;
-    }
-    requestedDiagramIdRef.current = diagramId;
-    setActiveSetId(setId);
-  };
-
   const selectViewKind = (viewKind: DiagramViewKind) => {
+    leavePlanDiagramPreview();
     setActiveViewKind(viewKind);
-    setActiveDiagramId(activeSet.featuredViewIds[viewKind] ?? null);
+    setActiveDiagramId(settledDiagramIdsByViewKind[viewKind] ?? null);
     setActiveComponentId(null);
     setScreen("diagram");
   };
 
   const openGenerate = (nextTargetKind: GenerationTargetKind) => {
+    leavePlanDiagramPreview();
     setTargetKind(nextTargetKind);
     if (nextTargetKind === "call-graph" || nextTargetKind === "dir-view") {
       setPrompt(defaultGenerationInstruction(nextTargetKind));
@@ -1421,8 +1547,21 @@ function StudioPage(props: { onExperiments: () => void }) {
   };
 
   const selectComponent = (componentId: string) => {
+    leavePlanDiagramPreview();
     setActiveComponentId(componentId);
     setScreen("diagram-component");
+  };
+
+  const selectPlanNode = (planId: string, changeId?: string) => {
+    const plan = (workspace.plans ?? []).find((candidate) => candidate.id === planId);
+    const change = plan?.changes.find((candidate) => candidate.id === changeId);
+    requestedPaneTabIdsRef.current = {
+      context: "plan-corpus",
+      ...(change?.kind === "diagram-modified" || change?.kind === "diagram-added"
+        ? { primary: "plan-preview" }
+        : {})
+    };
+    setPlanSelection({ planId, ...(changeId ? { changeId } : {}) });
   };
 
   const toggleEntity = (id: string) => setSelectedIds((current) => {
@@ -1668,13 +1807,15 @@ function StudioPage(props: { onExperiments: () => void }) {
     }
   };
 
-  const revealCodeEntity = (
-    target: Pick<DiagramElementMapping, "entityId" | "sourceRangeIndex">
+  const revealCodeEntityFromScope = (
+    diagramSetId: string,
+    codeEntities: readonly CodeEntityRecord[],
+    target: Pick<DiagramElementMapping, "entityId" | "sourceRangeIndex"> & { targetLine?: number }
   ) => {
-    const entity = resolutionEntities.find((candidate) => candidate.id === target.entityId);
+    const entity = codeEntities.find((candidate) => candidate.id === target.entityId);
     const range = entity?.sourceRanges[target.sourceRangeIndex];
     paneNavigation.jump({
-      key: `code-entity:${activeSet.id}:${target.entityId}:${target.sourceRangeIndex}`,
+      key: `code-entity:${diagramSetId}:${target.entityId}:${target.sourceRangeIndex}`,
       kind: "source-location",
       paneId: CONTEXT_PANE_ID,
       tabId: "code-entities",
@@ -1685,9 +1826,19 @@ function StudioPage(props: { onExperiments: () => void }) {
         entityId: target.entityId,
         sourceRangeIndex: target.sourceRangeIndex,
         path: range?.path,
-        line: range?.startLine
+        line: target.targetLine ?? range?.startLine
       } satisfies SourceLocationJumpPayload
     });
+  };
+
+  const revealCodeEntity = (
+    target: Pick<DiagramElementMapping, "entityId" | "sourceRangeIndex"> & { targetLine?: number }
+  ) => revealCodeEntityFromScope(activeSet.id, fileExplorerEntities, target);
+
+  const revealPlanCodeEntity = (mapping: DiagramElementMapping) => {
+    if (!selectedPlanDiagramSetId) return;
+    if (selectedPlanDiagramSetId !== activeSet.id) setActiveSetId(selectedPlanDiagramSetId);
+    revealCodeEntityFromScope(selectedPlanDiagramSetId, selectedPlanCodeEntities, mapping);
   };
 
   const jumpToMarkdownSection = (section: TerminalMarkdownSection) => {
@@ -1877,7 +2028,7 @@ function StudioPage(props: { onExperiments: () => void }) {
       active={editSession ? { ...activeDiagram, ascii: editSession.workingAscii } : activeDiagram}
       artifactKind="diagram"
       representationKind={selectedRepresentationKind}
-      partialDiff={partialDiffForDiagram(activeDiagram)}
+      partialDiff={partialDiffForDiagram(activeDiagram, workspace.plans ?? [])}
       onGenerate={() => derive(activeDiagram)}
       onExport={() => exportMappedArtifact("diagram", activeDiagram)}
       onCapture={capture}
@@ -1894,7 +2045,7 @@ function StudioPage(props: { onExperiments: () => void }) {
       mappingBusy={selectedMappingBusy}
       mappingProgress={selectedMappingJob?.progress ?? ""}
       mappingError={selectedMappingJob?.error ?? null}
-      starred={activeSet.featuredViewIds[activeDiagram.viewKind] === activeDiagram.id}
+      starred={Boolean(settledRepresentation)}
       starBusy={starBusy}
       onToggleStarred={() => void toggleStarred(activeDiagram.id)}
       onToggleEdit={() => void (editSession ? leaveEdit() : startEdit())}
@@ -1930,7 +2081,7 @@ function StudioPage(props: { onExperiments: () => void }) {
 
   const contextCodeEntities = screen === "generation"
     ? entitySet
-    : { ...entitySet, entities: resolutionEntities };
+    : { ...entitySet, entities: fileExplorerEntities };
   const renderContextPane = (tab: ContextTab) => <DiagramContextPanel
     setId={activeSet.id}
     codeEntities={contextCodeEntities}
@@ -1987,6 +2138,26 @@ function StudioPage(props: { onExperiments: () => void }) {
   );
   const paneViews: Record<string, PaneTabView> = {
     generate: { content: primaryPaneContent },
+    "plan-preview": { content: selectedPlan && selectedPlanDiagramChange ? (
+      <PlanDiagramPreview
+        workspace={workspace}
+        plan={selectedPlan}
+        change={selectedPlanDiagramChange}
+        codeEntities={selectedPlanCodeEntities}
+        codeEntityMap={selectedPlanCodeEntityMap}
+        onRevealCodeEntity={revealPlanCodeEntity}
+      />
+    ) : null },
+    "plan-corpus": { content: selectedPlan ? (
+      <PlanCorpusPreview
+        workspace={workspace}
+        plan={selectedPlan}
+        change={selectedPlanChange?.kind === "code-entity-compaction"
+          ? selectedPlanChange
+          : undefined}
+        contentPresentation={domainProfile.content}
+      />
+    ) : null },
     component: { content: primaryPaneContent },
     diagram: { content: primaryPaneContent, onActivate: () => selectViewKind("diagram") },
     "call-graph": { content: primaryPaneContent, onActivate: () => selectViewKind("call-graph") },
@@ -1995,20 +2166,28 @@ function StudioPage(props: { onExperiments: () => void }) {
     files: { content: <FileExplorerPanel
       activeSetId={activeSet.id}
       activeProjectId={activeSet.projectId}
-      diagramSets={workspace.diagramSets}
-      diagrams={workspace.diagrams}
-      codeEntitySets={workspace.codeEntitySets}
-      codeEntityMaps={workspace.codeEntityMaps}
+      codeEntities={fileExplorerEntities}
+      artifact={contextArtifact ?? undefined}
       onRevealCodeEntity={revealCodeEntity}
     /> },
-    "diagram-sets": { content: <DiagramSetTreePanel
-      diagramSets={workspace.diagramSets}
-      diagrams={workspace.diagrams}
-      activeSetId={activeSet.id}
-      activeDiagramId={activeDiagramId ?? undefined}
-      onSelectSet={selectDiagramSet}
-      onSelectDiagram={selectDiagramFromSet}
-      onDeleteSet={removeDiagramSet}
+    representations: { content: <RepresentationsPanel
+      catalog={workspace.representationCatalog}
+      onOpen={(diagramSetId, diagramId) => {
+        if (diagramSetId === activeSet.id) {
+          selectDiagram(diagramId);
+          return;
+        }
+        leavePlanDiagramPreview();
+        requestedDiagramIdRef.current = diagramId;
+        setActiveSetId(diagramSetId);
+      }}
+    /> },
+    plans: { content: <PlansTreePanel
+      plans={workspace.plans ?? []}
+      selectedPlanId={planSelection?.planId}
+      selectedChangeId={planSelection?.changeId}
+      staleChangeIds={stalePlanChangeIds}
+      onSelect={selectPlanNode}
     /> },
     "markdown-sections": { content: <MarkdownSectionsPanel
       path={markdownOutline?.path}
@@ -2045,11 +2224,17 @@ function StudioPage(props: { onExperiments: () => void }) {
             type="button"
             className={screen === "diagram" || screen === "diagram-component" ? "is-active" : ""}
             disabled={diagrams.length + components.length === 0}
-            onClick={() => setScreen(activeComponent ? "diagram-component" : "diagram")}
+            onClick={() => {
+              leavePlanDiagramPreview();
+              setScreen(activeComponent ? "diagram-component" : "diagram");
+            }}
           >
             {activeComponent ? "COMPONENT" : "DIAGRAM"}
           </button>
-          <button type="button" className={screen === "generation" ? "is-active" : ""} onClick={() => setScreen("generation")}>GENERATE</button>
+          <button type="button" className={screen === "generation" ? "is-active" : ""} onClick={() => {
+            leavePlanDiagramPreview();
+            setScreen("generation");
+          }}>GENERATE</button>
           <button type="button" className="header-import" onClick={() => setImportOpen(true)}>IMPORT</button>
           <button type="button" onClick={props.onExperiments}>EXPERIMENTS</button>
           <div className="settings-menu-shell">

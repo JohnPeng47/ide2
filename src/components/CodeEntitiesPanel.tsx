@@ -51,11 +51,17 @@ export function CodeEntitiesPanel(props: {
   }) => void;
 }) {
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const visible = useMemo(() => (
-    props.diagram
+  const visible = useMemo(() => {
+    const base = props.diagram
       ? props.codeEntities.entities.filter((entity) => props.diagram?.codeEntityIds.includes(entity.id))
-      : props.codeEntities.entities
-  ), [props.codeEntities.entities, props.diagram]);
+      : props.codeEntities.entities;
+    const revealed = props.reveal?.entityId
+      ? props.codeEntities.entities.find((entity) => entity.id === props.reveal?.entityId)
+      : undefined;
+    return revealed && !base.some((entity) => entity.id === revealed.id)
+      ? [...base, revealed]
+      : base;
+  }, [props.codeEntities.entities, props.diagram, props.reveal?.entityId]);
   const [activeEntityId, setActiveEntityId] = useState(() => visible[0]?.id ?? "");
   const [activeRangeIndex, setActiveRangeIndex] = useState(0);
   const [preview, setPreview] = useState<SourceSnippet | null>(null);
@@ -358,6 +364,7 @@ export function CodeEntitiesPanel(props: {
               range={activeRange}
               compacted={Boolean(activeRange.compactedSource)}
               presentation={props.contentPresentation}
+              targetLine={jumpTarget?.line}
               revealed={props.reveal?.entityId === activeEntity?.id}
               revealRequestId={props.reveal?.requestId}
             />

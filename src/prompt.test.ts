@@ -517,7 +517,7 @@ describe("createGenerationPromptConfig", () => {
     expect(config.contextPrompt.rendered).toContain("Show the queue");
   });
 
-  it("requires and injects starred prerequisite views for auxiliary generation", () => {
+  it("requires and injects settled prerequisite views for auxiliary generation", () => {
     const auxiliarySet = {
       ...diagramSet,
       featuredViewIds: { diagram: diagram.id }
@@ -561,7 +561,7 @@ describe("createGenerationPromptConfig", () => {
       instruction: "Show relevant files",
       selectedCodeEntityIds: [],
       createdAt: "2026-01-01T00:00:00Z"
-    })).toThrow(/star a Call Graph/);
+    })).toThrow(/settle a Call Graph/);
 
     const companionCallGraph: DiagramRecord = {
       ...diagram,
@@ -608,7 +608,7 @@ describe("createGenerationPromptConfig", () => {
       viewKind: "call-graph",
       instruction: "Show runtime calls",
       selectedCodeEntityIds: []
-    })).toThrow(/star a main Diagram/);
+    })).toThrow(/settle a main Diagram/);
   });
 
   it("rejects unknown references", () => {

@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "diagram-project-catalog-architecture-v1",
+  "recordOrigin": {
+    "projectId": "project-ce67f2af4410",
+    "diagramSetId": "set-5071af75-ec47-4222-b24b-fcbf2d00d36d"
+  },
+  "diagramSetId": "set-5071af75-ec47-4222-b24b-fcbf2d00d36d",
+  "viewKind": "diagram",
+  "handle": "project-corpus-settled-representations",
+  "name": "Project Corpus and Settled Representations",
+  "ascii": "Legend: [P] persisted, [R] runtime, [X] external content.\n\n             PROJECT-SCOPED CORPUS AND SETTLED REPRESENTATIONS\n\n[P] ProjectRecord\n |\n +--> corpus -----------------------> [P] CorpusBinding\n |                                        |\n |                              [R] function corpusProvider(...)\n |                                        |\n |                                        v\n |                             [X] Git worktree / documents\n |\n +--> catalogs ---------------------> [R] ProjectCatalogStore\n |                                        |\n |              +-------------------------+-------------------------+\n |              |                                                   |\n |              v                                                   v\n | [P] ProjectCorpusCompactionCatalogRecord       [P] ProjectRepresentationCatalogRecord\n |     activeByPath[path]                              activeByKind[viewKind]\n |              |                                                   |\n |              v                                                   v\n | [P] ProjectFileCompactionRecord                  [P] ProjectRepresentationRecord\n |     source hash + profile + sections                  currentRevisionId\n |              ^                                                   |\n |              | method upsertFileCompaction(...)                  v\n |              |                               [P] ProjectRepresentationRevisionRecord\n |              |                                   immutable ASCII + Evidence + mappings\n |              |                                                   |\n |              |                                                   v\n |              |                                [R] function buildRepresentationIndex(...)\n |\n `--> [P] GenerationSessionRecord\n      compatibility storage: DiagramSetRecord\n      owns CodeEntities + candidate Diagrams + runs\n                         |\n                         | method promoteProjectRepresentation(...)\n                         v\n                  [R] ProjectCatalogStore\n                         |\n                         `--> method promoteRepresentation(...)\n                              snapshots candidate + Evidence + mappings\n                              into the immutable settled revision above\n\nSESSION DELETION BOUNDARY\nGeneration Session removed ----X----> Project compactions / settled Representations",
+  "representationKind": "diagram",
+  "codeEntityIds": [
+    "entity-54af7e34-fffa-4226-8f5b-7f23671fd350",
+    "entity-007eb29d-0868-49d8-a758-aa23985bdaa2",
+    "entity-37cde46a-1708-49aa-b2b5-41a4ba733b2a",
+    "entity-project-catalog-store-v1",
+    "entity-project-corpus-compaction-catalog-v1",
+    "entity-project-representation-catalog-v1",
+    "entity-project-file-compaction-record-v1",
+    "entity-project-representation-record-v1",
+    "entity-upsert-file-compaction-v1",
+    "entity-project-representation-revision-v1",
+    "entity-764437e3-f0f0-4267-b5af-baa4aa38187e",
+    "entity-generation-session-record-v1",
+    "entity-promote-project-representation-v1",
+    "entity-promote-representation-v1"
+  ],
+  "origin": "materialized",
+  "derivedFromDiagramIds": [
+    "diagram-2fa3394c-f5d0-429c-9374-b314dec48702"
+  ],
+  "createdAt": "2026-09-02T19:23:00.457Z"
+}

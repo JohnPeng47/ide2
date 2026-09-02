@@ -13,6 +13,8 @@ export interface DiagramPixelRect {
   height: number;
 }
 
+export const PARTIAL_DIFF_DIALOG_HEADING = "SEMANTIC PARTIAL DIFF";
+
 export function diagramPixelRect(
   diff: PartialDiffDefinition,
   cell: DiagramCellMetrics
@@ -93,10 +95,15 @@ export function DiagramPartialDiffOverlay(props: {
           role="dialog"
           aria-modal="true"
           aria-label={props.diff.label}
-          style={{ left: rect.x, top: rect.y, width: modalSide, height: modalSide }}
+          style={{
+            left: rect.x,
+            top: rect.y,
+            width: modalSide,
+            height: modalSide
+          }}
         >
           <header>
-            <span>SEMANTIC OWNERSHIP-TRANSFER DIFF</span>
+            <span>{PARTIAL_DIFF_DIALOG_HEADING}</span>
             <button
               ref={closeRef}
               type="button"

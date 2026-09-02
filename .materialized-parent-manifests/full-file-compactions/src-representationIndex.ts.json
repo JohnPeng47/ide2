@@ -1,0 +1,148 @@
+{
+  "key": "src-representation-index-ts-full-file",
+  "handle": "src-representation-index-ts-full-file",
+  "label": "src/representationIndex.ts full-file compaction",
+  "category": "operation",
+  "summary": "Defines revision-scoped tree and diagram indexes, validates mapping freshness, builds stable representation identities, navigates tree structure, and resolves evidence bidirectionally.",
+  "sourceRanges": [
+    {
+      "key": "full-file",
+      "path": "src/representationIndex.ts",
+      "startLine": 1,
+      "endLine": 339,
+      "symbol": "RepresentationIndex construction and resolution",
+      "compactedSource": {
+        "level": "high",
+        "sections": [
+          {
+            "kind": "collapsed-comment",
+            "startLine": 1,
+            "endLine": 72,
+            "comment": "RepresentationContracts\n|\n+--> REVISION IDENTITY\n|    `--> interface RepresentationRevision { artifactId; asciiSha256 }\n|\n+--> EVIDENCE LINKS\n|    +--> interface EvidenceElementLink\n|    `--> interface ResolvedEvidenceElement\n|\n+--> TREE INDEX\n|    +--> interface TreeRepresentationNode\n|    `--> interface TreeRepresentationIndex\n|\n+--> DIAGRAM INDEX\n|    +--> interface DiagramRepresentationElement\n|    `--> interface DiagramRepresentationIndex\n|\n+--> INDEX UNION\n|    `--> type RepresentationIndex = tree | diagram\n|\n+--> SPATIAL RESOLVER\n|    `--> interface SpatialEvidenceResolver\n|         +--> resolveEvidence(...)\n|         `--> resolveElement(...)\n|\n`--> BUILD REQUEST\n     +--> interface RepresentationIndexSource\n     `--> type RepresentationIndexRequest = source + selected kind",
+            "nodes": [
+              { "graphLine": 1, "startLine": 1, "endLine": 72 },
+              { "graphLine": 3, "startLine": 4, "endLine": 7 },
+              { "graphLine": 4, "startLine": 4, "endLine": 7 },
+              { "graphLine": 6, "startLine": 9, "endLine": 13 },
+              { "graphLine": 7, "startLine": 9, "endLine": 13 },
+              { "graphLine": 8, "startLine": 52, "endLine": 56 },
+              { "graphLine": 10, "startLine": 15, "endLine": 33 },
+              { "graphLine": 11, "startLine": 15, "endLine": 26 },
+              { "graphLine": 12, "startLine": 28, "endLine": 33 },
+              { "graphLine": 14, "startLine": 35, "endLine": 48 },
+              { "graphLine": 15, "startLine": 35, "endLine": 42 },
+              { "graphLine": 16, "startLine": 44, "endLine": 48 },
+              { "graphLine": 18, "startLine": 50, "endLine": 50 },
+              { "graphLine": 19, "startLine": 50, "endLine": 50 },
+              { "graphLine": 21, "startLine": 58, "endLine": 61 },
+              { "graphLine": 22, "startLine": 58, "endLine": 61 },
+              { "graphLine": 23, "startLine": 59, "endLine": 59 },
+              { "graphLine": 24, "startLine": 60, "endLine": 60 },
+              { "graphLine": 26, "startLine": 63, "endLine": 72 },
+              { "graphLine": 27, "startLine": 63, "endLine": 67 },
+              { "graphLine": 28, "startLine": 69, "endLine": 72 }
+            ]
+          },
+          {
+            "kind": "collapsed-comment",
+            "startLine": 74,
+            "endLine": 131,
+            "comment": "RevisionAndMappingGuards\n|\n+--> SCOPE IDENTITY\n|    `--> function revisionScope(...)\n|         `--> encode artifact id + ASCII hash\n|\n+--> NORMALIZE MAPPINGS\n|    +--> function evidenceForMapping(...)\n|    |    `--> persisted mapping -> evidence link\n|    `--> function mappingsInVisualOrder(...)\n|         `--> stable line/column/id sort\n|\n+--> ASSERT REVISION\n|    +--> export function assertRepresentationRevision(...)\n|    |    +--[artifact mismatch]--> stale artifact error\n|    |    `--[hash mismatch]-----> stale ASCII error\n|    `--> export function isRepresentationRevisionCurrent(...)\n|         `--> artifact id + hash equality\n|\n`--> MAP GATE\n     `--> function assertCurrentMap(...)\n          +--[no map]--> accept\n          `--[map]----> assertRepresentationRevision(...)\n",
+            "nodes": [
+              { "graphLine": 1, "startLine": 74, "endLine": 131 },
+              { "graphLine": 3, "startLine": 74, "endLine": 76 },
+              { "graphLine": 4, "startLine": 74, "endLine": 76 },
+              { "graphLine": 5, "startLine": 75, "endLine": 75 },
+              { "graphLine": 7, "startLine": 78, "endLine": 95 },
+              { "graphLine": 8, "startLine": 78, "endLine": 84 },
+              { "graphLine": 9, "startLine": 79, "endLine": 83 },
+              { "graphLine": 10, "startLine": 86, "endLine": 95 },
+              { "graphLine": 11, "startLine": 89, "endLine": 94 },
+              { "graphLine": 13, "startLine": 97, "endLine": 120 },
+              { "graphLine": 14, "startLine": 98, "endLine": 112 },
+              { "graphLine": 15, "startLine": 102, "endLine": 106 },
+              { "graphLine": 16, "startLine": 107, "endLine": 111 },
+              { "graphLine": 17, "startLine": 114, "endLine": 120 },
+              { "graphLine": 18, "startLine": 118, "endLine": 119 },
+              { "graphLine": 20, "startLine": 122, "endLine": 131 },
+              { "graphLine": 21, "startLine": 122, "endLine": 131 },
+              { "graphLine": 22, "startLine": 126, "endLine": 126 },
+              { "graphLine": 23, "startLine": 127, "endLine": 130 }
+            ]
+          },
+          {
+            "kind": "collapsed-comment",
+            "startLine": 133,
+            "endLine": 254,
+            "comment": "RepresentationIndexConstruction\n|\n+--> BUILD TREE\n|    `--> export function buildTreeRepresentationIndex(...)\n|         +--> assert map revision -> parseAsciiTree(...)\n|         +--> pre-order nodes -> revision-scoped ancestry IDs\n|         +--> overlapping mappings -> mapping IDs + evidence links\n|         +--> unmapped semantic lines -> standalone loose roots\n|         `--> stable order -> TreeRepresentationIndex\n|\n+--> BUILD DIAGRAM\n|    `--> export function buildDiagramRepresentationIndex(...)\n|         +--> assert map revision -> mappingsInVisualOrder(...)\n|         +--> each mapping -> exact inclusive diagram element\n|         +--[duplicate id]--> reject\n|         `--> DiagramRepresentationIndex\n|\n`--> DISPATCH\n     `--> export function buildRepresentationIndex(...)\n          +--[tree]----> buildTreeRepresentationIndex(...)\n          `--[diagram]-> buildDiagramRepresentationIndex(...)",
+            "nodes": [
+              { "graphLine": 1, "startLine": 133, "endLine": 254 },
+              { "graphLine": 3, "startLine": 133, "endLine": 224 },
+              { "graphLine": 4, "startLine": 137, "endLine": 224 },
+              { "graphLine": 5, "startLine": 140, "endLine": 142 },
+              { "graphLine": 6, "startLine": 143, "endLine": 187 },
+              { "graphLine": 7, "startLine": 163, "endLine": 181 },
+              { "graphLine": 8, "startLine": 189, "endLine": 216 },
+              { "graphLine": 9, "startLine": 218, "endLine": 223 },
+              { "graphLine": 11, "startLine": 226, "endLine": 247 },
+              { "graphLine": 12, "startLine": 227, "endLine": 247 },
+              { "graphLine": 13, "startLine": 230, "endLine": 233 },
+              { "graphLine": 14, "startLine": 234, "endLine": 244 },
+              { "graphLine": 15, "startLine": 235, "endLine": 236 },
+              { "graphLine": 16, "startLine": 246, "endLine": 246 },
+              { "graphLine": 18, "startLine": 249, "endLine": 254 },
+              { "graphLine": 19, "startLine": 250, "endLine": 254 },
+              { "graphLine": 20, "startLine": 251, "endLine": 252 },
+              { "graphLine": 21, "startLine": 251, "endLine": 253 }
+            ]
+          },
+          {
+            "kind": "collapsed-comment",
+            "startLine": 256,
+            "endLine": 294,
+            "comment": "TreeIndexNavigation\n|\n+--> LINEAGE\n|    `--> export function treeRepresentationLineage(...)\n|         +--> node -> parent links -> root\n|         `--[unknown/cycle]--> [] or bounded ancestry\n|\n+--> SUBTREE\n|    `--> export function treeRepresentationSubtree(...)\n|         +--[unknown]--> []\n|         `--> const visit = (...)\n|              `--> depth-first child traversal -> stable pre-order\n|\n`--> SHARED ELEMENT VIEW\n     `--> function elementsOf(...)\n          `--> tree nodes | diagram elements",
+            "nodes": [
+              { "graphLine": 1, "startLine": 256, "endLine": 294 },
+              { "graphLine": 3, "startLine": 256, "endLine": 270 },
+              { "graphLine": 4, "startLine": 257, "endLine": 270 },
+              { "graphLine": 5, "startLine": 263, "endLine": 268 },
+              { "graphLine": 6, "startLine": 264, "endLine": 269 },
+              { "graphLine": 8, "startLine": 272, "endLine": 287 },
+              { "graphLine": 9, "startLine": 273, "endLine": 287 },
+              { "graphLine": 10, "startLine": 277, "endLine": 277 },
+              { "graphLine": 11, "startLine": 279, "endLine": 284 },
+              { "graphLine": 12, "startLine": 280, "endLine": 283 },
+              { "graphLine": 14, "startLine": 289, "endLine": 294 },
+              { "graphLine": 15, "startLine": 289, "endLine": 294 },
+              { "graphLine": 16, "startLine": 293, "endLine": 293 }
+            ]
+          },
+          {
+            "kind": "collapsed-comment",
+            "startLine": 296,
+            "endLine": 339,
+            "comment": "SpatialEvidenceResolution\n|\n+--> RESOLVER IMPLEMENTATION\n|    `--> const spatialEvidenceResolver: SpatialEvidenceResolver\n|         +--> resolveEvidence(...)\n|         |    `--> scan element evidence -> matching element links\n|         `--> resolveElement(...)\n|              `--> element id -> evidence links or []\n|\n+--> PUBLIC FACADE\n|    +--> export function resolveEvidenceElements(...)\n|    |    `--> spatialEvidenceResolver.resolveEvidence(...)\n|    `--> export function resolveElementEvidence(...)\n|         `--> spatialEvidenceResolver.resolveElement(...)\n|\n`--> MAPPING LOOKUP\n     `--> export function representationElementIdForMapping(...)\n          +--[tree]----> find node containing mapping id\n          `--[diagram]-> find element with exact mapping id",
+            "nodes": [
+              { "graphLine": 1, "startLine": 296, "endLine": 339 },
+              { "graphLine": 3, "startLine": 296, "endLine": 314 },
+              { "graphLine": 4, "startLine": 297, "endLine": 314 },
+              { "graphLine": 5, "startLine": 298, "endLine": 304 },
+              { "graphLine": 6, "startLine": 299, "endLine": 303 },
+              { "graphLine": 7, "startLine": 305, "endLine": 313 },
+              { "graphLine": 8, "startLine": 306, "endLine": 312 },
+              { "graphLine": 10, "startLine": 316, "endLine": 328 },
+              { "graphLine": 11, "startLine": 316, "endLine": 321 },
+              { "graphLine": 12, "startLine": 320, "endLine": 320 },
+              { "graphLine": 13, "startLine": 323, "endLine": 328 },
+              { "graphLine": 14, "startLine": 327, "endLine": 327 },
+              { "graphLine": 16, "startLine": 330, "endLine": 339 },
+              { "graphLine": 17, "startLine": 331, "endLine": 339 },
+              { "graphLine": 18, "startLine": 335, "endLine": 338 },
+              { "graphLine": 19, "startLine": 335, "endLine": 338 }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "key": "src-domain-profile-ts-full-file",
+  "handle": "src-domain-profile-ts-full-file",
+  "label": "src/domainProfile.ts full-file compaction",
+  "category": "interface-data-struct",
+  "summary": "Defines domain-neutral corpus bindings, evidence adapters, workspace surfaces, content presentation, element commands, and the aggregate domain profile contract.",
+  "sourceRanges": [
+    {
+      "key": "full-file",
+      "path": "src/domainProfile.ts",
+      "startLine": 1,
+      "endLine": 86,
+      "symbol": "DomainProfile contracts",
+      "compactedSource": {
+        "level": "high",
+        "sections": [
+          {
+            "kind": "collapsed-comment",
+            "startLine": 1,
+            "endLine": 26,
+            "comment": "CorpusProfileContracts\n|\n+--> DOMAIN IDENTITY\n|    +--> type BuiltInDomainProfileId = source-code | document\n|    `--> type DomainProfileId = built-in | extension string\n|\n+--> CORPUS BINDING\n|    `--> type CorpusBinding = git worktree | filesystem documents\n|         `--> root + optional revision select concrete corpus\n|\n+--> DIRECTORY MODEL\n|    +--> interface CorpusEntry { path; name; kind }\n|    `--> interface CorpusDirectoryListing { directory; entries }\n|\n`--> PROVIDER\n     `--> interface CorpusProvider\n          +--> readonly kind\n          +--> listDirectory(...)\n          `--> readLines(...)",
+            "nodes": [
+              { "graphLine": 1, "startLine": 1, "endLine": 26 },
+              { "graphLine": 3, "startLine": 3, "endLine": 5 },
+              { "graphLine": 4, "startLine": 4, "endLine": 4 },
+              { "graphLine": 5, "startLine": 5, "endLine": 5 },
+              { "graphLine": 7, "startLine": 7, "endLine": 9 },
+              { "graphLine": 8, "startLine": 7, "endLine": 9 },
+              { "graphLine": 9, "startLine": 8, "endLine": 9 },
+              { "graphLine": 11, "startLine": 11, "endLine": 20 },
+              { "graphLine": 12, "startLine": 11, "endLine": 15 },
+              { "graphLine": 13, "startLine": 17, "endLine": 20 },
+              { "graphLine": 15, "startLine": 22, "endLine": 26 },
+              { "graphLine": 16, "startLine": 22, "endLine": 26 },
+              { "graphLine": 17, "startLine": 23, "endLine": 23 },
+              { "graphLine": 18, "startLine": 24, "endLine": 24 },
+              { "graphLine": 19, "startLine": 25, "endLine": 25 }
+            ]
+          },
+          {
+            "kind": "collapsed-comment",
+            "startLine": 28,
+            "endLine": 44,
+            "comment": "EvidenceProfileContracts\n|\n+--> ENTITY VIEW\n|    `--> interface EvidenceEntity\n|         `--> identity + label/kind/summary + source anchors\n|\n`--> SCHEMA ADAPTER\n     `--> interface EvidenceSchema\n          +--> display nouns identify evidence and collections\n          `--> fromCodeEntity(...) -> EvidenceEntity",
+            "nodes": [
+              { "graphLine": 1, "startLine": 28, "endLine": 44 },
+              { "graphLine": 3, "startLine": 28, "endLine": 36 },
+              { "graphLine": 4, "startLine": 29, "endLine": 36 },
+              { "graphLine": 5, "startLine": 30, "endLine": 35 },
+              { "graphLine": 7, "startLine": 38, "endLine": 44 },
+              { "graphLine": 8, "startLine": 38, "endLine": 44 },
+              { "graphLine": 9, "startLine": 39, "endLine": 42 },
+              { "graphLine": 10, "startLine": 43, "endLine": 43 }
+            ]
+          },
+          {
+            "kind": "collapsed-comment",
+            "startLine": 46,
+            "endLine": 64,
+            "comment": "WorkspacePresentationContracts\n|\n+--> EXPLORER SURFACES\n|    +--> type ExplorerSurfaceId = files | sets | sections | highlights | plans\n|    `--> interface WorkspaceSurfaceContribution { id; label; domId }\n|\n+--> WORKSPACE PROFILE\n|    `--> interface WorkspaceSurfaceProfile\n|         `--> explorer tabs + supported DiagramViewKind list\n|\n`--> CONTENT PRESENTATION\n     `--> interface ContentPresentation\n          `--> highlighting + markdown mode + wrap + source compaction",
+            "nodes": [
+              { "graphLine": 1, "startLine": 46, "endLine": 64 },
+              { "graphLine": 3, "startLine": 46, "endLine": 52 },
+              { "graphLine": 4, "startLine": 46, "endLine": 46 },
+              { "graphLine": 5, "startLine": 48, "endLine": 52 },
+              { "graphLine": 7, "startLine": 54, "endLine": 57 },
+              { "graphLine": 8, "startLine": 54, "endLine": 57 },
+              { "graphLine": 9, "startLine": 55, "endLine": 56 },
+              { "graphLine": 11, "startLine": 59, "endLine": 64 },
+              { "graphLine": 12, "startLine": 59, "endLine": 64 },
+              { "graphLine": 13, "startLine": 60, "endLine": 63 }
+            ]
+          },
+          {
+            "kind": "collapsed-comment",
+            "startLine": 66,
+            "endLine": 86,
+            "comment": "DomainCommandProfile\n|\n+--> COMMAND IDENTITY\n|    `--> type ElementCommandId = reveal | collapse | highlight | buffer\n|\n+--> COMMAND CONTRIBUTION\n|    `--> interface ElementCommandContribution\n|         `--> command id + representation kinds + optional evidence gate\n|\n`--> AGGREGATE PROFILE\n     `--> interface DomainProfile\n          +--> identity + corpus kind + EvidenceSchema\n          +--> WorkspaceSurfaceProfile + ContentPresentation\n          `--> readonly ElementCommandContribution[]",
+            "nodes": [
+              { "graphLine": 1, "startLine": 66, "endLine": 86 },
+              { "graphLine": 3, "startLine": 66, "endLine": 70 },
+              { "graphLine": 4, "startLine": 66, "endLine": 70 },
+              { "graphLine": 6, "startLine": 72, "endLine": 76 },
+              { "graphLine": 7, "startLine": 72, "endLine": 76 },
+              { "graphLine": 8, "startLine": 73, "endLine": 75 },
+              { "graphLine": 10, "startLine": 78, "endLine": 86 },
+              { "graphLine": 11, "startLine": 78, "endLine": 86 },
+              { "graphLine": 12, "startLine": 79, "endLine": 82 },
+              { "graphLine": 13, "startLine": 83, "endLine": 84 },
+              { "graphLine": 14, "startLine": 85, "endLine": 85 }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

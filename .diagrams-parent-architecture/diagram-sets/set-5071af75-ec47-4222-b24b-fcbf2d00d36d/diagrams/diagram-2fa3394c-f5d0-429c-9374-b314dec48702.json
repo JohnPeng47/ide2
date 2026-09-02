@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "diagram-2fa3394c-f5d0-429c-9374-b314dec48702",
+  "recordOrigin": {
+    "projectId": "project-ce67f2af4410",
+    "diagramSetId": "set-5071af75-ec47-4222-b24b-fcbf2d00d36d"
+  },
+  "diagramSetId": "set-5071af75-ec47-4222-b24b-fcbf2d00d36d",
+  "viewKind": "diagram",
+  "handle": "corpus-evidence-representation",
+  "name": "Code-Level Corpus, Evidence, and Representation Graph",
+  "ascii": "Legend: [P] persisted, [R] runtime, [X] external content.\n\n                   CODE-LEVEL CORPUS / EVIDENCE / REPRESENTATION GRAPH\n\n                            [P] DiagramStore\n                                    |\n                             loadWorkspace()\n                                    |\n                                    v\n                           [P] WorkspaceSnapshot\n                                    |\n                    +---------------+----------------+\n                    |                                |\n                    v                                v\n            [P] ProjectRecord                [P] DiagramSetRecord\n            corpus: CorpusBinding            projectId\n            diagramSetIds[] ---------------->codeEntitiesSetId\n                    |                        diagramIds[]\n                    |                                |\n        CORPUS      |                 +--------------+--------------+\n        DIAGRAM     |                 |                             |\n                    v                 v                             v\n          [P] CorpusBinding   [P] CodeEntitiesSetRecord      [P] DiagramRecord\n          kind + root             entities[]                     id\n                    |                 |                           ascii\n                    v                 v                           representationKind\n          [R] corpusProvider  [P] CodeEntityRecord                |\n                    |             id                              |\n                    |             label                           |\n                    |             sourceRanges[]                  |\n                    |                 |                           |\n                    |     EVIDENCE    v                           |\n                    |     DIAGRAM  [P] SourceRange                |\n                    |             path                            |\n                    |             startLine/endLine               |\n                    |                 ^                           |\n                    |                 | entityId                  |\n                    |                 | sourceRangeId/index        |\n                    |                 |                           |\n                    |          [P] DiagramElementMapping          |\n                    |                 ^                           |\n                    |                 | mappings[]                |\n                    |                 |                           |\n                    |     [P] DiagramCodeEntityMapRecord <--------+\n                    |         diagramSetId        artifactId == DiagramRecord.id\n                    |         artifactId          asciiSha256\n                    |                 |\n                    |                 | exact spatial-to-evidence join\n                    |                 v\n                    |      [R] buildRepresentationIndex()\n                    |                 ^\n                    |                 | DiagramRecord.ascii\n                    |                 |\n                    |     REPRESENTATION DIAGRAM\n                    |                 |\n                    |                 v\n                    |        [R] RepresentationIndex\n                    |        TreeRepresentationNode\n                    |          or DiagramRepresentationElement\n                    |                 |\n                    |                 v\n                    |        EvidenceElementLink\n                    |        evidenceId + sourceRange identity\n                    |                 |\n                    |                 +------ resolves back to ------+\n                    |                                                |\n                    +------------------- read(path/range) ------------+\n                    |\n                    v\n            [X] Git worktree / document directory\n                actual source files",
+  "representationKind": "diagram",
+  "codeEntityIds": [
+    "entity-bb8f9210-d882-40fc-ad6f-24d54035644b",
+    "entity-ec2f08df-a28a-497f-80c1-e3bbe36df839",
+    "entity-d98645ba-2da2-47ca-887c-2e3bc5bdc656",
+    "entity-54af7e34-fffa-4226-8f5b-7f23671fd350",
+    "entity-0d5bff5f-614c-4c93-b1a8-873e61ddbf96",
+    "entity-007eb29d-0868-49d8-a758-aa23985bdaa2",
+    "entity-37cde46a-1708-49aa-b2b5-41a4ba733b2a",
+    "entity-9448bfac-1fca-4945-8809-5ac67ae6e096",
+    "entity-8c989621-9b37-4d55-a6f5-5183d8511978",
+    "entity-da172adb-edde-4fe8-b07c-e18c72d93f94",
+    "entity-26735c6a-bb82-43ee-9337-0f27a4c63a04",
+    "entity-2bf2236d-1ab0-4fe5-b87b-2a800e06d488",
+    "entity-0bdc60a3-3c4d-4ebd-9df8-c43d73cc5aac",
+    "entity-764437e3-f0f0-4267-b5af-baa4aa38187e",
+    "entity-1824b73f-7f7a-4530-bd92-3794821b58b7",
+    "entity-38356b9c-10f8-4a57-890d-fc1be26d4251",
+    "entity-6d475e9b-a1f4-4c71-9bd1-7f94a7d40327",
+    "entity-8be8ff3f-93c6-43af-b87d-4cf87191c2ba"
+  ],
+  "origin": "materialized",
+  "derivedFromDiagramIds": [],
+  "createdAt": "2026-09-01T16:29:11.865Z",
+  "archivedAt": "2026-09-02T19:23:00.457Z"
+}

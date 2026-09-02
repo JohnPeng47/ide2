@@ -45,7 +45,8 @@ const SOURCE_CODE_PROFILE: DomainProfile = {
     diagramViews: ["diagram", "call-graph", "dir-view"],
     explorerTabs: [
       { id: "files", label: "Diagram Files", domId: "files-tab" },
-      { id: "diagram-sets", label: "Diagram Sets", domId: "diagram-sets-tab" }
+      { id: "representations", label: "Starred", domId: "representations-tab" },
+      { id: "plans", label: "Plans", domId: "plans-tab" }
     ]
   },
   content: {
@@ -76,7 +77,8 @@ const DOCUMENT_PROFILE: DomainProfile = {
     explorerTabs: [
       { id: "files", label: "Diagram Files", domId: "files-tab" },
       { id: "markdown-sections", label: "Sections", domId: "markdown-sections-tab" },
-      { id: "highlights", label: "Highlights", domId: "highlights-tab" }
+      { id: "highlights", label: "Highlights", domId: "highlights-tab" },
+      { id: "plans", label: "Plans", domId: "plans-tab" }
     ]
   },
   content: {

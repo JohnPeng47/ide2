@@ -448,7 +448,6 @@ export function DiagramLineagePanel(props: {
     last: boolean
   ): ReactNode => {
     const current = diagram.id === props.activeDiagramId;
-    const starred = diagram.id === props.diagramSet.featuredViewIds[diagram.viewKind];
     const childBatchIds = childrenByDiagram.get(diagram.id) ?? [];
     const children = childBatchIds.flatMap(outputDiagrams);
     const collapseId = `diagram:${diagram.id}`;
@@ -500,13 +499,6 @@ export function DiagramLineagePanel(props: {
                 {collapsed ? `[+${hiddenCount}]` : "[-]"}
               </button>
             ) : <span className="diagram-tree-toggle-spacer" />}
-            <span
-              className={`diagram-tree-star${starred ? " is-starred" : ""}`}
-              aria-label={starred ? "Chosen diagram" : undefined}
-              title={starred ? "Chosen for downstream workflows" : undefined}
-            >
-              {starred ? "★" : ""}
-            </span>
             <button
               type="button"
               className="diagram-tree-diagram__open"

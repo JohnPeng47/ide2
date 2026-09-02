@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "global-representation-input-routing",
+  "projectId": "project-ce67f2af4410",
+  "title": "Global Representation Input Routing",
+  "status": "active",
+  "migration": {
+    "sourceFormat": "legacy-inline-plan",
+    "migratedAt": "2026-09-02T18:23:40.798Z",
+    "missingMetadata": [
+      "diagram-selection",
+      "generation-prompt",
+      "generation-context"
+    ]
+  },
+  "createdAt": "2026-09-02T03:53:52.000Z",
+  "updatedAt": "2026-09-02T04:17:38.657Z",
+  "markdownPath": "plan.md",
+  "selectionPath": "selection.json",
+  "changes": [
+    {
+      "id": "interactive-studio-input-routing",
+      "kind": "diagram-modified",
+      "mode": "partial",
+      "path": "changes/interactive-studio-input-routing/change.json"
+    }
+  ]
+}

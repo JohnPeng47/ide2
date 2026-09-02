@@ -11,7 +11,8 @@ describe("domain profiles", () => {
 
     expect(profile.workspace.explorerTabs.map(({ id, label }) => ({ id, label }))).toEqual([
       { id: "files", label: "Diagram Files" },
-      { id: "diagram-sets", label: "Diagram Sets" }
+      { id: "representations", label: "Starred" },
+      { id: "plans", label: "Plans" }
     ]);
     expect(profile.workspace.diagramViews).toEqual(["diagram", "call-graph", "dir-view"]);
     expect(profile.content).toEqual({
@@ -30,7 +31,8 @@ describe("domain profiles", () => {
     expect(profile.workspace.explorerTabs.map(({ id, label }) => ({ id, label }))).toEqual([
       { id: "files", label: "Diagram Files" },
       { id: "markdown-sections", label: "Sections" },
-      { id: "highlights", label: "Highlights" }
+      { id: "highlights", label: "Highlights" },
+      { id: "plans", label: "Plans" }
     ]);
     expect(profile.workspace.diagramViews).toEqual(["diagram", "call-graph"]);
     expect(profile.content).toEqual({

@@ -28,7 +28,24 @@ describe("reference buffer", () => {
       .toEqual([secondRange]);
     expect(reduceRefBuffer(populated, { type: "clear" }).entries).toEqual([]);
     expect(reduceRefBuffer(populated, { type: "scope", scopeKey: "project:set-b" }))
-      .toEqual({ scopeKey: "project:set-b", entries: [] });
+      .toEqual({ scopeKey: "project:set-b", entries: [], diagramSelections: [] });
+  });
+
+  it("keeps selected ASCII associated with its refs through removal and clear", () => {
+    const populated = reduceRefBuffer(EMPTY_REF_BUFFER, {
+      type: "add",
+      refs: [first, secondRange],
+      diagramSelection: { sourceArtifactId: "diagram-a", ascii: "[worker]" }
+    });
+    expect(populated.diagramSelections).toEqual([{
+      sourceArtifactId: "diagram-a",
+      ascii: "[worker]",
+      referenceKeys: [referenceIdentityKey(first), referenceIdentityKey(secondRange)]
+    }]);
+
+    const withOneRef = reduceRefBuffer(populated, { type: "remove", ref: first });
+    expect(withOneRef.diagramSelections[0].referenceKeys).toEqual([referenceIdentityKey(secondRange)]);
+    expect(reduceRefBuffer(withOneRef, { type: "clear" }).diagramSelections).toEqual([]);
   });
 
   it("creates range-qualified identities from diagram mappings", () => {

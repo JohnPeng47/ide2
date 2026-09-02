@@ -1,0 +1,52 @@
+{
+  "migration": "project-catalog-v1",
+  "mode": "execute",
+  "sourceSetId": "set-55bf33cb-1b5e-4d00-b3e8-eb4c80c479b6",
+  "supersededSetIds": [
+    "set-c5a8baa9-dcf7-4882-8e10-7483e9437687",
+    "set-2734923b-c97a-41f5-a224-aa320279c869",
+    "set-a6c18f14-2db6-4aea-9af0-5aef5db782d1",
+    "set-08ffa322-7c6a-49c2-b674-867370d907b6",
+    "set-55bf33cb-1b5e-4d00-b3e8-eb4c80c479b6"
+  ],
+  "migrated": [
+    {
+      "path": "server/corpus.ts",
+      "exactCurrentSource": true,
+      "sourceSha256": "cc198becd4af5dafd4a239943a6aee0ea0be2ac9e27fed457a08cdfe0ef79acf",
+      "sectionCount": 4,
+      "compactionId": "compaction-5fa51e025a539318158cbdbf66f711f8"
+    },
+    {
+      "path": "server/store.ts",
+      "exactCurrentSource": false,
+      "sourceSha256": "0771b725aa6ce33db52718b63ed682280ab2a8e220ce00964fa0b906c1aef217",
+      "sectionCount": 5,
+      "compactionId": "compaction-7ac496f32c0421fbe02b7a0f11beed13"
+    },
+    {
+      "path": "src/domain.ts",
+      "exactCurrentSource": false,
+      "sourceSha256": "614993de4fa0c048fff0911758cae7027c85bb3688c1dc5e37529f4c8fdf8347",
+      "sectionCount": 5,
+      "compactionId": "compaction-19a49c22e7a24e161e0b81f052f56688"
+    },
+    {
+      "path": "src/domainProfile.ts",
+      "exactCurrentSource": false,
+      "sourceSha256": "67afa21cbe953e0e3bbd44fed1b0daf3a78008c357512b880ebd6330766d65e3",
+      "sectionCount": 4,
+      "compactionId": "compaction-a870521161618a9c565cde9e893aaf08"
+    },
+    {
+      "path": "src/representationIndex.ts",
+      "exactCurrentSource": true,
+      "sourceSha256": "1e0534f99aa4bb71ff5a22792f961ea229640457f4ab1bf0106b6d31968404b4",
+      "sectionCount": 5,
+      "compactionId": "compaction-fb3db8ae4dca03c8ec929e7ccd81a38d"
+    }
+  ],
+  "deleted": [],
+  "purged": [],
+  "completedAt": "2026-09-02T19:13:49.053Z"
+}

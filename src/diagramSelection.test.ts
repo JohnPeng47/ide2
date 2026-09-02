@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { DiagramElementMapping } from "./domain";
 import {
+  asciiForSelection,
   mappingIntersectsSelection,
   mappingsForSelection,
   normalizeDiagramSelection,
@@ -42,5 +43,12 @@ describe("diagram rectangle selection", () => {
     ], selection).map(({ id }) => id)).toEqual(["first", "second", "third"]);
     expect(selectionContainsPoint(selection, 8, 30)).toBe(true);
     expect(selectionContainsPoint(selection, 9, 30)).toBe(false);
+  });
+
+  it("extracts the exact ASCII characters beneath the rectangle", () => {
+    expect(asciiForSelection(
+      "+-----+\n| AB  |\n+--+",
+      { startLine: 1, endLine: 3, startColumn: 2, endColumn: 6 }
+    )).toBe("-----\n AB  \n--+  ");
   });
 });

@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "diagramSetId": "set-5071af75-ec47-4222-b24b-fcbf2d00d36d",
+  "artifactKind": "diagram",
+  "artifactId": "diagram-project-catalog-architecture-v1",
+  "asciiSha256": "52996aea4a735738fafffb954fa133506d60424b847b6b0f42d8ddd898c330a8",
+  "mappings": [
+    {
+      "entityId": "entity-54af7e34-fffa-4226-8f5b-7f23671fd350",
+      "sourceRangeIndex": 0,
+      "sourceRangeId": "range-476caf3a-e5a7-4d1c-898a-46a9751ddb80",
+      "line": 5,
+      "startColumn": 5,
+      "endColumn": 17,
+      "id": "map-project-catalog-1"
+    },
+    {
+      "entityId": "entity-007eb29d-0868-49d8-a758-aa23985bdaa2",
+      "sourceRangeIndex": 0,
+      "sourceRangeId": "range-27a88569-eee5-4ab8-b88a-465912c2d4bd",
+      "line": 7,
+      "startColumn": 43,
+      "endColumn": 55,
+      "id": "map-project-catalog-2"
+    },
+    {
+      "entityId": "entity-37cde46a-1708-49aa-b2b5-41a4ba733b2a",
+      "sourceRangeIndex": 0,
+      "sourceRangeId": "range-361d56fd-4e60-4e8f-aab1-cd30ea83904f",
+      "line": 9,
+      "startColumn": 46,
+      "endColumn": 59,
+      "id": "map-project-catalog-3"
+    },
+    {
+      "entityId": "entity-project-catalog-store-v1",
+      "sourceRangeIndex": 0,
+      "sourceRangeId": "range-project-catalog-store-v1",
+      "line": 14,
+      "startColumn": 43,
+      "endColumn": 61,
+      "id": "map-project-catalog-4"
+    },
+    {
+      "entityId": "entity-project-corpus-compaction-catalog-v1",
+      "sourceRangeIndex": 0,
+      "sourceRangeId": "range-project-corpus-compaction-catalog-v1",
+      "line": 19,
+      "startColumn": 8,
+      "endColumn": 43,
+      "id": "map-project-catalog-5"
+    },
+    {
+      "entityId": "entity-project-representation-catalog-v1",
+      "sourceRangeIndex": 0,
+      "sourceRangeId": "range-project-representation-catalog-v1",
+      "line": 19,
+      "startColumn": 55,
+      "endColumn": 88,
+      "id": "map-project-catalog-6"
+    },
+    {
+      "entityId": "entity-project-file-compaction-record-v1",
+      "sourceRangeIndex": 0,
+      "sourceRangeId": "range-project-file-compaction-record-v1",
+      "line": 23,
+      "startColumn": 8,
+      "endColumn": 34,
+      "id": "map-project-catalog-7"
+    },
+    {
+      "entityId": "entity-project-representation-record-v1",
+      "sourceRangeIndex": 0,
+      "sourceRangeId": "range-project-representation-record-v1",
+      "line": 23,
+      "startColumn": 57,
+      "endColumn": 83,
+      "id": "map-project-catalog-8"
+    },
+    {
+      "entityId": "entity-upsert-file-compaction-v1",
+      "sourceRangeIndex": 0,
+      "sourceRangeId": "range-upsert-file-compaction-v1",
+      "line": 26,
+      "startColumn": 26,
+      "endColumn": 45,
+      "id": "map-project-catalog-9"
+    },
+    {
+      "entityId": "entity-project-representation-revision-v1",
+      "sourceRangeIndex": 0,
+      "sourceRangeId": "range-project-representation-revision-v1",
+      "line": 27,
+      "startColumn": 53,
+      "endColumn": 87,
+      "id": "map-project-catalog-10"
+    },
+    {
+      "entityId": "entity-764437e3-f0f0-4267-b5af-baa4aa38187e",
+      "sourceRangeIndex": 0,
+      "sourceRangeId": "range-e84dd60e-be04-41b2-a98d-8cef312e9fd0",
+      "line": 31,
+      "startColumn": 63,
+      "endColumn": 86,
+      "id": "map-project-catalog-11"
+    },
+    {
+      "entityId": "entity-generation-session-record-v1",
+      "sourceRangeIndex": 0,
+      "sourceRangeId": "range-generation-session-record-v1",
+      "line": 33,
+      "startColumn": 11,
+      "endColumn": 33,
+      "id": "map-project-catalog-12"
+    },
+    {
+      "entityId": "entity-promote-project-representation-v1",
+      "sourceRangeIndex": 0,
+      "sourceRangeId": "range-promote-project-representation-v1",
+      "line": 37,
+      "startColumn": 35,
+      "endColumn": 62,
+      "id": "map-project-catalog-13"
+    },
+    {
+      "entityId": "entity-promote-representation-v1",
+      "sourceRangeIndex": 0,
+      "sourceRangeId": "range-promote-representation-v1",
+      "line": 41,
+      "startColumn": 38,
+      "endColumn": 58,
+      "id": "map-project-catalog-14"
+    }
+  ],
+  "origin": "materialized",
+  "createdAt": "2026-09-02T19:23:00.457Z"
+}

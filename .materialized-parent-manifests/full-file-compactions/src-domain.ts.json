@@ -1,0 +1,776 @@
+{
+  "key": "src-domain-ts-full-file",
+  "handle": "src-domain-ts-full-file",
+  "label": "src/domain.ts full-file compaction",
+  "category": "interface-data-struct",
+  "summary": "Defines the persisted domain contracts for corpus evidence, prompts, artifacts, mappings, execution, plans, materialized imports, presentation adapters, and validation.",
+  "sourceRanges": [
+    {
+      "key": "full-file",
+      "path": "src/domain.ts",
+      "startLine": 1,
+      "endLine": 998,
+      "symbol": "Domain records and adapters",
+      "compactedSource": {
+        "level": "high",
+        "sections": [
+          {
+            "kind": "collapsed-comment",
+            "startLine": 5,
+            "endLine": 198,
+            "comment": "DomainPrimitivesAndSourceEvidence\n|\n+--> VOCABULARY\n|    +--> schema/import constants + model registry/defaults\n|    +--> entity, compaction, readiness, output/view target kinds\n|    `--> generation + code-entity prompt profile identities\n|\n+--> TARGET GUARDS\n|    +--> export function isDiagramModelId(...)\n|    |    `--> membership in DIAGRAM_MODELS\n|    +--> export function isGenerationPromptProfileId(...)\n|    |    `--> lowercase slug grammar\n|    +--> export function isDiagramViewKind(...)\n|    +--> export function isGenerationTargetKind(...)\n|    `--> export function outputKindForTarget(...)\n|         `--> component target -> component output; otherwise diagram\n|\n+--> EXECUTION STATES\n|    `--> AgentRun kind/status + GenerationBatch status unions\n|\n+--> PROVENANCE\n|    `--> ArtifactOrigin -> CodeEntityOrigin adds immutable collection id\n|\n+--> SOURCE COMPACTION\n|    +--> CompactedSourceSection = retained source | collapsed call graph\n|    +--> CompactedSourceNode maps graph line -> source span\n|    `--> SourceRange owns snapshot + optional CompactedSource\n|\n+--> PERSISTED CORPUS\n|    +--> CodeEntityRecord -> SourceRange[]\n|    +--> CodeEntitiesSetRecord -> revisioned finalized collection\n|    +--> ProjectRecord -> repository identity + corpus binding\n|    `--> DiagramSetRecord -> artifacts/runs/readiness + creation mode\n|\n`--> REPOSITORY AND IMPORTS\n     +--> RepositoryEntry + lazy RepositoryDirectoryListing\n     `--> ImportedArtifactLibraryRecord tracks global artifact dependencies",
+            "nodes": [
+              {
+                "graphLine": 1,
+                "startLine": 5,
+                "endLine": 198
+              },
+              {
+                "graphLine": 3,
+                "startLine": 5,
+                "endLine": 26
+              },
+              {
+                "graphLine": 4,
+                "startLine": 5,
+                "endLine": 26
+              },
+              {
+                "graphLine": 5,
+                "startLine": 8,
+                "endLine": 14
+              },
+              {
+                "graphLine": 6,
+                "startLine": 20,
+                "endLine": 26
+              },
+              {
+                "graphLine": 8,
+                "startLine": 28,
+                "endLine": 46
+              },
+              {
+                "graphLine": 9,
+                "startLine": 28,
+                "endLine": 30
+              },
+              {
+                "graphLine": 10,
+                "startLine": 28,
+                "endLine": 30
+              },
+              {
+                "graphLine": 11,
+                "startLine": 32,
+                "endLine": 34
+              },
+              {
+                "graphLine": 12,
+                "startLine": 32,
+                "endLine": 34
+              },
+              {
+                "graphLine": 13,
+                "startLine": 36,
+                "endLine": 38
+              },
+              {
+                "graphLine": 14,
+                "startLine": 40,
+                "endLine": 42
+              },
+              {
+                "graphLine": 15,
+                "startLine": 44,
+                "endLine": 46
+              },
+              {
+                "graphLine": 16,
+                "startLine": 44,
+                "endLine": 46
+              },
+              {
+                "graphLine": 18,
+                "startLine": 47,
+                "endLine": 61
+              },
+              {
+                "graphLine": 19,
+                "startLine": 47,
+                "endLine": 61
+              },
+              {
+                "graphLine": 21,
+                "startLine": 63,
+                "endLine": 71
+              },
+              {
+                "graphLine": 22,
+                "startLine": 63,
+                "endLine": 71
+              },
+              {
+                "graphLine": 24,
+                "startLine": 73,
+                "endLine": 110
+              },
+              {
+                "graphLine": 25,
+                "startLine": 73,
+                "endLine": 86
+              },
+              {
+                "graphLine": 26,
+                "startLine": 88,
+                "endLine": 92
+              },
+              {
+                "graphLine": 27,
+                "startLine": 94,
+                "endLine": 110
+              },
+              {
+                "graphLine": 29,
+                "startLine": 112,
+                "endLine": 173
+              },
+              {
+                "graphLine": 30,
+                "startLine": 112,
+                "endLine": 121
+              },
+              {
+                "graphLine": 31,
+                "startLine": 123,
+                "endLine": 134
+              },
+              {
+                "graphLine": 32,
+                "startLine": 136,
+                "endLine": 149
+              },
+              {
+                "graphLine": 33,
+                "startLine": 151,
+                "endLine": 173
+              },
+              {
+                "graphLine": 35,
+                "startLine": 175,
+                "endLine": 198
+              },
+              {
+                "graphLine": 36,
+                "startLine": 175,
+                "endLine": 186
+              },
+              {
+                "graphLine": 37,
+                "startLine": 188,
+                "endLine": 198
+              }
+            ]
+          },
+          {
+            "kind": "collapsed-comment",
+            "startLine": 200,
+            "endLine": 342,
+            "comment": "PromptAndReferenceContracts\n|\n+--> REFERENCE IDENTITY\n|    +--> ReferenceIdentity locates artifact/entity + optional source range\n|    +--> PromptReference -> rendered token + handle\n|    +--> GenerationPromptReference -> exact supplied representation\n|    +--> GenerationReferenceSelection -> inclusion state\n|    `--> GenerationDerivationRecord -> source artifact + correction\n|\n+--> GENERATION CONFIG\n|    `--> GenerationPromptConfigRecord\n|         +--> target/model/instruction + selected Evidence\n|         +--> optional reference follow-up + mandatory mapping prompt\n|         `--> rendered context/system prompt provenance\n|\n+--> TEMPLATE LIBRARY\n|    +--> PromptTemplateRecord -> typed prompt dictionary\n|    +--> NamedPromptTemplate -> template + description\n|    +--> PromptTemplateSetRecord -> global versioned named prompts\n|    +--> SystemPromptTemplateRecord alias\n|    `--> CodeEntityPromptTemplateRecord alias\n|\n`--> ENTITY COLLECTION PROMPT\n     `--> CodeEntityPromptConfigRecord\n          +--> selected profile revision\n          +--> rendered identification + compaction criteria\n          `--> rendered repository context",
+            "nodes": [
+              {
+                "graphLine": 1,
+                "startLine": 200,
+                "endLine": 342
+              },
+              {
+                "graphLine": 3,
+                "startLine": 200,
+                "endLine": 232
+              },
+              {
+                "graphLine": 4,
+                "startLine": 200,
+                "endLine": 210
+              },
+              {
+                "graphLine": 5,
+                "startLine": 212,
+                "endLine": 215
+              },
+              {
+                "graphLine": 6,
+                "startLine": 217,
+                "endLine": 220
+              },
+              {
+                "graphLine": 7,
+                "startLine": 222,
+                "endLine": 224
+              },
+              {
+                "graphLine": 8,
+                "startLine": 226,
+                "endLine": 232
+              },
+              {
+                "graphLine": 10,
+                "startLine": 234,
+                "endLine": 284
+              },
+              {
+                "graphLine": 11,
+                "startLine": 234,
+                "endLine": 284
+              },
+              {
+                "graphLine": 12,
+                "startLine": 234,
+                "endLine": 248
+              },
+              {
+                "graphLine": 13,
+                "startLine": 250,
+                "endLine": 267
+              },
+              {
+                "graphLine": 14,
+                "startLine": 268,
+                "endLine": 284
+              },
+              {
+                "graphLine": 16,
+                "startLine": 286,
+                "endLine": 321
+              },
+              {
+                "graphLine": 17,
+                "startLine": 286,
+                "endLine": 296
+              },
+              {
+                "graphLine": 18,
+                "startLine": 298,
+                "endLine": 301
+              },
+              {
+                "graphLine": 19,
+                "startLine": 303,
+                "endLine": 314
+              },
+              {
+                "graphLine": 20,
+                "startLine": 316,
+                "endLine": 316
+              },
+              {
+                "graphLine": 21,
+                "startLine": 318,
+                "endLine": 321
+              },
+              {
+                "graphLine": 23,
+                "startLine": 323,
+                "endLine": 342
+              },
+              {
+                "graphLine": 24,
+                "startLine": 323,
+                "endLine": 342
+              },
+              {
+                "graphLine": 25,
+                "startLine": 327,
+                "endLine": 330
+              },
+              {
+                "graphLine": 26,
+                "startLine": 331,
+                "endLine": 336
+              },
+              {
+                "graphLine": 27,
+                "startLine": 337,
+                "endLine": 342
+              }
+            ]
+          },
+          {
+            "kind": "collapsed-comment",
+            "startLine": 344,
+            "endLine": 570,
+            "comment": "ArtifactAndExecutionContracts\n|\n+--> ARTIFACT RECORDS\n|    +--> DiagramSelectionBounds -> selected ASCII rectangle\n|    +--> DiagramComponentRecord -> nested/derived artifact lineage\n|    +--> export function isDiagramComponentArchived(...)\n|    |    `--> archivedAt !== undefined\n|    +--> DiagramRecord -> full view + derivation lineage\n|    `--> export function isDiagramArchived(...)\n|         `--> archivedAt !== undefined\n|\n+--> EVIDENCE MAPPING\n|    +--> DiagramElementMapping -> entity/range + ASCII coordinates\n|    +--> DiagramCodeEntityMapRecord -> artifact hash + mappings\n|    +--> DiagramHighlight lineage/transcript/persistent snapshot\n|    `--> CodeEntityMapping target -> complete/failed result\n|\n+--> GENERATION EXECUTION\n|    +--> GenerationBatchRecord -> prompt/revision + child outputs\n|    +--> DiagramCandidateBatchRecord -> immutable candidates + rankings\n|    `--> AgentRunRecord -> lifecycle, model/session, outputs, error\n|\n`--> EDIT HISTORY\n     +--> TextPatch -> delete/insert delta\n     +--> EditOperationRecord -> manual/LLM operation metadata\n     `--> EditSessionRecord -> base/working ASCII + cursor/revision/status",
+            "nodes": [
+              {
+                "graphLine": 1,
+                "startLine": 344,
+                "endLine": 570
+              },
+              {
+                "graphLine": 3,
+                "startLine": 344,
+                "endLine": 406
+              },
+              {
+                "graphLine": 4,
+                "startLine": 344,
+                "endLine": 349
+              },
+              {
+                "graphLine": 5,
+                "startLine": 351,
+                "endLine": 374
+              },
+              {
+                "graphLine": 6,
+                "startLine": 376,
+                "endLine": 378
+              },
+              {
+                "graphLine": 7,
+                "startLine": 376,
+                "endLine": 378
+              },
+              {
+                "graphLine": 8,
+                "startLine": 380,
+                "endLine": 402
+              },
+              {
+                "graphLine": 9,
+                "startLine": 404,
+                "endLine": 406
+              },
+              {
+                "graphLine": 10,
+                "startLine": 404,
+                "endLine": 406
+              },
+              {
+                "graphLine": 12,
+                "startLine": 408,
+                "endLine": 474
+              },
+              {
+                "graphLine": 13,
+                "startLine": 408,
+                "endLine": 417
+              },
+              {
+                "graphLine": 14,
+                "startLine": 419,
+                "endLine": 431
+              },
+              {
+                "graphLine": 15,
+                "startLine": 433,
+                "endLine": 463
+              },
+              {
+                "graphLine": 16,
+                "startLine": 465,
+                "endLine": 474
+              },
+              {
+                "graphLine": 18,
+                "startLine": 476,
+                "endLine": 526
+              },
+              {
+                "graphLine": 19,
+                "startLine": 476,
+                "endLine": 492
+              },
+              {
+                "graphLine": 20,
+                "startLine": 494,
+                "endLine": 505
+              },
+              {
+                "graphLine": 21,
+                "startLine": 507,
+                "endLine": 526
+              },
+              {
+                "graphLine": 23,
+                "startLine": 528,
+                "endLine": 570
+              },
+              {
+                "graphLine": 24,
+                "startLine": 528,
+                "endLine": 532
+              },
+              {
+                "graphLine": 25,
+                "startLine": 534,
+                "endLine": 549
+              },
+              {
+                "graphLine": 26,
+                "startLine": 551,
+                "endLine": 570
+              }
+            ]
+          },
+          {
+            "kind": "collapsed-comment",
+            "startLine": 572,
+            "endLine": 776,
+            "comment": "PlansWorkspaceAndMaterialization\n|\n+--> PLAN PROJECTIONS\n|    +--> PlanStatus + modified Diagram change\n|    +--> added Diagram draft/change\n|    +--> CodeEntity compaction change\n|    +--> PlanChange discriminated union\n|    `--> PlanRecord -> markdown proposal + projected changes\n|\n+--> WORKSPACE SNAPSHOT\n|    `--> WorkspaceSnapshot\n|         +--> project/set/entity/artifact/prompt/run dictionaries\n|         `--> progress/representation/edit/map/highlight/plan layers\n|\n+--> AUTHORING DRAFTS\n|    +--> CodeEntityDraft + GeneratedArtifactDraft\n|    +--> CodeEntityPromptAlias + ArtifactEditDraft\n|    `--> DiagramElementMappingDraft\n|\n+--> MATERIALIZED INPUT\n|    +--> MaterializedSourceRangeInput -> request-local range key\n|    +--> MaterializedCodeEntityInput -> request-local entity key\n|    +--> MaterializedDiagramMappingInput -> local keys + coordinates\n|    +--> MaterializedDiagramInput -> composed ASCII + Evidence mappings\n|    +--> MaterializedDiagramSetInput -> non-empty entities/diagrams\n|    `--> MaterializedDiagramSetResult -> persisted id maps + workspace\n|\n`--> IMPORT, PROGRESS, AND SELECTION\n     +--> ArtifactImportInput -> raw artifact or mapped bundle\n     +--> MappedArtifactBundle -> artifact + Evidence + optional map\n     +--> AgentProgress -> active status + runtime identity\n     `--> SelectableText -> getSelectionText(...) contract",
+            "nodes": [
+              {
+                "graphLine": 1,
+                "startLine": 572,
+                "endLine": 776
+              },
+              {
+                "graphLine": 3,
+                "startLine": 572,
+                "endLine": 629
+              },
+              {
+                "graphLine": 4,
+                "startLine": 572,
+                "endLine": 583
+              },
+              {
+                "graphLine": 5,
+                "startLine": 585,
+                "endLine": 600
+              },
+              {
+                "graphLine": 6,
+                "startLine": 602,
+                "endLine": 611
+              },
+              {
+                "graphLine": 7,
+                "startLine": 613,
+                "endLine": 616
+              },
+              {
+                "graphLine": 8,
+                "startLine": 618,
+                "endLine": 629
+              },
+              {
+                "graphLine": 10,
+                "startLine": 631,
+                "endLine": 657
+              },
+              {
+                "graphLine": 11,
+                "startLine": 631,
+                "endLine": 657
+              },
+              {
+                "graphLine": 12,
+                "startLine": 631,
+                "endLine": 647
+              },
+              {
+                "graphLine": 13,
+                "startLine": 647,
+                "endLine": 657
+              },
+              {
+                "graphLine": 15,
+                "startLine": 659,
+                "endLine": 691
+              },
+              {
+                "graphLine": 16,
+                "startLine": 659,
+                "endLine": 673
+              },
+              {
+                "graphLine": 17,
+                "startLine": 675,
+                "endLine": 683
+              },
+              {
+                "graphLine": 18,
+                "startLine": 685,
+                "endLine": 691
+              },
+              {
+                "graphLine": 20,
+                "startLine": 693,
+                "endLine": 749
+              },
+              {
+                "graphLine": 21,
+                "startLine": 693,
+                "endLine": 696
+              },
+              {
+                "graphLine": 22,
+                "startLine": 698,
+                "endLine": 706
+              },
+              {
+                "graphLine": 23,
+                "startLine": 708,
+                "endLine": 715
+              },
+              {
+                "graphLine": 24,
+                "startLine": 717,
+                "endLine": 728
+              },
+              {
+                "graphLine": 25,
+                "startLine": 730,
+                "endLine": 742
+              },
+              {
+                "graphLine": 26,
+                "startLine": 744,
+                "endLine": 749
+              },
+              {
+                "graphLine": 28,
+                "startLine": 751,
+                "endLine": 776
+              },
+              {
+                "graphLine": 29,
+                "startLine": 751,
+                "endLine": 757
+              },
+              {
+                "graphLine": 30,
+                "startLine": 759,
+                "endLine": 765
+              },
+              {
+                "graphLine": 31,
+                "startLine": 767,
+                "endLine": 772
+              },
+              {
+                "graphLine": 32,
+                "startLine": 774,
+                "endLine": 776
+              }
+            ]
+          },
+          {
+            "kind": "collapsed-comment",
+            "startLine": 778,
+            "endLine": 998,
+            "comment": "DomainBehaviorAndValidation\n|\n+--> CODE ENTITY PRESENTATION\n|    `--> export class CodeEntity\n|         +--> constructor(...)\n|         +--> getSelectionText(...)\n|         |    `--> verify entity reference -> range id/index -> path\n|         `--> prompt_str(...)\n|              `--> render identity + ranges + compaction graphs/mappings\n|\n+--> PROMPT ALIAS PIPELINE\n|    +--> function promptAliasHash(...)\n|    |    `--> FNV-style deterministic 8-hex qualifier\n|    +--> export function qualifiedCodeEntityPromptAlias(...)\n|    |    `--> stable origin identity -> qualified readable alias\n|    +--> export function createCodeEntityPromptAliases(...)\n|    |    `--> deduplicate -> count handles -> qualify collisions\n|    +--> export function resolveCodeEntityPromptAliases(...)\n|    |    `--> reject ambiguous/missing aliases -> persisted ids\n|    +--> function renderCodeEntityPromptAliases(...)\n|    |    `--> ids -> aliases/fallbacks -> comma list\n|    `--> function renderArtifactPromptAscii(...)\n|         `--> rewrite declared [entity-id] annotations to aliases\n|\n+--> ARTIFACT PRESENTATION\n|    +--> export class Diagram\n|    |    +--> constructor(...)\n|    |    `--> prompt_str(...) -> metadata + aliased ASCII\n|    `--> export class DiagramComponent\n|         +--> constructor(...)\n|         `--> prompt_str(...) -> derivation lineage + aliased ASCII\n|\n`--> VALIDATION AND NORMALIZATION\n     +--> export function assertSevenBitAscii(...)\n     |    `--> reject blank or non-ASCII diagrams\n     +--> export function normalizeAscii(...)\n     |    `--> normalize newlines + trim trailing whitespace\n     +--> export function slugify(...)\n     |    `--> lowercase safe slug <= 64 chars or fallback\n     +--> export function assertSafeId(...)\n     |    `--> enforce bounded lowercase id grammar\n     `--> export function assertSourceRange(...)\n          +--> validate relative path, integer bounds, snapshots\n          +--> validate compaction level/section kind/ranges/ASCII\n          `--> validate unique graph lines within section source bounds",
+            "nodes": [
+              {
+                "graphLine": 1,
+                "startLine": 778,
+                "endLine": 998
+              },
+              {
+                "graphLine": 3,
+                "startLine": 778,
+                "endLine": 816
+              },
+              {
+                "graphLine": 4,
+                "startLine": 778,
+                "endLine": 816
+              },
+              {
+                "graphLine": 5,
+                "startLine": 779,
+                "endLine": 779
+              },
+              {
+                "graphLine": 6,
+                "startLine": 781,
+                "endLine": 789
+              },
+              {
+                "graphLine": 7,
+                "startLine": 781,
+                "endLine": 789
+              },
+              {
+                "graphLine": 8,
+                "startLine": 791,
+                "endLine": 815
+              },
+              {
+                "graphLine": 9,
+                "startLine": 791,
+                "endLine": 815
+              },
+              {
+                "graphLine": 11,
+                "startLine": 818,
+                "endLine": 892
+              },
+              {
+                "graphLine": 12,
+                "startLine": 818,
+                "endLine": 825
+              },
+              {
+                "graphLine": 13,
+                "startLine": 818,
+                "endLine": 825
+              },
+              {
+                "graphLine": 14,
+                "startLine": 827,
+                "endLine": 832
+              },
+              {
+                "graphLine": 15,
+                "startLine": 827,
+                "endLine": 832
+              },
+              {
+                "graphLine": 16,
+                "startLine": 838,
+                "endLine": 853
+              },
+              {
+                "graphLine": 17,
+                "startLine": 838,
+                "endLine": 853
+              },
+              {
+                "graphLine": 18,
+                "startLine": 855,
+                "endLine": 871
+              },
+              {
+                "graphLine": 19,
+                "startLine": 855,
+                "endLine": 871
+              },
+              {
+                "graphLine": 20,
+                "startLine": 873,
+                "endLine": 878
+              },
+              {
+                "graphLine": 21,
+                "startLine": 873,
+                "endLine": 878
+              },
+              {
+                "graphLine": 22,
+                "startLine": 880,
+                "endLine": 892
+              },
+              {
+                "graphLine": 23,
+                "startLine": 880,
+                "endLine": 892
+              },
+              {
+                "graphLine": 25,
+                "startLine": 894,
+                "endLine": 913
+              },
+              {
+                "graphLine": 26,
+                "startLine": 894,
+                "endLine": 903
+              },
+              {
+                "graphLine": 27,
+                "startLine": 895,
+                "endLine": 895
+              },
+              {
+                "graphLine": 28,
+                "startLine": 897,
+                "endLine": 902
+              },
+              {
+                "graphLine": 29,
+                "startLine": 905,
+                "endLine": 913
+              },
+              {
+                "graphLine": 30,
+                "startLine": 906,
+                "endLine": 906
+              },
+              {
+                "graphLine": 31,
+                "startLine": 908,
+                "endLine": 912
+              },
+              {
+                "graphLine": 33,
+                "startLine": 915,
+                "endLine": 998
+              },
+              {
+                "graphLine": 34,
+                "startLine": 915,
+                "endLine": 920
+              },
+              {
+                "graphLine": 35,
+                "startLine": 915,
+                "endLine": 920
+              },
+              {
+                "graphLine": 36,
+                "startLine": 922,
+                "endLine": 924
+              },
+              {
+                "graphLine": 37,
+                "startLine": 922,
+                "endLine": 924
+              },
+              {
+                "graphLine": 38,
+                "startLine": 926,
+                "endLine": 934
+              },
+              {
+                "graphLine": 39,
+                "startLine": 926,
+                "endLine": 934
+              },
+              {
+                "graphLine": 40,
+                "startLine": 936,
+                "endLine": 940
+              },
+              {
+                "graphLine": 41,
+                "startLine": 936,
+                "endLine": 940
+              },
+              {
+                "graphLine": 42,
+                "startLine": 942,
+                "endLine": 998
+              },
+              {
+                "graphLine": 43,
+                "startLine": 942,
+                "endLine": 954
+              },
+              {
+                "graphLine": 44,
+                "startLine": 955,
+                "endLine": 974
+              },
+              {
+                "graphLine": 45,
+                "startLine": 975,
+                "endLine": 998
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

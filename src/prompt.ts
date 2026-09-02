@@ -533,13 +533,13 @@ export function createGenerationPromptConfig(input: {
     const foundationId = input.diagramSet.featuredViewIds.diagram;
     foundationDiagram = foundationId ? diagramsById.get(foundationId) : undefined;
     if (!foundationDiagram || foundationDiagram.viewKind !== "diagram") {
-      throw new Error("star a main Diagram before generating auxiliary views");
+      throw new Error("settle a main Diagram before generating auxiliary views");
     }
     if (viewKind === "dir-view") {
       const callGraphId = input.diagramSet.featuredViewIds["call-graph"];
       companionCallGraph = callGraphId ? diagramsById.get(callGraphId) : undefined;
       if (!companionCallGraph || companionCallGraph.viewKind !== "call-graph") {
-        throw new Error("star a Call Graph before generating a Directory View");
+        throw new Error("settle a Call Graph before generating a Directory View");
       }
     }
     for (const id of [...new Set([

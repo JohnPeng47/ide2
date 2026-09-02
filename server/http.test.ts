@@ -1,11 +1,12 @@
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { Connect } from "vite";
 import { afterEach, describe, expect, it } from "vitest";
 import { diagramApi } from "./http";
+import { DiagramStore } from "./store";
 
 const roots: string[] = [];
 const servers: Server[] = [];
@@ -18,6 +19,58 @@ afterEach(async () => {
 });
 
 describe("call-graph focus HTTP API", () => {
+  it("creates, lists, reads, and updates project Plans", async () => {
+    const root = await mkdtemp(path.join(tmpdir(), "new-diagram-http-plans-"));
+    roots.push(root);
+    await mkdir(path.join(root, ".git"));
+    await new DiagramStore(root).ensureProject({
+      checkoutRoot: root,
+      repositoryIdentity: path.join(root, ".git")
+    });
+    let middleware: Connect.NextHandleFunction | undefined;
+    const server = createServer((request, response) => {
+      if (!middleware) throw new Error("middleware was not attached");
+      middleware(request, response, () => {
+        response.statusCode = 404;
+        response.end();
+      });
+    });
+    servers.push(server);
+    const configure = diagramApi(root).configureServer;
+    if (typeof configure !== "function") throw new Error("diagram API has no configure hook");
+    (configure as unknown as (server: unknown) => void)({
+      middlewares: { use: (handler: Connect.NextHandleFunction) => { middleware = handler; } },
+      httpServer: server
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address() as AddressInfo;
+    const endpoint = `http://127.0.0.1:${address.port}/api/plans`;
+
+    const createdResponse = await fetch(endpoint, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ title: "Routing", markdown: "# Routing", changes: [] })
+    });
+    expect(createdResponse.status).toBe(201);
+    const created = await createdResponse.json() as { id: string; status: string };
+    expect(created).toMatchObject({ status: "draft" });
+
+    const list = await (await fetch(endpoint)).json() as Array<{ id: string }>;
+    expect(list.map((plan) => plan.id)).toEqual([created.id]);
+
+    const planEndpoint = `${endpoint}/${created.id}`;
+    const updatedResponse = await fetch(planEndpoint, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ status: "active" })
+    });
+    expect(updatedResponse.status).toBe(200);
+    await expect(updatedResponse.json()).resolves.toMatchObject({ id: created.id, status: "active" });
+    await expect((await fetch(planEndpoint)).json()).resolves.toMatchObject({ markdown: "# Routing" });
+    await expect((await fetch(`http://127.0.0.1:${address.port}/api/workspace`)).json())
+      .resolves.toMatchObject({ plans: [{ id: created.id, status: "active" }] });
+  });
+
   it("requires CodeEntities alongside ASCII in materialized creation mode", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "new-diagram-http-materialized-"));
     roots.push(root);

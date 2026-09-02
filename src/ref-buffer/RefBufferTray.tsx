@@ -7,7 +7,11 @@ import type { DiagramRecord, ReferenceIdentity } from "../domain";
 import { referenceIdentityKey } from "../refBuffer";
 import { resolveReferences, type ReferenceResolutionContext } from "../referenceResolver";
 import { useRefBuffer } from "./RefBufferContext";
-import { displayTextForReference, formatReferences } from "./refFormatters";
+import {
+  displayTextForReference,
+  formatDiagramReferenceClipboard,
+  formatReferences
+} from "./refFormatters";
 import {
   ClipboardSink,
   WindowReferenceSink,
@@ -112,7 +116,10 @@ export function RefBufferTray(props: {
             type="button"
             disabled={outputDisabled}
             onClick={() => void run(async () => {
-              const text = formatReferences(resolution.resolved, "source-location");
+              const text = formatDiagramReferenceClipboard(
+                buffer.diagramSelections,
+                resolution.resolved
+              );
               await clipboardSink.send(text);
               return `copied ${resolution.resolved.length} source ref${resolution.resolved.length === 1 ? "" : "s"}`;
             })}

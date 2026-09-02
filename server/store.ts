@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { execFile } from "node:child_process";
-import { mkdir, readFile, realpath, rename, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, realpath, rename, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import {
@@ -34,8 +34,14 @@ import {
   type SystemPromptTemplateRecord,
   type PromptReference,
   type ProjectRecord,
+  type PlanChange,
+  type PlanCodeEntityCompactionChange,
+  type PlanDiagramSelection,
+  type PlanModifiedDiagramChange,
+  type PlanRecord,
   type WorkspaceSnapshot
 } from "../src/domain";
+import { applyPlanPatch, validatePlanRecord } from "../src/plans";
 import {
   createSystemPromptTemplate,
   createBuiltInCodeEntityPromptTemplates,
@@ -56,8 +62,37 @@ import {
   validateHighlightRecordV2,
   type HighlightRecordV2
 } from "../src/highlights";
+import { ProjectCatalogStore } from "./projectCatalogStore";
 
 type PersistedHighlight = DiagramHighlightRecord | HighlightRecordV2;
+interface PersistedPlanChangeReference {
+  id: string;
+  kind: PlanChange["kind"];
+  mode?: "partial" | "complete";
+  path: string;
+}
+
+type PersistedPlanManifest = Omit<PlanRecord, "markdown" | "selection" | "changes"> & {
+  markdownPath: "plan.md";
+  selectionPath: "selection.json";
+  changes: PersistedPlanChangeReference[];
+};
+
+type PersistedModifiedDiagramChange = Omit<
+  PlanModifiedDiagramChange,
+  "baseDiagram" | "outputAscii" | "semanticDiff"
+> & {
+  schemaVersion: typeof SCHEMA_VERSION;
+  baseDiagram: Omit<DiagramRecord, "ascii">;
+  basePath: "base.txt";
+  outputPath: "output.txt";
+  semanticDiffPath?: "semantic-diff.json";
+};
+
+interface PersistedCompactionArtifact {
+  schemaVersion: typeof SCHEMA_VERSION;
+  compactedSource: PlanCodeEntityCompactionChange["compactedSource"] | null;
+}
 import { isBuiltInDomainProfileId } from "./domainProfiles";
 
 const execFileAsync = promisify(execFile);
@@ -176,10 +211,12 @@ async function writeJsonAtomic(filePath: string, value: unknown): Promise<void> 
 export class DiagramStore {
   readonly checkoutRoot: string;
   readonly storeRoot: string;
+  readonly projectCatalogs: ProjectCatalogStore;
 
   constructor(checkoutRoot: string, diagramsDirectory = ".diagrams") {
     this.checkoutRoot = path.resolve(checkoutRoot);
     this.storeRoot = path.resolve(this.checkoutRoot, diagramsDirectory);
+    this.projectCatalogs = new ProjectCatalogStore(this.storeRoot);
   }
 
   private projectPath(): string {
@@ -192,6 +229,36 @@ export class DiagramStore {
 
   private spatialProgressPath(): string {
     return path.join(this.storeRoot, "spatial-progress.json");
+  }
+
+  private plansRoot(): string {
+    return path.join(this.storeRoot, "plans");
+  }
+
+  private planRoot(planId: string): string {
+    assertSafeId(planId, "Plan id");
+    return path.join(this.plansRoot(), planId);
+  }
+
+  private planManifestPath(planId: string): string {
+    return path.join(this.planRoot(planId), "plan.json");
+  }
+
+  private planMarkdownPath(planId: string): string {
+    return path.join(this.planRoot(planId), "plan.md");
+  }
+
+  private planSelectionPath(planId: string): string {
+    return path.join(this.planRoot(planId), "selection.json");
+  }
+
+  private planChangeRoot(planId: string, changeId: string): string {
+    assertSafeId(changeId, "Plan change id");
+    return path.join(this.planRoot(planId), "changes", changeId);
+  }
+
+  private planChangePath(planId: string, changeId: string, filename: string): string {
+    return path.join(this.planChangeRoot(planId, changeId), filename);
   }
 
   private systemPromptTemplatesPath(): string {
@@ -1558,7 +1625,8 @@ export class DiagramStore {
         agentRuns: {},
         editSessions: {},
         codeEntityMaps: {},
-        highlights: []
+        highlights: [],
+        plans: []
       };
     }
     let diagramSets = await Promise.all(project.diagramSetIds.map((id) => this.loadDiagramSet(id)));
@@ -1643,6 +1711,8 @@ export class DiagramStore {
     }
     return {
       project,
+      corpusCompactions: await this.projectCatalogs.loadCompactionCatalog(project.id),
+      representationCatalog: await this.projectCatalogs.loadRepresentationCatalog(project.id),
       diagramSets,
       globalImports,
       codeEntitySets,
@@ -1660,8 +1730,246 @@ export class DiagramStore {
       representationGraphs,
       editSessions,
       codeEntityMaps,
-      highlights: await this.loadHighlights()
+      highlights: await this.loadHighlights(),
+      plans: await this.loadPlans()
     };
+  }
+
+  async loadPlan(planId: string): Promise<PlanRecord> {
+    const manifest = await readJson<PersistedPlanManifest>(this.planManifestPath(planId));
+    if (manifest.markdownPath !== "plan.md") {
+      throw new Error(`unsupported Plan Markdown path: ${manifest.markdownPath}`);
+    }
+    if (manifest.selectionPath !== "selection.json") {
+      throw new Error(`unsupported Plan selection path: ${String(manifest.selectionPath)}`);
+    }
+    const selectionArtifact = await readJson<PlanDiagramSelection & { schemaVersion: number }>(
+      this.planSelectionPath(planId)
+    );
+    const { schemaVersion: _selectionSchemaVersion, ...selection } = selectionArtifact;
+    const changes = await Promise.all(manifest.changes.map(async (reference) => {
+      const expectedPath = `changes/${reference.id}/change.json`;
+      if (reference.path !== expectedPath) {
+        throw new Error(`unsupported Plan change path: ${reference.path}`);
+      }
+      const stored = await readJson<Record<string, unknown>>(
+        this.planChangePath(planId, reference.id, "change.json")
+      );
+      if (stored.id !== reference.id || stored.kind !== reference.kind) {
+        throw new Error(`Plan change reference does not match ${reference.path}`);
+      }
+      if (reference.kind === "diagram-modified") {
+        if (stored.basePath !== "base.txt" || stored.outputPath !== "output.txt") {
+          throw new Error(`modified Plan change ${reference.id} has unsupported artifact paths`);
+        }
+        if (stored.semanticDiffPath !== undefined && stored.semanticDiffPath !== "semantic-diff.json") {
+          throw new Error(`modified Plan change ${reference.id} has an unsupported semantic diff path`);
+        }
+        const baseAscii = await readFile(this.planChangePath(planId, reference.id, "base.txt"), "utf8");
+        const outputAscii = await readFile(this.planChangePath(planId, reference.id, "output.txt"), "utf8");
+        const semanticDiff = stored.semanticDiffPath === "semantic-diff.json"
+          ? await readJson<Record<string, unknown>>(
+            this.planChangePath(planId, reference.id, "semantic-diff.json")
+          )
+          : undefined;
+        const {
+          schemaVersion: _schemaVersion,
+          basePath: _basePath,
+          outputPath: _outputPath,
+          semanticDiffPath: _semanticDiffPath,
+          baseDiagram,
+          ...change
+        } = stored;
+        if (!baseDiagram || typeof baseDiagram !== "object" || Array.isArray(baseDiagram)) {
+          throw new Error(`modified Plan change ${reference.id} has no base Diagram metadata`);
+        }
+        return {
+          ...change,
+          baseDiagram: { ...baseDiagram, ascii: baseAscii },
+          outputAscii,
+          ...(semanticDiff ? { semanticDiff } : {})
+        };
+      }
+      if (reference.kind === "diagram-added") {
+        if (stored.outputPath !== "output.txt"
+          || !stored.draft
+          || typeof stored.draft !== "object"
+          || Array.isArray(stored.draft)) {
+          throw new Error(`added Plan change ${reference.id} has an invalid output artifact`);
+        }
+        const ascii = await readFile(this.planChangePath(planId, reference.id, "output.txt"), "utf8");
+        const { schemaVersion: _schemaVersion, outputPath: _outputPath, draft, ...change } = stored;
+        return { ...change, draft: { ...draft, ascii } };
+      }
+      if (stored.basePath !== "base.json" || stored.outputPath !== "output.json") {
+        throw new Error(`compaction Plan change ${reference.id} has unsupported artifact paths`);
+      }
+      const base = await readJson<PersistedCompactionArtifact>(
+        this.planChangePath(planId, reference.id, "base.json")
+      );
+      const output = await readJson<PersistedCompactionArtifact>(
+        this.planChangePath(planId, reference.id, "output.json")
+      );
+      if (!output.compactedSource) {
+        throw new Error(`compaction Plan change ${reference.id} has no output`);
+      }
+      const {
+        schemaVersion: _schemaVersion,
+        basePath: _basePath,
+        outputPath: _outputPath,
+        ...change
+      } = stored;
+      return {
+        ...change,
+        ...(base.compactedSource ? { baseCompactedSource: base.compactedSource } : {}),
+        compactedSource: output.compactedSource
+      };
+    }));
+    const plan = validatePlanRecord({
+      ...manifest,
+      markdown: await readFile(this.planMarkdownPath(planId), "utf8"),
+      selection,
+      changes
+    });
+    this.assertPlanArtifacts(plan);
+    return plan;
+  }
+
+  async loadPlans(): Promise<PlanRecord[]> {
+    const entries = await readdir(this.plansRoot(), { withFileTypes: true }).catch((error) => {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+      throw error;
+    });
+    const ids = entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
+    return Promise.all(ids.map((id) => this.loadPlan(id)));
+  }
+
+  async savePlan(input: PlanRecord): Promise<PlanRecord> {
+    const plan = validatePlanRecord(input);
+    this.assertPlanArtifacts(plan);
+    const project = await this.loadProject();
+    if (!project || project.id !== plan.projectId) throw new Error("Plan belongs to another project");
+    const { markdown, selection, changes, ...record } = plan;
+    const references: PersistedPlanChangeReference[] = [];
+    await mkdir(this.planRoot(plan.id), { recursive: true });
+    const markdownTemp = path.join(
+      this.planRoot(plan.id),
+      `.plan.md.${process.pid}.${randomUUID()}.tmp`
+    );
+    await writeFile(markdownTemp, markdown, "utf8");
+    await rename(markdownTemp, this.planMarkdownPath(plan.id));
+    await writeJsonAtomic(this.planSelectionPath(plan.id), {
+      schemaVersion: SCHEMA_VERSION,
+      ...selection
+    });
+    for (const change of changes) {
+      const root = this.planChangeRoot(plan.id, change.id);
+      await mkdir(root, { recursive: true });
+      const reference: PersistedPlanChangeReference = {
+        id: change.id,
+        kind: change.kind,
+        ...(change.kind === "diagram-modified" ? { mode: change.mode } : {}),
+        path: `changes/${change.id}/change.json`
+      };
+      references.push(reference);
+      if (change.kind === "diagram-modified") {
+        const {
+          baseDiagram,
+          outputAscii,
+          semanticDiff,
+          ...metadata
+        } = change;
+        const { ascii: _baseAscii, ...baseDiagramMetadata } = baseDiagram;
+        await writeFile(path.join(root, "base.txt"), baseDiagram.ascii, "utf8");
+        await writeFile(path.join(root, "output.txt"), outputAscii, "utf8");
+        if (semanticDiff) {
+          await writeJsonAtomic(path.join(root, "semantic-diff.json"), {
+            schemaVersion: SCHEMA_VERSION,
+            ...semanticDiff
+          });
+        }
+        const persisted: PersistedModifiedDiagramChange = {
+          schemaVersion: SCHEMA_VERSION,
+          ...metadata,
+          baseDiagram: baseDiagramMetadata,
+          basePath: "base.txt",
+          outputPath: "output.txt",
+          ...(semanticDiff ? { semanticDiffPath: "semantic-diff.json" } : {})
+        };
+        await writeJsonAtomic(path.join(root, "change.json"), persisted);
+        continue;
+      }
+      if (change.kind === "diagram-added") {
+        const { ascii, ...draft } = change.draft;
+        await writeFile(path.join(root, "output.txt"), ascii, "utf8");
+        await writeJsonAtomic(path.join(root, "change.json"), {
+          schemaVersion: SCHEMA_VERSION,
+          id: change.id,
+          kind: change.kind,
+          label: change.label,
+          draft,
+          outputPath: "output.txt",
+          ...(change.generation ? { generation: change.generation } : {})
+        });
+        continue;
+      }
+      const { baseCompactedSource, compactedSource, ...metadata } = change;
+      await writeJsonAtomic(path.join(root, "base.json"), {
+        schemaVersion: SCHEMA_VERSION,
+        compactedSource: baseCompactedSource ?? null
+      });
+      await writeJsonAtomic(path.join(root, "output.json"), {
+        schemaVersion: SCHEMA_VERSION,
+        compactedSource
+      });
+      await writeJsonAtomic(path.join(root, "change.json"), {
+        schemaVersion: SCHEMA_VERSION,
+        ...metadata,
+        basePath: "base.json",
+        outputPath: "output.json"
+      });
+    }
+    const manifest: PersistedPlanManifest = {
+      ...record,
+      markdownPath: "plan.md",
+      selectionPath: "selection.json",
+      changes: references
+    };
+    await writeJsonAtomic(this.planManifestPath(plan.id), manifest);
+    return plan;
+  }
+
+  private assertPlanArtifacts(plan: PlanRecord): void {
+    for (const change of plan.changes) {
+      if (change.kind === "diagram-modified") {
+        if (change.baseDiagram.id !== change.diagramId
+          || change.baseDiagram.diagramSetId !== change.diagramSetId) {
+          throw new Error(`modified Plan change ${change.id} base Diagram identity does not match`);
+        }
+        if (createHash("sha256").update(change.baseDiagram.ascii).digest("hex")
+          !== change.baseAsciiSha256) {
+          throw new Error(`modified Plan change ${change.id} base hash does not match its snapshot`);
+        }
+        if (applyPlanPatch(change.baseDiagram.ascii, change.patch) !== change.outputAscii) {
+          throw new Error(`modified Plan change ${change.id} output does not match its patch`);
+        }
+        if (change.mode === "complete"
+          && (change.patch.start !== 0 || change.patch.deletedText !== change.baseDiagram.ascii)) {
+          throw new Error(`complete Plan change ${change.id} must replace the entire base Diagram`);
+        }
+        continue;
+      }
+      if (change.kind !== "code-entity-compaction") continue;
+      if (change.baseEntity.id !== change.codeEntityId) {
+        throw new Error(`compaction Plan change ${change.id} base CodeEntity identity does not match`);
+      }
+      const range = change.baseEntity.sourceRanges.find(
+        (candidate) => candidate.id === change.sourceRangeId
+      );
+      if (!range || JSON.stringify(range.compactedSource) !== JSON.stringify(change.baseCompactedSource)) {
+        throw new Error(`compaction Plan change ${change.id} base snapshot does not match`);
+      }
+    }
   }
 
   ids = {
@@ -1676,6 +1984,7 @@ export class DiagramStore {
     editSession: () => makeId("edit"),
     editOperation: () => makeId("operation"),
     highlight: () => makeId("highlight"),
-    representationFeedback: () => makeId("feedback")
+    representationFeedback: () => makeId("feedback"),
+    plan: () => makeId("plan")
   };
 }
