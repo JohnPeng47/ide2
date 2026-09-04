@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createStudioPaneState } from "./App";
+import { createStudioPaneState, pageFromPath } from "./App";
 import { resolveDomainProfile } from "./domainProfiles";
 import { setPaneTabs } from "./panes/model";
 
@@ -44,5 +44,14 @@ describe("profile-driven studio panes", () => {
     const normalized = createStudioPaneState(resolveDomainProfile("document"), withHighlightsActive);
 
     expect(normalized.panes.files.activeTabId).toBe("highlights");
+  });
+});
+
+describe("application page routing", () => {
+  it("routes mapping paths to the representation mapping POC", () => {
+    expect(pageFromPath("/mapping")).toBe("mapping");
+    expect(pageFromPath("/mapping/graph-a")).toBe("mapping");
+    expect(pageFromPath("/experiments")).toBe("experiments");
+    expect(pageFromPath("/")).toBe("studio");
   });
 });

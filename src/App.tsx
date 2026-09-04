@@ -54,6 +54,7 @@ import { ExperimentViewerPage } from "./components/ExperimentViewerPage";
 import { GeneratorOptions } from "./components/GeneratorOptions";
 import { HighlightsTreePanel } from "./components/HighlightsTreePanel";
 import { MarkdownSectionsPanel } from "./components/MarkdownSectionsPanel";
+import { MappingPocPage } from "./components/MappingPocPage";
 import { PlanCorpusPreview, PlanDiagramPreview } from "./components/PlanPreview";
 import { PlansTreePanel } from "./components/PlansTreePanel";
 import { RepresentationsPanel } from "./components/RepresentationsPage";
@@ -282,8 +283,12 @@ function createStudioPaneApi(profile: DomainProfile): PaneApi {
   return new PaneApi(createStudioPaneState(profile, restored, storedPercent));
 }
 
-function pageFromPath(): "studio" | "experiments" {
-  return window.location.pathname.startsWith("/experiments") ? "experiments" : "studio";
+type AppPage = "studio" | "experiments" | "mapping";
+
+export function pageFromPath(pathname = window.location.pathname): AppPage {
+  if (pathname.startsWith("/experiments")) return "experiments";
+  if (pathname.startsWith("/mapping")) return "mapping";
+  return "studio";
 }
 
 export function App() {
@@ -293,16 +298,30 @@ export function App() {
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
-  const navigate = (next: "studio" | "experiments") => {
-    window.history.pushState({}, "", next === "experiments" ? "/experiments" : "/");
+  const navigate = (next: AppPage) => {
+    const path = next === "experiments" ? "/experiments" : next === "mapping" ? "/mapping" : "/";
+    window.history.pushState({}, "", path);
     setPage(next);
   };
-  return page === "experiments"
-    ? <ExperimentViewerPage onStudio={() => navigate("studio")} />
-    : <StudioPage onExperiments={() => navigate("experiments")} />;
+  if (page === "experiments") {
+    return <ExperimentViewerPage
+      onStudio={() => navigate("studio")}
+      onMapping={() => navigate("mapping")}
+    />;
+  }
+  if (page === "mapping") {
+    return <MappingPocPage
+      onStudio={() => navigate("studio")}
+      onExperiments={() => navigate("experiments")}
+    />;
+  }
+  return <StudioPage
+    onExperiments={() => navigate("experiments")}
+    onMapping={() => navigate("mapping")}
+  />;
 }
 
-function StudioPage(props: { onExperiments: () => void }) {
+function StudioPage(props: { onExperiments: () => void; onMapping: () => void }) {
   const refBuffer = useRefBuffer();
   const [paneApi] = useState(() => createStudioPaneApi(resolveDomainProfile(
     window.localStorage.getItem(PANE_PROFILE_STORAGE_KEY)
@@ -2237,6 +2256,7 @@ function StudioPage(props: { onExperiments: () => void }) {
           }}>GENERATE</button>
           <button type="button" className="header-import" onClick={() => setImportOpen(true)}>IMPORT</button>
           <button type="button" onClick={props.onExperiments}>EXPERIMENTS</button>
+          <button type="button" onClick={props.onMapping}>MAPPING</button>
           <div className="settings-menu-shell">
             <button
               type="button"

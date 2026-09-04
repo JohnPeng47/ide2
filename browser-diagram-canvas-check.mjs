@@ -218,10 +218,30 @@ try {
       "document.querySelector('.ascii-grid')?.dataset.cellWidth ?? 0"
     )) > 0, { message: "ASCII grid did not finish measuring" });
 
+    const canvasClip = await elementClip(cdp, ".diagram-canvas.is-enabled");
+    await evaluate(cdp, `(() => {
+      const line = document.querySelector('[data-ascii-line="15"]');
+      if (!line) throw new Error('ASCII line for native-selection setup was unavailable');
+      const range = document.createRange();
+      range.selectNodeContents(line);
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    })()`);
+    if (!await evaluate(cdp, "Boolean(window.getSelection()?.toString())")) {
+      throw new Error("native ASCII text selection setup failed");
+    }
+    await drag(cdp,
+      { x: canvasClip.x + 12, y: canvasClip.y + 12 },
+      { x: canvasClip.x + 12, y: canvasClip.y + 12 }
+    );
+    if (await evaluate(cdp, "Boolean(window.getSelection()?.toString())")) {
+      throw new Error("ordinary canvas press did not clear native ASCII text selection");
+    }
+
     const transformBeforePan = await evaluate(cdp,
       "document.querySelector('.diagram-canvas__surface').style.transform"
     );
-    const canvasClip = await elementClip(cdp, ".diagram-canvas.is-enabled");
     await drag(cdp,
       { x: canvasClip.x + 12, y: canvasClip.y + 12 },
       { x: canvasClip.x + 132, y: canvasClip.y + 72 }

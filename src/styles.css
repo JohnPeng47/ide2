@@ -788,6 +788,48 @@ button.highlight-tree-label:hover, button.highlight-tree-label:focus-visible { o
 .dataset-label-editor button { align-self: end; }
 .dataset-remove-item { margin: 0.8rem; border-color: var(--accent-red); color: var(--accent-red); }
 .dataset-remove-item:hover:not(:disabled) { background: rgb(191 97 106 / 8%); border-color: var(--accent-red); color: var(--accent-red); }
+
+.mapping-poc-shell { display: grid; width: 100%; min-width: 0; height: 100dvh; overflow: hidden; grid-template-rows: 58px minmax(0, 1fr); background: var(--bg); }
+.mapping-poc-workspace { display: grid; min-width: 0; min-height: 0; grid-template-rows: auto minmax(0, 1fr) 32px; }
+.mapping-poc-toolbar { display: flex; min-width: 0; min-height: 76px; align-items: center; justify-content: space-between; gap: 1.5rem; border-bottom: 1px solid var(--border); padding: 0.85rem 1.25rem; }
+.mapping-poc-toolbar h2 { margin-top: 0.3rem; overflow: hidden; font-size: 1rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.mapping-poc-contract { display: flex; flex: none; align-items: stretch; border: 1px solid var(--gutter); border-radius: 3px; color: var(--muted); font: 9px var(--font-mono); }
+.mapping-poc-contract span { display: flex; min-width: 92px; align-items: center; gap: 0.5rem; padding: 0.45rem 0.6rem; }
+.mapping-poc-contract span + span { border-left: 1px solid var(--gutter); }
+.mapping-poc-contract strong { color: var(--accent-yellow); font-size: 10px; }
+.mapping-poc-canvas { min-width: 0; min-height: 0; background-color: #0d1014; background-image: linear-gradient(rgb(136 192 208 / 3%) 1px, transparent 1px), linear-gradient(90deg, rgb(136 192 208 / 3%) 1px, transparent 1px); background-size: 24px 24px; }
+.mapping-poc-graph-stage { position: relative; display: inline-block; min-width: max-content; cursor: crosshair; }
+.mapping-poc-ascii { min-width: max-content; color: var(--fg); font: 13px/1.4 var(--font-mono); white-space: pre; }
+.mapping-poc-cell-probe { position: absolute; visibility: hidden; font: 13px/1.4 var(--font-mono); pointer-events: none; white-space: pre; }
+.mapping-poc-node-layer { position: absolute; z-index: 1; inset: 0; pointer-events: none; }
+.mapping-poc-node-hit { position: absolute; border-bottom: 1px dotted rgb(180 142 173 / 38%); background: rgb(180 142 173 / 2%); }
+.mapping-poc-node-hit.is-mapped { border-color: rgb(136 192 208 / 60%); background: rgb(136 192 208 / 3%); }
+.mapping-poc-node-hit.is-selected { border-color: var(--accent-yellow); background: rgb(235 203 139 / 20%); box-shadow: inset 2px 0 var(--accent-yellow); }
+.mapping-poc-selection-rect { position: absolute; z-index: 2; border: 1px solid var(--accent-cyan); background: rgb(136 192 208 / 7%); box-shadow: 0 0 0 1px rgb(136 192 208 / 14%); pointer-events: none; }
+.mapping-poc-selection-menu { position: absolute; z-index: 5; display: flex; width: 178px; overflow: hidden; border: 1px solid var(--gutter); border-radius: 4px; background: rgb(15 17 21 / 97%); box-shadow: 0 10px 30px rgb(0 0 0 / 45%); flex-direction: column; cursor: default; font: 9px var(--font-mono); }
+.mapping-poc-selection-menu > span { padding: 0.5rem 0.6rem; color: var(--muted); }
+.mapping-poc-selection-menu button { display: flex; min-height: 34px; align-items: center; gap: 0.55rem; border: 0; border-top: 1px solid var(--border); padding: 0 0.6rem; background: transparent; color: var(--accent-cyan); text-align: left; }
+.mapping-poc-selection-menu button:hover:not(:disabled), .mapping-poc-selection-menu button:focus-visible { background: rgb(136 192 208 / 9%); color: var(--fg); }
+.mapping-poc-selection-menu kbd { display: grid; width: 19px; height: 19px; place-items: center; border: 1px solid var(--gutter); border-radius: 2px; color: var(--accent-yellow); font: 8px var(--font-mono); }
+.mapping-poc-companion { position: absolute; z-index: 3; width: max-content; cursor: default; }
+.mapping-poc-companion::before { position: absolute; top: 9px; right: 100%; width: 112px; height: 1px; background: var(--accent-cyan); content: ""; }
+.mapping-poc-companion::after { position: absolute; top: 6px; right: calc(100% + 108px); width: 7px; height: 7px; border: 1px solid var(--accent-cyan); border-radius: 50%; background: var(--bg); content: ""; }
+.mapping-poc-companion-controls { position: absolute; bottom: calc(100% + 5px); left: 0; display: flex; min-height: 27px; align-items: center; justify-content: space-between; gap: 1.5rem; border: 1px solid var(--gutter); border-radius: 3px; padding: 0 0.35rem 0 0.55rem; background: rgb(15 17 21 / 97%); box-shadow: 0 8px 22px rgb(0 0 0 / 36%); color: var(--accent-cyan); font: 700 8px var(--font-mono); letter-spacing: 0.1em; white-space: nowrap; }
+.mapping-poc-companion-controls strong { color: var(--accent-yellow); font-size: 8px; font-weight: 600; letter-spacing: 0; }
+.mapping-poc-companion-meta { display: flex; align-items: center; gap: 0.65rem; }
+.mapping-poc-companion-meta button { display: grid; width: 22px; height: 22px; place-items: center; border: 1px solid transparent; border-radius: 2px; padding: 0; background: transparent; color: var(--muted); font: 15px/1 var(--font-mono); cursor: pointer; }
+.mapping-poc-companion-meta button:hover, .mapping-poc-companion-meta button:focus-visible { border-color: var(--gutter); background: rgb(136 192 208 / 9%); color: var(--fg); }
+.mapping-poc-companion pre { min-width: max-content; border: 1px solid var(--accent-cyan); border-radius: 2px; padding: 0 0.35rem; background: #0f1318; box-shadow: 0 14px 45px rgb(0 0 0 / 48%); color: var(--fg); font: 13px/1.4 var(--font-mono); white-space: pre; }
+.mapping-poc-status { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 1rem; border-top: 1px solid var(--border); padding: 0 1rem; color: var(--muted); font: 8px var(--font-mono); letter-spacing: 0.08em; }
+.mapping-poc-status span:first-child { color: var(--accent-purple); }
+
+@media (max-width: 760px), (max-width: 900px) and (hover: none) and (pointer: coarse) {
+  .mapping-poc-shell { grid-template-rows: auto minmax(0, 1fr); }
+  .mapping-poc-toolbar { min-height: 68px; padding: 0.7rem; }
+  .mapping-poc-contract span { min-width: auto; }
+  .mapping-poc-status { display: none; }
+  .mapping-poc-workspace { grid-template-rows: auto minmax(0, 1fr); }
+}
 .dataset-dialog-backdrop { position: fixed; z-index: 35; display: grid; inset: 0; place-items: center; padding: 1.5rem; background: rgb(5 7 10 / 82%); backdrop-filter: blur(3px); }
 .dataset-dialog { display: flex; width: min(590px, 100%); overflow: hidden; border: 1px solid var(--gutter); border-radius: 6px; background: var(--bg); box-shadow: 0 24px 90px rgb(0 0 0 / 55%); flex-direction: column; }
 .dataset-dialog > header { display: flex; align-items: start; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--gutter); padding: 1rem 1.1rem; }

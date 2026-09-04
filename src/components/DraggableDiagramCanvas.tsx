@@ -148,6 +148,7 @@ export function DraggableDiagramCanvas(props: {
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (!props.enabled || event.button !== 0 || isInteractiveTarget(event.target)) return;
     if (event.pointerType !== "touch" && (event.ctrlKey || event.metaKey || event.shiftKey)) return;
+    window.getSelection()?.removeAllRanges();
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
     const point = localPoint(event.currentTarget, event.clientX, event.clientY);

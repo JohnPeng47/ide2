@@ -373,7 +373,7 @@ function DatasetDiagramCard({ item }: { item: DiagramDatasetItemRecord }) {
   );
 }
 
-export function ExperimentViewerPage(props: { onStudio: () => void }) {
+export function ExperimentViewerPage(props: { onStudio: () => void; onMapping: () => void }) {
   const [snapshot, setSnapshot] = useState<ExperimentCatalogSnapshot | null>(null);
   const [datasets, setDatasets] = useState<DiagramDatasetCatalogSnapshot>({ datasets: [] });
   const [selection, setSelection] = useState<ExperimentSelection | null>(null);
@@ -536,6 +536,7 @@ export function ExperimentViewerPage(props: { onStudio: () => void }) {
         <nav className="screen-tabs" aria-label="Application pages">
           <button type="button" onClick={props.onStudio}>STUDIO</button>
           <button type="button" className="is-active">EXPERIMENTS</button>
+          <button type="button" onClick={props.onMapping}>MAPPING</button>
         </nav>
       </header>
       {error && !snapshot ? <section className="center-state"><h1>EXPERIMENTS UNAVAILABLE</h1><p>{error}</p></section> : null}
