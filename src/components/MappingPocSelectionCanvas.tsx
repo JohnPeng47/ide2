@@ -17,6 +17,11 @@ import {
   type MappingPocGridRect,
   type MappingPocProjection
 } from "../mappingPoc";
+import {
+  MAPPING_POC_A_SECTIONS,
+  MAPPING_POC_DETAIL_OVERLAYS,
+  MAPPING_POC_OVERLAY_PLACEMENTS
+} from "../mappingPocOverlays";
 
 interface GridPoint {
   line: number;
@@ -56,6 +61,7 @@ export function MappingPocSelectionCanvas() {
   const [selectionRect, setSelectionRect] = useState<MappingPocGridRect | null>(null);
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [openedProjection, setOpenedProjection] = useState<MappingPocProjection | null>(null);
+  const [openDetailOverlayId, setOpenDetailOverlayId] = useState<string | null>(null);
 
   const selectedNodeIdSet = useMemo(() => new Set(selectedNodeIds), [selectedNodeIds]);
   const selectedNodes = useMemo(
@@ -70,6 +76,10 @@ export function MappingPocSelectionCanvas() {
     const selectedIds = new Set(openedProjection?.selectedANodeIds ?? []);
     return MAPPING_POC_A_NODES.find((node) => selectedIds.has(node.id));
   }, [openedProjection]);
+  const openDetailOverlay = MAPPING_POC_DETAIL_OVERLAYS.find((overlay) => overlay.id === openDetailOverlayId);
+  const openDetailPlacement = MAPPING_POC_OVERLAY_PLACEMENTS.find(
+    (placement) => placement.overlayId === openDetailOverlayId
+  );
 
   useLayoutEffect(() => {
     const pre = preRef.current;
@@ -191,6 +201,7 @@ export function MappingPocSelectionCanvas() {
       aria-label="Graph A selectable nodes"
       onPointerDown={(event) => {
         if (openedProjection
+          || openDetailOverlay
           || event.button !== 0
           || event.shiftKey
           || event.ctrlKey
@@ -248,7 +259,63 @@ export function MappingPocSelectionCanvas() {
         )) : null}
       </div>
 
+      {cell.width > 0 && cell.height > 0 ? (
+        <div className="mapping-poc-a-section-layer" aria-label="Graph A detail sections">
+          {MAPPING_POC_A_SECTIONS.map((section, index) => (
+            <section
+              key={section.id}
+              className={`mapping-poc-a-section${openDetailOverlayId === section.id ? " is-open" : ""}`}
+              data-a-section={section.id}
+              style={{
+                top: (section.startLine - 1) * cell.height,
+                height: (section.endLine - section.startLine + 1) * cell.height
+              }}
+            >
+              <button
+                type="button"
+                data-mapping-static-ui
+                data-diagram-canvas-static-ui
+                aria-label={`Open ${section.label} overlay`}
+                aria-pressed={openDetailOverlayId === section.id}
+                onClick={() => setOpenDetailOverlayId(section.id)}
+              >
+                <span>{index + 1}</span>
+                {section.label}
+              </button>
+            </section>
+          ))}
+        </div>
+      ) : null}
+
       {rectStyle ? <span className="mapping-poc-selection-rect" style={rectStyle} aria-hidden="true" /> : null}
+
+      {openDetailOverlay && openDetailPlacement && cell.width > 0 && cell.height > 0 ? (
+        <aside
+          className="mapping-poc-detail-overlay"
+          data-mapping-static-ui
+          data-diagram-canvas-static-ui
+          data-overlay-id={openDetailOverlay.id}
+          data-overlay-origin-line={openDetailPlacement.originLine}
+          data-overlay-origin-column={openDetailPlacement.originColumn}
+          data-a-anchor-line={openDetailPlacement.aAnchor.line}
+          data-a-anchor-column={openDetailPlacement.aAnchor.startColumn}
+          style={{
+            left: (openDetailPlacement.originColumn - 1) * cell.width,
+            top: (openDetailPlacement.originLine - 1) * cell.height
+          }}
+        >
+          <header>
+            <span>A{MAPPING_POC_A_SECTIONS.findIndex((section) => section.id === openDetailOverlay.sectionId) + 1}_DETAIL</span>
+            <strong>{openDetailOverlay.label}</strong>
+            <button
+              type="button"
+              aria-label={`Close ${openDetailOverlay.label} overlay`}
+              onClick={() => setOpenDetailOverlayId(null)}
+            >×</button>
+          </header>
+          <pre>{openDetailOverlay.ascii}</pre>
+        </aside>
+      ) : null}
 
       {selectionRect && selectedNodes.length && rectStyle ? (
         <div

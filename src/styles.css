@@ -805,12 +805,26 @@ button.highlight-tree-label:hover, button.highlight-tree-label:focus-visible { o
 .mapping-poc-node-hit { position: absolute; border-bottom: 1px dotted rgb(180 142 173 / 38%); background: rgb(180 142 173 / 2%); }
 .mapping-poc-node-hit.is-mapped { border-color: rgb(136 192 208 / 60%); background: rgb(136 192 208 / 3%); }
 .mapping-poc-node-hit.is-selected { border-color: var(--accent-yellow); background: rgb(235 203 139 / 20%); box-shadow: inset 2px 0 var(--accent-yellow); }
+.mapping-poc-a-section-layer { position: absolute; z-index: 4; inset: 0; pointer-events: none; }
+.mapping-poc-a-section { position: absolute; right: 0; left: 0; border-top: 1px dashed rgb(180 142 173 / 22%); pointer-events: none; }
+.mapping-poc-a-section:last-child { border-bottom: 1px dashed rgb(180 142 173 / 22%); }
+.mapping-poc-a-section.is-open { border-color: var(--accent-purple); background: rgb(180 142 173 / 4%); }
+.mapping-poc-a-section > button { position: absolute; top: 3px; right: calc(100% + 10px); display: flex; width: 174px; min-height: 24px; align-items: center; gap: 0.45rem; border: 1px solid var(--border); border-radius: 3px; padding: 0 0.45rem; background: rgb(15 17 21 / 92%); color: var(--muted); pointer-events: auto; font: 8px var(--font-mono); text-align: left; white-space: nowrap; }
+.mapping-poc-a-section > button span { display: grid; width: 15px; height: 15px; flex: none; place-items: center; border: 1px solid var(--gutter); color: var(--accent-purple); }
+.mapping-poc-a-section > button:hover, .mapping-poc-a-section > button[aria-pressed="true"] { border-color: var(--accent-purple); background: rgb(180 142 173 / 12%); color: var(--fg); }
 .mapping-poc-selection-rect { position: absolute; z-index: 2; border: 1px solid var(--accent-cyan); background: rgb(136 192 208 / 7%); box-shadow: 0 0 0 1px rgb(136 192 208 / 14%); pointer-events: none; }
 .mapping-poc-selection-menu { position: absolute; z-index: 5; display: flex; width: 178px; overflow: hidden; border: 1px solid var(--gutter); border-radius: 4px; background: rgb(15 17 21 / 97%); box-shadow: 0 10px 30px rgb(0 0 0 / 45%); flex-direction: column; cursor: default; font: 9px var(--font-mono); }
 .mapping-poc-selection-menu > span { padding: 0.5rem 0.6rem; color: var(--muted); }
 .mapping-poc-selection-menu button { display: flex; min-height: 34px; align-items: center; gap: 0.55rem; border: 0; border-top: 1px solid var(--border); padding: 0 0.6rem; background: transparent; color: var(--accent-cyan); text-align: left; }
 .mapping-poc-selection-menu button:hover:not(:disabled), .mapping-poc-selection-menu button:focus-visible { background: rgb(136 192 208 / 9%); color: var(--fg); }
 .mapping-poc-selection-menu kbd { display: grid; width: 19px; height: 19px; place-items: center; border: 1px solid var(--gutter); border-radius: 2px; color: var(--accent-yellow); font: 8px var(--font-mono); }
+.mapping-poc-detail-overlay { position: absolute; z-index: 9; width: max-content; cursor: default; }
+.mapping-poc-detail-overlay header { position: absolute; bottom: calc(100% + 5px); left: 0; display: flex; min-height: 27px; align-items: center; gap: 0.75rem; border: 1px solid var(--accent-purple); border-radius: 3px; padding-left: 0.55rem; background: rgb(15 17 21 / 98%); box-shadow: 0 8px 22px rgb(0 0 0 / 40%); white-space: nowrap; }
+.mapping-poc-detail-overlay header > span { color: var(--accent-purple); font: 700 8px var(--font-mono); letter-spacing: 0.1em; }
+.mapping-poc-detail-overlay header strong { color: var(--fg); font: 600 8px var(--font-mono); }
+.mapping-poc-detail-overlay header button { display: grid; width: 24px; height: 25px; place-items: center; border: 0; border-left: 1px solid var(--border); background: transparent; color: var(--muted); font: 15px/1 var(--font-mono); }
+.mapping-poc-detail-overlay header button:hover, .mapping-poc-detail-overlay header button:focus-visible { background: rgb(180 142 173 / 12%); color: var(--fg); }
+.mapping-poc-detail-overlay pre { min-width: max-content; outline: 1px solid var(--accent-purple); background: #11141a; box-shadow: 0 16px 52px rgb(0 0 0 / 60%); color: var(--fg); font: 13px/1.4 var(--font-mono); white-space: pre; }
 .mapping-poc-companion { position: absolute; z-index: 3; width: max-content; cursor: default; }
 .mapping-poc-companion::before { position: absolute; top: 9px; right: 100%; width: 112px; height: 1px; background: var(--accent-cyan); content: ""; }
 .mapping-poc-companion::after { position: absolute; top: 6px; right: calc(100% + 108px); width: 7px; height: 7px; border: 1px solid var(--accent-cyan); border-radius: 50%; background: var(--bg); content: ""; }

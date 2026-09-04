@@ -87,6 +87,7 @@ const tempRoot = await mkdtemp(path.join(tmpdir(), "new-diagram-mapping-poc-"));
 const screenshotPath = process.env.MAPPING_POC_SCREENSHOT_OUTPUT
   ? path.resolve(process.env.MAPPING_POC_SCREENSHOT_OUTPUT)
   : path.join(tempRoot, "mapping-poc.png");
+const overlayScreenshotPath = screenshotPath.replace(/\.png$/i, "-overlay.png");
 const port = await freePort();
 const url = `http://127.0.0.1:${port}/mapping`;
 let serverProcess;
@@ -111,6 +112,48 @@ try {
     }, { message: "mapping canvas did not reach its initial centered transform" });
 
     const canvas = await elementRect(cdp, ".mapping-poc-canvas");
+    const sectionCount = await evaluate(cdp, "document.querySelectorAll('[data-a-section] > button').length");
+    if (sectionCount !== 5) throw new Error(`expected five A section controls, found ${sectionCount}`);
+    const transformBeforeOverlay = await evaluate(cdp, "document.querySelector('.diagram-canvas__surface')?.style.transform");
+    const generationAnchor = await elementRect(cdp, "[data-selectable-node='a-generate']");
+    const generationOverlayButton = await elementRect(cdp, "button[aria-label='Open Generation pipeline overlay']");
+    await click(cdp, {
+      x: generationOverlayButton.x + generationOverlayButton.width / 2,
+      y: generationOverlayButton.y + generationOverlayButton.height / 2
+    });
+    await waitForSelector(cdp, ".mapping-poc-detail-overlay[data-overlay-id='generation'][data-overlay-origin-line='18'][data-overlay-origin-column='1']");
+    const overlayGeometry = await evaluate(cdp, `(() => {
+      const overlay = document.querySelector('.mapping-poc-detail-overlay');
+      const pre = overlay.querySelector('pre');
+      const nodeLayer = document.querySelector('.mapping-poc-node-layer');
+      const rect = pre.getBoundingClientRect();
+      return {
+        x: rect.x,
+        y: rect.y,
+        z: Number(getComputedStyle(overlay).zIndex),
+        nodeZ: Number(getComputedStyle(nodeLayer).zIndex),
+        transform: document.querySelector('.diagram-canvas__surface')?.style.transform,
+        text: pre.textContent
+      };
+    })()`);
+    if (!near(overlayGeometry.x, generationAnchor.x)
+      || !near(overlayGeometry.y, generationAnchor.y)
+      || !(overlayGeometry.z > overlayGeometry.nodeZ)
+      || overlayGeometry.transform !== transformBeforeOverlay
+      || !overlayGeometry.text.startsWith("[R] generate")
+      || !overlayGeometry.text.includes("PiDiagramAgentRuntime.generateArtifact()")) {
+      throw new Error(`generation overlay was not aligned above A: ${JSON.stringify({ generationAnchor, overlayGeometry })}`);
+    }
+    await captureScreenshot(cdp, { output: overlayScreenshotPath });
+    const closeGenerationOverlay = await elementRect(cdp, "button[aria-label='Close Generation detail overlay']");
+    await click(cdp, {
+      x: closeGenerationOverlay.x + closeGenerationOverlay.width / 2,
+      y: closeGenerationOverlay.y + closeGenerationOverlay.height / 2
+    });
+    await waitFor(async () => await evaluate(cdp,
+      "document.querySelector('.mapping-poc-detail-overlay') === null"
+    ), { message: "detail overlay close button did not dismiss the HTML layer" });
+
     const first = await elementRect(cdp, "[data-selectable-node='a-generate']");
     const last = await elementRect(cdp, "[data-selectable-node='a-generation-record']");
     const widest = await elementRect(cdp, "[data-selectable-node='a-pi-runtime']");
@@ -307,6 +350,9 @@ try {
       selectedBNodes: 55,
       repeatCycle: "passed",
       persistentUntilExplicitClose: "passed",
+      aDetailOverlays: 5,
+      parsedOverlayOrigin: "18:1",
+      overlayScreenshot: overlayScreenshotPath,
       screenshot: screenshotPath
     })}\n`);
   });
