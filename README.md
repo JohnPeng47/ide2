@@ -3,6 +3,16 @@
 A repo-local workspace for collecting source-backed code entities and generating
 ASCII diagrams with parallel Pi agents.
 
+## UI test framework
+
+`packages/ui-test-framework` contains the repo-local
+`@new-diagram/ui-test-framework` package. It provides a development control dial
+for comparing UI variants with toggle, select, range, and color controls. Values
+can be persisted locally across reloads.
+
+Keep the framework at the development composition boundary: product components
+should receive plain values and should not import the framework directly.
+
 ## Install the agent skill
 
 The canonical skill source lives at `skills/new-diagram/`. Install or update its
