@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { DraggableDiagramCanvas } from "./DraggableDiagramCanvas";
 import { MappingPocSelectionCanvas } from "./MappingPocSelectionCanvas";
 import {
@@ -9,6 +10,7 @@ export function MappingPocPage(props: {
   onStudio: () => void;
   onExperiments: () => void;
 }) {
+  const [graphALineCount, setGraphALineCount] = useState(MAPPING_POC_GRAPH_A_LINE_COUNT);
   return (
     <main className="mapping-poc-shell">
       <header className="studio-header mapping-poc-header">
@@ -30,7 +32,7 @@ export function MappingPocPage(props: {
             <h2>C7. Offline prompt-control experiments and curated datasets</h2>
           </div>
           <div className="mapping-poc-contract" aria-label="Proof of concept graph line counts">
-            <span><strong>A</strong>{MAPPING_POC_GRAPH_A_LINE_COUNT} lines</span>
+            <span><strong>A</strong>{graphALineCount} lines</span>
             <span><strong>B</strong>{MAPPING_POC_GRAPH_B_LINE_COUNT} lines</span>
           </div>
         </header>
@@ -40,12 +42,12 @@ export function MappingPocPage(props: {
           enabled
           resetKey="mapping-poc-graph-a-v1"
         >
-          <MappingPocSelectionCanvas />
+          <MappingPocSelectionCanvas onLineCountChange={setGraphALineCount} />
         </DraggableDiagramCanvas>
 
         <footer className="mapping-poc-status">
           <span>POC PAIR A → B</span>
-          <span>drag over A to select · drag empty canvas to pan · Ctrl+B focuses actions</span>
+          <span>drag over A to select · N opens mapped · P prompts selected rows</span>
         </footer>
       </section>
     </main>

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import {
   createAgentSession,
   DefaultResourceLoader,
@@ -20,6 +21,7 @@ import {
   type CodeEntityPromptAlias,
   type CodeEntityPromptConfigRecord,
   type CodeEntityRecord,
+  type DiagramElementMapping,
   type DiagramElementMappingDraft,
   type DiagramModelId,
   type GeneratedArtifactDraft,
@@ -35,6 +37,20 @@ import {
   DEFAULT_MAPPING_FOLLOW_UP_PROMPT,
   renderMappingPromptTemplate
 } from "../src/prompt";
+import {
+  applyMappingPocPromptPatch,
+  mappingPocPromptHunk,
+  renderMappingPocAgentSystemPrompt,
+  renderMappingPocEditPrompt,
+  type MappingPocPromptHunk,
+  type MappingPocPromptRequest,
+  type MappingPocPromptResult
+} from "../src/mappingPocPrompt";
+import {
+  initialMappingPocElementMappings,
+  mappingPocElementMappingsAfterPatch,
+  mappingPocSourceContextForSelection
+} from "./mappingPocSourceContext";
 
 export interface EntityCollectionRequest {
   sourceRoot: string;
@@ -97,6 +113,10 @@ export interface DiagramAgentRuntime {
     request: ArtifactEditRequest,
     onProgress?: (progress: AgentProgress) => void
   ): Promise<ArtifactEditDraft>;
+  promptDiagramSelection?(
+    request: MappingPocPromptRequest & { sourceRoot: string },
+    onProgress?: (progress: AgentProgress) => void
+  ): Promise<MappingPocPromptResult>;
   dispose(): void;
 }
 
@@ -296,9 +316,32 @@ export function documentCorpusTools(binding: CorpusBinding) {
   return [read, list, search];
 }
 
+type PiAgentSession = Awaited<ReturnType<typeof createAgentSession>>["session"];
+
+interface MappingPocPendingPrompt {
+  selectionId: string;
+  expectedRevision: number;
+  hunk: MappingPocPromptHunk;
+  submission?: MappingPocPromptResult;
+}
+
+interface MappingPocAgentSession {
+  session: PiAgentSession;
+  unsubscribe: () => void;
+  ascii: string;
+  revision: number;
+  mappings: DiagramElementMapping[];
+  pending?: MappingPocPendingPrompt;
+  onProgress?: (progress: AgentProgress) => void;
+  modelName: string;
+  lastUsedAt: number;
+}
+
 export class PiDiagramAgentRuntime implements DiagramAgentRuntime {
   private modelRuntime?: Promise<ModelRuntime>;
   private readonly sessions = new Set<{ abort(): Promise<void>; dispose(): void }>();
+  private readonly mappingPocSessions = new Map<string, MappingPocAgentSession>();
+  private mappingPocPromptBusy = false;
 
   private runtime(): Promise<ModelRuntime> {
     this.modelRuntime ??= ModelRuntime.create({ allowModelNetwork: false });
@@ -691,6 +734,223 @@ ${request.instruction}`);
     }
   }
 
+  private collisionSafePromptNonce(...content: string[]): string {
+    let nonce = "";
+    do nonce = randomUUID().replaceAll("-", "").toUpperCase();
+    while (content.some((value) => value.includes(nonce)));
+    return nonce;
+  }
+
+  private disposeMappingPocSession(clientSessionId: string): void {
+    const state = this.mappingPocSessions.get(clientSessionId);
+    if (!state) return;
+    state.unsubscribe();
+    void state.session.abort();
+    state.session.dispose();
+    this.sessions.delete(state.session);
+    this.mappingPocSessions.delete(clientSessionId);
+  }
+
+  private async createMappingPocSession(
+    request: MappingPocPromptRequest & { sourceRoot: string }
+  ): Promise<MappingPocAgentSession> {
+    if (this.mappingPocSessions.size >= 12) {
+      const oldest = [...this.mappingPocSessions.entries()]
+        .sort((left, right) => left[1].lastUsedAt - right[1].lastUsedAt)[0];
+      if (oldest) this.disposeMappingPocSession(oldest[0]);
+    }
+    const configured = await this.model();
+    let state!: MappingPocAgentSession;
+    const submit = defineTool({
+      name: "submit_diagram_patch",
+      label: "Submit diagram patch",
+      description: "Replace the exact full-row hunk identified by the active selection.",
+      promptSnippet: "Submit replacement rows for the selected diagram hunk",
+      promptGuidelines: ["End each edit request by calling submit_diagram_patch exactly once."],
+      parameters: Type.Object({
+        selectionId: Type.String({ minLength: 1, maxLength: 120 }),
+        replacementLines: Type.Array(Type.String({ maxLength: 500 }), {
+          minItems: 1,
+          maxItems: 500
+        })
+      }),
+      async execute(_toolCallId, params) {
+        const pending = state.pending;
+        if (!pending) {
+          return {
+            content: [{ type: "text" as const, text: "Submission rejected: there is no active selection request." }],
+            details: { accepted: false },
+            terminate: false
+          };
+        }
+        if (params.selectionId !== pending.selectionId) {
+          return {
+            content: [{
+              type: "text" as const,
+              text: `Submission rejected: selectionId must be ${pending.selectionId}. Call submit_diagram_patch again.`
+            }],
+            details: { accepted: false },
+            terminate: false
+          };
+        }
+        try {
+          const result = applyMappingPocPromptPatch({
+            currentAscii: state.ascii,
+            currentRevision: state.revision,
+            expectedRevision: pending.expectedRevision,
+            hunk: pending.hunk,
+            replacementLines: params.replacementLines
+          });
+          state.ascii = result.diagramAscii;
+          state.revision = result.diagramRevision;
+          state.mappings = mappingPocElementMappingsAfterPatch(state.mappings, result);
+          pending.submission = result;
+          return {
+            content: [{
+              type: "text" as const,
+              text: `Applied the exact row patch at revision ${result.diagramRevision} (${result.verticalDelta >= 0 ? "+" : ""}${result.verticalDelta} rows).`
+            }],
+            details: { accepted: true },
+            terminate: true
+          };
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "invalid diagram patch";
+          return {
+            content: [{
+              type: "text" as const,
+              text: `Submission rejected: ${message}. Correct replacementLines and call submit_diagram_patch again.`
+            }],
+            details: { accepted: false },
+            terminate: false
+          };
+        }
+      }
+    });
+    const settingsManager = SettingsManager.inMemory({
+      defaultProvider: configured.provider,
+      defaultModel: configured.modelId,
+      defaultThinkingLevel: "medium"
+    });
+    const systemNonce = this.collisionSafePromptNonce(request.diagramAscii);
+    const resourceLoader = new DefaultResourceLoader({
+      cwd: request.sourceRoot,
+      agentDir: getAgentDir(),
+      settingsManager,
+      noExtensions: true,
+      noSkills: true,
+      noPromptTemplates: true,
+      noThemes: true,
+      noContextFiles: true,
+      systemPrompt: renderMappingPocAgentSystemPrompt(
+        request.diagramAscii,
+        request.diagramRevision,
+        systemNonce
+      )
+    });
+    await resourceLoader.reload();
+    const { session } = await createAgentSession({
+      cwd: request.sourceRoot,
+      modelRuntime: configured.runtime,
+      model: configured.model,
+      thinkingLevel: "medium",
+      tools: ["submit_diagram_patch"],
+      customTools: [submit],
+      resourceLoader,
+      settingsManager,
+      sessionManager: SessionManager.inMemory(request.sourceRoot)
+    });
+    const modelName = `${configured.provider}/${configured.modelId}`;
+    state = {
+      session,
+      unsubscribe: () => {},
+      ascii: request.diagramAscii,
+      revision: request.diagramRevision,
+      mappings: initialMappingPocElementMappings(),
+      modelName,
+      lastUsedAt: Date.now()
+    };
+    state.unsubscribe = session.subscribe((event) => {
+      const progress = progressFor(event, state.modelName, session.sessionId);
+      if (progress) state.onProgress?.(progress);
+    });
+    this.mappingPocSessions.set(request.clientSessionId, state);
+    this.sessions.add(session);
+    return state;
+  }
+
+  async promptDiagramSelection(
+    request: MappingPocPromptRequest & { sourceRoot: string },
+    onProgress?: (progress: AgentProgress) => void
+  ): Promise<MappingPocPromptResult> {
+    if (this.mappingPocPromptBusy) throw new Error("another diagram prompt is already running");
+    const instruction = request.instruction.trim();
+    if (!instruction) throw new Error("diagram prompt instruction is required");
+    if (instruction.length > 4000) throw new Error("diagram prompt instruction is too long");
+    this.mappingPocPromptBusy = true;
+    let state: MappingPocAgentSession | undefined;
+    try {
+      state = this.mappingPocSessions.get(request.clientSessionId)
+        ?? await this.createMappingPocSession(request);
+      if (state.revision !== request.diagramRevision || state.ascii !== request.diagramAscii) {
+        throw new Error("diagram prompt session is stale; reload the mapping page to start a new session");
+      }
+      if (state.pending) throw new Error("this diagram prompt session already has an active request");
+      const hunk = mappingPocPromptHunk(state.ascii, request.selection);
+      onProgress?.({
+        status: "reading-context",
+        message: "resolving mapped corpus ranges for the selected elements",
+        model: state.modelName,
+        sessionId: state.session.sessionId
+      });
+      const sourceContext = await mappingPocSourceContextForSelection({
+        sourceRoot: request.sourceRoot,
+        mappings: state.mappings,
+        selection: request.selection
+      });
+      const selectionId = `selection-${randomUUID()}`;
+      const promptNonce = this.collisionSafePromptNonce(
+        state.ascii,
+        instruction,
+        selectionId,
+        ...sourceContext.flatMap((context) => [context.path, ...context.lines])
+      );
+      const pending: MappingPocPendingPrompt = {
+        selectionId,
+        expectedRevision: state.revision,
+        hunk
+      };
+      state.pending = pending;
+      state.onProgress = onProgress;
+      state.lastUsedAt = Date.now();
+      onProgress?.({
+        status: "generating",
+        message: "sending selection context to the diagram agent",
+        model: state.modelName,
+        sessionId: state.session.sessionId
+      });
+      await state.session.prompt(renderMappingPocEditPrompt({
+        instruction,
+        selectionId,
+        diagramRevision: state.revision,
+        selection: request.selection,
+        hunk,
+        sourceContext,
+        nonce: promptNonce
+      }));
+      if (!pending.submission) throw new Error("diagram edit agent finished without submitting a patch");
+      return pending.submission;
+    } catch (error) {
+      if (state) this.disposeMappingPocSession(request.clientSessionId);
+      throw error;
+    } finally {
+      if (state) {
+        state.pending = undefined;
+        state.onProgress = undefined;
+      }
+      this.mappingPocPromptBusy = false;
+    }
+  }
+
   async mapArtifactEntities(
     request: ArtifactEntityMappingRequest,
     onProgress?: (progress: AgentProgress) => void
@@ -820,6 +1080,8 @@ ${renderMappingPromptTemplate({
   }
 
   dispose(): void {
+    for (const state of this.mappingPocSessions.values()) state.unsubscribe();
+    this.mappingPocSessions.clear();
     for (const session of this.sessions) {
       void session.abort();
       session.dispose();
@@ -919,6 +1181,37 @@ export class FakeDiagramAgentRuntime implements DiagramAgentRuntime {
       ascii = ascii.replace(marker.character, marker.originalCharacter);
     }
     return { ascii: `${ascii}\n[edited: ${request.instruction.trim()}]` };
+  }
+
+  async promptDiagramSelection(
+    request: MappingPocPromptRequest & { sourceRoot: string },
+    onProgress?: (progress: AgentProgress) => void
+  ): Promise<MappingPocPromptResult> {
+    onProgress?.({ status: "generating", message: "editing selected diagram rows", model: "fake/test" });
+    const delayMs = Number(process.env.NEW_DIAGRAM_FAKE_PROMPT_DELAY_MS ?? "0");
+    if (Number.isFinite(delayMs) && delayMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+    const hunk = mappingPocPromptHunk(request.diagramAscii, request.selection);
+    const sourceContext = await mappingPocSourceContextForSelection({
+      sourceRoot: request.sourceRoot,
+      mappings: initialMappingPocElementMappings(),
+      selection: request.selection
+    });
+    onProgress?.({
+      status: "reading-context",
+      message: `resolved ${sourceContext.length} mapped corpus range${sourceContext.length === 1 ? "" : "s"}`,
+      model: "fake/test"
+    });
+    const safeInstruction = request.instruction.trim().replace(/[^\x20-\x7e]/g, "?");
+    onProgress?.({ status: "validating", message: "validating structured submission", model: "fake/test" });
+    return applyMappingPocPromptPatch({
+      currentAscii: request.diagramAscii,
+      currentRevision: request.diagramRevision,
+      expectedRevision: request.diagramRevision,
+      hunk,
+      replacementLines: [...hunk.expectedOldLines, `[edited: ${safeInstruction}]`]
+    });
   }
 
   async mapArtifactEntities(

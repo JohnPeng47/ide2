@@ -23,7 +23,14 @@ export default defineConfig({
   root: ROOT,
   plugins: [
     react(),
-    diagramApi(PROJECT_ROOT, DIAGRAMS_DIRECTORY, EXPERIMENTS_ROOT, DATASET_COLLECTIONS_ROOT)
+    diagramApi(
+      PROJECT_ROOT,
+      DIAGRAMS_DIRECTORY,
+      EXPERIMENTS_ROOT,
+      DATASET_COLLECTIONS_ROOT,
+      undefined,
+      ROOT
+    )
   ],
   build: {
     outDir: "dist",

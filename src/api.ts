@@ -36,6 +36,7 @@ import type {
   RepresentationGraphRecord
 } from "./representationGraph";
 import type { SpatialProgressState } from "./agentWork";
+import type { MappingPocPromptRequest, MappingPocPromptResult } from "./mappingPocPrompt";
 import type {
   ProjectCorpusCompactionCatalogRecord,
   ProjectFileCompactionInput,
@@ -52,6 +53,46 @@ function apiFetch(path: string, init?: RequestInit): Promise<Response> {
 async function errorFrom(response: Response): Promise<Error> {
   const payload = await response.json().catch(() => ({})) as { error?: string };
   return new Error(payload.error || `request failed with ${response.status}`);
+}
+
+export async function promptMappingPocSelection(
+  request: MappingPocPromptRequest,
+  onProgress: (message: string) => void
+): Promise<MappingPocPromptResult> {
+  const response = await apiFetch("/api/mapping-poc/prompt", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(request)
+  });
+  if (!response.ok) throw await errorFrom(response);
+  if (!response.body) throw new Error("diagram prompt response did not include a stream");
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let result: MappingPocPromptResult | undefined;
+  const consume = (line: string) => {
+    if (!line.trim()) return;
+    const event = JSON.parse(line) as {
+      type?: string;
+      message?: string;
+      error?: string;
+      result?: MappingPocPromptResult;
+    };
+    if (event.type === "error") throw new Error(event.error || "diagram prompt failed");
+    if (event.type === "progress" && event.message) onProgress(event.message);
+    if (event.type === "result" && event.result) result = event.result;
+  };
+  while (true) {
+    const { done, value } = await reader.read();
+    buffer += decoder.decode(value, { stream: !done });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) consume(line);
+    if (done) break;
+  }
+  if (buffer.trim()) consume(buffer);
+  if (!result) throw new Error("diagram prompt stream ended without a patch result");
+  return result;
 }
 
 export async function fetchWorkspace(): Promise<WorkspaceSnapshot> {

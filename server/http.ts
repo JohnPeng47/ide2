@@ -236,7 +236,8 @@ export function diagramApi(
   datasetCollectionsRoot = `${experimentsRoot}/diagram-collections`,
   configuredDomainProfileId: BuiltInDomainProfileId | undefined = isBuiltInDomainProfileId(
     process.env.NEW_DIAGRAM_DOMAIN
-  ) ? process.env.NEW_DIAGRAM_DOMAIN : undefined
+  ) ? process.env.NEW_DIAGRAM_DOMAIN : undefined,
+  mappingPocSourceRoot = projectRoot
 ): Plugin {
   const runtime = process.env.NEW_DIAGRAM_AGENT === "fake"
     ? new FakeDiagramAgentRuntime()
@@ -258,6 +259,52 @@ export function diagramApi(
       return;
     }
     try {
+      if (url.pathname === "/api/mapping-poc/prompt") {
+        if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
+        const body = await readBody(request) as Record<string, unknown>;
+        const clientSessionId = typeof body.clientSessionId === "string" ? body.clientSessionId : "";
+        const diagramAscii = typeof body.diagramAscii === "string" ? body.diagramAscii : "";
+        const diagramRevision = Number(body.diagramRevision);
+        const instruction = typeof body.instruction === "string" ? body.instruction : "";
+        const rawSelection = body.selection as Record<string, unknown> | undefined;
+        if (!/^[A-Za-z0-9-]{8,120}$/.test(clientSessionId)) {
+          return sendJson(response, 400, { error: "valid clientSessionId is required" });
+        }
+        if (!diagramAscii || diagramAscii.length > 20000) {
+          return sendJson(response, 400, { error: "diagramAscii must contain at most 20000 characters" });
+        }
+        if (!Number.isInteger(diagramRevision) || diagramRevision < 0) {
+          return sendJson(response, 400, { error: "diagramRevision must be a non-negative integer" });
+        }
+        if (!instruction.trim() || instruction.length > 4000) {
+          return sendJson(response, 400, { error: "instruction must contain at most 4000 characters" });
+        }
+        if (!rawSelection) return sendJson(response, 400, { error: "selection is required" });
+        const selection = {
+          startLine: Number(rawSelection.startLine),
+          endLine: Number(rawSelection.endLine),
+          startColumn: Number(rawSelection.startColumn),
+          endColumn: Number(rawSelection.endColumn)
+        };
+        if (!Object.values(selection).every((value) => Number.isInteger(value) && value >= 1)) {
+          return sendJson(response, 400, { error: "selection coordinates must be positive integers" });
+        }
+        response.statusCode = 200;
+        response.setHeader("content-type", "application/x-ndjson; charset=utf-8");
+        response.setHeader("cache-control", "no-cache, no-transform");
+        response.flushHeaders();
+        const result = await runtime.promptDiagramSelection({
+          clientSessionId,
+          diagramAscii,
+          diagramRevision,
+          selection,
+          instruction,
+          sourceRoot: mappingPocSourceRoot
+        }, (event) => sendEvent(response, { type: "progress", ...event }));
+        sendEvent(response, { type: "result", result });
+        response.end();
+        return;
+      }
       if (url.pathname === "/api/experiments") {
         if (request.method !== "GET") return sendJson(response, 405, { error: "method not allowed" });
         return sendJson(response, 200, await experimentCatalog.list());

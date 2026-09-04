@@ -88,6 +88,7 @@ const screenshotPath = process.env.MAPPING_POC_SCREENSHOT_OUTPUT
   ? path.resolve(process.env.MAPPING_POC_SCREENSHOT_OUTPUT)
   : path.join(tempRoot, "mapping-poc.png");
 const overlayScreenshotPath = screenshotPath.replace(/\.png$/i, "-overlay.png");
+const promptScreenshotPath = screenshotPath.replace(/\.png$/i, "-prompt.png");
 const port = await freePort();
 const url = `http://127.0.0.1:${port}/mapping`;
 let serverProcess;
@@ -95,7 +96,12 @@ let serverProcess;
 try {
   serverProcess = spawn("npm", ["run", "preview", "--", "--port", String(port), "--strictPort"], {
     cwd: PACKAGE_ROOT,
-    env: { ...process.env, NEW_DIAGRAM_PROJECT_ROOT: PACKAGE_ROOT },
+    env: {
+      ...process.env,
+      NEW_DIAGRAM_PROJECT_ROOT: PACKAGE_ROOT,
+      NEW_DIAGRAM_AGENT: "fake",
+      NEW_DIAGRAM_FAKE_PROMPT_DELAY_MS: "80"
+    },
     stdio: "ignore"
   });
   await waitFor(async () => {
@@ -198,10 +204,6 @@ try {
       };
     })()`);
 
-    await pressKey(cdp, "b", "KeyB", 2);
-    await waitFor(async () => await evaluate(cdp,
-      "document.activeElement?.textContent?.includes('open mapped') === true"
-    ), { message: "Ctrl+B did not focus the selection operation" });
     await pressKey(cdp, "n", "KeyN");
     await waitForSelector(cdp, ".mapping-poc-companion[data-mapped-b-start-line='74'][data-mapped-b-end-line='238'][data-b-start-line='73'][data-b-end-line='238']");
     const displayedSlice = await evaluate(cdp, "document.querySelector('.mapping-poc-companion pre')?.textContent");
@@ -285,7 +287,6 @@ try {
     await waitFor(async () => (await evaluate(cdp,
       "document.querySelector('.mapping-poc-selection-menu')?.textContent"
     ))?.includes("5 selected · 5 mapped"), { message: "second rectangle selection retained stale mapping state" });
-    await pressKey(cdp, "b", "KeyB", 2);
     await pressKey(cdp, "n", "KeyN");
     await waitForSelector(cdp, ".mapping-poc-companion[data-mapped-b-start-line='74'][data-mapped-b-end-line='238'][data-b-start-line='73'][data-b-end-line='238']");
 
@@ -340,6 +341,71 @@ try {
       "document.querySelectorAll('.mapping-poc-node-hit.is-selected').length === 0"
     ), { message: "clicking away did not clear the repeated A selection" });
 
+    const promptFirst = await elementRect(cdp, "[data-selectable-node='a-judge-cross']");
+    const promptLast = await elementRect(cdp, "[data-selectable-node='a-stored-analysis']");
+    const promptWidest = await elementRect(cdp, "[data-selectable-node='a-judge-within']");
+    const downstreamTopBefore = await evaluate(cdp,
+      "Number.parseFloat(document.querySelector('[data-selectable-node=\"a-experiment-output\"]')?.style.top || '0')"
+    );
+    await drag(cdp,
+      { x: promptFirst.x + 2, y: promptFirst.y + promptFirst.height / 2 },
+      { x: promptWidest.x + promptWidest.width - 2, y: promptLast.y + promptLast.height / 2 }
+    );
+    await waitForSelector(cdp, ".mapping-poc-selection-menu");
+    const promptMenuText = await evaluate(cdp, "document.querySelector('.mapping-poc-selection-menu')?.textContent");
+    if (!promptMenuText?.includes("source 7/7 · 7 ranges")) {
+      throw new Error(`selection did not report complete mapped source coverage: ${JSON.stringify(promptMenuText)}`);
+    }
+    await pressKey(cdp, "p", "KeyP");
+    await waitForSelector(cdp, ".mapping-poc-prompt-form textarea");
+    const composingState = await evaluate(cdp, `({
+      focused: document.activeElement?.id,
+      composingRect: document.querySelector('.mapping-poc-selection-rect')?.classList.contains('is-composing'),
+      status: document.querySelector('.mapping-poc-selection-menu header small')?.textContent
+    })`);
+    if (composingState.focused !== "mapping-poc-prompt"
+      || !composingState.composingRect
+      || !composingState.status?.includes("describe")) {
+      throw new Error(`P did not open the local prompt composer: ${JSON.stringify(composingState)}`);
+    }
+    await cdp.send("Input.insertText", { text: "Clarify the evaluation flow" });
+    const submitPromptButton = await elementRect(cdp, ".mapping-poc-prompt-form button[type='submit']");
+    await click(cdp, {
+      x: submitPromptButton.x + submitPromptButton.width / 2,
+      y: submitPromptButton.y + submitPromptButton.height / 2
+    });
+    await waitForSelector(cdp, ".mapping-poc-selection-rect.is-generating");
+    await waitForSelector(cdp, ".mapping-poc-local-status.is-applied");
+    await waitFor(async () => await evaluate(cdp,
+      "document.querySelector('.mapping-poc-ascii')?.dataset.revision === '1'"
+    ), { message: "prompt patch did not increment the diagram revision" });
+    const appliedState = await evaluate(cdp, `(() => {
+      const pre = document.querySelector('.mapping-poc-ascii');
+      const downstream = document.querySelector('[data-selectable-node="a-experiment-output"]');
+      return {
+        ascii: pre?.textContent,
+        lineCount: pre?.dataset.lineCount,
+        status: document.querySelector('.mapping-poc-local-status')?.textContent,
+        patchedRect: document.querySelector('.mapping-poc-selection-rect')?.classList.contains('is-applied'),
+        downstreamTop: Number.parseFloat(downstream?.style.top || '0')
+      };
+    })()`);
+    const cellHeight = appliedState.downstreamTop - downstreamTopBefore;
+    if (!appliedState.ascii?.includes("[edited: Clarify the evaluation flow]")
+      || appliedState.lineCount !== "71"
+      || !appliedState.status?.includes("+1 rows")
+      || !appliedState.patchedRect
+      || !(cellHeight > 0)) {
+      throw new Error(`prompt patch did not render and shift downstream content: ${JSON.stringify({ appliedState, downstreamTopBefore })}`);
+    }
+    await captureScreenshot(cdp, { output: promptScreenshotPath });
+    await waitFor(async () => await evaluate(cdp, `
+      document.querySelector('.mapping-poc-local-status') === null
+      && document.querySelector('.mapping-poc-selection-rect') === null
+      && document.querySelector('.mapping-poc-ascii')?.dataset.revision === '1'
+      && document.querySelector('.mapping-poc-ascii')?.textContent?.includes('[edited: Clarify the evaluation flow]')
+    `), { timeoutMs: 5000, message: "successful patch indicator did not dismiss while preserving the edit" });
+
     process.stdout.write(`${JSON.stringify({
       event: "mapping-poc-browser-check",
       status: "passed",
@@ -349,10 +415,15 @@ try {
       alignedSections: 4,
       selectedBNodes: 55,
       repeatCycle: "passed",
+      directShortcuts: "N/P passed",
+      mappedSourceCoverage: "7/7 elements",
+      promptPatch: "+1 row applied",
+      successIndicator: "auto-dismissed",
       persistentUntilExplicitClose: "passed",
       aDetailOverlays: 5,
       parsedOverlayOrigin: "18:1",
       overlayScreenshot: overlayScreenshotPath,
+      promptScreenshot: promptScreenshotPath,
       screenshot: screenshotPath
     })}\n`);
   });

@@ -5,23 +5,25 @@ import {
   useMemo,
   useRef,
   useState,
-  type KeyboardEvent,
+  type FormEvent,
   type PointerEvent
 } from "react";
 import {
   MAPPING_POC_A_NODES,
   MAPPING_POC_GRAPH_A,
-  MAPPING_POC_GRAPH_A_LINE_COUNT,
   projectASelectionToB,
-  selectANodesInRect,
+  type MappingPocANode,
   type MappingPocGridRect,
   type MappingPocProjection
 } from "../mappingPoc";
 import {
   MAPPING_POC_A_SECTIONS,
   MAPPING_POC_DETAIL_OVERLAYS,
-  MAPPING_POC_OVERLAY_PLACEMENTS
+  MAPPING_POC_OVERLAY_PLACEMENTS,
+  type MappingPocASection
 } from "../mappingPocOverlays";
+import { promptMappingPocSelection } from "../api";
+import type { MappingPocPromptResult } from "../mappingPocPrompt";
 
 interface GridPoint {
   line: number;
@@ -39,7 +41,7 @@ interface ActiveSelection {
 }
 
 const SIDE_GUTTER_PX = 112;
-const MAX_COLUMN = Math.max(...MAPPING_POC_GRAPH_A.split("\n").map((line) => line.length));
+const PATCH_SUCCESS_VISIBLE_MS = 2400;
 
 function normalizeRect(anchor: GridPoint, focus: GridPoint): MappingPocGridRect {
   return {
@@ -50,36 +52,118 @@ function normalizeRect(anchor: GridPoint, focus: GridPoint): MappingPocGridRect 
   };
 }
 
-export function MappingPocSelectionCanvas() {
+function typingTarget(target: EventTarget | null): boolean {
+  return target instanceof HTMLElement
+    && (target.matches("input, textarea, select") || target.isContentEditable);
+}
+
+function nodesAfterPatch(
+  nodes: readonly MappingPocANode[],
+  result: MappingPocPromptResult
+): MappingPocANode[] {
+  return nodes.flatMap((node) => {
+    if (node.extent.endLine < result.startLine) return [node];
+    if (node.extent.startLine <= result.oldEndLine) return [];
+    return [{
+      ...node,
+      head: { ...node.head, line: node.head.line + result.verticalDelta },
+      extent: {
+        startLine: node.extent.startLine + result.verticalDelta,
+        endLine: node.extent.endLine + result.verticalDelta
+      }
+    }];
+  });
+}
+
+function sectionsAfterPatch(
+  sections: readonly MappingPocASection[],
+  result: MappingPocPromptResult
+): MappingPocASection[] {
+  return sections.flatMap((section) => {
+    if (section.endLine < result.startLine) return [section];
+    if (section.startLine <= result.oldEndLine) return [];
+    return [{
+      ...section,
+      startLine: section.startLine + result.verticalDelta,
+      endLine: section.endLine + result.verticalDelta
+    }];
+  });
+}
+
+type PromptPhase = "ready" | "composing" | "generating" | "applied" | "error";
+
+export function MappingPocSelectionCanvas(props: {
+  onLineCountChange?: (lineCount: number) => void;
+}) {
   const stageRef = useRef<HTMLDivElement>(null);
   const preRef = useRef<HTMLPreElement>(null);
   const probeRef = useRef<HTMLSpanElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const openMappedRef = useRef<HTMLButtonElement>(null);
+  const promptInputRef = useRef<HTMLTextAreaElement>(null);
   const activeSelectionRef = useRef<ActiveSelection | null>(null);
+  const [clientSessionId] = useState(() => `mapping-${crypto.randomUUID()}`);
   const [cell, setCell] = useState<CellMetrics>({ width: 0, height: 0 });
+  const [ascii, setAscii] = useState(MAPPING_POC_GRAPH_A);
+  const [diagramRevision, setDiagramRevision] = useState(0);
+  const [nodes, setNodes] = useState<MappingPocANode[]>(() => MAPPING_POC_A_NODES.map((node) => ({
+    ...node,
+    head: { ...node.head },
+    extent: { ...node.extent }
+  })));
+  const [sections, setSections] = useState<MappingPocASection[]>(() => MAPPING_POC_A_SECTIONS.map((section) => ({
+    ...section
+  })));
   const [selectionRect, setSelectionRect] = useState<MappingPocGridRect | null>(null);
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [openedProjection, setOpenedProjection] = useState<MappingPocProjection | null>(null);
   const [openDetailOverlayId, setOpenDetailOverlayId] = useState<string | null>(null);
+  const [promptOpen, setPromptOpen] = useState(false);
+  const [promptText, setPromptText] = useState("");
+  const [promptPhase, setPromptPhase] = useState<PromptPhase>("ready");
+  const [statusMessage, setStatusMessage] = useState("selection ready");
+
+  const asciiLines = useMemo(() => ascii.split("\n"), [ascii]);
+  const lineCount = asciiLines.length;
+  const maxColumn = useMemo(() => Math.max(...asciiLines.map((line) => line.length), 1), [asciiLines]);
 
   const selectedNodeIdSet = useMemo(() => new Set(selectedNodeIds), [selectedNodeIds]);
   const selectedNodes = useMemo(
-    () => MAPPING_POC_A_NODES.filter((node) => selectedNodeIdSet.has(node.id)),
-    [selectedNodeIdSet]
+    () => nodes.filter((node) => selectedNodeIdSet.has(node.id)),
+    [nodes, selectedNodeIdSet]
   );
+  const sourceCoveredNodeCount = selectedNodes.filter((node) => node.sourceRanges.length > 0).length;
+  const selectedSourceRangeCount = selectedNodes.reduce(
+    (count, node) => count + node.sourceRanges.length,
+    0
+  );
+  const hasCompleteSourceCoverage = selectedNodes.length > 0
+    && sourceCoveredNodeCount === selectedNodes.length;
   const candidateProjection = useMemo(
     () => projectASelectionToB(selectedNodeIds),
     [selectedNodeIds]
   );
   const firstSelectedANode = useMemo(() => {
     const selectedIds = new Set(openedProjection?.selectedANodeIds ?? []);
-    return MAPPING_POC_A_NODES.find((node) => selectedIds.has(node.id));
-  }, [openedProjection]);
+    return nodes.find((node) => selectedIds.has(node.id));
+  }, [nodes, openedProjection]);
   const openDetailOverlay = MAPPING_POC_DETAIL_OVERLAYS.find((overlay) => overlay.id === openDetailOverlayId);
-  const openDetailPlacement = MAPPING_POC_OVERLAY_PLACEMENTS.find(
+  const baseOpenDetailPlacement = MAPPING_POC_OVERLAY_PLACEMENTS.find(
     (placement) => placement.overlayId === openDetailOverlayId
   );
+  const openDetailSection = sections.find((section) => section.id === openDetailOverlay?.sectionId);
+  const baseOpenDetailSection = MAPPING_POC_A_SECTIONS.find((section) => section.id === openDetailOverlay?.sectionId);
+  const overlayLineDelta = openDetailSection && baseOpenDetailSection
+    ? openDetailSection.startLine - baseOpenDetailSection.startLine
+    : 0;
+  const openDetailPlacement = baseOpenDetailPlacement && openDetailSection ? {
+    ...baseOpenDetailPlacement,
+    originLine: baseOpenDetailPlacement.originLine + overlayLineDelta,
+    aAnchor: {
+      ...baseOpenDetailPlacement.aAnchor,
+      line: baseOpenDetailPlacement.aAnchor.line + overlayLineDelta
+    }
+  } : undefined;
 
   useLayoutEffect(() => {
     const pre = preRef.current;
@@ -96,6 +180,24 @@ export function MappingPocSelectionCanvas() {
     return () => observer?.disconnect();
   }, []);
 
+  useEffect(() => {
+    props.onLineCountChange?.(lineCount);
+  }, [lineCount, props]);
+
+  useEffect(() => {
+    if (promptOpen) promptInputRef.current?.focus();
+  }, [promptOpen]);
+
+  useEffect(() => {
+    if (promptPhase !== "applied") return undefined;
+    const timeout = window.setTimeout(() => {
+      setSelectionRect(null);
+      setPromptPhase("ready");
+      setStatusMessage("selection ready");
+    }, PATCH_SUCCESS_VISIBLE_MS);
+    return () => window.clearTimeout(timeout);
+  }, [promptPhase]);
+
   const pointAtClient = useCallback((clientX: number, clientY: number): GridPoint | null => {
     const pre = preRef.current;
     if (!pre || !(cell.width > 0) || !(cell.height > 0)) return null;
@@ -104,15 +206,15 @@ export function MappingPocSelectionCanvas() {
     const scaleY = pre.offsetHeight > 0 ? bounds.height / pre.offsetHeight : scaleX;
     return {
       line: Math.max(1, Math.min(
-        MAPPING_POC_GRAPH_A_LINE_COUNT,
+        lineCount,
         Math.floor((clientY - bounds.top) / (cell.height * scaleY)) + 1
       )),
       column: Math.max(1, Math.min(
-        MAX_COLUMN,
+        maxColumn,
         Math.floor((clientX - bounds.left) / (cell.width * scaleX)) + 1
       ))
     };
-  }, [cell]);
+  }, [cell, lineCount, maxColumn]);
 
   const finishSelection = (event: PointerEvent<HTMLDivElement>) => {
     const active = activeSelectionRef.current;
@@ -121,14 +223,24 @@ export function MappingPocSelectionCanvas() {
     event.stopPropagation();
     const focus = pointAtClient(event.clientX, event.clientY) ?? active.anchor;
     const rect = normalizeRect(active.anchor, focus);
-    const nodes = selectANodesInRect(rect);
+    const selected = nodes.filter((node) => (
+      node.head.line >= rect.startLine
+      && node.head.line <= rect.endLine
+      && node.head.startColumn <= rect.endColumn
+      && node.head.endColumn >= rect.startColumn
+    ));
     activeSelectionRef.current = null;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
     setOpenedProjection(null);
-    setSelectedNodeIds(nodes.map((node) => node.id));
-    setSelectionRect(nodes.length ? rect : null);
+    setPromptOpen(false);
+    setPromptText("");
+    setPromptPhase("ready");
+    const sourceRangeCount = selected.reduce((count, node) => count + node.sourceRanges.length, 0);
+    setStatusMessage(`${sourceRangeCount} mapped corpus range${sourceRangeCount === 1 ? "" : "s"} ready`);
+    setSelectedNodeIds(selected.map((node) => node.id));
+    setSelectionRect(selected.length ? rect : null);
   };
 
   const openMapped = useCallback(() => {
@@ -146,32 +258,103 @@ export function MappingPocSelectionCanvas() {
     setSelectedNodeIds([]);
     setSelectionRect(null);
     setOpenedProjection(null);
+    setPromptOpen(false);
+    setPromptText("");
+    setPromptPhase("ready");
+    setStatusMessage("selection ready");
   }, []);
+
+  const openPrompt = useCallback(() => {
+    if (!selectionRect
+      || !selectedNodeIds.length
+      || !hasCompleteSourceCoverage
+      || promptPhase === "generating") return;
+    setOpenedProjection(null);
+    setPromptOpen(true);
+    setPromptPhase("composing");
+    setStatusMessage("describe the in-line change");
+  }, [hasCompleteSourceCoverage, promptPhase, selectedNodeIds.length, selectionRect]);
+
+  const submitPrompt = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!selectionRect || !promptText.trim() || promptPhase === "generating") return;
+    setPromptPhase("generating");
+    setStatusMessage("starting diagram agent…");
+    try {
+      const result = await promptMappingPocSelection({
+        clientSessionId,
+        diagramAscii: ascii,
+        diagramRevision,
+        selection: selectionRect,
+        instruction: promptText.trim()
+      }, (message) => setStatusMessage(message));
+      setAscii(result.diagramAscii);
+      setDiagramRevision(result.diagramRevision);
+      setNodes((current) => nodesAfterPatch(current, result));
+      setSections((current) => sectionsAfterPatch(current, result));
+      setOpenDetailOverlayId(null);
+      setOpenedProjection(null);
+      setSelectedNodeIds([]);
+      setSelectionRect({
+        startLine: result.startLine,
+        endLine: result.newEndLine,
+        startColumn: selectionRect.startColumn,
+        endColumn: selectionRect.endColumn
+      });
+      setPromptOpen(false);
+      setPromptText("");
+      setPromptPhase("applied");
+      setStatusMessage(
+        `patch applied · ${result.verticalDelta >= 0 ? "+" : ""}${result.verticalDelta} rows · revision ${result.diagramRevision}`
+      );
+    } catch (error) {
+      setPromptPhase("error");
+      setStatusMessage(error instanceof Error ? error.message : "diagram prompt failed");
+    }
+  };
 
   useEffect(() => {
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "b" && selectedNodeIds.length) {
-        event.preventDefault();
-        const menu = menuRef.current;
-        if (menu?.contains(document.activeElement)) {
-          (stageRef.current?.closest("[data-diagram-canvas]") as HTMLElement | null)?.focus();
-        } else if (candidateProjection.bRange) {
-          openMappedRef.current?.focus();
-        } else {
-          menu?.focus();
+      if (typingTarget(event.target)) {
+        if (event.key === "Escape" && promptOpen && promptPhase !== "generating") {
+          event.preventDefault();
+          setPromptOpen(false);
+          setPromptPhase("ready");
+          setStatusMessage("selection ready");
         }
         return;
       }
-      if (event.key === "Escape" && selectedNodeIds.length && !openedProjection) {
+      if (!selectedNodeIds.length || !selectionRect) return;
+      if (event.key.toLowerCase() === "n" && candidateProjection.bRange && !promptOpen) {
+        event.preventDefault();
+        openMapped();
+        return;
+      }
+      if (event.key.toLowerCase() === "p" && promptPhase !== "generating") {
+        event.preventDefault();
+        openPrompt();
+        return;
+      }
+      if (event.key === "Escape" && !openedProjection && promptPhase !== "generating") {
         clearSelection();
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [candidateProjection.bRange, clearSelection, openedProjection, selectedNodeIds.length]);
+  }, [
+    candidateProjection.bRange,
+    clearSelection,
+    openMapped,
+    openedProjection,
+    openPrompt,
+    promptOpen,
+    promptPhase,
+    selectedNodeIds.length,
+    selectionRect
+  ]);
 
   useEffect(() => {
-    if (!selectedNodeIds.length || openedProjection) return undefined;
+    if (!selectedNodeIds.length || openedProjection || promptOpen || promptPhase === "generating") return undefined;
     const onPointerDown = (event: globalThis.PointerEvent) => {
       const stage = stageRef.current;
       if (stage && event.composedPath().includes(stage)) return;
@@ -179,13 +362,7 @@ export function MappingPocSelectionCanvas() {
     };
     window.addEventListener("pointerdown", onPointerDown, true);
     return () => window.removeEventListener("pointerdown", onPointerDown, true);
-  }, [clearSelection, openedProjection, selectedNodeIds.length]);
-
-  const onMenuKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key.toLowerCase() !== "n" || !candidateProjection.bRange) return;
-    event.preventDefault();
-    openMapped();
-  };
+  }, [clearSelection, openedProjection, promptOpen, promptPhase, selectedNodeIds.length]);
 
   const rectStyle = selectionRect && cell.width > 0 && cell.height > 0 ? {
     left: (selectionRect.startColumn - 1) * cell.width,
@@ -202,6 +379,8 @@ export function MappingPocSelectionCanvas() {
       onPointerDown={(event) => {
         if (openedProjection
           || openDetailOverlay
+          || promptOpen
+          || promptPhase === "generating"
           || event.button !== 0
           || event.shiftKey
           || event.ctrlKey
@@ -214,6 +393,8 @@ export function MappingPocSelectionCanvas() {
         window.getSelection()?.removeAllRanges();
         event.currentTarget.setPointerCapture(event.pointerId);
         activeSelectionRef.current = { pointerId: event.pointerId, anchor };
+        setPromptPhase("ready");
+        setStatusMessage("selection ready");
         setSelectionRect(normalizeRect(anchor, anchor));
         setSelectedNodeIds([]);
         setOpenedProjection(null);
@@ -240,14 +421,15 @@ export function MappingPocSelectionCanvas() {
         ref={preRef}
         className="mapping-poc-ascii"
         data-graph="A"
-        data-line-count={MAPPING_POC_GRAPH_A_LINE_COUNT}
-      >{MAPPING_POC_GRAPH_A}</pre>
+        data-line-count={lineCount}
+        data-revision={diagramRevision}
+      >{ascii}</pre>
 
       <div className="mapping-poc-node-layer" aria-hidden="true">
-        {cell.width > 0 && cell.height > 0 ? MAPPING_POC_A_NODES.map((node) => (
+        {cell.width > 0 && cell.height > 0 ? nodes.map((node) => (
           <span
             key={node.id}
-            className={`mapping-poc-node-hit is-${node.selectableBecause}${selectedNodeIdSet.has(node.id) ? " is-selected" : ""}`}
+            className={`mapping-poc-node-hit is-${node.selectableBecause}${selectedNodeIdSet.has(node.id) ? " is-selected" : ""}${selectedNodeIdSet.has(node.id) && (promptOpen || promptPhase === "generating") ? " is-prompt-target" : ""}`}
             data-selectable-node={node.id}
             style={{
               left: (node.head.startColumn - 1) * cell.width,
@@ -261,7 +443,7 @@ export function MappingPocSelectionCanvas() {
 
       {cell.width > 0 && cell.height > 0 ? (
         <div className="mapping-poc-a-section-layer" aria-label="Graph A detail sections">
-          {MAPPING_POC_A_SECTIONS.map((section, index) => (
+          {sections.map((section, index) => (
             <section
               key={section.id}
               className={`mapping-poc-a-section${openDetailOverlayId === section.id ? " is-open" : ""}`}
@@ -287,7 +469,13 @@ export function MappingPocSelectionCanvas() {
         </div>
       ) : null}
 
-      {rectStyle ? <span className="mapping-poc-selection-rect" style={rectStyle} aria-hidden="true" /> : null}
+      {rectStyle ? (
+        <span
+          className={`mapping-poc-selection-rect is-${promptPhase}`}
+          style={rectStyle}
+          aria-hidden="true"
+        />
+      ) : null}
 
       {openDetailOverlay && openDetailPlacement && cell.width > 0 && cell.height > 0 ? (
         <aside
@@ -323,25 +511,92 @@ export function MappingPocSelectionCanvas() {
           className="mapping-poc-selection-menu"
           data-mapping-static-ui
           data-diagram-canvas-static-ui
-          role="menu"
+          role="dialog"
           tabIndex={-1}
           aria-label="Selected node operations"
-          aria-keyshortcuts="Control+B Meta+B"
+          aria-keyshortcuts="N P"
           style={{ left: rectStyle.left + rectStyle.width + 12, top: rectStyle.top + rectStyle.height + 8 }}
-          onKeyDown={onMenuKeyDown}
         >
-          <span>{selectedNodes.length} selected · {candidateProjection.mappedANodeIds.length} mapped</span>
-          <button
-            ref={openMappedRef}
-            type="button"
-            role="menuitem"
-            disabled={!candidateProjection.bRange}
-            aria-keyshortcuts="N"
-            onClick={openMapped}
-          >
-            <kbd>N</kbd>
-            open mapped
-          </button>
+          <header>
+            <span>{selectedNodes.length} selected · {candidateProjection.mappedANodeIds.length} mapped</span>
+            <em className={hasCompleteSourceCoverage ? "is-covered" : "is-missing"}>
+              source {sourceCoveredNodeCount}/{selectedNodes.length} · {selectedSourceRangeCount} ranges
+            </em>
+            <small className={`is-${promptPhase}`} aria-live="polite">{statusMessage}</small>
+          </header>
+          {!promptOpen ? (
+            <div className="mapping-poc-selection-actions">
+              <button
+                ref={openMappedRef}
+                type="button"
+                disabled={!candidateProjection.bRange}
+                aria-keyshortcuts="N"
+                onClick={openMapped}
+              >
+                <kbd>N</kbd>
+                open mapped
+              </button>
+              <button
+                type="button"
+                aria-keyshortcuts="P"
+                disabled={!hasCompleteSourceCoverage}
+                title={hasCompleteSourceCoverage ? "Prompt with mapped corpus context" : "Selected elements need source mappings"}
+                onClick={openPrompt}
+              >
+                <kbd>P</kbd>
+                prompt selection
+              </button>
+            </div>
+          ) : (
+            <form className="mapping-poc-prompt-form" onSubmit={submitPrompt}>
+              <label htmlFor="mapping-poc-prompt">Change selected rows</label>
+              <textarea
+                ref={promptInputRef}
+                id="mapping-poc-prompt"
+                value={promptText}
+                maxLength={4000}
+                rows={4}
+                disabled={promptPhase === "generating"}
+                placeholder="e.g. split aggregation into validation and scoring"
+                onChange={(event) => {
+                  setPromptText(event.target.value);
+                  if (promptPhase === "error") {
+                    setPromptPhase("composing");
+                    setStatusMessage("ready to retry");
+                  }
+                }}
+              />
+              <footer>
+                <button
+                  type="button"
+                  disabled={promptPhase === "generating"}
+                  onClick={() => {
+                    setPromptOpen(false);
+                    setPromptPhase("ready");
+                    setStatusMessage("selection ready");
+                  }}
+                >cancel</button>
+                <button
+                  type="submit"
+                  className="is-primary"
+                  disabled={!promptText.trim() || promptPhase === "generating"}
+                >{promptPhase === "generating" ? "applying…" : "apply patch"}</button>
+              </footer>
+            </form>
+          )}
+        </div>
+      ) : null}
+
+      {selectionRect && !selectedNodes.length && rectStyle && (promptPhase === "applied" || promptPhase === "error") ? (
+        <div
+          className={`mapping-poc-local-status is-${promptPhase}`}
+          data-mapping-static-ui
+          data-diagram-canvas-static-ui
+          role="status"
+          style={{ left: rectStyle.left + rectStyle.width + 12, top: rectStyle.top }}
+        >
+          <span>{promptPhase === "applied" ? "PATCHED" : "ERROR"}</span>
+          <strong>{statusMessage}</strong>
         </div>
       ) : null}
 
