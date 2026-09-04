@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "build": "tsc --noEmit && vite build",
     "check:browser": "node browser-check.mjs",
@@ -31,6 +34,7 @@
     "vite": "^7.2.7"
   },
   "devDependencies": {
+    "@new-diagram/ui-test-framework": "file:packages/ui-test-framework",
     "@types/node": "^24.12.0",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
