@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "set-ac8b93d9-7e8f-443c-a525-f97d7dd283d1",
+  "projectId": "project-ce67f2af4410",
+  "name": "Current LLM Prompt Stack Overview",
+  "initialPrompt": "Trace the current end-to-end LLM prompt stack: persisted system and code-entity templates, runtime prompt inputs, prompt assembly and validation, model/agent invocation, reference follow-up turns, and produced diagram artifacts. Identify the concrete source entities and data passed between each layer.",
+  "sourceCheckoutRoot": "/home/john/.herdr/worktrees/new-diagram/worktree-transcripts",
+  "codeEntitiesSetId": "entities-830b6a51-2ebf-4ea4-9b4e-5be4c1d30c93",
+  "featuredViewIds": {},
+  "diagramIds": [],
+  "diagramComponentIds": [],
+  "generationBatchIds": [
+    "batch-2cdb37e0-3893-4e01-83d2-bed6f62e3eeb"
+  ],
+  "agentRunIds": [
+    "run-5f6143ef-0228-4fe5-9155-6a02b8bb2d98",
+    "run-21fa37f6-44e4-40ce-811f-383180ce3731",
+    "run-a66de17b-51da-413e-9dec-950d08a9f131",
+    "run-352fab87-b546-43ff-aec2-af9c22a1943e"
+  ],
+  "editSessionIds": [],
+  "readiness": "ready",
+  "creationMode": "generate",
+  "createdAt": "2026-09-05T16:08:27.973Z",
+  "updatedAt": "2026-09-05T16:11:14.181Z"
+}

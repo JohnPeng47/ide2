@@ -1,0 +1,73 @@
+[P] finalized DiagramSetRecord + CodeEntitiesSetRecord
+       \                                                        /
+        +-----> [R] ExperimentRunner.initialize <--------------+
+        |                    |                                  |
+        |                    v                                  |
+        |          [P] ExperimentManifest                       |
+        |          axes / iterations / fixed model              |
+        |                    |                                  |
+        |                    v                                  |
+        |          [R] promptFor(axis, iteration) <-----.       |
+        |             /                    \             |       |
+        |            v                      v            |       |
+        |   iteration 1 baseline      iteration 2 prior  |       |
+        |   control block             revisedPromptBlock |       |
+        |            \                      /            |       |
+        |             +--------+-----------+             |       |
+        |                      |                         |       |
+        |                      v                         |       |
+        |    .----------- [R] generate ------------.     |       |
+        |    |        values x replicates; mapLimit |     |       |
+        |    |                    |                 |     |       |
+        |    |                    v                 |     |       |
+        |    |  [R] SolExperimentRuntime.generate  |     |       |
+        |    |                    |                 |     |       |
+        |    |                    v                 |     |       |
+        |    | [R] PiDiagramAgentRuntime.generateArtifact       |
+        |    |                    |                 |     |       |
+        |    |                    v                 |     |       |
+        |    |              [X] model session      |     |       |
+        |    |                    |                 |     |       |
+        |    '--------------------+-----------------'     |       |
+        |                         v                       |       |
+        |              [P] GenerationRecord[*]           |       |
+        |      artifact + promptConfigId + diagramMetrics|       |
+        |                 /                    \          |       |
+        |                v                      v         |       |
+        |        [R] judgeCross          [R] judgeWithin  |       |
+        |        blinded order           same-value spread       |
+        |                |                      |         |       |
+        |                v                      v         |       |
+        |        [P] StoredCross          [P] StoredWithin|       |
+        |        Judgment[*]              Judgment[*]    |       |
+        |                \                      /         |       |
+        |                 +----------+----------+         |       |
+        |                            v                    |       |
+        |                   [R] aggregateScores           |       |
+        |          signal/noise + ordering + off-axis     |       |
+        |                   + metric means                |       |
+        |                            |                    |       |
+        |                            v                    |       |
+        |                       [R] analyze                |       |
+        |                            |                    |       |
+        |                            v                    |       |
+        |                  [P] StoredAnalysis ------------'       |
+        |                            |                            |
+        |                            v                            |
+        |                  [P] experiment output                  |
+        |                            |                            |
+        |                            v                            |
+        |            [R] ExperimentCatalog.list/artifact          |
+        |                            |                            |
+        |                            v                            |
+        |              [R] ExperimentViewerPage                   |
+        |                     /              \                    |
+        |                    v                \                   |
+        |      [R] DiagramDatasetStore.addItem \                  |
+        |                    |                 \                  |
+        |                    v                  \                 |
+        |      [P] curated DiagramDatasetItemRecord               |
+        |      snapshot + labels + source coordinates             |
+        |      + metrics/model/prompt provenance                   |
+        |                                                         |
+        +---------------- [P] SystemPromptTemplateRecord ---------+

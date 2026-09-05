@@ -18,26 +18,26 @@ describe("mapping POC corpus context", () => {
   it("resolves only mappings intersecting the selected diagram cells", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "mapping-poc-context-"));
     roots.push(root);
-    await mkdir(path.join(root, "experiments"));
-    const lines = Array.from({ length: 220 }, (_, index) => `source line ${index + 1}`);
-    await writeFile(path.join(root, "experiments", "runtime.ts"), lines.join("\n"), "utf8");
+    await mkdir(path.join(root, "server"));
+    const lines = Array.from({ length: 80 }, (_, index) => `source line ${index + 1}`);
+    await writeFile(path.join(root, "server", "codeEntityPrompt.ts"), lines.join("\n"), "utf8");
 
     const context = await mappingPocSourceContextForSelection({
       sourceRoot: root,
       mappings: initialMappingPocElementMappings(),
-      selection: { startLine: 50, endLine: 50, startColumn: 14, endColumn: 24 }
+      selection: { startLine: 45, endLine: 45, startColumn: 10, endColumn: 37 }
     });
 
     expect(context).toHaveLength(1);
     expect(context[0]).toMatchObject({
-      elementId: "a-analyze",
-      path: "experiments/runtime.ts",
-      startLine: 169,
-      endLine: 190,
-      diagramLine: 50
+      elementId: "a-collection-prompt",
+      path: "server/codeEntityPrompt.ts",
+      startLine: 9,
+      endLine: 48,
+      diagramLine: 45
     });
-    expect(context[0].lines[0]).toBe("source line 169");
-    expect(context[0].lines.at(-1)).toBe("source line 190");
+    expect(context[0].lines[0]).toBe("source line 9");
+    expect(context[0].lines.at(-1)).toBe("source line 48");
   });
 
   it("drops replaced mappings and shifts mappings below an applied patch", () => {
@@ -45,15 +45,17 @@ describe("mapping POC corpus context", () => {
     const shifted = mappingPocElementMappingsAfterPatch(mappings, {
       diagramAscii: "unused",
       diagramRevision: 1,
-      startLine: 36,
-      oldEndLine: 53,
-      newEndLine: 55,
-      removedLineCount: 18,
-      insertedLineCount: 20,
+      startLine: 127,
+      oldEndLine: 152,
+      newEndLine: 154,
+      removedLineCount: 26,
+      insertedLineCount: 28,
       verticalDelta: 2
     });
-    expect(shifted.some((mapping) => mapping.entityId === "a-analyze")).toBe(false);
-    expect(shifted.find((mapping) => mapping.entityId === "a-experiment-output")?.line).toBe(59);
-    expect(shifted.find((mapping) => mapping.entityId === "a-generation-record")?.line).toBe(30);
+    expect(shifted.some((mapping) => mapping.entityId === "a-turn-one")).toBe(false);
+    expect(shifted.some((mapping) => mapping.entityId === "a-turn-two")).toBe(false);
+    expect(shifted.some((mapping) => mapping.entityId === "a-turn-three")).toBe(false);
+    expect(shifted.find((mapping) => mapping.entityId === "a-submission-validation")?.line).toBe(156);
+    expect(shifted.find((mapping) => mapping.entityId === "a-generate-artifact")?.line).toBe(121);
   });
 });

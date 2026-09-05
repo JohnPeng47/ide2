@@ -1,0 +1,75 @@
+[P] finalized source DiagramSetRecord + CodeEntitiesSetRecord
+     |
+     `------> [P] SystemPromptTemplateRecord
+                   |
+                   `------> [R] ExperimentRunner.initialize
+                                 |
+                                 `------> [P] ExperimentManifest
+                                               axes + iterations + fixed model
+                                               |
+                                   .-----------'
+                                   v
+                   [R] promptFor(axis, iteration)
+                                   |
+                       .-----------+-----------.
+                       |                       |
+                       v                       v
+              iteration 1 baseline     iteration 2 prior
+                 control block         revisedPromptBlock
+                       |                       |
+                       `-----------+-----------'
+                                   |
+                                   `------> [R] generate
+                                             values x replicates / mapLimit
+                                             |
+                                 .-----------'
+                                 v
+             [R] SolExperimentRuntime.generate
+                                 |
+                                 `------> [R] PiDiagramAgentRuntime.generateArtifact
+                                                   |
+                                       .-----------'
+                                       v
+                             [X] model session
+                                       |
+                                       `------> [P] GenerationRecord[*]
+                                                 artifact + promptConfigId +
+                                                 diagramMetrics
+                                                   |
+                    .------------------------------+------------------------------.
+                    |                                                             |
+                    v                                                             v
+             [R] judgeCross                                                [R] judgeWithin
+      blinded low/mid/high order                                    same-value stochastic spread
+                    |                                                             |
+                    v                                                             v
+      [P] StoredCrossJudgment[*]                                  [P] StoredWithinJudgment[*]
+                    |                                                             |
+                    `------------------------------+------------------------------'
+                                                   |
+                                         .---------'
+                                         v
+                              [R] aggregateScores
+                          signal - noise / ordering /
+                           off-axis / metric means
+                                         |
+                                         `------> [R] analyze
+                                                       |
+                                             .---------'
+                                             v
+                                   [P] StoredAnalysis
+                                             |
+                                             `---- revised prompt feeds next iteration
+
+[P] experiment output
+     |
+     `------> [R] ExperimentCatalog.list/artifact
+                   |
+                   `------> [R] ExperimentViewerPage
+                                 |
+                                 `------> [R] DiagramDatasetStore.addItem
+                                               |
+                                               `------> [P] curated DiagramDatasetItemRecord
+                                                         artifact snapshot + labels +
+                                                         source coordinates + metrics /
+                                                         model / prompt provenance

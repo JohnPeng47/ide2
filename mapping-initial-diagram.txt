@@ -1,0 +1,183 @@
+CurrentLLMPromptStack
+ |
+ +-- persistedPromptProfiles
+ |   |
+ |   +-- system-prompt-templates.json
+ |   |   |
+ |   |   +-- artifact-generation
+ |   |   |   +-- domain-specific system instruction
+ |   |   |   +-- generate exactly one artifact
+ |   |   |   +-- require 7-bit ASCII
+ |   |   |   +-- require submit_diagram exactly once
+ |   |   |
+ |   |   +-- diagram-reference
+ |   |   |   +-- preserve source-backed meaning
+ |   |   |   +-- apply referenced visual grammar
+ |   |   |   +-- return a complete replacement
+ |   |   |
+ |   |   +-- diagram-mapping
+ |   |       +-- preserve final artifact unchanged
+ |   |       +-- map visible labels to CodeEntities
+ |   |       +-- require exact, non-overlapping spans
+ |   |
+ |   +-- code-entity-prompt-templates.json
+ |       +-- identificationCriteria
+ |       |   +-- decide which source evidence matters
+ |       |   +-- require exact file/range provenance
+ |       +-- compactionCriteria
+ |           +-- retain/collapse evidence presentation
+ |           +-- preserve exact evidence-node mappings
+ |
+ +-- DiagramSet
+ |   +-- name
+ |   +-- initialPrompt                         [original user request]
+ |   +-- sourceCheckoutRoot
+ |   +-- codeEntitiesSetId
+ |   +-- readiness
+ |   |
+ |   +-- CodeEntityPromptConfigRecord          [immutable collection snapshot]
+ |       +-- template profile + revision
+ |       +-- identification prompt
+ |       +-- compaction prompt
+ |       +-- rendered collection context
+ |
+ +-- evidenceCollection
+ |   +-- codeEntityCollectionPrompt()
+ |   |   +-- DiagramSet name
+ |   |   +-- original request
+ |   |   +-- identificationCriteria
+ |   |   +-- compactionCriteria
+ |   |   +-- expected structured fields
+ |   |   +-- submission/retry contract
+ |   |
+ |   +-- PiDiagramAgentRuntime.collectEntities()
+ |       +-- system prompt
+ |       |   +-- inspect repository documents
+ |       |   +-- collect only relevant evidence
+ |       |   +-- cite exact source ranges
+ |       +-- user prompt
+ |       |   +-- rendered collection context
+ |       +-- available tools
+ |       |   +-- corpus inspection
+ |       |   +-- submit_code_entities
+ |       +-- validation
+ |           +-- files and ranges must exist
+ |           +-- structured result must be complete
+ |           +-- accepted entities become finalized evidence
+ |
+ +-- runtimeGenerationRequest
+ |   +-- instruction
+ |   +-- selectedCodeEntityIds[]
+ |   +-- count
+ |   +-- outputKind
+ |   +-- viewKind
+ |   +-- modelId
+ |   +-- promptProfileId
+ |   +-- selected references[]
+ |   +-- referenceInstruction?
+ |   +-- derivationCorrection?
+ |   |
+ |   +-- generateArtifacts()                   [browser -> NDJSON HTTP]
+ |       +-- generation route
+ |           +-- parse and validate request
+ |           +-- bound candidate count
+ |           +-- validate model/output/view kinds
+ |           +-- stream progress and final workspace
+ |
+ +-- DiagramApplication.generate()
+ |   +-- validate
+ |   |   +-- evidence set is finalized
+ |   |   +-- selected entity IDs are allowed
+ |   |   +-- referenced artifacts exist
+ |   |
+ |   +-- createGenerationPromptConfig()
+ |   |   +-- resolve selected templates
+ |   |   +-- resolve @entity / @diagram / @component mentions
+ |   |   +-- reject unknown or ambiguous references
+ |   |   +-- include referenced artifact entity coverage
+ |   |   +-- create request-local readable aliases
+ |   |   |
+ |   |   +-- GenerationPromptConfigRecord       [immutable model handoff]
+ |   |       +-- domainProfileId
+ |   |       +-- outputKind + viewKind
+ |   |       +-- modelId
+ |   |       +-- instruction
+ |   |       +-- selectedCodeEntityIds[]
+ |   |       +-- includedReferences[]
+ |   |       +-- omittedReferences[]
+ |   |       +-- systemPrompt
+ |   |       |   +-- template id + revision
+ |   |       |   +-- fully rendered instruction
+ |   |       +-- contextPrompt                  [initial generation turn]
+ |   |       +-- referencePrompt?               [optional restyle turn]
+ |   |       +-- mappingPrompt                  [mandatory final turn]
+ |   |
+ |   +-- beginBatch()
+ |       +-- persist prompt config
+ |       +-- persist GenerationBatch
+ |       +-- create one AgentRun per slot
+ |       +-- invoke candidates concurrently
+ |
+ +-- PiDiagramAgentRuntime.generateArtifact()
+ |   +-- isolatedAgentSession
+ |   |   +-- selected OpenAI Codex model
+ |   |   +-- rendered systemPrompt
+ |   |   +-- submit_diagram tool only
+ |   |
+ |   +-- turn 1: generate
+ |   |   +-- contextPrompt
+ |   |   |   +-- DiagramSet name
+ |   |   |   +-- original request
+ |   |   |   +-- runtime instruction
+ |   |   |   +-- selected evidence summaries
+ |   |   |   +-- exact source ranges
+ |   |   |   +-- referenced artifacts
+ |   |   +-- runtime additions
+ |   |       +-- candidate slot / total
+ |   |       +-- readable entity aliases
+ |   |       +-- artifact allowlists
+ |   |
+ |   +-- turn 2: apply reference              [optional]
+ |   |   +-- previous candidate
+ |   |   +-- referenceInstruction
+ |   |   +-- serialized reference diagrams/components
+ |   |   +-- preserve meaning and entity coverage
+ |   |   +-- submit complete replacement
+ |   |
+ |   +-- turn 3: map final artifact            [mandatory]
+ |       +-- final name + numbered ASCII
+ |       +-- allowed CodeEntities
+ |       +-- evidence source ranges
+ |       +-- preserve artifact unchanged
+ |       +-- attach exact visible-text mappings
+ |
+ +-- submissionValidation
+ |   +-- resolve readable aliases -> persisted entity IDs
+ |   +-- require nonblank artifact name
+ |   +-- require 7-bit ASCII
+ |   +-- reject unselected entities
+ |   +-- require final mappings
+ |   +-- verify sourceRangeIndex
+ |   +-- verify visible, in-bounds spans
+ |   +-- reject overlapping spans
+ |   +-- mapping turn may not change name, ASCII, or entity list
+ |
+ +-- persistedOutputs
+     +-- DiagramRecord | DiagramComponentRecord
+     |   +-- promptConfigId
+     |   +-- agentRunId
+     |   +-- derivation lineage
+     |   +-- normalized ASCII
+     |
+     +-- DiagramCodeEntityMapRecord
+     |   +-- artifact hash
+     |   +-- entityId
+     |   +-- sourceRangeIndex
+     |   +-- exact ASCII span
+     |
+     +-- completeBatch()
+         +-- deduplicate accepted candidates
+         +-- persist artifacts and mappings
+         +-- complete AgentRuns
+         +-- update DiagramSet artifact IDs
+         +-- return updated workspace

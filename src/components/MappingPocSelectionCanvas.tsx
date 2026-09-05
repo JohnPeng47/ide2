@@ -8,6 +8,7 @@ import {
   type FormEvent,
   type PointerEvent
 } from "react";
+import { createPortal } from "react-dom";
 import {
   MAPPING_POC_A_NODES,
   MAPPING_POC_GRAPH_A,
@@ -24,6 +25,16 @@ import {
 } from "../mappingPocOverlays";
 import { promptMappingPocSelection } from "../api";
 import type { MappingPocPromptResult } from "../mappingPocPrompt";
+import {
+  createCyclingMockLocalChatResponder,
+  isLocalChatSubmitHotkey,
+  type LocalChatMessage,
+  type LocalChatResponder,
+  type LocalChatSelection,
+  type LocalChatThread,
+  type LocalChatVariant
+} from "../localChat";
+import { LocalChatConvo } from "./LocalChatConvo";
 
 interface GridPoint {
   line: number;
@@ -94,14 +105,27 @@ type PromptPhase = "ready" | "composing" | "generating" | "applied" | "error";
 
 export function MappingPocSelectionCanvas(props: {
   onLineCountChange?: (lineCount: number) => void;
+  localChatVariant?: LocalChatVariant;
+  mockReplyDelayMs?: number;
+  showPlacementGuide?: boolean;
 }) {
+  const localChatVariant = props.localChatVariant ?? "compact";
   const stageRef = useRef<HTMLDivElement>(null);
   const preRef = useRef<HTMLPreElement>(null);
   const probeRef = useRef<HTMLSpanElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const openMappedRef = useRef<HTMLButtonElement>(null);
   const promptInputRef = useRef<HTMLTextAreaElement>(null);
+  const askInputRef = useRef<HTMLTextAreaElement>(null);
   const activeSelectionRef = useRef<ActiveSelection | null>(null);
+  const mockReplyDelayRef = useRef(props.mockReplyDelayMs ?? 0);
+  mockReplyDelayRef.current = props.mockReplyDelayMs ?? 0;
+  const responderRef = useRef<LocalChatResponder | null>(null);
+  if (!responderRef.current) {
+    responderRef.current = createCyclingMockLocalChatResponder(undefined, {
+      delayMs: () => mockReplyDelayRef.current
+    });
+  }
   const [clientSessionId] = useState(() => `mapping-${crypto.randomUUID()}`);
   const [cell, setCell] = useState<CellMetrics>({ width: 0, height: 0 });
   const [ascii, setAscii] = useState(MAPPING_POC_GRAPH_A);
@@ -122,6 +146,14 @@ export function MappingPocSelectionCanvas(props: {
   const [promptText, setPromptText] = useState("");
   const [promptPhase, setPromptPhase] = useState<PromptPhase>("ready");
   const [statusMessage, setStatusMessage] = useState("selection ready");
+  const [askOpen, setAskOpen] = useState(false);
+  const [askText, setAskText] = useState("");
+  const [pendingPlacement, setPendingPlacement] = useState<{
+    query: string;
+    selection: LocalChatSelection;
+  } | null>(null);
+  const [chatThreads, setChatThreads] = useState<LocalChatThread[]>([]);
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
 
   const asciiLines = useMemo(() => ascii.split("\n"), [ascii]);
   const lineCount = asciiLines.length;
@@ -132,6 +164,7 @@ export function MappingPocSelectionCanvas(props: {
     () => nodes.filter((node) => selectedNodeIdSet.has(node.id)),
     [nodes, selectedNodeIdSet]
   );
+  const activeThread = chatThreads.find((thread) => thread.id === activeThreadId);
   const sourceCoveredNodeCount = selectedNodes.filter((node) => node.sourceRanges.length > 0).length;
   const selectedSourceRangeCount = selectedNodes.reduce(
     (count, node) => count + node.sourceRanges.length,
@@ -189,6 +222,10 @@ export function MappingPocSelectionCanvas(props: {
   }, [promptOpen]);
 
   useEffect(() => {
+    if (askOpen) askInputRef.current?.focus();
+  }, [askOpen]);
+
+  useEffect(() => {
     if (promptPhase !== "applied") return undefined;
     const timeout = window.setTimeout(() => {
       setSelectionRect(null);
@@ -216,6 +253,49 @@ export function MappingPocSelectionCanvas(props: {
     };
   }, [cell, lineCount, maxColumn]);
 
+  const stagePointAtClient = useCallback((clientX: number, clientY: number) => {
+    const stage = stageRef.current;
+    if (!stage) return null;
+    const bounds = stage.getBoundingClientRect();
+    const scaleX = stage.offsetWidth > 0 ? bounds.width / stage.offsetWidth : 1;
+    const scaleY = stage.offsetHeight > 0 ? bounds.height / stage.offsetHeight : scaleX;
+    return {
+      x: Math.max(12, Math.min(stage.offsetWidth - 12, (clientX - bounds.left) / scaleX)),
+      y: Math.max(12, Math.min(stage.offsetHeight - 12, (clientY - bounds.top) / scaleY))
+    };
+  }, []);
+
+  const requestLocalReply = useCallback((
+    threadId: string,
+    query: string,
+    selection: LocalChatSelection,
+    history: readonly LocalChatMessage[]
+  ) => {
+    const responder = responderRef.current;
+    if (!responder) return;
+    void responder.reply({ query, selection, history }).then((reply) => {
+      setChatThreads((current) => current.map((thread) => thread.id === threadId ? {
+        ...thread,
+        pending: false,
+        messages: [...thread.messages, {
+          id: `local-message-${crypto.randomUUID()}`,
+          role: "assistant",
+          text: reply
+        }]
+      } : thread));
+    }).catch((error) => {
+      setChatThreads((current) => current.map((thread) => thread.id === threadId ? {
+        ...thread,
+        pending: false,
+        messages: [...thread.messages, {
+          id: `local-message-${crypto.randomUUID()}`,
+          role: "assistant",
+          text: error instanceof Error ? error.message : "The mock response failed."
+        }]
+      } : thread));
+    });
+  }, []);
+
   const finishSelection = (event: PointerEvent<HTMLDivElement>) => {
     const active = activeSelectionRef.current;
     if (!active || active.pointerId !== event.pointerId) return;
@@ -236,6 +316,8 @@ export function MappingPocSelectionCanvas(props: {
     setOpenedProjection(null);
     setPromptOpen(false);
     setPromptText("");
+    setAskOpen(false);
+    setAskText("");
     setPromptPhase("ready");
     const sourceRangeCount = selected.reduce((count, node) => count + node.sourceRanges.length, 0);
     setStatusMessage(`${sourceRangeCount} mapped corpus range${sourceRangeCount === 1 ? "" : "s"} ready`);
@@ -260,6 +342,9 @@ export function MappingPocSelectionCanvas(props: {
     setOpenedProjection(null);
     setPromptOpen(false);
     setPromptText("");
+    setAskOpen(false);
+    setAskText("");
+    setPendingPlacement(null);
     setPromptPhase("ready");
     setStatusMessage("selection ready");
   }, []);
@@ -270,10 +355,81 @@ export function MappingPocSelectionCanvas(props: {
       || !hasCompleteSourceCoverage
       || promptPhase === "generating") return;
     setOpenedProjection(null);
+    setAskOpen(false);
     setPromptOpen(true);
     setPromptPhase("composing");
     setStatusMessage("describe the in-line change");
   }, [hasCompleteSourceCoverage, promptPhase, selectedNodeIds.length, selectionRect]);
+
+  const openAsk = useCallback(() => {
+    if (!selectionRect || !selectedNodeIds.length || promptPhase === "generating") return;
+    setOpenedProjection(null);
+    setPromptOpen(false);
+    setAskOpen(true);
+    setStatusMessage("ask about the selected region");
+  }, [promptPhase, selectedNodeIds.length, selectionRect]);
+
+  const submitAsk = (event: FormEvent) => {
+    event.preventDefault();
+    const query = askText.trim();
+    if (!selectionRect || !selectedNodeIds.length || !query) return;
+    const summary = `${selectedNodeIds.length} selected diagram node${selectedNodeIds.length === 1 ? "" : "s"}`;
+    setPendingPlacement({
+      query,
+      selection: {
+        nodeIds: [...selectedNodeIds],
+        rect: { ...selectionRect },
+        summary
+      }
+    });
+    setAskOpen(false);
+    setAskText("");
+    setStatusMessage("click the canvas to place this conversation");
+  };
+
+  const placeLocalChat = useCallback((clientX: number, clientY: number) => {
+    if (!pendingPlacement) return;
+    const anchor = stagePointAtClient(clientX, clientY);
+    if (!anchor) return;
+    const threadId = `local-thread-${crypto.randomUUID()}`;
+    const userMessage: LocalChatMessage = {
+      id: `local-message-${crypto.randomUUID()}`,
+      role: "user",
+      text: pendingPlacement.query
+    };
+    const thread: LocalChatThread = {
+      id: threadId,
+      title: pendingPlacement.selection.summary,
+      anchor,
+      selection: pendingPlacement.selection,
+      messages: [userMessage],
+      pending: true
+    };
+    setChatThreads((current) => [...current, thread]);
+    setPendingPlacement(null);
+    setSelectedNodeIds([]);
+    setSelectionRect(null);
+    setPromptPhase("ready");
+    setStatusMessage("selection ready");
+    requestLocalReply(threadId, pendingPlacement.query, pendingPlacement.selection, [userMessage]);
+  }, [pendingPlacement, requestLocalReply, stagePointAtClient]);
+
+  const submitLocalFollowUp = useCallback((threadId: string, text: string) => {
+    const thread = chatThreads.find((candidate) => candidate.id === threadId);
+    if (!thread || thread.pending) return;
+    const userMessage: LocalChatMessage = {
+      id: `local-message-${crypto.randomUUID()}`,
+      role: "user",
+      text
+    };
+    const history = [...thread.messages, userMessage];
+    setChatThreads((current) => current.map((candidate) => candidate.id === threadId ? {
+      ...candidate,
+      pending: true,
+      messages: history
+    } : candidate));
+    requestLocalReply(threadId, text, thread.selection, history);
+  }, [chatThreads, requestLocalReply]);
 
   const submitPrompt = async (event: FormEvent) => {
     event.preventDefault();
@@ -316,23 +472,35 @@ export function MappingPocSelectionCanvas(props: {
   useEffect(() => {
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
       if (typingTarget(event.target)) {
-        if (event.key === "Escape" && promptOpen && promptPhase !== "generating") {
+        if (event.key === "Escape" && (promptOpen || askOpen) && promptPhase !== "generating") {
           event.preventDefault();
           setPromptOpen(false);
+          setAskOpen(false);
           setPromptPhase("ready");
           setStatusMessage("selection ready");
         }
         return;
       }
+      if (event.key === "Escape" && pendingPlacement) {
+        event.preventDefault();
+        setPendingPlacement(null);
+        setStatusMessage("selection ready");
+        return;
+      }
       if (!selectedNodeIds.length || !selectionRect) return;
-      if (event.key.toLowerCase() === "n" && candidateProjection.bRange && !promptOpen) {
+      if (event.key.toLowerCase() === "n" && candidateProjection.bRange && !promptOpen && !askOpen) {
         event.preventDefault();
         openMapped();
         return;
       }
-      if (event.key.toLowerCase() === "p" && promptPhase !== "generating") {
+      if (event.key.toLowerCase() === "p" && promptPhase !== "generating" && !askOpen) {
         event.preventDefault();
         openPrompt();
+        return;
+      }
+      if (event.key.toLowerCase() === "a" && promptPhase !== "generating" && !promptOpen) {
+        event.preventDefault();
+        openAsk();
         return;
       }
       if (event.key === "Escape" && !openedProjection && promptPhase !== "generating") {
@@ -342,11 +510,14 @@ export function MappingPocSelectionCanvas(props: {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [
+    askOpen,
     candidateProjection.bRange,
     clearSelection,
     openMapped,
     openedProjection,
+    openAsk,
     openPrompt,
+    pendingPlacement,
     promptOpen,
     promptPhase,
     selectedNodeIds.length,
@@ -354,7 +525,12 @@ export function MappingPocSelectionCanvas(props: {
   ]);
 
   useEffect(() => {
-    if (!selectedNodeIds.length || openedProjection || promptOpen || promptPhase === "generating") return undefined;
+    if (!selectedNodeIds.length
+      || openedProjection
+      || promptOpen
+      || askOpen
+      || pendingPlacement
+      || promptPhase === "generating") return undefined;
     const onPointerDown = (event: globalThis.PointerEvent) => {
       const stage = stageRef.current;
       if (stage && event.composedPath().includes(stage)) return;
@@ -362,7 +538,7 @@ export function MappingPocSelectionCanvas(props: {
     };
     window.addEventListener("pointerdown", onPointerDown, true);
     return () => window.removeEventListener("pointerdown", onPointerDown, true);
-  }, [clearSelection, openedProjection, promptOpen, promptPhase, selectedNodeIds.length]);
+  }, [askOpen, clearSelection, openedProjection, pendingPlacement, promptOpen, promptPhase, selectedNodeIds.length]);
 
   const rectStyle = selectionRect && cell.width > 0 && cell.height > 0 ? {
     left: (selectionRect.startColumn - 1) * cell.width,
@@ -370,16 +546,31 @@ export function MappingPocSelectionCanvas(props: {
     width: (selectionRect.endColumn - selectionRect.startColumn + 1) * cell.width,
     height: (selectionRect.endLine - selectionRect.startLine + 1) * cell.height
   } : undefined;
+  const activeThreadRectStyle = activeThread && cell.width > 0 && cell.height > 0 ? {
+    left: (activeThread.selection.rect.startColumn - 1) * cell.width,
+    top: (activeThread.selection.rect.startLine - 1) * cell.height,
+    width: (activeThread.selection.rect.endColumn - activeThread.selection.rect.startColumn + 1) * cell.width,
+    height: (activeThread.selection.rect.endLine - activeThread.selection.rect.startLine + 1) * cell.height
+  } : undefined;
+  const selectionPhase = pendingPlacement ? "placing-chat" : askOpen ? "asking" : promptPhase;
 
   return (
     <div
       ref={stageRef}
-      className="mapping-poc-graph-stage"
+      className={`mapping-poc-graph-stage${pendingPlacement ? " is-placing-chat" : ""}`}
       aria-label="Graph A selectable nodes"
       onPointerDown={(event) => {
+        if (pendingPlacement) {
+          if (event.button !== 0 || (event.target as Element).closest("[data-mapping-static-ui]")) return;
+          event.preventDefault();
+          event.stopPropagation();
+          placeLocalChat(event.clientX, event.clientY);
+          return;
+        }
         if (openedProjection
           || openDetailOverlay
           || promptOpen
+          || askOpen
           || promptPhase === "generating"
           || event.button !== 0
           || event.shiftKey
@@ -429,7 +620,7 @@ export function MappingPocSelectionCanvas(props: {
         {cell.width > 0 && cell.height > 0 ? nodes.map((node) => (
           <span
             key={node.id}
-            className={`mapping-poc-node-hit is-${node.selectableBecause}${selectedNodeIdSet.has(node.id) ? " is-selected" : ""}${selectedNodeIdSet.has(node.id) && (promptOpen || promptPhase === "generating") ? " is-prompt-target" : ""}`}
+            className={`mapping-poc-node-hit is-${node.selectableBecause}${selectedNodeIdSet.has(node.id) ? " is-selected" : ""}${selectedNodeIdSet.has(node.id) && (promptOpen || askOpen || pendingPlacement || promptPhase === "generating") ? " is-prompt-target" : ""}`}
             data-selectable-node={node.id}
             style={{
               left: (node.head.startColumn - 1) * cell.width,
@@ -471,10 +662,21 @@ export function MappingPocSelectionCanvas(props: {
 
       {rectStyle ? (
         <span
-          className={`mapping-poc-selection-rect is-${promptPhase}`}
+          className={`mapping-poc-selection-rect is-${selectionPhase}`}
           style={rectStyle}
           aria-hidden="true"
         />
+      ) : null}
+
+      {activeThread && activeThreadRectStyle ? (
+        <div
+          className="local-chat-source-highlight"
+          data-local-chat-source-highlight={activeThread.id}
+          style={activeThreadRectStyle}
+          aria-hidden="true"
+        >
+          <span>CHAT SOURCE</span>
+        </div>
       ) : null}
 
       {openDetailOverlay && openDetailPlacement && cell.width > 0 && cell.height > 0 ? (
@@ -505,16 +707,16 @@ export function MappingPocSelectionCanvas(props: {
         </aside>
       ) : null}
 
-      {selectionRect && selectedNodes.length && rectStyle ? (
+      {selectionRect && selectedNodes.length && rectStyle && !pendingPlacement ? (
         <div
           ref={menuRef}
-          className="mapping-poc-selection-menu"
+          className={`mapping-poc-selection-menu${askOpen && localChatVariant === "floating" ? " has-floating-ask" : ""}`}
           data-mapping-static-ui
           data-diagram-canvas-static-ui
           role="dialog"
           tabIndex={-1}
           aria-label="Selected node operations"
-          aria-keyshortcuts="N P"
+          aria-keyshortcuts="N P A"
           style={{ left: rectStyle.left + rectStyle.width + 12, top: rectStyle.top + rectStyle.height + 8 }}
         >
           <header>
@@ -522,9 +724,9 @@ export function MappingPocSelectionCanvas(props: {
             <em className={hasCompleteSourceCoverage ? "is-covered" : "is-missing"}>
               source {sourceCoveredNodeCount}/{selectedNodes.length} · {selectedSourceRangeCount} ranges
             </em>
-            <small className={`is-${promptPhase}`} aria-live="polite">{statusMessage}</small>
+            <small className={`is-${askOpen ? "asking" : promptPhase}`} aria-live="polite">{statusMessage}</small>
           </header>
-          {!promptOpen ? (
+          {!promptOpen && !askOpen ? (
             <div className="mapping-poc-selection-actions">
               <button
                 ref={openMappedRef}
@@ -546,8 +748,18 @@ export function MappingPocSelectionCanvas(props: {
                 <kbd>P</kbd>
                 prompt selection
               </button>
+              <button
+                type="button"
+                className="is-ask"
+                aria-keyshortcuts="A"
+                title="Ask a question and place the conversation on the canvas"
+                onClick={openAsk}
+              >
+                <kbd>A</kbd>
+                ask about selection
+              </button>
             </div>
-          ) : (
+          ) : promptOpen ? (
             <form className="mapping-poc-prompt-form" onSubmit={submitPrompt}>
               <label htmlFor="mapping-poc-prompt">Change selected rows</label>
               <textarea
@@ -583,8 +795,109 @@ export function MappingPocSelectionCanvas(props: {
                 >{promptPhase === "generating" ? "applying…" : "apply patch"}</button>
               </footer>
             </form>
+          ) : (
+            <form
+              className={`local-chat-ask-form is-${localChatVariant}`}
+              data-local-chat-ask={localChatVariant}
+              onSubmit={submitAsk}
+            >
+              <label htmlFor="mapping-poc-local-question">Ask about this region</label>
+              <textarea
+                ref={askInputRef}
+                id="mapping-poc-local-question"
+                value={askText}
+                maxLength={4000}
+                rows={3}
+                placeholder="e.g. What contract does this block define?"
+                onChange={(event) => setAskText(event.target.value)}
+                onKeyDown={(event) => {
+                  if (!isLocalChatSubmitHotkey({
+                    key: event.key,
+                    ctrlKey: event.ctrlKey,
+                    isComposing: event.nativeEvent.isComposing
+                  })) return;
+                  event.preventDefault();
+                  event.currentTarget.form?.requestSubmit();
+                }}
+              />
+              <p>Your next canvas click places the conversation bubble.</p>
+              <footer>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAskOpen(false);
+                    setAskText("");
+                    setStatusMessage("selection ready");
+                  }}
+                >cancel</button>
+                <button type="submit" className="is-primary" disabled={!askText.trim()} title="Continue (Ctrl+Enter)">
+                  place answer
+                </button>
+              </footer>
+            </form>
           )}
         </div>
+      ) : null}
+
+      {pendingPlacement && rectStyle && (props.showPlacementGuide ?? true) ? (
+        <div
+          className="local-chat-placement-guide"
+          data-local-chat-placement="pending"
+          aria-live="polite"
+          style={{ left: rectStyle.left + rectStyle.width / 2, top: rectStyle.top - 12 }}
+        >
+          <span>PLACE LOCAL CHAT</span>
+          <strong>click anywhere on the diagram · Esc cancels</strong>
+        </div>
+      ) : null}
+
+      {chatThreads.map((thread) => {
+        const isActive = thread.id === activeThreadId;
+        return (
+          <div
+            key={thread.id}
+            className={`local-chat-anchor${isActive ? " is-active" : ""}`}
+            data-mapping-static-ui
+            data-diagram-canvas-static-ui
+            style={{ left: thread.anchor.x, top: thread.anchor.y }}
+          >
+            <button
+              type="button"
+              className={`local-chat-bubble${thread.pending ? " is-pending" : ""}`}
+              data-local-chat-bubble={thread.id}
+              aria-label={`${isActive ? "Collapse" : "Open"} local conversation`}
+              aria-expanded={isActive}
+              onClick={() => setActiveThreadId(isActive ? null : thread.id)}
+            >
+              <span aria-hidden="true">?</span>
+              <small>{thread.messages.filter((message) => message.role === "assistant").length}</small>
+            </button>
+            {isActive && localChatVariant !== "docked" ? (
+              <LocalChatConvo
+                thread={thread}
+                variant={localChatVariant}
+                onClose={() => setActiveThreadId(null)}
+                onSubmit={(message) => submitLocalFollowUp(thread.id, message)}
+              />
+            ) : null}
+          </div>
+        );
+      })}
+
+      {activeThread && localChatVariant === "docked" && typeof document !== "undefined" ? createPortal(
+        <div
+          className="local-chat-docked-shell"
+          data-mapping-static-ui
+          data-diagram-canvas-static-ui
+        >
+          <LocalChatConvo
+            thread={activeThread}
+            variant="docked"
+            onClose={() => setActiveThreadId(null)}
+            onSubmit={(message) => submitLocalFollowUp(activeThread.id, message)}
+          />
+        </div>,
+        document.body
       ) : null}
 
       {selectionRect && !selectedNodes.length && rectStyle && (promptPhase === "applied" || promptPhase === "error") ? (

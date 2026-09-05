@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "run-a66de17b-51da-413e-9dec-950d08a9f131",
+  "diagramSetId": "set-ac8b93d9-7e8f-443c-a525-f97d7dd283d1",
+  "kind": "generate-one-diagram",
+  "status": "failed",
+  "statusMessage": "diagram agent finished without submitting an artifact",
+  "generationBatchId": "batch-2cdb37e0-3893-4e01-83d2-bed6f62e3eeb",
+  "outputSlot": 2,
+  "codeEntitiesRevision": 1,
+  "outputCodeEntityIds": [],
+  "startedAt": "2026-09-05T16:11:14.168Z",
+  "updatedAt": "2026-09-05T16:19:49.650Z",
+  "model": "openai-codex/gpt-5.6-sol",
+  "sessionId": "01a0725e-37bb-75b4-84dd-1a45a55ed115",
+  "error": "diagram agent finished without submitting an artifact",
+  "completedAt": "2026-09-05T16:19:49.650Z"
+}

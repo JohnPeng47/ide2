@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "batch-2cdb37e0-3893-4e01-83d2-bed6f62e3eeb",
+  "diagramSetId": "set-ac8b93d9-7e8f-443c-a525-f97d7dd283d1",
+  "requestedCount": 3,
+  "promptConfigId": "prompt-03f1cfc3-161d-47d8-aa58-4941a45f28b6",
+  "codeEntitiesRevision": 1,
+  "childRunIds": [
+    "run-21fa37f6-44e4-40ce-811f-383180ce3731",
+    "run-a66de17b-51da-413e-9dec-950d08a9f131",
+    "run-352fab87-b546-43ff-aec2-af9c22a1943e"
+  ],
+  "outputDiagramIds": [],
+  "outputDiagramComponentIds": [],
+  "status": "failed",
+  "createdAt": "2026-09-05T16:11:14.168Z",
+  "updatedAt": "2026-09-05T16:19:49.652Z",
+  "error": "slot 2: diagram agent finished without submitting an artifact"
+}

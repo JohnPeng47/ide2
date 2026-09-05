@@ -1,0 +1,96 @@
+                         [P] SOURCE PACKAGE
+                 +---------------+---------------+
+                 |                               |
+                 v                               v
+ [P] finalized DiagramSetRecord          [P] CodeEntitiesSetRecord
+                 |                               |
+                 +---------------+---------------+
+                                 |
+                                 +---- [P] SystemPromptTemplateRecord
+                                 |
+                                 v
+                   [R] ExperimentRunner.initialize
+                                 |
+                                 v
+                    [P] ExperimentManifest
+                  axes / iterations / fixed model
+                                 |
+                                 v
+                 [R] promptFor(axis, iteration)
+                                 |
+             +-------------------+-------------------+
+             |                                       |
+             v                                       v
+ [P] baseline control block             [P] prior StoredAnalysis
+       iteration 1                       revisedPromptBlock
+             |                                       |
+             +-------------------+-------------------+
+                                 |
+                                 v
+                           [R] generate
+                                 |
+               +-----------------+-----------------+
+               |                                   |
+               v                                   v
+       [P] value choices                    [P] replicate jobs
+               |                                   |
+               +---------------+-------------------+
+                               |
+                               v
+                    [R] mapLimit concurrency cap
+                               |
+                               v
+                 [R] SolExperimentRuntime.generate
+                               |
+          +--------------------+--------------------+
+          |                                         |
+          v                                         v
+[R] PiDiagramAgentRuntime.generateArtifact    [P] promptConfigId
+          |                                         |
+          v                                         |
+   [X] model session                                |
+          |                                         |
+          +--------------------+--------------------+
+                               |
+                               v
+                    [P] GenerationRecord[*]
+                  artifact + diagramMetrics
+                               |
+          +--------------------+--------------------+
+          |                                         |
+          v                                         v
+   [R] judgeCross                            [R] judgeWithin
+ blinded low/mid/high order              same-value stochastic spread
+          |                                         |
+          v                                         v
+[P] StoredCrossJudgment[*]              [P] StoredWithinJudgment[*]
+          |                                         |
+          +--------------------+--------------------+
+                               |
+                               v
+                    [R] aggregateScores
+      signal - noise / ordering / off-axis / metric means
+                               |
+                               v
+                         [R] analyze
+                               |
+             +-----------------+------------------+
+             |                                    |
+             v                                    v
+   [P] StoredAnalysis                    [P] experiment output
+             |                                    |
+             |                                    v
+             |                     [R] ExperimentCatalog.list/artifact
+             |                                    |
+             |                                    v
+             |                        [R] ExperimentViewerPage
+             |                                    |
+             |                                    v
+             |                     [R] DiagramDatasetStore.addItem
+             |                                    |
+             |                                    v
+             |                  [P] curated DiagramDatasetItemRecord
+             |                    snapshot / labels / coordinates
+             |                    metrics / model / prompt provenance
+             |
+             +---- revised prompt returns to iteration 2

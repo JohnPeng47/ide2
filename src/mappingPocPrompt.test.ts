@@ -15,8 +15,8 @@ describe("mapping POC selection prompts", () => {
     expect(hunk.contextStartLine).toBe(32);
     expect(hunk.contextEndLine).toBe(58);
     expect(hunk.expectedOldLines).toHaveLength(21);
-    expect(hunk.contextLines[5]).toContain("same-value stochastic spread");
-    expect(hunk.contextLines[23]).toContain("revised prompt feeds next iteration");
+    expect(hunk.contextLines[0]).toContain("+-- name");
+    expect(hunk.contextLines[26]).toContain("+-- user prompt");
   });
 
   it("keeps the full diagram in bootstrap context and out of each edit prompt", () => {
@@ -29,28 +29,28 @@ describe("mapping POC selection prompts", () => {
       selection,
       hunk,
       sourceContext: [{
-        mappingId: "a-judge-cross:range-1",
-        elementId: "a-judge-cross",
-        elementLabel: "judgeCross",
-        diagramLine: 36,
+        mappingId: "a-collection-prompt:range-1",
+        elementId: "a-collection-prompt",
+        elementLabel: "code entity collection prompt",
+        diagramLine: 45,
         startColumn: 1,
         endColumn: 14,
-        path: "experiments/runtime.ts",
-        startLine: 134,
-        endLine: 135,
-        lines: ["async judgeCross() {", "  return this.judge();"]
+        path: "server/codeEntityPrompt.ts",
+        startLine: 9,
+        endLine: 10,
+        lines: ["export function codeEntityCollectionPrompt(", "  input: CodeEntityPromptInput"]
       }],
       nonce: "TURN123"
     });
     expect(system).toContain(MAPPING_POC_GRAPH_A);
-    expect(prompt).not.toContain("[P] finalized source DiagramSetRecord");
+    expect(prompt).not.toContain("CurrentLLMPromptStack");
     expect(prompt).toContain("Make the scoring branch clearer");
-    expect(prompt).toContain(">> 35 |       v");
-    expect(prompt).toContain(":: 32 |       |");
-    expect(prompt).toContain(":: 58 |       |");
-    expect(prompt).toContain("[MAPPED ELEMENT a-judge-cross]");
-    expect(prompt).toContain("Corpus range: experiments/runtime.ts:134-135");
-    expect(prompt).toContain("134 | async judgeCross() {");
+    expect(prompt).toContain(">> 35 |  |   +-- codeEntitiesSetId");
+    expect(prompt).toContain(":: 32 |  |   +-- name");
+    expect(prompt).toContain(":: 58 |  |       +-- user prompt");
+    expect(prompt).toContain("[MAPPED ELEMENT a-collection-prompt]");
+    expect(prompt).toContain("Corpus range: server/codeEntityPrompt.ts:9-10");
+    expect(prompt).toContain("09 | export function codeEntityCollectionPrompt(");
   });
 
   it("applies an exact row splice and reports the downstream vertical delta", () => {

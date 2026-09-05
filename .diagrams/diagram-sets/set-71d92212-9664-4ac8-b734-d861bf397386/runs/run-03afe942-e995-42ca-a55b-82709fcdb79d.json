@@ -3,12 +3,14 @@
   "id": "run-03afe942-e995-42ca-a55b-82709fcdb79d",
   "diagramSetId": "set-71d92212-9664-4ac8-b734-d861bf397386",
   "kind": "collect-entities",
-  "status": "generating",
-  "statusMessage": "agent is composing a structured result",
+  "status": "interrupted",
+  "statusMessage": "server restarted before the run completed",
   "codeEntitiesRevision": 1,
   "outputCodeEntityIds": [],
   "startedAt": "2026-09-04T03:21:06.413Z",
-  "updatedAt": "2026-09-04T03:21:26.704Z",
+  "updatedAt": "2026-09-05T16:08:27.967Z",
   "model": "openai-codex/gpt-5.6-sol",
-  "sessionId": "01a06a6f-2eb2-713a-9608-8a86cc2c6432"
+  "sessionId": "01a06a6f-2eb2-713a-9608-8a86cc2c6432",
+  "error": "interrupted by server restart",
+  "completedAt": "2026-09-05T16:08:27.967Z"
 }

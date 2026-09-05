@@ -1,75 +1,188 @@
-export const MAPPING_POC_GRAPH_A = `[P] finalized source DiagramSetRecord + CodeEntitiesSetRecord
-[P] SystemPromptTemplateRecord
-      |
-      v
-[R] ExperimentRunner.initialize
-      |
-      v
-[P] ExperimentManifest
-    axes + iterations + fixed model
-      |
-      v
-[R] promptFor(axis, iteration)
-      |
-      +--> iteration 1: baseline control block
-      \`--> iteration 2: prior analysis.revisedPromptBlock
-      |
-      v
-[R] generate
-    values x replicates, bounded by mapLimit
-      |
-      v
-[R] SolExperimentRuntime.generate
-      |
-      \`--> [R] PiDiagramAgentRuntime.generateArtifact
-                   |
-                   v
-                [X] model session
-      |
-      v
-[P] GenerationRecord[*]
-    artifact + promptConfigId + diagramMetrics
-      |
-      +----------------------------+
-      |                            |
-      v                            v
-[R] judgeCross                 [R] judgeWithin
- blinded low/mid/high order        same-value stochastic spread
-      |                            |
-      v                            v
-[P] StoredCrossJudgment[*]     [P] StoredWithinJudgment[*]
-      +-------------+--------------+
-                    |
-                    v
-             [R] aggregateScores
-              signal - noise,
-              ordering, off-axis,
-              metric means
-                    |
-                    v
-             [R] analyze
-                    |
-                    v
-             [P] StoredAnalysis
-                    |
-                    \`---- revised prompt feeds next iteration
+export const MAPPING_POC_GRAPH_A = `CurrentLLMPromptStack
+ |
+ +-- persistedPromptProfiles
+ |   |
+ |   +-- system-prompt-templates.json
+ |   |   |
+ |   |   +-- artifact-generation
+ |   |   |   +-- domain-specific system instruction
+ |   |   |   +-- generate exactly one artifact
+ |   |   |   +-- require 7-bit ASCII
+ |   |   |   +-- require submit_diagram exactly once
+ |   |   |
+ |   |   +-- diagram-reference
+ |   |   |   +-- preserve source-backed meaning
+ |   |   |   +-- apply referenced visual grammar
+ |   |   |   +-- return a complete replacement
+ |   |   |
+ |   |   +-- diagram-mapping
+ |   |       +-- preserve final artifact unchanged
+ |   |       +-- map visible labels to CodeEntities
+ |   |       +-- require exact, non-overlapping spans
+ |   |
+ |   +-- code-entity-prompt-templates.json
+ |       +-- identificationCriteria
+ |       |   +-- decide which source evidence matters
+ |       |   +-- require exact file/range provenance
+ |       +-- compactionCriteria
+ |           +-- retain/collapse evidence presentation
+ |           +-- preserve exact evidence-node mappings
+ |
+ +-- DiagramSet
+ |   +-- name
+ |   +-- initialPrompt                         [original user request]
+ |   +-- sourceCheckoutRoot
+ |   +-- codeEntitiesSetId
+ |   +-- readiness
+ |   |
+ |   +-- CodeEntityPromptConfigRecord          [immutable collection snapshot]
+ |       +-- template profile + revision
+ |       +-- identification prompt
+ |       +-- compaction prompt
+ |       +-- rendered collection context
+ |
+ +-- evidenceCollection
+ |   +-- codeEntityCollectionPrompt()
+ |   |   +-- DiagramSet name
+ |   |   +-- original request
+ |   |   +-- identificationCriteria
+ |   |   +-- compactionCriteria
+ |   |   +-- expected structured fields
+ |   |   +-- submission/retry contract
+ |   |
+ |   +-- PiDiagramAgentRuntime.collectEntities()
+ |       +-- system prompt
+ |       |   +-- inspect repository documents
+ |       |   +-- collect only relevant evidence
+ |       |   +-- cite exact source ranges
+ |       +-- user prompt
+ |       |   +-- rendered collection context
+ |       +-- available tools
+ |       |   +-- corpus inspection
+ |       |   +-- submit_code_entities
+ |       +-- validation
+ |           +-- files and ranges must exist
+ |           +-- structured result must be complete
+ |           +-- accepted entities become finalized evidence
+ |
+ +-- runtimeGenerationRequest
+ |   +-- instruction
+ |   +-- selectedCodeEntityIds[]
+ |   +-- count
+ |   +-- outputKind
+ |   +-- viewKind
+ |   +-- modelId
+ |   +-- promptProfileId
+ |   +-- selected references[]
+ |   +-- referenceInstruction?
+ |   +-- derivationCorrection?
+ |   |
+ |   +-- generateArtifacts()                   [browser -> NDJSON HTTP]
+ |       +-- generation route
+ |           +-- parse and validate request
+ |           +-- bound candidate count
+ |           +-- validate model/output/view kinds
+ |           +-- stream progress and final workspace
+ |
+ +-- DiagramApplication.generate()
+ |   +-- validate
+ |   |   +-- evidence set is finalized
+ |   |   +-- selected entity IDs are allowed
+ |   |   +-- referenced artifacts exist
+ |   |
+ |   +-- createGenerationPromptConfig()
+ |   |   +-- resolve selected templates
+ |   |   +-- resolve @entity / @diagram / @component mentions
+ |   |   +-- reject unknown or ambiguous references
+ |   |   +-- include referenced artifact entity coverage
+ |   |   +-- create request-local readable aliases
+ |   |   |
+ |   |   +-- GenerationPromptConfigRecord       [immutable model handoff]
+ |   |       +-- domainProfileId
+ |   |       +-- outputKind + viewKind
+ |   |       +-- modelId
+ |   |       +-- instruction
+ |   |       +-- selectedCodeEntityIds[]
+ |   |       +-- includedReferences[]
+ |   |       +-- omittedReferences[]
+ |   |       +-- systemPrompt
+ |   |       |   +-- template id + revision
+ |   |       |   +-- fully rendered instruction
+ |   |       +-- contextPrompt                  [initial generation turn]
+ |   |       +-- referencePrompt?               [optional restyle turn]
+ |   |       +-- mappingPrompt                  [mandatory final turn]
+ |   |
+ |   +-- beginBatch()
+ |       +-- persist prompt config
+ |       +-- persist GenerationBatch
+ |       +-- create one AgentRun per slot
+ |       +-- invoke candidates concurrently
+ |
+ +-- PiDiagramAgentRuntime.generateArtifact()
+ |   +-- isolatedAgentSession
+ |   |   +-- selected OpenAI Codex model
+ |   |   +-- rendered systemPrompt
+ |   |   +-- submit_diagram tool only
+ |   |
+ |   +-- turn 1: generate
+ |   |   +-- contextPrompt
+ |   |   |   +-- DiagramSet name
+ |   |   |   +-- original request
+ |   |   |   +-- runtime instruction
+ |   |   |   +-- selected evidence summaries
+ |   |   |   +-- exact source ranges
+ |   |   |   +-- referenced artifacts
+ |   |   +-- runtime additions
+ |   |       +-- candidate slot / total
+ |   |       +-- readable entity aliases
+ |   |       +-- artifact allowlists
+ |   |
+ |   +-- turn 2: apply reference              [optional]
+ |   |   +-- previous candidate
+ |   |   +-- referenceInstruction
+ |   |   +-- serialized reference diagrams/components
+ |   |   +-- preserve meaning and entity coverage
+ |   |   +-- submit complete replacement
+ |   |
+ |   +-- turn 3: map final artifact            [mandatory]
+ |       +-- final name + numbered ASCII
+ |       +-- allowed CodeEntities
+ |       +-- evidence source ranges
+ |       +-- preserve artifact unchanged
+ |       +-- attach exact visible-text mappings
+ |
+ +-- submissionValidation
+ |   +-- resolve readable aliases -> persisted entity IDs
+ |   +-- require nonblank artifact name
+ |   +-- require 7-bit ASCII
+ |   +-- reject unselected entities
+ |   +-- require final mappings
+ |   +-- verify sourceRangeIndex
+ |   +-- verify visible, in-bounds spans
+ |   +-- reject overlapping spans
+ |   +-- mapping turn may not change name, ASCII, or entity list
+ |
+ +-- persistedOutputs
+     +-- DiagramRecord | DiagramComponentRecord
+     |   +-- promptConfigId
+     |   +-- agentRunId
+     |   +-- derivation lineage
+     |   +-- normalized ASCII
+     |
+     +-- DiagramCodeEntityMapRecord
+     |   +-- artifact hash
+     |   +-- entityId
+     |   +-- sourceRangeIndex
+     |   +-- exact ASCII span
+     |
+     +-- completeBatch()
+         +-- deduplicate accepted candidates
+         +-- persist artifacts and mappings
+         +-- complete AgentRuns
+         +-- update DiagramSet artifact IDs
+         +-- return updated workspace`;
 
-[P] experiment output
-      |
-      v
-[R] ExperimentCatalog.list/artifact
-      |
-      v
-[R] ExperimentViewerPage
-      |
-      +--> [R] DiagramDatasetStore.addItem
-                    |
-                    v
-              [P] curated DiagramDatasetItemRecord
-              artifact snapshot + labels + source coordinates +
-              metrics/model/prompt proven`;
-
-export const MAPPING_POC_GRAPH_A_LINE_COUNT = 70;
+export const MAPPING_POC_GRAPH_A_LINE_COUNT = MAPPING_POC_GRAPH_A.split("\n").length;
 
 const MAPPING_POC_B_SECTION_DEFINITIONS = [
   {
@@ -1063,30 +1176,36 @@ function aNode(
 }
 
 export const MAPPING_POC_A_NODES: readonly MappingPocANode[] = [
-  aNode("a-source-input", "finalized source records", 1, "[P] finalized source DiagramSetRecord + CodeEntitiesSetRecord", 1, 1, [
-    sourceRange("src/domain.ts", 123, 134), sourceRange("src/domain.ts", 151, 173)
+  aNode("a-prompt-stack", "Current LLM prompt stack", 1, "CurrentLLMPromptStack", 1, 183, [
+    sourceRange("src/prompt.ts", 343, 923), sourceRange("server/agentRuntime.ts", 139, 648)
   ]),
-  aNode("a-system-prompt", "SystemPromptTemplateRecord", 2, "[P] SystemPromptTemplateRecord", 2, 2, [sourceRange("src/domain.ts", 319, 319)]),
-  aNode("a-initialize", "ExperimentRunner.initialize", 5, "[R] ExperimentRunner.initialize", 5, 5, [sourceRange("experiments/runner.ts", 137, 172)]),
-  aNode("a-manifest", "ExperimentManifest", 8, "[P] ExperimentManifest", 8, 9, [sourceRange("experiments/types.ts", 17, 28)]),
-  aNode("a-prompt-for", "promptFor(axis, iteration)", 12, "[R] promptFor(axis, iteration)", 12, 15, [sourceRange("experiments/runner.ts", 182, 186)]),
-  aNode("a-generate", "generate", 18, "[R] generate", 18, 19, [sourceRange("experiments/runner.ts", 188, 265)]),
-  aNode("a-sol-runtime", "SolExperimentRuntime.generate", 22, "[R] SolExperimentRuntime.generate", 22, 22, [sourceRange("experiments/runtime.ts", 68, 71)]),
-  aNode("a-pi-runtime", "PiDiagramAgentRuntime.generateArtifact", 24, "[R] PiDiagramAgentRuntime.generateArtifact", 24, 24, [sourceRange("server/agentRuntime.ts", 454, 607)]),
-  aNode("a-model-session", "model session", 27, "[X] model session", 27, 27, [sourceRange("server/agentRuntime.ts", 528, 605)]),
-  aNode("a-generation-record", "GenerationRecord[*]", 30, "[P] GenerationRecord[*]", 30, 31, [sourceRange("experiments/types.ts", 30, 41)]),
-  aNode("a-judge-cross", "judgeCross", 36, "[R] judgeCross", 36, 37, [sourceRange("experiments/runtime.ts", 134, 151)]),
-  aNode("a-judge-within", "judgeWithin", 36, "[R] judgeWithin", 36, 37, [sourceRange("experiments/runtime.ts", 153, 167)]),
-  aNode("a-stored-cross", "StoredCrossJudgment[*]", 40, "[P] StoredCrossJudgment[*]", 40, 40, [sourceRange("experiments/types.ts", 87, 96)]),
-  aNode("a-stored-within", "StoredWithinJudgment[*]", 40, "[P] StoredWithinJudgment[*]", 40, 40, [sourceRange("experiments/types.ts", 98, 107)]),
-  aNode("a-aggregate", "aggregateScores", 44, "[R] aggregateScores", 44, 47, [sourceRange("experiments/metrics.ts", 63, 102)]),
-  aNode("a-analyze", "analyze", 50, "[R] analyze", 50, 50, [sourceRange("experiments/runtime.ts", 169, 190)]),
-  aNode("a-stored-analysis", "StoredAnalysis", 53, "[P] StoredAnalysis", 53, 55, [sourceRange("experiments/types.ts", 135, 143)]),
-  aNode("a-experiment-output", "experiment output", 57, "[P] experiment output", 57, 57, [sourceRange("experiments/types.ts", 17, 143)]),
-  aNode("a-catalog", "ExperimentCatalog.list/artifact", 60, "[R] ExperimentCatalog.list/artifact", 60, 60, [sourceRange("server/experimentCatalog.ts", 41, 185)]),
-  aNode("a-viewer", "ExperimentViewerPage", 63, "[R] ExperimentViewerPage", 63, 63, [sourceRange("src/components/ExperimentViewerPage.tsx", 376, 617)]),
-  aNode("a-dataset-store", "DiagramDatasetStore.addItem", 65, "[R] DiagramDatasetStore.addItem", 65, 65, [sourceRange("server/diagramDatasetStore.ts", 131, 144)]),
-  aNode("a-curated-item", "curated DiagramDatasetItemRecord", 68, "[P] curated DiagramDatasetItemRecord", 68, 70, [sourceRange("src/datasetDomain.ts", 24, 30)])
+  aNode("a-system-templates", "system prompt templates", 5, "system-prompt-templates.json", 5, 21, [
+    sourceRange("src/domain.ts", 319, 319), sourceRange(".diagrams/system-prompt-templates.json", 1, 47)
+  ]),
+  aNode("a-artifact-generation", "artifact generation template", 7, "artifact-generation", 7, 11, [sourceRange(".diagrams/system-prompt-templates.json", 1, 47)]),
+  aNode("a-diagram-reference", "diagram reference template", 13, "diagram-reference", 13, 16, [sourceRange(".diagrams/system-prompt-templates.json", 1, 47)]),
+  aNode("a-diagram-mapping", "diagram mapping template", 18, "diagram-mapping", 18, 21, [sourceRange(".diagrams/system-prompt-templates.json", 1, 47)]),
+  aNode("a-code-entity-templates", "code entity prompt templates", 23, "code-entity-prompt-templates.json", 23, 29, [sourceRange(".diagrams/code-entity-prompt-templates.json", 1, 19)]),
+  aNode("a-diagram-set", "DiagramSet", 31, "DiagramSet", 31, 42, [sourceRange("src/domain.ts", 123, 173)]),
+  aNode("a-code-entity-config", "CodeEntityPromptConfigRecord", 38, "CodeEntityPromptConfigRecord", 38, 42, [sourceRange("server/codeEntityPrompt.ts", 81, 113)]),
+  aNode("a-evidence-collection", "evidence collection", 44, "evidenceCollection", 44, 66, [sourceRange("server/codeEntityPrompt.ts", 9, 113)]),
+  aNode("a-collection-prompt", "code entity collection prompt", 45, "codeEntityCollectionPrompt()", 45, 51, [sourceRange("server/codeEntityPrompt.ts", 9, 48)]),
+  aNode("a-collect-entities", "collect entities agent", 53, "PiDiagramAgentRuntime.collectEntities()", 53, 66, [sourceRange("server/agentRuntime.ts", 368, 495)]),
+  aNode("a-runtime-request", "runtime generation request", 68, "runtimeGenerationRequest", 68, 85, [sourceRange("src/App.tsx", 1083, 1150)]),
+  aNode("a-generate-artifacts", "generation HTTP client", 80, "generateArtifacts()", 80, 85, [sourceRange("src/api.ts", 869, 923), sourceRange("server/http.ts", 1073, 1155)]),
+  aNode("a-application-generate", "application generation orchestration", 87, "DiagramApplication.generate()", 87, 119, [sourceRange("server/application.ts", 2095, 2269)]),
+  aNode("a-create-config", "create generation prompt config", 93, "createGenerationPromptConfig()", 93, 113, [sourceRange("src/prompt.ts", 482, 923)]),
+  aNode("a-generation-config", "GenerationPromptConfigRecord", 100, "GenerationPromptConfigRecord", 100, 113, [sourceRange("src/domain.ts", 237, 287)]),
+  aNode("a-begin-batch", "begin generation batch", 115, "beginBatch()", 115, 119, [sourceRange("server/store.ts", 1439, 1465)]),
+  aNode("a-generate-artifact", "generate artifact agent", 121, "PiDiagramAgentRuntime.generateArtifact()", 121, 152, [sourceRange("server/agentRuntime.ts", 497, 648)]),
+  aNode("a-turn-one", "initial generation turn", 127, "turn 1: generate", 127, 138, [sourceRange("server/agentRuntime.ts", 139, 175)]),
+  aNode("a-turn-two", "reference restyle turn", 140, "turn 2: apply reference", 140, 145, [sourceRange("server/agentRuntime.ts", 139, 175)]),
+  aNode("a-turn-three", "final mapping turn", 147, "turn 3: map final artifact", 147, 152, [sourceRange("server/agentRuntime.ts", 139, 175)]),
+  aNode("a-submission-validation", "submission validation", 154, "submissionValidation", 154, 163, [
+    sourceRange("server/agentRuntime.ts", 511, 570), sourceRange("server/diagramMapping.ts", 7, 70), sourceRange("server/application.ts", 2676, 2690)
+  ]),
+  aNode("a-persisted-outputs", "persisted outputs", 165, "persistedOutputs", 165, 183, [sourceRange("server/application.ts", 2276, 2446)]),
+  aNode("a-complete-batch", "complete generation batch", 178, "completeBatch()", 178, 183, [sourceRange("server/store.ts", 1468, 1496)])
 ];
 
 const A_NODES_BY_ID = new Map(MAPPING_POC_A_NODES.map((node) => [node.id, node]));
@@ -1171,8 +1290,8 @@ export function projectASelectionToB(selectedANodeIds: readonly string[]): Mappi
 }
 
 export const MAPPING_POC_PROGRESSIVE_SELECTIONS = [
-  { aNodeIds: ["a-catalog"], expectedSectionIds: ["catalog"] },
-  { aNodeIds: ["a-catalog", "a-viewer"], expectedSectionIds: ["catalog", "viewer"] },
-  { aNodeIds: ["a-catalog", "a-viewer", "a-dataset-store"], expectedSectionIds: ["catalog", "viewer", "curation"] },
-  { aNodeIds: ["a-catalog", "a-viewer", "a-dataset-store", "a-curated-item"], expectedSectionIds: ["catalog", "viewer", "curation"] }
+  { aNodeIds: ["a-system-templates"], expectedSectionIds: ["inputs"] },
+  { aNodeIds: ["a-system-templates", "a-diagram-set"], expectedSectionIds: ["inputs"] },
+  { aNodeIds: ["a-system-templates", "a-diagram-set", "a-create-config"], expectedSectionIds: ["inputs", "initialize", "prompt-selection", "generation-plan", "prompt-config"] },
+  { aNodeIds: ["a-system-templates", "a-diagram-set", "a-create-config", "a-generate-artifact"], expectedSectionIds: ["inputs", "initialize", "prompt-selection", "generation-plan", "prompt-config", "model-generation"] }
 ] as const;

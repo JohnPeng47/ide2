@@ -1,0 +1,77 @@
++---------------- SOURCE WEB ----------------+       +--------- PROMPT SEED ---------+
+| [P] finalized DiagramSetRecord             |-------| [P] SystemPromptTemplateRecord |
+|     + CodeEntitiesSetRecord                |       +-------------+-----------------+
++-------------------+------------------------+                     |
+                    |                                              |
+                    +------------------+---------------------------+
+                                       |
+                                       v
+                         [R] ExperimentRunner.initialize
+                                       |
+                    +------------------+------------------+
+                    |                                     |
+                    v                                     |
+             [P] ExperimentManifest                       |
+             axes + iterations + fixed model              |
+                    |                                     |
+                    v                                     |
+             [R] promptFor(axis, iteration)               |
+                    |                                     |
+          +---------+----------+                          |
+          |                    |                          |
+          v                    v                          |
+ [P] iteration 1       [P] iteration 2                    |
+ baseline control      prior analysis.revisedPromptBlock <-+
+          |                    |
+          +---------+----------+
+                    |
+                    v
+               [R] generate <------------------------------+
+          values x replicates; mapLimit                    |
+                    |                                      |
+                    v                                      |
+       [R] SolExperimentRuntime.generate                   |
+                    |                                      |
+                    +----> [R] PiDiagramAgentRuntime.generateArtifact
+                                      |                    |
+                                      v                    |
+                               [X] model session           |
+                                      |                    |
+                    +-----------------+--------------------+
+                    |
+                    v
+           [P] GenerationRecord[*]
+ artifact + promptConfigId + diagramMetrics
+          /             |              \
+         /              |               \
+        v               v                v
+[R] judgeCross    [R] aggregateScores    [R] judgeWithin
+blinded order     signal/noise +          same-value spread
+        |         ordering + off-axis            |
+        v         + metric means                 v
+[P] StoredCrossJudgment[*]             [P] StoredWithinJudgment[*]
+        |               \                 /      |
+        +----------------+------>+<-------+-------+
+                                |
+                                v
+                           [R] analyze
+                                |
+                                v
+                       [P] StoredAnalysis
+                         /             \
+                        /               \
+       revised prompt -+                 +-> [P] experiment output
+              |                                   |
+              +-----> promptFor                   v
+                                    [R] ExperimentCatalog.list/artifact
+                                                   |
+                                                   v
+                                     [R] ExperimentViewerPage
+                                                   |
+                                                   v
+                                    [R] DiagramDatasetStore.addItem
+                                                   |
+                                                   v
+                              [P] curated DiagramDatasetItemRecord
+                              artifact snapshot + labels + source
+                              coordinates + metrics/model/prompt provenance

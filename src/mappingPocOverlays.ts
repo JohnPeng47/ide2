@@ -26,237 +26,194 @@ export interface MappingPocOverlayPlacement {
 }
 
 export const MAPPING_POC_A_SECTIONS: readonly MappingPocASection[] = [
-  { id: "setup", label: "Source, manifest, and prompt", startLine: 1, endLine: 15, anchorToken: "[P] finalized source DiagramSetRecord + CodeEntitiesSetRecord" },
-  { id: "generation", label: "Generation pipeline", startLine: 16, endLine: 31, anchorToken: "[R] generate" },
-  { id: "evaluation", label: "Judgment and aggregation", startLine: 32, endLine: 47, anchorToken: "[R] judgeCross" },
-  { id: "analysis", label: "Analysis and feedback", startLine: 48, endLine: 57, anchorToken: "[R] analyze" },
-  { id: "curation", label: "Catalog, viewer, and curation", startLine: 58, endLine: 70, anchorToken: "[R] ExperimentCatalog.list/artifact" }
+  { id: "profiles", label: "Persisted prompt profiles", startLine: 1, endLine: 30, anchorToken: "persistedPromptProfiles" },
+  { id: "collection", label: "Diagram set and evidence collection", startLine: 31, endLine: 67, anchorToken: "evidenceCollection" },
+  { id: "configuration", label: "Request and prompt configuration", startLine: 68, endLine: 120, anchorToken: "runtimeGenerationRequest" },
+  { id: "agent-turns", label: "Agent session and prompt turns", startLine: 121, endLine: 153, anchorToken: "PiDiagramAgentRuntime.generateArtifact()" },
+  { id: "outputs", label: "Validation and persisted outputs", startLine: 154, endLine: 183, anchorToken: "submissionValidation" }
 ];
 
 export const MAPPING_POC_DETAIL_OVERLAYS: readonly MappingPocDetailOverlay[] = [
   {
-    id: "setup",
-    label: "Setup detail",
-    sectionId: "setup",
-    anchorToken: "[P] finalized source DiagramSetRecord + CodeEntitiesSetRecord",
-    ascii: `[P] finalized source DiagramSetRecord + CodeEntitiesSetRecord
-      | readiness="ready"        | status="finalized"
-      +--------------------------+--------------------------+
-                                 |
-                                 v
-[P] SystemPromptTemplateRecord(id="default", version)
-                                 |
-                                 v
-[R] ExperimentRunner.initialize()
-                                 |
-       +-------------------------+-------------------------+
-       |                         |                         |
-       v                         v                         v
-read templates JSON      read experiment.json      resolve sourceRoot
-       |                         |                         |
-       +-------------------------+-------------------------+
-                                 |
-                    +------------+------------+
-                    |                         |
-                    v                         v
-           resume compatible run      create ExperimentManifest
-                    |                 axes + iterations + model
-                    +------------+------------+
-                                 |
-                                 v
-                   atomic write: temp -> rename
-                                 |
-                                 v
-[R] promptFor(axis, iteration)
-       +--> i1: axis.baselinePrompt
-       \`--> i2: prior analysis.revisedPromptBlock`
+    id: "profiles",
+    label: "Prompt profile detail",
+    sectionId: "profiles",
+    anchorToken: "persistedPromptProfiles",
+    ascii: `persistedPromptProfiles
+      |
+      +--> system-prompt-templates.json
+      |       |
+      |       +--> artifact-generation
+      |       |      domain instruction
+      |       |      one artifact
+      |       |      7-bit ASCII
+      |       |      submit_diagram contract
+      |       |
+      |       +--> diagram-reference
+      |       |      complete replacement
+      |       |      preserve source meaning
+      |       |      apply reference grammar
+      |       |
+      |       \`--> diagram-mapping
+      |              artifact unchanged
+      |              exact entity spans
+      |              no overlap
+      |
+      \`--> code-entity-prompt-templates.json
+              |
+              +--> identificationCriteria
+              |      relevant evidence
+              |      exact source ranges
+              |
+              \`--> compactionCriteria
+                     retained/collapsed views
+                     evidence-node mappings`
   },
   {
-    id: "generation",
-    label: "Generation detail",
-    sectionId: "generation",
-    anchorToken: "[R] generate",
-    ascii: `[R] generate
+    id: "collection",
+    label: "Evidence collection detail",
+    sectionId: "collection",
+    anchorToken: "evidenceCollection",
+    ascii: `evidenceCollection
       |
-      +--> source(axis)
-      |      +--> diagram-set.json
-      |      \`--> code-entities.json
-      |                 |
-      |                 v
-      |         assert generation-ready
+      +--> DiagramSet
+      |      name
+      |      initialPrompt
+      |      sourceCheckoutRoot
+      |      codeEntitiesSetId
+      |      readiness
       |
-      +--> values.flatMap(replicates) -> GenerationTask[*]
-      |                                  |
-      |                                  v
-      |                         mapLimit(concurrency)
-      |                                  |
-      |            +---------------------+---------------------+
-      |            |                                           |
-      |            v                                           v
-      |   resume existing record                    renderAxisPrompt(value)
-      |                                                        |
-      |                                                        v
-      |                                  createGenerationPromptConfig()
-      |                                  config + allowed aliases/entities
-      |                                                        |
-      |                                                        v
-      \`--------------------------> SolExperimentRuntime.generate()
-                                                               |
-                                                               v
-                                  PiDiagramAgentRuntime.generateArtifact()
-                                                               |
-                                      +------------------------+----------------+
-                                      |                                         |
-                                      v                                         v
-                             createAgentSession()                    submit_diagram tool
-                                      |                                         |
-                                      +------------------------+----------------+
-                                                               |
-                                                               v
-                                                       session.prompt()
-                                                               |
-                                                               v
-                                                   GeneratedArtifactDraft
-                                                               |
-                            normalize -> ASCII gate -> entity gate -> metrics
-                                                               |
-                                                               v
-                                                     GenerationRecord JSON`
+      +--> createCodeEntityPromptConfig()
+      |      profile + revision
+      |      identification criteria
+      |      compaction criteria
+      |      rendered context
+      |
+      +--> codeEntityCollectionPrompt()
+      |      original request
+      |      expected entity fields
+      |      submit/retry instruction
+      |
+      \`--> PiDiagramAgentRuntime.collectEntities()
+             |
+             +--> corpus inspection tools
+             +--> fixed collection system prompt
+             +--> rendered context user prompt
+             +--> submit_code_entities
+             |
+             \`--> validated CodeEntitiesSetRecord
+                    exact files and ranges
+                    status="finalized"`
   },
   {
-    id: "evaluation",
-    label: "Evaluation detail",
-    sectionId: "evaluation",
-    anchorToken: "[R] judgeCross",
-    ascii: `[R] judgeCross                         [R] judgeWithin
-      |                                               |
-      v                                               v
-build value windows                         group same-value replicates
-i1: [0,.5,1]                                [r1,r2,r3]
-i2: [0,.5,1] + [.25,.5,.75]                          |
-      |                                               |
-      v                                               v
-rotate blinded labels A/B/C                rotate blinded labels A/B/C
-      |                                               |
-      +-----------------------+-----------------------+
-                              |
-                              v
-               SolExperimentRuntime.structured()
-                              |
-       +----------------------+----------------------+
-       |                      |                      |
-       v                      v                      v
-fixed model/auth       structured submit tool    agent session
-       |                      |                      |
-       +----------------------+----------------------+
-                              |
-                              v
-                 CrossJudgment / WithinJudgment
-                              |
-             +----------------+----------------+
-             |                                 |
-             v                                 v
-   validate low-to-high order             measure spread
-             |                                 |
-             v                                 v
- StoredCrossJudgment[*]             StoredWithinJudgment[*]
-             +----------------+----------------+
-                              |
-                              v
-                     aggregateScores()
-                              |
-       signal - within noise - off-axis penalty
-                              |
-                              v
-                        AggregateScore`
+    id: "configuration",
+    label: "Generation configuration detail",
+    sectionId: "configuration",
+    anchorToken: "runtimeGenerationRequest",
+    ascii: `runtimeGenerationRequest
+      |
+      +--> instruction + selectedCodeEntityIds[]
+      +--> count + outputKind + viewKind + modelId
+      +--> promptProfileId
+      +--> references + referenceInstruction
+      \`--> derivationCorrection
+      |
+      v
+generateArtifacts()
+      |
+      v
+generation HTTP route
+      parse / validate / stream NDJSON
+      |
+      v
+DiagramApplication.generate()
+      |
+      +--> finalized evidence gate
+      +--> load entities and references
+      +--> createGenerationPromptConfig()
+      |       resolve templates
+      |       resolve mentions
+      |       create readable aliases
+      |       render system/context/reference/mapping prompts
+      |
+      +--> persist immutable GenerationPromptConfigRecord
+      |
+      \`--> beginBatch()
+             create AgentRun per slot
+             invoke candidates concurrently`
   },
   {
-    id: "analysis",
-    label: "Analysis detail",
-    sectionId: "analysis",
-    anchorToken: "[R] analyze",
-    ascii: `[R] analyze
+    id: "agent-turns",
+    label: "Agent prompt-turn detail",
+    sectionId: "agent-turns",
+    anchorToken: "PiDiagramAgentRuntime.generateArtifact()",
+    ascii: `PiDiagramAgentRuntime.generateArtifact()
       |
-      +--> read existing analysis -> resume
-      |
-      +--> persist aggregate.json
-      |
-      +--> iteration 2 reads iteration 1 aggregate
-      |
-      +--> judgeSummary(cross + within rationale)
+      +--> resolve selected model
+      +--> load rendered systemPrompt
+      +--> expose submit_diagram only
+      \`--> create isolated in-memory session
       |
       v
-SolExperimentRuntime.analyze()
+turn 1: generate
+      contextPrompt
+      slot + candidate total
+      readable aliases
+      entity/artifact allowlists
       |
       v
-structured prompt-analysis session
+turn 2: apply reference               [optional]
+      previous candidate
+      reference instruction/context
+      complete replacement required
       |
       v
-[P] PromptAnalysis
-    hypothesis / evidence / risks
-    revisedPromptBlock with literal {{value}}
+turn 3: map final artifact             [mandatory]
+      numbered final ASCII
+      allowed CodeEntities
+      exact evidence ranges
+      artifact must remain unchanged
       |
       v
-validate placeholder + 180/240 word limit
-      |
-      v
-[P] StoredAnalysis -> analysis.json
-      |
-      +-------------------------> promptFor(iteration 2)
-      |
-      v
-writeReport()
-      |
-      v
-REPORT.md + completed ExperimentManifest`
+submit_diagram
+      name + ASCII + entity IDs + mappings`
   },
   {
-    id: "curation",
-    label: "Curation detail",
-    sectionId: "curation",
-    anchorToken: "[R] ExperimentCatalog.list/artifact",
-    ascii: `[R] ExperimentCatalog.list/artifact
+    id: "outputs",
+    label: "Validation and output detail",
+    sectionId: "outputs",
+    anchorToken: "submissionValidation",
+    ascii: `submissionValidation
       |
-      +--> directories()
-      |      filter safe catalog IDs
+      +--> resolve aliases to persisted entity IDs
+      +--> require nonblank name
+      +--> require 7-bit ASCII
+      +--> reject entities outside allowlist
+      +--> require final mappings
+      +--> verify sourceRangeIndex
+      +--> verify visible in-bounds spans
+      +--> reject overlapping mappings
+      \`--> mapping turn cannot change artifact
       |
-      +--> summarize(catalogId)
-      |      +--> manifest + project
-      |      +--> axes + iteration analyses
-      |      \`--> generation summaries
+      v
+persistedOutputs
       |
-      \`--> artifact(axis, iteration, value, replicate)
-             validate coordinates -> read GenerationRecord
-                              |
-                              v
-[P] ExperimentSummary + ExperimentDiagramArtifact
-                              |
-                              v
-[R] ExperimentViewerPage
-      select experiment / axis / iteration / value / replicate
-                              |
-                              v
-                     DiagramCard + inspector
-                              |
-                              v
-              POST /diagram-datasets/:id/items
-                              |
-             +----------------+----------------+
-             |                                 |
-             v                                 v
- validate source coordinates          catalog.artifact()
-             |                                 |
-             +----------------+----------------+
-                              |
-                              v
-[R] DiagramDatasetStore.addItem()
-      snapshot ASCII / entities / metrics / model / prompt
-                              |
-                              v
-[P] DiagramDatasetItemRecord + labels + provenance
-                              |
-                              v
-          list() / updateLabels() / removeItem()`
+      +--> DiagramRecord | DiagramComponentRecord
+      |      normalized ASCII
+      |      promptConfigId
+      |      agentRunId
+      |      derivation lineage
+      |
+      +--> DiagramCodeEntityMapRecord
+      |      artifact hash
+      |      entity + source range
+      |      exact visible span
+      |
+      \`--> completeBatch()
+             deduplicate candidates
+             persist artifacts + maps + runs
+             update DiagramSet IDs
+             return workspace`
   }
 ];
 

@@ -1,0 +1,81 @@
++==============================================================================+
+| INPUT SUBNET                                                                 |
+|                                                                              |
+| [P] finalized source ----+       +---- [P] SystemPromptTemplateRecord        |
+| DiagramSetRecord +       |       |                                           |
+| CodeEntitiesSetRecord    v       v                                           |
+|                  [R] ExperimentRunner.initialize                             |
+|                              |                                               |
+|                              +----> [P] ExperimentManifest                   |
++==============================|===============================================+
+                               | control route
+                               v
++==============================|===============================================+
+| ITERATION ROUTER             |                                               |
+|                    [R] promptFor(axis, iteration)                             |
+|                         /                   \                                 |
+|            iteration 1 /                     \ iteration 2                    |
+|                       v                       v                               |
+|             baseline control     prior analysis.revisedPromptBlock           |
+|                       \                       /                               |
+|                        +----------+----------+                                |
++===================================|==========================================+
+                                    v
++===================================|==========================================+
+| GENERATION SUBNET                [R] generate                                |
+|                          values x replicates                                 |
+|                          bounded by mapLimit                                 |
+|                                    |                                         |
+|                                    v                                         |
+|                     [R] SolExperimentRuntime.generate                        |
+|                                    |                                         |
+|                                    v                                         |
+|               [R] PiDiagramAgentRuntime.generateArtifact                     |
+|                                    |                                         |
+|                                    v                                         |
+|                           [X] model session                                   |
+|                                    |                                         |
+|                                    v                                         |
+|                       [P] GenerationRecord[*]                                 |
+|                artifact + promptConfigId + diagramMetrics                    |
++=====================+===============================+=========================+
+                      |                               |
+        cross route   v                               v   within route
++=====================|===============================|=========================+
+| EVALUATION MESH     |                               |                         |
+|             [R] judgeCross                  [R] judgeWithin                   |
+|        blinded low/mid/high order       same-value stochastic spread          |
+|                     |                               |                         |
+|                     v                               v                         |
+|       [P] StoredCrossJudgment[*]       [P] StoredWithinJudgment[*]            |
+|                     |                               |                         |
+|                     +---------------+---------------+                         |
+|                                     |                                         |
+|                                     v                                         |
+|                           [R] aggregateScores                                 |
+|                  signal/noise + order + off-axis + means                      |
+|                                     |                                         |
+|                                     v                                         |
+|                                [R] analyze                                    |
+|                                     |                                         |
+|                                     v                                         |
+|                           [P] StoredAnalysis                                  |
++=====================================|=========================================+
+                                      |
+                  revised prompt route+-------------------------> ITERATION ROUTER
+
++==============================================================================+
+| ARTIFACT ROUTE                                                               |
+|                                                                              |
+| [P] experiment output --> [R] ExperimentCatalog.list/artifact                |
+|                                      |                                       |
+|                                      v                                       |
+|                         [R] ExperimentViewerPage                              |
+|                                      |                                       |
+|                                      v                                       |
+|                     [R] DiagramDatasetStore.addItem                           |
+|                                      |                                       |
+|                                      v                                       |
+|                  [P] curated DiagramDatasetItemRecord                        |
+|           artifact snapshot + labels + source coordinates + provenance       |
++==============================================================================+
