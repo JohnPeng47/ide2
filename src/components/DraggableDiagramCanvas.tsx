@@ -1,5 +1,6 @@
 import {
   useCallback,
+  useEffect,
   useLayoutEffect,
   useRef,
   type KeyboardEvent,
@@ -45,6 +46,8 @@ export function DraggableDiagramCanvas(props: {
   enabled: boolean;
   resetKey: string;
   className?: string;
+  leftInset?: number;
+  focusBox?: { id: string; serial: number };
 }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const surfaceRef = useRef<HTMLDivElement>(null);
@@ -79,12 +82,15 @@ export function DraggableDiagramCanvas(props: {
     const surface = surfaceRef.current;
     if (!viewport || !surface || !props.enabled) return;
     const viewportSize = { width: viewport.clientWidth, height: viewport.clientHeight };
+    if (viewportSize.width <= 0 || viewportSize.height <= 0) return;
     viewportSizeRef.current = viewportSize;
-    applyTransform(centeredCanvasTransform(viewportSize, {
+    const inset = Math.min(props.leftInset ?? 0, viewportSize.width / 2);
+    const centered = centeredCanvasTransform({ ...viewportSize, width: viewportSize.width - inset }, {
       width: surface.offsetWidth,
       height: surface.offsetHeight
-    }), animate);
-  }, [applyTransform, props.enabled]);
+    });
+    applyTransform({ ...centered, offset: { ...centered.offset, x: centered.offset.x + inset } }, animate);
+  }, [applyTransform, props.enabled, props.leftInset]);
 
   useLayoutEffect(() => {
     pointersRef.current.clear();
@@ -108,6 +114,8 @@ export function DraggableDiagramCanvas(props: {
     const observer = new ResizeObserver(() => {
       const previous = viewportSizeRef.current;
       const next = { width: viewport.clientWidth, height: viewport.clientHeight };
+      // Sidebar navigation hides mounted diagrams. Keep their last visible geometry.
+      if (next.width <= 0 || next.height <= 0) return;
       viewportSizeRef.current = next;
       if (previous.width <= 0 || previous.height <= 0
         || (previous.width === next.width && previous.height === next.height)) return;
@@ -134,6 +142,24 @@ export function DraggableDiagramCanvas(props: {
     viewport.addEventListener("wheel", onWheel, { passive: false });
     return () => viewport.removeEventListener("wheel", onWheel);
   }, [applyTransform, props.enabled]);
+
+  useEffect(() => {
+    if (!props.focusBox) return;
+    let innerFrame = 0;
+    const frame = requestAnimationFrame(() => { innerFrame = requestAnimationFrame(() => {
+      const viewport = viewportRef.current;
+      const target = Array.from(surfaceRef.current?.querySelectorAll<HTMLElement>("[data-grid-box]") ?? [])
+        .find((element) => element.dataset.gridBox === props.focusBox?.id);
+      if (!viewport || !target) return;
+      const bounds = viewport.getBoundingClientRect();
+      const box = target.getBoundingClientRect();
+      const inset = Math.min(props.leftInset ?? 0, bounds.width / 2);
+      const current = transformRef.current;
+      applyTransform({ ...current, offset: { x: current.offset.x + (bounds.width + inset) / 2 - (box.left - bounds.left + box.width / 2),
+        y: current.offset.y + Math.min(bounds.height / 2, box.height / 2 + 80) - (box.top - bounds.top + box.height / 2) } }, true);
+    }); });
+    return () => { cancelAnimationFrame(frame); cancelAnimationFrame(innerFrame); };
+  }, [props.focusBox, props.leftInset, applyTransform]);
 
   const beginPinch = (points: Map<number, CanvasPoint>) => {
     const [first, second] = [...points.values()];

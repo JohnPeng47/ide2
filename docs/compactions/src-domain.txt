@@ -1,0 +1,662 @@
+src/domain.ts
++-- import type { SpatialProgressState } from "./agentWork"
++-- import type { RepresentationGraphRecord } from "./representationGraph"
++-- import type { HighlightRecordV2 } from "./highlights"
++-- export const SCHEMA_VERSION = 1 as const
++-- export const GLOBAL_IMPORTS_DIAGRAM_SET_ID = "global-imports"
++-- export type CodeEntityCategory = "state" | "interface-data-struct" | "operation"
++-- export type SourceCompactionLevel = "low" | "medium" | "high"
++-- export type DiagramSetReadiness = "collecting" | "ready" | "failed"
++-- export type GenerationOutputKind = "diagram" | "diagram-component"
++-- export type DiagramViewKind = "diagram" | "call-graph" | "dir-view"
++-- export type GenerationTargetKind = DiagramViewKind | "diagram-component"
++-- export type CodeEntityPromptKind = "code-entity-identification" | "code-entity-compaction"
++-- export const DEFAULT_GENERATION_COUNT = 3
++-- export const DIAGRAM_MODELS = [ { id: "gpt-5.6-terra", label: "GPT-5.6 Terra" }, { id: "gpt-5.6-sol", label: "GPT-5.6 Sol" } ] as const
++-- export type DiagramModelId = typeof DIAGRAM_MODELS[number]["id"]
++-- export const DEFAULT_DIAGRAM_MODEL_ID: DiagramModelId = "gpt-5.6-sol"
++-- export type GenerationPromptProfileId = string
++-- export const DEFAULT_GENERATION_PROMPT_PROFILE_ID: GenerationPromptProfileId = "default"
++-- export type CodeEntityPromptProfileId = string
++-- export const DEFAULT_CODE_ENTITY_PROMPT_PROFILE_ID: CodeEntityPromptProfileId = "default-code-entities"
++-- export function isDiagramModelId(value: unknown): value is DiagramModelId
+|   \-- return DIAGRAM_MODELS.some(model.id === value)
++-- export function isGenerationPromptProfileId(value: unknown): value is GenerationPromptProfileId
+|   \-- return string matching /^[a-z0-9][a-z0-9-]*$/
++-- export function isDiagramViewKind(value: unknown): value is DiagramViewKind
+|   \-- return diagram | call-graph | dir-view membership
++-- export function isGenerationTargetKind(value: unknown): value is GenerationTargetKind
+|   \-- return isDiagramViewKind(value) || value === "diagram-component"
++-- export function outputKindForTarget(targetKind: GenerationTargetKind): GenerationOutputKind
+|   \-- diagram-component target -> diagram-component; all views -> diagram
++-- export type AgentRunKind = | "collect-entities" | "generate-one-diagram" | "generate-one-diagram-component" | "map-code-entities" | "edit-artifact"
++-- export type AgentRunStatus = | "queued" | "reading-context" | "generating" | "validating" | "complete" | "failed" | "interrupted"
++-- export type GenerationBatchStatus = "queued" | "running" | "validating" | "complete" | "failed"
++-- export interface ArtifactOrigin
+|   +-- projectId: string
+|   \-- diagramSetId: string
++-- export interface CodeEntityOrigin extends ArtifactOrigin
+|   \-- codeEntitiesSetId: string
++-- export type CompactedSourceSection = union
+|   +-- variant "source"
+|   |   +-- kind: "source"
+|   |   +-- startLine: number
+|   |   \-- endLine: number
+|   \-- variant "collapsed-comment"
+|       +-- kind: "collapsed-comment"
+|       +-- startLine: number
+|       +-- endLine: number
+|       +-- comment: string
+|       \-- nodes?: CompactedSourceNode[]
++-- export interface CompactedSourceNode
+|   +-- graphLine: number
+|   +-- startLine: number
+|   \-- endLine: number
++-- export interface CompactedSource
+|   +-- level: SourceCompactionLevel
+|   \-- sections: CompactedSourceSection[]
++-- export interface SourceRange
+|   +-- id?: string
+|   +-- path: string
+|   +-- startLine: number
+|   +-- endLine: number
+|   +-- symbol?: string
+|   +-- originalLines?: string[]
+|   \-- compactedSource?: CompactedSource
++-- export interface CodeEntityRecord
+|   +-- id: string
+|   +-- origin?: CodeEntityOrigin
+|   +-- handle: string
+|   +-- label: string
+|   +-- category: CodeEntityCategory
+|   +-- summary: string
+|   \-- sourceRanges: SourceRange[]
++-- export interface CodeEntitiesSetRecord
+|   +-- schemaVersion: typeof SCHEMA_VERSION
+|   +-- id: string
+|   +-- diagramSetId: string
+|   +-- revision: number
+|   +-- status: "collecting" | "finalized" | "failed"
+|   +-- entities: CodeEntityRecord[]
+|   +-- promptConfigId?: string
+|   +-- finalizedAt?: string
+|   \-- error?: string
++-- export interface ProjectRecord
+|   +-- schemaVersion: typeof SCHEMA_VERSION
+|   +-- id: string
+|   +-- name: string
+|   +-- repositoryIdentity: string
+|   +-- canonicalRepoRoot: string
+|   +-- domainProfileId: import("./domainProfile").DomainProfileId
+|   +-- corpus: import("./domainProfile").CorpusBinding
+|   +-- diagramSetIds: string[]
+|   +-- createdAt: string
+|   \-- updatedAt: string
++-- export interface DiagramSetRecord
+|   +-- schemaVersion: typeof SCHEMA_VERSION
+|   +-- id: string
+|   +-- projectId: string
+|   +-- name: string
+|   +-- initialPrompt: string
+|   +-- sourceCheckoutRoot: string
+|   +-- gitRevision?: string
+|   +-- codeEntitiesSetId: string
+|   +-- featuredViewIds: Partial<Record<DiagramViewKind, string>>
+|   +-- diagramIds: string[]
+|   +-- diagramComponentIds: string[]
+|   +-- generationBatchIds: string[]
+|   +-- agentRunIds: string[]
+|   +-- editSessionIds: string[]
+|   +-- readiness: DiagramSetReadiness
+|   +-- creationMode?: "generate" | "materialized"
+|   +-- createdAt: string
+|   +-- updatedAt: string
+|   \-- error?: string
++-- export type GenerationSessionRecord = DiagramSetRecord
++-- export interface RepositoryEntry
+|   +-- path: string
+|   +-- name: string
+|   \-- kind: "directory" | "file"
++-- export interface RepositoryDirectoryListing
+|   +-- directory: string
+|   \-- entries: RepositoryEntry[]
++-- export interface ImportedArtifactLibraryRecord
+|   +-- schemaVersion: typeof SCHEMA_VERSION
+|   +-- diagramIds: string[]
+|   +-- diagramComponentIds: string[]
+|   +-- codeEntityIds?: string[]
+|   +-- codeEntityMapArtifactIds?: string[]
+|   +-- createdAt: string
+|   \-- updatedAt: string
++-- export type ReferenceKind = "code-entity" | "diagram" | "diagram-component"
++-- export interface ReferenceIdentity
+|   +-- kind: ReferenceKind
+|   +-- targetId: string
+|   +-- origin?: CodeEntityOrigin | ArtifactOrigin
+|   +-- sourceRangeId?: string
+|   \-- sourceRangeIndex?: number
++-- export interface PromptReference extends ReferenceIdentity
+|   +-- token: string
+|   \-- handle: string
++-- export interface GenerationPromptReference extends PromptReference
+|   \-- promptRepresentation: string
++-- export interface GenerationReferenceSelection extends PromptReference
+|   \-- included: boolean
++-- export interface GenerationDerivationRecord
+|   +-- sourceArtifactKind: GenerationOutputKind
+|   +-- sourceArtifactId: string
+|   +-- sourceArtifactOrigin?: ArtifactOrigin
+|   \-- promptCorrection: string
++-- export interface GenerationPromptConfigRecord
+|   +-- schemaVersion: typeof SCHEMA_VERSION
+|   +-- id: string
+|   +-- diagramSetId: string
+|   +-- domainProfileId?: "source-code" | "document"
+|   +-- outputKind: GenerationOutputKind
+|   +-- viewKind?: DiagramViewKind
+|   +-- modelId: DiagramModelId
+|   +-- instruction: string
+|   +-- selectedCodeEntityIds: string[]
+|   +-- references: GenerationPromptReference[]
+|   +-- omittedReferences?: PromptReference[]
+|   +-- referencePrompt?: object
+|   |   +-- templateVersion: 1
+|   |   +-- promptName?: string
+|   |   +-- instruction: string
+|   |   +-- references: GenerationPromptReference[]
+|   |   +-- omittedReferences?: PromptReference[]
+|   |   \-- rendered: string
+|   +-- mappingPrompt: object
+|   |   +-- templateVersion: 1
+|   |   +-- promptName?: string
+|   |   \-- template: string
+|   +-- derivation?: GenerationDerivationRecord
+|   +-- contextPrompt: object
+|   |   +-- templateVersion: 1
+|   |   \-- rendered: string
+|   +-- systemPrompt: object
+|   |   +-- templateId: "artifact-generation"
+|   |   +-- templateVersion: 1
+|   |   +-- profileId: GenerationPromptProfileId
+|   |   +-- profileVersion: number
+|   |   +-- promptName?: string
+|   |   +-- references?: GenerationPromptReference[]
+|   |   \-- rendered: string
+|   \-- createdAt: string
++-- export interface PromptTemplateRecord<TPromptName extends string, TProfileId extends string = string>
+|   +-- schemaVersion: typeof SCHEMA_VERSION
+|   +-- id: TProfileId
+|   +-- label: string
+|   +-- description: string
+|   +-- builtIn: boolean
+|   +-- version: number
+|   +-- prompts: Record<TPromptName, string>
+|   +-- createdAt: string
+|   \-- updatedAt: string
++-- export interface NamedPromptTemplate
+|   +-- template: string
+|   \-- description?: string
++-- export interface PromptTemplateSetRecord<TProfileId extends string = string>
+|   +-- schemaVersion: typeof SCHEMA_VERSION
+|   +-- id: TProfileId
+|   +-- label: string
+|   +-- description: string
+|   +-- builtIn: boolean
+|   +-- version: number
+|   +-- prompts: Record<string, NamedPromptTemplate>
+|   +-- createdAt: string
+|   \-- updatedAt: string
++-- export type SystemPromptTemplateRecord = PromptTemplateSetRecord<GenerationPromptProfileId>
++-- export type CodeEntityPromptTemplateRecord = PromptTemplateRecord< CodeEntityPromptKind, CodeEntityPromptProfileId >
++-- export interface CodeEntityPromptConfigRecord
+|   +-- schemaVersion: typeof SCHEMA_VERSION
+|   +-- id: string
+|   +-- diagramSetId: string
+|   +-- template: object
+|   |   +-- profileId: CodeEntityPromptProfileId
+|   |   \-- profileVersion: number
+|   +-- identificationCriteria: object
+|   |   \-- rendered: string
+|   +-- compactionCriteria: object
+|   |   \-- rendered: string
+|   +-- contextPrompt: object
+|   |   +-- templateVersion: 1
+|   |   \-- rendered: string
+|   \-- createdAt: string
++-- export interface DiagramSelectionBounds
+|   +-- startLine: number
+|   +-- endLine: number
+|   +-- startColumn: number
+|   \-- endColumn: number
++-- export interface DiagramComponentRecord
+|   +-- schemaVersion: typeof SCHEMA_VERSION
+|   +-- id: string
+|   +-- recordOrigin?: ArtifactOrigin
+|   +-- diagramSetId: string
+|   +-- handle: string
+|   +-- name: string
+|   +-- ascii: string
+|   +-- representationKind?: "tree" | "diagram"
+|   +-- codeEntityIds: string[]
+|   +-- origin: "selection" | "generated" | "imported" | "edited" | "materialized"
+|   +-- sourceDiagramId?: string
+|   +-- sourceDiagramComponentId?: string
+|   +-- selectionBounds?: DiagramSelectionBounds
+|   +-- producedByRunId?: string
+|   +-- generationPromptConfigId?: string
+|   +-- editSessionId?: string
+|   +-- derivedFromDiagramIds: string[]
+|   +-- derivedFromDiagramComponentIds: string[]
+|   +-- createdAt: string
+|   \-- archivedAt?: string
++-- export function isDiagramComponentArchived(component: DiagramComponentRecord): boolean
+|   \-- return component.archivedAt !== undefined
++-- export interface DiagramRecord
+|   +-- schemaVersion: typeof SCHEMA_VERSION
+|   +-- id: string
+|   +-- recordOrigin?: ArtifactOrigin
+|   +-- diagramSetId: string
+|   +-- viewKind: DiagramViewKind
+|   +-- basedOnDiagramId?: string
+|   +-- handle: string
+|   +-- name: string
+|   +-- ascii: string
+|   +-- representationKind?: "tree" | "diagram"
+|   +-- codeEntityIds: string[]
+|   +-- origin: "generated" | "imported" | "edited" | "materialized"
+|   +-- producedByRunId?: string
+|   +-- generationPromptConfigId?: string
+|   +-- editSessionId?: string
+|   +-- derivedFromDiagramIds: string[]
+|   +-- createdAt: string
+|   \-- archivedAt?: string
++-- export function isDiagramArchived(diagram: DiagramRecord): boolean
+|   \-- return diagram.archivedAt !== undefined
++-- export interface DiagramElementMapping
+|   +-- id: string
+|   +-- entityId: string
+|   +-- sourceRangeId?: string
+|   +-- sourceRangeIndex: number
+|   +-- line: number
+|   +-- startColumn: number
+|   \-- endColumn: number
++-- export interface DiagramCodeEntityMapRecord
+|   +-- schemaVersion: typeof SCHEMA_VERSION
+|   +-- diagramSetId: string
+|   +-- artifactKind: GenerationOutputKind
+|   +-- artifactId: string
+|   +-- asciiSha256: string
+|   +-- mappings: DiagramElementMapping[]
+|   +-- producedByRunId?: string
+|   +-- origin?: "agent" | "materialized"
+|   \-- createdAt: string
++-- export interface DiagramHighlightLineageNode
+|   +-- graphLine: number
+|   \-- text: string
++-- export interface DiagramHighlightTranscript
+|   +-- path: string
+|   +-- startLine: number
+|   +-- endLine: number
+|   \-- lines: string[]
++-- export interface DiagramHighlightRecord
+|   +-- schemaVersion: typeof SCHEMA_VERSION
+|   +-- id: string
+|   +-- projectId: string
+|   +-- diagramSetId: string
+|   +-- artifactKind: GenerationOutputKind
+|   +-- artifactId: string
+|   +-- artifactName: string
+|   +-- mappingId: string
+|   +-- entityId: string
+|   +-- sourceRangeId?: string
+|   +-- sourceRangeIndex: number
+|   +-- graphLine: number
+|   +-- nodeText: string
+|   +-- lineage: DiagramHighlightLineageNode[]
+|   +-- transcript: DiagramHighlightTranscript
+|   \-- createdAt: string
++-- export interface CodeEntityMappingTarget
+|   +-- artifactKind: GenerationOutputKind
+|   \-- artifactId: string
++-- export interface CodeEntityMappingResult extends CodeEntityMappingTarget
+|   +-- status: "complete" | "failed"
+|   +-- mappingCount?: number
+|   \-- error?: string
++-- export interface GenerationBatchRecord
+|   +-- schemaVersion: typeof SCHEMA_VERSION
+|   +-- id: string
+|   +-- diagramSetId: string
+|   +-- requestedCount: number
+|   +-- promptConfigId: string
+|   +-- codeEntitiesRevision: number
+|   +-- childRunIds: string[]
+|   +-- outputDiagramIds: string[]
+|   +-- outputDiagramComponentIds: string[]
+|   +-- diagramCandidateBatchId?: string
+|   +-- status: GenerationBatchStatus
+|   +-- createdAt: string
+|   +-- updatedAt: string
+|   \-- error?: string
++-- export interface DiagramCandidateBatchRecord
+|   +-- schemaVersion: typeof SCHEMA_VERSION
+|   +-- id: string
+|   +-- diagramSetId: string
+|   +-- generationBatchId: string
+|   +-- diagramIds: string[]
+|   +-- rankings: Record<string, number>
+|   +-- createdAt: string
+|   \-- updatedAt: string
++-- export interface AgentRunRecord
+|   +-- schemaVersion: typeof SCHEMA_VERSION
+|   +-- id: string
+|   +-- diagramSetId: string
+|   +-- kind: AgentRunKind
+|   +-- status: AgentRunStatus
+|   +-- statusMessage: string
+|   +-- model?: string
+|   +-- sessionId?: string
+|   +-- generationBatchId?: string
+|   +-- outputSlot?: number
+|   +-- codeEntitiesRevision: number
+|   +-- outputCodeEntityIds: string[]
+|   +-- outputDiagramId?: string
+|   +-- outputDiagramComponentId?: string
+|   +-- startedAt: string
+|   +-- updatedAt: string
+|   +-- completedAt?: string
+|   \-- error?: string
++-- export interface TextPatch
+|   +-- start: number
+|   +-- deletedText: string
+|   \-- insertedText: string
++-- export interface EditOperationRecord
+|   +-- id: string
+|   +-- kind: "manual" | "llm"
+|   +-- subtype?: "marker"
+|   +-- label: string
+|   +-- patch: TextPatch
+|   +-- instruction?: string
+|   +-- modelId?: DiagramModelId
+|   +-- markerChar?: string
+|   +-- markerToken?: string
+|   +-- replacedChar?: string
+|   +-- line?: number
+|   +-- column?: number
+|   +-- agentRunId?: string
+|   \-- createdAt: string
++-- export interface EditSessionRecord
+|   +-- schemaVersion: typeof SCHEMA_VERSION
+|   +-- id: string
+|   +-- diagramSetId: string
+|   +-- sourceArtifactKind: GenerationOutputKind
+|   +-- sourceArtifactId: string
+|   +-- sourceHandle: string
+|   +-- sourceName: string
+|   +-- baseAscii: string
+|   +-- workingAscii: string
+|   +-- codeEntityIds: string[]
+|   +-- operations: EditOperationRecord[]
+|   +-- operationCursor: number
+|   +-- revision: number
+|   +-- status: "active" | "committed" | "discarded"
+|   +-- outputArtifactId?: string
+|   +-- createdAt: string
+|   \-- updatedAt: string
++-- export type PlanStatus = "draft" | "active" | "complete"
++-- export interface PlanAffectedCodeEntity
+|   +-- id: string
+|   \-- sourceRanges: string[]
++-- export interface PlanDiagramCandidate
+|   +-- diagramId: string
+|   +-- decision: "include" | "exclude"
+|   \-- reason: string
++-- export interface PlanDiagramSelection
+|   +-- availability: "recorded" | "unavailable"
+|   +-- affectedCodeEntities: PlanAffectedCodeEntity[]
+|   +-- diagramCandidates: PlanDiagramCandidate[]
+|   \-- selectedDiagramIds: string[]
++-- export interface PlanGenerationMetadata
+|   +-- availability: "recorded" | "unavailable"
+|   +-- prompt?: string
+|   +-- contextDiagramIds: string[]
+|   \-- agentRunId?: string
++-- export interface PlanMigrationMetadata
+|   +-- sourceFormat: "legacy-inline-plan"
+|   +-- migratedAt: string
+|   \-- missingMetadata: Array<"diagram-selection" | "generation-prompt" | "generation-context">
++-- export interface PlanModifiedDiagramChange
+|   +-- id: string
+|   +-- kind: "diagram-modified"
+|   +-- mode: "partial" | "complete"
+|   +-- diagramSetId: string
+|   +-- diagramId: string
+|   +-- label: string
+|   +-- baseDiagram: DiagramRecord
+|   +-- baseAsciiSha256: string
+|   +-- patch: TextPatch
+|   +-- outputAscii: string
+|   +-- semanticDiff?: import("./partialDiff").PartialDiffDefinition
+|   \-- generation?: PlanGenerationMetadata
++-- export interface PlanAddedDiagramDraft
+|   +-- diagramSetId: string
+|   +-- viewKind: DiagramViewKind
+|   +-- representationKind: "tree" | "diagram"
+|   +-- handle: string
+|   +-- name: string
+|   +-- ascii: string
+|   \-- codeEntityIds: string[]
++-- export interface PlanAddedDiagramChange
+|   +-- id: string
+|   +-- kind: "diagram-added"
+|   +-- label: string
+|   +-- draft: PlanAddedDiagramDraft
+|   \-- generation?: PlanGenerationMetadata
++-- export interface PlanCodeEntityCompactionChange
+|   +-- id: string
+|   +-- kind: "code-entity-compaction"
+|   +-- diagramSetId: string
+|   +-- codeEntityId: string
+|   +-- sourceRangeId: string
+|   +-- label: string
+|   +-- baseEntity: CodeEntityRecord
+|   +-- baseCompactedSource?: CompactedSource
+|   \-- compactedSource: CompactedSource
++-- export type PlanChange = | PlanModifiedDiagramChange | PlanAddedDiagramChange | PlanCodeEntityCompactionChange
++-- export interface PlanRecord
+|   +-- schemaVersion: typeof SCHEMA_VERSION
+|   +-- id: string
+|   +-- projectId: string
+|   +-- title: string
+|   +-- status: PlanStatus
+|   +-- markdown: string
+|   +-- selection: PlanDiagramSelection
+|   +-- changes: PlanChange[]
+|   +-- migration?: PlanMigrationMetadata
+|   +-- createdAt: string
+|   \-- updatedAt: string
++-- export interface WorkspaceSnapshot
+|   +-- project: ProjectRecord | null
+|   +-- corpusCompactions?: import("./projectCatalog").ProjectCorpusCompactionCatalogRecord
+|   +-- representationCatalog?: import("./projectCatalog").ProjectRepresentationCatalogRecord
+|   +-- diagramSets: DiagramSetRecord[]
+|   +-- globalImports: ImportedArtifactLibraryRecord
+|   +-- codeEntitySets: Record<string, CodeEntitiesSetRecord>
+|   +-- importedCodeEntities: Record<string, CodeEntityRecord>
+|   +-- diagrams: Record<string, DiagramRecord>
+|   +-- diagramComponents: Record<string, DiagramComponentRecord>
+|   +-- codeEntityPromptConfigs: Record<string, CodeEntityPromptConfigRecord>
+|   +-- codeEntityPromptTemplates: Record<string, CodeEntityPromptTemplateRecord>
+|   +-- generationPromptConfigs: Record<string, GenerationPromptConfigRecord>
+|   +-- systemPromptTemplates: Record<string, SystemPromptTemplateRecord>
+|   +-- generationBatches: Record<string, GenerationBatchRecord>
+|   +-- diagramCandidateBatches: Record<string, DiagramCandidateBatchRecord>
+|   +-- agentRuns: Record<string, AgentRunRecord>
+|   +-- spatialProgress?: Record<string, SpatialProgressState>
+|   +-- representationGraphs?: Record<string, RepresentationGraphRecord>
+|   +-- editSessions: Record<string, EditSessionRecord>
+|   +-- codeEntityMaps: Record<string, DiagramCodeEntityMapRecord>
+|   +-- highlights?: Array<DiagramHighlightRecord | HighlightRecordV2>
+|   \-- plans?: PlanRecord[]
++-- export interface CodeEntityDraft
+|   +-- handle: string
+|   +-- label: string
+|   +-- category: CodeEntityCategory
+|   +-- summary: string
+|   \-- sourceRanges: SourceRange[]
++-- export interface GeneratedArtifactDraft
+|   +-- name: string
+|   +-- ascii: string
+|   +-- codeEntityIds: string[]
+|   \-- mappings?: DiagramElementMappingDraft[]
++-- export interface CodeEntityPromptAlias
+|   +-- id: string
+|   \-- alias: string
++-- export interface ArtifactEditDraft
+|   \-- ascii: string
++-- export interface DiagramElementMappingDraft
+|   +-- entityId: string
+|   +-- sourceRangeIndex: number
+|   +-- line: number
+|   +-- startColumn: number
+|   \-- endColumn: number
++-- export interface MaterializedSourceRangeInput extends Omit<SourceRange, "id" | "originalLines">
+|   \-- key: string
++-- export interface MaterializedCodeEntityInput
+|   +-- key: string
+|   +-- handle: string
+|   +-- label: string
+|   +-- category: CodeEntityCategory
+|   +-- summary: string
+|   \-- sourceRanges: MaterializedSourceRangeInput[]
++-- export interface MaterializedDiagramMappingInput
+|   +-- entityKey: string
+|   +-- sourceRangeKey: string
+|   +-- line: number
+|   +-- startColumn: number
+|   \-- endColumn: number
++-- export interface MaterializedDiagramInput
+|   +-- key: string
+|   +-- handle?: string
+|   +-- name: string
+|   +-- ascii: string
+|   +-- viewKind?: DiagramViewKind
+|   +-- representationKind?: "tree" | "diagram"
+|   +-- codeEntityKeys: string[]
+|   \-- mappings?: MaterializedDiagramMappingInput[]
++-- export interface MaterializedDiagramSetInput
+|   +-- creationMode: "materialized"
+|   +-- path: string
+|   +-- name: string
+|   +-- domainProfileId?: import("./domainProfile").BuiltInDomainProfileId
+|   +-- description?: string
+|   +-- codeEntities: MaterializedCodeEntityInput[]
+|   +-- diagrams: MaterializedDiagramInput[]
+|   \-- featuredViews?: Partial<Record<DiagramViewKind, string>>
++-- export interface MaterializedDiagramSetResult
+|   +-- diagramSetId: string
+|   +-- codeEntityIdsByKey: Record<string, string>
+|   +-- diagramIdsByKey: Record<string, string>
+|   \-- workspace: WorkspaceSnapshot
++-- export interface ArtifactImportInput
+|   +-- artifactKind: GenerationOutputKind
+|   +-- name: string
+|   +-- ascii: string
+|   \-- bundle?: MappedArtifactBundle
++-- export interface MappedArtifactBundle
+|   +-- bundleVersion: 1
+|   +-- artifactKind: GenerationOutputKind
+|   +-- artifact: DiagramRecord | DiagramComponentRecord
+|   +-- codeEntities: CodeEntityRecord[]
+|   \-- codeEntityMap?: DiagramCodeEntityMapRecord
++-- export interface AgentProgress
+|   +-- status: Extract<AgentRunStatus, "reading-context" | "generating" | "validating">
+|   +-- message: string
+|   +-- model?: string
+|   \-- sessionId?: string
++-- export interface SelectableText
+|   \-- getSelectionText(reference: ReferenceIdentity): string | undefined
++-- export class CodeEntity implements SelectableText
+|   +-- constructor(readonly record: CodeEntityRecord)
+|   +-- getSelectionText(reference: ReferenceIdentity): string | undefined
+|   |   +-- mismatched reference kind or target id -> undefined
+|   |   +-- rangeIndex = stable sourceRangeId lookup, else sourceRangeIndex ?? 0
+|   |   \-- return selected source range path, possibly undefined
+|   \-- prompt_str(): string
+|       +-- ranges = sourceRanges.map(render range).join(newline)
+|       |   +-- symbol = optional parenthesized symbol
+|       |   +-- sections = optional compactedSource sections joined by newline
+|       |   |   +-- source section -> retain lines startLine-endLine
+|       |   |   +-- collapsed-comment -> collapse lines as call graph; normalize newlines and indent
+|       |   |   \-- nonempty nodes -> append graph-line to source-line mappings
+|       |   +-- compaction = optional level + rendered sections
+|       |   \-- return path:startLine-endLine + symbol + compaction
+|       \-- return entity handle, label, category, summary and rendered source ranges
++-- function promptAliasHash(value: string): string
+|   +-- hash = 0x811c9dc5
+|   +-- for each UTF-16 code unit: XOR into hash; Math.imul(hash, 0x01000193)
+|   \-- return unsigned 32-bit hash as zero-padded 8-digit hex
++-- export function qualifiedCodeEntityPromptAlias(entity: CodeEntityRecord): string
+|   +-- identity = origin project/set/entity-set/id path, else entity.id
+|   \-- return entity-<handle>--<promptAliasHash(identity)>
++-- export function createCodeEntityPromptAliases( entities: readonly CodeEntityRecord[] ): CodeEntityPromptAlias[]
+|   +-- uniqueEntities = Map by entity.id; last duplicate value wins
+|   +-- handleCounts = case-insensitive handle frequency map
+|   \-- return { id, alias } for each unique entity
+|       +-- unique handle -> entity-<handle>
+|       \-- colliding handle -> qualifiedCodeEntityPromptAlias(entity)
++-- export function resolveCodeEntityPromptAliases( aliases: readonly string[], allowed: readonly CodeEntityPromptAlias[] ): string[]
+|   +-- idsByAlias = Map populated from allowed entries
+|   |   +-- duplicate alias -> throw ambiguous CodeEntity alias
+|   |   \-- store entry.alias -> entry.id
+|   \-- return requested aliases mapped to persisted ids
+|       +-- lookup id; missing/falsy id -> throw unavailable CodeEntity alias
+|       \-- return id
++-- function renderCodeEntityPromptAliases( ids: readonly string[], aliases: ReadonlyMap<string, string> ): string
+|   \-- map ids to aliases or entity-reference-<1-based index>; join comma-space; empty -> none
++-- function renderArtifactPromptAscii( ascii: string, ids: readonly string[], aliases: ReadonlyMap<string, string> ): string
+|   +-- declaredIds = Set(ids)
+|   \-- replace bracket annotations through callback
+|       +-- compact = annotation value with whitespace removed
+|       +-- undeclared compact id -> preserve annotation
+|       \-- lookup alias; found -> bracketed alias, otherwise preserve annotation
++-- export class Diagram
+|   +-- constructor(readonly record: DiagramRecord)
+|   \-- prompt_str(codeEntityAliases: ReadonlyMap<string, string>): string
+|       +-- derived = comma-separated derivedFromDiagramIds or none
+|       \-- return handle, name, view, aliased CodeEntity ids, derivation and alias-rewritten ASCII
++-- export class DiagramComponent
+|   +-- constructor(readonly record: DiagramComponentRecord)
+|   \-- prompt_str(codeEntityAliases: ReadonlyMap<string, string>): string
+|       +-- diagrams = comma-separated derivedFromDiagramIds or none
+|       +-- components = comma-separated derivedFromDiagramComponentIds or none
+|       \-- return handle, name, aliased CodeEntity ids, both derivation lists and alias-rewritten ASCII
++-- export function assertSevenBitAscii(value: string): void
+|   +-- blank after trim -> throw
+|   \-- any character outside 0x00-0x7F -> throw
++-- export function normalizeAscii(value: string): string
+|   \-- normalize CRLF/CR to LF; trim trailing whitespace
++-- export function slugify(value: string, fallback: string): string
+|   +-- lowercase, trim, replace non-alphanumeric runs with hyphens, strip edge hyphens, slice to 64
+|   \-- return slug || fallback
++-- export function assertSafeId(value: string, label = "id"): void
+|   \-- require /^[a-z0-9][a-z0-9-]{0,95}$/; otherwise throw with label and value
+\-- export function assertSourceRange(range: SourceRange): void
+    +-- reject empty path, leading slash, or .. component split on slash/backslash
+    +-- require integer startLine and endLine
+    +-- require startLine >= 1 and endLine >= startLine
+    +-- if originalLines provided, require array
+    \-- if compactedSource provided
+        +-- require level low | medium | high
+        +-- require sections array
+        \-- for each section
+            +-- require kind source | collapsed-comment
+            +-- require integer startLine and endLine
+            +-- collapsed-comment: require nonblank comment
+            +-- collapsed-comment: require tabs/newlines/CR or printable 7-bit ASCII
+            \-- collapsed-comment with nodes provided
+                +-- require nonempty nodes array
+                +-- graphLineCount = newline-normalized comment line count; mappedGraphLines = Set
+                \-- for each node
+                    +-- require integer graphLine in 1..graphLineCount
+                    +-- reject duplicate graphLine; record mapped line
+                    \-- require integer source bounds, ordered and contained within section

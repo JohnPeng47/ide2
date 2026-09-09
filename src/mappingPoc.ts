@@ -698,7 +698,7 @@ rows      columns      density     junctions    arrows
     id: "curation",
     label: "Dataset curation",
     ascii: `== DATASET CURATION ============================================================
-POST /api/diagram-datasets/:datasetId/items
+POST /api/studio/diagram-datasets/:datasetId/items
                                      |
           +--------------------------+--------------------------+
           |                          |                          |
@@ -1241,9 +1241,13 @@ export function alignBRangeToSections(mappedRange: MappingPocNodeExtent | null):
   };
 }
 
-export function projectASelectionToB(selectedANodeIds: readonly string[]): MappingPocProjection {
+export function projectASelectionToB(
+  selectedANodeIds: readonly string[],
+  diagramNodes?: readonly MappingPocANode[]
+): MappingPocProjection {
+  const nodesById = diagramNodes ? new Map(diagramNodes.map((node) => [node.id, node])) : A_NODES_BY_ID;
   const selectedA = [...new Set(selectedANodeIds)].map((id) => {
-    const node = A_NODES_BY_ID.get(id);
+    const node = nodesById.get(id);
     if (!node) throw new Error(`Unknown Graph A node: ${id}`);
     return node;
   }).sort((left, right) => left.head.line - right.head.line || left.head.startColumn - right.head.startColumn);

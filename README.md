@@ -28,66 +28,111 @@ after every skill change; do not edit only one copy.
 
 ## Start the studio
 
-The server is the only process that writes DiagramSet records. Start it for the
-target checkout before invoking the agent-facing CLI:
+The server is the only process that writes DiagramSet records. From this app's
+checkout, start it for the target corpus:
 
 ```bash
-npm --prefix scripts/new-diagram run diagram -- serve \
-  --path /path/to/repository \
-  --diagrams-dir .diagrams
+NEW_DIAGRAM_PROJECT_ROOT=/path/to/repository \
+NEW_DIAGRAMS_DIR=.diagrams \
+npm run dev -- --port 5173 --strictPort
 ```
 
-Open `http://127.0.0.1:5173`. The dashboard can remain open while the CLI starts
-a collection. `--diagrams-dir` accepts an absolute path or a path relative to
-the repository and defaults to `.diagrams`; use `--port` to run another studio
-alongside an existing server.
+Open `http://127.0.0.1:5173`. `NEW_DIAGRAMS_DIR` accepts an absolute path or a
+path relative to the corpus and defaults to `.diagrams`. Set
+`NEW_DIAGRAM_DOMAIN=document` for a document corpus; the default domain is
+`source-code`. Use a separate port and store for another studio instance.
 
-## Start a DiagramSet
+## HTTP namespaces
 
-Authenticate Pi's `openai-codex` provider, then run from this repository in a
-second terminal. List persisted system-prompt templates when you need a
-non-default generation style:
+Studio operations live under `/api/studio/*`. `/api/mapping/*` is reserved and
+currently has no external endpoints. The previous unnamespaced API routes
+return 404. Mapping selection and overlays run in the browser; select → prompt
+uses the browser-internal `POST /internal/mapping/prompt` transport for streamed
+agent edits. Local chat uses a browser-side mock responder.
+
+## Mapping project diagrams
+
+Mapping shares Studio's project and representation catalog. The Mapping submenu
+creates diagrams from ASCII or a copy of the current canvas, renames the open
+diagram, and saves changes as immutable project revisions. Existing Studio ASCII
+diagrams can be opened in Mapping; their first canvas save preserves the diagram
+identity and previous revisions. Studio's project representation list can reopen
+these canvases.
+
+The floating explorer lists settled diagrams in the current project. Children
+under the open diagram are its canvas boxes and groups; selecting a child expands
+its ancestors and brings it into view. Switching diagrams retains each open
+diagram's unsaved edits, undo history, and pending prompt. Streamed results stay
+with the diagram that started the request.
+
+Saved revisions include canvas content, placement, groups, collapsed state, and
+source evidence snapshots. They also retain composed ASCII for existing consumers.
+Select mapped text and press `N` to preview its saved source, or `P` to prompt an edit.
+Save checks the expected revision and rejects stale writes; reload the page to
+open the latest saved revision after a conflict. Pan, zoom, undo history, and local
+chat are temporary editor state. Browser-internal `GET/POST
+/internal/mapping/diagrams` load and save the shared catalog; these do not add any
+external `/api/mapping/*` endpoints.
+
+## Start a DiagramSet through HTTP
+
+Authenticate Pi's `openai-codex` provider, then list persisted system-prompt
+templates when you need a non-default generation style:
 
 ```bash
-npm --prefix scripts/new-diagram run diagram -- prompt-templates \
-  --server http://127.0.0.1:5173
+curl --fail-with-body http://127.0.0.1:5173/api/studio/system-prompt-templates
 ```
 
-Then create the Diagram Set:
+Create the DiagramSet:
 
 ```bash
-npm --prefix scripts/new-diagram run diagram -- create \
-  --path /path/to/repository \
-  --name "Feature name" \
-  --prompt "Map the feature boundary" \
-  --prompt-template flow-first \
-  --server http://127.0.0.1:5173
+curl --fail-with-body --no-buffer http://127.0.0.1:5173/api/studio/diagram-sets \
+  -H 'Content-Type: application/json' \
+  --data-binary @- <<'JSON'
+{
+  "path": "/path/to/repository",
+  "name": "Feature name",
+  "prompt": "Map the feature boundary",
+  "promptTemplateId": "flow-first",
+  "runReferencePrompt": true
+}
+JSON
 ```
 
-The CLI asks the server to create the DiagramSet and streams collection and
-generation progress. Successful collection finalizes the immutable
-CodeEntitiesSet, then immediately launches three Sol diagram agents with all
-collected entities selected. The CLI path must resolve to the same checkout
-passed to the server's `--path`. `--server` defaults to
-`http://127.0.0.1:5173` and can also be set with `NEW_DIAGRAM_SERVER_URL`.
-`--prompt-template` is optional and defaults to `default`. Each CLI-created
-candidate runs the selected profile's Diagram reference prompt as a follow-up
-turn by default; `--reference-prompt <prompt>` supplies its optional runtime
-instruction, while `--no-reference-prompt` keeps one-turn generation. The final
-CLI event reports the exact template revision and immutable generation
-prompt-config id used for the initial diagrams, plus the CodeEntity template
-revision and immutable collection prompt-config id.
+The corpus `path` must resolve to the same checkout configured on the server.
+`promptTemplateId` is optional and defaults to `default`. Set
+`runReferencePrompt` to `true` to run the selected template's reference follow-up;
+`referencePrompt` supplies its optional runtime instruction. Omitting
+`runReferencePrompt` skips that optional turn. The final mapping turn still runs.
 
-Query every Diagram across all Diagram Sets as one JSON event:
+Creation streams newline-delimited JSON (`application/x-ndjson`), including
+`created`, progress, and `result` events. Successful collection finalizes the
+immutable CodeEntitiesSet, then generates the initial diagrams. The final result
+includes the workspace, DiagramSet id, exact template revisions, and immutable
+prompt-config ids. Check for `type: "error"` events even after an HTTP 200, and
+require a final `result` before treating the operation as complete. The open
+studio picks up collection and generation progress automatically.
+
+To submit existing entities and diagrams, send a `MaterializedDiagramSetInput`
+manifest with `creationMode: "materialized"` to the same endpoint:
 
 ```bash
-npm --prefix scripts/new-diagram run diagram -- list-diagrams \
-  --server http://127.0.0.1:5173
+curl --fail-with-body --no-buffer http://127.0.0.1:5173/api/studio/diagram-sets \
+  -H 'Content-Type: application/json' \
+  --data-binary @manifest.json
 ```
 
-The event includes `count` and a flat `diagrams` array. Each item is the complete
-Diagram record, including its ASCII and stable handle, with `diagramSetName`
-and a `status` of `starred`, `unstarred`, or `archived` added for filtering.
+Read all DiagramSets and their artifacts from the workspace endpoint:
+
+```bash
+curl --fail-with-body http://127.0.0.1:5173/api/studio/workspace
+```
+
+The response includes `diagramSets` and a `diagrams` dictionary keyed by id.
+Each set's `diagramIds` identifies its diagrams; `featuredViewIds` identifies
+starred views, and each diagram's `archivedAt` records its archive status.
+The route implementation is in `server/http.ts`, shared payload types are in
+`src/domain.ts`, and the browser's typed HTTP wrappers are in `src/api.ts`.
 
 The studio supports the waiting state, immutable collected CodeEntitiesSets,
 typed `@entity/`, `@diagram/`, and `@component/` references, N parallel agents,

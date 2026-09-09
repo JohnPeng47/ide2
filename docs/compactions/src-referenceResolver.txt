@@ -1,0 +1,39 @@
+src/referenceResolver.ts
++-- imports from ./domain: CodeEntity; CodeEntityRecord, DiagramComponentRecord, DiagramRecord, ReferenceIdentity, SelectableText, SourceRange types
++-- interface ResolvedReferenceBase
+|   +-- identity: ReferenceIdentity
+|   \-- selectableText?: SelectableText
++-- export type ResolvedReference = ResolvedReferenceBase & discriminated union
+|   +-- code-entity: record: CodeEntityRecord; sourceRange?: SourceRange
+|   +-- diagram: record: DiagramRecord
+|   \-- diagram-component: record: DiagramComponentRecord
++-- export interface ReferenceResolutionContext
+|   +-- codeEntities: readonly CodeEntityRecord[]
+|   +-- diagrams: Readonly<Record<string, DiagramRecord>>
+|   \-- components: Readonly<Record<string, DiagramComponentRecord>>
++-- export interface ReferenceResolutionResult
+|   +-- resolved: ResolvedReference[]
+|   \-- unresolved: ReferenceIdentity[]
++-- sameOrigin(expected, actual: ReferenceIdentity["origin"]): boolean
+|   +-- either origin absent: return true
+|   \-- otherwise require equal projectId + diagramSetId
+|       \-- expected has codeEntitiesSetId: require actual has it and values match
++-- export resolveReference(identity, context): ResolvedReference | null
+|   +-- identity.kind === "code-entity"
+|   |   +-- record = first code entity matching targetId and sameOrigin(identity.origin, entity.origin)
+|   |   +-- missing record: return null
+|   |   +-- sourceRange = truthy sourceRangeId ? find range by id : indexed range or undefined
+|   |   +-- either range selector defined but no sourceRange: return null
+|   |   \-- return identity, kind, record, optional sourceRange, selectableText: new CodeEntity(record)
+|   +-- identity.kind === "diagram"
+|   |   +-- record = context.diagrams[identity.targetId]
+|   |   \-- record exists and origin matches recordOrigin: return identity, kind, record; otherwise null
+|   \-- otherwise diagram-component
+|       +-- record = context.components[identity.targetId]
+|       \-- record exists and origin matches recordOrigin: return identity, kind, record; otherwise null
+\-- export resolveReferences(identities: ReferenceIdentity[], context): ReferenceResolutionResult
+    +-- initialize resolved: ResolvedReference[] and unresolved: ReferenceIdentity[]
+    +-- for each identity
+    |   +-- reference = resolveReference(identity, context)
+    |   \-- reference found: append to resolved; otherwise append identity to unresolved
+    \-- return { resolved, unresolved }

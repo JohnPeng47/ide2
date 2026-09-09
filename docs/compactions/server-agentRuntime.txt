@@ -1,0 +1,260 @@
+server/agentRuntime.ts
++-- imports
+|   +-- randomUUID from node:crypto
+|   +-- Pi sessions, resource loader, tools, model runtime, settings and event type
+|   +-- Type and Model from pi-ai
+|   +-- domain validators, aliases, model default and artifact/entity/mapping types
+|   +-- domain profile types and resolveDomainProfile
+|   +-- diagramMappingValidationError, corpusProvider, createValidatedSubmission
+|   +-- mapping prompt default and renderer
+|   +-- mapping POC validation, generation, patch, hunk, prompt renderers and types
+|   \-- initial mappings, post-patch mappings and selection source context
++-- export interface EntityCollectionRequest
+|   +-- sourceRoot: string; domainProfileId: BuiltInDomainProfileId; corpus: CorpusBinding
+|   \-- diagramSetName: string; promptConfig: CodeEntityPromptConfigRecord
++-- export interface ArtifactGenerationRequest
+|   +-- sourceRoot, diagramSetName: string; promptConfig: GenerationPromptConfigRecord
+|   +-- allowedCodeEntityAliases: CodeEntityPromptAlias[]; codeEntities: CodeEntityRecord[]
+|   +-- allowedDiagramIds, allowedDiagramComponentIds: string[]
+|   \-- slot, total: number
++-- export interface ArtifactEditRequest
+|   +-- sourceRoot, diagramSetName: string; artifactKind: GenerationOutputKind
+|   +-- artifactName, artifactHandle, currentAscii, instruction: string; modelId: DiagramModelId
+|   \-- markers: Array<{ token, character, originalCharacter: string }>
++-- export interface ArtifactEntityMappingRequest
+|   +-- sourceRoot, diagramSetName: string; artifactKind: GenerationOutputKind
+|   +-- artifactName, artifactHandle, ascii: string
+|   \-- codeEntityIds: string[]; codeEntities: CodeEntityRecord[]; domainProfileId?: BuiltInDomainProfileId
++-- export interface DiagramAgentRuntime
+|   +-- collectEntities(EntityCollectionRequest, onProgress?) -> Promise<CodeEntityDraft[]>
+|   +-- generateArtifact(ArtifactGenerationRequest, onProgress?) -> Promise<GeneratedArtifactDraft>
+|   +-- mapArtifactEntities(ArtifactEntityMappingRequest, onProgress?) -> Promise<DiagramElementMappingDraft[]>
+|   +-- editArtifact(ArtifactEditRequest, onProgress?) -> Promise<ArtifactEditDraft>
+|   +-- promptDiagramSelection?(MappingPocPromptRequest & { sourceRoot; projectEvidence? }, onProgress?) -> Promise<MappingPocPromptResult>
+|   \-- dispose(): void
++-- progressFor(event, model, sessionId) -> AgentProgress | undefined
+|   +-- shared = { model, sessionId }
+|   +-- agent_start, turn_start, message_start -> generating
+|   +-- tool_execution_start
+|   |   +-- read, grep, find, ls -> reading-context
+|   |   \-- submit_* -> validating
+|   \-- otherwise return undefined
++-- export async runGenerationPromptTurns(input) -> GeneratedArtifactDraft
+|   +-- input: initialPrompt, referencePrompt?, mappingPrompt, prompt, takeSubmission, artifactLabel, optional turn callbacks
+|   +-- prompt(initialPrompt); takeSubmission(); require initial artifact
+|   +-- if referencePrompt
+|   |   +-- onReferenceTurn?(); prompt(referencePrompt); takeSubmission()
+|   |   \-- require reference artifact; replace finalArtifact
+|   +-- onMappingTurn?(finalArtifact); prompt(mappingPrompt(finalArtifact)); takeSubmission()
+|   \-- require mapping submission and mappings; return mappingSubmission
++-- artifactSubmissionParameters(entityNoun = CodeEntity) -> Type.Object
+|   +-- name: string length 1..120; ascii: string length 1..20000
+|   +-- codeEntityIds: readable aliases, max 200
+|   \-- mappings?: max 200 exact ASCII span records
+|       +-- entityId: readable alias length 1..120
+|       \-- sourceRangeIndex: integer >= 0; line/startColumn/endColumn: integers >= 1
++-- unchangedArtifactError(expected, candidate) -> string | undefined
+|   +-- reject changed name
+|   +-- reject changed ASCII
+|   \-- reject JSON-unequal codeEntityIds; otherwise undefined
++-- async validateSubmittedSourceRanges(corpus, entities) -> string | undefined
+|   +-- provider = corpusProvider(corpus); visit every entity source range
+|   +-- assertSourceRange; return caught error message or invalid-range fallback
+|   +-- provider.readLines; read failure -> unresolved corpus-file error
+|   +-- compare actual/requested line counts; reject out-of-bounds document range
+|   \-- return undefined on success
++-- export documentCorpusTools(binding)
+|   +-- provider = corpusProvider(binding)
+|   +-- read = defineTool(read_corpus)
+|   |   +-- parameters: relative path length 1..500; optional positive startLine/endLine
+|   |   \-- async execute(_toolCallId, params)
+|   |       +-- readDocumentLines; default start 1 and end capped at start + 1999
+|   |       +-- reject reversed bounds; cap end at document length and 2000-line window
+|   |       \-- number sliced lines; return text and path/start/end/total details
+|   +-- list = defineTool(list_corpus)
+|   |   +-- parameters: optional relative directory length <= 500
+|   |   \-- async execute: listDirectory(directory or empty); tag directory/file paths; return text and directory/count
+|   +-- search = defineTool(search_corpus)
+|   |   +-- parameters: query length 1..200; optional directory <= 500 and limit 1..200
+|   |   \-- async execute(_toolCallId, params)
+|   |       +-- pending directory queue; collect at most 500 files breadth-first
+|   |       +-- lowercase query; limit defaults to 100; matches = []
+|   |       +-- read each document, skipping failed reads; collect numbered literal case-insensitive matches until limit
+|   |       \-- return match text and query/matches/filesScanned details
+|   \-- return [read, list, search]
++-- type PiAgentSession = Awaited<ReturnType<typeof createAgentSession>>[session]
++-- interface MappingPocPendingPrompt
+|   \-- selectionId: string; expectedRevision: number; hunk: MappingPocPromptHunk; submission?: MappingPocPromptResult
++-- interface MappingPocAgentSession
+|   +-- session: PiAgentSession; unsubscribe(): void; ascii: string; revision: number
+|   +-- mappings: DiagramElementMapping[]; pending?: MappingPocPendingPrompt; onProgress?: callback
+|   \-- modelName: string; lastUsedAt: number
++-- export class PiDiagramAgentRuntime implements DiagramAgentRuntime
+|   +-- private state
+|   |   +-- modelRuntime?: Promise<ModelRuntime>
+|   |   +-- readonly sessions = Set<{ abort(): Promise<void>; dispose(): void }>
+|   |   +-- readonly mappingPocSessions = Map<string, MappingPocAgentSession>
+|   |   \-- mappingPocPromptBusy = false
+|   +-- private runtime() -> Promise<ModelRuntime>
+|   |   \-- modelRuntime ??= ModelRuntime.create({ allowModelNetwork: false }); return cached promise
+|   +-- private async model(overrideModelId?) -> { runtime, model, provider, modelId }
+|   |   +-- runtime = await runtime(); provider = openai-codex
+|   |   +-- modelId = overrideModelId || NEW_DIAGRAM_MODEL || DEFAULT_DIAGRAM_MODEL_ID
+|   |   +-- runtime.getModel; require available model and configured provider auth
+|   |   \-- return { runtime, model, provider, modelId }
+|   +-- async collectEntities(request, onProgress?) -> CodeEntityDraft[]
+|   |   +-- configure model; select document corpus tools and evidence/code entity labels
+|   |   +-- submission = createValidatedSubmission
+|   |   |   \-- submit_code_entities; validateSubmittedSourceRanges; accepted count/message; coordinate correction prompt
+|   |   +-- submit = defineTool(submit_code_entities)
+|   |   |   +-- document-aware label/description/snippet; submission.promptGuideline
+|   |   |   +-- parameters: entities array, 1..200
+|   |   |   |   +-- handle 1..64; label 1..120; category state/interface-data-struct/operation; summary 1..600
+|   |   |   |   \-- sourceRanges array 1..12: path 1..500; positive start/end; optional symbol 1..200
+|   |   |   |       \-- compactedSource: level low/medium/high; sections array 1..100
+|   |   |   |           +-- source section: positive startLine/endLine
+|   |   |   |           +-- collapsed-comment section: positive start/end; ASCII call-graph comment length 1..1200
+|   |   |   |           \-- nodes array 1..100: positive graphLine/startLine/endLine; map each semantic graph node
+|   |   |   \-- execute: submission.execute
+|   |   +-- settingsManager = in-memory configured provider/model, medium thinking
+|   |   +-- resourceLoader: sourceRoot/getAgentDir; disable extensions, skills, templates, themes and context files
+|   |   |   \-- systemPrompt: read-only document evidence via corpus tools, or repository entities with compacted source
+|   |   +-- reload loader; create in-memory medium-thinking session
+|   |   |   \-- tools: document corpus tools or read/grep/find/ls, plus submit_code_entities
+|   |   +-- track session; subscribe progressFor and forward onProgress
+|   |   +-- prompt rendered context; require accepted submission; return entities
+|   |   \-- finally unsubscribe, dispose session, remove from sessions
+|   +-- async generateArtifact(request, onProgress?) -> GeneratedArtifactDraft
+|   |   +-- configure requested model; resolve component mode/domain/evidence noun/artifact label/toolName
+|   |   +-- state = { submissions: [], mappingSource?: GeneratedArtifactDraft }
+|   |   +-- submit = defineTool(toolName)
+|   |   |   +-- one ASCII artifact per generation turn; short specific name; artifactSubmissionParameters(evidenceNoun)
+|   |   |   \-- async execute(_toolCallId, params)
+|   |   |       +-- resolve codeEntityIds aliases and optional mapping entity aliases
+|   |   |       +-- candidate = name/ascii/resolved IDs and optional mappings with resolved entityId
+|   |   |       +-- if state.mappingSource
+|   |   |       |   +-- unchangedArtifactError; filter entities referenced by mappingSource
+|   |   |       |   +-- diagramMappingValidationError or missing-mappings error
+|   |   |       |   \-- invalid: reject with correction text, accepted false, terminate false
+|   |   |       \-- push candidate; return accepted true, terminate true
+|   |   +-- in-memory configured settings, medium thinking
+|   |   +-- resourceLoader: sourceRoot, configured system prompt; disable extension/skill/template/theme/context loading; reload
+|   |   +-- create in-memory session using only submit tool; track session and forward progressFor events
+|   |   +-- return runGenerationPromptTurns
+|   |   |   +-- initialPrompt: rendered context, slot/total, allowed aliases, referenced diagrams/components
+|   |   |   +-- referencePrompt: optional rendered reference prompt
+|   |   |   +-- mappingPrompt: render template for target kind with artifact, filtered entities, aliases and domain
+|   |   |   +-- prompt: session.prompt; takeSubmission: submissions.shift; artifactLabel
+|   |   |   +-- onReferenceTurn: emit generating progress
+|   |   |   \-- onMappingTurn: set mappingSource and emit generating progress
+|   |   \-- finally unsubscribe, dispose session, remove from sessions
+|   +-- async editArtifact(request, onProgress?) -> ArtifactEditDraft
+|   |   +-- configure request.modelId; state has optional submission
+|   |   +-- submit = defineTool(submit_artifact_edit)
+|   |   |   +-- complete revised ASCII; parameters: ascii length 1..20000
+|   |   |   \-- async execute: save params; record revised artifact; terminate true
+|   |   +-- in-memory configured settings, medium thinking
+|   |   +-- resourceLoader: no extensions/skills/templates/themes/context files; reload
+|   |   |   \-- systemPrompt: preserve unrelated ASCII; remove markers; never modify files; finish via submit_artifact_edit
+|   |   +-- create in-memory submit-only session; track and forward progressFor
+|   |   +-- markerGuide: token, unique character, original character for each marker; otherwise none
+|   |   +-- prompt diagram set, artifact kind/handle/name, full ASCII, markers and instruction
+|   |   +-- require submission; return it
+|   |   \-- finally unsubscribe, dispose session, remove from sessions
+|   +-- private collisionSafePromptNonce(content: string[]) -> string
+|   |   \-- generate uppercase dashless UUID until absent from every content string; return nonce
+|   +-- private disposeMappingPocSession(clientSessionId): void
+|   |   +-- lookup state; absent -> return
+|   |   \-- unsubscribe; fire-and-forget abort; dispose; remove session and client mapping
+|   +-- private async createMappingPocSession(request) -> MappingPocAgentSession
+|   |   +-- at >= 12 mapping sessions, dispose least recently used
+|   |   +-- configure model; declare state; generating = operation is generate
+|   |   +-- submit = defineTool(submit_diagram_patch)
+|   |   |   +-- generation submits complete mapped sub-diagram; edits replace exact full-row hunk
+|   |   |   +-- parameters: selectionId length 1..120; 1..500 replacementLines, each <= 500 characters
+|   |   |   +-- optional mappings: id/entityId, nonnegative sourceRangeIndex, positive line/startColumn/endColumn
+|   |   |   \-- async execute(_toolCallId, params)
+|   |   |       +-- require active pending selection; otherwise reject without terminating
+|   |   |       +-- require matching selectionId; otherwise reject with expected ID without terminating
+|   |   |       +-- try generate or patch result
+|   |   |       |   +-- generate: generatedMappingPocResult(replacementLines, mappings or [], overlapping selected mappings)
+|   |   |       |   +-- edit: applyMappingPocPromptPatch(current ASCII/revision, expected revision, hunk, replacementLines)
+|   |   |       |   +-- update ASCII/revision; generation uses result mappings, edit adjusts mappings after patch
+|   |   |       |   \-- attach state mappings; save pending.submission; accepted true, terminate true
+|   |   |       \-- catch: report error or invalid patch; request corrected replacementLines; terminate false
+|   |   +-- in-memory configured settings, medium thinking; collision-safe system nonce
+|   |   +-- resourceLoader: disable extensions/skills/templates/themes/context files; reload
+|   |   |   +-- generate system prompt: complete standalone printable ASCII, local mapped labels, at least one mapping, leave source untouched
+|   |   |   \-- edit system prompt: renderMappingPocAgentSystemPrompt(ASCII, revision, nonce)
+|   |   +-- create in-memory medium-thinking submit_diagram_patch-only session
+|   |   +-- state: session, no-op unsubscribe, request ASCII/revision, supplied or initial mappings, modelName, current timestamp
+|   |   +-- subscribe progressFor forwarding through state.onProgress
+|   |   \-- cache by clientSessionId; track session; return state
+|   +-- async promptDiagramSelection(request, onProgress?) -> MappingPocPromptResult
+|   |   +-- reject global busy; trim instruction; require length 1..4000; set busy
+|   |   +-- state initially undefined; try
+|   |   |   +-- get cached client session or createMappingPocSession
+|   |   |   +-- require matching revision/ASCII; reject already-pending request
+|   |   |   +-- validate mappings; derive full-row selection hunk
+|   |   |   +-- emit reading-context; resolve mapped corpus ranges with sourceRoot/projectEvidence/mappings/selection
+|   |   |   +-- selectionId = selection-UUID; collision-safe nonce against ASCII/instruction/ID/evidence paths and lines
+|   |   |   +-- pending = { selectionId, expectedRevision, hunk }; set state pending/progress/lastUsedAt
+|   |   |   +-- emit generating progress
+|   |   |   +-- session.prompt
+|   |   |   |   +-- generate: JSON instruction/selectionId/sourceDiagram/selection/evidence with sourceRangeIndex
+|   |   |   |   \-- edit: renderMappingPocEditPrompt with instruction/selection/revision/hunk/sourceContext/nonce
+|   |   |   \-- require pending submission; return result
+|   |   +-- catch: dispose client session if state exists; rethrow
+|   |   \-- finally clear pending/progress if state exists; reset global busy
+|   +-- async mapArtifactEntities(request, onProgress?) -> DiagramElementMappingDraft[]
+|   |   +-- configure model; resolve component/domain/evidence noun/artifact label/toolName; create readable aliases
+|   |   +-- expected = supplied name/ASCII/codeEntityIds; state has optional submission
+|   |   +-- submit = defineTool(toolName)
+|   |   |   +-- unchanged artifact with corrected mappings; artifactSubmissionParameters(evidenceNoun)
+|   |   |   \-- async execute(_toolCallId, params)
+|   |   |       +-- resolve entity and mapping aliases; build candidate with resolved IDs
+|   |   |       +-- catch invalid alias: reject with retry message, count 0, terminate false
+|   |   |       +-- validate unchanged artifact and exact diagram mappings; missing mappings is an error
+|   |   |       +-- invalid: reject with correction message, count 0, terminate false
+|   |   |       \-- save candidate; return accepted mapping count, terminate true
+|   |   +-- in-memory configured settings, medium thinking
+|   |   +-- resourceLoader: no extensions/skills/templates/themes/context files; map supplied semantic ASCII without modifying files; reload
+|   |   +-- create in-memory submit-only session; track and forward progressFor
+|   |   +-- prompt diagram set/artifact identity plus rendered DEFAULT_MAPPING_FOLLOW_UP_PROMPT
+|   |   +-- require submitted mappings; return mappings
+|   |   \-- finally unsubscribe, dispose session, remove from sessions
+|   \-- dispose(): void
+|       +-- unsubscribe mapping sessions; clear mappingPocSessions
+|       \-- fire-and-forget abort and dispose all sessions; clear sessions
+\-- export class FakeDiagramAgentRuntime implements DiagramAgentRuntime
+    +-- async collectEntities(_request, onProgress?) -> CodeEntityDraft[]
+    |   +-- emit fake/test reading-context; honor finite positive NEW_DIAGRAM_FAKE_COLLECTION_DELAY_MS
+    |   \-- return Workspace Store state entity with workspace-store handle and persistence summary
+    |       +-- sourceRange: fixture.ts, workspace symbol
+    |       \-- medium compactedSource: source sections around collapsed-comment
+    |           \-- collapsed graph: workspace -> collecting and ready status; explicit graph node source mappings
+    +-- async generateArtifact(request, onProgress?) -> GeneratedArtifactDraft
+    |   +-- emit fake/test generating slot; choose first allowed entity alias
+    |   +-- callGraphAscii: padded slot and optional alias/internal step
+    |   +-- ascii: component box, call graph, or parallel slot box
+    |   +-- find first letter-bearing line and first identifier token
+    |   +-- return slot-based Component/Diagram name, ASCII and optional first entity ID
+    |   \-- mappings: first token to entity sourceRangeIndex 0, inclusive one-based span; otherwise []
+    +-- async editArtifact(request, onProgress?) -> ArtifactEditDraft
+    |   +-- emit fake/test generating; restore original character for each marker
+    |   \-- return ASCII with appended trimmed edited instruction
+    +-- async promptDiagramSelection(request, onProgress?) -> MappingPocPromptResult
+    |   +-- emit fake/test generating; honor finite positive NEW_DIAGRAM_FAKE_PROMPT_DELAY_MS
+    |   +-- derive hunk; resolve source context using supplied or initial mappings and optional project evidence
+    |   +-- emit resolved range count; trim instruction and replace non-printable ASCII with question marks
+    |   +-- if operation is generate
+    |   |   +-- deduplicate contexts by elementId; title from sanitized first instruction line capped at 100; append element labels
+    |   |   \-- allowed = supplied or initial mappings; generatedMappingPocResult with sourceRangeIndex and local label spans
+    |   +-- otherwise emit validating; applyMappingPocPromptPatch appending edited instruction to old hunk rows
+    |   \-- adjust mappings after patch; return result
+    +-- async mapArtifactEntities(request, onProgress?) -> DiagramElementMappingDraft[]
+    |   +-- emit fake/test generating; first code entity or return []
+    |   +-- scan ASCII lines for first identifier token
+    |   +-- return mapping to first entity, sourceRangeIndex 0, inclusive one-based token span
+    |   \-- return [] if no token
+    \-- dispose(): void (no-op)

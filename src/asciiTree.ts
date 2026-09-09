@@ -7,24 +7,35 @@ export interface AsciiTreeNode {
   descendantLines: number[];
 }
 
-const BRANCH_LINE = /^([| ]*)(?:\+|`)-->(\s+)(.*)$/;
+const BRANCH_LINE = /^([| ]*)([+`\\]--(?:>)?)(\s+)(.*)$/;
+
+/** Plain roots belong to conventional trees, not legacy arrow-tree headings. */
+function isPlainRoot(lines: string[], index: number): boolean {
+  if (!/^\S/.test(lines[index]) || /^[|+`\\]/.test(lines[index])) return false;
+  let next = index + 1;
+  while (next < lines.length && /^[| ]+$/.test(lines[next])) next += 1;
+  const branch = next < lines.length ? BRANCH_LINE.exec(lines[next]) : null;
+  return Boolean(branch && !branch[2].endsWith(">"));
+}
 
 /** Parse the indentation-based branches used by ASCII diagram trees. */
 export function parseAsciiTree(ascii: string): AsciiTreeNode[] {
   const nodes: AsciiTreeNode[] = [];
   const ancestors: AsciiTreeNode[] = [];
-  for (const [index, line] of ascii.replace(/\r\n?/g, "\n").split("\n").entries()) {
+  const lines = ascii.replace(/\r\n?/g, "\n").split("\n");
+  for (const [index, line] of lines.entries()) {
     const match = BRANCH_LINE.exec(line);
-    if (!match) continue;
-    const branchColumn = match[1].length;
+    const plainRoot = !match && isPlainRoot(lines, index);
+    if (!match && !plainRoot) continue;
+    const branchColumn = match ? match[1].length : -1;
     while (ancestors.at(-1) && ancestors.at(-1)!.branchColumn >= branchColumn) ancestors.pop();
     const parent = ancestors.at(-1);
     const node: AsciiTreeNode = {
       line: index + 1,
       branchColumn,
       // Coordinates exposed by diagram mappings are one-based and inclusive.
-      textColumn: branchColumn + 5 + match[2].length,
-      text: match[3].trimEnd(),
+      textColumn: match ? branchColumn + match[2].length + match[3].length + 1 : 1,
+      text: match ? match[4].trimEnd() : line.trimEnd(),
       ...(parent ? { parentLine: parent.line } : {}),
       descendantLines: []
     };

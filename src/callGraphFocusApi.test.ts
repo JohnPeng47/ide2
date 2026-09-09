@@ -49,7 +49,7 @@ describe("call-graph focus API client", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(fetchCallGraphFocus(request)).resolves.toEqual(result);
-    expect(fetchMock).toHaveBeenCalledWith("/api/call-graph-focus", {
+    expect(fetchMock).toHaveBeenCalledWith("/api/studio/call-graph-focus", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(request)

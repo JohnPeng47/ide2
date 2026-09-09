@@ -1,3 +1,6 @@
+import { projectCanvasSnapshot, sceneFromRevision, type SaveProjectDiagramInput } from "../src/projectDiagramCanvas";
+import { buildProjectionTree, validateProjection, type ProjectProjectionRecord } from "../src/diagramProjection";
+import type { CompactionProjectionInput } from "../src/compactionProjection";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -91,8 +94,177 @@ export interface ProjectRepresentationPromotionDraft {
   makeActive: boolean;
 }
 
+/** Generated once; line addresses are resolved to revision-scoped tree IDs on import. */
+export interface SaveProjectedTreeInput {
+  sourceRepresentationId: string;
+  sourceRevisionId: string;
+  name: string;
+  ascii: string;
+  links: { sourceEvidenceIds: string[]; targetLines: number[] }[];
+  compactionProjection?: CompactionProjectionInput;
+  /** Explicit regeneration appends a revision to an existing projected tree. */
+  targetRepresentationId?: string;
+  expectedTargetRevisionId?: string;
+}
+
 export class ProjectCatalogStore {
   constructor(readonly storeRoot: string) {}
+
+  private representationWrite: Promise<unknown> = Promise.resolve();
+  private serialize<T>(write: () => Promise<T>): Promise<T> {
+    const result = this.representationWrite.then(write);
+    this.representationWrite = result.catch(() => undefined);
+    return result;
+  }
+
+  saveProjection(projectId: string, projection: ProjectProjectionRecord) {
+    return this.serialize(async () => {
+      const catalog = await this.loadRepresentationCatalog(projectId);
+      validateProjection(projection, catalog);
+      const existing = catalog.projections?.[projection.id];
+      if (existing && JSON.stringify(existing) !== JSON.stringify(projection)) {
+        throw new Error("Projection is immutable; save a new projection for changed links");
+      }
+      const next = { ...catalog, projections: { ...catalog.projections, [projection.id]: projection }, updatedAt: nowIso() };
+      await this.saveRepresentationCatalog(next);
+      return { catalog: next, projection };
+    });
+  }
+
+  /** Persist the generated tree and its relationship in one catalog write. */
+  saveProjectedTree(projectId: string, input: SaveProjectedTreeInput) {
+    return this.serialize(async () => {
+      if (!input || typeof input.name !== "string" || !input.name.trim() || input.name.length > 120
+        || typeof input.ascii !== "string" || !input.ascii.trim() || input.ascii.length > 20000
+        || !Array.isArray(input.links) || !input.links.length || input.links.length > 2000) {
+        throw new Error("A named ASCII tree and projection links are required");
+      }
+      const catalog = await this.loadRepresentationCatalog(projectId);
+      const source = catalog.representations[input.sourceRepresentationId];
+      const sourceRevision = catalog.revisions[input.sourceRevisionId];
+      if (!source || source.status !== "settled" || source.currentRevisionId !== input.sourceRevisionId
+        || sourceRevision?.representationId !== source.id) {
+        throw new ProjectDiagramConflict("Source diagram changed or is unavailable; regenerate its projection");
+      }
+      const asciiSha256 = createHash("sha256").update(input.ascii).digest("hex");
+      const mappingSignature = JSON.stringify(input.links);
+      const targetId = input.targetRepresentationId ?? stableId("representation", source.id, sourceRevision.id, input.name.trim(), asciiSha256, mappingSignature);
+      // Mapping changes also produce a new immutable revision, even when the ASCII is unchanged.
+      const revisionId = stableId("representation-revision", targetId, asciiSha256, mappingSignature);
+      const existingTarget = input.targetRepresentationId ? catalog.representations[input.targetRepresentationId] : undefined;
+      if (input.targetRepresentationId && (!existingTarget || existingTarget.projectId !== projectId
+        || existingTarget.status !== "settled" || existingTarget.representationKind !== "tree"
+        || !Object.values(catalog.projections ?? {}).some((p) => p.sourceRepresentationId === source.id && p.targetRepresentationId === targetId)
+        || (existingTarget.currentRevisionId !== input.expectedTargetRevisionId && existingTarget.currentRevisionId !== revisionId))) {
+        throw new ProjectDiagramConflict("Call tree changed or is unavailable; regenerate against its current revision");
+      }
+      const timestamp = nowIso();
+      const revision: ProjectRepresentationRevisionRecord = {
+        schemaVersion: 1, id: revisionId, projectId, representationId: targetId,
+        revision: existingTarget ? (catalog.revisions[existingTarget.currentRevisionId]?.revision ?? 0) + 1 : 1,
+        ascii: input.ascii, asciiSha256, representationKind: "tree", content: { kind: "ascii", ascii: input.ascii },
+        evidence: structuredClone(sourceRevision.evidence), mappings: [], createdAt: timestamp
+      };
+      const tree = buildProjectionTree(revision);
+      const byLine = new Map(Object.values(tree.nodes).map((node) => [node.line, node]));
+      const lines = input.ascii.split("\n");
+      const links = input.links.map((link, linkIndex) => {
+        if (!link || !Array.isArray(link.sourceEvidenceIds) || !link.sourceEvidenceIds.length
+          || !Array.isArray(link.targetLines) || !link.targetLines.length) throw new Error("Invalid projection link");
+        const targetNodeIds = link.targetLines.map((line) => {
+          const node = byLine.get(line);
+          if (!Number.isInteger(line) || !node) throw new Error(`Projection target row ${line} is not a tree node`);
+          for (const evidenceId of link.sourceEvidenceIds) {
+            const evidence = sourceRevision.evidence[evidenceId];
+            if (!evidence) throw new Error(`Unknown projection source evidence: ${evidenceId}`);
+            for (const range of evidence.sourceRanges) {
+              const startColumn = lines[line - 1].lastIndexOf(node.text) + 1;
+              revision.mappings.push({ id: `projection-map-${linkIndex}-${line}-${evidenceId}-${range.id}`,
+                evidenceId, sourceRangeId: range.id, line, startColumn, endColumn: startColumn + node.text.length - 1 });
+            }
+          }
+          return node.id;
+        });
+        return { sourceEvidenceIds: [...new Set(link.sourceEvidenceIds)], targetNodeIds: [...new Set(targetNodeIds)] };
+      });
+      const representation: ProjectRepresentationRecord = {
+        schemaVersion: 1, id: targetId, projectId, handle: targetId, name: input.name.trim(),
+        viewKind: "call-graph", representationKind: "tree", status: "settled", currentRevisionId: revisionId,
+        revisionIds: [...new Set([...(existingTarget?.revisionIds ?? []), revisionId])],
+        createdAt: existingTarget?.createdAt ?? timestamp, updatedAt: timestamp
+      };
+      const projection: ProjectProjectionRecord = {
+        id: stableId("projection", sourceRevision.id, revisionId, JSON.stringify(links),
+          ...(input.compactionProjection ? [JSON.stringify(input.compactionProjection)] : [])), projectId,
+        name: input.name.trim(), sourceRepresentationId: source.id, sourceRevisionId: sourceRevision.id,
+        targetRepresentationId: targetId, targetRevisionId: revisionId, match: "any", links
+      };
+      if (input.compactionProjection) {
+        const { files, links: compactionLinks } = input.compactionProjection;
+        if (!Array.isArray(files) || !Array.isArray(compactionLinks)) throw new Error("Invalid compaction projection");
+        for (const file of files) {
+          if (typeof file.ascii !== "string" || createHash("sha256").update(file.ascii).digest("hex") !== file.asciiSha256) {
+            throw new Error("Compaction snapshot hash mismatch");
+          }
+        }
+        projection.compactionProjection = { files: structuredClone(files), links: compactionLinks.map((link) => {
+          const node = byLine.get(link.callTreeLine);
+          if (!node) throw new Error(`Unknown call-tree row ${link.callTreeLine}`);
+          return { callTreeNodeId: node.id, file: link.file, treeLines: link.treeLines };
+        }) };
+      }
+      // Exact reimports are idempotent; never reset an independently edited target.
+      if (catalog.projections?.[projection.id]) return { catalog, representation: catalog.representations[targetId], projection: catalog.projections[projection.id] };
+      const next: ProjectRepresentationCatalogRecord = { ...catalog,
+        representations: { ...catalog.representations, [targetId]: existingTarget ? representation : catalog.representations[targetId] ?? representation },
+        revisions: { ...catalog.revisions, [revisionId]: catalog.revisions[revisionId] ?? revision },
+        projections: { ...catalog.projections, [projection.id]: projection }, updatedAt: timestamp };
+      validateProjection(projection, next);
+      projectCanvasSnapshot(sceneFromRevision(revision), revision.evidence);
+      await this.saveRepresentationCatalog(next);
+      return { catalog: next, representation: next.representations[targetId], projection };
+    });
+  }
+
+  saveMappingDiagram(projectId: string, input: SaveProjectDiagramInput) {
+    return this.serialize(async () => {
+      if (input.projectId && input.projectId !== projectId) throw new Error("Diagram belongs to another Project");
+      if (typeof input.name !== "string" || !input.name.trim() || input.name.length > 120) throw new Error("Diagram name must contain 1–120 characters");
+      const catalog = await this.loadRepresentationCatalog(projectId);
+      const current = input.representationId ? catalog.representations[input.representationId] : undefined;
+      if (input.representationId && !current) throw new Error("Project diagram was not found");
+      if (current && (current.status === "archived" || current.currentRevisionId !== input.expectedRevisionId)) {
+        throw new ProjectDiagramConflict("This diagram has changed. Reload the page to open the latest revision before saving.");
+      }
+      const sourceId = current?.currentRevisionId ?? input.sourceRevisionId;
+      const source = sourceId ? catalog.revisions[sourceId] : undefined;
+      if (sourceId && !source) throw new Error("Source revision does not belong to this Project");
+      const evidence = source?.evidence ?? {};
+      const scene = structuredClone(input.scene);
+      const { ascii, mappings } = projectCanvasSnapshot(scene, evidence);
+      const timestamp = nowIso();
+      const id = current?.id ?? `representation-${randomUUID()}`;
+      const revisionId = `representation-revision-${randomUUID()}`;
+      const revision: ProjectRepresentationRevisionRecord = {
+        schemaVersion: 1, id: revisionId, projectId, representationId: id,
+        revision: (current?.revisionIds.length ?? 0) + 1,
+        ascii, asciiSha256: createHash("sha256").update(ascii).digest("hex"),
+        content: { kind: "mapping-canvas", scene },
+        representationKind: current?.representationKind ?? source?.representationKind ?? "diagram",
+        evidence, mappings, ...(source?.provenance ? { provenance: source.provenance } : {}), createdAt: timestamp
+      };
+      const representation: ProjectRepresentationRecord = {
+        schemaVersion: 1, id, projectId, handle: current?.handle ?? id, name: input.name.trim(),
+        viewKind: current?.viewKind ?? "diagram", representationKind: revision.representationKind,
+        status: "settled", currentRevisionId: revisionId, revisionIds: [...(current?.revisionIds ?? []), revisionId],
+        createdAt: current?.createdAt ?? timestamp, updatedAt: timestamp
+      };
+      const next = { ...catalog, representations: { ...catalog.representations, [id]: representation },
+        revisions: { ...catalog.revisions, [revisionId]: revision }, updatedAt: timestamp };
+      await this.saveRepresentationCatalog(next);
+      return { catalog: next, representation };
+    });
+  }
 
   private compactionCatalogPath(): string {
     return path.join(this.storeRoot, "corpus", "compactions.json");
@@ -193,14 +365,20 @@ export class ProjectCatalogStore {
     if (stored.projectId !== projectId) {
       throw new Error("representation catalog belongs to another Project");
     }
-    return stored;
+    return { ...stored, revisions: Object.fromEntries(Object.entries(stored.revisions).map(([id, revision]) => [id,
+      { ...revision, content: revision.content ?? { kind: "ascii" as const, ascii: revision.ascii } }
+    ])) };
   }
 
   async saveRepresentationCatalog(catalog: ProjectRepresentationCatalogRecord): Promise<void> {
     await writeJsonAtomic(this.representationCatalogPath(), catalog);
   }
 
-  async promoteRepresentation(
+  promoteRepresentation(draft: ProjectRepresentationPromotionDraft) {
+    return this.serialize(() => this.promoteRepresentationUnlocked(draft));
+  }
+
+  private async promoteRepresentationUnlocked(
     draft: ProjectRepresentationPromotionDraft
   ): Promise<{ catalog: ProjectRepresentationCatalogRecord; representation: ProjectRepresentationRecord }> {
     const catalog = await this.loadRepresentationCatalog(draft.projectId);
@@ -234,6 +412,7 @@ export class ProjectCatalogStore {
       representationId,
       revision: revisionNumber,
       ascii: draft.ascii,
+      content: { kind: "ascii", ascii: draft.ascii },
       asciiSha256: draft.asciiSha256,
       representationKind: draft.representationKind,
       evidence: draft.evidence,
@@ -270,7 +449,11 @@ export class ProjectCatalogStore {
     return { catalog: next, representation };
   }
 
-  async clearActiveRepresentation(
+  clearActiveRepresentation(projectId: string, viewKind: DiagramViewKind, expectedRepresentationId?: string) {
+    return this.serialize(() => this.clearActiveRepresentationUnlocked(projectId, viewKind, expectedRepresentationId));
+  }
+
+  private async clearActiveRepresentationUnlocked(
     projectId: string,
     viewKind: DiagramViewKind,
     expectedRepresentationId?: string
@@ -285,7 +468,11 @@ export class ProjectCatalogStore {
     return next;
   }
 
-  async archiveRepresentation(
+  archiveRepresentation(projectId: string, representationId: string) {
+    return this.serialize(() => this.archiveRepresentationUnlocked(projectId, representationId));
+  }
+
+  private async archiveRepresentationUnlocked(
     projectId: string,
     representationId: string
   ): Promise<ProjectRepresentationCatalogRecord> {
@@ -323,3 +510,5 @@ export class ProjectCatalogStore {
     return revision ? catalog.representations[revision.representationId] : undefined;
   }
 }
+
+export class ProjectDiagramConflict extends Error {}

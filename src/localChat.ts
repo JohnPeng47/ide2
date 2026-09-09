@@ -10,6 +10,8 @@ export interface LocalChatMessage {
 }
 
 export interface LocalChatSelection {
+  /** Rendering box identity; rect remains diagram-local. */
+  boxId?: string;
   nodeIds: string[];
   rect: MappingPocGridRect;
   summary: string;

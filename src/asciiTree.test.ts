@@ -38,4 +38,22 @@ describe("ASCII tree", () => {
   it("reports the exact text column when a branch uses extra spacing", () => {
     expect(parseAsciiTree("+-->   spaced")[0]).toMatchObject({ text: "spaced", textColumn: 8 });
   });
+
+  it("recognizes conventional plain roots and all supported branch endings", () => {
+    const nodes = parseAsciiTree("root\n|\n+-- first\n|   `-- nested\n\\-- last");
+    expect(nodes.map(({ line, parentLine, textColumn, text }) => ({ line, parentLine, textColumn, text })))
+      .toEqual([
+        { line: 1, parentLine: undefined, textColumn: 1, text: "root" },
+        { line: 3, parentLine: 1, textColumn: 5, text: "first" },
+        { line: 4, parentLine: 3, textColumn: 9, text: "nested" },
+        { line: 5, parentLine: 1, textColumn: 5, text: "last" }
+      ]);
+  });
+
+  it("keeps adjacent conventional trees separate and ignores prose headings", () => {
+    const nodes = parseAsciiTree("heading\n\nfirst\n\\-- child\nsecond\n\\-- child");
+    expect(nodes.map((node) => [node.line, node.parentLine])).toEqual([
+      [3, undefined], [4, 3], [5, undefined], [6, 5]
+    ]);
+  });
 });

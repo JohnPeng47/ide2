@@ -1,0 +1,839 @@
+{
+  "schemaVersion": 1,
+  "id": "entities-47426036-2d2c-4d23-bbe7-a002271ba7f9",
+  "diagramSetId": "set-cb8f7180-d05e-4af0-912b-950dd96e6a88",
+  "revision": 1,
+  "status": "finalized",
+  "entities": [
+    {
+      "id": "entity-b5ee152a-0c4b-4d62-b80e-b61a336c7882",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-cb8f7180-d05e-4af0-912b-950dd96e6a88",
+        "codeEntitiesSetId": "entities-47426036-2d2c-4d23-bbe7-a002271ba7f9"
+      },
+      "handle": "project-record",
+      "label": "ProjectRecord",
+      "category": "interface-data-struct",
+      "summary": "ProjectRecord defines Project in the project, artifact, or generation domain model.",
+      "sourceRanges": [
+        {
+          "path": "src/domain.ts",
+          "startLine": 136,
+          "endLine": 149,
+          "symbol": "ProjectRecord",
+          "id": "range-d1a5c3e1-3980-4b97-a844-1f0a20c0c60c",
+          "originalLines": [
+            "export interface ProjectRecord {",
+            "  schemaVersion: typeof SCHEMA_VERSION;",
+            "  id: string;",
+            "  name: string;",
+            "  repositoryIdentity: string;",
+            "  canonicalRepoRoot: string;",
+            "  /** Application semantics for this corpus. Missing only while reading legacy records. */",
+            "  domainProfileId: import(\"./domainProfile\").DomainProfileId;",
+            "  /** Concrete content source. Missing legacy records normalize to the canonical git worktree. */",
+            "  corpus: import(\"./domainProfile\").CorpusBinding;",
+            "  diagramSetIds: string[];",
+            "  createdAt: string;",
+            "  updatedAt: string;",
+            "}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-0e550b61-ce64-4da6-9b26-23b019aa2068",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-cb8f7180-d05e-4af0-912b-950dd96e6a88",
+        "codeEntitiesSetId": "entities-47426036-2d2c-4d23-bbe7-a002271ba7f9"
+      },
+      "handle": "corpus-binding",
+      "label": "CorpusBinding",
+      "category": "interface-data-struct",
+      "summary": "CorpusBinding defines Corpus in the project, artifact, or generation domain model.",
+      "sourceRanges": [
+        {
+          "path": "src/domainProfile.ts",
+          "startLine": 7,
+          "endLine": 9,
+          "symbol": "CorpusBinding",
+          "id": "range-3d0dcdaf-2c1c-4bca-bb7f-852d7a769512",
+          "originalLines": [
+            "export type CorpusBinding =",
+            "  | { kind: \"git-worktree\"; root: string; revision?: string }",
+            "  | { kind: \"filesystem-documents\"; root: string };"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-1ef8d0ad-ae91-4cc6-900a-ca1aa100b7b7",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-cb8f7180-d05e-4af0-912b-950dd96e6a88",
+        "codeEntitiesSetId": "entities-47426036-2d2c-4d23-bbe7-a002271ba7f9"
+      },
+      "handle": "project-corpus-compaction-catalog-record",
+      "label": "ProjectCorpusCompactionCatalogRecord",
+      "category": "interface-data-struct",
+      "summary": "ProjectCorpusCompactionCatalogRecord defines shared source compactions in the project, artifact, or generation domain model.",
+      "sourceRanges": [
+        {
+          "path": "src/projectCatalog.ts",
+          "startLine": 36,
+          "endLine": 44,
+          "symbol": "ProjectCorpusCompactionCatalogRecord",
+          "id": "range-691588a9-f669-469b-9971-32613f97c6c8",
+          "originalLines": [
+            "export interface ProjectCorpusCompactionCatalogRecord {",
+            "  schemaVersion: 1;",
+            "  projectId: string;",
+            "  /** The current compaction for a live corpus path; historical source revisions remain addressable. */",
+            "  activeByPath: Record<string, string>;",
+            "  compactions: Record<string, ProjectFileCompactionRecord>;",
+            "  createdAt: string;",
+            "  updatedAt: string;",
+            "}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-03364914-1797-458b-a848-cf15a32f01cf",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-cb8f7180-d05e-4af0-912b-950dd96e6a88",
+        "codeEntitiesSetId": "entities-47426036-2d2c-4d23-bbe7-a002271ba7f9"
+      },
+      "handle": "diagram-set-record",
+      "label": "DiagramSetRecord",
+      "category": "interface-data-struct",
+      "summary": "DiagramSetRecord defines DiagramSet in the project, artifact, or generation domain model.",
+      "sourceRanges": [
+        {
+          "path": "src/domain.ts",
+          "startLine": 151,
+          "endLine": 173,
+          "symbol": "DiagramSetRecord",
+          "id": "range-1a70ce69-b499-471f-95d6-b55b438d7e5b",
+          "originalLines": [
+            "export interface DiagramSetRecord {",
+            "  schemaVersion: typeof SCHEMA_VERSION;",
+            "  id: string;",
+            "  projectId: string;",
+            "  name: string;",
+            "  initialPrompt: string;",
+            "  sourceCheckoutRoot: string;",
+            "  gitRevision?: string;",
+            "  codeEntitiesSetId: string;",
+            "  /** The preferred candidate for each full-diagram view category. */",
+            "  featuredViewIds: Partial<Record<DiagramViewKind, string>>;",
+            "  diagramIds: string[];",
+            "  diagramComponentIds: string[];",
+            "  generationBatchIds: string[];",
+            "  agentRunIds: string[];",
+            "  editSessionIds: string[];",
+            "  readiness: DiagramSetReadiness;",
+            "  /** How the initial evidence and diagrams entered this set. Missing legacy values mean generated. */",
+            "  creationMode?: \"generate\" | \"materialized\";",
+            "  createdAt: string;",
+            "  updatedAt: string;",
+            "  error?: string;",
+            "}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-639a3eee-ad9b-4271-9a88-ced89f02abc9",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-cb8f7180-d05e-4af0-912b-950dd96e6a88",
+        "codeEntitiesSetId": "entities-47426036-2d2c-4d23-bbe7-a002271ba7f9"
+      },
+      "handle": "generation-session-record",
+      "label": "GenerationSessionRecord",
+      "category": "interface-data-struct",
+      "summary": "GenerationSessionRecord defines GenerationSession in the project, artifact, or generation domain model.",
+      "sourceRanges": [
+        {
+          "path": "src/domain.ts",
+          "startLine": 176,
+          "endLine": 176,
+          "symbol": "GenerationSessionRecord",
+          "id": "range-e8375af9-120f-4a08-b84d-1d6ec69a733b",
+          "originalLines": [
+            "export type GenerationSessionRecord = DiagramSetRecord;"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-4a0f5e58-3cbc-434c-8e72-3d746340b2eb",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-cb8f7180-d05e-4af0-912b-950dd96e6a88",
+        "codeEntitiesSetId": "entities-47426036-2d2c-4d23-bbe7-a002271ba7f9"
+      },
+      "handle": "code-entities-set-record",
+      "label": "CodeEntitiesSetRecord",
+      "category": "interface-data-struct",
+      "summary": "CodeEntitiesSetRecord defines CodeEntitiesSet in the project, artifact, or generation domain model.",
+      "sourceRanges": [
+        {
+          "path": "src/domain.ts",
+          "startLine": 123,
+          "endLine": 134,
+          "symbol": "CodeEntitiesSetRecord",
+          "id": "range-bfcb461e-04a3-493d-945d-93c67fb46a8f",
+          "originalLines": [
+            "export interface CodeEntitiesSetRecord {",
+            "  schemaVersion: typeof SCHEMA_VERSION;",
+            "  id: string;",
+            "  diagramSetId: string;",
+            "  revision: number;",
+            "  status: \"collecting\" | \"finalized\" | \"failed\";",
+            "  entities: CodeEntityRecord[];",
+            "  /** Immutable prompt snapshot used to collect this set. Absent on legacy records. */",
+            "  promptConfigId?: string;",
+            "  finalizedAt?: string;",
+            "  error?: string;",
+            "}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-972428ea-c135-4efc-b296-8619f4e5a403",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-cb8f7180-d05e-4af0-912b-950dd96e6a88",
+        "codeEntitiesSetId": "entities-47426036-2d2c-4d23-bbe7-a002271ba7f9"
+      },
+      "handle": "code-entity-record",
+      "label": "CodeEntityRecord",
+      "category": "interface-data-struct",
+      "summary": "CodeEntityRecord defines CodeEntity in the project, artifact, or generation domain model.",
+      "sourceRanges": [
+        {
+          "path": "src/domain.ts",
+          "startLine": 112,
+          "endLine": 121,
+          "symbol": "CodeEntityRecord",
+          "id": "range-62e410cd-9c8a-4b58-8660-23790dc49b41",
+          "originalLines": [
+            "export interface CodeEntityRecord {",
+            "  id: string;",
+            "  /** Exact immutable collection that owns this entity. Optional on legacy records. */",
+            "  origin?: CodeEntityOrigin;",
+            "  handle: string;",
+            "  label: string;",
+            "  category: CodeEntityCategory;",
+            "  summary: string;",
+            "  sourceRanges: SourceRange[];",
+            "}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-b8ac6e82-01f8-43de-ae58-3cd3ae0ef38b",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-cb8f7180-d05e-4af0-912b-950dd96e6a88",
+        "codeEntitiesSetId": "entities-47426036-2d2c-4d23-bbe7-a002271ba7f9"
+      },
+      "handle": "source-range",
+      "label": "SourceRange",
+      "category": "interface-data-struct",
+      "summary": "SourceRange defines SourceRange + captured source text in the project, artifact, or generation domain model.",
+      "sourceRanges": [
+        {
+          "path": "src/domain.ts",
+          "startLine": 99,
+          "endLine": 110,
+          "symbol": "SourceRange",
+          "id": "range-e48742aa-4dd8-4e7c-8ca4-4d1a47d8333b",
+          "originalLines": [
+            "export interface SourceRange {",
+            "  /** Globally unique on new records. Optional only while reading legacy records. */",
+            "  id?: string;",
+            "  path: string;",
+            "  startLine: number;",
+            "  endLine: number;",
+            "  symbol?: string;",
+            "  /** Immutable source snapshot captured when this CodeEntity was collected. */",
+            "  originalLines?: string[];",
+            "  /** Optional presentation map; absent ranges render as their complete source. */",
+            "  compactedSource?: CompactedSource;",
+            "}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-1d19cf62-2ce7-4541-8057-58d3e968a6d8",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-cb8f7180-d05e-4af0-912b-950dd96e6a88",
+        "codeEntitiesSetId": "entities-47426036-2d2c-4d23-bbe7-a002271ba7f9"
+      },
+      "handle": "generation-batch-record",
+      "label": "GenerationBatchRecord",
+      "category": "interface-data-struct",
+      "summary": "GenerationBatchRecord defines GenerationBatch in the project, artifact, or generation domain model.",
+      "sourceRanges": [
+        {
+          "path": "src/domain.ts",
+          "startLine": 479,
+          "endLine": 495,
+          "symbol": "GenerationBatchRecord",
+          "id": "range-fa80443b-64b3-465b-b0a6-f7246e113171",
+          "originalLines": [
+            "export interface GenerationBatchRecord {",
+            "  schemaVersion: typeof SCHEMA_VERSION;",
+            "  id: string;",
+            "  diagramSetId: string;",
+            "  requestedCount: number;",
+            "  promptConfigId: string;",
+            "  codeEntitiesRevision: number;",
+            "  childRunIds: string[];",
+            "  outputDiagramIds: string[];",
+            "  outputDiagramComponentIds: string[];",
+            "  /** Evaluation container created for successful diagram outputs. */",
+            "  diagramCandidateBatchId?: string;",
+            "  status: GenerationBatchStatus;",
+            "  createdAt: string;",
+            "  updatedAt: string;",
+            "  error?: string;",
+            "}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-cc2b45dd-2005-4349-ba62-d89008bfe3e8",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-cb8f7180-d05e-4af0-912b-950dd96e6a88",
+        "codeEntitiesSetId": "entities-47426036-2d2c-4d23-bbe7-a002271ba7f9"
+      },
+      "handle": "generation-prompt-config-record",
+      "label": "GenerationPromptConfigRecord",
+      "category": "interface-data-struct",
+      "summary": "GenerationPromptConfigRecord defines GenerationPromptConfig in the project, artifact, or generation domain model.",
+      "sourceRanges": [
+        {
+          "path": "src/domain.ts",
+          "startLine": 237,
+          "endLine": 287,
+          "symbol": "GenerationPromptConfigRecord",
+          "id": "range-c713d50a-24d2-48cc-8df0-4db465aa9591",
+          "originalLines": [
+            "export interface GenerationPromptConfigRecord {",
+            "  schemaVersion: typeof SCHEMA_VERSION;",
+            "  id: string;",
+            "  diagramSetId: string;",
+            "  /** Domain used to render evidence terminology. Missing legacy values mean source-code. */",
+            "  domainProfileId?: \"source-code\" | \"document\";",
+            "  outputKind: GenerationOutputKind;",
+            "  /** Required for full diagrams and omitted for DiagramComponents. */",
+            "  viewKind?: DiagramViewKind;",
+            "  modelId: DiagramModelId;",
+            "  instruction: string;",
+            "  selectedCodeEntityIds: string[];",
+            "  references: GenerationPromptReference[];",
+            "  /** Mentioned references intentionally left out of the agent context. */",
+            "  omittedReferences?: PromptReference[];",
+            "  /** Optional second user turn that restyles the first submitted artifact. */",
+            "  referencePrompt?: {",
+            "    templateVersion: 1;",
+            "    /** Name of the persisted template selected for this workflow turn. */",
+            "    promptName?: string;",
+            "    instruction: string;",
+            "    references: GenerationPromptReference[];",
+            "    /** Mentioned follow-up references intentionally left out of model context. */",
+            "    omittedReferences?: PromptReference[];",
+            "    rendered: string;",
+            "  };",
+            "  /** Mandatory final user turn that maps the final submitted artifact. */",
+            "  mappingPrompt: {",
+            "    templateVersion: 1;",
+            "    /** Name of the persisted template selected for this workflow turn. */",
+            "    promptName?: string;",
+            "    template: string;",
+            "  };",
+            "  derivation?: GenerationDerivationRecord;",
+            "  contextPrompt: {",
+            "    templateVersion: 1;",
+            "    rendered: string;",
+            "  };",
+            "  systemPrompt: {",
+            "    templateId: \"artifact-generation\";",
+            "    templateVersion: 1;",
+            "    profileId: GenerationPromptProfileId;",
+            "    profileVersion: number;",
+            "    /** Name of the persisted template selected for this workflow turn. */",
+            "    promptName?: string;",
+            "    /** Artifact references declared by the selected system-prompt template. */",
+            "    references?: GenerationPromptReference[];",
+            "    rendered: string;",
+            "  };",
+            "  createdAt: string;",
+            "}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-03da1984-1efd-4726-a1d3-c9b60857f6d3",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-cb8f7180-d05e-4af0-912b-950dd96e6a88",
+        "codeEntitiesSetId": "entities-47426036-2d2c-4d23-bbe7-a002271ba7f9"
+      },
+      "handle": "agent-run-record",
+      "label": "AgentRunRecord",
+      "category": "interface-data-struct",
+      "summary": "AgentRunRecord defines AgentRun in the project, artifact, or generation domain model.",
+      "sourceRanges": [
+        {
+          "path": "src/domain.ts",
+          "startLine": 510,
+          "endLine": 529,
+          "symbol": "AgentRunRecord",
+          "id": "range-1a8fd565-c6ef-484c-bb2c-9d09345628e3",
+          "originalLines": [
+            "export interface AgentRunRecord {",
+            "  schemaVersion: typeof SCHEMA_VERSION;",
+            "  id: string;",
+            "  diagramSetId: string;",
+            "  kind: AgentRunKind;",
+            "  status: AgentRunStatus;",
+            "  statusMessage: string;",
+            "  model?: string;",
+            "  sessionId?: string;",
+            "  generationBatchId?: string;",
+            "  outputSlot?: number;",
+            "  codeEntitiesRevision: number;",
+            "  outputCodeEntityIds: string[];",
+            "  outputDiagramId?: string;",
+            "  outputDiagramComponentId?: string;",
+            "  startedAt: string;",
+            "  updatedAt: string;",
+            "  completedAt?: string;",
+            "  error?: string;",
+            "}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-7a81452b-a48e-40c1-9f56-6c91a8bba0e2",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-cb8f7180-d05e-4af0-912b-950dd96e6a88",
+        "codeEntitiesSetId": "entities-47426036-2d2c-4d23-bbe7-a002271ba7f9"
+      },
+      "handle": "diagram-record",
+      "label": "DiagramRecord",
+      "category": "interface-data-struct",
+      "summary": "DiagramRecord defines Diagram in the project, artifact, or generation domain model.",
+      "sourceRanges": [
+        {
+          "path": "src/domain.ts",
+          "startLine": 383,
+          "endLine": 405,
+          "symbol": "DiagramRecord",
+          "id": "range-fc085a62-5dd2-4132-b7f8-f67a6c342827",
+          "originalLines": [
+            "export interface DiagramRecord {",
+            "  schemaVersion: typeof SCHEMA_VERSION;",
+            "  id: string;",
+            "  /** Original owner; differs from diagramSetId for globally imported artifacts. */",
+            "  recordOrigin?: ArtifactOrigin;",
+            "  diagramSetId: string;",
+            "  viewKind: DiagramViewKind;",
+            "  /** Main diagram that supplied mandatory context for an auxiliary view. */",
+            "  basedOnDiagramId?: string;",
+            "  handle: string;",
+            "  name: string;",
+            "  ascii: string;",
+            "  /** Presentation semantics. Optional only on legacy records. */",
+            "  representationKind?: \"tree\" | \"diagram\";",
+            "  codeEntityIds: string[];",
+            "  origin: \"generated\" | \"imported\" | \"edited\" | \"materialized\";",
+            "  producedByRunId?: string;",
+            "  generationPromptConfigId?: string;",
+            "  editSessionId?: string;",
+            "  derivedFromDiagramIds: string[];",
+            "  createdAt: string;",
+            "  archivedAt?: string;",
+            "}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-bb54a8eb-2ab8-408e-94ad-8527f0cd7355",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-cb8f7180-d05e-4af0-912b-950dd96e6a88",
+        "codeEntitiesSetId": "entities-47426036-2d2c-4d23-bbe7-a002271ba7f9"
+      },
+      "handle": "diagram-component-record",
+      "label": "DiagramComponentRecord",
+      "category": "interface-data-struct",
+      "summary": "DiagramComponentRecord defines DiagramComponent in the project, artifact, or generation domain model.",
+      "sourceRanges": [
+        {
+          "path": "src/domain.ts",
+          "startLine": 354,
+          "endLine": 377,
+          "symbol": "DiagramComponentRecord",
+          "id": "range-3fdf0f64-6408-480c-9146-73b2de7af901",
+          "originalLines": [
+            "export interface DiagramComponentRecord {",
+            "  schemaVersion: typeof SCHEMA_VERSION;",
+            "  id: string;",
+            "  /** Original owner; differs from diagramSetId for globally imported artifacts. */",
+            "  recordOrigin?: ArtifactOrigin;",
+            "  diagramSetId: string;",
+            "  handle: string;",
+            "  name: string;",
+            "  ascii: string;",
+            "  /** Presentation semantics. Optional only on legacy records. */",
+            "  representationKind?: \"tree\" | \"diagram\";",
+            "  codeEntityIds: string[];",
+            "  origin: \"selection\" | \"generated\" | \"imported\" | \"edited\" | \"materialized\";",
+            "  sourceDiagramId?: string;",
+            "  sourceDiagramComponentId?: string;",
+            "  selectionBounds?: DiagramSelectionBounds;",
+            "  producedByRunId?: string;",
+            "  generationPromptConfigId?: string;",
+            "  editSessionId?: string;",
+            "  derivedFromDiagramIds: string[];",
+            "  derivedFromDiagramComponentIds: string[];",
+            "  createdAt: string;",
+            "  archivedAt?: string;",
+            "}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-d62d8a30-6741-4799-9548-470a809b265b",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-cb8f7180-d05e-4af0-912b-950dd96e6a88",
+        "codeEntitiesSetId": "entities-47426036-2d2c-4d23-bbe7-a002271ba7f9"
+      },
+      "handle": "diagram-candidate-batch-record",
+      "label": "DiagramCandidateBatchRecord",
+      "category": "interface-data-struct",
+      "summary": "DiagramCandidateBatchRecord defines DiagramCandidateBatch in the project, artifact, or generation domain model.",
+      "sourceRanges": [
+        {
+          "path": "src/domain.ts",
+          "startLine": 497,
+          "endLine": 508,
+          "symbol": "DiagramCandidateBatchRecord",
+          "id": "range-660c5ef9-b805-44c4-9355-a15c6ff9fa63",
+          "originalLines": [
+            "export interface DiagramCandidateBatchRecord {",
+            "  schemaVersion: typeof SCHEMA_VERSION;",
+            "  id: string;",
+            "  diagramSetId: string;",
+            "  generationBatchId: string;",
+            "  /** Immutable candidate membership in generation output order, including archived diagrams. */",
+            "  diagramIds: string[];",
+            "  /** One current rank per candidate. Empty until feedback is submitted. Lower is better. */",
+            "  rankings: Record<string, number>;",
+            "  createdAt: string;",
+            "  updatedAt: string;",
+            "}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-1fd40b71-eb44-42fe-8180-e8cdee16c3f6",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-cb8f7180-d05e-4af0-912b-950dd96e6a88",
+        "codeEntitiesSetId": "entities-47426036-2d2c-4d23-bbe7-a002271ba7f9"
+      },
+      "handle": "diagram-code-entity-map-record",
+      "label": "DiagramCodeEntityMapRecord",
+      "category": "interface-data-struct",
+      "summary": "DiagramCodeEntityMapRecord defines CodeEntityMap in the project, artifact, or generation domain model.",
+      "sourceRanges": [
+        {
+          "path": "src/domain.ts",
+          "startLine": 422,
+          "endLine": 434,
+          "symbol": "DiagramCodeEntityMapRecord",
+          "id": "range-402e9342-4952-4c65-a7a8-1faba4a31706",
+          "originalLines": [
+            "export interface DiagramCodeEntityMapRecord {",
+            "  schemaVersion: typeof SCHEMA_VERSION;",
+            "  diagramSetId: string;",
+            "  artifactKind: GenerationOutputKind;",
+            "  artifactId: string;",
+            "  asciiSha256: string;",
+            "  mappings: DiagramElementMapping[];",
+            "  /** Present for agent-produced maps; materialized maps have no synthetic AgentRun. */",
+            "  producedByRunId?: string;",
+            "  /** Missing legacy values mean agent-produced. */",
+            "  origin?: \"agent\" | \"materialized\";",
+            "  createdAt: string;",
+            "}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-e23015a5-e9b7-41fa-8085-ef52bad2abd3",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-cb8f7180-d05e-4af0-912b-950dd96e6a88",
+        "codeEntitiesSetId": "entities-47426036-2d2c-4d23-bbe7-a002271ba7f9"
+      },
+      "handle": "edit-session-record",
+      "label": "EditSessionRecord",
+      "category": "interface-data-struct",
+      "summary": "EditSessionRecord defines EditSession in the project, artifact, or generation domain model.",
+      "sourceRanges": [
+        {
+          "path": "src/domain.ts",
+          "startLine": 554,
+          "endLine": 573,
+          "symbol": "EditSessionRecord",
+          "id": "range-0a343922-85fa-435f-b88f-196729f78848",
+          "originalLines": [
+            "export interface EditSessionRecord {",
+            "  schemaVersion: typeof SCHEMA_VERSION;",
+            "  id: string;",
+            "  diagramSetId: string;",
+            "  sourceArtifactKind: GenerationOutputKind;",
+            "  sourceArtifactId: string;",
+            "  sourceHandle: string;",
+            "  sourceName: string;",
+            "  baseAscii: string;",
+            "  workingAscii: string;",
+            "  codeEntityIds: string[];",
+            "  operations: EditOperationRecord[];",
+            "  /** Number of operations currently applied. Operations after this cursor are redoable. */",
+            "  operationCursor: number;",
+            "  revision: number;",
+            "  status: \"active\" | \"committed\" | \"discarded\";",
+            "  outputArtifactId?: string;",
+            "  createdAt: string;",
+            "  updatedAt: string;",
+            "}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-66993e7a-d6b1-4771-8dc0-46f974b8efbc",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-cb8f7180-d05e-4af0-912b-950dd96e6a88",
+        "codeEntitiesSetId": "entities-47426036-2d2c-4d23-bbe7-a002271ba7f9"
+      },
+      "handle": "project-representation-catalog-record",
+      "label": "ProjectRepresentationCatalogRecord",
+      "category": "interface-data-struct",
+      "summary": "ProjectRepresentationCatalogRecord defines ProjectRepresentationCatalog in the project, artifact, or generation domain model.",
+      "sourceRanges": [
+        {
+          "path": "src/projectCatalog.ts",
+          "startLine": 125,
+          "endLine": 133,
+          "symbol": "ProjectRepresentationCatalogRecord",
+          "id": "range-788e996b-e27a-4d38-9361-f842facee99c",
+          "originalLines": [
+            "export interface ProjectRepresentationCatalogRecord {",
+            "  schemaVersion: 1;",
+            "  projectId: string;",
+            "  activeByKind: Partial<Record<DiagramViewKind, string>>;",
+            "  representations: Record<string, ProjectRepresentationRecord>;",
+            "  revisions: Record<string, ProjectRepresentationRevisionRecord>;",
+            "  createdAt: string;",
+            "  updatedAt: string;",
+            "}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-1345f50e-1563-4ff9-ad0b-fbf9f278660b",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-cb8f7180-d05e-4af0-912b-950dd96e6a88",
+        "codeEntitiesSetId": "entities-47426036-2d2c-4d23-bbe7-a002271ba7f9"
+      },
+      "handle": "project-representation-record",
+      "label": "ProjectRepresentationRecord",
+      "category": "interface-data-struct",
+      "summary": "ProjectRepresentationRecord defines ProjectRepresentation in the project, artifact, or generation domain model.",
+      "sourceRanges": [
+        {
+          "path": "src/projectCatalog.ts",
+          "startLine": 110,
+          "endLine": 123,
+          "symbol": "ProjectRepresentationRecord",
+          "id": "range-b9a056a5-2ab3-4920-bd3d-c6dd8bb06474",
+          "originalLines": [
+            "export interface ProjectRepresentationRecord {",
+            "  schemaVersion: 1;",
+            "  id: string;",
+            "  projectId: string;",
+            "  handle: string;",
+            "  name: string;",
+            "  viewKind: DiagramViewKind;",
+            "  representationKind: \"tree\" | \"diagram\";",
+            "  status: \"settled\" | \"archived\";",
+            "  currentRevisionId: string;",
+            "  revisionIds: string[];",
+            "  createdAt: string;",
+            "  updatedAt: string;",
+            "}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-bfbbcd22-49d0-4785-bdba-d840712d1d87",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-cb8f7180-d05e-4af0-912b-950dd96e6a88",
+        "codeEntitiesSetId": "entities-47426036-2d2c-4d23-bbe7-a002271ba7f9"
+      },
+      "handle": "project-representation-revision-record",
+      "label": "ProjectRepresentationRevisionRecord",
+      "category": "interface-data-struct",
+      "summary": "ProjectRepresentationRevisionRecord defines Revision in the project, artifact, or generation domain model.",
+      "sourceRanges": [
+        {
+          "path": "src/projectCatalog.ts",
+          "startLine": 90,
+          "endLine": 108,
+          "symbol": "ProjectRepresentationRevisionRecord",
+          "id": "range-10a10290-63df-46dc-b60a-f59e90e1d0eb",
+          "originalLines": [
+            "export interface ProjectRepresentationRevisionRecord {",
+            "  schemaVersion: 1;",
+            "  id: string;",
+            "  projectId: string;",
+            "  representationId: string;",
+            "  revision: number;",
+            "  ascii: string;",
+            "  asciiSha256: string;",
+            "  /** Absent legacy content is a single ASCII diagram. */",
+            "  content?: import(\"./projectDiagramCanvas\").ProjectDiagramContent;",
+            "  representationKind: \"tree\" | \"diagram\";",
+            "  evidence: Record<string, ProjectRepresentationEvidenceRecord>;",
+            "  mappings: ProjectRepresentationMappingRecord[];",
+            "  provenance?: {",
+            "    diagramSetId: string;",
+            "    artifactId: string;",
+            "  };",
+            "  createdAt: string;",
+            "}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-f735c499-20e6-4833-81ca-9c67e0627405",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-cb8f7180-d05e-4af0-912b-950dd96e6a88",
+        "codeEntitiesSetId": "entities-47426036-2d2c-4d23-bbe7-a002271ba7f9"
+      },
+      "handle": "project-diagram-content",
+      "label": "ProjectDiagramContent",
+      "category": "interface-data-struct",
+      "summary": "ProjectDiagramContent defines ASCII or structured mapping canvas in the project, artifact, or generation domain model.",
+      "sourceRanges": [
+        {
+          "path": "src/projectDiagramCanvas.ts",
+          "startLine": 6,
+          "endLine": 6,
+          "symbol": "ProjectDiagramContent",
+          "id": "range-f497a013-bf4f-4866-bfbe-7224055f64ce",
+          "originalLines": [
+            "export type ProjectDiagramContent = { kind: \"ascii\"; ascii: string } | { kind: \"mapping-canvas\"; scene: LineGridScene };"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-a7dd7433-6057-4a77-b3a0-8a21bd806b5f",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-cb8f7180-d05e-4af0-912b-950dd96e6a88",
+        "codeEntitiesSetId": "entities-47426036-2d2c-4d23-bbe7-a002271ba7f9"
+      },
+      "handle": "project-representation-evidence-record",
+      "label": "ProjectRepresentationEvidenceRecord",
+      "category": "interface-data-struct",
+      "summary": "ProjectRepresentationEvidenceRecord defines evidence snapshots in the project, artifact, or generation domain model.",
+      "sourceRanges": [
+        {
+          "path": "src/projectCatalog.ts",
+          "startLine": 72,
+          "endLine": 79,
+          "symbol": "ProjectRepresentationEvidenceRecord",
+          "id": "range-e70b5581-d089-4e47-8f77-abac36fbae11",
+          "originalLines": [
+            "export interface ProjectRepresentationEvidenceRecord {",
+            "  id: string;",
+            "  handle: string;",
+            "  label: string;",
+            "  category: CodeEntityCategory;",
+            "  summary: string;",
+            "  sourceRanges: ProjectRepresentationEvidenceRange[];",
+            "}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entity-28d37213-8616-482f-9f98-257d82310a2d",
+      "origin": {
+        "projectId": "project-ce67f2af4410",
+        "diagramSetId": "set-cb8f7180-d05e-4af0-912b-950dd96e6a88",
+        "codeEntitiesSetId": "entities-47426036-2d2c-4d23-bbe7-a002271ba7f9"
+      },
+      "handle": "project-representation-mapping-record",
+      "label": "ProjectRepresentationMappingRecord",
+      "category": "interface-data-struct",
+      "summary": "ProjectRepresentationMappingRecord defines mappings in the project, artifact, or generation domain model.",
+      "sourceRanges": [
+        {
+          "path": "src/projectCatalog.ts",
+          "startLine": 81,
+          "endLine": 88,
+          "symbol": "ProjectRepresentationMappingRecord",
+          "id": "range-32d3f94d-c28a-4d9f-8284-1a0c1f241533",
+          "originalLines": [
+            "export interface ProjectRepresentationMappingRecord {",
+            "  id: string;",
+            "  evidenceId: string;",
+            "  sourceRangeId: string;",
+            "  line: number;",
+            "  startColumn: number;",
+            "  endColumn: number;",
+            "}"
+          ]
+        }
+      ]
+    }
+  ],
+  "finalizedAt": "2026-09-09T02:23:33.681Z"
+}

@@ -1,20 +1,14 @@
 # ASCII Diagram Axis Experiments
 
-This resumable CLI tests whether a normalized scalar produces a monotonic, distinguishable ASCII-diagram response above same-value stochastic variation. It currently runs `semantic_zoom` against TLB-10 and `topology` against TLB-40.
+The resumable `ExperimentRunner` tests whether a normalized scalar produces a monotonic, distinguishable ASCII-diagram response above same-value stochastic variation. It currently runs `semantic_zoom` against TLB-10 and `topology` against TLB-40.
 
 Every generation, blind judgment, and prompt-analysis session is pinned to `gpt-5.6-sol`. Source DiagramSets are read-only. Results, exact prompt snapshots, diagrams, judgments, deterministic aggregates, and recommendations are stored in a separate output directory.
 
-```bash
-npm --prefix scripts/new-diagram run experiment -- plan
-npm --prefix scripts/new-diagram run experiment -- run \
-  --source /home/john/drone-interception \
-  --output /home/john/drone-interception/.datasets/diagram-axis-control-semantic-topology-v1 \
-  --through 2 \
-  --runtime sol \
-  --concurrency 3
-```
-
-Re-running the same command resumes from existing JSON records. Use `--runtime fake` with a different output directory for a model-free smoke test.
+The runner remains an internal TypeScript module in `runner.ts`, with
+`SolExperimentRuntime` and `FakeExperimentRuntime` implementations in `runtime.ts`.
+It resumes from existing JSON records in its output directory. There is no
+command-line entry point or HTTP endpoint for starting experiment runs; the
+studio exposes existing results through its viewer and read-only experiment API.
 
 Iteration 1 uses values `0, 0.5, 1`; iteration 2 uses `0, 0.25, 0.5, 0.75, 1`. Each value has three independent generations. Cross-value judges receive three blinded diagrams; same-value judges receive the three replicates. A Sol analyst revises the control block after iteration 1 and recommends a final block after iteration 2.
 

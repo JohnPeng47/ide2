@@ -1,0 +1,381 @@
+server/application.ts
++-- imports
+|   +-- node:crypto: createHash
+|   +-- node:path: path
+|   +-- src/domain: entity model, constants, ASCII/range validators, artifact and workspace types
+|   +-- src/domainProfile: BuiltInDomainProfileId, CorpusBinding
+|   +-- src/projectCatalog: file-compaction, evidence, mapping and promotion input types
+|   +-- src/domainProfiles: representationKindForArtifact, resolveDomainProfile
+|   +-- src/prompt: built-in templates, config construction, bindings and prompt rendering
+|   +-- src/callGraphFocus: version, identity key, focus request/result and entity identity
+|   +-- agentRuntime: DiagramAgentRuntime
+|   +-- callGraphTree: filterCallGraphTree, parseCallGraphTree
+|   +-- codeEntityPrompt: createCodeEntityPromptConfig
+|   +-- diagramMapping: validateDiagramMappings
+|   +-- corpus: corpusProvider, readCorpusDocumentLines
+|   +-- domainProfiles: isBuiltInDomainProfileId
+|   +-- store: DiagramStore, discoverDomainCorpus, RepositoryLocation
+|   +-- src/representationIndex: index construction, mapping element IDs and tree lineage
+|   +-- src/agentWork: spatial-progress validation, creation, updates and element IDs
+|   +-- src/representationGraph: graph validation, feedback append and record types
+|   \-- src/highlights: HighlightRecordV2
++-- const MAX_GENERATION_COUNT = 12;
++-- const MAX_ATTEMPTS = 3;
++-- const MARKER_CHARACTERS = ["`", "~", "^", "{", "}"] as const;
++-- export interface ServiceEvent
+|   +-- type: progress or workspace
+|   +-- message: string
+|   +-- workspace?: WorkspaceSnapshot
+|   +-- artifactKind?: GenerationOutputKind
+|   +-- artifactId?: string
+|   \-- status?: AgentRunRecord status
++-- timestamp()
+|   \-- return new Date().toISOString()
++-- assertMaterializedKey(value, label)
+|   \-- require lowercase letter/digit key with optional hyphens, 1..128 characters
++-- textPatch(before, after)
+|   +-- scan shared prefix into start
+|   +-- scan shared suffix into beforeEnd and afterEnd
+|   \-- return start, deletedText, insertedText
++-- applyPatch(value, patch, reverse)
+|   +-- choose deletedText and insertedText; swap when reverse
+|   +-- reject when working copy no longer matches deletedText
+|   \-- splice replacement into value
++-- characterOffset(ascii, line, column)
+|   +-- require positive integer line and column
+|   +-- split lines and reject coordinates beyond artifact bounds
+|   \-- sum prior row lengths plus newlines; add zero-based column
++-- cropAsciiSelection(ascii, bounds)
+|   +-- require positive integer bounds
+|   +-- normalize reversed line and column endpoints
+|   +-- normalize ASCII; check selection against height and maximum width
+|   +-- slice padded rows; trim blank top/bottom; reject blank selection
+|   +-- find occupied columns; crop left/right whitespace; normalize
+|   \-- assert seven-bit ASCII; return cropped ascii and normalized selection
++-- isRecord(value)
+|   \-- truthy object and not an array
++-- requiredString(value, label)
+|   \-- require nonempty string; return value
++-- parseArtifactOrigin(value, label)
+|   +-- require record with provenance
+|   \-- return required projectId and diagramSetId strings
++-- parseCallGraphFocusRequest(value)
+|   +-- require object, supported version, qualified source Diagram, nonempty selectedCodeEntities
+|   +-- parse source Diagram origin
+|   +-- selectedCodeEntities: validate each identity
+|   |   +-- require code-entity kind and provenance record
+|   |   \-- return required targetId plus project, diagram-set and entity-set origins
+|   \-- return version, required diagramSetId, sourceDiagram identity and selectedCodeEntities
++-- sameArtifactOrigin(left, right)
+|   \-- compare projectId and diagramSetId
++-- identityForRecord(entity)
+|   \-- require entity origin; return code-entity identity with targetId and origin
++-- stableProjectId(prefix, parts)
+|   \-- SHA256 NUL-joined parts; return prefix plus first 32 hex characters
+\-- export class DiagramApplication
+    +-- private readonly activeBatches = new Set<string>()
+    +-- private readonly activeMappings = new Set<string>()
+    +-- constructor(store, agents, defaultDomainProfileId)
+    |   +-- readonly store: DiagramStore
+    |   +-- private readonly agents: DiagramAgentRuntime
+    |   \-- private readonly defaultDomainProfileId = source-code
+    +-- private async projectCorpus(set?)
+    |   +-- load project; require initialized corpus and matching optional DiagramSet
+    |   \-- return document/source-code profile and project corpus
+    +-- private async settledViewIdsForSession(set)
+    |   +-- require project; load representation catalog; sort settled entries by updatedAt
+    |   +-- for revisions from this set, record artifactId by viewKind
+    |   +-- matching settled activeByKind entries override previous choices
+    |   \-- return result
+    +-- async upsertProjectFileCompaction(input)
+    |   +-- require initialized project
+    |   +-- when makeActive is not false, verify current source snapshot
+    |   |   +-- read document; remove terminal empty line
+    |   |   +-- reject stale captured originalLines
+    |   |   \-- reject incomplete active full-file snapshot
+    |   \-- upsert file compaction; return workspace
+    +-- async promoteProjectRepresentation(input)
+    |   +-- require matching project/session; resolve Diagram; reject archived source
+    |   +-- merge local/imported entities; load compactions; allocate evidence and legacy-ID maps
+    |   +-- promote every declared CodeEntity into evidence
+    |   |   +-- require entity and allocate stable evidence ID
+    |   |   +-- capture source ranges and allocate stable range IDs
+    |   |   |   +-- use originalLines or read live corpus excerpt
+    |   |   |   +-- index stable range IDs by legacy ID and index
+    |   |   |   +-- link active compaction only when hash and bounds match
+    |   |   |   \-- preserve source path, bounds, symbol and captured lines
+    |   |   \-- store evidence handle, label, category, summary and ranges
+    |   +-- load local/imported map; translate mappings to promoted evidence and range IDs
+    |   +-- promote representation with content hash, evidence, mappings and session provenance
+    |   \-- return workspace
+    +-- private async artifactForDiagramSet(setId, artifactKind, artifactId)
+    |   +-- load set; test local membership by artifact kind
+    |   +-- local: load Diagram or component; return global=false
+    |   +-- otherwise require membership in imported library
+    |   \-- load imported artifact; return global=true
+    +-- async mappedArtifactBundle(setId, artifactKind, artifactId)
+    |   +-- resolve artifact; merge local and imported evidence by entity ID
+    |   +-- resolve declared dependencies; reject unresolved dependency count
+    |   +-- load mapping; imported artifacts may fall back to set-local map
+    |   \-- return bundleVersion=1, kind, artifact, entities and optional map
+    +-- async callGraphFocus(input)
+    |   +-- parse request; resolve source Diagram; validate view kind and provenance
+    |   +-- require settled call graph based on source Diagram with provenance
+    |   +-- merge local/imported entities; reject missing call-graph dependencies
+    |   +-- validate and deduplicate selected identities
+    |   |   +-- require available entity and exact provenance identity
+    |   |   \-- require declaration by both source Diagram and settled call graph
+    |   +-- parse and filter call graph by selected identities; reject no matching nodes
+    |   \-- return versioned focused roots and qualified Diagram/call-graph identities
+    +-- async systemPromptTemplates()
+    |   \-- return store.loadSystemPromptTemplates()
+    +-- async saveRepresentationGraph(setId, input)
+    |   +-- require matching project/set ownership; stamp graph ownership and updatedAt
+    |   +-- assert graph shape; load workspace
+    |   +-- validate layers against available artifacts, exact ASCII revision and representation kind
+    |   \-- save graph; return workspace
+    +-- async addRepresentationFeedback(setId, input)
+    |   +-- require existing representation graph
+    |   +-- append target/comment feedback with generated ID and timestamp
+    |   \-- save updated graph; return workspace
+    +-- async saveAgentSpatialProgress(setId, runId, state)
+    |   +-- require AgentRun membership and load run
+    |   +-- resolve scoped artifact; require matching representation kind
+    |   +-- load mapping and build index from current ASCII hash
+    |   \-- assert state against index; save progress; return workspace
+    +-- async codeEntityPromptTemplates()
+    |   \-- load templates for document project or defaultDomainProfileId
+    +-- async resolveCodeEntityPromptTemplate(id?, requestedDomain?)
+    |   +-- default nullish ID; require string
+    |   +-- resolve requested/project/default domain; find template or first template for default request
+    |   \-- reject unsupported ID with available list; return template
+    +-- async resolveSystemPromptTemplate(id?)
+    |   +-- default nullish ID; require string; translate structureFirst and flowFirst legacy IDs
+    |   +-- load templates; find normalized ID or first template for default request
+    |   \-- reject unsupported ID with available list; return template
+    +-- async createDiagramSet(input)
+    |   +-- require name; validate corpus target; ensure project
+    |   \-- create generate-mode set with initial prompt; return diagramSet
+    +-- async createMaterializedDiagramSet(input)
+    |   +-- require materialized mode, path/name and 1..500 entities / 1..100 diagrams
+    |   +-- validate unique entity keys and per-entity source-range keys
+    |   +-- validate unique diagram keys, declared entity keys and optional mapping arrays
+    |   +-- validate target; ensure project; create materialized session
+    |   +-- materialize records and persist
+    |   |   +-- strip source-range keys from drafts; validate evidence; map entity keys to IDs
+    |   |   +-- resolve domain profile; initialize diagram handles, records, maps and ID lookup
+    |   |   +-- build each supplied Diagram and optional mappings
+    |   |   |   +-- require valid name, bounded seven-bit ASCII and available view/representation kinds
+    |   |   |   +-- select unique evidence; assign unique handle and Diagram ID
+    |   |   |   +-- build materialized Diagram with qualified origin and selected entity IDs
+    |   |   |   \-- resolve mapping entity/range keys; validate bounds; build content-hashed mapping record
+    |   |   +-- validate featuredViews object and matching Diagram view kinds
+    |   |   +-- complete collection; add diagrams/maps; promote featured representations
+    |   |   \-- return set ID, entity/diagram ID lookups and workspace
+    |   \-- on failure, move created session to trash best-effort; rethrow
+    +-- async validateDiagramSetTarget(inputPath, requestedDomainValue?)
+    |   +-- resolve requested/existing/default domain; validate built-in profile; discover corpus
+    |   +-- require discovered checkoutRoot matches application store
+    |   +-- validate existing project corpus identity and domain; allow same document root
+    |   \-- return location without writing project state
+    +-- async collectCodeEntities(setId, input, onEvent?)
+    |   +-- require mutable entity set; resolve corpus/template; begin collection with prompt config
+    |   +-- create queued collect-entities run; save and attach
+    |   +-- progress callback updates run; serializes saveRun writes; emits progress
+    |   +-- collect entities; await progress writes; validate drafts; complete collection and run; emit workspace
+    |   \-- on failure, drain progress writes; save failed run; fail collection; rethrow
+    +-- async generateInitialDiagrams(setId, input, onEvent?)
+    |   \-- generate default-count diagrams from all local entities with optional template/reference prompts
+    +-- private async validateEntityDrafts(set, drafts)
+    |   +-- reject empty drafts; resolve corpus; initialize handles and entities
+    |   +-- validate and materialize every draft
+    |   |   +-- slugify and uniquify handle
+    |   |   +-- require label, summary, supported category and source ranges
+    |   |   +-- validate each range; read corpus; reject missing/escaping paths or out-of-bounds start
+    |   |   |   \-- clamp endLine; assign range ID; capture originalLines
+    |   |   \-- assign entity ID/provenance; trim text; check prompt_str(); append record
+    |   \-- return entities
+    +-- async importArtifact(input)
+    |   +-- validate artifact kind, name and normalized seven-bit ASCII size
+    |   +-- validate optional mapped bundle and import evidence
+    |   |   +-- require bundle version/kind, unchanged ASCII and artifact provenance
+    |   |   +-- require all declared dependencies, entity provenance and source-range IDs
+    |   |   +-- require matching map target/hash, unique mapping IDs and valid entity/range identities
+    |   |   \-- persist imported CodeEntities
+    |   +-- allocate handle unique among existing artifacts of this kind
+    |   +-- Diagram: preserve bundle identity/provenance or create global imported identity; save artifact/map
+    |   +-- component: preserve bundle metadata/derivations or create global imported identity; save artifact/map
+    |   \-- return workspace
+    +-- async deleteDiagramSet(setId)
+    |   +-- reject active collection, generation batch or mapping
+    |   +-- reject persisted queued/reading-context/generating/validating runs
+    |   \-- move set to trash; return workspace
+    +-- async renameDiagram(setId, diagramId, name)
+    |   +-- trim and validate name; require local membership and nonarchived Diagram
+    |   \-- rename Diagram; return workspace
+    +-- async setStarredDiagram(setId, diagramId, starred)
+    |   +-- resolve Diagram and project representation for source
+    |   +-- starred: reject archived Diagram; promote active representation
+    |   +-- unstarred and settled: archive representation
+    |   \-- return workspace
+    +-- async rankDiagramCandidates(setId, candidateBatchId, rankings)
+    |   \-- load set; persist batch rankings; return workspace
+    +-- async archiveDiagram(setId, diagramId)
+    |   \-- require local Diagram membership; archive; return workspace
+    +-- async archiveDiagramComponent(setId, componentId)
+    |   \-- require local component membership; archive; return workspace
+    +-- async renameImportedDiagram(diagramId, name)
+    |   +-- trim/validate name; require nonarchived imported Diagram
+    |   \-- rename imported Diagram; return workspace
+    +-- async archiveImportedDiagram(diagramId)
+    |   \-- archive imported Diagram; clear featured-view references; return workspace
+    +-- async archiveImportedDiagramComponent(componentId)
+    |   \-- archive imported component; return workspace
+    +-- async mapCodeEntities(setId, artifactKind, artifactId, onEvent?)
+    |   +-- map one target through mapCodeEntitiesBatch with concurrency=1
+    |   \-- throw failed result error; otherwise return batch workspace
+    +-- async mapCodeEntitiesBatch(setId, targets, concurrency, onEvent?)
+    |   +-- require 1..50 unique targets and integer concurrency 1..6 (default 3)
+    |   +-- resolve set/domain; require finalized evidence
+    |   +-- prepare each target
+    |   |   +-- require supported kind, nonarchived artifact, evidence and no active mapping
+    |   |   +-- allocate queued mapping run linked to target and evidence revision
+    |   |   \-- build hashed representation index; initialize spatial progress; return prepared job
+    |   +-- recheck conflicts; reserve all mapping keys
+    |   +-- persist and execute mapping jobs
+    |   |   +-- save runs/spatial state; attach runs; emit queued events
+    |   |   +-- worker consumes shared cursor into results array
+    |   |   |   +-- claim job; mark all representation elements running; save spatial progress
+    |   |   |   +-- progress callback serializes run writes and emits target-specific events
+    |   |   |   +-- mapArtifactEntities; validate and persist mappings; mark spatial state and run complete
+    |   |   |   \-- on failure, drain writes; save failed run/spatial state/result; emit failure
+    |   |   \-- run bounded worker pool; emit workspace completion count; return workspace/results
+    |   \-- finally release every active mapping key
+    +-- async captureDiagramComponent(setId, diagramId, bounds)
+    |   \-- resolve Diagram; reject archived source; delegate to captureComponentSelection
+    +-- async createEditSession(setId, artifactKind, artifactId)
+    |   +-- resolve artifact; reject archived source; timestamp
+    |   +-- initialize active session with source metadata, copied ASCII/evidence, empty operations and revision=0
+    |   \-- add session; return workspace
+    +-- private async activeEditSession(setId, sessionId)
+    |   \-- require set membership; load session; require active status; return session
+    +-- private async appendEditOperation(session, operation)
+    |   +-- assign operation ID and createdAt
+    |   +-- apply patch; truncate redo history; append operation; advance cursor/revision
+    |   \-- validate ASCII and size; save and return updated session
+    +-- async manualEdit(setId, sessionId, ascii)
+    |   +-- load active session; normalize/validate ASCII; return unchanged workspace on no-op
+    |   +-- calculate textPatch and changed character count; append manual operation
+    |   \-- return workspace
+    +-- async placeEditMarker(setId, sessionId, line, column)
+    |   +-- load active session; choose unused marker character; compute offset and @token
+    |   +-- replace one character via manual marker operation; preserve coordinates and replacedChar
+    |   \-- return workspace and markerToken
+    +-- async undoEdit(setId, sessionId)
+    |   +-- load active session; no-op at cursor=0; choose preceding operation
+    |   +-- apply reverse patch; decrement cursor; increment revision; save
+    |   \-- return workspace
+    +-- async redoEdit(setId, sessionId)
+    |   +-- load active session; no-op at history end; choose current operation
+    |   +-- apply forward patch; increment cursor and revision; save
+    |   \-- return workspace
+    +-- async llmEdit(setId, sessionId, instruction, modelId, onEvent?)
+    |   +-- require instruction and supported model; load session/set; save and attach queued edit run
+    |   +-- collect applied marker operations still present and not followed by an LLM edit
+    |   +-- request and apply agent edit
+    |   |   +-- editArtifact with working ASCII, trimmed instruction, model and markers; save/emit progress
+    |   |   +-- normalize/validate result and size; append LLM patch with instruction/model/run provenance
+    |   |   \-- complete run; save; emit and return workspace
+    |   \-- on failure, save failed run with error/completion time; rethrow
+    +-- async finishEdit(setId, sessionId)
+    |   +-- require applied edit and no unresolved marker
+    |   +-- resolve source; derive edit name; allocate handle across local/imported artifacts
+    |   +-- save edited copy as a new artifact
+    |   |   +-- Diagram: preserve view, representation and basedOn metadata; link source/edit session
+    |   |   \-- component: preserve representation/source ancestry; link source component/edit session
+    |   \-- mark session committed with outputArtifactId; increment revision; return workspace
+    +-- async discardEdit(setId, sessionId)
+    |   \-- load active session; mark discarded; increment revision; save; return workspace
+    +-- async captureNestedDiagramComponent(setId, componentId, bounds)
+    |   \-- resolve component; reject archived source; delegate to captureComponentSelection
+    +-- private async captureComponentSelection(set, source, bounds)
+    |   +-- crop source ASCII and normalize selection bounds
+    |   +-- load local/imported components; derive sequence and unique handle
+    |   +-- build selection-origin component with copied evidence, representation kind, ancestry and bounds
+    |   \-- add component; return workspace
+    +-- async generate(setId, input, onEvent?)
+    |   +-- validate count 1..12, output/view kind, domain availability and model
+    |   +-- reject existing batch; reserve DiagramSet
+    |   +-- generate and persist complete batch
+    |   |   +-- load entities/template; require finalized entities and ready set
+    |   |   +-- load local/imported evidence and artifacts; exclude archived reference candidates; resolve settled views
+    |   |   +-- build generation prompt config with selected evidence, references, model and derivation
+    |   |   +-- create queued batch and per-slot runs; begin batch; reload persisted prompt config; mark running
+    |   |   +-- derive output label; emit parallel-agent start event
+    |   |   +-- retry pending slots up to MAX_ATTEMPTS
+    |   |   |   +-- initialize accepted drafts, pending indexes and lastErrors
+    |   |   |   +-- run pending generateArtifact calls in parallel; save/emit slot progress; validate drafts; capture errors
+    |   |   |   +-- normalize results; reject duplicate ASCII across accepted outputs; build retry list
+    |   |   |   +-- save queued retries or final failed runs
+    |   |   |   \-- if accepted count is incomplete, fail batch and throw aggregated slot errors
+    |   |   +-- mark validating; derive Diagram/component ancestry and same-view references
+    |   |   +-- allocate unique output handles and construct generated Diagram records
+    |   |   +-- construct generated components; infer representation kind from derivation source
+    |   |   +-- validate final entity maps and attach exact ASCII hash/run provenance
+    |   |   +-- complete runs and batch; commit artifacts and mappings
+    |   |   \-- emit generated-count workspace event; return workspace
+    |   \-- finally release active batch reservation
+    +-- async saveSystemPromptTemplate(input)
+    |   +-- trim and validate label/description; require named-prompts object
+    |   +-- validate each named template string and optional string description
+    |   +-- resolve existing ID; reject unknown; preserve omitted per-prompt descriptions
+    |   +-- allocate unique ID for new template; bump version; preserve creation time/builtIn
+    |   +-- derive standard system/reference/mapping names for all target kinds; reject incomplete standard sets
+    |   +-- test-render every standard system, reference and mapping prompt
+    |   \-- replace or append template; save; return workspace
+    +-- async resetSystemPromptTemplate(id)
+    |   +-- require existing built-in template; locate original built-in definition
+    |   \-- restore original prompts; increment version; preserve createdAt; save and return workspace
+    +-- async deleteSystemPromptTemplate(id)
+    |   +-- require known ID and at least one remaining template
+    |   \-- filter out template; save; return workspace
+    +-- async saveCodeEntityPromptTemplate(input)
+    |   +-- trim label/description and identification/compaction criteria
+    |   +-- validate label/description bounds; require both criteria within 32,000 characters
+    |   +-- resolve existing ID or create unique slug; reject unknown requested ID
+    |   +-- build versioned template with both criteria, schema, builtIn and timestamps
+    |   \-- replace or append template; save; return workspace
+    +-- async resetCodeEntityPromptTemplate(id)
+    |   +-- require built-in template; resolve project domain; find original domain-specific definition
+    |   \-- restore original criteria; increment version; preserve createdAt; save and return workspace
+    +-- async deleteCodeEntityPromptTemplate(id)
+    |   +-- require known ID and at least one remaining template
+    |   \-- filter out template; save; return workspace
+    +-- private validateGeneratedArtifactDraft(draft, allowedCodeEntityIds, allowedCodeEntities)
+    |   +-- require nonblank name, seven-bit ASCII and only allowed entity IDs
+    |   \-- require final mappings; filter allowed entities to declared IDs; validate mappings
+    +-- async sourceSnippet(setId, entityId, rangeIndex)
+    |   +-- load set/entity/range; validate range; read full corpus document
+    |   +-- when captured originalLines exist, pad prefix and replace corresponding live range
+    |   \-- return path, startLine=1 and full reconstructed document lines
+    +-- async addHighlight(input)
+    |   +-- validate nonempty target IDs and supported artifact kind
+    |   +-- resolve bundle, mapping, evidence and source range by stable ID or index
+    |   +-- hash artifact; build representation index; resolve mapped element ID
+    |   +-- derive tree-node text or mapped diagram substring; reject empty text
+    |   +-- build v2 highlight with target/revision, evidence address and optional captured document excerpt
+    |   +-- tree: attach representation lineage; diagram: attach representationKind=diagram
+    |   \-- save highlight; return workspace
+    +-- async deleteHighlight(highlightId)
+    |   \-- delete highlight by ID; return workspace
+    +-- async listRepositoryDirectory(setId, relativeDirectory)
+    |   +-- resolve set corpus; list directory; resolve store and corpus roots
+    |   \-- return directory entries excluding the storeRoot
+    +-- workspace()
+    |   \-- return store.loadWorkspace()
+    +-- async recoverInterruptedRuns()
+    |   +-- load workspace
+    |   +-- mark queued/reading-context/generating/validating runs interrupted with restart error and completion time
+    |   \-- mark queued/running/validating batches failed with restart error
+    \-- dispose()
+        \-- agents.dispose()

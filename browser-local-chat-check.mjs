@@ -1,3 +1,4 @@
+import { seedMappingFixture } from "./browser-mapping-fixture.mjs";
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
@@ -99,6 +100,7 @@ const url = `http://127.0.0.1:${port}/mapping`;
 let serverProcess;
 
 try {
+  await seedMappingFixture(tempRoot);
   serverProcess = spawn("npm", ["run", "preview", "--", "--port", String(port), "--strictPort"], {
     cwd: PACKAGE_ROOT,
     env: { ...process.env, NEW_DIAGRAM_PROJECT_ROOT: tempRoot },
@@ -111,13 +113,19 @@ try {
 
   await withHeadlessBrowser({ url, width: 1600, height: 1000 }, async ({ cdp }) => {
     await cdp.send("Page.enable");
-    await waitForSelector(cdp, "[data-selectable-node='a-prompt-for']");
+    await cdp.send("Network.enable");
+    const apiRequests = [];
+    const stopTrackingRequests = cdp.on("Network.requestWillBeSent", ({ request }) => {
+      if (new URL(request.url).pathname.startsWith("/api/")) apiRequests.push(request.url);
+    });
+    await cdp.send("Page.reload", { ignoreCache: true });
+    await waitForSelector(cdp, "[data-selectable-node='overview:a-system-templates:range-1']");
     await waitFor(async () => {
       const transform = await evaluate(cdp, "document.querySelector('.diagram-canvas__surface')?.style.transform");
       return typeof transform === "string" && transform.includes("translate3d(");
     }, { message: "mapping canvas did not initialize" });
 
-    const node = await rect(cdp, "[data-selectable-node='a-prompt-for']");
+    const node = await rect(cdp, "[data-selectable-node='overview:a-system-templates:range-1']");
     await drag(cdp,
       { x: node.x + 2, y: node.y + node.height / 2 },
       { x: node.x + node.width - 2, y: node.y + node.height / 2 }
@@ -131,7 +139,7 @@ try {
     await waitForSelector(cdp, "[data-local-chat-placement='pending']");
 
     const pre = await rect(cdp, ".mapping-poc-ascii");
-    await click(cdp, { x: pre.x + pre.width * 0.72, y: pre.y + pre.height * 0.19 });
+    await click(cdp, { x: pre.x + pre.width * 0.72, y: node.y + node.height + 40 });
     await waitForSelector(cdp, "[data-local-chat-bubble]");
     await waitFor(async () => await evaluate(cdp,
       "document.querySelectorAll('[data-local-chat-role=assistant]').length === 0 && !document.querySelector('[data-local-chat-placement]') && !document.querySelector('[data-local-chat-source-highlight]')"
@@ -180,6 +188,8 @@ try {
     await waitFor(async () => await evaluate(cdp,
       "!document.querySelector('[data-local-chat-convo]') && !document.querySelector('[data-local-chat-source-highlight]')"
     ), { message: "collapsing the conversation did not dismiss its source highlight" });
+    stopTrackingRequests();
+    if (apiRequests.length) throw new Error(`Mapping made API requests: ${JSON.stringify(apiRequests)}`);
   });
 
   console.log("local chat browser check passed (compact, floating, docked; mock replies wrapped through shared seam)");

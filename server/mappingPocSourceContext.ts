@@ -36,6 +36,7 @@ export function mappingPocElementMappingsAfterPatch(
 
 export async function mappingPocSourceContextForSelection(input: {
   sourceRoot: string;
+  projectEvidence?: Record<string, import("../src/projectCatalog").ProjectRepresentationEvidenceRecord>;
   mappings: readonly DiagramElementMapping[];
   selection: MappingPocGridRect;
 }): Promise<MappingPocCorpusRangeContext[]> {
@@ -46,11 +47,12 @@ export async function mappingPocSourceContextForSelection(input: {
   const binding = { kind: "git-worktree" as const, root: input.sourceRoot };
   const provider = corpusProvider(binding);
   const contexts = await Promise.all(selectedMappings.map(async (mapping) => {
-    const node = nodesById.get(mapping.entityId);
+    const node = input.projectEvidence ? input.projectEvidence[mapping.entityId] : nodesById.get(mapping.entityId);
     if (!node) throw new Error(`unknown mapped POC element: ${mapping.entityId}`);
     const range = node.sourceRanges[mapping.sourceRangeIndex];
     if (!range) throw new Error(`mapped POC element ${node.id} has no source range ${mapping.sourceRangeIndex}`);
-    const lines = await provider.readLines(binding, range);
+    if (mapping.sourceRangeId && (!("id" in range) || range.id !== mapping.sourceRangeId)) throw new Error("Source range identity mismatch");
+    const lines = input.projectEvidence && "originalLines" in range ? [...range.originalLines] : await provider.readLines(binding, range);
     const expectedLineCount = range.endLine - range.startLine + 1;
     if (lines.length !== expectedLineCount) {
       throw new Error(`mapped corpus range exceeds ${range.path}: ${range.startLine}-${range.endLine}`);

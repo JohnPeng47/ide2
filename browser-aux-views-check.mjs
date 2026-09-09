@@ -1,9 +1,8 @@
-import { execFile, execFileSync, spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { createServer } from "node:net";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { promisify } from "node:util";
 async function loadBrowserHarness() {
   const candidates = [
     new URL("../../.agents/skills/front-end/browser-test.mjs", import.meta.url),
@@ -29,7 +28,6 @@ const {
 } = await loadBrowserHarness();
 
 const packageRoot = path.dirname(new URL(import.meta.url).pathname);
-const execFileAsync = promisify(execFile);
 
 async function freePort() {
   return new Promise((resolve, reject) => {
@@ -124,13 +122,23 @@ try {
       pageErrors.push(exceptionDetails.exception?.description ?? exceptionDetails.text);
     });
     await waitForSelector(cdp, ".empty-workspace");
-    await execFileAsync("npm", [
-      "run", "diagram", "--", "create",
-      "--path", fixtureRoot,
-      "--name", "Auxiliary views",
-      "--prompt", "Show entry and worker flow",
-      "--server", url
-    ], { cwd: packageRoot, env: { ...process.env, NEW_DIAGRAM_AGENT: "fake" }, encoding: "utf8" });
+    const creationResponse = await fetch(new URL("/api/studio/diagram-sets", url), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        path: fixtureRoot,
+        name: "Auxiliary views",
+        prompt: "Show entry and worker flow",
+        runReferencePrompt: true
+      })
+    });
+    const creationBody = await creationResponse.text();
+    if (!creationResponse.ok) throw new Error(`fixture creation failed: ${creationBody}`);
+    const creationEvents = creationBody.trim().split("\n").filter(Boolean).map((line) => JSON.parse(line));
+    if (creationEvents.some((event) => event.type === "error")
+      || !creationEvents.some((event) => event.type === "result" && event.diagramSetId)) {
+      throw new Error(`fixture creation did not complete: ${creationBody}`);
+    }
     try {
       await waitForSelector(cdp, ".diagram-panel", { timeoutMs: 10000 });
     } catch (error) {
@@ -186,11 +194,11 @@ try {
     const callGraphName = await evaluate(cdp, `document.querySelector('.diagram-heading h2').textContent`);
     await click(cdp, ".diagram-star-toggle");
     await waitFor(async () => await evaluate(cdp, `(async () => {
-      const workspace = await fetch('/api/workspace').then((response) => response.json());
+      const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
       return Boolean(workspace.diagramSets[0].featuredViewIds['call-graph']);
     })()`), { message: "call graph star was not persisted" });
     const callPromptContext = await evaluate(cdp, `(async () => {
-      const workspace = await fetch('/api/workspace').then((response) => response.json());
+      const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
       const diagram = Object.values(workspace.diagrams).find((candidate) => candidate.viewKind === 'call-graph');
       return workspace.generationPromptConfigs[diagram.generationPromptConfigId].contextPrompt.rendered;
     })()`);
@@ -299,7 +307,7 @@ try {
       message: "directory view was not generated and selected"
     });
     const directoryPromptInputs = await evaluate(cdp, `(async () => {
-      const workspace = await fetch('/api/workspace').then((response) => response.json());
+      const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
       const diagram = Object.values(workspace.diagrams).find((candidate) => candidate.viewKind === 'dir-view');
       const config = workspace.generationPromptConfigs[diagram.generationPromptConfigId];
       return {
@@ -313,7 +321,7 @@ try {
     }
     await click(cdp, ".diagram-star-toggle");
     await waitFor(async () => await evaluate(cdp, `(async () => {
-      const workspace = await fetch('/api/workspace').then((response) => response.json());
+      const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
       const featured = workspace.diagramSets[0].featuredViewIds;
       return Boolean(featured.diagram && featured['call-graph'] && featured['dir-view']);
     })()`), { message: "independent view stars were not persisted" });

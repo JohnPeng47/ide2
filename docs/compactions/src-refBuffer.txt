@@ -1,0 +1,55 @@
+src/refBuffer.ts
++-- import type CodeEntityRecord, DiagramElementMapping, ReferenceIdentity from ./domain
++-- export interface RefBufferState
+|   +-- scopeKey: string | null
+|   +-- entries: ReferenceIdentity[]
+|   \-- diagramSelections: BufferedDiagramSelection[]
++-- export interface BufferedDiagramSelection
+|   +-- sourceArtifactId: string
+|   +-- ascii: string
+|   \-- referenceKeys: string[]
++-- export interface BufferedDiagramSelectionInput
+|   +-- sourceArtifactId: string
+|   \-- ascii: string
++-- export type RefBufferAction
+|   +-- scope: scopeKey: string | null
+|   +-- add: refs: ReferenceIdentity[]; diagramSelection?: BufferedDiagramSelectionInput
+|   +-- remove: ref: ReferenceIdentity
+|   +-- clear
+|   \-- replace: refs: ReferenceIdentity[]
++-- export EMPTY_REF_BUFFER: RefBufferState = { scopeKey: null, entries: [], diagramSelections: [] }
++-- export referenceIdentityKey(ref: ReferenceIdentity): string
+|   +-- origin: projectId:diagramSetId[:codeEntitiesSetId] when origin exists; otherwise legacy
+|   \-- return kind:origin:targetId:(sourceRangeId ?? sourceRangeIndex ?? "*")
++-- uniqueReferences(refs: ReferenceIdentity[]): ReferenceIdentity[]
+|   +-- seen = new Set<string>()
+|   \-- filter refs by referenceIdentityKey: discard seen keys; record and retain first occurrence
++-- diagramSelectionKey(selection: BufferedDiagramSelection): string
+|   \-- return sourceArtifactId, ascii, and referenceKeys joined with newline separators
++-- export reduceRefBuffer(state: RefBufferState, action: RefBufferAction): RefBufferState
+|   +-- scope
+|   |   \-- same scopeKey: return state; otherwise set scopeKey and clear entries + diagramSelections
+|   +-- clear
+|   |   \-- already empty entries + diagramSelections: return state; otherwise clear both, preserve scopeKey
+|   +-- replace: set entries = uniqueReferences(action.refs); clear diagramSelections; preserve scopeKey
+|   +-- remove
+|   |   +-- key = referenceIdentityKey(action.ref); filter matching entries
+|   |   +-- unchanged entry count: return state
+|   |   +-- filter key from each selection.referenceKeys; discard selections with no remaining keys
+|   |   \-- return state updated with entries and diagramSelections
+|   \-- add
+|       +-- existing = Set of state entry keys; uniqueRefs = uniqueReferences(action.refs)
+|       +-- additions = uniqueRefs absent from existing; referenceKeys = all uniqueRefs keys
+|       +-- diagramSelection = supplied selection with referenceKeys when nonempty; otherwise undefined
+|       +-- selectionExists = selection key present in state, or true when no selection supplied
+|       +-- no additions and selectionExists: return state
+|       \-- append additions and any new selection; preserve scopeKey
++-- export referenceFromMapping(mapping: DiagramElementMapping, entities: readonly CodeEntityRecord[]): ReferenceIdentity
+|   +-- entity = first entity matching mapping.entityId
+|   +-- range = entity range by mapping.sourceRangeId when truthy; otherwise by sourceRangeIndex
+|   \-- return reference
+|       +-- kind: code-entity; targetId: mapping.entityId
+|       +-- include origin only when entity.origin exists
+|       \-- prefer truthy range.id, then truthy mapping.sourceRangeId; otherwise mapping.sourceRangeIndex
+\-- export referencesFromMappings(mappings: DiagramElementMapping[], entities: readonly CodeEntityRecord[] = []): ReferenceIdentity[]
+    \-- map each mapping through referenceFromMapping(mapping, entities)

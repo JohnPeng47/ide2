@@ -1,0 +1,187 @@
+src/prompt.ts
++-- imports: domain records, artifact wrappers, schema, aliases, archive predicates; domain profiles
++-- interface PromptOption
+|   \-- kind; id; handle; label; token; optional origin
++-- interface GenerationPromptBuildResult
+|   +-- config; allowedCodeEntityIds; allowedCodeEntityAliases; allowedCodeEntities
+|   \-- allowedDiagramIds; allowedDiagramComponentIds
++-- evidencePromptRepresentation(record, domainProfileId): string
+|   +-- source-code -> new CodeEntity(record).prompt_str()
+|   +-- evidence = resolved profile evidenceSchema.fromCodeEntity(record)
+|   +-- ranges = anchors.map(path:startLine-endLine + optional symbol).join(newline)
+|   \-- return evidence handle, label, kind, summary, and document ranges
++-- DIAGRAM_BASE: exactly one compactly named architecture diagram
++-- CALL_GRAPH_BASE: exactly one source-backed invocation/control graph
++-- DIR_VIEW_BASE: exactly one source-backed ASCII repository hierarchy
++-- COMPONENT_BASE: exactly one reusable fragment, not a complete diagram
++-- DIAGRAM_FINISH: never modify files; 7-bit ASCII only
++-- COMPONENT_FINISH: never modify files; 7-bit ASCII only
++-- DOCUMENT_GENERATION_GUIDANCE: document evidence and supported relationships override code terminology
++-- DOCUMENT_MAPPING_GUIDANCE: map smallest exact semantic spans to supporting document passages
++-- DEFAULT_REFERENCE_FOLLOW_UP_PROMPT: regenerate complete artifact using visual references
+|   \-- preserve meaning, relationships, entity coverage; adopt visual grammar without unrelated content
++-- DEFAULT_MAPPING_FOLLOW_UP_PROMPT: unchanged artifact plus exact visible label mappings
+|   \-- use aliases and appropriate sourceRangeIndex; non-whitespace, single-line, non-overlapping spans
++-- interface GenerationPromptBindings: system, optional reference, mapping
++-- GENERATION_PROMPT_BINDINGS: Record<GenerationTargetKind, GenerationPromptBindings>
+|   +-- diagram -> diagram-system / diagram-reference / diagram-mapping
+|   +-- call-graph -> call-graph-system / call-graph-reference / call-graph-mapping
+|   +-- dir-view -> dir-view-system / dir-view-reference / dir-view-mapping
+|   \-- diagram-component -> diagram-component-system / diagram-component-reference / diagram-component-mapping
++-- generationPromptBindings(targetKind) -> GENERATION_PROMPT_BINDINGS[targetKind]
++-- DEFAULT_AUXILIARY_INSTRUCTIONS: foundation-based ASCII call graph and directory view
++-- defaultGenerationInstruction(targetKind): auxiliary default or empty string
++-- DEFAULT_CODE_ENTITY_IDENTIFICATION_CRITERIA
+|   +-- significant diagram concepts: state, interfaces/data structures, operations; related ranges may combine
+|   \-- source grounding: concise labels/summaries/symbols and exact repo-relative ranges
++-- DEFAULT_CODE_ENTITY_COMPACTION_CRITERIA
+|   +-- preserve declarations, boundaries, calls, validation, data flow according to compaction level
+|   +-- collapsed ASCII summaries expose inputs, branches, transformations, errors, and outputs
+|   +-- example: camera/LOS orientation flow; UI supplies heading/comment prefixes, graph body only
+|   +-- map every semantic graph line inside collapsed span; exclude blank/connectors and outside context
+|   \-- concise source-backed labels; server snapshots original source after coordinate validation
++-- DEFAULT_DOCUMENT_EVIDENCE_IDENTIFICATION_CRITERIA
+|   +-- document-grounded chronology, arguments, relationships, events, decisions, themes
+|   +-- related passages support one concept; concise labels/summaries and exact corpus-relative ranges
+|   \-- candidate claims, decisions, events, actors, definitions, contrasts, causal links, transitions
++-- DEFAULT_DOCUMENT_EVIDENCE_COMPACTION_CRITERIA
+|   +-- preserve meaningful statements, context, chronology, relationships
+|   +-- continuous compactedSource: retained quotes plus exact-span ASCII summaries; map semantic nodes
+|   \-- server snapshots original document lines after coordinate validation
++-- BUILT_IN_SYSTEM_PROMPT_TEMPLATES
+|   +-- default: balanced generation; component creativity
+|   +-- structure-first: ownership, boundaries, hierarchy
+|   +-- flow-first: control/data flow, invocation paths, branch points
+|   \-- compact: dense composable layouts; minimal crossings; relevant branches
++-- interface CreateSystemPromptTemplateInput
+|   \-- id; label; description; optional builtIn/version; prompts; createdAt; optional updatedAt
++-- validatePromptTemplate(template) -> renderPromptTemplate(template)
++-- createSystemPromptTemplate(input): SystemPromptTemplateRecord
+|   +-- prompts = Object.fromEntries(normalized Object.entries(input.prompts))
+|   |   +-- validate name against lowercase alphanumeric/dot/underscore/hyphen pattern; reject invalid
+|   |   +-- normalize string or NamedPromptTemplate; trim template and optional description
+|   |   +-- reject blank or >32,000-character template; validatePromptTemplate(template)
+|   |   \-- return named template and nonempty description
+|   +-- reject empty prompt collection
+|   \-- return schema/id, trimmed label/description, builtIn default false, version default 1, prompts, timestamps
++-- builtInGenerationPrompts(template)
+|   +-- four system prompts: base + target-specific template text + ASCII/read-only finish
+|   +-- four reference bindings -> DEFAULT_REFERENCE_FOLLOW_UP_PROMPT
+|   \-- four mapping bindings -> DEFAULT_MAPPING_FOLLOW_UP_PROMPT
++-- createBuiltInSystemPromptTemplates(createdAt)
+|   \-- map built-ins through createSystemPromptTemplate with version 1 and builtInGenerationPrompts
++-- createBuiltInCodeEntityPromptTemplates(createdAt, domainProfileId = source-code)
+|   +-- documentMode = domainProfileId === document
+|   +-- return default-code-entities built-in version 1; domain-specific label and description
+|   +-- identification/compaction prompts choose document evidence or code entity criteria
+|   \-- createdAt and updatedAt = createdAt
++-- renderSystemPromptTemplate(template, targetKind)
+|   \-- renderPromptTemplate -> appendSystemManagedOutputContract
++-- renderPromptTemplate(template): string
+|   \-- match {{ variable }}; reject unsupported variables; return template
++-- systemManagedOutputContract(targetKind): string
+|   +-- artifactName: DiagramComponent / CallGraph / DirectoryView / Diagram
+|   +-- submissionTool: submit_diagram_component for components, otherwise submit_diagram
+|   \-- return read-only requirements: one artifact, exactly one submission tool call
++-- appendSystemManagedOutputContract(rendered, targetKind)
+|   \-- return trimmed rendered prompt + systemManagedOutputContract
++-- renderReferencePromptTemplate({ template, targetKind, instruction, referenceContext })
+|   +-- trim instruction/context; defaults: visual references / none
+|   \-- render template + read-only reference instruction/context; append output contract
++-- renderMappingPromptTemplate({ template, targetKind, artifact, codeEntities, aliases, domainProfileId? })
+|   +-- resolve domainProfile/evidenceSchema/documentMode/evidenceCollectionLabel
+|   +-- aliasesById = Map(input.aliases); numberedAscii = one-based padded artifact lines
+|   +-- entities = alias or handle, label, summary, indexed source ranges and optional symbols; default none
+|   \-- optional document guidance + validated template + read-only artifact/ranges; append output contract
++-- promptTemplate(templateSet, promptName)
+|   \-- lookup named prompt; reject unknown name; return prompt.template
++-- renderArtifactSystemPrompt({ outputKind, viewKind?, template, promptBindings? })
+|   +-- targetKind = component or viewKind default diagram; bindings = supplied or target defaults
+|   \-- lookup system prompt and renderSystemPromptTemplate
++-- promptOptions(codeEntities, diagrams, components): PromptOption[]
+|   +-- entities -> kind/id/handle/label/@entity token/optional origin
+|   +-- non-archived diagrams -> kind/id/handle/name/@diagram token/optional recordOrigin
+|   \-- non-archived components -> kind/id/handle/name/@component token/optional recordOrigin
+\-- createGenerationPromptConfig(input): GenerationPromptBuildResult
+    +-- input: id, diagramSet, codeEntities, diagrams, components, outputKind, optional viewKind, modelId, profile
+    +-- input: optional promptBindings, instruction, optional reference controls, selectedCodeEntityIds
+    +-- input: optional reference selections/derivation/domainProfileId; createdAt
+    +-- require finalized CodeEntitiesSet
+    +-- entitiesById; allDiagramsById; activeDiagrams/diagramsById; allComponentsById; activeComponents/componentsById
+    +-- derive viewKind and targetKind; choose explicit or default promptBindings
+    +-- resolve domainProfileId default source-code, profile, evidenceSchema, documentMode, evidenceCollectionLabel
+    +-- lookup systemPromptTemplate, optional referencePromptTemplate, mappingPromptTemplate
+    +-- auxiliary = call-graph or dir-view; foundationDiagram and companionCallGraph initially undefined
+    +-- if auxiliary: establish immutable context
+    |   +-- foundationId = featured diagram; require active foundation with diagram viewKind
+    |   +-- dir-view: require active featured companion with call-graph viewKind
+    |   \-- reject unavailable entities referenced by foundation or companion
+    +-- options = promptOptions; index by lowercase typed token and grouped lowercase handle
+    +-- selectionMap(selections): Map<string, GenerationReferenceSelection>
+    |   +-- lowercase each token; reject conflicting kind/targetId/included selections
+    |   \-- set each selection by token; return byToken
+    +-- selected = deduplicated immutable auxiliary entities or input.selectedCodeEntityIds; reject unknown IDs
+    +-- mentionPattern: typed @entity/@diagram/@component handles or bare @handles, case-insensitive
+    +-- resolveMentions(instruction, selections): references, omittedReferences, seenReferences
+    |   +-- selectionsByToken = selectionMap; initialize included/omitted arrays and seen set
+    |   +-- for each mentionPattern match: token, typed option, bare-handle candidates
+    |   +-- reject ambiguous bare reference even before applying selection
+    |   +-- selection = selectionsByToken[token.toLowerCase()]; selectedOption initially undefined
+    |   +-- if selection: resolve explicit target
+    |   |   +-- normalize component kind; reject mismatch with typed token
+    |   |   +-- code-entity: lookup entitiesById; build option with token and optional origin
+    |   |   +-- diagram: lookup allDiagramsById; allow archived only when excluded; optional recordOrigin
+    |   |   +-- component: lookup allComponentsById; allow archived only when excluded; optional recordOrigin
+    |   |   \-- reject unavailable selected option
+    |   +-- option = selectedOption or typed or first bare; reject unknown token
+    |   +-- deduplicate by kind:id using seenReferences
+    |   +-- build reference: kind, targetId, optional origin, token, handle
+    |   \-- excluded selection -> omittedReferences; otherwise -> references; return collections
+    +-- initialMentions from instruction/selections -> references, omittedReferences, seenReferences
+    +-- followUpMentions from referencePrompt/selections; systemTemplateMentions from system template
+    +-- shouldRunReferencePrompt = explicit true or nonblank referencePrompt; require reference binding
+    +-- referenceTemplateMentions resolve reference template only when reference stage runs
+    +-- uniqueReferences(values): deduplicate via Map keyed kind:targetId
+    +-- followUpReferences = unique follow-up instruction + reference-template mentions
+    +-- if auxiliary: force foundation/companion into initial references
+    |   +-- immutableDiagrams = foundation plus optional companion; iterate reversed copy
+    |   +-- remove matching omitted reference
+    |   \-- if missing from references: mark seen and prepend typed diagram reference
+    +-- selectedFromReferences; referencedDiagrams; referencedComponents from initial references
+    +-- followUpCodeEntityIds; followUpReferencedDiagrams; followUpReferencedComponents
+    +-- allowedCodeEntityIds = deduplicated generation evidence
+    |   +-- selected + initial/follow-up direct entity mentions + system-template direct entity mentions
+    |   \-- initial diagram/component coverage + system-template artifact coverage
+    +-- promptCodeEntityIds = allowed IDs + follow-up diagram/component coverage
+    +-- promptCodeEntities = lookup all prompt IDs; reject unavailable referenced-artifact entity
+    +-- promptCodeEntityAliases = createCodeEntityPromptAliases(promptCodeEntities)
+    +-- allowedIds set; allowedCodeEntityAliases filter; codeEntityAliasesById map
+    +-- renderReferences(values): GenerationPromptReference[]
+    |   \-- add promptRepresentation using evidencePromptRepresentation or Diagram/DiagramComponent.prompt_str(aliases)
+    +-- renderedReferences, renderedFollowUpReferences, renderedSystemTemplateReferences
+    +-- selectedBlocks = deduplicated selected + initial direct entity representations
+    +-- diagramBlocks/componentBlocks from rendered initial references
+    +-- directoryPaths = sorted unique source paths from allowed entities
+    +-- outputInstruction selects domain and output/view kind
+    |   +-- document: reusable component / evidence-grounded hierarchical call-graph tree / evidence-grounded diagram
+    |   \-- source-code: reusable component / call graph / repository directory view / architecture diagram
+    +-- derivation initially undefined; when supplied validate source against all artifacts
+    +-- retain derivation with trimmed promptCorrection only when source appears in initial included references
+    +-- immutableDiagramIds = foundation/companion IDs; auxiliaryDiagramBlocks exclude those diagrams
+    +-- renderedContextPrompt: auxiliary or ordinary generation context
+    |   +-- auxiliary: DiagramSet, immutable foundation, optional companion, immutable selected evidence
+    |   +-- auxiliary: optional additional diagrams/components; directory-view path inventory; instruction/default
+    |   \-- ordinary: DiagramSet, original request, instruction/default, selected evidence, referenced artifacts, outputInstruction
+    +-- referenceInstruction = trimmed input or empty; referenceContext = joined follow-up representations
+    +-- renderedReferencePrompt = renderReferencePromptTemplate when requested, otherwise undefined
+    +-- config: GenerationPromptConfigRecord
+    |   +-- schemaVersion/id/diagramSetId/domainProfileId/outputKind/optional viewKind/modelId/instruction
+    |   +-- selectedCodeEntityIds; rendered references; optional omittedReferences
+    |   +-- optional referencePrompt: version/name/instruction/references/optional omissions/rendered prompt
+    |   +-- mappingPrompt: version/name/template; optional derivation; rendered contextPrompt
+    |   +-- systemPrompt: template/profile identity and versions; binding name; optional rendered references
+    |   +-- renderSystemPromptTemplate with optional document guidance, system template, and referenced artifact context
+    |   \-- createdAt = input.createdAt
+    +-- return config, allowedCodeEntityIds, allowedCodeEntityAliases, and filtered allowedCodeEntities
+    +-- allowedDiagramIds: unique initial/follow-up/system-template active diagram IDs
+    \-- allowedDiagramComponentIds: unique initial/follow-up/system-template active component IDs

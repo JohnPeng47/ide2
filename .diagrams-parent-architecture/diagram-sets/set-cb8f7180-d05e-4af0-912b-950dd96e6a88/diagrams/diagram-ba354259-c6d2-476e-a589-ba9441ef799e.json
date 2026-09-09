@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "id": "diagram-ba354259-c6d2-476e-a589-ba9441ef799e",
+  "recordOrigin": {
+    "projectId": "project-ce67f2af4410",
+    "diagramSetId": "set-cb8f7180-d05e-4af0-912b-950dd96e6a88"
+  },
+  "diagramSetId": "set-cb8f7180-d05e-4af0-912b-950dd96e6a88",
+  "viewKind": "diagram",
+  "handle": "diagram-domain-model",
+  "name": "Diagram domain model",
+  "ascii": "Project\n|\n+-- Corpus + shared source compactions\n|\n+-- DiagramSet / GenerationSession [many]\n|   |\n|   +-- CodeEntitiesSet [one; frozen after collection]\n|   |   `-- CodeEntity [many]\n|   |       `-- SourceRange + captured source text\n|   |\n|   +-- GenerationBatch [many]\n|   |   +-- GenerationPromptConfig [one; immutable inputs]\n|   |   +-- AgentRun [one per requested output]\n|   |   |   `-- produces Diagram OR DiagramComponent\n|   |   `-- DiagramCandidateBatch [successful diagram outputs]\n|   |       `-- candidate references + rankings\n|   |\n|   +-- Diagram / DiagramComponent [many]\n|   |   +-- ASCII content + origin + derivation links\n|   |   `-- CodeEntityMap -> source evidence\n|   |\n|   `-- EditSession -> new edited artifact\n|\n`-- ProjectRepresentationCatalog\n    +-- activeByKind -> preferred representation per view\n    `-- ProjectRepresentation [many; stable identity]\n        `-- Revision [many; currentRevisionId selects one]\n            +-- ASCII or structured mapping canvas\n            +-- evidence snapshots + mappings\n            `-- optional provenance -> source session/artifact",
+  "representationKind": "tree",
+  "codeEntityIds": [
+    "entity-b5ee152a-0c4b-4d62-b80e-b61a336c7882",
+    "entity-0e550b61-ce64-4da6-9b26-23b019aa2068",
+    "entity-1ef8d0ad-ae91-4cc6-900a-ca1aa100b7b7",
+    "entity-03364914-1797-458b-a848-cf15a32f01cf",
+    "entity-639a3eee-ad9b-4271-9a88-ced89f02abc9",
+    "entity-4a0f5e58-3cbc-434c-8e72-3d746340b2eb",
+    "entity-972428ea-c135-4efc-b296-8619f4e5a403",
+    "entity-b8ac6e82-01f8-43de-ae58-3cd3ae0ef38b",
+    "entity-1d19cf62-2ce7-4541-8057-58d3e968a6d8",
+    "entity-cc2b45dd-2005-4349-ba62-d89008bfe3e8",
+    "entity-03da1984-1efd-4726-a1d3-c9b60857f6d3",
+    "entity-7a81452b-a48e-40c1-9f56-6c91a8bba0e2",
+    "entity-bb54a8eb-2ab8-408e-94ad-8527f0cd7355",
+    "entity-d62d8a30-6741-4799-9548-470a809b265b",
+    "entity-1fd40b71-eb44-42fe-8180-e8cdee16c3f6",
+    "entity-e23015a5-e9b7-41fa-8085-ef52bad2abd3",
+    "entity-66993e7a-d6b1-4771-8dc0-46f974b8efbc",
+    "entity-1345f50e-1563-4ff9-ad0b-fbf9f278660b",
+    "entity-bfbbcd22-49d0-4785-bdba-d840712d1d87",
+    "entity-f735c499-20e6-4833-81ca-9c67e0627405",
+    "entity-a7dd7433-6057-4a77-b3a0-8a21bd806b5f",
+    "entity-28d37213-8616-482f-9f98-257d82310a2d"
+  ],
+  "origin": "materialized",
+  "derivedFromDiagramIds": [],
+  "createdAt": "2026-09-09T02:23:33.678Z"
+}

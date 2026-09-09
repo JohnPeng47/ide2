@@ -1,0 +1,55 @@
+src/derivativePrompt.ts
++-- imports from ./domain: isDiagramArchived; diagram, component, derivation, output-kind, config, reference types
++-- PREVIOUS_PROMPT_HEADER = "---- PREVIOUS PROMPT ----"
++-- PREVIOUS_PROMPT_FOOTER = "-------------------------"
++-- Artifact = DiagramRecord | DiagramComponentRecord
++-- DerivativePromptDraft
+|   +-- prompt: string; prefix: string; sourceToken: string
+|   \-- historicalReferences: PromptReference[]; derivation: Omit<GenerationDerivationRecord, "promptCorrection">
++-- DiagramReferenceMention extends PromptReference
+|   \-- kind: "diagram"; key: string; label: string; available: boolean; tokens: string[]
++-- artifactForReference(reference: Pick<PromptReference, "kind" | "targetId">, diagrams, components): Artifact | undefined
+|   \-- return diagrams[targetId] for diagram; components[targetId] for diagram-component; otherwise undefined
++-- parentReference(config: GenerationPromptConfigRecord): PromptReference | undefined
+|   +-- derivation present: source kind/id, optional origin, empty token and handle
+|   \-- otherwise first diagram reference, falling back to first diagram-component reference
++-- sourceTokenForArtifact(kind: GenerationOutputKind, artifact: Artifact): string
+|   \-- diagram -> @diagram/{handle}; otherwise -> @component/{handle}
++-- correctionAfterSourceToken(instruction: string, sourceToken: string): string
+|   +-- escape sourceToken for regex; find last line-start token followed by whitespace or end
+|   +-- missing marker/index: return instruction.trim()
+|   \-- account for matched newline; return trimmed text after token
++-- previousPromptBlock(instruction: string, index: number): string
+|   \-- numbered PREVIOUS PROMPT header + trimmed instruction + PREVIOUS_PROMPT_FOOTER
++-- buildDerivativePrompt(input): DerivativePromptDraft
+|   +-- input: sourceArtifactKind, sourceArtifact, diagrams, components, promptConfigs
+|   +-- initialize corrections, historicalReferences, seen-artifact/config/reference sets; artifact = sourceArtifact
+|   +-- while artifact exists and artifact.id unseen
+|   |   +-- mark artifact; resolve generationPromptConfigId; stop on missing or previously seen config; mark config
+|   |   +-- resolve parentReference(config) and its parentArtifact
+|   |   +-- storedCorrection = derivation.promptCorrection ?? instruction
+|   |   +-- for derivation, find source-kind/id token among references and omittedReferences
+|   |   +-- derivation + parentArtifact: strip source token using stored token or generated fallback; otherwise trim storedCorrection
+|   |   +-- append nonblank trimmed correction
+|   |   +-- collect references + omittedReferences, deduplicated by kind:targetId:lowercase-token
+|   |   \-- advance artifact = parentArtifact
+|   +-- reverse corrections; generate sourceToken; render numbered history blocks joined with blank lines
+|   +-- prefix = history + blank lines + sourceToken + blank lines, or sourceToken + space
+|   \-- return prompt: prefix, prefix, sourceToken, historicalReferences, derivation
+|       \-- derivation: source kind/id and optional sourceArtifactOrigin from recordOrigin
++-- promptCorrection(prompt: string, draft: DerivativePromptDraft): string
+|   \-- if prompt starts with draft.prefix, trim remainder; otherwise correctionAfterSourceToken(prompt, draft.sourceToken)
++-- rebaseDerivativePrompt(prompt: string, draft: DerivativePromptDraft): string
+|   \-- compute promptCorrection; return draft.prefix + correction when nonempty, otherwise draft.prompt
+\-- diagramReferencesInPrompt(input): DiagramReferenceMention[]
+    +-- input: prompt: string; diagrams: Record<string, DiagramRecord>; historicalReferences: PromptReference[]
+    +-- currentByToken maps lowercase @diagram/{handle} and @{handle} to current diagrams
+    +-- historicalByToken maps lowercase tokens of diagram-kind historical references; initialize byKey map
+    +-- scan prompt case-insensitively for @diagram/handle or @handle tokens
+    |   +-- look up current and historical token matches; prefer current.id over historical.targetId; skip unresolved
+    |   +-- resolve diagram; handle = diagram.handle ?? historical.handle ?? token suffix; key = diagram:{targetId}
+    |   +-- existing key: append token only if absent case-insensitively, then continue
+    |   \-- otherwise store new DiagramReferenceMention
+    |       +-- kind: diagram; targetId; origin from current recordOrigin, falling back to historical origin
+    |       \-- token, handle, key; label from diagram.name/historical.handle/handle; available iff present and unarchived; tokens: [token]
+    \-- return byKey values in insertion order

@@ -1,8 +1,14 @@
 import type { MappingPocGridRect } from "./mappingPoc";
+import type { DiagramElementMapping } from "./domain";
 
 export const MAPPING_POC_PROMPT_CONTEXT_LINES = 3;
 
 export interface MappingPocPromptRequest {
+  projectId?: string;
+  representationId?: string;
+  baseRevisionId?: string;
+  operation?: "edit" | "generate";
+  mappings?: DiagramElementMapping[];
   clientSessionId: string;
   diagramAscii: string;
   diagramRevision: number;
@@ -11,6 +17,7 @@ export interface MappingPocPromptRequest {
 }
 
 export interface MappingPocPromptResult {
+  mappings?: DiagramElementMapping[];
   diagramAscii: string;
   diagramRevision: number;
   startLine: number;
@@ -151,7 +158,7 @@ ${renderedSourceContext || "No mapped corpus ranges."}
 Apply the request to TARGET and call submit_diagram_patch.`;
 }
 
-function validateReplacementLines(lines: readonly string[]): void {
+export function validateReplacementLines(lines: readonly string[]): void {
   if (lines.length < 1 || lines.length > 500) {
     throw new Error("replacement must contain between 1 and 500 lines");
   }
@@ -164,6 +171,43 @@ function validateReplacementLines(lines: readonly string[]): void {
       const code = character.charCodeAt(0);
       if (code < 32 || code > 126) throw new Error("replacement must use printable 7-bit ASCII only");
     }
+  }
+}
+
+/** Generated diagrams have their own origin and only map evidence supplied for this request. */
+export function generatedMappingPocResult(
+  lines: string[], mappings: DiagramElementMapping[], allowed: readonly DiagramElementMapping[]
+): MappingPocPromptResult {
+  validateReplacementLines(lines);
+  if (!lines.join("\n").trim() || lines.join("\n").length > 20000) throw new Error("Generated diagram must contain 1–20000 characters");
+  if (!mappings.length) throw new Error("Generated diagrams require source mappings");
+  validateMappingPocMappings(lines.join("\n"), mappings);
+  for (const mapping of mappings) {
+    if (!allowed.some((source) => source.entityId === mapping.entityId && source.sourceRangeIndex === mapping.sourceRangeIndex)) {
+      throw new Error("Generated mapping references evidence outside the selection");
+    }
+  }
+  return { diagramAscii: lines.join("\n"), diagramRevision: 0, mappings,
+    startLine: 1, oldEndLine: 0, newEndLine: lines.length,
+    removedLineCount: 0, insertedLineCount: lines.length, verticalDelta: lines.length };
+}
+
+export function validateMappingPocMappings(ascii: string, mappings: readonly DiagramElementMapping[]): void {
+  if (mappings.length > 2000) throw new Error("Too many source mappings");
+  const lines = ascii.split("\n");
+  const ids = new Set<string>();
+  for (const mapping of mappings) {
+    if (!mapping || typeof mapping.id !== "string" || !mapping.id || ids.has(mapping.id)
+      || typeof mapping.entityId !== "string"
+      || !Number.isInteger(mapping.sourceRangeIndex) || mapping.sourceRangeIndex < 0
+      || !Number.isInteger(mapping.line) || mapping.line < 1
+      || !Number.isInteger(mapping.startColumn) || mapping.startColumn < 1
+      || !Number.isInteger(mapping.endColumn) || mapping.endColumn < mapping.startColumn
+      || !lines[mapping.line - 1] || mapping.endColumn > lines[mapping.line - 1].length
+      || !lines[mapping.line - 1].slice(mapping.startColumn - 1, mapping.endColumn).trim()) {
+      throw new Error("Invalid diagram-local source mapping");
+    }
+    ids.add(mapping.id);
   }
 }
 

@@ -3,6 +3,7 @@ import type { ProjectRepresentationCatalogRecord } from "../projectCatalog";
 
 export function RepresentationsPanel(props: {
   catalog?: ProjectRepresentationCatalogRecord;
+  onOpenProjectDiagram?: (id: string) => void;
   onOpen: (diagramSetId: string, diagramId: string) => void;
 }) {
   const representations = useMemo(() => Object.values(props.catalog?.representations ?? {})
@@ -26,9 +27,11 @@ export function RepresentationsPanel(props: {
               role="listitem"
               className="representation-row"
               key={representation.id}
-              disabled={!revision?.provenance}
-              onClick={() => revision?.provenance
-                && props.onOpen(revision.provenance.diagramSetId, revision.provenance.artifactId)}
+              disabled={!revision?.provenance && !props.onOpenProjectDiagram}
+              onClick={() => {
+                if (props.onOpenProjectDiagram && (revision?.content?.kind === "mapping-canvas" || !revision?.provenance)) props.onOpenProjectDiagram(representation.id);
+                else if (revision?.provenance) props.onOpen(revision.provenance.diagramSetId, revision.provenance.artifactId);
+              }}
             >
               <span className="representation-row__star" aria-label="Starred representation">★</span>
               <strong>{representation.name}</strong>

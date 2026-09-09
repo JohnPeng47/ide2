@@ -38,6 +38,8 @@ import {
   renderMappingPromptTemplate
 } from "../src/prompt";
 import {
+  generatedMappingPocResult,
+  validateMappingPocMappings,
   applyMappingPocPromptPatch,
   mappingPocPromptHunk,
   renderMappingPocAgentSystemPrompt,
@@ -114,7 +116,7 @@ export interface DiagramAgentRuntime {
     onProgress?: (progress: AgentProgress) => void
   ): Promise<ArtifactEditDraft>;
   promptDiagramSelection?(
-    request: MappingPocPromptRequest & { sourceRoot: string },
+    request: MappingPocPromptRequest & { sourceRoot: string; projectEvidence?: Record<string, import("../src/projectCatalog").ProjectRepresentationEvidenceRecord> },
     onProgress?: (progress: AgentProgress) => void
   ): Promise<MappingPocPromptResult>;
   dispose(): void;
@@ -752,7 +754,7 @@ ${request.instruction}`);
   }
 
   private async createMappingPocSession(
-    request: MappingPocPromptRequest & { sourceRoot: string }
+    request: MappingPocPromptRequest & { sourceRoot: string; projectEvidence?: Record<string, import("../src/projectCatalog").ProjectRepresentationEvidenceRecord> }
   ): Promise<MappingPocAgentSession> {
     if (this.mappingPocSessions.size >= 12) {
       const oldest = [...this.mappingPocSessions.entries()]
@@ -761,18 +763,25 @@ ${request.instruction}`);
     }
     const configured = await this.model();
     let state!: MappingPocAgentSession;
+    const generating = request.operation === "generate";
     const submit = defineTool({
       name: "submit_diagram_patch",
-      label: "Submit diagram patch",
-      description: "Replace the exact full-row hunk identified by the active selection.",
-      promptSnippet: "Submit replacement rows for the selected diagram hunk",
+      label: generating ? "Submit sub-diagram" : "Submit diagram patch",
+      description: generating
+        ? "Submit the complete standalone sub-diagram and exact local source mappings, using the active selectionId."
+        : "Replace the exact full-row hunk identified by the active selection.",
+      promptSnippet: generating ? "Submit a complete mapped sub-diagram" : "Submit replacement rows for the selected diagram hunk",
       promptGuidelines: ["End each edit request by calling submit_diagram_patch exactly once."],
       parameters: Type.Object({
         selectionId: Type.String({ minLength: 1, maxLength: 120 }),
         replacementLines: Type.Array(Type.String({ maxLength: 500 }), {
           minItems: 1,
           maxItems: 500
-        })
+        }),
+        mappings: Type.Optional(Type.Array(Type.Object({
+          id: Type.String(), entityId: Type.String(), sourceRangeIndex: Type.Integer({ minimum: 0 }),
+          line: Type.Integer({ minimum: 1 }), startColumn: Type.Integer({ minimum: 1 }), endColumn: Type.Integer({ minimum: 1 })
+        })))
       }),
       async execute(_toolCallId, params) {
         const pending = state.pending;
@@ -794,7 +803,12 @@ ${request.instruction}`);
           };
         }
         try {
-          const result = applyMappingPocPromptPatch({
+          const result = generating ? generatedMappingPocResult(
+            params.replacementLines, params.mappings ?? [],
+            state.mappings.filter((mapping) => mapping.line >= request.selection.startLine
+              && mapping.line <= request.selection.endLine
+              && mapping.startColumn <= request.selection.endColumn && mapping.endColumn >= request.selection.startColumn)
+          ) : applyMappingPocPromptPatch({
             currentAscii: state.ascii,
             currentRevision: state.revision,
             expectedRevision: pending.expectedRevision,
@@ -803,12 +817,14 @@ ${request.instruction}`);
           });
           state.ascii = result.diagramAscii;
           state.revision = result.diagramRevision;
-          state.mappings = mappingPocElementMappingsAfterPatch(state.mappings, result);
+          state.mappings = generating ? result.mappings! : mappingPocElementMappingsAfterPatch(state.mappings, result);
+          result.mappings = state.mappings;
           pending.submission = result;
           return {
             content: [{
               type: "text" as const,
-              text: `Applied the exact row patch at revision ${result.diagramRevision} (${result.verticalDelta >= 0 ? "+" : ""}${result.verticalDelta} rows).`
+              text: generating ? "Generated the standalone sub-diagram with validated source mappings."
+                : `Applied the exact row patch at revision ${result.diagramRevision} (${result.verticalDelta >= 0 ? "+" : ""}${result.verticalDelta} rows).`
             }],
             details: { accepted: true },
             terminate: true
@@ -841,7 +857,9 @@ ${request.instruction}`);
       noPromptTemplates: true,
       noThemes: true,
       noContextFiles: true,
-      systemPrompt: renderMappingPocAgentSystemPrompt(
+      systemPrompt: generating
+        ? "Generate a standalone printable ASCII sub-diagram from the supplied source evidence and instruction. Its first character is at local row 1, column 1. Call submit_diagram_patch with replacementLines containing the COMPLETE new diagram and mappings containing exact one-based inclusive spans for visible labels. Each mapping must use a supplied elementId as entityId and its sourceRangeIndex. Include at least one mapping. Do not edit the source diagram. No Markdown fences. End with exactly one accepted tool submission."
+        : renderMappingPocAgentSystemPrompt(
         request.diagramAscii,
         request.diagramRevision,
         systemNonce
@@ -865,7 +883,7 @@ ${request.instruction}`);
       unsubscribe: () => {},
       ascii: request.diagramAscii,
       revision: request.diagramRevision,
-      mappings: initialMappingPocElementMappings(),
+      mappings: request.mappings ?? initialMappingPocElementMappings(),
       modelName,
       lastUsedAt: Date.now()
     };
@@ -879,7 +897,7 @@ ${request.instruction}`);
   }
 
   async promptDiagramSelection(
-    request: MappingPocPromptRequest & { sourceRoot: string },
+    request: MappingPocPromptRequest & { sourceRoot: string; projectEvidence?: Record<string, import("../src/projectCatalog").ProjectRepresentationEvidenceRecord> },
     onProgress?: (progress: AgentProgress) => void
   ): Promise<MappingPocPromptResult> {
     if (this.mappingPocPromptBusy) throw new Error("another diagram prompt is already running");
@@ -895,6 +913,7 @@ ${request.instruction}`);
         throw new Error("diagram prompt session is stale; reload the mapping page to start a new session");
       }
       if (state.pending) throw new Error("this diagram prompt session already has an active request");
+      validateMappingPocMappings(state.ascii, state.mappings);
       const hunk = mappingPocPromptHunk(state.ascii, request.selection);
       onProgress?.({
         status: "reading-context",
@@ -904,6 +923,7 @@ ${request.instruction}`);
       });
       const sourceContext = await mappingPocSourceContextForSelection({
         sourceRoot: request.sourceRoot,
+        projectEvidence: request.projectEvidence,
         mappings: state.mappings,
         selection: request.selection
       });
@@ -928,7 +948,11 @@ ${request.instruction}`);
         model: state.modelName,
         sessionId: state.session.sessionId
       });
-      await state.session.prompt(renderMappingPocEditPrompt({
+      await state.session.prompt(request.operation === "generate"
+        ? JSON.stringify({ instruction, selectionId, sourceDiagram: state.ascii, selection: request.selection,
+            evidence: sourceContext.map((context) => ({ ...context,
+              sourceRangeIndex: state!.mappings.find((mapping) => mapping.id === context.mappingId)!.sourceRangeIndex })) })
+        : renderMappingPocEditPrompt({
         instruction,
         selectionId,
         diagramRevision: state.revision,
@@ -1184,7 +1208,7 @@ export class FakeDiagramAgentRuntime implements DiagramAgentRuntime {
   }
 
   async promptDiagramSelection(
-    request: MappingPocPromptRequest & { sourceRoot: string },
+    request: MappingPocPromptRequest & { sourceRoot: string; projectEvidence?: Record<string, import("../src/projectCatalog").ProjectRepresentationEvidenceRecord> },
     onProgress?: (progress: AgentProgress) => void
   ): Promise<MappingPocPromptResult> {
     onProgress?.({ status: "generating", message: "editing selected diagram rows", model: "fake/test" });
@@ -1195,7 +1219,8 @@ export class FakeDiagramAgentRuntime implements DiagramAgentRuntime {
     const hunk = mappingPocPromptHunk(request.diagramAscii, request.selection);
     const sourceContext = await mappingPocSourceContextForSelection({
       sourceRoot: request.sourceRoot,
-      mappings: initialMappingPocElementMappings(),
+      projectEvidence: request.projectEvidence,
+      mappings: request.mappings ?? initialMappingPocElementMappings(),
       selection: request.selection
     });
     onProgress?.({
@@ -1204,14 +1229,26 @@ export class FakeDiagramAgentRuntime implements DiagramAgentRuntime {
       model: "fake/test"
     });
     const safeInstruction = request.instruction.trim().replace(/[^\x20-\x7e]/g, "?");
+    if (request.operation === "generate") {
+      const contexts = sourceContext.filter((context, index) => sourceContext.findIndex((other) => other.elementId === context.elementId) === index);
+      const lines = [request.instruction.split("\n")[0].replace(/[^\x20-\x7e]/g, "?").slice(0, 100), ...contexts.map((context) => ` +-- ${context.elementLabel}`)];
+      const allowed = request.mappings ?? initialMappingPocElementMappings();
+      return generatedMappingPocResult(lines, contexts.map((context, index) => ({
+        id: `generated-${index}`, entityId: context.elementId,
+        sourceRangeIndex: allowed.find((mapping) => mapping.id === context.mappingId)!.sourceRangeIndex,
+        line: index + 2, startColumn: 6, endColumn: lines[index + 1].length
+      })), allowed);
+    }
     onProgress?.({ status: "validating", message: "validating structured submission", model: "fake/test" });
-    return applyMappingPocPromptPatch({
+    const result = applyMappingPocPromptPatch({
       currentAscii: request.diagramAscii,
       currentRevision: request.diagramRevision,
       expectedRevision: request.diagramRevision,
       hunk,
       replacementLines: [...hunk.expectedOldLines, `[edited: ${safeInstruction}]`]
     });
+    result.mappings = mappingPocElementMappingsAfterPatch(request.mappings ?? initialMappingPocElementMappings(), result);
+    return result;
   }
 
   async mapArtifactEntities(

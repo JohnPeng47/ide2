@@ -1,3 +1,7 @@
+import { ProjectDiagramConflict, type SaveProjectedTreeInput } from "./projectCatalogStore";
+import type { SaveProjectDiagramInput } from "../src/projectDiagramCanvas";
+import { validateMappingPocMappings } from "../src/mappingPocPrompt";
+import type { DiagramElementMapping } from "../src/domain";
 import type { ServerResponse } from "node:http";
 import type { Connect, Plugin } from "vite";
 import {
@@ -14,7 +18,7 @@ import { FakeDiagramAgentRuntime, PiDiagramAgentRuntime } from "./agentRuntime";
 import { DiagramApplication } from "./application";
 import { DiagramDatasetStore } from "./diagramDatasetStore";
 import { ExperimentCatalog } from "./experimentCatalog";
-import { DiagramStore } from "./store";
+import { DiagramStore, discoverDomainCorpus } from "./store";
 import type { BuiltInDomainProfileId } from "../src/domainProfile";
 import { isBuiltInDomainProfileId } from "./domainProfiles";
 
@@ -55,58 +59,58 @@ function readBody(request: Connect.IncomingMessage): Promise<unknown> {
 }
 
 function parseGeneration(pathname: string): { setId: string } | null {
-  const match = pathname.match(/^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/generate$/);
+  const match = pathname.match(/^\/api\/studio\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/generate$/);
   return match ? { setId: match[1] } : null;
 }
 
 function parseDiagramSet(pathname: string): { setId: string } | null {
-  const match = pathname.match(/^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)$/);
+  const match = pathname.match(/^\/api\/studio\/diagram-sets\/([a-z0-9][a-z0-9-]*)$/);
   return match ? { setId: match[1] } : null;
 }
 
 function parseRepresentationGraph(pathname: string): { setId: string; feedback: boolean } | null {
   const match = pathname.match(
-    /^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/representation-graph(\/feedback)?$/
+    /^\/api\/studio\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/representation-graph(\/feedback)?$/
   );
   return match ? { setId: match[1], feedback: Boolean(match[2]) } : null;
 }
 
 function parseSpatialProgress(pathname: string): { setId: string; runId: string } | null {
   const match = pathname.match(
-    /^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/agent-runs\/([a-z0-9][a-z0-9-]*)\/spatial-progress$/
+    /^\/api\/studio\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/agent-runs\/([a-z0-9][a-z0-9-]*)\/spatial-progress$/
   );
   return match ? { setId: match[1], runId: match[2] } : null;
 }
 
 function parseRepositoryFiles(pathname: string): { setId: string } | null {
-  const match = pathname.match(/^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/files$/);
+  const match = pathname.match(/^\/api\/studio\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/files$/);
   return match ? { setId: match[1] } : null;
 }
 
 function parseHighlight(pathname: string): { highlightId: string } | null {
-  const match = pathname.match(/^\/api\/highlights\/([a-z0-9][a-z0-9-]*)$/);
+  const match = pathname.match(/^\/api\/studio\/highlights\/([a-z0-9][a-z0-9-]*)$/);
   return match ? { highlightId: match[1] } : null;
 }
 
 function parsePlan(pathname: string): { planId: string } | null {
-  const match = pathname.match(/^\/api\/plans\/([a-z0-9][a-z0-9-]*)$/);
+  const match = pathname.match(/^\/api\/studio\/plans\/([a-z0-9][a-z0-9-]*)$/);
   return match ? { planId: match[1] } : null;
 }
 
 function parseSystemPromptTemplate(pathname: string): { id: string; reset: boolean } | null {
-  const match = pathname.match(/^\/api\/system-prompt-templates\/([a-z0-9][a-z0-9-]*)(\/reset)?$/);
+  const match = pathname.match(/^\/api\/studio\/system-prompt-templates\/([a-z0-9][a-z0-9-]*)(\/reset)?$/);
   return match ? { id: match[1], reset: Boolean(match[2]) } : null;
 }
 
 function parseCodeEntityPromptTemplate(pathname: string): { id: string; reset: boolean } | null {
   const match = pathname.match(
-    /^\/api\/code-entity-prompt-templates\/([a-z0-9][a-z0-9-]*)(\/reset)?$/
+    /^\/api\/studio\/code-entity-prompt-templates\/([a-z0-9][a-z0-9-]*)(\/reset)?$/
   );
   return match ? { id: match[1], reset: Boolean(match[2]) } : null;
 }
 
 function parseImportedDiagram(pathname: string): { diagramId: string; archive: boolean } | null {
-  const match = pathname.match(/^\/api\/imports\/diagrams\/([a-z0-9][a-z0-9-]*)(\/archive)?$/);
+  const match = pathname.match(/^\/api\/studio\/imports\/diagrams\/([a-z0-9][a-z0-9-]*)(\/archive)?$/);
   return match ? { diagramId: match[1], archive: Boolean(match[2]) } : null;
 }
 
@@ -114,28 +118,28 @@ function parseImportedDiagramComponent(
   pathname: string
 ): { componentId: string; archive: boolean } | null {
   const match = pathname.match(
-    /^\/api\/imports\/diagram-components\/([a-z0-9][a-z0-9-]*)(\/archive)?$/
+    /^\/api\/studio\/imports\/diagram-components\/([a-z0-9][a-z0-9-]*)(\/archive)?$/
   );
   return match ? { componentId: match[1], archive: Boolean(match[2]) } : null;
 }
 
 function parseDiagram(pathname: string): { setId: string; diagramId: string } | null {
   const match = pathname.match(
-    /^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/diagrams\/([a-z0-9][a-z0-9-]*)$/
+    /^\/api\/studio\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/diagrams\/([a-z0-9][a-z0-9-]*)$/
   );
   return match ? { setId: match[1], diagramId: match[2] } : null;
 }
 
 function parseDiagramArchive(pathname: string): { setId: string; diagramId: string } | null {
   const match = pathname.match(
-    /^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/diagrams\/([a-z0-9][a-z0-9-]*)\/archive$/
+    /^\/api\/studio\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/diagrams\/([a-z0-9][a-z0-9-]*)\/archive$/
   );
   return match ? { setId: match[1], diagramId: match[2] } : null;
 }
 
 function parseDiagramStar(pathname: string): { setId: string; diagramId: string } | null {
   const match = pathname.match(
-    /^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/diagrams\/([a-z0-9][a-z0-9-]*)\/star$/
+    /^\/api\/studio\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/diagrams\/([a-z0-9][a-z0-9-]*)\/star$/
   );
   return match ? { setId: match[1], diagramId: match[2] } : null;
 }
@@ -144,14 +148,14 @@ function parseDiagramCandidateFeedback(
   pathname: string
 ): { setId: string; candidateBatchId: string } | null {
   const match = pathname.match(
-    /^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/candidate-batches\/([a-z0-9][a-z0-9-]*)\/feedback$/
+    /^\/api\/studio\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/candidate-batches\/([a-z0-9][a-z0-9-]*)\/feedback$/
   );
   return match ? { setId: match[1], candidateBatchId: match[2] } : null;
 }
 
 function parseDiagramComponents(pathname: string): { setId: string; diagramId: string } | null {
   const match = pathname.match(
-    /^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/diagrams\/([a-z0-9][a-z0-9-]*)\/components$/
+    /^\/api\/studio\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/diagrams\/([a-z0-9][a-z0-9-]*)\/components$/
   );
   return match ? { setId: match[1], diagramId: match[2] } : null;
 }
@@ -162,7 +166,7 @@ function parseCodeEntityMap(pathname: string): {
   artifactId: string;
 } | null {
   const match = pathname.match(
-    /^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/(diagrams|components)\/([a-z0-9][a-z0-9-]*)\/code-entity-map$/
+    /^\/api\/studio\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/(diagrams|components)\/([a-z0-9][a-z0-9-]*)\/code-entity-map$/
   );
   if (!match) return null;
   return {
@@ -174,7 +178,7 @@ function parseCodeEntityMap(pathname: string): {
 
 function parseCodeEntityMapBatch(pathname: string): { setId: string } | null {
   const match = pathname.match(
-    /^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/code-entity-maps$/
+    /^\/api\/studio\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/code-entity-maps$/
   );
   return match ? { setId: match[1] } : null;
 }
@@ -185,7 +189,7 @@ function parseComponentAction(pathname: string): {
   action: "archive" | "components";
 } | null {
   const match = pathname.match(
-    /^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/components\/([a-z0-9][a-z0-9-]*)\/(archive|components)$/
+    /^\/api\/studio\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/components\/([a-z0-9][a-z0-9-]*)\/(archive|components)$/
   );
   return match
     ? { setId: match[1], componentId: match[2], action: match[3] as "archive" | "components" }
@@ -194,7 +198,7 @@ function parseComponentAction(pathname: string): {
 
 function parseEditSessions(pathname: string): { setId: string } | null {
   const match = pathname.match(
-    /^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/edit-sessions$/
+    /^\/api\/studio\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/edit-sessions$/
   );
   return match ? { setId: match[1] } : null;
 }
@@ -205,7 +209,7 @@ function parseEditSessionAction(pathname: string): {
   action: "manual" | "marker" | "llm" | "undo" | "redo" | "finish" | "discard";
 } | null {
   const match = pathname.match(
-    /^\/api\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/edit-sessions\/([a-z0-9][a-z0-9-]*)\/(manual|marker|llm|undo|redo|finish|discard)$/
+    /^\/api\/studio\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/edit-sessions\/([a-z0-9][a-z0-9-]*)\/(manual|marker|llm|undo|redo|finish|discard)$/
   );
   return match ? {
     setId: match[1],
@@ -215,17 +219,17 @@ function parseEditSessionAction(pathname: string): {
 }
 
 function parseExperimentArtifact(pathname: string): { catalogId: string } | null {
-  const match = pathname.match(/^\/api\/experiments\/([a-z0-9][a-z0-9-]{0,127})\/artifact$/);
+  const match = pathname.match(/^\/api\/studio\/experiments\/([a-z0-9][a-z0-9-]{0,127})\/artifact$/);
   return match ? { catalogId: match[1] } : null;
 }
 
 function parseDatasetItems(pathname: string): { datasetId: string } | null {
-  const match = pathname.match(/^\/api\/diagram-datasets\/([a-z0-9][a-z0-9-]{0,127})\/items$/);
+  const match = pathname.match(/^\/api\/studio\/diagram-datasets\/([a-z0-9][a-z0-9-]{0,127})\/items$/);
   return match ? { datasetId: match[1] } : null;
 }
 
 function parseDatasetItem(pathname: string): { datasetId: string; itemId: string } | null {
-  const match = pathname.match(/^\/api\/diagram-datasets\/([a-z0-9][a-z0-9-]{0,127})\/items\/([a-z0-9][a-z0-9-]{0,127})$/);
+  const match = pathname.match(/^\/api\/studio\/diagram-datasets\/([a-z0-9][a-z0-9-]{0,127})\/items\/([a-z0-9][a-z0-9-]{0,127})$/);
   return match ? { datasetId: match[1], itemId: match[2] } : null;
 }
 
@@ -254,12 +258,33 @@ export function diagramApi(
 
   const middleware: Connect.NextHandleFunction = async (request, response, next) => {
     const url = new URL(request.url ?? "/", "http://localhost");
-    if (!url.pathname.startsWith("/api/")) {
+    if (!url.pathname.startsWith("/api/") && !url.pathname.startsWith("/internal/mapping/")) {
       next();
       return;
     }
     try {
-      if (url.pathname === "/api/mapping-poc/prompt") {
+      if (url.pathname === "/internal/mapping/projections") {
+        if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
+        const project = await application.store.loadProject();
+        if (!project) return sendJson(response, 400, { error: "Project is not initialized" });
+        const input = await readBody(request) as SaveProjectedTreeInput;
+        const result = await application.store.projectCatalogs.saveProjectedTree(project.id, input);
+        return sendJson(response, 200, { project, ...result });
+      }
+      if (url.pathname === "/internal/mapping/diagrams") {
+        if (request.method === "GET") {
+          const project = await application.store.loadProject();
+          return sendJson(response, 200, { project, catalog: project
+            ? await application.store.projectCatalogs.loadRepresentationCatalog(project.id) : null });
+        }
+        if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
+        const input = await readBody(request) as SaveProjectDiagramInput;
+        const project = await application.store.loadProject()
+          ?? await application.store.ensureProject(await discoverDomainCorpus(projectRoot, configuredDomainProfileId ?? "source-code"));
+        const result = await application.store.projectCatalogs.saveMappingDiagram(project.id, input);
+        return sendJson(response, 200, { project, ...result });
+      }
+      if (url.pathname === "/internal/mapping/prompt") {
         if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
         const body = await readBody(request) as Record<string, unknown>;
         const clientSessionId = typeof body.clientSessionId === "string" ? body.clientSessionId : "";
@@ -289,27 +314,59 @@ export function diagramApi(
         if (!Object.values(selection).every((value) => Number.isInteger(value) && value >= 1)) {
           return sendJson(response, 400, { error: "selection coordinates must be positive integers" });
         }
+        if (body.operation !== undefined && body.operation !== "edit" && body.operation !== "generate") {
+          return sendJson(response, 400, { error: "operation must be edit or generate" });
+        }
+        let mappings: DiagramElementMapping[] | undefined;
+        if (body.mappings !== undefined) {
+          try {
+            if (!Array.isArray(body.mappings)) throw new Error("mappings must be an array");
+            mappings = body.mappings as DiagramElementMapping[];
+            validateMappingPocMappings(diagramAscii, mappings);
+          } catch (error) {
+            return sendJson(response, 400, { error: error instanceof Error ? error.message : "invalid mappings" });
+          }
+        }
+        let projectEvidence: Record<string, import("../src/projectCatalog").ProjectRepresentationEvidenceRecord> | undefined;
+        let sourceRoot = mappingPocSourceRoot;
+        if (body.representationId !== undefined || body.projectId !== undefined || body.baseRevisionId !== undefined) {
+          const project = await application.store.loadProject();
+          if (!project || body.projectId !== project.id) throw new Error("Diagram belongs to another Project");
+          const catalog = await application.store.projectCatalogs.loadRepresentationCatalog(project.id);
+          const representation = catalog.representations[String(body.representationId)];
+          if (!representation || representation.status === "archived"
+            || representation.currentRevisionId !== body.baseRevisionId) throw new ProjectDiagramConflict("Diagram revision has changed; reopen it before prompting");
+          projectEvidence = catalog.revisions[representation.currentRevisionId].evidence;
+          sourceRoot = project.corpus.root;
+          if (!mappings) throw new Error("Project diagram mappings are required");
+        }
         response.statusCode = 200;
         response.setHeader("content-type", "application/x-ndjson; charset=utf-8");
         response.setHeader("cache-control", "no-cache, no-transform");
         response.flushHeaders();
         const result = await runtime.promptDiagramSelection({
+          operation: body.operation as "edit" | "generate" | undefined,
+          mappings,
           clientSessionId,
           diagramAscii,
           diagramRevision,
           selection,
           instruction,
-          sourceRoot: mappingPocSourceRoot
+          sourceRoot,
+          projectEvidence
         }, (event) => sendEvent(response, { type: "progress", ...event }));
         sendEvent(response, { type: "result", result });
         response.end();
         return;
       }
-      if (url.pathname === "/api/experiments") {
+      if (!url.pathname.startsWith("/api/studio/")) {
+        return sendJson(response, 404, { error: "API route not found" });
+      }
+      if (url.pathname === "/api/studio/experiments") {
         if (request.method !== "GET") return sendJson(response, 405, { error: "method not allowed" });
         return sendJson(response, 200, await experimentCatalog.list());
       }
-      if (url.pathname === "/api/diagram-datasets") {
+      if (url.pathname === "/api/studio/diagram-datasets") {
         if (request.method === "GET") return sendJson(response, 200, await datasetStore.list());
         if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
         const body = await readBody(request) as Record<string, unknown>;
@@ -380,7 +437,7 @@ export function diagramApi(
         }));
       }
       await ensureRecovered();
-      if (url.pathname === "/api/plans") {
+      if (url.pathname === "/api/studio/plans") {
         if (request.method === "GET") return sendJson(response, 200, await application.store.loadPlans());
         if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
         const body = await readBody(request) as Record<string, unknown>;
@@ -420,11 +477,11 @@ export function diagramApi(
         });
         return sendJson(response, 200, await application.store.savePlan(plan));
       }
-      if (url.pathname === "/api/workspace") {
+      if (url.pathname === "/api/studio/workspace") {
         if (request.method !== "GET") return sendJson(response, 405, { error: "method not allowed" });
         return sendJson(response, 200, await application.workspace());
       }
-      if (url.pathname === "/api/project/corpus-compactions") {
+      if (url.pathname === "/api/studio/project/corpus-compactions") {
         const project = await application.store.loadProject();
         if (!project) return sendJson(response, 409, { error: "project is not initialized" });
         if (request.method === "GET") {
@@ -440,7 +497,7 @@ export function diagramApi(
           body as import("../src/projectCatalog").ProjectFileCompactionInput
         ));
       }
-      if (url.pathname === "/api/project/representations") {
+      if (url.pathname === "/api/studio/project/representations") {
         if (request.method !== "GET") return sendJson(response, 405, { error: "method not allowed" });
         const project = await application.store.loadProject();
         if (!project) return sendJson(response, 409, { error: "project is not initialized" });
@@ -450,7 +507,7 @@ export function diagramApi(
           await application.store.projectCatalogs.loadRepresentationCatalog(project.id)
         );
       }
-      if (url.pathname === "/api/project/representations/promote") {
+      if (url.pathname === "/api/studio/project/representations/promote") {
         if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
         const body = await readBody(request) as Record<string, unknown>;
         if (typeof body.diagramSetId !== "string" || typeof body.diagramId !== "string") {
@@ -465,7 +522,7 @@ export function diagramApi(
           ...(typeof body.makeActive === "boolean" ? { makeActive: body.makeActive } : {})
         }));
       }
-      if (url.pathname === "/api/highlights") {
+      if (url.pathname === "/api/studio/highlights") {
         if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
         const body = await readBody(request) as Record<string, unknown>;
         return sendJson(response, 201, await application.addHighlight({
@@ -524,7 +581,7 @@ export function diagramApi(
         if (request.method !== "DELETE") return sendJson(response, 405, { error: "method not allowed" });
         return sendJson(response, 200, await application.deleteHighlight(highlight.highlightId));
       }
-      if (url.pathname === "/api/artifact-bundle") {
+      if (url.pathname === "/api/studio/artifact-bundle") {
         if (request.method !== "GET") return sendJson(response, 405, { error: "method not allowed" });
         const setId = url.searchParams.get("setId") ?? "";
         const artifactId = url.searchParams.get("artifactId") ?? "";
@@ -538,18 +595,18 @@ export function diagramApi(
           await application.mappedArtifactBundle(setId, artifactKind, artifactId)
         );
       }
-      if (url.pathname === "/api/call-graph-focus") {
+      if (url.pathname === "/api/studio/call-graph-focus") {
         if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
         return sendJson(response, 200, await application.callGraphFocus(await readBody(request)));
       }
-      if (url.pathname === "/api/source") {
+      if (url.pathname === "/api/studio/source") {
         if (request.method !== "GET") return sendJson(response, 405, { error: "method not allowed" });
         const setId = url.searchParams.get("setId") ?? "";
         const entityId = url.searchParams.get("entityId") ?? "";
         const rangeIndex = Number(url.searchParams.get("range") ?? "0");
         return sendJson(response, 200, await application.sourceSnippet(setId, entityId, rangeIndex));
       }
-      if (url.pathname === "/api/system-prompt-templates") {
+      if (url.pathname === "/api/studio/system-prompt-templates") {
         if (request.method === "GET") {
           return sendJson(response, 200, { templates: await application.systemPromptTemplates() });
         }
@@ -561,7 +618,7 @@ export function diagramApi(
           prompts: body.prompts
         }));
       }
-      if (url.pathname === "/api/code-entity-prompt-templates") {
+      if (url.pathname === "/api/studio/code-entity-prompt-templates") {
         if (request.method === "GET") {
           return sendJson(response, 200, { templates: await application.codeEntityPromptTemplates() });
         }
@@ -625,7 +682,7 @@ export function diagramApi(
           prompts: body.prompts
         }));
       }
-      if (url.pathname === "/api/diagram-sets") {
+      if (url.pathname === "/api/studio/diagram-sets") {
         if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
         const body = await readBody(request) as Record<string, unknown>;
         const inputPath = typeof body.path === "string" ? body.path : "";
@@ -791,7 +848,7 @@ export function diagramApi(
         if (request.method !== "DELETE") return sendJson(response, 405, { error: "method not allowed" });
         return sendJson(response, 200, await application.deleteDiagramSet(diagramSet.setId));
       }
-      if (url.pathname === "/api/imports") {
+      if (url.pathname === "/api/studio/imports") {
         if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
         const body = await readBody(request) as Record<string, unknown>;
         const artifactKind = body.artifactKind;
@@ -1159,7 +1216,7 @@ export function diagramApi(
         sendEvent(response, { type: "error", error: message });
         if (!response.destroyed && !response.writableEnded) response.end();
       } else {
-        sendJson(response, 400, { error: message });
+        sendJson(response, error instanceof ProjectDiagramConflict ? 409 : 400, { error: message });
       }
     }
   };

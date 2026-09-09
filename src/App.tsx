@@ -293,12 +293,25 @@ export function pageFromPath(pathname = window.location.pathname): AppPage {
 
 export function App() {
   const [page, setPage] = useState(pageFromPath);
+  const navigationGuard = useRef<(() => boolean) | undefined>(undefined);
+  const guardedUrl = useRef(window.location.href);
+  const registerNavigationGuard = useCallback((guard: (() => boolean) | undefined) => {
+    navigationGuard.current = guard;
+    if (guard) guardedUrl.current = window.location.href;
+  }, []);
   useEffect(() => {
-    const onPopState = () => setPage(pageFromPath());
+    const onPopState = () => {
+      if (pageFromPath() !== "mapping" && navigationGuard.current && !navigationGuard.current()) {
+        window.history.pushState({}, "", guardedUrl.current);
+        return;
+      }
+      setPage(pageFromPath());
+    };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
   const navigate = (next: AppPage) => {
+    if (next !== "mapping" && navigationGuard.current && !navigationGuard.current()) return;
     const path = next === "experiments" ? "/experiments" : next === "mapping" ? "/mapping" : "/";
     window.history.pushState({}, "", path);
     setPage(next);
@@ -311,17 +324,19 @@ export function App() {
   }
   if (page === "mapping") {
     return <MappingPocPage
+      registerNavigationGuard={registerNavigationGuard}
       onStudio={() => navigate("studio")}
       onExperiments={() => navigate("experiments")}
     />;
   }
   return <StudioPage
+    onOpenProjectDiagram={(id) => { window.history.pushState({}, "", `/mapping?diagram=${encodeURIComponent(id)}`); setPage("mapping"); }}
     onExperiments={() => navigate("experiments")}
     onMapping={() => navigate("mapping")}
   />;
 }
 
-function StudioPage(props: { onExperiments: () => void; onMapping: () => void }) {
+function StudioPage(props: { onOpenProjectDiagram: (id: string) => void; onExperiments: () => void; onMapping: () => void }) {
   const refBuffer = useRefBuffer();
   const [paneApi] = useState(() => createStudioPaneApi(resolveDomainProfile(
     window.localStorage.getItem(PANE_PROFILE_STORAGE_KEY)
@@ -1067,9 +1082,12 @@ function StudioPage(props: { onExperiments: () => void; onMapping: () => void })
     return (
       <main className="empty-workspace">
         <span className="eyebrow">NO DIAGRAM SETS</span>
-        <h1>Start from the agent-facing CLI.</h1>
-        <p>The browser cannot create a DiagramSet or CodeEntitiesSet.</p>
-        <pre>npm run diagram -- create --path /path/to/repo --name "Feature" --prompt "Map the feature"</pre>
+        {Object.values(workspace.representationCatalog?.representations ?? {}).some((item) => item.status === "settled") ?
+          <RepresentationsPanel catalog={workspace.representationCatalog} onOpenProjectDiagram={props.onOpenProjectDiagram}
+            onOpen={() => props.onMapping()} /> : null}
+        <button type="button" onClick={props.onMapping}>Open Mapping</button>
+        <h1>Create your first DiagramSet.</h1>
+        <p>Ask your agent to create a DiagramSet through the studio's HTTP API. It will appear here when collection starts.</p>
         {error ? <p className="inline-error">{error}</p> : null}
       </main>
     );
@@ -2191,6 +2209,7 @@ function StudioPage(props: { onExperiments: () => void; onMapping: () => void })
     /> },
     representations: { content: <RepresentationsPanel
       catalog={workspace.representationCatalog}
+      onOpenProjectDiagram={props.onOpenProjectDiagram}
       onOpen={(diagramSetId, diagramId) => {
         if (diagramSetId === activeSet.id) {
           selectDiagram(diagramId);

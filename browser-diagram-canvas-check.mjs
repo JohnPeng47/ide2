@@ -161,7 +161,7 @@ try {
     return Boolean(response?.ok);
   }, { timeoutMs: 10000, message: "preview server did not start" });
 
-  const created = await fetch(new URL("/api/diagram-sets", url), {
+  const created = await fetch(new URL("/api/studio/diagram-sets", url), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({

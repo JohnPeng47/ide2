@@ -95,6 +95,8 @@ export interface ProjectRepresentationRevisionRecord {
   revision: number;
   ascii: string;
   asciiSha256: string;
+  /** Absent legacy content is a single ASCII diagram. */
+  content?: import("./projectDiagramCanvas").ProjectDiagramContent;
   representationKind: "tree" | "diagram";
   evidence: Record<string, ProjectRepresentationEvidenceRecord>;
   mappings: ProjectRepresentationMappingRecord[];
@@ -126,6 +128,8 @@ export interface ProjectRepresentationCatalogRecord {
   activeByKind: Partial<Record<DiagramViewKind, string>>;
   representations: Record<string, ProjectRepresentationRecord>;
   revisions: Record<string, ProjectRepresentationRevisionRecord>;
+  /** Revision-pinned correspondences to complementary project diagrams. */
+  projections?: Record<string, import("./diagramProjection").ProjectProjectionRecord>;
   createdAt: string;
   updatedAt: string;
 }
