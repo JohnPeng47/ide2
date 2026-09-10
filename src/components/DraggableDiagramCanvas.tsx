@@ -48,7 +48,11 @@ export function DraggableDiagramCanvas(props: {
   className?: string;
   leftInset?: number;
   focusBox?: { id: string; serial: number };
+  initialTransform?: CanvasTransform;
+  onTransformChange?: (transform: CanvasTransform) => void;
 }) {
+  const transformChange = useRef(props.onTransformChange); transformChange.current = props.onTransformChange;
+  const initialTransform = useRef(props.initialTransform);
   const viewportRef = useRef<HTMLDivElement>(null);
   const surfaceRef = useRef<HTMLDivElement>(null);
   const zoomOutputRef = useRef<HTMLOutputElement>(null);
@@ -60,6 +64,7 @@ export function DraggableDiagramCanvas(props: {
 
   const applyTransform = useCallback((transform: CanvasTransform, animate = false) => {
     transformRef.current = transform;
+    transformChange.current?.(transform);
     const surface = surfaceRef.current;
     if (surface) {
       surface.style.transition = animate ? `transform ${TRANSITION_MS}ms ease` : "none";
@@ -103,7 +108,7 @@ export function DraggableDiagramCanvas(props: {
       transformRef.current = { offset: { x: 0, y: 0 }, scale: 1 };
       return undefined;
     }
-    const frame = requestAnimationFrame(() => resetCanvas(false));
+    const frame = requestAnimationFrame(() => initialTransform.current ? applyTransform(initialTransform.current) : resetCanvas(false));
     return () => cancelAnimationFrame(frame);
   }, [endGesture, props.enabled, props.resetKey, resetCanvas]);
 
@@ -276,7 +281,7 @@ export function DraggableDiagramCanvas(props: {
       tabIndex={props.enabled ? 0 : undefined}
       aria-label={props.enabled ? "Draggable diagram canvas" : undefined}
       aria-keyshortcuts={props.enabled ? "ArrowLeft ArrowRight ArrowUp ArrowDown + - 0" : undefined}
-      title={props.enabled ? "Drag to pan · Ctrl/Cmd-wheel to zoom · Shift-drag to select text" : undefined}
+      title={props.enabled ? "Drag to pan · Ctrl-drag to select · Ctrl/Cmd-wheel to zoom · Shift-drag to select text" : undefined}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={finishPointer}

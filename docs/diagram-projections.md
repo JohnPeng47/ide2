@@ -4,9 +4,18 @@ A projection relates evidence entities in one saved project representation to br
 
 ## Using the viewer
 
-Open the source diagram in Mapping, drag across mapped labels, then press **N** or choose **open call tree**. The existing companion panel displays only related branches, with linked-entity coverage. Escape or the close button dismisses it. If the diagram has several projections, choose one in the selection menu.
+Open the source diagram in Mapping, Ctrl-drag across mapped labels, then press **N** or choose **open call tree**. The projected pane displays only related branches, with linked-entity coverage. Choosing the action retains the selection rectangle and projection; Escape does not dismiss them. Use the selection's remove control or a pane's close control to remove content explicitly.
 
-**Open compaction** in that panel projects its matched call-tree branches into compacted source trees, grouped by file, in the same inline panel. **Back to call tree** (or Escape) restores the call tree without changing the original selection; a second Escape closes the panel. Original-diagram selections always open the call tree first. Projections with compaction mappings are preferred by default; older projections remain available and show a disabled compaction action when unmapped.
+**Open compaction** creates a child pane containing compacted source trees grouped by file.
+The default **Stacked** mode displays one active projection path per selection; **Back** returns
+to the call tree without deleting the child. **Chained** mode displays the panes together on a
+shared horizontal connector axis. Ctrl-drag within a call tree and choose **Project selected rows**
+to project a subset. Join controls collapse/expand descendants. Multiple retained selections
+can coexist. See [Mapping workspace state](mapping-workspace.md) for persistence and ownership.
+
+Original-diagram selections open the call tree first. Projections with compaction mappings
+are preferred by default; older projections remain available and show a disabled compaction
+action when unmapped.
 
 Unlinked selections and diagrams without a projection explain why the action is unavailable. Unsaved scene changes in either open diagram block projection. Saved revisions that differ from the pinned source or target require an updated projection. Historical revisions and their old projection links remain stored.
 

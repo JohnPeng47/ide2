@@ -17,17 +17,17 @@ const port = await new Promise((resolve) => {
 });
 let server;
 
-async function mouse(cdp, type, point, buttons = 0) {
-  await cdp.send("Input.dispatchMouseEvent", { type, x: point.x, y: point.y, button: "left", buttons, clickCount: 1 });
+async function mouse(cdp, type, point, buttons = 0, modifiers = 0) {
+  await cdp.send("Input.dispatchMouseEvent", { type, x: point.x, y: point.y, button: "left", buttons, modifiers, clickCount: 1 });
 }
 async function click(cdp, selector) {
   const point = await evaluate(cdp, `(() => { const e = document.querySelector(${JSON.stringify(selector)}); if (!e) throw new Error('Missing: ' + ${JSON.stringify(selector)}); const r = e.getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2}; })()`);
   await mouse(cdp, "mousePressed", point, 1); await mouse(cdp, "mouseReleased", point);
 }
-async function drag(cdp, start, end) {
-  await mouse(cdp, "mousePressed", start, 1);
-  await mouse(cdp, "mouseMoved", end, 1);
-  await mouse(cdp, "mouseReleased", end);
+async function drag(cdp, start, end, modifiers = 0) {
+  await mouse(cdp, "mousePressed", start, 1, modifiers);
+  await mouse(cdp, "mouseMoved", end, 1, modifiers);
+  await mouse(cdp, "mouseReleased", end, 0, modifiers);
 }
 async function gridPoint(cdp, column, row) {
   return evaluate(cdp, `(() => { const pre=document.querySelector('.mapping-poc-ascii'); const r=pre.getBoundingClientRect(); const scale=r.width/pre.offsetWidth; const w=document.querySelector('.mapping-poc-cell-probe').offsetWidth/10; const h=parseFloat(getComputedStyle(pre).lineHeight); return {x:r.x+(${column}+.3)*w*scale,y:r.y+(${row}+.3)*h*scale}; })()`);
@@ -39,9 +39,9 @@ async function generate(cdp, column, row, title, sourceSelector = '[data-selecta
   await waitForSelector(cdp, sourceSelector);
   // A source-mapped node, using rendered geometry after layout.
   const rect = await evaluate(cdp, `(() => { const r=document.querySelector(${JSON.stringify(sourceSelector)}).getBoundingClientRect();return {x:r.x+1,y:r.y+2,width:r.width,height:r.height};})()`);
-  await drag(cdp, rect, { x: rect.x + rect.width - 2, y: rect.y + rect.height - 4 });
+  await drag(cdp, rect, { x: rect.x + rect.width - 2, y: rect.y + rect.height - 4 }, 2);
   await waitForSelector(cdp, ".mapping-poc-selection-actions");
-  await click(cdp, ".mapping-poc-selection-actions button:first-child");
+  await click(cdp, ".mapping-poc-selection-actions button:first-of-type");
   await waitForSelector(cdp, "#mapping-poc-prompt");
   await click(cdp, "#mapping-poc-prompt");
   await cdp.send("Input.insertText", { text: title });
@@ -60,6 +60,8 @@ try {
   await waitFor(async () => (await fetch(url).catch(() => null))?.ok, { timeoutMs: 15000 });
   await withHeadlessBrowser({ url, width: 2400, height: 1400 }, async ({ cdp }) => {
     await waitForSelector(cdp, "[data-grid-box=overview]");
+    await waitFor(async () => await evaluate(cdp, "document.querySelector('.diagram-canvas__surface')?.style.transform.includes('translate3d')"),
+      { timeoutMs: 15000, message: 'Canvas has not applied its initial viewport transform' });
     await waitFor(async () => (await gridPoint(cdp, 0, 0)).x > 50);
     const before = await state(cdp);
     await generate(cdp, 100, 10, "Profile detail");
@@ -72,7 +74,7 @@ try {
     assert.equal(await evaluate(cdp, "document.querySelectorAll('.mapping-poc-graph-stage pre').length"), 1);
 
     // Switch back to the overview through its text, then insert across B's bounds.
-    await drag(cdp, await gridPoint(cdp, 9, 4), await gridPoint(cdp, 20, 4));
+    await drag(cdp, await gridPoint(cdp, 9, 4), await gridPoint(cdp, 20, 4), 2);
     await generate(cdp, 95, 10, "Another detail");
     const second = await state(cdp);
     assert.equal(second.boxes.length, 3);
@@ -111,7 +113,7 @@ try {
     assert.equal((await state(cdp)).boxes.find((box) => box.id === latest.id).row, 20);
     // Generate recursively inside the moved group using the child's own evidence.
     const movedChild = (await state(cdp)).boxes.find((box) => box.id === latest.id);
-    await drag(cdp, await gridPoint(cdp, movedChild.column + 6, movedChild.row + 1), await gridPoint(cdp, movedChild.column + 18, movedChild.row + 1));
+    await drag(cdp, await gridPoint(cdp, movedChild.column + 6, movedChild.row + 1), await gridPoint(cdp, movedChild.column + 18, movedChild.row + 1), 2);
     await generate(cdp, movedChild.column + 5, movedChild.row + 3, "Nested detail", `[data-selectable-node^="${latest.id}:"]`);
     const nested = await state(cdp);
     const nestedBox = nested.boxes.find((box) => !grouped.boxes.some((old) => old.id === box.id));
@@ -121,7 +123,7 @@ try {
     assert.ok(grownGroup.columns > group.columns);
 
     // Patch only this generated box's local rows; sibling text is preserved.
-    await drag(cdp, await gridPoint(cdp, nestedBox.column + 6, nestedBox.row + 1), await gridPoint(cdp, nestedBox.column + 18, nestedBox.row + 1));
+    await drag(cdp, await gridPoint(cdp, nestedBox.column + 6, nestedBox.row + 1), await gridPoint(cdp, nestedBox.column + 18, nestedBox.row + 1), 2);
     await waitForSelector(cdp, '.mapping-poc-selection-actions');
     await click(cdp, '.mapping-poc-selection-actions button[aria-keyshortcuts="P"]');
     await click(cdp, '#mapping-poc-prompt');
@@ -139,9 +141,9 @@ try {
     const transform = await evaluate(cdp, "document.querySelector('.diagram-canvas__surface').style.transform");
     await drag(cdp, { x: 345, y: 800 }, { x: 390, y: 840 });
     await waitFor(async () => (await evaluate(cdp, "document.querySelector('.diagram-canvas__surface').style.transform")) !== transform);
-    await drag(cdp, await gridPoint(cdp, nestedBox.column + 6, nestedBox.row + 1), await gridPoint(cdp, nestedBox.column + 18, nestedBox.row + 1));
+    await drag(cdp, await gridPoint(cdp, nestedBox.column + 6, nestedBox.row + 1), await gridPoint(cdp, nestedBox.column + 18, nestedBox.row + 1), 2);
     await waitForSelector(cdp, `[data-selectable-node^="${nestedBox.id}:"].is-selected`);
-    await click(cdp, '.mapping-poc-selection-actions button:first-child');
+    await click(cdp, '.mapping-poc-selection-actions button:first-of-type');
     await click(cdp, '#mapping-poc-prompt');
     await cdp.send('Input.insertText', { text: 'Cancelled placement' });
     await click(cdp, '.mapping-poc-prompt-form button[type=submit]');
@@ -156,7 +158,7 @@ try {
     assert.ok(before.ascii.startsWith("CurrentLLMPromptStack"));
     // Persist generated children and their evidence, then edit a child after reload.
     await click(cdp, '.mapping-submenu button:nth-of-type(2)');
-    await waitFor(async () => (await evaluate(cdp, "document.querySelector('.mapping-submenu small').textContent")) === 'Saved');
+    await waitFor(async () => (await evaluate(cdp, "document.querySelector('.mapping-submenu small')?.textContent")) === 'Saved');
     await cdp.send('Page.reload', { ignoreCache: true });
     await waitForSelector(cdp, `[data-grid-box="${nestedBox.id}"]`);
     assert.deepEqual(await state(cdp), nested);
@@ -180,7 +182,7 @@ try {
 }
 
 async function selectAndEditReloadedChild(cdp, box) {
-  await drag(cdp, await gridPoint(cdp, box.column + 6, box.row + 1), await gridPoint(cdp, box.column + 18, box.row + 1));
+  await drag(cdp, await gridPoint(cdp, box.column + 6, box.row + 1), await gridPoint(cdp, box.column + 18, box.row + 1), 2);
   await waitForSelector(cdp, '.mapping-poc-selection-actions');
   await click(cdp, '.mapping-poc-selection-actions button[aria-keyshortcuts="P"]');
   await click(cdp, '#mapping-poc-prompt');

@@ -20,7 +20,6 @@ export interface LocalChatSelection {
 export interface LocalChatThread {
   id: string;
   title: string;
-  anchor: { x: number; y: number };
   selection: LocalChatSelection;
   messages: LocalChatMessage[];
   pending: boolean;

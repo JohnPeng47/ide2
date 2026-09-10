@@ -6,7 +6,6 @@ import type { LocalChatThread } from "../localChat";
 const thread: LocalChatThread = {
   id: "thread-1",
   title: "2 selected nodes",
-  anchor: { x: 10, y: 20 },
   selection: {
     nodeIds: ["one", "two"],
     rect: { startLine: 1, endLine: 3, startColumn: 2, endColumn: 20 },

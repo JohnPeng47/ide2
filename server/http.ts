@@ -1,3 +1,4 @@
+import { MappingWorkspaceStore } from "./mappingWorkspaceStore";
 import { ProjectDiagramConflict, type SaveProjectedTreeInput } from "./projectCatalogStore";
 import type { SaveProjectDiagramInput } from "../src/projectDiagramCanvas";
 import { validateMappingPocMappings } from "../src/mappingPocPrompt";
@@ -251,6 +252,7 @@ export function diagramApi(
     runtime,
     configuredDomainProfileId ?? "source-code"
   );
+  const workspaceStore = new MappingWorkspaceStore(application.store.projectCatalogs.storeRoot);
   const experimentCatalog = new ExperimentCatalog(experimentsRoot);
   const datasetStore = new DiagramDatasetStore(datasetCollectionsRoot);
   let recovered: Promise<void> | undefined;
@@ -263,6 +265,15 @@ export function diagramApi(
       return;
     }
     try {
+      if (url.pathname === "/internal/mapping/workspace") {
+        const project = await application.store.loadProject();
+        if (!project) return sendJson(response, request.method === "GET" ? 200 : 400, request.method === "GET" ? null : { error: "Project is not initialized" });
+        if (request.method === "GET") return sendJson(response, 200, await workspaceStore.load(project.id));
+        if (request.method !== "PUT") return sendJson(response, 405, { error: "method not allowed" });
+        try { await workspaceStore.save(project.id, await readBody(request)); }
+        catch (error) { return sendJson(response, 400, { error: error instanceof Error ? error.message : "Invalid workspace" }); }
+        return sendJson(response, 200, { saved: true });
+      }
       if (url.pathname === "/internal/mapping/projections") {
         if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
         const project = await application.store.loadProject();

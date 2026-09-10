@@ -1141,3 +1141,41 @@ button.experiment-tree-line:hover { background: rgb(255 255 255 / 3%); }
 }
 .mapping-compaction-file small { color: #b1baa4; }
 [data-projected-compactions] section + section { margin-top: 1rem; }
+
+/* Canvas display nodes share world coordinates; controls remain separate state. */
+.mapping-poc-graph-stage { cursor: inherit; }
+.mapping-poc-graph-stage.is-selecting { cursor: crosshair; }
+.selection-effects-layer { position: absolute; inset: 0; pointer-events: none; }
+.selection-effects-layer button, .selection-effects-layer select, .selection-effect-frame { pointer-events: auto; }
+.selection-effect-frame.mapping-poc-companion { width: max-content; position: absolute; border: 1px solid var(--accent-cyan); border-radius: 3px; background: #0f1318; box-shadow: 0 8px 24px #0006; }
+.selection-effect-frame.mapping-poc-companion::before, .selection-effect-frame.mapping-poc-companion::after { display: none; }
+.selection-effect-header { display: flex; align-items: center; gap: 10px; min-height: 29px; padding: 2px 6px; font: 10px var(--font-mono); color: var(--accent-cyan); }
+.selection-effect-header strong { max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.selection-effect-header small { color: var(--accent-yellow); }
+.selection-effect-header button, .retained-selection-controls button, .retained-selection-controls select, .projected-selection-actions button,
+.mapping-workspace-actions button { border: 1px solid var(--gutter); border-radius: 3px; background: #141920; color: var(--accent-cyan); padding: 3px 6px; font: 11px var(--font-mono); cursor: pointer; }
+.selection-effect-header button:disabled { opacity: .4; cursor: default; }
+.selection-effect-body { border-top: 1px solid var(--gutter); }
+.selection-effect-frame.mapping-poc-companion pre { border: 0; box-shadow: none; margin: 0; }
+.retained-selection-controls { position: absolute; display: flex; gap: 4px; font: 10px var(--font-mono); white-space: nowrap; color: var(--accent-yellow); pointer-events: auto; }
+.projection-connector { position: absolute; overflow: visible; pointer-events: none; }
+.projection-connector path { stroke: var(--accent-cyan); stroke-width: 1; fill: none; }
+.projection-join { position: absolute; z-index: 5; display: grid; place-content: center; width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--accent-cyan); background: #141920; color: var(--accent-cyan); font: 12px var(--font-mono); cursor: pointer; padding: 0; }
+.projected-row.is-selected { background: #ebcb8b33; }
+.projected-selection-actions { display: flex; gap: 8px; padding: 8px; }
+.mapping-workspace-actions { display: flex; align-items: center; gap: 4px; }
+.mapping-workspace-actions button:disabled { opacity: .4; }
+.retained-selection-controls { z-index: 6; }
+.selection-effect-header > div { min-width: 0; }
+.selection-effect-header strong { display: block; }
+.mapping-poc-header { grid-template-columns: minmax(260px, 1fr) auto auto; gap: 12px; }
+@media (max-width: 1100px) {
+  .mapping-poc-header { grid-template-columns: minmax(200px, 1fr) auto; }
+  .mapping-workspace-actions { position: absolute; right: 10px; top: 64px; z-index: 10; padding: 5px; background: var(--bg); border: 1px solid var(--gutter); }
+  .mapping-poc-header .screen-tabs { grid-column: 2; grid-row: 1; }
+}
+
+/* DisplayPane owns the allocation; overflowing fixed-size content scrolls inside it. */
+.selection-effect-frame { display: flex; flex-direction: column; }
+.selection-effect-header { flex: none; }
+.selection-effect-body { min-height: 0; overflow: auto; }

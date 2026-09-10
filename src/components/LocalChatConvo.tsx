@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { EffectPaneHeader } from "./DisplayPane";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import {
   isLocalChatSubmitHotkey,
   type LocalChatThread,
@@ -7,11 +8,25 @@ import {
 
 export function LocalChatConvo(props: {
   thread: LocalChatThread;
+  displayNodeId?: string;
+  style?: CSSProperties;
+  onMeasure?: (id: string, width: number, height: number) => void;
   variant: LocalChatVariant;
+  draft?: string;
+  onDraftChange?: (draft: string) => void;
   onSubmit: (message: string) => void;
   onClose: () => void;
 }) {
-  const [draft, setDraft] = useState("");
+  const paneRef = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const el = paneRef.current; if (!el || !props.onMeasure || !props.displayNodeId) return;
+    const report = () => props.onMeasure!(props.displayNodeId!, el.offsetWidth, el.offsetHeight);
+    report(); const observer = new ResizeObserver(report); observer.observe(el);
+    return () => observer.disconnect();
+  }, [props.displayNodeId, props.onMeasure]);
+  const [localDraft, setLocalDraft] = useState("");
+  const draft = props.draft ?? localDraft;
+  const setDraft = props.onDraftChange ?? setLocalDraft;
   const transcriptRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -28,18 +43,14 @@ export function LocalChatConvo(props: {
   };
 
   return (
-    <section
+    <section ref={paneRef} style={props.style} data-display-node={props.displayNodeId}
       className={`local-chat-convo is-${props.variant}`}
       data-local-chat-convo={props.variant}
       aria-label={`Local conversation about ${props.thread.title}`}
     >
-      <header>
-        <div>
-          <span>LOCAL CHAT</span>
-          <strong>{props.thread.title}</strong>
-        </div>
+      <EffectPaneHeader title={props.thread.title} eyebrow="LOCAL CHAT" actions={
         <button type="button" aria-label="Collapse local conversation" onClick={props.onClose}>×</button>
-      </header>
+      } />
 
       <div ref={transcriptRef} className="local-chat-transcript" role="log" aria-live="polite">
         {props.thread.messages.map((message) => (

@@ -59,13 +59,13 @@ async function click(cdp, selectorOrPoint) {
 
 async function drag(cdp, start, end) {
   await cdp.send("Input.dispatchMouseEvent", {
-    type: "mousePressed", x: start.x, y: start.y, button: "left", buttons: 1, clickCount: 1
+    type: "mousePressed", x: start.x, y: start.y, button: "left", modifiers: 2, buttons: 1, clickCount: 1
   });
   await cdp.send("Input.dispatchMouseEvent", {
-    type: "mouseMoved", x: end.x, y: end.y, button: "left", buttons: 1
+    type: "mouseMoved", x: end.x, y: end.y, button: "left", modifiers: 2, buttons: 1
   });
   await cdp.send("Input.dispatchMouseEvent", {
-    type: "mouseReleased", x: end.x, y: end.y, button: "left", buttons: 0, clickCount: 1
+    type: "mouseReleased", x: end.x, y: end.y, button: "left", modifiers: 2, buttons: 0, clickCount: 1
   });
 }
 
@@ -184,6 +184,21 @@ try {
       throw new Error(`docked conversation did not occupy the right edge: ${JSON.stringify(docked)}`);
     }
     await captureScreenshot(cdp, { output: path.join(screenshotRoot, "local-chat-docked.png") });
+    await click(cdp, '.mapping-workspace-actions button:first-child');
+    await waitFor(async () => await evaluate(cdp, "document.querySelector('.mapping-poc-status').textContent.includes('Workspace saved')"));
+    const saved = await (await fetch(new URL('/internal/mapping/workspace', url))).json();
+    const conversation = Object.values(saved.documents[0].canvas.display.nodes).find(node => node.kind === 'conversation');
+    if (saved.schemaVersion !== 2 || conversation.coordinateSpace !== 'viewport' || conversation.thread.anchor) {
+      throw new Error('conversation geometry was not persisted in the display node');
+    }
+    const savedPose = await evaluate(cdp, `(() => { const shell = document.querySelector('.local-chat-docked-shell');
+      return { x: shell.offsetLeft, y: shell.offsetTop, width: shell.offsetWidth, height: shell.offsetHeight }; })()`);
+    if (JSON.stringify(savedPose) !== JSON.stringify({ ...conversation.position, ...conversation.bounds })) throw new Error('docked geometry differs from saved allocation');
+    await cdp.send('Page.reload', { ignoreCache: true });
+    await waitForSelector(cdp, '.local-chat-docked-shell [data-local-chat-convo="docked"]');
+    const restoredPose = await evaluate(cdp, `(() => { const shell = document.querySelector('.local-chat-docked-shell');
+      return { x: shell.offsetLeft, y: shell.offsetTop, width: shell.offsetWidth, height: shell.offsetHeight }; })()`);
+    if (JSON.stringify(restoredPose) !== JSON.stringify(savedPose)) throw new Error('docked allocation did not survive reload');
     await click(cdp, ".local-chat-docked-shell button[aria-label='Collapse local conversation']");
     await waitFor(async () => await evaluate(cdp,
       "!document.querySelector('[data-local-chat-convo]') && !document.querySelector('[data-local-chat-source-highlight]')"
