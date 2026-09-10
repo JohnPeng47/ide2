@@ -1,3 +1,5 @@
+import { formatAsciiWithCodeReferences } from "../diagramClipboard";
+import { asciiForSelection } from "../diagramSelection";
 import {
   composeScene,
   flattenGrid,
@@ -221,6 +223,20 @@ export function MappingPocSelectionCanvas(props: {
   );
   const hasCompleteSourceCoverage = selectedNodes.length > 0
     && sourceCoveredNodeCount === selectedNodes.length;
+  const copySelection = useCallback(async () => {
+    if (!selectionRect || !selectedNodes.length) return;
+    const refs = selectedNodes.flatMap((node) => node.sourceRanges.map((range) =>
+      `${node.label}: ${range.path}:${range.startLine}-${range.endLine}`
+    ));
+    const text = formatAsciiWithCodeReferences([asciiForSelection(ascii, selectionRect)], refs);
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("Clipboard is unavailable in this browser");
+      await navigator.clipboard.writeText(text);
+      setStatusMessage(refs.length ? "Copied ASCII + code refs" : "Copied ASCII (no code refs mapped)");
+    } catch (error) {
+      setStatusMessage(`Copy failed: ${error instanceof Error ? error.message : "Clipboard access was denied"}`);
+    }
+  }, [ascii, selectionRect, selectedNodes]);
   const selectedEvidenceIds = useMemo(() => [...new Set(content.mappings
     .filter((mapping) => selectedNodeIdSet.has(`${content.id}:${mapping.id}`))
     .map((mapping) => mapping.entityId))], [content, selectedNodeIdSet]);
@@ -671,6 +687,12 @@ export function MappingPocSelectionCanvas(props: {
         return;
       }
       if (!selectedNodeIds.length || !selectionRect) return;
+      if (event.key.toLowerCase() === "c" && !event.altKey && !openedProjection && !promptOpen && !askOpen
+        && !window.getSelection()?.toString()) {
+        event.preventDefault();
+        void copySelection();
+        return;
+      }
       if (event.key.toLowerCase() === "n" && candidateProjection.bRange && !promptOpen && !askOpen) {
         event.preventDefault();
         openMapped();
@@ -698,6 +720,7 @@ export function MappingPocSelectionCanvas(props: {
     diagramPlacement,
     movingBoxId,
     candidateProjection.bRange,
+    copySelection,
     clearSelection,
     openMapped,
     openedProjection,
@@ -719,7 +742,7 @@ export function MappingPocSelectionCanvas(props: {
       || diagramPlacement
       || promptPhase === "generating") return undefined;
     const onPointerDown = (event: globalThis.PointerEvent) => {
-      if (props.active === false) return;
+      if (props.active === false || event.button !== 0) return;
       const stage = stageRef.current;
       if (stage && event.composedPath().includes(stage)) return;
       clearSelection();
@@ -976,7 +999,7 @@ export function MappingPocSelectionCanvas(props: {
           role="dialog"
           tabIndex={-1}
           aria-label="Selected node operations"
-          aria-keyshortcuts="N P A"
+          aria-keyshortcuts="C Control+C Meta+C N P A"
           style={{ left: rectStyle.left + rectStyle.width + 12, top: rectStyle.top + rectStyle.height + 8 }}
         >
           <header>
@@ -988,6 +1011,11 @@ export function MappingPocSelectionCanvas(props: {
           </header>
           {!promptOpen && !askOpen ? (
             <div className="mapping-poc-selection-actions">
+              <button type="button" aria-label="Copy ASCII + code refs" aria-keyshortcuts="C Control+C Meta+C"
+                title="Copy selected ASCII and associated source locations (C or Ctrl/Cmd+C)"
+                onClick={() => void copySelection()}>
+                <kbd>C</kbd>copy ASCII + code refs
+              </button>
               {props.projectContext && projections.length > 1 && <label className="mapping-projection-choice">
                 Call tree<select aria-label="Call-tree projection" value={chosenProjection?.id ?? ""}
                   onChange={(event) => { setProjectionChoice(event.target.value); setOpenedProjection(null); }}>

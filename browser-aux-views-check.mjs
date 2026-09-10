@@ -20,7 +20,6 @@ async function loadBrowserHarness() {
 
 const {
   captureScreenshot,
-  elementClip,
   evaluate,
   waitFor,
   waitForSelector,
@@ -42,9 +41,23 @@ async function freePort() {
 }
 
 async function click(cdp, selector) {
-  const clip = await elementClip(cdp, selector);
-  const x = clip.x + clip.width / 2;
-  const y = clip.y + clip.height / 2;
+  let point;
+  let previous;
+  let stable = 0;
+  await waitFor(async () => {
+    point = await evaluate(cdp, `(() => {
+      const element = document.querySelector(${JSON.stringify(selector)});
+      if (!element || element.disabled) return null;
+      const rect = element.getBoundingClientRect();
+      const x = rect.x + rect.width / 2, y = rect.y + rect.height / 2;
+      return element.contains(document.elementFromPoint(x, y)) ? { x, y } : null;
+    })()`);
+    const next = JSON.stringify(point);
+    stable = point && next === previous ? stable + 1 : 0;
+    previous = next;
+    return stable >= 2;
+  }, { message: `Click target did not settle: ${selector}` });
+  const { x, y } = point;
   await cdp.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", clickCount: 1 });
   await cdp.send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", clickCount: 1 });
 }
@@ -149,7 +162,7 @@ try {
       throw new Error(`initial diagram did not render: ${JSON.stringify({ ...pageState, pageErrors })}`, { cause: error });
     }
 
-    const mainName = await evaluate(cdp, `document.querySelector('.diagram-heading h2').textContent`);
+    const mainName = await evaluate(cdp, `document.querySelector('.diagram-heading h2')?.textContent`);
     await click(cdp, ".diagram-star-toggle");
     await waitFor(async () => await evaluate(cdp, `document.querySelector('.diagram-star-toggle').getAttribute('aria-pressed') === 'true'`), {
       message: "main diagram was not starred"
@@ -169,6 +182,9 @@ try {
     await replaceText(cdp, ".prompt-field textarea", "---- PREVIOUS PROMPT ----\nInherited diagram request\n-------------------------\n\nNew correction");
     await click(cdp, ".output-kind button:nth-of-type(2)");
     await waitForSelector(cdp, ".generation-foundation");
+    await waitFor(async () => await evaluate(cdp,
+      `document.querySelector('.prompt-field textarea').value === 'Generate an ASCII call graph based on the foundation diagram.'`),
+    { message: "call-graph instruction did not finish resetting" });
     const callSetup = await evaluate(cdp, `({
       output: document.querySelector('.output-kind [aria-checked="true"]').textContent.trim(),
       foundation: document.querySelector('.generation-foundation').textContent,
@@ -184,21 +200,28 @@ try {
       || callSetup.hasEntityCheckbox) {
       throw new Error(`call-graph generation foundation was incomplete: ${JSON.stringify(callSetup)}`);
     }
-    await click(cdp, '[aria-label="Use one fewer agent"]');
-    await click(cdp, '[aria-label="Use one fewer agent"]');
+    // The count persists between generation views and may already be one.
+    for (let step = 0; step < 2; step++) {
+      if (await evaluate(cdp, `document.querySelector('[aria-label="Use one fewer agent"]').disabled`)) break;
+      await click(cdp, '[aria-label="Use one fewer agent"]');
+    }
     await click(cdp, ".generate-action");
     await waitFor(async () => await evaluate(cdp, `document.querySelector('.diagram-meta')?.textContent.includes('[CALL-GRAPH]')`), {
       timeoutMs: 10000,
       message: "call graph was not generated and selected"
     });
-    const callGraphName = await evaluate(cdp, `document.querySelector('.diagram-heading h2').textContent`);
+    const callGraphName = await evaluate(cdp, `document.querySelector('.diagram-heading h2')?.textContent`);
     await click(cdp, ".diagram-star-toggle");
     await waitFor(async () => await evaluate(cdp, `(async () => {
-      const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
-      return Boolean(workspace.diagramSets[0].featuredViewIds['call-graph']);
+      const workspace = await fetch('/api/core/workspace').then((response) => response.json());
+      const catalog = workspace.representationCatalog;
+      const representation = catalog?.representations[catalog.activeByKind['call-graph']];
+      const revision = representation && catalog.revisions[representation.currentRevisionId];
+      return representation?.status === 'settled'
+        && workspace.diagrams[revision?.provenance?.artifactId]?.name === ${JSON.stringify(callGraphName)};
     })()`), { message: "call graph star was not persisted" });
     const callPromptContext = await evaluate(cdp, `(async () => {
-      const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
+      const workspace = await fetch('/api/core/workspace').then((response) => response.json());
       const diagram = Object.values(workspace.diagrams).find((candidate) => candidate.viewKind === 'call-graph');
       return workspace.generationPromptConfigs[diagram.generationPromptConfigId].contextPrompt.rendered;
     })()`);
@@ -209,7 +232,7 @@ try {
     }
 
     await click(cdp, ".diagram-view-tabs button:first-child");
-    await waitFor(async () => (await evaluate(cdp, `document.querySelector('.diagram-heading h2').textContent`)) === mainName, {
+    await waitFor(async () => (await evaluate(cdp, `document.querySelector('.diagram-heading h2')?.textContent`)) === mainName, {
       message: "Diagram tab did not return to the source diagram before focus selection"
     });
     await click(cdp, ".map-code-entities");
@@ -299,15 +322,18 @@ try {
       || directorySetup.hasEntityCheckbox) {
       throw new Error(`directory generation context was incomplete: ${JSON.stringify(directorySetup)}`);
     }
-    await click(cdp, '[aria-label="Use one fewer agent"]');
-    await click(cdp, '[aria-label="Use one fewer agent"]');
+    // The count persists between generation views and may already be one.
+    for (let step = 0; step < 2; step++) {
+      if (await evaluate(cdp, `document.querySelector('[aria-label="Use one fewer agent"]').disabled`)) break;
+      await click(cdp, '[aria-label="Use one fewer agent"]');
+    }
     await click(cdp, ".generate-action");
     await waitFor(async () => await evaluate(cdp, `document.querySelector('.diagram-meta')?.textContent.includes('[DIR-VIEW]')`), {
       timeoutMs: 10000,
       message: "directory view was not generated and selected"
     });
     const directoryPromptInputs = await evaluate(cdp, `(async () => {
-      const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
+      const workspace = await fetch('/api/core/workspace').then((response) => response.json());
       const diagram = Object.values(workspace.diagrams).find((candidate) => candidate.viewKind === 'dir-view');
       const config = workspace.generationPromptConfigs[diagram.generationPromptConfigId];
       return {
@@ -321,21 +347,26 @@ try {
     }
     await click(cdp, ".diagram-star-toggle");
     await waitFor(async () => await evaluate(cdp, `(async () => {
-      const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
-      const featured = workspace.diagramSets[0].featuredViewIds;
-      return Boolean(featured.diagram && featured['call-graph'] && featured['dir-view']);
+      const workspace = await fetch('/api/core/workspace').then((response) => response.json());
+      const catalog = workspace.representationCatalog;
+      return ['diagram', 'call-graph', 'dir-view'].every(kind => {
+        const representation = catalog?.representations[catalog.activeByKind[kind]];
+        const revision = representation && catalog.revisions[representation.currentRevisionId];
+        return representation?.status === 'settled'
+          && workspace.diagrams[revision?.provenance?.artifactId]?.viewKind === kind;
+      });
     })()`), { message: "independent view stars were not persisted" });
 
     await click(cdp, ".diagram-view-tabs button:first-child");
-    await waitFor(async () => (await evaluate(cdp, `document.querySelector('.diagram-heading h2').textContent`)) === mainName, {
+    await waitFor(async () => (await evaluate(cdp, `document.querySelector('.diagram-heading h2')?.textContent`)) === mainName, {
       message: "Diagram tab did not return to the starred main diagram"
     });
     await click(cdp, ".diagram-view-tabs button:nth-child(2)");
-    await waitFor(async () => await evaluate(cdp, `document.querySelector('.diagram-meta').textContent.includes('[CALL-GRAPH]')`), {
+    await waitFor(async () => await evaluate(cdp, `document.querySelector('.diagram-meta')?.textContent.includes('[CALL-GRAPH]')`), {
       message: "Call Graph tab did not show its starred candidate"
     });
     await click(cdp, ".diagram-view-tabs button:nth-child(3)");
-    await waitFor(async () => await evaluate(cdp, `document.querySelector('.diagram-meta').textContent.includes('[DIR-VIEW]')`), {
+    await waitFor(async () => await evaluate(cdp, `document.querySelector('.diagram-meta')?.textContent.includes('[DIR-VIEW]')`), {
       message: "Dir View tab did not show its starred candidate"
     });
     await captureScreenshot(cdp, { output: screenshotPath });
@@ -343,7 +374,7 @@ try {
     await cdp.send("Page.reload", { ignoreCache: true });
     await waitForSelector(cdp, ".diagram-view-tabs", { timeoutMs: 10000 });
     await click(cdp, ".diagram-view-tabs button:nth-child(2)");
-    await waitFor(async () => await evaluate(cdp, `document.querySelector('.diagram-meta').textContent.includes('[CALL-GRAPH]')`), {
+    await waitFor(async () => await evaluate(cdp, `document.querySelector('.diagram-meta')?.textContent.includes('[CALL-GRAPH]')`), {
       message: "starred call graph did not survive reload"
     });
     if (pageErrors.length > 0) {

@@ -1,14 +1,19 @@
+import { execFileSync } from "node:child_process";
+import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { Connect } from "vite";
-import { afterEach, describe, expect, it } from "vitest";
+import {
+  afterEach,
+  describe,
+  expect,
+  it
+} from "vitest";
+import { singleDiagramScene } from "../src/core/projectDiagramCanvas";
+import { DiagramStore } from "./core/store";
 import { diagramApi } from "./http";
-import { DiagramStore } from "./store";
-import { execFileSync } from "node:child_process";
-import { singleDiagramScene } from "../src/projectDiagramCanvas";
 
 const roots: string[] = [];
 const servers: Server[] = [];
@@ -20,8 +25,8 @@ afterEach(async () => {
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
 
-describe("Studio HTTP API", () => {
-  it("serves Studio routes only within the Studio namespace", async () => {
+describe("Studio, Mapping, and Core HTTP API", () => {
+  it("routes each capability through its owning namespace and shares the Core catalog", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "new-diagram-http-namespaces-"));
     roots.push(root);
     let middleware: Connect.NextHandleFunction | undefined;
@@ -42,19 +47,23 @@ describe("Studio HTTP API", () => {
     await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
     const origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 
-    const workspace = await fetch(`${origin}/api/studio/workspace`);
+    const workspace = await fetch(`${origin}/api/core/workspace`);
     expect(workspace.status).toBe(200);
     await expect(workspace.json()).resolves.toMatchObject({ diagramSets: [] });
-    const internalPrompt = `${origin}/internal/mapping/prompt`;
-    expect((await fetch(internalPrompt)).status).toBe(405);
-    const invalidPrompt = await fetch(internalPrompt, {
+    const mappingPrompt = `${origin}/api/mapping/prompt`;
+    expect((await fetch(mappingPrompt)).status).toBe(405);
+    const invalidPrompt = await fetch(mappingPrompt, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({})
     });
     expect(invalidPrompt.status).toBe(400);
     await expect(invalidPrompt.json()).resolves.toEqual({ error: "valid clientSessionId is required" });
-    for (const pathname of ["/api/workspace", "/api/mapping/workspace", "/api/studio/unknown"]) {
+    for (const pathname of [
+      "/api/workspace", "/api/mapping/workspace", "/api/studio/workspace", "/api/studio/unknown",
+      "/api/studio/project/representations", "/api/mapping/project/representations",
+      "/internal/mapping/diagrams", "/api/core/experiments", "/api/mapping/experiments"
+    ]) {
       const response = await fetch(`${origin}${pathname}`);
       expect(response.status).toBe(404);
       await expect(response.json()).resolves.toEqual({ error: "API route not found" });
@@ -62,7 +71,13 @@ describe("Studio HTTP API", () => {
     for (const pathname of [
       "/api/diagram-sets",
       "/api/mapping/diagram-sets",
-      "/api/mapping/prompt",
+      "/api/core/diagram-sets",
+      "/api/core/prompt",
+      "/api/studio/prompt",
+      "/api/studio/plans",
+      "/api/mapping/plans",
+      "/internal/mapping/prompt",
+      "/internal/mapping/projections",
       "/api/mapping-poc/prompt",
       "/api/studio/mapping-poc/prompt"
     ]) {
@@ -73,11 +88,11 @@ describe("Studio HTTP API", () => {
       });
       expect(response.status).toBe(404);
     }
-    await expect((await fetch(`${origin}/api/studio/workspace`)).json())
+    await expect((await fetch(`${origin}/api/core/workspace`)).json())
       .resolves.toMatchObject({ diagramSets: [] });
     // Mapping can initialize the same project catalog without a Studio generation session.
-    const diagramsUrl = `${origin}/internal/mapping/diagrams`;
-    await expect((await fetch(diagramsUrl)).json()).resolves.toMatchObject({ project: null, catalog: null });
+    const diagramsUrl = `${origin}/api/mapping/diagrams`;
+    await expect((await fetch(`${origin}/api/core/project/representations`)).json()).resolves.toMatchObject({ project: null, catalog: null });
     execFileSync("git", ["init", "-q", root]);
     const postDiagram = (body: unknown) => fetch(diagramsUrl, { method: "POST",
       headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
@@ -88,11 +103,13 @@ describe("Studio HTTP API", () => {
       expectedRevisionId: created.representation.currentRevisionId, name: "Renamed", scene: singleDiagramScene("Updated") };
     expect((await postDiagram(input)).status).toBe(200);
     expect((await postDiagram(input)).status).toBe(409);
-    const reopened = await (await fetch(diagramsUrl)).json();
+    const reopened = await (await fetch(`${origin}/api/core/project/representations`)).json();
     expect(reopened.catalog.representations[input.representationId].revisionIds).toHaveLength(2);
     expect(reopened.project.id).toBe(created.project.id);
-    expect((await fetch(`${origin}/api/mapping/diagrams`)).status).toBe(404);
-    const stalePrompt = await fetch(internalPrompt, { method: "POST", headers: { "content-type": "application/json" },
+    expect((await fetch(`${origin}/api/mapping/diagrams`)).status).toBe(405);
+    const coreWorkspace = await (await fetch(`${origin}/api/core/workspace`)).json();
+    expect(coreWorkspace.representationCatalog).toEqual(reopened.catalog);
+    const stalePrompt = await fetch(mappingPrompt, { method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({ projectId: created.project.id, representationId: input.representationId,
         baseRevisionId: input.expectedRevisionId, clientSessionId: "stale-project-prompt", diagramAscii: "Canvas", diagramRevision: 0,
         instruction: "Explain", selection: { startLine: 1, endLine: 1, startColumn: 1, endColumn: 6 }, mappings: [] }) });
@@ -124,7 +141,7 @@ describe("Studio HTTP API", () => {
     });
     await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
     const address = server.address() as AddressInfo;
-    const endpoint = `http://127.0.0.1:${address.port}/api/studio/plans`;
+    const endpoint = `http://127.0.0.1:${address.port}/api/core/plans`;
 
     const createdResponse = await fetch(endpoint, {
       method: "POST",
@@ -147,7 +164,7 @@ describe("Studio HTTP API", () => {
     expect(updatedResponse.status).toBe(200);
     await expect(updatedResponse.json()).resolves.toMatchObject({ id: created.id, status: "active" });
     await expect((await fetch(planEndpoint)).json()).resolves.toMatchObject({ markdown: "# Routing" });
-    await expect((await fetch(`http://127.0.0.1:${address.port}/api/studio/workspace`)).json())
+    await expect((await fetch(`http://127.0.0.1:${address.port}/api/core/workspace`)).json())
       .resolves.toMatchObject({ plans: [{ id: created.id, status: "active" }] });
   });
 
@@ -209,7 +226,7 @@ describe("Studio HTTP API", () => {
     });
     await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
     const address = server.address() as AddressInfo;
-    const endpoint = `http://127.0.0.1:${address.port}/api/studio/call-graph-focus`;
+    const endpoint = `http://127.0.0.1:${address.port}/api/core/call-graph-focus`;
 
     const wrongMethod = await fetch(endpoint);
     expect(wrongMethod.status).toBe(405);

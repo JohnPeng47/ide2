@@ -52,7 +52,7 @@ curl --fail-with-body --no-buffer http://127.0.0.1:5173/api/studio/diagram-sets 
 The `path` must resolve to the server's configured corpus. The response is
 newline-delimited JSON (`application/x-ndjson`). Watch for `type: "error"`, even
 with HTTP 200, and require a final `type: "result"` before reporting success.
-If the connection ends after creation, inspect `GET /api/studio/workspace` before
+If the connection ends after creation, inspect `GET /api/core/workspace` before
 retrying to avoid creating a duplicate DiagramSet.
 
 5. Return the result's `diagramSetId`, the server address, `promptTemplateId`,

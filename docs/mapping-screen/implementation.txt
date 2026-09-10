@@ -1,0 +1,26 @@
+Mapping screen implementation (containment and handlers)
++-- src/mapping/components/MappingPocPage.tsx
+|   +-- MappingScreen -> MappingPocPage
+|   +-- NewDiagramAction -> create
+|   \-- SaveDiagramAction -> save
++-- src/mapping/components/MappingSubmenu.tsx
+|   \-- MappingSubmenu -> MappingSubmenu
++-- src/core/components/DraggableDiagramCanvas.tsx
+|   +-- CanvasViewport -> DraggableDiagramCanvas
+|   \-- CenterAndReset -> resetCanvas
++-- src/core/lineGrid.ts
+|   +-- GridBox -> GridBox
+|   \-- Scene -> resolveScene
++-- src/mapping/components/MappingPocSelectionCanvas.tsx
+|   +-- SelectionInteraction -> finishSelection
+|   +-- GenerateSubDiagram -> generateAt
+|   +-- PromptSelection -> submitPrompt
+|   \-- ProjectionCompanion -> MappingPocSelectionCanvas: aside.mapping-poc-companion
++-- src/core/diagramProjection.ts
+|   \-- ProjectedCallTree -> projectSelection
++-- src/core/compactionProjection.ts
+|   \-- ProjectedSourceCompactions -> projectCompactions
++-- src/mapping/components/LocalChatConvo.tsx
+|   \-- LocalConversation -> LocalChatConvo
+\-- src/mapping/components/MappingDiagramExplorer.tsx
+    \-- ProjectExplorer -> MappingDiagramExplorer

@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { renderTerminalMarkdownDocument } from "./src/terminalMarkdown/render.ts";
+import { renderTerminalMarkdownDocument } from "./src/core/terminalMarkdown/render";
 
 async function loadBrowserHarness() {
   const candidates = [

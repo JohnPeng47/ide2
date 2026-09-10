@@ -1,0 +1,63 @@
+src/mapping/components/MappingPocPage.tsx
++-- import { UiTestFramework } from "@new-diagram/ui-test-framework";
++-- import { useEffect, useState } from "react";
++-- import { loadProjectRepresentations, type ProjectRepresentationsSnapshot } from "../../core/api";
++-- import { DraggableDiagramCanvas } from "../../core/components/DraggableDiagramCanvas";
++-- import { FloatingPane } from "../../core/components/FloatingPane";
++-- import { sceneFromRevision, singleDiagramScene } from "../../core/projectDiagramCanvas";
++-- import type { LocalChatVariant } from "../localChat";
++-- import { mappingDocumentFromScene } from "../mappingDocument";
++-- import type { MappingGridDocument } from "../mappingGrid";
++-- import { saveMappingProjectDiagram } from "../mappingProjectApi";
++-- import { MappingDiagramExplorer } from "./MappingDiagramExplorer";
++-- import { MappingPocSelectionCanvas } from "./MappingPocSelectionCanvas";
++-- import { MappingSubmenu } from "./MappingSubmenu";
++-- LOCAL_CHAT_UI_CONTROLS [binding]
++-- interface Draft
+|   +-- name: string;
+|   +-- document: MappingGridDocument;
+|   +-- savedScene: string;
+|   +-- savedName: string;
+|   +-- revisionId: string;
+|   +-- busy: boolean;
+|   \-- focusBox?: { id: string; serial: number };
++-- dirty(draft)
+\-- function MappingPocPage(props) - Loads project representations, retains document drafts, and composes the Mapping screen.
+    +-- onStudio: () => void;
+    +-- onExperiments: () => void;
+    +-- registerNavigationGuard?: (guard: (() => boolean) | undefined) => void
+    +-- [snapshot, setSnapshot] = useState()
+    +-- [drafts, setDrafts] = useState()
+    +-- [activeId, setActiveId] = useState()
+    +-- [error, setError] = useState()
+    +-- [savingId, setSavingId] = useState()
+    +-- [creating, setCreating] = useState()
+    +-- [newName, setNewName] = useState()
+    +-- [newAscii, setNewAscii] = useState()
+    +-- [copyCurrent, setCopyCurrent] = useState()
+    +-- active [binding]
+    +-- diagrams = Object.values(snapshot?.catalog?.representations ?? {}).filter()
+    +-- open(id, data, navigate)
+    |   +-- representation [binding]
+    |   +-- revision [binding]
+    |   +-- document = mappingDocumentFromScene()
+    |   \-- url [binding]
+    +-- useEffect callback
+    |   +-- cancelled [binding]
+    |   \-- id [binding]
+    +-- useEffect callback
+    |   \-- back()
+    |       \-- id = new URL(location.href).searchParams.get()
+    +-- useEffect callback
+    |   \-- warn(event)
+    +-- useEffect callback
+    +-- save() - Saves a captured draft against its expected project revision.
+    |   +-- id [binding]
+    |   +-- captured [binding]
+    |   +-- result [binding]
+    |   \-- error [binding]
+    +-- create() - Creates a canvas from entered ASCII or a copy of the active document.
+    |   +-- result [binding]
+    |   \-- error [binding]
+    +-- controls = Array.from()
+    \-- next [binding]

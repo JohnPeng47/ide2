@@ -321,7 +321,7 @@ try {
     })
   });
   const invalidTemplateError = await invalidTemplateResponse.json();
-  const untouchedWorkspace = await fetch(new URL("/api/studio/workspace", url)).then((response) => response.json());
+  const untouchedWorkspace = await fetch(new URL("/api/core/workspace", url)).then((response) => response.json());
   if (invalidTemplateResponse.status !== 400
     || !invalidTemplateError.error?.includes("available templates")
     || untouchedWorkspace.diagramSets.length !== 0) {
@@ -374,7 +374,7 @@ try {
     }
     await waitForSelector(cdp, ".diagram-panel", { timeoutMs: 10000 });
     const initialDiagramCount = await evaluate(cdp, `(async () => {
-      const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
+      const workspace = await fetch('/api/core/workspace').then((response) => response.json());
       return workspace.diagramSets[0].diagramIds.length;
     })()`);
     if (initialDiagramCount !== 3) {
@@ -421,7 +421,7 @@ try {
       throw new Error(`file explorer default or density was incorrect: ${JSON.stringify(initialFileExplorerState)}`);
     }
     const diagramFileEntityId = await evaluate(cdp, `(async () => {
-      const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
+      const workspace = await fetch('/api/core/workspace').then((response) => response.json());
       const set = workspace.diagramSets[0];
       const diagram = set.diagramIds.map((id) => workspace.diagrams[id])
         .find((candidate) => candidate?.viewKind === 'diagram');
@@ -643,7 +643,7 @@ try {
       await evaluate(cdp, `document.querySelector('.prompt-settings-dialog footer > span').textContent`)
     ).includes("v2"), { message: "system prompt template did not save revision two" });
     const savedTemplate = await evaluate(cdp, `(async () => {
-      const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
+      const workspace = await fetch('/api/core/workspace').then((response) => response.json());
       return workspace.systemPromptTemplates.compact;
     })()`);
     if (savedTemplate?.version !== 2
@@ -677,7 +677,7 @@ try {
       await evaluate(cdp, `document.querySelector('.prompt-settings-dialog footer > span').textContent`)
     ).includes("v2"), { message: "CodeEntity prompt template did not save revision two" });
     const savedCodeEntityTemplate = await evaluate(cdp, `(async () => {
-      const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
+      const workspace = await fetch('/api/core/workspace').then((response) => response.json());
       return workspace.codeEntityPromptTemplates['default-code-entities'];
     })()`);
     if (savedCodeEntityTemplate?.version !== 2
@@ -709,7 +709,7 @@ try {
     await cdp.send("Page.handleJavaScriptDialog", { accept: true });
     await promptDeleteClick;
     await waitFor(async () => await evaluate(cdp, `(async () => {
-      const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
+      const workspace = await fetch('/api/core/workspace').then((response) => response.json());
       return !workspace.systemPromptTemplates['structure-first']
         && document.querySelectorAll('.prompt-template-list > button').length === 3;
     })()`), { message: "deleted built-in prompt template remained available" });
@@ -731,7 +731,7 @@ try {
     await pointerClick(cdp, ".generate-action");
     await waitForSelector(cdp, ".diagram-panel", { timeoutMs: 10000 });
     const generatedPromptConfig = await evaluate(cdp, `(async () => {
-      const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
+      const workspace = await fetch('/api/core/workspace').then((response) => response.json());
       const set = workspace.diagramSets[0];
       const batch = workspace.generationBatches[set.generationBatchIds.at(-1)];
       return workspace.generationPromptConfigs[batch?.promptConfigId] ?? null;
@@ -760,7 +760,7 @@ try {
       throw new Error("automatically mapped diagram disabled reference selection");
     }
     const mappingCandidateDiagramIds = await evaluate(cdp, `(async () => {
-      const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
+      const workspace = await fetch('/api/core/workspace').then((response) => response.json());
       const set = workspace.diagramSets[0];
       const generationBatch = workspace.generationBatches[set.generationBatchIds.at(-1)];
       return workspace.diagramCandidateBatches[generationBatch.diagramCandidateBatchId]?.diagramIds ?? [];
@@ -769,7 +769,7 @@ try {
       throw new Error(`mapping batch contained ${mappingCandidateDiagramIds.length} diagrams instead of 3`);
     }
     await waitFor(async () => await evaluate(cdp, `(async () => {
-      const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
+      const workspace = await fetch('/api/core/workspace').then((response) => response.json());
       return ${JSON.stringify(mappingCandidateDiagramIds)}.every((id) => Boolean(
         workspace.codeEntityMaps[id]
       ));
@@ -1018,7 +1018,7 @@ try {
       '.candidate-feedback-dialog'
     ))`), { message: "candidate feedback modal did not close after save" });
     const rankedCandidateState = await evaluate(cdp, `(async () => {
-      const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
+      const workspace = await fetch('/api/core/workspace').then((response) => response.json());
       const candidateBatch = workspace.diagramCandidateBatches['${feedbackBatchId}'];
       const ranks = candidateBatch.diagramIds.map((diagramId) => ({
         persisted: candidateBatch.rankings[diagramId],
@@ -1110,7 +1110,7 @@ try {
     await pointerClick(cdp, ".diagram-star-toggle");
     try {
       await waitFor(async () => await evaluate(cdp, `(async () => {
-        const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
+        const workspace = await fetch('/api/core/workspace').then((response) => response.json());
         const activeSet = workspace.diagramSets.find((set) => set.diagramIds.includes('${selection.id}'));
         return document.querySelector('.diagram-star-toggle')?.getAttribute('aria-pressed') === 'true'
           && document.querySelector('[data-diagram-id="${selection.id}"] .diagram-tree-star')?.textContent.trim() === '★'
@@ -1118,7 +1118,7 @@ try {
       })()`), { message: "chosen diagram state did not reach the header, lineage, and persistence" });
     } catch (error) {
       const state = await evaluate(cdp, `(async () => {
-        const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
+        const workspace = await fetch('/api/core/workspace').then((response) => response.json());
         const activeSet = workspace.diagramSets.find((set) => set.diagramIds.includes('${selection.id}'));
         const star = document.querySelector('.diagram-star-toggle');
         const bounds = star?.getBoundingClientRect();
@@ -1146,7 +1146,7 @@ try {
       && document.querySelector('.diagram-set-tree-set.is-current .diagram-set-tree-set-star')
         ?.classList.contains('is-starred')
     )`), { message: "starred diagram was not visibly marked in the Diagram Set tree" });
-    const listedWorkspaceResponse = await fetch(new URL("/api/studio/workspace", url));
+    const listedWorkspaceResponse = await fetch(new URL("/api/core/workspace", url));
     const listedWorkspace = await listedWorkspaceResponse.json();
     const queriedDiagram = listedWorkspace.diagrams?.[selection.id];
     const queriedSet = listedWorkspace.diagramSets?.find((set) => set.diagramIds.includes(selection.id));
@@ -1447,7 +1447,7 @@ try {
     await pointerClick(cdp, ".generate-action");
     await waitForSelector(cdp, ".diagram-panel", { timeoutMs: 10000 });
     const derivativeConfig = await evaluate(cdp, `(async () => {
-      const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
+      const workspace = await fetch('/api/core/workspace').then((response) => response.json());
       const set = workspace.diagramSets[0];
       const batch = workspace.generationBatches[set.generationBatchIds.at(-1)];
       return workspace.generationPromptConfigs[batch.promptConfigId];
@@ -1513,7 +1513,7 @@ try {
       await evaluate(cdp, `document.querySelector('.diagram-panel .pane-header h2').textContent`)
     ) === renamedDiagram, { message: "diagram did not settle before edit mode" });
     const sourceAsciiBeforeEdit = await evaluate(cdp, `(async () => (
-      await fetch('/api/studio/workspace').then((response) => response.json())
+      await fetch('/api/core/workspace').then((response) => response.json())
     ).diagrams['${selection.id}'].ascii)()`);
     await pointerClick(cdp, ".edit-mode-toggle");
     await waitForSelector(cdp, "#operations-tab.is-active");
@@ -1563,12 +1563,12 @@ try {
       const state = await evaluate(cdp, `(async () => ({
         count: document.querySelectorAll('.diagram-tree-diagram').length,
         error: document.querySelector('[role="alert"]')?.textContent ?? '',
-        sessions: Object.values((await fetch('/api/studio/workspace').then((response) => response.json())).editSessions)
+        sessions: Object.values((await fetch('/api/core/workspace').then((response) => response.json())).editSessions)
       }))()`);
       throw new Error(`${error.message}: ${JSON.stringify(state)}`);
     }
     const diagramEditState = await evaluate(cdp, `(async () => {
-      const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
+      const workspace = await fetch('/api/core/workspace').then((response) => response.json());
       const session = Object.values(workspace.editSessions).find(
         (candidate) => candidate.sourceArtifactId === '${selection.id}' && candidate.status === 'committed'
       );
@@ -1598,7 +1598,7 @@ try {
       ), { message: "archived diagram remained in the lineage" });
     } catch (error) {
       const state = await evaluate(cdp, `(async () => {
-        const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
+        const workspace = await fetch('/api/core/workspace').then((response) => response.json());
         return {
           archivedAt: workspace.diagrams['${selection.id}']?.archivedAt ?? '',
           alert: document.querySelector('[role="alert"]')?.textContent ?? '',
@@ -1610,7 +1610,7 @@ try {
       throw new Error(`${error.message}: ${JSON.stringify(state)}`);
     }
     const archiveState = await evaluate(cdp, `(async () => {
-      const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
+      const workspace = await fetch('/api/core/workspace').then((response) => response.json());
       const diagram = workspace.diagrams['${selection.id}'];
       const set = workspace.diagramSets.find((candidate) => candidate.diagramIds.includes('${selection.id}'));
       return {
@@ -1660,7 +1660,7 @@ try {
       await waitForSelector(cdp, ".mention-menu [role=option]");
     } catch (error) {
       const state = await evaluate(cdp, `(async () => {
-        const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
+        const workspace = await fetch('/api/core/workspace').then((response) => response.json());
         return {
           prompt: document.querySelector('#diagram-prompt')?.value ?? '',
           components: Object.values(workspace.diagramComponents).map((component) => ({
@@ -1737,7 +1737,7 @@ try {
       ), { message: "DiagramComponent archive request did not settle" });
     } catch (error) {
       const state = await evaluate(cdp, `(async () => {
-        const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
+        const workspace = await fetch('/api/core/workspace').then((response) => response.json());
         return {
           archivedAt: workspace.diagramComponents['${capturedComponentId}']?.archivedAt ?? '',
           rowCount: document.querySelectorAll('[data-component-id="${capturedComponentId}"]').length,
@@ -1754,7 +1754,7 @@ try {
       throw new Error(`DiagramComponent archive failed in the UI: ${componentArchiveError}`);
     }
     const componentArchiveState = await evaluate(cdp, `(async () => {
-      const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
+      const workspace = await fetch('/api/core/workspace').then((response) => response.json());
       const component = workspace.diagramComponents['${capturedComponentId}'];
       const set = workspace.diagramSets.find(
         (candidate) => candidate.diagramComponentIds.includes('${capturedComponentId}')
@@ -1804,7 +1804,7 @@ try {
       && document.querySelectorAll('.diagram-tree-diagram').length === 8
     )`), { message: "imported Diagram did not appear in the lineage" });
     const importedDiagramState = await evaluate(cdp, `(async () => {
-      const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
+      const workspace = await fetch('/api/core/workspace').then((response) => response.json());
       const diagram = Object.values(workspace.diagrams).find(
         (candidate) => candidate.name === 'Imported browser diagram'
       );
@@ -1847,7 +1847,7 @@ try {
       && document.querySelectorAll('.diagram-tree-component').length === 4
     )`), { message: "imported DiagramComponent did not appear in the lineage" });
     const importedComponentState = await evaluate(cdp, `(async () => {
-      const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
+      const workspace = await fetch('/api/core/workspace').then((response) => response.json());
       const component = Object.values(workspace.diagramComponents).find(
         (candidate) => candidate.name === 'Imported browser component'
       );
@@ -1925,7 +1925,7 @@ try {
       await evaluate(cdp, `document.querySelector('.prompt-settings-dialog footer > span').textContent`)
     ).includes("v3"), { message: "imported system reference template did not save revision three" });
     const savedImportedSystemReference = await evaluate(cdp, `(async () => {
-      const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
+      const workspace = await fetch('/api/core/workspace').then((response) => response.json());
       return workspace.systemPromptTemplates.compact.prompts["diagram-system"].template;
     })()`);
     if (!importedSystemReferenceToken
@@ -1948,11 +1948,11 @@ try {
     await cdp.send("Page.reload", { ignoreCache: true });
     await waitForSelector(cdp, ".diagram-panel", { timeoutMs: 10000 });
     deletedSetId = await evaluate(cdp, `(async () => {
-      const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
+      const workspace = await fetch('/api/core/workspace').then((response) => response.json());
       return workspace.diagramSets.at(-1)?.id ?? '';
     })()`);
     const selectedInitialPrompt = await evaluate(cdp, `(async () => {
-      const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
+      const workspace = await fetch('/api/core/workspace').then((response) => response.json());
       const set = workspace.diagramSets.find((candidate) => candidate.id === ${JSON.stringify(deletedSetId)});
       const batch = workspace.generationBatches[set?.generationBatchIds.at(-1)];
       return workspace.generationPromptConfigs[batch?.promptConfigId]?.systemPrompt ?? null;
@@ -1995,7 +1995,7 @@ try {
     await cdp.send("Page.handleJavaScriptDialog", { accept: true });
     await deleteClick;
     await waitFor(async () => await evaluate(cdp, `(async () => {
-      const workspace = await fetch('/api/studio/workspace').then((response) => response.json());
+      const workspace = await fetch('/api/core/workspace').then((response) => response.json());
       return Array.isArray(workspace.diagramSets)
         && workspace.diagramSets.length === 1
         && !workspace.diagramSets.some((set) => set.id === ${JSON.stringify(deletedSetId)});
@@ -2003,7 +2003,7 @@ try {
     await cdp.send("Page.reload", { ignoreCache: true });
     await waitForSelector(cdp, ".diagram-panel", { timeoutMs: 10000 });
     const survivingSetCount = await evaluate(cdp, `(async () => (
-      await fetch('/api/studio/workspace').then((response) => response.json())
+      await fetch('/api/core/workspace').then((response) => response.json())
     ).diagramSets.length)()`);
     if (survivingSetCount !== 1) throw new Error("Diagram Set deletion did not survive reload");
   });

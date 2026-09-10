@@ -1,0 +1,43 @@
+src/core/compactionProjection.ts
++-- import { buildTreeRepresentationIndex } from "./representationIndex";
++-- interface CompactionSnapshot
+|   +-- sourceFile: string;
+|   +-- sourceSha256: string;
+|   +-- ascii: string;
+|   +-- asciiSha256: string;
+|   \-- mappings: { treeLine: number; sourceRanges: { startLine: number; endLine: number }[] }[];
++-- interface CompactionProjection
+|   +-- files: CompactionSnapshot[];
+|   \-- links: { callTreeNodeId: string; file: string; treeLines: number[] }[];
++-- interface CompactionProjectionInput
+|   +-- files: CompactionSnapshot[];
+|   \-- links: { callTreeLine: number; file: string; treeLines: number[] }[];
++-- function index(file)
++-- function validateCompactionProjection(value, callTreeNodeIds)
+|   +-- files [binding]
+|   +-- file [binding]
+|   +-- lines [binding]
+|   +-- mapped [binding]
+|   +-- mapping [binding]
+|   +-- link [binding]
+|   \-- lines = files.get()
+\-- function projectCompactions(projection, callTreeNodeIds) - Projects exact compaction rows with ancestors, excluding unrelated descendants.
+    +-- selected [binding]
+    +-- selections [binding]
+    +-- link [binding]
+    +-- lines [binding]
+    +-- selectedLines = selections.get()
+    +-- tree = index()
+    +-- visible [binding]
+    +-- node [binding]
+    +-- parent [binding]
+    +-- lines: string[]
+    +-- rows: { treeLine: number; selected: boolean; sourceRanges: CompactionSnapshot["mappings"][number]["sourceRanges"] }[]
+    |   +-- treeLine: number;
+    |   +-- selected: boolean;
+    |   \-- sourceRanges: CompactionSnapshot["mappings"][number]["sourceRanges"]
+    +-- mappings [binding]
+    \-- render(id, prefix, connector, childPrefix)
+        +-- node [binding]
+        +-- children = node.childIds.filter()
+        \-- last [binding]

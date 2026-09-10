@@ -7,8 +7,9 @@ import {
   type CodeEntitiesSetRecord,
   type DiagramSetRecord,
   type SystemPromptTemplateRecord
-} from "../src/domain";
-import { createGenerationPromptConfig, renderArtifactSystemPrompt } from "../src/prompt";
+} from "../src/core/domain";
+import { renderArtifactSystemPrompt } from "../src/core/prompt";
+import { createGenerationPromptConfig } from "../src/studio/prompt";
 import { aggregateScores, diagramMetrics, judgeSummary, validateRanking } from "./metrics";
 import { EXPERIMENT_MODEL_ID, type ExperimentRuntime } from "./runtime";
 import type {

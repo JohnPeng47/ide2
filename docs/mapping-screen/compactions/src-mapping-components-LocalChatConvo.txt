@@ -1,0 +1,21 @@
+src/mapping/components/LocalChatConvo.tsx
++-- import { LocalChatVerbosityToggle } from "./LocalChatVerbosityToggle";
++-- import { TerminalMarkdownContent } from "../../core/components/TerminalMarkdownContent";
++-- import { useEffect, useCallback, useRef, useState, type FormEvent } from "react";
++-- import { isLocalChatSubmitHotkey, type LocalChatThread, type LocalChatVerbosity, type LocalChatVariant } from "../localChat";
+\-- function LocalChatConvo(props) - Renders the transcript, pending/error state, verbosity control, and follow-up composer.
+    +-- thread: LocalChatThread;
+    +-- variant: LocalChatVariant;
+    +-- onSubmit: (message: string) => void;
+    +-- onClose: () => void;
+    +-- onVerbosityChange: (value: LocalChatVerbosity) => void;
+    +-- onRetry: () => void;
+    +-- [draft, setDraft] = useState()
+    +-- transcriptRef = useRef()
+    +-- scrollToLatest = useCallback()
+    |   \-- transcript [binding]
+    +-- useEffect callback
+    |   \-- transcript [binding]
+    +-- submit(event)
+    |   \-- message = draft.trim()
+    \-- render JSX

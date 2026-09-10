@@ -1,0 +1,9 @@
+src/mapping/components/MappingSubmenu.tsx
+\-- function MappingSubmenu(props) - Displays the project, editable name, creation/save actions, and status.
+    +-- projectName: string;
+    +-- name: string;
+    +-- status: string;
+    +-- canSave: boolean;
+    +-- onNameChange: (name: string) => void;
+    +-- onNew: () => void;
+    \-- onSave: () => void;

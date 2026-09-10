@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { createStudioPaneState, pageFromPath } from "./App";
-import { resolveDomainProfile } from "./domainProfiles";
-import { setPaneTabs } from "./panes/model";
+import { pageFromPath } from "./App";
+import { resolveDomainProfile } from "./core/domainProfiles";
+import { setPaneTabs } from "./core/panes/model";
+import { createStudioPaneState } from "./studio/StudioPage";
 
 function explorerIds(profileId: "source-code" | "document") {
   return createStudioPaneState(resolveDomainProfile(profileId), null).panes.files.tabs.map((tab) => tab.id);

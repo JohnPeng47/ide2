@@ -7,7 +7,7 @@ const packageRoot = path.dirname(new URL(import.meta.url).pathname);
 export async function seedMappingFixture(root) {
   execFileSync("git", ["init", "-q", root]);
   const { ascii, nodes } = JSON.parse(execFileSync(process.execPath, [path.join(packageRoot, "node_modules/tsx/dist/cli.mjs"), "-e",
-    'import {MAPPING_POC_GRAPH_A as ascii,MAPPING_POC_A_NODES as nodes} from "./src/mappingPoc.ts"; console.log(JSON.stringify({ascii,nodes}));'
+    'import {MAPPING_POC_GRAPH_A as ascii,MAPPING_POC_A_NODES as nodes} from "./src/mapping/mappingPoc.ts"; console.log(JSON.stringify({ascii,nodes}));'
   ], { cwd: packageRoot, encoding: "utf8" }));
   const projectId = `project-${createHash("sha256").update(path.join(root, ".git")).digest("hex").slice(0, 12)}`;
   const evidence = {};
@@ -15,7 +15,10 @@ export async function seedMappingFixture(root) {
   for (const node of nodes) {
     const sourceRanges = await Promise.all(node.sourceRanges.map(async (range, index) => ({
       ...range, id: `${node.id}-range-${index + 1}`,
-      originalLines: (await readFile(path.join(packageRoot, range.path), "utf8")).split("\n").slice(range.startLine - 1, range.endLine)
+      originalLines: (await readFile(path.join(packageRoot, range.path), "utf8").catch((error) => {
+        if (error.code !== "ENOENT") throw error;
+        return execFileSync("git", ["show", `HEAD:${range.path}`], { cwd: packageRoot, encoding: "utf8" });
+      })).split("\n").slice(range.startLine - 1, range.endLine)
     })));
     evidence[node.id] = { id: node.id, handle: node.id, label: node.label, category: "operation", summary: node.label, sourceRanges };
     sourceRanges.forEach((range, index) => mappings.push({ id: `${node.id}:range-${index+1}`, evidenceId: node.id, sourceRangeId: range.id, ...node.head }));

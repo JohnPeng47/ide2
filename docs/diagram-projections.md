@@ -10,11 +10,13 @@ Open the source diagram in Mapping, drag across mapped labels, then press **N** 
 
 Choose **Open source** on a compaction file to open a stacked source window using Studio's shared Shiki viewer. Exact mapped source ranges are highlighted; unrelated gaps and context-only ancestor ranges stay unhighlighted. **Compaction overlays** places the projected rows above their corresponding source ranges. Use the arrows to jump between ranges and the file selector to switch projected files.
 
-The pane breadcrumb moves back to **Compactions** or **Call tree**. Escape returns one layer at a time. Returning to compactions preserves the source window's scroll and overlay settings; **Source file →** brings it forward again. The source pane stays aligned with the compaction stack, offset by 24 pixels. Its size adapts to the available viewport space; panning moves the panes together.
+The pane breadcrumb moves back to **Compactions** or **Call tree**. Escape returns one layer at a time. Returning to compactions preserves the source window's scroll and overlay settings; **Source file →** brings it forward again. The source pane stays aligned with the compaction stack, offset by 24 pixels. Its size adapts to the available viewport space; panning moves the panes together. Middle-button dragging pans the canvas even when starting over an open pane or its controls.
 
 Source is read from the current project's corpus. If its SHA-256 differs from the projection's captured hash, the viewer explains the mismatch and displays current source without potentially incorrect highlights or overlays. Missing files display an error with Retry.
 
 Unlinked selections and diagrams without a projection explain why the action is unavailable. Unsaved scene changes in either open diagram block projection. Saved revisions that differ from the pinned source or target require an updated projection. Historical revisions and their old projection links remain stored.
+
+The selection menu also offers **Copy ASCII + code refs** (**C** or **Ctrl/Cmd+C**). It copies the exact selected rectangle followed by labeled `path:start-end` locations, using the same format as Studio’s reference clipboard. Native text selections and input fields keep their normal copy behavior.
 
 ## Stored model
 
@@ -38,7 +40,7 @@ The generated artifact is `docs/projections/prompt-reference-call-tree.json`. It
 npx tsx scripts/import-projection.ts .diagrams-parent-architecture docs/projections/prompt-reference-call-tree.json
 ```
 
-Alternatively, `POST /internal/mapping/projections` accepts that JSON for the server's current project. The server validates all links and writes the target representation, immutable revision, and projection atomically. Reimporting the same artifact is idempotent. Old catalogs load without a migration. New source revisions need a regenerated artifact with the new source revision ID; stale imports are rejected.
+Alternatively, `POST /api/core/project/projections` accepts that JSON for the server's current project. The server validates all links and writes the target representation, immutable revision, and projection atomically. Reimporting the same artifact is idempotent. Old catalogs load without a migration. New source revisions need a regenerated artifact with the new source revision ID; stale imports are rejected.
 
 For regeneration, `targetRepresentationId` plus `expectedTargetRevisionId` explicitly append a revision to the existing projected tree. The generator uses the existing relationship to fill these fields. Concurrent target changes are rejected; old revisions and projection records remain intact. The original diagram's current revision and active-view preferences are unchanged.
 

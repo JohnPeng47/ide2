@@ -1,0 +1,64 @@
+src/core/diagramProjection.ts
++-- import { validateCompactionProjection } from "./compactionProjection";
++-- import type { ProjectRepresentationCatalogRecord, ProjectRepresentationRevisionRecord } from "./projectCatalog";
++-- import { buildTreeRepresentationIndex, type TreeRepresentationIndex } from "./representationIndex";
++-- interface ProjectProjectionRecord
+|   +-- id: string;
+|   +-- projectId: string;
+|   +-- name: string;
+|   +-- sourceRepresentationId: string;
+|   +-- sourceRevisionId: string;
+|   +-- targetRepresentationId: string;
+|   +-- targetRevisionId: string;
+|   +-- match: "any";
+|   +-- links: { sourceEvidenceIds: string[]; targetNodeIds: string[] }[];
+|   \-- compactionProjection?: import("./compactionProjection").CompactionProjection;
++-- interface ProjectionSelectionResult
+|   +-- ascii: string;
+|   +-- matchedSourceEvidenceIds: string[];
+|   +-- unmatchedSourceEvidenceIds: string[];
+|   +-- targetNodeIds: string[];
+|   +-- visibleNodeIds: string[];
+|   +-- projectedNodeIds: string[];
+|   \-- rows: { nodeId: string; sourceLine: number }[];
++-- function record(value, label)
++-- function id(value, label)
++-- function ids(value, label, nonempty)
+|   \-- entry [binding]
++-- function validateShape(projection)
+|   +-- key [binding]
+|   \-- link [binding]
++-- function buildProjectionTree(revision)
++-- function validateProjection(projection, catalog)
+|   +-- side [binding]
+|   +-- representationId [binding]
+|   +-- revisionId [binding]
+|   +-- representation [binding]
+|   +-- revision [binding]
+|   +-- source [binding]
+|   +-- target = buildProjectionTree()
+|   +-- link [binding]
+|   +-- evidenceId [binding]
+|   \-- nodeId [binding]
+\-- function projectSelection(projection, targetRevision, selectedEvidenceIds) - OR-matches evidence, expands matched subtrees, and adds ancestors for display.
+    +-- tree = buildProjectionTree()
+    +-- selected [binding]
+    +-- selectedSet [binding]
+    +-- matched [binding]
+    +-- targets [binding]
+    +-- link [binding]
+    +-- nodeId [binding]
+    +-- matches = link.sourceEvidenceIds.filter()
+    +-- visible [binding]
+    +-- pending [binding]
+    +-- nodeId [binding]
+    +-- projected [binding]
+    +-- nodeId [binding]
+    +-- parentId [binding]
+    +-- lines: string[]
+    +-- rows: ProjectionSelectionResult["rows"]
+    +-- render(nodeId, prefix, connector, childPrefix)
+    |   +-- node [binding]
+    |   +-- children = node.childIds.filter()
+    |   \-- last [binding]
+    \-- ordered = Object.values(tree.nodes).sort()

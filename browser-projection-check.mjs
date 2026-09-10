@@ -8,7 +8,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { tsImport } from "tsx/esm/api";
 
-const { buildProjectionTree } = await tsImport("./src/diagramProjection.ts", import.meta.url);
+const { buildProjectionTree } = await tsImport("./src/core/diagramProjection.ts", import.meta.url);
 const { evaluate, waitFor, waitForSelector, captureScreenshot, withHeadlessBrowser } = await import(
   pathToFileURL(path.join(homedir(), ".codex/skills/front-end/browser-test.mjs")).href
 );
@@ -47,6 +47,65 @@ async function click(cdp, selector) {
   }, { message: `Click target did not settle: ${selector}` });
   await cdp.send("Input.dispatchMouseEvent", { type: "mousePressed", ...point, button: "left", buttons: 1, clickCount: 1 });
   await cdp.send("Input.dispatchMouseEvent", { type: "mouseReleased", ...point, button: "left", clickCount: 1 });
+}
+
+async function middlePan(cdp, selector, dx, dy, modifiers = 0) {
+  const matrix = () => evaluate(cdp, `(() => {
+    const surface = document.querySelector(${JSON.stringify(`${active} .diagram-canvas__surface`)});
+    const m = new DOMMatrixReadOnly(getComputedStyle(surface).transform);
+    return { x: m.e, y: m.f, scale: m.a };
+  })()`);
+  const before = await matrix();
+  const point = await evaluate(cdp, `(() => {
+    const el = document.querySelector(${JSON.stringify(selector)});
+    const r = el.getBoundingClientRect();
+    const x = (Math.max(0, r.left) + Math.min(innerWidth, r.right)) / 2;
+    const y = (Math.max(0, r.top) + Math.min(innerHeight, r.bottom)) / 2;
+    return el.contains(document.elementFromPoint(x, y)) ? { x, y } : null;
+  })()`);
+  assert.ok(point, `Middle-drag target must be visible: ${selector}`);
+  await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', ...point, button: 'middle', buttons: 4, clickCount: 1, modifiers });
+  await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: point.x + dx, y: point.y + dy, button: 'middle', buttons: 4, modifiers });
+  await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: point.x + dx, y: point.y + dy, button: 'middle', buttons: 0, clickCount: 1, modifiers });
+  await waitFor(async () => {
+    const after = await matrix();
+    return Math.abs(after.x - before.x - dx) < 1 && Math.abs(after.y - before.y - dy) < 1 && after.scale === before.scale;
+  }, { message: `Middle-drag did not pan the main canvas from ${selector}` });
+  assert.equal(await evaluate(cdp, `document.querySelector(${JSON.stringify(`${active} [data-diagram-canvas]`)}).classList.contains('is-dragging')`), false);
+  const released = await matrix();
+  await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: point.x + dx + 12, y: point.y + dy + 12, buttons: 0 });
+  assert.deepEqual(await matrix(), released, 'Panning must stop when the middle button is released');
+}
+
+async function checkSelectionCopy(cdp, expected) {
+  const previous = await evaluate(cdp, 'navigator.clipboard.readText()');
+  try {
+    await click(cdp, `${active} [aria-label="Copy ASCII + code refs"]`);
+    await waitFor(async () => (await evaluate(cdp, 'navigator.clipboard.readText()')).replace(/\r\n/g, '\n') === expected,
+      { message: 'Copy action did not include the selected ASCII and exact code references' }).catch(async (error) => {
+        throw new Error(`${error.message}: ${JSON.stringify(await evaluate(cdp, 'navigator.clipboard.readText()'))}`);
+      });
+    for (const modifiers of [0, 2, 4]) {
+      await evaluate(cdp, 'navigator.clipboard.writeText("copy-shortcut-sentinel")');
+      await key(cdp, 'c', 'KeyC', modifiers);
+      await waitFor(async () => (await evaluate(cdp, 'navigator.clipboard.readText()')).replace(/\r\n/g, '\n') === expected,
+        { message: 'Selection copy shortcut did not write the expected content' });
+    }
+    await key(cdp, 'p', 'KeyP');
+    await fill(cdp, '#mapping-poc-prompt', 'Native text copy stays native');
+    await cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Control', code: 'ControlLeft', windowsVirtualKeyCode: 17 });
+    for (const [key, code, windowsVirtualKeyCode] of [['a', 'KeyA', 65], ['c', 'KeyC', 67]]) {
+      await cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key, code, windowsVirtualKeyCode, modifiers: 2 });
+      await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key, code, windowsVirtualKeyCode, modifiers: 2 });
+    }
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Control', code: 'ControlLeft', windowsVirtualKeyCode: 17 });
+    await waitFor(async () => await evaluate(cdp, 'navigator.clipboard.readText()') === 'Native text copy stays native',
+      { message: 'Selection copy must not replace normal input copying' });
+    await key(cdp, 'Escape', 'Escape');
+    await waitForSelector(cdp, `${active} [aria-label="Copy ASCII + code refs"]`);
+  } finally {
+    await evaluate(cdp, `navigator.clipboard.writeText(${JSON.stringify(previous)})`);
+  }
 }
 
 async function key(cdp, key, code, modifiers = 0) {
@@ -133,7 +192,7 @@ async function openDiagram(cdp, id, name) {
 }
 
 async function catalog() {
-  const response = await fetch(`${url}/internal/mapping/diagrams`);
+  const response = await fetch(`${url}/api/core/project/representations`);
   assert.equal(response.ok, true);
   return (await response.json()).catalog;
 }
@@ -218,6 +277,7 @@ try {
     { cwd: root, env: { ...process.env, NEW_DIAGRAM_PROJECT_ROOT: temp, NEW_DIAGRAM_AGENT: "fake" }, stdio: "ignore" });
   await waitFor(async () => Boolean((await fetch(url).catch(() => null))?.ok), { timeoutMs: 15000 });
   await withHeadlessBrowser({ url: `${url}/mapping`, width: 1600, height: 1000 }, async ({ cdp }) => {
+    await cdp.send('Browser.grantPermissions', { origin: url, permissions: ['clipboardReadWrite', 'clipboardSanitizedWrite'] });
     await cdp.send("Page.enable");
     await cdp.send("Runtime.enable");
     const errors = [];
@@ -252,6 +312,11 @@ try {
         await click(cdp, `${sourcePane} [aria-pressed='true']`);
         assert.equal(await evaluate(cdp, `document.querySelectorAll(${JSON.stringify(`${viewer} [data-source-compaction-range]`)}).length`), 0);
         await click(cdp, `${sourcePane} [aria-pressed='false']`);
+        await middlePan(cdp, `${sourcePane} .source-code-viewer`, -36, -24);
+        await middlePan(cdp, `${sourcePane} .mapping-source-toolbar button:first-child`, 36, 24, 8);
+        await middlePan(cdp, '.mapping-floating-pane input', -25, 15);
+        await middlePan(cdp, '.mapping-floating-pane input', 25, -15);
+        assert.equal(await evaluate(cdp, `document.querySelector(${JSON.stringify(`${sourcePane} .mapping-source-toolbar button`)}).getAttribute('aria-pressed')`), 'true');
         await captureScreenshot(cdp, { output: process.env.SOURCE_STACK_SCREENSHOT ?? path.join(temp, "source-stack.png") });
         if (expectedFiles.length > 1) {
           await click(cdp, `${sourcePane} [aria-label='Projected source file']`);
@@ -277,6 +342,7 @@ try {
       await waitForSelector(cdp, `${panel} pre[data-projected-tree]`);
     }
     await selectRows(cdp, 2);
+    await checkSelectionCopy(cdp, "Beta\nAssociated Code Entities:\nBeta: fixture.ts:2-2");
     await openTree(cdp, sharedOnly);
     await checkCompactions(["src/shared.ts"]);
     // Mutate only the disposable corpus to exercise stale and missing source states.
@@ -305,6 +371,7 @@ try {
     await selectRows(cdp, 1);
     await expectUnavailable(cdp, "No linked call-tree branches");
     await selectRows(cdp, 2, 3);
+    await checkSelectionCopy(cdp, "Beta \nGamma\nAssociated Code Entities:\nBeta: fixture.ts:2-2\nGamma: fixture.ts:3-3");
     await openTree(cdp, both); // Exact text also catches duplicate branches/root context.
     await captureScreenshot(cdp, { output: process.env.PROJECTION_SCREENSHOT ?? path.join(temp, "projection.png") });
     await closeTree(cdp);

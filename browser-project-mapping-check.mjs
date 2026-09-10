@@ -48,7 +48,7 @@ async function selectWorker(cdp) {
   await drag(cdp,{x:rect.x+1,y:rect.y+rect.height/2},{x:rect.x+rect.width-1,y:rect.y+rect.height/2});
   await waitForSelector(cdp,".mapping-document-view:not([hidden]) .mapping-poc-selection-actions");
 }
-async function catalog() { return (await (await fetch(`${url}/internal/mapping/diagrams`)).json()).catalog; }
+async function catalog() { return (await (await fetch(`${url}/api/core/project/representations`)).json()).catalog; }
 try {
   execFileSync("git", ["init","-q",temp]);
   const projectId=`project-${createHash("sha256").update(path.join(temp,".git")).digest("hex").slice(0,12)}`;
@@ -103,8 +103,11 @@ try {
     await click(cdp,"[data-project-diagram='representation-seed']");
     await waitForSelector(cdp,".mapping-document-view:not([hidden]) [data-selectable-node]");
     await selectWorker(cdp); await key(cdp,"n","KeyN");
-    await waitForSelector(cdp, ".mapping-document-view:not([hidden]) .mapping-poc-companion");
-    assert.ok(await evaluate(cdp, "document.querySelector('.mapping-document-view:not([hidden]) .mapping-poc-companion').textContent.includes('export function worker() {}')"));
+    // Source evidence alone does not create a projection; the projection check
+    // exercises persisted trees and their source-compaction companions.
+    await waitForSelector(cdp, ".mapping-document-view:not([hidden]) .mapping-projection-status");
+    assert.ok(await evaluate(cdp, "document.querySelector('.mapping-document-view:not([hidden]) .mapping-projection-status').textContent.includes('No call-tree projection')"));
+    assert.equal(await evaluate(cdp, "Boolean(document.querySelector('.mapping-document-view:not([hidden]) .mapping-poc-companion'))"), false);
     await key(cdp, "Escape", "Escape");
     await selectWorker(cdp); await key(cdp,"p","KeyP");
     await waitForSelector(cdp,".mapping-document-view:not([hidden]) #mapping-poc-prompt");
@@ -134,7 +137,7 @@ try {
     await captureScreenshot(cdp,{output:process.env.MAPPING_SCREENSHOT??path.join(temp,"mapping.png")});
     assert.deepEqual(errors,[]);
   });
-  console.log("project Mapping browser check passed: create, save, reload, grouped scene, navigation, internal prompt across a switch, Studio catalog");
+  console.log("project Mapping browser check passed: create, save, reload, grouped scene, navigation, Mapping prompt across a switch, Core catalog shared with Studio");
 } finally {
   if(server?.exitCode===null) { server.kill("SIGTERM"); await new Promise(resolve=>server.once("exit",resolve)); }
   await rm(temp,{recursive:true,force:true});

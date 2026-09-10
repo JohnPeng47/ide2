@@ -1,0 +1,2267 @@
+import { createHash } from "node:crypto";
+import path from "node:path";
+import {
+  assertSpatialProgressState,
+  createSpatialProgressState,
+  representationElementIds,
+  updateSpatialProgressState,
+  type SpatialProgressState
+} from "../../src/core/agentWork";
+
+import {
+  CodeEntity,
+  DEFAULT_CODE_ENTITY_PROMPT_PROFILE_ID,
+  DEFAULT_DIAGRAM_MODEL_ID,
+  DEFAULT_GENERATION_COUNT,
+  DEFAULT_GENERATION_PROMPT_PROFILE_ID,
+  SCHEMA_VERSION,
+  assertSevenBitAscii,
+  assertSourceRange,
+  isDiagramArchived,
+  isDiagramComponentArchived,
+  isDiagramModelId,
+  isDiagramViewKind,
+  normalizeAscii,
+  slugify,
+  type AgentProgress,
+  type AgentRunRecord,
+  type CodeEntityDraft,
+  type CodeEntityMappingResult,
+  type CodeEntityMappingTarget,
+  type CodeEntityPromptTemplateRecord,
+  type CodeEntityRecord,
+  type DiagramCodeEntityMapRecord,
+  type DiagramComponentRecord,
+  type DiagramRecord,
+  type DiagramSelectionBounds,
+  type DiagramSetRecord,
+  type DiagramViewKind,
+  type EditOperationRecord,
+  type EditSessionRecord,
+  type GeneratedArtifactDraft,
+  type GenerationBatchRecord,
+  type GenerationDerivationRecord,
+  type GenerationOutputKind,
+  type GenerationReferenceSelection,
+  type GenerationTargetKind,
+  type MaterializedDiagramSetInput,
+  type MaterializedDiagramSetResult,
+  type NamedPromptTemplate,
+  type SystemPromptTemplateRecord,
+  type WorkspaceSnapshot
+} from "../../src/core/domain";
+import type { BuiltInDomainProfileId } from "../../src/core/domainProfile";
+import { representationKindForArtifact, resolveDomainProfile } from "../../src/core/domainProfiles";
+import type { ProjectRepresentationEvidenceRecord, ProjectRepresentationMappingRecord, PromoteProjectRepresentationInput } from "../../src/core/projectCatalog";
+import {
+  createBuiltInCodeEntityPromptTemplates,
+  createBuiltInSystemPromptTemplates,
+  createSystemPromptTemplate,
+  generationPromptBindings,
+  promptTemplate,
+  renderMappingPromptTemplate,
+  renderReferencePromptTemplate,
+  renderSystemPromptTemplate
+} from "../../src/core/prompt";
+import { createGenerationPromptConfig } from "../../src/studio/prompt";
+import {
+  appendRepresentationFeedback,
+  assertRepresentationGraph,
+  type RepresentationFeedbackTarget,
+  type RepresentationGraphRecord
+} from "../../src/core/representationGraph";
+import { buildRepresentationIndex } from "../../src/core/representationIndex";
+import { readCorpusDocumentLines } from "../core/corpus";
+import { validateDiagramMappings } from "../core/diagramMapping";
+import { isBuiltInDomainProfileId } from "../core/domainProfiles";
+import { DiagramStore, discoverDomainCorpus, type RepositoryLocation } from "../core/store";
+import type { DiagramAgentRuntime } from "./agentRuntime";
+import { createCodeEntityPromptConfig } from "./codeEntityPrompt";
+
+const MAX_GENERATION_COUNT = 12;
+const MAX_ATTEMPTS = 3;
+const MARKER_CHARACTERS = ["`", "~", "^", "{", "}"] as const;
+
+export interface ServiceEvent {
+  type: "progress" | "workspace";
+  message: string;
+  workspace?: WorkspaceSnapshot;
+  artifactKind?: GenerationOutputKind;
+  artifactId?: string;
+  status?: AgentRunRecord["status"];
+}
+
+function timestamp(): string {
+  return new Date().toISOString();
+}
+
+function assertMaterializedKey(value: unknown, label: string): asserts value is string {
+  if (typeof value !== "string" || !/^[a-z0-9][a-z0-9-]{0,127}$/.test(value)) {
+    throw new Error(`${label} must be a lowercase letter/digit key with optional hyphens`);
+  }
+}
+
+function textPatch(before: string, after: string): EditOperationRecord["patch"] {
+  let start = 0;
+  while (start < before.length && start < after.length && before[start] === after[start]) start += 1;
+  let beforeEnd = before.length;
+  let afterEnd = after.length;
+  while (beforeEnd > start && afterEnd > start && before[beforeEnd - 1] === after[afterEnd - 1]) {
+    beforeEnd -= 1;
+    afterEnd -= 1;
+  }
+  return {
+    start,
+    deletedText: before.slice(start, beforeEnd),
+    insertedText: after.slice(start, afterEnd)
+  };
+}
+
+function applyPatch(value: string, patch: EditOperationRecord["patch"], reverse = false): string {
+  const deletedText = reverse ? patch.insertedText : patch.deletedText;
+  const insertedText = reverse ? patch.deletedText : patch.insertedText;
+  if (value.slice(patch.start, patch.start + deletedText.length) !== deletedText) {
+    throw new Error("edit operation no longer matches the working copy");
+  }
+  return `${value.slice(0, patch.start)}${insertedText}${value.slice(patch.start + deletedText.length)}`;
+}
+
+function characterOffset(ascii: string, line: number, column: number): number {
+  if (!Number.isInteger(line) || !Number.isInteger(column) || line < 1 || column < 1) {
+    throw new Error("marker coordinates must be positive integers");
+  }
+  const lines = ascii.split("\n");
+  if (line > lines.length || column > lines[line - 1].length) {
+    throw new Error("marker location exceeds the artifact bounds");
+  }
+  return lines.slice(0, line - 1).reduce((total, row) => total + row.length + 1, 0) + column - 1;
+}
+
+function cropAsciiSelection(ascii: string, bounds: DiagramSelectionBounds): {
+  ascii: string;
+  selection: DiagramSelectionBounds;
+} {
+  const values = [bounds.startLine, bounds.endLine, bounds.startColumn, bounds.endColumn];
+  if (!values.every((value) => Number.isInteger(value) && value >= 1)) {
+    throw new Error("component selection coordinates must be positive integers");
+  }
+  const selection: DiagramSelectionBounds = {
+    startLine: Math.min(bounds.startLine, bounds.endLine),
+    endLine: Math.max(bounds.startLine, bounds.endLine),
+    startColumn: Math.min(bounds.startColumn, bounds.endColumn),
+    endColumn: Math.max(bounds.startColumn, bounds.endColumn)
+  };
+  const lines = normalizeAscii(ascii).split("\n");
+  const width = Math.max(...lines.map((line) => line.length));
+  if (selection.endLine > lines.length || selection.endColumn > width) {
+    throw new Error("component selection exceeds the artifact bounds");
+  }
+  let rows = lines.slice(selection.startLine - 1, selection.endLine)
+    .map((line) => line.padEnd(selection.endColumn, " ").slice(
+      selection.startColumn - 1,
+      selection.endColumn
+    ));
+  while (rows.length && !rows[0].trim()) rows = rows.slice(1);
+  while (rows.length && !rows.at(-1)?.trim()) rows = rows.slice(0, -1);
+  if (!rows.length) throw new Error("component selection cannot be blank");
+  const occupiedColumns = rows.flatMap((row) => [...row].flatMap(
+    (character, index) => character === " " ? [] : [index]
+  ));
+  const left = Math.min(...occupiedColumns);
+  const right = Math.max(...occupiedColumns);
+  const cropped = normalizeAscii(rows.map((row) => row.slice(left, right + 1)).join("\n"));
+  assertSevenBitAscii(cropped);
+  return { ascii: cropped, selection };
+}
+
+function stableProjectId(prefix: string, ...parts: string[]): string {
+  const digest = createHash("sha256").update(parts.join("\0")).digest("hex").slice(0, 32);
+  return `${prefix}-${digest}`;
+}
+
+import { CoreApplication } from "../core/application";
+export class StudioApplication extends CoreApplication {
+
+  private readonly activeBatches = new Set<string>();
+
+  private readonly activeMappings = new Set<string>();
+constructor(
+    store: DiagramStore,
+    private readonly agents: DiagramAgentRuntime,
+    private readonly defaultDomainProfileId: BuiltInDomainProfileId = "source-code"
+  ) { super(store); }
+
+  async promoteProjectRepresentation(
+    input: PromoteProjectRepresentationInput
+  ): Promise<WorkspaceSnapshot> {
+    const project = await this.store.loadProject();
+    if (!project) throw new Error("project corpus is not initialized");
+    const set = await this.store.loadDiagramSet(input.diagramSetId);
+    if (set.projectId !== project.id) throw new Error("generation session belongs to another Project");
+    const { artifact, global } = await this.artifactForDiagramSet(set.id, "diagram", input.diagramId);
+    const diagram = artifact as DiagramRecord;
+    if (isDiagramArchived(diagram)) throw new Error("archived diagrams cannot be promoted");
+    const local = await this.store.loadCodeEntities(set.id);
+    const library = await this.store.loadImportedArtifactLibrary();
+    const imported = await Promise.all(
+      (library.codeEntityIds ?? []).map((id) => this.store.loadImportedCodeEntity(id))
+    );
+    const available = new Map([...local.entities, ...imported].map((entity) => [entity.id, entity]));
+    const compactions = await this.store.projectCatalogs.loadCompactionCatalog(project.id);
+    const evidence: Record<string, ProjectRepresentationEvidenceRecord> = {};
+    const evidenceIdByEntityId = new Map<string, string>();
+    const rangeIdByLegacyAddress = new Map<string, string>();
+    for (const entityId of diagram.codeEntityIds) {
+      const entity = available.get(entityId);
+      if (!entity) throw new Error(`promoted Diagram references unavailable evidence: ${entityId}`);
+      const evidenceId = stableProjectId("evidence", project.id, diagram.id, entity.id);
+      evidenceIdByEntityId.set(entity.id, evidenceId);
+      const ranges = await Promise.all(entity.sourceRanges.map(async (range, index) => {
+        let originalLines = range.originalLines;
+        if (!originalLines) {
+          const liveLines = await readCorpusDocumentLines(project.corpus, range.path);
+          originalLines = liveLines.slice(range.startLine - 1, range.endLine);
+        }
+        const rangeId = stableProjectId(
+          "evidence-range",
+          evidenceId,
+          range.id ?? String(index),
+          range.path,
+          String(range.startLine),
+          String(range.endLine)
+        );
+        rangeIdByLegacyAddress.set(`${entity.id}:${range.id ?? index}`, rangeId);
+        rangeIdByLegacyAddress.set(`${entity.id}:${index}`, rangeId);
+        const activeCompactionId = compactions.activeByPath[range.path];
+        const activeCompaction = activeCompactionId
+          ? compactions.compactions[activeCompactionId]
+          : undefined;
+        const rangeSha256 = createHash("sha256").update(originalLines.join("\n")).digest("hex");
+        const compactionId = activeCompaction
+          && activeCompaction.sourceSha256 === rangeSha256
+          && activeCompaction.startLine === range.startLine
+          && activeCompaction.endLine === range.endLine
+          ? activeCompaction.id
+          : undefined;
+        return {
+          id: rangeId,
+          path: range.path,
+          startLine: range.startLine,
+          endLine: range.endLine,
+          ...(range.symbol ? { symbol: range.symbol } : {}),
+          originalLines: [...originalLines],
+          ...(compactionId ? { compactionId } : {})
+        };
+      }));
+      evidence[evidenceId] = {
+        id: evidenceId,
+        handle: entity.handle,
+        label: entity.label,
+        category: entity.category,
+        summary: entity.summary,
+        sourceRanges: ranges
+      };
+    }
+    const legacyMap = global
+      ? await this.store.loadImportedCodeEntityMap(diagram.id)
+      : await this.store.loadCodeEntityMap(set.id, diagram.id);
+    const mappings: ProjectRepresentationMappingRecord[] = (legacyMap?.mappings ?? []).map((mapping) => {
+      const sourceEntity = available.get(mapping.entityId);
+      if (!sourceEntity) throw new Error(`mapping references unavailable evidence: ${mapping.entityId}`);
+      const sourceRange = sourceEntity.sourceRanges[mapping.sourceRangeIndex];
+      const sourceRangeId = rangeIdByLegacyAddress.get(
+        `${mapping.entityId}:${mapping.sourceRangeId ?? sourceRange?.id ?? mapping.sourceRangeIndex}`
+      ) ?? rangeIdByLegacyAddress.get(`${mapping.entityId}:${mapping.sourceRangeIndex}`);
+      const evidenceId = evidenceIdByEntityId.get(mapping.entityId);
+      if (!sourceRangeId || !evidenceId) throw new Error(`mapping evidence was not promoted: ${mapping.id}`);
+      return {
+        id: stableProjectId("representation-map", project.id, diagram.id, mapping.id),
+        evidenceId,
+        sourceRangeId,
+        line: mapping.line,
+        startColumn: mapping.startColumn,
+        endColumn: mapping.endColumn
+      };
+    });
+    await this.store.projectCatalogs.promoteRepresentation({
+      projectId: project.id,
+      ...(input.representationId ? { representationId: input.representationId } : {}),
+      ...(input.expectedRevisionId ? { expectedRevisionId: input.expectedRevisionId } : {}),
+      handle: diagram.handle,
+      name: diagram.name,
+      viewKind: diagram.viewKind,
+      representationKind: representationKindForArtifact(diagram),
+      ascii: diagram.ascii,
+      asciiSha256: createHash("sha256").update(diagram.ascii).digest("hex"),
+      evidence,
+      mappings,
+      provenance: { diagramSetId: set.id, artifactId: diagram.id },
+      makeActive: input.makeActive !== false
+    });
+    return this.workspace();
+  }
+
+  async systemPromptTemplates(): Promise<SystemPromptTemplateRecord[]> {
+    return this.store.loadSystemPromptTemplates();
+  }
+
+  async saveRepresentationGraph(
+    setId: string,
+    input: RepresentationGraphRecord
+  ): Promise<WorkspaceSnapshot> {
+    const set = await this.store.loadDiagramSet(setId);
+    if (input.diagramSetId && input.diagramSetId !== setId) {
+      throw new Error("representation graph belongs to another DiagramSet");
+    }
+    if (input.projectId && input.projectId !== set.projectId) {
+      throw new Error("representation graph belongs to another project");
+    }
+    const graph: RepresentationGraphRecord = {
+      ...input,
+      projectId: set.projectId,
+      diagramSetId: setId,
+      updatedAt: timestamp()
+    };
+    assertRepresentationGraph(graph);
+    const workspace = await this.workspace();
+    for (const layer of graph.layers) {
+      const artifact = workspace.diagrams[layer.artifactRevision.artifactId]
+        ?? workspace.diagramComponents[layer.artifactRevision.artifactId];
+      if (!artifact || (artifact.diagramSetId !== setId && artifact.origin !== "imported")) {
+        throw new Error(`representation layer references an unavailable artifact: ${layer.id}`);
+      }
+      const asciiSha256 = createHash("sha256").update(artifact.ascii).digest("hex");
+      if (asciiSha256 !== layer.artifactRevision.asciiSha256) {
+        throw new Error(`representation layer has a stale artifact revision: ${layer.id}`);
+      }
+      if (representationKindForArtifact(artifact) !== layer.representationKind) {
+        throw new Error(`representation layer kind does not match its artifact: ${layer.id}`);
+      }
+    }
+    await this.store.saveRepresentationGraph(graph);
+    return this.workspace();
+  }
+
+  async addRepresentationFeedback(
+    setId: string,
+    input: { target: RepresentationFeedbackTarget; comment: string }
+  ): Promise<WorkspaceSnapshot> {
+    const graph = await this.store.loadRepresentationGraph(setId);
+    if (!graph) throw new Error("representation graph has not been created");
+    const next = appendRepresentationFeedback(graph, {
+      id: this.store.ids.representationFeedback(),
+      target: input.target,
+      comment: input.comment,
+      createdAt: timestamp()
+    });
+    await this.store.saveRepresentationGraph({ ...next, updatedAt: timestamp() });
+    return this.workspace();
+  }
+
+  async saveAgentSpatialProgress(
+    setId: string,
+    runId: string,
+    state: SpatialProgressState
+  ): Promise<WorkspaceSnapshot> {
+    const set = await this.store.loadDiagramSet(setId);
+    if (!set.agentRunIds.includes(runId)) throw new Error("AgentRun does not belong to this DiagramSet");
+    await this.store.loadRun(setId, runId);
+    const workspace = await this.workspace();
+    const artifactId = state.scope.revision.artifactId;
+    const artifact = workspace.diagrams[artifactId] ?? workspace.diagramComponents[artifactId];
+    if (!artifact) throw new Error(`spatial progress artifact was not found: ${artifactId}`);
+    const representationKind = representationKindForArtifact(artifact);
+    if (state.scope.representationKind !== representationKind) {
+      throw new Error("spatial progress representation kind does not match the artifact");
+    }
+    const codeEntityMap = workspace.codeEntityMaps[`${setId}:${artifactId}`]
+      ?? workspace.codeEntityMaps[artifactId];
+    const index = buildRepresentationIndex({
+      kind: representationKind,
+      revision: {
+        artifactId,
+        asciiSha256: createHash("sha256").update(artifact.ascii).digest("hex")
+      },
+      ascii: artifact.ascii,
+      codeEntityMap
+    });
+    assertSpatialProgressState(state, index);
+    await this.store.saveSpatialProgress(runId, state);
+    return this.workspace();
+  }
+
+  async codeEntityPromptTemplates(): Promise<CodeEntityPromptTemplateRecord[]> {
+    const project = await this.store.loadProject();
+    const domain = project?.domainProfileId === "document"
+      ? "document"
+      : this.defaultDomainProfileId;
+    return this.store.loadCodeEntityPromptTemplates(domain);
+  }
+
+  async resolveCodeEntityPromptTemplate(
+    id?: unknown,
+    requestedDomain?: BuiltInDomainProfileId
+  ): Promise<CodeEntityPromptTemplateRecord> {
+    const useDefault = id === undefined || id === null;
+    const requestedId = useDefault ? DEFAULT_CODE_ENTITY_PROMPT_PROFILE_ID : id;
+    if (typeof requestedId !== "string") {
+      throw new Error(`unsupported CodeEntity prompt template: ${String(requestedId)}`);
+    }
+    const project = await this.store.loadProject();
+    const domain = requestedDomain
+      ?? (project?.domainProfileId === "document" ? "document" : this.defaultDomainProfileId);
+    const templates = await this.store.loadCodeEntityPromptTemplates(domain);
+    const template = templates.find((candidate) => candidate.id === requestedId)
+      ?? (useDefault ? templates[0] : undefined);
+    if (!template) {
+      const available = templates.map((candidate) => candidate.id).join(", ");
+      throw new Error(
+        `unsupported CodeEntity prompt template: ${requestedId}; available templates: ${available}`
+      );
+    }
+    return template;
+  }
+
+  async resolveSystemPromptTemplate(id?: unknown): Promise<SystemPromptTemplateRecord> {
+    const useDefault = id === undefined || id === null;
+    const requestedId = useDefault ? DEFAULT_GENERATION_PROMPT_PROFILE_ID : id;
+    if (typeof requestedId !== "string") {
+      throw new Error(`unsupported generation prompt template: ${String(requestedId)}`);
+    }
+    const legacyIds: Record<string, string> = {
+      structureFirst: "structure-first",
+      flowFirst: "flow-first"
+    };
+    const normalizedId = legacyIds[requestedId] ?? requestedId;
+    const templates = await this.store.loadSystemPromptTemplates();
+    const template = templates.find((candidate) => candidate.id === normalizedId)
+      ?? (useDefault ? templates[0] : undefined);
+    if (!template) {
+      const available = templates.map((candidate) => candidate.id).join(", ");
+      throw new Error(
+        `unsupported generation prompt template: ${requestedId}; available templates: ${available}`
+      );
+    }
+    return template;
+  }
+
+  async createDiagramSet(input: {
+    path: string;
+    name: string;
+    prompt: string;
+    domainProfileId?: unknown;
+  }): Promise<DiagramSetRecord> {
+    if (!input.name.trim()) throw new Error("DiagramSet name is required");
+    const location = await this.validateDiagramSetTarget(input.path, input.domainProfileId);
+    const project = await this.store.ensureProject(location);
+    const created = await this.store.createDiagramSet({
+      project,
+      name: input.name,
+      initialPrompt: input.prompt,
+      location,
+      creationMode: "generate"
+    });
+    return created.diagramSet;
+  }
+
+  async createMaterializedDiagramSet(
+    input: MaterializedDiagramSetInput
+  ): Promise<MaterializedDiagramSetResult> {
+    if (!input || input.creationMode !== "materialized") {
+      throw new Error("materialized DiagramSet creation requires creationMode=materialized");
+    }
+    if (typeof input.path !== "string" || !input.path) throw new Error("corpus path is required");
+    if (typeof input.name !== "string" || !input.name.trim()) throw new Error("DiagramSet name is required");
+    if (input.name.trim().length > 120) throw new Error("DiagramSet name cannot exceed 120 characters");
+    if (!Array.isArray(input.codeEntities) || input.codeEntities.length === 0) {
+      throw new Error("materialized DiagramSet creation requires at least one CodeEntity");
+    }
+    if (!Array.isArray(input.diagrams) || input.diagrams.length === 0) {
+      throw new Error("materialized DiagramSet creation requires at least one ASCII Diagram");
+    }
+    if (input.codeEntities.length > 500) throw new Error("a materialized DiagramSet cannot exceed 500 CodeEntities");
+    if (input.diagrams.length > 100) throw new Error("a materialized DiagramSet cannot exceed 100 Diagrams");
+
+    const entityKeys = new Set<string>();
+    for (const [entityIndex, entity] of input.codeEntities.entries()) {
+      if (!entity || typeof entity !== "object") throw new Error(`CodeEntity ${entityIndex + 1} is invalid`);
+      assertMaterializedKey(entity.key, `CodeEntity ${entityIndex + 1} key`);
+      if (entityKeys.has(entity.key)) throw new Error(`duplicate CodeEntity key: ${entity.key}`);
+      entityKeys.add(entity.key);
+      if (!Array.isArray(entity.sourceRanges) || entity.sourceRanges.length === 0) {
+        throw new Error(`CodeEntity ${entity.key} must include at least one source range`);
+      }
+      const rangeKeys = new Set<string>();
+      for (const [rangeIndex, range] of entity.sourceRanges.entries()) {
+        if (!range || typeof range !== "object") {
+          throw new Error(`CodeEntity ${entity.key} source range ${rangeIndex + 1} is invalid`);
+        }
+        assertMaterializedKey(range.key, `CodeEntity ${entity.key} source range key`);
+        if (rangeKeys.has(range.key)) {
+          throw new Error(`duplicate source range key for CodeEntity ${entity.key}: ${range.key}`);
+        }
+        rangeKeys.add(range.key);
+      }
+    }
+
+    const diagramKeys = new Set<string>();
+    for (const [diagramIndex, diagram] of input.diagrams.entries()) {
+      if (!diagram || typeof diagram !== "object") throw new Error(`Diagram ${diagramIndex + 1} is invalid`);
+      assertMaterializedKey(diagram.key, `Diagram ${diagramIndex + 1} key`);
+      if (diagramKeys.has(diagram.key)) throw new Error(`duplicate Diagram key: ${diagram.key}`);
+      diagramKeys.add(diagram.key);
+      if (!Array.isArray(diagram.codeEntityKeys) || diagram.codeEntityKeys.length === 0) {
+        throw new Error(`materialized Diagram ${diagram.key} must include at least one CodeEntity`);
+      }
+      for (const entityKey of diagram.codeEntityKeys) {
+        if (typeof entityKey !== "string" || !entityKeys.has(entityKey)) {
+          throw new Error(`Diagram ${diagram.key} references unknown CodeEntity key: ${String(entityKey)}`);
+        }
+      }
+      if (diagram.mappings !== undefined && !Array.isArray(diagram.mappings)) {
+        throw new Error(`Diagram ${diagram.key} mappings must be an array`);
+      }
+    }
+
+    const location = await this.validateDiagramSetTarget(input.path, input.domainProfileId);
+    const project = await this.store.ensureProject(location);
+    const { diagramSet } = await this.store.createDiagramSet({
+      project,
+      name: input.name,
+      initialPrompt: typeof input.description === "string" ? input.description : "",
+      location,
+      creationMode: "materialized"
+    });
+
+    try {
+      const entityDrafts: CodeEntityDraft[] = input.codeEntities.map((entity) => ({
+        handle: entity.handle,
+        label: entity.label,
+        category: entity.category,
+        summary: entity.summary,
+        sourceRanges: entity.sourceRanges.map(({ key: _key, ...range }) => range)
+      }));
+      const entities = await this.validateEntityDrafts(diagramSet, entityDrafts);
+      const entityByKey = new Map(input.codeEntities.map((entity, index) => [entity.key, entities[index]]));
+      const codeEntityIdsByKey = Object.fromEntries(
+        [...entityByKey].map(([key, entity]) => [key, entity.id])
+      );
+      const profile = resolveDomainProfile(project.domainProfileId);
+      const diagramHandles = new Set<string>();
+      const createdAt = timestamp();
+      const diagrams: DiagramRecord[] = [];
+      const maps: DiagramCodeEntityMapRecord[] = [];
+      const diagramIdsByKey: Record<string, string> = {};
+
+      for (const [index, supplied] of input.diagrams.entries()) {
+        if (typeof supplied.name !== "string" || !supplied.name.trim()) {
+          throw new Error(`Diagram ${supplied.key} name is required`);
+        }
+        if (supplied.name.trim().length > 120) {
+          throw new Error(`Diagram ${supplied.key} name cannot exceed 120 characters`);
+        }
+        if (typeof supplied.ascii !== "string" || !supplied.ascii.trim()) {
+          throw new Error(`Diagram ${supplied.key} ASCII is required`);
+        }
+        const ascii = normalizeAscii(supplied.ascii);
+        assertSevenBitAscii(ascii);
+        if (ascii.length > 20000) throw new Error(`Diagram ${supplied.key} ASCII cannot exceed 20,000 characters`);
+        const viewKind = supplied.viewKind ?? "diagram";
+        if (!isDiagramViewKind(viewKind) || !profile.workspace.diagramViews.includes(viewKind)) {
+          throw new Error(`Diagram ${supplied.key} view kind is unavailable in the ${profile.id} domain`);
+        }
+        if (supplied.representationKind !== undefined
+          && supplied.representationKind !== "tree"
+          && supplied.representationKind !== "diagram") {
+          throw new Error(`Diagram ${supplied.key} representation kind is invalid`);
+        }
+        const representationKind = supplied.representationKind
+          ?? (viewKind === "diagram" ? "diagram" : "tree");
+        const selectedEntities = [...new Set(supplied.codeEntityKeys)].map((key) => entityByKey.get(key)!);
+        let handle = slugify(supplied.handle || supplied.name, `diagram-${index + 1}`);
+        const baseHandle = handle;
+        let suffix = 2;
+        while (diagramHandles.has(handle)) handle = `${baseHandle}-${suffix++}`;
+        diagramHandles.add(handle);
+        const id = this.store.ids.diagram();
+        diagramIdsByKey[supplied.key] = id;
+        const diagram: DiagramRecord = {
+          schemaVersion: SCHEMA_VERSION,
+          id,
+          recordOrigin: { projectId: project.id, diagramSetId: diagramSet.id },
+          diagramSetId: diagramSet.id,
+          viewKind,
+          handle,
+          name: supplied.name.trim(),
+          ascii,
+          representationKind,
+          codeEntityIds: selectedEntities.map((entity) => entity.id),
+          origin: "materialized",
+          derivedFromDiagramIds: [],
+          createdAt
+        };
+        diagrams.push(diagram);
+
+        if (supplied.mappings !== undefined) {
+          const selectedKeys = new Set(supplied.codeEntityKeys);
+          const drafts = supplied.mappings.map((mapping, mappingIndex) => {
+            if (!mapping || typeof mapping !== "object") {
+              throw new Error(`Diagram ${supplied.key} mapping ${mappingIndex + 1} is invalid`);
+            }
+            if (!selectedKeys.has(mapping.entityKey)) {
+              throw new Error(
+                `Diagram ${supplied.key} mapping references a CodeEntity not included by the Diagram: ${mapping.entityKey}`
+              );
+            }
+            const sourceEntity = input.codeEntities.find((entity) => entity.key === mapping.entityKey)!;
+            const sourceRangeIndex = sourceEntity.sourceRanges.findIndex(
+              (range) => range.key === mapping.sourceRangeKey
+            );
+            if (sourceRangeIndex < 0) {
+              throw new Error(
+                `Diagram ${supplied.key} mapping references unknown source range ${mapping.sourceRangeKey} for ${mapping.entityKey}`
+              );
+            }
+            return {
+              entityId: entityByKey.get(mapping.entityKey)!.id,
+              sourceRangeIndex,
+              line: mapping.line,
+              startColumn: mapping.startColumn,
+              endColumn: mapping.endColumn
+            };
+          });
+          maps.push({
+            schemaVersion: SCHEMA_VERSION,
+            diagramSetId: diagramSet.id,
+            artifactKind: "diagram",
+            artifactId: diagram.id,
+            asciiSha256: createHash("sha256").update(diagram.ascii).digest("hex"),
+            mappings: validateDiagramMappings(diagram.ascii, drafts, selectedEntities),
+            origin: "materialized",
+            createdAt
+          });
+        }
+      }
+
+      const featuredViewIds: Partial<Record<DiagramViewKind, string>> = {};
+      if (input.featuredViews !== undefined) {
+        if (!input.featuredViews || typeof input.featuredViews !== "object") {
+          throw new Error("featuredViews must be an object");
+        }
+        for (const [kind, key] of Object.entries(input.featuredViews)) {
+          if (!isDiagramViewKind(kind) || typeof key !== "string") {
+            throw new Error("featuredViews contains an invalid view kind or Diagram key");
+          }
+          const id = diagramIdsByKey[key];
+          const diagram = diagrams.find((candidate) => candidate.id === id);
+          if (!diagram || diagram.viewKind !== kind) {
+            throw new Error(`featured ${kind} view references an unavailable Diagram: ${key}`);
+          }
+          featuredViewIds[kind] = id;
+        }
+      }
+
+      await this.store.completeCollection(diagramSet.id, entities);
+      for (const diagram of diagrams) await this.store.addDiagram(diagram);
+      for (const mapping of maps) await this.store.saveCodeEntityMap(mapping);
+      for (const id of Object.values(featuredViewIds)) {
+        await this.promoteProjectRepresentation({
+          diagramSetId: diagramSet.id,
+          diagramId: id,
+          makeActive: true
+        });
+      }
+      return {
+        diagramSetId: diagramSet.id,
+        codeEntityIdsByKey,
+        diagramIdsByKey,
+        workspace: await this.workspace()
+      };
+    } catch (error) {
+      await this.store.moveDiagramSetToTrash(diagramSet.id).catch(() => undefined);
+      throw error;
+    }
+  }
+
+  /** Validate corpus/domain ownership without migrating templates or writing project state. */
+  async validateDiagramSetTarget(
+    inputPath: string,
+    requestedDomainValue?: unknown
+  ): Promise<RepositoryLocation> {
+    const existingProject = await this.store.loadProject();
+    const requestedDomain = requestedDomainValue
+      ?? existingProject?.domainProfileId
+      ?? this.defaultDomainProfileId;
+    if (!isBuiltInDomainProfileId(requestedDomain)) {
+      throw new Error(`unsupported domain profile: ${String(requestedDomain)}`);
+    }
+    const location = await discoverDomainCorpus(inputPath, requestedDomain);
+    if (path.resolve(location.checkoutRoot) !== this.store.checkoutRoot) {
+      throw new Error(`application store is rooted at ${this.store.checkoutRoot}, not ${location.checkoutRoot}`);
+    }
+    if (existingProject) {
+      const sameDocumentRoot = existingProject.domainProfileId === "document"
+        && requestedDomain === "document"
+        && path.resolve(existingProject.corpus.root) === path.resolve(location.checkoutRoot);
+      if (existingProject.repositoryIdentity !== location.repositoryIdentity && !sameDocumentRoot) {
+        throw new Error(".diagrams belongs to a different corpus identity");
+      }
+      if (existingProject.domainProfileId !== requestedDomain) {
+        throw new Error(`.diagrams belongs to the ${existingProject.domainProfileId} domain`);
+      }
+    }
+    return location;
+  }
+
+  async collectCodeEntities(
+    setId: string,
+    input: { promptTemplateId?: unknown } = {},
+    onEvent?: (event: ServiceEvent) => void
+  ): Promise<void> {
+    const set = await this.store.loadDiagramSet(setId);
+    const { domainProfileId, corpus } = await this.projectCorpus(set);
+    const entitySet = await this.store.loadCodeEntities(setId);
+    if (entitySet.status === "finalized") throw new Error("CodeEntitiesSet is immutable after finalization");
+    const template = await this.resolveCodeEntityPromptTemplate(input.promptTemplateId);
+    const promptConfig = createCodeEntityPromptConfig({
+      id: this.store.ids.promptConfig(),
+      diagramSet: set,
+      template,
+      domainProfileId,
+      createdAt: timestamp()
+    });
+    await this.store.beginCodeEntityCollection(promptConfig);
+    const runId = this.store.ids.run();
+    let run: AgentRunRecord = {
+      schemaVersion: SCHEMA_VERSION,
+      id: runId,
+      diagramSetId: setId,
+      kind: "collect-entities",
+      status: "queued",
+      statusMessage: domainProfileId === "document"
+        ? "opening document evidence collector"
+        : "opening code-entity collector",
+      codeEntitiesRevision: entitySet.revision,
+      outputCodeEntityIds: [],
+      startedAt: timestamp(),
+      updatedAt: timestamp()
+    };
+    await this.store.saveRun(run);
+    await this.store.attachRun(setId, run.id);
+    let progressWrites = Promise.resolve();
+    const progress = (update: AgentProgress) => {
+      run = {
+        ...run,
+        status: update.status,
+        statusMessage: update.message,
+        model: update.model ?? run.model,
+        sessionId: update.sessionId ?? run.sessionId,
+        updatedAt: timestamp()
+      };
+      const snapshot = run;
+      progressWrites = progressWrites.then(() => this.store.saveRun(snapshot));
+      onEvent?.({ type: "progress", message: update.message });
+    };
+    try {
+      const drafts = await this.agents.collectEntities({
+        sourceRoot: set.sourceCheckoutRoot,
+        domainProfileId,
+        corpus,
+        diagramSetName: set.name,
+        promptConfig
+      }, progress);
+      await progressWrites;
+      const entities = await this.validateEntityDrafts(set, drafts);
+      await this.store.completeCollection(setId, entities);
+      run = {
+        ...run,
+        status: "complete",
+        statusMessage: domainProfileId === "document"
+          ? `collected ${entities.length} evidence entities`
+          : `collected ${entities.length} code entities`,
+        outputCodeEntityIds: entities.map((entity) => entity.id),
+        updatedAt: timestamp(),
+        completedAt: timestamp()
+      };
+      await this.store.saveRun(run);
+      onEvent?.({ type: "workspace", message: run.statusMessage, workspace: await this.workspace() });
+    } catch (error) {
+      await progressWrites.catch(() => undefined);
+      const message = error instanceof Error ? error.message : "code-entity collection failed";
+      run = {
+        ...run,
+        status: "failed",
+        statusMessage: message,
+        error: message,
+        updatedAt: timestamp(),
+        completedAt: timestamp()
+      };
+      await this.store.saveRun(run);
+      await this.store.failCollection(setId, message);
+      throw error;
+    }
+  }
+
+  async generateInitialDiagrams(
+    setId: string,
+    input: {
+      promptTemplateId?: unknown;
+      runReferencePrompt?: boolean;
+      referencePrompt?: string;
+    } = {},
+    onEvent?: (event: ServiceEvent) => void
+  ): Promise<WorkspaceSnapshot> {
+    const entities = await this.store.loadCodeEntities(setId);
+    return this.generate(setId, {
+      prompt: "",
+      selectedCodeEntityIds: entities.entities.map((entity) => entity.id),
+      count: DEFAULT_GENERATION_COUNT,
+      outputKind: "diagram",
+      promptProfileId: input.promptTemplateId,
+      runReferencePrompt: input.runReferencePrompt,
+      referencePrompt: input.referencePrompt
+    }, onEvent);
+  }
+
+  private async validateEntityDrafts(
+    set: DiagramSetRecord,
+    drafts: CodeEntityDraft[]
+  ): Promise<CodeEntityRecord[]> {
+    if (drafts.length === 0) throw new Error("collector submitted no CodeEntities");
+    const handles = new Set<string>();
+    const { corpus } = await this.projectCorpus(set);
+    const entities: CodeEntityRecord[] = [];
+    for (const [index, draft] of drafts.entries()) {
+      const baseHandle = slugify(draft.handle || draft.label, `entity-${index + 1}`);
+      let handle = baseHandle;
+      let suffix = 2;
+      while (handles.has(handle)) {
+        handle = `${baseHandle}-${suffix}`;
+        suffix += 1;
+      }
+      handles.add(handle);
+      if (!draft.label.trim() || !draft.summary.trim()) throw new Error("CodeEntity label and summary are required");
+      if (!(["state", "interface-data-struct", "operation"] as const).includes(draft.category)) {
+        throw new Error(`invalid CodeEntity category: ${draft.category}`);
+      }
+      if (draft.sourceRanges.length === 0) throw new Error(`CodeEntity ${handle} has no source ranges`);
+      const sourceRanges: CodeEntityRecord["sourceRanges"] = [];
+      for (const range of draft.sourceRanges) {
+        assertSourceRange(range);
+        const sourceLines = await readCorpusDocumentLines(corpus, range.path).catch(() => null);
+        if (!sourceLines) throw new Error(`evidence range escapes or does not exist: ${range.path}`);
+        const lineCount = sourceLines.length;
+        if (range.startLine > lineCount) {
+          throw new Error(`source range starts beyond ${range.path} (${lineCount} lines)`);
+        }
+        const endLine = Math.min(range.endLine, lineCount);
+        sourceRanges.push({
+          ...range,
+          id: this.store.ids.sourceRange(),
+          endLine,
+          originalLines: sourceLines.slice(range.startLine - 1, endLine)
+        });
+      }
+      const record: CodeEntityRecord = {
+        id: this.store.ids.codeEntity(),
+        origin: {
+          projectId: set.projectId,
+          diagramSetId: set.id,
+          codeEntitiesSetId: set.codeEntitiesSetId
+        },
+        handle,
+        label: draft.label.trim(),
+        category: draft.category,
+        summary: draft.summary.trim(),
+        sourceRanges
+      };
+      new CodeEntity(record).prompt_str();
+      entities.push(record);
+    }
+    return entities;
+  }
+
+  async deleteDiagramSet(setId: string): Promise<WorkspaceSnapshot> {
+    const set = await this.store.loadDiagramSet(setId);
+    if (set.readiness === "collecting") {
+      throw new Error("a Diagram Set cannot be deleted while collection is running");
+    }
+    if (this.activeBatches.has(setId)
+      || [...this.activeMappings].some((key) => key.startsWith(`${setId}:`))) {
+      throw new Error("a Diagram Set cannot be deleted while an agent is running");
+    }
+    const workspace = await this.workspace();
+    const hasActiveRun = Object.values(workspace.agentRuns).some((run) => (
+      run.diagramSetId === setId
+      && ["queued", "reading-context", "generating", "validating"].includes(run.status)
+    ));
+    if (hasActiveRun) throw new Error("a Diagram Set cannot be deleted while an agent is running");
+    await this.store.moveDiagramSetToTrash(setId);
+    return this.workspace();
+  }
+
+  async renameDiagram(setId: string, diagramId: string, name: string): Promise<WorkspaceSnapshot> {
+    const normalized = name.trim();
+    if (!normalized) throw new Error("Diagram name is required");
+    if (normalized.length > 120) throw new Error("Diagram name cannot exceed 120 characters");
+    const set = await this.store.loadDiagramSet(setId);
+    if (!set.diagramIds.includes(diagramId)) throw new Error(`unknown Diagram: ${diagramId}`);
+    const diagram = await this.store.loadDiagram(setId, diagramId);
+    if (isDiagramArchived(diagram)) throw new Error("archived diagrams cannot be renamed");
+    await this.store.renameDiagram(setId, diagramId, normalized);
+    return this.workspace();
+  }
+
+  async setStarredDiagram(
+    setId: string,
+    diagramId: string,
+    starred: boolean
+  ): Promise<WorkspaceSnapshot> {
+    await this.store.loadDiagramSet(setId);
+    const { artifact } = await this.artifactForDiagramSet(setId, "diagram", diagramId);
+    const diagram = artifact as DiagramRecord;
+    const project = await this.store.loadProject();
+    if (!project) throw new Error("project corpus is not initialized");
+    const catalog = await this.store.projectCatalogs.loadRepresentationCatalog(project.id);
+    const representation = this.store.projectCatalogs.representationForSource(
+      catalog,
+      setId,
+      diagramId
+    );
+    if (starred) {
+      if (isDiagramArchived(diagram)) {
+        throw new Error("archived diagrams cannot be starred");
+      }
+      await this.promoteProjectRepresentation({
+        diagramSetId: setId,
+        diagramId,
+        makeActive: true
+      });
+    } else if (representation?.status === "settled") {
+      await this.store.projectCatalogs.archiveRepresentation(project.id, representation.id);
+    }
+    return this.workspace();
+  }
+
+  async rankDiagramCandidates(
+    setId: string,
+    candidateBatchId: string,
+    rankings: Array<{ diagramId: string; rank: number }>
+  ): Promise<WorkspaceSnapshot> {
+    await this.store.loadDiagramSet(setId);
+    await this.store.saveDiagramCandidateRankings(setId, candidateBatchId, rankings);
+    return this.workspace();
+  }
+
+  async archiveDiagram(setId: string, diagramId: string): Promise<WorkspaceSnapshot> {
+    const set = await this.store.loadDiagramSet(setId);
+    if (!set.diagramIds.includes(diagramId)) throw new Error(`unknown Diagram: ${diagramId}`);
+    await this.store.archiveDiagram(setId, diagramId);
+    return this.workspace();
+  }
+
+  async archiveDiagramComponent(setId: string, componentId: string): Promise<WorkspaceSnapshot> {
+    const set = await this.store.loadDiagramSet(setId);
+    if (!set.diagramComponentIds.includes(componentId)) {
+      throw new Error(`unknown DiagramComponent: ${componentId}`);
+    }
+    await this.store.archiveDiagramComponent(setId, componentId);
+    return this.workspace();
+  }
+
+  async mapCodeEntities(
+    setId: string,
+    artifactKind: GenerationOutputKind,
+    artifactId: string,
+    onEvent?: (event: ServiceEvent) => void
+  ): Promise<WorkspaceSnapshot> {
+    const batch = await this.mapCodeEntitiesBatch(
+      setId,
+      [{ artifactKind, artifactId }],
+      1,
+      onEvent
+    );
+    const failed = batch.results[0];
+    if (failed?.status === "failed") throw new Error(failed.error ?? "code-entity mapping failed");
+    return batch.workspace;
+  }
+
+  async mapCodeEntitiesBatch(
+    setId: string,
+    targets: CodeEntityMappingTarget[],
+    concurrency = 3,
+    onEvent?: (event: ServiceEvent) => void
+  ): Promise<{ workspace: WorkspaceSnapshot; results: CodeEntityMappingResult[] }> {
+    if (targets.length === 0) throw new Error("at least one artifact is required for mapping");
+    if (targets.length > 50) throw new Error("a mapping batch cannot exceed 50 artifacts");
+    if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 6) {
+      throw new Error("mapping concurrency must be between 1 and 6");
+    }
+    const targetKeys = targets.map(({ artifactKind, artifactId }) => `${artifactKind}:${artifactId}`);
+    if (new Set(targetKeys).size !== targetKeys.length) {
+      throw new Error("a mapping batch cannot contain duplicate artifacts");
+    }
+    const set = await this.store.loadDiagramSet(setId);
+    const { domainProfileId } = await this.projectCorpus(set);
+    const entitySet = await this.store.loadCodeEntities(setId);
+    if (entitySet.status !== "finalized") {
+      throw new Error("CodeEntitiesSet must be finalized before mapping");
+    }
+    const prepared = await Promise.all(targets.map(async (target) => {
+      if (target.artifactKind !== "diagram" && target.artifactKind !== "diagram-component") {
+        throw new Error(`unsupported artifact kind: ${String(target.artifactKind)}`);
+      }
+      const bundle = await this.mappedArtifactBundle(setId, target.artifactKind, target.artifactId);
+      if (bundle.artifact.archivedAt) throw new Error("archived artifacts cannot be mapped");
+      if (bundle.codeEntities.length === 0) throw new Error("artifact has no CodeEntities to map");
+      const mappingKey = `${setId}:${target.artifactId}`;
+      if (this.activeMappings.has(mappingKey)) {
+        throw new Error(`a code-entity mapping is already running for ${target.artifactId}`);
+      }
+      const createdAt = timestamp();
+      const run: AgentRunRecord = {
+        schemaVersion: SCHEMA_VERSION,
+        id: this.store.ids.run(),
+        diagramSetId: setId,
+        kind: "map-code-entities",
+        status: "queued",
+        statusMessage: "queued diagram mapping agent",
+        codeEntitiesRevision: entitySet.revision,
+        outputCodeEntityIds: bundle.codeEntities.map((entity) => entity.id),
+        ...(target.artifactKind === "diagram"
+          ? { outputDiagramId: target.artifactId }
+          : { outputDiagramComponentId: target.artifactId }),
+        startedAt: createdAt,
+        updatedAt: createdAt
+      };
+      const revision = {
+        artifactId: bundle.artifact.id,
+        asciiSha256: createHash("sha256").update(bundle.artifact.ascii).digest("hex")
+      };
+      const representationKind = representationKindForArtifact(bundle.artifact);
+      const representationIndex = buildRepresentationIndex({
+        kind: representationKind,
+        revision,
+        ascii: bundle.artifact.ascii,
+        codeEntityMap: bundle.codeEntityMap
+      });
+      const spatialProgress = createSpatialProgressState({
+        revision,
+        representationKind,
+        target: { kind: "artifact" }
+      }, representationIndex);
+      return {
+        target,
+        mappingKey,
+        artifact: bundle.artifact,
+        entities: bundle.codeEntities,
+        run,
+        representationIndex,
+        spatialProgress
+      };
+    }));
+
+    const conflictingJob = prepared.find((job) => this.activeMappings.has(job.mappingKey));
+    if (conflictingJob) {
+      throw new Error(
+        `a code-entity mapping is already running for ${conflictingJob.target.artifactId}`
+      );
+    }
+    for (const job of prepared) this.activeMappings.add(job.mappingKey);
+    try {
+      await Promise.all(prepared.flatMap((job) => [
+        this.store.saveRun(job.run),
+        this.store.saveSpatialProgress(job.run.id, job.spatialProgress)
+      ]));
+      await this.store.attachRuns(setId, prepared.map((job) => job.run.id));
+      for (const job of prepared) onEvent?.({
+        type: "progress",
+        artifactKind: job.target.artifactKind,
+        artifactId: job.target.artifactId,
+        status: "queued",
+        message: "queued code-entity mapping"
+      });
+
+      const results: CodeEntityMappingResult[] = new Array(prepared.length);
+      let cursor = 0;
+      const worker = async () => {
+        while (cursor < prepared.length) {
+          const index = cursor;
+          cursor += 1;
+          const job = prepared[index];
+          let run = job.run;
+          let spatialProgress = updateSpatialProgressState(job.spatialProgress, {
+            status: "running",
+            currentElementIds: representationElementIds(job.representationIndex)
+          }, job.representationIndex);
+          await this.store.saveSpatialProgress(run.id, spatialProgress);
+          let progressWrites = Promise.resolve();
+          const progress = (update: AgentProgress) => {
+            run = {
+              ...run,
+              status: update.status,
+              statusMessage: update.message,
+              model: update.model ?? run.model,
+              sessionId: update.sessionId ?? run.sessionId,
+              updatedAt: timestamp()
+            };
+            const snapshot = run;
+            progressWrites = progressWrites.then(() => this.store.saveRun(snapshot));
+            onEvent?.({
+              type: "progress",
+              artifactKind: job.target.artifactKind,
+              artifactId: job.target.artifactId,
+              status: update.status,
+              message: update.message
+            });
+          };
+          try {
+            const drafts = await this.agents.mapArtifactEntities({
+              sourceRoot: set.sourceCheckoutRoot,
+              diagramSetName: set.name,
+              artifactKind: job.target.artifactKind,
+              artifactName: job.artifact.name,
+              artifactHandle: job.artifact.handle,
+              ascii: job.artifact.ascii,
+              codeEntityIds: job.artifact.codeEntityIds,
+              codeEntities: job.entities,
+              domainProfileId
+            }, progress);
+            await progressWrites;
+            const mappings = validateDiagramMappings(job.artifact.ascii, drafts, job.entities);
+            const record: DiagramCodeEntityMapRecord = {
+              schemaVersion: SCHEMA_VERSION,
+              diagramSetId: setId,
+              artifactKind: job.target.artifactKind,
+              artifactId: job.target.artifactId,
+            asciiSha256: createHash("sha256").update(job.artifact.ascii).digest("hex"),
+            mappings,
+            producedByRunId: run.id,
+            origin: "agent",
+            createdAt: timestamp()
+            };
+            await this.store.saveCodeEntityMap(record);
+            const completedIndex = buildRepresentationIndex({
+              kind: job.spatialProgress.scope.representationKind,
+              revision: job.spatialProgress.scope.revision,
+              ascii: job.artifact.ascii,
+              codeEntityMap: record
+            });
+            spatialProgress = createSpatialProgressState(job.spatialProgress.scope, completedIndex);
+            const completedElementIds = representationElementIds(completedIndex);
+            spatialProgress = updateSpatialProgressState(spatialProgress, {
+              status: "running",
+              currentElementIds: completedElementIds
+            }, completedIndex);
+            spatialProgress = updateSpatialProgressState(spatialProgress, {
+              status: "complete",
+              completedElementIds
+            }, completedIndex);
+            await this.store.saveSpatialProgress(run.id, spatialProgress);
+            const completedAt = timestamp();
+            run = {
+              ...run,
+              status: "complete",
+              statusMessage: `mapped ${mappings.length} diagram elements`,
+              updatedAt: completedAt,
+              completedAt
+            };
+            await this.store.saveRun(run);
+            results[index] = {
+              ...job.target,
+              status: "complete",
+              mappingCount: mappings.length
+            };
+            onEvent?.({
+              type: "progress",
+              ...job.target,
+              status: "complete",
+              message: run.statusMessage
+            });
+          } catch (error) {
+            await progressWrites.catch(() => undefined);
+            const message = error instanceof Error ? error.message : "code-entity mapping failed";
+            const completedAt = timestamp();
+            run = {
+              ...run,
+              status: "failed",
+              statusMessage: message,
+              error: message,
+              updatedAt: completedAt,
+              completedAt
+            };
+            await this.store.saveRun(run);
+            spatialProgress = updateSpatialProgressState(
+              createSpatialProgressState(job.spatialProgress.scope, job.representationIndex), {
+              status: "failed",
+              error: message
+              }, job.representationIndex
+            );
+            await this.store.saveSpatialProgress(run.id, spatialProgress);
+            results[index] = { ...job.target, status: "failed", error: message };
+            onEvent?.({
+              type: "progress",
+              ...job.target,
+              status: "failed",
+              message
+            });
+          }
+        }
+      };
+      await Promise.all(Array.from(
+        { length: Math.min(concurrency, prepared.length) },
+        () => worker()
+      ));
+      const workspace = await this.workspace();
+      const completeCount = results.filter((result) => result.status === "complete").length;
+      onEvent?.({
+        type: "workspace",
+        message: `mapped ${completeCount} of ${results.length} artifacts`,
+        workspace
+      });
+      return { workspace, results };
+    } finally {
+      for (const job of prepared) this.activeMappings.delete(job.mappingKey);
+    }
+  }
+
+  async captureDiagramComponent(
+    setId: string,
+    diagramId: string,
+    bounds: DiagramSelectionBounds
+  ): Promise<WorkspaceSnapshot> {
+    const set = await this.store.loadDiagramSet(setId);
+    const { artifact } = await this.artifactForDiagramSet(setId, "diagram", diagramId);
+    const diagram = artifact as DiagramRecord;
+    if (isDiagramArchived(diagram)) throw new Error("archived diagrams cannot be captured");
+    return this.captureComponentSelection(set, { kind: "diagram", artifact: diagram }, bounds);
+  }
+
+  async createEditSession(
+    setId: string,
+    artifactKind: GenerationOutputKind,
+    artifactId: string
+  ): Promise<WorkspaceSnapshot> {
+    const { artifact } = await this.artifactForDiagramSet(setId, artifactKind, artifactId);
+    if (artifact.archivedAt) throw new Error("archived artifacts cannot be edited");
+    const createdAt = timestamp();
+    const session: EditSessionRecord = {
+      schemaVersion: SCHEMA_VERSION,
+      id: this.store.ids.editSession(),
+      diagramSetId: setId,
+      sourceArtifactKind: artifactKind,
+      sourceArtifactId: artifact.id,
+      sourceHandle: artifact.handle,
+      sourceName: artifact.name,
+      baseAscii: artifact.ascii,
+      workingAscii: artifact.ascii,
+      codeEntityIds: [...artifact.codeEntityIds],
+      operations: [],
+      operationCursor: 0,
+      revision: 0,
+      status: "active",
+      createdAt,
+      updatedAt: createdAt
+    };
+    await this.store.addEditSession(session);
+    return this.workspace();
+  }
+
+  private async activeEditSession(setId: string, sessionId: string): Promise<EditSessionRecord> {
+    const set = await this.store.loadDiagramSet(setId);
+    if (!set.editSessionIds.includes(sessionId)) throw new Error(`unknown EditSession: ${sessionId}`);
+    const session = await this.store.loadEditSession(setId, sessionId);
+    if (session.status !== "active") throw new Error(`EditSession is ${session.status}`);
+    return session;
+  }
+
+  private async appendEditOperation(
+    session: EditSessionRecord,
+    operation: Omit<EditOperationRecord, "id" | "createdAt">
+  ): Promise<EditSessionRecord> {
+    const createdAt = timestamp();
+    const nextOperation: EditOperationRecord = {
+      ...operation,
+      id: this.store.ids.editOperation(),
+      createdAt
+    };
+    const next: EditSessionRecord = {
+      ...session,
+      workingAscii: applyPatch(session.workingAscii, nextOperation.patch),
+      operations: [...session.operations.slice(0, session.operationCursor), nextOperation],
+      operationCursor: session.operationCursor + 1,
+      revision: session.revision + 1,
+      updatedAt: createdAt
+    };
+    assertSevenBitAscii(next.workingAscii);
+    if (next.workingAscii.length > 20000) throw new Error("artifact ASCII cannot exceed 20,000 characters");
+    await this.store.saveEditSession(next);
+    return next;
+  }
+
+  async manualEdit(setId: string, sessionId: string, ascii: string): Promise<WorkspaceSnapshot> {
+    const session = await this.activeEditSession(setId, sessionId);
+    const normalized = normalizeAscii(ascii);
+    assertSevenBitAscii(normalized);
+    if (normalized === session.workingAscii) return this.workspace();
+    const patch = textPatch(session.workingAscii, normalized);
+    const changed = Math.max(patch.deletedText.length, patch.insertedText.length);
+    await this.appendEditOperation(session, {
+      kind: "manual",
+      label: `Manual edit · ${changed} character${changed === 1 ? "" : "s"}`,
+      patch
+    });
+    return this.workspace();
+  }
+
+  async placeEditMarker(
+    setId: string,
+    sessionId: string,
+    line: number,
+    column: number
+  ): Promise<{ workspace: WorkspaceSnapshot; markerToken: string }> {
+    const session = await this.activeEditSession(setId, sessionId);
+    const markerChar = MARKER_CHARACTERS.find((candidate) => !session.workingAscii.includes(candidate));
+    if (!markerChar) throw new Error("no unused marker characters remain in this artifact");
+    const offset = characterOffset(session.workingAscii, line, column);
+    const replacedChar = session.workingAscii[offset];
+    const markerToken = `@${markerChar}`;
+    await this.appendEditOperation(session, {
+      kind: "manual",
+      subtype: "marker",
+      label: `Marker ${markerToken} · L${line}:C${column}`,
+      patch: { start: offset, deletedText: replacedChar, insertedText: markerChar },
+      markerChar,
+      markerToken,
+      replacedChar,
+      line,
+      column
+    });
+    return { workspace: await this.workspace(), markerToken };
+  }
+
+  async undoEdit(setId: string, sessionId: string): Promise<WorkspaceSnapshot> {
+    const session = await this.activeEditSession(setId, sessionId);
+    if (session.operationCursor === 0) return this.workspace();
+    const operation = session.operations[session.operationCursor - 1];
+    const updated: EditSessionRecord = {
+      ...session,
+      workingAscii: applyPatch(session.workingAscii, operation.patch, true),
+      operationCursor: session.operationCursor - 1,
+      revision: session.revision + 1,
+      updatedAt: timestamp()
+    };
+    await this.store.saveEditSession(updated);
+    return this.workspace();
+  }
+
+  async redoEdit(setId: string, sessionId: string): Promise<WorkspaceSnapshot> {
+    const session = await this.activeEditSession(setId, sessionId);
+    if (session.operationCursor === session.operations.length) return this.workspace();
+    const operation = session.operations[session.operationCursor];
+    const updated: EditSessionRecord = {
+      ...session,
+      workingAscii: applyPatch(session.workingAscii, operation.patch),
+      operationCursor: session.operationCursor + 1,
+      revision: session.revision + 1,
+      updatedAt: timestamp()
+    };
+    await this.store.saveEditSession(updated);
+    return this.workspace();
+  }
+
+  async llmEdit(
+    setId: string,
+    sessionId: string,
+    instruction: string,
+    modelId: unknown = DEFAULT_DIAGRAM_MODEL_ID,
+    onEvent?: (event: ServiceEvent) => void
+  ): Promise<WorkspaceSnapshot> {
+    if (!instruction.trim()) throw new Error("edit instruction is required");
+    if (!isDiagramModelId(modelId)) throw new Error(`unsupported edit model: ${String(modelId)}`);
+    const session = await this.activeEditSession(setId, sessionId);
+    const set = await this.store.loadDiagramSet(setId);
+    const runId = this.store.ids.run();
+    const createdAt = timestamp();
+    let run: AgentRunRecord = {
+      schemaVersion: SCHEMA_VERSION,
+      id: runId,
+      diagramSetId: setId,
+      kind: "edit-artifact",
+      status: "queued",
+      statusMessage: "queued artifact edit",
+      codeEntitiesRevision: (await this.store.loadCodeEntities(setId)).revision,
+      outputCodeEntityIds: [...session.codeEntityIds],
+      startedAt: createdAt,
+      updatedAt: createdAt
+    };
+    await this.store.saveRun(run);
+    await this.store.attachRun(setId, run.id);
+    const appliedOperations = session.operations.slice(0, session.operationCursor);
+    const markers = appliedOperations
+      .map((operation, index) => ({ operation, index }))
+      .filter(({ operation, index }) => operation.subtype === "marker" && operation.markerChar
+        && session.workingAscii.includes(operation.markerChar)
+        && !appliedOperations.slice(index + 1).some((candidate) => candidate.kind === "llm"))
+      .map(({ operation }) => ({
+        token: operation.markerToken!,
+        character: operation.markerChar!,
+        originalCharacter: operation.replacedChar ?? " "
+      }));
+    try {
+      const draft = await this.agents.editArtifact({
+        sourceRoot: set.sourceCheckoutRoot,
+        diagramSetName: set.name,
+        artifactKind: session.sourceArtifactKind,
+        artifactName: session.sourceName,
+        artifactHandle: session.sourceHandle,
+        currentAscii: session.workingAscii,
+        instruction: instruction.trim(),
+        modelId,
+        markers
+      }, (progress) => {
+        run = {
+          ...run,
+          status: progress.status,
+          statusMessage: progress.message,
+          model: progress.model ?? run.model,
+          sessionId: progress.sessionId ?? run.sessionId,
+          updatedAt: timestamp()
+        };
+        void this.store.saveRun(run);
+        onEvent?.({ type: "progress", message: progress.message });
+      });
+      const normalized = normalizeAscii(draft.ascii);
+      assertSevenBitAscii(normalized);
+      if (normalized.length > 20000) throw new Error("artifact ASCII cannot exceed 20,000 characters");
+      const patch = textPatch(session.workingAscii, normalized);
+      const updated = await this.appendEditOperation(session, {
+        kind: "llm",
+        label: `LLM edit · ${instruction.trim().slice(0, 72)}`,
+        patch,
+        instruction: instruction.trim(),
+        modelId,
+        agentRunId: run.id
+      });
+      run = {
+        ...run,
+        status: "complete",
+        statusMessage: "artifact edit applied",
+        updatedAt: timestamp(),
+        completedAt: timestamp()
+      };
+      await this.store.saveRun(run);
+      const workspace = await this.workspace();
+      onEvent?.({ type: "workspace", message: updated.operations.at(-1)?.label ?? "edit applied", workspace });
+      return workspace;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "artifact edit failed";
+      await this.store.saveRun({
+        ...run,
+        status: "failed",
+        statusMessage: message,
+        error: message,
+        updatedAt: timestamp(),
+        completedAt: timestamp()
+      });
+      throw error;
+    }
+  }
+
+  async finishEdit(setId: string, sessionId: string): Promise<WorkspaceSnapshot> {
+    const session = await this.activeEditSession(setId, sessionId);
+    if (session.operationCursor === 0) throw new Error("make at least one edit before saving a copy");
+    const appliedOperations = session.operations.slice(0, session.operationCursor);
+    const unresolvedMarker = appliedOperations.find((operation, index) => (
+      operation.markerChar
+      && session.workingAscii.includes(operation.markerChar)
+      && !appliedOperations.slice(index + 1).some((candidate) => candidate.kind === "llm")
+    ));
+    if (unresolvedMarker) throw new Error(`resolve ${unresolvedMarker.markerToken} before saving`);
+    const set = await this.store.loadDiagramSet(setId);
+    const { artifact: source } = await this.artifactForDiagramSet(
+      setId,
+      session.sourceArtifactKind,
+      session.sourceArtifactId
+    );
+    const name = `${source.name} Edit`.slice(0, 120);
+    const existing = session.sourceArtifactKind === "diagram"
+      ? await Promise.all(set.diagramIds.map((id) => this.store.loadDiagram(setId, id)))
+      : await Promise.all(set.diagramComponentIds.map((id) => this.store.loadDiagramComponent(setId, id)));
+    const library = await this.store.loadImportedArtifactLibrary();
+    const imported = session.sourceArtifactKind === "diagram"
+      ? await Promise.all(library.diagramIds.map((id) => this.store.loadImportedDiagram(id)))
+      : await Promise.all(
+        library.diagramComponentIds.map((id) => this.store.loadImportedDiagramComponent(id))
+      );
+    const handles = new Set([...existing, ...imported].map((artifact) => artifact.handle));
+    const baseHandle = slugify(name, session.sourceArtifactKind === "diagram" ? "diagram-edit" : "component-edit");
+    let handle = baseHandle;
+    let suffix = 2;
+    while (handles.has(handle)) handle = `${baseHandle}-${suffix++}`;
+    let outputArtifactId: string;
+    if (session.sourceArtifactKind === "diagram") {
+      outputArtifactId = this.store.ids.diagram();
+      await this.store.addDiagram({
+        schemaVersion: SCHEMA_VERSION,
+        id: outputArtifactId,
+        recordOrigin: { projectId: set.projectId, diagramSetId: set.id },
+        diagramSetId: setId,
+        viewKind: (source as DiagramRecord).viewKind,
+        representationKind: representationKindForArtifact(source as DiagramRecord),
+        ...((source as DiagramRecord).basedOnDiagramId
+          ? { basedOnDiagramId: (source as DiagramRecord).basedOnDiagramId }
+          : {}),
+        handle,
+        name,
+        ascii: session.workingAscii,
+        codeEntityIds: [...session.codeEntityIds],
+        origin: "edited",
+        generationPromptConfigId: source.generationPromptConfigId,
+        editSessionId: session.id,
+        derivedFromDiagramIds: [source.id],
+        createdAt: timestamp()
+      });
+    } else {
+      const component = source as DiagramComponentRecord;
+      outputArtifactId = this.store.ids.diagramComponent();
+      await this.store.addDiagramComponent({
+        schemaVersion: SCHEMA_VERSION,
+        id: outputArtifactId,
+        recordOrigin: { projectId: set.projectId, diagramSetId: set.id },
+        diagramSetId: setId,
+        handle,
+        name,
+        ascii: session.workingAscii,
+        representationKind: representationKindForArtifact(component),
+        codeEntityIds: [...session.codeEntityIds],
+        origin: "edited",
+        generationPromptConfigId: component.generationPromptConfigId,
+        sourceDiagramId: component.sourceDiagramId,
+        sourceDiagramComponentId: component.id,
+        editSessionId: session.id,
+        derivedFromDiagramIds: [...component.derivedFromDiagramIds],
+        derivedFromDiagramComponentIds: [component.id],
+        createdAt: timestamp()
+      });
+    }
+    await this.store.saveEditSession({
+      ...session,
+      status: "committed",
+      outputArtifactId,
+      revision: session.revision + 1,
+      updatedAt: timestamp()
+    });
+    return this.workspace();
+  }
+
+  async discardEdit(setId: string, sessionId: string): Promise<WorkspaceSnapshot> {
+    const session = await this.activeEditSession(setId, sessionId);
+    await this.store.saveEditSession({
+      ...session,
+      status: "discarded",
+      revision: session.revision + 1,
+      updatedAt: timestamp()
+    });
+    return this.workspace();
+  }
+
+  async captureNestedDiagramComponent(
+    setId: string,
+    componentId: string,
+    bounds: DiagramSelectionBounds
+  ): Promise<WorkspaceSnapshot> {
+    const set = await this.store.loadDiagramSet(setId);
+    const { artifact } = await this.artifactForDiagramSet(
+      setId,
+      "diagram-component",
+      componentId
+    );
+    const component = artifact as DiagramComponentRecord;
+    if (isDiagramComponentArchived(component)) {
+      throw new Error("archived DiagramComponents cannot be captured");
+    }
+    return this.captureComponentSelection(set, { kind: "diagram-component", artifact: component }, bounds);
+  }
+
+  private async captureComponentSelection(
+    set: DiagramSetRecord,
+    source:
+      | { kind: "diagram"; artifact: DiagramRecord }
+      | { kind: "diagram-component"; artifact: DiagramComponentRecord },
+    bounds: DiagramSelectionBounds
+  ): Promise<WorkspaceSnapshot> {
+    const { ascii, selection } = cropAsciiSelection(source.artifact.ascii, bounds);
+    const existing = await Promise.all(
+      set.diagramComponentIds.map((id) => this.store.loadDiagramComponent(set.id, id))
+    );
+    const sequence = existing.length + 1;
+    const library = await this.store.loadImportedArtifactLibrary();
+    const imported = await Promise.all(
+      library.diagramComponentIds.map((id) => this.store.loadImportedDiagramComponent(id))
+    );
+    const handles = new Set([...existing, ...imported].map((component) => component.handle));
+    const baseHandle = slugify(
+      `${source.artifact.handle}-component-${sequence}`,
+      `component-${sequence}`
+    );
+    let handle = baseHandle;
+    let suffix = 2;
+    while (handles.has(handle)) handle = `${baseHandle}-${suffix++}`;
+    const component: DiagramComponentRecord = {
+      schemaVersion: SCHEMA_VERSION,
+      id: this.store.ids.diagramComponent(),
+      recordOrigin: { projectId: set.projectId, diagramSetId: set.id },
+      diagramSetId: set.id,
+      handle,
+      name: `${source.artifact.name} - Component ${sequence}`,
+      ascii,
+      representationKind: representationKindForArtifact(source.artifact),
+      codeEntityIds: [...source.artifact.codeEntityIds],
+      origin: "selection",
+      ...(source.kind === "diagram"
+        ? { sourceDiagramId: source.artifact.id }
+        : {
+          sourceDiagramId: source.artifact.sourceDiagramId,
+          sourceDiagramComponentId: source.artifact.id
+        }),
+      selectionBounds: selection,
+      derivedFromDiagramIds: source.kind === "diagram"
+        ? [source.artifact.id]
+        : [...source.artifact.derivedFromDiagramIds],
+      derivedFromDiagramComponentIds: source.kind === "diagram-component"
+        ? [source.artifact.id]
+        : [],
+      createdAt: timestamp()
+    };
+    await this.store.addDiagramComponent(component);
+    return this.workspace();
+  }
+
+  async generate(
+    setId: string,
+    input: {
+      prompt: string;
+      runReferencePrompt?: boolean;
+      referencePrompt?: string;
+      selectedCodeEntityIds: string[];
+      count: number;
+      outputKind: GenerationOutputKind;
+      viewKind?: DiagramViewKind;
+      modelId?: unknown;
+      promptProfileId?: unknown;
+      referenceSelections?: GenerationReferenceSelection[];
+      referencePromptSelections?: GenerationReferenceSelection[];
+      derivation?: GenerationDerivationRecord;
+    },
+    onEvent?: (event: ServiceEvent) => void
+  ): Promise<WorkspaceSnapshot> {
+    if (!Number.isInteger(input.count) || input.count < 1 || input.count > MAX_GENERATION_COUNT) {
+      throw new Error(`output count must be between 1 and ${MAX_GENERATION_COUNT}`);
+    }
+    if (input.outputKind !== "diagram" && input.outputKind !== "diagram-component") {
+      throw new Error("output kind must be diagram or diagram-component");
+    }
+    if (input.outputKind === "diagram" && !isDiagramViewKind(input.viewKind ?? "diagram")) {
+      throw new Error("view kind must be diagram, call-graph, or dir-view");
+    }
+    if (input.outputKind === "diagram-component" && input.viewKind !== undefined) {
+      throw new Error("DiagramComponents do not have a view kind");
+    }
+    const set = await this.store.loadDiagramSet(setId);
+    const { domainProfileId } = await this.projectCorpus(set);
+    if (input.outputKind === "diagram"
+      && !resolveDomainProfile(domainProfileId).workspace.diagramViews.includes(input.viewKind ?? "diagram")) {
+      throw new Error(`${input.viewKind ?? "diagram"} is not available in the ${domainProfileId} domain`);
+    }
+    const modelId = input.modelId ?? DEFAULT_DIAGRAM_MODEL_ID;
+    if (!isDiagramModelId(modelId)) throw new Error(`unsupported generation model: ${String(modelId)}`);
+    if (this.activeBatches.has(setId)) throw new Error("a generation batch is already active for this DiagramSet");
+    this.activeBatches.add(setId);
+    try {
+      const entities = await this.store.loadCodeEntities(setId);
+      const promptProfile = await this.resolveSystemPromptTemplate(input.promptProfileId);
+      if (entities.status !== "finalized" || set.readiness !== "ready") {
+        throw new Error("CodeEntitiesSet must be finalized before generation");
+      }
+      const storedDiagrams = await Promise.all(set.diagramIds.map((id) => this.store.loadDiagram(setId, id)));
+      const library = await this.store.loadImportedArtifactLibrary();
+      const importedCodeEntities = await Promise.all(
+        (library.codeEntityIds ?? []).map((id) => this.store.loadImportedCodeEntity(id))
+      );
+      const importedDiagrams = await Promise.all(
+        library.diagramIds.map((id) => this.store.loadImportedDiagram(id))
+      );
+      const existingDiagrams = [...storedDiagrams, ...importedDiagrams]
+        .filter((diagram) => !isDiagramArchived(diagram));
+      const settledViewIds = await this.settledViewIdsForSession(set);
+      const storedComponents = await Promise.all(
+        set.diagramComponentIds.map((id) => this.store.loadDiagramComponent(setId, id))
+      );
+      const importedComponents = await Promise.all(
+        library.diagramComponentIds.map((id) => this.store.loadImportedDiagramComponent(id))
+      );
+      const existingComponents = [...storedComponents, ...importedComponents].filter(
+        (component) => !isDiagramComponentArchived(component)
+      );
+      const createdAt = timestamp();
+      const promptBuild = createGenerationPromptConfig({
+        id: this.store.ids.promptConfig(),
+        diagramSet: { ...set, featuredViewIds: settledViewIds },
+        codeEntities: {
+          ...entities,
+          entities: [...entities.entities, ...importedCodeEntities]
+        },
+        diagrams: [...storedDiagrams, ...importedDiagrams],
+        components: [...storedComponents, ...importedComponents],
+        outputKind: input.outputKind,
+        viewKind: input.viewKind,
+        modelId,
+        profile: promptProfile,
+        domainProfileId,
+        instruction: input.prompt,
+        runReferencePrompt: input.runReferencePrompt,
+        referencePrompt: input.referencePrompt,
+        selectedCodeEntityIds: input.selectedCodeEntityIds,
+        referenceSelections: input.referenceSelections,
+        referencePromptSelections: input.referencePromptSelections,
+        derivation: input.derivation,
+        createdAt
+      });
+      const promptConfig = promptBuild.config;
+      const batchId = this.store.ids.batch();
+      let batch: GenerationBatchRecord = {
+        schemaVersion: SCHEMA_VERSION,
+        id: batchId,
+        diagramSetId: setId,
+        requestedCount: input.count,
+        promptConfigId: promptConfig.id,
+        codeEntitiesRevision: entities.revision,
+        childRunIds: [],
+        outputDiagramIds: [],
+        outputDiagramComponentIds: [],
+        status: "queued",
+        createdAt,
+        updatedAt: createdAt
+      };
+      let runs: AgentRunRecord[] = Array.from({ length: input.count }, (_, index) => ({
+        schemaVersion: SCHEMA_VERSION,
+        id: this.store.ids.run(),
+        diagramSetId: setId,
+        kind: input.outputKind === "diagram"
+          ? "generate-one-diagram"
+          : "generate-one-diagram-component",
+        status: "queued",
+        statusMessage: `queued parallel slot ${index + 1}`,
+        generationBatchId: batchId,
+        outputSlot: index + 1,
+        codeEntitiesRevision: entities.revision,
+        outputCodeEntityIds: [],
+        startedAt: createdAt,
+        updatedAt: createdAt
+      }));
+      batch = { ...batch, childRunIds: runs.map((run) => run.id) };
+      await this.store.beginBatch(promptConfig, batch, runs);
+      const persistedPromptConfig = await this.store.loadGenerationPromptConfig(
+        setId,
+        promptConfig.id
+      );
+      batch = { ...batch, status: "running", updatedAt: timestamp() };
+      await this.store.saveBatch(batch);
+      const outputViewKind = input.outputKind === "diagram" ? input.viewKind ?? "diagram" : undefined;
+      const outputLabel = input.outputKind === "diagram-component"
+        ? "component"
+        : outputViewKind === "call-graph"
+          ? "call graph"
+          : outputViewKind === "dir-view"
+            ? "directory view"
+            : "diagram";
+      onEvent?.({ type: "progress", message: `started ${input.count} parallel ${outputLabel} agents` });
+
+      const accepted = new Map<number, GeneratedArtifactDraft>();
+      let pending = runs.map((_, index) => index);
+      let lastErrors = new Map<number, string>();
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS && pending.length > 0; attempt += 1) {
+        const results: Array<{ index: number; draft: GeneratedArtifactDraft } | { index: number; error: string }> = await Promise.all(pending.map(async (index) => {
+          const run = runs[index];
+          const setRun = (update: Partial<AgentRunRecord>) => {
+            runs[index] = { ...runs[index], ...update, updatedAt: timestamp() };
+            void this.store.saveRun(runs[index]);
+          };
+          try {
+            const draft = await this.agents.generateArtifact({
+              sourceRoot: set.sourceCheckoutRoot,
+              diagramSetName: set.name,
+              promptConfig: persistedPromptConfig,
+              allowedCodeEntityAliases: promptBuild.allowedCodeEntityAliases,
+              codeEntities: promptBuild.allowedCodeEntities,
+              allowedDiagramIds: promptBuild.allowedDiagramIds,
+              allowedDiagramComponentIds: promptBuild.allowedDiagramComponentIds,
+              slot: index + 1,
+              total: input.count
+            }, (progress) => {
+              setRun({
+                status: progress.status,
+                statusMessage: progress.message,
+                model: progress.model ?? run.model,
+                sessionId: progress.sessionId ?? run.sessionId
+              });
+              onEvent?.({ type: "progress", message: `slot ${index + 1}: ${progress.message}` });
+            });
+            this.validateGeneratedArtifactDraft(
+              draft,
+              promptBuild.allowedCodeEntityIds,
+              promptBuild.allowedCodeEntities
+            );
+            return { index, draft };
+          } catch (error) {
+            return { index, error: error instanceof Error ? error.message : "diagram generation failed" };
+          }
+        }));
+
+        const usedAscii = new Set([...accepted.values()].map((draft) => normalizeAscii(draft.ascii)));
+        const retry: number[] = [];
+        lastErrors = new Map();
+        for (const result of results) {
+          if ("error" in result) {
+            retry.push(result.index);
+            lastErrors.set(result.index, result.error);
+            continue;
+          }
+          const normalized = normalizeAscii(result.draft.ascii);
+          if (usedAscii.has(normalized)) {
+            retry.push(result.index);
+            lastErrors.set(result.index, "duplicate normalized ASCII output");
+            continue;
+          }
+          usedAscii.add(normalized);
+          accepted.set(result.index, { ...result.draft, ascii: normalized });
+        }
+        pending = retry;
+        for (const index of pending) {
+          runs[index] = {
+            ...runs[index],
+            status: attempt === MAX_ATTEMPTS ? "failed" : "queued",
+            statusMessage: lastErrors.get(index) ?? "invalid diagram result",
+            error: lastErrors.get(index),
+            updatedAt: timestamp(),
+            ...(attempt === MAX_ATTEMPTS ? { completedAt: timestamp() } : {})
+          };
+          await this.store.saveRun(runs[index]);
+        }
+      }
+
+      if (accepted.size !== input.count) {
+        const message = [...lastErrors.entries()]
+          .map(([index, error]) => `slot ${index + 1}: ${error}`)
+          .join("; ") || "one or more diagram agents failed";
+        batch = { ...batch, status: "failed", error: message, updatedAt: timestamp() };
+        await this.store.saveBatch(batch);
+        throw new Error(message);
+      }
+
+      batch = { ...batch, status: "validating", updatedAt: timestamp() };
+      await this.store.saveBatch(batch);
+      onEvent?.({ type: "progress", message: "validating complete parallel batch" });
+      const derivedFromDiagramIds = promptConfig.references
+        .filter((reference) => reference.kind === "diagram")
+        .map((reference) => reference.targetId);
+      const sameViewDerivedFromDiagramIds = input.outputKind === "diagram"
+        ? derivedFromDiagramIds.filter((id) => existingDiagrams.find(
+          (diagram) => diagram.id === id && diagram.viewKind === outputViewKind
+        ))
+        : derivedFromDiagramIds;
+      const derivedFromDiagramComponentIds = promptConfig.references
+        .filter((reference) => reference.kind === "diagram-component")
+        .map((reference) => reference.targetId);
+      const handles = new Set((input.outputKind === "diagram" ? existingDiagrams : existingComponents)
+        .map((artifact) => artifact.handle));
+      const generated = runs.map((run, index) => {
+        const draft = accepted.get(index)!;
+        const sequence = input.outputKind === "diagram"
+          ? set.diagramIds.length + index + 1
+          : set.diagramComponentIds.length + index + 1;
+        const base = slugify(draft.name, `${outputLabel}-${sequence}`);
+        let handle = base;
+        let suffix = 2;
+        while (handles.has(handle)) {
+          handle = `${base}-${suffix}`;
+          suffix += 1;
+        }
+        handles.add(handle);
+        return { run, draft, handle };
+      });
+      const diagrams: DiagramRecord[] = input.outputKind === "diagram"
+        ? generated.map(({ run, draft, handle }) => ({
+          schemaVersion: SCHEMA_VERSION,
+          id: this.store.ids.diagram(),
+          recordOrigin: { projectId: set.projectId, diagramSetId: set.id },
+          diagramSetId: setId,
+          viewKind: outputViewKind!,
+          representationKind: outputViewKind === "diagram" ? "diagram" : "tree",
+          ...(outputViewKind !== "diagram" && settledViewIds.diagram
+            ? { basedOnDiagramId: settledViewIds.diagram }
+            : {}),
+          handle,
+          name: draft.name.trim(),
+          ascii: normalizeAscii(draft.ascii),
+          codeEntityIds: [...new Set(draft.codeEntityIds)],
+          origin: "generated",
+          producedByRunId: run.id,
+          generationPromptConfigId: promptConfig.id,
+          derivedFromDiagramIds: [...new Set(sameViewDerivedFromDiagramIds)],
+          createdAt: timestamp()
+        }))
+        : [];
+      const components: DiagramComponentRecord[] = input.outputKind === "diagram-component"
+        ? generated.map(({ run, draft, handle }) => ({
+          schemaVersion: SCHEMA_VERSION,
+          id: this.store.ids.diagramComponent(),
+          recordOrigin: { projectId: set.projectId, diagramSetId: set.id },
+          diagramSetId: setId,
+          handle,
+          name: draft.name.trim(),
+          ascii: normalizeAscii(draft.ascii),
+          representationKind: (() => {
+            const sourceId = input.derivation?.sourceArtifactId;
+            if (!sourceId) return "diagram" as const;
+            const source = input.derivation?.sourceArtifactKind === "diagram"
+              ? existingDiagrams.find((artifact) => artifact.id === sourceId)
+              : existingComponents.find((artifact) => artifact.id === sourceId);
+            return source ? representationKindForArtifact(source) : "diagram";
+          })(),
+          codeEntityIds: [...new Set(draft.codeEntityIds)],
+          origin: "generated",
+          producedByRunId: run.id,
+          generationPromptConfigId: promptConfig.id,
+          derivedFromDiagramIds: [...new Set(derivedFromDiagramIds)],
+          derivedFromDiagramComponentIds: [...new Set(derivedFromDiagramComponentIds)],
+          createdAt: timestamp()
+        }))
+        : [];
+      const artifacts = input.outputKind === "diagram" ? diagrams : components;
+      const codeEntityMaps: DiagramCodeEntityMapRecord[] = generated.map(({ run, draft }, index) => {
+        const artifact = artifacts[index];
+        const mappedEntities = promptBuild.allowedCodeEntities.filter(
+          (entity) => artifact.codeEntityIds.includes(entity.id)
+        );
+        const mappings = validateDiagramMappings(
+          artifact.ascii,
+          draft.mappings ?? [],
+          mappedEntities
+        );
+        return {
+          schemaVersion: SCHEMA_VERSION,
+          diagramSetId: setId,
+          artifactKind: input.outputKind,
+          artifactId: artifact.id,
+          asciiSha256: createHash("sha256").update(artifact.ascii).digest("hex"),
+          mappings,
+          producedByRunId: run.id,
+          origin: "agent",
+          createdAt: timestamp()
+        };
+      });
+      runs = runs.map((run, index) => ({
+        ...run,
+        status: "complete",
+        statusMessage: `${outputLabel} committed`,
+        outputCodeEntityIds: (diagrams[index] ?? components[index]).codeEntityIds,
+        ...(input.outputKind === "diagram"
+          ? { outputDiagramId: diagrams[index].id }
+          : { outputDiagramComponentId: components[index].id }),
+        error: undefined,
+        updatedAt: timestamp(),
+        completedAt: timestamp()
+      }));
+      batch = {
+        ...batch,
+        status: "complete",
+        outputDiagramIds: diagrams.map((diagram) => diagram.id),
+        outputDiagramComponentIds: components.map((component) => component.id),
+        error: undefined,
+        updatedAt: timestamp()
+      };
+      await this.store.completeBatch(batch, runs, diagrams, components, codeEntityMaps);
+      const workspace = await this.workspace();
+      onEvent?.({
+        type: "workspace",
+        message: `generated ${input.count} ${outputLabel}${input.count === 1 ? "" : "s"}`,
+        workspace
+      });
+      return workspace;
+    } finally {
+      this.activeBatches.delete(setId);
+    }
+  }
+
+  async saveSystemPromptTemplate(input: {
+    id?: unknown;
+    label: unknown;
+    description: unknown;
+    prompts: unknown;
+  }): Promise<WorkspaceSnapshot> {
+    const label = typeof input.label === "string" ? input.label.trim() : "";
+    const description = typeof input.description === "string" ? input.description.trim() : "";
+    if (!label) throw new Error("template name is required");
+    if (label.length > 80) throw new Error("template name cannot exceed 80 characters");
+    if (description.length > 240) throw new Error("template description cannot exceed 240 characters");
+    if (!input.prompts || typeof input.prompts !== "object" || Array.isArray(input.prompts)) {
+      throw new Error("named prompts must be an object");
+    }
+    const rawPrompts = input.prompts as Record<string, unknown>;
+    const prompts: Record<string, NamedPromptTemplate> = {};
+    for (const [name, value] of Object.entries(rawPrompts)) {
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        throw new Error(`prompt ${name} must be an object with a template string`);
+      }
+      const entry = value as Record<string, unknown>;
+      if (typeof entry.template !== "string") {
+        throw new Error(`prompt ${name} must include a template string`);
+      }
+      if (entry.description !== undefined && typeof entry.description !== "string") {
+        throw new Error(`prompt ${name} description must be a string`);
+      }
+      prompts[name] = {
+        template: entry.template,
+        ...(typeof entry.description === "string" ? { description: entry.description } : {})
+      };
+    }
+    const templates = await this.store.loadSystemPromptTemplates();
+    const requestedId = typeof input.id === "string" ? input.id : undefined;
+    const existing = requestedId ? templates.find((template) => template.id === requestedId) : undefined;
+    if (requestedId && !existing) throw new Error(`unknown system prompt template: ${requestedId}`);
+    const persistedPrompts = Object.fromEntries(Object.entries(prompts).map(([name, entry]) => [
+      name,
+      entry.description === undefined && existing?.prompts[name]?.description
+        ? { ...entry, description: existing.prompts[name].description }
+        : entry
+    ]));
+    const timestampValue = timestamp();
+    let id = existing?.id ?? slugify(label, "custom-prompt");
+    if (!existing) {
+      const ids = new Set(templates.map((template) => template.id));
+      const baseId = id;
+      let suffix = 2;
+      while (ids.has(id)) id = `${baseId}-${suffix++}`;
+    }
+    const template = createSystemPromptTemplate({
+      id,
+      label,
+      description,
+      builtIn: existing?.builtIn ?? false,
+      version: (existing?.version ?? 0) + 1,
+      prompts: persistedPrompts,
+      createdAt: existing?.createdAt ?? timestampValue,
+      updatedAt: timestampValue
+    });
+    const targetKinds: GenerationTargetKind[] = [
+      "diagram", "call-graph", "dir-view", "diagram-component"
+    ];
+    const requiredStandardPromptNames = targetKinds.flatMap((targetKind) => {
+      const bindings = generationPromptBindings(targetKind);
+      return [bindings.system, bindings.reference!, bindings.mapping];
+    });
+    const existingWasStandard = Boolean(existing && requiredStandardPromptNames.every(
+      (name) => existing.prompts[name]
+    ));
+    const submittedStandardName = requiredStandardPromptNames.some((name) => template.prompts[name]);
+    if ((existingWasStandard || submittedStandardName) && !requiredStandardPromptNames.every(
+      (name) => template.prompts[name]
+    )) {
+      throw new Error("standard generation prompt sets require every system, reference, and mapping prompt");
+    }
+    for (const targetKind of (existingWasStandard || submittedStandardName ? targetKinds : [])) {
+      const bindings = generationPromptBindings(targetKind);
+      renderSystemPromptTemplate(promptTemplate(template, bindings.system), targetKind);
+      renderReferencePromptTemplate({
+        template: promptTemplate(template, bindings.reference!),
+        targetKind,
+        instruction: targetKind === "diagram-component"
+          ? "Use @component/reference as the style reference."
+          : "Use @diagram/reference as the style reference.",
+        referenceContext: targetKind === "diagram-component"
+          ? "DiagramComponent reference"
+          : "Diagram reference"
+      });
+      renderMappingPromptTemplate({
+        template: promptTemplate(template, bindings.mapping),
+        targetKind,
+        artifact: { name: "Preview", ascii: "+-- preview --+", codeEntityIds: [] },
+        codeEntities: [],
+        aliases: []
+      });
+    }
+    await this.store.saveSystemPromptTemplates(existing
+      ? templates.map((candidate) => candidate.id === id ? template : candidate)
+      : [...templates, template]);
+    return this.workspace();
+  }
+
+  async resetSystemPromptTemplate(id: string): Promise<WorkspaceSnapshot> {
+    const templates = await this.store.loadSystemPromptTemplates();
+    const existing = templates.find((template) => template.id === id);
+    if (!existing?.builtIn) throw new Error(`built-in system prompt template not found: ${id}`);
+    const original = createBuiltInSystemPromptTemplates(existing.createdAt)
+      .find((template) => template.id === id);
+    if (!original) throw new Error(`built-in system prompt template not found: ${id}`);
+    const reset: SystemPromptTemplateRecord = {
+      ...original,
+      version: existing.version + 1,
+      createdAt: existing.createdAt,
+      updatedAt: timestamp()
+    };
+    await this.store.saveSystemPromptTemplates(
+      templates.map((template) => template.id === id ? reset : template)
+    );
+    return this.workspace();
+  }
+
+  async deleteSystemPromptTemplate(id: string): Promise<WorkspaceSnapshot> {
+    const templates = await this.store.loadSystemPromptTemplates();
+    const existing = templates.find((template) => template.id === id);
+    if (!existing) throw new Error(`unknown system prompt template: ${id}`);
+    if (templates.length === 1) throw new Error("at least one system prompt template is required");
+    await this.store.saveSystemPromptTemplates(
+      templates.filter((template) => template.id !== id)
+    );
+    return this.workspace();
+  }
+
+  async saveCodeEntityPromptTemplate(input: {
+    id?: unknown;
+    label: unknown;
+    description: unknown;
+    prompts: unknown;
+  }): Promise<WorkspaceSnapshot> {
+    const label = typeof input.label === "string" ? input.label.trim() : "";
+    const description = typeof input.description === "string" ? input.description.trim() : "";
+    const prompts = input.prompts && typeof input.prompts === "object"
+      ? input.prompts as Record<string, unknown>
+      : {};
+    const identificationCriteria = typeof prompts["code-entity-identification"] === "string"
+      ? prompts["code-entity-identification"].trim()
+      : "";
+    const compactionCriteria = typeof prompts["code-entity-compaction"] === "string"
+      ? prompts["code-entity-compaction"].trim()
+      : "";
+    if (!label) throw new Error("template name is required");
+    if (label.length > 80) throw new Error("template name cannot exceed 80 characters");
+    if (description.length > 240) throw new Error("template description cannot exceed 240 characters");
+    if (!identificationCriteria || !compactionCriteria) {
+      throw new Error("identification and compaction criteria are required");
+    }
+    if (identificationCriteria.length > 32000 || compactionCriteria.length > 32000) {
+      throw new Error("CodeEntity criteria cannot exceed 32,000 characters");
+    }
+
+    const templates = await this.store.loadCodeEntityPromptTemplates();
+    const requestedId = typeof input.id === "string" ? input.id : undefined;
+    const existing = requestedId ? templates.find((template) => template.id === requestedId) : undefined;
+    if (requestedId && !existing) throw new Error(`unknown CodeEntity prompt template: ${requestedId}`);
+    const timestampValue = timestamp();
+    let id = existing?.id ?? slugify(label, "custom-code-entities");
+    if (!existing) {
+      const ids = new Set(templates.map((template) => template.id));
+      const baseId = id;
+      let suffix = 2;
+      while (ids.has(id)) id = `${baseId}-${suffix++}`;
+    }
+    const template: CodeEntityPromptTemplateRecord = {
+      schemaVersion: SCHEMA_VERSION,
+      id,
+      label,
+      description,
+      builtIn: existing?.builtIn ?? false,
+      version: (existing?.version ?? 0) + 1,
+      prompts: {
+        "code-entity-identification": identificationCriteria,
+        "code-entity-compaction": compactionCriteria
+      },
+      createdAt: existing?.createdAt ?? timestampValue,
+      updatedAt: timestampValue
+    };
+    await this.store.saveCodeEntityPromptTemplates(existing
+      ? templates.map((candidate) => candidate.id === id ? template : candidate)
+      : [...templates, template]);
+    return this.workspace();
+  }
+
+  async resetCodeEntityPromptTemplate(id: string): Promise<WorkspaceSnapshot> {
+    const templates = await this.store.loadCodeEntityPromptTemplates();
+    const existing = templates.find((template) => template.id === id);
+    if (!existing?.builtIn) throw new Error(`built-in CodeEntity prompt template not found: ${id}`);
+    const project = await this.store.loadProject();
+    const domain = project?.domainProfileId === "document" ? "document" : "source-code";
+    const original = createBuiltInCodeEntityPromptTemplates(existing.createdAt, domain)
+      .find((template) => template.id === id);
+    if (!original) throw new Error(`built-in CodeEntity prompt template not found: ${id}`);
+    const reset: CodeEntityPromptTemplateRecord = {
+      ...original,
+      version: existing.version + 1,
+      createdAt: existing.createdAt,
+      updatedAt: timestamp()
+    };
+    await this.store.saveCodeEntityPromptTemplates(
+      templates.map((template) => template.id === id ? reset : template)
+    );
+    return this.workspace();
+  }
+
+  async deleteCodeEntityPromptTemplate(id: string): Promise<WorkspaceSnapshot> {
+    const templates = await this.store.loadCodeEntityPromptTemplates();
+    const existing = templates.find((template) => template.id === id);
+    if (!existing) throw new Error(`unknown CodeEntity prompt template: ${id}`);
+    if (templates.length === 1) throw new Error("at least one CodeEntity prompt template is required");
+    await this.store.saveCodeEntityPromptTemplates(
+      templates.filter((template) => template.id !== id)
+    );
+    return this.workspace();
+  }
+
+  private validateGeneratedArtifactDraft(
+    draft: GeneratedArtifactDraft,
+    allowedCodeEntityIds: string[],
+    allowedCodeEntities: CodeEntityRecord[]
+  ): void {
+    if (!draft.name.trim()) throw new Error("generated artifact name cannot be blank");
+    assertSevenBitAscii(draft.ascii);
+    const allowedEntities = new Set(allowedCodeEntityIds);
+    for (const id of draft.codeEntityIds) {
+      if (!allowedEntities.has(id)) throw new Error(`artifact references unavailable CodeEntity: ${id}`);
+    }
+    if (!draft.mappings) throw new Error("generated artifact is missing its final entity mappings");
+    const mappedEntities = allowedCodeEntities.filter((entity) => draft.codeEntityIds.includes(entity.id));
+    validateDiagramMappings(draft.ascii, draft.mappings, mappedEntities);
+  }
+
+  async recoverInterruptedRuns(): Promise<void> {
+    const workspace = await this.workspace();
+    for (const run of Object.values(workspace.agentRuns)) {
+      if (["queued", "reading-context", "generating", "validating"].includes(run.status)) {
+        await this.store.saveRun({
+          ...run,
+          status: "interrupted",
+          statusMessage: "server restarted before the run completed",
+          error: "interrupted by server restart",
+          updatedAt: timestamp(),
+          completedAt: timestamp()
+        });
+      }
+    }
+    for (const batch of Object.values(workspace.generationBatches)) {
+      if (["queued", "running", "validating"].includes(batch.status)) {
+        await this.store.saveBatch({
+          ...batch,
+          status: "failed",
+          error: "interrupted by server restart",
+          updatedAt: timestamp()
+        });
+      }
+    }
+  }
+
+  dispose(): void {
+    this.agents.dispose();
+  }
+}

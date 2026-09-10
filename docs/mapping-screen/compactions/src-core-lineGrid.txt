@@ -1,0 +1,91 @@
+src/core/lineGrid.ts
++-- import type { DiagramElementMapping } from "./domain";
++-- interface GridPoint
+|   +-- column: number;
+|   \-- row: number
++-- interface GridSize
+|   +-- columns: number;
+|   \-- rows: number
++-- interface GridBounds
++-- interface CanvasDiagram
+|   +-- id: string;
+|   +-- revision: number;
+|   +-- ascii: string;
+|   \-- mappings: readonly DiagramElementMapping[];
++-- type GridBox - Recursive discriminated union of diagram boxes and container boxes.
+|   +-- id: string;
+|   +-- position: GridPoint;
+|   +-- minimumSize?: GridSize;
+|   +-- collapsed: boolean;
+|   +-- collapsedContentId?: string;
+|   +-- kind: "diagram";
+|   +-- contentId: string
+|   +-- kind: "container";
+|   +-- children: readonly GridBox[];
+|   \-- layout: { collisionPolicy: "push-right"; gap: number }
++-- interface LineGridScene
+|   +-- contents: Readonly<Record<string, CanvasDiagram>>;
+|   \-- root: GridBox;
++-- interface ResolvedGridBox
+|   +-- box: GridBox;
+|   +-- bounds: GridBounds;
+|   +-- contentId?: string;
+|   \-- children: readonly ResolvedGridBox[];
++-- MAX_EXTENT [binding]
++-- MAX_CELLS [binding]
++-- function integer(value, label)
++-- function measureContent(ascii)
+|   \-- lines = ascii.split()
++-- function boxesOverlap(a, b, gap)
++-- function resolveScene(scene) - Resolves recursive box sizes, positions, collapsed content, and absolute bounds.
+|   +-- ids [binding]
+|   \-- function visit(box, parent)
+|       +-- origin [binding]
+|       +-- contentId [binding]
+|       +-- size: GridSize
+|       +-- content [binding]
+|       +-- children [binding]
+|       \-- child [binding]
++-- function flattenGrid(root)
++-- function findCollisions(scene, parentId, bounds, excludeId)
+|   \-- parent = flattenGrid(resolveScene(scene)).find()
++-- function updateGridBox(scene, id, update)
+|   +-- found [binding]
+|   +-- function visit(box)
+|   \-- root = visit()
++-- function layoutScene(scene, changedId)
+|   +-- function visit(box)
+|   |   +-- box: GridBox;
+|   |   +-- changed: boolean
+|   |   +-- descendants = box.children.map()
+|   |   +-- children = descendants.map()
+|   |   +-- anchoredId [binding]
+|   |   +-- measure(child)
+|   |   +-- ordered = children.map((child, index) => ({ child, index })).sort()
+|   |   +-- settled: GridBounds[]
+|   |   +-- replacements [binding]
+|   |   +-- { child } [binding]
+|   |   +-- bounds [binding]
+|   |   \-- collisions = settled.filter()
+|   +-- result = visit()
+|   \-- next [binding]
++-- function composeScene(scene)
+|   +-- root = resolveScene()
+|   +-- width [binding]
+|   +-- height [binding]
+|   +-- rows = Array.from()
+|   \-- function paint(node)
+|       +-- i [binding]
+|       +-- j [binding]
+|       +-- row [binding]
+|       +-- start [binding]
+|       \-- existing = rows[row].padEnd()
++-- function hitTest(scene, point)
+|   +-- boxId: string;
+|   +-- contentId?: string;
+|   +-- local: GridPoint
+|   \-- function visit(node)
+|       +-- b [binding]
+|       +-- child [binding]
+|       \-- hit = visit()
+\-- function projectMapping(bounds, mapping)

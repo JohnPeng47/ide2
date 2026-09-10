@@ -1,0 +1,14 @@
+src/mapping/components/MappingDiagramExplorer.tsx
++-- import { useState } from "react";
++-- import type { GridBox, LineGridScene } from "../../core/lineGrid";
++-- import type { ProjectRepresentationRecord } from "../../core/projectCatalog";
+\-- function MappingDiagramExplorer(props) - Filters project diagrams and renders the active canvas box hierarchy.
+    +-- projectName: string;
+    +-- diagrams: ProjectRepresentationRecord[];
+    +-- activeId?: string;
+    +-- scene?: LineGridScene;
+    +-- dirtyIds: string[];
+    +-- onOpen: (id: string) => void;
+    +-- onFocus: (boxId: string) => void;
+    +-- [query, setQuery] = useState()
+    \-- boxTree(box)

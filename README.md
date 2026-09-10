@@ -19,7 +19,7 @@ The canonical skill source lives at `skills/new-diagram/`. Install or update its
 global Codex mirror with:
 
 ```bash
-./scripts/new-diagram/install-skill
+./install-skill
 ```
 
 The destination is `$CODEX_HOME/skills/new-diagram`, defaulting to
@@ -44,11 +44,23 @@ path relative to the corpus and defaults to `.diagrams`. Set
 
 ## HTTP namespaces
 
-Studio operations live under `/api/studio/*`. `/api/mapping/*` is reserved and
-currently has no external endpoints. The previous unnamespaced API routes
-return 404. Mapping selection and overlays run in the browser; select → prompt
-uses the browser-internal `POST /internal/mapping/prompt` transport for streamed
-agent edits. Local chat uses a browser-side mock responder.
+The app has three ownership boundaries, reflected in its HTTP routes, browser
+clients, services, and component directories:
+
+| Area | Namespace | Ownership |
+| --- | --- | --- |
+| Studio | `/api/studio/*` | Collection, generation, candidates, promotion, artifact edit sessions, templates, experiments, datasets |
+| Mapping | `/api/mapping/*` | Canvas saves, selection prompts, local chat |
+| Core | `/api/core/*` | Workspace, corpus, representations, projections, imports, plans, highlights, shared rendering |
+
+Both features depend on Core; neither imports the other. `src/App.tsx` and
+`server/http.ts` compose them. The shared representation catalog is read through
+`GET /api/core/project/representations`, returning `{ project, catalog }` (both
+null before initialization). There is no second Mapping catalog endpoint.
+
+Old shared `/api/studio/*` URLs, `/internal/mapping/*`, and unnamespaced API
+URLs return 404. See [API ownership and migration](docs/api-ownership.md) for
+the route inventory, dependency rules, and client migration details.
 
 ## Mapping project diagrams
 
@@ -70,9 +82,9 @@ source evidence snapshots. They also retain composed ASCII for existing consumer
 Select mapped text and press `N` to preview its saved source, or `P` to prompt an edit.
 Save checks the expected revision and rejects stale writes; reload the page to
 open the latest saved revision after a conflict. Pan, zoom, undo history, and local
-chat are temporary editor state. Browser-internal `GET/POST
-/internal/mapping/diagrams` load and save the shared catalog; these do not add any
-external `/api/mapping/*` endpoints.
+chat history are temporary editor state. Read the catalog through Core and save
+canvases with `POST /api/mapping/diagrams`. Selection edits stream from
+`POST /api/mapping/prompt`; chat answers stream from `POST /api/mapping/chat`.
 
 ## Start a DiagramSet through HTTP
 
@@ -125,14 +137,15 @@ curl --fail-with-body --no-buffer http://127.0.0.1:5173/api/studio/diagram-sets 
 Read all DiagramSets and their artifacts from the workspace endpoint:
 
 ```bash
-curl --fail-with-body http://127.0.0.1:5173/api/studio/workspace
+curl --fail-with-body http://127.0.0.1:5173/api/core/workspace
 ```
 
 The response includes `diagramSets` and a `diagrams` dictionary keyed by id.
 Each set's `diagramIds` identifies its diagrams; `featuredViewIds` identifies
 starred views, and each diagram's `archivedAt` records its archive status.
-The route implementation is in `server/http.ts`, shared payload types are in
-`src/domain.ts`, and the browser's typed HTTP wrappers are in `src/api.ts`.
+Route handlers live in `server/{core,studio,mapping}/routes.ts`, shared persisted
+record types in `src/core/domain.ts`, and typed browser clients in
+`src/{core,studio,mapping}/api.ts` (canvas saves in `src/mapping/mappingProjectApi.ts`).
 
 The studio supports the waiting state, immutable collected CodeEntitiesSets,
 typed `@entity/`, `@diagram/`, and `@component/` references, N parallel agents,
@@ -313,3 +326,20 @@ For an offline deterministic fixture, set `NEW_DIAGRAM_AGENT=fake`.
 Run `npm test`, `npm run check:browser`, and `npm run check:aux-views` to cover
 the domain/API behavior, the existing studio workflow, and the focused
 empty-generate-star-toggle-reload flow for auxiliary views.
+
+Mapping's **Ask about selection** starts Codex with `gpt-6-astra`, using the
+selected box's ASCII diagram, diagram-local rectangle, and mapped file excerpts.
+Codex runs in the project's source root with a read-only sandbox and can search
+files for additional context. The server needs an authenticated `codex` CLI on
+PATH; `NEW_DIAGRAM_CODEX_BIN` can select another executable. On Linux, Codex also
+requires `bwrap` (the `bubblewrap` package) on PATH.
+
+Submitting places the conversation marker at the selection's top-right corner.
+Low verbosity defaults to the four-sentence brevity prefix; High adds no verbosity
+conditioning. Each follow-up sends the original diagram/source snapshot and prior
+messages, with conditioning applied only to the latest query. Failed requests have
+a Retry action and are excluded from assistant history. Threads last for the open
+page; they are not saved with the diagram or restored after reload.
+
+`npm run check:local-chat` exercises the production HTTP path using the explicit
+`NEW_DIAGRAM_AGENT=fake` server mode, including marker placement and follow-ups.

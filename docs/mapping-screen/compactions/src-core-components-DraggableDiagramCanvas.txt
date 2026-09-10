@@ -1,0 +1,74 @@
+src/core/components/DraggableDiagramCanvas.tsx
++-- import { useCallback, useEffect, useLayoutEffect, useRef, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
++-- import { beginCanvasPinch, canvasPinchGeometry, centeredCanvasTransform, recenterCanvasTransform, scaleCanvasTransform, updateCanvasPinch, type CanvasPinch, type CanvasPoint, type CanvasTransform } from "../diagramCanvas";
++-- ZOOM_SENSITIVITY [binding]
++-- PAN_KEY_STEP [binding]
++-- ZOOM_KEY_FACTOR [binding]
++-- TRANSITION_MS [binding]
++-- interface ActivePan
+|   +-- pointerId: number;
+|   +-- start: CanvasPoint;
+|   \-- base: CanvasPoint;
++-- function localPoint(element, clientX, clientY)
+|   \-- bounds = element.getBoundingClientRect()
++-- function isInteractiveTarget(target)
+\-- function DraggableDiagramCanvas(props) - Controls canvas pan, zoom, recentering, pointer gestures, and focus.
+    +-- children: ReactNode;
+    +-- enabled: boolean;
+    +-- resetKey: string;
+    +-- className?: string;
+    +-- leftInset?: number;
+    +-- focusBox?: { id: string; serial: number };
+    +-- viewportRef = useRef()
+    +-- surfaceRef = useRef()
+    +-- zoomOutputRef = useRef()
+    +-- transformRef = useRef()
+    +-- viewportSizeRef = useRef()
+    +-- pointersRef = useRef()
+    +-- panRef = useRef()
+    +-- pinchRef = useRef()
+    +-- applyTransform = useCallback()
+    |   \-- surface [binding]
+    +-- endGesture = useCallback()
+    +-- resetCanvas = useCallback() - Computes a centered transform with an inset for the explorer.
+    |   +-- viewport [binding]
+    |   +-- surface [binding]
+    |   +-- viewportSize [binding]
+    |   +-- inset = Math.min()
+    |   \-- centered = centeredCanvasTransform()
+    +-- useLayoutEffect callback
+    |   +-- surface [binding]
+    |   \-- frame = requestAnimationFrame()
+    +-- useLayoutEffect callback
+    |   +-- viewport [binding]
+    |   \-- observer [binding]
+    |       +-- previous [binding]
+    |       \-- next [binding]
+    +-- useLayoutEffect callback
+    |   +-- viewport [binding]
+    |   \-- onWheel(event)
+    |       \-- anchor = localPoint()
+    +-- useEffect callback
+    |   +-- innerFrame [binding]
+    |   \-- frame = requestAnimationFrame()
+    |       +-- viewport [binding]
+    |       +-- target = Array.from(surfaceRef.current?.querySelectorAll<HTMLElement>("[data-grid-box]") ?? []) .find()
+    |       +-- bounds = viewport.getBoundingClientRect()
+    |       +-- box = target.getBoundingClientRect()
+    |       +-- inset = Math.min()
+    |       \-- current [binding]
+    +-- beginPinch(points)
+    |   +-- [first, second] [binding]
+    |   \-- geometry = canvasPinchGeometry()
+    +-- onPointerDown(event)
+    |   \-- point = localPoint()
+    +-- onPointerMove(event)
+    |   +-- point = localPoint()
+    |   +-- [first, second] [binding]
+    |   +-- geometry [binding]
+    |   \-- pan [binding]
+    +-- finishPointer(event)
+    |   \-- remaining [binding]
+    +-- onKeyDown(event)
+    |   \-- next: CanvasTransform | null
+    \-- render JSX

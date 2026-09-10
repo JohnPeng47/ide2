@@ -12,11 +12,16 @@ npm run dev
 Open http://127.0.0.1:5187/mapping?diagram=representation-9044402993fccf94debfaa08a438e767.
 `npm run build` checks types and creates a production build; `npm run preview` serves it.
 
+Use **Copy ASCII + code refs** in the selection menu (**C** or **Ctrl/Cmd+C**)
+to copy the selected rectangle with its labeled source locations.
+
 Select mapped text and press **N** to open the implementation tree, then choose
 **Open compaction** and **Open source**. The source window uses Shiki, highlights
 exact projected ranges, and displays compaction overlays above those ranges.
 File selection, range navigation, pane breadcrumbs, and Escape work locally.
 The source window stays aligned with the underlying stack at a 24-pixel offset.
+Hold the middle mouse button and drag anywhere over the canvas or its open panes
+to pan the main canvas; ordinary clicks and source scrolling still operate the panes.
 
 The explorer includes the selected diagram and its linked implementation tree.
 Selection, pan/zoom, grouping, collapse, movement, undo/redo, conversation layouts,

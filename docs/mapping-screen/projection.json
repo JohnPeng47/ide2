@@ -1,0 +1,6211 @@
+{
+  "name": "Mapping screen implementation",
+  "ascii": "Mapping screen implementation (containment and handlers)\n+-- src/mapping/components/MappingPocPage.tsx\n|   +-- MappingScreen -> MappingPocPage\n|   +-- NewDiagramAction -> create\n|   \\-- SaveDiagramAction -> save\n+-- src/mapping/components/MappingSubmenu.tsx\n|   \\-- MappingSubmenu -> MappingSubmenu\n+-- src/core/components/DraggableDiagramCanvas.tsx\n|   +-- CanvasViewport -> DraggableDiagramCanvas\n|   \\-- CenterAndReset -> resetCanvas\n+-- src/core/lineGrid.ts\n|   +-- GridBox -> GridBox\n|   \\-- Scene -> resolveScene\n+-- src/mapping/components/MappingPocSelectionCanvas.tsx\n|   +-- SelectionInteraction -> finishSelection\n|   +-- GenerateSubDiagram -> generateAt\n|   +-- PromptSelection -> submitPrompt\n|   \\-- ProjectionCompanion -> MappingPocSelectionCanvas: aside.mapping-poc-companion\n+-- src/core/diagramProjection.ts\n|   \\-- ProjectedCallTree -> projectSelection\n+-- src/core/compactionProjection.ts\n|   \\-- ProjectedSourceCompactions -> projectCompactions\n+-- src/mapping/components/LocalChatConvo.tsx\n|   \\-- LocalConversation -> LocalChatConvo\n\\-- src/mapping/components/MappingDiagramExplorer.tsx\n    \\-- ProjectExplorer -> MappingDiagramExplorer\n",
+  "links": [
+    {
+      "sourceEvidenceIds": [
+        "evidence-01f8a6d3be6ce18c8dcb0d6ed55859ae"
+      ],
+      "targetLines": [
+        3
+      ]
+    },
+    {
+      "sourceEvidenceIds": [
+        "evidence-3cb3773265ef6db6cdf08eff8ddb4a68"
+      ],
+      "targetLines": [
+        4
+      ]
+    },
+    {
+      "sourceEvidenceIds": [
+        "evidence-eb435207308c3f1809697b8b0559ed77"
+      ],
+      "targetLines": [
+        5
+      ]
+    },
+    {
+      "sourceEvidenceIds": [
+        "evidence-3e32b1fd149e457a733eb5cc75537d78"
+      ],
+      "targetLines": [
+        7
+      ]
+    },
+    {
+      "sourceEvidenceIds": [
+        "evidence-f8c609815bc46b87c743fd65761857a4"
+      ],
+      "targetLines": [
+        9
+      ]
+    },
+    {
+      "sourceEvidenceIds": [
+        "evidence-a451f075f7744d2e74969b84450829ef"
+      ],
+      "targetLines": [
+        10
+      ]
+    },
+    {
+      "sourceEvidenceIds": [
+        "evidence-ff4b87d61c60fc8e7a33669d434986ad"
+      ],
+      "targetLines": [
+        12
+      ]
+    },
+    {
+      "sourceEvidenceIds": [
+        "evidence-893f150841f454da9355612df9fa205b"
+      ],
+      "targetLines": [
+        13
+      ]
+    },
+    {
+      "sourceEvidenceIds": [
+        "evidence-16a18d9cbda5848caf9bf27a8a44a472"
+      ],
+      "targetLines": [
+        15
+      ]
+    },
+    {
+      "sourceEvidenceIds": [
+        "evidence-c722a2bd2ea5ffc461ebdc6e4feeef39"
+      ],
+      "targetLines": [
+        16
+      ]
+    },
+    {
+      "sourceEvidenceIds": [
+        "evidence-4f00d2bbb8cde2b113e8125196834c6e"
+      ],
+      "targetLines": [
+        17
+      ]
+    },
+    {
+      "sourceEvidenceIds": [
+        "evidence-933c77615fee1bd2087db71e87300d31"
+      ],
+      "targetLines": [
+        18
+      ]
+    },
+    {
+      "sourceEvidenceIds": [
+        "evidence-a1dd4d91429c74028b031244cd611e7e"
+      ],
+      "targetLines": [
+        20
+      ]
+    },
+    {
+      "sourceEvidenceIds": [
+        "evidence-600feb94110df2b75354dd466c3196e9"
+      ],
+      "targetLines": [
+        22
+      ]
+    },
+    {
+      "sourceEvidenceIds": [
+        "evidence-f64fcc20a461a14f5356de8970726c26"
+      ],
+      "targetLines": [
+        24
+      ]
+    },
+    {
+      "sourceEvidenceIds": [
+        "evidence-5d595dd01814e370affb996779741950"
+      ],
+      "targetLines": [
+        26
+      ]
+    }
+  ],
+  "compactionProjection": {
+    "files": [
+      {
+        "sourceFile": "src/mapping/components/MappingPocPage.tsx",
+        "sourceSha256": "b056e272e84493b15a710cdc0534a3e8c10b505812cd54fa969e2210c32401e8",
+        "ascii": "src/mapping/components/MappingPocPage.tsx\n+-- import { UiTestFramework } from \"@new-diagram/ui-test-framework\";\n+-- import { useEffect, useState } from \"react\";\n+-- import { loadProjectRepresentations, type ProjectRepresentationsSnapshot } from \"../../core/api\";\n+-- import { DraggableDiagramCanvas } from \"../../core/components/DraggableDiagramCanvas\";\n+-- import { FloatingPane } from \"../../core/components/FloatingPane\";\n+-- import { sceneFromRevision, singleDiagramScene } from \"../../core/projectDiagramCanvas\";\n+-- import type { LocalChatVariant } from \"../localChat\";\n+-- import { mappingDocumentFromScene } from \"../mappingDocument\";\n+-- import type { MappingGridDocument } from \"../mappingGrid\";\n+-- import { saveMappingProjectDiagram } from \"../mappingProjectApi\";\n+-- import { MappingDiagramExplorer } from \"./MappingDiagramExplorer\";\n+-- import { MappingPocSelectionCanvas } from \"./MappingPocSelectionCanvas\";\n+-- import { MappingSubmenu } from \"./MappingSubmenu\";\n+-- LOCAL_CHAT_UI_CONTROLS [binding]\n+-- interface Draft\n|   +-- name: string;\n|   +-- document: MappingGridDocument;\n|   +-- savedScene: string;\n|   +-- savedName: string;\n|   +-- revisionId: string;\n|   +-- busy: boolean;\n|   \\-- focusBox?: { id: string; serial: number };\n+-- dirty(draft)\n\\-- function MappingPocPage(props) - Loads project representations, retains document drafts, and composes the Mapping screen.\n    +-- onStudio: () => void;\n    +-- onExperiments: () => void;\n    +-- registerNavigationGuard?: (guard: (() => boolean) | undefined) => void\n    +-- [snapshot, setSnapshot] = useState()\n    +-- [drafts, setDrafts] = useState()\n    +-- [activeId, setActiveId] = useState()\n    +-- [error, setError] = useState()\n    +-- [savingId, setSavingId] = useState()\n    +-- [creating, setCreating] = useState()\n    +-- [newName, setNewName] = useState()\n    +-- [newAscii, setNewAscii] = useState()\n    +-- [copyCurrent, setCopyCurrent] = useState()\n    +-- active [binding]\n    +-- diagrams = Object.values(snapshot?.catalog?.representations ?? {}).filter()\n    +-- open(id, data, navigate)\n    |   +-- representation [binding]\n    |   +-- revision [binding]\n    |   +-- document = mappingDocumentFromScene()\n    |   \\-- url [binding]\n    +-- useEffect callback\n    |   +-- cancelled [binding]\n    |   \\-- id [binding]\n    +-- useEffect callback\n    |   \\-- back()\n    |       \\-- id = new URL(location.href).searchParams.get()\n    +-- useEffect callback\n    |   \\-- warn(event)\n    +-- useEffect callback\n    +-- save() - Saves a captured draft against its expected project revision.\n    |   +-- id [binding]\n    |   +-- captured [binding]\n    |   +-- result [binding]\n    |   \\-- error [binding]\n    +-- create() - Creates a canvas from entered ASCII or a copy of the active document.\n    |   +-- result [binding]\n    |   \\-- error [binding]\n    +-- controls = Array.from()\n    \\-- next [binding]\n",
+        "asciiSha256": "ea6f458c767b8d0ae8a836eaa6f89ee1b513f38f3b2adb6f955d0fb9e06e6135",
+        "mappings": [
+          {
+            "treeLine": 1,
+            "sourceRanges": [
+              {
+                "startLine": 1,
+                "endLine": 182
+              }
+            ]
+          },
+          {
+            "treeLine": 2,
+            "sourceRanges": [
+              {
+                "startLine": 1,
+                "endLine": 1
+              }
+            ]
+          },
+          {
+            "treeLine": 3,
+            "sourceRanges": [
+              {
+                "startLine": 2,
+                "endLine": 2
+              }
+            ]
+          },
+          {
+            "treeLine": 4,
+            "sourceRanges": [
+              {
+                "startLine": 3,
+                "endLine": 3
+              }
+            ]
+          },
+          {
+            "treeLine": 5,
+            "sourceRanges": [
+              {
+                "startLine": 4,
+                "endLine": 4
+              }
+            ]
+          },
+          {
+            "treeLine": 6,
+            "sourceRanges": [
+              {
+                "startLine": 5,
+                "endLine": 5
+              }
+            ]
+          },
+          {
+            "treeLine": 7,
+            "sourceRanges": [
+              {
+                "startLine": 6,
+                "endLine": 6
+              }
+            ]
+          },
+          {
+            "treeLine": 8,
+            "sourceRanges": [
+              {
+                "startLine": 7,
+                "endLine": 7
+              }
+            ]
+          },
+          {
+            "treeLine": 9,
+            "sourceRanges": [
+              {
+                "startLine": 8,
+                "endLine": 8
+              }
+            ]
+          },
+          {
+            "treeLine": 10,
+            "sourceRanges": [
+              {
+                "startLine": 9,
+                "endLine": 9
+              }
+            ]
+          },
+          {
+            "treeLine": 11,
+            "sourceRanges": [
+              {
+                "startLine": 10,
+                "endLine": 10
+              }
+            ]
+          },
+          {
+            "treeLine": 12,
+            "sourceRanges": [
+              {
+                "startLine": 11,
+                "endLine": 11
+              }
+            ]
+          },
+          {
+            "treeLine": 13,
+            "sourceRanges": [
+              {
+                "startLine": 12,
+                "endLine": 12
+              }
+            ]
+          },
+          {
+            "treeLine": 14,
+            "sourceRanges": [
+              {
+                "startLine": 13,
+                "endLine": 13
+              }
+            ]
+          },
+          {
+            "treeLine": 15,
+            "sourceRanges": [
+              {
+                "startLine": 15,
+                "endLine": 28
+              }
+            ]
+          },
+          {
+            "treeLine": 16,
+            "sourceRanges": [
+              {
+                "startLine": 30,
+                "endLine": 38
+              }
+            ]
+          },
+          {
+            "treeLine": 17,
+            "sourceRanges": [
+              {
+                "startLine": 31,
+                "endLine": 31
+              }
+            ]
+          },
+          {
+            "treeLine": 18,
+            "sourceRanges": [
+              {
+                "startLine": 32,
+                "endLine": 32
+              }
+            ]
+          },
+          {
+            "treeLine": 19,
+            "sourceRanges": [
+              {
+                "startLine": 33,
+                "endLine": 33
+              }
+            ]
+          },
+          {
+            "treeLine": 20,
+            "sourceRanges": [
+              {
+                "startLine": 34,
+                "endLine": 34
+              }
+            ]
+          },
+          {
+            "treeLine": 21,
+            "sourceRanges": [
+              {
+                "startLine": 35,
+                "endLine": 35
+              }
+            ]
+          },
+          {
+            "treeLine": 22,
+            "sourceRanges": [
+              {
+                "startLine": 36,
+                "endLine": 36
+              }
+            ]
+          },
+          {
+            "treeLine": 23,
+            "sourceRanges": [
+              {
+                "startLine": 37,
+                "endLine": 37
+              }
+            ]
+          },
+          {
+            "treeLine": 24,
+            "sourceRanges": [
+              {
+                "startLine": 39,
+                "endLine": 39
+              }
+            ]
+          },
+          {
+            "treeLine": 25,
+            "sourceRanges": [
+              {
+                "startLine": 41,
+                "endLine": 182
+              }
+            ]
+          },
+          {
+            "treeLine": 26,
+            "sourceRanges": [
+              {
+                "startLine": 41,
+                "endLine": 41
+              }
+            ]
+          },
+          {
+            "treeLine": 27,
+            "sourceRanges": [
+              {
+                "startLine": 41,
+                "endLine": 41
+              }
+            ]
+          },
+          {
+            "treeLine": 28,
+            "sourceRanges": [
+              {
+                "startLine": 42,
+                "endLine": 42
+              }
+            ]
+          },
+          {
+            "treeLine": 29,
+            "sourceRanges": [
+              {
+                "startLine": 43,
+                "endLine": 43
+              }
+            ]
+          },
+          {
+            "treeLine": 30,
+            "sourceRanges": [
+              {
+                "startLine": 44,
+                "endLine": 44
+              }
+            ]
+          },
+          {
+            "treeLine": 31,
+            "sourceRanges": [
+              {
+                "startLine": 45,
+                "endLine": 45
+              }
+            ]
+          },
+          {
+            "treeLine": 32,
+            "sourceRanges": [
+              {
+                "startLine": 46,
+                "endLine": 46
+              }
+            ]
+          },
+          {
+            "treeLine": 33,
+            "sourceRanges": [
+              {
+                "startLine": 47,
+                "endLine": 47
+              }
+            ]
+          },
+          {
+            "treeLine": 34,
+            "sourceRanges": [
+              {
+                "startLine": 48,
+                "endLine": 48
+              }
+            ]
+          },
+          {
+            "treeLine": 35,
+            "sourceRanges": [
+              {
+                "startLine": 49,
+                "endLine": 49
+              }
+            ]
+          },
+          {
+            "treeLine": 36,
+            "sourceRanges": [
+              {
+                "startLine": 50,
+                "endLine": 50
+              }
+            ]
+          },
+          {
+            "treeLine": 37,
+            "sourceRanges": [
+              {
+                "startLine": 51,
+                "endLine": 51
+              }
+            ]
+          },
+          {
+            "treeLine": 38,
+            "sourceRanges": [
+              {
+                "startLine": 52,
+                "endLine": 52
+              }
+            ]
+          },
+          {
+            "treeLine": 39,
+            "sourceRanges": [
+              {
+                "startLine": 53,
+                "endLine": 53
+              }
+            ]
+          },
+          {
+            "treeLine": 40,
+            "sourceRanges": [
+              {
+                "startLine": 55,
+                "endLine": 68
+              }
+            ]
+          },
+          {
+            "treeLine": 41,
+            "sourceRanges": [
+              {
+                "startLine": 56,
+                "endLine": 56
+              }
+            ]
+          },
+          {
+            "treeLine": 42,
+            "sourceRanges": [
+              {
+                "startLine": 57,
+                "endLine": 57
+              }
+            ]
+          },
+          {
+            "treeLine": 43,
+            "sourceRanges": [
+              {
+                "startLine": 59,
+                "endLine": 59
+              }
+            ]
+          },
+          {
+            "treeLine": 44,
+            "sourceRanges": [
+              {
+                "startLine": 64,
+                "endLine": 64
+              }
+            ]
+          },
+          {
+            "treeLine": 45,
+            "sourceRanges": [
+              {
+                "startLine": 70,
+                "endLine": 80
+              }
+            ]
+          },
+          {
+            "treeLine": 46,
+            "sourceRanges": [
+              {
+                "startLine": 71,
+                "endLine": 71
+              }
+            ]
+          },
+          {
+            "treeLine": 47,
+            "sourceRanges": [
+              {
+                "startLine": 75,
+                "endLine": 76
+              }
+            ]
+          },
+          {
+            "treeLine": 48,
+            "sourceRanges": [
+              {
+                "startLine": 82,
+                "endLine": 86
+              }
+            ]
+          },
+          {
+            "treeLine": 49,
+            "sourceRanges": [
+              {
+                "startLine": 83,
+                "endLine": 83
+              }
+            ]
+          },
+          {
+            "treeLine": 50,
+            "sourceRanges": [
+              {
+                "startLine": 83,
+                "endLine": 83
+              }
+            ]
+          },
+          {
+            "treeLine": 51,
+            "sourceRanges": [
+              {
+                "startLine": 87,
+                "endLine": 91
+              }
+            ]
+          },
+          {
+            "treeLine": 52,
+            "sourceRanges": [
+              {
+                "startLine": 88,
+                "endLine": 88
+              }
+            ]
+          },
+          {
+            "treeLine": 53,
+            "sourceRanges": [
+              {
+                "startLine": 92,
+                "endLine": 96
+              }
+            ]
+          },
+          {
+            "treeLine": 54,
+            "sourceRanges": [
+              {
+                "startLine": 98,
+                "endLine": 112
+              }
+            ]
+          },
+          {
+            "treeLine": 55,
+            "sourceRanges": [
+              {
+                "startLine": 100,
+                "endLine": 100
+              }
+            ]
+          },
+          {
+            "treeLine": 56,
+            "sourceRanges": [
+              {
+                "startLine": 101,
+                "endLine": 101
+              }
+            ]
+          },
+          {
+            "treeLine": 57,
+            "sourceRanges": [
+              {
+                "startLine": 104,
+                "endLine": 105
+              }
+            ]
+          },
+          {
+            "treeLine": 58,
+            "sourceRanges": [
+              {
+                "startLine": 110,
+                "endLine": 110
+              }
+            ]
+          },
+          {
+            "treeLine": 59,
+            "sourceRanges": [
+              {
+                "startLine": 113,
+                "endLine": 122
+              }
+            ]
+          },
+          {
+            "treeLine": 60,
+            "sourceRanges": [
+              {
+                "startLine": 117,
+                "endLine": 118
+              }
+            ]
+          },
+          {
+            "treeLine": 61,
+            "sourceRanges": [
+              {
+                "startLine": 120,
+                "endLine": 120
+              }
+            ]
+          },
+          {
+            "treeLine": 62,
+            "sourceRanges": [
+              {
+                "startLine": 166,
+                "endLine": 166
+              }
+            ]
+          },
+          {
+            "treeLine": 63,
+            "sourceRanges": [
+              {
+                "startLine": 167,
+                "endLine": 167
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sourceFile": "src/mapping/components/MappingSubmenu.tsx",
+        "sourceSha256": "5dcc7fd5fe638bfc3f28ef0f4ebb9c0ec523d42b62cc91d58674b62960e15ac8",
+        "ascii": "src/mapping/components/MappingSubmenu.tsx\n\\-- function MappingSubmenu(props) - Displays the project, editable name, creation/save actions, and status.\n    +-- projectName: string;\n    +-- name: string;\n    +-- status: string;\n    +-- canSave: boolean;\n    +-- onNameChange: (name: string) => void;\n    +-- onNew: () => void;\n    \\-- onSave: () => void;\n",
+        "asciiSha256": "4634f330d9e4650bc174be0d6dd19b8e3fda1959556142b6f0593c1569450afc",
+        "mappings": [
+          {
+            "treeLine": 1,
+            "sourceRanges": [
+              {
+                "startLine": 1,
+                "endLine": 12
+              }
+            ]
+          },
+          {
+            "treeLine": 2,
+            "sourceRanges": [
+              {
+                "startLine": 1,
+                "endLine": 12
+              }
+            ]
+          },
+          {
+            "treeLine": 3,
+            "sourceRanges": [
+              {
+                "startLine": 2,
+                "endLine": 2
+              }
+            ]
+          },
+          {
+            "treeLine": 4,
+            "sourceRanges": [
+              {
+                "startLine": 2,
+                "endLine": 2
+              }
+            ]
+          },
+          {
+            "treeLine": 5,
+            "sourceRanges": [
+              {
+                "startLine": 2,
+                "endLine": 2
+              }
+            ]
+          },
+          {
+            "treeLine": 6,
+            "sourceRanges": [
+              {
+                "startLine": 2,
+                "endLine": 2
+              }
+            ]
+          },
+          {
+            "treeLine": 7,
+            "sourceRanges": [
+              {
+                "startLine": 3,
+                "endLine": 3
+              }
+            ]
+          },
+          {
+            "treeLine": 8,
+            "sourceRanges": [
+              {
+                "startLine": 3,
+                "endLine": 3
+              }
+            ]
+          },
+          {
+            "treeLine": 9,
+            "sourceRanges": [
+              {
+                "startLine": 3,
+                "endLine": 3
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sourceFile": "src/core/components/DraggableDiagramCanvas.tsx",
+        "sourceSha256": "98c21693aa292e62a8bd40d5d408df518a95cb1025282bd829a2f0f4c2f6a118",
+        "ascii": "src/core/components/DraggableDiagramCanvas.tsx\n+-- import { useCallback, useEffect, useLayoutEffect, useRef, type KeyboardEvent, type PointerEvent, type ReactNode } from \"react\";\n+-- import { beginCanvasPinch, canvasPinchGeometry, centeredCanvasTransform, recenterCanvasTransform, scaleCanvasTransform, updateCanvasPinch, type CanvasPinch, type CanvasPoint, type CanvasTransform } from \"../diagramCanvas\";\n+-- ZOOM_SENSITIVITY [binding]\n+-- PAN_KEY_STEP [binding]\n+-- ZOOM_KEY_FACTOR [binding]\n+-- TRANSITION_MS [binding]\n+-- interface ActivePan\n|   +-- pointerId: number;\n|   +-- start: CanvasPoint;\n|   \\-- base: CanvasPoint;\n+-- function localPoint(element, clientX, clientY)\n|   \\-- bounds = element.getBoundingClientRect()\n+-- function isInteractiveTarget(target)\n\\-- function DraggableDiagramCanvas(props) - Controls canvas pan, zoom, recentering, pointer gestures, and focus.\n    +-- children: ReactNode;\n    +-- enabled: boolean;\n    +-- resetKey: string;\n    +-- className?: string;\n    +-- leftInset?: number;\n    +-- focusBox?: { id: string; serial: number };\n    +-- viewportRef = useRef()\n    +-- surfaceRef = useRef()\n    +-- zoomOutputRef = useRef()\n    +-- transformRef = useRef()\n    +-- viewportSizeRef = useRef()\n    +-- pointersRef = useRef()\n    +-- panRef = useRef()\n    +-- pinchRef = useRef()\n    +-- applyTransform = useCallback()\n    |   \\-- surface [binding]\n    +-- endGesture = useCallback()\n    +-- resetCanvas = useCallback() - Computes a centered transform with an inset for the explorer.\n    |   +-- viewport [binding]\n    |   +-- surface [binding]\n    |   +-- viewportSize [binding]\n    |   +-- inset = Math.min()\n    |   \\-- centered = centeredCanvasTransform()\n    +-- useLayoutEffect callback\n    |   +-- surface [binding]\n    |   \\-- frame = requestAnimationFrame()\n    +-- useLayoutEffect callback\n    |   +-- viewport [binding]\n    |   \\-- observer [binding]\n    |       +-- previous [binding]\n    |       \\-- next [binding]\n    +-- useLayoutEffect callback\n    |   +-- viewport [binding]\n    |   \\-- onWheel(event)\n    |       \\-- anchor = localPoint()\n    +-- useEffect callback\n    |   +-- innerFrame [binding]\n    |   \\-- frame = requestAnimationFrame()\n    |       +-- viewport [binding]\n    |       +-- target = Array.from(surfaceRef.current?.querySelectorAll<HTMLElement>(\"[data-grid-box]\") ?? []) .find()\n    |       +-- bounds = viewport.getBoundingClientRect()\n    |       +-- box = target.getBoundingClientRect()\n    |       +-- inset = Math.min()\n    |       \\-- current [binding]\n    +-- beginPinch(points)\n    |   +-- [first, second] [binding]\n    |   \\-- geometry = canvasPinchGeometry()\n    +-- onPointerDown(event)\n    |   \\-- point = localPoint()\n    +-- onPointerMove(event)\n    |   +-- point = localPoint()\n    |   +-- [first, second] [binding]\n    |   +-- geometry [binding]\n    |   \\-- pan [binding]\n    +-- finishPointer(event)\n    |   \\-- remaining [binding]\n    +-- onKeyDown(event)\n    |   \\-- next: CanvasTransform | null\n    \\-- render JSX\n",
+        "asciiSha256": "e822daf0a25de850f6015703b79fccaf527b9e17fdb5d277d8c467923286ce9c",
+        "mappings": [
+          {
+            "treeLine": 1,
+            "sourceRanges": [
+              {
+                "startLine": 1,
+                "endLine": 299
+              }
+            ]
+          },
+          {
+            "treeLine": 2,
+            "sourceRanges": [
+              {
+                "startLine": 1,
+                "endLine": 9
+              }
+            ]
+          },
+          {
+            "treeLine": 3,
+            "sourceRanges": [
+              {
+                "startLine": 10,
+                "endLine": 20
+              }
+            ]
+          },
+          {
+            "treeLine": 4,
+            "sourceRanges": [
+              {
+                "startLine": 22,
+                "endLine": 22
+              }
+            ]
+          },
+          {
+            "treeLine": 5,
+            "sourceRanges": [
+              {
+                "startLine": 23,
+                "endLine": 23
+              }
+            ]
+          },
+          {
+            "treeLine": 6,
+            "sourceRanges": [
+              {
+                "startLine": 24,
+                "endLine": 24
+              }
+            ]
+          },
+          {
+            "treeLine": 7,
+            "sourceRanges": [
+              {
+                "startLine": 25,
+                "endLine": 25
+              }
+            ]
+          },
+          {
+            "treeLine": 8,
+            "sourceRanges": [
+              {
+                "startLine": 27,
+                "endLine": 31
+              }
+            ]
+          },
+          {
+            "treeLine": 9,
+            "sourceRanges": [
+              {
+                "startLine": 28,
+                "endLine": 28
+              }
+            ]
+          },
+          {
+            "treeLine": 10,
+            "sourceRanges": [
+              {
+                "startLine": 29,
+                "endLine": 29
+              }
+            ]
+          },
+          {
+            "treeLine": 11,
+            "sourceRanges": [
+              {
+                "startLine": 30,
+                "endLine": 30
+              }
+            ]
+          },
+          {
+            "treeLine": 12,
+            "sourceRanges": [
+              {
+                "startLine": 33,
+                "endLine": 36
+              }
+            ]
+          },
+          {
+            "treeLine": 13,
+            "sourceRanges": [
+              {
+                "startLine": 34,
+                "endLine": 34
+              }
+            ]
+          },
+          {
+            "treeLine": 14,
+            "sourceRanges": [
+              {
+                "startLine": 38,
+                "endLine": 42
+              }
+            ]
+          },
+          {
+            "treeLine": 15,
+            "sourceRanges": [
+              {
+                "startLine": 44,
+                "endLine": 299
+              }
+            ]
+          },
+          {
+            "treeLine": 16,
+            "sourceRanges": [
+              {
+                "startLine": 45,
+                "endLine": 45
+              }
+            ]
+          },
+          {
+            "treeLine": 17,
+            "sourceRanges": [
+              {
+                "startLine": 46,
+                "endLine": 46
+              }
+            ]
+          },
+          {
+            "treeLine": 18,
+            "sourceRanges": [
+              {
+                "startLine": 47,
+                "endLine": 47
+              }
+            ]
+          },
+          {
+            "treeLine": 19,
+            "sourceRanges": [
+              {
+                "startLine": 48,
+                "endLine": 48
+              }
+            ]
+          },
+          {
+            "treeLine": 20,
+            "sourceRanges": [
+              {
+                "startLine": 49,
+                "endLine": 49
+              }
+            ]
+          },
+          {
+            "treeLine": 21,
+            "sourceRanges": [
+              {
+                "startLine": 50,
+                "endLine": 50
+              }
+            ]
+          },
+          {
+            "treeLine": 22,
+            "sourceRanges": [
+              {
+                "startLine": 52,
+                "endLine": 52
+              }
+            ]
+          },
+          {
+            "treeLine": 23,
+            "sourceRanges": [
+              {
+                "startLine": 53,
+                "endLine": 53
+              }
+            ]
+          },
+          {
+            "treeLine": 24,
+            "sourceRanges": [
+              {
+                "startLine": 54,
+                "endLine": 54
+              }
+            ]
+          },
+          {
+            "treeLine": 25,
+            "sourceRanges": [
+              {
+                "startLine": 55,
+                "endLine": 55
+              }
+            ]
+          },
+          {
+            "treeLine": 26,
+            "sourceRanges": [
+              {
+                "startLine": 56,
+                "endLine": 56
+              }
+            ]
+          },
+          {
+            "treeLine": 27,
+            "sourceRanges": [
+              {
+                "startLine": 57,
+                "endLine": 57
+              }
+            ]
+          },
+          {
+            "treeLine": 28,
+            "sourceRanges": [
+              {
+                "startLine": 58,
+                "endLine": 58
+              }
+            ]
+          },
+          {
+            "treeLine": 29,
+            "sourceRanges": [
+              {
+                "startLine": 59,
+                "endLine": 59
+              }
+            ]
+          },
+          {
+            "treeLine": 30,
+            "sourceRanges": [
+              {
+                "startLine": 61,
+                "endLine": 72
+              }
+            ]
+          },
+          {
+            "treeLine": 31,
+            "sourceRanges": [
+              {
+                "startLine": 63,
+                "endLine": 63
+              }
+            ]
+          },
+          {
+            "treeLine": 32,
+            "sourceRanges": [
+              {
+                "startLine": 74,
+                "endLine": 78
+              }
+            ]
+          },
+          {
+            "treeLine": 33,
+            "sourceRanges": [
+              {
+                "startLine": 80,
+                "endLine": 93
+              }
+            ]
+          },
+          {
+            "treeLine": 34,
+            "sourceRanges": [
+              {
+                "startLine": 81,
+                "endLine": 81
+              }
+            ]
+          },
+          {
+            "treeLine": 35,
+            "sourceRanges": [
+              {
+                "startLine": 82,
+                "endLine": 82
+              }
+            ]
+          },
+          {
+            "treeLine": 36,
+            "sourceRanges": [
+              {
+                "startLine": 84,
+                "endLine": 84
+              }
+            ]
+          },
+          {
+            "treeLine": 37,
+            "sourceRanges": [
+              {
+                "startLine": 87,
+                "endLine": 87
+              }
+            ]
+          },
+          {
+            "treeLine": 38,
+            "sourceRanges": [
+              {
+                "startLine": 88,
+                "endLine": 91
+              }
+            ]
+          },
+          {
+            "treeLine": 39,
+            "sourceRanges": [
+              {
+                "startLine": 95,
+                "endLine": 108
+              }
+            ]
+          },
+          {
+            "treeLine": 40,
+            "sourceRanges": [
+              {
+                "startLine": 98,
+                "endLine": 98
+              }
+            ]
+          },
+          {
+            "treeLine": 41,
+            "sourceRanges": [
+              {
+                "startLine": 106,
+                "endLine": 106
+              }
+            ]
+          },
+          {
+            "treeLine": 42,
+            "sourceRanges": [
+              {
+                "startLine": 110,
+                "endLine": 126
+              }
+            ]
+          },
+          {
+            "treeLine": 43,
+            "sourceRanges": [
+              {
+                "startLine": 111,
+                "endLine": 111
+              }
+            ]
+          },
+          {
+            "treeLine": 44,
+            "sourceRanges": [
+              {
+                "startLine": 114,
+                "endLine": 123
+              }
+            ]
+          },
+          {
+            "treeLine": 45,
+            "sourceRanges": [
+              {
+                "startLine": 115,
+                "endLine": 115
+              }
+            ]
+          },
+          {
+            "treeLine": 46,
+            "sourceRanges": [
+              {
+                "startLine": 116,
+                "endLine": 116
+              }
+            ]
+          },
+          {
+            "treeLine": 47,
+            "sourceRanges": [
+              {
+                "startLine": 128,
+                "endLine": 144
+              }
+            ]
+          },
+          {
+            "treeLine": 48,
+            "sourceRanges": [
+              {
+                "startLine": 129,
+                "endLine": 129
+              }
+            ]
+          },
+          {
+            "treeLine": 49,
+            "sourceRanges": [
+              {
+                "startLine": 131,
+                "endLine": 141
+              }
+            ]
+          },
+          {
+            "treeLine": 50,
+            "sourceRanges": [
+              {
+                "startLine": 135,
+                "endLine": 135
+              }
+            ]
+          },
+          {
+            "treeLine": 51,
+            "sourceRanges": [
+              {
+                "startLine": 146,
+                "endLine": 162
+              }
+            ]
+          },
+          {
+            "treeLine": 52,
+            "sourceRanges": [
+              {
+                "startLine": 148,
+                "endLine": 148
+              }
+            ]
+          },
+          {
+            "treeLine": 53,
+            "sourceRanges": [
+              {
+                "startLine": 149,
+                "endLine": 160
+              }
+            ]
+          },
+          {
+            "treeLine": 54,
+            "sourceRanges": [
+              {
+                "startLine": 150,
+                "endLine": 150
+              }
+            ]
+          },
+          {
+            "treeLine": 55,
+            "sourceRanges": [
+              {
+                "startLine": 151,
+                "endLine": 152
+              }
+            ]
+          },
+          {
+            "treeLine": 56,
+            "sourceRanges": [
+              {
+                "startLine": 154,
+                "endLine": 154
+              }
+            ]
+          },
+          {
+            "treeLine": 57,
+            "sourceRanges": [
+              {
+                "startLine": 155,
+                "endLine": 155
+              }
+            ]
+          },
+          {
+            "treeLine": 58,
+            "sourceRanges": [
+              {
+                "startLine": 156,
+                "endLine": 156
+              }
+            ]
+          },
+          {
+            "treeLine": 59,
+            "sourceRanges": [
+              {
+                "startLine": 157,
+                "endLine": 157
+              }
+            ]
+          },
+          {
+            "treeLine": 60,
+            "sourceRanges": [
+              {
+                "startLine": 164,
+                "endLine": 172
+              }
+            ]
+          },
+          {
+            "treeLine": 61,
+            "sourceRanges": [
+              {
+                "startLine": 165,
+                "endLine": 165
+              }
+            ]
+          },
+          {
+            "treeLine": 62,
+            "sourceRanges": [
+              {
+                "startLine": 167,
+                "endLine": 167
+              }
+            ]
+          },
+          {
+            "treeLine": 63,
+            "sourceRanges": [
+              {
+                "startLine": 174,
+                "endLine": 189
+              }
+            ]
+          },
+          {
+            "treeLine": 64,
+            "sourceRanges": [
+              {
+                "startLine": 180,
+                "endLine": 180
+              }
+            ]
+          },
+          {
+            "treeLine": 65,
+            "sourceRanges": [
+              {
+                "startLine": 191,
+                "endLine": 211
+              }
+            ]
+          },
+          {
+            "treeLine": 66,
+            "sourceRanges": [
+              {
+                "startLine": 194,
+                "endLine": 194
+              }
+            ]
+          },
+          {
+            "treeLine": 67,
+            "sourceRanges": [
+              {
+                "startLine": 197,
+                "endLine": 197
+              }
+            ]
+          },
+          {
+            "treeLine": 68,
+            "sourceRanges": [
+              {
+                "startLine": 198,
+                "endLine": 198
+              }
+            ]
+          },
+          {
+            "treeLine": 69,
+            "sourceRanges": [
+              {
+                "startLine": 202,
+                "endLine": 202
+              }
+            ]
+          },
+          {
+            "treeLine": 70,
+            "sourceRanges": [
+              {
+                "startLine": 213,
+                "endLine": 233
+              }
+            ]
+          },
+          {
+            "treeLine": 71,
+            "sourceRanges": [
+              {
+                "startLine": 221,
+                "endLine": 221
+              }
+            ]
+          },
+          {
+            "treeLine": 72,
+            "sourceRanges": [
+              {
+                "startLine": 235,
+                "endLine": 269
+              }
+            ]
+          },
+          {
+            "treeLine": 73,
+            "sourceRanges": [
+              {
+                "startLine": 237,
+                "endLine": 237
+              }
+            ]
+          },
+          {
+            "treeLine": 74,
+            "sourceRanges": [
+              {
+                "startLine": 271,
+                "endLine": 298
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sourceFile": "src/core/lineGrid.ts",
+        "sourceSha256": "d016743d7c64ba1f36cb390b15a97d6771aa0fc33f4912965802d924fac2fa1a",
+        "ascii": "src/core/lineGrid.ts\n+-- import type { DiagramElementMapping } from \"./domain\";\n+-- interface GridPoint\n|   +-- column: number;\n|   \\-- row: number\n+-- interface GridSize\n|   +-- columns: number;\n|   \\-- rows: number\n+-- interface GridBounds\n+-- interface CanvasDiagram\n|   +-- id: string;\n|   +-- revision: number;\n|   +-- ascii: string;\n|   \\-- mappings: readonly DiagramElementMapping[];\n+-- type GridBox - Recursive discriminated union of diagram boxes and container boxes.\n|   +-- id: string;\n|   +-- position: GridPoint;\n|   +-- minimumSize?: GridSize;\n|   +-- collapsed: boolean;\n|   +-- collapsedContentId?: string;\n|   +-- kind: \"diagram\";\n|   +-- contentId: string\n|   +-- kind: \"container\";\n|   +-- children: readonly GridBox[];\n|   \\-- layout: { collisionPolicy: \"push-right\"; gap: number }\n+-- interface LineGridScene\n|   +-- contents: Readonly<Record<string, CanvasDiagram>>;\n|   \\-- root: GridBox;\n+-- interface ResolvedGridBox\n|   +-- box: GridBox;\n|   +-- bounds: GridBounds;\n|   +-- contentId?: string;\n|   \\-- children: readonly ResolvedGridBox[];\n+-- MAX_EXTENT [binding]\n+-- MAX_CELLS [binding]\n+-- function integer(value, label)\n+-- function measureContent(ascii)\n|   \\-- lines = ascii.split()\n+-- function boxesOverlap(a, b, gap)\n+-- function resolveScene(scene) - Resolves recursive box sizes, positions, collapsed content, and absolute bounds.\n|   +-- ids [binding]\n|   \\-- function visit(box, parent)\n|       +-- origin [binding]\n|       +-- contentId [binding]\n|       +-- size: GridSize\n|       +-- content [binding]\n|       +-- children [binding]\n|       \\-- child [binding]\n+-- function flattenGrid(root)\n+-- function findCollisions(scene, parentId, bounds, excludeId)\n|   \\-- parent = flattenGrid(resolveScene(scene)).find()\n+-- function updateGridBox(scene, id, update)\n|   +-- found [binding]\n|   +-- function visit(box)\n|   \\-- root = visit()\n+-- function layoutScene(scene, changedId)\n|   +-- function visit(box)\n|   |   +-- box: GridBox;\n|   |   +-- changed: boolean\n|   |   +-- descendants = box.children.map()\n|   |   +-- children = descendants.map()\n|   |   +-- anchoredId [binding]\n|   |   +-- measure(child)\n|   |   +-- ordered = children.map((child, index) => ({ child, index })).sort()\n|   |   +-- settled: GridBounds[]\n|   |   +-- replacements [binding]\n|   |   +-- { child } [binding]\n|   |   +-- bounds [binding]\n|   |   \\-- collisions = settled.filter()\n|   +-- result = visit()\n|   \\-- next [binding]\n+-- function composeScene(scene)\n|   +-- root = resolveScene()\n|   +-- width [binding]\n|   +-- height [binding]\n|   +-- rows = Array.from()\n|   \\-- function paint(node)\n|       +-- i [binding]\n|       +-- j [binding]\n|       +-- row [binding]\n|       +-- start [binding]\n|       \\-- existing = rows[row].padEnd()\n+-- function hitTest(scene, point)\n|   +-- boxId: string;\n|   +-- contentId?: string;\n|   +-- local: GridPoint\n|   \\-- function visit(node)\n|       +-- b [binding]\n|       +-- child [binding]\n|       \\-- hit = visit()\n\\-- function projectMapping(bounds, mapping)\n",
+        "asciiSha256": "44d9ee0b51f3cce5ae5fbdf8fb6593d5b0fc41e7e4d3fe625abb77fcf3c1042f",
+        "mappings": [
+          {
+            "treeLine": 1,
+            "sourceRanges": [
+              {
+                "startLine": 1,
+                "endLine": 212
+              }
+            ]
+          },
+          {
+            "treeLine": 2,
+            "sourceRanges": [
+              {
+                "startLine": 1,
+                "endLine": 1
+              }
+            ]
+          },
+          {
+            "treeLine": 3,
+            "sourceRanges": [
+              {
+                "startLine": 4,
+                "endLine": 4
+              }
+            ]
+          },
+          {
+            "treeLine": 4,
+            "sourceRanges": [
+              {
+                "startLine": 4,
+                "endLine": 4
+              }
+            ]
+          },
+          {
+            "treeLine": 5,
+            "sourceRanges": [
+              {
+                "startLine": 4,
+                "endLine": 4
+              }
+            ]
+          },
+          {
+            "treeLine": 6,
+            "sourceRanges": [
+              {
+                "startLine": 5,
+                "endLine": 5
+              }
+            ]
+          },
+          {
+            "treeLine": 7,
+            "sourceRanges": [
+              {
+                "startLine": 5,
+                "endLine": 5
+              }
+            ]
+          },
+          {
+            "treeLine": 8,
+            "sourceRanges": [
+              {
+                "startLine": 5,
+                "endLine": 5
+              }
+            ]
+          },
+          {
+            "treeLine": 9,
+            "sourceRanges": [
+              {
+                "startLine": 6,
+                "endLine": 6
+              }
+            ]
+          },
+          {
+            "treeLine": 10,
+            "sourceRanges": [
+              {
+                "startLine": 8,
+                "endLine": 13
+              }
+            ]
+          },
+          {
+            "treeLine": 11,
+            "sourceRanges": [
+              {
+                "startLine": 9,
+                "endLine": 9
+              }
+            ]
+          },
+          {
+            "treeLine": 12,
+            "sourceRanges": [
+              {
+                "startLine": 10,
+                "endLine": 10
+              }
+            ]
+          },
+          {
+            "treeLine": 13,
+            "sourceRanges": [
+              {
+                "startLine": 11,
+                "endLine": 11
+              }
+            ]
+          },
+          {
+            "treeLine": 14,
+            "sourceRanges": [
+              {
+                "startLine": 12,
+                "endLine": 12
+              }
+            ]
+          },
+          {
+            "treeLine": 15,
+            "sourceRanges": [
+              {
+                "startLine": 15,
+                "endLine": 24
+              }
+            ]
+          },
+          {
+            "treeLine": 16,
+            "sourceRanges": [
+              {
+                "startLine": 16,
+                "endLine": 16
+              }
+            ]
+          },
+          {
+            "treeLine": 17,
+            "sourceRanges": [
+              {
+                "startLine": 17,
+                "endLine": 17
+              }
+            ]
+          },
+          {
+            "treeLine": 18,
+            "sourceRanges": [
+              {
+                "startLine": 18,
+                "endLine": 18
+              }
+            ]
+          },
+          {
+            "treeLine": 19,
+            "sourceRanges": [
+              {
+                "startLine": 19,
+                "endLine": 19
+              }
+            ]
+          },
+          {
+            "treeLine": 20,
+            "sourceRanges": [
+              {
+                "startLine": 20,
+                "endLine": 20
+              }
+            ]
+          },
+          {
+            "treeLine": 21,
+            "sourceRanges": [
+              {
+                "startLine": 22,
+                "endLine": 22
+              }
+            ]
+          },
+          {
+            "treeLine": 22,
+            "sourceRanges": [
+              {
+                "startLine": 22,
+                "endLine": 22
+              }
+            ]
+          },
+          {
+            "treeLine": 23,
+            "sourceRanges": [
+              {
+                "startLine": 23,
+                "endLine": 23
+              }
+            ]
+          },
+          {
+            "treeLine": 24,
+            "sourceRanges": [
+              {
+                "startLine": 23,
+                "endLine": 23
+              }
+            ]
+          },
+          {
+            "treeLine": 25,
+            "sourceRanges": [
+              {
+                "startLine": 23,
+                "endLine": 23
+              }
+            ]
+          },
+          {
+            "treeLine": 26,
+            "sourceRanges": [
+              {
+                "startLine": 26,
+                "endLine": 29
+              }
+            ]
+          },
+          {
+            "treeLine": 27,
+            "sourceRanges": [
+              {
+                "startLine": 27,
+                "endLine": 27
+              }
+            ]
+          },
+          {
+            "treeLine": 28,
+            "sourceRanges": [
+              {
+                "startLine": 28,
+                "endLine": 28
+              }
+            ]
+          },
+          {
+            "treeLine": 29,
+            "sourceRanges": [
+              {
+                "startLine": 31,
+                "endLine": 37
+              }
+            ]
+          },
+          {
+            "treeLine": 30,
+            "sourceRanges": [
+              {
+                "startLine": 32,
+                "endLine": 32
+              }
+            ]
+          },
+          {
+            "treeLine": 31,
+            "sourceRanges": [
+              {
+                "startLine": 34,
+                "endLine": 34
+              }
+            ]
+          },
+          {
+            "treeLine": 32,
+            "sourceRanges": [
+              {
+                "startLine": 35,
+                "endLine": 35
+              }
+            ]
+          },
+          {
+            "treeLine": 33,
+            "sourceRanges": [
+              {
+                "startLine": 36,
+                "endLine": 36
+              }
+            ]
+          },
+          {
+            "treeLine": 34,
+            "sourceRanges": [
+              {
+                "startLine": 40,
+                "endLine": 40
+              }
+            ]
+          },
+          {
+            "treeLine": 35,
+            "sourceRanges": [
+              {
+                "startLine": 41,
+                "endLine": 41
+              }
+            ]
+          },
+          {
+            "treeLine": 36,
+            "sourceRanges": [
+              {
+                "startLine": 43,
+                "endLine": 47
+              }
+            ]
+          },
+          {
+            "treeLine": 37,
+            "sourceRanges": [
+              {
+                "startLine": 49,
+                "endLine": 53
+              }
+            ]
+          },
+          {
+            "treeLine": 38,
+            "sourceRanges": [
+              {
+                "startLine": 51,
+                "endLine": 51
+              }
+            ]
+          },
+          {
+            "treeLine": 39,
+            "sourceRanges": [
+              {
+                "startLine": 55,
+                "endLine": 58
+              }
+            ]
+          },
+          {
+            "treeLine": 40,
+            "sourceRanges": [
+              {
+                "startLine": 61,
+                "endLine": 100
+              }
+            ]
+          },
+          {
+            "treeLine": 41,
+            "sourceRanges": [
+              {
+                "startLine": 62,
+                "endLine": 62
+              }
+            ]
+          },
+          {
+            "treeLine": 42,
+            "sourceRanges": [
+              {
+                "startLine": 63,
+                "endLine": 98
+              }
+            ]
+          },
+          {
+            "treeLine": 43,
+            "sourceRanges": [
+              {
+                "startLine": 72,
+                "endLine": 72
+              }
+            ]
+          },
+          {
+            "treeLine": 44,
+            "sourceRanges": [
+              {
+                "startLine": 76,
+                "endLine": 76
+              }
+            ]
+          },
+          {
+            "treeLine": 45,
+            "sourceRanges": [
+              {
+                "startLine": 78,
+                "endLine": 78
+              }
+            ]
+          },
+          {
+            "treeLine": 46,
+            "sourceRanges": [
+              {
+                "startLine": 80,
+                "endLine": 80
+              }
+            ]
+          },
+          {
+            "treeLine": 47,
+            "sourceRanges": [
+              {
+                "startLine": 84,
+                "endLine": 85
+              }
+            ]
+          },
+          {
+            "treeLine": 48,
+            "sourceRanges": [
+              {
+                "startLine": 86,
+                "endLine": 86
+              }
+            ]
+          },
+          {
+            "treeLine": 49,
+            "sourceRanges": [
+              {
+                "startLine": 102,
+                "endLine": 104
+              }
+            ]
+          },
+          {
+            "treeLine": 50,
+            "sourceRanges": [
+              {
+                "startLine": 106,
+                "endLine": 111
+              }
+            ]
+          },
+          {
+            "treeLine": 51,
+            "sourceRanges": [
+              {
+                "startLine": 107,
+                "endLine": 107
+              }
+            ]
+          },
+          {
+            "treeLine": 52,
+            "sourceRanges": [
+              {
+                "startLine": 114,
+                "endLine": 123
+              }
+            ]
+          },
+          {
+            "treeLine": 53,
+            "sourceRanges": [
+              {
+                "startLine": 115,
+                "endLine": 115
+              }
+            ]
+          },
+          {
+            "treeLine": 54,
+            "sourceRanges": [
+              {
+                "startLine": 116,
+                "endLine": 119
+              }
+            ]
+          },
+          {
+            "treeLine": 55,
+            "sourceRanges": [
+              {
+                "startLine": 120,
+                "endLine": 120
+              }
+            ]
+          },
+          {
+            "treeLine": 56,
+            "sourceRanges": [
+              {
+                "startLine": 130,
+                "endLine": 164
+              }
+            ]
+          },
+          {
+            "treeLine": 57,
+            "sourceRanges": [
+              {
+                "startLine": 131,
+                "endLine": 157
+              }
+            ]
+          },
+          {
+            "treeLine": 58,
+            "sourceRanges": [
+              {
+                "startLine": 131,
+                "endLine": 131
+              }
+            ]
+          },
+          {
+            "treeLine": 59,
+            "sourceRanges": [
+              {
+                "startLine": 131,
+                "endLine": 131
+              }
+            ]
+          },
+          {
+            "treeLine": 60,
+            "sourceRanges": [
+              {
+                "startLine": 133,
+                "endLine": 133
+              }
+            ]
+          },
+          {
+            "treeLine": 61,
+            "sourceRanges": [
+              {
+                "startLine": 134,
+                "endLine": 134
+              }
+            ]
+          },
+          {
+            "treeLine": 62,
+            "sourceRanges": [
+              {
+                "startLine": 135,
+                "endLine": 135
+              }
+            ]
+          },
+          {
+            "treeLine": 63,
+            "sourceRanges": [
+              {
+                "startLine": 137,
+                "endLine": 137
+              }
+            ]
+          },
+          {
+            "treeLine": 64,
+            "sourceRanges": [
+              {
+                "startLine": 138,
+                "endLine": 141
+              }
+            ]
+          },
+          {
+            "treeLine": 65,
+            "sourceRanges": [
+              {
+                "startLine": 142,
+                "endLine": 142
+              }
+            ]
+          },
+          {
+            "treeLine": 66,
+            "sourceRanges": [
+              {
+                "startLine": 143,
+                "endLine": 143
+              }
+            ]
+          },
+          {
+            "treeLine": 67,
+            "sourceRanges": [
+              {
+                "startLine": 144,
+                "endLine": 144
+              }
+            ]
+          },
+          {
+            "treeLine": 68,
+            "sourceRanges": [
+              {
+                "startLine": 145,
+                "endLine": 145
+              }
+            ]
+          },
+          {
+            "treeLine": 69,
+            "sourceRanges": [
+              {
+                "startLine": 146,
+                "endLine": 146
+              }
+            ]
+          },
+          {
+            "treeLine": 70,
+            "sourceRanges": [
+              {
+                "startLine": 158,
+                "endLine": 158
+              }
+            ]
+          },
+          {
+            "treeLine": 71,
+            "sourceRanges": [
+              {
+                "startLine": 160,
+                "endLine": 160
+              }
+            ]
+          },
+          {
+            "treeLine": 72,
+            "sourceRanges": [
+              {
+                "startLine": 166,
+                "endLine": 192
+              }
+            ]
+          },
+          {
+            "treeLine": 73,
+            "sourceRanges": [
+              {
+                "startLine": 167,
+                "endLine": 167
+              }
+            ]
+          },
+          {
+            "treeLine": 74,
+            "sourceRanges": [
+              {
+                "startLine": 168,
+                "endLine": 168
+              }
+            ]
+          },
+          {
+            "treeLine": 75,
+            "sourceRanges": [
+              {
+                "startLine": 169,
+                "endLine": 169
+              }
+            ]
+          },
+          {
+            "treeLine": 76,
+            "sourceRanges": [
+              {
+                "startLine": 171,
+                "endLine": 171
+              }
+            ]
+          },
+          {
+            "treeLine": 77,
+            "sourceRanges": [
+              {
+                "startLine": 172,
+                "endLine": 189
+              }
+            ]
+          },
+          {
+            "treeLine": 78,
+            "sourceRanges": [
+              {
+                "startLine": 173,
+                "endLine": 173
+              }
+            ]
+          },
+          {
+            "treeLine": 79,
+            "sourceRanges": [
+              {
+                "startLine": 174,
+                "endLine": 174
+              }
+            ]
+          },
+          {
+            "treeLine": 80,
+            "sourceRanges": [
+              {
+                "startLine": 182,
+                "endLine": 182
+              }
+            ]
+          },
+          {
+            "treeLine": 81,
+            "sourceRanges": [
+              {
+                "startLine": 183,
+                "endLine": 183
+              }
+            ]
+          },
+          {
+            "treeLine": 82,
+            "sourceRanges": [
+              {
+                "startLine": 184,
+                "endLine": 184
+              }
+            ]
+          },
+          {
+            "treeLine": 83,
+            "sourceRanges": [
+              {
+                "startLine": 194,
+                "endLine": 207
+              }
+            ]
+          },
+          {
+            "treeLine": 84,
+            "sourceRanges": [
+              {
+                "startLine": 194,
+                "endLine": 194
+              }
+            ]
+          },
+          {
+            "treeLine": 85,
+            "sourceRanges": [
+              {
+                "startLine": 194,
+                "endLine": 194
+              }
+            ]
+          },
+          {
+            "treeLine": 86,
+            "sourceRanges": [
+              {
+                "startLine": 194,
+                "endLine": 194
+              }
+            ]
+          },
+          {
+            "treeLine": 87,
+            "sourceRanges": [
+              {
+                "startLine": 195,
+                "endLine": 205
+              }
+            ]
+          },
+          {
+            "treeLine": 88,
+            "sourceRanges": [
+              {
+                "startLine": 196,
+                "endLine": 196
+              }
+            ]
+          },
+          {
+            "treeLine": 89,
+            "sourceRanges": [
+              {
+                "startLine": 199,
+                "endLine": 199
+              }
+            ]
+          },
+          {
+            "treeLine": 90,
+            "sourceRanges": [
+              {
+                "startLine": 200,
+                "endLine": 200
+              }
+            ]
+          },
+          {
+            "treeLine": 91,
+            "sourceRanges": [
+              {
+                "startLine": 209,
+                "endLine": 212
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sourceFile": "src/mapping/components/MappingPocSelectionCanvas.tsx",
+        "sourceSha256": "d1cf2fc2a54f2a6f78c063f3cf838e6d7e0337099990c9259e7cb576e068c067",
+        "ascii": "src/mapping/components/MappingPocSelectionCanvas.tsx\n+-- import { composeScene, flattenGrid, hitTest, layoutScene, resolveScene, updateGridBox, type GridPoint as ScenePoint } from \"../../core/lineGrid\";\n+-- import { mappingDocumentFromScene } from \"../mappingDocument\";\n+-- import { initialMappingGrid, insertGridDiagram, type MappingGridDocument } from \"../mappingGrid\";\n+-- import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent, type PointerEvent } from \"react\";\n+-- import { createPortal } from \"react-dom\";\n+-- import { projectCompactions } from \"../../core/compactionProjection\";\n+-- import { projectSelection, validateProjection } from \"../../core/diagramProjection\";\n+-- import type { ProjectRepresentationCatalogRecord } from \"../../core/projectCatalog\";\n+-- import { localChatResponder, promptMappingPocSelection } from \"../api\";\n+-- import { isLocalChatSubmitHotkey, type LocalChatVerbosity, type LocalChatThread, type LocalChatVariant } from \"../localChat\";\n+-- import { projectASelectionToB, type MappingPocANode, type MappingPocGridRect, type MappingPocProjection } from \"../mappingPoc\";\n+-- import { MAPPING_POC_A_SECTIONS, MAPPING_POC_DETAIL_OVERLAYS, MAPPING_POC_OVERLAY_PLACEMENTS, type MappingPocASection } from \"../mappingPocOverlays\";\n+-- import type { MappingPocPromptResult } from \"../mappingPocPrompt\";\n+-- import { LocalChatVerbosityToggle } from \"./LocalChatVerbosityToggle\";\n+-- import { ProjectedSourcePane } from \"./ProjectedSourcePane\";\n+-- import { LocalChatConvo } from \"./LocalChatConvo\";\n+-- interface GridPoint\n|   +-- line: number;\n|   \\-- column: number;\n+-- interface CellMetrics\n|   +-- width: number;\n|   \\-- height: number;\n+-- interface ActiveSelection\n|   +-- pointerId: number;\n|   \\-- anchor: GridPoint;\n+-- SIDE_GUTTER_PX [binding]\n+-- PATCH_SUCCESS_VISIBLE_MS [binding]\n+-- function normalizeRect(anchor, focus)\n+-- function typingTarget(target)\n+-- function nodesAfterPatch(nodes, result)\n+-- function sectionsAfterPatch(sections, result)\n+-- type PromptPhase\n\\-- function MappingPocSelectionCanvas(props)\n    +-- initialDocument?: MappingGridDocument;\n    +-- onDocumentChange?: (document: MappingGridDocument) => void;\n    +-- onBusyChange?: (busy: boolean) => void;\n    +-- active?: boolean;\n    +-- focusBox?: { id: string; serial: number };\n    +-- projectContext?: { projectId: string; representationId: string; baseRevisionId: string };\n    +-- projectionCatalog?: ProjectRepresentationCatalogRecord;\n    +-- savedScene?: string;\n    +-- dirtyRepresentationIds?: string[];\n    +-- onLineCountChange?: (lineCount: number) => void;\n    +-- localChatVariant?: LocalChatVariant;\n    +-- localChatVariant [binding]\n    +-- stageRef = useRef()\n    +-- preRef = useRef()\n    +-- probeRef = useRef()\n    +-- menuRef = useRef()\n    +-- openMappedRef = useRef()\n    +-- promptInputRef = useRef()\n    +-- askInputRef = useRef()\n    +-- activeSelectionRef = useRef()\n    +-- replyControllers = useRef()\n    +-- useEffect callback\n    |   \\-- controller [binding]\n    +-- [clientSessionId] = useState()\n    +-- [cell, setCell] = useState()\n    +-- [history, setHistory] = useState()\n    |   +-- past: MappingGridDocument[];\n    |   +-- present: MappingGridDocument;\n    |   \\-- future: MappingGridDocument[]\n    +-- gridDocument [binding]\n    +-- scene [binding]\n    +-- resolved = useMemo()\n    +-- boxes = useMemo()\n    +-- [activeBoxId, setActiveBoxId] = useState()\n    +-- activeBox [binding]\n    +-- content [binding]\n    +-- ascii [binding]\n    +-- diagramRevision [binding]\n    +-- nodes [binding]\n    +-- sections [binding]\n    +-- composedAscii = useMemo()\n    +-- commit(next)\n    +-- [promptOperation, setPromptOperation] = useState()\n    +-- [diagramPlacement, setDiagramPlacement] = useState()\n    +-- placementDragRef = useRef()\n    +-- placementPointerRef = useRef()\n    +-- [placementPreview, setPlacementPreview] = useState()\n    |   +-- start: ScenePoint;\n    |   \\-- end: ScenePoint\n    +-- [movingBoxId, setMovingBoxId] = useState()\n    +-- [selectionRect, setSelectionRect] = useState()\n    +-- [selectedNodeIds, setSelectedNodeIds] = useState()\n    +-- [openedProjection, setOpenedProjection] = useState()\n    +-- [projectionChoice, setProjectionChoice] = useState()\n    +-- [compactionOpen, setCompactionOpen] = useState()\n    +-- [sourceFile, setSourceFile] = useState()\n    +-- [sourceVisible, setSourceVisible] = useState()\n    +-- sourceStackRef = useRef()\n    +-- useLayoutEffect callback\n    |   +-- stack [binding]\n    |   +-- parent [binding]\n    |   +-- viewport = stack?.closest()\n    |   +-- bounds = viewport.getBoundingClientRect()\n    |   +-- anchor = parent.getBoundingClientRect()\n    |   +-- scale [binding]\n    |   +-- width = Math.min()\n    |   \\-- height = Math.min()\n    +-- openSource(path)\n    +-- useEffect callback\n    +-- [openDetailOverlayId, setOpenDetailOverlayId] = useState()\n    +-- [promptOpen, setPromptOpen] = useState()\n    +-- [promptText, setPromptText] = useState()\n    +-- [promptPhase, setPromptPhase] = useState()\n    +-- [statusMessage, setStatusMessage] = useState()\n    +-- [askOpen, setAskOpen] = useState()\n    +-- [askText, setAskText] = useState()\n    +-- [askVerbosity, setAskVerbosity] = useState()\n    +-- [chatThreads, setChatThreads] = useState()\n    +-- [activeThreadId, setActiveThreadId] = useState()\n    +-- asciiLines = useMemo()\n    +-- lineCount [binding]\n    +-- maxColumn = useMemo()\n    +-- selectedNodeIdSet = useMemo()\n    +-- selectedNodes = useMemo()\n    +-- activeThread = chatThreads.find()\n    +-- sourceCoveredNodeCount [binding]\n    +-- selectedSourceRangeCount = selectedNodes.reduce()\n    +-- hasCompleteSourceCoverage [binding]\n    +-- selectedEvidenceIds = useMemo()\n    +-- projections = Object.values(props.projectionCatalog?.projections ?? {}) .reverse() .filter((projection) => projection.sourceRepresentationId === props.projectContext?.representationId) .sort()\n    +-- chosenProjection [binding]\n    +-- projectionContentDirty [binding]\n    +-- callTreeProjection = useMemo()\n    |   +-- catalog [binding]\n    |   +-- source [binding]\n    |   +-- target [binding]\n    |   +-- result = projectSelection()\n    |   \\-- error [binding]\n    +-- useEffect callback\n    +-- useEffect callback\n    +-- selectedCompactions = useMemo()\n    +-- candidateProjection = useMemo()\n    |   +-- projection = projectASelectionToB()\n    |   +-- result [binding]\n    |   +-- bRange [binding]\n    |   \\-- matched [binding]\n    +-- firstSelectedANode = useMemo()\n    |   \\-- selectedIds [binding]\n    +-- openDetailOverlay = MAPPING_POC_DETAIL_OVERLAYS.find()\n    +-- baseOpenDetailPlacement = MAPPING_POC_OVERLAY_PLACEMENTS.find()\n    +-- openDetailSection = sections.find()\n    +-- baseOpenDetailSection = MAPPING_POC_A_SECTIONS.find()\n    +-- overlayLineDelta [binding]\n    +-- openDetailPlacement [binding]\n    +-- useLayoutEffect callback\n    |   +-- pre [binding]\n    |   +-- probe [binding]\n    |   +-- measure()\n    |   |   +-- width [binding]\n    |   |   \\-- height = Number.parseFloat()\n    |   \\-- observer [binding]\n    +-- useEffect callback\n    +-- changeHandler = useRef()\n    +-- useEffect callback\n    +-- busyHandler = useRef()\n    +-- useEffect callback\n    +-- useEffect callback\n    |   +-- target [binding]\n    |   +-- expand(box)\n    |   |   \\-- contains(node)\n    |   \\-- root = expand()\n    +-- useEffect callback\n    +-- useEffect callback\n    +-- useEffect callback\n    |   \\-- timeout = window.setTimeout()\n    +-- scenePointAtClient = useCallback()\n    |   +-- pre [binding]\n    |   +-- bounds = pre.getBoundingClientRect()\n    |   \\-- scale [binding]\n    +-- pointAtClient = useCallback()\n    |   \\-- point = scenePointAtClient()\n    +-- requestLocalReply = useCallback()\n    |   +-- controller [binding]\n    |   \\-- updateThread(update)\n    +-- finishSelection(event) - Converts the completed drag to a rectangle and selects intersecting mapped labels.\n    |   +-- active [binding]\n    |   +-- focus [binding]\n    |   +-- rect = normalizeRect()\n    |   +-- selected = nodes.filter()\n    |   \\-- sourceRangeCount = selected.reduce()\n    +-- openMapped = useCallback()\n    +-- clearSelection = useCallback()\n    |   +-- active [binding]\n    |   \\-- stage [binding]\n    +-- openPrompt = useCallback()\n    +-- openAsk = useCallback()\n    +-- submitAsk(event)\n    |   +-- query = askText.trim()\n    |   +-- summary [binding]\n    |   \\-- thread: LocalChatThread\n    +-- submitLocalFollowUp = useCallback()\n    |   +-- thread = chatThreads.find()\n    |   \\-- next: LocalChatThread\n    +-- retryLocalReply(threadId)\n    |   +-- thread = chatThreads.find()\n    |   \\-- next [binding]\n    +-- changeThreadVerbosity(threadId, verbosity)\n    +-- commitScene(nextScene, changedId)\n    |   \\-- error [binding]\n    +-- undo(redo)\n    |   +-- next [binding]\n    |   \\-- previous = current.past.at()\n    +-- submitPrompt(event) - Applies a source-backed edit or begins sub-diagram placement.\n    |   +-- result [binding]\n    |   +-- nextContent [binding]\n    |   +-- nextScene = layoutScene()\n    |   \\-- error [binding]\n    +-- generateAt(start, end) - Generates ASCII for a requested region, inserts a diagram, and settles its layout.\n    |   +-- column = Math.min()\n    |   +-- row = Math.min()\n    |   +-- minimumSize [binding]\n    |   +-- parent [binding]\n    |   +-- targetParent [binding]\n    |   +-- result [binding]\n    |   +-- id [binding]\n    |   +-- next = insertGridDiagram()\n    |   \\-- error [binding]\n    +-- wrapInGroup(boxId)\n    |   +-- id [binding]\n    |   +-- summaryId [binding]\n    |   \\-- next = updateGridBox()\n    +-- useEffect callback\n    |   \\-- onKeyDown(event)\n    +-- useEffect callback\n    |   \\-- onPointerDown(event)\n    |       \\-- stage [binding]\n    +-- rectStyle [binding]\n    +-- threadSource = boxes.find()\n    +-- activeThreadRectStyle [binding]\n    +-- selectionPhase [binding]\n    \\-- render JSX\n        +-- point = scenePointAtClient()\n        +-- parent [binding]\n        +-- scenePoint = scenePointAtClient()\n        +-- hit [binding]\n        +-- targetBox [binding]\n        +-- anchor [binding]\n        +-- point = scenePointAtClient()\n        +-- active [binding]\n        +-- focus = pointAtClient()\n        +-- start [binding]\n        +-- end [binding]\n        +-- isActive [binding]\n        +-- sourceBox = boxes.find()\n        +-- marker [binding]\n        +-- render JSX\n        \\-- <aside className=\"mapping-poc-companion\"> in MappingPocSelectionCanvas - Renders the enclosing projection panel, header controls, and call-tree or source-compaction body.\n",
+        "asciiSha256": "fc6f6b79e1f8c0c238408a7f437e508acbe54af647fcddc36b90b54f3ff2d020",
+        "mappings": [
+          {
+            "treeLine": 1,
+            "sourceRanges": [
+              {
+                "startLine": 1,
+                "endLine": 1250
+              }
+            ]
+          },
+          {
+            "treeLine": 2,
+            "sourceRanges": [
+              {
+                "startLine": 1,
+                "endLine": 9
+              }
+            ]
+          },
+          {
+            "treeLine": 3,
+            "sourceRanges": [
+              {
+                "startLine": 10,
+                "endLine": 10
+              }
+            ]
+          },
+          {
+            "treeLine": 4,
+            "sourceRanges": [
+              {
+                "startLine": 11,
+                "endLine": 11
+              }
+            ]
+          },
+          {
+            "treeLine": 5,
+            "sourceRanges": [
+              {
+                "startLine": 13,
+                "endLine": 22
+              }
+            ]
+          },
+          {
+            "treeLine": 6,
+            "sourceRanges": [
+              {
+                "startLine": 23,
+                "endLine": 23
+              }
+            ]
+          },
+          {
+            "treeLine": 7,
+            "sourceRanges": [
+              {
+                "startLine": 24,
+                "endLine": 24
+              }
+            ]
+          },
+          {
+            "treeLine": 8,
+            "sourceRanges": [
+              {
+                "startLine": 25,
+                "endLine": 25
+              }
+            ]
+          },
+          {
+            "treeLine": 9,
+            "sourceRanges": [
+              {
+                "startLine": 26,
+                "endLine": 26
+              }
+            ]
+          },
+          {
+            "treeLine": 10,
+            "sourceRanges": [
+              {
+                "startLine": 27,
+                "endLine": 27
+              }
+            ]
+          },
+          {
+            "treeLine": 11,
+            "sourceRanges": [
+              {
+                "startLine": 28,
+                "endLine": 33
+              }
+            ]
+          },
+          {
+            "treeLine": 12,
+            "sourceRanges": [
+              {
+                "startLine": 34,
+                "endLine": 39
+              }
+            ]
+          },
+          {
+            "treeLine": 13,
+            "sourceRanges": [
+              {
+                "startLine": 40,
+                "endLine": 45
+              }
+            ]
+          },
+          {
+            "treeLine": 14,
+            "sourceRanges": [
+              {
+                "startLine": 46,
+                "endLine": 46
+              }
+            ]
+          },
+          {
+            "treeLine": 15,
+            "sourceRanges": [
+              {
+                "startLine": 47,
+                "endLine": 47
+              }
+            ]
+          },
+          {
+            "treeLine": 16,
+            "sourceRanges": [
+              {
+                "startLine": 48,
+                "endLine": 48
+              }
+            ]
+          },
+          {
+            "treeLine": 17,
+            "sourceRanges": [
+              {
+                "startLine": 49,
+                "endLine": 49
+              }
+            ]
+          },
+          {
+            "treeLine": 18,
+            "sourceRanges": [
+              {
+                "startLine": 51,
+                "endLine": 54
+              }
+            ]
+          },
+          {
+            "treeLine": 19,
+            "sourceRanges": [
+              {
+                "startLine": 52,
+                "endLine": 52
+              }
+            ]
+          },
+          {
+            "treeLine": 20,
+            "sourceRanges": [
+              {
+                "startLine": 53,
+                "endLine": 53
+              }
+            ]
+          },
+          {
+            "treeLine": 21,
+            "sourceRanges": [
+              {
+                "startLine": 56,
+                "endLine": 59
+              }
+            ]
+          },
+          {
+            "treeLine": 22,
+            "sourceRanges": [
+              {
+                "startLine": 57,
+                "endLine": 57
+              }
+            ]
+          },
+          {
+            "treeLine": 23,
+            "sourceRanges": [
+              {
+                "startLine": 58,
+                "endLine": 58
+              }
+            ]
+          },
+          {
+            "treeLine": 24,
+            "sourceRanges": [
+              {
+                "startLine": 61,
+                "endLine": 64
+              }
+            ]
+          },
+          {
+            "treeLine": 25,
+            "sourceRanges": [
+              {
+                "startLine": 62,
+                "endLine": 62
+              }
+            ]
+          },
+          {
+            "treeLine": 26,
+            "sourceRanges": [
+              {
+                "startLine": 63,
+                "endLine": 63
+              }
+            ]
+          },
+          {
+            "treeLine": 27,
+            "sourceRanges": [
+              {
+                "startLine": 66,
+                "endLine": 66
+              }
+            ]
+          },
+          {
+            "treeLine": 28,
+            "sourceRanges": [
+              {
+                "startLine": 67,
+                "endLine": 67
+              }
+            ]
+          },
+          {
+            "treeLine": 29,
+            "sourceRanges": [
+              {
+                "startLine": 69,
+                "endLine": 76
+              }
+            ]
+          },
+          {
+            "treeLine": 30,
+            "sourceRanges": [
+              {
+                "startLine": 78,
+                "endLine": 81
+              }
+            ]
+          },
+          {
+            "treeLine": 31,
+            "sourceRanges": [
+              {
+                "startLine": 83,
+                "endLine": 99
+              }
+            ]
+          },
+          {
+            "treeLine": 32,
+            "sourceRanges": [
+              {
+                "startLine": 101,
+                "endLine": 114
+              }
+            ]
+          },
+          {
+            "treeLine": 33,
+            "sourceRanges": [
+              {
+                "startLine": 116,
+                "endLine": 116
+              }
+            ]
+          },
+          {
+            "treeLine": 34,
+            "sourceRanges": [
+              {
+                "startLine": 118,
+                "endLine": 1250
+              }
+            ]
+          },
+          {
+            "treeLine": 35,
+            "sourceRanges": [
+              {
+                "startLine": 119,
+                "endLine": 119
+              }
+            ]
+          },
+          {
+            "treeLine": 36,
+            "sourceRanges": [
+              {
+                "startLine": 120,
+                "endLine": 120
+              }
+            ]
+          },
+          {
+            "treeLine": 37,
+            "sourceRanges": [
+              {
+                "startLine": 121,
+                "endLine": 121
+              }
+            ]
+          },
+          {
+            "treeLine": 38,
+            "sourceRanges": [
+              {
+                "startLine": 122,
+                "endLine": 122
+              }
+            ]
+          },
+          {
+            "treeLine": 39,
+            "sourceRanges": [
+              {
+                "startLine": 123,
+                "endLine": 123
+              }
+            ]
+          },
+          {
+            "treeLine": 40,
+            "sourceRanges": [
+              {
+                "startLine": 124,
+                "endLine": 124
+              }
+            ]
+          },
+          {
+            "treeLine": 41,
+            "sourceRanges": [
+              {
+                "startLine": 125,
+                "endLine": 125
+              }
+            ]
+          },
+          {
+            "treeLine": 42,
+            "sourceRanges": [
+              {
+                "startLine": 126,
+                "endLine": 126
+              }
+            ]
+          },
+          {
+            "treeLine": 43,
+            "sourceRanges": [
+              {
+                "startLine": 127,
+                "endLine": 127
+              }
+            ]
+          },
+          {
+            "treeLine": 44,
+            "sourceRanges": [
+              {
+                "startLine": 128,
+                "endLine": 128
+              }
+            ]
+          },
+          {
+            "treeLine": 45,
+            "sourceRanges": [
+              {
+                "startLine": 129,
+                "endLine": 129
+              }
+            ]
+          },
+          {
+            "treeLine": 46,
+            "sourceRanges": [
+              {
+                "startLine": 131,
+                "endLine": 131
+              }
+            ]
+          },
+          {
+            "treeLine": 47,
+            "sourceRanges": [
+              {
+                "startLine": 132,
+                "endLine": 132
+              }
+            ]
+          },
+          {
+            "treeLine": 48,
+            "sourceRanges": [
+              {
+                "startLine": 133,
+                "endLine": 133
+              }
+            ]
+          },
+          {
+            "treeLine": 49,
+            "sourceRanges": [
+              {
+                "startLine": 134,
+                "endLine": 134
+              }
+            ]
+          },
+          {
+            "treeLine": 50,
+            "sourceRanges": [
+              {
+                "startLine": 135,
+                "endLine": 135
+              }
+            ]
+          },
+          {
+            "treeLine": 51,
+            "sourceRanges": [
+              {
+                "startLine": 136,
+                "endLine": 136
+              }
+            ]
+          },
+          {
+            "treeLine": 52,
+            "sourceRanges": [
+              {
+                "startLine": 137,
+                "endLine": 137
+              }
+            ]
+          },
+          {
+            "treeLine": 53,
+            "sourceRanges": [
+              {
+                "startLine": 138,
+                "endLine": 138
+              }
+            ]
+          },
+          {
+            "treeLine": 54,
+            "sourceRanges": [
+              {
+                "startLine": 139,
+                "endLine": 139
+              }
+            ]
+          },
+          {
+            "treeLine": 55,
+            "sourceRanges": [
+              {
+                "startLine": 140,
+                "endLine": 140
+              }
+            ]
+          },
+          {
+            "treeLine": 56,
+            "sourceRanges": [
+              {
+                "startLine": 141,
+                "endLine": 144
+              }
+            ]
+          },
+          {
+            "treeLine": 57,
+            "sourceRanges": [
+              {
+                "startLine": 142,
+                "endLine": 142
+              }
+            ]
+          },
+          {
+            "treeLine": 58,
+            "sourceRanges": [
+              {
+                "startLine": 145,
+                "endLine": 145
+              }
+            ]
+          },
+          {
+            "treeLine": 59,
+            "sourceRanges": [
+              {
+                "startLine": 146,
+                "endLine": 146
+              }
+            ]
+          },
+          {
+            "treeLine": 60,
+            "sourceRanges": [
+              {
+                "startLine": 147,
+                "endLine": 149
+              }
+            ]
+          },
+          {
+            "treeLine": 61,
+            "sourceRanges": [
+              {
+                "startLine": 147,
+                "endLine": 147
+              }
+            ]
+          },
+          {
+            "treeLine": 62,
+            "sourceRanges": [
+              {
+                "startLine": 147,
+                "endLine": 147
+              }
+            ]
+          },
+          {
+            "treeLine": 63,
+            "sourceRanges": [
+              {
+                "startLine": 147,
+                "endLine": 147
+              }
+            ]
+          },
+          {
+            "treeLine": 64,
+            "sourceRanges": [
+              {
+                "startLine": 150,
+                "endLine": 150
+              }
+            ]
+          },
+          {
+            "treeLine": 65,
+            "sourceRanges": [
+              {
+                "startLine": 151,
+                "endLine": 151
+              }
+            ]
+          },
+          {
+            "treeLine": 66,
+            "sourceRanges": [
+              {
+                "startLine": 152,
+                "endLine": 152
+              }
+            ]
+          },
+          {
+            "treeLine": 67,
+            "sourceRanges": [
+              {
+                "startLine": 153,
+                "endLine": 153
+              }
+            ]
+          },
+          {
+            "treeLine": 68,
+            "sourceRanges": [
+              {
+                "startLine": 154,
+                "endLine": 154
+              }
+            ]
+          },
+          {
+            "treeLine": 69,
+            "sourceRanges": [
+              {
+                "startLine": 155,
+                "endLine": 156
+              }
+            ]
+          },
+          {
+            "treeLine": 70,
+            "sourceRanges": [
+              {
+                "startLine": 157,
+                "endLine": 157
+              }
+            ]
+          },
+          {
+            "treeLine": 71,
+            "sourceRanges": [
+              {
+                "startLine": 158,
+                "endLine": 158
+              }
+            ]
+          },
+          {
+            "treeLine": 72,
+            "sourceRanges": [
+              {
+                "startLine": 159,
+                "endLine": 159
+              }
+            ]
+          },
+          {
+            "treeLine": 73,
+            "sourceRanges": [
+              {
+                "startLine": 160,
+                "endLine": 160
+              }
+            ]
+          },
+          {
+            "treeLine": 74,
+            "sourceRanges": [
+              {
+                "startLine": 161,
+                "endLine": 161
+              }
+            ]
+          },
+          {
+            "treeLine": 75,
+            "sourceRanges": [
+              {
+                "startLine": 162,
+                "endLine": 162
+              }
+            ]
+          },
+          {
+            "treeLine": 76,
+            "sourceRanges": [
+              {
+                "startLine": 163,
+                "endLine": 165
+              }
+            ]
+          },
+          {
+            "treeLine": 77,
+            "sourceRanges": [
+              {
+                "startLine": 166,
+                "endLine": 166
+              }
+            ]
+          },
+          {
+            "treeLine": 78,
+            "sourceRanges": [
+              {
+                "startLine": 167,
+                "endLine": 167
+              }
+            ]
+          },
+          {
+            "treeLine": 79,
+            "sourceRanges": [
+              {
+                "startLine": 168,
+                "endLine": 168
+              }
+            ]
+          },
+          {
+            "treeLine": 80,
+            "sourceRanges": [
+              {
+                "startLine": 169,
+                "endLine": 169
+              }
+            ]
+          },
+          {
+            "treeLine": 81,
+            "sourceRanges": [
+              {
+                "startLine": 170,
+                "endLine": 170
+              }
+            ]
+          },
+          {
+            "treeLine": 82,
+            "sourceRanges": [
+              {
+                "startLine": 170,
+                "endLine": 170
+              }
+            ]
+          },
+          {
+            "treeLine": 83,
+            "sourceRanges": [
+              {
+                "startLine": 170,
+                "endLine": 170
+              }
+            ]
+          },
+          {
+            "treeLine": 84,
+            "sourceRanges": [
+              {
+                "startLine": 171,
+                "endLine": 171
+              }
+            ]
+          },
+          {
+            "treeLine": 85,
+            "sourceRanges": [
+              {
+                "startLine": 172,
+                "endLine": 172
+              }
+            ]
+          },
+          {
+            "treeLine": 86,
+            "sourceRanges": [
+              {
+                "startLine": 173,
+                "endLine": 173
+              }
+            ]
+          },
+          {
+            "treeLine": 87,
+            "sourceRanges": [
+              {
+                "startLine": 174,
+                "endLine": 174
+              }
+            ]
+          },
+          {
+            "treeLine": 88,
+            "sourceRanges": [
+              {
+                "startLine": 175,
+                "endLine": 175
+              }
+            ]
+          },
+          {
+            "treeLine": 89,
+            "sourceRanges": [
+              {
+                "startLine": 176,
+                "endLine": 176
+              }
+            ]
+          },
+          {
+            "treeLine": 90,
+            "sourceRanges": [
+              {
+                "startLine": 177,
+                "endLine": 177
+              }
+            ]
+          },
+          {
+            "treeLine": 91,
+            "sourceRanges": [
+              {
+                "startLine": 178,
+                "endLine": 178
+              }
+            ]
+          },
+          {
+            "treeLine": 92,
+            "sourceRanges": [
+              {
+                "startLine": 179,
+                "endLine": 179
+              }
+            ]
+          },
+          {
+            "treeLine": 93,
+            "sourceRanges": [
+              {
+                "startLine": 180,
+                "endLine": 193
+              }
+            ]
+          },
+          {
+            "treeLine": 94,
+            "sourceRanges": [
+              {
+                "startLine": 181,
+                "endLine": 181
+              }
+            ]
+          },
+          {
+            "treeLine": 95,
+            "sourceRanges": [
+              {
+                "startLine": 182,
+                "endLine": 182
+              }
+            ]
+          },
+          {
+            "treeLine": 96,
+            "sourceRanges": [
+              {
+                "startLine": 183,
+                "endLine": 183
+              }
+            ]
+          },
+          {
+            "treeLine": 97,
+            "sourceRanges": [
+              {
+                "startLine": 185,
+                "endLine": 185
+              }
+            ]
+          },
+          {
+            "treeLine": 98,
+            "sourceRanges": [
+              {
+                "startLine": 186,
+                "endLine": 186
+              }
+            ]
+          },
+          {
+            "treeLine": 99,
+            "sourceRanges": [
+              {
+                "startLine": 187,
+                "endLine": 187
+              }
+            ]
+          },
+          {
+            "treeLine": 100,
+            "sourceRanges": [
+              {
+                "startLine": 189,
+                "endLine": 189
+              }
+            ]
+          },
+          {
+            "treeLine": 101,
+            "sourceRanges": [
+              {
+                "startLine": 190,
+                "endLine": 190
+              }
+            ]
+          },
+          {
+            "treeLine": 102,
+            "sourceRanges": [
+              {
+                "startLine": 194,
+                "endLine": 194
+              }
+            ]
+          },
+          {
+            "treeLine": 103,
+            "sourceRanges": [
+              {
+                "startLine": 195,
+                "endLine": 195
+              }
+            ]
+          },
+          {
+            "treeLine": 104,
+            "sourceRanges": [
+              {
+                "startLine": 196,
+                "endLine": 196
+              }
+            ]
+          },
+          {
+            "treeLine": 105,
+            "sourceRanges": [
+              {
+                "startLine": 197,
+                "endLine": 197
+              }
+            ]
+          },
+          {
+            "treeLine": 106,
+            "sourceRanges": [
+              {
+                "startLine": 198,
+                "endLine": 198
+              }
+            ]
+          },
+          {
+            "treeLine": 107,
+            "sourceRanges": [
+              {
+                "startLine": 199,
+                "endLine": 199
+              }
+            ]
+          },
+          {
+            "treeLine": 108,
+            "sourceRanges": [
+              {
+                "startLine": 200,
+                "endLine": 200
+              }
+            ]
+          },
+          {
+            "treeLine": 109,
+            "sourceRanges": [
+              {
+                "startLine": 201,
+                "endLine": 201
+              }
+            ]
+          },
+          {
+            "treeLine": 110,
+            "sourceRanges": [
+              {
+                "startLine": 202,
+                "endLine": 202
+              }
+            ]
+          },
+          {
+            "treeLine": 111,
+            "sourceRanges": [
+              {
+                "startLine": 203,
+                "endLine": 203
+              }
+            ]
+          },
+          {
+            "treeLine": 112,
+            "sourceRanges": [
+              {
+                "startLine": 204,
+                "endLine": 204
+              }
+            ]
+          },
+          {
+            "treeLine": 113,
+            "sourceRanges": [
+              {
+                "startLine": 205,
+                "endLine": 205
+              }
+            ]
+          },
+          {
+            "treeLine": 114,
+            "sourceRanges": [
+              {
+                "startLine": 207,
+                "endLine": 207
+              }
+            ]
+          },
+          {
+            "treeLine": 115,
+            "sourceRanges": [
+              {
+                "startLine": 208,
+                "endLine": 208
+              }
+            ]
+          },
+          {
+            "treeLine": 116,
+            "sourceRanges": [
+              {
+                "startLine": 209,
+                "endLine": 209
+              }
+            ]
+          },
+          {
+            "treeLine": 117,
+            "sourceRanges": [
+              {
+                "startLine": 211,
+                "endLine": 211
+              }
+            ]
+          },
+          {
+            "treeLine": 118,
+            "sourceRanges": [
+              {
+                "startLine": 212,
+                "endLine": 215
+              }
+            ]
+          },
+          {
+            "treeLine": 119,
+            "sourceRanges": [
+              {
+                "startLine": 216,
+                "endLine": 216
+              }
+            ]
+          },
+          {
+            "treeLine": 120,
+            "sourceRanges": [
+              {
+                "startLine": 217,
+                "endLine": 217
+              }
+            ]
+          },
+          {
+            "treeLine": 121,
+            "sourceRanges": [
+              {
+                "startLine": 218,
+                "endLine": 221
+              }
+            ]
+          },
+          {
+            "treeLine": 122,
+            "sourceRanges": [
+              {
+                "startLine": 222,
+                "endLine": 223
+              }
+            ]
+          },
+          {
+            "treeLine": 123,
+            "sourceRanges": [
+              {
+                "startLine": 224,
+                "endLine": 226
+              }
+            ]
+          },
+          {
+            "treeLine": 124,
+            "sourceRanges": [
+              {
+                "startLine": 227,
+                "endLine": 230
+              }
+            ]
+          },
+          {
+            "treeLine": 125,
+            "sourceRanges": [
+              {
+                "startLine": 231,
+                "endLine": 234
+              }
+            ]
+          },
+          {
+            "treeLine": 126,
+            "sourceRanges": [
+              {
+                "startLine": 235,
+                "endLine": 235
+              }
+            ]
+          },
+          {
+            "treeLine": 127,
+            "sourceRanges": [
+              {
+                "startLine": 236,
+                "endLine": 257
+              }
+            ]
+          },
+          {
+            "treeLine": 128,
+            "sourceRanges": [
+              {
+                "startLine": 237,
+                "endLine": 237
+              }
+            ]
+          },
+          {
+            "treeLine": 129,
+            "sourceRanges": [
+              {
+                "startLine": 242,
+                "endLine": 242
+              }
+            ]
+          },
+          {
+            "treeLine": 130,
+            "sourceRanges": [
+              {
+                "startLine": 243,
+                "endLine": 243
+              }
+            ]
+          },
+          {
+            "treeLine": 131,
+            "sourceRanges": [
+              {
+                "startLine": 252,
+                "endLine": 252
+              }
+            ]
+          },
+          {
+            "treeLine": 132,
+            "sourceRanges": [
+              {
+                "startLine": 254,
+                "endLine": 254
+              }
+            ]
+          },
+          {
+            "treeLine": 133,
+            "sourceRanges": [
+              {
+                "startLine": 258,
+                "endLine": 258
+              }
+            ]
+          },
+          {
+            "treeLine": 134,
+            "sourceRanges": [
+              {
+                "startLine": 259,
+                "endLine": 259
+              }
+            ]
+          },
+          {
+            "treeLine": 135,
+            "sourceRanges": [
+              {
+                "startLine": 260,
+                "endLine": 263
+              }
+            ]
+          },
+          {
+            "treeLine": 136,
+            "sourceRanges": [
+              {
+                "startLine": 264,
+                "endLine": 277
+              }
+            ]
+          },
+          {
+            "treeLine": 137,
+            "sourceRanges": [
+              {
+                "startLine": 266,
+                "endLine": 266
+              }
+            ]
+          },
+          {
+            "treeLine": 138,
+            "sourceRanges": [
+              {
+                "startLine": 268,
+                "endLine": 268
+              }
+            ]
+          },
+          {
+            "treeLine": 139,
+            "sourceRanges": [
+              {
+                "startLine": 269,
+                "endLine": 269
+              }
+            ]
+          },
+          {
+            "treeLine": 140,
+            "sourceRanges": [
+              {
+                "startLine": 270,
+                "endLine": 270
+              }
+            ]
+          },
+          {
+            "treeLine": 141,
+            "sourceRanges": [
+              {
+                "startLine": 278,
+                "endLine": 281
+              }
+            ]
+          },
+          {
+            "treeLine": 142,
+            "sourceRanges": [
+              {
+                "startLine": 279,
+                "endLine": 279
+              }
+            ]
+          },
+          {
+            "treeLine": 143,
+            "sourceRanges": [
+              {
+                "startLine": 282,
+                "endLine": 282
+              }
+            ]
+          },
+          {
+            "treeLine": 144,
+            "sourceRanges": [
+              {
+                "startLine": 283,
+                "endLine": 285
+              }
+            ]
+          },
+          {
+            "treeLine": 145,
+            "sourceRanges": [
+              {
+                "startLine": 286,
+                "endLine": 286
+              }
+            ]
+          },
+          {
+            "treeLine": 146,
+            "sourceRanges": [
+              {
+                "startLine": 287,
+                "endLine": 287
+              }
+            ]
+          },
+          {
+            "treeLine": 147,
+            "sourceRanges": [
+              {
+                "startLine": 288,
+                "endLine": 290
+              }
+            ]
+          },
+          {
+            "treeLine": 148,
+            "sourceRanges": [
+              {
+                "startLine": 291,
+                "endLine": 298
+              }
+            ]
+          },
+          {
+            "treeLine": 149,
+            "sourceRanges": [
+              {
+                "startLine": 300,
+                "endLine": 313
+              }
+            ]
+          },
+          {
+            "treeLine": 150,
+            "sourceRanges": [
+              {
+                "startLine": 301,
+                "endLine": 301
+              }
+            ]
+          },
+          {
+            "treeLine": 151,
+            "sourceRanges": [
+              {
+                "startLine": 302,
+                "endLine": 302
+              }
+            ]
+          },
+          {
+            "treeLine": 152,
+            "sourceRanges": [
+              {
+                "startLine": 304,
+                "endLine": 308
+              }
+            ]
+          },
+          {
+            "treeLine": 153,
+            "sourceRanges": [
+              {
+                "startLine": 305,
+                "endLine": 305
+              }
+            ]
+          },
+          {
+            "treeLine": 154,
+            "sourceRanges": [
+              {
+                "startLine": 306,
+                "endLine": 306
+              }
+            ]
+          },
+          {
+            "treeLine": 155,
+            "sourceRanges": [
+              {
+                "startLine": 310,
+                "endLine": 310
+              }
+            ]
+          },
+          {
+            "treeLine": 156,
+            "sourceRanges": [
+              {
+                "startLine": 315,
+                "endLine": 317
+              }
+            ]
+          },
+          {
+            "treeLine": 157,
+            "sourceRanges": [
+              {
+                "startLine": 319,
+                "endLine": 319
+              }
+            ]
+          },
+          {
+            "treeLine": 158,
+            "sourceRanges": [
+              {
+                "startLine": 321,
+                "endLine": 321
+              }
+            ]
+          },
+          {
+            "treeLine": 159,
+            "sourceRanges": [
+              {
+                "startLine": 322,
+                "endLine": 322
+              }
+            ]
+          },
+          {
+            "treeLine": 160,
+            "sourceRanges": [
+              {
+                "startLine": 324,
+                "endLine": 324
+              }
+            ]
+          },
+          {
+            "treeLine": 161,
+            "sourceRanges": [
+              {
+                "startLine": 326,
+                "endLine": 338
+              }
+            ]
+          },
+          {
+            "treeLine": 162,
+            "sourceRanges": [
+              {
+                "startLine": 328,
+                "endLine": 328
+              }
+            ]
+          },
+          {
+            "treeLine": 163,
+            "sourceRanges": [
+              {
+                "startLine": 329,
+                "endLine": 333
+              }
+            ]
+          },
+          {
+            "treeLine": 164,
+            "sourceRanges": [
+              {
+                "startLine": 331,
+                "endLine": 331
+              }
+            ]
+          },
+          {
+            "treeLine": 165,
+            "sourceRanges": [
+              {
+                "startLine": 334,
+                "endLine": 334
+              }
+            ]
+          },
+          {
+            "treeLine": 166,
+            "sourceRanges": [
+              {
+                "startLine": 340,
+                "endLine": 342
+              }
+            ]
+          },
+          {
+            "treeLine": 167,
+            "sourceRanges": [
+              {
+                "startLine": 344,
+                "endLine": 346
+              }
+            ]
+          },
+          {
+            "treeLine": 168,
+            "sourceRanges": [
+              {
+                "startLine": 348,
+                "endLine": 356
+              }
+            ]
+          },
+          {
+            "treeLine": 169,
+            "sourceRanges": [
+              {
+                "startLine": 350,
+                "endLine": 354
+              }
+            ]
+          },
+          {
+            "treeLine": 170,
+            "sourceRanges": [
+              {
+                "startLine": 358,
+                "endLine": 367
+              }
+            ]
+          },
+          {
+            "treeLine": 171,
+            "sourceRanges": [
+              {
+                "startLine": 359,
+                "endLine": 359
+              }
+            ]
+          },
+          {
+            "treeLine": 172,
+            "sourceRanges": [
+              {
+                "startLine": 361,
+                "endLine": 361
+              }
+            ]
+          },
+          {
+            "treeLine": 173,
+            "sourceRanges": [
+              {
+                "startLine": 362,
+                "endLine": 362
+              }
+            ]
+          },
+          {
+            "treeLine": 174,
+            "sourceRanges": [
+              {
+                "startLine": 368,
+                "endLine": 374
+              }
+            ]
+          },
+          {
+            "treeLine": 175,
+            "sourceRanges": [
+              {
+                "startLine": 369,
+                "endLine": 369
+              }
+            ]
+          },
+          {
+            "treeLine": 176,
+            "sourceRanges": [
+              {
+                "startLine": 376,
+                "endLine": 399
+              }
+            ]
+          },
+          {
+            "treeLine": 177,
+            "sourceRanges": [
+              {
+                "startLine": 378,
+                "endLine": 378
+              }
+            ]
+          },
+          {
+            "treeLine": 178,
+            "sourceRanges": [
+              {
+                "startLine": 380,
+                "endLine": 382
+              }
+            ]
+          },
+          {
+            "treeLine": 179,
+            "sourceRanges": [
+              {
+                "startLine": 401,
+                "endLine": 428
+              }
+            ]
+          },
+          {
+            "treeLine": 180,
+            "sourceRanges": [
+              {
+                "startLine": 402,
+                "endLine": 402
+              }
+            ]
+          },
+          {
+            "treeLine": 181,
+            "sourceRanges": [
+              {
+                "startLine": 406,
+                "endLine": 406
+              }
+            ]
+          },
+          {
+            "treeLine": 182,
+            "sourceRanges": [
+              {
+                "startLine": 407,
+                "endLine": 407
+              }
+            ]
+          },
+          {
+            "treeLine": 183,
+            "sourceRanges": [
+              {
+                "startLine": 408,
+                "endLine": 413
+              }
+            ]
+          },
+          {
+            "treeLine": 184,
+            "sourceRanges": [
+              {
+                "startLine": 424,
+                "endLine": 424
+              }
+            ]
+          },
+          {
+            "treeLine": 185,
+            "sourceRanges": [
+              {
+                "startLine": 430,
+                "endLine": 433
+              }
+            ]
+          },
+          {
+            "treeLine": 186,
+            "sourceRanges": [
+              {
+                "startLine": 435,
+                "endLine": 459
+              }
+            ]
+          },
+          {
+            "treeLine": 187,
+            "sourceRanges": [
+              {
+                "startLine": 436,
+                "endLine": 436
+              }
+            ]
+          },
+          {
+            "treeLine": 188,
+            "sourceRanges": [
+              {
+                "startLine": 437,
+                "endLine": 437
+              }
+            ]
+          },
+          {
+            "treeLine": 189,
+            "sourceRanges": [
+              {
+                "startLine": 461,
+                "endLine": 472
+              }
+            ]
+          },
+          {
+            "treeLine": 190,
+            "sourceRanges": [
+              {
+                "startLine": 474,
+                "endLine": 480
+              }
+            ]
+          },
+          {
+            "treeLine": 191,
+            "sourceRanges": [
+              {
+                "startLine": 482,
+                "endLine": 506
+              }
+            ]
+          },
+          {
+            "treeLine": 192,
+            "sourceRanges": [
+              {
+                "startLine": 484,
+                "endLine": 484
+              }
+            ]
+          },
+          {
+            "treeLine": 193,
+            "sourceRanges": [
+              {
+                "startLine": 486,
+                "endLine": 486
+              }
+            ]
+          },
+          {
+            "treeLine": 194,
+            "sourceRanges": [
+              {
+                "startLine": 487,
+                "endLine": 496
+              }
+            ]
+          },
+          {
+            "treeLine": 195,
+            "sourceRanges": [
+              {
+                "startLine": 508,
+                "endLine": 516
+              }
+            ]
+          },
+          {
+            "treeLine": 196,
+            "sourceRanges": [
+              {
+                "startLine": 509,
+                "endLine": 509
+              }
+            ]
+          },
+          {
+            "treeLine": 197,
+            "sourceRanges": [
+              {
+                "startLine": 511,
+                "endLine": 513
+              }
+            ]
+          },
+          {
+            "treeLine": 198,
+            "sourceRanges": [
+              {
+                "startLine": 518,
+                "endLine": 524
+              }
+            ]
+          },
+          {
+            "treeLine": 199,
+            "sourceRanges": [
+              {
+                "startLine": 519,
+                "endLine": 519
+              }
+            ]
+          },
+          {
+            "treeLine": 200,
+            "sourceRanges": [
+              {
+                "startLine": 521,
+                "endLine": 521
+              }
+            ]
+          },
+          {
+            "treeLine": 201,
+            "sourceRanges": [
+              {
+                "startLine": 526,
+                "endLine": 528
+              }
+            ]
+          },
+          {
+            "treeLine": 202,
+            "sourceRanges": [
+              {
+                "startLine": 530,
+                "endLine": 537
+              }
+            ]
+          },
+          {
+            "treeLine": 203,
+            "sourceRanges": [
+              {
+                "startLine": 534,
+                "endLine": 534
+              }
+            ]
+          },
+          {
+            "treeLine": 204,
+            "sourceRanges": [
+              {
+                "startLine": 539,
+                "endLine": 550
+              }
+            ]
+          },
+          {
+            "treeLine": 205,
+            "sourceRanges": [
+              {
+                "startLine": 544,
+                "endLine": 544
+              }
+            ]
+          },
+          {
+            "treeLine": 206,
+            "sourceRanges": [
+              {
+                "startLine": 547,
+                "endLine": 547
+              }
+            ]
+          },
+          {
+            "treeLine": 207,
+            "sourceRanges": [
+              {
+                "startLine": 552,
+                "endLine": 589
+              }
+            ]
+          },
+          {
+            "treeLine": 208,
+            "sourceRanges": [
+              {
+                "startLine": 564,
+                "endLine": 569
+              }
+            ]
+          },
+          {
+            "treeLine": 209,
+            "sourceRanges": [
+              {
+                "startLine": 570,
+                "endLine": 571
+              }
+            ]
+          },
+          {
+            "treeLine": 210,
+            "sourceRanges": [
+              {
+                "startLine": 572,
+                "endLine": 572
+              }
+            ]
+          },
+          {
+            "treeLine": 211,
+            "sourceRanges": [
+              {
+                "startLine": 585,
+                "endLine": 585
+              }
+            ]
+          },
+          {
+            "treeLine": 212,
+            "sourceRanges": [
+              {
+                "startLine": 591,
+                "endLine": 624
+              }
+            ]
+          },
+          {
+            "treeLine": 213,
+            "sourceRanges": [
+              {
+                "startLine": 593,
+                "endLine": 593
+              }
+            ]
+          },
+          {
+            "treeLine": 214,
+            "sourceRanges": [
+              {
+                "startLine": 594,
+                "endLine": 594
+              }
+            ]
+          },
+          {
+            "treeLine": 215,
+            "sourceRanges": [
+              {
+                "startLine": 595,
+                "endLine": 595
+              }
+            ]
+          },
+          {
+            "treeLine": 216,
+            "sourceRanges": [
+              {
+                "startLine": 596,
+                "endLine": 596
+              }
+            ]
+          },
+          {
+            "treeLine": 217,
+            "sourceRanges": [
+              {
+                "startLine": 598,
+                "endLine": 598
+              }
+            ]
+          },
+          {
+            "treeLine": 218,
+            "sourceRanges": [
+              {
+                "startLine": 604,
+                "endLine": 609
+              }
+            ]
+          },
+          {
+            "treeLine": 219,
+            "sourceRanges": [
+              {
+                "startLine": 610,
+                "endLine": 610
+              }
+            ]
+          },
+          {
+            "treeLine": 220,
+            "sourceRanges": [
+              {
+                "startLine": 611,
+                "endLine": 614
+              }
+            ]
+          },
+          {
+            "treeLine": 221,
+            "sourceRanges": [
+              {
+                "startLine": 620,
+                "endLine": 620
+              }
+            ]
+          },
+          {
+            "treeLine": 222,
+            "sourceRanges": [
+              {
+                "startLine": 626,
+                "endLine": 635
+              }
+            ]
+          },
+          {
+            "treeLine": 223,
+            "sourceRanges": [
+              {
+                "startLine": 627,
+                "endLine": 627
+              }
+            ]
+          },
+          {
+            "treeLine": 224,
+            "sourceRanges": [
+              {
+                "startLine": 628,
+                "endLine": 628
+              }
+            ]
+          },
+          {
+            "treeLine": 225,
+            "sourceRanges": [
+              {
+                "startLine": 629,
+                "endLine": 633
+              }
+            ]
+          },
+          {
+            "treeLine": 226,
+            "sourceRanges": [
+              {
+                "startLine": 637,
+                "endLine": 712
+              }
+            ]
+          },
+          {
+            "treeLine": 227,
+            "sourceRanges": [
+              {
+                "startLine": 638,
+                "endLine": 692
+              }
+            ]
+          },
+          {
+            "treeLine": 228,
+            "sourceRanges": [
+              {
+                "startLine": 714,
+                "endLine": 729
+              }
+            ]
+          },
+          {
+            "treeLine": 229,
+            "sourceRanges": [
+              {
+                "startLine": 721,
+                "endLine": 726
+              }
+            ]
+          },
+          {
+            "treeLine": 230,
+            "sourceRanges": [
+              {
+                "startLine": 723,
+                "endLine": 723
+              }
+            ]
+          },
+          {
+            "treeLine": 231,
+            "sourceRanges": [
+              {
+                "startLine": 731,
+                "endLine": 736
+              }
+            ]
+          },
+          {
+            "treeLine": 232,
+            "sourceRanges": [
+              {
+                "startLine": 737,
+                "endLine": 737
+              }
+            ]
+          },
+          {
+            "treeLine": 233,
+            "sourceRanges": [
+              {
+                "startLine": 738,
+                "endLine": 743
+              }
+            ]
+          },
+          {
+            "treeLine": 234,
+            "sourceRanges": [
+              {
+                "startLine": 744,
+                "endLine": 744
+              }
+            ]
+          },
+          {
+            "treeLine": 235,
+            "sourceRanges": [
+              {
+                "startLine": 746,
+                "endLine": 1249
+              }
+            ]
+          },
+          {
+            "treeLine": 236,
+            "sourceRanges": [
+              {
+                "startLine": 756,
+                "endLine": 756
+              }
+            ]
+          },
+          {
+            "treeLine": 237,
+            "sourceRanges": [
+              {
+                "startLine": 760,
+                "endLine": 760
+              }
+            ]
+          },
+          {
+            "treeLine": 238,
+            "sourceRanges": [
+              {
+                "startLine": 781,
+                "endLine": 781
+              }
+            ]
+          },
+          {
+            "treeLine": 239,
+            "sourceRanges": [
+              {
+                "startLine": 782,
+                "endLine": 782
+              }
+            ]
+          },
+          {
+            "treeLine": 240,
+            "sourceRanges": [
+              {
+                "startLine": 783,
+                "endLine": 783
+              }
+            ]
+          },
+          {
+            "treeLine": 241,
+            "sourceRanges": [
+              {
+                "startLine": 785,
+                "endLine": 785
+              }
+            ]
+          },
+          {
+            "treeLine": 242,
+            "sourceRanges": [
+              {
+                "startLine": 802,
+                "endLine": 802
+              }
+            ]
+          },
+          {
+            "treeLine": 243,
+            "sourceRanges": [
+              {
+                "startLine": 807,
+                "endLine": 807
+              }
+            ]
+          },
+          {
+            "treeLine": 244,
+            "sourceRanges": [
+              {
+                "startLine": 809,
+                "endLine": 809
+              }
+            ]
+          },
+          {
+            "treeLine": 245,
+            "sourceRanges": [
+              {
+                "startLine": 816,
+                "endLine": 816
+              }
+            ]
+          },
+          {
+            "treeLine": 246,
+            "sourceRanges": [
+              {
+                "startLine": 821,
+                "endLine": 821
+              }
+            ]
+          },
+          {
+            "treeLine": 247,
+            "sourceRanges": [
+              {
+                "startLine": 1114,
+                "endLine": 1114
+              }
+            ]
+          },
+          {
+            "treeLine": 248,
+            "sourceRanges": [
+              {
+                "startLine": 1115,
+                "endLine": 1115
+              }
+            ]
+          },
+          {
+            "treeLine": 249,
+            "sourceRanges": [
+              {
+                "startLine": 1117,
+                "endLine": 1120
+              }
+            ]
+          },
+          {
+            "treeLine": 250,
+            "sourceRanges": [
+              {
+                "startLine": 1121,
+                "endLine": 1151
+              }
+            ]
+          },
+          {
+            "treeLine": 251,
+            "sourceRanges": [
+              {
+                "startLine": 1186,
+                "endLine": 1245
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sourceFile": "src/core/diagramProjection.ts",
+        "sourceSha256": "a1fc76c3aff7638070b79af9b6aff99d8fc9f55f7e56913cb05dfb1fa26a4164",
+        "ascii": "src/core/diagramProjection.ts\n+-- import { validateCompactionProjection } from \"./compactionProjection\";\n+-- import type { ProjectRepresentationCatalogRecord, ProjectRepresentationRevisionRecord } from \"./projectCatalog\";\n+-- import { buildTreeRepresentationIndex, type TreeRepresentationIndex } from \"./representationIndex\";\n+-- interface ProjectProjectionRecord\n|   +-- id: string;\n|   +-- projectId: string;\n|   +-- name: string;\n|   +-- sourceRepresentationId: string;\n|   +-- sourceRevisionId: string;\n|   +-- targetRepresentationId: string;\n|   +-- targetRevisionId: string;\n|   +-- match: \"any\";\n|   +-- links: { sourceEvidenceIds: string[]; targetNodeIds: string[] }[];\n|   \\-- compactionProjection?: import(\"./compactionProjection\").CompactionProjection;\n+-- interface ProjectionSelectionResult\n|   +-- ascii: string;\n|   +-- matchedSourceEvidenceIds: string[];\n|   +-- unmatchedSourceEvidenceIds: string[];\n|   +-- targetNodeIds: string[];\n|   +-- visibleNodeIds: string[];\n|   +-- projectedNodeIds: string[];\n|   \\-- rows: { nodeId: string; sourceLine: number }[];\n+-- function record(value, label)\n+-- function id(value, label)\n+-- function ids(value, label, nonempty)\n|   \\-- entry [binding]\n+-- function validateShape(projection)\n|   +-- key [binding]\n|   \\-- link [binding]\n+-- function buildProjectionTree(revision)\n+-- function validateProjection(projection, catalog)\n|   +-- side [binding]\n|   +-- representationId [binding]\n|   +-- revisionId [binding]\n|   +-- representation [binding]\n|   +-- revision [binding]\n|   +-- source [binding]\n|   +-- target = buildProjectionTree()\n|   +-- link [binding]\n|   +-- evidenceId [binding]\n|   \\-- nodeId [binding]\n\\-- function projectSelection(projection, targetRevision, selectedEvidenceIds) - OR-matches evidence, expands matched subtrees, and adds ancestors for display.\n    +-- tree = buildProjectionTree()\n    +-- selected [binding]\n    +-- selectedSet [binding]\n    +-- matched [binding]\n    +-- targets [binding]\n    +-- link [binding]\n    +-- nodeId [binding]\n    +-- matches = link.sourceEvidenceIds.filter()\n    +-- visible [binding]\n    +-- pending [binding]\n    +-- nodeId [binding]\n    +-- projected [binding]\n    +-- nodeId [binding]\n    +-- parentId [binding]\n    +-- lines: string[]\n    +-- rows: ProjectionSelectionResult[\"rows\"]\n    +-- render(nodeId, prefix, connector, childPrefix)\n    |   +-- node [binding]\n    |   +-- children = node.childIds.filter()\n    |   \\-- last [binding]\n    \\-- ordered = Object.values(tree.nodes).sort()\n",
+        "asciiSha256": "c7057893d59ffbc61ab6e108f73d43fffd35786250abfe6d24a37c74d53c1eab",
+        "mappings": [
+          {
+            "treeLine": 1,
+            "sourceRanges": [
+              {
+                "startLine": 1,
+                "endLine": 225
+              }
+            ]
+          },
+          {
+            "treeLine": 2,
+            "sourceRanges": [
+              {
+                "startLine": 1,
+                "endLine": 1
+              }
+            ]
+          },
+          {
+            "treeLine": 3,
+            "sourceRanges": [
+              {
+                "startLine": 2,
+                "endLine": 2
+              }
+            ]
+          },
+          {
+            "treeLine": 4,
+            "sourceRanges": [
+              {
+                "startLine": 3,
+                "endLine": 3
+              }
+            ]
+          },
+          {
+            "treeLine": 5,
+            "sourceRanges": [
+              {
+                "startLine": 5,
+                "endLine": 17
+              }
+            ]
+          },
+          {
+            "treeLine": 6,
+            "sourceRanges": [
+              {
+                "startLine": 6,
+                "endLine": 6
+              }
+            ]
+          },
+          {
+            "treeLine": 7,
+            "sourceRanges": [
+              {
+                "startLine": 7,
+                "endLine": 7
+              }
+            ]
+          },
+          {
+            "treeLine": 8,
+            "sourceRanges": [
+              {
+                "startLine": 8,
+                "endLine": 8
+              }
+            ]
+          },
+          {
+            "treeLine": 9,
+            "sourceRanges": [
+              {
+                "startLine": 9,
+                "endLine": 9
+              }
+            ]
+          },
+          {
+            "treeLine": 10,
+            "sourceRanges": [
+              {
+                "startLine": 10,
+                "endLine": 10
+              }
+            ]
+          },
+          {
+            "treeLine": 11,
+            "sourceRanges": [
+              {
+                "startLine": 11,
+                "endLine": 11
+              }
+            ]
+          },
+          {
+            "treeLine": 12,
+            "sourceRanges": [
+              {
+                "startLine": 12,
+                "endLine": 12
+              }
+            ]
+          },
+          {
+            "treeLine": 13,
+            "sourceRanges": [
+              {
+                "startLine": 13,
+                "endLine": 13
+              }
+            ]
+          },
+          {
+            "treeLine": 14,
+            "sourceRanges": [
+              {
+                "startLine": 14,
+                "endLine": 14
+              }
+            ]
+          },
+          {
+            "treeLine": 15,
+            "sourceRanges": [
+              {
+                "startLine": 16,
+                "endLine": 16
+              }
+            ]
+          },
+          {
+            "treeLine": 16,
+            "sourceRanges": [
+              {
+                "startLine": 19,
+                "endLine": 29
+              }
+            ]
+          },
+          {
+            "treeLine": 17,
+            "sourceRanges": [
+              {
+                "startLine": 20,
+                "endLine": 20
+              }
+            ]
+          },
+          {
+            "treeLine": 18,
+            "sourceRanges": [
+              {
+                "startLine": 21,
+                "endLine": 21
+              }
+            ]
+          },
+          {
+            "treeLine": 19,
+            "sourceRanges": [
+              {
+                "startLine": 22,
+                "endLine": 22
+              }
+            ]
+          },
+          {
+            "treeLine": 20,
+            "sourceRanges": [
+              {
+                "startLine": 23,
+                "endLine": 23
+              }
+            ]
+          },
+          {
+            "treeLine": 21,
+            "sourceRanges": [
+              {
+                "startLine": 24,
+                "endLine": 24
+              }
+            ]
+          },
+          {
+            "treeLine": 22,
+            "sourceRanges": [
+              {
+                "startLine": 26,
+                "endLine": 26
+              }
+            ]
+          },
+          {
+            "treeLine": 23,
+            "sourceRanges": [
+              {
+                "startLine": 28,
+                "endLine": 28
+              }
+            ]
+          },
+          {
+            "treeLine": 24,
+            "sourceRanges": [
+              {
+                "startLine": 31,
+                "endLine": 35
+              }
+            ]
+          },
+          {
+            "treeLine": 25,
+            "sourceRanges": [
+              {
+                "startLine": 37,
+                "endLine": 44
+              }
+            ]
+          },
+          {
+            "treeLine": 26,
+            "sourceRanges": [
+              {
+                "startLine": 46,
+                "endLine": 51
+              }
+            ]
+          },
+          {
+            "treeLine": 27,
+            "sourceRanges": [
+              {
+                "startLine": 50,
+                "endLine": 50
+              }
+            ]
+          },
+          {
+            "treeLine": 28,
+            "sourceRanges": [
+              {
+                "startLine": 53,
+                "endLine": 69
+              }
+            ]
+          },
+          {
+            "treeLine": 29,
+            "sourceRanges": [
+              {
+                "startLine": 55,
+                "endLine": 55
+              }
+            ]
+          },
+          {
+            "treeLine": 30,
+            "sourceRanges": [
+              {
+                "startLine": 64,
+                "endLine": 64
+              }
+            ]
+          },
+          {
+            "treeLine": 31,
+            "sourceRanges": [
+              {
+                "startLine": 77,
+                "endLine": 106
+              }
+            ]
+          },
+          {
+            "treeLine": 32,
+            "sourceRanges": [
+              {
+                "startLine": 109,
+                "endLine": 152
+              }
+            ]
+          },
+          {
+            "treeLine": 33,
+            "sourceRanges": [
+              {
+                "startLine": 118,
+                "endLine": 118
+              }
+            ]
+          },
+          {
+            "treeLine": 34,
+            "sourceRanges": [
+              {
+                "startLine": 119,
+                "endLine": 119
+              }
+            ]
+          },
+          {
+            "treeLine": 35,
+            "sourceRanges": [
+              {
+                "startLine": 120,
+                "endLine": 120
+              }
+            ]
+          },
+          {
+            "treeLine": 36,
+            "sourceRanges": [
+              {
+                "startLine": 121,
+                "endLine": 122
+              }
+            ]
+          },
+          {
+            "treeLine": 37,
+            "sourceRanges": [
+              {
+                "startLine": 123,
+                "endLine": 123
+              }
+            ]
+          },
+          {
+            "treeLine": 38,
+            "sourceRanges": [
+              {
+                "startLine": 138,
+                "endLine": 138
+              }
+            ]
+          },
+          {
+            "treeLine": 39,
+            "sourceRanges": [
+              {
+                "startLine": 140,
+                "endLine": 140
+              }
+            ]
+          },
+          {
+            "treeLine": 40,
+            "sourceRanges": [
+              {
+                "startLine": 142,
+                "endLine": 142
+              }
+            ]
+          },
+          {
+            "treeLine": 41,
+            "sourceRanges": [
+              {
+                "startLine": 143,
+                "endLine": 143
+              }
+            ]
+          },
+          {
+            "treeLine": 42,
+            "sourceRanges": [
+              {
+                "startLine": 148,
+                "endLine": 148
+              }
+            ]
+          },
+          {
+            "treeLine": 43,
+            "sourceRanges": [
+              {
+                "startLine": 159,
+                "endLine": 225
+              }
+            ]
+          },
+          {
+            "treeLine": 44,
+            "sourceRanges": [
+              {
+                "startLine": 172,
+                "endLine": 172
+              }
+            ]
+          },
+          {
+            "treeLine": 45,
+            "sourceRanges": [
+              {
+                "startLine": 173,
+                "endLine": 173
+              }
+            ]
+          },
+          {
+            "treeLine": 46,
+            "sourceRanges": [
+              {
+                "startLine": 174,
+                "endLine": 174
+              }
+            ]
+          },
+          {
+            "treeLine": 47,
+            "sourceRanges": [
+              {
+                "startLine": 175,
+                "endLine": 175
+              }
+            ]
+          },
+          {
+            "treeLine": 48,
+            "sourceRanges": [
+              {
+                "startLine": 176,
+                "endLine": 176
+              }
+            ]
+          },
+          {
+            "treeLine": 49,
+            "sourceRanges": [
+              {
+                "startLine": 177,
+                "endLine": 177
+              }
+            ]
+          },
+          {
+            "treeLine": 50,
+            "sourceRanges": [
+              {
+                "startLine": 178,
+                "endLine": 178
+              }
+            ]
+          },
+          {
+            "treeLine": 51,
+            "sourceRanges": [
+              {
+                "startLine": 181,
+                "endLine": 181
+              }
+            ]
+          },
+          {
+            "treeLine": 52,
+            "sourceRanges": [
+              {
+                "startLine": 186,
+                "endLine": 186
+              }
+            ]
+          },
+          {
+            "treeLine": 53,
+            "sourceRanges": [
+              {
+                "startLine": 187,
+                "endLine": 187
+              }
+            ]
+          },
+          {
+            "treeLine": 54,
+            "sourceRanges": [
+              {
+                "startLine": 189,
+                "endLine": 189
+              }
+            ]
+          },
+          {
+            "treeLine": 55,
+            "sourceRanges": [
+              {
+                "startLine": 194,
+                "endLine": 194
+              }
+            ]
+          },
+          {
+            "treeLine": 56,
+            "sourceRanges": [
+              {
+                "startLine": 195,
+                "endLine": 195
+              }
+            ]
+          },
+          {
+            "treeLine": 57,
+            "sourceRanges": [
+              {
+                "startLine": 196,
+                "endLine": 196
+              }
+            ]
+          },
+          {
+            "treeLine": 58,
+            "sourceRanges": [
+              {
+                "startLine": 202,
+                "endLine": 202
+              }
+            ]
+          },
+          {
+            "treeLine": 59,
+            "sourceRanges": [
+              {
+                "startLine": 203,
+                "endLine": 203
+              }
+            ]
+          },
+          {
+            "treeLine": 60,
+            "sourceRanges": [
+              {
+                "startLine": 204,
+                "endLine": 213
+              }
+            ]
+          },
+          {
+            "treeLine": 61,
+            "sourceRanges": [
+              {
+                "startLine": 205,
+                "endLine": 205
+              }
+            ]
+          },
+          {
+            "treeLine": 62,
+            "sourceRanges": [
+              {
+                "startLine": 208,
+                "endLine": 208
+              }
+            ]
+          },
+          {
+            "treeLine": 63,
+            "sourceRanges": [
+              {
+                "startLine": 210,
+                "endLine": 210
+              }
+            ]
+          },
+          {
+            "treeLine": 64,
+            "sourceRanges": [
+              {
+                "startLine": 215,
+                "endLine": 215
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sourceFile": "src/core/compactionProjection.ts",
+        "sourceSha256": "f431ed1b5661bff22a842622ac112556c75e6c87b3b37c8a6c002f8912495f00",
+        "ascii": "src/core/compactionProjection.ts\n+-- import { buildTreeRepresentationIndex } from \"./representationIndex\";\n+-- interface CompactionSnapshot\n|   +-- sourceFile: string;\n|   +-- sourceSha256: string;\n|   +-- ascii: string;\n|   +-- asciiSha256: string;\n|   \\-- mappings: { treeLine: number; sourceRanges: { startLine: number; endLine: number }[] }[];\n+-- interface CompactionProjection\n|   +-- files: CompactionSnapshot[];\n|   \\-- links: { callTreeNodeId: string; file: string; treeLines: number[] }[];\n+-- interface CompactionProjectionInput\n|   +-- files: CompactionSnapshot[];\n|   \\-- links: { callTreeLine: number; file: string; treeLines: number[] }[];\n+-- function index(file)\n+-- function validateCompactionProjection(value, callTreeNodeIds)\n|   +-- files [binding]\n|   +-- file [binding]\n|   +-- lines [binding]\n|   +-- mapped [binding]\n|   +-- mapping [binding]\n|   +-- link [binding]\n|   \\-- lines = files.get()\n\\-- function projectCompactions(projection, callTreeNodeIds) - Projects exact compaction rows with ancestors, excluding unrelated descendants.\n    +-- selected [binding]\n    +-- selections [binding]\n    +-- link [binding]\n    +-- lines [binding]\n    +-- selectedLines = selections.get()\n    +-- tree = index()\n    +-- visible [binding]\n    +-- node [binding]\n    +-- parent [binding]\n    +-- lines: string[]\n    +-- rows: { treeLine: number; selected: boolean; sourceRanges: CompactionSnapshot[\"mappings\"][number][\"sourceRanges\"] }[]\n    |   +-- treeLine: number;\n    |   +-- selected: boolean;\n    |   \\-- sourceRanges: CompactionSnapshot[\"mappings\"][number][\"sourceRanges\"]\n    +-- mappings [binding]\n    \\-- render(id, prefix, connector, childPrefix)\n        +-- node [binding]\n        +-- children = node.childIds.filter()\n        \\-- last [binding]\n",
+        "asciiSha256": "6f5b0383ba3ad7baee03ef6b23f9119ae5cc9501f252f85afd774930600a363c",
+        "mappings": [
+          {
+            "treeLine": 1,
+            "sourceRanges": [
+              {
+                "startLine": 1,
+                "endLine": 99
+              }
+            ]
+          },
+          {
+            "treeLine": 2,
+            "sourceRanges": [
+              {
+                "startLine": 1,
+                "endLine": 1
+              }
+            ]
+          },
+          {
+            "treeLine": 3,
+            "sourceRanges": [
+              {
+                "startLine": 3,
+                "endLine": 9
+              }
+            ]
+          },
+          {
+            "treeLine": 4,
+            "sourceRanges": [
+              {
+                "startLine": 4,
+                "endLine": 4
+              }
+            ]
+          },
+          {
+            "treeLine": 5,
+            "sourceRanges": [
+              {
+                "startLine": 5,
+                "endLine": 5
+              }
+            ]
+          },
+          {
+            "treeLine": 6,
+            "sourceRanges": [
+              {
+                "startLine": 6,
+                "endLine": 6
+              }
+            ]
+          },
+          {
+            "treeLine": 7,
+            "sourceRanges": [
+              {
+                "startLine": 7,
+                "endLine": 7
+              }
+            ]
+          },
+          {
+            "treeLine": 8,
+            "sourceRanges": [
+              {
+                "startLine": 8,
+                "endLine": 8
+              }
+            ]
+          },
+          {
+            "treeLine": 9,
+            "sourceRanges": [
+              {
+                "startLine": 11,
+                "endLine": 14
+              }
+            ]
+          },
+          {
+            "treeLine": 10,
+            "sourceRanges": [
+              {
+                "startLine": 12,
+                "endLine": 12
+              }
+            ]
+          },
+          {
+            "treeLine": 11,
+            "sourceRanges": [
+              {
+                "startLine": 13,
+                "endLine": 13
+              }
+            ]
+          },
+          {
+            "treeLine": 12,
+            "sourceRanges": [
+              {
+                "startLine": 16,
+                "endLine": 19
+              }
+            ]
+          },
+          {
+            "treeLine": 13,
+            "sourceRanges": [
+              {
+                "startLine": 17,
+                "endLine": 17
+              }
+            ]
+          },
+          {
+            "treeLine": 14,
+            "sourceRanges": [
+              {
+                "startLine": 18,
+                "endLine": 18
+              }
+            ]
+          },
+          {
+            "treeLine": 15,
+            "sourceRanges": [
+              {
+                "startLine": 21,
+                "endLine": 25
+              }
+            ]
+          },
+          {
+            "treeLine": 16,
+            "sourceRanges": [
+              {
+                "startLine": 28,
+                "endLine": 59
+              }
+            ]
+          },
+          {
+            "treeLine": 17,
+            "sourceRanges": [
+              {
+                "startLine": 32,
+                "endLine": 32
+              }
+            ]
+          },
+          {
+            "treeLine": 18,
+            "sourceRanges": [
+              {
+                "startLine": 33,
+                "endLine": 33
+              }
+            ]
+          },
+          {
+            "treeLine": 19,
+            "sourceRanges": [
+              {
+                "startLine": 40,
+                "endLine": 40
+              }
+            ]
+          },
+          {
+            "treeLine": 20,
+            "sourceRanges": [
+              {
+                "startLine": 41,
+                "endLine": 41
+              }
+            ]
+          },
+          {
+            "treeLine": 21,
+            "sourceRanges": [
+              {
+                "startLine": 42,
+                "endLine": 42
+              }
+            ]
+          },
+          {
+            "treeLine": 22,
+            "sourceRanges": [
+              {
+                "startLine": 52,
+                "endLine": 52
+              }
+            ]
+          },
+          {
+            "treeLine": 23,
+            "sourceRanges": [
+              {
+                "startLine": 53,
+                "endLine": 53
+              }
+            ]
+          },
+          {
+            "treeLine": 24,
+            "sourceRanges": [
+              {
+                "startLine": 62,
+                "endLine": 99
+              }
+            ]
+          },
+          {
+            "treeLine": 25,
+            "sourceRanges": [
+              {
+                "startLine": 63,
+                "endLine": 63
+              }
+            ]
+          },
+          {
+            "treeLine": 26,
+            "sourceRanges": [
+              {
+                "startLine": 64,
+                "endLine": 64
+              }
+            ]
+          },
+          {
+            "treeLine": 27,
+            "sourceRanges": [
+              {
+                "startLine": 65,
+                "endLine": 65
+              }
+            ]
+          },
+          {
+            "treeLine": 28,
+            "sourceRanges": [
+              {
+                "startLine": 67,
+                "endLine": 67
+              }
+            ]
+          },
+          {
+            "treeLine": 29,
+            "sourceRanges": [
+              {
+                "startLine": 72,
+                "endLine": 72
+              }
+            ]
+          },
+          {
+            "treeLine": 30,
+            "sourceRanges": [
+              {
+                "startLine": 74,
+                "endLine": 74
+              }
+            ]
+          },
+          {
+            "treeLine": 31,
+            "sourceRanges": [
+              {
+                "startLine": 75,
+                "endLine": 75
+              }
+            ]
+          },
+          {
+            "treeLine": 32,
+            "sourceRanges": [
+              {
+                "startLine": 76,
+                "endLine": 76
+              }
+            ]
+          },
+          {
+            "treeLine": 33,
+            "sourceRanges": [
+              {
+                "startLine": 79,
+                "endLine": 79
+              }
+            ]
+          },
+          {
+            "treeLine": 34,
+            "sourceRanges": [
+              {
+                "startLine": 82,
+                "endLine": 82
+              }
+            ]
+          },
+          {
+            "treeLine": 35,
+            "sourceRanges": [
+              {
+                "startLine": 83,
+                "endLine": 83
+              }
+            ]
+          },
+          {
+            "treeLine": 36,
+            "sourceRanges": [
+              {
+                "startLine": 83,
+                "endLine": 83
+              }
+            ]
+          },
+          {
+            "treeLine": 37,
+            "sourceRanges": [
+              {
+                "startLine": 83,
+                "endLine": 83
+              }
+            ]
+          },
+          {
+            "treeLine": 38,
+            "sourceRanges": [
+              {
+                "startLine": 83,
+                "endLine": 83
+              }
+            ]
+          },
+          {
+            "treeLine": 39,
+            "sourceRanges": [
+              {
+                "startLine": 84,
+                "endLine": 84
+              }
+            ]
+          },
+          {
+            "treeLine": 40,
+            "sourceRanges": [
+              {
+                "startLine": 85,
+                "endLine": 94
+              }
+            ]
+          },
+          {
+            "treeLine": 41,
+            "sourceRanges": [
+              {
+                "startLine": 86,
+                "endLine": 86
+              }
+            ]
+          },
+          {
+            "treeLine": 42,
+            "sourceRanges": [
+              {
+                "startLine": 89,
+                "endLine": 89
+              }
+            ]
+          },
+          {
+            "treeLine": 43,
+            "sourceRanges": [
+              {
+                "startLine": 91,
+                "endLine": 91
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sourceFile": "src/mapping/components/LocalChatConvo.tsx",
+        "sourceSha256": "315ac67429382f224a3220bbd0763b5337726ac10885be0e0f8e263b34b9f508",
+        "ascii": "src/mapping/components/LocalChatConvo.tsx\n+-- import { LocalChatVerbosityToggle } from \"./LocalChatVerbosityToggle\";\n+-- import { TerminalMarkdownContent } from \"../../core/components/TerminalMarkdownContent\";\n+-- import { useEffect, useCallback, useRef, useState, type FormEvent } from \"react\";\n+-- import { isLocalChatSubmitHotkey, type LocalChatThread, type LocalChatVerbosity, type LocalChatVariant } from \"../localChat\";\n\\-- function LocalChatConvo(props) - Renders the transcript, pending/error state, verbosity control, and follow-up composer.\n    +-- thread: LocalChatThread;\n    +-- variant: LocalChatVariant;\n    +-- onSubmit: (message: string) => void;\n    +-- onClose: () => void;\n    +-- onVerbosityChange: (value: LocalChatVerbosity) => void;\n    +-- onRetry: () => void;\n    +-- [draft, setDraft] = useState()\n    +-- transcriptRef = useRef()\n    +-- scrollToLatest = useCallback()\n    |   \\-- transcript [binding]\n    +-- useEffect callback\n    |   \\-- transcript [binding]\n    +-- submit(event)\n    |   \\-- message = draft.trim()\n    \\-- render JSX\n",
+        "asciiSha256": "7508104fa9764ed510978ba38d1451c6af3a9a36620b49d9c6f4cc766798ed3f",
+        "mappings": [
+          {
+            "treeLine": 1,
+            "sourceRanges": [
+              {
+                "startLine": 1,
+                "endLine": 108
+              }
+            ]
+          },
+          {
+            "treeLine": 2,
+            "sourceRanges": [
+              {
+                "startLine": 1,
+                "endLine": 1
+              }
+            ]
+          },
+          {
+            "treeLine": 3,
+            "sourceRanges": [
+              {
+                "startLine": 2,
+                "endLine": 2
+              }
+            ]
+          },
+          {
+            "treeLine": 4,
+            "sourceRanges": [
+              {
+                "startLine": 3,
+                "endLine": 9
+              }
+            ]
+          },
+          {
+            "treeLine": 5,
+            "sourceRanges": [
+              {
+                "startLine": 10,
+                "endLine": 15
+              }
+            ]
+          },
+          {
+            "treeLine": 6,
+            "sourceRanges": [
+              {
+                "startLine": 17,
+                "endLine": 108
+              }
+            ]
+          },
+          {
+            "treeLine": 7,
+            "sourceRanges": [
+              {
+                "startLine": 18,
+                "endLine": 18
+              }
+            ]
+          },
+          {
+            "treeLine": 8,
+            "sourceRanges": [
+              {
+                "startLine": 19,
+                "endLine": 19
+              }
+            ]
+          },
+          {
+            "treeLine": 9,
+            "sourceRanges": [
+              {
+                "startLine": 20,
+                "endLine": 20
+              }
+            ]
+          },
+          {
+            "treeLine": 10,
+            "sourceRanges": [
+              {
+                "startLine": 21,
+                "endLine": 21
+              }
+            ]
+          },
+          {
+            "treeLine": 11,
+            "sourceRanges": [
+              {
+                "startLine": 22,
+                "endLine": 22
+              }
+            ]
+          },
+          {
+            "treeLine": 12,
+            "sourceRanges": [
+              {
+                "startLine": 23,
+                "endLine": 23
+              }
+            ]
+          },
+          {
+            "treeLine": 13,
+            "sourceRanges": [
+              {
+                "startLine": 25,
+                "endLine": 25
+              }
+            ]
+          },
+          {
+            "treeLine": 14,
+            "sourceRanges": [
+              {
+                "startLine": 26,
+                "endLine": 26
+              }
+            ]
+          },
+          {
+            "treeLine": 15,
+            "sourceRanges": [
+              {
+                "startLine": 27,
+                "endLine": 30
+              }
+            ]
+          },
+          {
+            "treeLine": 16,
+            "sourceRanges": [
+              {
+                "startLine": 28,
+                "endLine": 28
+              }
+            ]
+          },
+          {
+            "treeLine": 17,
+            "sourceRanges": [
+              {
+                "startLine": 32,
+                "endLine": 35
+              }
+            ]
+          },
+          {
+            "treeLine": 18,
+            "sourceRanges": [
+              {
+                "startLine": 33,
+                "endLine": 33
+              }
+            ]
+          },
+          {
+            "treeLine": 19,
+            "sourceRanges": [
+              {
+                "startLine": 37,
+                "endLine": 43
+              }
+            ]
+          },
+          {
+            "treeLine": 20,
+            "sourceRanges": [
+              {
+                "startLine": 39,
+                "endLine": 39
+              }
+            ]
+          },
+          {
+            "treeLine": 21,
+            "sourceRanges": [
+              {
+                "startLine": 45,
+                "endLine": 107
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sourceFile": "src/mapping/components/MappingDiagramExplorer.tsx",
+        "sourceSha256": "a83809000f93998e97c118ba962af00076423fe2f02d6b300093f923d6daea5c",
+        "ascii": "src/mapping/components/MappingDiagramExplorer.tsx\n+-- import { useState } from \"react\";\n+-- import type { GridBox, LineGridScene } from \"../../core/lineGrid\";\n+-- import type { ProjectRepresentationRecord } from \"../../core/projectCatalog\";\n\\-- function MappingDiagramExplorer(props) - Filters project diagrams and renders the active canvas box hierarchy.\n    +-- projectName: string;\n    +-- diagrams: ProjectRepresentationRecord[];\n    +-- activeId?: string;\n    +-- scene?: LineGridScene;\n    +-- dirtyIds: string[];\n    +-- onOpen: (id: string) => void;\n    +-- onFocus: (boxId: string) => void;\n    +-- [query, setQuery] = useState()\n    \\-- boxTree(box)\n",
+        "asciiSha256": "dd88e87ff1fd9b78db61d41c9f2ca72d682f4f1f6aca1ff3851e90a3c3c165f0",
+        "mappings": [
+          {
+            "treeLine": 1,
+            "sourceRanges": [
+              {
+                "startLine": 1,
+                "endLine": 31
+              }
+            ]
+          },
+          {
+            "treeLine": 2,
+            "sourceRanges": [
+              {
+                "startLine": 1,
+                "endLine": 1
+              }
+            ]
+          },
+          {
+            "treeLine": 3,
+            "sourceRanges": [
+              {
+                "startLine": 2,
+                "endLine": 2
+              }
+            ]
+          },
+          {
+            "treeLine": 4,
+            "sourceRanges": [
+              {
+                "startLine": 3,
+                "endLine": 3
+              }
+            ]
+          },
+          {
+            "treeLine": 5,
+            "sourceRanges": [
+              {
+                "startLine": 4,
+                "endLine": 31
+              }
+            ]
+          },
+          {
+            "treeLine": 6,
+            "sourceRanges": [
+              {
+                "startLine": 5,
+                "endLine": 5
+              }
+            ]
+          },
+          {
+            "treeLine": 7,
+            "sourceRanges": [
+              {
+                "startLine": 5,
+                "endLine": 5
+              }
+            ]
+          },
+          {
+            "treeLine": 8,
+            "sourceRanges": [
+              {
+                "startLine": 5,
+                "endLine": 5
+              }
+            ]
+          },
+          {
+            "treeLine": 9,
+            "sourceRanges": [
+              {
+                "startLine": 6,
+                "endLine": 6
+              }
+            ]
+          },
+          {
+            "treeLine": 10,
+            "sourceRanges": [
+              {
+                "startLine": 6,
+                "endLine": 6
+              }
+            ]
+          },
+          {
+            "treeLine": 11,
+            "sourceRanges": [
+              {
+                "startLine": 6,
+                "endLine": 6
+              }
+            ]
+          },
+          {
+            "treeLine": 12,
+            "sourceRanges": [
+              {
+                "startLine": 6,
+                "endLine": 6
+              }
+            ]
+          },
+          {
+            "treeLine": 13,
+            "sourceRanges": [
+              {
+                "startLine": 8,
+                "endLine": 8
+              }
+            ]
+          },
+          {
+            "treeLine": 14,
+            "sourceRanges": [
+              {
+                "startLine": 9,
+                "endLine": 15
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "links": [
+      {
+        "callTreeLine": 3,
+        "file": "src/mapping/components/MappingPocPage.tsx",
+        "treeLines": [
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63
+        ]
+      },
+      {
+        "callTreeLine": 4,
+        "file": "src/mapping/components/MappingPocPage.tsx",
+        "treeLines": [
+          59,
+          60,
+          61
+        ]
+      },
+      {
+        "callTreeLine": 5,
+        "file": "src/mapping/components/MappingPocPage.tsx",
+        "treeLines": [
+          54,
+          55,
+          56,
+          57,
+          58
+        ]
+      },
+      {
+        "callTreeLine": 7,
+        "file": "src/mapping/components/MappingSubmenu.tsx",
+        "treeLines": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ]
+      },
+      {
+        "callTreeLine": 9,
+        "file": "src/core/components/DraggableDiagramCanvas.tsx",
+        "treeLines": [
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66,
+          67,
+          68,
+          69,
+          70,
+          71,
+          72,
+          73,
+          74
+        ]
+      },
+      {
+        "callTreeLine": 10,
+        "file": "src/core/components/DraggableDiagramCanvas.tsx",
+        "treeLines": [
+          33,
+          34,
+          35,
+          36,
+          37,
+          38
+        ]
+      },
+      {
+        "callTreeLine": 12,
+        "file": "src/core/lineGrid.ts",
+        "treeLines": [
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25
+        ]
+      },
+      {
+        "callTreeLine": 13,
+        "file": "src/core/lineGrid.ts",
+        "treeLines": [
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48
+        ]
+      },
+      {
+        "callTreeLine": 15,
+        "file": "src/mapping/components/MappingPocSelectionCanvas.tsx",
+        "treeLines": [
+          179,
+          180,
+          181,
+          182,
+          183,
+          184
+        ]
+      },
+      {
+        "callTreeLine": 16,
+        "file": "src/mapping/components/MappingPocSelectionCanvas.tsx",
+        "treeLines": [
+          212,
+          213,
+          214,
+          215,
+          216,
+          217,
+          218,
+          219,
+          220,
+          221
+        ]
+      },
+      {
+        "callTreeLine": 17,
+        "file": "src/mapping/components/MappingPocSelectionCanvas.tsx",
+        "treeLines": [
+          207,
+          208,
+          209,
+          210,
+          211
+        ]
+      },
+      {
+        "callTreeLine": 18,
+        "file": "src/mapping/components/MappingPocSelectionCanvas.tsx",
+        "treeLines": [
+          251
+        ]
+      },
+      {
+        "callTreeLine": 20,
+        "file": "src/core/diagramProjection.ts",
+        "treeLines": [
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51,
+          52,
+          53,
+          54,
+          55,
+          56,
+          57,
+          58,
+          59,
+          60,
+          61,
+          62,
+          63,
+          64
+        ]
+      },
+      {
+        "callTreeLine": 22,
+        "file": "src/core/compactionProjection.ts",
+        "treeLines": [
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43
+        ]
+      },
+      {
+        "callTreeLine": 24,
+        "file": "src/mapping/components/LocalChatConvo.tsx",
+        "treeLines": [
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21
+        ]
+      },
+      {
+        "callTreeLine": 26,
+        "file": "src/mapping/components/MappingDiagramExplorer.tsx",
+        "treeLines": [
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14
+        ]
+      }
+    ]
+  },
+  "sourceRepresentationId": "representation-9044402993fccf94debfaa08a438e767",
+  "sourceRevisionId": "representation-revision-3afa4c8b-97f4-4cc6-9af6-7e8149505da1"
+}

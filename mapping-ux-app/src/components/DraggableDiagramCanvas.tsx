@@ -144,6 +144,53 @@ export function DraggableDiagramCanvas(props: {
   }, [applyTransform, props.enabled]);
 
   useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport || !props.enabled) return;
+    let suppressAuxClick = false;
+    const onMiddleDown = (event: globalThis.PointerEvent) => {
+      if (event.button !== 1) return;
+      suppressAuxClick = false;
+      if (event.defaultPrevented) return;
+      const bounds = viewport.getBoundingClientRect();
+      if (bounds.width <= 0 || bounds.height <= 0 || event.clientX < bounds.left
+        || event.clientX >= bounds.right || event.clientY < bounds.top || event.clientY >= bounds.bottom) return;
+      // Capture before pane controls, including floating siblings, can claim the gesture.
+      event.preventDefault();
+      event.stopPropagation();
+      suppressAuxClick = true;
+      window.getSelection()?.removeAllRanges();
+      viewport.setPointerCapture(event.pointerId);
+      const point = localPoint(viewport, event.clientX, event.clientY);
+      pointersRef.current.clear();
+      pointersRef.current.set(event.pointerId, point);
+      pinchRef.current = null;
+      panRef.current = { pointerId: event.pointerId, start: point, base: { ...transformRef.current.offset } };
+      viewport.classList.add("is-dragging");
+    };
+    const onAuxClick = (event: MouseEvent) => {
+      if (event.button !== 1 || !suppressAuxClick) return;
+      suppressAuxClick = false;
+      event.preventDefault();
+      event.stopPropagation();
+    };
+    const onBlur = () => {
+      for (const pointerId of pointersRef.current.keys()) {
+        if (viewport.hasPointerCapture(pointerId)) viewport.releasePointerCapture(pointerId);
+      }
+      pointersRef.current.clear();
+      endGesture();
+    };
+    document.addEventListener("pointerdown", onMiddleDown, true);
+    document.addEventListener("auxclick", onAuxClick, true);
+    window.addEventListener("blur", onBlur);
+    return () => {
+      document.removeEventListener("pointerdown", onMiddleDown, true);
+      document.removeEventListener("auxclick", onAuxClick, true);
+      window.removeEventListener("blur", onBlur);
+    };
+  }, [props.enabled, endGesture]);
+
+  useEffect(() => {
     if (!props.focusBox) return;
     let innerFrame = 0;
     const frame = requestAnimationFrame(() => { innerFrame = requestAnimationFrame(() => {
@@ -276,11 +323,12 @@ export function DraggableDiagramCanvas(props: {
       tabIndex={props.enabled ? 0 : undefined}
       aria-label={props.enabled ? "Draggable diagram canvas" : undefined}
       aria-keyshortcuts={props.enabled ? "ArrowLeft ArrowRight ArrowUp ArrowDown + - 0" : undefined}
-      title={props.enabled ? "Drag to pan · Ctrl/Cmd-wheel to zoom · Shift-drag to select text" : undefined}
+      title={props.enabled ? "Drag to pan · Middle-drag anywhere to pan · Ctrl/Cmd-wheel to zoom · Shift-drag to select text" : undefined}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={finishPointer}
       onPointerCancel={finishPointer}
+      onLostPointerCapture={finishPointer}
       onKeyDown={onKeyDown}
     >
       <div ref={surfaceRef} className="diagram-canvas__surface">

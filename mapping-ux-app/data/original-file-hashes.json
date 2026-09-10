@@ -1,7 +1,7 @@
 {
   "src/mapping/components/MappingPocPage.tsx": "b056e272e84493b15a710cdc0534a3e8c10b505812cd54fa969e2210c32401e8",
   "src/mapping/components/MappingSubmenu.tsx": "5dcc7fd5fe638bfc3f28ef0f4ebb9c0ec523d42b62cc91d58674b62960e15ac8",
-  "src/mapping/components/MappingPocSelectionCanvas.tsx": "d1cf2fc2a54f2a6f78c063f3cf838e6d7e0337099990c9259e7cb576e068c067",
+  "src/mapping/components/MappingPocSelectionCanvas.tsx": "410bb4618702aaee536857d1a1d788d3390d68e8606144de9bbbeb418a5d0d74",
   "src/mapping/components/LocalChatConvo.tsx": "87c9a5d578d5d7a293289e1e7af97e15b72a453ed19c9aba9ac3996e6a664973",
   "src/mapping/localChat.ts": "754d3a6930725e0bf36ef63c9fed088cf7a6780a4efd689b48a3bf8b99b13a72",
   "src/mapping/mappingPoc.ts": "ce669364553baa6a79c2c1780e5abd86974ff639d2987ad42dbae2ec3779caa9",
@@ -28,7 +28,9 @@
   "src/mapping/mappingDocument.ts": "caa31c50a9974c8b09fe5dc54a4c88307d638fffea3d87986731030c358c2133",
   "src/mapping/components/MappingDiagramExplorer.tsx": "a83809000f93998e97c118ba962af00076423fe2f02d6b300093f923d6daea5c",
   "src/core/components/FloatingPane.tsx": "990f879005901963a8a84477b07b962bfe8533d0e220ea764ed0460c8d3988e9",
-  "src/core/components/DraggableDiagramCanvas.tsx": "98c21693aa292e62a8bd40d5d408df518a95cb1025282bd829a2f0f4c2f6a118",
+  "src/core/components/DraggableDiagramCanvas.tsx": "00309a60d286561cd4242676efc22f27a9448fd491b1c6bc312246a8676529bd",
   "src/core/diagramCanvas.ts": "19827bc3b4241928386af856bc0ef1648db0fe77c18fc88495ea7004c4ae23c1",
-  "src/styles.css": "288e5aae34fb0cfaab72ef31b5e4f45fdb66c2e04787554eef40a353a8bf8052"
+  "src/styles.css": "288e5aae34fb0cfaab72ef31b5e4f45fdb66c2e04787554eef40a353a8bf8052",
+  "src/core/diagramClipboard.ts": "079024a18d78c25648c2e4680fdc0d428b138955399d217d219250b094e232d3",
+  "src/core/diagramSelection.ts": "e3bfcf3aebf2515d61bd8abdde8bceadebf3996ff2a7f0823b8c27143cf59051"
 }

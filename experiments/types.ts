@@ -1,4 +1,4 @@
-import type { GenerationPromptConfigRecord, GeneratedArtifactDraft } from "../src/domain";
+import type { GenerationPromptConfigRecord, GeneratedArtifactDraft } from "../src/core/domain";
 
 export type AxisId = "semantic_zoom" | "topology";
 export type IterationNumber = 1 | 2;

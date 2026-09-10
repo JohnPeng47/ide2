@@ -34,6 +34,65 @@ async function click(cdp, selector) {
   await cdp.send("Input.dispatchMouseEvent", { type: "mouseReleased", ...point, button: "left", clickCount: 1 });
 }
 
+async function middlePan(cdp, selector, dx, dy, modifiers = 0) {
+  const matrix = () => evaluate(cdp, `(() => {
+    const surface = document.querySelector(${JSON.stringify(`${active} .diagram-canvas__surface`)});
+    const m = new DOMMatrixReadOnly(getComputedStyle(surface).transform);
+    return { x: m.e, y: m.f, scale: m.a };
+  })()`);
+  const before = await matrix();
+  const point = await evaluate(cdp, `(() => {
+    const el = document.querySelector(${JSON.stringify(selector)});
+    const r = el.getBoundingClientRect();
+    const x = (Math.max(0, r.left) + Math.min(innerWidth, r.right)) / 2;
+    const y = (Math.max(0, r.top) + Math.min(innerHeight, r.bottom)) / 2;
+    return el.contains(document.elementFromPoint(x, y)) ? { x, y } : null;
+  })()`);
+  assert.ok(point, `Middle-drag target must be visible: ${selector}`);
+  await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', ...point, button: 'middle', buttons: 4, clickCount: 1, modifiers });
+  await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: point.x + dx, y: point.y + dy, button: 'middle', buttons: 4, modifiers });
+  await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: point.x + dx, y: point.y + dy, button: 'middle', buttons: 0, clickCount: 1, modifiers });
+  await waitFor(async () => {
+    const after = await matrix();
+    return Math.abs(after.x - before.x - dx) < 1 && Math.abs(after.y - before.y - dy) < 1 && after.scale === before.scale;
+  }, { message: `Middle-drag did not pan the main canvas from ${selector}` });
+  assert.equal(await evaluate(cdp, `document.querySelector(${JSON.stringify(`${active} [data-diagram-canvas]`)}).classList.contains('is-dragging')`), false);
+  const released = await matrix();
+  await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: point.x + dx + 12, y: point.y + dy + 12, buttons: 0 });
+  assert.deepEqual(await matrix(), released, 'Panning must stop when the middle button is released');
+}
+
+async function checkSelectionCopy(cdp, expected) {
+  const previous = await evaluate(cdp, 'navigator.clipboard.readText()');
+  try {
+    await click(cdp, `${active} [aria-label="Copy ASCII + code refs"]`);
+    await waitFor(async () => (await evaluate(cdp, 'navigator.clipboard.readText()')).replace(/\r\n/g, '\n') === expected,
+      { message: 'Copy action did not include the selected ASCII and exact code references' }).catch(async (error) => {
+        throw new Error(`${error.message}: ${JSON.stringify(await evaluate(cdp, 'navigator.clipboard.readText()'))}`);
+      });
+    for (const modifiers of [0, 2, 4]) {
+      await evaluate(cdp, 'navigator.clipboard.writeText("copy-shortcut-sentinel")');
+      await key(cdp, 'c', 'KeyC', modifiers);
+      await waitFor(async () => (await evaluate(cdp, 'navigator.clipboard.readText()')).replace(/\r\n/g, '\n') === expected,
+        { message: 'Selection copy shortcut did not write the expected content' });
+    }
+    await key(cdp, 'p', 'KeyP');
+    await fill(cdp, '#mapping-poc-prompt', 'Native text copy stays native');
+    await cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Control', code: 'ControlLeft', windowsVirtualKeyCode: 17 });
+    for (const [key, code, windowsVirtualKeyCode] of [['a', 'KeyA', 65], ['c', 'KeyC', 67]]) {
+      await cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key, code, windowsVirtualKeyCode, modifiers: 2 });
+      await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key, code, windowsVirtualKeyCode, modifiers: 2 });
+    }
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Control', code: 'ControlLeft', windowsVirtualKeyCode: 17 });
+    await waitFor(async () => await evaluate(cdp, 'navigator.clipboard.readText()') === 'Native text copy stays native',
+      { message: 'Selection copy must not replace normal input copying' });
+    await key(cdp, 'Escape', 'Escape');
+    await waitForSelector(cdp, `${active} [aria-label="Copy ASCII + code refs"]`);
+  } finally {
+    await evaluate(cdp, `navigator.clipboard.writeText(${JSON.stringify(previous)})`);
+  }
+}
+
 async function key(cdp, key, code, modifiers = 0) {
   await cdp.send("Input.dispatchKeyEvent", { type: "keyDown", key, code, modifiers });
   await cdp.send("Input.dispatchKeyEvent", { type: "keyUp", key, code, modifiers });
@@ -106,6 +165,7 @@ try {
     baseline.projectedTree = await evaluate(cdp, "document.querySelector('[data-projected-tree]').textContent");
   });
   await withHeadlessBrowser({ url: target, width: 1900, height: 1100 }, async ({cdp}) => {
+    await cdp.send('Browser.grantPermissions', { origin: new URL(target).origin, permissions: ['clipboardReadWrite', 'clipboardSanitizedWrite'] });
     const errors = [], requests = [];
     await cdp.send('Runtime.enable'); await cdp.send('Network.enable'); await cdp.send('Page.enable');
     cdp.on('Runtime.exceptionThrown', e => errors.push(e.exceptionDetails.exception?.description ?? e.exceptionDetails.text));
@@ -119,7 +179,13 @@ try {
     const diagramCount = Object.keys(seed.catalog.representations).length;
     assert.equal(await evaluate(cdp, "document.querySelectorAll('[data-project-diagram]').length"), diagramCount);
     await captureScreenshot(cdp, { output: path.join(screenshots, 'extracted.png') });
-    await selectRows(cdp, 1); await key(cdp, 'n', 'KeyN');
+    await selectRows(cdp, 1);
+    const firstMapping = [...revision.mappings].sort((a, b) => a.line - b.line || a.startColumn - b.startColumn)[0];
+    const firstEvidence = revision.evidence[firstMapping.evidenceId];
+    const range = firstEvidence.sourceRanges.find((range) => range.id === firstMapping.sourceRangeId);
+    const selectedAscii = revision.ascii.split('\n')[firstMapping.line - 1].slice(firstMapping.startColumn - 1, firstMapping.endColumn);
+    await checkSelectionCopy(cdp, `${selectedAscii}\nAssociated Code Entities:\n${firstEvidence.label}: ${range.path}:${range.startLine}-${range.endLine}`);
+    await key(cdp, 'n', 'KeyN');
     await waitForSelector(cdp, '[data-projected-tree]');
     if (baseline) assert.equal(await evaluate(cdp, "document.querySelector('[data-projected-tree]').textContent"), baseline.projectedTree);
     await captureScreenshot(cdp, { output: path.join(screenshots, 'call-tree.png') });
@@ -136,6 +202,11 @@ try {
     assert.ok(await evaluate(cdp, "document.querySelectorAll('[data-source-compaction-range]').length > 0"));
     assert.equal(await evaluate(cdp, "Boolean(document.querySelector('.mapping-source-message'))"), false);
     assert.deepEqual(await evaluate(cdp, `(() => {const el = document.querySelector('.mapping-source-stack');const css = getComputedStyle(el);return [css.left, css.top];})()`), ['24px', '24px']);
+    await middlePan(cdp, '.mapping-source-pane .source-code-viewer', -36, -24);
+    await middlePan(cdp, '.mapping-source-toolbar button:first-child', 36, 24, 8);
+    await middlePan(cdp, '.mapping-floating-pane input', -25, 15);
+    await middlePan(cdp, '.mapping-floating-pane input', 25, -15);
+    assert.equal(await evaluate(cdp, "document.querySelector('.mapping-source-toolbar button').getAttribute('aria-pressed')"), 'true');
     await captureScreenshot(cdp, { output: path.join(screenshots, 'source-stack.png') });
     await click(cdp, '.mapping-source-toolbar button[aria-pressed=true]');
     assert.equal(await evaluate(cdp, "document.querySelectorAll('[data-source-compaction-range]').length"), 0);
@@ -182,7 +253,7 @@ try {
     assert.equal(await evaluate(cdp, "document.querySelectorAll('[data-project-diagram]').length"), diagramCount + 1);
     assert.deepEqual(errors, []);
     assert.equal(requests.some(url => url.includes(':5177') || url.includes('/internal/') || url.includes('/api/')), false);
-    await writeFile(path.join(root, 'review/validation.json'), JSON.stringify({diagram:actual.name,mappedNodes:actual.nodes.length,originalRenderingMatches:baseline ? true : undefined,seedMatches:true,callTreeMatches:baseline ? true : undefined,compactions:true,sourceStack:true,shiki:true,sourceHighlights:true,chat:true,saveReload:true,originalServerRequests:0,browserErrors:errors}, null, 2)+'\n');
+    await writeFile(path.join(root, 'review/validation.json'), JSON.stringify({diagram:actual.name,mappedNodes:actual.nodes.length,originalRenderingMatches:baseline ? true : undefined,seedMatches:true,callTreeMatches:baseline ? true : undefined,compactions:true,sourceStack:true,shiki:true,sourceHighlights:true,selectionClipboard:true,middleButtonPan:true,chat:true,saveReload:true,originalServerRequests:0,browserErrors:errors}, null, 2)+'\n');
   });
   console.log('PASS: bundled diagram, projections, Shiki source stack, highlights, overlays, demo chat, group/save/reload, and no original-server calls.');
 } finally {

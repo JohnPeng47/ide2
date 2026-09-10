@@ -1,0 +1,251 @@
+src/mapping/components/MappingPocSelectionCanvas.tsx
++-- import { composeScene, flattenGrid, hitTest, layoutScene, resolveScene, updateGridBox, type GridPoint as ScenePoint } from "../../core/lineGrid";
++-- import { mappingDocumentFromScene } from "../mappingDocument";
++-- import { initialMappingGrid, insertGridDiagram, type MappingGridDocument } from "../mappingGrid";
++-- import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent, type PointerEvent } from "react";
++-- import { createPortal } from "react-dom";
++-- import { projectCompactions } from "../../core/compactionProjection";
++-- import { projectSelection, validateProjection } from "../../core/diagramProjection";
++-- import type { ProjectRepresentationCatalogRecord } from "../../core/projectCatalog";
++-- import { localChatResponder, promptMappingPocSelection } from "../api";
++-- import { isLocalChatSubmitHotkey, type LocalChatVerbosity, type LocalChatThread, type LocalChatVariant } from "../localChat";
++-- import { projectASelectionToB, type MappingPocANode, type MappingPocGridRect, type MappingPocProjection } from "../mappingPoc";
++-- import { MAPPING_POC_A_SECTIONS, MAPPING_POC_DETAIL_OVERLAYS, MAPPING_POC_OVERLAY_PLACEMENTS, type MappingPocASection } from "../mappingPocOverlays";
++-- import type { MappingPocPromptResult } from "../mappingPocPrompt";
++-- import { LocalChatVerbosityToggle } from "./LocalChatVerbosityToggle";
++-- import { ProjectedSourcePane } from "./ProjectedSourcePane";
++-- import { LocalChatConvo } from "./LocalChatConvo";
++-- interface GridPoint
+|   +-- line: number;
+|   \-- column: number;
++-- interface CellMetrics
+|   +-- width: number;
+|   \-- height: number;
++-- interface ActiveSelection
+|   +-- pointerId: number;
+|   \-- anchor: GridPoint;
++-- SIDE_GUTTER_PX [binding]
++-- PATCH_SUCCESS_VISIBLE_MS [binding]
++-- function normalizeRect(anchor, focus)
++-- function typingTarget(target)
++-- function nodesAfterPatch(nodes, result)
++-- function sectionsAfterPatch(sections, result)
++-- type PromptPhase
+\-- function MappingPocSelectionCanvas(props)
+    +-- initialDocument?: MappingGridDocument;
+    +-- onDocumentChange?: (document: MappingGridDocument) => void;
+    +-- onBusyChange?: (busy: boolean) => void;
+    +-- active?: boolean;
+    +-- focusBox?: { id: string; serial: number };
+    +-- projectContext?: { projectId: string; representationId: string; baseRevisionId: string };
+    +-- projectionCatalog?: ProjectRepresentationCatalogRecord;
+    +-- savedScene?: string;
+    +-- dirtyRepresentationIds?: string[];
+    +-- onLineCountChange?: (lineCount: number) => void;
+    +-- localChatVariant?: LocalChatVariant;
+    +-- localChatVariant [binding]
+    +-- stageRef = useRef()
+    +-- preRef = useRef()
+    +-- probeRef = useRef()
+    +-- menuRef = useRef()
+    +-- openMappedRef = useRef()
+    +-- promptInputRef = useRef()
+    +-- askInputRef = useRef()
+    +-- activeSelectionRef = useRef()
+    +-- replyControllers = useRef()
+    +-- useEffect callback
+    |   \-- controller [binding]
+    +-- [clientSessionId] = useState()
+    +-- [cell, setCell] = useState()
+    +-- [history, setHistory] = useState()
+    |   +-- past: MappingGridDocument[];
+    |   +-- present: MappingGridDocument;
+    |   \-- future: MappingGridDocument[]
+    +-- gridDocument [binding]
+    +-- scene [binding]
+    +-- resolved = useMemo()
+    +-- boxes = useMemo()
+    +-- [activeBoxId, setActiveBoxId] = useState()
+    +-- activeBox [binding]
+    +-- content [binding]
+    +-- ascii [binding]
+    +-- diagramRevision [binding]
+    +-- nodes [binding]
+    +-- sections [binding]
+    +-- composedAscii = useMemo()
+    +-- commit(next)
+    +-- [promptOperation, setPromptOperation] = useState()
+    +-- [diagramPlacement, setDiagramPlacement] = useState()
+    +-- placementDragRef = useRef()
+    +-- placementPointerRef = useRef()
+    +-- [placementPreview, setPlacementPreview] = useState()
+    |   +-- start: ScenePoint;
+    |   \-- end: ScenePoint
+    +-- [movingBoxId, setMovingBoxId] = useState()
+    +-- [selectionRect, setSelectionRect] = useState()
+    +-- [selectedNodeIds, setSelectedNodeIds] = useState()
+    +-- [openedProjection, setOpenedProjection] = useState()
+    +-- [projectionChoice, setProjectionChoice] = useState()
+    +-- [compactionOpen, setCompactionOpen] = useState()
+    +-- [sourceFile, setSourceFile] = useState()
+    +-- [sourceVisible, setSourceVisible] = useState()
+    +-- sourceStackRef = useRef()
+    +-- useLayoutEffect callback
+    |   +-- stack [binding]
+    |   +-- parent [binding]
+    |   +-- viewport = stack?.closest()
+    |   +-- bounds = viewport.getBoundingClientRect()
+    |   +-- anchor = parent.getBoundingClientRect()
+    |   +-- scale [binding]
+    |   +-- width = Math.min()
+    |   \-- height = Math.min()
+    +-- openSource(path)
+    +-- useEffect callback
+    +-- [openDetailOverlayId, setOpenDetailOverlayId] = useState()
+    +-- [promptOpen, setPromptOpen] = useState()
+    +-- [promptText, setPromptText] = useState()
+    +-- [promptPhase, setPromptPhase] = useState()
+    +-- [statusMessage, setStatusMessage] = useState()
+    +-- [askOpen, setAskOpen] = useState()
+    +-- [askText, setAskText] = useState()
+    +-- [askVerbosity, setAskVerbosity] = useState()
+    +-- [chatThreads, setChatThreads] = useState()
+    +-- [activeThreadId, setActiveThreadId] = useState()
+    +-- asciiLines = useMemo()
+    +-- lineCount [binding]
+    +-- maxColumn = useMemo()
+    +-- selectedNodeIdSet = useMemo()
+    +-- selectedNodes = useMemo()
+    +-- activeThread = chatThreads.find()
+    +-- sourceCoveredNodeCount [binding]
+    +-- selectedSourceRangeCount = selectedNodes.reduce()
+    +-- hasCompleteSourceCoverage [binding]
+    +-- selectedEvidenceIds = useMemo()
+    +-- projections = Object.values(props.projectionCatalog?.projections ?? {}) .reverse() .filter((projection) => projection.sourceRepresentationId === props.projectContext?.representationId) .sort()
+    +-- chosenProjection [binding]
+    +-- projectionContentDirty [binding]
+    +-- callTreeProjection = useMemo()
+    |   +-- catalog [binding]
+    |   +-- source [binding]
+    |   +-- target [binding]
+    |   +-- result = projectSelection()
+    |   \-- error [binding]
+    +-- useEffect callback
+    +-- useEffect callback
+    +-- selectedCompactions = useMemo()
+    +-- candidateProjection = useMemo()
+    |   +-- projection = projectASelectionToB()
+    |   +-- result [binding]
+    |   +-- bRange [binding]
+    |   \-- matched [binding]
+    +-- firstSelectedANode = useMemo()
+    |   \-- selectedIds [binding]
+    +-- openDetailOverlay = MAPPING_POC_DETAIL_OVERLAYS.find()
+    +-- baseOpenDetailPlacement = MAPPING_POC_OVERLAY_PLACEMENTS.find()
+    +-- openDetailSection = sections.find()
+    +-- baseOpenDetailSection = MAPPING_POC_A_SECTIONS.find()
+    +-- overlayLineDelta [binding]
+    +-- openDetailPlacement [binding]
+    +-- useLayoutEffect callback
+    |   +-- pre [binding]
+    |   +-- probe [binding]
+    |   +-- measure()
+    |   |   +-- width [binding]
+    |   |   \-- height = Number.parseFloat()
+    |   \-- observer [binding]
+    +-- useEffect callback
+    +-- changeHandler = useRef()
+    +-- useEffect callback
+    +-- busyHandler = useRef()
+    +-- useEffect callback
+    +-- useEffect callback
+    |   +-- target [binding]
+    |   +-- expand(box)
+    |   |   \-- contains(node)
+    |   \-- root = expand()
+    +-- useEffect callback
+    +-- useEffect callback
+    +-- useEffect callback
+    |   \-- timeout = window.setTimeout()
+    +-- scenePointAtClient = useCallback()
+    |   +-- pre [binding]
+    |   +-- bounds = pre.getBoundingClientRect()
+    |   \-- scale [binding]
+    +-- pointAtClient = useCallback()
+    |   \-- point = scenePointAtClient()
+    +-- requestLocalReply = useCallback()
+    |   +-- controller [binding]
+    |   \-- updateThread(update)
+    +-- finishSelection(event) - Converts the completed drag to a rectangle and selects intersecting mapped labels.
+    |   +-- active [binding]
+    |   +-- focus [binding]
+    |   +-- rect = normalizeRect()
+    |   +-- selected = nodes.filter()
+    |   \-- sourceRangeCount = selected.reduce()
+    +-- openMapped = useCallback()
+    +-- clearSelection = useCallback()
+    |   +-- active [binding]
+    |   \-- stage [binding]
+    +-- openPrompt = useCallback()
+    +-- openAsk = useCallback()
+    +-- submitAsk(event)
+    |   +-- query = askText.trim()
+    |   +-- summary [binding]
+    |   \-- thread: LocalChatThread
+    +-- submitLocalFollowUp = useCallback()
+    |   +-- thread = chatThreads.find()
+    |   \-- next: LocalChatThread
+    +-- retryLocalReply(threadId)
+    |   +-- thread = chatThreads.find()
+    |   \-- next [binding]
+    +-- changeThreadVerbosity(threadId, verbosity)
+    +-- commitScene(nextScene, changedId)
+    |   \-- error [binding]
+    +-- undo(redo)
+    |   +-- next [binding]
+    |   \-- previous = current.past.at()
+    +-- submitPrompt(event) - Applies a source-backed edit or begins sub-diagram placement.
+    |   +-- result [binding]
+    |   +-- nextContent [binding]
+    |   +-- nextScene = layoutScene()
+    |   \-- error [binding]
+    +-- generateAt(start, end) - Generates ASCII for a requested region, inserts a diagram, and settles its layout.
+    |   +-- column = Math.min()
+    |   +-- row = Math.min()
+    |   +-- minimumSize [binding]
+    |   +-- parent [binding]
+    |   +-- targetParent [binding]
+    |   +-- result [binding]
+    |   +-- id [binding]
+    |   +-- next = insertGridDiagram()
+    |   \-- error [binding]
+    +-- wrapInGroup(boxId)
+    |   +-- id [binding]
+    |   +-- summaryId [binding]
+    |   \-- next = updateGridBox()
+    +-- useEffect callback
+    |   \-- onKeyDown(event)
+    +-- useEffect callback
+    |   \-- onPointerDown(event)
+    |       \-- stage [binding]
+    +-- rectStyle [binding]
+    +-- threadSource = boxes.find()
+    +-- activeThreadRectStyle [binding]
+    +-- selectionPhase [binding]
+    \-- render JSX
+        +-- point = scenePointAtClient()
+        +-- parent [binding]
+        +-- scenePoint = scenePointAtClient()
+        +-- hit [binding]
+        +-- targetBox [binding]
+        +-- anchor [binding]
+        +-- point = scenePointAtClient()
+        +-- active [binding]
+        +-- focus = pointAtClient()
+        +-- start [binding]
+        +-- end [binding]
+        +-- isActive [binding]
+        +-- sourceBox = boxes.find()
+        +-- marker [binding]
+        +-- render JSX
+        \-- <aside className="mapping-poc-companion"> in MappingPocSelectionCanvas - Renders the enclosing projection panel, header controls, and call-tree or source-compaction body.

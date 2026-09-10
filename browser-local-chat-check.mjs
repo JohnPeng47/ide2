@@ -2,11 +2,12 @@ import { seedMappingFixture } from "./browser-mapping-fixture.mjs";
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { tmpdir, homedir } from "node:os";
 import path from "node:path";
 
 async function loadBrowserHarness() {
   const candidates = [
+    path.join(homedir(), ".codex/skills/front-end/browser-test.mjs"),
     new URL("../../.agents/skills/front-end/browser-test.mjs", import.meta.url),
     new URL("../../../../.codex/skills/front-end/browser-test.mjs", import.meta.url)
   ];
@@ -98,15 +99,20 @@ await mkdir(screenshotRoot, { recursive: true });
 const port = await freePort();
 const url = `http://127.0.0.1:${port}/mapping`;
 let serverProcess;
+let serverError = "";
 
 try {
   await seedMappingFixture(tempRoot);
-  serverProcess = spawn("npm", ["run", "preview", "--", "--port", String(port), "--strictPort"], {
+  serverProcess = spawn(process.execPath, [path.join(PACKAGE_ROOT, "node_modules/vite/bin/vite.js"), "preview", "--host", "127.0.0.1", "--port", String(port), "--strictPort"], {
     cwd: PACKAGE_ROOT,
-    env: { ...process.env, NEW_DIAGRAM_PROJECT_ROOT: tempRoot },
-    stdio: "ignore"
+    env: { ...process.env, NEW_DIAGRAM_PROJECT_ROOT: tempRoot, NEW_DIAGRAM_AGENT: "fake" },
+    stdio: ["ignore", "ignore", "pipe"]
   });
-  await waitFor(async () => Boolean((await fetch(url).catch(() => null))?.ok), {
+  serverProcess.stderr.on("data", (chunk) => { serverError = (serverError + chunk).slice(-4000); });
+  await waitFor(async () => {
+    if (serverProcess.exitCode !== null) throw new Error(`Preview exited: ${serverError}`);
+    return Boolean((await fetch(url).catch(() => null))?.ok);
+  }, {
     timeoutMs: 10000,
     message: "local chat preview server did not start"
   });
@@ -116,7 +122,7 @@ try {
     await cdp.send("Network.enable");
     const apiRequests = [];
     const stopTrackingRequests = cdp.on("Network.requestWillBeSent", ({ request }) => {
-      if (new URL(request.url).pathname.startsWith("/api/")) apiRequests.push(request.url);
+      if (new URL(request.url).pathname.startsWith("/api/")) apiRequests.push({ url: request.url, body: request.postData ? JSON.parse(request.postData) : undefined });
     });
     await cdp.send("Page.reload", { ignoreCache: true });
     await waitForSelector(cdp, "[data-selectable-node='overview:a-system-templates:range-1']");
@@ -134,28 +140,42 @@ try {
     await click(cdp, ".mapping-poc-selection-menu .is-ask");
     await waitForSelector(cdp, "[data-local-chat-ask='compact'] textarea");
     await click(cdp, "[data-local-chat-ask='compact'] textarea");
-    await cdp.send("Input.insertText", { text: "What contract does this prompt block define?" });
+    await cdp.send("Input.insertText", { text: "What contract does **this prompt** define? Use `source context`.\n\n- First point\n- Second point\n\n```typescript\nconst ready = true;\n```\n\n" });
     await key(cdp, "Enter", "Enter", 13, 2);
-    await waitForSelector(cdp, "[data-local-chat-placement='pending']");
-
-    const pre = await rect(cdp, ".mapping-poc-ascii");
-    await click(cdp, { x: pre.x + pre.width * 0.72, y: node.y + node.height + 40 });
     await waitForSelector(cdp, "[data-local-chat-bubble]");
-    await waitFor(async () => await evaluate(cdp,
-      "document.querySelectorAll('[data-local-chat-role=assistant]').length === 0 && !document.querySelector('[data-local-chat-placement]') && !document.querySelector('[data-local-chat-source-highlight]')"
-    ), { message: "bubble was not placed in its collapsed state" });
-    await click(cdp, "[data-local-chat-bubble]");
+    const placement = await evaluate(cdp, `(() => {
+      const bubble = document.querySelector('[data-local-chat-bubble]').getBoundingClientRect();
+      const source = document.querySelector('[data-local-chat-source-highlight]').getBoundingClientRect();
+      return { dx: bubble.x + bubble.width / 2 - source.right, dy: bubble.y + bubble.height / 2 - source.top,
+        guide: Boolean(document.querySelector('[data-local-chat-placement]')) };
+    })()`);
+    if (Math.abs(placement.dx) > 1 || Math.abs(placement.dy) > 1 || placement.guide) throw new Error(`bad automatic placement: ${JSON.stringify(placement)}`);
     await waitForSelector(cdp, "[data-local-chat-convo='compact']");
     await waitForSelector(cdp, "[data-local-chat-source-highlight]");
     await waitFor(async () => await evaluate(cdp,
       "document.querySelectorAll('[data-local-chat-role=assistant]').length === 1"
-    ), { timeoutMs: 5000, message: "first mocked local-chat response did not arrive" });
+    ), { timeoutMs: 5000, message: "first server local-chat response did not arrive" });
+    await waitForSelector(cdp, "[data-local-chat-role=assistant] [data-rendered-markdown] pre code");
+    const markdown = await evaluate(cdp, `(() => {
+      const body = document.querySelector('[data-local-chat-role=assistant] .local-chat-markdown');
+      return { bold: body.querySelector('strong')?.textContent, code: body.querySelector('p code')?.textContent,
+        items: body.querySelectorAll('li').length, highlighted: Boolean(body.querySelector('.shiki')),
+        userBold: Boolean(document.querySelector('[data-local-chat-role=user] strong')) };
+    })()`);
+    if (markdown.bold !== 'this prompt' || markdown.code !== 'source context' || markdown.items !== 2
+      || !markdown.highlighted || markdown.userBold) throw new Error(`Markdown was not rendered correctly: ${JSON.stringify(markdown)}`);
     const firstReply = await evaluate(cdp,
-      "document.querySelector('[data-local-chat-role=assistant] p')?.textContent"
+      "document.querySelector('[data-local-chat-role=assistant] .local-chat-markdown')?.textContent"
     );
-    if (!firstReply?.includes("experiment manifest")) throw new Error(`unexpected first mock reply: ${firstReply}`);
+    if (!firstReply?.includes("1 messages") || !firstReply?.includes("low")) throw new Error(`unexpected first mock reply: ${firstReply}`);
     await captureScreenshot(cdp, { output: path.join(screenshotRoot, "local-chat-compact.png") });
 
+    const highButton = await evaluate(cdp, `(() => {
+      const buttons = Array.from(document.querySelectorAll('[data-local-chat-convo] .local-chat-verbosity button'));
+      const r = buttons.find(b => b.textContent === 'High').getBoundingClientRect();
+      return {x: r.x+r.width/2, y: r.y+r.height/2};
+    })()`);
+    await click(cdp, highButton);
     await click(cdp, "[data-local-chat-convo='compact'] textarea");
     await cdp.send("Input.insertText", { text: "And where does its source context come from?" });
     await key(cdp, "Enter", "Enter", 13, 2);
@@ -165,7 +185,34 @@ try {
     const secondReply = await evaluate(cdp,
       "Array.from(document.querySelectorAll('[data-local-chat-role=assistant] p')).at(-1)?.textContent"
     );
-    if (!secondReply?.includes("mapped corpus ranges")) throw new Error(`unexpected second mock reply: ${secondReply}`);
+    if (!secondReply?.includes("3 messages") || !secondReply?.includes("high")) throw new Error(`unexpected second mock reply: ${secondReply}`);
+
+    await cdp.send("Fetch.enable", { patterns: [{ urlPattern: "*/api/mapping/chat", requestStage: "Request" }] });
+    const stopFailing = cdp.on("Fetch.requestPaused", ({ requestId }) => {
+      void cdp.send("Fetch.failRequest", { requestId, errorReason: "ConnectionFailed" });
+    });
+    await click(cdp, "[data-local-chat-convo='compact'] textarea");
+    await cdp.send("Input.insertText", { text: "Can you explain that again?" });
+    await key(cdp, "Enter", "Enter", 13, 2);
+    await waitForSelector(cdp, ".local-chat-error button");
+    if (await evaluate(cdp, "document.querySelectorAll('[data-local-chat-role=assistant]').length") !== 2) throw new Error('network error was added to assistant history');
+    stopFailing();
+    await cdp.send("Fetch.disable");
+    await click(cdp, ".local-chat-error button");
+    await waitFor(async () => await evaluate(cdp,
+      "document.querySelectorAll('[data-local-chat-role=assistant]').length === 3 && !document.querySelector('.local-chat-error')"
+    ), { message: 'retry did not recover the failed turn' });
+    if (await evaluate(cdp, "document.querySelectorAll('[data-local-chat-role=user]').length") !== 3) throw new Error('retry duplicated the user query');
+
+    const beforeZoom = await evaluate(cdp, "document.querySelector('[aria-label=\"Diagram zoom\"]').textContent");
+    await cdp.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: node.x + 20, y: node.y + 180, deltaX: 0, deltaY: -100, modifiers: 2 });
+    await waitFor(async () => (await evaluate(cdp, "document.querySelector('[aria-label=\"Diagram zoom\"]').textContent")) !== beforeZoom);
+    const aligned = await evaluate(cdp, `(() => {
+      const bubble = document.querySelector('[data-local-chat-bubble]').getBoundingClientRect();
+      const source = document.querySelector('[data-local-chat-source-highlight]').getBoundingClientRect();
+      return Math.abs(bubble.x+bubble.width/2-source.right) < 1 && Math.abs(bubble.y+bubble.height/2-source.top) < 1;
+    })()`);
+    if (!aligned) throw new Error('marker drifted after zoom');
 
     await chooseNextVariant(cdp, "floating");
     await waitForSelector(cdp, "[data-local-chat-convo='floating']");
@@ -189,14 +236,19 @@ try {
       "!document.querySelector('[data-local-chat-convo]') && !document.querySelector('[data-local-chat-source-highlight]')"
     ), { message: "collapsing the conversation did not dismiss its source highlight" });
     stopTrackingRequests();
-    if (apiRequests.length) throw new Error(`Mapping made API requests: ${JSON.stringify(apiRequests)}`);
+    const chats = apiRequests.filter(r => new URL(r.url).pathname === '/api/mapping/chat');
+    if (chats.length !== 4) throw new Error(`expected 4 chat requests, got ${chats.length}`);
+    if (chats[0].body.context.contentId !== 'overview' || !chats[0].body.context.diagramAscii.includes('CurrentLLMPromptStack')) throw new Error('wrong diagram context');
+    if (!chats[1].body.context.sourceRanges?.length || chats[1].body.history.length !== 3 || chats[1].body.verbosity !== 'high') throw new Error('follow-up did not preserve context/history/verbosity');
+    if (chats[3].body.history.length !== 5) throw new Error('retry lost or duplicated history');
   });
 
-  console.log("local chat browser check passed (compact, floating, docked; mock replies wrapped through shared seam)");
+  console.log("local chat browser check passed (compact, floating, docked; automatic placement, HTTP replies, context snapshots and verbosity)");
 } finally {
-  if (serverProcess) {
+  if (serverProcess && serverProcess.exitCode === null && serverProcess.signalCode === null) {
+    const exited = new Promise((resolve) => serverProcess.once("exit", resolve));
     serverProcess.kill("SIGTERM");
-    await new Promise((resolve) => serverProcess.once("exit", resolve));
+    await exited;
   }
   await rm(tempRoot, { recursive: true, force: true });
 }
