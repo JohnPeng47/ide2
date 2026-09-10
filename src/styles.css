@@ -485,7 +485,8 @@ button.highlight-tree-label:hover, button.highlight-tree-label:focus-visible { o
 .diagram-canvas.is-enabled:focus-visible { box-shadow: inset 0 0 0 1px rgb(136 192 208 / 55%); }
 .diagram-canvas.is-enabled.is-dragging { cursor: grabbing; }
 .diagram-canvas__surface { display: inline-block; min-width: max-content; transform-origin: 0 0; }
-.diagram-canvas.is-enabled .diagram-canvas__surface { position: absolute; top: 0; left: 0; will-change: transform; }
+/* Allow text to be re-rasterized at each zoom scale; will-change: transform retains a blurry cached raster. */
+.diagram-canvas.is-enabled .diagram-canvas__surface { position: absolute; top: 0; left: 0; }
 .diagram-canvas.is-enabled.is-dragging .diagram-canvas__surface { user-select: none; }
 .diagram-canvas:not(.is-enabled) { display: grid; place-items: center; overflow: auto; padding: 2rem; }
 .diagram-canvas__controls { position: absolute; z-index: 8; right: 0.7rem; bottom: 0.7rem; display: flex; align-items: center; overflow: hidden; border: 1px solid var(--gutter); border-radius: 3px; background: rgb(16 20 24 / 90%); box-shadow: 0 4px 14px rgb(0 0 0 / 30%); color: var(--muted); font: 9px var(--font-mono); }
