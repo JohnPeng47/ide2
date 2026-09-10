@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Workspace notes</title>
+<link rel="stylesheet" href="../styles/terminal-markdown.css">
+</head>
+<body>
+<article class="terminal-markdown" data-cms-document="terminal-markdown" data-cms-transform-root>
+  <header class="terminal-markdown-header">
+    <h1 data-source-start-line="1" data-source-end-line="1"># Workspace notes</h1>
+  </header>
+<h2 data-source-start-line="3" data-source-end-line="3" id="representation-workflow" tabindex="-1">## Representation workflow</h2>
+<p data-source-start-line="5" data-source-end-line="5">Keep <strong>source relationships</strong> visible while reviewing a diagram. Use <code>render()</code> for inline code.</p>
+<ul data-source-start-line="7" data-source-end-line="10">
+<li data-source-start-line="7" data-source-end-line="7">Import a representation</li>
+<li data-source-start-line="8" data-source-end-line="8">Select a region</li>
+<li data-source-start-line="9" data-source-end-line="10">Explore its implementation</li>
+</ul>
+<blockquote data-source-start-line="11" data-source-end-line="11">
+<p data-source-start-line="11" data-source-end-line="11">Preserve character alignment when changing typography.</p>
+</blockquote>
+<div class="terminal-code-block" data-source-start-line="13" data-source-end-line="18"><pre class="shiki catppuccin-mocha" style="background-color:#1e1e2e;color:#cdd6f4" tabindex="0"><code><span class="line"><span style="color:#CBA6F7">const</span><span style="color:#CDD6F4"> title </span><span style="color:#94E2D5">=</span><span style="color:#A6E3A1"> "New Diagram"</span><span style="color:#9399B2">;</span></span>
+<span class="line"><span style="color:#CBA6F7">function</span><span style="color:#89B4FA;font-style:italic"> render</span><span style="color:#9399B2">(</span><span style="color:#EBA0AC;font-style:italic">title</span><span style="color:#94E2D5">:</span><span style="color:#CBA6F7"> string</span><span style="color:#9399B2">)</span><span style="color:#9399B2"> {</span></span>
+<span class="line"><span style="color:#CBA6F7">  return</span><span style="color:#9399B2"> {</span><span style="color:#CDD6F4"> title</span><span style="color:#9399B2">,</span><span style="color:#CDD6F4"> ready</span><span style="color:#94E2D5">:</span><span style="color:#FAB387"> true</span><span style="color:#9399B2"> };</span></span>
+<span class="line"><span style="color:#9399B2">}</span></span>
+<span class="line"></span></code></pre></div>
+<table data-source-start-line="20" data-source-end-line="23">
+<thead data-source-start-line="20" data-source-end-line="20">
+<tr data-source-start-line="20" data-source-end-line="20">
+<th>State</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody data-source-start-line="22" data-source-end-line="23">
+<tr data-source-start-line="22" data-source-end-line="22">
+<td>Draft</td>
+<td>In progress</td>
+</tr>
+<tr data-source-start-line="23" data-source-end-line="23">
+<td>Finalized</td>
+<td>Ready for reuse</td>
+</tr>
+</tbody>
+</table>
+</article>
+<script>
+(() => {
+  document.addEventListener('click', (event) => {
+    const link = event.target instanceof Element
+      ? event.target.closest('[data-repository-path]')
+      : null;
+    if (!link) return;
+    event.preventDefault();
+    parent.postMessage({
+      type: 'new-diagram:open-repository-file',
+      path: link.getAttribute('data-repository-path')
+    }, '*');
+  });
+  window.addEventListener('message', (event) => {
+    if (event.source !== parent
+      || !event.data
+      || event.data.type !== 'new-diagram:reveal-markdown-line'
+      || !Number.isInteger(event.data.line)
+      || event.data.line < 1) return;
+    const line = event.data.line;
+    const selectionStart = Number.isInteger(event.data.startLine) ? event.data.startLine : line;
+    const selectionEnd = Number.isInteger(event.data.endLine) ? event.data.endLine : selectionStart;
+    const candidates = [...document.querySelectorAll('[data-source-start-line]')]
+      .map((element) => ({
+        element,
+        start: Number(element.getAttribute('data-source-start-line')),
+        end: Number(element.getAttribute('data-source-end-line'))
+      }))
+      .filter(({ start, end }) => Number.isFinite(start) && Number.isFinite(end));
+    document.querySelectorAll('.is-source-selection').forEach((element) => {
+      element.classList.remove('is-source-selection');
+    });
+    const intersecting = candidates.filter(({ start, end }) => (
+      start <= selectionEnd && selectionStart <= end
+    ));
+    const leafBlocks = intersecting.filter(({ element }) => ![...element.children].some((child) => (
+      child.matches('[data-source-start-line]')
+      && Number(child.getAttribute('data-source-start-line')) <= selectionEnd
+      && selectionStart <= Number(child.getAttribute('data-source-end-line'))
+    )));
+    leafBlocks.forEach(({ element }) => element.classList.add('is-source-selection'));
+    const containing = candidates
+      .filter(({ start, end }) => start <= line && line <= end)
+      .sort((left, right) => (left.end - left.start) - (right.end - right.start));
+    const preceding = candidates
+      .filter(({ start }) => start <= line)
+      .sort((left, right) => right.start - left.start);
+    const following = candidates
+      .filter(({ start }) => start > line)
+      .sort((left, right) => left.start - right.start);
+    const target = containing[0] ?? preceding[0] ?? following[0];
+    const behavior = event.data.behavior === 'smooth'
+      && !matchMedia('(prefers-reduced-motion: reduce)').matches
+      ? 'smooth'
+      : 'auto';
+    target?.element.scrollIntoView({ block: 'start', behavior });
+  });
+
+  let sectionFrame = 0;
+  const reportActiveSection = () => {
+    sectionFrame = 0;
+    const headings = [...document.querySelectorAll('h2[id], h3[id], h4[id]')];
+    if (headings.length === 0) return;
+    const threshold = Math.max(24, innerHeight * 0.12);
+    const preceding = headings.filter((heading) => heading.getBoundingClientRect().top <= threshold);
+    const active = preceding.at(-1) ?? headings[0];
+    parent.postMessage({
+      type: 'new-diagram:active-markdown-section',
+      id: active.id,
+      line: Number(active.getAttribute('data-source-start-line')),
+      scrollTop: scrollY
+    }, '*');
+  };
+  addEventListener('scroll', () => {
+    if (!sectionFrame) sectionFrame = requestAnimationFrame(reportActiveSection);
+  }, { passive: true });
+  addEventListener('load', reportActiveSection, { once: true });
+  requestAnimationFrame(reportActiveSection);
+})();
+</script>
+</body>
+</html>

@@ -1193,3 +1193,19 @@ button.experiment-tree-line:hover { background: rgb(255 255 255 / 3%); }
 .local-chat-verbosity > button[aria-pressed="true"] { border-color: var(--accent-green); background: rgb(163 190 140 / 14%); color: var(--accent-green); }
 .local-chat-error { padding: 8px; color: var(--accent-red, #bf616a); overflow-wrap: anywhere; }
 .local-chat-error button { margin-top: 6px; padding: 4px 9px; border: 1px solid currentColor; border-radius: 3px; }
+
+/* Source content uses the retained DisplayPane frame and its saved allocation. */
+.selection-effect-frame[data-pane-content="source-code"] > .selection-effect-body { flex: 1; overflow: hidden; }
+.mapping-source-pane { display: flex; height: 100%; min-height: 0; min-width: 0; flex-direction: column; font: 12px/1.5 var(--font-mono); }
+.mapping-source-file-header, .mapping-source-toolbar { display: flex; flex: none; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--gutter); }
+.mapping-source-file-header select { min-width: 0; flex: 1; }
+.mapping-source-file-header small { flex: none; }
+.mapping-source-toolbar button, .mapping-source-message button, .mapping-compaction-file button { border: 1px solid var(--gutter); border-radius: 3px; padding: 4px 8px; background: #141920; color: var(--accent-cyan); font: inherit; cursor: pointer; }
+.mapping-source-toolbar button:disabled { opacity: .45; cursor: default; }
+.mapping-source-toolbar button[aria-pressed="true"] { border-color: var(--accent-cyan); background: #243b45; }
+.mapping-source-message { margin: 0; padding: 12px; overflow-wrap: anywhere; }
+.mapping-source-pane > .source-code-viewer { flex: 1; height: auto; }
+.mapping-source-compaction { margin: 6px 12px 6px var(--source-gutter-width); padding: 8px 12px; border-left: 2px solid var(--accent-cyan); background: #17252c; color: var(--fg); }
+.mapping-source-compaction small { display: block; margin-bottom: 5px; color: var(--accent-cyan); font: 10px var(--font-mono); }
+.mapping-compaction-file { display: flex; align-items: center; gap: 12px; }
+.mapping-compaction-file small { margin-left: auto; }

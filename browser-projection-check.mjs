@@ -50,6 +50,19 @@ async function click(cdp, selector) {
   await cdp.send("Input.dispatchMouseEvent", { type: "mouseReleased", ...point, button: "left", clickCount: 1 });
 }
 
+async function saveWorkspace(cdp) {
+  let status;
+  const unsubscribe = cdp.on('Network.responseReceived', ({ response }) => {
+    if (new URL(response.url).pathname === '/api/mapping/workspace') status = response.status;
+  });
+  try {
+    await click(cdp, '.mapping-workspace-actions button:first-child');
+    await waitFor(() => status !== undefined, { message: 'Workspace save did not finish' });
+    assert.equal(status, 200);
+    await waitFor(async () => await evaluate(cdp, "!document.querySelector('.mapping-workspace-actions button:first-child').disabled"));
+  } finally { unsubscribe(); }
+}
+
 async function key(cdp, key, code, modifiers = 0) {
   await cdp.send("Input.dispatchKeyEvent", { type: "keyDown", key, code, modifiers });
   await cdp.send("Input.dispatchKeyEvent", { type: "keyUp", key, code, modifiers });
@@ -192,10 +205,15 @@ try {
     targetRepresentationId: target.id, targetRevisionId: targetRevision.id, match: "any",
     links: [{ sourceEvidenceIds: ["b", "c"], targetNodeIds: [nodeId("shared()")] },
       { sourceEvidenceIds: ["c"], targetNodeIds: [nodeId("gamma()")] }] };
+  const sourceText = Array.from({ length: 120 }, (_, index) => index === 11
+    ? 'export function selected() { return 1; }' : index === 81 ? 'export const detail = true;'
+    : `// Unselected source context ${index + 1}`).join('\n');
+  await mkdir(path.join(temp, 'src'), { recursive: true });
+  for (const file of ['shared.ts', 'gamma.ts']) await writeFile(path.join(temp, 'src', file), sourceText);
   const compactedFile = (sourceFile) => {
     const ascii = `${sourceFile}\n+-- selected method\n|   +-- selected detail\n|   \\-- hidden sibling\n\\-- unrelated method`;
-    return { sourceFile, ascii, asciiSha256: createHash("sha256").update(ascii).digest("hex"), sourceSha256: "a".repeat(64),
-      mappings: [1, 2, 3, 4, 5].map((treeLine) => ({ treeLine, sourceRanges: [{ startLine: treeLine, endLine: treeLine }] })) };
+    return { sourceFile, ascii, asciiSha256: createHash("sha256").update(ascii).digest("hex"), sourceSha256: createHash("sha256").update(sourceText).digest("hex"),
+      mappings: [1, 2, 3, 4, 5].map((treeLine) => ({ treeLine, sourceRanges: [{ startLine: treeLine === 2 ? 12 : treeLine === 3 ? 82 : treeLine, endLine: treeLine === 2 ? 12 : treeLine === 3 ? 82 : treeLine }] })) };
   };
   projection.compactionProjection = { files: [compactedFile("src/shared.ts"), compactedFile("src/gamma.ts")], links: [
     { callTreeNodeId: nodeId("shared()"), file: "src/shared.ts", treeLines: [2] },
@@ -216,9 +234,10 @@ try {
   server = spawn(process.execPath, ["node_modules/vite/bin/vite.js", "preview", "--host", "127.0.0.1", "--port", String(port), "--strictPort"],
     { cwd: root, env: { ...process.env, NEW_DIAGRAM_PROJECT_ROOT: temp, NEW_DIAGRAM_AGENT: "fake" }, stdio: "ignore" });
   await waitFor(async () => Boolean((await fetch(url).catch(() => null))?.ok), { timeoutMs: 15000 });
-  await withHeadlessBrowser({ url: `${url}/mapping`, width: 1600, height: 1000 }, async ({ cdp, profilePath }) => {
+  await withHeadlessBrowser({ url: `${url}/mapping`, width: 2400, height: 1400 }, async ({ cdp, profilePath }) => {
     await cdp.send("Page.enable");
     await cdp.send("Runtime.enable");
+    await cdp.send("Network.enable");
     const errors = [];
     cdp.on("Runtime.exceptionThrown", ({ exceptionDetails }) => (errors.push(exceptionDetails.exception?.description ?? exceptionDetails.text), console.error(exceptionDetails.exception?.description ?? exceptionDetails.text)));
     cdp.on("Page.javascriptDialogOpening", () => { void cdp.send("Page.handleJavaScriptDialog", { accept: true }); });
@@ -247,6 +266,80 @@ try {
       await click(cdp, `${panel} [aria-label='Back to call tree']`);
       await waitForSelector(cdp, `${panel} pre[data-projected-tree]`);
     }
+    // Full source is an owned DisplayPane child, with its own persisted view state.
+    await selectRows(cdp, 3);
+    await openTree(cdp, both);
+    await click(cdp, `${panel} [aria-label='Open compaction']`);
+    await click(cdp, `${panel} [aria-label='Open source src/shared.ts']`);
+    const sourcePane = `${active} [data-pane-content='source-code']`;
+    const sourceViewer = `${sourcePane} .source-code-viewer`;
+    await waitForSelector(cdp, `${sourceViewer}[data-highlighted=true]`);
+    const sourceId = await evaluate(cdp, `document.querySelector(${JSON.stringify(sourcePane)}).dataset.displayNode`);
+    const selectedLines = () => evaluate(cdp, `Array.from(document.querySelectorAll(${JSON.stringify(`${sourceViewer} [data-selected=true]`)})).map(node => +node.dataset.line)`);
+    assert.deepEqual(await selectedLines(), [12, 82]);
+    assert.equal(await evaluate(cdp, `document.querySelectorAll(${JSON.stringify(`${sourcePane} [data-source-compaction-range]`)}).length`), 2);
+    assert.equal(await evaluate(cdp, `document.querySelectorAll(${JSON.stringify(`${sourcePane} .source-token[style]`)}).length > 0`), true);
+    await click(cdp, `${sourcePane} [aria-label='Next mapped range']`);
+    await waitFor(async () => await evaluate(cdp, `document.querySelector(${JSON.stringify(`${sourcePane} .mapping-source-toolbar`)}).textContent.includes('82')`));
+    const overlays = `${sourcePane} .mapping-source-toolbar button:first-child`;
+    await click(cdp, overlays);
+    await waitFor(async () => await evaluate(cdp, `document.querySelector(${JSON.stringify(overlays)}).getAttribute('aria-pressed') === 'false'`));
+    const scroll = () => evaluate(cdp, `document.querySelector(${JSON.stringify(sourceViewer)})?.scrollTop`);
+    await waitFor(async () => (await scroll()) > 500);
+    const savedScroll = await scroll();
+    await captureScreenshot(cdp, { output: process.env.SOURCE_SCREENSHOT ?? path.join(temp, 'source-pane.png') });
+    await click(cdp, `${sourcePane} [aria-label='Back to compactions']`);
+    await waitForSelector(cdp, `${panel} [data-projected-compactions]`);
+    await click(cdp, `${panel} [aria-label='Forward to child pane']`);
+    await waitForSelector(cdp, sourceViewer);
+    assert.equal(await evaluate(cdp, `document.querySelector(${JSON.stringify(sourcePane)}).dataset.displayNode`), sourceId);
+    await waitFor(async () => Math.abs((await scroll()) - savedScroll) < 1);
+    await click(cdp, `${sourcePane} [aria-label='Collapse pane']`);
+    await waitFor(async () => !await evaluate(cdp, `Boolean(document.querySelector(${JSON.stringify(sourceViewer)}))`));
+    await click(cdp, `${sourcePane} [aria-label='Expand pane']`);
+    await waitFor(async () => Math.abs((await scroll()) - savedScroll) < 1);
+    await saveWorkspace(cdp);
+    let savedSource;
+    await waitFor(async () => {
+      const workspace = await (await fetch(`${url}/api/mapping/workspace`)).json();
+      const nodes = workspace?.documents[0]?.canvas.display.nodes;
+      savedSource = nodes?.[sourceId];
+      return savedSource?.content.scroll?.top === savedScroll;
+    });
+    assert.equal(savedSource.content.kind, 'source-code');
+    assert.equal(savedSource.content.showCompactions, false);
+    assert.equal(savedSource.content.rangeIndex, 1);
+    await reload(cdp);
+    await waitForSelector(cdp, `${sourceViewer}[data-highlighted=true]`);
+    assert.deepEqual(await selectedLines(), [12, 82]);
+    assert.equal(await evaluate(cdp, `document.querySelector(${JSON.stringify(overlays)}).getAttribute('aria-pressed')`), 'false');
+    await waitFor(async () => Math.abs((await scroll()) - savedScroll) < 1);
+    await click(cdp, `${sourcePane} [aria-label='Projected source file']`);
+    await key(cdp, 'ArrowDown', 'ArrowDown'); await key(cdp, 'Enter', 'Enter');
+    await waitForSelector(cdp, `${sourcePane} [data-projected-source='src/gamma.ts'] [data-highlighted=true]`);
+    await click(cdp, `${sourcePane} [aria-label='Close pane']`);
+    await waitForSelector(cdp, `${panel} [data-projected-compactions]`);
+    // Re-fetch changed and missing files without inventing current range highlights.
+    await writeFile(path.join(temp, 'src/shared.ts'), sourceText + '\n// changed');
+    await click(cdp, `${panel} [aria-label='Open source src/shared.ts']`);
+    await waitForSelector(cdp, `${sourcePane} .mapping-source-message[role=status]`);
+    await waitFor(async () => await evaluate(cdp, `document.querySelector(${JSON.stringify(sourcePane)}).textContent.includes('has changed')`));
+    assert.deepEqual(await selectedLines(), []);
+    assert.equal(await evaluate(cdp, `document.querySelectorAll(${JSON.stringify(`${sourcePane} [data-source-compaction-range]`)}).length`), 0);
+    await click(cdp, `${sourcePane} [aria-label='Close pane']`);
+    await rm(path.join(temp, 'src/shared.ts'));
+    await click(cdp, `${panel} [aria-label='Open source src/shared.ts']`);
+    await waitForSelector(cdp, `${sourcePane} [role=alert] button`);
+    await writeFile(path.join(temp, 'src/shared.ts'), sourceText);
+    await click(cdp, `${sourcePane} [role=alert] button`);
+    await waitForSelector(cdp, `${sourceViewer}[data-highlighted=true]`);
+    assert.deepEqual(await selectedLines(), [12, 82]);
+    await click(cdp, `${sourcePane} [aria-label='Back to compactions']`);
+    await click(cdp, `${panel} [aria-label='Back to call tree']`);
+    await closeTree(cdp);
+    await saveWorkspace(cdp);
+    await waitFor(async () => (await (await fetch(`${url}/api/mapping/workspace`)).json()).documents[0].canvas.display.rootIds.length === 0);
+
     await selectRows(cdp, 2);
     await openTree(cdp, sharedOnly);
     await checkCompactions(["src/shared.ts"]);
@@ -295,7 +388,7 @@ try {
     await cdp.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 1100, y: 600, deltaX: 0, deltaY: 160, modifiers: 2 });
     await waitFor(async () => await evaluate(cdp, "document.querySelector('[aria-label=\"Diagram zoom\"]').textContent !== '100%'"));
     const beforeReload = await evaluate(cdp, "({panels: document.querySelectorAll('[data-display-node]').length, transform: document.querySelector('.diagram-canvas__surface').style.transform})");
-    await click(cdp, '.mapping-workspace-actions button:first-child');
+    await saveWorkspace(cdp);
     await waitFor(async () => await evaluate(cdp, "document.querySelector('.mapping-poc-status').textContent.includes('Workspace saved')"));
     const savedWorkspace = await (await fetch(`${url}/api/mapping/workspace`)).json();
     assert.equal(savedWorkspace.schemaVersion, 2);
@@ -324,7 +417,7 @@ try {
     // Overlapping groups are allowed; remove the uppermost one first.
     await click(cdp, `${active} [data-selection-root]:last-child [aria-label='Remove selection']`);
     await click(cdp, `${active} [aria-label='Remove selection']`);
-    await click(cdp, '.mapping-workspace-actions button:first-child');
+    await saveWorkspace(cdp);
     await waitFor(async () => (await (await fetch(`${url}/api/mapping/workspace`)).json()).documents[0].canvas.display.rootIds.length === 0);
     await cdp.send('Page.setInterceptFileChooserDialog', { enabled: true });
     const chooser = new Promise(resolve => { const stop = cdp.on('Page.fileChooserOpened', event => { stop(); resolve(event); }); });
@@ -346,14 +439,14 @@ try {
     await waitFor(async () => (await manualGeometry())?.height < 100);
     await click(cdp, `${manualSelector} [aria-label='Expand pane']`);
     await waitFor(async () => (await manualGeometry())?.height === 310);
-    await click(cdp, '.mapping-workspace-actions button:first-child');
+    await saveWorkspace(cdp);
     await waitFor(async () => await evaluate(cdp, "document.querySelector('.mapping-poc-status').textContent.includes('Workspace saved')"));
     await reload(cdp);
     await waitFor(async () => (await manualGeometry())?.height === 310);
     assert.deepEqual(await manualGeometry(), { x: 200, y: 180, width: 460, height: 310 });
     await click(cdp, `${active} [data-selection-root]:last-child [aria-label='Remove selection']`);
     await click(cdp, `${active} [aria-label='Remove selection']`);
-    await click(cdp, '.mapping-workspace-actions button:first-child');
+    await saveWorkspace(cdp);
     await waitFor(async () => (await (await fetch(`${url}/api/mapping/workspace`)).json()).documents[0].canvas.display.rootIds.length === 0);
     await selectRows(cdp, 3);
     await openTree(cdp, both);
@@ -417,7 +510,7 @@ try {
     assert.equal(saved.revisions[targetRevision.id].ascii, targetRevision.ascii);
     assert.deepEqual(errors, []);
   });
-  console.log("projection browser check passed: Ctrl-selection, retained groups, Escape, stacked/chained panes, edge connectors, recursive collapse, saved form drafts/viewport, workspace reload, and revision validation");
+  console.log("projection browser check passed: retained source panes, exact source highlights, overlays, file switching, stale/missing source and retry, source view save/reload, Ctrl-selection, retained groups, Escape, stacked/chained panes, edge connectors, recursive collapse, saved form drafts/viewport, workspace reload, and revision validation");
 } finally {
   if (server?.exitCode === null) {
     server.kill("SIGTERM");

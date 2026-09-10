@@ -36,6 +36,16 @@ export interface SelectionRegion extends DisplayNodeBase {
   displayMode: ChildDisplayMode;
   activeChildId?: string;
 }
+export type ProjectedFile = ReturnType<typeof projectCompactions>[number];
+export interface SourceCodePaneContent {
+  kind: 'source-code';
+  projectId: string;
+  files: ProjectedFile[];
+  sourceFile: string;
+  showCompactions: boolean;
+  rangeIndex: number;
+  scroll?: { top: number; left: number };
+}
 export interface ProjectedPane extends DisplayNodeBase {
   kind: 'projection';
   title: string;
@@ -44,7 +54,8 @@ export interface ProjectedPane extends DisplayNodeBase {
   targetRevisionId?: string;
   activeChildId?: string;
   content: { kind: 'call-tree'; result: ProjectionSelectionResult; coverage: string }
-    | { kind: 'compaction'; files: ReturnType<typeof projectCompactions> };
+    | { kind: 'compaction'; files: ProjectedFile[] }
+    | SourceCodePaneContent;
 }
 export interface ConversationPane extends DisplayNodeBase {
   kind: 'conversation';

@@ -23,6 +23,7 @@ export function DisplayPane(props: {
     return () => observer.disconnect();
   }, [node.id]);
   return <aside ref={ref} className="selection-effect-frame mapping-poc-companion" data-display-node={node.id}
+    data-pane-content={node.kind === 'projection' ? node.content.kind : 'detail'}
     data-projection-id={node.kind === 'projection' ? node.projectionId : undefined} data-mapping-static-ui data-diagram-canvas-static-ui
     style={{ left: node.position.x, top: node.position.y, boxSizing: 'border-box',
       width: fixed ? node.bounds.width : undefined, height: fixed && expanded ? node.bounds.height : undefined }}>

@@ -15,7 +15,7 @@ Stacked mode shows the active projection path in one slot per selection. Back an
 navigate without deleting content. Chained mode displays the related panes beside their
 parents with connectors on one horizontal axis. Ctrl-drag in a projected call tree selects
 rendered rows; Project selected rows creates a compaction child using stable node IDs.
-Escape cancels that uncommitted row selection. Content collisions are intentionally not resolved.
+Compaction files offer Open source, which creates a source-code child rendered inside the same DisplayPane frame. Source file choice, overlays, range navigation, and scroll position are retained with the child. Escape cancels that uncommitted row selection. Content collisions are intentionally not resolved.
 
 Source movement updates selection anchors. Collapsing a source scene box hides its attached
 effects. Changed/missing content is marked as a saved snapshot: the original rectangle is

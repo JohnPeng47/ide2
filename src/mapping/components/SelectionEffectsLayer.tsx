@@ -1,3 +1,5 @@
+import { SourceCodePane } from "./SourceCodePane";
+import { openSourceCodePane, updateSourceCodePane } from "../sourceCodePane";
 import { useCallback, useLayoutEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { projectCompactions } from '../../core/compactionProjection';
 import { addDisplayNode, displayGeometry, measureDisplayNode, updateDisplayGeometry, setExpansion, type DisplayState, type ProjectedPane, type SelectionRegion } from '../displayModel';
@@ -107,11 +109,11 @@ export function SelectionEffectsLayer(props: {
             ? content.result.rows.slice(Math.min(draft.start, draft.end), Math.max(draft.start, draft.end) + 1).map(row => row.nodeId)
               .filter(key => content.result.projectedNodeIds.includes(key)) : undefined;
           return <DisplayPane key={id} node={pane} onToggle={() => toggle(id)} onRemove={() => props.onRemove(id)} onMeasure={measure}
-            metadata={invalid ? 'Saved snapshot · source unavailable or changed' : content.kind === 'call-tree' ? content.coverage : `${content.files.length} files`}
+            metadata={invalid ? 'Saved snapshot · source unavailable or changed' : content.kind === 'call-tree' ? content.coverage : content.kind === 'source-code' ? 'SOURCE CODE' : `${content.files.length} files`}
             actions={<>
-              {parent?.kind === 'projection' && root.displayMode === 'stacked' && <button type="button" aria-label="Back to call tree" onClick={() => props.setState(state => ({ ...state, nodes: { ...state.nodes, [parent.id]: { ...parent, activeChildId: undefined } } }))}>Back</button>}
+              {parent?.kind === 'projection' && root.displayMode === 'stacked' && <button type="button" aria-label={parent.content.kind === 'compaction' ? 'Back to compactions' : 'Back to call tree'} onClick={() => props.setState(state => ({ ...state, nodes: { ...state.nodes, [parent.id]: { ...parent, activeChildId: undefined } } }))}>Back</button>}
               {content.kind === 'call-tree' && <button type="button" aria-label="Open compaction" disabled={!canCompact} onClick={() => openCompaction(pane)}>Open compaction</button>}
-              {pane.childIds.length > 0 && !pane.activeChildId && root.displayMode === 'stacked' && <button type="button" onClick={() => props.setState(state => ({ ...state, nodes: { ...state.nodes, [id]: { ...pane, activeChildId: pane.childIds.at(-1) } } }))}>Forward</button>}
+              {pane.childIds.length > 0 && !pane.activeChildId && root.displayMode === 'stacked' && <button type="button" aria-label="Forward to child pane" onClick={() => props.setState(state => ({ ...state, nodes: { ...state.nodes, [id]: { ...pane, activeChildId: pane.childIds.at(-1) } } }))}>Forward</button>}
             </>}>
             {content.kind === 'call-tree' ? <>
               <pre data-projected-tree tabIndex={0} onPointerDown={event => {
@@ -129,8 +131,11 @@ export function SelectionEffectsLayer(props: {
                 if (draft?.paneId === id) { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); setDraft({ ...draft, dragging: false }); }
               }} onPointerCancel={() => setDraft(null)}>{content.result.ascii.split('\n').map((line, index) => <span key={index} className={draft?.paneId === id && index >= Math.min(draft.start, draft.end) && index <= Math.max(draft.start, draft.end) ? 'projected-row is-selected' : 'projected-row'}>{line}{index < content.result.ascii.split('\n').length - 1 ? '\n' : ''}</span>)}</pre>
               {draft?.paneId === id && !draft.dragging && <div className="projected-selection-actions"><button type="button" disabled={!canCompact || !selectedIds?.length} onClick={() => openCompaction(pane, selectedIds)}>Project selected rows</button><button type="button" onClick={() => setDraft(null)}>Cancel</button></div>}
-            </> : <div data-projected-compactions>{content.files.map(file => <section key={file.sourceFile} data-compaction-file={file.sourceFile} data-compaction-rows={file.rows.filter(row => row.selected).map(row => row.treeLine).join(' ')}>
-              <header className="mapping-compaction-file">{file.sourceFile}<small>{file.selectedLineCount} mapped rows · source snapshot {file.sourceSha256.slice(0, 8)}</small></header><pre>{file.ascii}</pre>
+            </> : content.kind === 'source-code' ? <SourceCodePane content={content}
+              onChange={patch => props.setState(state => updateSourceCodePane(state, id, patch))} /> : <div data-projected-compactions>{content.files.map(file => <section key={file.sourceFile} data-compaction-file={file.sourceFile} data-compaction-rows={file.rows.filter(row => row.selected).map(row => row.treeLine).join(' ')}>
+              <header className="mapping-compaction-file"><span>{file.sourceFile}</span>
+                <button type="button" aria-label={`Open source ${file.sourceFile}`} disabled={!props.catalog?.projectId}
+                  onClick={() => props.setState(state => openSourceCodePane(state, id, props.catalog!.projectId, file.sourceFile))}>Open source</button><small>{file.selectedLineCount} mapped rows · source snapshot {file.sourceSha256.slice(0, 8)}</small></header><pre>{file.ascii}</pre>
             </section>)}</div>}
           </DisplayPane>;
         })}

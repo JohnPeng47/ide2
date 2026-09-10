@@ -81,11 +81,23 @@ export function deserializeWorkspace(json: string | unknown): MappingWorkspaceSn
           check(Array.isArray(node.content.result.rows), 'invalid projection rows');
           for (const row of node.content.result.rows) { object(row); id(row.nodeId); number(row.sourceLine); }
         } else {
-          check(node.content.kind === 'compaction' && Array.isArray(node.content.files), 'invalid pane content');
+          check(['compaction', 'source-code'].includes(node.content.kind) && Array.isArray(node.content.files), 'invalid pane content');
           for (const file of node.content.files) {
             object(file); string(file.sourceFile); string(file.sourceSha256); string(file.ascii); number(file.selectedLineCount);
             check(Array.isArray(file.rows), 'invalid compaction rows');
             for (const row of file.rows) { object(row); number(row.treeLine); check(typeof row.selected === 'boolean', 'invalid row selection'); ranges(row.sourceRanges); }
+          }
+        }
+        if (node.content.kind === 'source-code') {
+          const content = node.content;
+          id(content.projectId); check(content.projectId === value.projectId, 'source pane belongs to another project');
+          string(content.sourceFile);
+          check(content.files.some((file: any) => file.sourceFile === content.sourceFile), 'source file is not in the projected compactions');
+          check(typeof content.showCompactions === 'boolean', 'invalid source overlay flag');
+          check(Number.isInteger(content.rangeIndex) && content.rangeIndex >= 0, 'invalid source range index');
+          if (content.scroll !== undefined) {
+            object(content.scroll); number(content.scroll.top); number(content.scroll.left);
+            check(content.scroll.top >= 0 && content.scroll.left >= 0, 'invalid source scroll position');
           }
         }
       } else if (node.kind === 'conversation') {

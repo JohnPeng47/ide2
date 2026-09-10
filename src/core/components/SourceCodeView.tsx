@@ -191,8 +191,12 @@ export function SourceCodeView(props: {
   targetLine?: number;
   revealed?: boolean;
   revealRequestId?: number;
+  initialScrollPosition?: { top: number; left: number };
+  onScrollPositionChange?: (position: { top: number; left: number }) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const initialScroll = useRef(props.initialScrollPosition);
+  const restoredSource = useRef<string | undefined>(undefined);
   const [highlighted, setHighlighted] = useState<TokensResult | null>(null);
   const [highlightFailed, setHighlightFailed] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(() => new Set());
@@ -229,6 +233,14 @@ export function SourceCodeView(props: {
   useEffect(() => {
     const viewer = scrollRef.current;
     if (!viewer) return;
+    if (restoredSource.current !== sourceIdentity) {
+      restoredSource.current = sourceIdentity;
+      if (initialScroll.current) {
+        viewer.scrollTop = initialScroll.current.top;
+        viewer.scrollLeft = initialScroll.current.left;
+        return;
+      }
+    }
     viewer.scrollLeft = 0;
     const target = viewer.querySelector<HTMLElement>(
       `[data-line="${props.targetLine ?? props.range.startLine}"]`
@@ -376,6 +388,7 @@ export function SourceCodeView(props: {
   return (
     <div
       ref={scrollRef}
+      onScroll={(event) => props.onScrollPositionChange?.({ top: event.currentTarget.scrollTop, left: event.currentTarget.scrollLeft })}
       className={props.revealed ? "source-code-viewer is-revealed" : "source-code-viewer"}
       data-highlighted={highlighted ? "true" : "false"}
       data-language={contentLanguageName(props.preview.path, props.presentation)}
