@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import { corpusProvider } from "./corpus";
 import { ProjectDiagramConflict, type SaveProjectedTreeInput } from "./projectCatalogStore";
 import type { SaveProjectDiagramInput } from "../src/projectDiagramCanvas";
 import { validateMappingPocMappings } from "../src/mappingPocPrompt";
@@ -263,6 +265,19 @@ export function diagramApi(
       return;
     }
     try {
+      if (url.pathname === "/api/core/project/source") {
+        if (request.method !== "GET") return sendJson(response, 405, { error: "method not allowed" });
+        const project = await application.store.loadProject();
+        if (!project || url.searchParams.get("projectId") !== project.id) {
+          return sendJson(response, 409, { error: "Source belongs to another project; reopen the diagram." });
+        }
+        const sourcePath = url.searchParams.get("path");
+        if (!sourcePath) return sendJson(response, 400, { error: "Source path is required" });
+        const source = await corpusProvider(project.corpus).readDocumentText(project.corpus, sourcePath);
+        return sendJson(response, 200, { path: sourcePath, startLine: 1, lines: source.split(/\r?\n/),
+          sourceSha256: createHash("sha256").update(source).digest("hex") });
+      }
+
       if (url.pathname === "/internal/mapping/projections") {
         if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
         const project = await application.store.loadProject();

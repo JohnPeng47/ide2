@@ -178,6 +178,8 @@ export function SourceCodeView(props: {
   preview: SourceSnippet;
   range: SourceRange;
   compacted: boolean;
+  highlightedRanges?: readonly Pick<SourceRange, "startLine" | "endLine">[];
+  lineAnnotations?: readonly { startLine: number; content: ReactNode }[];
   presentation: ContentPresentation;
   targetLine?: number;
   revealed?: boolean;
@@ -229,10 +231,23 @@ export function SourceCodeView(props: {
       : 0;
   }, [props.range.startLine, props.revealRequestId, props.targetLine, sourceIdentity]);
 
+  const annotationsByLine = new Map<number, ReactNode[]>();
+  for (const annotation of props.lineAnnotations ?? []) {
+    const annotations = annotationsByLine.get(annotation.startLine) ?? [];
+    annotations.push(annotation.content);
+    annotationsByLine.set(annotation.startLine, annotations);
+  }
   const tokenLines = highlighted?.tokens ?? [];
   const rows: ReactNode[] = [];
   for (let index = 0; index < props.preview.lines.length;) {
     const lineNumber = props.preview.startLine + index;
+    const selected = (props.highlightedRanges ?? [props.range]).some(
+      (range) => lineNumber >= range.startLine && lineNumber <= range.endLine
+    );
+    const annotations = annotationsByLine.get(lineNumber);
+    if (annotations) rows.push(<div className="source-line-annotations" key={`annotations:${lineNumber}`}>
+      {annotations.map((annotation, index) => <div key={index}>{annotation}</div>)}
+    </div>);
     const section = sectionsByStart.get(lineNumber);
     const key = section ? sectionKey(section) : "";
     const expanded = section ? expandedSections.has(key) : false;
@@ -311,11 +326,11 @@ export function SourceCodeView(props: {
 
     rows.push(
       <div
-        className={lineNumber >= props.range.startLine && lineNumber <= props.range.endLine
+        className={selected
           ? "source-code-line is-selected"
           : "source-code-line"}
         data-line={lineNumber}
-        data-selected={lineNumber >= props.range.startLine && lineNumber <= props.range.endLine
+        data-selected={selected
           ? "true"
           : undefined}
         key={`line:${lineNumber}`}

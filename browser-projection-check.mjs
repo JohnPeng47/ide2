@@ -188,10 +188,15 @@ try {
     targetRepresentationId: target.id, targetRevisionId: targetRevision.id, match: "any",
     links: [{ sourceEvidenceIds: ["b", "c"], targetNodeIds: [nodeId("shared()")] },
       { sourceEvidenceIds: ["c"], targetNodeIds: [nodeId("gamma()")] }] };
+  const sourceText = Array.from({ length: 90 }, (_, index) => index === 1 ? "export const selected = 1;"
+    : index === 59 ? "export const detail = selected + 1;" : `// Unmapped context line ${index + 1}`).join("\n") + "\n";
+  await mkdir(path.join(temp, "src"));
+  await writeFile(path.join(temp, "src/shared.ts"), sourceText);
+  await writeFile(path.join(temp, "src/gamma.ts"), sourceText);
   const compactedFile = (sourceFile) => {
     const ascii = `${sourceFile}\n+-- selected method\n|   +-- selected detail\n|   \\-- hidden sibling\n\\-- unrelated method`;
-    return { sourceFile, ascii, asciiSha256: createHash("sha256").update(ascii).digest("hex"), sourceSha256: "a".repeat(64),
-      mappings: [1, 2, 3, 4, 5].map((treeLine) => ({ treeLine, sourceRanges: [{ startLine: treeLine, endLine: treeLine }] })) };
+    return { sourceFile, ascii, asciiSha256: createHash("sha256").update(ascii).digest("hex"), sourceSha256: createHash("sha256").update(sourceText).digest("hex"),
+      mappings: [1, 2, 3, 4, 5].map((treeLine) => ({ treeLine, sourceRanges: [{ startLine: treeLine === 3 ? 60 : treeLine, endLine: treeLine === 3 ? 60 : treeLine }] })) };
   };
   projection.compactionProjection = { files: [compactedFile("src/shared.ts"), compactedFile("src/gamma.ts")], links: [
     { callTreeNodeId: nodeId("shared()"), file: "src/shared.ts", treeLines: [2] },
@@ -233,6 +238,36 @@ try {
         assert.equal(file.rows, "2 3");
         assert.equal(file.ascii, `${file.file}\n\\-- selected method\n    \\-- selected detail`);
       }
+      const sourcePane = `${panel} .mapping-source-stack:not([hidden])`;
+      const viewer = `${sourcePane} .source-code-viewer`;
+      for (const file of expectedFiles) {
+        await click(cdp, `${panel} [aria-label='Open source ${file}']`);
+        await waitForSelector(cdp, `${sourcePane} [data-projected-source='${file}'] [data-highlighted='true']`);
+        assert.deepEqual(await evaluate(cdp, `Array.from(document.querySelectorAll(${JSON.stringify(`${viewer} [data-selected=true]`)})).map(el => Number(el.dataset.line))`), [2, 60]);
+        assert.equal(await evaluate(cdp, `document.querySelectorAll(${JSON.stringify(`${viewer} [data-source-compaction-range]`)}).length`), 2);
+        assert.equal(await evaluate(cdp, `new Set(Array.from(document.querySelectorAll(${JSON.stringify(`${viewer} .source-token`)})).map(el => el.style.color)).size > 1`), true);
+        await click(cdp, `${sourcePane} [aria-label='Next mapped range']`);
+        await waitFor(async () => await evaluate(cdp, `document.querySelector(${JSON.stringify(`${sourcePane} .mapping-source-toolbar`)}).textContent.includes('Lines 60–60')`));
+        await waitFor(async () => await evaluate(cdp, `document.querySelector(${JSON.stringify(viewer)}).scrollTop > 0`));
+        await click(cdp, `${sourcePane} [aria-pressed='true']`);
+        assert.equal(await evaluate(cdp, `document.querySelectorAll(${JSON.stringify(`${viewer} [data-source-compaction-range]`)}).length`), 0);
+        await click(cdp, `${sourcePane} [aria-pressed='false']`);
+        await captureScreenshot(cdp, { output: process.env.SOURCE_STACK_SCREENSHOT ?? path.join(temp, "source-stack.png") });
+        if (expectedFiles.length > 1) {
+          await click(cdp, `${sourcePane} [aria-label='Projected source file']`);
+          await key(cdp, file === expectedFiles[0] ? "End" : "Home", file === expectedFiles[0] ? "End" : "Home");
+          await key(cdp, "Enter", "Enter");
+          const switched = file === expectedFiles[0] ? expectedFiles.at(-1) : expectedFiles[0];
+          await waitForSelector(cdp, `${sourcePane} [data-projected-source='${switched}'] [data-highlighted='true']`);
+        }
+        const scrollTop = await evaluate(cdp, `document.querySelector(${JSON.stringify(viewer)}).scrollTop`);
+        await key(cdp, "Escape", "Escape");
+        await waitFor(async () => !await evaluate(cdp, `Boolean(document.querySelector(${JSON.stringify(sourcePane)}))`));
+        await click(cdp, `${panel} [aria-label='Return to source file']`);
+        await waitForSelector(cdp, sourcePane);
+        assert.equal(await evaluate(cdp, `document.querySelector(${JSON.stringify(viewer)}).scrollTop`), scrollTop);
+        await click(cdp, `${sourcePane} [aria-label='Back to compactions']`);
+      }
       await captureScreenshot(cdp, { output: process.env.COMPACTION_SCREENSHOT ?? path.join(temp, "compaction.png") });
       await click(cdp, `${panel} [aria-label='Back to call tree']`);
       await waitForSelector(cdp, `${panel} pre[data-projected-tree]`);
@@ -244,6 +279,24 @@ try {
     await selectRows(cdp, 2);
     await openTree(cdp, sharedOnly);
     await checkCompactions(["src/shared.ts"]);
+    // Mutate only the disposable corpus to exercise stale and missing source states.
+    await writeFile(path.join(temp, "src/shared.ts"), sourceText + "// changed\n");
+    await click(cdp, `${panel} [aria-label='Open compaction']`);
+    await click(cdp, `${panel} [aria-label='Open source src/shared.ts']`);
+    await waitFor(async () => await evaluate(cdp, `document.querySelector(${JSON.stringify(`${panel} .mapping-source-message`)})?.textContent.includes('has changed')`));
+    assert.equal(await evaluate(cdp, `document.querySelectorAll(${JSON.stringify(`${panel} .source-code-line[data-selected], ${panel} [data-source-compaction-range]`)}).length`), 0);
+    await key(cdp, "Escape", "Escape");
+    await key(cdp, "Escape", "Escape");
+    await rm(path.join(temp, "src/shared.ts"));
+    await click(cdp, `${panel} [aria-label='Open compaction']`);
+    await click(cdp, `${panel} [aria-label='Open source src/shared.ts']`);
+    await waitForSelector(cdp, `${panel} .mapping-source-pane [role=alert]`);
+    await writeFile(path.join(temp, "src/shared.ts"), sourceText);
+    await click(cdp, `${panel} .mapping-source-pane [role=alert] button`);
+    await waitForSelector(cdp, `${panel} .mapping-source-pane [data-highlighted=true]`);
+    assert.equal(await evaluate(cdp, `document.querySelectorAll(${JSON.stringify(`${panel} .source-code-line[data-selected]`)}).length`), 2);
+    await click(cdp, `${panel} .mapping-source-navigation button:first-child`);
+    await waitForSelector(cdp, `${panel} pre[data-projected-tree]`);
     await closeTree(cdp);
     await selectRows(cdp, 3);
     await openTree(cdp, both);
@@ -305,7 +358,7 @@ try {
     assert.equal(saved.revisions[targetRevision.id].ascii, targetRevision.ascii);
     assert.deepEqual(errors, []);
   });
-  console.log("projection browser check passed: selection, OR links, deduplication, no-match state, Escape, reload, sidebar, dirty source/target undo, saved target revision invalidation");
+  console.log("projection browser check passed: selection, OR links, source stack, Shiki, exact ranges, overlays, file switching, stale/missing source and retry, Escape, reload, dirty revisions");
 } finally {
   if (server?.exitCode === null) {
     server.kill("SIGTERM");

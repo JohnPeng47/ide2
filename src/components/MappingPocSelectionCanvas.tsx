@@ -38,6 +38,7 @@ import {
   type LocalChatThread,
   type LocalChatVariant
 } from "../localChat";
+import { ProjectedSourcePane } from "./ProjectedSourcePane";
 import { LocalChatConvo } from "./LocalChatConvo";
 
 interface GridPoint {
@@ -171,6 +172,25 @@ export function MappingPocSelectionCanvas(props: {
   const [openedProjection, setOpenedProjection] = useState<MappingPocProjection | null>(null);
   const [projectionChoice, setProjectionChoice] = useState("");
   const [compactionOpen, setCompactionOpen] = useState(false);
+  const [sourceFile, setSourceFile] = useState<string | null>(null);
+  const [sourceVisible, setSourceVisible] = useState(false);
+  const sourceStackRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const stack = sourceStackRef.current;
+    const parent = stack?.parentElement;
+    const viewport = stack?.closest<HTMLElement>("[data-diagram-canvas]");
+    if (!sourceVisible || !stack || !parent || !viewport) return;
+    const bounds = viewport.getBoundingClientRect();
+    const anchor = parent.getBoundingClientRect();
+    const scale = anchor.width / parent.offsetWidth || 1;
+    // Keep the source attached to the stack; adapt its size instead of moving it away.
+    const width = Math.min(920, Math.max(360, (bounds.right - 24 - anchor.left) / scale - 24));
+    const height = Math.min(640, Math.max(320, (bounds.bottom - 32 - anchor.top) / scale - 24));
+    stack.style.width = `${width}px`;
+    stack.style.setProperty("--source-pane-height", `${height}px`);
+  }, [sourceVisible, sourceFile]);
+  const openSource = (path: string) => { setSourceFile(path); setSourceVisible(true); };
+  useEffect(() => { if (!compactionOpen) { setSourceFile(null); setSourceVisible(false); } }, [compactionOpen]);
   const [openDetailOverlayId, setOpenDetailOverlayId] = useState<string | null>(null);
   const [promptOpen, setPromptOpen] = useState(false);
   const [promptText, setPromptText] = useState("");
@@ -654,6 +674,12 @@ export function MappingPocSelectionCanvas(props: {
       if (props.active === false) return;
       if (event.target instanceof Element && event.target.closest(".mapping-floating-pane, .mapping-submenu")) return;
       if (event.key === "Escape" && openedProjection) {
+        if (compactionOpen && sourceVisible) {
+          event.preventDefault();
+          event.stopPropagation();
+          setSourceVisible(false);
+          return;
+        }
         if (compactionOpen) {
           event.preventDefault();
           event.stopPropagation();
@@ -717,6 +743,7 @@ export function MappingPocSelectionCanvas(props: {
     openMapped,
     openedProjection,
     compactionOpen,
+    sourceVisible,
     openAsk,
     openPrompt,
     pendingPlacement,
@@ -1240,6 +1267,8 @@ export function MappingPocSelectionCanvas(props: {
                 onClick={() => setCompactionOpen((open) => !open)}>
                 {compactionOpen ? "Back to call tree" : "Open compaction"}
               </button>}
+              {compactionOpen && sourceFile && <button type="button" className="mapping-compaction-action"
+                aria-label="Return to source file" onClick={() => setSourceVisible(true)}>Source file →</button>}
               <button
                 type="button"
                 aria-label="Close call tree"
@@ -1251,10 +1280,19 @@ export function MappingPocSelectionCanvas(props: {
           {compactionOpen ? <div data-projected-compactions>
             {selectedCompactions.map((file) => <section key={file.sourceFile} data-compaction-file={file.sourceFile}
               data-compaction-rows={file.rows.filter((row) => row.selected).map((row) => row.treeLine).join(" ")}>
-              <header className="mapping-compaction-file">{file.sourceFile}<small>{file.selectedLineCount} mapped rows · source snapshot {file.sourceSha256.slice(0, 8)}</small></header>
+              <header className="mapping-compaction-file"><span>{file.sourceFile}</span>
+                <button type="button" aria-label={`Open source ${file.sourceFile}`} onClick={() => openSource(file.sourceFile)}>Open source ↗</button>
+                <small>{file.selectedLineCount} mapped rows · source snapshot {file.sourceSha256.slice(0, 8)}</small>
+              </header>
               <pre>{file.ascii}</pre>
             </section>)}
           </div> : <pre data-projected-tree>{openedProjection.bAscii}</pre>}
+          {compactionOpen && sourceFile && props.projectContext && selectedCompactions.some((file) => file.sourceFile === sourceFile) &&
+            <div ref={sourceStackRef} className="mapping-source-stack" hidden={!sourceVisible}>
+              <ProjectedSourcePane key={sourceFile} projectId={props.projectContext.projectId} files={selectedCompactions}
+                file={selectedCompactions.find((file) => file.sourceFile === sourceFile)!} onFileChange={openSource}
+                onBack={() => setSourceVisible(false)} onCallTree={() => setCompactionOpen(false)} />
+            </div>}
         </aside>
       ) : null}
       </div>

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile, symlink, rm } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
@@ -71,11 +71,29 @@ async function fixture() {
     name: "Calls", ascii: "Calls\n|\n+-- shared()\n|   \\-- detail\n\\-- gamma()",
     links: [{ sourceEvidenceIds: ["b", "c"], targetLines: [3] }, { sourceEvidenceIds: ["c"], targetLines: [5] }]
   };
-  return { store, project, source, endpoint, diagramsEndpoint, post, snapshot, input,
+  return { root, sourceEndpoint: `${origin}/api/core/project/source`, store, project, source, endpoint, diagramsEndpoint, post, snapshot, input,
     catalogPath: path.join(store.storeRoot, "representations/catalog.json") };
 }
 
 describe("Project projection HTTP API", () => {
+  it("reads complete project source with an exact hash and rejects foreign projects and escaping paths", async () => {
+    const { root, project, sourceEndpoint } = await fixture();
+    const source = "// context\r\nexport const selected = 1;\r\n// tail\r\n";
+    await writeFile(path.join(root, "source.ts"), source);
+    const read = (file: string, projectId = project.id) => fetch(`${sourceEndpoint}?${new URLSearchParams({ projectId, path: file })}`);
+    const response = await read("source.ts");
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ path: "source.ts", startLine: 1, lines: source.split(/\r?\n/),
+      sourceSha256: createHash("sha256").update(source).digest("hex") });
+    expect((await read("source.ts", "other-project")).status).toBe(409);
+    for (const file of ["../source.ts", path.join(root, "source.ts"), "missing.ts"]) {
+      expect((await read(file)).ok).toBe(false);
+    }
+    await symlink(path.join(root, "source.ts"), path.join(root, "link.ts"));
+    expect((await read("link.ts")).ok).toBe(false);
+    expect((await fetch(sourceEndpoint, { method: "POST" })).status).toBe(405);
+  });
+
   it("persists a target tree and OR links visible through the diagrams endpoint", async () => {
     const { project, source, post, snapshot, input } = await fixture();
     const response = await post(input);

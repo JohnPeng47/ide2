@@ -94,14 +94,19 @@ class FilesystemCorpusProvider implements CorpusProvider {
   }
 
   async readDocumentLines(binding: CorpusBinding, relativePath: string): Promise<string[]> {
+    return (await this.readDocumentText(binding, relativePath)).split(/\r?\n/);
+  }
+
+  async readDocumentText(binding: CorpusBinding, relativePath: string): Promise<string> {
     const root = await canonicalBindingRoot(binding, this.kind);
     const filePath = await resolveWithoutSymlinks(root, relativePath, "corpus file");
     if (!(await stat(filePath)).isFile()) throw new Error(`corpus path is not a file: ${relativePath}`);
-    return (await readFile(filePath, "utf8")).split(/\r?\n/);
+    return readFile(filePath, "utf8");
   }
 }
 
 export type ReadableCorpusProvider = CorpusProvider & {
+  readDocumentText(binding: CorpusBinding, relativePath: string): Promise<string>;
   readDocumentLines(binding: CorpusBinding, relativePath: string): Promise<string[]>;
 };
 

@@ -938,3 +938,14 @@ export async function fetchSourceSnippet(
   if (!response.ok) throw await errorFrom(response);
   return response.json() as Promise<SourceSnippet>;
 }
+
+export interface ProjectSourceFile extends SourceSnippet {
+  sourceSha256: string;
+}
+
+export async function fetchProjectSourceFile(projectId: string, path: string, signal?: AbortSignal): Promise<ProjectSourceFile> {
+  const params = new URLSearchParams({ projectId, path });
+  const response = await apiFetch(`/api/core/project/source?${params}`, { cache: "no-store", signal });
+  if (!response.ok) throw await errorFrom(response);
+  return response.json();
+}

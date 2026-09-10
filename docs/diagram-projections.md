@@ -8,6 +8,12 @@ Open the source diagram in Mapping, drag across mapped labels, then press **N** 
 
 **Open compaction** in that panel projects its matched call-tree branches into compacted source trees, grouped by file, in the same inline panel. **Back to call tree** (or Escape) restores the call tree without changing the original selection; a second Escape closes the panel. Original-diagram selections always open the call tree first. Projections with compaction mappings are preferred by default; older projections remain available and show a disabled compaction action when unmapped.
 
+Choose **Open source** on a compaction file to open a stacked source window using Studio's shared Shiki viewer. Exact mapped source ranges are highlighted; unrelated gaps and context-only ancestor ranges stay unhighlighted. **Compaction overlays** places the projected rows above their corresponding source ranges. Use the arrows to jump between ranges and the file selector to switch projected files.
+
+The pane breadcrumb moves back to **Compactions** or **Call tree**. Escape returns one layer at a time. Returning to compactions preserves the source window's scroll and overlay settings; **Source file →** brings it forward again. The source pane stays aligned with the compaction stack, offset by 24 pixels. Its size adapts to the available viewport space; panning moves the panes together.
+
+Source is read from the current project's corpus. If its SHA-256 differs from the projection's captured hash, the viewer explains the mismatch and displays current source without potentially incorrect highlights or overlays. Missing files display an error with Retry.
+
 Unlinked selections and diagrams without a projection explain why the action is unavailable. Unsaved scene changes in either open diagram block projection. Saved revisions that differ from the pinned source or target require an updated projection. Historical revisions and their old projection links remain stored.
 
 ## Stored model
