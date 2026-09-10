@@ -1,3 +1,4 @@
+import { MappingWorkspaceStore } from "./mappingWorkspaceStore";
 import { handleLocalChat } from "./localChatRoutes";
 import type { LocalChatRuntime } from "./localChatRuntime";
 import type { ServerResponse } from "node:http";
@@ -17,7 +18,18 @@ export function createMappingRoutes({ application, runtime, chatRuntime, project
   chatRuntime: LocalChatRuntime;
   runtime: MappingAgentRuntime; projectRoot: string; configuredDomainProfileId?: BuiltInDomainProfileId; mappingPocSourceRoot: string;
 }) {
+  const workspaceStore = new MappingWorkspaceStore(application.store.projectCatalogs.storeRoot);
   return async (request: Connect.IncomingMessage, response: ServerResponse, url: URL): Promise<void> => {
+
+    if (url.pathname === "/api/mapping/workspace") {
+      const project = await application.store.loadProject();
+      if (!project) return sendJson(response, request.method === "GET" ? 200 : 400, request.method === "GET" ? null : { error: "Project is not initialized" });
+      if (request.method === "GET") return sendJson(response, 200, await workspaceStore.load(project.id));
+      if (request.method !== "PUT") return sendJson(response, 405, { error: "method not allowed" });
+      try { await workspaceStore.save(project.id, await readBody(request)); }
+      catch (error) { return sendJson(response, 400, { error: error instanceof Error ? error.message : "Invalid workspace" }); }
+      return sendJson(response, 200, { saved: true });
+    }
 
     if (url.pathname === "/api/mapping/chat") return handleLocalChat(request, response, { application, chatRuntime, mappingPocSourceRoot });
 

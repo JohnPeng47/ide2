@@ -1,7 +1,10 @@
+import { EffectPaneHeader } from "./DisplayPane";
 import { LocalChatVerbosityToggle } from "./LocalChatVerbosityToggle";
 import { TerminalMarkdownContent } from "../../core/components/TerminalMarkdownContent";
 import {
   useEffect,
+  useLayoutEffect,
+  type CSSProperties,
   useCallback,
   useRef,
   useState,
@@ -16,13 +19,27 @@ import {
 
 export function LocalChatConvo(props: {
   thread: LocalChatThread;
+  displayNodeId?: string;
+  style?: CSSProperties;
+  onMeasure?: (id: string, width: number, height: number) => void;
   variant: LocalChatVariant;
+  draft?: string;
+  onDraftChange?: (draft: string) => void;
   onSubmit: (message: string) => void;
   onClose: () => void;
   onVerbosityChange: (value: LocalChatVerbosity) => void;
   onRetry: () => void;
 }) {
-  const [draft, setDraft] = useState("");
+  const paneRef = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const el = paneRef.current; if (!el || !props.onMeasure || !props.displayNodeId) return;
+    const report = () => props.onMeasure!(props.displayNodeId!, el.offsetWidth, el.offsetHeight);
+    report(); const observer = new ResizeObserver(report); observer.observe(el);
+    return () => observer.disconnect();
+  }, [props.displayNodeId, props.onMeasure]);
+  const [localDraft, setLocalDraft] = useState("");
+  const draft = props.draft ?? localDraft;
+  const setDraft = props.onDraftChange ?? setLocalDraft;
   const transcriptRef = useRef<HTMLDivElement>(null);
   const scrollToLatest = useCallback(() => {
     const transcript = transcriptRef.current;
@@ -37,24 +54,20 @@ export function LocalChatConvo(props: {
   const submit = (event: FormEvent) => {
     event.preventDefault();
     const message = draft.trim();
-    if (!message || props.thread.pending) return;
+    if (!message || props.thread.pending || !props.thread.context) return;
     props.onSubmit(message);
     setDraft("");
   };
 
   return (
-    <section
+    <section ref={paneRef} style={props.style} data-display-node={props.displayNodeId}
       className={`local-chat-convo is-${props.variant}`}
       data-local-chat-convo={props.variant}
       aria-label={`Local conversation about ${props.thread.title}`}
     >
-      <header>
-        <div>
-          <span>LOCAL CHAT</span>
-          <strong>{props.thread.title}</strong>
-        </div>
+      <EffectPaneHeader title={props.thread.title} eyebrow="LOCAL CHAT" actions={
         <button type="button" aria-label="Collapse local conversation" onClick={props.onClose}>×</button>
-      </header>
+      } />
 
       <div ref={transcriptRef} className="local-chat-transcript" role="log" aria-live="polite">
         {props.thread.messages.map((message) => (
@@ -75,9 +88,9 @@ export function LocalChatConvo(props: {
 
       {props.thread.error && <div className="local-chat-error" role="alert">
         <p>{props.thread.error}</p>
-        <button type="button" onClick={props.onRetry} disabled={props.thread.pending}>Retry</button>
+        {props.thread.context && <button type="button" onClick={props.onRetry} disabled={props.thread.pending || !props.thread.context}>Retry</button>}
       </div>}
-      <LocalChatVerbosityToggle value={props.thread.verbosity} disabled={props.thread.pending} onChange={props.onVerbosityChange} />
+      <LocalChatVerbosityToggle value={props.thread.verbosity} disabled={props.thread.pending || !props.thread.context} onChange={props.onVerbosityChange} />
       <form onSubmit={submit}>
         <label>
           <span>Follow up</span>
@@ -85,7 +98,7 @@ export function LocalChatConvo(props: {
             value={draft}
             rows={2}
             maxLength={4000}
-            disabled={props.thread.pending}
+            disabled={props.thread.pending || !props.thread.context}
             placeholder="Ask about this region…"
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={(event) => {
@@ -99,7 +112,7 @@ export function LocalChatConvo(props: {
             }}
           />
         </label>
-        <button type="submit" disabled={!draft.trim() || props.thread.pending} title="Send (Ctrl+Enter)">
+        <button type="submit" disabled={!draft.trim() || props.thread.pending || !props.thread.context} title="Send (Ctrl+Enter)">
           {props.thread.pending ? "waiting…" : "send"}
         </button>
       </form>

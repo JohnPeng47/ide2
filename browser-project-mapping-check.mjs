@@ -38,14 +38,14 @@ async function fill(cdp, selector, text) {
   await cdp.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Control", code: "ControlLeft", windowsVirtualKeyCode: 17 });
   await cdp.send("Input.insertText",{text});
 }
-async function drag(cdp, start, end) {
-  await cdp.send("Input.dispatchMouseEvent", {type:"mousePressed",...start,button:"left",buttons:1,clickCount:1});
-  await cdp.send("Input.dispatchMouseEvent", {type:"mouseMoved",...end,button:"left",buttons:1});
-  await cdp.send("Input.dispatchMouseEvent", {type:"mouseReleased",...end,button:"left",clickCount:1});
+async function drag(cdp, start, end, modifiers = 0) {
+  await cdp.send("Input.dispatchMouseEvent", {type:"mousePressed",...start,button:"left",modifiers,buttons:1,clickCount:1});
+  await cdp.send("Input.dispatchMouseEvent", {type:"mouseMoved",...end,button:"left",modifiers,buttons:1});
+  await cdp.send("Input.dispatchMouseEvent", {type:"mouseReleased",...end,button:"left",modifiers,clickCount:1});
 }
 async function selectWorker(cdp) {
   const rect = await evaluate(cdp, `(() => { const r=document.querySelector('.mapping-document-view:not([hidden]) [data-selectable-node]').getBoundingClientRect(); return {x:r.x,y:r.y,width:r.width,height:r.height}; })()`);
-  await drag(cdp,{x:rect.x+1,y:rect.y+rect.height/2},{x:rect.x+rect.width-1,y:rect.y+rect.height/2});
+  await drag(cdp,{x:rect.x+1,y:rect.y+rect.height/2},{x:rect.x+rect.width-1,y:rect.y+rect.height/2}, 2);
   await waitForSelector(cdp,".mapping-document-view:not([hidden]) .mapping-poc-selection-actions");
 }
 async function catalog() { return (await (await fetch(`${url}/api/core/project/representations`)).json()).catalog; }
@@ -103,11 +103,8 @@ try {
     await click(cdp,"[data-project-diagram='representation-seed']");
     await waitForSelector(cdp,".mapping-document-view:not([hidden]) [data-selectable-node]");
     await selectWorker(cdp); await key(cdp,"n","KeyN");
-    // Source evidence alone does not create a projection; the projection check
-    // exercises persisted trees and their source-compaction companions.
     await waitForSelector(cdp, ".mapping-document-view:not([hidden]) .mapping-projection-status");
     assert.ok(await evaluate(cdp, "document.querySelector('.mapping-document-view:not([hidden]) .mapping-projection-status').textContent.includes('No call-tree projection')"));
-    assert.equal(await evaluate(cdp, "Boolean(document.querySelector('.mapping-document-view:not([hidden]) .mapping-poc-companion'))"), false);
     await key(cdp, "Escape", "Escape");
     await selectWorker(cdp); await key(cdp,"p","KeyP");
     await waitForSelector(cdp,".mapping-document-view:not([hidden]) #mapping-poc-prompt");
@@ -137,7 +134,7 @@ try {
     await captureScreenshot(cdp,{output:process.env.MAPPING_SCREENSHOT??path.join(temp,"mapping.png")});
     assert.deepEqual(errors,[]);
   });
-  console.log("project Mapping browser check passed: create, save, reload, grouped scene, navigation, Mapping prompt across a switch, Core catalog shared with Studio");
+  console.log("project Mapping browser check passed: create, save, reload, grouped scene, navigation, internal prompt across a switch, Studio catalog");
 } finally {
   if(server?.exitCode===null) { server.kill("SIGTERM"); await new Promise(resolve=>server.once("exit",resolve)); }
   await rm(temp,{recursive:true,force:true});

@@ -1,16 +1,20 @@
-import { UiTestFramework } from "@new-diagram/ui-test-framework";
-import { useEffect, useState } from "react";
-import { loadProjectRepresentations, type ProjectRepresentationsSnapshot } from "../../core/api";
-import { DraggableDiagramCanvas } from "../../core/components/DraggableDiagramCanvas";
-import { FloatingPane } from "../../core/components/FloatingPane";
-import { sceneFromRevision, singleDiagramScene } from "../../core/projectDiagramCanvas";
-import type { LocalChatVariant } from "../localChat";
 import { mappingDocumentFromScene } from "../mappingDocument";
-import type { MappingGridDocument } from "../mappingGrid";
-import { saveMappingProjectDiagram } from "../mappingProjectApi";
-import { MappingDiagramExplorer } from "./MappingDiagramExplorer";
+import { loadProjectRepresentations, type ProjectRepresentationsSnapshot } from "../../core/api";
+import { initialCanvasState, type MappingCanvasState, type MappingWorkspaceSnapshot } from "../mappingWorkspace";
+import { deserializeWorkspace, serializeWorkspace } from "../mappingWorkspaceCodec";
+import { mappingWorkspaceRepository } from "../mappingWorkspaceRepository";
+import type { CanvasTransform } from "../../core/diagramCanvas";
+import { useEffect, useRef, useState } from "react";
+import { UiTestFramework } from "@new-diagram/ui-test-framework";
+import { DraggableDiagramCanvas } from "../../core/components/DraggableDiagramCanvas";
 import { MappingPocSelectionCanvas } from "./MappingPocSelectionCanvas";
 import { MappingSubmenu } from "./MappingSubmenu";
+import { FloatingPane } from "../../core/components/FloatingPane";
+import { MappingDiagramExplorer } from "./MappingDiagramExplorer";
+import type { LocalChatVariant } from "../localChat";
+import type { MappingGridDocument } from "../mappingGrid";
+import { sceneFromRevision, singleDiagramScene } from "../../core/projectDiagramCanvas";
+import { saveMappingProjectDiagram } from "../mappingProjectApi";
 
 const LOCAL_CHAT_UI_CONTROLS = {
   variant: {
@@ -23,8 +27,7 @@ const LOCAL_CHAT_UI_CONTROLS = {
       { value: "floating", label: "Floating window" },
       { value: "docked", label: "Docked panel" }
     ]
-  },
-
+  }
 } as const;
 
 interface Draft {
@@ -34,12 +37,18 @@ interface Draft {
   savedName: string;
   revisionId: string;
   busy: boolean;
+  canvas: MappingCanvasState;
+  viewport?: CanvasTransform;
   focusBox?: { id: string; serial: number };
 }
 const dirty = (draft: Draft) => draft.name !== draft.savedName || JSON.stringify(draft.document.scene) !== draft.savedScene;
 
 export function MappingPocPage(props: { onStudio: () => void; onExperiments: () => void;
   registerNavigationGuard?: (guard: (() => boolean) | undefined) => void }) {
+  const [workspaceEpoch, setWorkspaceEpoch] = useState(0);
+  const [workspaceStatus, setWorkspaceStatus] = useState("");
+  const [workspaceBusy, setWorkspaceBusy] = useState(false);
+  const importRef = useRef<HTMLInputElement>(null);
   const [snapshot, setSnapshot] = useState<ProjectRepresentationsSnapshot>();
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [activeId, setActiveId] = useState<string>();
@@ -58,7 +67,7 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
     if (!representation || representation.status !== "settled" || !revision) { setError("Project diagram was not found"); return; }
     const document = mappingDocumentFromScene(sceneFromRevision(revision), revision.evidence);
     setDrafts((current) => current[id] ? current : { ...current, [id]: { name: representation.name,
-      document, savedScene: JSON.stringify(document.scene), savedName: representation.name, revisionId: revision.id, busy: false } });
+      document, savedScene: JSON.stringify(document.scene), savedName: representation.name, revisionId: revision.id, busy: false, canvas: initialCanvasState() } });
     setActiveId(id);
     if (navigate) {
       const url = new URL(location.href); url.searchParams.set("diagram", id);
@@ -67,15 +76,56 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
     setError("");
   };
 
+  const restore = (workspace: MappingWorkspaceSnapshot, data = snapshot) => {
+    if (workspace.projectId !== data?.project?.id) throw new Error("Workspace belongs to another project");
+    setDrafts(Object.fromEntries(workspace.documents.map(doc => [doc.representationId, { ...doc, busy: false }])));
+    const id = workspace.activeDocumentId ?? workspace.documents[0]?.representationId;
+    setActiveId(id); setWorkspaceEpoch(value => value + 1); setCreating(false);
+    if (id) { const url = new URL(location.href); url.searchParams.set('diagram', id); history.replaceState({}, '', url); }
+    setWorkspaceStatus('Workspace restored');
+  };
+  const capture = (): MappingWorkspaceSnapshot => {
+    if (!snapshot?.project) throw new Error('Project is not initialized');
+    return { schemaVersion: 2, projectId: snapshot.project.id, activeDocumentId: activeId,
+      documents: Object.entries(drafts).map(([representationId, draft]) => ({ representationId, name: draft.name,
+        savedName: draft.savedName, savedScene: draft.savedScene, revisionId: draft.revisionId,
+        document: draft.document, canvas: draft.canvas, viewport: draft.viewport })) };
+  };
+  const workspaceAction = async (action: 'save' | 'restore' | 'export', imported?: string) => {
+    setWorkspaceBusy(true); setError('');
+    try {
+      if (imported !== undefined) { restore(deserializeWorkspace(imported)); setWorkspaceStatus('Workspace imported; save to retain on reload'); }
+      else if (action === 'save') { await mappingWorkspaceRepository.save(capture()); setWorkspaceStatus('Workspace saved'); }
+      else if (action === 'restore') {
+        const saved = await mappingWorkspaceRepository.load();
+        if (saved) restore(saved); else setWorkspaceStatus('No saved workspace yet');
+      } else {
+        const href = URL.createObjectURL(new Blob([serializeWorkspace(capture())], { type: 'application/json' }));
+        const a = document.createElement('a'); a.href = href; a.download = 'mapping-workspace.json'; a.click(); URL.revokeObjectURL(href);
+        setWorkspaceStatus('Workspace exported');
+      }
+    } catch (error) { setError(error instanceof Error ? error.message : 'Workspace operation failed'); }
+    finally { setWorkspaceBusy(false); }
+  };
   useEffect(() => {
     let cancelled = false;
-    loadProjectRepresentations().then((data) => {
-      if (cancelled) return;
-      setSnapshot(data);
-      const id = new URL(location.href).searchParams.get("diagram")
-        ?? Object.values(data.catalog?.representations ?? {}).find((diagram) => diagram.status === "settled")?.id;
-      if (id) open(id, data, false);
-    }).catch((error) => { if (!cancelled) setError(error.message); });
+    void (async () => {
+      try {
+        const data = await loadProjectRepresentations(); if (cancelled) return; setSnapshot(data);
+        let workspace: MappingWorkspaceSnapshot | null = null;
+        let restoreError = '';
+        try { workspace = await mappingWorkspaceRepository.load(); }
+        catch (error) { restoreError = error instanceof Error ? error.message : 'Could not restore workspace'; }
+        if (cancelled) return;
+        if (workspace && workspace.documents.length) restore(workspace, data);
+        else {
+          const id = new URL(location.href).searchParams.get('diagram')
+            ?? Object.values(data.catalog?.representations ?? {}).find(diagram => diagram.status === 'settled')?.id;
+          if (id) open(id, data, false);
+        }
+        if (restoreError) setError(restoreError);
+      } catch (error) { if (!cancelled) setError(error instanceof Error ? error.message : 'Could not load project'); }
+    })();
     return () => { cancelled = true; };
   }, []);
 
@@ -129,6 +179,16 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
           canSave={Boolean(active?.name.trim() && active && dirty(active) && !active.busy && !savingId)}
           onNameChange={(name) => { if (activeId) setDrafts((current) => ({ ...current, [activeId]: { ...current[activeId], name } })); }}
           onNew={() => { setCopyCurrent(false); setCreating(true); }} onSave={() => void save()} />
+        <div className="mapping-workspace-actions">
+          <button disabled={workspaceBusy || !active || Object.values(drafts).some(draft => draft.busy)} onClick={() => void workspaceAction('save')}>Save workspace</button>
+          <button disabled={workspaceBusy || Object.values(drafts).some(draft => draft.busy)} onClick={() => void workspaceAction('restore')}>Restore workspace</button>
+          <button disabled={workspaceBusy || !active} onClick={() => void workspaceAction('export')}>Export</button>
+          <button disabled={workspaceBusy || Object.values(drafts).some(draft => draft.busy)} onClick={() => importRef.current?.click()}>Import</button>
+          <input ref={importRef} type="file" accept="application/json,.json" hidden aria-label="Import workspace" onChange={event => {
+            const file = event.target.files?.[0]; event.target.value = '';
+            if (file) void file.text().then(text => workspaceAction('restore', text)).catch(error => setError(String(error)));
+          }} />
+        </div>
         <nav className="screen-tabs" aria-label="Application pages">
           <button type="button" onClick={props.onStudio}>STUDIO</button>
           <button type="button" onClick={props.onExperiments}>EXPERIMENTS</button>
@@ -137,9 +197,12 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
       </header>
       <section className="mapping-poc-workspace">
         <div className="mapping-viewport">
-          {Object.entries(drafts).map(([id, draft]) => <div key={id} className="mapping-document-view" hidden={id !== activeId}>
-            <DraggableDiagramCanvas className="mapping-poc-canvas" enabled resetKey={id} leftInset={340} focusBox={draft.focusBox}>
-              <MappingPocSelectionCanvas initialDocument={draft.document} active={id === activeId && !creating} focusBox={draft.focusBox}
+          {Object.entries(drafts).map(([id, draft]) => <div key={`${workspaceEpoch}:${id}`} className="mapping-document-view" hidden={id !== activeId}>
+            <DraggableDiagramCanvas className="mapping-poc-canvas" enabled resetKey={id} leftInset={340} focusBox={draft.focusBox}
+              initialTransform={draft.viewport} onTransformChange={viewport => setDrafts(current => current[id] ? { ...current, [id]: { ...current[id], viewport } } : current)}>
+              <MappingPocSelectionCanvas initialCanvasState={draft.canvas}
+                onCanvasStateChange={canvas => setDrafts(current => !current[id] || current[id].canvas === canvas ? current : { ...current, [id]: { ...current[id], canvas } })}
+                initialDocument={draft.document} active={id === activeId && !creating} focusBox={draft.focusBox}
                 projectContext={{ projectId: snapshot!.project!.id, representationId: id, baseRevisionId: draft.revisionId }}
                 projectionCatalog={snapshot?.catalog ?? undefined} savedScene={draft.savedScene}
                 dirtyRepresentationIds={Object.keys(drafts).filter((key) => JSON.stringify(drafts[key].document.scene) !== drafts[key].savedScene)}
@@ -152,12 +215,12 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
             {snapshot && <button type="button" onClick={() => setCreating(true)}>New diagram</button>}</div>}
           <FloatingPane><MappingDiagramExplorer projectName={snapshot?.project?.name ?? "Project"} diagrams={diagrams}
             activeId={activeId} scene={active?.document.scene} dirtyIds={Object.keys(drafts).filter((id) => dirty(drafts[id]))}
-            onOpen={(id) => open(id)} onFocus={(id) => { if (activeId) setDrafts((current) => ({ ...current,
+            onOpen={(id) => open(id)} onFocus={(id) => { if (activeId && !drafts[activeId]?.busy) setDrafts((current) => ({ ...current,
               [activeId]: { ...current[activeId], focusBox: { id, serial: (current[activeId].focusBox?.serial ?? 0) + 1 } } })); }} /></FloatingPane>
           {error && <div className="mapping-project-error" role="alert">{error}<button type="button" onClick={() => setError("")}>Dismiss</button></div>}
         </div>
         <footer className="mapping-poc-status"><span>{active?.name ?? "PROJECT DIAGRAMS"}</span>
-          <span>select text to generate a sub-diagram · N opens call tree · P patches · A asks locally</span></footer>
+          <span>{workspaceStatus || 'Ctrl + drag to select · N opens call tree · P patches · A asks locally'}</span></footer>
       </section>
       {creating && <div className="mapping-dialog-backdrop"><form className="mapping-create-dialog" role="dialog" aria-modal="true" aria-label="New project diagram"
         onKeyDown={(event) => {

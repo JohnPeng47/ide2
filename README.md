@@ -50,7 +50,7 @@ clients, services, and component directories:
 | Area | Namespace | Ownership |
 | --- | --- | --- |
 | Studio | `/api/studio/*` | Collection, generation, candidates, promotion, artifact edit sessions, templates, experiments, datasets |
-| Mapping | `/api/mapping/*` | Canvas saves, selection prompts, local chat |
+| Mapping | `/api/mapping/*` | Canvas saves, selection prompts, local chat, workspace persistence |
 | Core | `/api/core/*` | Workspace, corpus, representations, projections, imports, plans, highlights, shared rendering |
 
 Both features depend on Core; neither imports the other. `src/App.tsx` and
@@ -81,8 +81,10 @@ Saved revisions include canvas content, placement, groups, collapsed state, and
 source evidence snapshots. They also retain composed ASCII for existing consumers.
 Select mapped text and press `N` to preview its saved source, or `P` to prompt an edit.
 Save checks the expected revision and rejects stale writes; reload the page to
-open the latest saved revision after a conflict. Pan, zoom, undo history, and local
-chat history are temporary editor state. Read the catalog through Core and save
+refresh the catalog after a conflict. **Save workspace** separately persists open
+documents, unsaved scenes, retained panes, chat context/history, drafts, and pan/zoom
+through `GET/PUT /api/mapping/workspace`. Reload restores that workspace before
+falling back to the diagram URL. Undo history remains temporary editor state. Read the catalog through Core and save
 canvases with `POST /api/mapping/diagrams`. Selection edits stream from
 `POST /api/mapping/prompt`; chat answers stream from `POST /api/mapping/chat`.
 

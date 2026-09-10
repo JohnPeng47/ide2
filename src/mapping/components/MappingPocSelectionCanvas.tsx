@@ -1,17 +1,15 @@
+import { LocalChatVerbosityToggle } from "./LocalChatVerbosityToggle";
 import { formatAsciiWithCodeReferences } from "../../core/diagramClipboard";
 import { asciiForSelection } from "../../core/diagramSelection";
-import {
-  composeScene,
-  flattenGrid,
-  hitTest,
-  layoutScene,
-  resolveScene,
-  updateGridBox,
-  type GridPoint as ScenePoint
-} from "../../core/lineGrid";
-import { mappingDocumentFromScene } from "../mappingDocument";
+import { layoutConversationPane } from "../conversationPaneLayout";
+import { addDisplayNode, displayGeometry, measureDisplayNode, removeDisplayNode, setExpansion, type DisplayState, type SelectionRegion, type ConversationPane, type ProjectedPane } from "../displayModel";
+import { initialCanvasState, initialSelectionSurface, selectionSurfaceKeys, type MappingCanvasState, type MappingControlValues, type SelectionSurfaceState } from "../mappingWorkspace";
+import { SelectionEffectsLayer } from "./SelectionEffectsLayer";
+import { composeScene, flattenGrid, hitTest, layoutScene, resolveScene, updateGridBox, type GridPoint as ScenePoint } from "../../core/lineGrid";
 import { initialMappingGrid, insertGridDiagram, type MappingGridDocument } from "../mappingGrid";
-
+import { mappingDocumentFromScene } from "../mappingDocument";
+import { projectSelection, validateProjection } from "../../core/diagramProjection";
+import type { ProjectRepresentationCatalogRecord } from "../../core/projectCatalog";
 import {
   useCallback,
   useEffect,
@@ -19,35 +17,30 @@ import {
   useMemo,
   useRef,
   useState,
+  type Dispatch,
+  type SetStateAction,
   type FormEvent,
   type PointerEvent
 } from "react";
 import { createPortal } from "react-dom";
-import { projectCompactions } from "../../core/compactionProjection";
-import { projectSelection, validateProjection } from "../../core/diagramProjection";
-import type { ProjectRepresentationCatalogRecord } from "../../core/projectCatalog";
+import {
+  projectASelectionToB,
+  type MappingPocANode,
+  type MappingPocGridRect
+} from "../mappingPoc";
+import {
+  MAPPING_POC_DETAIL_OVERLAYS,
+  MAPPING_POC_OVERLAY_PLACEMENTS,
+  type MappingPocASection
+} from "../mappingPocOverlays";
 import { localChatResponder, promptMappingPocSelection } from "../api";
+import type { MappingPocPromptResult } from "../mappingPocPrompt";
 import {
   isLocalChatSubmitHotkey,
   type LocalChatVerbosity,
   type LocalChatThread,
   type LocalChatVariant
 } from "../localChat";
-import {
-  projectASelectionToB,
-  type MappingPocANode,
-  type MappingPocGridRect,
-  type MappingPocProjection
-} from "../mappingPoc";
-import {
-  MAPPING_POC_A_SECTIONS,
-  MAPPING_POC_DETAIL_OVERLAYS,
-  MAPPING_POC_OVERLAY_PLACEMENTS,
-  type MappingPocASection
-} from "../mappingPocOverlays";
-import type { MappingPocPromptResult } from "../mappingPocPrompt";
-import { LocalChatVerbosityToggle } from "./LocalChatVerbosityToggle";
-import { ProjectedSourcePane } from "./ProjectedSourcePane";
 import { LocalChatConvo } from "./LocalChatConvo";
 
 interface GridPoint {
@@ -65,8 +58,29 @@ interface ActiveSelection {
   anchor: GridPoint;
 }
 
-const SIDE_GUTTER_PX = 112;
-const PATCH_SUCCESS_VISIBLE_MS = 2400;
+function useControl<K extends keyof MappingControlValues>(key: K, state: MappingCanvasState,
+  setState: Dispatch<SetStateAction<MappingCanvasState>>): [MappingControlValues[K], Dispatch<SetStateAction<MappingControlValues[K]>>] {
+  const isSurface = (selectionSurfaceKeys as readonly string[]).includes(key);
+  const read = (current: MappingCanvasState) => (isSurface
+    ? current.controls.surfaces[current.controls.retainedSelectionId ?? 'draft']
+    : current.controls) as MappingControlValues;
+  const set = useCallback((value: SetStateAction<MappingControlValues[K]>) => setState(current => {
+    const nextValue = typeof value === 'function' ? (value as (old: MappingControlValues[K]) => MappingControlValues[K])(read(current)[key]) : value;
+    if (isSurface) {
+      const owner = current.controls.retainedSelectionId ?? 'draft';
+      return { ...current, controls: { ...current.controls, surfaces: { ...current.controls.surfaces,
+        [owner]: { ...current.controls.surfaces[owner], [key]: nextValue } } } };
+    }
+    const surfaces = { ...current.controls.surfaces };
+    if (key === 'retainedSelectionId' && nextValue !== current.controls.retainedSelectionId) {
+      const target = nextValue as string | null;
+      if (!target) surfaces.draft = { ...initialSelectionSurface(), presentation: surfaces[current.controls.retainedSelectionId ?? 'draft'].presentation };
+      else surfaces[target] ??= { ...surfaces[current.controls.retainedSelectionId ?? 'draft'] };
+    }
+    return { ...current, controls: { ...current.controls, [key]: nextValue, surfaces } };
+  }), [key, isSurface, setState]);
+  return [read(state)[key], set];
+}
 
 function normalizeRect(anchor: GridPoint, focus: GridPoint): MappingPocGridRect {
   return {
@@ -115,10 +129,10 @@ function sectionsAfterPatch(
   });
 }
 
-type PromptPhase = "ready" | "composing" | "generating" | "applied" | "error";
-
 export function MappingPocSelectionCanvas(props: {
   initialDocument?: MappingGridDocument;
+  initialCanvasState?: MappingCanvasState;
+  onCanvasStateChange?: (state: MappingCanvasState) => void;
   onDocumentChange?: (document: MappingGridDocument) => void;
   onBusyChange?: (busy: boolean) => void;
   active?: boolean;
@@ -130,7 +144,57 @@ export function MappingPocSelectionCanvas(props: {
   onLineCountChange?: (lineCount: number) => void;
   localChatVariant?: LocalChatVariant;
 }) {
-  const localChatVariant = props.localChatVariant ?? "compact";
+  const [canvasState, setCanvasState] = useState(() => {
+    if (props.initialCanvasState) return props.initialCanvasState;
+    const state = initialCanvasState(); state.controls.surfaces.draft.presentation = props.localChatVariant ?? 'compact'; return state;
+  });
+  const localChatVariant = canvasState.controls.surfaces[canvasState.controls.retainedSelectionId ?? 'draft'].presentation;
+  const previousVariant = useRef(props.localChatVariant);
+  useEffect(() => {
+    if (previousVariant.current === props.localChatVariant) return;
+    previousVariant.current = props.localChatVariant;
+    const presentation = props.localChatVariant ?? 'compact';
+    setCanvasState(current => ({ ...current,
+      controls: { ...current.controls, surfaces: Object.fromEntries(Object.entries(current.controls.surfaces).map(([id, surface]) => [id, { ...surface, presentation }])) },
+      display: { ...current.display, nodes: Object.fromEntries(Object.entries(current.display.nodes).map(([id, node]) => [id, node.kind === 'conversation' ? { ...node, presentation, geometryPolicy: { placement: 'automatic' as const, sizing: 'content' as const }, expandedGeometry: undefined } : node])) }
+    }));
+  }, [props.localChatVariant]);
+  const display = canvasState.display;
+  const operationOwnerRef = useRef<string>('draft'); operationOwnerRef.current = canvasState.controls.retainedSelectionId ?? 'draft';
+  const isGenerating = Object.values(canvasState.controls.surfaces).some(surface => surface.promptPhase === 'generating');
+  const updateSurface = (owner: string, patch: Partial<SelectionSurfaceState>) => setCanvasState(current =>
+    current.controls.surfaces[owner] ? { ...current, controls: { ...current.controls, surfaces: { ...current.controls.surfaces,
+      [owner]: { ...current.controls.surfaces[owner], ...patch } } } } : current);
+
+  const setDisplay = useCallback((value: SetStateAction<DisplayState>) => setCanvasState(current => {
+    const display = typeof value === 'function' ? value(current.display) : value;
+    return display === current.display ? current : { ...current, display };
+  }), []);
+  const measurePane = useCallback((id: string, width: number, height: number) =>
+    setDisplay(current => measureDisplayNode(current, id, width, height)), [setDisplay]);
+  useLayoutEffect(() => {
+    const layout = () => setDisplay(current => {
+      let next = current;
+      for (const node of Object.values(current.nodes)) if (node.kind === 'conversation') {
+        next = layoutConversationPane(next, node, { width: window.innerWidth, height: window.innerHeight });
+      }
+      return next;
+    });
+    layout(); window.addEventListener('resize', layout);
+    return () => window.removeEventListener('resize', layout);
+  }, [display, setDisplay]);
+  const canvasChange = useRef(props.onCanvasStateChange); canvasChange.current = props.onCanvasStateChange;
+  useEffect(() => { canvasChange.current?.(canvasState); }, [canvasState]);
+  const [actionsOpen, setActionsOpen] = useControl('actionsOpen', canvasState, setCanvasState);
+  const [retainedSelectionId, setRetainedSelectionId] = useControl('retainedSelectionId', canvasState, setCanvasState);
+  const [ctrlSelecting, setCtrlSelecting] = useState(false);
+  useEffect(() => {
+    const down = (event: KeyboardEvent) => setCtrlSelecting(event.ctrlKey);
+    const clear = () => setCtrlSelecting(false);
+    window.addEventListener('keydown', down); window.addEventListener('keyup', down); window.addEventListener('blur', clear);
+    return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', down); window.removeEventListener('blur', clear); };
+  }, []);
+
   const stageRef = useRef<HTMLDivElement>(null);
   const preRef = useRef<HTMLPreElement>(null);
   const probeRef = useRef<HTMLSpanElement>(null);
@@ -153,7 +217,7 @@ export function MappingPocSelectionCanvas(props: {
   const scene = gridDocument.scene;
   const resolved = useMemo(() => resolveScene(scene), [scene]);
   const boxes = useMemo(() => flattenGrid(resolved), [resolved]);
-  const [activeBoxId, setActiveBoxId] = useState("overview");
+  const [activeBoxId, setActiveBoxId] = useControl("activeBoxId", canvasState, setCanvasState);
   const activeBox = boxes.find((node) => node.box.id === activeBoxId && node.contentId)
     ?? boxes.find((node) => node.contentId)!;
   const content = scene.contents[activeBox.contentId!];
@@ -165,46 +229,60 @@ export function MappingPocSelectionCanvas(props: {
   const commit = (next: MappingGridDocument) => setHistory((current) => ({
     past: [...current.past.slice(-49), current.present], present: next, future: []
   }));
-  const [promptOperation, setPromptOperation] = useState<"edit" | "generate">("edit");
+  const [promptOperation, setPromptOperation] = useControl("promptOperation", canvasState, setCanvasState);
   const [diagramPlacement, setDiagramPlacement] = useState<string | null>(null);
   const placementDragRef = useRef<ScenePoint | null>(null);
   const placementPointerRef = useRef<number | null>(null);
   const [placementPreview, setPlacementPreview] = useState<{ start: ScenePoint; end: ScenePoint } | null>(null);
   const [movingBoxId, setMovingBoxId] = useState<string | null>(null);
-  const [selectionRect, setSelectionRect] = useState<MappingPocGridRect | null>(null);
-  const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
-  const [openedProjection, setOpenedProjection] = useState<MappingPocProjection | null>(null);
-  const [projectionChoice, setProjectionChoice] = useState("");
-  const [compactionOpen, setCompactionOpen] = useState(false);
-  const [sourceFile, setSourceFile] = useState<string | null>(null);
-  const [sourceVisible, setSourceVisible] = useState(false);
-  const sourceStackRef = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    const stack = sourceStackRef.current;
-    const parent = stack?.parentElement;
-    const viewport = stack?.closest<HTMLElement>("[data-diagram-canvas]");
-    if (!sourceVisible || !stack || !parent || !viewport) return;
-    const bounds = viewport.getBoundingClientRect();
-    const anchor = parent.getBoundingClientRect();
-    const scale = anchor.width / parent.offsetWidth || 1;
-    // Keep the source attached to the stack; adapt its size instead of moving it away.
-    const width = Math.min(920, Math.max(360, (bounds.right - 24 - anchor.left) / scale - 24));
-    const height = Math.min(640, Math.max(320, (bounds.bottom - 32 - anchor.top) / scale - 24));
-    stack.style.width = `${width}px`;
-    stack.style.setProperty("--source-pane-height", `${height}px`);
-  }, [sourceVisible, sourceFile]);
-  const openSource = (path: string) => { setSourceFile(path); setSourceVisible(true); };
-  useEffect(() => { if (!compactionOpen) { setSourceFile(null); setSourceVisible(false); } }, [compactionOpen]);
-  const [openDetailOverlayId, setOpenDetailOverlayId] = useState<string | null>(null);
-  const [promptOpen, setPromptOpen] = useState(false);
-  const [promptText, setPromptText] = useState("");
-  const [promptPhase, setPromptPhase] = useState<PromptPhase>("ready");
-  const [statusMessage, setStatusMessage] = useState("selection ready");
-  const [askOpen, setAskOpen] = useState(false);
-  const [askText, setAskText] = useState("");
-  const [askVerbosity, setAskVerbosity] = useState<LocalChatVerbosity>("low");
-  const [chatThreads, setChatThreads] = useState<LocalChatThread[]>([]);
-  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const [selectionRect, setSelectionRect] = useControl("selectionRect", canvasState, setCanvasState);
+  const [selectedNodeIds, setSelectedNodeIds] = useControl("selectedNodeIds", canvasState, setCanvasState);
+  const [projectionChoice, setProjectionChoice] = useControl("projectionChoice", canvasState, setCanvasState);
+  const openDetailIds = new Set(Object.values(display.nodes).filter(node => node.kind === 'detail').map(node => node.kind === 'detail' ? node.sectionId : undefined));
+  const openDetail = (sectionId: string) => {
+    const existing = Object.values(display.nodes).find(node => node.kind === 'detail' && node.sectionId === sectionId);
+    if (existing) { setDisplay(state => setExpansion(state, existing.id, 'expanded')); return; }
+    const overlay = MAPPING_POC_DETAIL_OVERLAYS.find(item => item.id === sectionId);
+    const placement = MAPPING_POC_OVERLAY_PLACEMENTS.find(item => item.overlayId === sectionId);
+    if (!overlay || !placement) return;
+    setDisplay(state => addDisplayNode(state, { id: crypto.randomUUID(), kind: 'detail', childIds: [], expansion: 'expanded',
+      ...displayGeometry({ x: (activeBox.bounds.column + placement.originColumn - 1) * cell.width,
+        y: (activeBox.bounds.row + placement.originLine - 1) * cell.height }),
+      sectionId, title: overlay.label, ascii: overlay.ascii }));
+  };
+  const [promptOpen, setPromptOpen] = useControl("promptOpen", canvasState, setCanvasState);
+  const [promptText, setPromptText] = useControl("promptText", canvasState, setCanvasState);
+  const [promptPhase, setPromptPhase] = useControl("promptPhase", canvasState, setCanvasState);
+  const [statusMessage, setStatusMessage] = useControl("statusMessage", canvasState, setCanvasState);
+  const [askOpen, setAskOpen] = useControl("askOpen", canvasState, setCanvasState);
+  const [askText, setAskText] = useControl("askText", canvasState, setCanvasState);
+  const [askVerbosity, setAskVerbosity] = useControl("askVerbosity", canvasState, setCanvasState);
+  const chatThreads = Object.values(display.nodes).filter((node): node is ConversationPane => node.kind === 'conversation').map(node => node.thread);
+  const setChatThreads = useCallback((update: SetStateAction<LocalChatThread[]>) => setDisplay(current => {
+    const old = Object.values(current.nodes).filter((node): node is ConversationPane => node.kind === 'conversation').map(node => node.thread);
+    const next = typeof update === 'function' ? update(old) : update;
+    let state = current;
+    for (const thread of next) {
+      const existing = state.nodes[thread.id];
+      if (existing?.kind === 'conversation') state = { ...state, nodes: { ...state.nodes, [thread.id]: { ...existing, thread } } };
+
+    }
+    return state;
+  }), [setDisplay]);
+  useEffect(() => {
+    for (const [id, controller] of replyControllers.current) {
+      if (!display.nodes[id]) { controller.abort(); replyControllers.current.delete(id); }
+    }
+  }, [display]);
+  const [activeThreadId, setActiveThreadControl] = useControl("activeThreadId", canvasState, setCanvasState);
+  const setActiveThreadId = (id: string | null) => {
+    setActiveThreadControl(id);
+    const target = id ?? activeThreadId;
+    if (target) setDisplay(state => {
+      const node = state.nodes[target];
+      return node?.kind === 'conversation' ? setExpansion(state, target, id ? 'expanded' : 'collapsed') : state;
+    });
+  };
 
   const asciiLines = useMemo(() => ascii.split("\n"), [ascii]);
   const lineCount = asciiLines.length;
@@ -215,7 +293,8 @@ export function MappingPocSelectionCanvas(props: {
     () => nodes.filter((node) => selectedNodeIdSet.has(node.id)),
     [nodes, selectedNodeIdSet]
   );
-  const activeThread = chatThreads.find((thread) => thread.id === activeThreadId);
+  const activeThread = chatThreads.find(thread => thread.id === activeThreadId && display.nodes[thread.id]?.expansion === 'expanded' && !Object.values(display.nodes)
+    .some(node => node.childIds.includes(thread.id) && (node.expansion === 'collapsed' || node.kind === 'selection' && !boxes.some(box => box.box.id === node.sourceBoxId && !box.box.collapsed))));
   const sourceCoveredNodeCount = selectedNodes.filter((node) => node.sourceRanges.length > 0).length;
   const selectedSourceRangeCount = selectedNodes.reduce(
     (count, node) => count + node.sourceRanges.length,
@@ -271,12 +350,6 @@ export function MappingPocSelectionCanvas(props: {
       return { error: error instanceof Error ? error.message : "Could not resolve projection" };
     }
   }, [props.projectionCatalog, chosenProjection, projectionContentDirty, props.dirtyRepresentationIds, props.projectContext?.baseRevisionId, selectedEvidenceIds]);
-  useEffect(() => { setOpenedProjection(null); }, [chosenProjection?.id, projectionContentDirty, props.projectionCatalog, props.dirtyRepresentationIds?.join(",")]);
-  useEffect(() => { setCompactionOpen(false); }, [openedProjection, chosenProjection?.id]);
-  const selectedCompactions = useMemo(() => {
-    if (!openedProjection || !chosenProjection?.compactionProjection || !callTreeProjection.result) return [];
-    return projectCompactions(chosenProjection.compactionProjection, callTreeProjection.result.projectedNodeIds);
-  }, [openedProjection, chosenProjection, callTreeProjection.result]);
   const candidateProjection = useMemo(
     () => {
       const projection = projectASelectionToB(selectedNodeIds.filter((id) => nodes.some((node) => node.id === id)), nodes);
@@ -291,28 +364,6 @@ export function MappingPocSelectionCanvas(props: {
     },
     [selectedNodeIds, nodes, content, props.projectContext, callTreeProjection]
   );
-  const firstSelectedANode = useMemo(() => {
-    const selectedIds = new Set(openedProjection?.selectedANodeIds ?? []);
-    return nodes.find((node) => selectedIds.has(node.id));
-  }, [nodes, openedProjection]);
-  const openDetailOverlay = MAPPING_POC_DETAIL_OVERLAYS.find((overlay) => overlay.id === openDetailOverlayId);
-  const baseOpenDetailPlacement = MAPPING_POC_OVERLAY_PLACEMENTS.find(
-    (placement) => placement.overlayId === openDetailOverlayId
-  );
-  const openDetailSection = sections.find((section) => section.id === openDetailOverlay?.sectionId);
-  const baseOpenDetailSection = MAPPING_POC_A_SECTIONS.find((section) => section.id === openDetailOverlay?.sectionId);
-  const overlayLineDelta = openDetailSection && baseOpenDetailSection
-    ? openDetailSection.startLine - baseOpenDetailSection.startLine
-    : 0;
-  const openDetailPlacement = baseOpenDetailPlacement && openDetailSection ? {
-    ...baseOpenDetailPlacement,
-    originLine: baseOpenDetailPlacement.originLine + overlayLineDelta,
-    aAnchor: {
-      ...baseOpenDetailPlacement.aAnchor,
-      line: baseOpenDetailPlacement.aAnchor.line + overlayLineDelta
-    }
-  } : undefined;
-
   useLayoutEffect(() => {
     const pre = preRef.current;
     const probe = probeRef.current;
@@ -337,7 +388,7 @@ export function MappingPocSelectionCanvas(props: {
   useEffect(() => { changeHandler.current?.(gridDocument); }, [gridDocument]);
   const busyHandler = useRef(props.onBusyChange);
   busyHandler.current = props.onBusyChange;
-  useEffect(() => { busyHandler.current?.(promptPhase === "generating"); }, [promptPhase]);
+  useEffect(() => { busyHandler.current?.(isGenerating); }, [isGenerating]);
 
   useEffect(() => {
     if (!props.focusBox) return;
@@ -361,16 +412,6 @@ export function MappingPocSelectionCanvas(props: {
     if (askOpen) askInputRef.current?.focus();
   }, [askOpen]);
 
-  useEffect(() => {
-    if (promptPhase !== "applied") return undefined;
-    const timeout = window.setTimeout(() => {
-      setSelectionRect(null);
-      setPromptPhase("ready");
-      setStatusMessage("selection ready");
-    }, PATCH_SUCCESS_VISIBLE_MS);
-    return () => window.clearTimeout(timeout);
-  }, [promptPhase]);
-
   const scenePointAtClient = useCallback((clientX: number, clientY: number): ScenePoint | null => {
     const pre = preRef.current;
     if (!pre || !(cell.width > 0) || !(cell.height > 0)) return null;
@@ -391,6 +432,11 @@ export function MappingPocSelectionCanvas(props: {
 
   const requestLocalReply = useCallback((thread: LocalChatThread) => {
     if (replyControllers.current.has(thread.id)) return;
+    if (!thread.context) {
+      setChatThreads(threads => threads.map(current => current.id === thread.id
+        ? { ...current, pending: false, error: "This saved conversation has no source context. Start a new conversation." } : current));
+      return;
+    }
     const controller = new AbortController();
     replyControllers.current.set(thread.id, controller);
     const updateThread = (update: (current: LocalChatThread) => LocalChatThread) => {
@@ -401,7 +447,7 @@ export function MappingPocSelectionCanvas(props: {
       selection: thread.selection, history: thread.messages
     }, {
       signal: controller.signal,
-      onContext: (sourceRanges) => updateThread((current) => ({ ...current, context: { ...current.context, sourceRanges } })),
+      onContext: (sourceRanges) => updateThread((current) => current.context ? { ...current, context: { ...current.context, sourceRanges } } : current),
       onProgress: (progress) => updateThread((current) => ({ ...current, progress }))
     }).then((reply) => {
       updateThread((current) => ({ ...current, pending: false, progress: undefined, error: undefined,
@@ -412,7 +458,7 @@ export function MappingPocSelectionCanvas(props: {
         error: error instanceof Error ? error.message : "Chat failed"
       }));
     }).finally(() => replyControllers.current.delete(thread.id));
-  }, []);
+  }, [setChatThreads]);
 
   const finishSelection = (event: PointerEvent<HTMLDivElement>) => {
     const active = activeSelectionRef.current;
@@ -431,7 +477,6 @@ export function MappingPocSelectionCanvas(props: {
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
-    setOpenedProjection(null);
     setPromptOpen(false);
     setPromptText("");
     setAskOpen(false);
@@ -443,10 +488,44 @@ export function MappingPocSelectionCanvas(props: {
     setSelectionRect(selected.length ? rect : null);
   };
 
+  const retainSelection = useCallback(() => {
+    if (retainedSelectionId && display.nodes[retainedSelectionId]) return retainedSelectionId;
+    if (!selectionRect) return undefined;
+    const id = crypto.randomUUID();
+    const root: SelectionRegion = { ...displayGeometry({
+      x: (activeBox.bounds.column + selectionRect.startColumn - 1) * cell.width,
+      y: (activeBox.bounds.row + selectionRect.startLine - 1) * cell.height }, {
+      width: (selectionRect.endColumn - selectionRect.startColumn + 1) * cell.width,
+      height: (selectionRect.endLine - selectionRect.startLine + 1) * cell.height }), id, kind: 'selection', childIds: [], expansion: 'expanded', displayMode: 'stacked',
+      sourceBoxId: activeBox.box.id, sourceContentId: content.id, sourceAscii: content.ascii,
+      sourceRevisionId: props.projectContext?.baseRevisionId, rect: { ...selectionRect }, selectedIds: [...selectedNodeIds] };
+    setDisplay(current => addDisplayNode(current, root)); setRetainedSelectionId(id); setActionsOpen(false);
+    return id;
+  }, [retainedSelectionId, display, selectionRect, activeBox, cell, content, props.projectContext?.baseRevisionId, selectedNodeIds, setDisplay, setRetainedSelectionId, setActionsOpen]);
   const openMapped = useCallback(() => {
     if (!candidateProjection.bRange) return;
-    setOpenedProjection(candidateProjection);
-  }, [candidateProjection]);
+    const ownerId = retainSelection(); if (!ownerId) return;
+    const result = callTreeProjection.result ?? { ascii: candidateProjection.bAscii, matchedSourceEvidenceIds: [],
+      unmatchedSourceEvidenceIds: [], targetNodeIds: candidateProjection.directlyMappedBNodeIds,
+      visibleNodeIds: candidateProjection.selectedBNodeIds, projectedNodeIds: candidateProjection.selectedBNodeIds,
+      rows: candidateProjection.bAscii.split('\n').map((_, index) => ({ nodeId: String(index), sourceLine: index + 1 })) };
+    const pane: ProjectedPane = { ...displayGeometry(), id: crypto.randomUUID(), kind: 'projection', childIds: [], expansion: 'expanded',
+      title: callTreeProjection.title ?? 'Related branches', projectionId: chosenProjection?.id,
+      sourceRevisionId: chosenProjection?.sourceRevisionId, targetRevisionId: chosenProjection?.targetRevisionId,
+      content: { kind: 'call-tree', result, coverage: `${result.matchedSourceEvidenceIds.length}/${selectedEvidenceIds.length} entities linked · ${result.targetNodeIds.length} branches` } };
+    setDisplay(current => addDisplayNode(current, pane, ownerId));
+    setActionsOpen(false);
+    setStatusMessage("Projection opened");
+  }, [candidateProjection, retainSelection, callTreeProjection, chosenProjection, selectedEvidenceIds.length, setDisplay]);
+  const removeEffect = (id: string) => setCanvasState(current => {
+    if (current.controls.surfaces[id]?.promptPhase === 'generating') return current;
+    const display = removeDisplayNode(current.display, id);
+    const ownerRemoved = current.controls.retainedSelectionId && !display.nodes[current.controls.retainedSelectionId];
+    return { ...current, display, controls: { ...current.controls,
+      ...(ownerRemoved ? { retainedSelectionId: null, selectionRect: null, selectedNodeIds: [] } : {}),
+      surfaces: Object.fromEntries(Object.entries(current.controls.surfaces).filter(([key]) => key === 'draft' || display.nodes[key])),
+      activeThreadId: current.controls.activeThreadId && display.nodes[current.controls.activeThreadId] ? current.controls.activeThreadId : null } };
+  });
 
   const clearSelection = useCallback(() => {
     const active = activeSelectionRef.current;
@@ -462,7 +541,7 @@ export function MappingPocSelectionCanvas(props: {
     placementPointerRef.current = null;
     setSelectedNodeIds([]);
     setSelectionRect(null);
-    setOpenedProjection(null);
+    setRetainedSelectionId(null);
     setPromptOpen(false);
     setPromptText("");
     setAskOpen(false);
@@ -479,21 +558,21 @@ export function MappingPocSelectionCanvas(props: {
       || !selectedNodeIds.length
       || !hasCompleteSourceCoverage
       || promptPhase === "generating") return;
-    setOpenedProjection(null);
+    retainSelection();
     setAskOpen(false);
     setPromptOperation("edit");
     setPromptOpen(true);
     setPromptPhase("composing");
     setStatusMessage("describe the in-line change");
-  }, [hasCompleteSourceCoverage, promptPhase, selectedNodeIds.length, selectionRect]);
+  }, [hasCompleteSourceCoverage, promptPhase, selectedNodeIds.length, selectionRect, retainSelection]);
 
   const openAsk = useCallback(() => {
     if (!selectionRect || !selectedNodeIds.length || promptPhase === "generating") return;
-    setOpenedProjection(null);
+    retainSelection();
     setPromptOpen(false);
     setAskOpen(true);
     setStatusMessage("ask about the selected region");
-  }, [promptPhase, selectedNodeIds.length, selectionRect]);
+  }, [promptPhase, selectedNodeIds.length, selectionRect, retainSelection]);
 
   const submitAsk = (event: FormEvent) => {
     event.preventDefault();
@@ -510,12 +589,23 @@ export function MappingPocSelectionCanvas(props: {
       messages: [{ id: `local-message-${crypto.randomUUID()}`, role: "user", text: query }],
       pending: true
     };
-    setChatThreads((current) => [...current, thread]);
+    const ownerId = retainSelection();
+    if (!ownerId) return;
+    const anchor = {
+      x: (activeBox.bounds.column + selectionRect.endColumn) * cell.width,
+      y: (activeBox.bounds.row + selectionRect.startLine - 1) * cell.height
+    };
+    setDisplay(current => addDisplayNode(current, {
+      ...displayGeometry({ x: anchor.x - 17, y: anchor.y - 17 }, { width: 34, height: 34 }),
+      id: thread.id, kind: 'conversation', childIds: [], expansion: 'expanded',
+      canvasAnchor: anchor, thread, draft: '', presentation: localChatVariant
+    }, ownerId));
     setActiveThreadId(thread.id);
     setAskOpen(false);
     setAskText("");
     setSelectedNodeIds([]);
     setSelectionRect(null);
+    setRetainedSelectionId(null);
     setPromptPhase("ready");
     setStatusMessage("selection ready");
     requestLocalReply(thread);
@@ -553,7 +643,7 @@ export function MappingPocSelectionCanvas(props: {
   };
 
   const undo = (redo = false) => {
-    if (promptPhase === "generating") return;
+    if (isGenerating) return;
     clearSelection();
     setHistory((current) => {
       if (redo) {
@@ -567,44 +657,45 @@ export function MappingPocSelectionCanvas(props: {
 
   const submitPrompt = async (event: FormEvent) => {
     event.preventDefault();
-    if (!selectionRect || !promptText.trim() || promptPhase === "generating") return;
+    const owner = operationOwnerRef.current;
+    if (!selectionRect || !promptText.trim() || isGenerating) return;
     if (promptOperation === "generate") {
       setDiagramPlacement(promptText.trim());
-      setPromptOpen(false);
       setStatusMessage("Drag a region on the canvas for the new diagram; Escape cancels");
       return;
     }
-    setPromptPhase("generating");
-    setStatusMessage("starting diagram agent…");
+    updateSurface(owner, { promptPhase: "generating" });
+    updateSurface(owner, { statusMessage: "starting diagram agent…" });
     try {
       const result = await promptMappingPocSelection({
         ...props.projectContext,
         clientSessionId: `${clientSessionId}-${crypto.randomUUID()}`,
         diagramAscii: ascii, diagramRevision, mappings: [...content.mappings],
         selection: selectionRect, instruction: promptText.trim()
-      }, (message) => setStatusMessage(message));
+      }, (message) => updateSurface(owner, { statusMessage: message }));
       const nextContent = { ...content, ascii: result.diagramAscii, revision: result.diagramRevision,
         mappings: result.mappings ?? [] };
       const nextScene = layoutScene({ ...scene, contents: { ...scene.contents, [content.id]: nextContent } }, activeBox.box.id);
       commit(gridDocument.evidence ? mappingDocumentFromScene(nextScene, gridDocument.evidence)
         : { ...gridDocument, scene: nextScene, nodes: { ...gridDocument.nodes, [content.id]: nodesAfterPatch(nodes, result) },
           sections: { ...gridDocument.sections, [content.id]: sectionsAfterPatch(sections, result) } });
-      setOpenDetailOverlayId(null);
-      setOpenedProjection(null);
-      setSelectedNodeIds([]);
-      setSelectionRect({ startLine: result.startLine, endLine: result.newEndLine,
-        startColumn: selectionRect.startColumn, endColumn: selectionRect.endColumn });
-      setPromptOpen(false);
-      setPromptText("");
-      setPromptPhase("applied");
-      setStatusMessage(`patch applied · ${result.verticalDelta >= 0 ? "+" : ""}${result.verticalDelta} rows · revision ${result.diagramRevision}`);
+      if (operationOwnerRef.current === owner) {
+        setSelectedNodeIds([]);
+        setSelectionRect({ startLine: result.startLine, endLine: result.newEndLine,
+          startColumn: selectionRect.startColumn, endColumn: selectionRect.endColumn });
+      }
+      updateSurface(owner, { promptOpen: false });
+      updateSurface(owner, { promptText: "" });
+      updateSurface(owner, { promptPhase: "applied" });
+      updateSurface(owner, { statusMessage: `patch applied · ${result.verticalDelta >= 0 ? "+" : ""}${result.verticalDelta} rows · revision ${result.diagramRevision}` });
     } catch (error) {
-      setPromptPhase("error");
-      setStatusMessage(error instanceof Error ? error.message : "diagram prompt failed");
+      updateSurface(owner, { promptPhase: "error" });
+      updateSurface(owner, { statusMessage: error instanceof Error ? error.message : "diagram prompt failed" });
     }
   };
 
   const generateAt = async (start: ScenePoint, end: ScenePoint) => {
+    const owner = operationOwnerRef.current;
     if (!diagramPlacement || !selectionRect) return;
     const column = Math.min(start.column, end.column);
     const row = Math.min(start.row, end.row);
@@ -614,28 +705,27 @@ export function MappingPocSelectionCanvas(props: {
     const targetParent = column >= parent.bounds.column && row >= parent.bounds.row ? parent : resolved;
     setDiagramPlacement(null);
     setPlacementPreview(null);
-    setPromptPhase("generating");
-    setStatusMessage("generating sub-diagram…");
+    updateSurface(owner, { promptPhase: "generating" });
+    updateSurface(owner, { statusMessage: "generating sub-diagram…" });
     try {
       const result = await promptMappingPocSelection({
         ...props.projectContext,
         clientSessionId: `${clientSessionId}-${crypto.randomUUID()}`, operation: "generate",
         diagramAscii: ascii, diagramRevision, mappings: [...content.mappings], selection: selectionRect,
         instruction: `${diagramPlacement}\nAim for ${minimumSize.columns} columns by ${minimumSize.rows} rows; the canvas can grow if needed.`
-      }, setStatusMessage);
+      }, message => updateSurface(owner, { statusMessage: message }));
       const id = `diagram-${crypto.randomUUID()}`;
       const next = insertGridDiagram(gridDocument, targetParent.box.id, {
         id, kind: "diagram", contentId: id, collapsed: false, minimumSize,
         position: { column: column - targetParent.bounds.column, row: row - targetParent.bounds.row }
       }, { id, ascii: result.diagramAscii, revision: result.diagramRevision, mappings: result.mappings ?? [] });
       commit(next);
-      clearSelection();
-      setActiveBoxId(id);
-      setPromptPhase("applied");
-      setStatusMessage("Sub-diagram generated; layout updated");
+      if (operationOwnerRef.current === owner) { clearSelection(); setActiveBoxId(id); }
+      updateSurface(owner, { promptPhase: "applied", promptOpen: false, statusMessage: "Sub-diagram generated; layout updated" });
+      if (operationOwnerRef.current === 'draft') setStatusMessage("Sub-diagram generated; layout updated");
     } catch (error) {
-      setPromptPhase("error");
-      setStatusMessage(error instanceof Error ? error.message : "Sub-diagram generation failed");
+      updateSurface(owner, { promptPhase: "error" });
+      updateSurface(owner, { statusMessage: error instanceof Error ? error.message : "Sub-diagram generation failed" });
     }
   };
 
@@ -650,26 +740,18 @@ export function MappingPocSelectionCanvas(props: {
     commitScene(next, id);
   };
 
+  const hotkeyHandler = useRef<(event: globalThis.KeyboardEvent) => void>(() => {});
   useEffect(() => {
-    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+    const handle = (event: globalThis.KeyboardEvent) => hotkeyHandler.current(event);
+    window.addEventListener('keydown', handle);
+    return () => window.removeEventListener('keydown', handle);
+  }, []);
+  useLayoutEffect(() => {
+    hotkeyHandler.current = (event: globalThis.KeyboardEvent) => {
       if (props.active === false) return;
-      if (event.target instanceof Element && event.target.closest(".mapping-floating-pane, .mapping-submenu")) return;
-      if (event.key === "Escape" && openedProjection) {
-        if (compactionOpen && sourceVisible) {
-          event.preventDefault();
-          event.stopPropagation();
-          setSourceVisible(false);
-          return;
-        }
-        if (compactionOpen) {
-          event.preventDefault();
-          event.stopPropagation();
-          setCompactionOpen(false);
-          return;
-        }
-        event.preventDefault();
-        setOpenedProjection(null);
-        return;
+      if (event.target instanceof Element && event.target.closest(".mapping-floating-pane, .mapping-submenu, [data-display-node]")) return;
+      if (event.key === "Escape" && activeSelectionRef.current) {
+        event.preventDefault(); clearSelection(); return;
       }
       if (event.key === "Escape" && (diagramPlacement || movingBoxId)) {
         event.preventDefault();
@@ -679,6 +761,7 @@ export function MappingPocSelectionCanvas(props: {
       if (typingTarget(event.target)) {
         if (event.key === "Escape" && (promptOpen || askOpen) && promptPhase !== "generating") {
           event.preventDefault();
+          if (retainedSelectionId) { (event.target as HTMLElement).blur(); return; }
           setPromptOpen(false);
           setAskOpen(false);
           setPromptPhase("ready");
@@ -687,11 +770,9 @@ export function MappingPocSelectionCanvas(props: {
         return;
       }
       if (!selectedNodeIds.length || !selectionRect) return;
-      if (event.key.toLowerCase() === "c" && !event.altKey && !openedProjection && !promptOpen && !askOpen
+      if (event.key.toLowerCase() === "c" && !event.altKey && !promptOpen && !askOpen
         && !window.getSelection()?.toString()) {
-        event.preventDefault();
-        void copySelection();
-        return;
+        event.preventDefault(); void copySelection(); return;
       }
       if (event.key.toLowerCase() === "n" && candidateProjection.bRange && !promptOpen && !askOpen) {
         event.preventDefault();
@@ -708,12 +789,10 @@ export function MappingPocSelectionCanvas(props: {
         openAsk();
         return;
       }
-      if (event.key === "Escape" && !openedProjection && promptPhase !== "generating") {
+      if (event.key === "Escape" && !retainedSelectionId && promptPhase !== "generating") {
         clearSelection();
       }
     };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
   }, [
     props.active,
     askOpen,
@@ -723,9 +802,7 @@ export function MappingPocSelectionCanvas(props: {
     copySelection,
     clearSelection,
     openMapped,
-    openedProjection,
-    compactionOpen,
-    sourceVisible,
+    retainedSelectionId,
     openAsk,
     openPrompt,
     promptOpen,
@@ -736,20 +813,20 @@ export function MappingPocSelectionCanvas(props: {
 
   useEffect(() => {
     if (!selectedNodeIds.length
-      || openedProjection
+      || retainedSelectionId
       || promptOpen
       || askOpen
       || diagramPlacement
       || promptPhase === "generating") return undefined;
     const onPointerDown = (event: globalThis.PointerEvent) => {
-      if (props.active === false || event.button !== 0) return;
+      if (props.active === false) return;
       const stage = stageRef.current;
       if (stage && event.composedPath().includes(stage)) return;
       clearSelection();
     };
     window.addEventListener("pointerdown", onPointerDown, true);
     return () => window.removeEventListener("pointerdown", onPointerDown, true);
-  }, [props.active, askOpen, clearSelection, openedProjection, diagramPlacement, promptOpen, promptPhase, selectedNodeIds.length]);
+  }, [props.active, askOpen, clearSelection, retainedSelectionId, diagramPlacement, promptOpen, promptPhase, selectedNodeIds.length]);
 
   const rectStyle = selectionRect && cell.width > 0 && cell.height > 0 ? {
     left: (selectionRect.startColumn - 1) * cell.width,
@@ -757,7 +834,7 @@ export function MappingPocSelectionCanvas(props: {
     width: (selectionRect.endColumn - selectionRect.startColumn + 1) * cell.width,
     height: (selectionRect.endLine - selectionRect.startLine + 1) * cell.height
   } : undefined;
-  const threadSource = boxes.find((node) => node.box.id === activeThread?.selection.boxId);
+  const threadSource = boxes.find((node) => node.box.id === (activeThread?.selection.boxId ?? "overview"));
   const activeThreadRectStyle = activeThread && threadSource && !threadSource.box.collapsed && cell.width > 0 && cell.height > 0 ? {
     left: (threadSource.bounds.column - activeBox.bounds.column + activeThread.selection.rect.startColumn - 1) * cell.width,
     top: (threadSource.bounds.row - activeBox.bounds.row + activeThread.selection.rect.startLine - 1) * cell.height,
@@ -770,7 +847,7 @@ export function MappingPocSelectionCanvas(props: {
     <div
       ref={stageRef}
       tabIndex={-1}
-      className="mapping-poc-graph-stage"
+      className={`mapping-poc-graph-stage${ctrlSelecting ? " is-selecting" : ""}`}
       aria-label="Graph A selectable nodes"
       style={cell.width ? { width: (resolved.bounds.columns + 65) * cell.width, minHeight: (resolved.bounds.rows + 16) * cell.height } : undefined}
       onPointerDown={(event) => {
@@ -791,14 +868,10 @@ export function MappingPocSelectionCanvas(props: {
           }
           return;
         }
-        if (openedProjection
-          || openDetailOverlay
-          || promptOpen
-          || askOpen
-          || promptPhase === "generating"
+        if (isGenerating
           || event.button !== 0
           || event.shiftKey
-          || event.ctrlKey
+          || !event.ctrlKey
           || event.metaKey
           || (event.target as Element).closest("[data-mapping-static-ui]")) return;
         const scenePoint = scenePointAtClient(event.clientX, event.clientY);
@@ -814,12 +887,12 @@ export function MappingPocSelectionCanvas(props: {
         window.getSelection()?.removeAllRanges();
         event.currentTarget.setPointerCapture(event.pointerId);
         activeSelectionRef.current = { pointerId: event.pointerId, anchor };
+        setRetainedSelectionId(null);
         setPromptPhase("ready");
         setStatusMessage("selection ready");
         setSelectionRect(normalizeRect(anchor, anchor));
         setSelectedNodeIds([]);
-        setOpenedProjection(null);
-      }}
+          }}
       onPointerMove={(event) => {
         if (placementDragRef.current) {
           const point = scenePointAtClient(event.clientX, event.clientY);
@@ -869,8 +942,8 @@ export function MappingPocSelectionCanvas(props: {
       >{composedAscii}</pre>
 
       <div className="mapping-grid-tools" data-mapping-static-ui data-diagram-canvas-static-ui>
-        <button type="button" disabled={!history.past.length || promptPhase === "generating"} onClick={() => undo()}>Undo</button>
-        <button type="button" disabled={!history.future.length || promptPhase === "generating"} onClick={() => undo(true)}>Redo</button>
+        <button type="button" disabled={!history.past.length || isGenerating} onClick={() => undo()}>Undo</button>
+        <button type="button" disabled={!history.future.length || isGenerating} onClick={() => undo(true)}>Redo</button>
         <span role="status">{diagramPlacement ? "Drag a region to place the sub-diagram · Esc cancels" : movingBoxId ? "Click to move the box · Esc cancels" : statusMessage}</span>
       </div>
       {boxes.filter((node) => node.box.id !== "root").map((node) => (
@@ -880,13 +953,13 @@ export function MappingPocSelectionCanvas(props: {
           style={{ left: node.bounds.column * cell.width, top: node.bounds.row * cell.height,
             width: node.bounds.columns * cell.width, height: node.bounds.rows * cell.height }}>
           <div className="mapping-grid-box-tools" data-mapping-static-ui data-diagram-canvas-static-ui>
-            <button type="button" disabled={promptPhase === "generating" || !!diagramPlacement}
+            <button type="button" disabled={isGenerating || !!diagramPlacement}
               aria-label={`${node.box.collapsed ? "Expand" : "Collapse"} ${node.box.id}`}
               onClick={() => commitScene(updateGridBox(scene, node.box.id, (box) => ({ ...box, collapsed: !box.collapsed })), node.box.id)}>
               {node.box.collapsed ? "Expand" : "Collapse"}
             </button>
-            <button type="button" disabled={promptPhase === "generating" || !!diagramPlacement} onClick={() => { clearSelection(); setMovingBoxId(node.box.id); }}>Move</button>
-            <button type="button" disabled={promptPhase === "generating" || !!diagramPlacement} onClick={() => wrapInGroup(node.box.id)}>Group</button>
+            <button type="button" disabled={isGenerating || !!diagramPlacement} onClick={() => { clearSelection(); setMovingBoxId(node.box.id); }}>Move</button>
+            <button type="button" disabled={isGenerating || !!diagramPlacement} onClick={() => wrapInGroup(node.box.id)}>Group</button>
           </div>
         </div>
       ))}
@@ -920,7 +993,7 @@ export function MappingPocSelectionCanvas(props: {
           {sections.map((section, index) => (
             <section
               key={section.id}
-              className={`mapping-poc-a-section${openDetailOverlayId === section.id ? " is-open" : ""}`}
+              className={`mapping-poc-a-section${openDetailIds.has(section.id) ? " is-open" : ""}`}
               data-a-section={section.id}
               style={{
                 top: (section.startLine - 1) * cell.height,
@@ -932,8 +1005,8 @@ export function MappingPocSelectionCanvas(props: {
                 data-mapping-static-ui
                 data-diagram-canvas-static-ui
                 aria-label={`Open ${section.label} overlay`}
-                aria-pressed={openDetailOverlayId === section.id}
-                onClick={() => setOpenDetailOverlayId(section.id)}
+                aria-pressed={openDetailIds.has(section.id)}
+                onClick={() => openDetail(section.id)}
               >
                 <span>{index + 1}</span>
                 {section.label}
@@ -943,7 +1016,7 @@ export function MappingPocSelectionCanvas(props: {
         </div>
       ) : null}
 
-      {rectStyle ? (
+      {rectStyle && !retainedSelectionId ? (
         <span
           className={`mapping-poc-selection-rect is-${selectionPhase}`}
           style={rectStyle}
@@ -962,35 +1035,7 @@ export function MappingPocSelectionCanvas(props: {
         </div>
       ) : null}
 
-      {openDetailOverlay && openDetailPlacement && cell.width > 0 && cell.height > 0 ? (
-        <aside
-          className="mapping-poc-detail-overlay"
-          data-mapping-static-ui
-          data-diagram-canvas-static-ui
-          data-overlay-id={openDetailOverlay.id}
-          data-overlay-origin-line={openDetailPlacement.originLine}
-          data-overlay-origin-column={openDetailPlacement.originColumn}
-          data-a-anchor-line={openDetailPlacement.aAnchor.line}
-          data-a-anchor-column={openDetailPlacement.aAnchor.startColumn}
-          style={{
-            left: (openDetailPlacement.originColumn - 1) * cell.width,
-            top: (openDetailPlacement.originLine - 1) * cell.height
-          }}
-        >
-          <header>
-            <span>A{MAPPING_POC_A_SECTIONS.findIndex((section) => section.id === openDetailOverlay.sectionId) + 1}_DETAIL</span>
-            <strong>{openDetailOverlay.label}</strong>
-            <button
-              type="button"
-              aria-label={`Close ${openDetailOverlay.label} overlay`}
-              onClick={() => setOpenDetailOverlayId(null)}
-            >×</button>
-          </header>
-          <pre>{openDetailOverlay.ascii}</pre>
-        </aside>
-      ) : null}
-
-      {selectionRect && selectedNodes.length && rectStyle && !diagramPlacement && !openedProjection ? (
+      {selectionRect && selectedNodes.length && rectStyle && !diagramPlacement && (!retainedSelectionId || promptOpen || askOpen || actionsOpen) ? (
         <div
           ref={menuRef}
           className={`mapping-poc-selection-menu${askOpen && localChatVariant === "floating" ? " has-floating-ask" : ""}`}
@@ -999,7 +1044,7 @@ export function MappingPocSelectionCanvas(props: {
           role="dialog"
           tabIndex={-1}
           aria-label="Selected node operations"
-          aria-keyshortcuts="C Control+C Meta+C N P A"
+          aria-keyshortcuts="N P A"
           style={{ left: rectStyle.left + rectStyle.width + 12, top: rectStyle.top + rectStyle.height + 8 }}
         >
           <header>
@@ -1011,14 +1056,12 @@ export function MappingPocSelectionCanvas(props: {
           </header>
           {!promptOpen && !askOpen ? (
             <div className="mapping-poc-selection-actions">
-              <button type="button" aria-label="Copy ASCII + code refs" aria-keyshortcuts="C Control+C Meta+C"
-                title="Copy selected ASCII and associated source locations (C or Ctrl/Cmd+C)"
-                onClick={() => void copySelection()}>
-                <kbd>C</kbd>copy ASCII + code refs
+              <button type="button" aria-label="Copy ASCII + code refs" aria-keyshortcuts="C Control+C Meta+C" onClick={() => void copySelection()}>
+                Copy ASCII + code refs
               </button>
               {props.projectContext && projections.length > 1 && <label className="mapping-projection-choice">
                 Call tree<select aria-label="Call-tree projection" value={chosenProjection?.id ?? ""}
-                  onChange={(event) => { setProjectionChoice(event.target.value); setOpenedProjection(null); }}>
+                  onChange={(event) => setProjectionChoice(event.target.value)}>
                   {projections.map((projection) => <option key={projection.id} value={projection.id}>{projection.name}</option>)}
                 </select>
               </label>}
@@ -1051,7 +1094,7 @@ export function MappingPocSelectionCanvas(props: {
                 type="button"
                 className="is-ask"
                 aria-keyshortcuts="A"
-                title="Ask about the selected diagram region"
+                title="Ask about the selected region"
                 onClick={openAsk}
               >
                 <kbd>A</kbd>
@@ -1129,7 +1172,7 @@ export function MappingPocSelectionCanvas(props: {
                     setStatusMessage("selection ready");
                   }}
                 >cancel</button>
-                <button type="submit" className="is-primary" disabled={!askText.trim()} title="Ask (Ctrl+Enter)">
+                <button type="submit" className="is-primary" disabled={!askText.trim()} title="Send (Ctrl+Enter)">
                   ask
                 </button>
               </footer>
@@ -1138,21 +1181,21 @@ export function MappingPocSelectionCanvas(props: {
         </div>
       ) : null}
 
-      {chatThreads.map((thread) => {
-        const isActive = thread.id === activeThreadId;
-        const sourceBox = boxes.find((node) => node.box.id === thread.selection.boxId);
-        if (!sourceBox?.contentId || sourceBox.box.collapsed) return null;
-        const marker = {
-          left: (sourceBox.bounds.column - activeBox.bounds.column + thread.selection.rect.endColumn) * cell.width,
-          top: (sourceBox.bounds.row - activeBox.bounds.row + thread.selection.rect.startLine - 1) * cell.height
-        };
+
+      {chatThreads.filter(thread => {
+        const owner = Object.values(display.nodes).find(node => node.childIds.includes(thread.id));
+        return !owner || owner.expansion === 'expanded' && (owner.kind !== 'selection' || boxes.some(box => box.box.id === owner.sourceBoxId && !box.box.collapsed));
+      }).map((thread) => {
+        const isActive = display.nodes[thread.id]?.expansion === 'expanded';
+        const pane = display.nodes[thread.id] as ConversationPane;
+        const presentation = pane.presentation;
         return (
           <div
             key={thread.id}
             className={`local-chat-anchor${isActive ? " is-active" : ""}`}
             data-mapping-static-ui
             data-diagram-canvas-static-ui
-            style={marker}
+            style={{ left: pane.canvasAnchor.x - activeBox.bounds.column * cell.width, top: pane.canvasAnchor.y - activeBox.bounds.row * cell.height }}
           >
             <button
               type="button"
@@ -1160,16 +1203,25 @@ export function MappingPocSelectionCanvas(props: {
               data-local-chat-bubble={thread.id}
               aria-label={`${isActive ? "Collapse" : "Open"} local conversation`}
               aria-expanded={isActive}
-              onClick={() => setActiveThreadId(isActive ? null : thread.id)}
+              onClick={() => {
+                if (isActive) { setDisplay(state => setExpansion(state, thread.id, 'collapsed')); if (activeThreadId === thread.id) setActiveThreadControl(null); }
+                else setActiveThreadId(thread.id);
+              }}
             >
               <span aria-hidden="true">?</span>
               <small>{thread.messages.filter((message) => message.role === "assistant").length}</small>
             </button>
-            {isActive && localChatVariant !== "docked" ? (
+            {isActive && presentation !== "docked" ? (
               <LocalChatConvo
                 thread={thread}
-                variant={localChatVariant}
-                onClose={() => setActiveThreadId(null)}
+                displayNodeId={pane.id}
+                onMeasure={measurePane}
+                style={{ left: pane.position.x - pane.canvasAnchor.x, top: pane.position.y - pane.canvasAnchor.y,
+                  ...(pane.geometryPolicy.sizing === 'fixed' ? { width: pane.bounds.width, height: pane.bounds.height, maxHeight: 'none' } : {}) }}
+                draft={(display.nodes[thread.id] as ConversationPane).draft}
+                onDraftChange={draft => setDisplay(state => ({ ...state, nodes: { ...state.nodes, [thread.id]: { ...(state.nodes[thread.id] as ConversationPane), draft } } }))}
+                variant={presentation}
+                onClose={() => { setDisplay(state => setExpansion(state, thread.id, 'collapsed')); if (activeThreadId === thread.id) setActiveThreadControl(null); }}
                 onSubmit={(message) => submitLocalFollowUp(thread.id, message)}
                 onVerbosityChange={(value) => changeThreadVerbosity(thread.id, value)}
                 onRetry={() => retryLocalReply(thread.id)}
@@ -1179,14 +1231,20 @@ export function MappingPocSelectionCanvas(props: {
         );
       })}
 
-      {props.active !== false && activeThread && localChatVariant === "docked" && typeof document !== "undefined" ? createPortal(
+      {props.active !== false && activeThread && (display.nodes[activeThread.id] as ConversationPane).presentation === "docked" && typeof document !== "undefined" ? createPortal(
         <div
           className="local-chat-docked-shell"
+          style={{ left: display.nodes[activeThread.id].position.x, top: display.nodes[activeThread.id].position.y,
+            width: display.nodes[activeThread.id].bounds.width, height: display.nodes[activeThread.id].bounds.height,
+            right: 'auto', bottom: 'auto' }}
           data-mapping-static-ui
           data-diagram-canvas-static-ui
         >
           <LocalChatConvo
             thread={activeThread}
+            displayNodeId={activeThread.id}
+            draft={(display.nodes[activeThread.id] as ConversationPane).draft}
+            onDraftChange={draft => setDisplay(state => ({ ...state, nodes: { ...state.nodes, [activeThread.id]: { ...(state.nodes[activeThread.id] as ConversationPane), draft } } }))}
             variant="docked"
             onClose={() => setActiveThreadId(null)}
             onSubmit={(message) => submitLocalFollowUp(activeThread.id, message)}
@@ -1210,69 +1268,15 @@ export function MappingPocSelectionCanvas(props: {
         </div>
       ) : null}
 
-      {openedProjection?.bRange && firstSelectedANode && cell.height > 0 ? (
-        <aside
-          className="mapping-poc-companion"
-          data-mapping-static-ui
-          data-diagram-canvas-static-ui
-          data-b-start-line={openedProjection.alignedBRange?.startLine}
-          data-b-end-line={openedProjection.alignedBRange?.endLine}
-          data-mapped-b-start-line={openedProjection.mappedBRange?.startLine}
-          data-mapped-b-end-line={openedProjection.mappedBRange?.endLine}
-          data-aligned-section-ids={openedProjection.alignedSectionIds.join(" ")}
-          data-b-node-ids={openedProjection.selectedBNodeIds.join(" ")}
-          data-projection-id={props.projectContext ? chosenProjection?.id : undefined}
-          style={{
-            left: `calc(100% + ${SIDE_GUTTER_PX}px)`,
-            top: (firstSelectedANode.head.line - 1) * cell.height
-          }}
-        >
-          <header className="mapping-poc-companion-controls">
-            <span>{compactionOpen ? "COMPACTED SOURCE" : props.projectContext ? callTreeProjection.title ?? "CALL TREE" : "B_SELECTED"}</span>
-            <span className="mapping-poc-companion-meta">
-              <strong>
-                {compactionOpen ? `${selectedCompactions.length} files · ${selectedCompactions.reduce((sum, file) => sum + file.selectedLineCount, 0)} mapped rows`
-                  : props.projectContext ? `${callTreeProjection.result?.matchedSourceEvidenceIds.length ?? 0}/${selectedEvidenceIds.length} entities linked · ${openedProjection.directlyMappedBNodeIds.length} branches` : <>mapped {openedProjection.mappedBRange?.startLine}–{openedProjection.mappedBRange?.endLine}
-                {" · "}aligned {openedProjection.alignedBRange?.startLine}–{openedProjection.alignedBRange?.endLine}
-                {" · "}{openedProjection.alignedSectionIds.length} sections</>}
-              </strong>
-              {props.projectContext && <button type="button" className="mapping-compaction-action"
-                aria-label={compactionOpen ? "Back to call tree" : "Open compaction"}
-                disabled={!compactionOpen && !selectedCompactions.length}
-                title={!selectedCompactions.length ? "No compaction projection is mapped for these branches" : "Show mapped compaction rows grouped by source file"}
-                onClick={() => setCompactionOpen((open) => !open)}>
-                {compactionOpen ? "Back to call tree" : "Open compaction"}
-              </button>}
-              {compactionOpen && sourceFile && <button type="button" className="mapping-compaction-action"
-                aria-label="Return to source file" onClick={() => setSourceVisible(true)}>Source file →</button>}
-              <button
-                type="button"
-                aria-label="Close call tree"
-                title="Close call tree"
-                onClick={() => setOpenedProjection(null)}
-              >×</button>
-            </span>
-          </header>
-          {compactionOpen ? <div data-projected-compactions>
-            {selectedCompactions.map((file) => <section key={file.sourceFile} data-compaction-file={file.sourceFile}
-              data-compaction-rows={file.rows.filter((row) => row.selected).map((row) => row.treeLine).join(" ")}>
-              <header className="mapping-compaction-file"><span>{file.sourceFile}</span>
-                <button type="button" aria-label={`Open source ${file.sourceFile}`} onClick={() => openSource(file.sourceFile)}>Open source ↗</button>
-                <small>{file.selectedLineCount} mapped rows · source snapshot {file.sourceSha256.slice(0, 8)}</small>
-              </header>
-              <pre>{file.ascii}</pre>
-            </section>)}
-          </div> : <pre data-projected-tree>{openedProjection.bAscii}</pre>}
-          {compactionOpen && sourceFile && props.projectContext && selectedCompactions.some((file) => file.sourceFile === sourceFile) &&
-            <div ref={sourceStackRef} className="mapping-source-stack" hidden={!sourceVisible}>
-              <ProjectedSourcePane key={sourceFile} projectId={props.projectContext.projectId} files={selectedCompactions}
-                file={selectedCompactions.find((file) => file.sourceFile === sourceFile)!} onFileChange={openSource}
-                onBack={() => setSourceVisible(false)} onCallTree={() => setCompactionOpen(false)} />
-            </div>}
-
-        </aside>
-      ) : null}
       </div>
+      <SelectionEffectsLayer state={display} setState={setDisplay} boxes={boxes} scene={scene} cell={cell}
+        catalog={props.projectionCatalog} dirtyRepresentationIds={props.dirtyRepresentationIds} onRemove={removeEffect}
+        busySelectionIds={Object.entries(canvasState.controls.surfaces).filter(([, surface]) => surface.promptPhase === 'generating').map(([id]) => id)}
+        onActivate={root => {
+          setActiveBoxId(root.sourceBoxId); setRetainedSelectionId(root.id); setSelectionRect(root.rect); setSelectedNodeIds(root.selectedIds);
+          setActionsOpen(true);
+          stageRef.current?.focus({ preventScroll: true });
+        }} />
     </div>
   );
 }

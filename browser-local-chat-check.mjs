@@ -60,13 +60,13 @@ async function click(cdp, selectorOrPoint) {
 
 async function drag(cdp, start, end) {
   await cdp.send("Input.dispatchMouseEvent", {
-    type: "mousePressed", x: start.x, y: start.y, button: "left", buttons: 1, clickCount: 1
+    type: "mousePressed", x: start.x, y: start.y, button: "left", modifiers: 2, buttons: 1, clickCount: 1
   });
   await cdp.send("Input.dispatchMouseEvent", {
-    type: "mouseMoved", x: end.x, y: end.y, button: "left", buttons: 1
+    type: "mouseMoved", x: end.x, y: end.y, button: "left", modifiers: 2, buttons: 1
   });
   await cdp.send("Input.dispatchMouseEvent", {
-    type: "mouseReleased", x: end.x, y: end.y, button: "left", buttons: 0, clickCount: 1
+    type: "mouseReleased", x: end.x, y: end.y, button: "left", modifiers: 2, buttons: 0, clickCount: 1
   });
 }
 
@@ -231,16 +231,50 @@ try {
       throw new Error(`docked conversation did not occupy the right edge: ${JSON.stringify(docked)}`);
     }
     await captureScreenshot(cdp, { output: path.join(screenshotRoot, "local-chat-docked.png") });
+    await click(cdp, "[data-local-chat-convo='docked'] textarea");
+    await cdp.send("Input.insertText", { text: "Continue with the same context after reload." });
+    await click(cdp, '.mapping-workspace-actions button:first-child');
+    await waitFor(async () => await evaluate(cdp, "document.querySelector('.mapping-poc-status').textContent.includes('Workspace saved')"));
+    const saved = await (await fetch(new URL('/api/mapping/workspace', url))).json();
+    const conversation = Object.values(saved.documents[0].canvas.display.nodes).find(node => node.kind === 'conversation');
+    if (saved.schemaVersion !== 2 || conversation.coordinateSpace !== 'viewport' || conversation.thread.anchor) {
+      throw new Error('conversation geometry was not persisted in the display node');
+    }
+    const owner = Object.values(saved.documents[0].canvas.display.nodes).find(node => node.childIds.includes(conversation.id));
+    if (owner?.kind !== 'selection' || conversation.thread.verbosity !== 'high'
+      || !conversation.thread.context.sourceRanges?.length || conversation.thread.messages.length !== 6
+      || conversation.draft !== 'Continue with the same context after reload.') {
+      throw new Error('workspace lost retained ownership, conversation context, verbosity, history, or draft');
+    }
+    const savedPose = await evaluate(cdp, `(() => { const shell = document.querySelector('.local-chat-docked-shell');
+      return { x: shell.offsetLeft, y: shell.offsetTop, width: shell.offsetWidth, height: shell.offsetHeight }; })()`);
+    if (JSON.stringify(savedPose) !== JSON.stringify({ ...conversation.position, ...conversation.bounds })) throw new Error('docked geometry differs from saved allocation');
+    await cdp.send('Page.reload', { ignoreCache: true });
+    await waitForSelector(cdp, '.local-chat-docked-shell [data-local-chat-convo="docked"]');
+    const restoredPose = await evaluate(cdp, `(() => { const shell = document.querySelector('.local-chat-docked-shell');
+      return { x: shell.offsetLeft, y: shell.offsetTop, width: shell.offsetWidth, height: shell.offsetHeight }; })()`);
+    if (JSON.stringify(restoredPose) !== JSON.stringify(savedPose)) throw new Error('docked allocation did not survive reload');
+    const restoredDraft = await evaluate(cdp, "document.querySelector('[data-local-chat-convo=docked] textarea').value");
+    if (restoredDraft !== conversation.draft) throw new Error('composer draft did not survive reload');
+    await click(cdp, "[data-local-chat-convo='docked'] textarea");
+    await key(cdp, "Enter", "Enter", 13, 2);
+    await waitFor(async () => await evaluate(cdp,
+      "document.querySelectorAll('[data-local-chat-role=assistant]').length === 4"
+    ), { message: 'restored conversation could not continue' });
     await click(cdp, ".local-chat-docked-shell button[aria-label='Collapse local conversation']");
     await waitFor(async () => await evaluate(cdp,
       "!document.querySelector('[data-local-chat-convo]') && !document.querySelector('[data-local-chat-source-highlight]')"
     ), { message: "collapsing the conversation did not dismiss its source highlight" });
     stopTrackingRequests();
     const chats = apiRequests.filter(r => new URL(r.url).pathname === '/api/mapping/chat');
-    if (chats.length !== 4) throw new Error(`expected 4 chat requests, got ${chats.length}`);
+    if (chats.length !== 5) throw new Error(`expected 5 chat requests, got ${chats.length}`);
     if (chats[0].body.context.contentId !== 'overview' || !chats[0].body.context.diagramAscii.includes('CurrentLLMPromptStack')) throw new Error('wrong diagram context');
     if (!chats[1].body.context.sourceRanges?.length || chats[1].body.history.length !== 3 || chats[1].body.verbosity !== 'high') throw new Error('follow-up did not preserve context/history/verbosity');
     if (chats[3].body.history.length !== 5) throw new Error('retry lost or duplicated history');
+    if (chats[4].body.history.length !== 7 || chats[4].body.verbosity !== 'high'
+      || JSON.stringify(chats[4].body.context) !== JSON.stringify(chats[1].body.context)) {
+      throw new Error('restored follow-up lost the original context, history, or verbosity');
+    }
   });
 
   console.log("local chat browser check passed (compact, floating, docked; automatic placement, HTTP replies, context snapshots and verbosity)");

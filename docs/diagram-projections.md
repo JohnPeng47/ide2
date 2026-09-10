@@ -4,15 +4,20 @@ A projection relates evidence entities in one saved project representation to br
 
 ## Using the viewer
 
-Open the source diagram in Mapping, drag across mapped labels, then press **N** or choose **open call tree**. The existing companion panel displays only related branches, with linked-entity coverage. Escape or the close button dismisses it. If the diagram has several projections, choose one in the selection menu.
+Open the source diagram in Mapping, Ctrl-drag across mapped labels, then press **N** or choose **open call tree**. The projected pane displays only related branches, with linked-entity coverage. Choosing the action retains the selection rectangle and projection; Escape does not dismiss them. Use the selection's remove control or a pane's close control to remove content explicitly.
 
-**Open compaction** in that panel projects its matched call-tree branches into compacted source trees, grouped by file, in the same inline panel. **Back to call tree** (or Escape) restores the call tree without changing the original selection; a second Escape closes the panel. Original-diagram selections always open the call tree first. Projections with compaction mappings are preferred by default; older projections remain available and show a disabled compaction action when unmapped.
+**Open compaction** creates a child pane containing compacted source trees grouped by file.
+The default **Stacked** mode displays one active projection path per selection; **Back** returns
+to the call tree without deleting the child. **Chained** mode displays the panes together on a
+shared horizontal connector axis. Ctrl-drag within a call tree and choose **Project selected rows**
+to project a subset. Join controls collapse/expand descendants. Multiple retained selections
+can coexist. See [Mapping workspace state](mapping-workspace.md) for persistence and ownership.
 
-Choose **Open source** on a compaction file to open a stacked source window using Studio's shared Shiki viewer. Exact mapped source ranges are highlighted; unrelated gaps and context-only ancestor ranges stay unhighlighted. **Compaction overlays** places the projected rows above their corresponding source ranges. Use the arrows to jump between ranges and the file selector to switch projected files.
+Original-diagram selections open the call tree first. Projections with compaction mappings
+are preferred by default; older projections remain available and show a disabled compaction
+action when unmapped.
 
-The pane breadcrumb moves back to **Compactions** or **Call tree**. Escape returns one layer at a time. Returning to compactions preserves the source window's scroll and overlay settings; **Source file →** brings it forward again. The source pane stays aligned with the compaction stack, offset by 24 pixels. Its size adapts to the available viewport space; panning moves the panes together. Middle-button dragging pans the canvas even when starting over an open pane or its controls.
-
-Source is read from the current project's corpus. If its SHA-256 differs from the projection's captured hash, the viewer explains the mismatch and displays current source without potentially incorrect highlights or overlays. Missing files display an error with Retry.
+The retained-pane viewer renders call trees and compactions. The earlier full-source overlay is not part of this display model; the standalone `mapping-ux-app` retains its source-window workflow.
 
 Unlinked selections and diagrams without a projection explain why the action is unavailable. Unsaved scene changes in either open diagram block projection. Saved revisions that differ from the pinned source or target require an updated projection. Historical revisions and their old projection links remain stored.
 

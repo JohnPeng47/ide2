@@ -36,7 +36,8 @@ export interface LocalChatSelection {
 export interface LocalChatThread {
   id: string;
   title: string;
-  context: LocalChatContext;
+  /** Older workspace snapshots may contain messages without captured source context. */
+  context?: LocalChatContext;
   verbosity: LocalChatVerbosity;
   error?: string;
   progress?: string;

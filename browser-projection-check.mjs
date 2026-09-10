@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { spawn, execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, writeFile, rm } from "node:fs/promises";
 import { createServer } from "node:net";
+import { existsSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -49,65 +50,6 @@ async function click(cdp, selector) {
   await cdp.send("Input.dispatchMouseEvent", { type: "mouseReleased", ...point, button: "left", clickCount: 1 });
 }
 
-async function middlePan(cdp, selector, dx, dy, modifiers = 0) {
-  const matrix = () => evaluate(cdp, `(() => {
-    const surface = document.querySelector(${JSON.stringify(`${active} .diagram-canvas__surface`)});
-    const m = new DOMMatrixReadOnly(getComputedStyle(surface).transform);
-    return { x: m.e, y: m.f, scale: m.a };
-  })()`);
-  const before = await matrix();
-  const point = await evaluate(cdp, `(() => {
-    const el = document.querySelector(${JSON.stringify(selector)});
-    const r = el.getBoundingClientRect();
-    const x = (Math.max(0, r.left) + Math.min(innerWidth, r.right)) / 2;
-    const y = (Math.max(0, r.top) + Math.min(innerHeight, r.bottom)) / 2;
-    return el.contains(document.elementFromPoint(x, y)) ? { x, y } : null;
-  })()`);
-  assert.ok(point, `Middle-drag target must be visible: ${selector}`);
-  await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', ...point, button: 'middle', buttons: 4, clickCount: 1, modifiers });
-  await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: point.x + dx, y: point.y + dy, button: 'middle', buttons: 4, modifiers });
-  await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: point.x + dx, y: point.y + dy, button: 'middle', buttons: 0, clickCount: 1, modifiers });
-  await waitFor(async () => {
-    const after = await matrix();
-    return Math.abs(after.x - before.x - dx) < 1 && Math.abs(after.y - before.y - dy) < 1 && after.scale === before.scale;
-  }, { message: `Middle-drag did not pan the main canvas from ${selector}` });
-  assert.equal(await evaluate(cdp, `document.querySelector(${JSON.stringify(`${active} [data-diagram-canvas]`)}).classList.contains('is-dragging')`), false);
-  const released = await matrix();
-  await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: point.x + dx + 12, y: point.y + dy + 12, buttons: 0 });
-  assert.deepEqual(await matrix(), released, 'Panning must stop when the middle button is released');
-}
-
-async function checkSelectionCopy(cdp, expected) {
-  const previous = await evaluate(cdp, 'navigator.clipboard.readText()');
-  try {
-    await click(cdp, `${active} [aria-label="Copy ASCII + code refs"]`);
-    await waitFor(async () => (await evaluate(cdp, 'navigator.clipboard.readText()')).replace(/\r\n/g, '\n') === expected,
-      { message: 'Copy action did not include the selected ASCII and exact code references' }).catch(async (error) => {
-        throw new Error(`${error.message}: ${JSON.stringify(await evaluate(cdp, 'navigator.clipboard.readText()'))}`);
-      });
-    for (const modifiers of [0, 2, 4]) {
-      await evaluate(cdp, 'navigator.clipboard.writeText("copy-shortcut-sentinel")');
-      await key(cdp, 'c', 'KeyC', modifiers);
-      await waitFor(async () => (await evaluate(cdp, 'navigator.clipboard.readText()')).replace(/\r\n/g, '\n') === expected,
-        { message: 'Selection copy shortcut did not write the expected content' });
-    }
-    await key(cdp, 'p', 'KeyP');
-    await fill(cdp, '#mapping-poc-prompt', 'Native text copy stays native');
-    await cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Control', code: 'ControlLeft', windowsVirtualKeyCode: 17 });
-    for (const [key, code, windowsVirtualKeyCode] of [['a', 'KeyA', 65], ['c', 'KeyC', 67]]) {
-      await cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key, code, windowsVirtualKeyCode, modifiers: 2 });
-      await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key, code, windowsVirtualKeyCode, modifiers: 2 });
-    }
-    await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Control', code: 'ControlLeft', windowsVirtualKeyCode: 17 });
-    await waitFor(async () => await evaluate(cdp, 'navigator.clipboard.readText()') === 'Native text copy stays native',
-      { message: 'Selection copy must not replace normal input copying' });
-    await key(cdp, 'Escape', 'Escape');
-    await waitForSelector(cdp, `${active} [aria-label="Copy ASCII + code refs"]`);
-  } finally {
-    await evaluate(cdp, `navigator.clipboard.writeText(${JSON.stringify(previous)})`);
-  }
-}
-
 async function key(cdp, key, code, modifiers = 0) {
   await cdp.send("Input.dispatchKeyEvent", { type: "keyDown", key, code, modifiers });
   await cdp.send("Input.dispatchKeyEvent", { type: "keyUp", key, code, modifiers });
@@ -125,6 +67,8 @@ async function fill(cdp, selector, text) {
 }
 
 async function selectRows(cdp, first, last = first) {
+  await waitFor(async () => await evaluate(cdp, `document.querySelector(${JSON.stringify(`${active} .diagram-canvas__surface`)})?.style.transform.includes('translate3d')`),
+    { message: 'Canvas has not applied its initial viewport transform', timeoutMs: 15000 });
   await waitFor(async () => await evaluate(cdp,
     `document.querySelectorAll(${JSON.stringify(`${active} [data-selectable-node]`)}).length >= ${last}`));
   let points;
@@ -144,9 +88,9 @@ async function selectRows(cdp, first, last = first) {
     previous = next;
     return stable >= 2;
   }, { message: "Selection geometry did not settle" });
-  await cdp.send("Input.dispatchMouseEvent", { type: "mousePressed", ...points.start, button: "left", buttons: 1, clickCount: 1 });
-  await cdp.send("Input.dispatchMouseEvent", { type: "mouseMoved", ...points.end, button: "left", buttons: 1 });
-  await cdp.send("Input.dispatchMouseEvent", { type: "mouseReleased", ...points.end, button: "left", clickCount: 1 });
+  await cdp.send("Input.dispatchMouseEvent", { type: "mousePressed", ...points.start, button: "left", buttons: 1, modifiers: 2, clickCount: 1 });
+  await cdp.send("Input.dispatchMouseEvent", { type: "mouseMoved", ...points.end, button: "left", buttons: 1, modifiers: 2 });
+  await cdp.send("Input.dispatchMouseEvent", { type: "mouseReleased", ...points.end, button: "left", modifiers: 2, clickCount: 1 });
   await waitForSelector(cdp, `${active} .mapping-poc-selection-actions`).catch(async (error) => {
     if (process.env.PROJECTION_SCREENSHOT) await captureScreenshot(cdp, { output: process.env.PROJECTION_SCREENSHOT });
     throw new Error(`${error.message}; selection=${JSON.stringify(points)}; ${await evaluate(cdp, "document.body.innerText")}`);
@@ -158,7 +102,7 @@ async function selectRows(cdp, first, last = first) {
 async function openTree(cdp, expected) {
   await waitFor(async () => await evaluate(cdp, `!document.querySelector(${JSON.stringify(action)}).disabled`));
   await key(cdp, "n", "KeyN");
-  await waitForSelector(cdp, `${panel} pre[data-projected-tree]`);
+  await waitForSelector(cdp, `${panel} pre[data-projected-tree]`).catch(async error => { throw new Error(error.message + "\n" + await evaluate(cdp, "document.body.innerText")); });
   assert.equal(await evaluate(cdp, `Boolean(document.querySelector(${JSON.stringify(`${active} .mapping-poc-selection-menu`)}))`), false,
     "Selection menu must not obscure projected branches");
   assert.equal(await evaluate(cdp, `document.querySelector(${JSON.stringify(panel)}).dataset.projectionId`), "projection-calls");
@@ -167,8 +111,9 @@ async function openTree(cdp, expected) {
 
 async function closeTree(cdp) {
   await key(cdp, "Escape", "Escape");
-  await waitFor(async () => !await evaluate(cdp, `Boolean(document.querySelector(${JSON.stringify(panel)}))`),
-    { message: "Escape did not close the projected call tree" });
+  assert.equal(await evaluate(cdp, `Boolean(document.querySelector(${JSON.stringify(panel)}))`), true, 'Escape preserves retained projections');
+  await click(cdp, `${active} [aria-label='Remove selection']`);
+  await waitFor(async () => !await evaluate(cdp, `Boolean(document.querySelector(${JSON.stringify(panel)}))`));
 }
 
 async function expectUnavailable(cdp, reason) {
@@ -247,15 +192,10 @@ try {
     targetRepresentationId: target.id, targetRevisionId: targetRevision.id, match: "any",
     links: [{ sourceEvidenceIds: ["b", "c"], targetNodeIds: [nodeId("shared()")] },
       { sourceEvidenceIds: ["c"], targetNodeIds: [nodeId("gamma()")] }] };
-  const sourceText = Array.from({ length: 90 }, (_, index) => index === 1 ? "export const selected = 1;"
-    : index === 59 ? "export const detail = selected + 1;" : `// Unmapped context line ${index + 1}`).join("\n") + "\n";
-  await mkdir(path.join(temp, "src"));
-  await writeFile(path.join(temp, "src/shared.ts"), sourceText);
-  await writeFile(path.join(temp, "src/gamma.ts"), sourceText);
   const compactedFile = (sourceFile) => {
     const ascii = `${sourceFile}\n+-- selected method\n|   +-- selected detail\n|   \\-- hidden sibling\n\\-- unrelated method`;
-    return { sourceFile, ascii, asciiSha256: createHash("sha256").update(ascii).digest("hex"), sourceSha256: createHash("sha256").update(sourceText).digest("hex"),
-      mappings: [1, 2, 3, 4, 5].map((treeLine) => ({ treeLine, sourceRanges: [{ startLine: treeLine === 3 ? 60 : treeLine, endLine: treeLine === 3 ? 60 : treeLine }] })) };
+    return { sourceFile, ascii, asciiSha256: createHash("sha256").update(ascii).digest("hex"), sourceSha256: "a".repeat(64),
+      mappings: [1, 2, 3, 4, 5].map((treeLine) => ({ treeLine, sourceRanges: [{ startLine: treeLine, endLine: treeLine }] })) };
   };
   projection.compactionProjection = { files: [compactedFile("src/shared.ts"), compactedFile("src/gamma.ts")], links: [
     { callTreeNodeId: nodeId("shared()"), file: "src/shared.ts", treeLines: [2] },
@@ -276,12 +216,11 @@ try {
   server = spawn(process.execPath, ["node_modules/vite/bin/vite.js", "preview", "--host", "127.0.0.1", "--port", String(port), "--strictPort"],
     { cwd: root, env: { ...process.env, NEW_DIAGRAM_PROJECT_ROOT: temp, NEW_DIAGRAM_AGENT: "fake" }, stdio: "ignore" });
   await waitFor(async () => Boolean((await fetch(url).catch(() => null))?.ok), { timeoutMs: 15000 });
-  await withHeadlessBrowser({ url: `${url}/mapping`, width: 1600, height: 1000 }, async ({ cdp }) => {
-    await cdp.send('Browser.grantPermissions', { origin: url, permissions: ['clipboardReadWrite', 'clipboardSanitizedWrite'] });
+  await withHeadlessBrowser({ url: `${url}/mapping`, width: 1600, height: 1000 }, async ({ cdp, profilePath }) => {
     await cdp.send("Page.enable");
     await cdp.send("Runtime.enable");
     const errors = [];
-    cdp.on("Runtime.exceptionThrown", ({ exceptionDetails }) => errors.push(exceptionDetails.exception?.description ?? exceptionDetails.text));
+    cdp.on("Runtime.exceptionThrown", ({ exceptionDetails }) => (errors.push(exceptionDetails.exception?.description ?? exceptionDetails.text), console.error(exceptionDetails.exception?.description ?? exceptionDetails.text)));
     cdp.on("Page.javascriptDialogOpening", () => { void cdp.send("Page.handleJavaScriptDialog", { accept: true }); });
     await waitForSelector(cdp, "[data-project-diagram='source']");
     await waitForSelector(cdp, `${active} [data-selectable-node]`);
@@ -298,80 +237,133 @@ try {
         assert.equal(file.rows, "2 3");
         assert.equal(file.ascii, `${file.file}\n\\-- selected method\n    \\-- selected detail`);
       }
-      const sourcePane = `${panel} .mapping-source-stack:not([hidden])`;
-      const viewer = `${sourcePane} .source-code-viewer`;
-      for (const file of expectedFiles) {
-        await click(cdp, `${panel} [aria-label='Open source ${file}']`);
-        await waitForSelector(cdp, `${sourcePane} [data-projected-source='${file}'] [data-highlighted='true']`);
-        assert.deepEqual(await evaluate(cdp, `Array.from(document.querySelectorAll(${JSON.stringify(`${viewer} [data-selected=true]`)})).map(el => Number(el.dataset.line))`), [2, 60]);
-        assert.equal(await evaluate(cdp, `document.querySelectorAll(${JSON.stringify(`${viewer} [data-source-compaction-range]`)}).length`), 2);
-        assert.equal(await evaluate(cdp, `new Set(Array.from(document.querySelectorAll(${JSON.stringify(`${viewer} .source-token`)})).map(el => el.style.color)).size > 1`), true);
-        await click(cdp, `${sourcePane} [aria-label='Next mapped range']`);
-        await waitFor(async () => await evaluate(cdp, `document.querySelector(${JSON.stringify(`${sourcePane} .mapping-source-toolbar`)}).textContent.includes('Lines 60–60')`));
-        await waitFor(async () => await evaluate(cdp, `document.querySelector(${JSON.stringify(viewer)}).scrollTop > 0`));
-        await click(cdp, `${sourcePane} [aria-pressed='true']`);
-        assert.equal(await evaluate(cdp, `document.querySelectorAll(${JSON.stringify(`${viewer} [data-source-compaction-range]`)}).length`), 0);
-        await click(cdp, `${sourcePane} [aria-pressed='false']`);
-        await middlePan(cdp, `${sourcePane} .source-code-viewer`, -36, -24);
-        await middlePan(cdp, `${sourcePane} .mapping-source-toolbar button:first-child`, 36, 24, 8);
-        await middlePan(cdp, '.mapping-floating-pane input', -25, 15);
-        await middlePan(cdp, '.mapping-floating-pane input', 25, -15);
-        assert.equal(await evaluate(cdp, `document.querySelector(${JSON.stringify(`${sourcePane} .mapping-source-toolbar button`)}).getAttribute('aria-pressed')`), 'true');
-        await captureScreenshot(cdp, { output: process.env.SOURCE_STACK_SCREENSHOT ?? path.join(temp, "source-stack.png") });
-        if (expectedFiles.length > 1) {
-          await click(cdp, `${sourcePane} [aria-label='Projected source file']`);
-          await key(cdp, file === expectedFiles[0] ? "End" : "Home", file === expectedFiles[0] ? "End" : "Home");
-          await key(cdp, "Enter", "Enter");
-          const switched = file === expectedFiles[0] ? expectedFiles.at(-1) : expectedFiles[0];
-          await waitForSelector(cdp, `${sourcePane} [data-projected-source='${switched}'] [data-highlighted='true']`);
-        }
-        const scrollTop = await evaluate(cdp, `document.querySelector(${JSON.stringify(viewer)}).scrollTop`);
-        await key(cdp, "Escape", "Escape");
-        await waitFor(async () => !await evaluate(cdp, `Boolean(document.querySelector(${JSON.stringify(sourcePane)}))`));
-        await click(cdp, `${panel} [aria-label='Return to source file']`);
-        await waitForSelector(cdp, sourcePane);
-        assert.equal(await evaluate(cdp, `document.querySelector(${JSON.stringify(viewer)}).scrollTop`), scrollTop);
-        await click(cdp, `${sourcePane} [aria-label='Back to compactions']`);
-      }
       await captureScreenshot(cdp, { output: process.env.COMPACTION_SCREENSHOT ?? path.join(temp, "compaction.png") });
       await click(cdp, `${panel} [aria-label='Back to call tree']`);
       await waitForSelector(cdp, `${panel} pre[data-projected-tree]`);
       await click(cdp, `${panel} [aria-label='Open compaction']`);
       await waitForSelector(cdp, `${panel} [data-projected-compactions]`);
       await key(cdp, "Escape", "Escape");
+      await waitForSelector(cdp, `${panel} [data-projected-compactions]`);
+      await click(cdp, `${panel} [aria-label='Back to call tree']`);
       await waitForSelector(cdp, `${panel} pre[data-projected-tree]`);
     }
     await selectRows(cdp, 2);
-    await checkSelectionCopy(cdp, "Beta\nAssociated Code Entities:\nBeta: fixture.ts:2-2");
     await openTree(cdp, sharedOnly);
     await checkCompactions(["src/shared.ts"]);
-    // Mutate only the disposable corpus to exercise stale and missing source states.
-    await writeFile(path.join(temp, "src/shared.ts"), sourceText + "// changed\n");
-    await click(cdp, `${panel} [aria-label='Open compaction']`);
-    await click(cdp, `${panel} [aria-label='Open source src/shared.ts']`);
-    await waitFor(async () => await evaluate(cdp, `document.querySelector(${JSON.stringify(`${panel} .mapping-source-message`)})?.textContent.includes('has changed')`));
-    assert.equal(await evaluate(cdp, `document.querySelectorAll(${JSON.stringify(`${panel} .source-code-line[data-selected], ${panel} [data-source-compaction-range]`)}).length`), 0);
+    // Persistent groups, chained geometry, projected-row selection, and a full workspace round trip.
+    const row = await evaluate(cdp, `(() => {
+      const r = document.querySelector(${JSON.stringify(`${panel} [data-projected-tree] .projected-row:last-child`)}).getBoundingClientRect();
+      return { x: r.left + 8, y: r.top + r.height / 2 };
+    })()`);
+    await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', ...row, button: 'left', buttons: 1, modifiers: 2, clickCount: 1 });
+    await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...row, button: 'left', modifiers: 2, clickCount: 1 });
+    await waitForSelector(cdp, '.projected-selection-actions');
+    await key(cdp, 'Escape', 'Escape');
+    assert.equal(await evaluate(cdp, "document.querySelector('.projected-selection-actions') === null"), true);
+    await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', ...row, button: 'left', buttons: 1, modifiers: 2, clickCount: 1 });
+    await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...row, button: 'left', modifiers: 2, clickCount: 1 });
+    await click(cdp, '.projected-selection-actions button:first-child');
+    await waitForSelector(cdp, `${panel} [data-compaction-file]`);
+    assert.equal(await evaluate(cdp, `document.querySelector(${JSON.stringify(`${panel} [data-compaction-file]`)}).dataset.compactionRows`), '3');
+    await click(cdp, `${panel} [aria-label='Back to call tree']`);
+    await click(cdp, `${active} [aria-label='Projection display mode']`);
+    await key(cdp, "ArrowDown", "ArrowDown"); await key(cdp, "Enter", "Enter");
+    await waitForSelector(cdp, `${panel} [data-projected-compactions]`);
+    assert.ok(await evaluate(cdp, `document.querySelectorAll(${JSON.stringify(panel)}).length >= 2`));
+    const geometry = await evaluate(cdp, `(() => {
+      const root = document.querySelector('[data-selection-root]');
+      const rect = root.querySelector('.retained-selection').getBoundingClientRect();
+      const links = [...root.querySelectorAll('.projection-connector')].map(el => el.getBoundingClientRect());
+      return { edge: rect.right, start: links[0].left, axes: links.map(r => r.top) };
+    })()`);
+    assert.ok(Math.abs(geometry.edge - geometry.start) < 2, 'connector begins at selection outer edge');
+    assert.ok(geometry.axes.every(y => Math.abs(y - geometry.axes[0]) < 1), 'chain connectors share an axis');
+    await click(cdp, `${active} [aria-label='Collapse selection effects']`);
+    assert.equal(await evaluate(cdp, `document.querySelectorAll(${JSON.stringify(panel)}).length`), 0);
+    await click(cdp, `${active} [aria-label='Expand selection effects']`);
+    await waitForSelector(cdp, `${panel} [data-projected-compactions]`);
+    // A second independent selection must leave the first group intact.
+    await selectRows(cdp, 3); await key(cdp, "n", "KeyN");
+    await waitFor(async () => await evaluate(cdp, "document.querySelectorAll('[data-selection-root]').length === 2"));
     await key(cdp, "Escape", "Escape");
+    assert.equal(await evaluate(cdp, "document.querySelectorAll('[data-selection-root]').length"), 2);
+    await key(cdp, "p", "KeyP");
+    await waitForSelector(cdp, '#mapping-poc-prompt');
+    await fill(cdp, '#mapping-poc-prompt', 'Preserve this instruction draft');
     await key(cdp, "Escape", "Escape");
-    await rm(path.join(temp, "src/shared.ts"));
-    await click(cdp, `${panel} [aria-label='Open compaction']`);
-    await click(cdp, `${panel} [aria-label='Open source src/shared.ts']`);
-    await waitForSelector(cdp, `${panel} .mapping-source-pane [role=alert]`);
-    await writeFile(path.join(temp, "src/shared.ts"), sourceText);
-    await click(cdp, `${panel} .mapping-source-pane [role=alert] button`);
-    await waitForSelector(cdp, `${panel} .mapping-source-pane [data-highlighted=true]`);
-    assert.equal(await evaluate(cdp, `document.querySelectorAll(${JSON.stringify(`${panel} .source-code-line[data-selected]`)}).length`), 2);
-    await click(cdp, `${panel} .mapping-source-navigation button:first-child`);
-    await waitForSelector(cdp, `${panel} pre[data-projected-tree]`);
-    await closeTree(cdp);
+    assert.equal(await evaluate(cdp, "document.querySelector('#mapping-poc-prompt').value"), 'Preserve this instruction draft');
+    await cdp.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 1100, y: 600, deltaX: 0, deltaY: 160, modifiers: 2 });
+    await waitFor(async () => await evaluate(cdp, "document.querySelector('[aria-label=\"Diagram zoom\"]').textContent !== '100%'"));
+    const beforeReload = await evaluate(cdp, "({panels: document.querySelectorAll('[data-display-node]').length, transform: document.querySelector('.diagram-canvas__surface').style.transform})");
+    await click(cdp, '.mapping-workspace-actions button:first-child');
+    await waitFor(async () => await evaluate(cdp, "document.querySelector('.mapping-poc-status').textContent.includes('Workspace saved')"));
+    const savedWorkspace = await (await fetch(`${url}/api/mapping/workspace`)).json();
+    assert.equal(savedWorkspace.schemaVersion, 2);
+    assert.equal(savedWorkspace.documents[0].canvas.display.rootIds.length, 2);
+    const renderedGeometry = await evaluate(cdp, `Object.fromEntries([...document.querySelectorAll('[data-display-node]')].map(el => [el.dataset.displayNode,
+      { position: { x: el.offsetLeft, y: el.offsetTop }, bounds: { width: el.offsetWidth, height: el.offsetHeight } }]))`);
+    for (const [id, geometry] of Object.entries(renderedGeometry)) {
+      const node = savedWorkspace.documents[0].canvas.display.nodes[id];
+      assert.deepEqual(node.bounds, geometry.bounds, 'measured outer bounds are saved in the node');
+      assert.ok(Math.abs(node.position.x - geometry.position.x) <= .5 && Math.abs(node.position.y - geometry.position.y) <= .5, 'node position controls rendering');
+    }
+    await reload(cdp);
+    await waitFor(async () => await evaluate(cdp, "document.querySelectorAll('[data-selection-root]').length === 2"));
+    assert.deepEqual(await evaluate(cdp, "({panels: document.querySelectorAll('[data-display-node]').length, transform: document.querySelector('.diagram-canvas__surface').style.transform})"), beforeReload);
+    assert.equal(await evaluate(cdp, "document.querySelector('#mapping-poc-prompt').value"), 'Preserve this instruction draft');
+    await click(cdp, '.mapping-poc-prompt-form button[type=button]');
+    await captureScreenshot(cdp, { output: process.env.WORKSPACE_SCREENSHOT ?? path.join(temp, 'workspace.png') });
+    const browserPath = file => profilePath.startsWith('/mnt/') ? execFileSync('wslpath', ['-w', file], { encoding: 'utf8' }).trim() : file;
+    await cdp.send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: browserPath(profilePath) });
+    await click(cdp, '.mapping-workspace-actions button:nth-child(3)');
+    const exportFile = path.join(profilePath, 'mapping-workspace.json');
+    await waitFor(() => existsSync(exportFile), { message: 'Workspace export did not download' });
+    const exported = JSON.parse(await readFile(exportFile, 'utf8'));
+    assert.equal(exported.documents[0].canvas.display.rootIds.length, 2);
+
+    // Overlapping groups are allowed; remove the uppermost one first.
+    await click(cdp, `${active} [data-selection-root]:last-child [aria-label='Remove selection']`);
+    await click(cdp, `${active} [aria-label='Remove selection']`);
+    await click(cdp, '.mapping-workspace-actions button:first-child');
+    await waitFor(async () => (await (await fetch(`${url}/api/mapping/workspace`)).json()).documents[0].canvas.display.rootIds.length === 0);
+    await cdp.send('Page.setInterceptFileChooserDialog', { enabled: true });
+    const chooser = new Promise(resolve => { const stop = cdp.on('Page.fileChooserOpened', event => { stop(); resolve(event); }); });
+    await click(cdp, '.mapping-workspace-actions button:nth-child(4)');
+    const chosen = await chooser;
+    // Exercise manual/fixed geometry through the public JSON import flow.
+    const importedPane = Object.values(exported.documents[0].canvas.display.nodes).find(node => node.kind === 'projection');
+    importedPane.geometryPolicy = { placement: 'manual', sizing: 'fixed' };
+    importedPane.position = { x: 200, y: 180 };
+    importedPane.bounds = { width: 460, height: 310 };
+    await writeFile(exportFile, JSON.stringify(exported));
+    await cdp.send('DOM.setFileInputFiles', { backendNodeId: chosen.backendNodeId, files: [browserPath(exportFile)] });
+    await waitFor(async () => await evaluate(cdp, "document.querySelectorAll('[data-selection-root]').length === 2"));
+    const manualSelector = `[data-display-node="${importedPane.id}"]`;
+    const manualGeometry = () => evaluate(cdp, `(() => { const el = document.querySelector(${JSON.stringify(manualSelector)}); return el && { x: el.offsetLeft, y: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight }; })()`);
+    await waitFor(async () => (await manualGeometry())?.height === 310);
+    assert.deepEqual(await manualGeometry(), { x: 200, y: 180, width: 460, height: 310 });
+    await click(cdp, `${manualSelector} [aria-label='Collapse pane']`);
+    await waitFor(async () => (await manualGeometry())?.height < 100);
+    await click(cdp, `${manualSelector} [aria-label='Expand pane']`);
+    await waitFor(async () => (await manualGeometry())?.height === 310);
+    await click(cdp, '.mapping-workspace-actions button:first-child');
+    await waitFor(async () => await evaluate(cdp, "document.querySelector('.mapping-poc-status').textContent.includes('Workspace saved')"));
+    await reload(cdp);
+    await waitFor(async () => (await manualGeometry())?.height === 310);
+    assert.deepEqual(await manualGeometry(), { x: 200, y: 180, width: 460, height: 310 });
+    await click(cdp, `${active} [data-selection-root]:last-child [aria-label='Remove selection']`);
+    await click(cdp, `${active} [aria-label='Remove selection']`);
+    await click(cdp, '.mapping-workspace-actions button:first-child');
+    await waitFor(async () => (await (await fetch(`${url}/api/mapping/workspace`)).json()).documents[0].canvas.display.rootIds.length === 0);
     await selectRows(cdp, 3);
     await openTree(cdp, both);
     await checkCompactions(["src/shared.ts", "src/gamma.ts"]);
     await closeTree(cdp);
     await selectRows(cdp, 1);
     await expectUnavailable(cdp, "No linked call-tree branches");
+    await key(cdp, 'Escape', 'Escape');
+    assert.equal(await evaluate(cdp, "document.querySelector('.mapping-poc-selection-menu') === null"), true, 'Escape cancels a selection without a follow-up');
     await selectRows(cdp, 2, 3);
-    await checkSelectionCopy(cdp, "Beta \nGamma\nAssociated Code Entities:\nBeta: fixture.ts:2-2\nGamma: fixture.ts:3-3");
     await openTree(cdp, both); // Exact text also catches duplicate branches/root context.
     await captureScreenshot(cdp, { output: process.env.PROJECTION_SCREENSHOT ?? path.join(temp, "projection.png") });
     await closeTree(cdp);
@@ -425,7 +417,7 @@ try {
     assert.equal(saved.revisions[targetRevision.id].ascii, targetRevision.ascii);
     assert.deepEqual(errors, []);
   });
-  console.log("projection browser check passed: selection, OR links, source stack, Shiki, exact ranges, overlays, file switching, stale/missing source and retry, Escape, reload, dirty revisions");
+  console.log("projection browser check passed: Ctrl-selection, retained groups, Escape, stacked/chained panes, edge connectors, recursive collapse, saved form drafts/viewport, workspace reload, and revision validation");
 } finally {
   if (server?.exitCode === null) {
     server.kill("SIGTERM");

@@ -83,12 +83,12 @@ with evidence. It is separate from operating the Mapping canvas editor.
 | POST | `/diagrams` | Create/save a canvas representation and immutable revision |
 | POST | `/prompt` | Edit/generate from an editor selection; NDJSON |
 | POST | `/chat` | Answer a question about selected content; NDJSON |
+| GET, PUT | `/workspace` | Load/save the editor workspace, including scenes, retained panes, drafts, and viewport |
 
 Saving a canvas writes Core's representation catalog. It returns
 `{ project, catalog, representation }`; an existing diagram requires its current
 `expectedRevisionId`. A stale write returns 409. Selection prompt results remain
-editor proposals until the user saves. Pan/zoom, local undo history, and chat
-history remain browser state.
+editor proposals until the user saves. Explicit workspace saves persist scenes, retained panes, chat context/history, drafts, and pan/zoom separately from representation revisions. Local undo history remains browser state.
 
 ### Core — `/api/core`
 

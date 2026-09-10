@@ -50,6 +50,7 @@ describe("Studio, Mapping, and Core HTTP API", () => {
     const workspace = await fetch(`${origin}/api/core/workspace`);
     expect(workspace.status).toBe(200);
     await expect(workspace.json()).resolves.toMatchObject({ diagramSets: [] });
+    await expect((await fetch(`${origin}/api/mapping/workspace`)).json()).resolves.toBeNull();
     const mappingPrompt = `${origin}/api/mapping/prompt`;
     expect((await fetch(mappingPrompt)).status).toBe(405);
     const invalidPrompt = await fetch(mappingPrompt, {
@@ -60,7 +61,7 @@ describe("Studio, Mapping, and Core HTTP API", () => {
     expect(invalidPrompt.status).toBe(400);
     await expect(invalidPrompt.json()).resolves.toEqual({ error: "valid clientSessionId is required" });
     for (const pathname of [
-      "/api/workspace", "/api/mapping/workspace", "/api/studio/workspace", "/api/studio/unknown",
+      "/api/workspace", "/internal/mapping/workspace", "/api/studio/workspace", "/api/studio/unknown",
       "/api/studio/project/representations", "/api/mapping/project/representations",
       "/internal/mapping/diagrams", "/api/core/experiments", "/api/mapping/experiments"
     ]) {
@@ -106,6 +107,16 @@ describe("Studio, Mapping, and Core HTTP API", () => {
     const reopened = await (await fetch(`${origin}/api/core/project/representations`)).json();
     expect(reopened.catalog.representations[input.representationId].revisionIds).toHaveLength(2);
     expect(reopened.project.id).toBe(created.project.id);
+    const editorWorkspaceUrl = `${origin}/api/mapping/workspace`;
+    const savedWorkspace = { schemaVersion: 2, projectId: created.project.id, documents: [] };
+    const putWorkspace = (body: unknown) => fetch(editorWorkspaceUrl, { method: "PUT",
+      headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    expect((await putWorkspace(savedWorkspace)).status).toBe(200);
+    await expect((await fetch(editorWorkspaceUrl)).json()).resolves.toEqual(savedWorkspace);
+    expect((await putWorkspace({ ...savedWorkspace, projectId: "foreign-project" })).status).toBe(400);
+    expect((await putWorkspace({ ...savedWorkspace, schemaVersion: 99 })).status).toBe(400);
+    await expect((await fetch(editorWorkspaceUrl)).json()).resolves.toEqual(savedWorkspace);
+    expect((await fetch(editorWorkspaceUrl, { method: "POST" })).status).toBe(405);
     expect((await fetch(`${origin}/api/mapping/diagrams`)).status).toBe(405);
     const coreWorkspace = await (await fetch(`${origin}/api/core/workspace`)).json();
     expect(coreWorkspace.representationCatalog).toEqual(reopened.catalog);
