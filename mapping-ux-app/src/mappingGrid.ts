@@ -1,7 +1,14 @@
-import { mappingDocumentFromScene } from "./projectDiagramCanvas";
+import { mappingDocumentFromScene } from "./mappingDocument";
+
+import {
+  layoutScene,
+  updateGridBox,
+  type CanvasDiagram,
+  type GridBox,
+  type LineGridScene
+} from "./lineGrid";
 import { MAPPING_POC_A_NODES, MAPPING_POC_GRAPH_A, type MappingPocANode } from "./mappingPoc";
 import { MAPPING_POC_A_SECTIONS, type MappingPocASection } from "./mappingPocOverlays";
-import { layoutScene, updateGridBox, type CanvasDiagram, type GridBox, type LineGridScene } from "./lineGrid";
 
 export interface MappingGridDocument {
   scene: LineGridScene;

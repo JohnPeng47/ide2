@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile, mkdtemp, rm } from "node:fs/promises";
 import path from "node:path";
-import { homedir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { pathToFileURL, fileURLToPath } from "node:url";
 const { evaluate, waitFor, waitForSelector, captureScreenshot, withHeadlessBrowser } = await import(pathToFileURL(path.join(homedir(), ".codex/skills/front-end/browser-test.mjs")).href);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const screenshots = await mkdtemp(path.join(tmpdir(), "mapping-copy-browser-"));
+const seed = JSON.parse(await readFile(path.join(root, "data/project-snapshot.json"), "utf8"));
 const extraction = JSON.parse(await readFile(path.join(root, "data/extraction.json"), "utf8"));
 const active = ".mapping-document-view:not([hidden])";
 const target = `http://127.0.0.1:5197/mapping?diagram=${extraction.primaryDiagramId}`;
@@ -95,9 +97,9 @@ async function appearance(cdp) {
 try {
   await waitFor(async () => (await fetch(target).catch(()=>null))?.ok, { timeoutMs: 15000 });
   let baseline;
-  await withHeadlessBrowser({ url: extraction.sourceUrl, width: 1900, height: 1100 }, async ({cdp}) => {
+  if (process.env.COMPARE_ORIGINAL === "1") await withHeadlessBrowser({ url: extraction.sourceUrl, width: 1900, height: 1100 }, async ({cdp}) => {
     baseline = await appearance(cdp);
-    await captureScreenshot(cdp, { output: path.join(root, 'review/original.png') });
+    await captureScreenshot(cdp, { output: path.join(screenshots, 'original.png') });
     await selectRows(cdp, 1);
     await key(cdp, 'n', 'KeyN');
     await waitForSelector(cdp, '[data-projected-tree]');
@@ -109,20 +111,38 @@ try {
     cdp.on('Runtime.exceptionThrown', e => errors.push(e.exceptionDetails.exception?.description ?? e.exceptionDetails.text));
     cdp.on('Network.requestWillBeSent', e => requests.push(e.request.url));
     const actual = await appearance(cdp);
-    const {projectedTree, ...expected} = baseline;
+    const representation = seed.catalog.representations[extraction.primaryDiagramId];
+    const revision = seed.catalog.revisions[representation.currentRevisionId];
+    const expected = baseline ? (({projectedTree, ...appearance}) => appearance)(baseline) : { ...actual, name: representation.name, ascii: revision.ascii };
     assert.deepEqual(actual, expected);
-    assert.equal(await evaluate(cdp, "document.querySelectorAll('[data-project-diagram]').length"), 1);
-    await captureScreenshot(cdp, { output: path.join(root, 'review/extracted.png') });
+    assert.equal(actual.nodes.length, revision.mappings.length);
+    const diagramCount = Object.keys(seed.catalog.representations).length;
+    assert.equal(await evaluate(cdp, "document.querySelectorAll('[data-project-diagram]').length"), diagramCount);
+    await captureScreenshot(cdp, { output: path.join(screenshots, 'extracted.png') });
     await selectRows(cdp, 1); await key(cdp, 'n', 'KeyN');
     await waitForSelector(cdp, '[data-projected-tree]');
-    assert.equal(await evaluate(cdp, "document.querySelector('[data-projected-tree]').textContent"), projectedTree);
-    await captureScreenshot(cdp, { output: path.join(root, 'review/call-tree.png') });
+    if (baseline) assert.equal(await evaluate(cdp, "document.querySelector('[data-projected-tree]').textContent"), baseline.projectedTree);
+    await captureScreenshot(cdp, { output: path.join(screenshots, 'call-tree.png') });
     // Zoom out to bring the companion controls into the viewport, using real wheel input.
     for (let i=0;i<5;i++) await cdp.send('Input.dispatchMouseEvent', {type:'mouseWheel',x:1400,y:350,deltaX:0,deltaY:160,modifiers:2});
     await click(cdp, '[aria-label="Open compaction"]');
     await waitForSelector(cdp, '[data-projected-compactions]');
     assert.ok(await evaluate(cdp, "document.querySelectorAll('[data-compaction-file]').length > 0"));
-    await captureScreenshot(cdp, { output: path.join(root, 'review/compactions.png') });
+    await captureScreenshot(cdp, { output: path.join(screenshots, 'compactions.png') });
+    const file = await evaluate(cdp, "document.querySelector('[data-compaction-file]').dataset.compactionFile");
+    await click(cdp, `[aria-label="Open source ${file}"]`);
+    await waitForSelector(cdp, '.mapping-source-stack:not([hidden]) [data-highlighted="true"]', { timeoutMs: 20000 });
+    assert.ok(await evaluate(cdp, "document.querySelectorAll('.source-code-line[data-selected=true]').length > 0"));
+    assert.ok(await evaluate(cdp, "document.querySelectorAll('[data-source-compaction-range]').length > 0"));
+    assert.equal(await evaluate(cdp, "Boolean(document.querySelector('.mapping-source-message'))"), false);
+    assert.deepEqual(await evaluate(cdp, `(() => {const el = document.querySelector('.mapping-source-stack');const css = getComputedStyle(el);return [css.left, css.top];})()`), ['24px', '24px']);
+    await captureScreenshot(cdp, { output: path.join(screenshots, 'source-stack.png') });
+    await click(cdp, '.mapping-source-toolbar button[aria-pressed=true]');
+    assert.equal(await evaluate(cdp, "document.querySelectorAll('[data-source-compaction-range]').length"), 0);
+    await key(cdp, 'Escape', 'Escape');
+    await click(cdp, '[aria-label="Return to source file"]');
+    await waitForSelector(cdp, '.mapping-source-stack:not([hidden])');
+    await click(cdp, '[aria-label="Back to compactions"]');
     await key(cdp, 'Escape', 'Escape'); await key(cdp, 'Escape', 'Escape');
     await cdp.send('Page.reload', {ignoreCache:true});
     await appearance(cdp);
@@ -130,14 +150,15 @@ try {
     await waitForSelector(cdp, '#mapping-poc-local-question');
     await fill(cdp, '#mapping-poc-local-question', 'Explain this selected region');
     await key(cdp, 'Enter', 'Enter', 2);
-    await waitForSelector(cdp, '.mapping-poc-graph-stage.is-placing-chat');
-    await cdp.send('Input.dispatchMouseEvent', {type:'mousePressed',x:900,y:350,button:'left',buttons:1,clickCount:1});
-    await cdp.send('Input.dispatchMouseEvent', {type:'mouseReleased',x:900,y:350,button:'left',clickCount:1});
     await waitForSelector(cdp, '[data-local-chat-bubble]');
-    await click(cdp, '[data-local-chat-bubble]');
     await waitForSelector(cdp, '[data-local-chat-role="assistant"]');
     assert.ok(await evaluate(cdp, "document.querySelector('[data-local-chat-role=assistant]').textContent.includes('Demo reply')"));
-    await captureScreenshot(cdp, { output: path.join(root, 'review/chat.png') });
+    await click(cdp, '.local-chat-convo .local-chat-verbosity button:last-child');
+    await fill(cdp, '.local-chat-convo textarea', 'Show more implementation context');
+    await key(cdp, 'Enter', 'Enter', 2);
+    await waitFor(async () => await evaluate(cdp, "document.querySelectorAll('[data-local-chat-role=assistant]').length === 2"));
+    assert.ok(await evaluate(cdp, "document.querySelectorAll('[data-local-chat-role=assistant]')[1].textContent.includes('saved source ranges')"));
+    await captureScreenshot(cdp, { output: path.join(screenshots, 'chat.png') });
     await click(cdp, '[aria-label="Collapse local conversation"]');
     await selectRows(cdp, 1); await key(cdp, 'p', 'KeyP');
     await fill(cdp, '#mapping-poc-prompt', 'Show context');
@@ -158,13 +179,14 @@ try {
     await waitFor(async () => await evaluate(cdp, "document.querySelector('[aria-label=\"Diagram name\"]').value === 'UX draft'"));
     await cdp.send('Page.reload', {ignoreCache:true});
     await waitFor(async () => await evaluate(cdp, "document.querySelector('[aria-label=\"Diagram name\"]')?.value === 'UX draft'"));
-    assert.equal(await evaluate(cdp, "document.querySelectorAll('[data-project-diagram]').length"), 2);
+    assert.equal(await evaluate(cdp, "document.querySelectorAll('[data-project-diagram]').length"), diagramCount + 1);
     assert.deepEqual(errors, []);
     assert.equal(requests.some(url => url.includes(':5177') || url.includes('/internal/') || url.includes('/api/')), false);
-    await writeFile(path.join(root, 'review/validation.json'), JSON.stringify({diagram:actual.name,mappedNodes:actual.nodes.length,originalRenderingMatches:true,callTreeMatches:true,compactions:true,chat:true,saveReload:true,originalServerRequests:0,browserErrors:errors}, null, 2)+'\n');
+    await writeFile(path.join(root, 'review/validation.json'), JSON.stringify({diagram:actual.name,mappedNodes:actual.nodes.length,originalRenderingMatches:baseline ? true : undefined,seedMatches:true,callTreeMatches:baseline ? true : undefined,compactions:true,sourceStack:true,shiki:true,sourceHighlights:true,chat:true,saveReload:true,originalServerRequests:0,browserErrors:errors}, null, 2)+'\n');
   });
-  console.log('PASS: original diagram rendering and projection match; scoped explorer; compactions; demo chat; group/save/reload; no original-server calls.');
+  console.log('PASS: bundled diagram, projections, Shiki source stack, highlights, overlays, demo chat, group/save/reload, and no original-server calls.');
 } finally {
+  await rm(screenshots, { recursive: true, force: true });
   server.kill('SIGTERM');
   await new Promise(resolve => server.exitCode !== null ? resolve() : server.once('exit', resolve));
 }

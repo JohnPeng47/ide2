@@ -1,7 +1,12 @@
-import { measureContent, composeScene, flattenGrid, resolveScene, type LineGridScene } from "./lineGrid";
-import { validateMappingPocMappings } from "./mappingPocPrompt";
+import { validateDiagramLocalMappings } from "./diagramMappings";
+import {
+  composeScene,
+  flattenGrid,
+  measureContent,
+  resolveScene,
+  type LineGridScene
+} from "./lineGrid";
 import type { ProjectRepresentationEvidenceRecord, ProjectRepresentationMappingRecord, ProjectRepresentationRevisionRecord } from "./projectCatalog";
-import type { MappingGridDocument } from "./mappingGrid";
 
 export type ProjectDiagramContent = { kind: "ascii"; ascii: string } | { kind: "mapping-canvas"; scene: LineGridScene };
 export interface SaveProjectDiagramInput {
@@ -35,19 +40,6 @@ export function sceneFromRevision(revision: ProjectRepresentationRevisionRecord)
   return scene;
 }
 
-export function mappingDocumentFromScene(scene: LineGridScene, evidence: Record<string, ProjectRepresentationEvidenceRecord>): MappingGridDocument {
-  return { scene, evidence, sections: {}, nodes: Object.fromEntries(Object.values(scene.contents).map((content) => [content.id,
-    content.mappings.map((mapping) => {
-      const entity = evidence[mapping.entityId];
-      const range = entity?.sourceRanges[mapping.sourceRangeIndex];
-      return { id: `${content.id}:${mapping.id}`, label: entity?.label ?? mapping.entityId,
-        head: { line: mapping.line, startColumn: mapping.startColumn, endColumn: mapping.endColumn },
-        extent: { startLine: mapping.line, endLine: mapping.line }, selectableBecause: "mapped" as const,
-        sourceRanges: range ? [range] : [], mappedBNodeIds: [] };
-    })
-  ])) };
-}
-
 /** Validate all content (including collapsed content), then derive the visible export. */
 export function projectCanvasSnapshot(scene: LineGridScene, evidence: Record<string, ProjectRepresentationEvidenceRecord>) {
   if (!scene || !scene.contents || !scene.root || Object.keys(scene.contents).length > 500) throw new Error("Invalid Mapping canvas");
@@ -71,7 +63,7 @@ export function projectCanvasSnapshot(scene: LineGridScene, evidence: Record<str
     if (content.id !== id || !Number.isInteger(content.revision) || content.revision < 0 || typeof content.ascii !== "string"
       || !content.ascii.trim() || content.ascii.length > 20000 || !Array.isArray(content.mappings)) throw new Error("Invalid canvas content");
     measureContent(content.ascii);
-    validateMappingPocMappings(content.ascii, content.mappings);
+    validateDiagramLocalMappings(content.ascii, content.mappings);
     for (const mapping of content.mappings) {
       const range = evidence[mapping.entityId]?.sourceRanges[mapping.sourceRangeIndex];
       if (!range || (mapping.sourceRangeId && range.id !== mapping.sourceRangeId)) throw new Error("Canvas mapping references unknown project evidence");

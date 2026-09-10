@@ -126,7 +126,7 @@ generation HTTP route
       parse / validate / stream NDJSON
       |
       v
-DiagramApplication.generate()
+StudioApplication.generate()
       |
       +--> finalized evidence gate
       +--> load entities and references

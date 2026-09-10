@@ -1,6 +1,22 @@
+import type { DiagramElementMapping } from "./domain";
+import type { MappingPocCorpusRangeContext } from "./mappingPocPrompt";
 import type { MappingPocGridRect } from "./mappingPoc";
 
 export type LocalChatVariant = "compact" | "floating" | "docked";
+export type LocalChatVerbosity = "low" | "high";
+
+export interface LocalChatContext {
+  projectId?: string;
+  representationId?: string;
+  baseRevisionId?: string;
+  contentId: string;
+  diagramAscii: string;
+  diagramRevision: number;
+  mappings: DiagramElementMapping[];
+  /** Frozen excerpts returned by the server, reused by follow-ups. */
+  sourceRanges?: MappingPocCorpusRangeContext[];
+}
+
 export type LocalChatRole = "user" | "assistant";
 
 export interface LocalChatMessage {
@@ -11,7 +27,7 @@ export interface LocalChatMessage {
 
 export interface LocalChatSelection {
   /** Rendering box identity; rect remains diagram-local. */
-  boxId?: string;
+  boxId: string;
   nodeIds: string[];
   rect: MappingPocGridRect;
   summary: string;
@@ -20,20 +36,30 @@ export interface LocalChatSelection {
 export interface LocalChatThread {
   id: string;
   title: string;
-  anchor: { x: number; y: number };
+  context: LocalChatContext;
+  verbosity: LocalChatVerbosity;
+  error?: string;
+  progress?: string;
   selection: LocalChatSelection;
   messages: LocalChatMessage[];
   pending: boolean;
 }
 
 export interface LocalChatReplyRequest {
-  query: string;
+  threadId: string;
+  context: LocalChatContext;
+  verbosity: LocalChatVerbosity;
   selection: LocalChatSelection;
+  /** Ordered raw messages, ending with the current user query exactly once. */
   history: readonly LocalChatMessage[];
 }
 
 export interface LocalChatResponder {
-  reply(request: LocalChatReplyRequest): Promise<string>;
+  reply(request: LocalChatReplyRequest, options?: {
+    signal?: AbortSignal;
+    onContext?: (ranges: MappingPocCorpusRangeContext[]) => void;
+    onProgress?: (message: string) => void;
+  }): Promise<string>;
 }
 
 export function isLocalChatSubmitHotkey(event: {
@@ -42,33 +68,4 @@ export function isLocalChatSubmitHotkey(event: {
   isComposing?: boolean;
 }): boolean {
   return event.key === "Enter" && event.ctrlKey && !event.isComposing;
-}
-
-export const MOCK_LOCAL_CHAT_RESPONSES = [
-  "Demo reply: This selection is part of the prompt, reference, lineage, and portability diagram. Open its call tree with N to inspect the linked execution paths and source compactions.",
-  "Demo reply: This conversation remains attached to the selected region. The extracted app includes the original saved source evidence and projections for inspection.",
-  "Demo reply: You can continue this conversation, move or collapse the canvas boxes, and save your layout locally. No language model is connected in this UX copy."
-] as const;
-
-export function createCyclingMockLocalChatResponder(
-  responses: readonly string[] = MOCK_LOCAL_CHAT_RESPONSES,
-  options: { delayMs?: number | (() => number) } = {}
-): LocalChatResponder {
-  if (responses.length === 0) throw new Error("Local chat mock responses cannot be empty");
-  let nextIndex = 0;
-
-  return {
-    async reply(_request) {
-      const response = responses[nextIndex];
-      nextIndex = (nextIndex + 1) % responses.length;
-      const configuredDelay = typeof options.delayMs === "function"
-        ? options.delayMs()
-        : options.delayMs ?? 0;
-      const delayMs = Math.max(0, configuredDelay);
-      if (delayMs > 0) {
-        await new Promise<void>((resolve) => globalThis.setTimeout(resolve, delayMs));
-      }
-      return response;
-    }
-  };
 }

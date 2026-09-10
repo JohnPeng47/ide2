@@ -1,6 +1,6 @@
 import type { SpatialProgressState } from "./agentWork";
-import type { RepresentationGraphRecord } from "./representationGraph";
 import type { HighlightRecordV2 } from "./highlights";
+import type { RepresentationGraphRecord } from "./representationGraph";
 
 export const SCHEMA_VERSION = 1 as const;
 export const GLOBAL_IMPORTS_DIAGRAM_SET_ID = "global-imports";

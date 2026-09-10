@@ -1,9 +1,6 @@
-import type {
-  ProjectRepresentationCatalogRecord,
-  ProjectRepresentationRevisionRecord
-} from "./projectCatalog";
-import { buildTreeRepresentationIndex, type TreeRepresentationIndex } from "./representationIndex";
 import { validateCompactionProjection } from "./compactionProjection";
+import type { ProjectRepresentationCatalogRecord, ProjectRepresentationRevisionRecord } from "./projectCatalog";
+import { buildTreeRepresentationIndex, type TreeRepresentationIndex } from "./representationIndex";
 
 export interface ProjectProjectionRecord {
   id: string;

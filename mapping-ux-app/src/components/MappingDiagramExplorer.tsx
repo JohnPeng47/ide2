@@ -1,6 +1,6 @@
 import { useState } from "react";
+import type { GridBox, LineGridScene } from "../lineGrid";
 import type { ProjectRepresentationRecord } from "../projectCatalog";
-import type { LineGridScene, GridBox } from "../lineGrid";
 export function MappingDiagramExplorer(props: {
   projectName: string; diagrams: ProjectRepresentationRecord[]; activeId?: string;
   scene?: LineGridScene; dirtyIds: string[]; onOpen: (id: string) => void; onFocus: (boxId: string) => void;

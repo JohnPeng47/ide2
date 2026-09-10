@@ -1,16 +1,17 @@
 import extraction from "../../data/extraction.json";
-const SUPPORTING_IDS = new Set(extraction.supportingRepresentationIds);
-import { useEffect, useState } from "react";
 import { UiTestFramework } from "@new-diagram/ui-test-framework";
+import { useEffect, useState } from "react";
+import { loadProjectRepresentations, type ProjectRepresentationsSnapshot } from "../api";
 import { DraggableDiagramCanvas } from "./DraggableDiagramCanvas";
+import { FloatingPane } from "./FloatingPane";
+import { sceneFromRevision, singleDiagramScene } from "../projectDiagramCanvas";
+import type { LocalChatVariant } from "../localChat";
+import { mappingDocumentFromScene } from "../mappingDocument";
+import type { MappingGridDocument } from "../mappingGrid";
+import { saveMappingProjectDiagram } from "../mappingProjectApi";
+import { MappingDiagramExplorer } from "./MappingDiagramExplorer";
 import { MappingPocSelectionCanvas } from "./MappingPocSelectionCanvas";
 import { MappingSubmenu } from "./MappingSubmenu";
-import { FloatingPane } from "./FloatingPane";
-import { MappingDiagramExplorer } from "./MappingDiagramExplorer";
-import type { LocalChatVariant } from "../localChat";
-import type { MappingGridDocument } from "../mappingGrid";
-import { mappingDocumentFromScene, sceneFromRevision, singleDiagramScene } from "../projectDiagramCanvas";
-import { loadMappingProject, saveMappingProjectDiagram, type MappingProjectSnapshot } from "../mappingProjectApi";
 
 const LOCAL_CHAT_UI_CONTROLS = {
   variant: {
@@ -24,21 +25,7 @@ const LOCAL_CHAT_UI_CONTROLS = {
       { value: "docked", label: "Docked panel" }
     ]
   },
-  replyDelayMs: {
-    type: "range",
-    label: "Mock reply delay",
-    description: "Simulates time spent waiting for the language model.",
-    defaultValue: 350,
-    min: 0,
-    max: 1600,
-    step: 100
-  },
-  placementGuide: {
-    type: "toggle",
-    label: "Placement hint",
-    description: "Show the click-to-place instruction over the canvas.",
-    defaultValue: true
-  }
+
 } as const;
 
 interface Draft {
@@ -52,8 +39,9 @@ interface Draft {
 }
 const dirty = (draft: Draft) => draft.name !== draft.savedName || JSON.stringify(draft.document.scene) !== draft.savedScene;
 
-export function MappingPocPage() {
-  const [snapshot, setSnapshot] = useState<MappingProjectSnapshot>();
+export function MappingPocPage(props: { onStudio: () => void; onExperiments: () => void;
+  registerNavigationGuard?: (guard: (() => boolean) | undefined) => void }) {
+  const [snapshot, setSnapshot] = useState<ProjectRepresentationsSnapshot>();
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [activeId, setActiveId] = useState<string>();
   const [error, setError] = useState("");
@@ -63,7 +51,7 @@ export function MappingPocPage() {
   const [newAscii, setNewAscii] = useState("[New diagram]");
   const [copyCurrent, setCopyCurrent] = useState(false);
   const active = activeId ? drafts[activeId] : undefined;
-  const diagrams = Object.values(snapshot?.catalog?.representations ?? {}).filter((diagram) => diagram.status === "settled" && !SUPPORTING_IDS.has(diagram.id));
+  const diagrams = Object.values(snapshot?.catalog?.representations ?? {}).filter((diagram) => diagram.status === "settled");
 
   const open = (id: string, data = snapshot, navigate = true) => {
     const representation = data?.catalog?.representations[id];
@@ -82,7 +70,7 @@ export function MappingPocPage() {
 
   useEffect(() => {
     let cancelled = false;
-    loadMappingProject().then((data) => {
+    loadProjectRepresentations().then((data) => {
       if (cancelled) return;
       setSnapshot(data);
       const id = new URL(location.href).searchParams.get("diagram")
@@ -102,7 +90,11 @@ export function MappingPocPage() {
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [drafts]);
-
+  useEffect(() => {
+    props.registerNavigationGuard?.(() => !Object.values(drafts).some((draft) => dirty(draft) || draft.busy)
+      || window.confirm("Leave Mapping and discard unsaved changes and pending edits?"));
+    return () => props.registerNavigationGuard?.(undefined);
+  }, [drafts, activeId, props.registerNavigationGuard]);
 
   const save = async () => {
     if (!activeId || !active || active.busy || savingId) return;
@@ -139,8 +131,8 @@ export function MappingPocPage() {
           onNameChange={(name) => { if (activeId) setDrafts((current) => ({ ...current, [activeId]: { ...current[activeId], name } })); }}
           onNew={() => { setCopyCurrent(false); setCreating(true); }} onSave={() => void save()} />
         <nav className="screen-tabs" aria-label="Application pages">
-          <button type="button" disabled title="Studio is outside this Mapping extraction">STUDIO</button>
-          <button type="button" disabled title="Experiments is outside this Mapping extraction">EXPERIMENTS</button>
+          <button type="button" disabled title="Studio is available in the full app">STUDIO</button>
+          <button type="button" disabled title="Experiments are available in the full app">EXPERIMENTS</button>
           <button type="button" className="is-active" aria-current="page">MAPPING</button>
         </nav>
       </header>
@@ -154,7 +146,7 @@ export function MappingPocPage() {
                 dirtyRepresentationIds={Object.keys(drafts).filter((key) => JSON.stringify(drafts[key].document.scene) !== drafts[key].savedScene)}
                 onDocumentChange={(document) => setDrafts((current) => current[id].document === document ? current : { ...current, [id]: { ...current[id], document } })}
                 onBusyChange={(busy) => setDrafts((current) => current[id].busy === busy ? current : { ...current, [id]: { ...current[id], busy } })}
-                localChatVariant={ui.variant as LocalChatVariant} mockReplyDelayMs={ui.replyDelayMs} showPlacementGuide={ui.placementGuide} />
+                localChatVariant={ui.variant as LocalChatVariant} />
             </DraggableDiagramCanvas>
           </div>)}
           {!active && <div className="mapping-empty"><h1>{snapshot ? "Create a project diagram" : error ? "Could not load project diagrams" : "Loading project diagrams…"}</h1>

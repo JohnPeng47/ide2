@@ -1,7 +1,14 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { LocalChatVerbosityToggle } from "./LocalChatVerbosityToggle";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent
+} from "react";
 import {
   isLocalChatSubmitHotkey,
   type LocalChatThread,
+  type LocalChatVerbosity,
   type LocalChatVariant
 } from "../localChat";
 
@@ -10,6 +17,8 @@ export function LocalChatConvo(props: {
   variant: LocalChatVariant;
   onSubmit: (message: string) => void;
   onClose: () => void;
+  onVerbosityChange: (value: LocalChatVerbosity) => void;
+  onRetry: () => void;
 }) {
   const [draft, setDraft] = useState("");
   const transcriptRef = useRef<HTMLDivElement>(null);
@@ -51,11 +60,16 @@ export function LocalChatConvo(props: {
         {props.thread.pending ? (
           <article className="is-assistant is-pending" data-local-chat-pending="true">
             <span>AI</span>
-            <p>thinking<span aria-hidden="true">…</span></p>
+            <p>{props.thread.progress ?? "Thinking…"}</p>
           </article>
         ) : null}
       </div>
 
+      {props.thread.error && <div className="local-chat-error" role="alert">
+        <p>{props.thread.error}</p>
+        <button type="button" onClick={props.onRetry} disabled={props.thread.pending}>Retry</button>
+      </div>}
+      <LocalChatVerbosityToggle value={props.thread.verbosity} disabled={props.thread.pending} onChange={props.onVerbosityChange} />
       <form onSubmit={submit}>
         <label>
           <span>Follow up</span>

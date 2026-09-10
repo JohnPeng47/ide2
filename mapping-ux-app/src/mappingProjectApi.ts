@@ -1,10 +1,11 @@
 import seed from "../data/project-snapshot.json";
+import extraction from "../data/extraction.json";
 import type { ProjectRecord } from "./domain";
 import type { ProjectRepresentationCatalogRecord, ProjectRepresentationRecord, ProjectRepresentationRevisionRecord } from "./projectCatalog";
 import { projectCanvasSnapshot, type SaveProjectDiagramInput } from "./projectDiagramCanvas";
 
 export interface MappingProjectSnapshot { project: ProjectRecord | null; catalog: ProjectRepresentationCatalogRecord | null }
-export const STORAGE_KEY = "mapping-ux-app:project:v1";
+export const STORAGE_KEY = `mapping-ux-app:project:v2:${extraction.primaryDiagramId}:${seed.catalog.representations[extraction.primaryDiagramId as keyof typeof seed.catalog.representations].currentRevisionId}`;
 export async function loadMappingProject(): Promise<MappingProjectSnapshot> {
   const stored = localStorage.getItem(STORAGE_KEY);
   return stored ? JSON.parse(stored) : structuredClone(seed) as MappingProjectSnapshot;

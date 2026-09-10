@@ -1,8 +1,19 @@
 {
-  "sourceUrl": "http://127.0.0.1:5177/mapping?diagram=representation-a302e06c3b42121f3297b1a1dbffeee7",
-  "primaryDiagramId": "representation-a302e06c3b42121f3297b1a1dbffeee7",
+  "sourceUrl": "http://127.0.0.1:5177/mapping?diagram=representation-9044402993fccf94debfaa08a438e767",
+  "primaryDiagramId": "representation-9044402993fccf94debfaa08a438e767",
   "supportingRepresentationIds": [
-    "representation-c8c804dd293ff4b77605e18d4bf168f0"
+    "representation-6d6908f198879f4a2a9a919a638db013"
   ],
-  "reason": "Only projection targets used by the selected diagram are retained as supporting data."
+  "sourceFiles": {
+    "src/mapping/components/MappingPocPage.tsx": "current source",
+    "src/mapping/components/MappingSubmenu.tsx": "current source",
+    "src/core/components/DraggableDiagramCanvas.tsx": "current source",
+    "src/core/lineGrid.ts": "current source",
+    "src/mapping/components/MappingPocSelectionCanvas.tsx": "recovered original projection snapshot",
+    "src/core/diagramProjection.ts": "current source",
+    "src/core/compactionProjection.ts": "current source",
+    "src/mapping/components/LocalChatConvo.tsx": "current source",
+    "src/mapping/components/MappingDiagramExplorer.tsx": "current source"
+  },
+  "reason": "The selected diagram, all linked representations and revisions, projection and compaction mappings, evidence, and exact source snapshots are bundled for standalone use."
 }

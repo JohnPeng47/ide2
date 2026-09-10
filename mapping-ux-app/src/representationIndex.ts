@@ -1,5 +1,5 @@
-import type { DiagramCodeEntityMapRecord, DiagramElementMapping } from "./domain";
 import { parseAsciiTree } from "./asciiTree";
+import type { DiagramCodeEntityMapRecord, DiagramElementMapping } from "./domain";
 
 export interface RepresentationRevision {
   artifactId: string;

@@ -7,19 +7,21 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "check:browser": "node scripts/check-browser.mjs"
+    "check:browser": "node scripts/check-browser.mjs",
+    "check:data": "node scripts/check-data.mjs"
   },
   "dependencies": {
+    "@new-diagram/ui-test-framework": "file:packages/ui-test-framework",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "@new-diagram/ui-test-framework": "file:packages/ui-test-framework"
+    "shiki": "4.4.3"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "5.2.0",
-    "vite": "7.3.6",
-    "typescript": "5.9.3",
+    "@types/node": "24.13.3",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
-    "@types/node": "24.13.3"
+    "@vitejs/plugin-react": "5.2.0",
+    "typescript": "5.9.3",
+    "vite": "7.3.6"
   }
 }

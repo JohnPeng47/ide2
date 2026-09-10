@@ -25,3 +25,45 @@ export async function promptMappingPocSelection(request: MappingPocPromptRequest
     : m.line <= result.oldEndLine ? [] : [{ ...m, line: m.line + result.verticalDelta }]);
   return result;
 }
+
+export { loadMappingProject as loadProjectRepresentations } from "./mappingProjectApi";
+export type { MappingProjectSnapshot as ProjectRepresentationsSnapshot } from "./mappingProjectApi";
+
+export interface SourceSnippet { path: string; startLine: number; lines: string[] }
+export interface ProjectSourceFile extends SourceSnippet { sourceSha256: string }
+
+export async function fetchProjectSourceFile(projectId: string, path: string, signal?: AbortSignal): Promise<ProjectSourceFile> {
+  signal?.throwIfAborted();
+  const project = (await loadMappingProject()).project;
+  if (!project || project.id !== projectId) throw new Error("Source belongs to another project");
+  const { default: files } = await import("../data/source-files.json");
+  signal?.throwIfAborted();
+  const file = (files as Record<string, ProjectSourceFile>)[path];
+  if (!file) throw new Error(`Source file was not bundled: ${path}`);
+  return structuredClone(file);
+}
+
+export const localChatResponder: import("./localChat").LocalChatResponder = {
+  async reply(request, options) {
+    options?.signal?.throwIfAborted();
+    options?.onProgress?.("Preparing demo reply…");
+    const snapshot = await loadMappingProject();
+    const revision = snapshot.catalog?.revisions[request.context.baseRevisionId ?? ""];
+    const selected = request.context.mappings.filter((mapping) =>
+      mapping.line >= request.selection.rect.startLine && mapping.line <= request.selection.rect.endLine
+      && mapping.startColumn <= request.selection.rect.endColumn && mapping.endColumn >= request.selection.rect.startColumn
+    );
+    const ranges = request.context.sourceRanges ?? selected.flatMap((mapping) =>
+      (revision?.evidence[mapping.entityId]?.sourceRanges ?? []).map((range) => ({
+        mappingId: mapping.id, elementId: mapping.entityId, elementLabel: revision?.evidence[mapping.entityId]?.label ?? mapping.entityId,
+        diagramLine: mapping.line, startColumn: mapping.startColumn, endColumn: mapping.endColumn,
+        path: range.path, startLine: range.startLine, endLine: range.endLine, lines: range.originalLines ?? []
+      }))
+    );
+    options?.onContext?.(ranges);
+    options?.signal?.throwIfAborted();
+    const detail = request.verbosity === "high"
+      ? ` The selected region links to ${ranges.length} saved source ranges. Open the call tree with N, then compactions and source to inspect the implementation. This conversation stays attached to your selection and supports follow-up questions.` : " Open its call tree, compactions, and source windows to inspect the implementation.";
+    return `Demo reply: ${request.selection.summary}.${detail} No language model is connected in this standalone copy.`;
+  }
+};
