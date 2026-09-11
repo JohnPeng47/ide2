@@ -70,9 +70,12 @@ export function DraggableDiagramCanvas(props: {
       surface.style.transition = animate ? `transform ${TRANSITION_MS}ms ease` : "none";
       surface.style.transform = `translate3d(${transform.offset.x}px, ${transform.offset.y}px, 0) scale(${transform.scale})`;
     }
-    if (zoomOutputRef.current) {
-      zoomOutputRef.current.value = `${Math.round(transform.scale * 100)}%`;
-      zoomOutputRef.current.textContent = `${Math.round(transform.scale * 100)}%`;
+    const zoomOutput = zoomOutputRef.current;
+    const zoomLabel = `${Math.round(transform.scale * 100)}%`;
+    // Setting output.value replaces its text node, even if the zoom is unchanged.
+    // Panning must not invalidate document layout on every pointer movement.
+    if (zoomOutput && zoomOutput.value !== zoomLabel) {
+      zoomOutput.value = zoomLabel;
     }
   }, []);
 

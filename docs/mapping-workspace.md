@@ -63,6 +63,18 @@ edits, retained effects, control drafts, and pan/zoom. Restore workspace replace
 workspace with the saved snapshot. The saved workspace is also restored on page reload.
 These explicit commands are separate from Save, which creates a diagram representation revision.
 
+Live source scroll offsets and camera transforms are kept in a workspace-scoped
+`SourcePaneViewState`, outside React's display state. Source scroll events update only their
+viewport entry; camera movements write the canvas transform without updating the page's
+drafts. `capture()` samples mounted source viewers directly, retains the last position of
+unmounted panes, and merges those positions and the camera into the existing v2 snapshot.
+This also captures scrolling immediately before Save or Export, before a scroll event arrives.
+Restore/Import replaces the runtime state; file switches and pane deletion discard obsolete
+entries. Source rows are memoized independently of viewport callbacks, so scrolling and
+panning cannot restart the full-file block measurements. The current renderer retains native
+browser search and selection with measured offscreen chunks; it does not virtualize DOM rows.
+
+
 Export downloads the same snapshot as JSON. Import validates it and replaces the current
 workspace; Save workspace makes an imported workspace the default on reload. Import requires
 the same project ID. It is not a portable project/artifact export: projection content is

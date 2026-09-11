@@ -1,18 +1,27 @@
-import { useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { fetchProjectSourceFile, type ProjectSourceFile } from "../../core/api";
 import { SourceCodeView } from "../../core/components/SourceCodeView";
 import type { SourceCodePaneView } from "../sourceCodePane";
 import type { SourceCodePaneContent } from "../displayModel";
 import { sourceCodeCompaction } from "../sourceCodeCompaction";
+import { SourcePaneDocumentActiveContext, SourcePaneDocumentContext, SourcePaneViewStateContext } from "./SourcePaneViewStateContext";
 
 const presentation = { syntaxHighlighting: "code", markdownRendering: "source", wrap: false, sourceCompaction: true } as const;
 
 /** Source content only; DisplayPane owns the frame, geometry, and navigation. */
-export function SourceCodePane(props: {
+export const SourceCodePane = memo(function SourceCodePane(props: {
+  id: string;
   content: SourceCodePaneContent;
-  onChange: (patch: Partial<SourceCodePaneView>) => void;
+  onChange: (id: string, patch: Partial<SourceCodePaneView>) => void;
 }) {
   const { content } = props;
+  const viewState = useContext(SourcePaneViewStateContext);
+  const documentId = useContext(SourcePaneDocumentContext);
+  const active = useContext(SourcePaneDocumentActiveContext);
+  const scrollState = useMemo(() => viewState?.bind(documentId, props.id, content.sourceFile, content.scroll),
+    [viewState, documentId, props.id, content.sourceFile, content.scroll]);
+  const onChange = useCallback((patch: Partial<SourceCodePaneView>) => props.onChange(props.id, patch),
+    [props.id, props.onChange]);
   const file = content.files.find(file => file.sourceFile === content.sourceFile)!;
   const [preview, setPreview] = useState<ProjectSourceFile | null>(null);
   const [error, setError] = useState("");
@@ -41,7 +50,7 @@ export function SourceCodePane(props: {
     endLine: target?.endLine ?? 1, compactedSource: stale ? undefined : compactedSource }),
   [file.sourceFile, target, stale, compactedSource]);
   const reveal = (index: number) => {
-    props.onChange({ rangeIndex: index, scroll: undefined });
+    onChange({ rangeIndex: index, scroll: undefined });
     setRevealRequestId(id => id + 1);
   };
 
@@ -49,7 +58,8 @@ export function SourceCodePane(props: {
     aria-label={`Source file ${file.sourceFile}`}>
     <div className="mapping-source-file-header">
       <select aria-label="Projected source file" value={file.sourceFile} onChange={event => {
-        props.onChange({ sourceFile: event.target.value, rangeIndex: 0, scroll: undefined });
+        viewState?.resetPane(documentId, props.id);
+        onChange({ sourceFile: event.target.value, rangeIndex: 0, scroll: undefined });
       }}>
         {content.files.map(file => <option key={file.sourceFile} value={file.sourceFile}>{file.sourceFile}</option>)}
       </select>
@@ -57,7 +67,7 @@ export function SourceCodePane(props: {
     </div>
     <div className="mapping-source-toolbar">
       <button type="button" aria-pressed={content.showCompactions} disabled={!loaded || stale}
-        onClick={() => props.onChange({ showCompactions: !content.showCompactions })}>Compact source</button>
+        onClick={() => onChange({ showCompactions: !content.showCompactions })}>Compact source</button>
       <span>{target ? `Lines ${target.startLine}–${target.endLine}` : "No mapped ranges"}</span>
       <button type="button" aria-label="Previous mapped range" disabled={!loaded || stale || !entries.length}
         onClick={() => reveal((rangeIndex + entries.length - 1) % entries.length)}>↑</button>
@@ -69,8 +79,9 @@ export function SourceCodePane(props: {
       : !loaded ? <p className="mapping-source-message" role="status">Loading source…</p>
       : <SourceCodeView key={`${content.projectId}:${file.sourceFile}`} preview={loaded}
         range={range}
-        compacted={!stale && content.showCompactions} presentation={presentation} highlightedRanges={stale ? [] : entries}
+        compacted={!stale && content.showCompactions} presentation={presentation} highlightedRanges={stale ? [] : entries} deferOffscreen
         targetLine={stale ? 1 : target?.startLine} revealRequestId={revealRequestId}
-        initialScrollPosition={content.scroll} onScrollPositionChange={scroll => props.onChange({ scroll })} />}
+        initialScrollPosition={content.scroll} scrollState={scrollState} active={active}
+        onScrollPositionChange={scrollState ? undefined : scroll => onChange({ scroll })} />}
   </section>;
-}
+});

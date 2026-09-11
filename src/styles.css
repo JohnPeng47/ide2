@@ -439,10 +439,11 @@ button.highlight-tree-label:hover, button.highlight-tree-label:focus-visible { o
 .source-workspace__body { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
 .terminal-markdown-frame { display: block; width: 100%; height: 100%; min-width: 0; min-height: 0; border: 0; background: #0f1115; }
 .source-code-viewer { --source-gutter-width: 6.25rem; --source-copy-padding: 0.85rem; width: 100%; height: 100%; min-width: 0; min-height: 0; overflow: auto; background: var(--source-bg); color: var(--source-fg); font: 12px/1.55 var(--font-mono); outline: 0; tab-size: 4; }
-.source-code-viewer { position: relative; }
 .source-code-viewer.is-revealed { box-shadow: inset 2px 0 var(--accent-cyan); }
+.source-code-viewer { position: relative; }
 .source-code-viewer:focus-visible { box-shadow: inset 2px 0 var(--accent-cyan), inset 0 0 0 1px rgb(136 192 208 / 42%); }
 .source-code-content { width: max-content; min-width: 100%; padding: 0.65rem 0; }
+.source-code-chunk { display: flow-root; }
 .source-code-line, .source-fold-placeholder { display: grid; width: 100%; min-width: max-content; grid-template-columns: var(--source-gutter-width) minmax(max-content, 1fr); align-items: baseline; border: 0; background: transparent; font: inherit; line-height: inherit; text-align: left; white-space: pre; }
 .source-code-line:hover { background: rgb(255 255 255 / 3%); }
 .source-code-line.is-selected { background: rgb(136 192 208 / 11%); box-shadow: inset 2px 0 var(--accent-cyan); }
@@ -1197,7 +1198,8 @@ button.experiment-tree-line:hover { background: rgb(255 255 255 / 3%); }
 
 /* Source content uses the retained DisplayPane frame and its saved allocation. */
 .selection-effect-frame[data-pane-content="source-code"] > .selection-effect-body { flex: 1; overflow: hidden; }
-.mapping-source-pane { display: flex; height: 100%; min-height: 0; min-width: 0; flex-direction: column; font: 12px/1.5 var(--font-mono); }
+/* Keep canvas drag selection styles from propagating through every source token. */
+.mapping-source-pane { display: flex; height: 100%; min-height: 0; min-width: 0; flex-direction: column; font: 12px/1.5 var(--font-mono); user-select: text; }
 .mapping-source-file-header, .mapping-source-toolbar { display: flex; flex: none; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--gutter); }
 .mapping-source-file-header select { min-width: 0; flex: 1; }
 .mapping-source-file-header small { flex: none; }
@@ -1205,6 +1207,7 @@ button.experiment-tree-line:hover { background: rgb(255 255 255 / 3%); }
 .mapping-source-toolbar button:disabled { opacity: .45; cursor: default; }
 .mapping-source-toolbar button[aria-pressed="true"] { border-color: var(--accent-cyan); background: #243b45; }
 .mapping-source-message { margin: 0; padding: 12px; overflow-wrap: anywhere; }
-.mapping-source-pane > .source-code-viewer { flex: 1; height: auto; }
+/* The frame allocates the viewer; its offscreen contents need not participate in canvas painting. */
+.mapping-source-pane > .source-code-viewer { flex: 1; height: auto; contain: strict; }
 .mapping-compaction-file { display: flex; align-items: center; gap: 12px; }
 .mapping-compaction-file small { margin-left: auto; }

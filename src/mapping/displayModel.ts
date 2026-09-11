@@ -44,6 +44,7 @@ export interface SourceCodePaneContent {
   sourceFile: string;
   showCompactions: boolean;
   rangeIndex: number;
+  /** Saved checkpoint; live scrolling is owned by SourcePaneViewState. */
   scroll?: { top: number; left: number };
 }
 export interface ProjectedPane extends DisplayNodeBase {

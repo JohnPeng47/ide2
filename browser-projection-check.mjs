@@ -309,6 +309,35 @@ try {
       const rect = document.querySelector(${JSON.stringify(sourceViewer)}).getBoundingClientRect();
       return { x: rect.left + 100, y: rect.top + 60 };
     })()`);
+    async function measureSourcePan(label) {
+      const beforeSourcePan = await sourcePanState();
+      const zoomSelector = `${active} [aria-label='Diagram zoom']`;
+      const zoomTextNode = (await cdp.send('Runtime.evaluate', {
+        expression: `document.querySelector(${JSON.stringify(zoomSelector)}).firstChild`
+      })).result.objectId;
+      await cdp.send('Performance.enable');
+      const performanceMetrics = async () => Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map(metric => [metric.name, metric.value]));
+      const beforePanMetrics = await performanceMetrics();
+      await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', ...sourcePoint, button: 'middle', buttons: 4, clickCount: 1 });
+      for (let step = 1; step <= 40; step++) {
+        const distance = step <= 20 ? step : 40 - step;
+        await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: sourcePoint.x + distance * 4,
+          y: sourcePoint.y + distance * 2, button: 'middle', buttons: 4 });
+        if (step === 20) assert.notEqual((await sourcePanState()).transform, beforeSourcePan.transform, 'Pan moves the canvas over an open source pane');
+      }
+      await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...sourcePoint, button: 'middle', buttons: 0, clickCount: 1 });
+      const afterPanMetrics = await performanceMetrics();
+      console.log(`Source pane ${label} pan (40 moves, ms):`, Object.fromEntries(['TaskDuration', 'ScriptDuration', 'RecalcStyleDuration'].map(name =>
+        [name, Math.round((afterPanMetrics[name] - beforePanMetrics[name]) * 1000)])));
+      await cdp.send('Performance.disable');
+      const retainedZoomText = await cdp.send('Runtime.callFunctionOn', { objectId: zoomTextNode,
+        functionDeclaration: `function() { return this === document.querySelector(${JSON.stringify(zoomSelector)}).firstChild; }`, returnByValue: true });
+      await cdp.send('Runtime.releaseObject', { objectId: zoomTextNode });
+      assert.equal(retainedZoomText.result.value, true, 'Panning must not replace the unchanged zoom text and invalidate layout');
+      assert.deepEqual(await sourcePanState(), beforeSourcePan, 'Pan preserves source scroll and returns to the original transform');
+      assert.equal(await evaluate(cdp, 'window.getSelection()?.toString()'), '', 'Panning over source must not select text');
+    }
+    await measureSourcePan('expanded');
     assert.deepEqual(await selectedLines(), [12, detailLine]);
     await cdp.send('Input.dispatchMouseEvent', { type: 'mouseWheel', ...sourcePoint, deltaX: 300, deltaY: 0 });
     await waitFor(async () => (await sourcePanState()).left > 0, { message: 'Offscreen wide lines must retain horizontal scrolling' });
@@ -337,6 +366,7 @@ try {
     await waitFor(async () => Math.abs((await scroll()) - savedScroll) < 1);
     await click(cdp, `${sourcePane} [aria-label='Collapse pane']`);
     await waitFor(async () => !await evaluate(cdp, `Boolean(document.querySelector(${JSON.stringify(sourceViewer)}))`));
+    await measureSourcePan('collapsed');
     await click(cdp, `${sourcePane} [aria-label='Expand pane']`);
     await waitFor(async () => Math.abs((await scroll()) - savedScroll) < 1);
     await saveWorkspace(cdp);

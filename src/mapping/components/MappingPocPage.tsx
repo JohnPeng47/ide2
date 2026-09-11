@@ -15,6 +15,8 @@ import type { LocalChatVariant } from "../localChat";
 import type { MappingGridDocument } from "../mappingGrid";
 import { sceneFromRevision, singleDiagramScene } from "../../core/projectDiagramCanvas";
 import { saveMappingProjectDiagram } from "../mappingProjectApi";
+import { SourcePaneViewState } from "../sourcePaneViewState";
+import { SourcePaneDocumentActiveContext, SourcePaneDocumentContext, SourcePaneViewStateContext } from "./SourcePaneViewStateContext";
 
 const LOCAL_CHAT_UI_CONTROLS = {
   variant: {
@@ -46,6 +48,7 @@ const dirty = (draft: Draft) => draft.name !== draft.savedName || JSON.stringify
 export function MappingPocPage(props: { onStudio: () => void; onExperiments: () => void;
   registerNavigationGuard?: (guard: (() => boolean) | undefined) => void }) {
   const [workspaceEpoch, setWorkspaceEpoch] = useState(0);
+  const [viewState, setViewState] = useState(() => new SourcePaneViewState());
   const [workspaceStatus, setWorkspaceStatus] = useState("");
   const [workspaceBusy, setWorkspaceBusy] = useState(false);
   const importRef = useRef<HTMLInputElement>(null);
@@ -78,6 +81,7 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
 
   const restore = (workspace: MappingWorkspaceSnapshot, data = snapshot) => {
     if (workspace.projectId !== data?.project?.id) throw new Error("Workspace belongs to another project");
+    setViewState(new SourcePaneViewState());
     setDrafts(Object.fromEntries(workspace.documents.map(doc => [doc.representationId, { ...doc, busy: false }])));
     const id = workspace.activeDocumentId ?? workspace.documents[0]?.representationId;
     setActiveId(id); setWorkspaceEpoch(value => value + 1); setCreating(false);
@@ -89,7 +93,8 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
     return { schemaVersion: 2, projectId: snapshot.project.id, activeDocumentId: activeId,
       documents: Object.entries(drafts).map(([representationId, draft]) => ({ representationId, name: draft.name,
         savedName: draft.savedName, savedScene: draft.savedScene, revisionId: draft.revisionId,
-        document: draft.document, canvas: draft.canvas, viewport: draft.viewport })) };
+        document: draft.document, canvas: { ...draft.canvas, display: viewState.captureDisplay(representationId, draft.canvas.display) },
+        viewport: viewState.captureCamera(representationId, draft.viewport) })) };
   };
   const workspaceAction = async (action: 'save' | 'restore' | 'export', imported?: string) => {
     setWorkspaceBusy(true); setError('');
@@ -171,7 +176,11 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
     finally { setSavingId(undefined); }
   };
 
-  return <UiTestFramework id="mapping-local-chat" title="Local chat variants" controls={LOCAL_CHAT_UI_CONTROLS}>
+  useEffect(() => {
+    for (const [id, draft] of Object.entries(drafts)) viewState.prune(id, draft.canvas.display);
+  }, [drafts, viewState]);
+
+  return <SourcePaneViewStateContext.Provider value={viewState}><UiTestFramework id="mapping-local-chat" title="Local chat variants" controls={LOCAL_CHAT_UI_CONTROLS}>
     {(ui) => <main className="mapping-poc-shell" data-local-chat-variant={ui.variant}>
       <header className="studio-header mapping-poc-header">
         <MappingSubmenu projectName={snapshot?.project?.name ?? "Project"} name={active?.name ?? ""}
@@ -197,9 +206,9 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
       </header>
       <section className="mapping-poc-workspace">
         <div className="mapping-viewport">
-          {Object.entries(drafts).map(([id, draft]) => <div key={`${workspaceEpoch}:${id}`} className="mapping-document-view" hidden={id !== activeId}>
+          {Object.entries(drafts).map(([id, draft]) => <SourcePaneDocumentContext.Provider key={`${workspaceEpoch}:${id}`} value={id}><SourcePaneDocumentActiveContext.Provider value={id === activeId}><div className="mapping-document-view" hidden={id !== activeId}>
             <DraggableDiagramCanvas className="mapping-poc-canvas" enabled resetKey={id} leftInset={340} focusBox={draft.focusBox}
-              initialTransform={draft.viewport} onTransformChange={viewport => setDrafts(current => current[id] ? { ...current, [id]: { ...current[id], viewport } } : current)}>
+              initialTransform={draft.viewport} onTransformChange={viewport => viewState.setCamera(id, viewport)}>
               <MappingPocSelectionCanvas initialCanvasState={draft.canvas}
                 onCanvasStateChange={canvas => setDrafts(current => !current[id] || current[id].canvas === canvas ? current : { ...current, [id]: { ...current[id], canvas } })}
                 initialDocument={draft.document} active={id === activeId && !creating} focusBox={draft.focusBox}
@@ -210,7 +219,7 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
                 onBusyChange={(busy) => setDrafts((current) => current[id].busy === busy ? current : { ...current, [id]: { ...current[id], busy } })}
                 localChatVariant={ui.variant as LocalChatVariant} />
             </DraggableDiagramCanvas>
-          </div>)}
+          </div></SourcePaneDocumentActiveContext.Provider></SourcePaneDocumentContext.Provider>)}
           {!active && <div className="mapping-empty"><h1>{snapshot ? "Create a project diagram" : error ? "Could not load project diagrams" : "Loading project diagrams…"}</h1>
             {snapshot && <button type="button" onClick={() => setCreating(true)}>New diagram</button>}</div>}
           <FloatingPane><MappingDiagramExplorer projectName={snapshot?.project?.name ?? "Project"} diagrams={diagrams}
@@ -241,5 +250,5 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
           <button type="submit" disabled={Boolean(savingId) || !newName.trim() || (!copyCurrent && !newAscii.trim()) || (copyCurrent && active?.busy)}>Create diagram</button></footer>
       </form></div>}
     </main>}
-  </UiTestFramework>;
+  </UiTestFramework></SourcePaneViewStateContext.Provider>;
 }

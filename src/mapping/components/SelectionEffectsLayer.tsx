@@ -1,5 +1,5 @@
 import { SourceCodePane } from "./SourceCodePane";
-import { openSourceCodePane, updateSourceCodePane } from "../sourceCodePane";
+import { openSourceCodePane, updateSourceCodePane, type SourceCodePaneView } from "../sourceCodePane";
 import { useCallback, useLayoutEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { projectCompactions } from '../../core/compactionProjection';
 import { addDisplayNode, displayGeometry, measureDisplayNode, updateDisplayGeometry, setExpansion, type DisplayState, type ProjectedPane, type SelectionRegion } from '../displayModel';
@@ -19,6 +19,9 @@ export function SelectionEffectsLayer(props: {
   const [draft, setDraft] = useState<{ paneId: string; start: number; end: number; dragging: boolean } | null>(null);
   const measure = useCallback((id: string, width: number, height: number) =>
     props.setState(current => measureDisplayNode(current, id, width, height)), [props.setState]);
+  // Keep source content independent of the workspace renders caused by pan and selection gestures.
+  const changeSource = useCallback((id: string, patch: Partial<SourceCodePaneView>) =>
+    props.setState(state => updateSourceCodePane(state, id, patch)), [props.setState]);
   useLayoutEffect(() => {
     if (!props.cell.width || !props.cell.height) return;
     props.setState(current => {
@@ -131,8 +134,8 @@ export function SelectionEffectsLayer(props: {
                 if (draft?.paneId === id) { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); setDraft({ ...draft, dragging: false }); }
               }} onPointerCancel={() => setDraft(null)}>{content.result.ascii.split('\n').map((line, index) => <span key={index} className={draft?.paneId === id && index >= Math.min(draft.start, draft.end) && index <= Math.max(draft.start, draft.end) ? 'projected-row is-selected' : 'projected-row'}>{line}{index < content.result.ascii.split('\n').length - 1 ? '\n' : ''}</span>)}</pre>
               {draft?.paneId === id && !draft.dragging && <div className="projected-selection-actions"><button type="button" disabled={!canCompact || !selectedIds?.length} onClick={() => openCompaction(pane, selectedIds)}>Project selected rows</button><button type="button" onClick={() => setDraft(null)}>Cancel</button></div>}
-            </> : content.kind === 'source-code' ? <SourceCodePane content={content}
-              onChange={patch => props.setState(state => updateSourceCodePane(state, id, patch))} /> : <div data-projected-compactions>{content.files.map(file => <section key={file.sourceFile} data-compaction-file={file.sourceFile} data-compaction-rows={file.rows.filter(row => row.selected).map(row => row.treeLine).join(' ')}>
+            </> : content.kind === 'source-code' ? <SourceCodePane id={id} content={content}
+              onChange={changeSource} /> : <div data-projected-compactions>{content.files.map(file => <section key={file.sourceFile} data-compaction-file={file.sourceFile} data-compaction-rows={file.rows.filter(row => row.selected).map(row => row.treeLine).join(' ')}>
               <header className="mapping-compaction-file"><span>{file.sourceFile}</span>
                 <button type="button" aria-label={`Open source ${file.sourceFile}`} disabled={!props.catalog?.projectId}
                   onClick={() => props.setState(state => openSourceCodePane(state, id, props.catalog!.projectId, file.sourceFile))}>Open source</button><small>{file.selectedLineCount} mapped rows · source snapshot {file.sourceSha256.slice(0, 8)}</small></header><pre>{file.ascii}</pre>
