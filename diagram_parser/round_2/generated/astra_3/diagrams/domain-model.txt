@@ -1,0 +1,138 @@
+MAPPING DOMAIN MODEL
+Relationships and fields shown in the supplied source excerpts.
+[ref] denotes a reference; [derived] denotes a computed view.
+
+Mapping workspace
++-- ProjectRepresentationsSnapshot
+|   +-- Project
+|   |   +-- id
+|   |   \-- name
+|   \-- Catalog
+|       +-- Representations [keyed by representation ID]
+|       |   \-- ProjectRepresentationRecord
+|       |       +-- id
+|       |       +-- name
+|       |       +-- status [workspace lists settled diagrams]
+|       |       \-- currentRevisionId [ref] -> Revision
+|       \-- Revisions [keyed by revision ID]
+|           \-- ProjectRepresentationRevisionRecord
+|               +-- id / representationId / projectId
+|               +-- Scene [reconstructed by sceneFromRevision]
+|               \-- Evidence
+|
++-- Editing session
+|   +-- activeId [ref] -> active representation and its draft
+|   +-- Drafts [keyed by representation ID; retained across diagram switches]
+|   |   \-- Draft
+|   |       +-- name / savedName
+|   |       +-- revisionId [ref] -> revision used for optimistic saving
+|   |       +-- document -> Mapping document
+|   |       +-- savedScene [serialized scene baseline]
+|   |       +-- busy
+|   |       +-- focusBox { id [ref] -> GridBox, serial }
+|   |       \-- dirty [derived from current name/scene versus saved baseline]
+|   +-- Save operation
+|   |   +-- projectId / representationId / expectedRevisionId
+|   |   +-- Captured name and scene
+|   |   \-- Result -> refreshed snapshot and current revision reference
+|   \-- Create operation
+|       +-- New name
+|       +-- Initial ASCII -> single-diagram scene
+|       \-- Or current draft scene + sourceRevisionId -> copied diagram
+|
++-- Mapping document
+|   +-- scene -> LineGridScene
+|   |   +-- root -> GridBox [recursive]
+|   |   |   +-- Shared properties
+|   |   |   |   +-- id [unique within the resolved scene]
+|   |   |   |   +-- position { column, row } [relative to parent]
+|   |   |   |   +-- minimumSize? { columns, rows }
+|   |   |   |   +-- collapsed
+|   |   |   |   \-- collapsedContentId? [ref] -> Content
+|   |   |   +-- Diagram box [kind = diagram]
+|   |   |   |   \-- contentId [ref] -> Content
+|   |   |   \-- Container box [kind = container]
+|   |   |       +-- children -> GridBox[]
+|   |   |       \-- layout { collisionPolicy: push-right, gap }
+|   |   \-- contents [keyed by content ID]
+|   |       \-- Content
+|   |           +-- id / ascii / revision
+|   |           \-- mappings [diagram-to-source associations]
+|   +-- evidence? [used to reconstruct mapped nodes and sections]
+|   +-- nodes [keyed by content ID]
+|   |   \-- Mapped node
+|   |       +-- id
+|   |       +-- head { line, startColumn, endColumn }
+|   |       \-- sourceRanges[]
+|   \-- sections [keyed by content ID]
+|
++-- Canvas view [session state and derived geometry]
+|   +-- ResolvedGridBox [derived recursively from LineGridScene]
+|   |   +-- box [ref] -> GridBox
+|   |   +-- bounds { column, row, columns, rows } [absolute grid geometry]
+|   |   +-- contentId? [normal or collapsed content reference]
+|   |   \-- children -> ResolvedGridBox[] [empty when collapsed]
+|   +-- CanvasTransform { offset: { x, y }, scale }
+|   +-- Viewport size / left inset
+|   \-- Pointer gestures -> pan / pinch; focusBox -> centered box
+|
++-- Selection and diagram editing
+|   +-- Active box [ref] -> GridBox and its Content
+|   +-- Selection rectangle { startLine, endLine, startColumn, endColumn }
+|   +-- Selected node IDs [derived from head intersection with rectangle]
+|   +-- Selected source ranges / evidence IDs -> projection or prompt context
+|   \-- Prompt operation
+|       +-- Shared context: project, representation, base revision, session
+|       +-- Input: ASCII, content revision, mappings, selection, instruction
+|       +-- Patch -> updated content, mappings, revision, and scene layout
+|       \-- Generate -> new Content + Diagram box in a target container
+|           \-- Placement region -> relative position and minimum size
+|
++-- Evidence projection
+|   +-- ProjectProjectionRecord
+|   |   +-- projectId
+|   |   +-- targetRepresentationId / targetRevisionId [pinned references]
+|   |   \-- links[]
+|   |       +-- sourceEvidenceIds[]
+|   |       \-- targetNodeIds[] [ref] -> target revision's projection tree
+|   +-- Projection tree [derived from target revision]
+|   |   +-- rootIds[]
+|   |   \-- Nodes { id, text, line, order, parentId, childIds[] }
+|   \-- ProjectionSelectionResult [derived for selected evidence IDs]
+|       +-- matchedSourceEvidenceIds / unmatchedSourceEvidenceIds
+|       +-- targetNodeIds [directly linked nodes]
+|       +-- projectedNodeIds [targets and descendants]
+|       +-- visibleNodeIds [projected nodes plus ancestor context]
+|       +-- rows[] { nodeId, sourceLine }
+|       \-- ascii -> call-tree companion view
+|
++-- Compaction projection
+|   +-- CompactionProjection
+|   |   +-- links[] { callTreeNodeId, file, treeLines[] }
+|   |   \-- files[] -> CompactionSnapshot
+|   |       +-- sourceFile / sourceSha256
+|   |       +-- Compaction tree [indexed for projection]
+|   |       \-- mappings[] { treeLine, sourceRanges }
+|   \-- Projected compactions [derived for selected call-tree node IDs]
+|       \-- Per-file result
+|           +-- sourceFile / sourceSha256
+|           +-- ascii [selected rows plus ancestor context]
+|           +-- rows[] { treeLine, selected, sourceRanges }
+|           +-- selectedLineCount
+|           \-- Source-pane navigation -> corresponding source file
+|
++-- Local conversation
+|   \-- LocalChatThread
+|       +-- title
+|       +-- messages[] { id, role, text }
+|       |   +-- user -> plain text
+|       |   \-- assistant -> rendered Markdown
+|       +-- pending / progress / error
+|       +-- verbosity
+|       \-- Actions: follow up, retry, change verbosity, collapse
+|
+\-- Workspace navigation [derived views]
+    +-- Diagram explorer -> settled representations, name filter, dirty marks
+    +-- Box explorer -> active scene's recursive GridBox tree
+    +-- Diagram URL parameter -> active representation
+    \-- Navigation guard -> unsaved or busy drafts require leave confirmation

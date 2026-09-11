@@ -1,0 +1,145 @@
+MAPPING DOMAIN MODEL
+Based on the supplied source excerpts.
+Tree branches group concepts; references identify relationships across branches.
+
+Project diagram workspace
+|
++-- ProjectRepresentationsSnapshot (loaded / saved project state)
+|   +-- Project
+|   |   +-- id
+|   |   `-- name
+|   `-- Catalog
+|       +-- Representations [by representation id]
+|       |   `-- ProjectRepresentationRecord
+|       |       +-- id / projectId / name
+|       |       +-- status (only settled diagrams can be opened)
+|       |       `-- currentRevisionId --> Representation revision
+|       +-- Revisions [by revision id]
+|       |   `-- ProjectRepresentationRevisionRecord
+|       |       +-- id / representationId / projectId
+|       |       +-- Scene reconstructed by sceneFromRevision(revision)
+|       |       `-- Evidence used by mappingDocumentFromScene(...)
+|       `-- Projection records --> Evidence projection model below
+|
++-- Editable diagram session (local workspace state)
+|   +-- activeId --> Open draft / project representation
+|   +-- Drafts [by representation id]
+|   |   `-- Draft
+|   |       +-- name / document (current editable state)
+|   |       +-- savedName / savedScene (saved baseline)
+|   |       +-- revisionId --> Revision used as save / request base
+|   |       +-- busy (pending edits)
+|   |       `-- focusBox { id, serial } --> GridBox
+|   +-- Save
+|   |   +-- Input: projectId / representationId / expectedRevisionId
+|   |   +-- Payload: name / document.scene
+|   |   `-- Result: updated snapshot / saved baseline / revisionId
+|   +-- Create
+|   |   +-- New name + initial ASCII --> Single-diagram scene
+|   |   `-- Copy current --> sourceRevisionId + current scene
+|   `-- Navigation protection
+|       `-- Dirty or busy drafts --> Leave-page warning / navigation guard
+|
++-- Mapping document
+|   +-- LineGridScene
+|   |   +-- contents [by content id]
+|   |   |   `-- Grid content
+|   |   |       +-- id
+|   |   |       +-- ascii / revision
+|   |   |       `-- mappings --> Source evidence / source ranges
+|   |   `-- root: GridBox (recursive spatial hierarchy)
+|   |       +-- Shared box properties
+|   |       |   +-- id
+|   |       |   +-- position { column, row } (relative to parent)
+|   |       |   +-- minimumSize? { columns, rows }
+|   |       |   +-- collapsed
+|   |       |   `-- collapsedContentId? --> Grid content
+|   |       +-- Diagram box (kind = diagram)
+|   |       |   `-- contentId --> Grid content
+|   |       `-- Container box (kind = container)
+|   |           +-- children: GridBox[]
+|   |           `-- layout { collisionPolicy: push-right, gap }
+|   +-- evidence (when available)
+|   +-- nodes [by content id]
+|   |   `-- Mapped node: id / head line and columns / sourceRanges
+|   `-- sections [by content id]
+|
++-- Resolved scene (derived geometry)
+|   `-- ResolvedGridBox (recursive)
+|       +-- box --> Original GridBox
+|       +-- bounds { column, row, columns, rows } (absolute)
+|       +-- contentId --> Visible grid content, if any
+|       +-- children: ResolvedGridBox[] (expanded containers only)
+|       `-- Size rules
+|           +-- Measured ASCII + expanded child extents
+|           +-- Expanded boxes also honor minimumSize
+|           `-- Collapsed boxes require collapsed content
+|
++-- Selection and diagram editing
+|   +-- Active box --> GridBox / its content
+|   +-- Selection rectangle
+|   |   +-- startLine / endLine / startColumn / endColumn
+|   |   `-- Intersecting node heads --> Selected node ids / source ranges
+|   +-- Prompt context
+|   |   +-- projectId / representationId / baseRevisionId
+|   |   +-- clientSessionId
+|   |   `-- diagramAscii / diagramRevision / mappings / selection / instruction
+|   +-- Patch operation
+|   |   `-- Agent result --> Replace active content / relayout / commit document
+|   `-- Generate operation
+|       +-- Placement region --> Position / requested minimum size
+|       +-- Target parent --> Source container or root canvas
+|       `-- Agent result --> Insert new diagram box and content / commit document
+|
++-- Evidence projection model
+|   +-- ProjectProjectionRecord
+|   |   +-- projectId
+|   |   +-- targetRepresentationId / targetRevisionId --> Pinned target revision
+|   |   `-- links[]
+|   |       +-- sourceEvidenceIds[] <-- Evidence from selected source nodes
+|   |       `-- targetNodeIds[] --> Target projection tree nodes
+|   +-- Target projection tree (built from pinned revision)
+|   |   +-- rootIds[]
+|   |   `-- nodes [by node id]
+|   |       `-- id / text / line / order / parentId / childIds[]
+|   +-- ProjectionSelectionResult (derived)
+|   |   +-- ascii / rows[] { nodeId, sourceLine }
+|   |   +-- matchedSourceEvidenceIds / unmatchedSourceEvidenceIds
+|   |   +-- targetNodeIds (direct link targets)
+|   |   +-- projectedNodeIds (targets and descendants)
+|   |   `-- visibleNodeIds (projected nodes and their ancestors)
+|   `-- CompactionProjection
+|       +-- links[]
+|       |   `-- callTreeNodeId + file + treeLines[]
+|       +-- files[]: CompactionSnapshot
+|       |   +-- sourceFile / sourceSha256
+|       |   +-- Compacted source tree
+|       |   `-- mappings[]: treeLine --> sourceRanges[]
+|       `-- Projected compactions [derived from selected call-tree node ids]
+|           +-- sourceFile / sourceSha256 / ascii / selectedLineCount
+|           +-- rows[] { treeLine, selected, sourceRanges }
+|           +-- Visible rows = selected rows and ancestors
+|           `-- Source pane --> Selected source file and mapped source ranges
+|
++-- Local conversation
+|   `-- LocalChatThread
+|       +-- title (region under discussion)
+|       +-- messages[]
+|       |   `-- id / role (user or assistant) / text
+|       +-- pending / progress / error
+|       +-- verbosity
+|       `-- Actions: submit follow-up / retry / change verbosity / collapse
+|
+`-- Workspace presentation state
+    +-- Diagram explorer
+    |   +-- Filtered settled representations / active diagram / dirty markers
+    |   `-- Recursive box tree --> Focus selected GridBox
+    +-- Draggable canvas (per mounted diagram)
+    |   +-- Transform { offset: { x, y }, scale }
+    |   +-- Viewport size / left inset
+    |   +-- Pointer pan / pinch / wheel zoom / keyboard navigation
+    |   `-- Center or focus --> Update transform without changing scene geometry
+    `-- Selection companion
+        +-- Call-tree projection
+        +-- Compacted source grouped by file
+        `-- Source file pane

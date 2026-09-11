@@ -1,0 +1,147 @@
+MAPPING DOMAIN MODEL
+====================
+
+Mapping Workspace
+|
++-- ProjectRepresentationsSnapshot
+|   |
+|   +-- project: Project [0..1]
+|   |   +-- id
+|   |   `-- name
+|   |
+|   `-- catalog
+|       |
+|       +-- representations: ProjectRepresentation [0..*]
+|       |   +-- id
+|       |   +-- projectId ------------------------------> Project.id
+|       |   +-- name
+|       |   +-- status: settled | ...
+|       |   `-- currentRevisionId ----------------------> ProjectRepresentationRevision.id
+|       |
+|       +-- revisions: ProjectRepresentationRevision [0..*]
+|       |   +-- id
+|       |   +-- projectId ------------------------------> Project.id
+|       |   +-- representationId -----------------------> ProjectRepresentation.id
+|       |   +-- scene -----------------------------------> LineGridScene
+|       |   `-- evidence [0..*] -------------------------> SourceEvidence
+|       |
+|       +-- projections: ProjectProjectionRecord [0..*]
+|       |   +-- projectId ------------------------------> Project.id
+|       |   +-- targetRepresentationId -----------------> ProjectRepresentation.id
+|       |   +-- targetRevisionId -----------------------> ProjectRepresentationRevision.id
+|       |   `-- links [0..*]
+|       |       +-- sourceEvidenceIds [1..*] -----------> SourceEvidence.id
+|       |       `-- targetNodeIds [1..*] ---------------> ProjectionTreeNode.id
+|       |
+|       `-- compactionProjection [0..1]
+|           +-- files: CompactionSnapshot [0..*]
+|           |   +-- sourceFile
+|           |   +-- sourceSha256
+|           |   +-- ascii
+|           |   `-- mappings [0..*]
+|           |       +-- treeLine
+|           |       `-- sourceRanges [1..*] ------------> SourceRange
+|           `-- links [0..*]
+|               +-- callTreeNodeId ---------------------> ProjectionTreeNode.id
+|               +-- file -------------------------------> CompactionSnapshot.sourceFile
+|               `-- treeLines [1..*] -------------------> CompactionSnapshot.mappings.treeLine
+|
++-- Draft Registry (keyed by ProjectRepresentation.id)
+|   `-- Draft [0..*]
+|       +-- name
+|       +-- revisionId ---------------------------------> ProjectRepresentationRevision.id
+|       +-- document -----------------------------------> MappingDocument
+|       |   +-- scene: LineGridScene
+|       |   |   +-- contents: GridContent [1..*]
+|       |   |   |   +-- id
+|       |   |   |   +-- ascii
+|       |   |   |   +-- revision
+|       |   |   |   `-- mappings [0..*] ----------------> SourceRange
+|       |   |   `-- root: GridBox
+|       |   |       +-- id
+|       |   |       +-- position { column, row }
+|       |   |       +-- minimumSize? { columns, rows }
+|       |   |       +-- collapsed
+|       |   |       +-- collapsedContentId? ------------> GridContent.id
+|       |   |       `-- kind
+|       |   |           +-- diagram
+|       |   |           |   `-- contentId --------------> GridContent.id
+|       |   |           `-- container
+|       |   |               +-- layout { collisionPolicy: push-right, gap }
+|       |   |               `-- children: GridBox [0..*] (recursive)
+|       |   +-- evidence [0..*] ------------------------> SourceEvidence
+|       |   +-- nodes (keyed by GridContent.id)
+|       |   `-- sections (keyed by GridContent.id)
+|       +-- savedScene (serialized comparison baseline)
+|       +-- savedName
+|       +-- busy
+|       `-- focusBox? { id -----------------------------> GridBox.id, serial }
+|
++-- Active Editing Session
+|   +-- activeId? --------------------------------------> Draft Registry key
+|   +-- selection: SelectionRect [0..1]
+|   |   +-- startLine / endLine
+|   |   `-- startColumn / endColumn
+|   +-- selectedNodes [0..*]
+|   |   +-- head { line, startColumn, endColumn }
+|   |   `-- sourceRanges [0..*] ------------------------> SourceRange
+|   +-- promptOperation: patch | generate
+|   |   +-- patch
+|   |   |   `-- replaces selected GridContent ascii, revision, mappings
+|   |   `-- generate
+|   |       `-- inserts GridBox + GridContent into a target container/root
+|   +-- diagramPlacement? { start, end, minimumSize }
+|   +-- promptPhase: ready | generating | applied | error
+|   `-- statusMessage
+|
++-- Derived Views (not persisted)
+|   +-- ResolvedGridBox
+|   |   +-- box ----------------------------------------> GridBox
+|   |   +-- bounds { column, row, columns, rows }
+|   |   +-- contentId? ---------------------------------> GridContent.id
+|   |   `-- children: ResolvedGridBox [0..*]
+|   +-- ProjectionSelectionResult
+|   |   +-- ascii
+|   |   +-- matchedSourceEvidenceIds [0..*]
+|   |   +-- unmatchedSourceEvidenceIds [0..*]
+|   |   +-- targetNodeIds [0..*]
+|   |   +-- visibleNodeIds [0..*]
+|   |   +-- projectedNodeIds [0..*]
+|   |   `-- rows [{ nodeId, sourceLine }]
+|   `-- ProjectedCompaction [0..*]
+|       +-- sourceFile
+|       +-- sourceSha256
+|       +-- ascii
+|       +-- selectedLineCount
+|       `-- rows [{ treeLine, selected, sourceRanges }]
+|
+`-- Local Chat Registry (scoped to selected regions)
+    `-- LocalChatThread [0..*]
+        +-- title
+        +-- messages: LocalChatMessage [0..*]
+        |   +-- id
+        |   +-- role: user | assistant
+        |   `-- text
+        +-- verbosity
+        +-- pending
+        +-- progress?
+        `-- error?
+
+LIFECYCLE / INVARIANTS
+----------------------
+
+Project
+  `-- Representation (settled only in explorer)
+      `-- current Revision (optimistically pinned by Draft.revisionId)
+          `-- MappingDocument
+              `-- LineGridScene
+                  `-- recursive GridBox hierarchy
+                      `-- GridContent (ASCII plus source mappings)
+
+* A GridBox id is unique across the entire scene.
+* A collapsed box must reference collapsed content.
+* Expanded minimumSize reserves space; collapsed boxes shrink to their content.
+* A draft is dirty when its name or serialized scene differs from its saved baseline.
+* Save advances currentRevisionId; create can start blank or copy the active revision.
+* Projection links map selected source evidence to pinned call-tree nodes.
+* Compaction links map projected call-tree nodes to source-backed compacted rows.

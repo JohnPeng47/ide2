@@ -1,0 +1,22 @@
+{
+  "round": 2,
+  "startedAt": "2026-09-11T16:14:45.678630+00:00",
+  "parserSha256": "6cbed1d30a96554e5033c117df99192f27c099107e297ecee0b62bc372e85d2b",
+  "promptSha256": "b63c667184f691bc588701d721e8fe1dd7671ce5b065ea220714e82f0845a489",
+  "codeContextSha256": "fe6c4ca5b74f996cefa94383b39e36536d5c1602a5c7c98af34eedeed1f5da6e",
+  "parserOptions": {
+    "mode": "auto",
+    "continuation": "auto",
+    "tab_size": 4,
+    "strict": false
+  },
+  "generationPlan": {
+    "models": {
+      "gpt-5.6-sol": 3,
+      "gpt-6-astra": 3
+    },
+    "reasoningEffort": "high",
+    "maxConcurrent": 3
+  },
+  "evaluationPolicy": "Freeze parser before generation. Judge exact labels, parent-child relationships, roots, continuations, and excluded lines by an independent subagent against untouched generated ASCII. Count semantic misparses separately from strict diagnostic failures. Do not fix parser before recording baseline."
+}

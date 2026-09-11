@@ -1,0 +1,120 @@
+MAPPING PROJECT DOMAIN
+|
++-- Project
+|   +-- id
+|   +-- name
+|   \-- ProjectRepresentationsSnapshot (loaded/saved aggregate)
+|       +-- ProjectCatalog
+|       |   +-- representations: Representation [0..*]
+|       |   |   +-- id
+|       |   |   +-- name
+|       |   |   +-- status: settled | ...
+|       |   |   \-- currentRevisionId ---------> RepresentationRevision.id
+|       |   +-- revisions: RepresentationRevision [0..*]
+|       |   |   +-- id
+|       |   |   +-- projectId -----------------> Project.id
+|       |   |   +-- representationId ----------> Representation.id
+|       |   |   +-- scene: LineGridScene
+|       |   |   \-- evidence: Evidence [0..*]
+|       |   +-- diagram projections [0..*]
+|       |   |   \-- DiagramProjection (source evidence -> pinned call-tree revision)
+|       |   |       +-- projectId --------------> Project.id
+|       |   |       +-- targetRepresentationId -> Representation.id
+|       |   |       +-- targetRevisionId -------> RepresentationRevision.id
+|       |   |       \-- links [0..*]
+|       |   |           +-- sourceEvidenceIds [1..*] -> Evidence.id
+|       |   |           \-- targetNodeIds [1..*] ----> CallTreeNode.id
+|       |   \-- compaction projections [0..*]
+|       |       \-- CompactionProjection (call-tree nodes -> compacted source)
+|       |           +-- links [0..*]
+|       |           |   +-- callTreeNodeId ------> CallTreeNode.id
+|       |           |   +-- file ----------------> CompactionSnapshot.sourceFile
+|       |           |   \-- treeLines [1..*]
+|       |           \-- files: CompactionSnapshot [0..*]
+|       |               +-- sourceFile
+|       |               +-- sourceSha256
+|       |               +-- compacted ASCII tree
+|       |               \-- mappings [0..*]
+|       |                   +-- treeLine
+|       |                   \-- sourceRanges [1..*] -> SourceRange
+|       |
+|       \-- EditorSession (client-side working aggregate)
+|           +-- activeRepresentationId ---------> Representation.id
+|           +-- drafts: Draft [0..*] (one per opened Representation)
+|           |   +-- name / savedName
+|           |   +-- revisionId -----------------> RepresentationRevision.id
+|           |   +-- document: MappingDocument
+|           |   |   +-- scene: LineGridScene
+|           |   |   |   +-- contents: DiagramContent [1..*]
+|           |   |   |   |   +-- id
+|           |   |   |   |   +-- ascii
+|           |   |   |   |   +-- revision
+|           |   |   |   |   \-- mappings [0..*] -> Evidence / SourceRange
+|           |   |   |   \-- root: GridBox
+|           |   |   |       +-- id
+|           |   |   |       +-- position: GridPoint (column, row)
+|           |   |   |       +-- minimumSize?: GridSize (columns, rows)
+|           |   |   |       +-- collapsed
+|           |   |   |       +-- collapsedContentId? -> DiagramContent.id
+|           |   |   |       \-- kind
+|           |   |   |           +-- diagram
+|           |   |   |           |   \-- contentId -> DiagramContent.id
+|           |   |   |           \-- container
+|           |   |   |               +-- layout: push-right + gap
+|           |   |   |               \-- children: GridBox [0..*] (recursive)
+|           |   |   +-- nodes: MappingNode [0..*]
+|           |   |   |   +-- head: diagram line/column span
+|           |   |   |   \-- sourceRanges [0..*] -> SourceRange
+|           |   |   \-- sections [0..*]
+|           |   +-- savedScene (dirty-check baseline)
+|           |   +-- busy
+|           |   \-- focusBox? ------------------> GridBox.id
+|           |
+|           +-- Selection
+|           |   +-- rectangle: line/column range in active DiagramContent
+|           |   +-- selectedNodeIds [0..*] ------> MappingNode.id
+|           |   \-- selectedEvidenceIds [0..*] -> Evidence.id
+|           |
+|           +-- SelectionOperation
+|           |   +-- patch
+|           |   |   \-- rewrites active DiagramContent + mappings, then relayouts scene
+|           |   \-- generate sub-diagram
+|           |       +-- placement rectangle -> GridPoint + minimum GridSize
+|           |       \-- creates DiagramContent + diagram GridBox in container/root
+|           |
+|           +-- ProjectionSelection (derived call-tree view)
+|           |   +-- matched / unmatched source evidence
+|           |   +-- target nodes
+|           |   +-- visible nodes = targets + descendants + ancestors
+|           |   +-- projected nodes = targets + descendants
+|           |   \-- rendered ASCII rows -------> CallTreeNode.id + source line
+|           |
+|           +-- CompactionSelection (derived source view)
+|           |   +-- selected files
+|           |   +-- visible rows = linked tree lines + ancestors
+|           |   \-- rendered rows -------------> SourceRange [0..*]
+|           |
+|           \-- LocalChatThread [0..*] (conversation scoped to a selected region)
+|               +-- title
+|               +-- verbosity
+|               +-- messages [0..*]
+|               +-- pending / progress / error
+|               \-- retryable follow-up submission
+|
+\-- CanvasView (interaction state; does not alter the domain document)
+    +-- transform
+    |   +-- offset (x, y)
+    |   \-- scale
+    +-- gestures: pan | pinch | Ctrl/Cmd-wheel zoom
+    +-- keyboard: arrows | +/- | reset
+    \-- focused GridBox is centered by its rendered bounds
+
+INVARIANTS
+|
++-- GridBox ids are unique across a LineGridScene.
++-- Positions, sizes, gaps, and resolved bounds are integers.
++-- A collapsed GridBox must reference collapsed content.
++-- Expanded containers derive bounds from children and optional minimumSize.
++-- Collapsed boxes ignore the expanded minimumSize reservation.
++-- A DiagramProjection is valid only for its pinned project, representation, and revision.
+\-- Saving uses expectedRevisionId and advances the draft to the returned current revision.

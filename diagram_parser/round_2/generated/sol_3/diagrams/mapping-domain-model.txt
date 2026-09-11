@@ -1,0 +1,151 @@
+MAPPING DOMAIN MODEL
+====================
+
+MappingProject
+`-- ProjectRepresentationsSnapshot
+    +-- project: Project
+    |   +-- id
+    |   `-- name
+    |
+    +-- catalog: ProjectionCatalog
+    |   +-- representations: { representationId -> ProjectRepresentationRecord }
+    |   |   `-- ProjectRepresentationRecord
+    |   |       +-- id
+    |   |       +-- name
+    |   |       +-- status: settled | ...
+    |   |       +-- currentRevisionId -----------------------+
+    |   |       `-- revisions: 1..* (through catalog)        |
+    |   |                                                     |
+    |   +-- revisions: { revisionId -> ProjectRepresentationRevisionRecord }
+    |   |   `-- ProjectRepresentationRevisionRecord <--------+
+    |   |       +-- id
+    |   |       +-- projectId ------------------------------> Project.id
+    |   |       +-- representationId -----------------------> ProjectRepresentationRecord.id
+    |   |       +-- scene: LineGridScene
+    |   |       |   +-- root: GridBox
+    |   |       |   |   +-- shared fields
+    |   |       |   |   |   +-- id
+    |   |       |   |   |   +-- position: GridPoint
+    |   |       |   |   |   |   +-- column
+    |   |       |   |   |   |   `-- row
+    |   |       |   |   |   +-- minimumSize?: GridSize
+    |   |       |   |   |   |   +-- columns
+    |   |       |   |   |   |   `-- rows
+    |   |       |   |   |   +-- collapsed
+    |   |       |   |   |   `-- collapsedContentId? --------+
+    |   |       |   |   |                                     |
+    |   |       |   |   +-- DiagramGridBox                    |
+    |   |       |   |   |   +-- kind: diagram                 |
+    |   |       |   |   |   `-- contentId --------------------+---+
+    |   |       |   |   |                                         |
+    |   |       |   |   `-- ContainerGridBox                      |
+    |   |       |   |       +-- kind: container                    |
+    |   |       |   |       +-- children: GridBox[] (recursive)    |
+    |   |       |   |       `-- layout                             |
+    |   |       |   |           +-- collisionPolicy: push-right    |
+    |   |       |   |           `-- gap                            |
+    |   |       |   |                                             |
+    |   |       |   `-- contents: { contentId -> GridContent } <---+
+    |   |       |       `-- GridContent
+    |   |       |           +-- id
+    |   |       |           +-- ascii
+    |   |       |           +-- revision
+    |   |       |           `-- mappings: ContentMapping[]
+    |   |       |               `-- sourceRanges: SourceRange[]
+    |   |       |
+    |   |       `-- evidence: EvidenceSet
+    |   |           `-- evidenceId -> mapped corpus/source ranges
+    |   |
+    |   +-- diagram projections: ProjectProjectionRecord[]
+    |   |   `-- ProjectProjectionRecord
+    |   |       +-- id
+    |   |       +-- projectId ------------------------------> Project.id
+    |   |       +-- targetRepresentationId -----------------> ProjectRepresentationRecord.id
+    |   |       +-- targetRevisionId -----------------------> ProjectRepresentationRevisionRecord.id
+    |   |       `-- links: ProjectionLink[]
+    |   |           +-- sourceEvidenceIds: Evidence.id[]
+    |   |           `-- targetNodeIds: ProjectionTreeNode.id[]
+    |   |
+    |   `-- compaction projection: CompactionProjection
+    |       +-- files: CompactionSnapshot[]
+    |       |   `-- CompactionSnapshot
+    |       |       +-- sourceFile
+    |       |       +-- sourceSha256
+    |       |       +-- ascii (indexed as a tree)
+    |       |       `-- mappings[]
+    |       |           +-- treeLine
+    |       |           `-- sourceRanges: SourceRange[]
+    |       `-- links: CompactionLink[]
+    |           +-- callTreeNodeId
+    |           +-- file -------------------------------> CompactionSnapshot.sourceFile
+    |           `-- treeLines[]
+    |
+    `-- editing session (client-side)
+        +-- drafts: { representationId -> Draft }
+        |   `-- Draft
+        |       +-- name
+        |       +-- document: MappingDocument
+        |       |   +-- scene: LineGridScene
+        |       |   +-- evidence?: EvidenceSet
+        |       |   +-- nodes: { contentId -> MappingNode[] }
+        |       |   `-- sections: { contentId -> MappingSection[] }
+        |       +-- savedScene (serialized comparison baseline)
+        |       +-- savedName
+        |       +-- revisionId --------------------------> ProjectRepresentationRevisionRecord.id
+        |       +-- busy
+        |       `-- focusBox?: { id: GridBox.id, serial }
+        |
+        +-- active representation: representationId ------> Draft
+        +-- selection
+        |   +-- rectangle: start/end line and column
+        |   +-- selected MappingNode ids
+        |   `-- mapped SourceRange count
+        +-- prompt operation
+        |   +-- patch -> replaces active GridContent ascii/revision/mappings
+        |   `-- generate -> inserts a new DiagramGridBox + GridContent
+        `-- local chats: LocalChatThread[]
+            +-- title
+            +-- verbosity
+            +-- pending / progress / error
+            `-- messages: LocalChatMessage[]
+                +-- id
+                +-- role: user | assistant
+                `-- text
+
+DERIVED READ MODELS
+===================
+
+LineGridScene
+`-- resolveScene(scene) -> ResolvedGridBox
+    +-- validates unique GridBox ids and integer geometry
+    +-- resolves relative positions into absolute bounds
+    +-- measures visible/collapsed content
+    `-- recursively expands non-collapsed container children
+
+ProjectProjectionRecord + pinned target revision + selected Evidence ids
+`-- projectSelection(...) -> ProjectionSelectionResult
+    +-- matchedSourceEvidenceIds / unmatchedSourceEvidenceIds
+    +-- targetNodeIds
+    +-- visibleNodeIds (targets + descendants + ancestors)
+    +-- projectedNodeIds (targets + descendants)
+    +-- ascii
+    `-- rows: { nodeId, sourceLine }[]
+
+CompactionProjection + selected call-tree node ids
+`-- projectCompactions(...) -> projected source files
+    `-- each file
+        +-- sourceFile / sourceSha256
+        +-- ascii (selected nodes plus ancestors)
+        +-- selectedLineCount
+        `-- rows: { treeLine, selected, sourceRanges }[]
+
+SOURCE ANCHORS
+==============
+
++-- Snapshot/draft lifecycle: MappingPocPage.tsx
++-- GridBox union and resolved geometry: lineGrid.ts
++-- Selection, patch, and sub-diagram generation: MappingPocSelectionCanvas.tsx
++-- Evidence-to-call-tree projection: diagramProjection.ts
++-- Call-tree-to-source compaction projection: compactionProjection.ts
++-- Local conversation model: LocalChatConvo.tsx
+`-- Project/box navigation: MappingDiagramExplorer.tsx

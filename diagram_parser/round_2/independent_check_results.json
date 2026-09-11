@@ -1,0 +1,329 @@
+[
+  {
+    "id": "sol_1_1",
+    "file": "generated/sol_1/diagrams/mapping-domain-model.txt",
+    "input_sha256": "faac5a29f307fff9e7e92edb93f47e71fecdac5225e05155ad1c048c4f2c7069",
+    "actual_counts": {
+      "nodes": 126,
+      "edges": 124,
+      "roots": 2
+    },
+    "expected_counts": {
+      "nodes": 119,
+      "edges": 118,
+      "roots": 1
+    },
+    "expected_root_lines": [
+      4
+    ],
+    "actual_root_lines": [
+      4,
+      137
+    ],
+    "verdict": "ambiguous",
+    "findings": [],
+    "ambiguity_lines": [
+      137,
+      140,
+      141,
+      142,
+      143,
+      144,
+      145
+    ],
+    "parser_exception": null,
+    "strict_diagnostic_failure": false,
+    "diagnostics": [],
+    "line_accounting": {
+      "prose": 10,
+      "border": 3,
+      "blank": 5,
+      "node": 126,
+      "guide": 1
+    },
+    "source_line_count": 145,
+    "verified_common_nodes": 119,
+    "literal_suffix_verdict": "ambiguous",
+    "literal_label_check": true
+  },
+  {
+    "id": "sol_2_1",
+    "file": "generated/sol_2/diagrams/mapping-domain-model.txt",
+    "input_sha256": "4ae31397e2bb8ca1cd82961197520d61433fc8e70debc47af5394cba1a2d7a89",
+    "actual_counts": {
+      "nodes": 110,
+      "edges": 108,
+      "roots": 2
+    },
+    "expected_counts": {
+      "nodes": 110,
+      "edges": 108,
+      "roots": 2
+    },
+    "expected_root_lines": [
+      1,
+      112
+    ],
+    "actual_root_lines": [
+      1,
+      112
+    ],
+    "verdict": "pass",
+    "findings": [],
+    "ambiguity_lines": [],
+    "parser_exception": null,
+    "strict_diagnostic_failure": false,
+    "diagnostics": [],
+    "line_accounting": {
+      "node": 110,
+      "guide": 9,
+      "blank": 1
+    },
+    "source_line_count": 120,
+    "verified_common_nodes": 110,
+    "literal_suffix_verdict": "pass",
+    "literal_label_check": true
+  },
+  {
+    "id": "sol_3_1",
+    "file": "generated/sol_3/diagrams/mapping-domain-model.txt",
+    "input_sha256": "acc91a2299e737e53098bb732005c9f55a23257894d4bcef08dfdc832a5f4209",
+    "actual_counts": {
+      "nodes": 129,
+      "edges": 124,
+      "roots": 5
+    },
+    "expected_counts": {
+      "nodes": 129,
+      "edges": 124,
+      "roots": 5
+    },
+    "expected_root_lines": [
+      4,
+      118,
+      125,
+      134,
+      142
+    ],
+    "actual_root_lines": [
+      4,
+      118,
+      125,
+      134,
+      142
+    ],
+    "verdict": "fail",
+    "findings": [
+      {
+        "line": 16,
+        "kind": "label_mismatch",
+        "expected": "currentRevisionId",
+        "actual": "currentRevisionId -----------------------+"
+      },
+      {
+        "line": 17,
+        "kind": "label_mismatch",
+        "expected": "revisions: 1..* (through catalog)",
+        "actual": "revisions: 1..* (through catalog)        |"
+      },
+      {
+        "line": 20,
+        "kind": "label_mismatch",
+        "expected": "ProjectRepresentationRevisionRecord",
+        "actual": "ProjectRepresentationRevisionRecord <--------+"
+      },
+      {
+        "line": 35,
+        "kind": "label_mismatch",
+        "expected": "collapsedContentId?",
+        "actual": "collapsedContentId? --------+"
+      },
+      {
+        "line": 37,
+        "kind": "label_mismatch",
+        "expected": "DiagramGridBox",
+        "actual": "DiagramGridBox                    |"
+      },
+      {
+        "line": 38,
+        "kind": "label_mismatch",
+        "expected": "kind: diagram",
+        "actual": "kind: diagram                 |"
+      },
+      {
+        "line": 39,
+        "kind": "label_mismatch",
+        "expected": "contentId",
+        "actual": "contentId --------------------+---+"
+      },
+      {
+        "line": 41,
+        "kind": "label_mismatch",
+        "expected": "ContainerGridBox",
+        "actual": "ContainerGridBox                      |"
+      },
+      {
+        "line": 42,
+        "kind": "label_mismatch",
+        "expected": "kind: container",
+        "actual": "kind: container                    |"
+      },
+      {
+        "line": 43,
+        "kind": "label_mismatch",
+        "expected": "children: GridBox[] (recursive)",
+        "actual": "children: GridBox[] (recursive)    |"
+      },
+      {
+        "line": 44,
+        "kind": "label_mismatch",
+        "expected": "layout",
+        "actual": "layout                             |"
+      },
+      {
+        "line": 45,
+        "kind": "label_mismatch",
+        "expected": "collisionPolicy: push-right",
+        "actual": "collisionPolicy: push-right    |"
+      },
+      {
+        "line": 46,
+        "kind": "label_mismatch",
+        "expected": "gap",
+        "actual": "gap                            |"
+      },
+      {
+        "line": 48,
+        "kind": "label_mismatch",
+        "expected": "contents: { contentId -> GridContent }",
+        "actual": "contents: { contentId -> GridContent } <---+"
+      }
+    ],
+    "ambiguity_lines": [],
+    "parser_exception": null,
+    "strict_diagnostic_failure": false,
+    "diagnostics": [],
+    "line_accounting": {
+      "prose": 2,
+      "border": 3,
+      "blank": 7,
+      "node": 129,
+      "guide": 10
+    },
+    "source_line_count": 151,
+    "verified_common_nodes": 129,
+    "literal_suffix_verdict": "pass",
+    "literal_label_check": true
+  },
+  {
+    "id": "astra_1_1",
+    "file": "generated/astra_1/diagrams/mapping-domain-model.txt",
+    "input_sha256": "07baf0de3c027b7df1c11bf21544f411cca1752010a8d25b6fed377f003558b2",
+    "actual_counts": {
+      "nodes": 114,
+      "edges": 113,
+      "roots": 1
+    },
+    "expected_counts": {
+      "nodes": 114,
+      "edges": 113,
+      "roots": 1
+    },
+    "expected_root_lines": [
+      1
+    ],
+    "actual_root_lines": [
+      1
+    ],
+    "verdict": "pass",
+    "findings": [],
+    "ambiguity_lines": [],
+    "parser_exception": null,
+    "strict_diagnostic_failure": false,
+    "diagnostics": [],
+    "line_accounting": {
+      "node": 114,
+      "guide": 6,
+      "blank": 1,
+      "prose": 2
+    },
+    "source_line_count": 123,
+    "verified_common_nodes": 114,
+    "literal_suffix_verdict": "pass",
+    "literal_label_check": true
+  },
+  {
+    "id": "astra_2_1",
+    "file": "generated/astra_2/diagrams/mapping-domain-model.txt",
+    "input_sha256": "256f0d5cd0724369fccf9d4be9af034865f7f76caa5933a49aea05238c2eabb2",
+    "actual_counts": {
+      "nodes": 111,
+      "edges": 110,
+      "roots": 1
+    },
+    "expected_counts": {
+      "nodes": 111,
+      "edges": 110,
+      "roots": 1
+    },
+    "expected_root_lines": [
+      1
+    ],
+    "actual_root_lines": [
+      1
+    ],
+    "verdict": "pass",
+    "findings": [],
+    "ambiguity_lines": [],
+    "parser_exception": null,
+    "strict_diagnostic_failure": false,
+    "diagnostics": [],
+    "line_accounting": {
+      "node": 111,
+      "guide": 6,
+      "blank": 1,
+      "prose": 2
+    },
+    "source_line_count": 120,
+    "verified_common_nodes": 111,
+    "literal_suffix_verdict": "pass",
+    "literal_label_check": true
+  },
+  {
+    "id": "astra_3_1",
+    "file": "generated/astra_3/diagrams/domain-model.txt",
+    "input_sha256": "521ac9b7d0f0fea833791e492289e36759946359d4bbff04ae32947bcf6b86a5",
+    "actual_counts": {
+      "nodes": 126,
+      "edges": 125,
+      "roots": 1
+    },
+    "expected_counts": {
+      "nodes": 126,
+      "edges": 125,
+      "roots": 1
+    },
+    "expected_root_lines": [
+      5
+    ],
+    "actual_root_lines": [
+      5
+    ],
+    "verdict": "pass",
+    "findings": [],
+    "ambiguity_lines": [],
+    "parser_exception": null,
+    "strict_diagnostic_failure": false,
+    "diagnostics": [],
+    "line_accounting": {
+      "prose": 3,
+      "blank": 1,
+      "node": 126,
+      "guide": 8
+    },
+    "source_line_count": 138,
+    "verified_common_nodes": 126,
+    "literal_suffix_verdict": "pass",
+    "literal_label_check": true
+  }
+]

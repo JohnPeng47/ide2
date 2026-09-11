@@ -1,0 +1,143 @@
+MappingScreen
+  |
+  +-- ScreenHeader
+  |   +-- MappingSubmenu
+  |   |   +-- ProjectName
+  |   |   +-- DiagramNameEditor
+  |   |   +-- NewDiagramAction
+  |   |   +-- SaveDiagramAction
+  |   |   \-- SaveStatus / EditingStatus
+  |   \-- ApplicationNavigation
+  |       +-- StudioTab
+  |       +-- ExperimentsTab
+  |       \-- MappingTab
+  |
+  +-- MappingWorkspace
+  |   |
+  |   +-- DocumentView [*; only active document visible]
+  |   |   |
+  |   |   +-- CanvasViewport
+  |   |   |   +-- CanvasBackground
+  |   |   |   +-- TransformedCanvasSurface
+  |   |   |   |   |
+  |   |   |   |   +-- Scene
+  |   |   |   |   |   \-- RootContainer
+  |   |   |   |   |       \-- GridBox [*; recursive]
+  |   |   |   |   |           +-- ContainerBox
+  |   |   |   |   |           |   +-- Expanded: child GridBoxes
+  |   |   |   |   |           |   \-- Collapsed: summary content
+  |   |   |   |   |           +-- DiagramBox
+  |   |   |   |   |           |   +-- Expanded: ASCII diagram content
+  |   |   |   |   |           |   \-- Collapsed: summary content
+  |   |   |   |   |           \-- BoxDecorationAndControls
+  |   |   |   |   |               +-- Boundary
+  |   |   |   |   |               +-- Expand / Collapse
+  |   |   |   |   |               +-- Move
+  |   |   |   |   |               \-- Group
+  |   |   |   |   |
+  |   |   |   |   +-- DiagramAnnotations
+  |   |   |   |   |   +-- MappedLabelHighlight [*]
+  |   |   |   |   |   |   \-- Normal / Selected / PromptTarget
+  |   |   |   |   |   +-- DetailSection [*; legacy fixture]
+  |   |   |   |   |   |   +-- SectionBoundary
+  |   |   |   |   |   |   \-- NumberedOpenDetailAction
+  |   |   |   |   |   \-- DetailOverlay [conditional; legacy fixture]
+  |   |   |   |   |       +-- Header: section ID, title, close
+  |   |   |   |   |       \-- ASCII detail content
+  |   |   |   |   |
+  |   |   |   |   +-- SelectionInteraction [currently one]
+  |   |   |   |   |   +-- SelectionRectangle
+  |   |   |   |   |   |   \-- Ready / Composing / Generating /
+  |   |   |   |   |   |       Applied / Error / Asking / PlacingChat
+  |   |   |   |   |   +-- SelectionOperationsPopover
+  |   |   |   |   |   |   +-- SelectionCountAndSourceCoverage
+  |   |   |   |   |   |   +-- OperationStatus
+  |   |   |   |   |   |   \-- Body [one of]
+  |   |   |   |   |   |       +-- ActionMenu
+  |   |   |   |   |   |       |   +-- ProjectionChooser
+  |   |   |   |   |   |       |   +-- ProjectionUnavailableMessage
+  |   |   |   |   |   |       |   +-- GenerateSubDiagram
+  |   |   |   |   |   |       |   +-- OpenCallTree
+  |   |   |   |   |   |       |   +-- PromptSelection
+  |   |   |   |   |   |       |   \-- AskAboutSelection
+  |   |   |   |   |   |       +-- Edit / GeneratePromptForm
+  |   |   |   |   |   |       |   \-- Instruction, cancel, apply / choose region
+  |   |   |   |   |   |       \-- LocalQuestionForm
+  |   |   |   |   |   |           \-- Question, placement hint, cancel, place
+  |   |   |   |   |   \-- PatchResultStatus [conditional]
+  |   |   |   |   |       \-- Applied / Error
+  |   |   |   |   |
+  |   |   |   |   +-- ProjectionCompanion [currently one]
+  |   |   |   |   |   +-- ConnectorLineAndJoinDecoration
+  |   |   |   |   |   +-- Header
+  |   |   |   |   |   |   +-- TitleAndCoverageMetadata
+  |   |   |   |   |   |   +-- OpenCompaction / BackToCallTree
+  |   |   |   |   |   |   \-- Close
+  |   |   |   |   |   \-- Body [one of]
+  |   |   |   |   |       +-- ProjectedCallTree
+  |   |   |   |   |       |   \-- ASCII tree rows
+  |   |   |   |   |       \-- ProjectedSourceCompactions
+  |   |   |   |   |           \-- CompactionFileSection [*]
+  |   |   |   |   |               +-- FilePathAndSnapshotMetadata
+  |   |   |   |   |               \-- ASCII compaction rows
+  |   |   |   |   |
+  |   |   |   |   +-- LocalConversation [*]
+  |   |   |   |   |   +-- CanvasAnchorBubble
+  |   |   |   |   |   |   \-- Open / Collapse, reply count, pending indicator
+  |   |   |   |   |   +-- SourceSelectionHighlight [when active]
+  |   |   |   |   |   \-- ConversationPanel [when active]
+  |   |   |   |   |       +-- Display: compact / floating / docked
+  |   |   |   |   |       +-- Header: title, collapse
+  |   |   |   |   |       +-- Transcript
+  |   |   |   |   |       |   +-- UserMessage [*]
+  |   |   |   |   |       |   +-- AssistantMessage [*]
+  |   |   |   |   |       |   \-- PendingReply
+  |   |   |   |   |       \-- FollowUpComposer
+  |   |   |   |   |           \-- Text input, send / waiting
+  |   |   |   |   |
+  |   |   |   |   +-- PlacementFeedback [conditional]
+  |   |   |   |   |   +-- NewDiagramPlacementRectangle
+  |   |   |   |   |   \-- LocalChatPlacementGuide
+  |   |   |   |   |
+  |   |   |   |   \-- CanvasOperationToolbar
+  |   |   |   |       +-- Undo / Redo
+  |   |   |   |       \-- OperationStatus / PlacementInstructions
+  |   |   |   |
+  |   |   |   \-- ViewportControls
+  |   |   |       +-- ZoomReadout
+  |   |   |       \-- CenterAndReset
+  |   |   |
+  |   |   \-- Document state: active / hidden, saved / dirty, busy
+  |   |
+  |   +-- ProjectExplorer [FloatingPane]
+  |   |   +-- ProjectHeader
+  |   |   +-- DiagramFilter
+  |   |   +-- DiagramEntry [*]
+  |   |   |   +-- Name, active indicator, unsaved indicator
+  |   |   |   \-- ActiveDiagramBoxEntry [*; recursive]
+  |   |   |       +-- ContainerEntry
+  |   |   |       \-- DiagramEntry
+  |   |   \-- EmptyExplorerMessage
+  |   |
+  |   +-- WorkspacePlaceholder [conditional]
+  |   |   \-- Loading / LoadFailure / CreateFirstDiagram
+  |   +-- ProjectErrorAlert [conditional; dismissible]
+  |   \-- StatusFooter
+  |       +-- ActiveDiagramName
+  |       \-- KeyboardAndSelectionHints
+  |
+  +-- NewDiagramModal [conditional]
+  |   +-- Backdrop
+  |   +-- DiagramNameInput
+  |   +-- CopyCurrentDiagramOption
+  |   +-- InitialASCIIEditor
+  |   +-- HelpText / ErrorMessage
+  |   \-- Cancel / Create
+  |
+  \-- UITestingControls
+      +-- ToggleButton
+      \-- SettingsPanel [conditional]
+          +-- LocalChatDisplayVariant
+          +-- MockReplyDelay
+          +-- PlacementHintToggle
+          \-- ResetAll

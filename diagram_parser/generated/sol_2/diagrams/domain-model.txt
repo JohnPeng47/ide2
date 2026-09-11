@@ -1,0 +1,134 @@
+MAPPING DOMAIN MODEL
+====================
+
+Legend: 1 = exactly one, 0..1 = optional, * = many, --> = references
+
+MappingProject
++-- identity
+|   +-- id
+|   \-- name
++-- catalog : ProjectRepresentationCatalog [1]
+|   +-- representations : ProjectRepresentation [*]
+|   |   +-- id
+|   |   +-- projectId --> MappingProject.id
+|   |   +-- name
+|   |   +-- status : settled | other lifecycle state
+|   |   \-- currentRevisionId --> ProjectRepresentationRevision.id
+|   +-- revisions : ProjectRepresentationRevision [*]
+|   |   +-- id
+|   |   +-- projectId --> MappingProject.id
+|   |   +-- representationId --> ProjectRepresentation.id
+|   |   +-- scene : LineGridScene [1]
+|   |   \-- evidence : EvidenceCatalog [0..1]
+|   +-- diagram projections : ProjectProjection [*]
+|   |   +-- projectId --> MappingProject.id
+|   |   +-- targetRepresentationId --> ProjectRepresentation.id
+|   |   +-- targetRevisionId --> ProjectRepresentationRevision.id (pinned)
+|   |   \-- links [*]
+|   |       +-- sourceEvidenceIds --> Evidence.id [*]
+|   |       \-- targetNodeIds --> DiagramNode.id [*]
+|   \-- compaction projections : CompactionProjection [*]
+|       +-- files : CompactionSnapshot [*]
+|       |   +-- sourceFile
+|       |   +-- sourceSha256
+|       |   +-- ascii
+|       |   \-- mappings [*]
+|       |       +-- treeLine
+|       |       \-- sourceRanges : SourceRange [*]
+|       \-- links [*]
+|           +-- callTreeNodeId --> DiagramNode.id
+|           +-- file --> CompactionSnapshot.sourceFile
+|           \-- treeLines --> CompactionSnapshot.mappings.treeLine [*]
+|
++-- editable workspace : MappingWorkspace [1 per UI session]
+|   +-- snapshot --> MappingProject + catalog
+|   +-- activeRepresentationId --> ProjectRepresentation.id [0..1]
+|   +-- drafts : DiagramDraft [*; keyed by representation id]
+|   |   +-- name
+|   |   +-- document : MappingDocument [1]
+|   |   |   +-- scene : LineGridScene [1]
+|   |   |   |   +-- contents : GridContent [*; keyed by content id]
+|   |   |   |   |   +-- id
+|   |   |   |   |   +-- ascii
+|   |   |   |   |   +-- revision
+|   |   |   |   |   \-- mappings : EvidenceMapping [*]
+|   |   |   |   |       +-- diagram/tree location
+|   |   |   |   |       \-- sourceRanges : SourceRange [*]
+|   |   |   |   \-- root : GridBox [1]
+|   |   |   |       +-- id
+|   |   |   |       +-- position { column, row }
+|   |   |   |       +-- minimumSize { columns, rows } [0..1]
+|   |   |   |       +-- collapsed
+|   |   |   |       +-- collapsedContentId --> GridContent.id [required when collapsed]
+|   |   |   |       +-- diagram box
+|   |   |   |       |   \-- contentId --> GridContent.id
+|   |   |   |       \-- container box
+|   |   |   |           +-- layout { collisionPolicy: push-right, gap }
+|   |   |   |           \-- children : GridBox [*; recursive]
+|   |   |   +-- evidence : EvidenceCatalog [0..1]
+|   |   |   +-- nodes : DiagramNode [*; keyed by content id]
+|   |   |   |   +-- id
+|   |   |   |   +-- head { line, startColumn, endColumn }
+|   |   |   |   \-- sourceRanges : SourceRange [*]
+|   |   |   \-- sections : DiagramSection [*; keyed by content id]
+|   |   +-- revisionId --> ProjectRepresentationRevision.id
+|   |   +-- savedName + savedScene (dirty-state baseline)
+|   |   +-- busy
+|   |   \-- focusBox --> GridBox.id [0..1]
+|   +-- save command
+|   |   +-- requires a dirty, named, idle active draft
+|   |   +-- uses expectedRevisionId for optimistic concurrency
+|   |   \-- creates a revision and advances currentRevisionId
+|   \-- create command
+|       +-- creates content from initial ASCII, or
+|       \-- copies the active revision, scene, and source evidence
+|
++-- selection and diagram editing : MappingInteraction [0..1 active]
+|   +-- activeBoxId --> GridBox.id
+|   +-- selection : GridSelection [0..1]
+|   |   +-- startLine / endLine
+|   |   +-- startColumn / endColumn
+|   |   \-- selectedNodeIds --> DiagramNode.id [*]
+|   +-- prompt operation
+|   |   +-- patch
+|   |   |   +-- sends active ASCII, revision, mappings, selection, instruction
+|   |   |   \-- replaces content ASCII/revision/mappings and relayouts the scene
+|   |   \-- generate sub-diagram
+|   |       +-- sends the same mapped selection plus desired region size
+|   |       \-- inserts GridContent + diagram GridBox into a selected container
+|   +-- call-tree projection
+|   |   +-- selected Evidence.ids match ProjectProjection links
+|   |   +-- linked target nodes and their descendants are projected
+|   |   \-- ancestors remain visible as structural context
+|   \-- compaction view
+|       +-- selected call-tree nodes resolve file tree lines
+|       +-- selected lines and ancestors remain visible
+|       \-- mapped source ranges can open a ProjectedSourcePane
+|
+\-- presentation/session models
+    +-- DiagramCanvas
+    |   +-- transform { offset { x, y }, scale }
+    |   +-- gestures : pan | pinch | Ctrl/Cmd-wheel zoom
+    |   +-- commands : arrow pan | +/- zoom | 0 reset
+    |   \-- focus target --> GridBox.id
+    +-- DiagramExplorer
+    |   +-- diagrams --> settled ProjectRepresentation records
+    |   \-- active box tree --> LineGridScene.root
+    \-- LocalChatThread [0..1 per selected region]
+        +-- title
+        +-- messages : LocalChatMessage [*]
+        |   +-- id
+        |   +-- role : user | assistant
+        |   \-- text
+        +-- verbosity
+        +-- pending + progress
+        \-- error + retry
+
+KEY INVARIANTS
++-- Every GridBox.id is unique within a scene.
++-- Every position, minimum size, gap, and resolved edge is an integer.
++-- A collapsed box must reference collapsed content.
++-- An expanded box honors minimumSize; a collapsed box does not reserve it.
++-- A projection can target only its pinned project, representation, and revision.
++-- Unsaved name/scene changes or busy edits guard navigation and page unload.
+\-- Only settled representations appear in the project diagram explorer.

@@ -1,0 +1,2414 @@
+{
+  "nodes": [
+    {
+      "id": 0,
+      "label": "MAPPING DOMAIN MODEL",
+      "parent_id": null,
+      "depth": 0,
+      "line": 1,
+      "column": 1,
+      "end_line": 1,
+      "branch_column": 0,
+      "children": [
+        1,
+        14,
+        37,
+        48,
+        62,
+        89,
+        95
+      ],
+      "raw_lines": [
+        "MAPPING DOMAIN MODEL"
+      ]
+    },
+    {
+      "id": 1,
+      "label": "Project",
+      "parent_id": 0,
+      "depth": 1,
+      "line": 3,
+      "column": 5,
+      "end_line": 3,
+      "branch_column": 1,
+      "children": [
+        2,
+        3
+      ],
+      "raw_lines": [
+        "+-- Project"
+      ]
+    },
+    {
+      "id": 2,
+      "label": "id, name",
+      "parent_id": 1,
+      "depth": 2,
+      "line": 4,
+      "column": 9,
+      "end_line": 4,
+      "branch_column": 5,
+      "children": [],
+      "raw_lines": [
+        "|   |-- id, name"
+      ]
+    },
+    {
+      "id": 3,
+      "label": "ProjectRepresentationsSnapshot",
+      "parent_id": 1,
+      "depth": 2,
+      "line": 5,
+      "column": 9,
+      "end_line": 5,
+      "branch_column": 5,
+      "children": [
+        4,
+        5
+      ],
+      "raw_lines": [
+        "|   `-- ProjectRepresentationsSnapshot"
+      ]
+    },
+    {
+      "id": 4,
+      "label": "project",
+      "parent_id": 3,
+      "depth": 3,
+      "line": 6,
+      "column": 13,
+      "end_line": 6,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|       |-- project"
+      ]
+    },
+    {
+      "id": 5,
+      "label": "catalog",
+      "parent_id": 3,
+      "depth": 3,
+      "line": 7,
+      "column": 13,
+      "end_line": 7,
+      "branch_column": 9,
+      "children": [
+        6,
+        10
+      ],
+      "raw_lines": [
+        "|       `-- catalog"
+      ]
+    },
+    {
+      "id": 6,
+      "label": "representations[id] -> ProjectRepresentationRecord",
+      "parent_id": 5,
+      "depth": 4,
+      "line": 8,
+      "column": 17,
+      "end_line": 8,
+      "branch_column": 13,
+      "children": [
+        7,
+        8,
+        9
+      ],
+      "raw_lines": [
+        "|           |-- representations[id] -> ProjectRepresentationRecord"
+      ]
+    },
+    {
+      "id": 7,
+      "label": "id, name, status",
+      "parent_id": 6,
+      "depth": 5,
+      "line": 9,
+      "column": 21,
+      "end_line": 9,
+      "branch_column": 17,
+      "children": [],
+      "raw_lines": [
+        "|           |   |-- id, name, status"
+      ]
+    },
+    {
+      "id": 8,
+      "label": "currentRevisionId -> ProjectRepresentationRevisionRecord",
+      "parent_id": 6,
+      "depth": 5,
+      "line": 10,
+      "column": 21,
+      "end_line": 10,
+      "branch_column": 17,
+      "children": [],
+      "raw_lines": [
+        "|           |   |-- currentRevisionId -> ProjectRepresentationRevisionRecord"
+      ]
+    },
+    {
+      "id": 9,
+      "label": "Explorer lists representations with status = \"settled\"",
+      "parent_id": 6,
+      "depth": 5,
+      "line": 11,
+      "column": 21,
+      "end_line": 11,
+      "branch_column": 17,
+      "children": [],
+      "raw_lines": [
+        "|           |   `-- Explorer lists representations with status = \"settled\""
+      ]
+    },
+    {
+      "id": 10,
+      "label": "revisions[id] -> ProjectRepresentationRevisionRecord",
+      "parent_id": 5,
+      "depth": 4,
+      "line": 12,
+      "column": 17,
+      "end_line": 12,
+      "branch_column": 13,
+      "children": [
+        11,
+        12,
+        13
+      ],
+      "raw_lines": [
+        "|           `-- revisions[id] -> ProjectRepresentationRevisionRecord"
+      ]
+    },
+    {
+      "id": 11,
+      "label": "id, representationId, projectId",
+      "parent_id": 10,
+      "depth": 5,
+      "line": 13,
+      "column": 21,
+      "end_line": 13,
+      "branch_column": 17,
+      "children": [],
+      "raw_lines": [
+        "|               |-- id, representationId, projectId"
+      ]
+    },
+    {
+      "id": 12,
+      "label": "scene (obtained through sceneFromRevision)",
+      "parent_id": 10,
+      "depth": 5,
+      "line": 14,
+      "column": 21,
+      "end_line": 14,
+      "branch_column": 17,
+      "children": [],
+      "raw_lines": [
+        "|               |-- scene (obtained through sceneFromRevision)"
+      ]
+    },
+    {
+      "id": 13,
+      "label": "evidence",
+      "parent_id": 10,
+      "depth": 5,
+      "line": 15,
+      "column": 21,
+      "end_line": 15,
+      "branch_column": 17,
+      "children": [],
+      "raw_lines": [
+        "|               `-- evidence"
+      ]
+    },
+    {
+      "id": 14,
+      "label": "Editable diagram document",
+      "parent_id": 0,
+      "depth": 1,
+      "line": 17,
+      "column": 5,
+      "end_line": 17,
+      "branch_column": 1,
+      "children": [
+        15,
+        31,
+        32,
+        36
+      ],
+      "raw_lines": [
+        "+-- Editable diagram document"
+      ]
+    },
+    {
+      "id": 15,
+      "label": "scene -> LineGridScene",
+      "parent_id": 14,
+      "depth": 2,
+      "line": 18,
+      "column": 9,
+      "end_line": 18,
+      "branch_column": 5,
+      "children": [
+        16,
+        28
+      ],
+      "raw_lines": [
+        "|   |-- scene -> LineGridScene"
+      ]
+    },
+    {
+      "id": 16,
+      "label": "root -> GridBox",
+      "parent_id": 15,
+      "depth": 3,
+      "line": 19,
+      "column": 13,
+      "end_line": 19,
+      "branch_column": 9,
+      "children": [
+        17,
+        23,
+        25
+      ],
+      "raw_lines": [
+        "|   |   |-- root -> GridBox"
+      ]
+    },
+    {
+      "id": 17,
+      "label": "Shared properties",
+      "parent_id": 16,
+      "depth": 4,
+      "line": 20,
+      "column": 17,
+      "end_line": 20,
+      "branch_column": 13,
+      "children": [
+        18,
+        19,
+        20,
+        21,
+        22
+      ],
+      "raw_lines": [
+        "|   |   |   |-- Shared properties"
+      ]
+    },
+    {
+      "id": 18,
+      "label": "id",
+      "parent_id": 17,
+      "depth": 5,
+      "line": 21,
+      "column": 21,
+      "end_line": 21,
+      "branch_column": 17,
+      "children": [],
+      "raw_lines": [
+        "|   |   |   |   |-- id"
+      ]
+    },
+    {
+      "id": 19,
+      "label": "position: { column, row } relative to parent",
+      "parent_id": 17,
+      "depth": 5,
+      "line": 22,
+      "column": 21,
+      "end_line": 22,
+      "branch_column": 17,
+      "children": [],
+      "raw_lines": [
+        "|   |   |   |   |-- position: { column, row } relative to parent"
+      ]
+    },
+    {
+      "id": 20,
+      "label": "minimumSize?: { columns, rows }",
+      "parent_id": 17,
+      "depth": 5,
+      "line": 23,
+      "column": 21,
+      "end_line": 23,
+      "branch_column": 17,
+      "children": [],
+      "raw_lines": [
+        "|   |   |   |   |-- minimumSize?: { columns, rows }"
+      ]
+    },
+    {
+      "id": 21,
+      "label": "collapsed",
+      "parent_id": 17,
+      "depth": 5,
+      "line": 24,
+      "column": 21,
+      "end_line": 24,
+      "branch_column": 17,
+      "children": [],
+      "raw_lines": [
+        "|   |   |   |   |-- collapsed"
+      ]
+    },
+    {
+      "id": 22,
+      "label": "collapsedContentId? -> contents[id]",
+      "parent_id": 17,
+      "depth": 5,
+      "line": 25,
+      "column": 21,
+      "end_line": 25,
+      "branch_column": 17,
+      "children": [],
+      "raw_lines": [
+        "|   |   |   |   `-- collapsedContentId? -> contents[id]"
+      ]
+    },
+    {
+      "id": 23,
+      "label": "Diagram box (kind = \"diagram\")",
+      "parent_id": 16,
+      "depth": 4,
+      "line": 26,
+      "column": 17,
+      "end_line": 26,
+      "branch_column": 13,
+      "children": [
+        24
+      ],
+      "raw_lines": [
+        "|   |   |   |-- Diagram box (kind = \"diagram\")"
+      ]
+    },
+    {
+      "id": 24,
+      "label": "contentId -> contents[id]",
+      "parent_id": 23,
+      "depth": 5,
+      "line": 27,
+      "column": 21,
+      "end_line": 27,
+      "branch_column": 17,
+      "children": [],
+      "raw_lines": [
+        "|   |   |   |   `-- contentId -> contents[id]"
+      ]
+    },
+    {
+      "id": 25,
+      "label": "Container box (kind = \"container\")",
+      "parent_id": 16,
+      "depth": 4,
+      "line": 28,
+      "column": 17,
+      "end_line": 28,
+      "branch_column": 13,
+      "children": [
+        26,
+        27
+      ],
+      "raw_lines": [
+        "|   |   |   `-- Container box (kind = \"container\")"
+      ]
+    },
+    {
+      "id": 26,
+      "label": "children[] -> GridBox (recursive)",
+      "parent_id": 25,
+      "depth": 5,
+      "line": 29,
+      "column": 21,
+      "end_line": 29,
+      "branch_column": 17,
+      "children": [],
+      "raw_lines": [
+        "|   |   |       |-- children[] -> GridBox (recursive)"
+      ]
+    },
+    {
+      "id": 27,
+      "label": "layout: { collisionPolicy: \"push-right\", gap }",
+      "parent_id": 25,
+      "depth": 5,
+      "line": 30,
+      "column": 21,
+      "end_line": 30,
+      "branch_column": 17,
+      "children": [],
+      "raw_lines": [
+        "|   |   |       `-- layout: { collisionPolicy: \"push-right\", gap }"
+      ]
+    },
+    {
+      "id": 28,
+      "label": "contents[id]",
+      "parent_id": 15,
+      "depth": 3,
+      "line": 31,
+      "column": 13,
+      "end_line": 31,
+      "branch_column": 9,
+      "children": [
+        29,
+        30
+      ],
+      "raw_lines": [
+        "|   |   `-- contents[id]"
+      ]
+    },
+    {
+      "id": 29,
+      "label": "id, ascii, revision",
+      "parent_id": 28,
+      "depth": 4,
+      "line": 32,
+      "column": 17,
+      "end_line": 32,
+      "branch_column": 13,
+      "children": [],
+      "raw_lines": [
+        "|   |       |-- id, ascii, revision"
+      ]
+    },
+    {
+      "id": 30,
+      "label": "mappings[] -> source evidence associations",
+      "parent_id": 28,
+      "depth": 4,
+      "line": 33,
+      "column": 17,
+      "end_line": 33,
+      "branch_column": 13,
+      "children": [],
+      "raw_lines": [
+        "|   |       `-- mappings[] -> source evidence associations"
+      ]
+    },
+    {
+      "id": 31,
+      "label": "evidence? -> source-backed document metadata",
+      "parent_id": 14,
+      "depth": 2,
+      "line": 34,
+      "column": 9,
+      "end_line": 34,
+      "branch_column": 5,
+      "children": [],
+      "raw_lines": [
+        "|   |-- evidence? -> source-backed document metadata"
+      ]
+    },
+    {
+      "id": 32,
+      "label": "nodes[contentId][]",
+      "parent_id": 14,
+      "depth": 2,
+      "line": 35,
+      "column": 9,
+      "end_line": 35,
+      "branch_column": 5,
+      "children": [
+        33,
+        34,
+        35
+      ],
+      "raw_lines": [
+        "|   |-- nodes[contentId][]"
+      ]
+    },
+    {
+      "id": 33,
+      "label": "id",
+      "parent_id": 32,
+      "depth": 3,
+      "line": 36,
+      "column": 13,
+      "end_line": 36,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|   |   |-- id"
+      ]
+    },
+    {
+      "id": 34,
+      "label": "head: { line, startColumn, endColumn }",
+      "parent_id": 32,
+      "depth": 3,
+      "line": 37,
+      "column": 13,
+      "end_line": 37,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|   |   |-- head: { line, startColumn, endColumn }"
+      ]
+    },
+    {
+      "id": 35,
+      "label": "sourceRanges[]",
+      "parent_id": 32,
+      "depth": 3,
+      "line": 38,
+      "column": 13,
+      "end_line": 38,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|   |   `-- sourceRanges[]"
+      ]
+    },
+    {
+      "id": 36,
+      "label": "sections[contentId][]",
+      "parent_id": 14,
+      "depth": 2,
+      "line": 39,
+      "column": 9,
+      "end_line": 39,
+      "branch_column": 5,
+      "children": [],
+      "raw_lines": [
+        "|   `-- sections[contentId][]"
+      ]
+    },
+    {
+      "id": 37,
+      "label": "Resolved scene (derived from LineGridScene)",
+      "parent_id": 0,
+      "depth": 1,
+      "line": 41,
+      "column": 5,
+      "end_line": 41,
+      "branch_column": 1,
+      "children": [
+        38
+      ],
+      "raw_lines": [
+        "+-- Resolved scene (derived from LineGridScene)"
+      ]
+    },
+    {
+      "id": 38,
+      "label": "ResolvedGridBox",
+      "parent_id": 37,
+      "depth": 2,
+      "line": 42,
+      "column": 9,
+      "end_line": 42,
+      "branch_column": 5,
+      "children": [
+        39,
+        40,
+        41,
+        42,
+        43
+      ],
+      "raw_lines": [
+        "|   `-- ResolvedGridBox"
+      ]
+    },
+    {
+      "id": 39,
+      "label": "box -> original GridBox",
+      "parent_id": 38,
+      "depth": 3,
+      "line": 43,
+      "column": 13,
+      "end_line": 43,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|       |-- box -> original GridBox"
+      ]
+    },
+    {
+      "id": 40,
+      "label": "bounds: { column, row, columns, rows } in scene coordinates",
+      "parent_id": 38,
+      "depth": 3,
+      "line": 44,
+      "column": 13,
+      "end_line": 44,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|       |-- bounds: { column, row, columns, rows } in scene coordinates"
+      ]
+    },
+    {
+      "id": 41,
+      "label": "contentId? -> displayed content",
+      "parent_id": 38,
+      "depth": 3,
+      "line": 45,
+      "column": 13,
+      "end_line": 45,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|       |-- contentId? -> displayed content"
+      ]
+    },
+    {
+      "id": 42,
+      "label": "children[] -> ResolvedGridBox (expanded containers only)",
+      "parent_id": 38,
+      "depth": 3,
+      "line": 46,
+      "column": 13,
+      "end_line": 46,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|       |-- children[] -> ResolvedGridBox (expanded containers only)"
+      ]
+    },
+    {
+      "id": 43,
+      "label": "Sizing rules",
+      "parent_id": 38,
+      "depth": 3,
+      "line": 47,
+      "column": 13,
+      "end_line": 47,
+      "branch_column": 9,
+      "children": [
+        44,
+        45,
+        46,
+        47
+      ],
+      "raw_lines": [
+        "|       `-- Sizing rules"
+      ]
+    },
+    {
+      "id": 44,
+      "label": "Content determines measured size",
+      "parent_id": 43,
+      "depth": 4,
+      "line": 48,
+      "column": 17,
+      "end_line": 48,
+      "branch_column": 13,
+      "children": [],
+      "raw_lines": [
+        "|           |-- Content determines measured size"
+      ]
+    },
+    {
+      "id": 45,
+      "label": "Expanded containers include child extents",
+      "parent_id": 43,
+      "depth": 4,
+      "line": 49,
+      "column": 17,
+      "end_line": 49,
+      "branch_column": 13,
+      "children": [],
+      "raw_lines": [
+        "|           |-- Expanded containers include child extents"
+      ]
+    },
+    {
+      "id": 46,
+      "label": "Expanded boxes respect minimumSize",
+      "parent_id": 43,
+      "depth": 4,
+      "line": 50,
+      "column": 17,
+      "end_line": 50,
+      "branch_column": 13,
+      "children": [],
+      "raw_lines": [
+        "|           |-- Expanded boxes respect minimumSize"
+      ]
+    },
+    {
+      "id": 47,
+      "label": "Collapsed boxes require collapsed content and ignore minimumSize",
+      "parent_id": 43,
+      "depth": 4,
+      "line": 51,
+      "column": 17,
+      "end_line": 51,
+      "branch_column": 13,
+      "children": [],
+      "raw_lines": [
+        "|           `-- Collapsed boxes require collapsed content and ignore minimumSize"
+      ]
+    },
+    {
+      "id": 48,
+      "label": "Selection and diagram editing",
+      "parent_id": 0,
+      "depth": 1,
+      "line": 53,
+      "column": 5,
+      "end_line": 53,
+      "branch_column": 1,
+      "children": [
+        49,
+        50,
+        53,
+        57,
+        59
+      ],
+      "raw_lines": [
+        "+-- Selection and diagram editing"
+      ]
+    },
+    {
+      "id": 49,
+      "label": "Active box -> GridBox and its content",
+      "parent_id": 48,
+      "depth": 2,
+      "line": 54,
+      "column": 9,
+      "end_line": 54,
+      "branch_column": 5,
+      "children": [],
+      "raw_lines": [
+        "|   |-- Active box -> GridBox and its content"
+      ]
+    },
+    {
+      "id": 50,
+      "label": "Selection rectangle",
+      "parent_id": 48,
+      "depth": 2,
+      "line": 55,
+      "column": 9,
+      "end_line": 55,
+      "branch_column": 5,
+      "children": [
+        51,
+        52
+      ],
+      "raw_lines": [
+        "|   |-- Selection rectangle"
+      ]
+    },
+    {
+      "id": 51,
+      "label": "startLine, endLine, startColumn, endColumn",
+      "parent_id": 50,
+      "depth": 3,
+      "line": 56,
+      "column": 13,
+      "end_line": 56,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|   |   |-- startLine, endLine, startColumn, endColumn"
+      ]
+    },
+    {
+      "id": 52,
+      "label": "selectedNodeIds[] -> nodes intersecting the rectangle",
+      "parent_id": 50,
+      "depth": 3,
+      "line": 57,
+      "column": 13,
+      "end_line": 57,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|   |   `-- selectedNodeIds[] -> nodes intersecting the rectangle"
+      ]
+    },
+    {
+      "id": 53,
+      "label": "Prompt context",
+      "parent_id": 48,
+      "depth": 2,
+      "line": 58,
+      "column": 9,
+      "end_line": 58,
+      "branch_column": 5,
+      "children": [
+        54,
+        55,
+        56
+      ],
+      "raw_lines": [
+        "|   |-- Prompt context"
+      ]
+    },
+    {
+      "id": 54,
+      "label": "projectId, representationId, baseRevisionId",
+      "parent_id": 53,
+      "depth": 3,
+      "line": 59,
+      "column": 13,
+      "end_line": 59,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|   |   |-- projectId, representationId, baseRevisionId"
+      ]
+    },
+    {
+      "id": 55,
+      "label": "clientSessionId",
+      "parent_id": 53,
+      "depth": 3,
+      "line": 60,
+      "column": 13,
+      "end_line": 60,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|   |   |-- clientSessionId"
+      ]
+    },
+    {
+      "id": 56,
+      "label": "diagramAscii, diagramRevision, mappings, selection, instruction",
+      "parent_id": 53,
+      "depth": 3,
+      "line": 61,
+      "column": 13,
+      "end_line": 61,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|   |   `-- diagramAscii, diagramRevision, mappings, selection, instruction"
+      ]
+    },
+    {
+      "id": 57,
+      "label": "Patch operation",
+      "parent_id": 48,
+      "depth": 2,
+      "line": 62,
+      "column": 9,
+      "end_line": 62,
+      "branch_column": 5,
+      "children": [
+        58
+      ],
+      "raw_lines": [
+        "|   |-- Patch operation"
+      ]
+    },
+    {
+      "id": 58,
+      "label": "Replaces active content and updates mappings and scene layout",
+      "parent_id": 57,
+      "depth": 3,
+      "line": 63,
+      "column": 13,
+      "end_line": 63,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|   |   `-- Replaces active content and updates mappings and scene layout"
+      ]
+    },
+    {
+      "id": 59,
+      "label": "Generate operation",
+      "parent_id": 48,
+      "depth": 2,
+      "line": 64,
+      "column": 9,
+      "end_line": 64,
+      "branch_column": 5,
+      "children": [
+        60,
+        61
+      ],
+      "raw_lines": [
+        "|   `-- Generate operation"
+      ]
+    },
+    {
+      "id": 60,
+      "label": "Placement region -> position and requested minimumSize",
+      "parent_id": 59,
+      "depth": 3,
+      "line": 65,
+      "column": 13,
+      "end_line": 65,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|       |-- Placement region -> position and requested minimumSize"
+      ]
+    },
+    {
+      "id": 61,
+      "label": "Inserts a new diagram box and content into a target container",
+      "parent_id": 59,
+      "depth": 3,
+      "line": 66,
+      "column": 13,
+      "end_line": 66,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|       `-- Inserts a new diagram box and content into a target container"
+      ]
+    },
+    {
+      "id": 62,
+      "label": "Source evidence projections",
+      "parent_id": 0,
+      "depth": 1,
+      "line": 68,
+      "column": 5,
+      "end_line": 68,
+      "branch_column": 1,
+      "children": [
+        63,
+        70,
+        73,
+        80
+      ],
+      "raw_lines": [
+        "+-- Source evidence projections"
+      ]
+    },
+    {
+      "id": 63,
+      "label": "ProjectProjectionRecord",
+      "parent_id": 62,
+      "depth": 2,
+      "line": 69,
+      "column": 9,
+      "end_line": 69,
+      "branch_column": 5,
+      "children": [
+        64,
+        65,
+        66,
+        67
+      ],
+      "raw_lines": [
+        "|   |-- ProjectProjectionRecord"
+      ]
+    },
+    {
+      "id": 64,
+      "label": "projectId",
+      "parent_id": 63,
+      "depth": 3,
+      "line": 70,
+      "column": 13,
+      "end_line": 70,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|   |   |-- projectId"
+      ]
+    },
+    {
+      "id": 65,
+      "label": "targetRepresentationId -> representation",
+      "parent_id": 63,
+      "depth": 3,
+      "line": 71,
+      "column": 13,
+      "end_line": 71,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|   |   |-- targetRepresentationId -> representation"
+      ]
+    },
+    {
+      "id": 66,
+      "label": "targetRevisionId -> pinned revision",
+      "parent_id": 63,
+      "depth": 3,
+      "line": 72,
+      "column": 13,
+      "end_line": 72,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|   |   |-- targetRevisionId -> pinned revision"
+      ]
+    },
+    {
+      "id": 67,
+      "label": "links[]",
+      "parent_id": 63,
+      "depth": 3,
+      "line": 73,
+      "column": 13,
+      "end_line": 73,
+      "branch_column": 9,
+      "children": [
+        68,
+        69
+      ],
+      "raw_lines": [
+        "|   |   `-- links[]"
+      ]
+    },
+    {
+      "id": 68,
+      "label": "sourceEvidenceIds[]",
+      "parent_id": 67,
+      "depth": 4,
+      "line": 74,
+      "column": 17,
+      "end_line": 74,
+      "branch_column": 13,
+      "children": [],
+      "raw_lines": [
+        "|   |       |-- sourceEvidenceIds[]"
+      ]
+    },
+    {
+      "id": 69,
+      "label": "targetNodeIds[] -> nodes in target revision's projection tree",
+      "parent_id": 67,
+      "depth": 4,
+      "line": 75,
+      "column": 17,
+      "end_line": 75,
+      "branch_column": 13,
+      "children": [],
+      "raw_lines": [
+        "|   |       `-- targetNodeIds[] -> nodes in target revision's projection tree"
+      ]
+    },
+    {
+      "id": 70,
+      "label": "Projection tree (built from target revision)",
+      "parent_id": 62,
+      "depth": 2,
+      "line": 76,
+      "column": 9,
+      "end_line": 76,
+      "branch_column": 5,
+      "children": [
+        71,
+        72
+      ],
+      "raw_lines": [
+        "|   |-- Projection tree (built from target revision)"
+      ]
+    },
+    {
+      "id": 71,
+      "label": "rootIds[]",
+      "parent_id": 70,
+      "depth": 3,
+      "line": 77,
+      "column": 13,
+      "end_line": 77,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|   |   |-- rootIds[]"
+      ]
+    },
+    {
+      "id": 72,
+      "label": "nodes[id]: text, line, order, parentId, childIds[]",
+      "parent_id": 70,
+      "depth": 3,
+      "line": 78,
+      "column": 13,
+      "end_line": 78,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|   |   `-- nodes[id]: text, line, order, parentId, childIds[]"
+      ]
+    },
+    {
+      "id": 73,
+      "label": "ProjectionSelectionResult (from selected evidence IDs)",
+      "parent_id": 62,
+      "depth": 2,
+      "line": 79,
+      "column": 9,
+      "end_line": 79,
+      "branch_column": 5,
+      "children": [
+        74,
+        75,
+        76,
+        77,
+        78,
+        79
+      ],
+      "raw_lines": [
+        "|   |-- ProjectionSelectionResult (from selected evidence IDs)"
+      ]
+    },
+    {
+      "id": 74,
+      "label": "ascii",
+      "parent_id": 73,
+      "depth": 3,
+      "line": 80,
+      "column": 13,
+      "end_line": 80,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|   |   |-- ascii"
+      ]
+    },
+    {
+      "id": 75,
+      "label": "matchedSourceEvidenceIds[], unmatchedSourceEvidenceIds[]",
+      "parent_id": 73,
+      "depth": 3,
+      "line": 81,
+      "column": 13,
+      "end_line": 81,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|   |   |-- matchedSourceEvidenceIds[], unmatchedSourceEvidenceIds[]"
+      ]
+    },
+    {
+      "id": 76,
+      "label": "targetNodeIds[]: directly linked nodes",
+      "parent_id": 73,
+      "depth": 3,
+      "line": 82,
+      "column": 13,
+      "end_line": 82,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|   |   |-- targetNodeIds[]: directly linked nodes"
+      ]
+    },
+    {
+      "id": 77,
+      "label": "projectedNodeIds[]: targets and descendants",
+      "parent_id": 73,
+      "depth": 3,
+      "line": 83,
+      "column": 13,
+      "end_line": 83,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|   |   |-- projectedNodeIds[]: targets and descendants"
+      ]
+    },
+    {
+      "id": 78,
+      "label": "visibleNodeIds[]: projected nodes and ancestor context",
+      "parent_id": 73,
+      "depth": 3,
+      "line": 84,
+      "column": 13,
+      "end_line": 84,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|   |   |-- visibleNodeIds[]: projected nodes and ancestor context"
+      ]
+    },
+    {
+      "id": 79,
+      "label": "rows[]: { nodeId, sourceLine }",
+      "parent_id": 73,
+      "depth": 3,
+      "line": 85,
+      "column": 13,
+      "end_line": 85,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|   |   `-- rows[]: { nodeId, sourceLine }"
+      ]
+    },
+    {
+      "id": 80,
+      "label": "CompactionProjection",
+      "parent_id": 62,
+      "depth": 2,
+      "line": 86,
+      "column": 9,
+      "end_line": 86,
+      "branch_column": 5,
+      "children": [
+        81,
+        82,
+        85
+      ],
+      "raw_lines": [
+        "|   `-- CompactionProjection"
+      ]
+    },
+    {
+      "id": 81,
+      "label": "links[]: { callTreeNodeId, file, treeLines[] }",
+      "parent_id": 80,
+      "depth": 3,
+      "line": 87,
+      "column": 13,
+      "end_line": 87,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|       |-- links[]: { callTreeNodeId, file, treeLines[] }"
+      ]
+    },
+    {
+      "id": 82,
+      "label": "files[] -> CompactionSnapshot",
+      "parent_id": 80,
+      "depth": 3,
+      "line": 88,
+      "column": 13,
+      "end_line": 88,
+      "branch_column": 9,
+      "children": [
+        83,
+        84
+      ],
+      "raw_lines": [
+        "|       |-- files[] -> CompactionSnapshot"
+      ]
+    },
+    {
+      "id": 83,
+      "label": "sourceFile, sourceSha256",
+      "parent_id": 82,
+      "depth": 4,
+      "line": 89,
+      "column": 17,
+      "end_line": 89,
+      "branch_column": 13,
+      "children": [],
+      "raw_lines": [
+        "|       |   |-- sourceFile, sourceSha256"
+      ]
+    },
+    {
+      "id": 84,
+      "label": "mappings[]: { treeLine, sourceRanges[] }",
+      "parent_id": 82,
+      "depth": 4,
+      "line": 90,
+      "column": 17,
+      "end_line": 90,
+      "branch_column": 13,
+      "children": [],
+      "raw_lines": [
+        "|       |   `-- mappings[]: { treeLine, sourceRanges[] }"
+      ]
+    },
+    {
+      "id": 85,
+      "label": "Projected compactions (from selected call-tree node IDs)",
+      "parent_id": 80,
+      "depth": 3,
+      "line": 91,
+      "column": 13,
+      "end_line": 91,
+      "branch_column": 9,
+      "children": [
+        86,
+        87,
+        88
+      ],
+      "raw_lines": [
+        "|       `-- Projected compactions (from selected call-tree node IDs)"
+      ]
+    },
+    {
+      "id": 86,
+      "label": "sourceFile, sourceSha256, ascii, selectedLineCount",
+      "parent_id": 85,
+      "depth": 4,
+      "line": 92,
+      "column": 17,
+      "end_line": 92,
+      "branch_column": 13,
+      "children": [],
+      "raw_lines": [
+        "|           |-- sourceFile, sourceSha256, ascii, selectedLineCount"
+      ]
+    },
+    {
+      "id": 87,
+      "label": "rows[]: { treeLine, selected, sourceRanges }",
+      "parent_id": 85,
+      "depth": 4,
+      "line": 93,
+      "column": 17,
+      "end_line": 93,
+      "branch_column": 13,
+      "children": [],
+      "raw_lines": [
+        "|           |-- rows[]: { treeLine, selected, sourceRanges }"
+      ]
+    },
+    {
+      "id": 88,
+      "label": "Selected rows plus ancestor context -> source-file pane",
+      "parent_id": 85,
+      "depth": 4,
+      "line": 94,
+      "column": 17,
+      "end_line": 94,
+      "branch_column": 13,
+      "children": [],
+      "raw_lines": [
+        "|           `-- Selected rows plus ancestor context -> source-file pane"
+      ]
+    },
+    {
+      "id": 89,
+      "label": "Local conversation",
+      "parent_id": 0,
+      "depth": 1,
+      "line": 96,
+      "column": 5,
+      "end_line": 96,
+      "branch_column": 1,
+      "children": [
+        90
+      ],
+      "raw_lines": [
+        "+-- Local conversation"
+      ]
+    },
+    {
+      "id": 90,
+      "label": "LocalChatThread",
+      "parent_id": 89,
+      "depth": 2,
+      "line": 97,
+      "column": 9,
+      "end_line": 97,
+      "branch_column": 5,
+      "children": [
+        91,
+        92,
+        93,
+        94
+      ],
+      "raw_lines": [
+        "|   `-- LocalChatThread"
+      ]
+    },
+    {
+      "id": 91,
+      "label": "title, verbosity",
+      "parent_id": 90,
+      "depth": 3,
+      "line": 98,
+      "column": 13,
+      "end_line": 98,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|       |-- title, verbosity"
+      ]
+    },
+    {
+      "id": 92,
+      "label": "messages[]: { id, role, text }",
+      "parent_id": 90,
+      "depth": 3,
+      "line": 99,
+      "column": 13,
+      "end_line": 99,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|       |-- messages[]: { id, role, text }"
+      ]
+    },
+    {
+      "id": 93,
+      "label": "pending, progress?, error?",
+      "parent_id": 90,
+      "depth": 3,
+      "line": 100,
+      "column": 13,
+      "end_line": 100,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|       |-- pending, progress?, error?"
+      ]
+    },
+    {
+      "id": 94,
+      "label": "Actions: submit follow-up, retry, change verbosity, collapse",
+      "parent_id": 90,
+      "depth": 3,
+      "line": 101,
+      "column": 13,
+      "end_line": 101,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "|       `-- Actions: submit follow-up, retry, change verbosity, collapse"
+      ]
+    },
+    {
+      "id": 95,
+      "label": "Workspace session (transient UI state)",
+      "parent_id": 0,
+      "depth": 1,
+      "line": 103,
+      "column": 5,
+      "end_line": 103,
+      "branch_column": 1,
+      "children": [
+        96,
+        97,
+        98,
+        104,
+        105,
+        106,
+        107
+      ],
+      "raw_lines": [
+        "`-- Workspace session (transient UI state)"
+      ]
+    },
+    {
+      "id": 96,
+      "label": "snapshot -> loaded project and catalog",
+      "parent_id": 95,
+      "depth": 2,
+      "line": 104,
+      "column": 9,
+      "end_line": 104,
+      "branch_column": 5,
+      "children": [],
+      "raw_lines": [
+        "    |-- snapshot -> loaded project and catalog"
+      ]
+    },
+    {
+      "id": 97,
+      "label": "activeId -> current representation and draft",
+      "parent_id": 95,
+      "depth": 2,
+      "line": 105,
+      "column": 9,
+      "end_line": 105,
+      "branch_column": 5,
+      "children": [],
+      "raw_lines": [
+        "    |-- activeId -> current representation and draft"
+      ]
+    },
+    {
+      "id": 98,
+      "label": "drafts[representationId]",
+      "parent_id": 95,
+      "depth": 2,
+      "line": 106,
+      "column": 9,
+      "end_line": 106,
+      "branch_column": 5,
+      "children": [
+        99,
+        100,
+        101,
+        102,
+        103
+      ],
+      "raw_lines": [
+        "    |-- drafts[representationId]"
+      ]
+    },
+    {
+      "id": 99,
+      "label": "name, document",
+      "parent_id": 98,
+      "depth": 3,
+      "line": 107,
+      "column": 13,
+      "end_line": 107,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "    |   |-- name, document"
+      ]
+    },
+    {
+      "id": 100,
+      "label": "savedName, savedScene -> saved baseline for dirty checks",
+      "parent_id": 98,
+      "depth": 3,
+      "line": 108,
+      "column": 13,
+      "end_line": 108,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "    |   |-- savedName, savedScene -> saved baseline for dirty checks"
+      ]
+    },
+    {
+      "id": 101,
+      "label": "revisionId -> expected revision when saving",
+      "parent_id": 98,
+      "depth": 3,
+      "line": 109,
+      "column": 13,
+      "end_line": 109,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "    |   |-- revisionId -> expected revision when saving"
+      ]
+    },
+    {
+      "id": 102,
+      "label": "busy",
+      "parent_id": 98,
+      "depth": 3,
+      "line": 110,
+      "column": 13,
+      "end_line": 110,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "    |   |-- busy"
+      ]
+    },
+    {
+      "id": 103,
+      "label": "focusBox?: { id, serial } -> requested canvas focus",
+      "parent_id": 98,
+      "depth": 3,
+      "line": 111,
+      "column": 13,
+      "end_line": 111,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "    |   `-- focusBox?: { id, serial } -> requested canvas focus"
+      ]
+    },
+    {
+      "id": 104,
+      "label": "Save -> persists captured draft and advances its revision baseline",
+      "parent_id": 95,
+      "depth": 2,
+      "line": 112,
+      "column": 9,
+      "end_line": 112,
+      "branch_column": 5,
+      "children": [],
+      "raw_lines": [
+        "    |-- Save -> persists captured draft and advances its revision baseline"
+      ]
+    },
+    {
+      "id": 105,
+      "label": "Create -> new ASCII scene or copy of current scene and source revision",
+      "parent_id": 95,
+      "depth": 2,
+      "line": 113,
+      "column": 9,
+      "end_line": 113,
+      "branch_column": 5,
+      "children": [],
+      "raw_lines": [
+        "    |-- Create -> new ASCII scene or copy of current scene and source revision"
+      ]
+    },
+    {
+      "id": 106,
+      "label": "Navigation guard -> checks unsaved changes and pending edits",
+      "parent_id": 95,
+      "depth": 2,
+      "line": 114,
+      "column": 9,
+      "end_line": 114,
+      "branch_column": 5,
+      "children": [],
+      "raw_lines": [
+        "    |-- Navigation guard -> checks unsaved changes and pending edits"
+      ]
+    },
+    {
+      "id": 107,
+      "label": "CanvasTransform (view geometry)",
+      "parent_id": 95,
+      "depth": 2,
+      "line": 115,
+      "column": 9,
+      "end_line": 115,
+      "branch_column": 5,
+      "children": [
+        108,
+        109
+      ],
+      "raw_lines": [
+        "    `-- CanvasTransform (view geometry)"
+      ]
+    },
+    {
+      "id": 108,
+      "label": "offset: { x, y }, scale",
+      "parent_id": 107,
+      "depth": 3,
+      "line": 116,
+      "column": 13,
+      "end_line": 116,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "        |-- offset: { x, y }, scale"
+      ]
+    },
+    {
+      "id": 109,
+      "label": "Pan, pinch, zoom, center, and focus change the view transform",
+      "parent_id": 107,
+      "depth": 3,
+      "line": 117,
+      "column": 13,
+      "end_line": 117,
+      "branch_column": 9,
+      "children": [],
+      "raw_lines": [
+        "        `-- Pan, pinch, zoom, center, and focus change the view transform"
+      ]
+    }
+  ],
+  "roots": [
+    0
+  ],
+  "diagnostics": [],
+  "lines": [
+    {
+      "line": 1,
+      "kind": "node",
+      "node_id": 0,
+      "raw": "MAPPING DOMAIN MODEL"
+    },
+    {
+      "line": 2,
+      "kind": "guide",
+      "node_id": null,
+      "raw": "|"
+    },
+    {
+      "line": 3,
+      "kind": "node",
+      "node_id": 1,
+      "raw": "+-- Project"
+    },
+    {
+      "line": 4,
+      "kind": "node",
+      "node_id": 2,
+      "raw": "|   |-- id, name"
+    },
+    {
+      "line": 5,
+      "kind": "node",
+      "node_id": 3,
+      "raw": "|   `-- ProjectRepresentationsSnapshot"
+    },
+    {
+      "line": 6,
+      "kind": "node",
+      "node_id": 4,
+      "raw": "|       |-- project"
+    },
+    {
+      "line": 7,
+      "kind": "node",
+      "node_id": 5,
+      "raw": "|       `-- catalog"
+    },
+    {
+      "line": 8,
+      "kind": "node",
+      "node_id": 6,
+      "raw": "|           |-- representations[id] -> ProjectRepresentationRecord"
+    },
+    {
+      "line": 9,
+      "kind": "node",
+      "node_id": 7,
+      "raw": "|           |   |-- id, name, status"
+    },
+    {
+      "line": 10,
+      "kind": "node",
+      "node_id": 8,
+      "raw": "|           |   |-- currentRevisionId -> ProjectRepresentationRevisionRecord"
+    },
+    {
+      "line": 11,
+      "kind": "node",
+      "node_id": 9,
+      "raw": "|           |   `-- Explorer lists representations with status = \"settled\""
+    },
+    {
+      "line": 12,
+      "kind": "node",
+      "node_id": 10,
+      "raw": "|           `-- revisions[id] -> ProjectRepresentationRevisionRecord"
+    },
+    {
+      "line": 13,
+      "kind": "node",
+      "node_id": 11,
+      "raw": "|               |-- id, representationId, projectId"
+    },
+    {
+      "line": 14,
+      "kind": "node",
+      "node_id": 12,
+      "raw": "|               |-- scene (obtained through sceneFromRevision)"
+    },
+    {
+      "line": 15,
+      "kind": "node",
+      "node_id": 13,
+      "raw": "|               `-- evidence"
+    },
+    {
+      "line": 16,
+      "kind": "guide",
+      "node_id": null,
+      "raw": "|"
+    },
+    {
+      "line": 17,
+      "kind": "node",
+      "node_id": 14,
+      "raw": "+-- Editable diagram document"
+    },
+    {
+      "line": 18,
+      "kind": "node",
+      "node_id": 15,
+      "raw": "|   |-- scene -> LineGridScene"
+    },
+    {
+      "line": 19,
+      "kind": "node",
+      "node_id": 16,
+      "raw": "|   |   |-- root -> GridBox"
+    },
+    {
+      "line": 20,
+      "kind": "node",
+      "node_id": 17,
+      "raw": "|   |   |   |-- Shared properties"
+    },
+    {
+      "line": 21,
+      "kind": "node",
+      "node_id": 18,
+      "raw": "|   |   |   |   |-- id"
+    },
+    {
+      "line": 22,
+      "kind": "node",
+      "node_id": 19,
+      "raw": "|   |   |   |   |-- position: { column, row } relative to parent"
+    },
+    {
+      "line": 23,
+      "kind": "node",
+      "node_id": 20,
+      "raw": "|   |   |   |   |-- minimumSize?: { columns, rows }"
+    },
+    {
+      "line": 24,
+      "kind": "node",
+      "node_id": 21,
+      "raw": "|   |   |   |   |-- collapsed"
+    },
+    {
+      "line": 25,
+      "kind": "node",
+      "node_id": 22,
+      "raw": "|   |   |   |   `-- collapsedContentId? -> contents[id]"
+    },
+    {
+      "line": 26,
+      "kind": "node",
+      "node_id": 23,
+      "raw": "|   |   |   |-- Diagram box (kind = \"diagram\")"
+    },
+    {
+      "line": 27,
+      "kind": "node",
+      "node_id": 24,
+      "raw": "|   |   |   |   `-- contentId -> contents[id]"
+    },
+    {
+      "line": 28,
+      "kind": "node",
+      "node_id": 25,
+      "raw": "|   |   |   `-- Container box (kind = \"container\")"
+    },
+    {
+      "line": 29,
+      "kind": "node",
+      "node_id": 26,
+      "raw": "|   |   |       |-- children[] -> GridBox (recursive)"
+    },
+    {
+      "line": 30,
+      "kind": "node",
+      "node_id": 27,
+      "raw": "|   |   |       `-- layout: { collisionPolicy: \"push-right\", gap }"
+    },
+    {
+      "line": 31,
+      "kind": "node",
+      "node_id": 28,
+      "raw": "|   |   `-- contents[id]"
+    },
+    {
+      "line": 32,
+      "kind": "node",
+      "node_id": 29,
+      "raw": "|   |       |-- id, ascii, revision"
+    },
+    {
+      "line": 33,
+      "kind": "node",
+      "node_id": 30,
+      "raw": "|   |       `-- mappings[] -> source evidence associations"
+    },
+    {
+      "line": 34,
+      "kind": "node",
+      "node_id": 31,
+      "raw": "|   |-- evidence? -> source-backed document metadata"
+    },
+    {
+      "line": 35,
+      "kind": "node",
+      "node_id": 32,
+      "raw": "|   |-- nodes[contentId][]"
+    },
+    {
+      "line": 36,
+      "kind": "node",
+      "node_id": 33,
+      "raw": "|   |   |-- id"
+    },
+    {
+      "line": 37,
+      "kind": "node",
+      "node_id": 34,
+      "raw": "|   |   |-- head: { line, startColumn, endColumn }"
+    },
+    {
+      "line": 38,
+      "kind": "node",
+      "node_id": 35,
+      "raw": "|   |   `-- sourceRanges[]"
+    },
+    {
+      "line": 39,
+      "kind": "node",
+      "node_id": 36,
+      "raw": "|   `-- sections[contentId][]"
+    },
+    {
+      "line": 40,
+      "kind": "guide",
+      "node_id": null,
+      "raw": "|"
+    },
+    {
+      "line": 41,
+      "kind": "node",
+      "node_id": 37,
+      "raw": "+-- Resolved scene (derived from LineGridScene)"
+    },
+    {
+      "line": 42,
+      "kind": "node",
+      "node_id": 38,
+      "raw": "|   `-- ResolvedGridBox"
+    },
+    {
+      "line": 43,
+      "kind": "node",
+      "node_id": 39,
+      "raw": "|       |-- box -> original GridBox"
+    },
+    {
+      "line": 44,
+      "kind": "node",
+      "node_id": 40,
+      "raw": "|       |-- bounds: { column, row, columns, rows } in scene coordinates"
+    },
+    {
+      "line": 45,
+      "kind": "node",
+      "node_id": 41,
+      "raw": "|       |-- contentId? -> displayed content"
+    },
+    {
+      "line": 46,
+      "kind": "node",
+      "node_id": 42,
+      "raw": "|       |-- children[] -> ResolvedGridBox (expanded containers only)"
+    },
+    {
+      "line": 47,
+      "kind": "node",
+      "node_id": 43,
+      "raw": "|       `-- Sizing rules"
+    },
+    {
+      "line": 48,
+      "kind": "node",
+      "node_id": 44,
+      "raw": "|           |-- Content determines measured size"
+    },
+    {
+      "line": 49,
+      "kind": "node",
+      "node_id": 45,
+      "raw": "|           |-- Expanded containers include child extents"
+    },
+    {
+      "line": 50,
+      "kind": "node",
+      "node_id": 46,
+      "raw": "|           |-- Expanded boxes respect minimumSize"
+    },
+    {
+      "line": 51,
+      "kind": "node",
+      "node_id": 47,
+      "raw": "|           `-- Collapsed boxes require collapsed content and ignore minimumSize"
+    },
+    {
+      "line": 52,
+      "kind": "guide",
+      "node_id": null,
+      "raw": "|"
+    },
+    {
+      "line": 53,
+      "kind": "node",
+      "node_id": 48,
+      "raw": "+-- Selection and diagram editing"
+    },
+    {
+      "line": 54,
+      "kind": "node",
+      "node_id": 49,
+      "raw": "|   |-- Active box -> GridBox and its content"
+    },
+    {
+      "line": 55,
+      "kind": "node",
+      "node_id": 50,
+      "raw": "|   |-- Selection rectangle"
+    },
+    {
+      "line": 56,
+      "kind": "node",
+      "node_id": 51,
+      "raw": "|   |   |-- startLine, endLine, startColumn, endColumn"
+    },
+    {
+      "line": 57,
+      "kind": "node",
+      "node_id": 52,
+      "raw": "|   |   `-- selectedNodeIds[] -> nodes intersecting the rectangle"
+    },
+    {
+      "line": 58,
+      "kind": "node",
+      "node_id": 53,
+      "raw": "|   |-- Prompt context"
+    },
+    {
+      "line": 59,
+      "kind": "node",
+      "node_id": 54,
+      "raw": "|   |   |-- projectId, representationId, baseRevisionId"
+    },
+    {
+      "line": 60,
+      "kind": "node",
+      "node_id": 55,
+      "raw": "|   |   |-- clientSessionId"
+    },
+    {
+      "line": 61,
+      "kind": "node",
+      "node_id": 56,
+      "raw": "|   |   `-- diagramAscii, diagramRevision, mappings, selection, instruction"
+    },
+    {
+      "line": 62,
+      "kind": "node",
+      "node_id": 57,
+      "raw": "|   |-- Patch operation"
+    },
+    {
+      "line": 63,
+      "kind": "node",
+      "node_id": 58,
+      "raw": "|   |   `-- Replaces active content and updates mappings and scene layout"
+    },
+    {
+      "line": 64,
+      "kind": "node",
+      "node_id": 59,
+      "raw": "|   `-- Generate operation"
+    },
+    {
+      "line": 65,
+      "kind": "node",
+      "node_id": 60,
+      "raw": "|       |-- Placement region -> position and requested minimumSize"
+    },
+    {
+      "line": 66,
+      "kind": "node",
+      "node_id": 61,
+      "raw": "|       `-- Inserts a new diagram box and content into a target container"
+    },
+    {
+      "line": 67,
+      "kind": "guide",
+      "node_id": null,
+      "raw": "|"
+    },
+    {
+      "line": 68,
+      "kind": "node",
+      "node_id": 62,
+      "raw": "+-- Source evidence projections"
+    },
+    {
+      "line": 69,
+      "kind": "node",
+      "node_id": 63,
+      "raw": "|   |-- ProjectProjectionRecord"
+    },
+    {
+      "line": 70,
+      "kind": "node",
+      "node_id": 64,
+      "raw": "|   |   |-- projectId"
+    },
+    {
+      "line": 71,
+      "kind": "node",
+      "node_id": 65,
+      "raw": "|   |   |-- targetRepresentationId -> representation"
+    },
+    {
+      "line": 72,
+      "kind": "node",
+      "node_id": 66,
+      "raw": "|   |   |-- targetRevisionId -> pinned revision"
+    },
+    {
+      "line": 73,
+      "kind": "node",
+      "node_id": 67,
+      "raw": "|   |   `-- links[]"
+    },
+    {
+      "line": 74,
+      "kind": "node",
+      "node_id": 68,
+      "raw": "|   |       |-- sourceEvidenceIds[]"
+    },
+    {
+      "line": 75,
+      "kind": "node",
+      "node_id": 69,
+      "raw": "|   |       `-- targetNodeIds[] -> nodes in target revision's projection tree"
+    },
+    {
+      "line": 76,
+      "kind": "node",
+      "node_id": 70,
+      "raw": "|   |-- Projection tree (built from target revision)"
+    },
+    {
+      "line": 77,
+      "kind": "node",
+      "node_id": 71,
+      "raw": "|   |   |-- rootIds[]"
+    },
+    {
+      "line": 78,
+      "kind": "node",
+      "node_id": 72,
+      "raw": "|   |   `-- nodes[id]: text, line, order, parentId, childIds[]"
+    },
+    {
+      "line": 79,
+      "kind": "node",
+      "node_id": 73,
+      "raw": "|   |-- ProjectionSelectionResult (from selected evidence IDs)"
+    },
+    {
+      "line": 80,
+      "kind": "node",
+      "node_id": 74,
+      "raw": "|   |   |-- ascii"
+    },
+    {
+      "line": 81,
+      "kind": "node",
+      "node_id": 75,
+      "raw": "|   |   |-- matchedSourceEvidenceIds[], unmatchedSourceEvidenceIds[]"
+    },
+    {
+      "line": 82,
+      "kind": "node",
+      "node_id": 76,
+      "raw": "|   |   |-- targetNodeIds[]: directly linked nodes"
+    },
+    {
+      "line": 83,
+      "kind": "node",
+      "node_id": 77,
+      "raw": "|   |   |-- projectedNodeIds[]: targets and descendants"
+    },
+    {
+      "line": 84,
+      "kind": "node",
+      "node_id": 78,
+      "raw": "|   |   |-- visibleNodeIds[]: projected nodes and ancestor context"
+    },
+    {
+      "line": 85,
+      "kind": "node",
+      "node_id": 79,
+      "raw": "|   |   `-- rows[]: { nodeId, sourceLine }"
+    },
+    {
+      "line": 86,
+      "kind": "node",
+      "node_id": 80,
+      "raw": "|   `-- CompactionProjection"
+    },
+    {
+      "line": 87,
+      "kind": "node",
+      "node_id": 81,
+      "raw": "|       |-- links[]: { callTreeNodeId, file, treeLines[] }"
+    },
+    {
+      "line": 88,
+      "kind": "node",
+      "node_id": 82,
+      "raw": "|       |-- files[] -> CompactionSnapshot"
+    },
+    {
+      "line": 89,
+      "kind": "node",
+      "node_id": 83,
+      "raw": "|       |   |-- sourceFile, sourceSha256"
+    },
+    {
+      "line": 90,
+      "kind": "node",
+      "node_id": 84,
+      "raw": "|       |   `-- mappings[]: { treeLine, sourceRanges[] }"
+    },
+    {
+      "line": 91,
+      "kind": "node",
+      "node_id": 85,
+      "raw": "|       `-- Projected compactions (from selected call-tree node IDs)"
+    },
+    {
+      "line": 92,
+      "kind": "node",
+      "node_id": 86,
+      "raw": "|           |-- sourceFile, sourceSha256, ascii, selectedLineCount"
+    },
+    {
+      "line": 93,
+      "kind": "node",
+      "node_id": 87,
+      "raw": "|           |-- rows[]: { treeLine, selected, sourceRanges }"
+    },
+    {
+      "line": 94,
+      "kind": "node",
+      "node_id": 88,
+      "raw": "|           `-- Selected rows plus ancestor context -> source-file pane"
+    },
+    {
+      "line": 95,
+      "kind": "guide",
+      "node_id": null,
+      "raw": "|"
+    },
+    {
+      "line": 96,
+      "kind": "node",
+      "node_id": 89,
+      "raw": "+-- Local conversation"
+    },
+    {
+      "line": 97,
+      "kind": "node",
+      "node_id": 90,
+      "raw": "|   `-- LocalChatThread"
+    },
+    {
+      "line": 98,
+      "kind": "node",
+      "node_id": 91,
+      "raw": "|       |-- title, verbosity"
+    },
+    {
+      "line": 99,
+      "kind": "node",
+      "node_id": 92,
+      "raw": "|       |-- messages[]: { id, role, text }"
+    },
+    {
+      "line": 100,
+      "kind": "node",
+      "node_id": 93,
+      "raw": "|       |-- pending, progress?, error?"
+    },
+    {
+      "line": 101,
+      "kind": "node",
+      "node_id": 94,
+      "raw": "|       `-- Actions: submit follow-up, retry, change verbosity, collapse"
+    },
+    {
+      "line": 102,
+      "kind": "guide",
+      "node_id": null,
+      "raw": "|"
+    },
+    {
+      "line": 103,
+      "kind": "node",
+      "node_id": 95,
+      "raw": "`-- Workspace session (transient UI state)"
+    },
+    {
+      "line": 104,
+      "kind": "node",
+      "node_id": 96,
+      "raw": "    |-- snapshot -> loaded project and catalog"
+    },
+    {
+      "line": 105,
+      "kind": "node",
+      "node_id": 97,
+      "raw": "    |-- activeId -> current representation and draft"
+    },
+    {
+      "line": 106,
+      "kind": "node",
+      "node_id": 98,
+      "raw": "    |-- drafts[representationId]"
+    },
+    {
+      "line": 107,
+      "kind": "node",
+      "node_id": 99,
+      "raw": "    |   |-- name, document"
+    },
+    {
+      "line": 108,
+      "kind": "node",
+      "node_id": 100,
+      "raw": "    |   |-- savedName, savedScene -> saved baseline for dirty checks"
+    },
+    {
+      "line": 109,
+      "kind": "node",
+      "node_id": 101,
+      "raw": "    |   |-- revisionId -> expected revision when saving"
+    },
+    {
+      "line": 110,
+      "kind": "node",
+      "node_id": 102,
+      "raw": "    |   |-- busy"
+    },
+    {
+      "line": 111,
+      "kind": "node",
+      "node_id": 103,
+      "raw": "    |   `-- focusBox?: { id, serial } -> requested canvas focus"
+    },
+    {
+      "line": 112,
+      "kind": "node",
+      "node_id": 104,
+      "raw": "    |-- Save -> persists captured draft and advances its revision baseline"
+    },
+    {
+      "line": 113,
+      "kind": "node",
+      "node_id": 105,
+      "raw": "    |-- Create -> new ASCII scene or copy of current scene and source revision"
+    },
+    {
+      "line": 114,
+      "kind": "node",
+      "node_id": 106,
+      "raw": "    |-- Navigation guard -> checks unsaved changes and pending edits"
+    },
+    {
+      "line": 115,
+      "kind": "node",
+      "node_id": 107,
+      "raw": "    `-- CanvasTransform (view geometry)"
+    },
+    {
+      "line": 116,
+      "kind": "node",
+      "node_id": 108,
+      "raw": "        |-- offset: { x, y }, scale"
+    },
+    {
+      "line": 117,
+      "kind": "node",
+      "node_id": 109,
+      "raw": "        `-- Pan, pinch, zoom, center, and focus change the view transform"
+    },
+    {
+      "line": 118,
+      "kind": "blank",
+      "node_id": null,
+      "raw": ""
+    },
+    {
+      "line": 119,
+      "kind": "prose",
+      "node_id": null,
+      "raw": "Notation: [] = collection; ? = optional; -> = reference or derived relationship."
+    },
+    {
+      "line": 120,
+      "kind": "prose",
+      "node_id": null,
+      "raw": "Scope: source entities and relationships shown in the supplied excerpts."
+    }
+  ]
+}

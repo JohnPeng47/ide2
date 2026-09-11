@@ -1,0 +1,168 @@
+Mapping domain model
+|
++-- ProjectRepresentationsSnapshot
+|   |
+|   +-- project: Project
+|   |   +-- id
+|   |   \-- name
+|   |
+|   \-- catalog: ProjectRepresentationCatalog
+|       |
+|       +-- representations: Map<RepresentationId, ProjectRepresentation>
+|       |   \-- ProjectRepresentation
+|       |       +-- id
+|       |       +-- projectId ------------------------------> Project.id
+|       |       +-- name
+|       |       +-- status: settled | ...
+|       |       \-- currentRevisionId ----------------------> ProjectRepresentationRevision.id
+|       |
+|       +-- revisions: Map<RevisionId, ProjectRepresentationRevision>
+|       |   \-- ProjectRepresentationRevision
+|       |       +-- id
+|       |       +-- projectId ------------------------------> Project.id
+|       |       +-- representationId -----------------------> ProjectRepresentation.id
+|       |       +-- scene: LineGridScene
+|       |       \-- evidence: MappingEvidence
+|       |
+|       +-- projections: DiagramProjectionCatalog
+|       |   \-- ProjectProjectionRecord [0..*]
+|       |       +-- projectId ------------------------------> Project.id
+|       |       +-- targetRepresentationId -----------------> ProjectRepresentation.id
+|       |       +-- targetRevisionId -----------------------> ProjectRepresentationRevision.id
+|       |       \-- links [0..*]
+|       |           \-- ProjectionLink
+|       |               +-- sourceEvidenceIds [1..*] -------> MappingEvidence.evidenceIds
+|       |               \-- targetNodeIds [1..*] -----------> ProjectionTreeNode.id
+|       |
+|       \-- compactionProjection: CompactionProjection [0..1]
+|           +-- links [0..*]
+|           |   \-- CompactionLink
+|           |       +-- callTreeNodeId ---------------------> ProjectionTreeNode.id
+|           |       +-- file -------------------------------> CompactionSnapshot.sourceFile
+|           |       \-- treeLines [1..*] -------------------> CompactionSnapshot tree nodes
+|           \-- files [0..*]
+|               \-- CompactionSnapshot
+|                   +-- sourceFile
+|                   +-- sourceSha256
+|                   +-- ascii
+|                   \-- mappings [0..*]
+|                       +-- treeLine
+|                       \-- sourceRanges [1..*] ------------> source-file ranges
+|
++-- MappingDocument                          (materialized from a revision)
+|   +-- scene: LineGridScene
+|   |   +-- contents: Map<ContentId, GridContent>
+|   |   |   \-- GridContent
+|   |   |       +-- id
+|   |   |       +-- ascii
+|   |   |       +-- revision
+|   |   |       \-- mappings [0..*] ------------------------> source ranges / evidence
+|   |   |
+|   |   \-- root: GridBox
+|   |       +-- common state
+|   |       |   +-- id: BoxId                              (unique in the scene)
+|   |       |   +-- position: GridPoint { column, row }    (relative to parent)
+|   |       |   +-- minimumSize: GridSize [0..1]
+|   |       |   +-- collapsed
+|   |       |   \-- collapsedContentId [required if collapsed] -> GridContent.id
+|   |       |
+|   |       \-- kind
+|   |           +-- diagram
+|   |           |   \-- contentId --------------------------> GridContent.id
+|   |           |
+|   |           \-- container
+|   |               +-- children: GridBox [0..*]           (recursive ownership)
+|   |               \-- layout
+|   |                   +-- collisionPolicy: push-right
+|   |                   \-- gap
+|   |
+|   +-- evidence: MappingEvidence [0..1]
+|   +-- nodes: Map<ContentId, MappedNode[]>                 (derived/editable index)
+|   |   \-- MappedNode
+|   |       +-- id
+|   |       +-- head: { line, startColumn, endColumn }
+|   |       \-- sourceRanges [0..*] ------------------------> MappingEvidence
+|   \-- sections: Map<ContentId, MappedSection[]>          (derived/editable index)
+|
++-- ResolvedGridBox                         (derived layout view of GridBox)
+|   +-- box ------------------------------------------------> GridBox
+|   +-- bounds: absolute GridPoint + measured GridSize
+|   +-- contentId [0..1] -----------------------------------> GridContent.id
+|   \-- children: ResolvedGridBox [0..*]
+|       \-- rules
+|           +-- content size is measured from ASCII
+|           +-- expanded containers include child extents and minimumSize
+|           \-- collapsed boxes use collapsedContentId and ignore expanded minimumSize
+|
++-- MappingEditorSession                    (client-side working state)
+|   +-- snapshot ---------------------------> ProjectRepresentationsSnapshot
+|   +-- activeId [0..1] --------------------> ProjectRepresentation.id
+|   +-- drafts: Map<RepresentationId, Draft>
+|   |   \-- Draft
+|   |       +-- name
+|   |       +-- document -------------------> MappingDocument
+|   |       +-- savedName
+|   |       +-- savedScene                  (serialized save baseline)
+|   |       +-- revisionId -----------------> ProjectRepresentationRevision.id
+|   |       +-- busy
+|   |       +-- focusBox [0..1] ------------> GridBox.id
+|   |       \-- dirty := name != savedName or scene != savedScene
+|   +-- savingId [0..1]
+|   \-- creationDraft [0..1]
+|       +-- name
+|       +-- initialAscii
+|       \-- copyCurrent                     (reuses current revision/evidence)
+|
++-- SelectionAndGenerationSession           (transient interaction state)
+|   +-- activeBoxId ------------------------> GridBox.id
+|   +-- selectionRect: line/column range
+|   +-- selectedNodeIds [0..*] -------------> MappedNode.id
+|   +-- promptOperation: patch | generate
+|   +-- promptPhase: ready | generating | applied | error
+|   +-- patch
+|   |   +-- updates active GridContent ASCII, revision, and mappings
+|   |   \-- relayouts the scene around the active GridBox
+|   \-- generate
+|       +-- creates GridContent from the selected evidence and instruction
+|       +-- creates a diagram GridBox with the dragged position/minimumSize
+|       \-- inserts both into the selected parent container (or root)
+|
++-- ProjectionSelectionResult               (derived call-tree slice)
+|   +-- matchedSourceEvidenceIds [0..*]
+|   +-- unmatchedSourceEvidenceIds [0..*]
+|   +-- targetNodeIds [0..*]                (directly linked nodes)
+|   +-- visibleNodeIds [0..*]               (targets + descendants + ancestors)
+|   +-- projectedNodeIds [0..*]             (targets + descendants)
+|   +-- rows: { nodeId, sourceLine } [0..*]
+|   \-- ascii                               (rendered visible call tree)
+|
++-- CompactionSelection [0..*]              (derived source-oriented slice)
+|   +-- sourceFile
+|   +-- sourceSha256
+|   +-- ascii                               (selected tree rows + ancestors)
+|   +-- selectedLineCount
+|   \-- rows
+|       +-- treeLine
+|       +-- selected
+|       \-- sourceRanges -------------------> source-file ranges
+|
+\-- LocalChatThread                         (conversation scoped to a selected region)
+    +-- title
+    +-- verbosity
+    +-- pending
+    +-- progress [0..1]
+    +-- error [0..1]
+    \-- messages [0..*]
+        \-- LocalChatMessage
+            +-- id
+            +-- role: user | assistant
+            \-- text
+
+Lifecycle
+|
++-- open representation -> current revision -> MappingDocument -> Draft
++-- select mapped nodes -> evidence ids -> pinned call-tree projection
++-- call-tree nodes -> compaction projection -> mapped source ranges
++-- prompt patch -> replace content in active box -> relayout -> mark draft dirty
++-- prompt generate -> add content + diagram box -> relayout -> mark draft dirty
+\-- save dirty draft with expected revision id -> new current revision -> reset baseline

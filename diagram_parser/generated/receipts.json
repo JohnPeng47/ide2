@@ -1,0 +1,68 @@
+[
+  {
+    "name": "sol_1",
+    "model": "gpt-5.6-sol",
+    "reasoningEffort": "high",
+    "promptSha256": "b63c667184f691bc588701d721e8fe1dd7671ce5b065ea220714e82f0845a489",
+    "exitCode": 0,
+    "elapsedSeconds": 93.08,
+    "files": [
+      "generated/sol_1/diagrams/mapping-domain-model.txt"
+    ]
+  },
+  {
+    "name": "sol_2",
+    "model": "gpt-5.6-sol",
+    "reasoningEffort": "high",
+    "promptSha256": "b63c667184f691bc588701d721e8fe1dd7671ce5b065ea220714e82f0845a489",
+    "exitCode": 0,
+    "elapsedSeconds": 86.68,
+    "files": [
+      "generated/sol_2/diagrams/domain-model.txt"
+    ]
+  },
+  {
+    "name": "sol_3",
+    "model": "gpt-5.6-sol",
+    "reasoningEffort": "high",
+    "promptSha256": "b63c667184f691bc588701d721e8fe1dd7671ce5b065ea220714e82f0845a489",
+    "exitCode": 0,
+    "elapsedSeconds": 73.4,
+    "files": [
+      "generated/sol_3/diagrams/mapping-domain-model.txt"
+    ]
+  },
+  {
+    "name": "astra_1",
+    "model": "gpt-6-astra",
+    "reasoningEffort": "high",
+    "promptSha256": "b63c667184f691bc588701d721e8fe1dd7671ce5b065ea220714e82f0845a489",
+    "exitCode": 0,
+    "elapsedSeconds": 70.14,
+    "files": [
+      "generated/astra_1/diagrams/domain-model.txt"
+    ]
+  },
+  {
+    "name": "astra_2",
+    "model": "gpt-6-astra",
+    "reasoningEffort": "high",
+    "promptSha256": "b63c667184f691bc588701d721e8fe1dd7671ce5b065ea220714e82f0845a489",
+    "exitCode": 0,
+    "elapsedSeconds": 83.14,
+    "files": [
+      "generated/astra_2/diagrams/mapping-domain-model.txt"
+    ]
+  },
+  {
+    "name": "astra_3",
+    "model": "gpt-6-astra",
+    "reasoningEffort": "high",
+    "promptSha256": "b63c667184f691bc588701d721e8fe1dd7671ce5b065ea220714e82f0845a489",
+    "exitCode": 0,
+    "elapsedSeconds": 74.58,
+    "files": [
+      "generated/astra_3/diagrams/domain-model.txt"
+    ]
+  }
+]

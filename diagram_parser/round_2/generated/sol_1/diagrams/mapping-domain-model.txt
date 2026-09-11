@@ -1,0 +1,145 @@
+MAPPING DOMAIN MODEL
+====================
+
+Project
+|-- id
+|-- name
+|-- Catalog
+|   |-- representations: Representation [0..*]
+|   |   \-- Representation
+|   |       |-- id
+|   |       |-- projectId -> Project.id
+|   |       |-- name
+|   |       |-- status: settled | ...
+|   |       \-- currentRevisionId -> Revision.id
+|   |-- revisions: Revision [0..*]
+|   |   \-- Revision
+|   |       |-- id
+|   |       |-- projectId -> Project.id
+|   |       |-- representationId -> Representation.id
+|   |       |-- scene -> LineGridScene
+|   |       \-- evidence -> EvidenceIndex
+|   \-- projections: Projection [0..*]
+|       |-- DiagramProjection
+|       |   |-- projectId -> Project.id
+|       |   |-- targetRepresentationId -> Representation.id
+|       |   |-- targetRevisionId -> Revision.id (pinned)
+|       |   \-- links: ProjectionLink [0..*]
+|       |       |-- sourceEvidenceIds: Evidence.id [1..*]
+|       |       \-- targetNodeIds: DiagramNode.id [1..*]
+|       \-- CompactionProjection
+|           |-- files: CompactionSnapshot [0..*]
+|           |   |-- sourceFile
+|           |   |-- sourceSha256
+|           |   |-- ascii
+|           |   \-- mappings: CompactionMapping [0..*]
+|           |       |-- treeLine
+|           |       \-- sourceRanges: SourceRange [1..*]
+|           \-- links: CompactionLink [0..*]
+|               |-- callTreeNodeId -> DiagramNode.id
+|               |-- file -> CompactionSnapshot.sourceFile
+|               \-- treeLines: integer [1..*]
+|
+\-- MappingWorkspace (client editing session)
+    |-- snapshot -> Project + Catalog
+    |-- activeId -> Representation.id
+    |-- drafts: Draft [0..*] (one per opened Representation)
+    |   \-- Draft
+    |       |-- name
+    |       |-- revisionId -> Revision.id (optimistic-save base)
+    |       |-- document -> MappingDocument
+    |       |   |-- scene -> LineGridScene
+    |       |   |   |-- contents: GridContent [1..*]
+    |       |   |   |   \-- GridContent
+    |       |   |   |       |-- id
+    |       |   |   |       |-- ascii
+    |       |   |   |       |-- revision
+    |       |   |   |       \-- mappings -> SourceRange [0..*]
+    |       |   |   \-- root -> GridBox
+    |       |   |       |-- id
+    |       |   |       |-- position { column, row }
+    |       |   |       |-- minimumSize? { columns, rows }
+    |       |   |       |-- collapsed
+    |       |   |       |-- collapsedContentId? -> GridContent.id
+    |       |   |       \-- kind
+    |       |   |           |-- diagram
+    |       |   |           |   \-- contentId -> GridContent.id
+    |       |   |           \-- container
+    |       |   |               |-- children: GridBox [0..*]
+    |       |   |               \-- layout { collisionPolicy: push-right, gap }
+    |       |   |-- evidence -> EvidenceIndex?
+    |       |   |   \-- Evidence
+    |       |   |       |-- id
+    |       |   |       \-- sourceRanges: SourceRange [1..*]
+    |       |   |-- nodes: DiagramNode [0..*] (indexed by content id)
+    |       |   |   \-- DiagramNode
+    |       |   |       |-- id
+    |       |   |       |-- text / line / columns
+    |       |   |       |-- parentId?
+    |       |   |       |-- childIds: DiagramNode.id [0..*]
+    |       |   |       \-- sourceRanges: SourceRange [0..*]
+    |       |   \-- sections [0..*]
+    |       |-- savedName + savedScene (dirty-check baseline)
+    |       |-- busy
+    |       \-- focusBox? { id -> GridBox.id, serial }
+    |-- DiagramExplorer
+    |   |-- lists settled Representations
+    |   |-- marks dirty Drafts
+    |   \-- traverses the active LineGridScene/GridBox tree
+    |-- CanvasView
+    |   |-- transform { offset { x, y }, scale }
+    |   |-- pan / pinch / keyboard zoom state
+    |   \-- resolves or focuses GridBox bounds
+    |-- SelectionSession
+    |   |-- activeBoxId -> GridBox.id
+    |   |-- selectionRect { startLine, endLine, startColumn, endColumn }
+    |   |-- selectedNodeIds -> DiagramNode.id [0..*]
+    |   |-- selectedEvidenceIds -> Evidence.id [0..*]
+    |   \-- PromptOperation
+    |       |-- patch
+    |       |   \-- replaces active GridContent ascii/revision/mappings
+    |       \-- generate
+    |           \-- inserts a new diagram GridBox + GridContent into a container
+    |-- ProjectionView
+    |   |-- projectSelection(DiagramProjection, pinned Revision, Evidence ids)
+    |   |   \-- ProjectionSelectionResult
+    |   |       |-- ascii
+    |   |       |-- matched / unmatched Evidence ids
+    |   |       |-- target / visible / projected DiagramNode ids
+    |   |       \-- rows { nodeId, sourceLine }
+    |   \-- projectCompactions(CompactionProjection, call-tree node ids)
+    |       \-- ProjectedCompaction [0..*]
+    |           |-- sourceFile + sourceSha256
+    |           |-- ascii
+    |           |-- rows { treeLine, selected, sourceRanges }
+    |           \-- selectedLineCount
+    \-- LocalChatThread [0..*]
+        |-- title
+        |-- messages: LocalChatMessage [0..*]
+        |   |-- role: user | assistant
+        |   \-- text
+        |-- verbosity
+        |-- pending + progress
+        \-- error
+
+KEY RELATIONSHIPS
+-----------------
+
+Representation 1 ---- * Revision
+Revision       1 ---- 1 MappingDocument snapshot
+LineGridScene  1 ---- * GridBox (recursive containment)
+GridBox        * ---- 0..1 GridContent
+Evidence       * ---- * DiagramNode (through source mappings)
+Evidence       * ---- * DiagramNode (through DiagramProjection links)
+DiagramNode    * ---- * compacted tree lines (through CompactionProjection links)
+Draft          1 ---- 1 pinned Revision until the next successful save
+
+INVARIANTS VISIBLE IN THE SOURCE
+--------------------------------
+
+* GridBox ids are unique within a scene; positions, sizes, and bounds are integers.
+* A collapsed GridBox must name collapsed content; expanded minimumSize reserves space.
+* Only settled Representations are openable and shown by the explorer.
+* Projection target project, Representation, and Revision must match the pinned target.
+* Saving uses Draft.revisionId as expectedRevisionId, then advances it to the saved revision.
+* A Draft is dirty when its current name or serialized scene differs from its saved baseline.

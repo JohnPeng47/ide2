@@ -1,0 +1,457 @@
+{
+  "round": 2,
+  "reviewer": {
+    "identity": "/root/round_2_independent_review",
+    "task": "Independent source-first audit of all six frozen-baseline ASCII parses"
+  },
+  "reviewed_at": "2026-09-11T16:22:58.975198+00:00",
+  "methodology": [
+    "Read every original ASCII file before comparing results. Did not read tree_parser.py, tree_parser_snapshot.py, earlier-round results, or parser tests, and did not invoke any parser.",
+    "Manually established each tree/prose boundary, root, four-column branch convention, and the 14 routed-wire label overrides directly from source. The independent checker uses only those observed source-specific conventions.",
+    "Compared all 716 parsed nodes: labels, source line and end line, raw source span, label and branch columns, depth, parent, ordered children, and roots. The seven ambiguous appendix nodes were separately verified against the bullet-tree alternative.",
+    "Checked every actual containment edge (704), root (12), and all 797 original lines for exact raw content, numbering, classification, and node references. Checked node order and parent/child reciprocity. Cross-checked every review-table node against the JSON output.",
+    "Preserve both raw-label and clean-semantic-label rubrics; ordinary prose-bullet ambiguity is independent. Exception and strict diagnostic outcomes are recorded separately and do not determine semantic correctness."
+  ],
+  "rubric": {
+    "primary": "Clean semantic labels and faithfully reconstructed ASCII containment forests, excluding unambiguously detached prose; genuinely ambiguous appendix membership remains ambiguous.",
+    "wire_labels": "Do not absorb visibly routed right-side wires into semantic entity labels. Keep textual inline reference arrows with named targets as label annotations. Non-containment graph links are documented but not required as tree edges.",
+    "literal_alternative": "If labels are defined as the complete raw suffix following a branch marker, routed wires are literal label content rather than parse errors."
+  },
+  "totals": {
+    "diagrams_reviewed": 6,
+    "extra_generated_diagram_outputs": 0,
+    "semantic_failures": 1,
+    "semantic_passes": 4,
+    "ambiguities": 1,
+    "parser_exceptions": 0,
+    "strict_diagnostic_failures": 0,
+    "source_lines_reviewed": 797,
+    "parsed_nodes_reviewed": 716,
+    "parsed_edges_reviewed": 704,
+    "parsed_roots_reviewed": 12
+  },
+  "literal_suffix_rubric_totals": {
+    "diagrams_reviewed": 6,
+    "confirmed_failures": 0,
+    "passes": 5,
+    "ambiguities": 1,
+    "if_ordinary_bullet_appendix_is_accepted": {
+      "failures": 0,
+      "passes": 6,
+      "ambiguities": 0
+    }
+  },
+  "conditional_semantic_totals": {
+    "if_sol_1_appendix_is_prose": {
+      "failures": 2,
+      "passes": 4,
+      "ambiguities": 0
+    },
+    "if_sol_1_appendix_is_supported_tree": {
+      "failures": 1,
+      "passes": 5,
+      "ambiguities": 0
+    }
+  },
+  "evidence": {
+    "expected_nodes_edges_and_line_accounting": "independent_expected.json",
+    "reproduction": "python diagram_parser/round_2/independent_check.py",
+    "checker": "independent_check.py",
+    "checker_results": "independent_check_results.json"
+  },
+  "diagrams": [
+    {
+      "id": "sol_1_1",
+      "file": "generated/sol_1/diagrams/mapping-domain-model.txt",
+      "input_sha256": "faac5a29f307fff9e7e92edb93f47e71fecdac5225e05155ad1c048c4f2c7069",
+      "actual_counts": {
+        "nodes": 126,
+        "edges": 124,
+        "roots": 2
+      },
+      "expected_counts": {
+        "nodes": 119,
+        "edges": 118,
+        "roots": 1
+      },
+      "expected_root_lines": [
+        4
+      ],
+      "actual_root_lines": [
+        4,
+        137
+      ],
+      "verdict": "ambiguous",
+      "findings": [],
+      "ambiguity_lines": [
+        137,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145
+      ],
+      "parser_exception": null,
+      "strict_diagnostic_failure": false,
+      "diagnostics": [],
+      "line_accounting": {
+        "prose": 10,
+        "border": 3,
+        "blank": 5,
+        "node": 126,
+        "guide": 1
+      },
+      "source_line_count": 145,
+      "verified_common_nodes": 119,
+      "literal_suffix_verdict": "ambiguous",
+      "literal_label_check": true,
+      "titles_notes_continuations": "Lines 1-3 are title, underline, and blank. Project at line 4 is the root of the unambiguous tree through line 123. Lines 125-135 are a KEY RELATIONSHIPS heading, underline, and flat multiplicity statements; all are correctly excluded from the tree, without inventing children or continuation labels. Lines 137-145 form an underlined INVARIANTS heading and six ordinary asterisk bullets. This may be prose notes or a supported bullet tree, so its inclusion is ambiguous. No wrapped labels.",
+      "hierarchy_verdict": "pass for all explicitly drawn trees; sol_1 appendix membership is ambiguous",
+      "semantic_label_verdict": "pass for every included node",
+      "ambiguities": [
+        {
+          "lines": [
+            137,
+            140,
+            141,
+            142,
+            143,
+            144,
+            145
+          ],
+          "question": "Are the ordinary asterisk invariant bullets prose notes or an additional supported bullet tree?",
+          "expected_if_prose": "All seven lines are prose; no root at 137 and no edges 137 -> 140..145; totals 119 nodes, 118 edges, 1 root.",
+          "expected_if_bullet_tree": "Root at 137 with exactly children 140,141,142,143,144,145; totals 126 nodes, 124 edges, 2 roots.",
+          "actual": "Root at 137 with exactly children 140,141,142,143,144,145; each bullet label is preserved without its asterisk. Every alternative node and edge was checked.",
+          "conclusion": "Ambiguous membership, not a confirmed failure or semantic pass for the whole file."
+        }
+      ],
+      "expected_counts_basis": "Unambiguous ASCII tree only; counts do not prejudge the ordinary-bullet appendix.",
+      "expected_counts_if_bullet_appendix_is_tree": {
+        "nodes": 126,
+        "edges": 124,
+        "roots": 2
+      }
+    },
+    {
+      "id": "sol_2_1",
+      "file": "generated/sol_2/diagrams/mapping-domain-model.txt",
+      "input_sha256": "4ae31397e2bb8ca1cd82961197520d61433fc8e70debc47af5394cba1a2d7a89",
+      "actual_counts": {
+        "nodes": 110,
+        "edges": 108,
+        "roots": 2
+      },
+      "expected_counts": {
+        "nodes": 110,
+        "edges": 108,
+        "roots": 2
+      },
+      "expected_root_lines": [
+        1,
+        112
+      ],
+      "actual_root_lines": [
+        1,
+        112
+      ],
+      "verdict": "pass",
+      "findings": [],
+      "ambiguity_lines": [],
+      "parser_exception": null,
+      "strict_diagnostic_failure": false,
+      "diagnostics": [],
+      "line_accounting": {
+        "node": 110,
+        "guide": 9,
+        "blank": 1
+      },
+      "source_line_count": 120,
+      "verified_common_nodes": 110,
+      "literal_suffix_verdict": "pass",
+      "literal_label_check": true,
+      "titles_notes_continuations": "MAPPING PROJECT DOMAIN at line 1 and INVARIANTS at line 112 are separate visible roots: both are followed by a vertical guide and explicit ASCII branches. The detached invariant tree has seven children at lines 114-120. Both roots and every child are correctly preserved. No prose appendix or wrapped labels.",
+      "hierarchy_verdict": "pass",
+      "semantic_label_verdict": "pass for every included node",
+      "ambiguities": []
+    },
+    {
+      "id": "sol_3_1",
+      "file": "generated/sol_3/diagrams/mapping-domain-model.txt",
+      "input_sha256": "acc91a2299e737e53098bb732005c9f55a23257894d4bcef08dfdc832a5f4209",
+      "actual_counts": {
+        "nodes": 129,
+        "edges": 124,
+        "roots": 5
+      },
+      "expected_counts": {
+        "nodes": 129,
+        "edges": 124,
+        "roots": 5
+      },
+      "expected_root_lines": [
+        4,
+        118,
+        125,
+        134,
+        142
+      ],
+      "actual_root_lines": [
+        4,
+        118,
+        125,
+        134,
+        142
+      ],
+      "verdict": "fail",
+      "findings": [
+        {
+          "line": 16,
+          "kind": "label_mismatch",
+          "expected": "currentRevisionId",
+          "actual": "currentRevisionId -----------------------+"
+        },
+        {
+          "line": 17,
+          "kind": "label_mismatch",
+          "expected": "revisions: 1..* (through catalog)",
+          "actual": "revisions: 1..* (through catalog)        |"
+        },
+        {
+          "line": 20,
+          "kind": "label_mismatch",
+          "expected": "ProjectRepresentationRevisionRecord",
+          "actual": "ProjectRepresentationRevisionRecord <--------+"
+        },
+        {
+          "line": 35,
+          "kind": "label_mismatch",
+          "expected": "collapsedContentId?",
+          "actual": "collapsedContentId? --------+"
+        },
+        {
+          "line": 37,
+          "kind": "label_mismatch",
+          "expected": "DiagramGridBox",
+          "actual": "DiagramGridBox                    |"
+        },
+        {
+          "line": 38,
+          "kind": "label_mismatch",
+          "expected": "kind: diagram",
+          "actual": "kind: diagram                 |"
+        },
+        {
+          "line": 39,
+          "kind": "label_mismatch",
+          "expected": "contentId",
+          "actual": "contentId --------------------+---+"
+        },
+        {
+          "line": 41,
+          "kind": "label_mismatch",
+          "expected": "ContainerGridBox",
+          "actual": "ContainerGridBox                      |"
+        },
+        {
+          "line": 42,
+          "kind": "label_mismatch",
+          "expected": "kind: container",
+          "actual": "kind: container                    |"
+        },
+        {
+          "line": 43,
+          "kind": "label_mismatch",
+          "expected": "children: GridBox[] (recursive)",
+          "actual": "children: GridBox[] (recursive)    |"
+        },
+        {
+          "line": 44,
+          "kind": "label_mismatch",
+          "expected": "layout",
+          "actual": "layout                             |"
+        },
+        {
+          "line": 45,
+          "kind": "label_mismatch",
+          "expected": "collisionPolicy: push-right",
+          "actual": "collisionPolicy: push-right    |"
+        },
+        {
+          "line": 46,
+          "kind": "label_mismatch",
+          "expected": "gap",
+          "actual": "gap                            |"
+        },
+        {
+          "line": 48,
+          "kind": "label_mismatch",
+          "expected": "contents: { contentId -> GridContent }",
+          "actual": "contents: { contentId -> GridContent } <---+"
+        }
+      ],
+      "ambiguity_lines": [],
+      "parser_exception": null,
+      "strict_diagnostic_failure": false,
+      "diagnostics": [],
+      "line_accounting": {
+        "prose": 2,
+        "border": 3,
+        "blank": 7,
+        "node": 129,
+        "guide": 10
+      },
+      "source_line_count": 151,
+      "verified_common_nodes": 129,
+      "literal_suffix_verdict": "pass",
+      "literal_label_check": true,
+      "titles_notes_continuations": "Lines 1-3 are a title/underline/blank. MappingProject at line 4 is the first root. DERIVED READ MODELS at line 115 is a heading for three detached trees rooted at lines 118, 125, and 134; its underline and intervening blanks are not nodes. SOURCE ANCHORS at line 142 governs seven explicit ASCII branches at lines 145-151 and is accepted as a fifth root, even though its children are references rather than domain entities. Unlike ordinary prose bullets, these rows explicitly use the diagram branch syntax. Right-side reference wiring spans lines 16-20 and 35-48 and is not wrapped label text. No actual wrapped labels occur.",
+      "hierarchy_verdict": "pass",
+      "semantic_label_verdict": "fail",
+      "ambiguities": [],
+      "wire_interpretation": {
+        "semantic_label_error": "All 14 listed mismatches retain connector-only suffixes in labels. Vertical bars alongside unrelated nodes are visibly routing geometry, not entity label characters.",
+        "literal_tree_extraction": "All 129 labels equal the complete raw source suffix after the branch marker; all 124 containment edges and 5 roots are correct under literal suffix semantics.",
+        "cross_reference_routes": [
+          {
+            "from_line": 16,
+            "to_line": 20
+          },
+          {
+            "from_line": 35,
+            "to_line": 48
+          },
+          {
+            "from_line": 39,
+            "to_line": 48
+          }
+        ],
+        "graph_semantics": "The three routed references are non-containment links. Their absence from parent_id/children is not counted as a missing tree edge. The confirmed failure is semantic label contamination, not inability to represent a general graph."
+      }
+    },
+    {
+      "id": "astra_1_1",
+      "file": "generated/astra_1/diagrams/mapping-domain-model.txt",
+      "input_sha256": "07baf0de3c027b7df1c11bf21544f411cca1752010a8d25b6fed377f003558b2",
+      "actual_counts": {
+        "nodes": 114,
+        "edges": 113,
+        "roots": 1
+      },
+      "expected_counts": {
+        "nodes": 114,
+        "edges": 113,
+        "roots": 1
+      },
+      "expected_root_lines": [
+        1
+      ],
+      "actual_root_lines": [
+        1
+      ],
+      "verdict": "pass",
+      "findings": [],
+      "ambiguity_lines": [],
+      "parser_exception": null,
+      "strict_diagnostic_failure": false,
+      "diagnostics": [],
+      "line_accounting": {
+        "node": 114,
+        "guide": 6,
+        "blank": 1,
+        "prose": 2
+      },
+      "source_line_count": 123,
+      "verified_common_nodes": 114,
+      "literal_suffix_verdict": "pass",
+      "literal_label_check": true,
+      "titles_notes_continuations": "Line 1 is the visible tree root because line 2 carries its vertical connector. The complete tree is lines 1-120. Lines 122-123 are detached legend/scope prose and are correctly excluded. No wrapped labels or additional trees.",
+      "hierarchy_verdict": "pass",
+      "semantic_label_verdict": "pass for every included node",
+      "ambiguities": []
+    },
+    {
+      "id": "astra_2_1",
+      "file": "generated/astra_2/diagrams/mapping-domain-model.txt",
+      "input_sha256": "256f0d5cd0724369fccf9d4be9af034865f7f76caa5933a49aea05238c2eabb2",
+      "actual_counts": {
+        "nodes": 111,
+        "edges": 110,
+        "roots": 1
+      },
+      "expected_counts": {
+        "nodes": 111,
+        "edges": 110,
+        "roots": 1
+      },
+      "expected_root_lines": [
+        1
+      ],
+      "actual_root_lines": [
+        1
+      ],
+      "verdict": "pass",
+      "findings": [],
+      "ambiguity_lines": [],
+      "parser_exception": null,
+      "strict_diagnostic_failure": false,
+      "diagnostics": [],
+      "line_accounting": {
+        "node": 111,
+        "guide": 6,
+        "blank": 1,
+        "prose": 2
+      },
+      "source_line_count": 120,
+      "verified_common_nodes": 111,
+      "literal_suffix_verdict": "pass",
+      "literal_label_check": true,
+      "titles_notes_continuations": "Line 1 is the visible tree root connected through line 2. The complete tree is lines 1-117. Lines 119-120 are detached notation/scope prose and are correctly excluded. No wrapped labels or additional trees.",
+      "hierarchy_verdict": "pass",
+      "semantic_label_verdict": "pass for every included node",
+      "ambiguities": []
+    },
+    {
+      "id": "astra_3_1",
+      "file": "generated/astra_3/diagrams/domain-model.txt",
+      "input_sha256": "521ac9b7d0f0fea833791e492289e36759946359d4bbff04ae32947bcf6b86a5",
+      "actual_counts": {
+        "nodes": 126,
+        "edges": 125,
+        "roots": 1
+      },
+      "expected_counts": {
+        "nodes": 126,
+        "edges": 125,
+        "roots": 1
+      },
+      "expected_root_lines": [
+        5
+      ],
+      "actual_root_lines": [
+        5
+      ],
+      "verdict": "pass",
+      "findings": [],
+      "ambiguity_lines": [],
+      "parser_exception": null,
+      "strict_diagnostic_failure": false,
+      "diagnostics": [],
+      "line_accounting": {
+        "prose": 3,
+        "blank": 1,
+        "node": 126,
+        "guide": 8
+      },
+      "source_line_count": 138,
+      "verified_common_nodes": 126,
+      "literal_suffix_verdict": "pass",
+      "literal_label_check": true,
+      "titles_notes_continuations": "Lines 1-3 are title, scope prose, and a notation legend, separated from the actual root Mapping workspace at line 5. The tree is lines 5-138. Those introductory lines are correctly excluded. No wrapped labels or additional trees.",
+      "hierarchy_verdict": "pass",
+      "semantic_label_verdict": "pass for every included node",
+      "ambiguities": []
+    }
+  ]
+}

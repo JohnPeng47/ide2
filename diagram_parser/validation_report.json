@@ -1,0 +1,83 @@
+{
+  "generated": [
+    {
+      "generator": "astra_1",
+      "file": "generated/astra_1/diagrams/domain-model.txt",
+      "sha256": "1a47a76ff745c8b48bcb4e372154bd733d221f77e28c072c64009b15c5e56ef8",
+      "nodes": 110,
+      "edges": 109,
+      "roots": 1,
+      "sourceLines": 120,
+      "diagnostics": 0,
+      "allLabelsAndEdgesMatch": true
+    },
+    {
+      "generator": "astra_2",
+      "file": "generated/astra_2/diagrams/mapping-domain-model.txt",
+      "sha256": "34992bb87344839505b4ede491d75c212e887b55e17b8895958683782546f75b",
+      "nodes": 133,
+      "edges": 132,
+      "roots": 1,
+      "sourceLines": 145,
+      "diagnostics": 0,
+      "allLabelsAndEdgesMatch": true
+    },
+    {
+      "generator": "astra_3",
+      "file": "generated/astra_3/diagrams/domain-model.txt",
+      "sha256": "a800eef600ffc41f47321169ff846cf7f7e8e76a8f1f4b2a17ae998ba5927009",
+      "nodes": 118,
+      "edges": 117,
+      "roots": 1,
+      "sourceLines": 133,
+      "diagnostics": 0,
+      "allLabelsAndEdgesMatch": true
+    },
+    {
+      "generator": "sol_1",
+      "file": "generated/sol_1/diagrams/mapping-domain-model.txt",
+      "sha256": "683eade44b487433243760688c018fd2707cdca6faa0d04a75e2bb594fb0e3f6",
+      "nodes": 148,
+      "edges": 146,
+      "roots": 2,
+      "sourceLines": 168,
+      "diagnostics": 0,
+      "allLabelsAndEdgesMatch": true
+    },
+    {
+      "generator": "sol_2",
+      "file": "generated/sol_2/diagrams/domain-model.txt",
+      "sha256": "bcfc7da00469a26450a3bca774cbb30341acc53c6ed49b2960fd11946b366e1e",
+      "nodes": 125,
+      "edges": 123,
+      "roots": 2,
+      "sourceLines": 134,
+      "diagnostics": 0,
+      "allLabelsAndEdgesMatch": true
+    },
+    {
+      "generator": "sol_3",
+      "file": "generated/sol_3/diagrams/mapping-domain-model.txt",
+      "sha256": "9a7ac242e2dd63621901d9b1de3a4b51b39eb7ee73f3d268f1f9599429d120f8",
+      "nodes": 128,
+      "edges": 119,
+      "roots": 9,
+      "sourceLines": 147,
+      "diagnostics": 0,
+      "allLabelsAndEdgesMatch": true
+    }
+  ],
+  "original": {
+    "nodes": 125,
+    "roots": 1,
+    "diagnostics": [
+      {
+        "line": 51,
+        "code": "joined_continuation",
+        "message": "Joined an unmarked line to the preceding label.",
+        "severity": "info"
+      }
+    ]
+  },
+  "scope": "Exact labels and parent-child edges for six independent outputs; not a statistical reliability estimate."
+}

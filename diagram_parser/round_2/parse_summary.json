@@ -1,0 +1,249 @@
+{
+  "round": 2,
+  "capturedAt": "2026-09-11T16:18:04.931694+00:00",
+  "parserSha256": "6cbed1d30a96554e5033c117df99192f27c099107e297ecee0b62bc372e85d2b",
+  "promptSha256": "b63c667184f691bc588701d721e8fe1dd7671ce5b065ea220714e82f0845a489",
+  "generationCount": 6,
+  "diagramCount": 6,
+  "parseExceptions": 0,
+  "strictDiagnosticFailures": 0,
+  "semanticFailures": 1,
+  "entries": [
+    {
+      "id": "sol_1_1",
+      "generator": "sol_1",
+      "model": "gpt-5.6-sol",
+      "source": "generated/sol_1/diagrams/mapping-domain-model.txt",
+      "sourceSha256": "faac5a29f307fff9e7e92edb93f47e71fecdac5225e05155ad1c048c4f2c7069",
+      "parsed": "parsed/sol_1_1.json",
+      "reviewTable": "parsed/sol_1_1.review.txt",
+      "exception": null,
+      "nodes": 126,
+      "edges": 124,
+      "roots": 2,
+      "diagnostics": [],
+      "strictWouldFail": false,
+      "sourceLines": 145,
+      "semanticCorrectness": "ambiguous",
+      "parsedSha256": "f0f133d9bd1f66737f2890c882288c66f7b52e0caa2f22cf22c3d692f88df7ca",
+      "literalSuffixVerdict": "ambiguous",
+      "semanticFindings": [],
+      "ambiguityLines": [
+        137,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145
+      ]
+    },
+    {
+      "id": "sol_2_1",
+      "generator": "sol_2",
+      "model": "gpt-5.6-sol",
+      "source": "generated/sol_2/diagrams/mapping-domain-model.txt",
+      "sourceSha256": "4ae31397e2bb8ca1cd82961197520d61433fc8e70debc47af5394cba1a2d7a89",
+      "parsed": "parsed/sol_2_1.json",
+      "reviewTable": "parsed/sol_2_1.review.txt",
+      "exception": null,
+      "nodes": 110,
+      "edges": 108,
+      "roots": 2,
+      "diagnostics": [],
+      "strictWouldFail": false,
+      "sourceLines": 120,
+      "semanticCorrectness": "pass",
+      "parsedSha256": "67c8c5e1ffb2502bc79e8c331f3578865de249302435ea6aafd54dac4a6f4fac",
+      "literalSuffixVerdict": "pass",
+      "semanticFindings": [],
+      "ambiguityLines": []
+    },
+    {
+      "id": "sol_3_1",
+      "generator": "sol_3",
+      "model": "gpt-5.6-sol",
+      "source": "generated/sol_3/diagrams/mapping-domain-model.txt",
+      "sourceSha256": "acc91a2299e737e53098bb732005c9f55a23257894d4bcef08dfdc832a5f4209",
+      "parsed": "parsed/sol_3_1.json",
+      "reviewTable": "parsed/sol_3_1.review.txt",
+      "exception": null,
+      "nodes": 129,
+      "edges": 124,
+      "roots": 5,
+      "diagnostics": [],
+      "strictWouldFail": false,
+      "sourceLines": 151,
+      "semanticCorrectness": "fail",
+      "parsedSha256": "07f0847a23bf275f479d2c2bbeb9a70e71f92417cdf6448105142df6e91906e7",
+      "literalSuffixVerdict": "pass",
+      "semanticFindings": [
+        {
+          "line": 16,
+          "kind": "label_mismatch",
+          "expected": "currentRevisionId",
+          "actual": "currentRevisionId -----------------------+"
+        },
+        {
+          "line": 17,
+          "kind": "label_mismatch",
+          "expected": "revisions: 1..* (through catalog)",
+          "actual": "revisions: 1..* (through catalog)        |"
+        },
+        {
+          "line": 20,
+          "kind": "label_mismatch",
+          "expected": "ProjectRepresentationRevisionRecord",
+          "actual": "ProjectRepresentationRevisionRecord <--------+"
+        },
+        {
+          "line": 35,
+          "kind": "label_mismatch",
+          "expected": "collapsedContentId?",
+          "actual": "collapsedContentId? --------+"
+        },
+        {
+          "line": 37,
+          "kind": "label_mismatch",
+          "expected": "DiagramGridBox",
+          "actual": "DiagramGridBox                    |"
+        },
+        {
+          "line": 38,
+          "kind": "label_mismatch",
+          "expected": "kind: diagram",
+          "actual": "kind: diagram                 |"
+        },
+        {
+          "line": 39,
+          "kind": "label_mismatch",
+          "expected": "contentId",
+          "actual": "contentId --------------------+---+"
+        },
+        {
+          "line": 41,
+          "kind": "label_mismatch",
+          "expected": "ContainerGridBox",
+          "actual": "ContainerGridBox                      |"
+        },
+        {
+          "line": 42,
+          "kind": "label_mismatch",
+          "expected": "kind: container",
+          "actual": "kind: container                    |"
+        },
+        {
+          "line": 43,
+          "kind": "label_mismatch",
+          "expected": "children: GridBox[] (recursive)",
+          "actual": "children: GridBox[] (recursive)    |"
+        },
+        {
+          "line": 44,
+          "kind": "label_mismatch",
+          "expected": "layout",
+          "actual": "layout                             |"
+        },
+        {
+          "line": 45,
+          "kind": "label_mismatch",
+          "expected": "collisionPolicy: push-right",
+          "actual": "collisionPolicy: push-right    |"
+        },
+        {
+          "line": 46,
+          "kind": "label_mismatch",
+          "expected": "gap",
+          "actual": "gap                            |"
+        },
+        {
+          "line": 48,
+          "kind": "label_mismatch",
+          "expected": "contents: { contentId -> GridContent }",
+          "actual": "contents: { contentId -> GridContent } <---+"
+        }
+      ],
+      "ambiguityLines": []
+    },
+    {
+      "id": "astra_1_1",
+      "generator": "astra_1",
+      "model": "gpt-6-astra",
+      "source": "generated/astra_1/diagrams/mapping-domain-model.txt",
+      "sourceSha256": "07baf0de3c027b7df1c11bf21544f411cca1752010a8d25b6fed377f003558b2",
+      "parsed": "parsed/astra_1_1.json",
+      "reviewTable": "parsed/astra_1_1.review.txt",
+      "exception": null,
+      "nodes": 114,
+      "edges": 113,
+      "roots": 1,
+      "diagnostics": [],
+      "strictWouldFail": false,
+      "sourceLines": 123,
+      "semanticCorrectness": "pass",
+      "parsedSha256": "3967f3ed3c1ec6166761b6966a3db82d198d7fc59c8a944adb2f315a3ee061e2",
+      "literalSuffixVerdict": "pass",
+      "semanticFindings": [],
+      "ambiguityLines": []
+    },
+    {
+      "id": "astra_2_1",
+      "generator": "astra_2",
+      "model": "gpt-6-astra",
+      "source": "generated/astra_2/diagrams/mapping-domain-model.txt",
+      "sourceSha256": "256f0d5cd0724369fccf9d4be9af034865f7f76caa5933a49aea05238c2eabb2",
+      "parsed": "parsed/astra_2_1.json",
+      "reviewTable": "parsed/astra_2_1.review.txt",
+      "exception": null,
+      "nodes": 111,
+      "edges": 110,
+      "roots": 1,
+      "diagnostics": [],
+      "strictWouldFail": false,
+      "sourceLines": 120,
+      "semanticCorrectness": "pass",
+      "parsedSha256": "3e4ade6879b03dbfbf11d11ae5c392b314405f6d07692fe4b51111573ea5d7ac",
+      "literalSuffixVerdict": "pass",
+      "semanticFindings": [],
+      "ambiguityLines": []
+    },
+    {
+      "id": "astra_3_1",
+      "generator": "astra_3",
+      "model": "gpt-6-astra",
+      "source": "generated/astra_3/diagrams/domain-model.txt",
+      "sourceSha256": "521ac9b7d0f0fea833791e492289e36759946359d4bbff04ae32947bcf6b86a5",
+      "parsed": "parsed/astra_3_1.json",
+      "reviewTable": "parsed/astra_3_1.review.txt",
+      "exception": null,
+      "nodes": 126,
+      "edges": 125,
+      "roots": 1,
+      "diagnostics": [],
+      "strictWouldFail": false,
+      "sourceLines": 138,
+      "semanticCorrectness": "pass",
+      "parsedSha256": "1fe806fe7090534e752395dace5d063e7490c6dc751d20dd6693cc6567a40651",
+      "literalSuffixVerdict": "pass",
+      "semanticFindings": [],
+      "ambiguityLines": []
+    }
+  ],
+  "semanticPasses": 4,
+  "semanticAmbiguities": 1,
+  "semanticRubric": "Clean semantic labels and faithfully reconstructed ASCII containment forests, excluding unambiguously detached prose; genuinely ambiguous appendix membership remains ambiguous.",
+  "literalSuffixRubricTotals": {
+    "diagrams_reviewed": 6,
+    "confirmed_failures": 0,
+    "passes": 5,
+    "ambiguities": 1,
+    "if_ordinary_bullet_appendix_is_accepted": {
+      "failures": 0,
+      "passes": 6,
+      "ambiguities": 0
+    }
+  },
+  "independentReview": "independent_review.json",
+  "reviewedAt": "2026-09-11T16:22:58.975198+00:00",
+  "reviewer": "/root/round_2_independent_review"
+}

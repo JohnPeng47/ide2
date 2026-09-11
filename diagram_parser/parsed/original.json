@@ -1,0 +1,2798 @@
+{
+  "nodes": [
+    {
+      "id": 0,
+      "label": "MappingScreen",
+      "parent_id": null,
+      "depth": 0,
+      "line": 1,
+      "column": 1,
+      "end_line": 1,
+      "branch_column": 0,
+      "children": [
+        1,
+        12,
+        111,
+        118
+      ],
+      "raw_lines": [
+        "MappingScreen"
+      ]
+    },
+    {
+      "id": 1,
+      "label": "ScreenHeader",
+      "parent_id": 0,
+      "depth": 1,
+      "line": 3,
+      "column": 7,
+      "end_line": 3,
+      "branch_column": 3,
+      "children": [
+        2,
+        8
+      ],
+      "raw_lines": [
+        "  +-- ScreenHeader"
+      ]
+    },
+    {
+      "id": 2,
+      "label": "MappingSubmenu",
+      "parent_id": 1,
+      "depth": 2,
+      "line": 4,
+      "column": 11,
+      "end_line": 4,
+      "branch_column": 7,
+      "children": [
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "raw_lines": [
+        "  |   +-- MappingSubmenu"
+      ]
+    },
+    {
+      "id": 3,
+      "label": "ProjectName",
+      "parent_id": 2,
+      "depth": 3,
+      "line": 5,
+      "column": 15,
+      "end_line": 5,
+      "branch_column": 11,
+      "children": [],
+      "raw_lines": [
+        "  |   |   +-- ProjectName"
+      ]
+    },
+    {
+      "id": 4,
+      "label": "DiagramNameEditor",
+      "parent_id": 2,
+      "depth": 3,
+      "line": 6,
+      "column": 15,
+      "end_line": 6,
+      "branch_column": 11,
+      "children": [],
+      "raw_lines": [
+        "  |   |   +-- DiagramNameEditor"
+      ]
+    },
+    {
+      "id": 5,
+      "label": "NewDiagramAction",
+      "parent_id": 2,
+      "depth": 3,
+      "line": 7,
+      "column": 15,
+      "end_line": 7,
+      "branch_column": 11,
+      "children": [],
+      "raw_lines": [
+        "  |   |   +-- NewDiagramAction"
+      ]
+    },
+    {
+      "id": 6,
+      "label": "SaveDiagramAction",
+      "parent_id": 2,
+      "depth": 3,
+      "line": 8,
+      "column": 15,
+      "end_line": 8,
+      "branch_column": 11,
+      "children": [],
+      "raw_lines": [
+        "  |   |   +-- SaveDiagramAction"
+      ]
+    },
+    {
+      "id": 7,
+      "label": "SaveStatus / EditingStatus",
+      "parent_id": 2,
+      "depth": 3,
+      "line": 9,
+      "column": 15,
+      "end_line": 9,
+      "branch_column": 11,
+      "children": [],
+      "raw_lines": [
+        "  |   |   \\-- SaveStatus / EditingStatus"
+      ]
+    },
+    {
+      "id": 8,
+      "label": "ApplicationNavigation",
+      "parent_id": 1,
+      "depth": 2,
+      "line": 10,
+      "column": 11,
+      "end_line": 10,
+      "branch_column": 7,
+      "children": [
+        9,
+        10,
+        11
+      ],
+      "raw_lines": [
+        "  |   \\-- ApplicationNavigation"
+      ]
+    },
+    {
+      "id": 9,
+      "label": "StudioTab",
+      "parent_id": 8,
+      "depth": 3,
+      "line": 11,
+      "column": 15,
+      "end_line": 11,
+      "branch_column": 11,
+      "children": [],
+      "raw_lines": [
+        "  |       +-- StudioTab"
+      ]
+    },
+    {
+      "id": 10,
+      "label": "ExperimentsTab",
+      "parent_id": 8,
+      "depth": 3,
+      "line": 12,
+      "column": 15,
+      "end_line": 12,
+      "branch_column": 11,
+      "children": [],
+      "raw_lines": [
+        "  |       +-- ExperimentsTab"
+      ]
+    },
+    {
+      "id": 11,
+      "label": "MappingTab",
+      "parent_id": 8,
+      "depth": 3,
+      "line": 13,
+      "column": 15,
+      "end_line": 13,
+      "branch_column": 11,
+      "children": [],
+      "raw_lines": [
+        "  |       \\-- MappingTab"
+      ]
+    },
+    {
+      "id": 12,
+      "label": "MappingWorkspace",
+      "parent_id": 0,
+      "depth": 1,
+      "line": 15,
+      "column": 7,
+      "end_line": 15,
+      "branch_column": 3,
+      "children": [
+        13,
+        96,
+        105,
+        107,
+        108
+      ],
+      "raw_lines": [
+        "  +-- MappingWorkspace"
+      ]
+    },
+    {
+      "id": 13,
+      "label": "DocumentView [*; only active document visible]",
+      "parent_id": 12,
+      "depth": 2,
+      "line": 17,
+      "column": 11,
+      "end_line": 17,
+      "branch_column": 7,
+      "children": [
+        14,
+        95
+      ],
+      "raw_lines": [
+        "  |   +-- DocumentView [*; only active document visible]"
+      ]
+    },
+    {
+      "id": 14,
+      "label": "CanvasViewport",
+      "parent_id": 13,
+      "depth": 3,
+      "line": 19,
+      "column": 15,
+      "end_line": 19,
+      "branch_column": 11,
+      "children": [
+        15,
+        16,
+        92
+      ],
+      "raw_lines": [
+        "  |   |   +-- CanvasViewport"
+      ]
+    },
+    {
+      "id": 15,
+      "label": "CanvasBackground",
+      "parent_id": 14,
+      "depth": 4,
+      "line": 20,
+      "column": 19,
+      "end_line": 20,
+      "branch_column": 15,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   +-- CanvasBackground"
+      ]
+    },
+    {
+      "id": 16,
+      "label": "TransformedCanvasSurface",
+      "parent_id": 14,
+      "depth": 4,
+      "line": 21,
+      "column": 19,
+      "end_line": 21,
+      "branch_column": 15,
+      "children": [
+        17,
+        31,
+        40,
+        60,
+        73,
+        86,
+        89
+      ],
+      "raw_lines": [
+        "  |   |   |   +-- TransformedCanvasSurface"
+      ]
+    },
+    {
+      "id": 17,
+      "label": "Scene",
+      "parent_id": 16,
+      "depth": 5,
+      "line": 23,
+      "column": 23,
+      "end_line": 23,
+      "branch_column": 19,
+      "children": [
+        18
+      ],
+      "raw_lines": [
+        "  |   |   |   |   +-- Scene"
+      ]
+    },
+    {
+      "id": 18,
+      "label": "RootContainer",
+      "parent_id": 17,
+      "depth": 6,
+      "line": 24,
+      "column": 27,
+      "end_line": 24,
+      "branch_column": 23,
+      "children": [
+        19
+      ],
+      "raw_lines": [
+        "  |   |   |   |   |   \\-- RootContainer"
+      ]
+    },
+    {
+      "id": 19,
+      "label": "GridBox [*; recursive]",
+      "parent_id": 18,
+      "depth": 7,
+      "line": 25,
+      "column": 31,
+      "end_line": 25,
+      "branch_column": 27,
+      "children": [
+        20,
+        23,
+        26
+      ],
+      "raw_lines": [
+        "  |   |   |   |   |       \\-- GridBox [*; recursive]"
+      ]
+    },
+    {
+      "id": 20,
+      "label": "ContainerBox",
+      "parent_id": 19,
+      "depth": 8,
+      "line": 26,
+      "column": 35,
+      "end_line": 26,
+      "branch_column": 31,
+      "children": [
+        21,
+        22
+      ],
+      "raw_lines": [
+        "  |   |   |   |   |           +-- ContainerBox"
+      ]
+    },
+    {
+      "id": 21,
+      "label": "Expanded: child GridBoxes",
+      "parent_id": 20,
+      "depth": 9,
+      "line": 27,
+      "column": 39,
+      "end_line": 27,
+      "branch_column": 35,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |           |   +-- Expanded: child GridBoxes"
+      ]
+    },
+    {
+      "id": 22,
+      "label": "Collapsed: summary content",
+      "parent_id": 20,
+      "depth": 9,
+      "line": 28,
+      "column": 39,
+      "end_line": 28,
+      "branch_column": 35,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |           |   \\-- Collapsed: summary content"
+      ]
+    },
+    {
+      "id": 23,
+      "label": "DiagramBox",
+      "parent_id": 19,
+      "depth": 8,
+      "line": 29,
+      "column": 35,
+      "end_line": 29,
+      "branch_column": 31,
+      "children": [
+        24,
+        25
+      ],
+      "raw_lines": [
+        "  |   |   |   |   |           +-- DiagramBox"
+      ]
+    },
+    {
+      "id": 24,
+      "label": "Expanded: ASCII diagram content",
+      "parent_id": 23,
+      "depth": 9,
+      "line": 30,
+      "column": 39,
+      "end_line": 30,
+      "branch_column": 35,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |           |   +-- Expanded: ASCII diagram content"
+      ]
+    },
+    {
+      "id": 25,
+      "label": "Collapsed: summary content",
+      "parent_id": 23,
+      "depth": 9,
+      "line": 31,
+      "column": 39,
+      "end_line": 31,
+      "branch_column": 35,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |           |   \\-- Collapsed: summary content"
+      ]
+    },
+    {
+      "id": 26,
+      "label": "BoxDecorationAndControls",
+      "parent_id": 19,
+      "depth": 8,
+      "line": 32,
+      "column": 35,
+      "end_line": 32,
+      "branch_column": 31,
+      "children": [
+        27,
+        28,
+        29,
+        30
+      ],
+      "raw_lines": [
+        "  |   |   |   |   |           \\-- BoxDecorationAndControls"
+      ]
+    },
+    {
+      "id": 27,
+      "label": "Boundary",
+      "parent_id": 26,
+      "depth": 9,
+      "line": 33,
+      "column": 39,
+      "end_line": 33,
+      "branch_column": 35,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |               +-- Boundary"
+      ]
+    },
+    {
+      "id": 28,
+      "label": "Expand / Collapse",
+      "parent_id": 26,
+      "depth": 9,
+      "line": 34,
+      "column": 39,
+      "end_line": 34,
+      "branch_column": 35,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |               +-- Expand / Collapse"
+      ]
+    },
+    {
+      "id": 29,
+      "label": "Move",
+      "parent_id": 26,
+      "depth": 9,
+      "line": 35,
+      "column": 39,
+      "end_line": 35,
+      "branch_column": 35,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |               +-- Move"
+      ]
+    },
+    {
+      "id": 30,
+      "label": "Group",
+      "parent_id": 26,
+      "depth": 9,
+      "line": 36,
+      "column": 39,
+      "end_line": 36,
+      "branch_column": 35,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |               \\-- Group"
+      ]
+    },
+    {
+      "id": 31,
+      "label": "DiagramAnnotations",
+      "parent_id": 16,
+      "depth": 5,
+      "line": 38,
+      "column": 23,
+      "end_line": 38,
+      "branch_column": 19,
+      "children": [
+        32,
+        34,
+        37
+      ],
+      "raw_lines": [
+        "  |   |   |   |   +-- DiagramAnnotations"
+      ]
+    },
+    {
+      "id": 32,
+      "label": "MappedLabelHighlight [*]",
+      "parent_id": 31,
+      "depth": 6,
+      "line": 39,
+      "column": 27,
+      "end_line": 39,
+      "branch_column": 23,
+      "children": [
+        33
+      ],
+      "raw_lines": [
+        "  |   |   |   |   |   +-- MappedLabelHighlight [*]"
+      ]
+    },
+    {
+      "id": 33,
+      "label": "Normal / Selected / PromptTarget",
+      "parent_id": 32,
+      "depth": 7,
+      "line": 40,
+      "column": 31,
+      "end_line": 40,
+      "branch_column": 27,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |   |   \\-- Normal / Selected / PromptTarget"
+      ]
+    },
+    {
+      "id": 34,
+      "label": "DetailSection [*; legacy fixture]",
+      "parent_id": 31,
+      "depth": 6,
+      "line": 41,
+      "column": 27,
+      "end_line": 41,
+      "branch_column": 23,
+      "children": [
+        35,
+        36
+      ],
+      "raw_lines": [
+        "  |   |   |   |   |   +-- DetailSection [*; legacy fixture]"
+      ]
+    },
+    {
+      "id": 35,
+      "label": "SectionBoundary",
+      "parent_id": 34,
+      "depth": 7,
+      "line": 42,
+      "column": 31,
+      "end_line": 42,
+      "branch_column": 27,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |   |   +-- SectionBoundary"
+      ]
+    },
+    {
+      "id": 36,
+      "label": "NumberedOpenDetailAction",
+      "parent_id": 34,
+      "depth": 7,
+      "line": 43,
+      "column": 31,
+      "end_line": 43,
+      "branch_column": 27,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |   |   \\-- NumberedOpenDetailAction"
+      ]
+    },
+    {
+      "id": 37,
+      "label": "DetailOverlay [conditional; legacy fixture]",
+      "parent_id": 31,
+      "depth": 6,
+      "line": 44,
+      "column": 27,
+      "end_line": 44,
+      "branch_column": 23,
+      "children": [
+        38,
+        39
+      ],
+      "raw_lines": [
+        "  |   |   |   |   |   \\-- DetailOverlay [conditional; legacy fixture]"
+      ]
+    },
+    {
+      "id": 38,
+      "label": "Header: section ID, title, close",
+      "parent_id": 37,
+      "depth": 7,
+      "line": 45,
+      "column": 31,
+      "end_line": 45,
+      "branch_column": 27,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |       +-- Header: section ID, title, close"
+      ]
+    },
+    {
+      "id": 39,
+      "label": "ASCII detail content",
+      "parent_id": 37,
+      "depth": 7,
+      "line": 46,
+      "column": 31,
+      "end_line": 46,
+      "branch_column": 27,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |       \\-- ASCII detail content"
+      ]
+    },
+    {
+      "id": 40,
+      "label": "SelectionInteraction [currently one]",
+      "parent_id": 16,
+      "depth": 5,
+      "line": 48,
+      "column": 23,
+      "end_line": 48,
+      "branch_column": 19,
+      "children": [
+        41,
+        43,
+        58
+      ],
+      "raw_lines": [
+        "  |   |   |   |   +-- SelectionInteraction [currently one]"
+      ]
+    },
+    {
+      "id": 41,
+      "label": "SelectionRectangle",
+      "parent_id": 40,
+      "depth": 6,
+      "line": 49,
+      "column": 27,
+      "end_line": 49,
+      "branch_column": 23,
+      "children": [
+        42
+      ],
+      "raw_lines": [
+        "  |   |   |   |   |   +-- SelectionRectangle"
+      ]
+    },
+    {
+      "id": 42,
+      "label": "Ready / Composing / Generating / Applied / Error / Asking / PlacingChat",
+      "parent_id": 41,
+      "depth": 7,
+      "line": 50,
+      "column": 31,
+      "end_line": 51,
+      "branch_column": 27,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |   |   \\-- Ready / Composing / Generating /",
+        "  |   |   |   |   |   |       Applied / Error / Asking / PlacingChat"
+      ]
+    },
+    {
+      "id": 43,
+      "label": "SelectionOperationsPopover",
+      "parent_id": 40,
+      "depth": 6,
+      "line": 52,
+      "column": 27,
+      "end_line": 52,
+      "branch_column": 23,
+      "children": [
+        44,
+        45,
+        46
+      ],
+      "raw_lines": [
+        "  |   |   |   |   |   +-- SelectionOperationsPopover"
+      ]
+    },
+    {
+      "id": 44,
+      "label": "SelectionCountAndSourceCoverage",
+      "parent_id": 43,
+      "depth": 7,
+      "line": 53,
+      "column": 31,
+      "end_line": 53,
+      "branch_column": 27,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |   |   +-- SelectionCountAndSourceCoverage"
+      ]
+    },
+    {
+      "id": 45,
+      "label": "OperationStatus",
+      "parent_id": 43,
+      "depth": 7,
+      "line": 54,
+      "column": 31,
+      "end_line": 54,
+      "branch_column": 27,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |   |   +-- OperationStatus"
+      ]
+    },
+    {
+      "id": 46,
+      "label": "Body [one of]",
+      "parent_id": 43,
+      "depth": 7,
+      "line": 55,
+      "column": 31,
+      "end_line": 55,
+      "branch_column": 27,
+      "children": [
+        47,
+        54,
+        56
+      ],
+      "raw_lines": [
+        "  |   |   |   |   |   |   \\-- Body [one of]"
+      ]
+    },
+    {
+      "id": 47,
+      "label": "ActionMenu",
+      "parent_id": 46,
+      "depth": 8,
+      "line": 56,
+      "column": 35,
+      "end_line": 56,
+      "branch_column": 31,
+      "children": [
+        48,
+        49,
+        50,
+        51,
+        52,
+        53
+      ],
+      "raw_lines": [
+        "  |   |   |   |   |   |       +-- ActionMenu"
+      ]
+    },
+    {
+      "id": 48,
+      "label": "ProjectionChooser",
+      "parent_id": 47,
+      "depth": 9,
+      "line": 57,
+      "column": 39,
+      "end_line": 57,
+      "branch_column": 35,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |   |       |   +-- ProjectionChooser"
+      ]
+    },
+    {
+      "id": 49,
+      "label": "ProjectionUnavailableMessage",
+      "parent_id": 47,
+      "depth": 9,
+      "line": 58,
+      "column": 39,
+      "end_line": 58,
+      "branch_column": 35,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |   |       |   +-- ProjectionUnavailableMessage"
+      ]
+    },
+    {
+      "id": 50,
+      "label": "GenerateSubDiagram",
+      "parent_id": 47,
+      "depth": 9,
+      "line": 59,
+      "column": 39,
+      "end_line": 59,
+      "branch_column": 35,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |   |       |   +-- GenerateSubDiagram"
+      ]
+    },
+    {
+      "id": 51,
+      "label": "OpenCallTree",
+      "parent_id": 47,
+      "depth": 9,
+      "line": 60,
+      "column": 39,
+      "end_line": 60,
+      "branch_column": 35,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |   |       |   +-- OpenCallTree"
+      ]
+    },
+    {
+      "id": 52,
+      "label": "PromptSelection",
+      "parent_id": 47,
+      "depth": 9,
+      "line": 61,
+      "column": 39,
+      "end_line": 61,
+      "branch_column": 35,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |   |       |   +-- PromptSelection"
+      ]
+    },
+    {
+      "id": 53,
+      "label": "AskAboutSelection",
+      "parent_id": 47,
+      "depth": 9,
+      "line": 62,
+      "column": 39,
+      "end_line": 62,
+      "branch_column": 35,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |   |       |   \\-- AskAboutSelection"
+      ]
+    },
+    {
+      "id": 54,
+      "label": "Edit / GeneratePromptForm",
+      "parent_id": 46,
+      "depth": 8,
+      "line": 63,
+      "column": 35,
+      "end_line": 63,
+      "branch_column": 31,
+      "children": [
+        55
+      ],
+      "raw_lines": [
+        "  |   |   |   |   |   |       +-- Edit / GeneratePromptForm"
+      ]
+    },
+    {
+      "id": 55,
+      "label": "Instruction, cancel, apply / choose region",
+      "parent_id": 54,
+      "depth": 9,
+      "line": 64,
+      "column": 39,
+      "end_line": 64,
+      "branch_column": 35,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |   |       |   \\-- Instruction, cancel, apply / choose region"
+      ]
+    },
+    {
+      "id": 56,
+      "label": "LocalQuestionForm",
+      "parent_id": 46,
+      "depth": 8,
+      "line": 65,
+      "column": 35,
+      "end_line": 65,
+      "branch_column": 31,
+      "children": [
+        57
+      ],
+      "raw_lines": [
+        "  |   |   |   |   |   |       \\-- LocalQuestionForm"
+      ]
+    },
+    {
+      "id": 57,
+      "label": "Question, placement hint, cancel, place",
+      "parent_id": 56,
+      "depth": 9,
+      "line": 66,
+      "column": 39,
+      "end_line": 66,
+      "branch_column": 35,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |   |           \\-- Question, placement hint, cancel, place"
+      ]
+    },
+    {
+      "id": 58,
+      "label": "PatchResultStatus [conditional]",
+      "parent_id": 40,
+      "depth": 6,
+      "line": 67,
+      "column": 27,
+      "end_line": 67,
+      "branch_column": 23,
+      "children": [
+        59
+      ],
+      "raw_lines": [
+        "  |   |   |   |   |   \\-- PatchResultStatus [conditional]"
+      ]
+    },
+    {
+      "id": 59,
+      "label": "Applied / Error",
+      "parent_id": 58,
+      "depth": 7,
+      "line": 68,
+      "column": 31,
+      "end_line": 68,
+      "branch_column": 27,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |       \\-- Applied / Error"
+      ]
+    },
+    {
+      "id": 60,
+      "label": "ProjectionCompanion [currently one]",
+      "parent_id": 16,
+      "depth": 5,
+      "line": 70,
+      "column": 23,
+      "end_line": 70,
+      "branch_column": 19,
+      "children": [
+        61,
+        62,
+        66
+      ],
+      "raw_lines": [
+        "  |   |   |   |   +-- ProjectionCompanion [currently one]"
+      ]
+    },
+    {
+      "id": 61,
+      "label": "ConnectorLineAndJoinDecoration",
+      "parent_id": 60,
+      "depth": 6,
+      "line": 71,
+      "column": 27,
+      "end_line": 71,
+      "branch_column": 23,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |   +-- ConnectorLineAndJoinDecoration"
+      ]
+    },
+    {
+      "id": 62,
+      "label": "Header",
+      "parent_id": 60,
+      "depth": 6,
+      "line": 72,
+      "column": 27,
+      "end_line": 72,
+      "branch_column": 23,
+      "children": [
+        63,
+        64,
+        65
+      ],
+      "raw_lines": [
+        "  |   |   |   |   |   +-- Header"
+      ]
+    },
+    {
+      "id": 63,
+      "label": "TitleAndCoverageMetadata",
+      "parent_id": 62,
+      "depth": 7,
+      "line": 73,
+      "column": 31,
+      "end_line": 73,
+      "branch_column": 27,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |   |   +-- TitleAndCoverageMetadata"
+      ]
+    },
+    {
+      "id": 64,
+      "label": "OpenCompaction / BackToCallTree",
+      "parent_id": 62,
+      "depth": 7,
+      "line": 74,
+      "column": 31,
+      "end_line": 74,
+      "branch_column": 27,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |   |   +-- OpenCompaction / BackToCallTree"
+      ]
+    },
+    {
+      "id": 65,
+      "label": "Close",
+      "parent_id": 62,
+      "depth": 7,
+      "line": 75,
+      "column": 31,
+      "end_line": 75,
+      "branch_column": 27,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |   |   \\-- Close"
+      ]
+    },
+    {
+      "id": 66,
+      "label": "Body [one of]",
+      "parent_id": 60,
+      "depth": 6,
+      "line": 76,
+      "column": 27,
+      "end_line": 76,
+      "branch_column": 23,
+      "children": [
+        67,
+        69
+      ],
+      "raw_lines": [
+        "  |   |   |   |   |   \\-- Body [one of]"
+      ]
+    },
+    {
+      "id": 67,
+      "label": "ProjectedCallTree",
+      "parent_id": 66,
+      "depth": 7,
+      "line": 77,
+      "column": 31,
+      "end_line": 77,
+      "branch_column": 27,
+      "children": [
+        68
+      ],
+      "raw_lines": [
+        "  |   |   |   |   |       +-- ProjectedCallTree"
+      ]
+    },
+    {
+      "id": 68,
+      "label": "ASCII tree rows",
+      "parent_id": 67,
+      "depth": 8,
+      "line": 78,
+      "column": 35,
+      "end_line": 78,
+      "branch_column": 31,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |       |   \\-- ASCII tree rows"
+      ]
+    },
+    {
+      "id": 69,
+      "label": "ProjectedSourceCompactions",
+      "parent_id": 66,
+      "depth": 7,
+      "line": 79,
+      "column": 31,
+      "end_line": 79,
+      "branch_column": 27,
+      "children": [
+        70
+      ],
+      "raw_lines": [
+        "  |   |   |   |   |       \\-- ProjectedSourceCompactions"
+      ]
+    },
+    {
+      "id": 70,
+      "label": "CompactionFileSection [*]",
+      "parent_id": 69,
+      "depth": 8,
+      "line": 80,
+      "column": 35,
+      "end_line": 80,
+      "branch_column": 31,
+      "children": [
+        71,
+        72
+      ],
+      "raw_lines": [
+        "  |   |   |   |   |           \\-- CompactionFileSection [*]"
+      ]
+    },
+    {
+      "id": 71,
+      "label": "FilePathAndSnapshotMetadata",
+      "parent_id": 70,
+      "depth": 9,
+      "line": 81,
+      "column": 39,
+      "end_line": 81,
+      "branch_column": 35,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |               +-- FilePathAndSnapshotMetadata"
+      ]
+    },
+    {
+      "id": 72,
+      "label": "ASCII compaction rows",
+      "parent_id": 70,
+      "depth": 9,
+      "line": 82,
+      "column": 39,
+      "end_line": 82,
+      "branch_column": 35,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |               \\-- ASCII compaction rows"
+      ]
+    },
+    {
+      "id": 73,
+      "label": "LocalConversation [*]",
+      "parent_id": 16,
+      "depth": 5,
+      "line": 84,
+      "column": 23,
+      "end_line": 84,
+      "branch_column": 19,
+      "children": [
+        74,
+        76,
+        77
+      ],
+      "raw_lines": [
+        "  |   |   |   |   +-- LocalConversation [*]"
+      ]
+    },
+    {
+      "id": 74,
+      "label": "CanvasAnchorBubble",
+      "parent_id": 73,
+      "depth": 6,
+      "line": 85,
+      "column": 27,
+      "end_line": 85,
+      "branch_column": 23,
+      "children": [
+        75
+      ],
+      "raw_lines": [
+        "  |   |   |   |   |   +-- CanvasAnchorBubble"
+      ]
+    },
+    {
+      "id": 75,
+      "label": "Open / Collapse, reply count, pending indicator",
+      "parent_id": 74,
+      "depth": 7,
+      "line": 86,
+      "column": 31,
+      "end_line": 86,
+      "branch_column": 27,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |   |   \\-- Open / Collapse, reply count, pending indicator"
+      ]
+    },
+    {
+      "id": 76,
+      "label": "SourceSelectionHighlight [when active]",
+      "parent_id": 73,
+      "depth": 6,
+      "line": 87,
+      "column": 27,
+      "end_line": 87,
+      "branch_column": 23,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |   +-- SourceSelectionHighlight [when active]"
+      ]
+    },
+    {
+      "id": 77,
+      "label": "ConversationPanel [when active]",
+      "parent_id": 73,
+      "depth": 6,
+      "line": 88,
+      "column": 27,
+      "end_line": 88,
+      "branch_column": 23,
+      "children": [
+        78,
+        79,
+        80,
+        84
+      ],
+      "raw_lines": [
+        "  |   |   |   |   |   \\-- ConversationPanel [when active]"
+      ]
+    },
+    {
+      "id": 78,
+      "label": "Display: compact / floating / docked",
+      "parent_id": 77,
+      "depth": 7,
+      "line": 89,
+      "column": 31,
+      "end_line": 89,
+      "branch_column": 27,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |       +-- Display: compact / floating / docked"
+      ]
+    },
+    {
+      "id": 79,
+      "label": "Header: title, collapse",
+      "parent_id": 77,
+      "depth": 7,
+      "line": 90,
+      "column": 31,
+      "end_line": 90,
+      "branch_column": 27,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |       +-- Header: title, collapse"
+      ]
+    },
+    {
+      "id": 80,
+      "label": "Transcript",
+      "parent_id": 77,
+      "depth": 7,
+      "line": 91,
+      "column": 31,
+      "end_line": 91,
+      "branch_column": 27,
+      "children": [
+        81,
+        82,
+        83
+      ],
+      "raw_lines": [
+        "  |   |   |   |   |       +-- Transcript"
+      ]
+    },
+    {
+      "id": 81,
+      "label": "UserMessage [*]",
+      "parent_id": 80,
+      "depth": 8,
+      "line": 92,
+      "column": 35,
+      "end_line": 92,
+      "branch_column": 31,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |       |   +-- UserMessage [*]"
+      ]
+    },
+    {
+      "id": 82,
+      "label": "AssistantMessage [*]",
+      "parent_id": 80,
+      "depth": 8,
+      "line": 93,
+      "column": 35,
+      "end_line": 93,
+      "branch_column": 31,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |       |   +-- AssistantMessage [*]"
+      ]
+    },
+    {
+      "id": 83,
+      "label": "PendingReply",
+      "parent_id": 80,
+      "depth": 8,
+      "line": 94,
+      "column": 35,
+      "end_line": 94,
+      "branch_column": 31,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |       |   \\-- PendingReply"
+      ]
+    },
+    {
+      "id": 84,
+      "label": "FollowUpComposer",
+      "parent_id": 77,
+      "depth": 7,
+      "line": 95,
+      "column": 31,
+      "end_line": 95,
+      "branch_column": 27,
+      "children": [
+        85
+      ],
+      "raw_lines": [
+        "  |   |   |   |   |       \\-- FollowUpComposer"
+      ]
+    },
+    {
+      "id": 85,
+      "label": "Text input, send / waiting",
+      "parent_id": 84,
+      "depth": 8,
+      "line": 96,
+      "column": 35,
+      "end_line": 96,
+      "branch_column": 31,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |           \\-- Text input, send / waiting"
+      ]
+    },
+    {
+      "id": 86,
+      "label": "PlacementFeedback [conditional]",
+      "parent_id": 16,
+      "depth": 5,
+      "line": 98,
+      "column": 23,
+      "end_line": 98,
+      "branch_column": 19,
+      "children": [
+        87,
+        88
+      ],
+      "raw_lines": [
+        "  |   |   |   |   +-- PlacementFeedback [conditional]"
+      ]
+    },
+    {
+      "id": 87,
+      "label": "NewDiagramPlacementRectangle",
+      "parent_id": 86,
+      "depth": 6,
+      "line": 99,
+      "column": 27,
+      "end_line": 99,
+      "branch_column": 23,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |   +-- NewDiagramPlacementRectangle"
+      ]
+    },
+    {
+      "id": 88,
+      "label": "LocalChatPlacementGuide",
+      "parent_id": 86,
+      "depth": 6,
+      "line": 100,
+      "column": 27,
+      "end_line": 100,
+      "branch_column": 23,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |   |   \\-- LocalChatPlacementGuide"
+      ]
+    },
+    {
+      "id": 89,
+      "label": "CanvasOperationToolbar",
+      "parent_id": 16,
+      "depth": 5,
+      "line": 102,
+      "column": 23,
+      "end_line": 102,
+      "branch_column": 19,
+      "children": [
+        90,
+        91
+      ],
+      "raw_lines": [
+        "  |   |   |   |   \\-- CanvasOperationToolbar"
+      ]
+    },
+    {
+      "id": 90,
+      "label": "Undo / Redo",
+      "parent_id": 89,
+      "depth": 6,
+      "line": 103,
+      "column": 27,
+      "end_line": 103,
+      "branch_column": 23,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |       +-- Undo / Redo"
+      ]
+    },
+    {
+      "id": 91,
+      "label": "OperationStatus / PlacementInstructions",
+      "parent_id": 89,
+      "depth": 6,
+      "line": 104,
+      "column": 27,
+      "end_line": 104,
+      "branch_column": 23,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   |       \\-- OperationStatus / PlacementInstructions"
+      ]
+    },
+    {
+      "id": 92,
+      "label": "ViewportControls",
+      "parent_id": 14,
+      "depth": 4,
+      "line": 106,
+      "column": 19,
+      "end_line": 106,
+      "branch_column": 15,
+      "children": [
+        93,
+        94
+      ],
+      "raw_lines": [
+        "  |   |   |   \\-- ViewportControls"
+      ]
+    },
+    {
+      "id": 93,
+      "label": "ZoomReadout",
+      "parent_id": 92,
+      "depth": 5,
+      "line": 107,
+      "column": 23,
+      "end_line": 107,
+      "branch_column": 19,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |       +-- ZoomReadout"
+      ]
+    },
+    {
+      "id": 94,
+      "label": "CenterAndReset",
+      "parent_id": 92,
+      "depth": 5,
+      "line": 108,
+      "column": 23,
+      "end_line": 108,
+      "branch_column": 19,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |       \\-- CenterAndReset"
+      ]
+    },
+    {
+      "id": 95,
+      "label": "Document state: active / hidden, saved / dirty, busy",
+      "parent_id": 13,
+      "depth": 3,
+      "line": 110,
+      "column": 15,
+      "end_line": 110,
+      "branch_column": 11,
+      "children": [],
+      "raw_lines": [
+        "  |   |   \\-- Document state: active / hidden, saved / dirty, busy"
+      ]
+    },
+    {
+      "id": 96,
+      "label": "ProjectExplorer [FloatingPane]",
+      "parent_id": 12,
+      "depth": 2,
+      "line": 112,
+      "column": 11,
+      "end_line": 112,
+      "branch_column": 7,
+      "children": [
+        97,
+        98,
+        99,
+        104
+      ],
+      "raw_lines": [
+        "  |   +-- ProjectExplorer [FloatingPane]"
+      ]
+    },
+    {
+      "id": 97,
+      "label": "ProjectHeader",
+      "parent_id": 96,
+      "depth": 3,
+      "line": 113,
+      "column": 15,
+      "end_line": 113,
+      "branch_column": 11,
+      "children": [],
+      "raw_lines": [
+        "  |   |   +-- ProjectHeader"
+      ]
+    },
+    {
+      "id": 98,
+      "label": "DiagramFilter",
+      "parent_id": 96,
+      "depth": 3,
+      "line": 114,
+      "column": 15,
+      "end_line": 114,
+      "branch_column": 11,
+      "children": [],
+      "raw_lines": [
+        "  |   |   +-- DiagramFilter"
+      ]
+    },
+    {
+      "id": 99,
+      "label": "DiagramEntry [*]",
+      "parent_id": 96,
+      "depth": 3,
+      "line": 115,
+      "column": 15,
+      "end_line": 115,
+      "branch_column": 11,
+      "children": [
+        100,
+        101
+      ],
+      "raw_lines": [
+        "  |   |   +-- DiagramEntry [*]"
+      ]
+    },
+    {
+      "id": 100,
+      "label": "Name, active indicator, unsaved indicator",
+      "parent_id": 99,
+      "depth": 4,
+      "line": 116,
+      "column": 19,
+      "end_line": 116,
+      "branch_column": 15,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |   +-- Name, active indicator, unsaved indicator"
+      ]
+    },
+    {
+      "id": 101,
+      "label": "ActiveDiagramBoxEntry [*; recursive]",
+      "parent_id": 99,
+      "depth": 4,
+      "line": 117,
+      "column": 19,
+      "end_line": 117,
+      "branch_column": 15,
+      "children": [
+        102,
+        103
+      ],
+      "raw_lines": [
+        "  |   |   |   \\-- ActiveDiagramBoxEntry [*; recursive]"
+      ]
+    },
+    {
+      "id": 102,
+      "label": "ContainerEntry",
+      "parent_id": 101,
+      "depth": 5,
+      "line": 118,
+      "column": 23,
+      "end_line": 118,
+      "branch_column": 19,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |       +-- ContainerEntry"
+      ]
+    },
+    {
+      "id": 103,
+      "label": "DiagramEntry",
+      "parent_id": 101,
+      "depth": 5,
+      "line": 119,
+      "column": 23,
+      "end_line": 119,
+      "branch_column": 19,
+      "children": [],
+      "raw_lines": [
+        "  |   |   |       \\-- DiagramEntry"
+      ]
+    },
+    {
+      "id": 104,
+      "label": "EmptyExplorerMessage",
+      "parent_id": 96,
+      "depth": 3,
+      "line": 120,
+      "column": 15,
+      "end_line": 120,
+      "branch_column": 11,
+      "children": [],
+      "raw_lines": [
+        "  |   |   \\-- EmptyExplorerMessage"
+      ]
+    },
+    {
+      "id": 105,
+      "label": "WorkspacePlaceholder [conditional]",
+      "parent_id": 12,
+      "depth": 2,
+      "line": 122,
+      "column": 11,
+      "end_line": 122,
+      "branch_column": 7,
+      "children": [
+        106
+      ],
+      "raw_lines": [
+        "  |   +-- WorkspacePlaceholder [conditional]"
+      ]
+    },
+    {
+      "id": 106,
+      "label": "Loading / LoadFailure / CreateFirstDiagram",
+      "parent_id": 105,
+      "depth": 3,
+      "line": 123,
+      "column": 15,
+      "end_line": 123,
+      "branch_column": 11,
+      "children": [],
+      "raw_lines": [
+        "  |   |   \\-- Loading / LoadFailure / CreateFirstDiagram"
+      ]
+    },
+    {
+      "id": 107,
+      "label": "ProjectErrorAlert [conditional; dismissible]",
+      "parent_id": 12,
+      "depth": 2,
+      "line": 124,
+      "column": 11,
+      "end_line": 124,
+      "branch_column": 7,
+      "children": [],
+      "raw_lines": [
+        "  |   +-- ProjectErrorAlert [conditional; dismissible]"
+      ]
+    },
+    {
+      "id": 108,
+      "label": "StatusFooter",
+      "parent_id": 12,
+      "depth": 2,
+      "line": 125,
+      "column": 11,
+      "end_line": 125,
+      "branch_column": 7,
+      "children": [
+        109,
+        110
+      ],
+      "raw_lines": [
+        "  |   \\-- StatusFooter"
+      ]
+    },
+    {
+      "id": 109,
+      "label": "ActiveDiagramName",
+      "parent_id": 108,
+      "depth": 3,
+      "line": 126,
+      "column": 15,
+      "end_line": 126,
+      "branch_column": 11,
+      "children": [],
+      "raw_lines": [
+        "  |       +-- ActiveDiagramName"
+      ]
+    },
+    {
+      "id": 110,
+      "label": "KeyboardAndSelectionHints",
+      "parent_id": 108,
+      "depth": 3,
+      "line": 127,
+      "column": 15,
+      "end_line": 127,
+      "branch_column": 11,
+      "children": [],
+      "raw_lines": [
+        "  |       \\-- KeyboardAndSelectionHints"
+      ]
+    },
+    {
+      "id": 111,
+      "label": "NewDiagramModal [conditional]",
+      "parent_id": 0,
+      "depth": 1,
+      "line": 129,
+      "column": 7,
+      "end_line": 129,
+      "branch_column": 3,
+      "children": [
+        112,
+        113,
+        114,
+        115,
+        116,
+        117
+      ],
+      "raw_lines": [
+        "  +-- NewDiagramModal [conditional]"
+      ]
+    },
+    {
+      "id": 112,
+      "label": "Backdrop",
+      "parent_id": 111,
+      "depth": 2,
+      "line": 130,
+      "column": 11,
+      "end_line": 130,
+      "branch_column": 7,
+      "children": [],
+      "raw_lines": [
+        "  |   +-- Backdrop"
+      ]
+    },
+    {
+      "id": 113,
+      "label": "DiagramNameInput",
+      "parent_id": 111,
+      "depth": 2,
+      "line": 131,
+      "column": 11,
+      "end_line": 131,
+      "branch_column": 7,
+      "children": [],
+      "raw_lines": [
+        "  |   +-- DiagramNameInput"
+      ]
+    },
+    {
+      "id": 114,
+      "label": "CopyCurrentDiagramOption",
+      "parent_id": 111,
+      "depth": 2,
+      "line": 132,
+      "column": 11,
+      "end_line": 132,
+      "branch_column": 7,
+      "children": [],
+      "raw_lines": [
+        "  |   +-- CopyCurrentDiagramOption"
+      ]
+    },
+    {
+      "id": 115,
+      "label": "InitialASCIIEditor",
+      "parent_id": 111,
+      "depth": 2,
+      "line": 133,
+      "column": 11,
+      "end_line": 133,
+      "branch_column": 7,
+      "children": [],
+      "raw_lines": [
+        "  |   +-- InitialASCIIEditor"
+      ]
+    },
+    {
+      "id": 116,
+      "label": "HelpText / ErrorMessage",
+      "parent_id": 111,
+      "depth": 2,
+      "line": 134,
+      "column": 11,
+      "end_line": 134,
+      "branch_column": 7,
+      "children": [],
+      "raw_lines": [
+        "  |   +-- HelpText / ErrorMessage"
+      ]
+    },
+    {
+      "id": 117,
+      "label": "Cancel / Create",
+      "parent_id": 111,
+      "depth": 2,
+      "line": 135,
+      "column": 11,
+      "end_line": 135,
+      "branch_column": 7,
+      "children": [],
+      "raw_lines": [
+        "  |   \\-- Cancel / Create"
+      ]
+    },
+    {
+      "id": 118,
+      "label": "UITestingControls",
+      "parent_id": 0,
+      "depth": 1,
+      "line": 137,
+      "column": 7,
+      "end_line": 137,
+      "branch_column": 3,
+      "children": [
+        119,
+        120
+      ],
+      "raw_lines": [
+        "  \\-- UITestingControls"
+      ]
+    },
+    {
+      "id": 119,
+      "label": "ToggleButton",
+      "parent_id": 118,
+      "depth": 2,
+      "line": 138,
+      "column": 11,
+      "end_line": 138,
+      "branch_column": 7,
+      "children": [],
+      "raw_lines": [
+        "      +-- ToggleButton"
+      ]
+    },
+    {
+      "id": 120,
+      "label": "SettingsPanel [conditional]",
+      "parent_id": 118,
+      "depth": 2,
+      "line": 139,
+      "column": 11,
+      "end_line": 139,
+      "branch_column": 7,
+      "children": [
+        121,
+        122,
+        123,
+        124
+      ],
+      "raw_lines": [
+        "      \\-- SettingsPanel [conditional]"
+      ]
+    },
+    {
+      "id": 121,
+      "label": "LocalChatDisplayVariant",
+      "parent_id": 120,
+      "depth": 3,
+      "line": 140,
+      "column": 15,
+      "end_line": 140,
+      "branch_column": 11,
+      "children": [],
+      "raw_lines": [
+        "          +-- LocalChatDisplayVariant"
+      ]
+    },
+    {
+      "id": 122,
+      "label": "MockReplyDelay",
+      "parent_id": 120,
+      "depth": 3,
+      "line": 141,
+      "column": 15,
+      "end_line": 141,
+      "branch_column": 11,
+      "children": [],
+      "raw_lines": [
+        "          +-- MockReplyDelay"
+      ]
+    },
+    {
+      "id": 123,
+      "label": "PlacementHintToggle",
+      "parent_id": 120,
+      "depth": 3,
+      "line": 142,
+      "column": 15,
+      "end_line": 142,
+      "branch_column": 11,
+      "children": [],
+      "raw_lines": [
+        "          +-- PlacementHintToggle"
+      ]
+    },
+    {
+      "id": 124,
+      "label": "ResetAll",
+      "parent_id": 120,
+      "depth": 3,
+      "line": 143,
+      "column": 15,
+      "end_line": 143,
+      "branch_column": 11,
+      "children": [],
+      "raw_lines": [
+        "          \\-- ResetAll"
+      ]
+    }
+  ],
+  "roots": [
+    0
+  ],
+  "diagnostics": [
+    {
+      "line": 51,
+      "code": "joined_continuation",
+      "message": "Joined an unmarked line to the preceding label.",
+      "severity": "info"
+    }
+  ],
+  "lines": [
+    {
+      "line": 1,
+      "kind": "node",
+      "node_id": 0,
+      "raw": "MappingScreen"
+    },
+    {
+      "line": 2,
+      "kind": "guide",
+      "node_id": null,
+      "raw": "  |"
+    },
+    {
+      "line": 3,
+      "kind": "node",
+      "node_id": 1,
+      "raw": "  +-- ScreenHeader"
+    },
+    {
+      "line": 4,
+      "kind": "node",
+      "node_id": 2,
+      "raw": "  |   +-- MappingSubmenu"
+    },
+    {
+      "line": 5,
+      "kind": "node",
+      "node_id": 3,
+      "raw": "  |   |   +-- ProjectName"
+    },
+    {
+      "line": 6,
+      "kind": "node",
+      "node_id": 4,
+      "raw": "  |   |   +-- DiagramNameEditor"
+    },
+    {
+      "line": 7,
+      "kind": "node",
+      "node_id": 5,
+      "raw": "  |   |   +-- NewDiagramAction"
+    },
+    {
+      "line": 8,
+      "kind": "node",
+      "node_id": 6,
+      "raw": "  |   |   +-- SaveDiagramAction"
+    },
+    {
+      "line": 9,
+      "kind": "node",
+      "node_id": 7,
+      "raw": "  |   |   \\-- SaveStatus / EditingStatus"
+    },
+    {
+      "line": 10,
+      "kind": "node",
+      "node_id": 8,
+      "raw": "  |   \\-- ApplicationNavigation"
+    },
+    {
+      "line": 11,
+      "kind": "node",
+      "node_id": 9,
+      "raw": "  |       +-- StudioTab"
+    },
+    {
+      "line": 12,
+      "kind": "node",
+      "node_id": 10,
+      "raw": "  |       +-- ExperimentsTab"
+    },
+    {
+      "line": 13,
+      "kind": "node",
+      "node_id": 11,
+      "raw": "  |       \\-- MappingTab"
+    },
+    {
+      "line": 14,
+      "kind": "guide",
+      "node_id": null,
+      "raw": "  |"
+    },
+    {
+      "line": 15,
+      "kind": "node",
+      "node_id": 12,
+      "raw": "  +-- MappingWorkspace"
+    },
+    {
+      "line": 16,
+      "kind": "guide",
+      "node_id": null,
+      "raw": "  |   |"
+    },
+    {
+      "line": 17,
+      "kind": "node",
+      "node_id": 13,
+      "raw": "  |   +-- DocumentView [*; only active document visible]"
+    },
+    {
+      "line": 18,
+      "kind": "guide",
+      "node_id": null,
+      "raw": "  |   |   |"
+    },
+    {
+      "line": 19,
+      "kind": "node",
+      "node_id": 14,
+      "raw": "  |   |   +-- CanvasViewport"
+    },
+    {
+      "line": 20,
+      "kind": "node",
+      "node_id": 15,
+      "raw": "  |   |   |   +-- CanvasBackground"
+    },
+    {
+      "line": 21,
+      "kind": "node",
+      "node_id": 16,
+      "raw": "  |   |   |   +-- TransformedCanvasSurface"
+    },
+    {
+      "line": 22,
+      "kind": "guide",
+      "node_id": null,
+      "raw": "  |   |   |   |   |"
+    },
+    {
+      "line": 23,
+      "kind": "node",
+      "node_id": 17,
+      "raw": "  |   |   |   |   +-- Scene"
+    },
+    {
+      "line": 24,
+      "kind": "node",
+      "node_id": 18,
+      "raw": "  |   |   |   |   |   \\-- RootContainer"
+    },
+    {
+      "line": 25,
+      "kind": "node",
+      "node_id": 19,
+      "raw": "  |   |   |   |   |       \\-- GridBox [*; recursive]"
+    },
+    {
+      "line": 26,
+      "kind": "node",
+      "node_id": 20,
+      "raw": "  |   |   |   |   |           +-- ContainerBox"
+    },
+    {
+      "line": 27,
+      "kind": "node",
+      "node_id": 21,
+      "raw": "  |   |   |   |   |           |   +-- Expanded: child GridBoxes"
+    },
+    {
+      "line": 28,
+      "kind": "node",
+      "node_id": 22,
+      "raw": "  |   |   |   |   |           |   \\-- Collapsed: summary content"
+    },
+    {
+      "line": 29,
+      "kind": "node",
+      "node_id": 23,
+      "raw": "  |   |   |   |   |           +-- DiagramBox"
+    },
+    {
+      "line": 30,
+      "kind": "node",
+      "node_id": 24,
+      "raw": "  |   |   |   |   |           |   +-- Expanded: ASCII diagram content"
+    },
+    {
+      "line": 31,
+      "kind": "node",
+      "node_id": 25,
+      "raw": "  |   |   |   |   |           |   \\-- Collapsed: summary content"
+    },
+    {
+      "line": 32,
+      "kind": "node",
+      "node_id": 26,
+      "raw": "  |   |   |   |   |           \\-- BoxDecorationAndControls"
+    },
+    {
+      "line": 33,
+      "kind": "node",
+      "node_id": 27,
+      "raw": "  |   |   |   |   |               +-- Boundary"
+    },
+    {
+      "line": 34,
+      "kind": "node",
+      "node_id": 28,
+      "raw": "  |   |   |   |   |               +-- Expand / Collapse"
+    },
+    {
+      "line": 35,
+      "kind": "node",
+      "node_id": 29,
+      "raw": "  |   |   |   |   |               +-- Move"
+    },
+    {
+      "line": 36,
+      "kind": "node",
+      "node_id": 30,
+      "raw": "  |   |   |   |   |               \\-- Group"
+    },
+    {
+      "line": 37,
+      "kind": "guide",
+      "node_id": null,
+      "raw": "  |   |   |   |   |"
+    },
+    {
+      "line": 38,
+      "kind": "node",
+      "node_id": 31,
+      "raw": "  |   |   |   |   +-- DiagramAnnotations"
+    },
+    {
+      "line": 39,
+      "kind": "node",
+      "node_id": 32,
+      "raw": "  |   |   |   |   |   +-- MappedLabelHighlight [*]"
+    },
+    {
+      "line": 40,
+      "kind": "node",
+      "node_id": 33,
+      "raw": "  |   |   |   |   |   |   \\-- Normal / Selected / PromptTarget"
+    },
+    {
+      "line": 41,
+      "kind": "node",
+      "node_id": 34,
+      "raw": "  |   |   |   |   |   +-- DetailSection [*; legacy fixture]"
+    },
+    {
+      "line": 42,
+      "kind": "node",
+      "node_id": 35,
+      "raw": "  |   |   |   |   |   |   +-- SectionBoundary"
+    },
+    {
+      "line": 43,
+      "kind": "node",
+      "node_id": 36,
+      "raw": "  |   |   |   |   |   |   \\-- NumberedOpenDetailAction"
+    },
+    {
+      "line": 44,
+      "kind": "node",
+      "node_id": 37,
+      "raw": "  |   |   |   |   |   \\-- DetailOverlay [conditional; legacy fixture]"
+    },
+    {
+      "line": 45,
+      "kind": "node",
+      "node_id": 38,
+      "raw": "  |   |   |   |   |       +-- Header: section ID, title, close"
+    },
+    {
+      "line": 46,
+      "kind": "node",
+      "node_id": 39,
+      "raw": "  |   |   |   |   |       \\-- ASCII detail content"
+    },
+    {
+      "line": 47,
+      "kind": "guide",
+      "node_id": null,
+      "raw": "  |   |   |   |   |"
+    },
+    {
+      "line": 48,
+      "kind": "node",
+      "node_id": 40,
+      "raw": "  |   |   |   |   +-- SelectionInteraction [currently one]"
+    },
+    {
+      "line": 49,
+      "kind": "node",
+      "node_id": 41,
+      "raw": "  |   |   |   |   |   +-- SelectionRectangle"
+    },
+    {
+      "line": 50,
+      "kind": "node",
+      "node_id": 42,
+      "raw": "  |   |   |   |   |   |   \\-- Ready / Composing / Generating /"
+    },
+    {
+      "line": 51,
+      "kind": "continuation",
+      "node_id": 42,
+      "raw": "  |   |   |   |   |   |       Applied / Error / Asking / PlacingChat"
+    },
+    {
+      "line": 52,
+      "kind": "node",
+      "node_id": 43,
+      "raw": "  |   |   |   |   |   +-- SelectionOperationsPopover"
+    },
+    {
+      "line": 53,
+      "kind": "node",
+      "node_id": 44,
+      "raw": "  |   |   |   |   |   |   +-- SelectionCountAndSourceCoverage"
+    },
+    {
+      "line": 54,
+      "kind": "node",
+      "node_id": 45,
+      "raw": "  |   |   |   |   |   |   +-- OperationStatus"
+    },
+    {
+      "line": 55,
+      "kind": "node",
+      "node_id": 46,
+      "raw": "  |   |   |   |   |   |   \\-- Body [one of]"
+    },
+    {
+      "line": 56,
+      "kind": "node",
+      "node_id": 47,
+      "raw": "  |   |   |   |   |   |       +-- ActionMenu"
+    },
+    {
+      "line": 57,
+      "kind": "node",
+      "node_id": 48,
+      "raw": "  |   |   |   |   |   |       |   +-- ProjectionChooser"
+    },
+    {
+      "line": 58,
+      "kind": "node",
+      "node_id": 49,
+      "raw": "  |   |   |   |   |   |       |   +-- ProjectionUnavailableMessage"
+    },
+    {
+      "line": 59,
+      "kind": "node",
+      "node_id": 50,
+      "raw": "  |   |   |   |   |   |       |   +-- GenerateSubDiagram"
+    },
+    {
+      "line": 60,
+      "kind": "node",
+      "node_id": 51,
+      "raw": "  |   |   |   |   |   |       |   +-- OpenCallTree"
+    },
+    {
+      "line": 61,
+      "kind": "node",
+      "node_id": 52,
+      "raw": "  |   |   |   |   |   |       |   +-- PromptSelection"
+    },
+    {
+      "line": 62,
+      "kind": "node",
+      "node_id": 53,
+      "raw": "  |   |   |   |   |   |       |   \\-- AskAboutSelection"
+    },
+    {
+      "line": 63,
+      "kind": "node",
+      "node_id": 54,
+      "raw": "  |   |   |   |   |   |       +-- Edit / GeneratePromptForm"
+    },
+    {
+      "line": 64,
+      "kind": "node",
+      "node_id": 55,
+      "raw": "  |   |   |   |   |   |       |   \\-- Instruction, cancel, apply / choose region"
+    },
+    {
+      "line": 65,
+      "kind": "node",
+      "node_id": 56,
+      "raw": "  |   |   |   |   |   |       \\-- LocalQuestionForm"
+    },
+    {
+      "line": 66,
+      "kind": "node",
+      "node_id": 57,
+      "raw": "  |   |   |   |   |   |           \\-- Question, placement hint, cancel, place"
+    },
+    {
+      "line": 67,
+      "kind": "node",
+      "node_id": 58,
+      "raw": "  |   |   |   |   |   \\-- PatchResultStatus [conditional]"
+    },
+    {
+      "line": 68,
+      "kind": "node",
+      "node_id": 59,
+      "raw": "  |   |   |   |   |       \\-- Applied / Error"
+    },
+    {
+      "line": 69,
+      "kind": "guide",
+      "node_id": null,
+      "raw": "  |   |   |   |   |"
+    },
+    {
+      "line": 70,
+      "kind": "node",
+      "node_id": 60,
+      "raw": "  |   |   |   |   +-- ProjectionCompanion [currently one]"
+    },
+    {
+      "line": 71,
+      "kind": "node",
+      "node_id": 61,
+      "raw": "  |   |   |   |   |   +-- ConnectorLineAndJoinDecoration"
+    },
+    {
+      "line": 72,
+      "kind": "node",
+      "node_id": 62,
+      "raw": "  |   |   |   |   |   +-- Header"
+    },
+    {
+      "line": 73,
+      "kind": "node",
+      "node_id": 63,
+      "raw": "  |   |   |   |   |   |   +-- TitleAndCoverageMetadata"
+    },
+    {
+      "line": 74,
+      "kind": "node",
+      "node_id": 64,
+      "raw": "  |   |   |   |   |   |   +-- OpenCompaction / BackToCallTree"
+    },
+    {
+      "line": 75,
+      "kind": "node",
+      "node_id": 65,
+      "raw": "  |   |   |   |   |   |   \\-- Close"
+    },
+    {
+      "line": 76,
+      "kind": "node",
+      "node_id": 66,
+      "raw": "  |   |   |   |   |   \\-- Body [one of]"
+    },
+    {
+      "line": 77,
+      "kind": "node",
+      "node_id": 67,
+      "raw": "  |   |   |   |   |       +-- ProjectedCallTree"
+    },
+    {
+      "line": 78,
+      "kind": "node",
+      "node_id": 68,
+      "raw": "  |   |   |   |   |       |   \\-- ASCII tree rows"
+    },
+    {
+      "line": 79,
+      "kind": "node",
+      "node_id": 69,
+      "raw": "  |   |   |   |   |       \\-- ProjectedSourceCompactions"
+    },
+    {
+      "line": 80,
+      "kind": "node",
+      "node_id": 70,
+      "raw": "  |   |   |   |   |           \\-- CompactionFileSection [*]"
+    },
+    {
+      "line": 81,
+      "kind": "node",
+      "node_id": 71,
+      "raw": "  |   |   |   |   |               +-- FilePathAndSnapshotMetadata"
+    },
+    {
+      "line": 82,
+      "kind": "node",
+      "node_id": 72,
+      "raw": "  |   |   |   |   |               \\-- ASCII compaction rows"
+    },
+    {
+      "line": 83,
+      "kind": "guide",
+      "node_id": null,
+      "raw": "  |   |   |   |   |"
+    },
+    {
+      "line": 84,
+      "kind": "node",
+      "node_id": 73,
+      "raw": "  |   |   |   |   +-- LocalConversation [*]"
+    },
+    {
+      "line": 85,
+      "kind": "node",
+      "node_id": 74,
+      "raw": "  |   |   |   |   |   +-- CanvasAnchorBubble"
+    },
+    {
+      "line": 86,
+      "kind": "node",
+      "node_id": 75,
+      "raw": "  |   |   |   |   |   |   \\-- Open / Collapse, reply count, pending indicator"
+    },
+    {
+      "line": 87,
+      "kind": "node",
+      "node_id": 76,
+      "raw": "  |   |   |   |   |   +-- SourceSelectionHighlight [when active]"
+    },
+    {
+      "line": 88,
+      "kind": "node",
+      "node_id": 77,
+      "raw": "  |   |   |   |   |   \\-- ConversationPanel [when active]"
+    },
+    {
+      "line": 89,
+      "kind": "node",
+      "node_id": 78,
+      "raw": "  |   |   |   |   |       +-- Display: compact / floating / docked"
+    },
+    {
+      "line": 90,
+      "kind": "node",
+      "node_id": 79,
+      "raw": "  |   |   |   |   |       +-- Header: title, collapse"
+    },
+    {
+      "line": 91,
+      "kind": "node",
+      "node_id": 80,
+      "raw": "  |   |   |   |   |       +-- Transcript"
+    },
+    {
+      "line": 92,
+      "kind": "node",
+      "node_id": 81,
+      "raw": "  |   |   |   |   |       |   +-- UserMessage [*]"
+    },
+    {
+      "line": 93,
+      "kind": "node",
+      "node_id": 82,
+      "raw": "  |   |   |   |   |       |   +-- AssistantMessage [*]"
+    },
+    {
+      "line": 94,
+      "kind": "node",
+      "node_id": 83,
+      "raw": "  |   |   |   |   |       |   \\-- PendingReply"
+    },
+    {
+      "line": 95,
+      "kind": "node",
+      "node_id": 84,
+      "raw": "  |   |   |   |   |       \\-- FollowUpComposer"
+    },
+    {
+      "line": 96,
+      "kind": "node",
+      "node_id": 85,
+      "raw": "  |   |   |   |   |           \\-- Text input, send / waiting"
+    },
+    {
+      "line": 97,
+      "kind": "guide",
+      "node_id": null,
+      "raw": "  |   |   |   |   |"
+    },
+    {
+      "line": 98,
+      "kind": "node",
+      "node_id": 86,
+      "raw": "  |   |   |   |   +-- PlacementFeedback [conditional]"
+    },
+    {
+      "line": 99,
+      "kind": "node",
+      "node_id": 87,
+      "raw": "  |   |   |   |   |   +-- NewDiagramPlacementRectangle"
+    },
+    {
+      "line": 100,
+      "kind": "node",
+      "node_id": 88,
+      "raw": "  |   |   |   |   |   \\-- LocalChatPlacementGuide"
+    },
+    {
+      "line": 101,
+      "kind": "guide",
+      "node_id": null,
+      "raw": "  |   |   |   |   |"
+    },
+    {
+      "line": 102,
+      "kind": "node",
+      "node_id": 89,
+      "raw": "  |   |   |   |   \\-- CanvasOperationToolbar"
+    },
+    {
+      "line": 103,
+      "kind": "node",
+      "node_id": 90,
+      "raw": "  |   |   |   |       +-- Undo / Redo"
+    },
+    {
+      "line": 104,
+      "kind": "node",
+      "node_id": 91,
+      "raw": "  |   |   |   |       \\-- OperationStatus / PlacementInstructions"
+    },
+    {
+      "line": 105,
+      "kind": "guide",
+      "node_id": null,
+      "raw": "  |   |   |   |"
+    },
+    {
+      "line": 106,
+      "kind": "node",
+      "node_id": 92,
+      "raw": "  |   |   |   \\-- ViewportControls"
+    },
+    {
+      "line": 107,
+      "kind": "node",
+      "node_id": 93,
+      "raw": "  |   |   |       +-- ZoomReadout"
+    },
+    {
+      "line": 108,
+      "kind": "node",
+      "node_id": 94,
+      "raw": "  |   |   |       \\-- CenterAndReset"
+    },
+    {
+      "line": 109,
+      "kind": "guide",
+      "node_id": null,
+      "raw": "  |   |   |"
+    },
+    {
+      "line": 110,
+      "kind": "node",
+      "node_id": 95,
+      "raw": "  |   |   \\-- Document state: active / hidden, saved / dirty, busy"
+    },
+    {
+      "line": 111,
+      "kind": "guide",
+      "node_id": null,
+      "raw": "  |   |"
+    },
+    {
+      "line": 112,
+      "kind": "node",
+      "node_id": 96,
+      "raw": "  |   +-- ProjectExplorer [FloatingPane]"
+    },
+    {
+      "line": 113,
+      "kind": "node",
+      "node_id": 97,
+      "raw": "  |   |   +-- ProjectHeader"
+    },
+    {
+      "line": 114,
+      "kind": "node",
+      "node_id": 98,
+      "raw": "  |   |   +-- DiagramFilter"
+    },
+    {
+      "line": 115,
+      "kind": "node",
+      "node_id": 99,
+      "raw": "  |   |   +-- DiagramEntry [*]"
+    },
+    {
+      "line": 116,
+      "kind": "node",
+      "node_id": 100,
+      "raw": "  |   |   |   +-- Name, active indicator, unsaved indicator"
+    },
+    {
+      "line": 117,
+      "kind": "node",
+      "node_id": 101,
+      "raw": "  |   |   |   \\-- ActiveDiagramBoxEntry [*; recursive]"
+    },
+    {
+      "line": 118,
+      "kind": "node",
+      "node_id": 102,
+      "raw": "  |   |   |       +-- ContainerEntry"
+    },
+    {
+      "line": 119,
+      "kind": "node",
+      "node_id": 103,
+      "raw": "  |   |   |       \\-- DiagramEntry"
+    },
+    {
+      "line": 120,
+      "kind": "node",
+      "node_id": 104,
+      "raw": "  |   |   \\-- EmptyExplorerMessage"
+    },
+    {
+      "line": 121,
+      "kind": "guide",
+      "node_id": null,
+      "raw": "  |   |"
+    },
+    {
+      "line": 122,
+      "kind": "node",
+      "node_id": 105,
+      "raw": "  |   +-- WorkspacePlaceholder [conditional]"
+    },
+    {
+      "line": 123,
+      "kind": "node",
+      "node_id": 106,
+      "raw": "  |   |   \\-- Loading / LoadFailure / CreateFirstDiagram"
+    },
+    {
+      "line": 124,
+      "kind": "node",
+      "node_id": 107,
+      "raw": "  |   +-- ProjectErrorAlert [conditional; dismissible]"
+    },
+    {
+      "line": 125,
+      "kind": "node",
+      "node_id": 108,
+      "raw": "  |   \\-- StatusFooter"
+    },
+    {
+      "line": 126,
+      "kind": "node",
+      "node_id": 109,
+      "raw": "  |       +-- ActiveDiagramName"
+    },
+    {
+      "line": 127,
+      "kind": "node",
+      "node_id": 110,
+      "raw": "  |       \\-- KeyboardAndSelectionHints"
+    },
+    {
+      "line": 128,
+      "kind": "guide",
+      "node_id": null,
+      "raw": "  |"
+    },
+    {
+      "line": 129,
+      "kind": "node",
+      "node_id": 111,
+      "raw": "  +-- NewDiagramModal [conditional]"
+    },
+    {
+      "line": 130,
+      "kind": "node",
+      "node_id": 112,
+      "raw": "  |   +-- Backdrop"
+    },
+    {
+      "line": 131,
+      "kind": "node",
+      "node_id": 113,
+      "raw": "  |   +-- DiagramNameInput"
+    },
+    {
+      "line": 132,
+      "kind": "node",
+      "node_id": 114,
+      "raw": "  |   +-- CopyCurrentDiagramOption"
+    },
+    {
+      "line": 133,
+      "kind": "node",
+      "node_id": 115,
+      "raw": "  |   +-- InitialASCIIEditor"
+    },
+    {
+      "line": 134,
+      "kind": "node",
+      "node_id": 116,
+      "raw": "  |   +-- HelpText / ErrorMessage"
+    },
+    {
+      "line": 135,
+      "kind": "node",
+      "node_id": 117,
+      "raw": "  |   \\-- Cancel / Create"
+    },
+    {
+      "line": 136,
+      "kind": "guide",
+      "node_id": null,
+      "raw": "  |"
+    },
+    {
+      "line": 137,
+      "kind": "node",
+      "node_id": 118,
+      "raw": "  \\-- UITestingControls"
+    },
+    {
+      "line": 138,
+      "kind": "node",
+      "node_id": 119,
+      "raw": "      +-- ToggleButton"
+    },
+    {
+      "line": 139,
+      "kind": "node",
+      "node_id": 120,
+      "raw": "      \\-- SettingsPanel [conditional]"
+    },
+    {
+      "line": 140,
+      "kind": "node",
+      "node_id": 121,
+      "raw": "          +-- LocalChatDisplayVariant"
+    },
+    {
+      "line": 141,
+      "kind": "node",
+      "node_id": 122,
+      "raw": "          +-- MockReplyDelay"
+    },
+    {
+      "line": 142,
+      "kind": "node",
+      "node_id": 123,
+      "raw": "          +-- PlacementHintToggle"
+    },
+    {
+      "line": 143,
+      "kind": "node",
+      "node_id": 124,
+      "raw": "          \\-- ResetAll"
+    }
+  ]
+}

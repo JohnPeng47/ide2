@@ -1,0 +1,120 @@
+MAPPING DOMAIN MODEL
+|
++-- Project
+|   |-- id, name
+|   `-- ProjectRepresentationsSnapshot
+|       |-- project
+|       `-- catalog
+|           |-- representations[id] -> ProjectRepresentationRecord
+|           |   |-- id, name, status
+|           |   |-- currentRevisionId -> ProjectRepresentationRevisionRecord
+|           |   `-- Explorer lists representations with status = "settled"
+|           `-- revisions[id] -> ProjectRepresentationRevisionRecord
+|               |-- id, representationId, projectId
+|               |-- scene (obtained through sceneFromRevision)
+|               `-- evidence
+|
++-- Editable diagram document
+|   |-- scene -> LineGridScene
+|   |   |-- root -> GridBox
+|   |   |   |-- Shared properties
+|   |   |   |   |-- id
+|   |   |   |   |-- position: { column, row } relative to parent
+|   |   |   |   |-- minimumSize?: { columns, rows }
+|   |   |   |   |-- collapsed
+|   |   |   |   `-- collapsedContentId? -> contents[id]
+|   |   |   |-- Diagram box (kind = "diagram")
+|   |   |   |   `-- contentId -> contents[id]
+|   |   |   `-- Container box (kind = "container")
+|   |   |       |-- children[] -> GridBox (recursive)
+|   |   |       `-- layout: { collisionPolicy: "push-right", gap }
+|   |   `-- contents[id]
+|   |       |-- id, ascii, revision
+|   |       `-- mappings[] -> source evidence associations
+|   |-- evidence? -> source-backed document metadata
+|   |-- nodes[contentId][]
+|   |   |-- id
+|   |   |-- head: { line, startColumn, endColumn }
+|   |   `-- sourceRanges[]
+|   `-- sections[contentId][]
+|
++-- Resolved scene (derived from LineGridScene)
+|   `-- ResolvedGridBox
+|       |-- box -> original GridBox
+|       |-- bounds: { column, row, columns, rows } in scene coordinates
+|       |-- contentId? -> displayed content
+|       |-- children[] -> ResolvedGridBox (expanded containers only)
+|       `-- Sizing rules
+|           |-- Content determines measured size
+|           |-- Expanded containers include child extents
+|           |-- Expanded boxes respect minimumSize
+|           `-- Collapsed boxes require collapsed content and ignore minimumSize
+|
++-- Selection and diagram editing
+|   |-- Active box -> GridBox and its content
+|   |-- Selection rectangle
+|   |   |-- startLine, endLine, startColumn, endColumn
+|   |   `-- selectedNodeIds[] -> nodes intersecting the rectangle
+|   |-- Prompt context
+|   |   |-- projectId, representationId, baseRevisionId
+|   |   |-- clientSessionId
+|   |   `-- diagramAscii, diagramRevision, mappings, selection, instruction
+|   |-- Patch operation
+|   |   `-- Replaces active content and updates mappings and scene layout
+|   `-- Generate operation
+|       |-- Placement region -> position and requested minimumSize
+|       `-- Inserts a new diagram box and content into a target container
+|
++-- Source evidence projections
+|   |-- ProjectProjectionRecord
+|   |   |-- projectId
+|   |   |-- targetRepresentationId -> representation
+|   |   |-- targetRevisionId -> pinned revision
+|   |   `-- links[]
+|   |       |-- sourceEvidenceIds[]
+|   |       `-- targetNodeIds[] -> nodes in target revision's projection tree
+|   |-- Projection tree (built from target revision)
+|   |   |-- rootIds[]
+|   |   `-- nodes[id]: text, line, order, parentId, childIds[]
+|   |-- ProjectionSelectionResult (from selected evidence IDs)
+|   |   |-- ascii
+|   |   |-- matchedSourceEvidenceIds[], unmatchedSourceEvidenceIds[]
+|   |   |-- targetNodeIds[]: directly linked nodes
+|   |   |-- projectedNodeIds[]: targets and descendants
+|   |   |-- visibleNodeIds[]: projected nodes and ancestor context
+|   |   `-- rows[]: { nodeId, sourceLine }
+|   `-- CompactionProjection
+|       |-- links[]: { callTreeNodeId, file, treeLines[] }
+|       |-- files[] -> CompactionSnapshot
+|       |   |-- sourceFile, sourceSha256
+|       |   `-- mappings[]: { treeLine, sourceRanges[] }
+|       `-- Projected compactions (from selected call-tree node IDs)
+|           |-- sourceFile, sourceSha256, ascii, selectedLineCount
+|           |-- rows[]: { treeLine, selected, sourceRanges }
+|           `-- Selected rows plus ancestor context -> source-file pane
+|
++-- Local conversation
+|   `-- LocalChatThread
+|       |-- title, verbosity
+|       |-- messages[]: { id, role, text }
+|       |-- pending, progress?, error?
+|       `-- Actions: submit follow-up, retry, change verbosity, collapse
+|
+`-- Workspace session (transient UI state)
+    |-- snapshot -> loaded project and catalog
+    |-- activeId -> current representation and draft
+    |-- drafts[representationId]
+    |   |-- name, document
+    |   |-- savedName, savedScene -> saved baseline for dirty checks
+    |   |-- revisionId -> expected revision when saving
+    |   |-- busy
+    |   `-- focusBox?: { id, serial } -> requested canvas focus
+    |-- Save -> persists captured draft and advances its revision baseline
+    |-- Create -> new ASCII scene or copy of current scene and source revision
+    |-- Navigation guard -> checks unsaved changes and pending edits
+    `-- CanvasTransform (view geometry)
+        |-- offset: { x, y }, scale
+        `-- Pan, pinch, zoom, center, and focus change the view transform
+
+Notation: [] = collection; ? = optional; -> = reference or derived relationship.
+Scope: source entities and relationships shown in the supplied excerpts.
