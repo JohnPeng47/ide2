@@ -1,0 +1,124 @@
+MAPPING DOMAIN MODEL
+|
++-- Project representations snapshot
+|   +-- Project: id, name
+|   `-- Catalog
+|       +-- Representations [by id]
+|       |   +-- Identity: id, projectId, name
+|       |   +-- Lifecycle: status (settled diagrams appear in the explorer)
+|       |   `-- currentRevisionId --> Revision
+|       `-- Revisions [by id]
+|           +-- Identity: id, representationId, projectId
+|           +-- Scene --> Line grid scene
+|           `-- Source evidence (used to construct a mapping document)
+|
++-- Mapping document
+|   +-- Scene: LineGridScene
+|   |   +-- Contents [by content id]
+|   |   |   +-- id, ascii, revision
+|   |   |   `-- Mappings (diagram content to source evidence)
+|   |   `-- Root: GridBox
+|   |       +-- Shared attributes
+|   |       |   +-- id
+|   |       |   +-- position: column, row (relative to parent)
+|   |       |   +-- minimumSize?: columns, rows
+|   |       |   +-- collapsed
+|   |       |   `-- collapsedContentId? --> Content
+|   |       `-- Kind (one of)
+|   |           +-- Diagram
+|   |           |   `-- contentId --> Content
+|   |           `-- Container
+|   |               +-- children: GridBox[] (recursive)
+|   |               `-- layout: collisionPolicy = push-right, gap
+|   +-- Evidence (optional)
+|   +-- Nodes [by content id]
+|   |   `-- Selectable node: id, head(line, startColumn, endColumn), sourceRanges
+|   `-- Sections [by content id]
+|
++-- Resolved scene (derived from LineGridScene)
+|   `-- ResolvedGridBox (recursive)
+|       +-- box --> Original GridBox
+|       +-- bounds: absolute column, row, columns, rows
+|       +-- contentId? --> Visible content
+|       +-- children: ResolvedGridBox[] (expanded containers only)
+|       `-- Sizing rules
+|           +-- Visible ASCII content and expanded children determine size
+|           +-- minimumSize reserves space only while expanded
+|           `-- Collapsed boxes require collapsed content
+|
++-- Mapping workspace (local editing state)
+|   +-- snapshot --> Project representations snapshot
+|   +-- activeId --> Active representation / draft
+|   +-- Drafts [by representation id]
+|   |   +-- name, document --> Mapping document
+|   |   +-- revisionId --> Revision used as save baseline
+|   |   +-- savedName, savedScene (dirty-state baseline)
+|   |   +-- busy (pending edit)
+|   |   `-- focusBox?: id, serial --> GridBox focus request
+|   +-- Save operation
+|   |   +-- Inputs: projectId, representationId, expectedRevisionId, name, scene
+|   |   `-- Result: refreshed snapshot and saved revision baseline
+|   +-- Create operation
+|   |   +-- New name and initial ASCII --> New single-diagram scene
+|   |   `-- Copy current --> Source revision and current draft scene
+|   +-- Explorer: diagram filter, active diagram, dirty markers, box hierarchy
+|   `-- Canvas view state
+|       +-- Transform: offset(x, y), scale
+|       +-- Viewport: width, height, left inset
+|       `-- Gestures: pointers, pan, pinch; focus and center requests
+|
++-- Selection and diagram editing
+|   +-- Active box --> GridBox and its content
+|   +-- Selection rectangle: startLine, endLine, startColumn, endColumn
+|   +-- Selected node ids --> Nodes intersecting the selection
+|   +-- Selected source ranges / evidence ids --> Projection and prompt inputs
+|   `-- Prompt operation
+|       +-- Shared inputs: project context, session id, ASCII, revision,
+|       |                 mappings, selection, instruction
+|       +-- Patch
+|       |   `-- Replace active content, update mappings, relayout, commit document
+|       `-- Generate sub-diagram
+|           +-- Placement: dragged region, minimum size, target parent
+|           `-- Insert new diagram box and content, commit document
+|
++-- Call-tree projection
+|   +-- ProjectProjectionRecord
+|   |   +-- id, projectId
+|   |   +-- targetRepresentationId --> Representation
+|   |   +-- targetRevisionId --> Pinned target revision
+|   |   `-- Links[]: sourceEvidenceIds[] --> targetNodeIds[]
+|   +-- Target tree (built from the pinned revision)
+|   |   +-- rootIds[]
+|   |   `-- Nodes [by id]: text, line, order, parentId, childIds[]
+|   `-- ProjectionSelectionResult (derived from selected evidence ids)
+|       +-- matchedSourceEvidenceIds[], unmatchedSourceEvidenceIds[]
+|       +-- targetNodeIds[] (directly linked nodes)
+|       +-- projectedNodeIds[] (targets and descendants)
+|       +-- visibleNodeIds[] (projected nodes and ancestor context)
+|       `-- Rendered ASCII and rows[]: nodeId, sourceLine
+|
++-- Compaction projection
+|   +-- Links[]: callTreeNodeId --> file, treeLines[]
+|   +-- File snapshots[]
+|   |   +-- sourceFile, sourceSha256, compacted tree content
+|   |   `-- Mappings[]: treeLine --> sourceRanges[]
+|   `-- Projected files[] (derived from selected call-tree node ids)
+|       +-- sourceFile, sourceSha256
+|       +-- ASCII (selected rows and ancestor context)
+|       +-- Rows[]: treeLine, selected, sourceRanges[]
+|       +-- selectedLineCount
+|       `-- Source pane --> Selected source file and mapped ranges
+|
+`-- Local conversation
+    +-- LocalChatThread
+    |   +-- title, verbosity
+    |   +-- Messages[]: id, role(user | assistant), text
+    |   `-- pending, progress, error
+    `-- Conversation view state and actions
+        +-- variant, follow-up draft, transcript scroll position
+        +-- Submit follow-up / retry failed response
+        `-- Change verbosity / collapse conversation
+
+Scope: Based on the supplied source excerpts. Arrows denote references or
+data flow; grouping does not imply database ownership. Workspace, resolved
+scene, selection results, and view state are separated from stored records.

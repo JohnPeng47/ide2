@@ -1,0 +1,113 @@
+Project
++-- id
++-- name
++-- catalog
+    +-- representations
+    |   \-- ProjectRepresentation
+    |       +-- id
+    |       +-- name
+    |       +-- status
+    |       \-- currentRevisionId ──────────────┐
+    +-- revisions                              │
+    |   \-- ProjectRepresentationRevision <────┘
+    |       +-- id
+    |       +-- projectId
+    |       +-- representationId
+    |       +-- scene
+    |       \-- evidence
+    +-- diagram projections
+    |   \-- ProjectProjection
+    |       +-- projectId
+    |       +-- targetRepresentationId
+    |       +-- targetRevisionId
+    |       \-- links
+    |           +-- sourceEvidenceIds[]
+    |           \-- targetNodeIds[]
+    \-- compaction projections
+        \-- CompactionProjection
+            +-- files
+            |   \-- CompactionSnapshot
+            |       +-- sourceFile
+            |       +-- sourceSha256
+            |       +-- ASCII tree
+            |       \-- source mappings
+            \-- links
+                +-- callTreeNodeId
+                +-- file
+                \-- treeLines[]
+
+MappingDocument
++-- scene
+|   \-- LineGridScene
+|       +-- contents
+|       |   \-- GridContent
+|       |       +-- id
+|       |       +-- ASCII
+|       |       +-- revision
+|       |       \-- mappings
+|       \-- root
+|           \-- GridBox
+|               +-- id
+|               +-- position
+|               |   +-- column
+|               |   \-- row
+|               +-- minimumSize
+|               |   +-- columns
+|               |   \-- rows
+|               +-- collapsed
+|               +-- collapsedContentId
+|               +-- DiagramBox
+|               |   \-- contentId ───────────> GridContent
+|               \-- ContainerBox
+|                   +-- children[] ───────────> GridBox
+|                   \-- layout
+|                       +-- collisionPolicy: push-right
+|                       \-- gap
++-- evidence
++-- nodes
+\-- sections
+
+EditingSession
++-- ProjectSnapshot
++-- activeRepresentationId
++-- drafts
+|   \-- Draft
+|       +-- name
+|       +-- MappingDocument
+|       +-- savedScene
+|       +-- savedName
+|       +-- revisionId
+|       +-- busy
+|       \-- focusBox
++-- selected diagram region
+|   +-- selected nodes
+|   \-- mapped evidence ranges
++-- operations
+|   +-- patch selected diagram
+|   \-- generate sub-diagram
+|       +-- placement region
+|       +-- minimum size
+|       \-- inserted GridBox
+\-- local conversations
+    \-- LocalChatThread
+        +-- title
+        +-- messages
+        |   \-- LocalChatMessage
+        |       +-- role: user | assistant
+        |       \-- text
+        +-- verbosity
+        +-- pending/progress
+        \-- error
+
+ProjectionPipeline
++-- selected evidence IDs
++-- ProjectProjection
++-- projected call-tree nodes
+|   +-- directly matched nodes
+|   +-- descendants
+|   \-- ancestor context
++-- CompactionProjection
++-- projected source-file trees
+|   +-- selected rows
+|   \-- ancestor context
+\-- source ranges

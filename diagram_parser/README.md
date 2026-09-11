@@ -189,4 +189,12 @@ The parser has since been fixed and refactored for round 3. Its stages now handl
 text extraction, prose-list classification, paired-wire cleanup, and iterative
 hierarchy construction separately. All **32 tests** pass, including exact comparison
 with the independent round-2 oracle, preservation of literal labels, and explicit
-bullet-list policies.
+bullet-list policies. [Prior-round regression results](round_3/prior_round_regression.json)
+record all six previous diagrams passing the clean-label interpretation. The
+original round-2 baseline and its failure report remain unchanged.
+
+[Round 3 results](round_3/README.md): the new independent evaluation found **5
+passes and 1 failure**. The failure combines overlapping trees with downward
+routing arrows and workflow branches. All six prior-round cases are fixed, but
+this new hybrid-layout case remains unsupported. One contaminated generation was
+excluded before parsing and replaced; the report preserves the full provenance.

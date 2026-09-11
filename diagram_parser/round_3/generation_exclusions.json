@@ -1,0 +1,19 @@
+{
+  "excludedGenerations": [
+    {
+      "name": "sol_2",
+      "model": "gpt-5.6-sol",
+      "reason": "Generator read earlier generated diagrams, original_tree.txt and parser README outside its temporary workspace. Replaced before parser evaluation to preserve sample independence.",
+      "artifact": "excluded/sol_2_contaminated/diagrams/diagrams/domain-model.txt",
+      "sha256": "71f768cf4ecdcfa8d57500c06b1c00418aa7278e69b102061915b3cbbffd53fe",
+      "parserResultUsedForDecision": false
+    }
+  ],
+  "setupFailures": [
+    {
+      "path": "excluded/replacement_setup_failure/sol_2/receipt.json",
+      "reason": "bubblewrap target binary mount path was on a read-only directory; corrected before the replacement model session started."
+    }
+  ],
+  "replacementPolicy": "Same prompt bytes and Sol/high model, with filesystem masking and read-capable tools disabled. Other five execution logs checked; no earlier output reads observed."
+}

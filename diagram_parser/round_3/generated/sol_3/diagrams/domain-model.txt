@@ -1,0 +1,183 @@
+MAPPING DOMAIN MODEL
+====================
+
+MappingWorkspace
++-- project: Project
+|   +-- id
+|   +-- name
+|   \-- catalog: ProjectRepresentationsCatalog
+|       +-- representations: Representation[id]
+|       |   +-- id
+|       |   +-- projectId
+|       |   +-- name
+|       |   +-- status: settled | ...
+|       |   +-- currentRevisionId -------------------------------+
+|       |   \-- owns 1..* revisions                              |
+|       +-- revisions: RepresentationRevision[id] <--------------+
+|       |   +-- id
+|       |   +-- projectId
+|       |   +-- representationId
+|       |   +-- scene: LineGridScene
+|       |   \-- evidence: Evidence[id]
+|       +-- projections: ProjectProjectionRecord[id]
+|       |   +-- projectId
+|       |   +-- targetRepresentationId
+|       |   +-- targetRevisionId (pinned)
+|       |   \-- links[*]
+|       |       +-- sourceEvidenceIds[*]
+|       |       \-- targetNodeIds[*]
+|       \-- compactionProjection: CompactionProjection
+|           +-- links[*]
+|           |   +-- callTreeNodeId
+|           |   +-- file
+|           |   \-- treeLines[*]
+|           \-- files[*]: CompactionSnapshot
+|               +-- sourceFile
+|               +-- sourceSha256
+|               +-- ascii
+|               \-- mappings[*]
+|                   +-- treeLine
+|                   \-- sourceRanges[*]
+|
++-- editorSession: MappingEditorSession
+|   +-- activeRepresentationId
+|   +-- drafts: Draft[representationId]
+|   |   +-- name
+|   |   +-- document: MappingDocument
+|   |   |   +-- scene: LineGridScene
+|   |   |   |   +-- contents: GridContent[contentId]
+|   |   |   |   |   +-- id
+|   |   |   |   |   +-- ascii
+|   |   |   |   |   +-- revision
+|   |   |   |   |   \-- mappings[*] -> sourceRanges[*]
+|   |   |   |   \-- root: GridBox
+|   |   |   |       +-- id
+|   |   |   |       +-- position { column, row }
+|   |   |   |       +-- minimumSize? { columns, rows }
+|   |   |   |       +-- collapsed
+|   |   |   |       +-- collapsedContentId? -> GridContent
+|   |   |   |       \-- variant
+|   |   |   |           +-- DiagramBox
+|   |   |   |           |   \-- contentId -> GridContent
+|   |   |   |           \-- ContainerBox
+|   |   |   |               +-- children[*] -> GridBox (recursive)
+|   |   |   |               \-- layout { collisionPolicy: push-right, gap }
+|   |   |   +-- evidence: Evidence[id]
+|   |   |   +-- nodes: DiagramNode[contentId]
+|   |   |   \-- sections: DiagramSection[contentId]
+|   |   +-- revisionId (optimistic-save base)
+|   |   +-- savedName
+|   |   +-- savedScene
+|   |   +-- busy
+|   |   \-- focusBox? { id, serial }
+|   +-- dirty(draft)
+|   |   \-- name != savedName OR serialize(scene) != savedScene
+|   \-- commands
+|       +-- open(representationId)
+|       |   \-- settled representation + current revision -> Draft
+|       +-- save(active Draft)
+|       |   \-- expectedRevisionId -> new snapshot/currentRevisionId
+|       \-- create(name, initial ASCII | current Draft copy)
+|           \-- new Representation + initial RepresentationRevision
+|
++-- resolvedLayout: ResolvedGridBox
+|   +-- produced by resolveScene(LineGridScene)
+|   +-- box -> GridBox
+|   +-- bounds { absolute column, row, columns, rows }
+|   +-- contentId?
+|   \-- children[*] -> ResolvedGridBox
+|       +-- expanded containers include recursive child bounds
+|       +-- minimumSize reserves expanded space
+|       \-- collapsed boxes measure only collapsedContentId
+|
++-- selectionContext: MappingSelection
+|   +-- activeBox -> ResolvedGridBox
+|   +-- selectedNodes[*]: DiagramNode
+|   |   +-- id
+|   |   +-- head { line, startColumn, endColumn }
+|   |   \-- sourceRanges[*] -> corpus evidence
+|   +-- selectionRect { startLine, endLine, startColumn, endColumn }
+|   \-- operations
+|       +-- PATCH selected region
+|       |   +-- promptMappingPocSelection(operation: patch)
+|       |   +-- replaces active GridContent ascii/revision/mappings
+|       |   +-- updates MappingDocument nodes + sections
+|       |   \-- layoutScene(scene, activeBoxId)
+|       \-- GENERATE sub-diagram in dragged region
+|           +-- promptMappingPocSelection(operation: generate)
+|           +-- creates GridContent + DiagramBox with minimumSize
+|           \-- insertGridDiagram(document, target ContainerBox)
+|
++-- evidenceProjectionPipeline
+|   +-- MappingSelection.selectedNodes[*].sourceRanges
+|   |   \-- selectedEvidenceIds[*]
+|   +-- projectSelection(ProjectProjectionRecord, pinned target revision, evidence ids)
+|   |   +-- matches sourceEvidenceIds -> targetNodeIds
+|   |   +-- projected nodes = matched call-tree targets + descendants
+|   |   +-- visible nodes = projected nodes + ancestors
+|   |   \-- ProjectionSelectionResult
+|   |       +-- ascii
+|   |       +-- matchedSourceEvidenceIds[*]
+|   |       +-- unmatchedSourceEvidenceIds[*]
+|   |       +-- targetNodeIds[*]
+|   |       +-- visibleNodeIds[*]
+|   |       +-- projectedNodeIds[*]
+|   |       \-- rows[*] { nodeId, sourceLine }
+|   \-- projectCompactions(CompactionProjection, projected call-tree node ids)
+|       +-- callTreeNodeId -> file treeLines[*]
+|       +-- visible compaction rows = selected rows + ancestors
+|       \-- ProjectedCompactionFile[*]
+|           +-- sourceFile + sourceSha256
+|           +-- ascii
+|           +-- selectedLineCount
+|           \-- rows[*] { treeLine, selected, sourceRanges[*] }
+|               \-- ProjectedSourcePane opens original mapped source
+|
++-- canvasView: DraggableDiagramCanvas
+|   +-- transform { offset { x, y }, scale }
+|   +-- gestures: pan | pinch | Ctrl/Cmd-wheel zoom
+|   +-- keyboard: arrows pan | +/- zoom | 0 center
+|   +-- focusBox -> animated recenter on GridBox
+|   \-- contains MappingSelectionCanvas
+|
++-- explorerView: MappingDiagramExplorer
+|   +-- filters settled Representation records by name
+|   +-- opens a Representation into editorSession
+|   \-- traverses active LineGridScene.root to focus a GridBox
+|
++-- submenuView: MappingSubmenu
+|   +-- edits active Draft.name
+|   +-- creates a Representation
+|   \-- saves only a valid, dirty, idle Draft
+|
+\-- localConversation: LocalChatThread (selection-scoped)
+    +-- title
+    +-- messages[*] { id, role: user | assistant, text }
+    +-- pending + progress
+    +-- error
+    +-- verbosity
+    \-- commands: submit follow-up | retry | collapse
+
+SOURCE MAP
+==========
+
++-- Workspace, Draft lifecycle, save/create, and view composition
+|   \-- src/mapping/components/MappingPocPage.tsx:41-182
++-- Mapping submenu contract
+|   \-- src/mapping/components/MappingSubmenu.tsx:1-12
++-- Canvas transform, gestures, keyboard controls, and box focus
+|   \-- src/core/components/DraggableDiagramCanvas.tsx:44-299
++-- GridBox variants and layout resolution
+|   \-- src/core/lineGrid.ts:15-24,61-100
++-- Selection, patching, and generated DiagramBox insertion
+|   \-- src/mapping/components/MappingPocSelectionCanvas.tsx:401-428,552-624
++-- Call-tree/compaction/source projection presentation
+|   \-- src/mapping/components/MappingPocSelectionCanvas.tsx:1186-1245
++-- Evidence-to-call-tree projection rules
+|   \-- src/core/diagramProjection.ts:159-225
++-- Call-tree-to-compaction projection rules
+|   \-- src/core/compactionProjection.ts:62-99
++-- Selection-scoped local conversation
+|   \-- src/mapping/components/LocalChatConvo.tsx:17-108
+\-- Project and nested GridBox exploration
+    \-- src/mapping/components/MappingDiagramExplorer.tsx:4-31

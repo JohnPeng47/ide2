@@ -1,0 +1,34 @@
+{
+  "round": 3,
+  "startedAt": "2026-09-11T16:31:30.331153+00:00",
+  "parserSha256": "417d337ddc20e98bb6bee788b93f0af5af0eb8f65ea64b222015b0e12b157881",
+  "promptSha256": "b63c667184f691bc588701d721e8fe1dd7671ce5b065ea220714e82f0845a489",
+  "codeContextSha256": "fe6c4ca5b74f996cefa94383b39e36536d5c1602a5c7c98af34eedeed1f5da6e",
+  "parserOptions": {
+    "mode": "auto",
+    "continuation": "auto",
+    "tab_size": 4,
+    "strict": false,
+    "label_mode": "semantic",
+    "list_policy": "auto"
+  },
+  "generationPlan": {
+    "models": {
+      "gpt-5.6-sol": 3,
+      "gpt-6-astra": 3
+    },
+    "reasoningEffort": "high",
+    "maxConcurrent": 3
+  },
+  "changesSinceRound2": [
+    "Paired routing graphics are excluded from semantic labels and retained as decorations; label_mode=literal preserves legacy labels.",
+    "Detached ordinary bullet appendices after explicit trees are prose in auto mode; list_policy=include or mode=tree preserves them.",
+    "Separated normalization/extraction, list classification, wire cleanup, and iterative forest construction."
+  ],
+  "regressionValidation": {
+    "testsPassed": 32,
+    "randomKnownAnswerCases": 2000,
+    "round2IndependentCleanLabelFixturesPassed": 6
+  },
+  "evaluationPolicy": "Freeze fixed parser before generation. Independent source-first subagent audits all labels, roots, edges, prose/continuations and line accounting. Clean semantic labels are primary. Standalone bullet trees and explicit ASCII appendix branches are trees; detached ordinary prose lists after an explicit tree are excluded by automatic extraction, with any intrinsically ambiguous intent reported separately. Record first-run failures before further parser changes."
+}

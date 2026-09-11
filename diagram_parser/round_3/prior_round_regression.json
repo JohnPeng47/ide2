@@ -1,0 +1,76 @@
+{
+  "parserSha256": "417d337ddc20e98bb6bee788b93f0af5af0eb8f65ea64b222015b0e12b157881",
+  "oracle": "../round_2/independent_expected.json",
+  "oracleSha256": "71c5e71c0cb09e201824051abfdbec3d208735509adaba25151a92ea1a0bc8ee",
+  "policy": "Independent clean semantic-label oracle; ambiguous detached prose appendix is excluded by the new explicit auto-mode policy. Original round-2 baseline untouched.",
+  "diagramsPassed": 6,
+  "diagramsFailed": 0,
+  "entries": [
+    {
+      "generator": "sol_1",
+      "source": "../round_2/generated/sol_1/diagrams/mapping-domain-model.txt",
+      "sourceSha256": "faac5a29f307fff9e7e92edb93f47e71fecdac5225e05155ad1c048c4f2c7069",
+      "verdict": "pass",
+      "nodes": 119,
+      "edges": 118,
+      "roots": 1,
+      "wireDecorations": 0,
+      "diagnostics": 0
+    },
+    {
+      "generator": "sol_2",
+      "source": "../round_2/generated/sol_2/diagrams/mapping-domain-model.txt",
+      "sourceSha256": "4ae31397e2bb8ca1cd82961197520d61433fc8e70debc47af5394cba1a2d7a89",
+      "verdict": "pass",
+      "nodes": 110,
+      "edges": 108,
+      "roots": 2,
+      "wireDecorations": 0,
+      "diagnostics": 0
+    },
+    {
+      "generator": "sol_3",
+      "source": "../round_2/generated/sol_3/diagrams/mapping-domain-model.txt",
+      "sourceSha256": "acc91a2299e737e53098bb732005c9f55a23257894d4bcef08dfdc832a5f4209",
+      "verdict": "pass",
+      "nodes": 129,
+      "edges": 124,
+      "roots": 5,
+      "wireDecorations": 14,
+      "diagnostics": 0
+    },
+    {
+      "generator": "astra_1",
+      "source": "../round_2/generated/astra_1/diagrams/mapping-domain-model.txt",
+      "sourceSha256": "07baf0de3c027b7df1c11bf21544f411cca1752010a8d25b6fed377f003558b2",
+      "verdict": "pass",
+      "nodes": 114,
+      "edges": 113,
+      "roots": 1,
+      "wireDecorations": 0,
+      "diagnostics": 0
+    },
+    {
+      "generator": "astra_2",
+      "source": "../round_2/generated/astra_2/diagrams/mapping-domain-model.txt",
+      "sourceSha256": "256f0d5cd0724369fccf9d4be9af034865f7f76caa5933a49aea05238c2eabb2",
+      "verdict": "pass",
+      "nodes": 111,
+      "edges": 110,
+      "roots": 1,
+      "wireDecorations": 0,
+      "diagnostics": 0
+    },
+    {
+      "generator": "astra_3",
+      "source": "../round_2/generated/astra_3/diagrams/domain-model.txt",
+      "sourceSha256": "521ac9b7d0f0fea833791e492289e36759946359d4bbff04ae32947bcf6b86a5",
+      "verdict": "pass",
+      "nodes": 126,
+      "edges": 125,
+      "roots": 1,
+      "wireDecorations": 0,
+      "diagnostics": 0
+    }
+  ]
+}

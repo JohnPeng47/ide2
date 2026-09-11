@@ -1,0 +1,156 @@
+MAPPING DOMAIN MODEL
+|
++-- Project
+|   +-- id
+|   +-- name
+|   \-- representation catalog
+|       +-- representations[id] -> ProjectRepresentation
+|       |   +-- id
+|       |   +-- name
+|       |   +-- status
+|       |   \-- currentRevisionId -> RepresentationRevision
+|       +-- revisions[id] -> RepresentationRevision
+|       |   +-- id
+|       |   +-- projectId -> Project
+|       |   +-- representationId -> ProjectRepresentation
+|       |   +-- scene
+|       |   \-- evidence
+|       \-- settled representations -> diagrams visible in ProjectExplorer
+|
++-- MappingDocument
+|   +-- scene -> LineGridScene
+|   |   +-- contents[contentId] -> GridContent
+|   |   |   +-- id
+|   |   |   +-- ascii
+|   |   |   +-- revision
+|   |   |   \-- mappings[] -> source evidence ranges
+|   |   \-- root -> GridBox
+|   |       +-- shared properties
+|   |       |   +-- id [unique within resolved scene]
+|   |       |   +-- position { column, row } [relative to parent]
+|   |       |   +-- minimumSize? { columns, rows }
+|   |       |   +-- collapsed
+|   |       |   \-- collapsedContentId? -> GridContent [required when collapsed]
+|   |       +-- DiagramBox [kind = diagram]
+|   |       |   \-- contentId -> GridContent
+|   |       \-- ContainerBox [kind = container]
+|   |           +-- children[] -> GridBox [recursive]
+|   |           \-- layout { collisionPolicy = push-right, gap }
+|   +-- evidence? -> source-backed metadata
+|   +-- nodes[contentId][] -> MappedNode
+|   |   +-- id
+|   |   +-- head { line, startColumn, endColumn }
+|   |   \-- sourceRanges[]
+|   \-- sections[contentId][]
+|
++-- ResolvedGridBox [derived from LineGridScene]
+|   +-- box -> GridBox
+|   +-- bounds { column, row, columns, rows } [absolute scene coordinates]
+|   +-- contentId? -> displayed GridContent
+|   +-- children[] -> ResolvedGridBox [expanded containers only]
+|   \-- sizing rules
+|       +-- displayed content establishes measured size
+|       +-- expanded containers include descendant extents
+|       +-- expanded boxes honor minimumSize
+|       \-- collapsed boxes ignore minimumSize
+|
++-- MappingWorkspace [transient editing session]
+|   +-- snapshot -> Project + representation catalog
+|   +-- activeId? -> ProjectRepresentation + DiagramDraft
+|   +-- drafts[representationId] -> DiagramDraft
+|   |   +-- name
+|   |   +-- document -> MappingDocument
+|   |   +-- savedName
+|   |   +-- savedScene [serialized dirty-state baseline]
+|   |   +-- revisionId -> expected RepresentationRevision on save
+|   |   +-- busy
+|   |   \-- focusBox? { id, serial } -> GridBox
+|   +-- save command
+|   |   +-- persists name + scene against expected revision
+|   |   \-- advances current revision and saved baseline
+|   +-- create command
+|   |   +-- initial ASCII -> single-diagram scene
+|   |   \-- copy current -> source revision + current scene
+|   \-- navigation guard -> dirty or busy drafts
+|
++-- MappingSelection [at most one active]
+|   +-- activeBox -> GridBox + GridContent
+|   +-- rectangle { startLine, endLine, startColumn, endColumn }
+|   +-- selectedNodeIds[] -> intersecting MappedNode records
+|   +-- selectedEvidenceIds[] -> mapped source evidence
+|   +-- prompt context
+|   |   +-- projectId
+|   |   +-- representationId
+|   |   +-- baseRevisionId
+|   |   +-- clientSessionId
+|   |   \-- diagram ASCII + revision + mappings + selection + instruction
+|   +-- patch operation
+|   |   \-- replaces active ASCII, revision, mappings, nodes, sections, and layout
+|   \-- generate operation
+|       +-- placement region -> relative position + minimumSize
+|       \-- inserts a new DiagramBox + GridContent into a target container
+|
++-- CallTreeProjection
+|   +-- ProjectProjectionRecord
+|   |   +-- projectId -> Project
+|   |   +-- targetRepresentationId -> ProjectRepresentation
+|   |   +-- targetRevisionId -> pinned RepresentationRevision
+|   |   \-- links[]
+|   |       +-- sourceEvidenceIds[]
+|   |       \-- targetNodeIds[] -> ProjectionTreeNode
+|   +-- ProjectionTree [built from pinned target revision]
+|   |   +-- rootIds[]
+|   |   \-- nodes[id] -> ProjectionTreeNode
+|   |       +-- text
+|   |       +-- line
+|   |       +-- order
+|   |       +-- parentId?
+|   |       \-- childIds[]
+|   \-- ProjectionSelectionResult
+|       +-- matchedSourceEvidenceIds[]
+|       +-- unmatchedSourceEvidenceIds[]
+|       +-- targetNodeIds[] [direct links]
+|       +-- projectedNodeIds[] [targets + descendants]
+|       +-- visibleNodeIds[] [projected nodes + ancestor context]
+|       +-- ascii [rendered visible tree]
+|       \-- rows[] { nodeId, sourceLine }
+|
++-- CompactionProjection
+|   +-- links[]
+|   |   +-- callTreeNodeId -> ProjectionTreeNode
+|   |   +-- file -> CompactionSnapshot
+|   |   \-- treeLines[]
+|   +-- files[] -> CompactionSnapshot
+|   |   +-- sourceFile
+|   |   +-- sourceSha256
+|   |   +-- compacted source tree
+|   |   \-- mappings[] { treeLine, sourceRanges[] }
+|   \-- ProjectedCompaction[] [grouped by source file]
+|       +-- sourceFile
+|       +-- sourceSha256
+|       +-- ascii [selected rows + ancestor context]
+|       +-- selectedLineCount
+|       \-- rows[] { treeLine, selected, sourceRanges }
+|
++-- LocalChatThread [conversation about a selected region]
+|   +-- title
+|   +-- verbosity
+|   +-- messages[] -> LocalChatMessage
+|   |   +-- id
+|   |   +-- role = user | assistant
+|   |   \-- text
+|   +-- pending
+|   +-- progress?
+|   +-- error?
+|   \-- actions = submit | retry | change verbosity | collapse
+|
+\-- CanvasView [presentation state]
+    +-- transform
+    |   +-- offset { x, y }
+    |   \-- scale
+    +-- pan + pinch + wheel + keyboard -> transform
+    +-- center/reset -> fitted transform
+    +-- focus request -> centers GridBox
+    \-- ProjectExplorer -> settled diagrams + active GridBox hierarchy
+
+Legend: [] = collection; ? = optional; -> = reference or derived relationship.

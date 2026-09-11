@@ -1,0 +1,224 @@
+MAPPING DOMAIN MODEL
+====================
+
+Project
+|-- id
+|-- name
+`-- catalog: ProjectionCatalog
+    |-- representations: ProjectRepresentation [id -> record]
+    |   `-- ProjectRepresentation
+    |       |-- id
+    |       |-- name
+    |       |-- status: settled | ...
+    |       `-- currentRevisionId -------------------------------+
+    |                                                             |
+    `-- revisions: ProjectRepresentationRevision [id -> record]   |
+        `-- ProjectRepresentationRevision <-----------------------+
+            |-- id
+            |-- projectId -------------------------------> Project
+            |-- representationId ------------------------> ProjectRepresentation
+            |-- scene ------------------------------------+
+            |                                             |
+            `-- evidence ---------------------------------+---------+
+                                                          |         |
+                                                          v         v
+MappingDocument                                        LineGridScene
+|-- scene -------------------------------------------------+
+|   |-- root: GridBox
+|   |   |-- id
+|   |   |-- position: GridPoint { column, row }
+|   |   |-- minimumSize?: GridSize { columns, rows }
+|   |   |-- collapsed
+|   |   |-- collapsedContentId? --------------------------+
+|   |   |                                                  |
+|   |   |-- DiagramBox                                    |
+|   |   |   `-- contentId --------------------------------+----+
+|   |   |                                                       |
+|   |   `-- ContainerBox                                       |
+|   |       |-- children: GridBox[] (recursive)                 |
+|   |       `-- layout                                         |
+|   |           |-- collisionPolicy: push-right                 |
+|   |           `-- gap                                        |
+|   |                                                           v
+|   `-- contents: GridContent [contentId -> content]       GridContent
+|       `-------------------------------------------------> |-- id
+|                                                          |-- ascii
+|                                                          |-- revision
+|                                                          `-- mappings: EvidenceMapping[]
+|                                                              `-- sourceRanges[]
+|                                                                  |-- source/file identity
+|                                                                  `-- line/column range
+|
+|-- evidence: SourceEvidence [evidenceId -> record]
+|   `-- evidenceId <-------------------------------- EvidenceMapping
+|
+|-- nodes: DiagramNode[] [contentId -> nodes]
+|   |-- id
+|   |-- head { line, startColumn, endColumn }
+|   `-- sourceRanges[] ------------------------------------> SourceEvidence
+|
+`-- sections: DiagramSection[] [contentId -> sections]
+
+
+RUNTIME EDITING MODEL
+=====================
+
+MappingPocPage
+|-- snapshot: ProjectRepresentationsSnapshot
+|   |-- project -------------------------------------------> Project
+|   `-- catalog -------------------------------------------> ProjectionCatalog
+|
+|-- activeId ----------------------------------------------> Draft
+|-- drafts: Draft [representationId -> draft]
+|   `-- Draft
+|       |-- name
+|       |-- document --------------------------------------> MappingDocument
+|       |-- revisionId ------------------------------------> ProjectRepresentationRevision
+|       |-- savedName
+|       |-- savedScene
+|       |-- busy
+|       `-- focusBox? { id, serial } ----------------------> GridBox
+|
+|-- save()
+|   `-- Draft + expected revisionId
+|       --> new ProjectRepresentationRevision
+|       --> updated ProjectRepresentation.currentRevisionId
+|
+`-- create()
+    |-- blank: singleDiagramScene(ascii)
+    `-- copy: source revision + current scene
+
+
+CANVAS, SELECTION, AND GENERATION
+=================================
+
+DraggableDiagramCanvas
+|-- viewport
+|-- surface -----------------------------------------------> rendered LineGridScene
+|-- CanvasTransform
+|   |-- offset { x, y }
+|   `-- scale
+|-- gestures
+|   |-- pan: one pointer
+|   |-- pinch: two pointers
+|   `-- Ctrl/Cmd-wheel: anchored zoom
+`-- focusBox ----------------------------------------------> centered GridBox
+
+SelectionRect
+|-- startLine / endLine
+|-- startColumn / endColumn
+`-- intersects --------------------------------------------> DiagramNode.head
+    `-- selected nodes
+        `-- sourceRanges ----------------------------------> SourceEvidence
+
+Selected source-backed region
+|-- ask locally -------------------------------------------> LocalChatThread
+|-- patch existing diagram
+|   `-- promptMappingPocSelection(operation = patch)
+|       |-- replaces GridContent.ascii / revision / mappings
+|       |-- updates MappingDocument nodes / sections
+|       `-- layoutScene() resolves affected GridBox layout
+`-- generate sub-diagram
+    `-- promptMappingPocSelection(operation = generate)
+        `-- insertGridDiagram(parent, new DiagramBox, new GridContent)
+            |-- placement rectangle -----------------------> position + minimumSize
+            |-- inside source container -------------------> parent ContainerBox
+            `-- outside source container ------------------> root ContainerBox
+
+resolveScene(LineGridScene)
+`-- ResolvedGridBox (recursive)
+    |-- validates unique box ids and integer geometry
+    |-- resolves relative position to absolute bounds
+    |-- measures visible ASCII content
+    |-- expands containers around visible children
+    |-- applies minimumSize only while expanded
+    `-- uses collapsedContentId while collapsed
+
+
+PROJECTION MODEL
+================
+
+Selected SourceEvidence ids
+`-- ProjectProjectionRecord
+    |-- projectId -----------------------------------------> Project
+    |-- targetRepresentationId ----------------------------> ProjectRepresentation
+    |-- targetRevisionId ----------------------------------> pinned ProjectRepresentationRevision
+    `-- links[]
+        |-- sourceEvidenceIds[] ----------------------------> SourceEvidence
+        `-- targetNodeIds[] --------------------------------> CallTreeNode
+            |
+            v
+        projectSelection()
+        `-- ProjectionSelectionResult
+            |-- matched / unmatched SourceEvidence ids
+            |-- target nodes
+            |-- visible nodes = targets + ancestors + descendants
+            |-- projected nodes = targets + descendants
+            |-- rows { nodeId, sourceLine }
+            `-- ascii call tree
+                `-- displayed by MappingPoc companion pane
+
+Selected CallTreeNode ids
+`-- CompactionProjection
+    |-- links[]
+    |   |-- callTreeNodeId --------------------------------> CallTreeNode
+    |   |-- file ------------------------------------------> CompactionSnapshot
+    |   `-- treeLines[]
+    `-- files: CompactionSnapshot[]
+        |-- sourceFile
+        |-- sourceSha256
+        |-- compacted tree
+        `-- mappings: treeLine -> sourceRanges
+            |
+            v
+        projectCompactions()
+        `-- projected files
+            |-- visible rows = selected rows + ancestors
+            |-- selectedLineCount
+            |-- sourceRanges ------------------------------> original source file
+            `-- ascii compacted source tree
+                `-- companion pane --> ProjectedSourcePane
+
+
+LOCAL CHAT MODEL
+================
+
+Selected source-backed region
+`-- LocalChatThread
+    |-- title
+    |-- verbosity
+    |-- pending / progress / error
+    `-- messages: LocalChatMessage[]
+        |-- role: user | assistant
+        `-- text
+            `-- LocalChatConvo
+                |-- transcript
+                |-- follow-up message
+                |-- retry
+                `-- verbosity control
+
+
+USER-FACING NAVIGATION
+======================
+
+MappingPocPage
+|-- MappingSubmenu
+|   |-- project name
+|   |-- editable active diagram name
+|   |-- New / Save
+|   `-- Saved | Unsaved changes | Editing... | Saving...
+|
+|-- MappingDiagramExplorer
+|   |-- settled ProjectRepresentations
+|   |-- active diagram
+|   |-- dirty marker
+|   `-- recursive GridBox tree ----------------------------> focusBox
+|
+`-- navigation guard
+    `-- blocks leaving while any Draft is dirty or busy
+
+
+Legend
+------
+|--  containment / owned state
+`--> reference, derivation, or workflow result

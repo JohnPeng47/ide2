@@ -1,0 +1,133 @@
+MAPPING DOMAIN MODEL
+Relationships and fields visible in the supplied source excerpts.
+[*] = collection; -> = reference or derived relationship.
+
+Project
+|-- id
+|-- name
+`-- ProjectRepresentationsSnapshot
+    `-- catalog
+        |-- representations[*]: ProjectRepresentationRecord
+        |   |-- id
+        |   |-- name
+        |   |-- status (only "settled" diagrams appear in the explorer)
+        |   `-- currentRevisionId -> ProjectRepresentationRevisionRecord
+        `-- revisions[*]: ProjectRepresentationRevisionRecord
+            |-- id
+            |-- projectId -> Project
+            |-- representationId -> ProjectRepresentationRecord
+            |-- evidence
+            `-- sceneFromRevision(...) -> LineGridScene
+
+Mapping workspace
+|-- snapshot -> ProjectRepresentationsSnapshot
+|-- activeId -> representation / draft (also stored in the URL)
+|-- drafts[*], keyed by representation id
+|   |-- name
+|   |-- revisionId -> saved representation revision
+|   |-- document: MappingDocument
+|   |   |-- scene: LineGridScene
+|   |   |-- evidence (optional)
+|   |   |-- nodes[contentId][*]: mapped nodes
+|   |   |   |-- id
+|   |   |   |-- head: line, startColumn, endColumn
+|   |   |   `-- sourceRanges[*]
+|   |   `-- sections[contentId][*]
+|   |-- savedName / savedScene: saved baseline
+|   |-- busy: pending edit state
+|   `-- focusBox: id, serial -> GridBox
+|-- save
+|   |-- input: projectId, representationId, expectedRevisionId, name, scene
+|   `-- result: updated snapshot and current revision reference
+|-- create
+|   |-- name + ASCII -> single-diagram scene
+|   `-- copy current -> sourceRevisionId + current scene
+`-- navigation guard -> unsaved drafts or pending edits
+
+LineGridScene
+|-- root: GridBox
+|   |-- id
+|   |-- position: column, row (relative to parent)
+|   |-- minimumSize?: columns, rows
+|   |-- collapsed
+|   |-- collapsedContentId? -> contents entry
+|   `-- kind (one of)
+|       |-- diagram
+|       |   `-- contentId -> contents entry
+|       `-- container
+|           |-- children[*]: GridBox (recursive)
+|           `-- layout: collisionPolicy = "push-right", gap
+|-- contents[id]
+|   |-- id
+|   |-- ascii
+|   |-- revision
+|   `-- mappings[*] -> source evidence / ranges
+`-- resolveScene(...) -> ResolvedGridBox
+    |-- box -> GridBox
+    |-- bounds: absolute column, row, columns, rows
+    |-- contentId? -> visible content
+    `-- children[*]: ResolvedGridBox
+        `-- empty when the container is collapsed
+
+Diagram selection and editing
+|-- activeBox -> resolved diagram box -> content
+|-- selectionRect: startLine, endLine, startColumn, endColumn
+|-- selectedNodeIds[*] -> mapped nodes intersecting the selection
+|-- selected source ranges / evidence -> prompt and projection context
+|-- patch operation
+|   |-- input: project context, ASCII, revision, mappings, selection, instruction
+|   `-- result -> replace content, update layout, commit document
+`-- generate operation
+    |-- dragged region -> position + minimumSize + target parent
+    |-- input: selection context + instruction + requested dimensions
+    `-- result -> insert new diagram box and content, commit document
+
+Evidence projections
+|-- ProjectProjectionRecord
+|   |-- id / projectId
+|   |-- targetRepresentationId -> ProjectRepresentationRecord
+|   |-- targetRevisionId -> pinned ProjectRepresentationRevisionRecord
+|   `-- links[*]
+|       |-- sourceEvidenceIds[*]
+|       `-- targetNodeIds[*] -> nodes in the target revision's tree
+|-- projectSelection(selectedEvidenceIds) -> ProjectionSelectionResult
+|   |-- matchedSourceEvidenceIds / unmatchedSourceEvidenceIds
+|   |-- targetNodeIds: directly linked nodes
+|   |-- projectedNodeIds: targets and their descendants
+|   |-- visibleNodeIds: projected nodes and their ancestors
+|   |-- ascii: rendered selection tree
+|   `-- rows[*]: nodeId, sourceLine
+`-- CompactionProjection
+    |-- links[*]
+    |   |-- callTreeNodeId -> call-tree projection node
+    |   |-- file -> sourceFile
+    |   `-- treeLines[*] -> compaction tree rows
+    |-- files[*]: compaction snapshots
+    |   |-- sourceFile / sourceSha256
+    |   `-- mappings[*]: treeLine -> sourceRanges[*]
+    `-- projectCompactions(callTreeNodeIds) -> selected files[*]
+        |-- sourceFile / sourceSha256
+        |-- ascii: selected rows with their ancestors
+        |-- rows[*]: treeLine, selected, sourceRanges
+        |-- selectedLineCount
+        `-- source pane -> source file associated with the selected compaction
+
+Local conversation
+`-- LocalChatThread
+    |-- title: region/topic label
+    |-- messages[*]
+    |   |-- id
+    |   |-- role: user / assistant
+    |   `-- text (assistant text rendered as Markdown)
+    |-- pending / progress / error
+    |-- verbosity: LocalChatVerbosity
+    `-- actions: submit follow-up, retry, change verbosity, collapse
+
+Workspace presentation state
+|-- Diagram explorer -> settled representations and recursive scene boxes
+|-- Mapping submenu -> draft name, save availability, editing/saving status
+|-- Draggable canvas
+|   |-- transform: offset { x, y }, scale
+|   |-- viewport size / active pointers / pan / pinch
+|   `-- focusBox -> center the requested scene box
+`-- Companion pane -> call tree -> compaction -> source file

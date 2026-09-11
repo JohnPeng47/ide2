@@ -1,0 +1,186 @@
+{
+  "round": 3,
+  "capturedAt": "2026-09-11T16:39:20.295714+00:00",
+  "parserSha256": "417d337ddc20e98bb6bee788b93f0af5af0eb8f65ea64b222015b0e12b157881",
+  "promptSha256": "b63c667184f691bc588701d721e8fe1dd7671ce5b065ea220714e82f0845a489",
+  "generationCount": 6,
+  "diagramCount": 6,
+  "parseExceptions": 0,
+  "strictDiagnosticFailures": 2,
+  "semanticFailures": 1,
+  "entries": [
+    {
+      "id": "sol_1_1",
+      "generator": "sol_1",
+      "model": "gpt-5.6-sol",
+      "source": "generated/sol_1/diagrams/mapping-domain-model.txt",
+      "sourceSha256": "734a48698f4a8babb0fbe6dd3c22d23209c733158d35aadfbacd56559a3c452e",
+      "parsed": "parsed/sol_1_1.json",
+      "reviewTable": "parsed/sol_1_1.review.txt",
+      "exception": null,
+      "nodes": 172,
+      "edges": 160,
+      "roots": 12,
+      "diagnostics": [
+        {
+          "line": 24,
+          "code": "unmarked_node",
+          "message": "Treated an unmarked indented line as a node; it may be wrapped text.",
+          "severity": "warning"
+        },
+        {
+          "line": 42,
+          "code": "unmarked_node",
+          "message": "Treated an unmarked indented line as a node; it may be wrapped text.",
+          "severity": "warning"
+        },
+        {
+          "line": 150,
+          "code": "joined_continuation",
+          "message": "Joined an unmarked line to the preceding label.",
+          "severity": "info"
+        },
+        {
+          "line": 151,
+          "code": "irregular_dedent",
+          "message": "Dedent did not match an existing level; attached to the nearest shallower node.",
+          "severity": "warning"
+        },
+        {
+          "line": 173,
+          "code": "joined_continuation",
+          "message": "Joined an unmarked line to the preceding label.",
+          "severity": "info"
+        },
+        {
+          "line": 174,
+          "code": "irregular_dedent",
+          "message": "Dedent did not match an existing level; attached to the nearest shallower node.",
+          "severity": "warning"
+        }
+      ],
+      "strictWouldFail": true,
+      "sourceLines": 224,
+      "semanticCorrectness": "fail",
+      "parsedSha256": "19505cf87114753333f3f85b2c4741f66761cbf12e7a61ee90628950d53ac272",
+      "acceptedIntentAlternatives": [
+        "omit isolated LineGridScene reference target (predeclared alternative)",
+        "Legend as tree root (predeclared heading alternative)"
+      ]
+    },
+    {
+      "id": "sol_2_1",
+      "generator": "sol_2",
+      "model": "gpt-5.6-sol",
+      "source": "blind_replacement/sol_2/diagrams/domain-model.txt",
+      "sourceSha256": "8ef6fb0d17710abdd2bab715bc2458ef4606410db61adf42dc03fe7bf13bd095",
+      "parsed": "parsed/sol_2_1.json",
+      "reviewTable": "parsed/sol_2_1.review.txt",
+      "exception": null,
+      "nodes": 110,
+      "edges": 106,
+      "roots": 4,
+      "diagnostics": [],
+      "strictWouldFail": false,
+      "sourceLines": 113,
+      "semanticCorrectness": "pass",
+      "parsedSha256": "cd6b67e03528cb33a8706f976ae9174fa847e7cbd2a2cd0c6aae541452d6fcc2",
+      "acceptedIntentAlternatives": []
+    },
+    {
+      "id": "sol_3_1",
+      "generator": "sol_3",
+      "model": "gpt-5.6-sol",
+      "source": "generated/sol_3/diagrams/domain-model.txt",
+      "sourceSha256": "22a82eca11ac57e13208600c82cbaedd06493092a69a27d0a65cb34c1aba8fce",
+      "parsed": "parsed/sol_3_1.json",
+      "reviewTable": "parsed/sol_3_1.review.txt",
+      "exception": null,
+      "nodes": 169,
+      "edges": 167,
+      "roots": 2,
+      "diagnostics": [],
+      "strictWouldFail": false,
+      "sourceLines": 183,
+      "semanticCorrectness": "pass",
+      "parsedSha256": "d1e756d8ffd5f83b008394e7396399b82c20406d6d12d7317da1906c450ded75",
+      "acceptedIntentAlternatives": [
+        "SOURCE MAP as tree root (predeclared heading alternative)"
+      ]
+    },
+    {
+      "id": "astra_1_1",
+      "generator": "astra_1",
+      "model": "gpt-6-astra",
+      "source": "generated/astra_1/diagrams/domain-model.txt",
+      "sourceSha256": "fab52c11c51a6b75f309746a858b2448ed207d0bbcb86c89c4c021d8f761a66a",
+      "parsed": "parsed/astra_1_1.json",
+      "reviewTable": "parsed/astra_1_1.review.txt",
+      "exception": null,
+      "nodes": 123,
+      "edges": 116,
+      "roots": 7,
+      "diagnostics": [],
+      "strictWouldFail": false,
+      "sourceLines": 133,
+      "semanticCorrectness": "pass",
+      "parsedSha256": "a3b1759a97ce648da5bdb9987e033eee6c439dd0cf2d28c08855dce9900e11fb",
+      "acceptedIntentAlternatives": []
+    },
+    {
+      "id": "astra_2_1",
+      "generator": "astra_2",
+      "model": "gpt-6-astra",
+      "source": "generated/astra_2/diagrams/domain-model.txt",
+      "sourceSha256": "b32c5a2347d8da0d68960aa23351015f089ad52f1ba2cf468c41f1dd961b4348",
+      "parsed": "parsed/astra_2_1.json",
+      "reviewTable": "parsed/astra_2_1.review.txt",
+      "exception": null,
+      "nodes": 118,
+      "edges": 111,
+      "roots": 7,
+      "diagnostics": [],
+      "strictWouldFail": false,
+      "sourceLines": 128,
+      "semanticCorrectness": "pass",
+      "parsedSha256": "4604759b142dcafdc0aa7165e5c62b20f6821c60e5b66408d45ade443785bf76",
+      "acceptedIntentAlternatives": []
+    },
+    {
+      "id": "astra_3_1",
+      "generator": "astra_3",
+      "model": "gpt-6-astra",
+      "source": "generated/astra_3/diagrams/domain-model.txt",
+      "sourceSha256": "7697b4e29aa26e7ce68115c685d3e009fd260d8924300019b3b14867a6b898f7",
+      "parsed": "parsed/astra_3_1.json",
+      "reviewTable": "parsed/astra_3_1.review.txt",
+      "exception": null,
+      "nodes": 111,
+      "edges": 110,
+      "roots": 1,
+      "diagnostics": [
+        {
+          "line": 77,
+          "code": "joined_continuation",
+          "message": "Joined an unmarked line to the preceding label.",
+          "severity": "info"
+        }
+      ],
+      "strictWouldFail": true,
+      "sourceLines": 124,
+      "semanticCorrectness": "pass",
+      "parsedSha256": "b875d26bda5d599e19d9a4c5948cb6191d7b0fd26d3487d6759285d1ec88e4b8",
+      "acceptedIntentAlternatives": []
+    }
+  ],
+  "semanticPasses": 5,
+  "semanticAmbiguities": 0,
+  "sourceIntentRegions": 3,
+  "sourceIntentExplanation": "Accepted alternatives were documented before seeing outputs. Sol 1 fails under every alternative; Sol 3 passes an independently predeclared alternative. Thus ambiguities are tracked separately from policy-correct passes and unequivocal failures.",
+  "semanticRubric": "Labels exclude drawn routing-wire graphics and retain full named inline reference annotations including arrow run lengths. Reference/workflow arrows are not containment edges. Detached ordinary prose bullet appendices after explicit trees are prose; standalone bullet trees, guided/indented lists within trees and appendices with explicit branch connectors are trees.",
+  "independentReview": "independent_review.json",
+  "reviewer": "/root/round_3_independent_review",
+  "reviewedAt": "2026-09-11T16:46:12.856766+00:00",
+  "excludedGenerationCount": 1,
+  "generationExclusions": "generation_exclusions.json"
+}

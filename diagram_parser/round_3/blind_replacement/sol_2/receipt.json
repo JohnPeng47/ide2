@@ -1,0 +1,15 @@
+{
+  "name": "sol_2",
+  "model": "gpt-5.6-sol",
+  "reasoningEffort": "high",
+  "promptSha256": "b63c667184f691bc588701d721e8fe1dd7671ce5b065ea220714e82f0845a489",
+  "exitCode": 0,
+  "elapsedSeconds": 43.31,
+  "files": [
+    "round_3/blind_replacement/sol_2/diagrams/domain-model.txt"
+  ],
+  "isolation": "bubblewrap hides other homes, tmp workspaces, mounts and processes; shell, subagents and web search disabled",
+  "artifactDelivery": "Exact fenced ASCII extracted from final agent response; file writing was unavailable because the isolated execution helper was hidden.",
+  "finalResponseSha256": "c32cc1f998c9b0b2689b5c4622429a955ee6412765d27228946a9115c1ea0586",
+  "diagramSha256": "8ef6fb0d17710abdd2bab715bc2458ef4606410db61adf42dc03fe7bf13bd095"
+}
