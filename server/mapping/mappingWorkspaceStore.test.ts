@@ -8,7 +8,7 @@ it('atomically saves validated project-scoped workspaces without disturbing the 
   try {
     const store = new MappingWorkspaceStore(dir);
     expect(await store.load('project')).toBeNull();
-    const snapshot = { schemaVersion: 2 as const, projectId: 'project', documents: [] };
+    const snapshot = { schemaVersion: 3 as const, projectId: 'project', documents: [] };
     await store.save('project', snapshot); expect(await store.load('project')).toEqual(snapshot);
     await expect(store.save('other', snapshot)).rejects.toThrow('another project');
     await expect(store.save('project', { ...snapshot, schemaVersion: 99 })).rejects.toThrow('version');

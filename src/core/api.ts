@@ -214,3 +214,15 @@ export async function fetchProjectSourceFile(projectId: string, path: string, si
   if (!response.ok) throw await errorFrom(response);
   return response.json();
 }
+
+export async function fetchProjectDirectory(projectId: string, path: string, signal?: AbortSignal): Promise<import('./domain').RepositoryDirectoryListing> {
+  const response = await apiFetch(`/api/core/project/files?${new URLSearchParams({ projectId, path })}`, { signal });
+  if (!response.ok) throw await errorFrom(response);
+  return response.json();
+}
+export async function fetchSourceDefinitions(projectId: string, path: string, position: import('./sourceNavigation').SourcePosition, sourceSha256: string, signal?: AbortSignal): Promise<import('./sourceNavigation').SourceDefinitions> {
+  const response = await apiFetch('/api/core/project/definitions', { method: 'POST', signal,
+    headers: { 'content-type': 'application/json' }, body: JSON.stringify({ projectId, path, position, sourceSha256 }) });
+  if (!response.ok) throw await errorFrom(response);
+  return response.json();
+}

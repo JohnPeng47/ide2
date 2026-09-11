@@ -474,7 +474,7 @@ try {
     await saveWorkspace(cdp);
     await waitFor(async () => await evaluate(cdp, "document.querySelector('.mapping-poc-status').textContent.includes('Workspace saved')"));
     const savedWorkspace = await (await fetch(`${url}/api/mapping/workspace`)).json();
-    assert.equal(savedWorkspace.schemaVersion, 2);
+    assert.equal(savedWorkspace.schemaVersion, 3);
     assert.equal(savedWorkspace.documents[0].canvas.display.rootIds.length, 2);
     const renderedGeometry = await evaluate(cdp, `Object.fromEntries([...document.querySelectorAll('[data-display-node]')].map(el => [el.dataset.displayNode,
       { position: { x: el.offsetLeft, y: el.offsetTop }, bounds: { width: el.offsetWidth, height: el.offsetHeight } }]))`);

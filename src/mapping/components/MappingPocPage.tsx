@@ -90,7 +90,7 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
   };
   const capture = (): MappingWorkspaceSnapshot => {
     if (!snapshot?.project) throw new Error('Project is not initialized');
-    return { schemaVersion: 2, projectId: snapshot.project.id, activeDocumentId: activeId,
+    return { schemaVersion: 3, projectId: snapshot.project.id, activeDocumentId: activeId,
       documents: Object.entries(drafts).map(([representationId, draft]) => ({ representationId, name: draft.name,
         savedName: draft.savedName, savedScene: draft.savedScene, revisionId: draft.revisionId,
         document: draft.document, canvas: { ...draft.canvas, display: viewState.captureDisplay(representationId, draft.canvas.display) },

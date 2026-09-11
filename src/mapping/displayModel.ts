@@ -40,7 +40,9 @@ export type ProjectedFile = ReturnType<typeof projectCompactions>[number];
 export interface SourceCodePaneContent {
   kind: 'source-code';
   projectId: string;
+  /** Projection metadata; navigation may select a file outside this list. */
   files: ProjectedFile[];
+  /** Repository-relative path of the currently viewed file. */
   sourceFile: string;
   showCompactions: boolean;
   rangeIndex: number;

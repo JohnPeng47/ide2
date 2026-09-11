@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { deserializeWorkspace, serializeWorkspace } from './mappingWorkspaceCodec';
 import { initialCanvasState, type MappingWorkspaceSnapshot } from './mappingWorkspace';
 import { initialMappingGrid } from './mappingGrid';
-function snapshot(): MappingWorkspaceSnapshot { const document = initialMappingGrid(); return { schemaVersion: 2, projectId: 'project', activeDocumentId: 'diagram', documents: [{ representationId: 'diagram', revisionId: 'revision', name: 'Diagram', savedName: 'Diagram', savedScene: JSON.stringify(document.scene), document, canvas: initialCanvasState(), viewport: { offset: { x: 42, y: 51 }, scale: .8 } }] }; }
+function snapshot(): MappingWorkspaceSnapshot { const document = initialMappingGrid(); return { schemaVersion: 3, projectId: 'project', activeDocumentId: 'diagram', documents: [{ representationId: 'diagram', revisionId: 'revision', name: 'Diagram', savedName: 'Diagram', savedScene: JSON.stringify(document.scene), document, canvas: initialCanvasState(), viewport: { offset: { x: 42, y: 51 }, scale: .8 } }] }; }
 describe('workspace codec', () => {
   it('round trips scene, control drafts, and viewport without coupling controls to display nodes', () => {
     const input = snapshot(); input.documents[0].canvas.controls.surfaces.draft.promptText = 'Keep this draft';
@@ -49,7 +49,7 @@ it('migrates legacy detail coordinates and conversation anchors without mutating
   } };
   const migrated = deserializeWorkspace(input);
   const nodes = migrated.documents[0].canvas.display.nodes;
-  expect(migrated.schemaVersion).toBe(2);
+  expect(migrated.schemaVersion).toBe(3);
   expect(nodes.detail).toMatchObject({ position: { x: 125, y: -30 }, geometryPolicy: { placement: 'manual' } });
   expect(nodes.detail).not.toHaveProperty('x');
   expect(nodes.chat).toMatchObject({ canvasAnchor: { x: 200, y: 250 }, coordinateSpace: 'canvas', position: { x: 183, y: 233 } });

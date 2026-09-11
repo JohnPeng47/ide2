@@ -1211,3 +1211,17 @@ button.experiment-tree-line:hover { background: rgb(255 255 255 / 3%); }
 .mapping-source-pane > .source-code-viewer { flex: 1; height: auto; contain: strict; }
 .mapping-compaction-file { display: flex; align-items: center; gap: 12px; }
 .mapping-compaction-file small { margin-left: auto; }
+
+.mapping-source-body { display: flex; flex: 1; min-height: 0; min-width: 0; overflow: hidden; }
+.mapping-source-main { display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; }
+.mapping-source-main > .source-code-viewer { flex: 1; height: auto; contain: strict; }
+.mapping-source-file-header button, .repository-file-explorer button { font: inherit; color: inherit; background: transparent; border: 0; cursor: pointer; }
+.mapping-source-file-header button:disabled { opacity: .4; cursor: default; }
+.mapping-source-toolbar { flex-wrap: wrap; gap: 6px; }
+.source-navigation-hint { padding: 2px 12px; color: var(--accent-cyan); }
+.repository-file-explorer { width: 190px; max-width: 40%; flex: none; min-height: 0; overflow: auto; overscroll-behavior: contain; border-right: 1px solid var(--gutter); padding: 8px; }
+.repository-file-list { list-style: none; padding: 0; margin: 0; }
+.repository-file-list .repository-file-list { padding-left: 12px; }
+.repository-file-list button { text-align: left; white-space: nowrap; padding: 3px 5px; }
+.repository-file-list button[aria-current="page"] { background: #243b45; color: var(--accent-cyan); }
+.repository-file-explorer button:focus-visible { outline: 1px solid var(--accent-cyan); }

@@ -1,3 +1,4 @@
+import { ProjectLanguageService } from './core/projectLanguageService';
 import { CodexLocalChatRuntime, FakeLocalChatRuntime } from "./mapping/localChatRuntime";
 import type { Connect, Plugin } from "vite";
 import type { BuiltInDomainProfileId } from "../src/core/domainProfile";
@@ -32,9 +33,10 @@ export function diagramApi(
   const mappingRuntime = fake ? new FakeMappingAgentRuntime() : new PiMappingAgentRuntime();
   const store = new DiagramStore(projectRoot, diagramsDirectory);
   const core = new CoreApplication(store);
+  const languageService = new ProjectLanguageService();
   const studio = new StudioApplication(store, studioRuntime, configuredDomainProfileId ?? "source-code");
   const routes = {
-    core: createCoreRoutes({ application: core }),
+    core: createCoreRoutes({ application: core, languageService }),
     studio: createStudioRoutes({
       application: studio,
       experimentCatalog: new ExperimentCatalog(experimentsRoot),
@@ -76,6 +78,7 @@ export function diagramApi(
   }) => {
     server.middlewares.use(middleware);
     server.httpServer?.once("close", () => {
+      languageService.dispose();
       studio.dispose();
       mappingRuntime.dispose();
       chatRuntime.dispose();

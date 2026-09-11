@@ -42,5 +42,5 @@ export interface MappingDocumentSnapshot {
   document: MappingGridDocument; canvas: MappingCanvasState; viewport?: CanvasTransform;
 }
 export interface MappingWorkspaceSnapshot {
-  schemaVersion: 2; projectId: string; activeDocumentId?: string; documents: MappingDocumentSnapshot[];
+  schemaVersion: 3; projectId: string; activeDocumentId?: string; documents: MappingDocumentSnapshot[];
 }

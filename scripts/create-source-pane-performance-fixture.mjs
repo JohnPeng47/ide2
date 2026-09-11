@@ -28,7 +28,7 @@ for (let index = 0; index < 5; index++) {
     childIds: [], expansion: 'expanded', content: { kind: 'source-code', projectId: 'performance-fixture', files,
       sourceFile: 'src/large.ts', showCompactions: false, rangeIndex: 0, scroll: { top: 0, left: 0 } } };
 }
-const workspace = { schemaVersion: 2, projectId: 'performance-fixture', activeDocumentId: 'source', documents: [{
+const workspace = { schemaVersion: 3, projectId: 'performance-fixture', activeDocumentId: 'source', documents: [{
   representationId: 'source', name: 'Source pane performance', savedName: 'Source pane performance', revisionId: 'revision-source',
   savedScene: JSON.stringify(scene), document: { scene, nodes: {}, sections: {} }, canvas,
   viewport: { offset: { x: 0, y: 0 }, scale: 1 }

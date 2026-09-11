@@ -1,3 +1,4 @@
+import { isRepositoryFilePath } from '../core/sourceNavigation';
 import { displayGeometry, type DisplayState, type SelectionRegion } from './displayModel';
 import { layoutProjectedPanes } from './projectedPaneLayout';
 import { layoutConversationPane } from './conversationPaneLayout';
@@ -39,11 +40,11 @@ function geometry(value: any) {
   check(value.bounds.width > 0 && value.bounds.height > 0, 'invalid bounds');
   check(['canvas', 'viewport'].includes(value.coordinateSpace), 'invalid coordinate space');
 }
-/** v2 moves pane geometry into DisplayNode. v1 content and controls remain loadable. */
+/** v3 permits repository navigation; v1/v2 workspaces migrate on read. */
 export function deserializeWorkspace(json: string | unknown): MappingWorkspaceSnapshot {
   const value = typeof json === 'string' ? JSON.parse(json) : structuredClone(json);
   object(value);
-  check(value.schemaVersion === 1 || value.schemaVersion === 2, 'unsupported schema version'); id(value.projectId);
+  check(value.schemaVersion === 1 || value.schemaVersion === 2 || value.schemaVersion === 3, 'unsupported schema version'); id(value.projectId);
   const legacy = value.schemaVersion === 1;
   check(Array.isArray(value.documents) && value.documents.length <= 100, 'invalid document list');
   const docs = new Set<string>();
@@ -92,7 +93,8 @@ export function deserializeWorkspace(json: string | unknown): MappingWorkspaceSn
           const content = node.content;
           id(content.projectId); check(content.projectId === value.projectId, 'source pane belongs to another project');
           string(content.sourceFile);
-          check(content.files.some((file: any) => file.sourceFile === content.sourceFile), 'source file is not in the projected compactions');
+          check(isRepositoryFilePath(content.sourceFile), 'invalid repository file path');
+          if (value.schemaVersion < 3) check(content.files.some((file: any) => file.sourceFile === content.sourceFile), 'source file is not in the projected compactions');
           check(typeof content.showCompactions === 'boolean', 'invalid source overlay flag');
           check(Number.isInteger(content.rangeIndex) && content.rangeIndex >= 0, 'invalid source range index');
           if (content.scroll !== undefined) {
@@ -196,7 +198,7 @@ export function deserializeWorkspace(json: string | unknown): MappingWorkspaceSn
     if (doc.viewport) { object(doc.viewport); object(doc.viewport.offset); number(doc.viewport.offset.x); number(doc.viewport.offset.y); check(doc.viewport.scale >= .25 && doc.viewport.scale <= 4, 'invalid zoom'); }
   }
   if (value.activeDocumentId !== undefined) check(docs.has(value.activeDocumentId), 'missing active document');
-  value.schemaVersion = 2;
+  value.schemaVersion = 3;
   return value as unknown as MappingWorkspaceSnapshot;
 }
 export function serializeWorkspace(value: MappingWorkspaceSnapshot): string {

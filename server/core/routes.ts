@@ -1,3 +1,4 @@
+import type { ProjectLanguageService } from './projectLanguageService';
 import { createHash } from "node:crypto";
 import { corpusProvider } from "./corpus";
 import type { ServerResponse } from "node:http";
@@ -36,11 +37,35 @@ function parseImportedDiagramComponent(
   );
   return match ? { componentId: match[1], archive: Boolean(match[2]) } : null;
 }
-export function createCoreRoutes({ application }: {
+export function createCoreRoutes({ application, languageService }: {
+  languageService?: ProjectLanguageService;
   application: CoreApplication;
 
 }) {
   return async (request: Connect.IncomingMessage, response: ServerResponse, url: URL): Promise<void> => {
+
+    if (url.pathname === '/api/core/project/files') {
+      if (request.method !== 'GET') return sendJson(response, 405, { error: 'method not allowed' });
+      const project = await application.store.loadProject();
+      if (!project || url.searchParams.get('projectId') !== project.id) return sendJson(response, 409, { error: 'Repository belongs to another project' });
+      const listing = await corpusProvider(project.corpus).listDirectory(project.corpus, url.searchParams.get('path') ?? '');
+      return sendJson(response, 200, listing);
+    }
+    if (url.pathname === '/api/core/project/definitions') {
+      if (request.method !== 'POST') return sendJson(response, 405, { error: 'method not allowed' });
+      const body = await readBody(request) as any;
+      const project = await application.store.loadProject();
+      if (!project || body.projectId !== project.id) return sendJson(response, 409, { error: 'Source belongs to another project' });
+      if (!languageService) return sendJson(response, 503, { error: 'Language service unavailable' });
+      const controller = new AbortController();
+      const abort = () => { if (!response.writableEnded) controller.abort(); };
+      response.once('close', abort);
+      try {
+        const result = await languageService.definitions(project.corpus, body.path, body.position, body.sourceSha256, controller.signal);
+        if (!response.destroyed) return sendJson(response, 200, result);
+      } finally { response.removeListener('close', abort); }
+      return;
+    }
 
     if (url.pathname === "/api/core/project/source") {
       if (request.method !== "GET") return sendJson(response, 405, { error: "method not allowed" });
@@ -51,6 +76,7 @@ export function createCoreRoutes({ application }: {
       const sourcePath = url.searchParams.get("path");
       if (!sourcePath) return sendJson(response, 400, { error: "Source path is required" });
       const source = await corpusProvider(project.corpus).readDocumentText(project.corpus, sourcePath);
+      if (source.includes('\0')) return sendJson(response, 415, { error: 'This is a binary file. The source pane displays text files.' });
       return sendJson(response, 200, { path: sourcePath, startLine: 1, lines: source.split(/\r?\n/),
         sourceSha256: createHash("sha256").update(source).digest("hex") });
     }

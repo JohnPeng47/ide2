@@ -67,7 +67,7 @@ Live source scroll offsets and camera transforms are kept in a workspace-scoped
 `SourcePaneViewState`, outside React's display state. Source scroll events update only their
 viewport entry; camera movements write the canvas transform without updating the page's
 drafts. `capture()` samples mounted source viewers directly, retains the last position of
-unmounted panes, and merges those positions and the camera into the existing v2 snapshot.
+unmounted panes, and merges those positions and the camera into the workspace snapshot.
 This also captures scrolling immediately before Save or Export, before a scroll event arrives.
 Restore/Import replaces the runtime state; file switches and pane deletion discard obsolete
 entries. Source rows are memoized independently of viewport callbacks, so scrolling and
@@ -109,7 +109,7 @@ workspace; Save workspace makes an imported workspace the default on reload. Imp
 the same project ID. It is not a portable project/artifact export: projection content is
 captured, but continuing a projection still requires the corresponding catalog/revisions.
 
-`mappingWorkspaceCodec.ts` is the format/migration boundary. v2 validates node ownership,
+`mappingWorkspaceCodec.ts` is the format/migration boundary. v3 retains the v2 geometry model and permits arbitrary repository-relative source files. v1/v2 snapshots migrate on read. The codec validates node ownership,
 reference integrity, kind-specific payloads, document scenes, and viewport coordinates.
 v1 files migrate detail x/y and conversation thread anchors into the new model, and initialize
 previously unsaved selection/projection geometry for automatic resolution. v2 saves all node
@@ -139,3 +139,48 @@ node browser-line-grid-check.mjs
 Browser checks run against disposable fixture projects and exercise actual pointer/keyboard
 input. Projection checks include retained selections, chained connector alignment, collapse,
 form drafts, and a server-backed save/reload round trip.
+
+
+## Repository files and definitions
+
+Source panes have a **Files** disclosure, collapsed on initial load and after workspace restore.
+Expand directories on demand, then click a file or press Enter to open it in the same pane.
+Arrow keys move between visible entries; Right expands a directory and Left collapses it or
+moves to its parent. Refresh files reloads directory listings. The mapped-file selector remains
+available to return to files from the original projection. Unmapped files display complete source
+without projection highlights or compaction controls. Binary files show an unsupported-file message.
+
+`SourceCodePaneContent.sourceFile` is the selected repository-relative path. `files` remains the
+original projection metadata, not a repository index. File navigation retains node ID, geometry,
+and ownership. Workspace v3 persists the selected file and current scroll position. Explorer
+expansion and Back/Forward history are local to the mounted pane and are not serialized.
+
+For TS/JS, **Ctrl/Cmd+click** a symbol, or place the text selection/caret on it and press **F12**.
+A single definition opens in the same pane, expands an enclosing compaction if needed, and
+selects the target text. Multiple results offer a destination picker. Back/Forward restores
+previous files and scroll offsets. Reload source refreshes the current file after changes on disk.
+Definitions outside the project root are reported rather than opened.
+
+The project API exposes `GET /api/core/project/files?projectId=...&path=...` for one directory
+and `POST /api/core/project/definitions` for `{ projectId, path, position, sourceSha256 }`.
+Positions are zero-based UTF-16. Both APIs resolve the server-owned project corpus root.
+Definition requests verify the displayed source hash against disk. `ProjectLanguageService`
+starts one shared `typescript-language-server`/`tsserver` session per checkout on first use,
+with the app's installed TypeScript version and the checkout's project configuration. It uses
+semantic analysis (syntax-only startup results can stop at import aliases), supports cancellation
+and bounded requests, closes read-only documents after lookup, and stops idle sessions after five
+minutes. Subsequent requests restart failed or idle sessions. Other languages currently support
+browsing and syntax highlighting only.
+
+Source hit testing counts original code text, excluding gutters and generated fold labels.
+Navigation and language-service requests never run on the scroll path. Directory state remains
+inside the explorer; shared directory request caching is bounded to 256 entries. The existing
+memoized source rows and offscreen chunks continue to handle rendering.
+
+Run `npm run check:source-navigation` for a production browser check using the disposable
+five-pane fixture and a real language server. It checks lazy directories, unmapped files,
+Ctrl+click/F12 definitions, UTF-16 positions, folded targets, history, and save/reload. Server tests
+also cover multiple/no definitions, outside-root targets, stale source, and path restrictions.
+Run `SOURCE_PERF_EXPLORERS=1 npm run check:source-performance` to benchmark 1–5 panes with
+their repository explorers open. This variant shifts selection controls left so they do not
+cover the first pane's explorer button; source pane positions and sizes remain unchanged.

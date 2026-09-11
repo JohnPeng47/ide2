@@ -237,7 +237,7 @@ try {
     await waitFor(async () => await evaluate(cdp, "document.querySelector('.mapping-poc-status').textContent.includes('Workspace saved')"));
     const saved = await (await fetch(new URL('/api/mapping/workspace', url))).json();
     const conversation = Object.values(saved.documents[0].canvas.display.nodes).find(node => node.kind === 'conversation');
-    if (saved.schemaVersion !== 2 || conversation.coordinateSpace !== 'viewport' || conversation.thread.anchor) {
+    if (saved.schemaVersion !== 3 || conversation.coordinateSpace !== 'viewport' || conversation.thread.anchor) {
       throw new Error('conversation geometry was not persisted in the display node');
     }
     const owner = Object.values(saved.documents[0].canvas.display.nodes).find(node => node.childIds.includes(conversation.id));

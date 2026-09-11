@@ -172,3 +172,19 @@ describe("Project projection HTTP API", () => {
     expect(await snapshot()).toEqual(before);
   });
 });
+
+it('lists repository directories lazily through project scope and rejects foreign roots and symlinks', async () => {
+  const { root, project, sourceEndpoint } = await fixture();
+  await mkdir(path.join(root, 'src'));
+  await writeFile(path.join(root, 'src/main.ts'), 'export const main = 1;');
+  const endpoint = sourceEndpoint.replace('/source', '/files');
+  const list = (directory: string, projectId = project.id) => fetch(`${endpoint}?${new URLSearchParams({ projectId, path: directory })}`);
+  const rootListing = await (await list('')).json();
+  expect(rootListing.entries).toContainEqual({ name: 'src', path: 'src', kind: 'directory' });
+  expect(rootListing.entries.some((entry: any) => entry.name === '.git' || entry.path === 'src/main.ts')).toBe(false);
+  expect(await (await list('src')).json()).toEqual({ directory: 'src', entries: [{ name: 'main.ts', path: 'src/main.ts', kind: 'file' }] });
+  expect((await list('', 'foreign')).status).toBe(409);
+  expect((await list('../')).ok).toBe(false);
+  await symlink(path.join(root, 'src'), path.join(root, 'linked'));
+  expect((await list('linked')).ok).toBe(false);
+});

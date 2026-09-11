@@ -1,3 +1,5 @@
+import { mainSource, mathSource, tsconfig } from './tests/fixtures/source-navigation/source.mjs';
+import { checkSourceNavigation } from './browser-source-navigation-check.mjs';
 import assert from 'node:assert/strict';
 import { spawn, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -12,6 +14,7 @@ const { evaluate, waitFor, waitForSelector, withHeadlessBrowser, captureScreensh
   pathToFileURL(path.join(homedir(), '.codex/skills/front-end/browser-test.mjs')).href);
 const root = path.dirname(fileURLToPath(import.meta.url));
 const baseline = process.env.SOURCE_PERF_BASELINE === '1';
+const explorersOpen = process.env.SOURCE_PERF_EXPLORERS === '1';
 const trials = Number(process.env.SOURCE_PERF_TRIALS ?? 3);
 assert.ok(Number.isInteger(trials) && trials >= 0 && trials <= 4, 'SOURCE_PERF_TRIALS must be an integer from 0 through 4');
 const temp = await mkdtemp(path.join(tmpdir(), 'source-pane-performance-'));
@@ -87,7 +90,7 @@ async function measure(cdp, kind, count, trial) {
     if (remaining > 0) await new Promise(resolve => setTimeout(resolve, remaining));
   }
   if (kind === 'drag') await cdp.send('Input.dispatchMouseEvent', {type: 'mouseReleased', ...p, button: 'middle', buttons: 0});
-  else await waitFor(async () => (await positions(cdp))['source-1'].top >= initial['source-1'].top + steps * 60 - 1,
+  else await waitFor(async () => (await positions(cdp))['source-1']?.top >= initial['source-1'].top + steps * 60 - 1,
     { message: 'Wheel input did not scroll the target pane by the requested distance' });
   await settle(cdp);
   const elapsedMs = performance.now() - start, after = await metrics(cdp);
@@ -119,6 +122,7 @@ try {
   const projectId = `project-${hash(path.join(temp, '.git')).slice(0, 12)}`;
   const fixture = await readFile(path.join(root, 'tests/fixtures/source-pane-performance/workspace.json'), 'utf8');
   const workspace = JSON.parse(fixture.replaceAll('performance-fixture', projectId));
+  if (explorersOpen) for (const node of Object.values(workspace.documents[0].canvas.display.nodes)) if (node.kind === 'selection') node.position.x -= 180;
   const doc = workspace.documents[0], timestamp = '2026-09-10T00:00:00.000Z';
   const representation = { schemaVersion: 1, id: 'source', projectId, handle: 'source', name: doc.name, viewKind: 'diagram',
     representationKind: 'diagram', status: 'settled', currentRevisionId: 'revision-source', revisionIds: ['revision-source'], createdAt: timestamp, updatedAt: timestamp };
@@ -130,6 +134,9 @@ try {
   await mkdir(path.join(temp, '.diagrams/representations'), {recursive: true});
   await mkdir(path.join(temp, 'src'));
   await writeFile(path.join(temp, 'src/large.ts'), sourceText);
+  await writeFile(path.join(temp, 'src/math.ts'), mathSource);
+  await writeFile(path.join(temp, 'src/main.ts'), mainSource);
+  await writeFile(path.join(temp, 'tsconfig.json'), JSON.stringify(tsconfig));
   await writeFile(path.join(temp, '.diagrams/project.json'), JSON.stringify({ schemaVersion: 1, id: projectId, name: doc.name,
     repositoryIdentity: path.join(temp, '.git'), canonicalRepoRoot: temp, domainProfileId: 'source-code', corpus: {kind: 'git-worktree', root: temp},
     diagramSetIds: [], createdAt: timestamp, updatedAt: timestamp }));
@@ -160,11 +167,22 @@ try {
     for (let count = 1; count <= 5; count++) {
       if (count > 1) await click(cdp, `${pane(count)} [aria-label="Expand pane"]`);
       await waitFor(async () => await evaluate(cdp, `document.querySelectorAll('.source-code-viewer[data-highlighted=true]').length === ${count}`));
+      if (explorersOpen) {
+        await click(cdp, `${pane(count)} [aria-label="Toggle repository files"]`);
+        await waitForSelector(cdp, `${pane(count)} [data-directory="src"]`);
+        await click(cdp, `${pane(count)} [data-directory="src"]`);
+        await waitForSelector(cdp, `${pane(count)} [data-repository-file="src/main.ts"]`);
+      }
       await settle(cdp);
       for (let trial = 1; trial <= trials; trial++) for (const gesture of ['drag', 'scroll']) {
         const result = await measure(cdp, gesture, count, trial); results.push(result); console.log(JSON.stringify(result));
       }
     }
+    if (explorersOpen) {
+      await mkdir(path.dirname(reportPath), {recursive: true});
+      await captureScreenshot(cdp, {output: reportPath.replace(/\.json$/, '.explorers.png')});
+    }
+    if (explorersOpen) for (let id = 1; id <= 5; id++) await click(cdp, `${pane(id)} [aria-label="Toggle repository files"]`);
     console.log('Persistence: independent pane positions and collapsed-pane save');
     // Exercise independent horizontal and vertical positions, including a pane hidden before saving.
     for (let id = 1; id <= 5; id++) {
@@ -191,7 +209,7 @@ try {
     await waitForSelector(cdp, '.mapping-document-view[hidden] [data-display-node="source-1"]');
     await click(cdp, '[data-project-diagram="source"]');
     await waitForSelector(cdp, '.mapping-document-view:not([hidden]) [data-display-node="source-1"]');
-    await waitFor(async () => (await positions(cdp))['source-1'].top === beforeSave['source-1'].top,
+    await waitFor(async () => (await positions(cdp))['source-1']?.top === beforeSave['source-1'].top,
       {message: 'A source document restored in the background must restore its viewport when activated'});
     await click(cdp, '.mapping-workspace-actions button:first-child');
     await waitFor(async () => {
@@ -203,7 +221,7 @@ try {
     await click(cdp, `${pane(5)} [aria-label="Expand pane"]`);
     const exportPosition = {...beforeSave['source-1'], top: beforeSave['source-1'].top + 180};
     await cdp.send('Input.dispatchMouseEvent', {type: 'mouseWheel', ...await point(cdp, viewer(1)), deltaX: 0, deltaY: 180});
-    await waitFor(async () => (await positions(cdp))['source-1'].top >= exportPosition.top - 1);
+    await waitFor(async () => (await positions(cdp))['source-1']?.top >= exportPosition.top - 1);
     const downloads = path.join(profilePath, 'downloads');
     await mkdir(downloads, {recursive: true});
     const browserPath = downloads.startsWith('/mnt/') ? execFileSync('wslpath', ['-w', downloads], {encoding: 'utf8'}).trim() : downloads;
@@ -230,11 +248,13 @@ try {
     await click(cdp, '.mapping-workspace-actions button:first-child');
     await waitFor(async () => (await (await fetch(`${url}/api/mapping/workspace`)).json()).documents[0].canvas.display.nodes['source-5'].expansion === 'expanded');
     await mkdir(path.dirname(reportPath), {recursive: true});
+    if (process.env.SOURCE_NAVIGATION === '1') await checkSourceNavigation({ cdp, url, evaluate, waitFor, waitForSelector, click, pane, viewer, reload, captureScreenshot,
+      screenshotPath: reportPath.replace(/\.json$/, '.navigation.png') });
     await captureScreenshot(cdp, {output: reportPath.replace(/\.json$/, '.png')});
     await writeFile(reportPath.replace(/\.json$/, '.workspace.json'), JSON.stringify(await (await fetch(`${url}/api/mapping/workspace`)).json(), null, 2));
     assert.deepEqual(errors, []);
   });
-  const report = { baseline, createdAt: new Date().toISOString(), browser: browserVersion, sourceLines: 3000, fixtureSha256: hash(fixture),
+  const report = { baseline, explorersOpen, navigationChecked: process.env.SOURCE_NAVIGATION === '1', createdAt: new Date().toISOString(), browser: browserVersion, sourceLines: 3000, fixtureSha256: hash(fixture),
     viewport: {width: 2400, height: 1500}, steps, cadenceMs, trials,
     notes: 'Sequential real CDP gestures. Frame intervals are main-thread requestAnimationFrame observations, not compositor dropped-frame counts. CPU metrics overlap. Scroll targets pane 1; every expanded pane is onscreen.', results };
   await writeFile(reportPath, JSON.stringify(report, null, 2));

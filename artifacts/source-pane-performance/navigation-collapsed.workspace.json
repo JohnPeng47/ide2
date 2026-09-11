@@ -1,0 +1,709 @@
+{
+  "schemaVersion": 3,
+  "projectId": "project-717975d1d4ad",
+  "activeDocumentId": "source",
+  "documents": [
+    {
+      "representationId": "source",
+      "name": "Source pane performance",
+      "savedName": "Source pane performance",
+      "savedScene": "{\"contents\":{\"overview\":{\"id\":\"overview\",\"revision\":0,\"ascii\":\"Source pane performance fixture\",\"mappings\":[]},\"overview-summary\":{\"id\":\"overview-summary\",\"revision\":0,\"ascii\":\"[Diagram]\",\"mappings\":[]}},\"root\":{\"id\":\"root\",\"kind\":\"container\",\"position\":{\"column\":0,\"row\":0},\"collapsed\":false,\"layout\":{\"collisionPolicy\":\"push-right\",\"gap\":3},\"children\":[{\"id\":\"overview\",\"kind\":\"diagram\",\"position\":{\"column\":0,\"row\":0},\"collapsed\":false,\"contentId\":\"overview\",\"collapsedContentId\":\"overview-summary\"}]}}",
+      "revisionId": "revision-source",
+      "document": {
+        "scene": {
+          "contents": {
+            "overview": {
+              "id": "overview",
+              "revision": 0,
+              "ascii": "Source pane performance fixture",
+              "mappings": []
+            },
+            "overview-summary": {
+              "id": "overview-summary",
+              "revision": 0,
+              "ascii": "[Diagram]",
+              "mappings": []
+            }
+          },
+          "root": {
+            "id": "root",
+            "kind": "container",
+            "position": {
+              "column": 0,
+              "row": 0
+            },
+            "collapsed": false,
+            "layout": {
+              "collisionPolicy": "push-right",
+              "gap": 3
+            },
+            "children": [
+              {
+                "id": "overview",
+                "kind": "diagram",
+                "position": {
+                  "column": 0,
+                  "row": 0
+                },
+                "collapsed": false,
+                "contentId": "overview",
+                "collapsedContentId": "overview-summary"
+              }
+            ]
+          }
+        },
+        "nodes": {},
+        "sections": {}
+      },
+      "canvas": {
+        "display": {
+          "rootIds": [
+            "selection-1",
+            "selection-2",
+            "selection-3",
+            "selection-4",
+            "selection-5"
+          ],
+          "nodes": {
+            "selection-1": {
+              "position": {
+                "x": 360,
+                "y": 10
+              },
+              "bounds": {
+                "width": 30,
+                "height": 20
+              },
+              "coordinateSpace": "canvas",
+              "geometryPolicy": {
+                "placement": "manual",
+                "sizing": "fixed"
+              },
+              "id": "selection-1",
+              "kind": "selection",
+              "childIds": [
+                "source-1"
+              ],
+              "expansion": "expanded",
+              "sourceBoxId": "overview",
+              "sourceContentId": "overview",
+              "sourceAscii": "Source pane performance fixture",
+              "rect": {
+                "startLine": 1,
+                "endLine": 1,
+                "startColumn": 1,
+                "endColumn": 1
+              },
+              "selectedIds": [],
+              "displayMode": "chained"
+            },
+            "source-1": {
+              "position": {
+                "x": 420,
+                "y": 70
+              },
+              "bounds": {
+                "width": 530,
+                "height": 490
+              },
+              "coordinateSpace": "canvas",
+              "geometryPolicy": {
+                "placement": "manual",
+                "sizing": "fixed"
+              },
+              "id": "source-1",
+              "kind": "projection",
+              "title": "src/large.ts",
+              "childIds": [],
+              "expansion": "expanded",
+              "content": {
+                "kind": "source-code",
+                "projectId": "project-717975d1d4ad",
+                "files": [
+                  {
+                    "sourceFile": "src/large.ts",
+                    "sourceSha256": "70a8f278dd7506f6b2f944928299a95515918ba078f224fc1691e4d3ad94fafb",
+                    "ascii": "large.ts\n+-- first operation\n\\-- distant operation",
+                    "selectedLineCount": 2,
+                    "rows": [
+                      {
+                        "treeLine": 1,
+                        "selected": false,
+                        "sourceRanges": [
+                          {
+                            "startLine": 1,
+                            "endLine": 3000
+                          }
+                        ]
+                      },
+                      {
+                        "treeLine": 2,
+                        "selected": true,
+                        "sourceRanges": [
+                          {
+                            "startLine": 12,
+                            "endLine": 15
+                          }
+                        ]
+                      },
+                      {
+                        "treeLine": 3,
+                        "selected": true,
+                        "sourceRanges": [
+                          {
+                            "startLine": 2962,
+                            "endLine": 2965
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "sourceFile": "src/large.ts",
+                "showCompactions": false,
+                "rangeIndex": 0,
+                "scroll": {
+                  "top": 36090,
+                  "left": 30
+                }
+              }
+            },
+            "selection-2": {
+              "position": {
+                "x": 360,
+                "y": 40
+              },
+              "bounds": {
+                "width": 30,
+                "height": 20
+              },
+              "coordinateSpace": "canvas",
+              "geometryPolicy": {
+                "placement": "manual",
+                "sizing": "fixed"
+              },
+              "id": "selection-2",
+              "kind": "selection",
+              "childIds": [
+                "source-2"
+              ],
+              "expansion": "expanded",
+              "sourceBoxId": "overview",
+              "sourceContentId": "overview",
+              "sourceAscii": "Source pane performance fixture",
+              "rect": {
+                "startLine": 1,
+                "endLine": 1,
+                "startColumn": 1,
+                "endColumn": 1
+              },
+              "selectedIds": [],
+              "displayMode": "chained"
+            },
+            "source-2": {
+              "position": {
+                "x": 980,
+                "y": 70
+              },
+              "bounds": {
+                "width": 530,
+                "height": 490
+              },
+              "coordinateSpace": "canvas",
+              "geometryPolicy": {
+                "placement": "manual",
+                "sizing": "fixed"
+              },
+              "id": "source-2",
+              "kind": "projection",
+              "title": "src/large.ts",
+              "childIds": [],
+              "expansion": "expanded",
+              "content": {
+                "kind": "source-code",
+                "projectId": "project-717975d1d4ad",
+                "files": [
+                  {
+                    "sourceFile": "src/large.ts",
+                    "sourceSha256": "70a8f278dd7506f6b2f944928299a95515918ba078f224fc1691e4d3ad94fafb",
+                    "ascii": "large.ts\n+-- first operation\n\\-- distant operation",
+                    "selectedLineCount": 2,
+                    "rows": [
+                      {
+                        "treeLine": 1,
+                        "selected": false,
+                        "sourceRanges": [
+                          {
+                            "startLine": 1,
+                            "endLine": 3000
+                          }
+                        ]
+                      },
+                      {
+                        "treeLine": 2,
+                        "selected": true,
+                        "sourceRanges": [
+                          {
+                            "startLine": 12,
+                            "endLine": 15
+                          }
+                        ]
+                      },
+                      {
+                        "treeLine": 3,
+                        "selected": true,
+                        "sourceRanges": [
+                          {
+                            "startLine": 2962,
+                            "endLine": 2965
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "sourceFile": "src/large.ts",
+                "showCompactions": false,
+                "rangeIndex": 0,
+                "scroll": {
+                  "top": 180,
+                  "left": 60
+                }
+              }
+            },
+            "selection-3": {
+              "position": {
+                "x": 360,
+                "y": 70
+              },
+              "bounds": {
+                "width": 30,
+                "height": 20
+              },
+              "coordinateSpace": "canvas",
+              "geometryPolicy": {
+                "placement": "manual",
+                "sizing": "fixed"
+              },
+              "id": "selection-3",
+              "kind": "selection",
+              "childIds": [
+                "source-3"
+              ],
+              "expansion": "expanded",
+              "sourceBoxId": "overview",
+              "sourceContentId": "overview",
+              "sourceAscii": "Source pane performance fixture",
+              "rect": {
+                "startLine": 1,
+                "endLine": 1,
+                "startColumn": 1,
+                "endColumn": 1
+              },
+              "selectedIds": [],
+              "displayMode": "chained"
+            },
+            "source-3": {
+              "position": {
+                "x": 1540,
+                "y": 70
+              },
+              "bounds": {
+                "width": 530,
+                "height": 490
+              },
+              "coordinateSpace": "canvas",
+              "geometryPolicy": {
+                "placement": "manual",
+                "sizing": "fixed"
+              },
+              "id": "source-3",
+              "kind": "projection",
+              "title": "src/large.ts",
+              "childIds": [],
+              "expansion": "expanded",
+              "content": {
+                "kind": "source-code",
+                "projectId": "project-717975d1d4ad",
+                "files": [
+                  {
+                    "sourceFile": "src/large.ts",
+                    "sourceSha256": "70a8f278dd7506f6b2f944928299a95515918ba078f224fc1691e4d3ad94fafb",
+                    "ascii": "large.ts\n+-- first operation\n\\-- distant operation",
+                    "selectedLineCount": 2,
+                    "rows": [
+                      {
+                        "treeLine": 1,
+                        "selected": false,
+                        "sourceRanges": [
+                          {
+                            "startLine": 1,
+                            "endLine": 3000
+                          }
+                        ]
+                      },
+                      {
+                        "treeLine": 2,
+                        "selected": true,
+                        "sourceRanges": [
+                          {
+                            "startLine": 12,
+                            "endLine": 15
+                          }
+                        ]
+                      },
+                      {
+                        "treeLine": 3,
+                        "selected": true,
+                        "sourceRanges": [
+                          {
+                            "startLine": 2962,
+                            "endLine": 2965
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "sourceFile": "src/large.ts",
+                "showCompactions": false,
+                "rangeIndex": 0,
+                "scroll": {
+                  "top": 270,
+                  "left": 90
+                }
+              }
+            },
+            "selection-4": {
+              "position": {
+                "x": 360,
+                "y": 100
+              },
+              "bounds": {
+                "width": 30,
+                "height": 20
+              },
+              "coordinateSpace": "canvas",
+              "geometryPolicy": {
+                "placement": "manual",
+                "sizing": "fixed"
+              },
+              "id": "selection-4",
+              "kind": "selection",
+              "childIds": [
+                "source-4"
+              ],
+              "expansion": "expanded",
+              "sourceBoxId": "overview",
+              "sourceContentId": "overview",
+              "sourceAscii": "Source pane performance fixture",
+              "rect": {
+                "startLine": 1,
+                "endLine": 1,
+                "startColumn": 1,
+                "endColumn": 1
+              },
+              "selectedIds": [],
+              "displayMode": "chained"
+            },
+            "source-4": {
+              "position": {
+                "x": 420,
+                "y": 610
+              },
+              "bounds": {
+                "width": 530,
+                "height": 490
+              },
+              "coordinateSpace": "canvas",
+              "geometryPolicy": {
+                "placement": "manual",
+                "sizing": "fixed"
+              },
+              "id": "source-4",
+              "kind": "projection",
+              "title": "src/large.ts",
+              "childIds": [],
+              "expansion": "expanded",
+              "content": {
+                "kind": "source-code",
+                "projectId": "project-717975d1d4ad",
+                "files": [
+                  {
+                    "sourceFile": "src/large.ts",
+                    "sourceSha256": "70a8f278dd7506f6b2f944928299a95515918ba078f224fc1691e4d3ad94fafb",
+                    "ascii": "large.ts\n+-- first operation\n\\-- distant operation",
+                    "selectedLineCount": 2,
+                    "rows": [
+                      {
+                        "treeLine": 1,
+                        "selected": false,
+                        "sourceRanges": [
+                          {
+                            "startLine": 1,
+                            "endLine": 3000
+                          }
+                        ]
+                      },
+                      {
+                        "treeLine": 2,
+                        "selected": true,
+                        "sourceRanges": [
+                          {
+                            "startLine": 12,
+                            "endLine": 15
+                          }
+                        ]
+                      },
+                      {
+                        "treeLine": 3,
+                        "selected": true,
+                        "sourceRanges": [
+                          {
+                            "startLine": 2962,
+                            "endLine": 2965
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "sourceFile": "src/large.ts",
+                "showCompactions": false,
+                "rangeIndex": 0,
+                "scroll": {
+                  "top": 360,
+                  "left": 120
+                }
+              }
+            },
+            "selection-5": {
+              "position": {
+                "x": 360,
+                "y": 130
+              },
+              "bounds": {
+                "width": 30,
+                "height": 20
+              },
+              "coordinateSpace": "canvas",
+              "geometryPolicy": {
+                "placement": "manual",
+                "sizing": "fixed"
+              },
+              "id": "selection-5",
+              "kind": "selection",
+              "childIds": [
+                "source-5"
+              ],
+              "expansion": "expanded",
+              "sourceBoxId": "overview",
+              "sourceContentId": "overview",
+              "sourceAscii": "Source pane performance fixture",
+              "rect": {
+                "startLine": 1,
+                "endLine": 1,
+                "startColumn": 1,
+                "endColumn": 1
+              },
+              "selectedIds": [],
+              "displayMode": "chained"
+            },
+            "source-5": {
+              "position": {
+                "x": 980,
+                "y": 610
+              },
+              "bounds": {
+                "width": 530,
+                "height": 490
+              },
+              "coordinateSpace": "canvas",
+              "geometryPolicy": {
+                "placement": "manual",
+                "sizing": "fixed"
+              },
+              "id": "source-5",
+              "kind": "projection",
+              "title": "src/large.ts",
+              "childIds": [],
+              "expansion": "expanded",
+              "content": {
+                "kind": "source-code",
+                "projectId": "project-717975d1d4ad",
+                "files": [
+                  {
+                    "sourceFile": "src/large.ts",
+                    "sourceSha256": "70a8f278dd7506f6b2f944928299a95515918ba078f224fc1691e4d3ad94fafb",
+                    "ascii": "large.ts\n+-- first operation\n\\-- distant operation",
+                    "selectedLineCount": 2,
+                    "rows": [
+                      {
+                        "treeLine": 1,
+                        "selected": false,
+                        "sourceRanges": [
+                          {
+                            "startLine": 1,
+                            "endLine": 3000
+                          }
+                        ]
+                      },
+                      {
+                        "treeLine": 2,
+                        "selected": true,
+                        "sourceRanges": [
+                          {
+                            "startLine": 12,
+                            "endLine": 15
+                          }
+                        ]
+                      },
+                      {
+                        "treeLine": 3,
+                        "selected": true,
+                        "sourceRanges": [
+                          {
+                            "startLine": 2962,
+                            "endLine": 2965
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "sourceFile": "src/large.ts",
+                "showCompactions": false,
+                "rangeIndex": 0,
+                "scroll": {
+                  "top": 450,
+                  "left": 150
+                }
+              }
+            }
+          }
+        },
+        "controls": {
+          "activeBoxId": "overview",
+          "selectionRect": null,
+          "selectedNodeIds": [],
+          "retainedSelectionId": null,
+          "activeThreadId": null,
+          "surfaces": {
+            "draft": {
+              "actionsOpen": true,
+              "presentation": "compact",
+              "projectionChoice": "",
+              "promptOperation": "edit",
+              "promptOpen": false,
+              "promptText": "",
+              "askOpen": false,
+              "askText": "",
+              "askVerbosity": "low",
+              "promptPhase": "ready",
+              "statusMessage": "Ctrl + drag to select"
+            }
+          }
+        }
+      },
+      "viewport": {
+        "offset": {
+          "x": 0,
+          "y": 0
+        },
+        "scale": 1
+      }
+    },
+    {
+      "representationId": "other",
+      "name": "Other document",
+      "savedName": "Other document",
+      "savedScene": "{\"contents\":{\"overview\":{\"id\":\"overview\",\"revision\":0,\"ascii\":\"Source pane performance fixture\",\"mappings\":[]},\"overview-summary\":{\"id\":\"overview-summary\",\"revision\":0,\"ascii\":\"[Diagram]\",\"mappings\":[]}},\"root\":{\"id\":\"root\",\"kind\":\"container\",\"position\":{\"column\":0,\"row\":0},\"collapsed\":false,\"layout\":{\"collisionPolicy\":\"push-right\",\"gap\":3},\"children\":[{\"id\":\"overview\",\"kind\":\"diagram\",\"position\":{\"column\":0,\"row\":0},\"collapsed\":false,\"contentId\":\"overview\",\"collapsedContentId\":\"overview-summary\"}]}}",
+      "revisionId": "revision-other",
+      "document": {
+        "scene": {
+          "contents": {
+            "overview": {
+              "id": "overview",
+              "revision": 0,
+              "ascii": "Source pane performance fixture",
+              "mappings": []
+            },
+            "overview-summary": {
+              "id": "overview-summary",
+              "revision": 0,
+              "ascii": "[Diagram]",
+              "mappings": []
+            }
+          },
+          "root": {
+            "id": "root",
+            "kind": "container",
+            "position": {
+              "column": 0,
+              "row": 0
+            },
+            "collapsed": false,
+            "layout": {
+              "collisionPolicy": "push-right",
+              "gap": 3
+            },
+            "children": [
+              {
+                "id": "overview",
+                "kind": "diagram",
+                "position": {
+                  "column": 0,
+                  "row": 0
+                },
+                "collapsed": false,
+                "contentId": "overview",
+                "collapsedContentId": "overview-summary"
+              }
+            ]
+          }
+        },
+        "evidence": {},
+        "sections": {},
+        "nodes": {
+          "overview": [],
+          "overview-summary": []
+        }
+      },
+      "canvas": {
+        "display": {
+          "rootIds": [],
+          "nodes": {}
+        },
+        "controls": {
+          "activeBoxId": "overview",
+          "selectionRect": null,
+          "selectedNodeIds": [],
+          "retainedSelectionId": null,
+          "activeThreadId": null,
+          "surfaces": {
+            "draft": {
+              "actionsOpen": true,
+              "presentation": "compact",
+              "projectionChoice": "",
+              "promptOperation": "edit",
+              "promptOpen": false,
+              "promptText": "",
+              "askOpen": false,
+              "askText": "",
+              "askVerbosity": "low",
+              "promptPhase": "ready",
+              "statusMessage": "Ctrl + drag to select"
+            }
+          }
+        }
+      },
+      "viewport": {
+        "offset": {
+          "x": 926,
+          "y": 475
+        },
+        "scale": 1
+      }
+    }
+  ]
+}

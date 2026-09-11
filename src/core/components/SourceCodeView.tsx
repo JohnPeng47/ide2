@@ -1,3 +1,5 @@
+import type { SourceLocation, SourcePosition } from '../sourceNavigation';
+import { sourcePositionAtNode, sourcePositionAtPoint, selectSourceRange } from '../sourceDomPosition';
 import {
   memo,
   useEffect,
@@ -175,7 +177,7 @@ function GraphNodeSource(props: {
     rows.push(
       <div className="source-call-graph-node-source-line" data-line={lineNumber} key={lineNumber}>
         <span aria-hidden="true">{lineNumber}</span>
-        <code>
+        <code data-source-text="">
           <SourceTokens tokens={props.tokenLines[index] ?? []} fallback={props.preview.lines[index]} />
         </code>
       </div>
@@ -234,6 +236,8 @@ export function SourceCodeView(props: {
   lineAnnotations?: readonly { startLine: number; content: ReactNode }[];
   presentation: ContentPresentation;
   targetLine?: number;
+  navigationRange?: SourceLocation['range'];
+  onGoToDefinition?: (position: SourcePosition) => void;
   revealed?: boolean;
   revealRequestId?: number;
   initialScrollPosition?: { top: number; left: number };
@@ -247,7 +251,9 @@ export function SourceCodeView(props: {
   const restoredSource = useRef<string | undefined>(undefined);
   const [highlighted, setHighlighted] = useState<TokensResult | null>(null);
   const [highlightFailed, setHighlightFailed] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(() => new Set());
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(() => new Set(
+    props.navigationRange ? collapsedSections(props.range, props.preview).filter(section =>
+      props.navigationRange!.start.line + 1 >= section.startLine && props.navigationRange!.start.line + 1 <= section.endLine).map(sectionKey) : []));
   const [expandedGraphNodes, setExpandedGraphNodes] = useState<Set<string>>(() => new Set());
   const source = useMemo(() => props.preview.lines.join("\n"), [props.preview.lines]);
   const sourceIdentity = `${props.preview.path}:${props.preview.startLine}:${source}`;
@@ -274,9 +280,11 @@ export function SourceCodeView(props: {
   }, [props.presentation.syntaxHighlighting, props.preview.path, source]);
 
   useEffect(() => {
-    setExpandedSections(new Set());
+    const destination = props.navigationRange?.start.line;
+    const next = new Set(destination === undefined ? [] : sections.filter(section => destination + 1 >= section.startLine && destination + 1 <= section.endLine).map(sectionKey));
+    setExpandedSections(current => current.size === next.size && [...current].every(key => next.has(key)) ? current : next);
     setExpandedGraphNodes(new Set());
-  }, [sourceIdentity, props.range.compactedSource]);
+  }, [sourceIdentity, props.range.compactedSource, props.navigationRange, sections]);
 
   useLayoutEffect(() => {
     if (props.active === false) {
@@ -305,7 +313,11 @@ export function SourceCodeView(props: {
       top += parent.offsetTop;
     }
     viewer.scrollTop = target ? Math.max(0, top - viewer.clientHeight * 0.2) : 0;
-  }, [props.range.startLine, props.revealRequestId, props.targetLine, props.compacted, props.presentation.sourceCompaction, sections, sourceIdentity, props.scrollState, props.active]);
+    if (props.navigationRange) {
+      const { start, end } = props.navigationRange;
+      selectSourceRange(viewer, start.line + 1, start.character, end.line === start.line ? end.character : props.preview.lines[start.line - props.preview.startLine + 1]?.length ?? start.character);
+    }
+  }, [props.range.startLine, props.revealRequestId, props.targetLine, props.compacted, props.presentation.sourceCompaction, sections, sourceIdentity, props.scrollState, props.active, props.navigationRange ? expandedSections : undefined, props.navigationRange]);
 
   useLayoutEffect(() => {
     const viewer = scrollRef.current;
@@ -314,6 +326,14 @@ export function SourceCodeView(props: {
     return props.scrollState.connect(() => viewer.getClientRects().length
       ? { top: viewer.scrollTop, left: viewer.scrollLeft } : undefined);
   }, [props.scrollState, sourceIdentity, props.active]);
+
+  // Tokenization replaces text nodes; reapply the destination selection after that replacement.
+  useLayoutEffect(() => {
+    if (!props.navigationRange || !scrollRef.current || props.active === false || initialScroll.current) return;
+    const { start, end } = props.navigationRange;
+    selectSourceRange(scrollRef.current, start.line + 1, start.character,
+      end.line === start.line ? end.character : props.preview.lines[start.line - props.preview.startLine + 1]?.length ?? start.character);
+  }, [highlighted, expandedSections, props.navigationRange, props.active]);
 
   const rows = useMemo(() => {
     const annotationsByLine = new Map<number, ReactNode[]>();
@@ -439,7 +459,7 @@ export function SourceCodeView(props: {
               <span className="source-line-number" aria-hidden="true">{lineNumber}</span>
             )}
           </span>
-          <code className="source-line-text">
+          <code className="source-line-text" data-source-text="">
             <SourceTokens tokens={tokenLines[index] ?? []} fallback={props.preview.lines[index]} />
           </code>
         </div>
@@ -459,6 +479,19 @@ export function SourceCodeView(props: {
   return (
     <div
       ref={scrollRef}
+      data-definitions={Boolean(props.onGoToDefinition)}
+      onClick={event => {
+        if (!(event.ctrlKey || event.metaKey) || !props.onGoToDefinition) return;
+        const position = sourcePositionAtPoint(event.currentTarget, event.clientX, event.clientY);
+        if (position) { event.preventDefault(); event.stopPropagation(); props.onGoToDefinition(position); }
+      }}
+      onKeyDown={event => {
+        if (event.key !== 'F12' || !props.onGoToDefinition) return;
+        event.preventDefault(); event.stopPropagation();
+        const selection = window.getSelection();
+        const position = sourcePositionAtNode(event.currentTarget, selection?.focusNode ?? null, selection?.focusOffset ?? 0);
+        if (position) props.onGoToDefinition(position);
+      }}
       onScroll={(event) => {
         const position = { top: event.currentTarget.scrollTop, left: event.currentTarget.scrollLeft };
         if (position.top === 0 && position.left === 0 && !event.currentTarget.getClientRects().length) return;
