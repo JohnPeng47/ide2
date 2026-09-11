@@ -29,7 +29,7 @@ const url = `http://127.0.0.1:${port}`;
 let server;
 
 // Geometry reads only: every application interaction uses real CDP input events.
-async function click(cdp, selector) {
+async function click(cdp, selector, leftInset) {
   let point;
   let previous = "";
   let stable = 0;
@@ -38,7 +38,7 @@ async function click(cdp, selector) {
       const element = document.querySelector(${JSON.stringify(selector)});
       if (!element || element.disabled) return null;
       const rect = element.getBoundingClientRect();
-      const x = rect.x + rect.width / 2, y = rect.y + rect.height / 2;
+      const x = rect.x + ${leftInset ?? "rect.width / 2"}, y = rect.y + rect.height / 2;
       return element.contains(document.elementFromPoint(x, y)) ? {x, y} : null;
     })()`);
     const next = JSON.stringify(point);
@@ -205,15 +205,21 @@ try {
     targetRepresentationId: target.id, targetRevisionId: targetRevision.id, match: "any",
     links: [{ sourceEvidenceIds: ["b", "c"], targetNodeIds: [nodeId("shared()")] },
       { sourceEvidenceIds: ["c"], targetNodeIds: [nodeId("gamma()")] }] };
-  const sourceText = Array.from({ length: 120 }, (_, index) => index === 11
-    ? 'export function selected() { return 1; }' : index === 81 ? 'export const detail = true;'
-    : `// Unselected source context ${index + 1}`).join('\n');
+  // Set PROJECTION_SOURCE_LINES=3000 to exercise dragging with a large highlighted file.
+  const sourceLineCount = Number(process.env.PROJECTION_SOURCE_LINES ?? 120);
+  const detailLine = sourceLineCount - 38;
+  const mappedLines = [12, 13, 14, 15, detailLine, detailLine + 1, detailLine + 2];
+  const sourceText = Array.from({ length: sourceLineCount }, (_, index) => index === 11
+    ? 'export function selected() { return 1; }' : index === detailLine - 1 ? 'export const detail = true;'
+    : index === sourceLineCount - 1 ? `export const wideLine = ${JSON.stringify('x'.repeat(240))};`
+    : `export function context${index + 1}(value: number) { return value * ${index + 1} + 1; }`).join('\n');
   await mkdir(path.join(temp, 'src'), { recursive: true });
   for (const file of ['shared.ts', 'gamma.ts']) await writeFile(path.join(temp, 'src', file), sourceText);
   const compactedFile = (sourceFile) => {
+    const nested = sourceFile === 'src/gamma.ts';
     const ascii = `${sourceFile}\n+-- selected method\n|   +-- selected detail\n|   \\-- hidden sibling\n\\-- unrelated method`;
     return { sourceFile, ascii, asciiSha256: createHash("sha256").update(ascii).digest("hex"), sourceSha256: createHash("sha256").update(sourceText).digest("hex"),
-      mappings: [1, 2, 3, 4, 5].map((treeLine) => ({ treeLine, sourceRanges: [{ startLine: treeLine === 2 ? 12 : treeLine === 3 ? 82 : treeLine, endLine: treeLine === 2 ? 12 : treeLine === 3 ? 82 : treeLine }] })) };
+      mappings: [1, 2, 3, 4, 5].map((treeLine) => ({ treeLine, sourceRanges: [{ startLine: treeLine === 2 ? 12 : treeLine === 3 ? (nested ? 14 : detailLine) : treeLine, endLine: treeLine === 2 ? (nested ? 20 : 15) : treeLine === 3 ? (nested ? 16 : detailLine + 2) : treeLine }] })) };
   };
   projection.compactionProjection = { files: [compactedFile("src/shared.ts"), compactedFile("src/gamma.ts")], links: [
     { callTreeNodeId: nodeId("shared()"), file: "src/shared.ts", treeLines: [2] },
@@ -276,14 +282,49 @@ try {
     await waitForSelector(cdp, `${sourceViewer}[data-highlighted=true]`);
     const sourceId = await evaluate(cdp, `document.querySelector(${JSON.stringify(sourcePane)}).dataset.displayNode`);
     const selectedLines = () => evaluate(cdp, `Array.from(document.querySelectorAll(${JSON.stringify(`${sourceViewer} [data-selected=true]`)})).map(node => +node.dataset.line)`);
-    assert.deepEqual(await selectedLines(), [12, 82]);
-    assert.equal(await evaluate(cdp, `document.querySelectorAll(${JSON.stringify(`${sourcePane} [data-source-compaction-range]`)}).length`), 2);
+    assert.deepEqual(await selectedLines(), [12, detailLine]);
+    assert.equal(await evaluate(cdp, `document.querySelectorAll(${JSON.stringify(`${sourcePane} .source-fold-placeholder`)}).length`), 2);
     assert.equal(await evaluate(cdp, `document.querySelectorAll(${JSON.stringify(`${sourcePane} .source-token[style]`)}).length > 0`), true);
+    const firstFold = `${sourceViewer} .source-fold-placeholder[data-line='12']`;
+    assert.equal(await evaluate(cdp, `document.querySelector(${JSON.stringify(firstFold)}).textContent.includes('// [Lines 12-15 | 4 lines compacted]')`), true);
+    assert.equal(await evaluate(cdp, `Boolean(document.querySelector(${JSON.stringify(`${sourceViewer} .source-code-line[data-line='13']`)}))`), false);
+    assert.equal(await evaluate(cdp, `Boolean(document.querySelector(${JSON.stringify(`${sourcePane} .mapping-source-compaction`)}))`), false);
+    await click(cdp, `${firstFold} .source-call-graph-node`, 24);
+    await waitForSelector(cdp, `${firstFold} .source-call-graph-node-source`);
+    assert.deepEqual(await evaluate(cdp, `Array.from(document.querySelectorAll(${JSON.stringify(`${firstFold} .source-call-graph-node-source-line`)})).map(line => +line.dataset.line)`), [12, 13, 14, 15]);
+    await click(cdp, `${firstFold} .source-call-graph-node`, 24);
+    await waitFor(async () => !await evaluate(cdp, `Boolean(document.querySelector(${JSON.stringify(`${firstFold} .source-call-graph-node-source`)}))`));
+    await click(cdp, `${firstFold} .source-section-fold-toggle`);
+    await waitForSelector(cdp, `${sourceViewer} .source-code-line[data-line='13']`);
+    await click(cdp, `${sourceViewer} [data-line='12'] .source-fold-toggle`);
+    await waitForSelector(cdp, firstFold);
+    await captureScreenshot(cdp, { output: process.env.SOURCE_COMPACTION_SCREENSHOT ?? path.join(temp, 'source-compaction.png') });
+    // Middle-button pan over the source itself must move the canvas and preserve its source view.
+    const sourcePanState = () => evaluate(cdp, `(() => {
+      const viewer = document.querySelector(${JSON.stringify(sourceViewer)});
+      return { transform: document.querySelector(${JSON.stringify(`${active} .diagram-canvas__surface`)}).style.transform,
+        top: viewer?.scrollTop ?? null, left: viewer?.scrollLeft ?? null };
+    })()`);
+    const sourcePoint = await evaluate(cdp, `(() => {
+      const rect = document.querySelector(${JSON.stringify(sourceViewer)}).getBoundingClientRect();
+      return { x: rect.left + 100, y: rect.top + 60 };
+    })()`);
+    assert.deepEqual(await selectedLines(), [12, detailLine]);
+    await cdp.send('Input.dispatchMouseEvent', { type: 'mouseWheel', ...sourcePoint, deltaX: 300, deltaY: 0 });
+    await waitFor(async () => (await sourcePanState()).left > 0, { message: 'Offscreen wide lines must retain horizontal scrolling' });
     await click(cdp, `${sourcePane} [aria-label='Next mapped range']`);
-    await waitFor(async () => await evaluate(cdp, `document.querySelector(${JSON.stringify(`${sourcePane} .mapping-source-toolbar`)}).textContent.includes('82')`));
+    await waitFor(async () => await evaluate(cdp, `document.querySelector(${JSON.stringify(`${sourcePane} .mapping-source-toolbar`)}).textContent.includes('${detailLine}')`));
+    await waitFor(async () => await evaluate(cdp, `(() => {
+      const viewer = document.querySelector(${JSON.stringify(sourceViewer)});
+      const bounds = viewer.getBoundingClientRect();
+      const target = viewer.querySelector('[data-line="${detailLine}"]').getBoundingClientRect();
+      return target.top >= bounds.top && target.bottom <= bounds.bottom && viewer.scrollLeft === 0;
+    })()`), { message: 'Mapped range navigation must reveal a distant deferred source block' });
     const overlays = `${sourcePane} .mapping-source-toolbar button:first-child`;
     await click(cdp, overlays);
     await waitFor(async () => await evaluate(cdp, `document.querySelector(${JSON.stringify(overlays)}).getAttribute('aria-pressed') === 'false'`));
+    assert.equal(await evaluate(cdp, `document.querySelectorAll(${JSON.stringify(`${sourcePane} .source-fold-placeholder`)}).length`), 0);
+    assert.deepEqual(await selectedLines(), mappedLines);
     const scroll = () => evaluate(cdp, `document.querySelector(${JSON.stringify(sourceViewer)})?.scrollTop`);
     await waitFor(async () => (await scroll()) > 500);
     const savedScroll = await scroll();
@@ -311,12 +352,24 @@ try {
     assert.equal(savedSource.content.rangeIndex, 1);
     await reload(cdp);
     await waitForSelector(cdp, `${sourceViewer}[data-highlighted=true]`);
-    assert.deepEqual(await selectedLines(), [12, 82]);
+    assert.deepEqual(await selectedLines(), mappedLines);
     assert.equal(await evaluate(cdp, `document.querySelector(${JSON.stringify(overlays)}).getAttribute('aria-pressed')`), 'false');
     await waitFor(async () => Math.abs((await scroll()) - savedScroll) < 1);
     await click(cdp, `${sourcePane} [aria-label='Projected source file']`);
     await key(cdp, 'ArrowDown', 'ArrowDown'); await key(cdp, 'Enter', 'Enter');
     await waitForSelector(cdp, `${sourcePane} [data-projected-source='src/gamma.ts'] [data-highlighted=true]`);
+    await click(cdp, overlays);
+    await click(cdp, `${sourcePane} [aria-label='Next mapped range']`);
+    const nestedFold = `${sourceViewer} .source-fold-placeholder[data-line='12']`;
+    await waitForSelector(cdp, nestedFold);
+    assert.equal(await evaluate(cdp, `document.querySelectorAll(${JSON.stringify(`${sourceViewer} .source-fold-placeholder`)}).length`), 1);
+    await waitFor(async () => await evaluate(cdp, `(() => {
+      const viewer = document.querySelector(${JSON.stringify(sourceViewer)}).getBoundingClientRect();
+      const fold = document.querySelector(${JSON.stringify(nestedFold)}).getBoundingClientRect();
+      return fold.top >= viewer.top && fold.bottom <= viewer.bottom;
+    })()`), { message: 'Navigation to a nested range must reveal its enclosing fold' });
+    await click(cdp, `${nestedFold} .source-call-graph-node[data-graph-line='2']`, 24);
+    assert.deepEqual(await evaluate(cdp, `Array.from(document.querySelectorAll(${JSON.stringify(`${nestedFold} .source-call-graph-node-source-line`)})).map(line => +line.dataset.line)`), [14, 15, 16]);
     await click(cdp, `${sourcePane} [aria-label='Close pane']`);
     await waitForSelector(cdp, `${panel} [data-projected-compactions]`);
     // Re-fetch changed and missing files without inventing current range highlights.
@@ -325,7 +378,7 @@ try {
     await waitForSelector(cdp, `${sourcePane} .mapping-source-message[role=status]`);
     await waitFor(async () => await evaluate(cdp, `document.querySelector(${JSON.stringify(sourcePane)}).textContent.includes('has changed')`));
     assert.deepEqual(await selectedLines(), []);
-    assert.equal(await evaluate(cdp, `document.querySelectorAll(${JSON.stringify(`${sourcePane} [data-source-compaction-range]`)}).length`), 0);
+    assert.equal(await evaluate(cdp, `document.querySelectorAll(${JSON.stringify(`${sourcePane} .source-fold-placeholder`)}).length`), 0);
     await click(cdp, `${sourcePane} [aria-label='Close pane']`);
     await rm(path.join(temp, 'src/shared.ts'));
     await click(cdp, `${panel} [aria-label='Open source src/shared.ts']`);
@@ -333,7 +386,7 @@ try {
     await writeFile(path.join(temp, 'src/shared.ts'), sourceText);
     await click(cdp, `${sourcePane} [role=alert] button`);
     await waitForSelector(cdp, `${sourceViewer}[data-highlighted=true]`);
-    assert.deepEqual(await selectedLines(), [12, 82]);
+    assert.deepEqual(await selectedLines(), [12, detailLine]);
     await click(cdp, `${sourcePane} [aria-label='Back to compactions']`);
     await click(cdp, `${panel} [aria-label='Back to call tree']`);
     await closeTree(cdp);
@@ -510,7 +563,7 @@ try {
     assert.equal(saved.revisions[targetRevision.id].ascii, targetRevision.ascii);
     assert.deepEqual(errors, []);
   });
-  console.log("projection browser check passed: retained source panes, exact source highlights, overlays, file switching, stale/missing source and retry, source view save/reload, Ctrl-selection, retained groups, Escape, stacked/chained panes, edge connectors, recursive collapse, saved form drafts/viewport, workspace reload, and revision validation");
+  console.log("projection browser check passed: retained source panes, exact source highlights, Studio compaction folds and node expansion, file switching, stale/missing source and retry, source view save/reload, Ctrl-selection, retained groups, Escape, stacked/chained panes, edge connectors, recursive collapse, saved form drafts/viewport, workspace reload, and revision validation");
 } finally {
   if (server?.exitCode === null) {
     server.kill("SIGTERM");

@@ -205,7 +205,7 @@ export function SourceCodeView(props: {
   const sourceIdentity = `${props.preview.path}:${props.preview.startLine}:${source}`;
   const sections = useMemo(
     () => collapsedSections(props.range, props.preview),
-    [props.preview, props.range]
+    [props.preview, props.range.compactedSource]
   );
   const sectionsByStart = useMemo(
     () => new Map(sections.map((section) => [section.startLine, section])),
@@ -242,13 +242,17 @@ export function SourceCodeView(props: {
       }
     }
     viewer.scrollLeft = 0;
-    const target = viewer.querySelector<HTMLElement>(
-      `[data-line="${props.targetLine ?? props.range.startLine}"]`
-    );
-    viewer.scrollTop = target
-      ? Math.max(0, target.offsetTop - viewer.clientHeight * 0.2)
-      : 0;
-  }, [props.range.startLine, props.revealRequestId, props.targetLine, sourceIdentity]);
+    const line = props.targetLine ?? props.range.startLine;
+    const foldedSection = props.compacted && props.presentation.sourceCompaction
+      ? sections.find(section => line >= section.startLine && line <= section.endLine) : undefined;
+    const target = viewer.querySelector<HTMLElement>(`[data-line="${line}"]`)
+      ?? (foldedSection ? viewer.querySelector<HTMLElement>(`[data-line="${foldedSection.startLine}"]`) : null);
+    let top = target?.offsetTop ?? 0;
+    for (let parent = target?.offsetParent as HTMLElement | null; parent && parent !== viewer; parent = parent.offsetParent as HTMLElement | null) {
+      top += parent.offsetTop;
+    }
+    viewer.scrollTop = target ? Math.max(0, top - viewer.clientHeight * 0.2) : 0;
+  }, [props.range.startLine, props.revealRequestId, props.targetLine, props.compacted, props.presentation.sourceCompaction, sections, sourceIdentity]);
 
   const annotationsByLine = new Map<number, ReactNode[]>();
   for (const annotation of props.lineAnnotations ?? []) {
@@ -279,6 +283,7 @@ export function SourceCodeView(props: {
         <div
           className="source-fold-placeholder"
           data-line={section.startLine}
+          data-selected={selected ? "true" : undefined}
           key={`fold:${key}`}
         >
           <span className="source-line-gutter">
