@@ -10,6 +10,7 @@
     "build": "tsc --noEmit && vite build",
     "check:browser": "node browser-check.mjs",
     "check:canvas": "node browser-diagram-canvas-check.mjs",
+    "check:source-performance": "npm run build && node browser-source-pane-performance.mjs",
     "check:mapping": "node browser-mapping-poc-check.mjs",
     "check:line-grid": "node browser-line-grid-check.mjs",
     "check:local-chat": "node browser-local-chat-check.mjs",

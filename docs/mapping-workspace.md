@@ -74,6 +74,35 @@ entries. Source rows are memoized independently of viewport callbacks, so scroll
 panning cannot restart the full-file block measurements. The current renderer retains native
 browser search and selection with measured offscreen chunks; it does not virtualize DOM rows.
 
+Run `npm run check:source-performance` for the production-browser regression and benchmark.
+The checked-in `tests/fixtures/source-pane-performance/workspace.json` opens five independent
+3,000-line viewers in a visible 3-by-2 arrangement. The test materializes that snapshot and its
+deterministic source in a disposable project, then uses actual UI controls to exercise one
+through five expanded panes. Three trials per count measure 40 middle-button pan movements
+and 40 wheel inputs directed at pane 1. Pan gestures return to their starting transform;
+scroll gestures leave other panes unchanged. Measurements exclude file loading/tokenization,
+but include the first gesture after expanding each additional pane.
+
+Reports record overlapping CDP main-thread/script/layout/style durations, elapsed time,
+requestAnimationFrame interval p95/max, intervals above 25 ms, and observed long tasks.
+Input targets a 60 Hz cadence but awaits each CDP dispatch, so transport/browser backpressure
+can extend the gesture. Frame intervals describe main-thread scheduling, not compositor
+dropped-frame counts or input-to-display latency. Numeric timings are observations rather
+than machine-dependent pass/fail limits. Regression assertions require zero full-source
+block-size reads and zero source-content DOM mutations during each gesture.
+
+The same integration test checks independent horizontal/vertical positions, immediate Save,
+collapsed-pane and inactive-document persistence, Export without a preceding Save, Restore,
+and reload. It writes
+the metrics, a screenshot, and the final five-pane saved workspace under
+`artifacts/source-pane-performance/`. Set `SOURCE_PERF_REPORT` to choose the JSON report path.
+The canonical fixture uses a placeholder project ID which the runner rebinds to its isolated
+project; generated saved snapshots belong to that disposable project. Regenerate the fixture
+with `node scripts/create-source-pane-performance-fixture.mjs` when its data/layout changes.
+`SOURCE_PERF_BASELINE=1` disables only the new measurement/mutation assertions for profiling
+an older build; persistence and real interaction checks remain enabled.
+`SOURCE_PERF_TRIALS=0` runs only the persistence checks; the benchmark defaults to three
+trials per gesture and pane count.
 
 Export downloads the same snapshot as JSON. Import validates it and replaces the current
 workspace; Save workspace makes an imported workspace the default on reload. Import requires
