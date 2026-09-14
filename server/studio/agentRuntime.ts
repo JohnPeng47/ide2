@@ -30,6 +30,8 @@ import { PiAgentRuntime, progressFor } from "../core/agentRuntime";
 import { corpusProvider } from "../core/corpus";
 import { diagramMappingValidationError } from "../core/diagramMapping";
 import { createValidatedSubmission } from "../core/validatedSubmission";
+import { runAgentWorkflow } from "../core/agentWorkflow";
+import { createGenerationWorkflow } from "./generationWorkflow";
 
 export interface EntityCollectionRequest {
   sourceRoot: string;
@@ -73,44 +75,6 @@ export interface ArtifactEntityMappingRequest {
   codeEntityIds: string[];
   codeEntities: CodeEntityRecord[];
   domainProfileId?: BuiltInDomainProfileId;
-}
-
-export async function runGenerationPromptTurns(input: {
-  initialPrompt: string;
-  referencePrompt?: string;
-  mappingPrompt(artifact: GeneratedArtifactDraft): string;
-  prompt(text: string): Promise<void>;
-  takeSubmission(): GeneratedArtifactDraft | undefined;
-  artifactLabel: string;
-  onReferenceTurn?(): void;
-  onMappingTurn?(artifact: GeneratedArtifactDraft): void;
-}): Promise<GeneratedArtifactDraft> {
-  await input.prompt(input.initialPrompt);
-  const initialSubmission = input.takeSubmission();
-  if (!initialSubmission) {
-    throw new Error(`${input.artifactLabel} agent finished without submitting an artifact`);
-  }
-  let finalArtifact = initialSubmission;
-  if (input.referencePrompt) {
-    input.onReferenceTurn?.();
-    await input.prompt(input.referencePrompt);
-    const referenceSubmission = input.takeSubmission();
-    if (!referenceSubmission) {
-      throw new Error(`${input.artifactLabel} agent finished the reference turn without submitting an artifact`);
-    }
-    finalArtifact = referenceSubmission;
-  }
-
-  input.onMappingTurn?.(finalArtifact);
-  await input.prompt(input.mappingPrompt(finalArtifact));
-  const mappingSubmission = input.takeSubmission();
-  if (!mappingSubmission) {
-    throw new Error(`${input.artifactLabel} agent finished the mapping turn without submitting an artifact`);
-  }
-  if (!mappingSubmission.mappings) {
-    throw new Error(`${input.artifactLabel} agent submitted no mappings in the mapping turn`);
-  }
-  return mappingSubmission;
 }
 
 const artifactSubmissionParameters = (entityNoun = "CodeEntity") => Type.Object({
@@ -518,7 +482,7 @@ export class PiDiagramAgentRuntime extends PiAgentRuntime implements DiagramAgen
       if (progress) onProgress?.(progress);
     });
     try {
-      return await runGenerationPromptTurns({
+      const workflow = createGenerationWorkflow({
         initialPrompt: `${request.promptConfig.contextPrompt.rendered}
 
 Parallel generation slot: ${request.slot} of ${request.total}.
@@ -538,8 +502,6 @@ Referenced DiagramComponent ids: ${request.allowedDiagramComponentIds.join(", ")
           aliases: request.allowedCodeEntityAliases,
           domainProfileId: request.promptConfig.domainProfileId
         }),
-        prompt: (text) => session.prompt(text),
-        takeSubmission: () => state.submissions.shift(),
         artifactLabel,
         onReferenceTurn: () => onProgress?.({
           status: "generating",
@@ -556,6 +518,11 @@ Referenced DiagramComponent ids: ${request.allowedDiagramComponentIds.join(", ")
             sessionId: session.sessionId
           });
         }
+      });
+      return await runAgentWorkflow(workflow, async ({ prompt }) => {
+        state.submissions.length = 0;
+        await session.prompt(prompt);
+        return state.submissions.shift();
       });
     } finally {
       unsubscribe();

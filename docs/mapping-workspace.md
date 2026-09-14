@@ -1,6 +1,6 @@
 # Mapping workspace state
 
-Mapping uses Ctrl + left-drag to select a rectangle. Plain dragging pans the canvas.
+Mapping uses Ctrl + left-drag to select a rectangle, including text or whitespace without code entities. Plain dragging pans the canvas. Unmapped regions support Copy and Ask; source-dependent generation and projection actions still require mappings.
 A selection without a follow-up is temporary: Escape cancels it. Opening a projection,
 prompt, or local question retains the selection. Its source rectangle and effects remain
 until explicitly removed. More selections can be made without replacing retained groups.
@@ -155,7 +155,14 @@ original projection metadata, not a repository index. File navigation retains no
 and ownership. Workspace v3 persists the selected file and current scroll position. Explorer
 expansion and Back/Forward history are local to the mounted pane and are not serialized.
 
-For TS/JS, **Ctrl/Cmd+click** a symbol, or place the text selection/caret on it and press **F12**.
+LSP is **off by default**. Start explicitly with `npm run dev -- --lsp` (or
+`npm run preview -- --lsp` after building). `npm start -- --lsp` is also supported.
+Without the flag, the server does not construct a language service, rejects definition
+requests with `503 LSP_DISABLED`, and hides definition gestures/hints in source panes.
+Repository browsing, highlighting, folding and file history still work. No workspace or
+environment variable can enable LSP; the launcher passes a process-local opt-in.
+
+With LSP enabled, for TS/JS, **Ctrl/Cmd+click** a symbol, or place the text selection/caret on it and press **F12**.
 A single definition opens in the same pane, expands an enclosing compaction if needed, and
 selects the target text. Multiple results offer a destination picker. Back/Forward restores
 previous files and scroll offsets. Reload source refreshes the current file after changes on disk.
@@ -165,7 +172,7 @@ The project API exposes `GET /api/core/project/files?projectId=...&path=...` for
 and `POST /api/core/project/definitions` for `{ projectId, path, position, sourceSha256 }`.
 Positions are zero-based UTF-16. Both APIs resolve the server-owned project corpus root.
 Definition requests verify the displayed source hash against disk. `ProjectLanguageService`
-starts one shared `typescript-language-server`/`tsserver` session per checkout on first use,
+starts one shared `typescript-language-server`/`tsserver` session per checkout on first definition lookup when enabled,
 with the app's installed TypeScript version and the checkout's project configuration. It uses
 semantic analysis (syntax-only startup results can stop at import aliases), supports cancellation
 and bounded requests, closes read-only documents after lookup, and stops idle sessions after five
@@ -178,9 +185,22 @@ inside the explorer; shared directory request caching is bounded to 256 entries.
 memoized source rows and offscreen chunks continue to handle rendering.
 
 Run `npm run check:source-navigation` for a production browser check using the disposable
-five-pane fixture and a real language server. It checks lazy directories, unmapped files,
+five-pane fixture and an explicitly enabled real language server. Performance checks start with LSP disabled. It checks lazy directories, unmapped files,
 Ctrl+click/F12 definitions, UTF-16 positions, folded targets, history, and save/reload. Server tests
 also cover multiple/no definitions, outside-root targets, stale source, and path restrictions.
 Run `SOURCE_PERF_EXPLORERS=1 npm run check:source-performance` to benchmark 1–5 panes with
 their repository explorers open. This variant shifts selection controls left so they do not
 cover the first pane's explorer button; source pane positions and sizes remain unchanged.
+
+`server/core/lspStartup.test.ts` launches the actual CLI in both modes. It checks that
+inherited environment flags cannot enable LSP, disabled definition requests stay blocked,
+enabled sessions start only on the first lookup and are shared, and stopping the server
+terminates its language-server processes (process checks use `/proc` on Linux).
+
+Run `npm run check:unmapped-selection` to check unmapped text and whitespace selection, Copy/Ask, cancellation, and conversation save/reload in a disposable browser fixture. Server validation cases live in `server/mapping/localChat.test.ts`.
+
+Right-click the diagram canvas and choose **Paste sub-diagram here** to insert clipboard ASCII at that grid cell, including on blank canvas space. The click location is captured before reading the clipboard and accounts for pan/zoom; positions before the grid origin clamp to zero. Paste inserts into the root container through the same `insertGridDiagram` / `layoutScene` path as generation: the new box stays anchored and overlapping siblings move right. It creates no source mappings. Undo/redo and diagram/workspace saves include the insertion.
+
+Clipboard paste preserves indentation, normalizes CRLF/CR newlines, and accepts one enclosing Markdown code fence. Empty/whitespace-only content, tabs, non-ASCII characters, and more than 20,000 characters are rejected. Clipboard failures or invalid text open a manual paste field. Escape, outside click, pan/zoom, and switching diagrams dismiss the menu and cancel pending clipboard reads. Right-click inside code panes and editable fields keeps native behavior.
+
+Run `npm run check:canvas-paste` for the disposable production-browser regression (placement after pan/zoom, collisions, undo/redo, clipboard fallback, stale reads, and save/reload). Parsing and atomic insertion tests are in `src/mapping/pasteDiagram.test.ts`.

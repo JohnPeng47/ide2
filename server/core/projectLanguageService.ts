@@ -112,9 +112,12 @@ class LanguageSession {
 /** One lazy TS/JS session per checkout, shared by every pane. */
 export class ProjectLanguageService {
   private sessions = new Map<string, LanguageSession>();
+  private disposed = false;
   private readonly exit = () => this.dispose();
   constructor() { process.once('exit', this.exit); }
   async definitions(binding: CorpusBinding, file: string, position: SourcePosition, sourceSha256: string, signal?: AbortSignal): Promise<SourceDefinitions> {
+    if (this.disposed) throw new Error('Language service is stopped');
+    signal?.throwIfAborted();
     if (!isRepositoryFilePath(file) || !supportsDefinitions(file)) throw new Error('Definitions are supported for TypeScript and JavaScript files');
     if (!position || !Number.isInteger(position.line) || position.line < 0 || !Number.isInteger(position.character) || position.character < 0) throw new Error('Invalid source position');
     const text = await corpusProvider(binding).readDocumentText(binding, file);
@@ -122,6 +125,8 @@ export class ProjectLanguageService {
     const line = text.split(/\r?\n/)[position.line];
     if (line === undefined || position.character > line.length) throw new Error('Source position is outside the file');
     const root = await realpath(binding.root);
+    if (this.disposed) throw new Error('Language service is stopped');
+    signal?.throwIfAborted();
     let session = this.sessions.get(root);
     if (!session || session.dead) { session = new LanguageSession(root); this.sessions.set(root, session); }
     const result = await session.lookup(file, text, position, signal);
@@ -140,5 +145,5 @@ export class ProjectLanguageService {
     }
     return { locations, outsideRoot };
   }
-  dispose() { for (const session of this.sessions.values()) session.dispose(); this.sessions.clear(); process.removeListener('exit', this.exit); }
+  dispose() { this.disposed = true; for (const session of this.sessions.values()) session.dispose(); this.sessions.clear(); process.removeListener('exit', this.exit); }
 }

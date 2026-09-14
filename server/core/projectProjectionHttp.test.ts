@@ -96,7 +96,7 @@ describe("Project projection HTTP API", () => {
     const response = await read("source.ts");
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ path: "source.ts", startLine: 1, lines: source.split(/\r?\n/),
-      sourceSha256: createHash("sha256").update(source).digest("hex") });
+      sourceSha256: createHash("sha256").update(source).digest("hex"), lspEnabled: false });
     expect((await read("source.ts", "other-project")).status).toBe(409);
     for (const file of ["../source.ts", path.join(root, "source.ts"), "missing.ts"]) {
       expect((await read(file)).ok).toBe(false);

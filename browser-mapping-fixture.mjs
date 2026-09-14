@@ -4,9 +4,9 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 const packageRoot = path.dirname(new URL(import.meta.url).pathname);
 /** Seed the old overview as a real project diagram for interaction regression tests. */
-export async function seedMappingFixture(root) {
+export async function seedMappingFixture(root, diagram) {
   execFileSync("git", ["init", "-q", root]);
-  const { ascii, nodes } = JSON.parse(execFileSync(process.execPath, [path.join(packageRoot, "node_modules/tsx/dist/cli.mjs"), "-e",
+  const { ascii, nodes } = diagram ?? JSON.parse(execFileSync(process.execPath, [path.join(packageRoot, "node_modules/tsx/dist/cli.mjs"), "-e",
     'import {MAPPING_POC_GRAPH_A as ascii,MAPPING_POC_A_NODES as nodes} from "./src/mapping/mappingPoc.ts"; console.log(JSON.stringify({ascii,nodes}));'
   ], { cwd: packageRoot, encoding: "utf8" }));
   const projectId = `project-${createHash("sha256").update(path.join(root, ".git")).digest("hex").slice(0, 12)}`;

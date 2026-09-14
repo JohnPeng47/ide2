@@ -1,0 +1,511 @@
+{
+  "nodes": [
+    {
+      "id": 0,
+      "kind": "tree",
+      "text": "contents: GridContent [contentId -> content]",
+      "spans": [
+        {
+          "line": 2,
+          "column": 11,
+          "text": "contents: GridContent [contentId -> content]",
+          "branch_column": 7,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 0,
+          "cleaned_column": 11,
+          "cleaned_branch_column": 7,
+          "guide_columns": [
+            3
+          ]
+        }
+      ],
+      "tree": {
+        "nodes": [
+          {
+            "id": 0,
+            "label": "contents: GridContent [contentId -> content]",
+            "parent_id": null,
+            "depth": 0,
+            "line": 2,
+            "column": 11,
+            "end_line": 2,
+            "branch_column": 7,
+            "children": [],
+            "raw_lines": [
+              "      `-- contents: GridContent [contentId -> content]"
+            ],
+            "decorations": []
+          }
+        ],
+        "roots": [
+          0
+        ],
+        "diagnostics": [],
+        "lines": [
+          {
+            "line": 2,
+            "kind": "node",
+            "node_id": 0,
+            "raw": "      `-- contents: GridContent [contentId -> content]"
+          }
+        ]
+      }
+    },
+    {
+      "id": 1,
+      "kind": "tree",
+      "text": "GridContent",
+      "spans": [
+        {
+          "line": 2,
+          "column": 62,
+          "text": "GridContent",
+          "branch_column": null,
+          "marker": "",
+          "node_id": 1,
+          "tree_node_id": 0,
+          "cleaned_column": 63,
+          "cleaned_branch_column": null,
+          "guide_columns": []
+        },
+        {
+          "line": 3,
+          "column": 67,
+          "text": "id",
+          "branch_column": 63,
+          "marker": "|--",
+          "node_id": 1,
+          "tree_node_id": 1,
+          "cleaned_column": 67,
+          "cleaned_branch_column": 63,
+          "guide_columns": [
+            3
+          ]
+        },
+        {
+          "line": 4,
+          "column": 66,
+          "text": "ascii",
+          "branch_column": 62,
+          "marker": "|--",
+          "node_id": 1,
+          "tree_node_id": 2,
+          "cleaned_column": 67,
+          "cleaned_branch_column": 63,
+          "guide_columns": [
+            3
+          ]
+        },
+        {
+          "line": 5,
+          "column": 66,
+          "text": "revision",
+          "branch_column": 62,
+          "marker": "|--",
+          "node_id": 1,
+          "tree_node_id": 3,
+          "cleaned_column": 67,
+          "cleaned_branch_column": 63,
+          "guide_columns": [
+            3
+          ]
+        },
+        {
+          "line": 6,
+          "column": 66,
+          "text": "mappin",
+          "branch_column": 62,
+          "marker": "`--",
+          "node_id": 1,
+          "tree_node_id": 4,
+          "cleaned_column": 67,
+          "cleaned_branch_column": 63,
+          "guide_columns": [
+            3
+          ]
+        }
+      ],
+      "tree": {
+        "nodes": [
+          {
+            "id": 0,
+            "label": "GridContent",
+            "parent_id": null,
+            "depth": 0,
+            "line": 2,
+            "column": 63,
+            "end_line": 2,
+            "branch_column": 62,
+            "children": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "raw_lines": [
+              "                                                              GridContent"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 1,
+            "label": "id",
+            "parent_id": 0,
+            "depth": 1,
+            "line": 3,
+            "column": 67,
+            "end_line": 3,
+            "branch_column": 63,
+            "children": [],
+            "raw_lines": [
+              "                                                              |-- id"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 2,
+            "label": "ascii",
+            "parent_id": 0,
+            "depth": 1,
+            "line": 4,
+            "column": 67,
+            "end_line": 4,
+            "branch_column": 63,
+            "children": [],
+            "raw_lines": [
+              "                                                              |-- ascii"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 3,
+            "label": "revision",
+            "parent_id": 0,
+            "depth": 1,
+            "line": 5,
+            "column": 67,
+            "end_line": 5,
+            "branch_column": 63,
+            "children": [],
+            "raw_lines": [
+              "                                                              |-- revision"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 4,
+            "label": "mappin",
+            "parent_id": 0,
+            "depth": 1,
+            "line": 6,
+            "column": 67,
+            "end_line": 6,
+            "branch_column": 63,
+            "children": [],
+            "raw_lines": [
+              "                                                              `-- mappin"
+            ],
+            "decorations": []
+          }
+        ],
+        "roots": [
+          0
+        ],
+        "diagnostics": [],
+        "lines": [
+          {
+            "line": 2,
+            "kind": "node",
+            "node_id": 0,
+            "raw": "                                                              GridContent"
+          },
+          {
+            "line": 3,
+            "kind": "node",
+            "node_id": 1,
+            "raw": "                                                              |-- id"
+          },
+          {
+            "line": 4,
+            "kind": "node",
+            "node_id": 2,
+            "raw": "                                                              |-- ascii"
+          },
+          {
+            "line": 5,
+            "kind": "node",
+            "node_id": 3,
+            "raw": "                                                              |-- revision"
+          },
+          {
+            "line": 6,
+            "kind": "node",
+            "node_id": 4,
+            "raw": "                                                              `-- mappin"
+          }
+        ]
+      }
+    }
+  ],
+  "references": [
+    {
+      "source": {
+        "node_id": 0,
+        "tree_node_id": null
+      },
+      "target": {
+        "node_id": 1,
+        "tree_node_id": null
+      },
+      "arrow_line": 3,
+      "arrow_column": 61,
+      "wire_cells": [
+        [
+          3,
+          11
+        ],
+        [
+          3,
+          12
+        ],
+        [
+          3,
+          13
+        ],
+        [
+          3,
+          14
+        ],
+        [
+          3,
+          15
+        ],
+        [
+          3,
+          16
+        ],
+        [
+          3,
+          17
+        ],
+        [
+          3,
+          18
+        ],
+        [
+          3,
+          19
+        ],
+        [
+          3,
+          20
+        ],
+        [
+          3,
+          21
+        ],
+        [
+          3,
+          22
+        ],
+        [
+          3,
+          23
+        ],
+        [
+          3,
+          24
+        ],
+        [
+          3,
+          25
+        ],
+        [
+          3,
+          26
+        ],
+        [
+          3,
+          27
+        ],
+        [
+          3,
+          28
+        ],
+        [
+          3,
+          29
+        ],
+        [
+          3,
+          30
+        ],
+        [
+          3,
+          31
+        ],
+        [
+          3,
+          32
+        ],
+        [
+          3,
+          33
+        ],
+        [
+          3,
+          34
+        ],
+        [
+          3,
+          35
+        ],
+        [
+          3,
+          36
+        ],
+        [
+          3,
+          37
+        ],
+        [
+          3,
+          38
+        ],
+        [
+          3,
+          39
+        ],
+        [
+          3,
+          40
+        ],
+        [
+          3,
+          41
+        ],
+        [
+          3,
+          42
+        ],
+        [
+          3,
+          43
+        ],
+        [
+          3,
+          44
+        ],
+        [
+          3,
+          45
+        ],
+        [
+          3,
+          46
+        ],
+        [
+          3,
+          47
+        ],
+        [
+          3,
+          48
+        ],
+        [
+          3,
+          49
+        ],
+        [
+          3,
+          50
+        ],
+        [
+          3,
+          51
+        ],
+        [
+          3,
+          52
+        ],
+        [
+          3,
+          53
+        ],
+        [
+          3,
+          54
+        ],
+        [
+          3,
+          55
+        ],
+        [
+          3,
+          56
+        ],
+        [
+          3,
+          57
+        ],
+        [
+          3,
+          58
+        ],
+        [
+          3,
+          59
+        ],
+        [
+          3,
+          60
+        ],
+        [
+          3,
+          61
+        ]
+      ]
+    }
+  ],
+  "diagnostics": [
+    {
+      "line": 1,
+      "code": "unresolved_reference",
+      "message": "Arrow at column 21 has 0 source(s) and 1 target candidate(s).",
+      "severity": "warning"
+    }
+  ],
+  "repairs": [
+    {
+      "line": 2,
+      "column": 62,
+      "cleaned_column": 63,
+      "text": "GridContent",
+      "kind": "tree_alignment"
+    },
+    {
+      "line": 4,
+      "column": 62,
+      "cleaned_column": 63,
+      "text": "|-- ascii",
+      "kind": "tree_alignment"
+    },
+    {
+      "line": 5,
+      "column": 62,
+      "cleaned_column": 63,
+      "text": "|-- revision",
+      "kind": "tree_alignment"
+    },
+    {
+      "line": 6,
+      "column": 62,
+      "cleaned_column": 63,
+      "text": "`-- mappin",
+      "kind": "tree_alignment"
+    }
+  ],
+  "original_ascii": "                    v\n  |   `-- contents: GridContent [contentId -> content]       GridContent\n  |       `-------------------------------------------------> |-- id\n  |                                                          |-- ascii\n  |                                                          |-- revision\n  |                                                          `-- mappin\n",
+  "cleaned_ascii": "                    v\n  |   `-- contents: GridContent [contentId -> content]        GridContent\n  |       `-------------------------------------------------> |-- id\n  |                                                           |-- ascii\n  |                                                           |-- revision\n  |                                                           `-- mappin"
+}

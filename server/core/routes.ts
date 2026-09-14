@@ -53,10 +53,10 @@ export function createCoreRoutes({ application, languageService }: {
     }
     if (url.pathname === '/api/core/project/definitions') {
       if (request.method !== 'POST') return sendJson(response, 405, { error: 'method not allowed' });
+      if (!languageService) return sendJson(response, 503, { code: 'LSP_DISABLED', error: 'Definition lookup is disabled. Start the server with --lsp to enable it.' });
       const body = await readBody(request) as any;
       const project = await application.store.loadProject();
       if (!project || body.projectId !== project.id) return sendJson(response, 409, { error: 'Source belongs to another project' });
-      if (!languageService) return sendJson(response, 503, { error: 'Language service unavailable' });
       const controller = new AbortController();
       const abort = () => { if (!response.writableEnded) controller.abort(); };
       response.once('close', abort);
@@ -78,7 +78,7 @@ export function createCoreRoutes({ application, languageService }: {
       const source = await corpusProvider(project.corpus).readDocumentText(project.corpus, sourcePath);
       if (source.includes('\0')) return sendJson(response, 415, { error: 'This is a binary file. The source pane displays text files.' });
       return sendJson(response, 200, { path: sourcePath, startLine: 1, lines: source.split(/\r?\n/),
-        sourceSha256: createHash("sha256").update(source).digest("hex") });
+        sourceSha256: createHash("sha256").update(source).digest("hex"), lspEnabled: Boolean(languageService) });
     }
 
     if (url.pathname === "/api/core/project/projections") {

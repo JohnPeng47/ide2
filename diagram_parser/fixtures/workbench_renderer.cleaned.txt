@@ -1,0 +1,80 @@
+  Workbench renderer
+  |
+  |-- EditorPart
+  |   `-- SerializableGrid
+  |       |-- SplitView / GridView
+  |       |   `-- resize
+  |       |       |-- redistribute space among neighboring panes
+  |       |       `-- propagate dimensions -----------------------------+
+  |       |                                                             |
+  |       `-- EditorGroupView [one per group]                           |
+  |           |-- layout(width, height, top, left) <--------------------+
+  |           |   |-- lay out title / tabs
+  |           |   `-- EditorPanes.layout
+  |           |       `-- active EditorPane.layout
+  |           |           `-- editor dimensions change
+  |           |               |-- viewport changes
+  |           |               `-- wrapping may change ------------+
+  |           |                                                   |
+  |           `-- EditorPanes                                     |
+  |               `-- active text editor                          |
+  |                   `-- CodeEditorWidget                        |
+  |                       |                                       |
+  |                       |-- ITextModel -------------------------|----------+
+  |                       |                                       |          |
+  |                       |-- ViewModel [per editor] <------------+          |
+  |                       |   |-- view configuration                         |
+  |                       |   |-- model-to-view line mapping                 |
+  |                       |   `-- viewport / selections                      |
+  |                       |                                                  |
+  |                       `-- View                                           |
+  |                           |-- scrolling                                  |
+  |                           |   `-- visible line range changes             |
+  |                           |                                              |
+  |                           |-- changed view parts / lines                 |
+  |                           |   `-- _scheduleRender                        |
+  |                           |       `-- pending frame?                     |
+  |                           |           |-- yes: reuse scheduled work      |
+  |                           |           `-- no: enqueue -----------------+ |
+  |                           |                                            | |
+  |                           `-- rendering callbacks -------------------+ | |
+  |                                                                      | | |
+  |   TextModel [shared by editors displaying this document] <-----------|-|-+
+  |   |                                                                  | |
+  |   |-- typing / edits                                                 | |
+  |   |   `-- piece-tree text buffer                                     | |
+  |   |       |-- original buffers + change buffer                       | |
+  |   |       `-- update pieces instead of rebuilding the whole document | |
+  |   |                                                                  | |
+  |   `-- content changes                                                | |
+  |       `-- attached ViewModels                                        | |
+  |           `-- each editor updates its own view state                 | |
+  |               `-- affected Views schedule rendering                  | |
+  |                                                                      | |
+  `-- EditorRenderingCoordinator <---------------------------------------|-+
+      |                                                                  |
+      |-- queued editor renderings <-------------------------------------+
+      |-- animation-frame runners [by window]
+      |
+      `-- _onRenderScheduled
+          |
+          |-- 1. prepareRenderText [across queued editors]
+          |   |-- disconnected DOM? ----------> skip editor
+          |   |-- nothing dirty? -------------> skip editor
+          |   `-- compute ViewportData
+          |       `-- visible lines + whitespace + selections
+          |
+          |-- 2. renderText [across prepared editors]
+          |   |-- ViewLines / ViewLinesGpu
+          |   `-- collect view parts needing rendering
+          |
+          |-- 3. prepareRender [across prepared editors]
+          |   `-- prepare changed view parts / measure geometry
+          |
+          `-- 4. render [across prepared editors]
+              `-- update changed view parts
+                  |
+                  `-- browser rendering consequences [not code entities]
+                      |-- style recalculation
+                      |-- layout, when geometry is invalidated
+                      `-- paint / compositing, as needed

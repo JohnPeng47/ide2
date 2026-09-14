@@ -196,5 +196,121 @@ original round-2 baseline and its failure report remain unchanged.
 [Round 3 results](round_3/README.md): the new independent evaluation found **5
 passes and 1 failure**. The failure combines overlapping trees with downward
 routing arrows and workflow branches. All six prior-round cases are fixed, but
-this new hybrid-layout case remains unsupported. One contaminated generation was
+this new hybrid-layout case remains unsupported by the tree-only API. One contaminated generation was
 excluded before parsing and replaced; the report preserves the full provenance.
+
+## Graphs containing trees and text
+
+`graph_parser.py` adds `parse_graph(text)` without changing `tree_parser.py` or the
+archived evaluation results. It separates positioned labels and local tree regions,
+calls `parse_tree` for each hierarchy, and then traces reference connectors. A graph
+node is either a local tree or a text region. Consecutive unconnected text lines at
+the same column form a multiline text region. Repeated labels remain distinct
+occurrences; a reference to a printed `Project` does not automatically resolve to
+another tree named `Project` elsewhere in the drawing.
+
+```python
+from diagram_parser.graph_parser import parse_graph
+
+result = parse_graph(source)
+result.nodes          # tree/text regions, original spans, and parsed local trees
+result.references     # source/target region IDs and optional internal tree node IDs
+result.repairs        # original and cleaned columns for each moved item
+result.diagnostics    # unresolved arrows, incomplete routes, blocked repairs
+result.cleaned_ascii  # complete drawing with tree/wire alignment repairs
+result.original_ascii # exact input
+```
+
+```sh
+python3 diagram_parser/graph_parser.py diagram_parser/fixtures/mapping_graph.txt \
+  --cleaned-output /tmp/mapping.cleaned.txt > /tmp/mapping.graph.json
+python3 diagram_parser/graph_parser.py diagram_parser/fixtures/misaligned_neighbor.txt --format ascii
+python3 diagram_parser/graph_parser.py diagram_parser/fixtures/workbench_renderer.txt --nodes
+python3 -m unittest discover -s diagram_parser -p 'test_*.py'
+```
+
+`--nodes` prints a numbered list of every tree item and text node in source order,
+including duplicate label occurrences. Each tree item includes its own subtree,
+with descendants indented beneath it; leaves print just their label. Descendants
+also receive their own numbered entries. It overrides `--format`; multiline
+labels use literal `\n` separators.
+
+The regular graph dialect uses tree joints (`|--`, `+--`, backtick/backslash
+elbows, and common Unicode tree joints) for containment and headed wires (`-->`,
+`<--`, `v`, `^`) for references. A routed wire may turn/join at `+`.
+At `-|-`, the horizontal wire passes across the vertical wire without joining it.
+A head aimed
+at a neighboring tree's branch/guide addresses that tree region; a head aimed at
+a label addresses that tree item. A root item's endpoint is represented by the
+region ID alone. A shared bus connects its sources to each explicit arrowhead;
+separate arrowheads remain separate reference records, even if their endpoints
+match. Shared sources are called out in an informational diagnostic.
+
+Neighboring labels require **at least three spaces**, except where a reference
+connector itself separates them. One or two internal spaces are preserved.
+Balanced brackets, braces, and parentheses protect embedded arrows and spacing,
+so `[id -> record]` remains label text. Bare dashes inside a label remain text.
+An underline is drawing metadata; its heading remains a tree root when directly
+followed by branches. These are explicit input conventions, not a claim that
+arbitrary prose spacing is unambiguous.
+
+Cleanup preserves the layout and spelling, including truncated labels. By
+default it clusters branch drift within one column (`tree_tolerance`) and traces
+vertical drift within two columns per row (`wire_tolerance`). Explicit ancestor
+guides protect narrow nesting from being flattened. Set `tree_tolerance=0` for
+intentional narrow, unguided indentation. Each vertical run is moved together,
+including its corners, with horizontal segments extended as needed. Repairs do
+not cross text or another wire. Tree roots close to their first branch column
+are aligned with that column, and incoming arrows retain a gap before a branch.
+Source span columns remain original; `cleaned_column`/`cleaned_branch_column` and
+local parsed-tree coordinates describe the cleaned placement. Coordinates are
+one-based after tab expansion. Reference wire cells use cleaned coordinates.
+
+Missing heads, missing sources, tied targets, and blocked repairs produce
+diagnostics instead of invented links. `strict=True` raises `GraphParseError`
+for warnings/errors (the partial result is available on the exception);
+`--strict` returns a nonzero exit status while still emitting the result.
+Informational shared-bus diagnostics do not fail strict mode. Unknown framing,
+unmarked workflow sources, and unrestricted connector styles are outside this
+initial graph dialect. This does not establish the original 99.99% reliability
+target on arbitrary LLM drawings.
+
+The supplied examples are saved in `fixtures/`, alongside their cleaned output
+and parsed JSON. `mapping_graph.txt` preserves the first 60 lines of round 3's
+Sol 1 drawing. The added `Expand Here` annotation is tested separately using a
+headed connector, as agreed. `misaligned_neighbor.txt` preserves the latest
+six-line snippet exactly, including its orphan arrow and `mappin` truncation.
+The larger example produces three trees and five text regions. Its row-26
+`scene` route has no continuation/head and remains a warning. The short snippet
+has an arrow without a source; its `contents` reference still resolves correctly
+to the neighboring `GridContent` tree.
+
+Graph tests check known containment and reference relationships, cleanup
+idempotence, graph equivalence after cleanup, colliding repairs, parallel wires,
+arrow directions, labels, and limits. A Sol-high subagent independently reviewed
+the implementation and added adversarial tests in `test_graph_review.py`.
+Findings and their resolution are recorded in `graph_review.md`.
+
+### Workbench renderer example
+
+`fixtures/workbench_renderer.txt` preserves the supplied 80-line drawing;
+`workbench_renderer.cleaned.txt` and `workbench_renderer.parsed.json` contain the
+cleaned drawing and graph. The result has **61 tree items in two tree regions,
+two distinct `skip editor` text targets, and seven references**, with no
+diagnostics. `TextModel` starts an unmarked local tree; the explicit outer branch
+for `EditorRenderingCoordinator` resumes the `Workbench renderer` tree.
+
+This example added support for nonjoining wire crossings, a crowded label next
+to vertical wires, and parallel wire bundles drifting together. Bundle matching
+preserves left-to-right order, maximizes continued tracks, and minimizes total
+drift; ties remain unresolved. Existing crossing cells may move along their
+horizontal wire while retaining separate horizontal and vertical connectivity.
+An outer-tree dedent closes a later embedded region without closing earlier
+parallel trees. A nearby vertical pipe does not create a lateral reference from
+label text.
+
+`test_workbench_graph.py` checks every parent against a manually transcribed
+source-line oracle and all seven expected references. Cleanup makes 59 recorded
+wire alignment repairs. Parsing the cleaned drawing preserves the graph and
+requires no further repairs. The complete suite now has **52 passing tests**;
+the earlier Sol review remains a record of the preceding implementation.

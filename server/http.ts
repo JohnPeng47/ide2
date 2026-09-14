@@ -9,6 +9,8 @@ import { createCoreRoutes } from "./core/routes";
 import { DiagramStore } from "./core/store";
 import { FakeMappingAgentRuntime, PiMappingAgentRuntime } from "./mapping/agentRuntime";
 import { createMappingRoutes } from "./mapping/routes";
+import { FakeFileCompactionRuntime, PiFileCompactionRuntime } from "./mapping/fileCompactionRuntime";
+import { FileCompactionService } from "./mapping/fileCompactionService";
 import { FakeDiagramAgentRuntime, PiDiagramAgentRuntime } from "./studio/agentRuntime";
 import { StudioApplication } from "./studio/application";
 import { DiagramDatasetStore } from "./studio/diagramDatasetStore";
@@ -25,7 +27,8 @@ export function diagramApi(
   configuredDomainProfileId: BuiltInDomainProfileId | undefined = isBuiltInDomainProfileId(
     process.env.NEW_DIAGRAM_DOMAIN
   ) ? process.env.NEW_DIAGRAM_DOMAIN : undefined,
-  mappingPocSourceRoot = projectRoot
+  mappingPocSourceRoot = projectRoot,
+  options: { lspEnabled?: boolean } = {}
 ): Plugin {
   const fake = process.env.NEW_DIAGRAM_AGENT === "fake";
   const studioRuntime = fake ? new FakeDiagramAgentRuntime() : new PiDiagramAgentRuntime();
@@ -33,7 +36,8 @@ export function diagramApi(
   const mappingRuntime = fake ? new FakeMappingAgentRuntime() : new PiMappingAgentRuntime();
   const store = new DiagramStore(projectRoot, diagramsDirectory);
   const core = new CoreApplication(store);
-  const languageService = new ProjectLanguageService();
+  const compactionService = new FileCompactionService(core, fake ? new FakeFileCompactionRuntime() : new PiFileCompactionRuntime());
+  const languageService = options.lspEnabled === true ? new ProjectLanguageService() : undefined;
   const studio = new StudioApplication(store, studioRuntime, configuredDomainProfileId ?? "source-code");
   const routes = {
     core: createCoreRoutes({ application: core, languageService }),
@@ -44,7 +48,7 @@ export function diagramApi(
       configuredDomainProfileId
     }),
     mapping: createMappingRoutes({
-      application: core, runtime: mappingRuntime, chatRuntime, projectRoot,
+      application: core, runtime: mappingRuntime, chatRuntime, compactionService, projectRoot,
       configuredDomainProfileId, mappingPocSourceRoot
     })
   };
@@ -78,10 +82,11 @@ export function diagramApi(
   }) => {
     server.middlewares.use(middleware);
     server.httpServer?.once("close", () => {
-      languageService.dispose();
+      languageService?.dispose();
       studio.dispose();
       mappingRuntime.dispose();
       chatRuntime.dispose();
+      compactionService.dispose();
     });
   };
   return { name: "new-diagram-api", configureServer: attach, configurePreviewServer: attach };

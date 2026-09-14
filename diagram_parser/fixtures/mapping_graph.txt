@@ -1,0 +1,60 @@
+MAPPING DOMAIN MODEL
+====================
+
+Project
+|-- id
+|-- name
+`-- catalog: ProjectionCatalog
+    |-- representations: ProjectRepresentation [id -> record]
+    |   `-- ProjectRepresentation
+    |       |-- id
+    |       |-- name
+    |       |-- status: settled | ...
+    |       `-- currentRevisionId -------------------------------+
+    |                                                             |
+    `-- revisions: ProjectRepresentationRevision [id -> record]   |
+        `-- ProjectRepresentationRevision <-----------------------+
+            |-- id
+            |-- projectId -------------------------------> Project
+            |-- representationId ------------------------> ProjectRepresentation
+            |-- scene ------------------------------------+
+            |                                             |
+            `-- evidence ---------------------------------+---------+
+                                                          |         |
+                                                          v         v
+MappingDocument                                        LineGridScene
+|-- scene -------------------------------------------------+
+|   |-- root: GridBox
+|   |   |-- id
+|   |   |-- position: GridPoint { column, row }
+|   |   |-- minimumSize?: GridSize { columns, rows }
+|   |   |-- collapsed
+|   |   |-- collapsedContentId? --------------------------+
+|   |   |                                                  |
+|   |   |-- DiagramBox                                    |
+|   |   |   `-- contentId --------------------------------+----+
+|   |   |                                                       |
+|   |   `-- ContainerBox                                       |
+|   |       |-- children: GridBox[] (recursive)                 |
+|   |       `-- layout                                         |
+|   |           |-- collisionPolicy: push-right                 |
+|   |           `-- gap                                        |
+|   |                                                           v
+|   `-- contents: GridContent [contentId -> content]       GridContent
+|       `-------------------------------------------------> |-- id
+|                                                          |-- ascii
+|                                                          |-- revision
+|                                                          `-- mappings: EvidenceMapping[]
+|                                                              `-- sourceRanges[]
+|                                                                  |-- source/file identity
+|                                                                  `-- line/column range
+|
+|-- evidence: SourceEvidence [evidenceId -> record]
+|   `-- evidenceId <-------------------------------- EvidenceMapping
+|
+|-- nodes: DiagramNode[] [contentId -> nodes]
+|   |-- id
+|   |-- head { line, startColumn, endColumn }
+|   `-- sourceRanges[] ------------------------------------> SourceEvidence
+|
+`-- sections: DiagramSection[] [contentId -> sections]

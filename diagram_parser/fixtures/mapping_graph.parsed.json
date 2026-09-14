@@ -1,0 +1,5199 @@
+{
+  "nodes": [
+    {
+      "id": 0,
+      "kind": "tree",
+      "text": "Project",
+      "spans": [
+        {
+          "line": 4,
+          "column": 1,
+          "text": "Project",
+          "branch_column": null,
+          "marker": "",
+          "node_id": 0,
+          "tree_node_id": 0,
+          "cleaned_column": 1,
+          "cleaned_branch_column": null,
+          "guide_columns": []
+        },
+        {
+          "line": 5,
+          "column": 5,
+          "text": "id",
+          "branch_column": 1,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 1,
+          "cleaned_column": 5,
+          "cleaned_branch_column": 1,
+          "guide_columns": []
+        },
+        {
+          "line": 6,
+          "column": 5,
+          "text": "name",
+          "branch_column": 1,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 2,
+          "cleaned_column": 5,
+          "cleaned_branch_column": 1,
+          "guide_columns": []
+        },
+        {
+          "line": 7,
+          "column": 5,
+          "text": "catalog: ProjectionCatalog",
+          "branch_column": 1,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 3,
+          "cleaned_column": 5,
+          "cleaned_branch_column": 1,
+          "guide_columns": []
+        },
+        {
+          "line": 8,
+          "column": 9,
+          "text": "representations: ProjectRepresentation [id -> record]",
+          "branch_column": 5,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 4,
+          "cleaned_column": 9,
+          "cleaned_branch_column": 5,
+          "guide_columns": []
+        },
+        {
+          "line": 9,
+          "column": 13,
+          "text": "ProjectRepresentation",
+          "branch_column": 9,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 5,
+          "cleaned_column": 13,
+          "cleaned_branch_column": 9,
+          "guide_columns": [
+            5
+          ]
+        },
+        {
+          "line": 10,
+          "column": 17,
+          "text": "id",
+          "branch_column": 13,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 6,
+          "cleaned_column": 17,
+          "cleaned_branch_column": 13,
+          "guide_columns": [
+            5
+          ]
+        },
+        {
+          "line": 11,
+          "column": 17,
+          "text": "name",
+          "branch_column": 13,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 7,
+          "cleaned_column": 17,
+          "cleaned_branch_column": 13,
+          "guide_columns": [
+            5
+          ]
+        },
+        {
+          "line": 12,
+          "column": 17,
+          "text": "status: settled | ...",
+          "branch_column": 13,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 8,
+          "cleaned_column": 17,
+          "cleaned_branch_column": 13,
+          "guide_columns": [
+            5
+          ]
+        },
+        {
+          "line": 13,
+          "column": 17,
+          "text": "currentRevisionId",
+          "branch_column": 13,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 9,
+          "cleaned_column": 17,
+          "cleaned_branch_column": 13,
+          "guide_columns": [
+            5
+          ]
+        },
+        {
+          "line": 15,
+          "column": 9,
+          "text": "revisions: ProjectRepresentationRevision [id -> record]",
+          "branch_column": 5,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 10,
+          "cleaned_column": 9,
+          "cleaned_branch_column": 5,
+          "guide_columns": []
+        },
+        {
+          "line": 16,
+          "column": 13,
+          "text": "ProjectRepresentationRevision",
+          "branch_column": 9,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 11,
+          "cleaned_column": 13,
+          "cleaned_branch_column": 9,
+          "guide_columns": []
+        },
+        {
+          "line": 17,
+          "column": 17,
+          "text": "id",
+          "branch_column": 13,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 12,
+          "cleaned_column": 17,
+          "cleaned_branch_column": 13,
+          "guide_columns": []
+        },
+        {
+          "line": 18,
+          "column": 17,
+          "text": "projectId",
+          "branch_column": 13,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 13,
+          "cleaned_column": 17,
+          "cleaned_branch_column": 13,
+          "guide_columns": []
+        },
+        {
+          "line": 19,
+          "column": 17,
+          "text": "representationId",
+          "branch_column": 13,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 14,
+          "cleaned_column": 17,
+          "cleaned_branch_column": 13,
+          "guide_columns": []
+        },
+        {
+          "line": 20,
+          "column": 17,
+          "text": "scene",
+          "branch_column": 13,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 15,
+          "cleaned_column": 17,
+          "cleaned_branch_column": 13,
+          "guide_columns": []
+        },
+        {
+          "line": 22,
+          "column": 17,
+          "text": "evidence",
+          "branch_column": 13,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 16,
+          "cleaned_column": 17,
+          "cleaned_branch_column": 13,
+          "guide_columns": []
+        }
+      ],
+      "tree": {
+        "nodes": [
+          {
+            "id": 0,
+            "label": "Project",
+            "parent_id": null,
+            "depth": 0,
+            "line": 4,
+            "column": 1,
+            "end_line": 4,
+            "branch_column": 0,
+            "children": [
+              1,
+              2,
+              3
+            ],
+            "raw_lines": [
+              "Project"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 1,
+            "label": "id",
+            "parent_id": 0,
+            "depth": 1,
+            "line": 5,
+            "column": 5,
+            "end_line": 5,
+            "branch_column": 1,
+            "children": [],
+            "raw_lines": [
+              "|-- id"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 2,
+            "label": "name",
+            "parent_id": 0,
+            "depth": 1,
+            "line": 6,
+            "column": 5,
+            "end_line": 6,
+            "branch_column": 1,
+            "children": [],
+            "raw_lines": [
+              "|-- name"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 3,
+            "label": "catalog: ProjectionCatalog",
+            "parent_id": 0,
+            "depth": 1,
+            "line": 7,
+            "column": 5,
+            "end_line": 7,
+            "branch_column": 1,
+            "children": [
+              4,
+              10
+            ],
+            "raw_lines": [
+              "`-- catalog: ProjectionCatalog"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 4,
+            "label": "representations: ProjectRepresentation [id -> record]",
+            "parent_id": 3,
+            "depth": 2,
+            "line": 8,
+            "column": 9,
+            "end_line": 8,
+            "branch_column": 5,
+            "children": [
+              5
+            ],
+            "raw_lines": [
+              "    |-- representations: ProjectRepresentation [id -> record]"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 5,
+            "label": "ProjectRepresentation",
+            "parent_id": 4,
+            "depth": 3,
+            "line": 9,
+            "column": 13,
+            "end_line": 9,
+            "branch_column": 9,
+            "children": [
+              6,
+              7,
+              8,
+              9
+            ],
+            "raw_lines": [
+              "        `-- ProjectRepresentation"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 6,
+            "label": "id",
+            "parent_id": 5,
+            "depth": 4,
+            "line": 10,
+            "column": 17,
+            "end_line": 10,
+            "branch_column": 13,
+            "children": [],
+            "raw_lines": [
+              "            |-- id"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 7,
+            "label": "name",
+            "parent_id": 5,
+            "depth": 4,
+            "line": 11,
+            "column": 17,
+            "end_line": 11,
+            "branch_column": 13,
+            "children": [],
+            "raw_lines": [
+              "            |-- name"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 8,
+            "label": "status: settled | ...",
+            "parent_id": 5,
+            "depth": 4,
+            "line": 12,
+            "column": 17,
+            "end_line": 12,
+            "branch_column": 13,
+            "children": [],
+            "raw_lines": [
+              "            |-- status: settled | ..."
+            ],
+            "decorations": []
+          },
+          {
+            "id": 9,
+            "label": "currentRevisionId",
+            "parent_id": 5,
+            "depth": 4,
+            "line": 13,
+            "column": 17,
+            "end_line": 13,
+            "branch_column": 13,
+            "children": [],
+            "raw_lines": [
+              "            `-- currentRevisionId"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 10,
+            "label": "revisions: ProjectRepresentationRevision [id -> record]",
+            "parent_id": 3,
+            "depth": 2,
+            "line": 15,
+            "column": 9,
+            "end_line": 15,
+            "branch_column": 5,
+            "children": [
+              11
+            ],
+            "raw_lines": [
+              "    `-- revisions: ProjectRepresentationRevision [id -> record]"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 11,
+            "label": "ProjectRepresentationRevision",
+            "parent_id": 10,
+            "depth": 3,
+            "line": 16,
+            "column": 13,
+            "end_line": 16,
+            "branch_column": 9,
+            "children": [
+              12,
+              13,
+              14,
+              15,
+              16
+            ],
+            "raw_lines": [
+              "        `-- ProjectRepresentationRevision"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 12,
+            "label": "id",
+            "parent_id": 11,
+            "depth": 4,
+            "line": 17,
+            "column": 17,
+            "end_line": 17,
+            "branch_column": 13,
+            "children": [],
+            "raw_lines": [
+              "            |-- id"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 13,
+            "label": "projectId",
+            "parent_id": 11,
+            "depth": 4,
+            "line": 18,
+            "column": 17,
+            "end_line": 18,
+            "branch_column": 13,
+            "children": [],
+            "raw_lines": [
+              "            |-- projectId"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 14,
+            "label": "representationId",
+            "parent_id": 11,
+            "depth": 4,
+            "line": 19,
+            "column": 17,
+            "end_line": 19,
+            "branch_column": 13,
+            "children": [],
+            "raw_lines": [
+              "            |-- representationId"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 15,
+            "label": "scene",
+            "parent_id": 11,
+            "depth": 4,
+            "line": 20,
+            "column": 17,
+            "end_line": 20,
+            "branch_column": 13,
+            "children": [],
+            "raw_lines": [
+              "            |-- scene"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 16,
+            "label": "evidence",
+            "parent_id": 11,
+            "depth": 4,
+            "line": 22,
+            "column": 17,
+            "end_line": 22,
+            "branch_column": 13,
+            "children": [],
+            "raw_lines": [
+              "            `-- evidence"
+            ],
+            "decorations": []
+          }
+        ],
+        "roots": [
+          0
+        ],
+        "diagnostics": [],
+        "lines": [
+          {
+            "line": 4,
+            "kind": "node",
+            "node_id": 0,
+            "raw": "Project"
+          },
+          {
+            "line": 5,
+            "kind": "node",
+            "node_id": 1,
+            "raw": "|-- id"
+          },
+          {
+            "line": 6,
+            "kind": "node",
+            "node_id": 2,
+            "raw": "|-- name"
+          },
+          {
+            "line": 7,
+            "kind": "node",
+            "node_id": 3,
+            "raw": "`-- catalog: ProjectionCatalog"
+          },
+          {
+            "line": 8,
+            "kind": "node",
+            "node_id": 4,
+            "raw": "    |-- representations: ProjectRepresentation [id -> record]"
+          },
+          {
+            "line": 9,
+            "kind": "node",
+            "node_id": 5,
+            "raw": "        `-- ProjectRepresentation"
+          },
+          {
+            "line": 10,
+            "kind": "node",
+            "node_id": 6,
+            "raw": "            |-- id"
+          },
+          {
+            "line": 11,
+            "kind": "node",
+            "node_id": 7,
+            "raw": "            |-- name"
+          },
+          {
+            "line": 12,
+            "kind": "node",
+            "node_id": 8,
+            "raw": "            |-- status: settled | ..."
+          },
+          {
+            "line": 13,
+            "kind": "node",
+            "node_id": 9,
+            "raw": "            `-- currentRevisionId"
+          },
+          {
+            "line": 14,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 15,
+            "kind": "node",
+            "node_id": 10,
+            "raw": "    `-- revisions: ProjectRepresentationRevision [id -> record]"
+          },
+          {
+            "line": 16,
+            "kind": "node",
+            "node_id": 11,
+            "raw": "        `-- ProjectRepresentationRevision"
+          },
+          {
+            "line": 17,
+            "kind": "node",
+            "node_id": 12,
+            "raw": "            |-- id"
+          },
+          {
+            "line": 18,
+            "kind": "node",
+            "node_id": 13,
+            "raw": "            |-- projectId"
+          },
+          {
+            "line": 19,
+            "kind": "node",
+            "node_id": 14,
+            "raw": "            |-- representationId"
+          },
+          {
+            "line": 20,
+            "kind": "node",
+            "node_id": 15,
+            "raw": "            |-- scene"
+          },
+          {
+            "line": 21,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 22,
+            "kind": "node",
+            "node_id": 16,
+            "raw": "            `-- evidence"
+          }
+        ]
+      }
+    },
+    {
+      "id": 1,
+      "kind": "text",
+      "text": "Project",
+      "spans": [
+        {
+          "line": 18,
+          "column": 60,
+          "text": "Project",
+          "branch_column": null,
+          "marker": "",
+          "node_id": 1,
+          "tree_node_id": null,
+          "cleaned_column": 60,
+          "cleaned_branch_column": null,
+          "guide_columns": []
+        }
+      ],
+      "tree": null
+    },
+    {
+      "id": 2,
+      "kind": "text",
+      "text": "ProjectRepresentation",
+      "spans": [
+        {
+          "line": 19,
+          "column": 60,
+          "text": "ProjectRepresentation",
+          "branch_column": null,
+          "marker": "",
+          "node_id": 2,
+          "tree_node_id": null,
+          "cleaned_column": 60,
+          "cleaned_branch_column": null,
+          "guide_columns": []
+        }
+      ],
+      "tree": null
+    },
+    {
+      "id": 3,
+      "kind": "tree",
+      "text": "MappingDocument",
+      "spans": [
+        {
+          "line": 25,
+          "column": 1,
+          "text": "MappingDocument",
+          "branch_column": null,
+          "marker": "",
+          "node_id": 3,
+          "tree_node_id": 0,
+          "cleaned_column": 1,
+          "cleaned_branch_column": null,
+          "guide_columns": []
+        },
+        {
+          "line": 26,
+          "column": 5,
+          "text": "scene",
+          "branch_column": 1,
+          "marker": "|--",
+          "node_id": 3,
+          "tree_node_id": 1,
+          "cleaned_column": 5,
+          "cleaned_branch_column": 1,
+          "guide_columns": []
+        },
+        {
+          "line": 27,
+          "column": 9,
+          "text": "root: GridBox",
+          "branch_column": 5,
+          "marker": "|--",
+          "node_id": 3,
+          "tree_node_id": 2,
+          "cleaned_column": 9,
+          "cleaned_branch_column": 5,
+          "guide_columns": [
+            1
+          ]
+        },
+        {
+          "line": 28,
+          "column": 13,
+          "text": "id",
+          "branch_column": 9,
+          "marker": "|--",
+          "node_id": 3,
+          "tree_node_id": 3,
+          "cleaned_column": 13,
+          "cleaned_branch_column": 9,
+          "guide_columns": [
+            1,
+            5
+          ]
+        },
+        {
+          "line": 29,
+          "column": 13,
+          "text": "position: GridPoint { column, row }",
+          "branch_column": 9,
+          "marker": "|--",
+          "node_id": 3,
+          "tree_node_id": 4,
+          "cleaned_column": 13,
+          "cleaned_branch_column": 9,
+          "guide_columns": [
+            1,
+            5
+          ]
+        },
+        {
+          "line": 30,
+          "column": 13,
+          "text": "minimumSize?: GridSize { columns, rows }",
+          "branch_column": 9,
+          "marker": "|--",
+          "node_id": 3,
+          "tree_node_id": 5,
+          "cleaned_column": 13,
+          "cleaned_branch_column": 9,
+          "guide_columns": [
+            1,
+            5
+          ]
+        },
+        {
+          "line": 31,
+          "column": 13,
+          "text": "collapsed",
+          "branch_column": 9,
+          "marker": "|--",
+          "node_id": 3,
+          "tree_node_id": 6,
+          "cleaned_column": 13,
+          "cleaned_branch_column": 9,
+          "guide_columns": [
+            1,
+            5
+          ]
+        },
+        {
+          "line": 32,
+          "column": 13,
+          "text": "collapsedContentId?",
+          "branch_column": 9,
+          "marker": "|--",
+          "node_id": 3,
+          "tree_node_id": 7,
+          "cleaned_column": 13,
+          "cleaned_branch_column": 9,
+          "guide_columns": [
+            1,
+            5
+          ]
+        },
+        {
+          "line": 34,
+          "column": 13,
+          "text": "DiagramBox",
+          "branch_column": 9,
+          "marker": "|--",
+          "node_id": 3,
+          "tree_node_id": 8,
+          "cleaned_column": 13,
+          "cleaned_branch_column": 9,
+          "guide_columns": [
+            1,
+            5
+          ]
+        },
+        {
+          "line": 35,
+          "column": 17,
+          "text": "contentId",
+          "branch_column": 13,
+          "marker": "`--",
+          "node_id": 3,
+          "tree_node_id": 9,
+          "cleaned_column": 17,
+          "cleaned_branch_column": 13,
+          "guide_columns": [
+            1,
+            5,
+            9
+          ]
+        },
+        {
+          "line": 37,
+          "column": 13,
+          "text": "ContainerBox",
+          "branch_column": 9,
+          "marker": "`--",
+          "node_id": 3,
+          "tree_node_id": 10,
+          "cleaned_column": 13,
+          "cleaned_branch_column": 9,
+          "guide_columns": [
+            1,
+            5
+          ]
+        },
+        {
+          "line": 38,
+          "column": 17,
+          "text": "children: GridBox[] (recursive)",
+          "branch_column": 13,
+          "marker": "|--",
+          "node_id": 3,
+          "tree_node_id": 11,
+          "cleaned_column": 17,
+          "cleaned_branch_column": 13,
+          "guide_columns": [
+            1,
+            5
+          ]
+        },
+        {
+          "line": 39,
+          "column": 17,
+          "text": "layout",
+          "branch_column": 13,
+          "marker": "`--",
+          "node_id": 3,
+          "tree_node_id": 12,
+          "cleaned_column": 17,
+          "cleaned_branch_column": 13,
+          "guide_columns": [
+            1,
+            5
+          ]
+        },
+        {
+          "line": 40,
+          "column": 21,
+          "text": "collisionPolicy: push-right",
+          "branch_column": 17,
+          "marker": "|--",
+          "node_id": 3,
+          "tree_node_id": 13,
+          "cleaned_column": 21,
+          "cleaned_branch_column": 17,
+          "guide_columns": [
+            1,
+            5
+          ]
+        },
+        {
+          "line": 41,
+          "column": 21,
+          "text": "gap",
+          "branch_column": 17,
+          "marker": "`--",
+          "node_id": 3,
+          "tree_node_id": 14,
+          "cleaned_column": 21,
+          "cleaned_branch_column": 17,
+          "guide_columns": [
+            1,
+            5
+          ]
+        },
+        {
+          "line": 43,
+          "column": 9,
+          "text": "contents: GridContent [contentId -> content]",
+          "branch_column": 5,
+          "marker": "`--",
+          "node_id": 3,
+          "tree_node_id": 15,
+          "cleaned_column": 9,
+          "cleaned_branch_column": 5,
+          "guide_columns": [
+            1
+          ]
+        },
+        {
+          "line": 52,
+          "column": 5,
+          "text": "evidence: SourceEvidence [evidenceId -> record]",
+          "branch_column": 1,
+          "marker": "|--",
+          "node_id": 3,
+          "tree_node_id": 16,
+          "cleaned_column": 5,
+          "cleaned_branch_column": 1,
+          "guide_columns": []
+        },
+        {
+          "line": 53,
+          "column": 9,
+          "text": "evidenceId",
+          "branch_column": 5,
+          "marker": "`--",
+          "node_id": 3,
+          "tree_node_id": 17,
+          "cleaned_column": 9,
+          "cleaned_branch_column": 5,
+          "guide_columns": [
+            1
+          ]
+        },
+        {
+          "line": 55,
+          "column": 5,
+          "text": "nodes: DiagramNode[] [contentId -> nodes]",
+          "branch_column": 1,
+          "marker": "|--",
+          "node_id": 3,
+          "tree_node_id": 18,
+          "cleaned_column": 5,
+          "cleaned_branch_column": 1,
+          "guide_columns": []
+        },
+        {
+          "line": 56,
+          "column": 9,
+          "text": "id",
+          "branch_column": 5,
+          "marker": "|--",
+          "node_id": 3,
+          "tree_node_id": 19,
+          "cleaned_column": 9,
+          "cleaned_branch_column": 5,
+          "guide_columns": [
+            1
+          ]
+        },
+        {
+          "line": 57,
+          "column": 9,
+          "text": "head { line, startColumn, endColumn }",
+          "branch_column": 5,
+          "marker": "|--",
+          "node_id": 3,
+          "tree_node_id": 20,
+          "cleaned_column": 9,
+          "cleaned_branch_column": 5,
+          "guide_columns": [
+            1
+          ]
+        },
+        {
+          "line": 58,
+          "column": 9,
+          "text": "sourceRanges[]",
+          "branch_column": 5,
+          "marker": "`--",
+          "node_id": 3,
+          "tree_node_id": 21,
+          "cleaned_column": 9,
+          "cleaned_branch_column": 5,
+          "guide_columns": [
+            1
+          ]
+        },
+        {
+          "line": 60,
+          "column": 5,
+          "text": "sections: DiagramSection[] [contentId -> sections]",
+          "branch_column": 1,
+          "marker": "`--",
+          "node_id": 3,
+          "tree_node_id": 22,
+          "cleaned_column": 5,
+          "cleaned_branch_column": 1,
+          "guide_columns": []
+        }
+      ],
+      "tree": {
+        "nodes": [
+          {
+            "id": 0,
+            "label": "MappingDocument",
+            "parent_id": null,
+            "depth": 0,
+            "line": 25,
+            "column": 1,
+            "end_line": 25,
+            "branch_column": 0,
+            "children": [
+              1,
+              16,
+              18,
+              22
+            ],
+            "raw_lines": [
+              "MappingDocument"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 1,
+            "label": "scene",
+            "parent_id": 0,
+            "depth": 1,
+            "line": 26,
+            "column": 5,
+            "end_line": 26,
+            "branch_column": 1,
+            "children": [
+              2,
+              15
+            ],
+            "raw_lines": [
+              "|-- scene"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 2,
+            "label": "root: GridBox",
+            "parent_id": 1,
+            "depth": 2,
+            "line": 27,
+            "column": 9,
+            "end_line": 27,
+            "branch_column": 5,
+            "children": [
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              10
+            ],
+            "raw_lines": [
+              "    |-- root: GridBox"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 3,
+            "label": "id",
+            "parent_id": 2,
+            "depth": 3,
+            "line": 28,
+            "column": 13,
+            "end_line": 28,
+            "branch_column": 9,
+            "children": [],
+            "raw_lines": [
+              "        |-- id"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 4,
+            "label": "position: GridPoint { column, row }",
+            "parent_id": 2,
+            "depth": 3,
+            "line": 29,
+            "column": 13,
+            "end_line": 29,
+            "branch_column": 9,
+            "children": [],
+            "raw_lines": [
+              "        |-- position: GridPoint { column, row }"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 5,
+            "label": "minimumSize?: GridSize { columns, rows }",
+            "parent_id": 2,
+            "depth": 3,
+            "line": 30,
+            "column": 13,
+            "end_line": 30,
+            "branch_column": 9,
+            "children": [],
+            "raw_lines": [
+              "        |-- minimumSize?: GridSize { columns, rows }"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 6,
+            "label": "collapsed",
+            "parent_id": 2,
+            "depth": 3,
+            "line": 31,
+            "column": 13,
+            "end_line": 31,
+            "branch_column": 9,
+            "children": [],
+            "raw_lines": [
+              "        |-- collapsed"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 7,
+            "label": "collapsedContentId?",
+            "parent_id": 2,
+            "depth": 3,
+            "line": 32,
+            "column": 13,
+            "end_line": 32,
+            "branch_column": 9,
+            "children": [],
+            "raw_lines": [
+              "        |-- collapsedContentId?"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 8,
+            "label": "DiagramBox",
+            "parent_id": 2,
+            "depth": 3,
+            "line": 34,
+            "column": 13,
+            "end_line": 34,
+            "branch_column": 9,
+            "children": [
+              9
+            ],
+            "raw_lines": [
+              "        |-- DiagramBox"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 9,
+            "label": "contentId",
+            "parent_id": 8,
+            "depth": 4,
+            "line": 35,
+            "column": 17,
+            "end_line": 35,
+            "branch_column": 13,
+            "children": [],
+            "raw_lines": [
+              "            `-- contentId"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 10,
+            "label": "ContainerBox",
+            "parent_id": 2,
+            "depth": 3,
+            "line": 37,
+            "column": 13,
+            "end_line": 37,
+            "branch_column": 9,
+            "children": [
+              11,
+              12
+            ],
+            "raw_lines": [
+              "        `-- ContainerBox"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 11,
+            "label": "children: GridBox[] (recursive)",
+            "parent_id": 10,
+            "depth": 4,
+            "line": 38,
+            "column": 17,
+            "end_line": 38,
+            "branch_column": 13,
+            "children": [],
+            "raw_lines": [
+              "            |-- children: GridBox[] (recursive)"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 12,
+            "label": "layout",
+            "parent_id": 10,
+            "depth": 4,
+            "line": 39,
+            "column": 17,
+            "end_line": 39,
+            "branch_column": 13,
+            "children": [
+              13,
+              14
+            ],
+            "raw_lines": [
+              "            `-- layout"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 13,
+            "label": "collisionPolicy: push-right",
+            "parent_id": 12,
+            "depth": 5,
+            "line": 40,
+            "column": 21,
+            "end_line": 40,
+            "branch_column": 17,
+            "children": [],
+            "raw_lines": [
+              "                |-- collisionPolicy: push-right"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 14,
+            "label": "gap",
+            "parent_id": 12,
+            "depth": 5,
+            "line": 41,
+            "column": 21,
+            "end_line": 41,
+            "branch_column": 17,
+            "children": [],
+            "raw_lines": [
+              "                `-- gap"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 15,
+            "label": "contents: GridContent [contentId -> content]",
+            "parent_id": 1,
+            "depth": 2,
+            "line": 43,
+            "column": 9,
+            "end_line": 43,
+            "branch_column": 5,
+            "children": [],
+            "raw_lines": [
+              "    `-- contents: GridContent [contentId -> content]"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 16,
+            "label": "evidence: SourceEvidence [evidenceId -> record]",
+            "parent_id": 0,
+            "depth": 1,
+            "line": 52,
+            "column": 5,
+            "end_line": 52,
+            "branch_column": 1,
+            "children": [
+              17
+            ],
+            "raw_lines": [
+              "|-- evidence: SourceEvidence [evidenceId -> record]"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 17,
+            "label": "evidenceId",
+            "parent_id": 16,
+            "depth": 2,
+            "line": 53,
+            "column": 9,
+            "end_line": 53,
+            "branch_column": 5,
+            "children": [],
+            "raw_lines": [
+              "    `-- evidenceId"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 18,
+            "label": "nodes: DiagramNode[] [contentId -> nodes]",
+            "parent_id": 0,
+            "depth": 1,
+            "line": 55,
+            "column": 5,
+            "end_line": 55,
+            "branch_column": 1,
+            "children": [
+              19,
+              20,
+              21
+            ],
+            "raw_lines": [
+              "|-- nodes: DiagramNode[] [contentId -> nodes]"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 19,
+            "label": "id",
+            "parent_id": 18,
+            "depth": 2,
+            "line": 56,
+            "column": 9,
+            "end_line": 56,
+            "branch_column": 5,
+            "children": [],
+            "raw_lines": [
+              "    |-- id"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 20,
+            "label": "head { line, startColumn, endColumn }",
+            "parent_id": 18,
+            "depth": 2,
+            "line": 57,
+            "column": 9,
+            "end_line": 57,
+            "branch_column": 5,
+            "children": [],
+            "raw_lines": [
+              "    |-- head { line, startColumn, endColumn }"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 21,
+            "label": "sourceRanges[]",
+            "parent_id": 18,
+            "depth": 2,
+            "line": 58,
+            "column": 9,
+            "end_line": 58,
+            "branch_column": 5,
+            "children": [],
+            "raw_lines": [
+              "    `-- sourceRanges[]"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 22,
+            "label": "sections: DiagramSection[] [contentId -> sections]",
+            "parent_id": 0,
+            "depth": 1,
+            "line": 60,
+            "column": 5,
+            "end_line": 60,
+            "branch_column": 1,
+            "children": [],
+            "raw_lines": [
+              "`-- sections: DiagramSection[] [contentId -> sections]"
+            ],
+            "decorations": []
+          }
+        ],
+        "roots": [
+          0
+        ],
+        "diagnostics": [],
+        "lines": [
+          {
+            "line": 25,
+            "kind": "node",
+            "node_id": 0,
+            "raw": "MappingDocument"
+          },
+          {
+            "line": 26,
+            "kind": "node",
+            "node_id": 1,
+            "raw": "|-- scene"
+          },
+          {
+            "line": 27,
+            "kind": "node",
+            "node_id": 2,
+            "raw": "    |-- root: GridBox"
+          },
+          {
+            "line": 28,
+            "kind": "node",
+            "node_id": 3,
+            "raw": "        |-- id"
+          },
+          {
+            "line": 29,
+            "kind": "node",
+            "node_id": 4,
+            "raw": "        |-- position: GridPoint { column, row }"
+          },
+          {
+            "line": 30,
+            "kind": "node",
+            "node_id": 5,
+            "raw": "        |-- minimumSize?: GridSize { columns, rows }"
+          },
+          {
+            "line": 31,
+            "kind": "node",
+            "node_id": 6,
+            "raw": "        |-- collapsed"
+          },
+          {
+            "line": 32,
+            "kind": "node",
+            "node_id": 7,
+            "raw": "        |-- collapsedContentId?"
+          },
+          {
+            "line": 33,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 34,
+            "kind": "node",
+            "node_id": 8,
+            "raw": "        |-- DiagramBox"
+          },
+          {
+            "line": 35,
+            "kind": "node",
+            "node_id": 9,
+            "raw": "            `-- contentId"
+          },
+          {
+            "line": 36,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 37,
+            "kind": "node",
+            "node_id": 10,
+            "raw": "        `-- ContainerBox"
+          },
+          {
+            "line": 38,
+            "kind": "node",
+            "node_id": 11,
+            "raw": "            |-- children: GridBox[] (recursive)"
+          },
+          {
+            "line": 39,
+            "kind": "node",
+            "node_id": 12,
+            "raw": "            `-- layout"
+          },
+          {
+            "line": 40,
+            "kind": "node",
+            "node_id": 13,
+            "raw": "                |-- collisionPolicy: push-right"
+          },
+          {
+            "line": 41,
+            "kind": "node",
+            "node_id": 14,
+            "raw": "                `-- gap"
+          },
+          {
+            "line": 42,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 43,
+            "kind": "node",
+            "node_id": 15,
+            "raw": "    `-- contents: GridContent [contentId -> content]"
+          },
+          {
+            "line": 44,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 45,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 46,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 47,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 48,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 49,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 50,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 51,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 52,
+            "kind": "node",
+            "node_id": 16,
+            "raw": "|-- evidence: SourceEvidence [evidenceId -> record]"
+          },
+          {
+            "line": 53,
+            "kind": "node",
+            "node_id": 17,
+            "raw": "    `-- evidenceId"
+          },
+          {
+            "line": 54,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 55,
+            "kind": "node",
+            "node_id": 18,
+            "raw": "|-- nodes: DiagramNode[] [contentId -> nodes]"
+          },
+          {
+            "line": 56,
+            "kind": "node",
+            "node_id": 19,
+            "raw": "    |-- id"
+          },
+          {
+            "line": 57,
+            "kind": "node",
+            "node_id": 20,
+            "raw": "    |-- head { line, startColumn, endColumn }"
+          },
+          {
+            "line": 58,
+            "kind": "node",
+            "node_id": 21,
+            "raw": "    `-- sourceRanges[]"
+          },
+          {
+            "line": 59,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 60,
+            "kind": "node",
+            "node_id": 22,
+            "raw": "`-- sections: DiagramSection[] [contentId -> sections]"
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "kind": "text",
+      "text": "LineGridScene",
+      "spans": [
+        {
+          "line": 25,
+          "column": 56,
+          "text": "LineGridScene",
+          "branch_column": null,
+          "marker": "",
+          "node_id": 4,
+          "tree_node_id": null,
+          "cleaned_column": 56,
+          "cleaned_branch_column": null,
+          "guide_columns": []
+        }
+      ],
+      "tree": null
+    },
+    {
+      "id": 5,
+      "kind": "tree",
+      "text": "GridContent",
+      "spans": [
+        {
+          "line": 43,
+          "column": 60,
+          "text": "GridContent",
+          "branch_column": null,
+          "marker": "",
+          "node_id": 5,
+          "tree_node_id": 0,
+          "cleaned_column": 61,
+          "cleaned_branch_column": null,
+          "guide_columns": []
+        },
+        {
+          "line": 44,
+          "column": 65,
+          "text": "id",
+          "branch_column": 61,
+          "marker": "|--",
+          "node_id": 5,
+          "tree_node_id": 1,
+          "cleaned_column": 65,
+          "cleaned_branch_column": 61,
+          "guide_columns": [
+            1
+          ]
+        },
+        {
+          "line": 45,
+          "column": 64,
+          "text": "ascii",
+          "branch_column": 60,
+          "marker": "|--",
+          "node_id": 5,
+          "tree_node_id": 2,
+          "cleaned_column": 65,
+          "cleaned_branch_column": 61,
+          "guide_columns": [
+            1
+          ]
+        },
+        {
+          "line": 46,
+          "column": 64,
+          "text": "revision",
+          "branch_column": 60,
+          "marker": "|--",
+          "node_id": 5,
+          "tree_node_id": 3,
+          "cleaned_column": 65,
+          "cleaned_branch_column": 61,
+          "guide_columns": [
+            1
+          ]
+        },
+        {
+          "line": 47,
+          "column": 64,
+          "text": "mappings: EvidenceMapping[]",
+          "branch_column": 60,
+          "marker": "`--",
+          "node_id": 5,
+          "tree_node_id": 4,
+          "cleaned_column": 65,
+          "cleaned_branch_column": 61,
+          "guide_columns": [
+            1
+          ]
+        },
+        {
+          "line": 48,
+          "column": 68,
+          "text": "sourceRanges[]",
+          "branch_column": 64,
+          "marker": "`--",
+          "node_id": 5,
+          "tree_node_id": 5,
+          "cleaned_column": 69,
+          "cleaned_branch_column": 65,
+          "guide_columns": [
+            1
+          ]
+        },
+        {
+          "line": 49,
+          "column": 72,
+          "text": "source/file identity",
+          "branch_column": 68,
+          "marker": "|--",
+          "node_id": 5,
+          "tree_node_id": 6,
+          "cleaned_column": 73,
+          "cleaned_branch_column": 69,
+          "guide_columns": [
+            1
+          ]
+        },
+        {
+          "line": 50,
+          "column": 72,
+          "text": "line/column range",
+          "branch_column": 68,
+          "marker": "`--",
+          "node_id": 5,
+          "tree_node_id": 7,
+          "cleaned_column": 73,
+          "cleaned_branch_column": 69,
+          "guide_columns": [
+            1
+          ]
+        }
+      ],
+      "tree": {
+        "nodes": [
+          {
+            "id": 0,
+            "label": "GridContent",
+            "parent_id": null,
+            "depth": 0,
+            "line": 43,
+            "column": 61,
+            "end_line": 43,
+            "branch_column": 60,
+            "children": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "raw_lines": [
+              "                                                            GridContent"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 1,
+            "label": "id",
+            "parent_id": 0,
+            "depth": 1,
+            "line": 44,
+            "column": 65,
+            "end_line": 44,
+            "branch_column": 61,
+            "children": [],
+            "raw_lines": [
+              "                                                            |-- id"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 2,
+            "label": "ascii",
+            "parent_id": 0,
+            "depth": 1,
+            "line": 45,
+            "column": 65,
+            "end_line": 45,
+            "branch_column": 61,
+            "children": [],
+            "raw_lines": [
+              "                                                            |-- ascii"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 3,
+            "label": "revision",
+            "parent_id": 0,
+            "depth": 1,
+            "line": 46,
+            "column": 65,
+            "end_line": 46,
+            "branch_column": 61,
+            "children": [],
+            "raw_lines": [
+              "                                                            |-- revision"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 4,
+            "label": "mappings: EvidenceMapping[]",
+            "parent_id": 0,
+            "depth": 1,
+            "line": 47,
+            "column": 65,
+            "end_line": 47,
+            "branch_column": 61,
+            "children": [
+              5
+            ],
+            "raw_lines": [
+              "                                                            `-- mappings: EvidenceMapping[]"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 5,
+            "label": "sourceRanges[]",
+            "parent_id": 4,
+            "depth": 2,
+            "line": 48,
+            "column": 69,
+            "end_line": 48,
+            "branch_column": 65,
+            "children": [
+              6,
+              7
+            ],
+            "raw_lines": [
+              "                                                                `-- sourceRanges[]"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 6,
+            "label": "source/file identity",
+            "parent_id": 5,
+            "depth": 3,
+            "line": 49,
+            "column": 73,
+            "end_line": 49,
+            "branch_column": 69,
+            "children": [],
+            "raw_lines": [
+              "                                                                    |-- source/file identity"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 7,
+            "label": "line/column range",
+            "parent_id": 5,
+            "depth": 3,
+            "line": 50,
+            "column": 73,
+            "end_line": 50,
+            "branch_column": 69,
+            "children": [],
+            "raw_lines": [
+              "                                                                    `-- line/column range"
+            ],
+            "decorations": []
+          }
+        ],
+        "roots": [
+          0
+        ],
+        "diagnostics": [],
+        "lines": [
+          {
+            "line": 43,
+            "kind": "node",
+            "node_id": 0,
+            "raw": "                                                            GridContent"
+          },
+          {
+            "line": 44,
+            "kind": "node",
+            "node_id": 1,
+            "raw": "                                                            |-- id"
+          },
+          {
+            "line": 45,
+            "kind": "node",
+            "node_id": 2,
+            "raw": "                                                            |-- ascii"
+          },
+          {
+            "line": 46,
+            "kind": "node",
+            "node_id": 3,
+            "raw": "                                                            |-- revision"
+          },
+          {
+            "line": 47,
+            "kind": "node",
+            "node_id": 4,
+            "raw": "                                                            `-- mappings: EvidenceMapping[]"
+          },
+          {
+            "line": 48,
+            "kind": "node",
+            "node_id": 5,
+            "raw": "                                                                `-- sourceRanges[]"
+          },
+          {
+            "line": 49,
+            "kind": "node",
+            "node_id": 6,
+            "raw": "                                                                    |-- source/file identity"
+          },
+          {
+            "line": 50,
+            "kind": "node",
+            "node_id": 7,
+            "raw": "                                                                    `-- line/column range"
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "kind": "text",
+      "text": "EvidenceMapping",
+      "spans": [
+        {
+          "line": 53,
+          "column": 54,
+          "text": "EvidenceMapping",
+          "branch_column": null,
+          "marker": "",
+          "node_id": 6,
+          "tree_node_id": null,
+          "cleaned_column": 54,
+          "cleaned_branch_column": null,
+          "guide_columns": []
+        }
+      ],
+      "tree": null
+    },
+    {
+      "id": 7,
+      "kind": "text",
+      "text": "SourceEvidence",
+      "spans": [
+        {
+          "line": 58,
+          "column": 62,
+          "text": "SourceEvidence",
+          "branch_column": null,
+          "marker": "",
+          "node_id": 7,
+          "tree_node_id": null,
+          "cleaned_column": 62,
+          "cleaned_branch_column": null,
+          "guide_columns": []
+        }
+      ],
+      "tree": null
+    }
+  ],
+  "references": [
+    {
+      "source": {
+        "node_id": 0,
+        "tree_node_id": 9
+      },
+      "target": {
+        "node_id": 0,
+        "tree_node_id": 11
+      },
+      "arrow_line": 16,
+      "arrow_column": 43,
+      "wire_cells": [
+        [
+          13,
+          35
+        ],
+        [
+          13,
+          36
+        ],
+        [
+          13,
+          37
+        ],
+        [
+          13,
+          38
+        ],
+        [
+          13,
+          39
+        ],
+        [
+          13,
+          40
+        ],
+        [
+          13,
+          41
+        ],
+        [
+          13,
+          42
+        ],
+        [
+          13,
+          43
+        ],
+        [
+          13,
+          44
+        ],
+        [
+          13,
+          45
+        ],
+        [
+          13,
+          46
+        ],
+        [
+          13,
+          47
+        ],
+        [
+          13,
+          48
+        ],
+        [
+          13,
+          49
+        ],
+        [
+          13,
+          50
+        ],
+        [
+          13,
+          51
+        ],
+        [
+          13,
+          52
+        ],
+        [
+          13,
+          53
+        ],
+        [
+          13,
+          54
+        ],
+        [
+          13,
+          55
+        ],
+        [
+          13,
+          56
+        ],
+        [
+          13,
+          57
+        ],
+        [
+          13,
+          58
+        ],
+        [
+          13,
+          59
+        ],
+        [
+          13,
+          60
+        ],
+        [
+          13,
+          61
+        ],
+        [
+          13,
+          62
+        ],
+        [
+          13,
+          63
+        ],
+        [
+          13,
+          64
+        ],
+        [
+          13,
+          65
+        ],
+        [
+          13,
+          66
+        ],
+        [
+          13,
+          67
+        ],
+        [
+          14,
+          67
+        ],
+        [
+          15,
+          67
+        ],
+        [
+          16,
+          43
+        ],
+        [
+          16,
+          44
+        ],
+        [
+          16,
+          45
+        ],
+        [
+          16,
+          46
+        ],
+        [
+          16,
+          47
+        ],
+        [
+          16,
+          48
+        ],
+        [
+          16,
+          49
+        ],
+        [
+          16,
+          50
+        ],
+        [
+          16,
+          51
+        ],
+        [
+          16,
+          52
+        ],
+        [
+          16,
+          53
+        ],
+        [
+          16,
+          54
+        ],
+        [
+          16,
+          55
+        ],
+        [
+          16,
+          56
+        ],
+        [
+          16,
+          57
+        ],
+        [
+          16,
+          58
+        ],
+        [
+          16,
+          59
+        ],
+        [
+          16,
+          60
+        ],
+        [
+          16,
+          61
+        ],
+        [
+          16,
+          62
+        ],
+        [
+          16,
+          63
+        ],
+        [
+          16,
+          64
+        ],
+        [
+          16,
+          65
+        ],
+        [
+          16,
+          66
+        ],
+        [
+          16,
+          67
+        ]
+      ]
+    },
+    {
+      "source": {
+        "node_id": 0,
+        "tree_node_id": 13
+      },
+      "target": {
+        "node_id": 1,
+        "tree_node_id": null
+      },
+      "arrow_line": 18,
+      "arrow_column": 58,
+      "wire_cells": [
+        [
+          18,
+          27
+        ],
+        [
+          18,
+          28
+        ],
+        [
+          18,
+          29
+        ],
+        [
+          18,
+          30
+        ],
+        [
+          18,
+          31
+        ],
+        [
+          18,
+          32
+        ],
+        [
+          18,
+          33
+        ],
+        [
+          18,
+          34
+        ],
+        [
+          18,
+          35
+        ],
+        [
+          18,
+          36
+        ],
+        [
+          18,
+          37
+        ],
+        [
+          18,
+          38
+        ],
+        [
+          18,
+          39
+        ],
+        [
+          18,
+          40
+        ],
+        [
+          18,
+          41
+        ],
+        [
+          18,
+          42
+        ],
+        [
+          18,
+          43
+        ],
+        [
+          18,
+          44
+        ],
+        [
+          18,
+          45
+        ],
+        [
+          18,
+          46
+        ],
+        [
+          18,
+          47
+        ],
+        [
+          18,
+          48
+        ],
+        [
+          18,
+          49
+        ],
+        [
+          18,
+          50
+        ],
+        [
+          18,
+          51
+        ],
+        [
+          18,
+          52
+        ],
+        [
+          18,
+          53
+        ],
+        [
+          18,
+          54
+        ],
+        [
+          18,
+          55
+        ],
+        [
+          18,
+          56
+        ],
+        [
+          18,
+          57
+        ],
+        [
+          18,
+          58
+        ]
+      ]
+    },
+    {
+      "source": {
+        "node_id": 0,
+        "tree_node_id": 14
+      },
+      "target": {
+        "node_id": 2,
+        "tree_node_id": null
+      },
+      "arrow_line": 19,
+      "arrow_column": 58,
+      "wire_cells": [
+        [
+          19,
+          34
+        ],
+        [
+          19,
+          35
+        ],
+        [
+          19,
+          36
+        ],
+        [
+          19,
+          37
+        ],
+        [
+          19,
+          38
+        ],
+        [
+          19,
+          39
+        ],
+        [
+          19,
+          40
+        ],
+        [
+          19,
+          41
+        ],
+        [
+          19,
+          42
+        ],
+        [
+          19,
+          43
+        ],
+        [
+          19,
+          44
+        ],
+        [
+          19,
+          45
+        ],
+        [
+          19,
+          46
+        ],
+        [
+          19,
+          47
+        ],
+        [
+          19,
+          48
+        ],
+        [
+          19,
+          49
+        ],
+        [
+          19,
+          50
+        ],
+        [
+          19,
+          51
+        ],
+        [
+          19,
+          52
+        ],
+        [
+          19,
+          53
+        ],
+        [
+          19,
+          54
+        ],
+        [
+          19,
+          55
+        ],
+        [
+          19,
+          56
+        ],
+        [
+          19,
+          57
+        ],
+        [
+          19,
+          58
+        ]
+      ]
+    },
+    {
+      "source": {
+        "node_id": 0,
+        "tree_node_id": 15
+      },
+      "target": {
+        "node_id": 4,
+        "tree_node_id": null
+      },
+      "arrow_line": 24,
+      "arrow_column": 59,
+      "wire_cells": [
+        [
+          20,
+          23
+        ],
+        [
+          20,
+          24
+        ],
+        [
+          20,
+          25
+        ],
+        [
+          20,
+          26
+        ],
+        [
+          20,
+          27
+        ],
+        [
+          20,
+          28
+        ],
+        [
+          20,
+          29
+        ],
+        [
+          20,
+          30
+        ],
+        [
+          20,
+          31
+        ],
+        [
+          20,
+          32
+        ],
+        [
+          20,
+          33
+        ],
+        [
+          20,
+          34
+        ],
+        [
+          20,
+          35
+        ],
+        [
+          20,
+          36
+        ],
+        [
+          20,
+          37
+        ],
+        [
+          20,
+          38
+        ],
+        [
+          20,
+          39
+        ],
+        [
+          20,
+          40
+        ],
+        [
+          20,
+          41
+        ],
+        [
+          20,
+          42
+        ],
+        [
+          20,
+          43
+        ],
+        [
+          20,
+          44
+        ],
+        [
+          20,
+          45
+        ],
+        [
+          20,
+          46
+        ],
+        [
+          20,
+          47
+        ],
+        [
+          20,
+          48
+        ],
+        [
+          20,
+          49
+        ],
+        [
+          20,
+          50
+        ],
+        [
+          20,
+          51
+        ],
+        [
+          20,
+          52
+        ],
+        [
+          20,
+          53
+        ],
+        [
+          20,
+          54
+        ],
+        [
+          20,
+          55
+        ],
+        [
+          20,
+          56
+        ],
+        [
+          20,
+          57
+        ],
+        [
+          20,
+          58
+        ],
+        [
+          20,
+          59
+        ],
+        [
+          21,
+          59
+        ],
+        [
+          22,
+          26
+        ],
+        [
+          22,
+          27
+        ],
+        [
+          22,
+          28
+        ],
+        [
+          22,
+          29
+        ],
+        [
+          22,
+          30
+        ],
+        [
+          22,
+          31
+        ],
+        [
+          22,
+          32
+        ],
+        [
+          22,
+          33
+        ],
+        [
+          22,
+          34
+        ],
+        [
+          22,
+          35
+        ],
+        [
+          22,
+          36
+        ],
+        [
+          22,
+          37
+        ],
+        [
+          22,
+          38
+        ],
+        [
+          22,
+          39
+        ],
+        [
+          22,
+          40
+        ],
+        [
+          22,
+          41
+        ],
+        [
+          22,
+          42
+        ],
+        [
+          22,
+          43
+        ],
+        [
+          22,
+          44
+        ],
+        [
+          22,
+          45
+        ],
+        [
+          22,
+          46
+        ],
+        [
+          22,
+          47
+        ],
+        [
+          22,
+          48
+        ],
+        [
+          22,
+          49
+        ],
+        [
+          22,
+          50
+        ],
+        [
+          22,
+          51
+        ],
+        [
+          22,
+          52
+        ],
+        [
+          22,
+          53
+        ],
+        [
+          22,
+          54
+        ],
+        [
+          22,
+          55
+        ],
+        [
+          22,
+          56
+        ],
+        [
+          22,
+          57
+        ],
+        [
+          22,
+          58
+        ],
+        [
+          22,
+          59
+        ],
+        [
+          22,
+          60
+        ],
+        [
+          22,
+          61
+        ],
+        [
+          22,
+          62
+        ],
+        [
+          22,
+          63
+        ],
+        [
+          22,
+          64
+        ],
+        [
+          22,
+          65
+        ],
+        [
+          22,
+          66
+        ],
+        [
+          22,
+          67
+        ],
+        [
+          22,
+          68
+        ],
+        [
+          22,
+          69
+        ],
+        [
+          23,
+          59
+        ],
+        [
+          23,
+          69
+        ],
+        [
+          24,
+          59
+        ],
+        [
+          24,
+          69
+        ]
+      ]
+    },
+    {
+      "source": {
+        "node_id": 0,
+        "tree_node_id": 16
+      },
+      "target": {
+        "node_id": 4,
+        "tree_node_id": null
+      },
+      "arrow_line": 24,
+      "arrow_column": 59,
+      "wire_cells": [
+        [
+          20,
+          23
+        ],
+        [
+          20,
+          24
+        ],
+        [
+          20,
+          25
+        ],
+        [
+          20,
+          26
+        ],
+        [
+          20,
+          27
+        ],
+        [
+          20,
+          28
+        ],
+        [
+          20,
+          29
+        ],
+        [
+          20,
+          30
+        ],
+        [
+          20,
+          31
+        ],
+        [
+          20,
+          32
+        ],
+        [
+          20,
+          33
+        ],
+        [
+          20,
+          34
+        ],
+        [
+          20,
+          35
+        ],
+        [
+          20,
+          36
+        ],
+        [
+          20,
+          37
+        ],
+        [
+          20,
+          38
+        ],
+        [
+          20,
+          39
+        ],
+        [
+          20,
+          40
+        ],
+        [
+          20,
+          41
+        ],
+        [
+          20,
+          42
+        ],
+        [
+          20,
+          43
+        ],
+        [
+          20,
+          44
+        ],
+        [
+          20,
+          45
+        ],
+        [
+          20,
+          46
+        ],
+        [
+          20,
+          47
+        ],
+        [
+          20,
+          48
+        ],
+        [
+          20,
+          49
+        ],
+        [
+          20,
+          50
+        ],
+        [
+          20,
+          51
+        ],
+        [
+          20,
+          52
+        ],
+        [
+          20,
+          53
+        ],
+        [
+          20,
+          54
+        ],
+        [
+          20,
+          55
+        ],
+        [
+          20,
+          56
+        ],
+        [
+          20,
+          57
+        ],
+        [
+          20,
+          58
+        ],
+        [
+          20,
+          59
+        ],
+        [
+          21,
+          59
+        ],
+        [
+          22,
+          26
+        ],
+        [
+          22,
+          27
+        ],
+        [
+          22,
+          28
+        ],
+        [
+          22,
+          29
+        ],
+        [
+          22,
+          30
+        ],
+        [
+          22,
+          31
+        ],
+        [
+          22,
+          32
+        ],
+        [
+          22,
+          33
+        ],
+        [
+          22,
+          34
+        ],
+        [
+          22,
+          35
+        ],
+        [
+          22,
+          36
+        ],
+        [
+          22,
+          37
+        ],
+        [
+          22,
+          38
+        ],
+        [
+          22,
+          39
+        ],
+        [
+          22,
+          40
+        ],
+        [
+          22,
+          41
+        ],
+        [
+          22,
+          42
+        ],
+        [
+          22,
+          43
+        ],
+        [
+          22,
+          44
+        ],
+        [
+          22,
+          45
+        ],
+        [
+          22,
+          46
+        ],
+        [
+          22,
+          47
+        ],
+        [
+          22,
+          48
+        ],
+        [
+          22,
+          49
+        ],
+        [
+          22,
+          50
+        ],
+        [
+          22,
+          51
+        ],
+        [
+          22,
+          52
+        ],
+        [
+          22,
+          53
+        ],
+        [
+          22,
+          54
+        ],
+        [
+          22,
+          55
+        ],
+        [
+          22,
+          56
+        ],
+        [
+          22,
+          57
+        ],
+        [
+          22,
+          58
+        ],
+        [
+          22,
+          59
+        ],
+        [
+          22,
+          60
+        ],
+        [
+          22,
+          61
+        ],
+        [
+          22,
+          62
+        ],
+        [
+          22,
+          63
+        ],
+        [
+          22,
+          64
+        ],
+        [
+          22,
+          65
+        ],
+        [
+          22,
+          66
+        ],
+        [
+          22,
+          67
+        ],
+        [
+          22,
+          68
+        ],
+        [
+          22,
+          69
+        ],
+        [
+          23,
+          59
+        ],
+        [
+          23,
+          69
+        ],
+        [
+          24,
+          59
+        ],
+        [
+          24,
+          69
+        ]
+      ]
+    },
+    {
+      "source": {
+        "node_id": 0,
+        "tree_node_id": 15
+      },
+      "target": {
+        "node_id": 4,
+        "tree_node_id": null
+      },
+      "arrow_line": 24,
+      "arrow_column": 69,
+      "wire_cells": [
+        [
+          20,
+          23
+        ],
+        [
+          20,
+          24
+        ],
+        [
+          20,
+          25
+        ],
+        [
+          20,
+          26
+        ],
+        [
+          20,
+          27
+        ],
+        [
+          20,
+          28
+        ],
+        [
+          20,
+          29
+        ],
+        [
+          20,
+          30
+        ],
+        [
+          20,
+          31
+        ],
+        [
+          20,
+          32
+        ],
+        [
+          20,
+          33
+        ],
+        [
+          20,
+          34
+        ],
+        [
+          20,
+          35
+        ],
+        [
+          20,
+          36
+        ],
+        [
+          20,
+          37
+        ],
+        [
+          20,
+          38
+        ],
+        [
+          20,
+          39
+        ],
+        [
+          20,
+          40
+        ],
+        [
+          20,
+          41
+        ],
+        [
+          20,
+          42
+        ],
+        [
+          20,
+          43
+        ],
+        [
+          20,
+          44
+        ],
+        [
+          20,
+          45
+        ],
+        [
+          20,
+          46
+        ],
+        [
+          20,
+          47
+        ],
+        [
+          20,
+          48
+        ],
+        [
+          20,
+          49
+        ],
+        [
+          20,
+          50
+        ],
+        [
+          20,
+          51
+        ],
+        [
+          20,
+          52
+        ],
+        [
+          20,
+          53
+        ],
+        [
+          20,
+          54
+        ],
+        [
+          20,
+          55
+        ],
+        [
+          20,
+          56
+        ],
+        [
+          20,
+          57
+        ],
+        [
+          20,
+          58
+        ],
+        [
+          20,
+          59
+        ],
+        [
+          21,
+          59
+        ],
+        [
+          22,
+          26
+        ],
+        [
+          22,
+          27
+        ],
+        [
+          22,
+          28
+        ],
+        [
+          22,
+          29
+        ],
+        [
+          22,
+          30
+        ],
+        [
+          22,
+          31
+        ],
+        [
+          22,
+          32
+        ],
+        [
+          22,
+          33
+        ],
+        [
+          22,
+          34
+        ],
+        [
+          22,
+          35
+        ],
+        [
+          22,
+          36
+        ],
+        [
+          22,
+          37
+        ],
+        [
+          22,
+          38
+        ],
+        [
+          22,
+          39
+        ],
+        [
+          22,
+          40
+        ],
+        [
+          22,
+          41
+        ],
+        [
+          22,
+          42
+        ],
+        [
+          22,
+          43
+        ],
+        [
+          22,
+          44
+        ],
+        [
+          22,
+          45
+        ],
+        [
+          22,
+          46
+        ],
+        [
+          22,
+          47
+        ],
+        [
+          22,
+          48
+        ],
+        [
+          22,
+          49
+        ],
+        [
+          22,
+          50
+        ],
+        [
+          22,
+          51
+        ],
+        [
+          22,
+          52
+        ],
+        [
+          22,
+          53
+        ],
+        [
+          22,
+          54
+        ],
+        [
+          22,
+          55
+        ],
+        [
+          22,
+          56
+        ],
+        [
+          22,
+          57
+        ],
+        [
+          22,
+          58
+        ],
+        [
+          22,
+          59
+        ],
+        [
+          22,
+          60
+        ],
+        [
+          22,
+          61
+        ],
+        [
+          22,
+          62
+        ],
+        [
+          22,
+          63
+        ],
+        [
+          22,
+          64
+        ],
+        [
+          22,
+          65
+        ],
+        [
+          22,
+          66
+        ],
+        [
+          22,
+          67
+        ],
+        [
+          22,
+          68
+        ],
+        [
+          22,
+          69
+        ],
+        [
+          23,
+          59
+        ],
+        [
+          23,
+          69
+        ],
+        [
+          24,
+          59
+        ],
+        [
+          24,
+          69
+        ]
+      ]
+    },
+    {
+      "source": {
+        "node_id": 0,
+        "tree_node_id": 16
+      },
+      "target": {
+        "node_id": 4,
+        "tree_node_id": null
+      },
+      "arrow_line": 24,
+      "arrow_column": 69,
+      "wire_cells": [
+        [
+          20,
+          23
+        ],
+        [
+          20,
+          24
+        ],
+        [
+          20,
+          25
+        ],
+        [
+          20,
+          26
+        ],
+        [
+          20,
+          27
+        ],
+        [
+          20,
+          28
+        ],
+        [
+          20,
+          29
+        ],
+        [
+          20,
+          30
+        ],
+        [
+          20,
+          31
+        ],
+        [
+          20,
+          32
+        ],
+        [
+          20,
+          33
+        ],
+        [
+          20,
+          34
+        ],
+        [
+          20,
+          35
+        ],
+        [
+          20,
+          36
+        ],
+        [
+          20,
+          37
+        ],
+        [
+          20,
+          38
+        ],
+        [
+          20,
+          39
+        ],
+        [
+          20,
+          40
+        ],
+        [
+          20,
+          41
+        ],
+        [
+          20,
+          42
+        ],
+        [
+          20,
+          43
+        ],
+        [
+          20,
+          44
+        ],
+        [
+          20,
+          45
+        ],
+        [
+          20,
+          46
+        ],
+        [
+          20,
+          47
+        ],
+        [
+          20,
+          48
+        ],
+        [
+          20,
+          49
+        ],
+        [
+          20,
+          50
+        ],
+        [
+          20,
+          51
+        ],
+        [
+          20,
+          52
+        ],
+        [
+          20,
+          53
+        ],
+        [
+          20,
+          54
+        ],
+        [
+          20,
+          55
+        ],
+        [
+          20,
+          56
+        ],
+        [
+          20,
+          57
+        ],
+        [
+          20,
+          58
+        ],
+        [
+          20,
+          59
+        ],
+        [
+          21,
+          59
+        ],
+        [
+          22,
+          26
+        ],
+        [
+          22,
+          27
+        ],
+        [
+          22,
+          28
+        ],
+        [
+          22,
+          29
+        ],
+        [
+          22,
+          30
+        ],
+        [
+          22,
+          31
+        ],
+        [
+          22,
+          32
+        ],
+        [
+          22,
+          33
+        ],
+        [
+          22,
+          34
+        ],
+        [
+          22,
+          35
+        ],
+        [
+          22,
+          36
+        ],
+        [
+          22,
+          37
+        ],
+        [
+          22,
+          38
+        ],
+        [
+          22,
+          39
+        ],
+        [
+          22,
+          40
+        ],
+        [
+          22,
+          41
+        ],
+        [
+          22,
+          42
+        ],
+        [
+          22,
+          43
+        ],
+        [
+          22,
+          44
+        ],
+        [
+          22,
+          45
+        ],
+        [
+          22,
+          46
+        ],
+        [
+          22,
+          47
+        ],
+        [
+          22,
+          48
+        ],
+        [
+          22,
+          49
+        ],
+        [
+          22,
+          50
+        ],
+        [
+          22,
+          51
+        ],
+        [
+          22,
+          52
+        ],
+        [
+          22,
+          53
+        ],
+        [
+          22,
+          54
+        ],
+        [
+          22,
+          55
+        ],
+        [
+          22,
+          56
+        ],
+        [
+          22,
+          57
+        ],
+        [
+          22,
+          58
+        ],
+        [
+          22,
+          59
+        ],
+        [
+          22,
+          60
+        ],
+        [
+          22,
+          61
+        ],
+        [
+          22,
+          62
+        ],
+        [
+          22,
+          63
+        ],
+        [
+          22,
+          64
+        ],
+        [
+          22,
+          65
+        ],
+        [
+          22,
+          66
+        ],
+        [
+          22,
+          67
+        ],
+        [
+          22,
+          68
+        ],
+        [
+          22,
+          69
+        ],
+        [
+          23,
+          59
+        ],
+        [
+          23,
+          69
+        ],
+        [
+          24,
+          59
+        ],
+        [
+          24,
+          69
+        ]
+      ]
+    },
+    {
+      "source": {
+        "node_id": 3,
+        "tree_node_id": 7
+      },
+      "target": {
+        "node_id": 5,
+        "tree_node_id": null
+      },
+      "arrow_line": 42,
+      "arrow_column": 65,
+      "wire_cells": [
+        [
+          32,
+          33
+        ],
+        [
+          32,
+          34
+        ],
+        [
+          32,
+          35
+        ],
+        [
+          32,
+          36
+        ],
+        [
+          32,
+          37
+        ],
+        [
+          32,
+          38
+        ],
+        [
+          32,
+          39
+        ],
+        [
+          32,
+          40
+        ],
+        [
+          32,
+          41
+        ],
+        [
+          32,
+          42
+        ],
+        [
+          32,
+          43
+        ],
+        [
+          32,
+          44
+        ],
+        [
+          32,
+          45
+        ],
+        [
+          32,
+          46
+        ],
+        [
+          32,
+          47
+        ],
+        [
+          32,
+          48
+        ],
+        [
+          32,
+          49
+        ],
+        [
+          32,
+          50
+        ],
+        [
+          32,
+          51
+        ],
+        [
+          32,
+          52
+        ],
+        [
+          32,
+          53
+        ],
+        [
+          32,
+          54
+        ],
+        [
+          32,
+          55
+        ],
+        [
+          32,
+          56
+        ],
+        [
+          32,
+          57
+        ],
+        [
+          32,
+          58
+        ],
+        [
+          32,
+          59
+        ],
+        [
+          32,
+          60
+        ],
+        [
+          33,
+          60
+        ],
+        [
+          34,
+          60
+        ],
+        [
+          35,
+          27
+        ],
+        [
+          35,
+          28
+        ],
+        [
+          35,
+          29
+        ],
+        [
+          35,
+          30
+        ],
+        [
+          35,
+          31
+        ],
+        [
+          35,
+          32
+        ],
+        [
+          35,
+          33
+        ],
+        [
+          35,
+          34
+        ],
+        [
+          35,
+          35
+        ],
+        [
+          35,
+          36
+        ],
+        [
+          35,
+          37
+        ],
+        [
+          35,
+          38
+        ],
+        [
+          35,
+          39
+        ],
+        [
+          35,
+          40
+        ],
+        [
+          35,
+          41
+        ],
+        [
+          35,
+          42
+        ],
+        [
+          35,
+          43
+        ],
+        [
+          35,
+          44
+        ],
+        [
+          35,
+          45
+        ],
+        [
+          35,
+          46
+        ],
+        [
+          35,
+          47
+        ],
+        [
+          35,
+          48
+        ],
+        [
+          35,
+          49
+        ],
+        [
+          35,
+          50
+        ],
+        [
+          35,
+          51
+        ],
+        [
+          35,
+          52
+        ],
+        [
+          35,
+          53
+        ],
+        [
+          35,
+          54
+        ],
+        [
+          35,
+          55
+        ],
+        [
+          35,
+          56
+        ],
+        [
+          35,
+          57
+        ],
+        [
+          35,
+          58
+        ],
+        [
+          35,
+          59
+        ],
+        [
+          35,
+          60
+        ],
+        [
+          35,
+          61
+        ],
+        [
+          35,
+          62
+        ],
+        [
+          35,
+          63
+        ],
+        [
+          35,
+          64
+        ],
+        [
+          35,
+          65
+        ],
+        [
+          36,
+          65
+        ],
+        [
+          37,
+          65
+        ],
+        [
+          38,
+          65
+        ],
+        [
+          39,
+          65
+        ],
+        [
+          40,
+          65
+        ],
+        [
+          41,
+          65
+        ],
+        [
+          42,
+          65
+        ]
+      ]
+    },
+    {
+      "source": {
+        "node_id": 3,
+        "tree_node_id": 9
+      },
+      "target": {
+        "node_id": 5,
+        "tree_node_id": null
+      },
+      "arrow_line": 42,
+      "arrow_column": 65,
+      "wire_cells": [
+        [
+          32,
+          33
+        ],
+        [
+          32,
+          34
+        ],
+        [
+          32,
+          35
+        ],
+        [
+          32,
+          36
+        ],
+        [
+          32,
+          37
+        ],
+        [
+          32,
+          38
+        ],
+        [
+          32,
+          39
+        ],
+        [
+          32,
+          40
+        ],
+        [
+          32,
+          41
+        ],
+        [
+          32,
+          42
+        ],
+        [
+          32,
+          43
+        ],
+        [
+          32,
+          44
+        ],
+        [
+          32,
+          45
+        ],
+        [
+          32,
+          46
+        ],
+        [
+          32,
+          47
+        ],
+        [
+          32,
+          48
+        ],
+        [
+          32,
+          49
+        ],
+        [
+          32,
+          50
+        ],
+        [
+          32,
+          51
+        ],
+        [
+          32,
+          52
+        ],
+        [
+          32,
+          53
+        ],
+        [
+          32,
+          54
+        ],
+        [
+          32,
+          55
+        ],
+        [
+          32,
+          56
+        ],
+        [
+          32,
+          57
+        ],
+        [
+          32,
+          58
+        ],
+        [
+          32,
+          59
+        ],
+        [
+          32,
+          60
+        ],
+        [
+          33,
+          60
+        ],
+        [
+          34,
+          60
+        ],
+        [
+          35,
+          27
+        ],
+        [
+          35,
+          28
+        ],
+        [
+          35,
+          29
+        ],
+        [
+          35,
+          30
+        ],
+        [
+          35,
+          31
+        ],
+        [
+          35,
+          32
+        ],
+        [
+          35,
+          33
+        ],
+        [
+          35,
+          34
+        ],
+        [
+          35,
+          35
+        ],
+        [
+          35,
+          36
+        ],
+        [
+          35,
+          37
+        ],
+        [
+          35,
+          38
+        ],
+        [
+          35,
+          39
+        ],
+        [
+          35,
+          40
+        ],
+        [
+          35,
+          41
+        ],
+        [
+          35,
+          42
+        ],
+        [
+          35,
+          43
+        ],
+        [
+          35,
+          44
+        ],
+        [
+          35,
+          45
+        ],
+        [
+          35,
+          46
+        ],
+        [
+          35,
+          47
+        ],
+        [
+          35,
+          48
+        ],
+        [
+          35,
+          49
+        ],
+        [
+          35,
+          50
+        ],
+        [
+          35,
+          51
+        ],
+        [
+          35,
+          52
+        ],
+        [
+          35,
+          53
+        ],
+        [
+          35,
+          54
+        ],
+        [
+          35,
+          55
+        ],
+        [
+          35,
+          56
+        ],
+        [
+          35,
+          57
+        ],
+        [
+          35,
+          58
+        ],
+        [
+          35,
+          59
+        ],
+        [
+          35,
+          60
+        ],
+        [
+          35,
+          61
+        ],
+        [
+          35,
+          62
+        ],
+        [
+          35,
+          63
+        ],
+        [
+          35,
+          64
+        ],
+        [
+          35,
+          65
+        ],
+        [
+          36,
+          65
+        ],
+        [
+          37,
+          65
+        ],
+        [
+          38,
+          65
+        ],
+        [
+          39,
+          65
+        ],
+        [
+          40,
+          65
+        ],
+        [
+          41,
+          65
+        ],
+        [
+          42,
+          65
+        ]
+      ]
+    },
+    {
+      "source": {
+        "node_id": 3,
+        "tree_node_id": 15
+      },
+      "target": {
+        "node_id": 5,
+        "tree_node_id": null
+      },
+      "arrow_line": 44,
+      "arrow_column": 59,
+      "wire_cells": [
+        [
+          44,
+          9
+        ],
+        [
+          44,
+          10
+        ],
+        [
+          44,
+          11
+        ],
+        [
+          44,
+          12
+        ],
+        [
+          44,
+          13
+        ],
+        [
+          44,
+          14
+        ],
+        [
+          44,
+          15
+        ],
+        [
+          44,
+          16
+        ],
+        [
+          44,
+          17
+        ],
+        [
+          44,
+          18
+        ],
+        [
+          44,
+          19
+        ],
+        [
+          44,
+          20
+        ],
+        [
+          44,
+          21
+        ],
+        [
+          44,
+          22
+        ],
+        [
+          44,
+          23
+        ],
+        [
+          44,
+          24
+        ],
+        [
+          44,
+          25
+        ],
+        [
+          44,
+          26
+        ],
+        [
+          44,
+          27
+        ],
+        [
+          44,
+          28
+        ],
+        [
+          44,
+          29
+        ],
+        [
+          44,
+          30
+        ],
+        [
+          44,
+          31
+        ],
+        [
+          44,
+          32
+        ],
+        [
+          44,
+          33
+        ],
+        [
+          44,
+          34
+        ],
+        [
+          44,
+          35
+        ],
+        [
+          44,
+          36
+        ],
+        [
+          44,
+          37
+        ],
+        [
+          44,
+          38
+        ],
+        [
+          44,
+          39
+        ],
+        [
+          44,
+          40
+        ],
+        [
+          44,
+          41
+        ],
+        [
+          44,
+          42
+        ],
+        [
+          44,
+          43
+        ],
+        [
+          44,
+          44
+        ],
+        [
+          44,
+          45
+        ],
+        [
+          44,
+          46
+        ],
+        [
+          44,
+          47
+        ],
+        [
+          44,
+          48
+        ],
+        [
+          44,
+          49
+        ],
+        [
+          44,
+          50
+        ],
+        [
+          44,
+          51
+        ],
+        [
+          44,
+          52
+        ],
+        [
+          44,
+          53
+        ],
+        [
+          44,
+          54
+        ],
+        [
+          44,
+          55
+        ],
+        [
+          44,
+          56
+        ],
+        [
+          44,
+          57
+        ],
+        [
+          44,
+          58
+        ],
+        [
+          44,
+          59
+        ]
+      ]
+    },
+    {
+      "source": {
+        "node_id": 6,
+        "tree_node_id": null
+      },
+      "target": {
+        "node_id": 3,
+        "tree_node_id": 17
+      },
+      "arrow_line": 53,
+      "arrow_column": 20,
+      "wire_cells": [
+        [
+          53,
+          20
+        ],
+        [
+          53,
+          21
+        ],
+        [
+          53,
+          22
+        ],
+        [
+          53,
+          23
+        ],
+        [
+          53,
+          24
+        ],
+        [
+          53,
+          25
+        ],
+        [
+          53,
+          26
+        ],
+        [
+          53,
+          27
+        ],
+        [
+          53,
+          28
+        ],
+        [
+          53,
+          29
+        ],
+        [
+          53,
+          30
+        ],
+        [
+          53,
+          31
+        ],
+        [
+          53,
+          32
+        ],
+        [
+          53,
+          33
+        ],
+        [
+          53,
+          34
+        ],
+        [
+          53,
+          35
+        ],
+        [
+          53,
+          36
+        ],
+        [
+          53,
+          37
+        ],
+        [
+          53,
+          38
+        ],
+        [
+          53,
+          39
+        ],
+        [
+          53,
+          40
+        ],
+        [
+          53,
+          41
+        ],
+        [
+          53,
+          42
+        ],
+        [
+          53,
+          43
+        ],
+        [
+          53,
+          44
+        ],
+        [
+          53,
+          45
+        ],
+        [
+          53,
+          46
+        ],
+        [
+          53,
+          47
+        ],
+        [
+          53,
+          48
+        ],
+        [
+          53,
+          49
+        ],
+        [
+          53,
+          50
+        ],
+        [
+          53,
+          51
+        ],
+        [
+          53,
+          52
+        ]
+      ]
+    },
+    {
+      "source": {
+        "node_id": 3,
+        "tree_node_id": 21
+      },
+      "target": {
+        "node_id": 7,
+        "tree_node_id": null
+      },
+      "arrow_line": 58,
+      "arrow_column": 60,
+      "wire_cells": [
+        [
+          58,
+          24
+        ],
+        [
+          58,
+          25
+        ],
+        [
+          58,
+          26
+        ],
+        [
+          58,
+          27
+        ],
+        [
+          58,
+          28
+        ],
+        [
+          58,
+          29
+        ],
+        [
+          58,
+          30
+        ],
+        [
+          58,
+          31
+        ],
+        [
+          58,
+          32
+        ],
+        [
+          58,
+          33
+        ],
+        [
+          58,
+          34
+        ],
+        [
+          58,
+          35
+        ],
+        [
+          58,
+          36
+        ],
+        [
+          58,
+          37
+        ],
+        [
+          58,
+          38
+        ],
+        [
+          58,
+          39
+        ],
+        [
+          58,
+          40
+        ],
+        [
+          58,
+          41
+        ],
+        [
+          58,
+          42
+        ],
+        [
+          58,
+          43
+        ],
+        [
+          58,
+          44
+        ],
+        [
+          58,
+          45
+        ],
+        [
+          58,
+          46
+        ],
+        [
+          58,
+          47
+        ],
+        [
+          58,
+          48
+        ],
+        [
+          58,
+          49
+        ],
+        [
+          58,
+          50
+        ],
+        [
+          58,
+          51
+        ],
+        [
+          58,
+          52
+        ],
+        [
+          58,
+          53
+        ],
+        [
+          58,
+          54
+        ],
+        [
+          58,
+          55
+        ],
+        [
+          58,
+          56
+        ],
+        [
+          58,
+          57
+        ],
+        [
+          58,
+          58
+        ],
+        [
+          58,
+          59
+        ],
+        [
+          58,
+          60
+        ]
+      ]
+    }
+  ],
+  "diagnostics": [
+    {
+      "line": 20,
+      "code": "shared_reference_bus",
+      "message": "Joined wire has multiple sources; each source reaches its arrow endpoints.",
+      "severity": "info"
+    },
+    {
+      "line": 26,
+      "code": "unheaded_reference",
+      "message": "Reference wire has no arrowhead; no directed edge was inferred.",
+      "severity": "warning"
+    },
+    {
+      "line": 32,
+      "code": "shared_reference_bus",
+      "message": "Joined wire has multiple sources; each source reaches its arrow endpoints.",
+      "severity": "info"
+    }
+  ],
+  "repairs": [
+    {
+      "line": 43,
+      "column": 60,
+      "cleaned_column": 61,
+      "text": "GridContent",
+      "kind": "tree_alignment"
+    },
+    {
+      "line": 45,
+      "column": 60,
+      "cleaned_column": 61,
+      "text": "|-- ascii",
+      "kind": "tree_alignment"
+    },
+    {
+      "line": 46,
+      "column": 60,
+      "cleaned_column": 61,
+      "text": "|-- revision",
+      "kind": "tree_alignment"
+    },
+    {
+      "line": 47,
+      "column": 60,
+      "cleaned_column": 61,
+      "text": "`-- mappings: EvidenceMapping[]",
+      "kind": "tree_alignment"
+    },
+    {
+      "line": 48,
+      "column": 64,
+      "cleaned_column": 65,
+      "text": "`-- sourceRanges[]",
+      "kind": "tree_alignment"
+    },
+    {
+      "line": 49,
+      "column": 68,
+      "cleaned_column": 69,
+      "text": "|-- source/file identity",
+      "kind": "tree_alignment"
+    },
+    {
+      "line": 50,
+      "column": 68,
+      "cleaned_column": 69,
+      "text": "`-- line/column range",
+      "kind": "tree_alignment"
+    },
+    {
+      "line": 13,
+      "column": 66,
+      "cleaned_column": 67,
+      "text": "+",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 32,
+      "column": 59,
+      "cleaned_column": 60,
+      "text": "+",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 34,
+      "column": 59,
+      "cleaned_column": 60,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 35,
+      "column": 59,
+      "cleaned_column": 60,
+      "text": "+",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 35,
+      "column": 64,
+      "cleaned_column": 65,
+      "text": "+",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 37,
+      "column": 64,
+      "cleaned_column": 65,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 39,
+      "column": 64,
+      "cleaned_column": 65,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 41,
+      "column": 64,
+      "cleaned_column": 65,
+      "text": "|",
+      "kind": "wire_alignment"
+    }
+  ],
+  "original_ascii": "MAPPING DOMAIN MODEL\n====================\n\nProject\n|-- id\n|-- name\n`-- catalog: ProjectionCatalog\n    |-- representations: ProjectRepresentation [id -> record]\n    |   `-- ProjectRepresentation\n    |       |-- id\n    |       |-- name\n    |       |-- status: settled | ...\n    |       `-- currentRevisionId -------------------------------+\n    |                                                             |\n    `-- revisions: ProjectRepresentationRevision [id -> record]   |\n        `-- ProjectRepresentationRevision <-----------------------+\n            |-- id\n            |-- projectId -------------------------------> Project\n            |-- representationId ------------------------> ProjectRepresentation\n            |-- scene ------------------------------------+\n            |                                             |\n            `-- evidence ---------------------------------+---------+\n                                                          |         |\n                                                          v         v\nMappingDocument                                        LineGridScene\n|-- scene -------------------------------------------------+\n|   |-- root: GridBox\n|   |   |-- id\n|   |   |-- position: GridPoint { column, row }\n|   |   |-- minimumSize?: GridSize { columns, rows }\n|   |   |-- collapsed\n|   |   |-- collapsedContentId? --------------------------+\n|   |   |                                                  |\n|   |   |-- DiagramBox                                    |\n|   |   |   `-- contentId --------------------------------+----+\n|   |   |                                                       |\n|   |   `-- ContainerBox                                       |\n|   |       |-- children: GridBox[] (recursive)                 |\n|   |       `-- layout                                         |\n|   |           |-- collisionPolicy: push-right                 |\n|   |           `-- gap                                        |\n|   |                                                           v\n|   `-- contents: GridContent [contentId -> content]       GridContent\n|       `-------------------------------------------------> |-- id\n|                                                          |-- ascii\n|                                                          |-- revision\n|                                                          `-- mappings: EvidenceMapping[]\n|                                                              `-- sourceRanges[]\n|                                                                  |-- source/file identity\n|                                                                  `-- line/column range\n|\n|-- evidence: SourceEvidence [evidenceId -> record]\n|   `-- evidenceId <-------------------------------- EvidenceMapping\n|\n|-- nodes: DiagramNode[] [contentId -> nodes]\n|   |-- id\n|   |-- head { line, startColumn, endColumn }\n|   `-- sourceRanges[] ------------------------------------> SourceEvidence\n|\n`-- sections: DiagramSection[] [contentId -> sections]\n",
+  "cleaned_ascii": "MAPPING DOMAIN MODEL\n====================\n\nProject\n|-- id\n|-- name\n`-- catalog: ProjectionCatalog\n    |-- representations: ProjectRepresentation [id -> record]\n    |   `-- ProjectRepresentation\n    |       |-- id\n    |       |-- name\n    |       |-- status: settled | ...\n    |       `-- currentRevisionId --------------------------------+\n    |                                                             |\n    `-- revisions: ProjectRepresentationRevision [id -> record]   |\n        `-- ProjectRepresentationRevision <-----------------------+\n            |-- id\n            |-- projectId -------------------------------> Project\n            |-- representationId ------------------------> ProjectRepresentation\n            |-- scene ------------------------------------+\n            |                                             |\n            `-- evidence ---------------------------------+---------+\n                                                          |         |\n                                                          v         v\nMappingDocument                                        LineGridScene\n|-- scene -------------------------------------------------+\n|   |-- root: GridBox\n|   |   |-- id\n|   |   |-- position: GridPoint { column, row }\n|   |   |-- minimumSize?: GridSize { columns, rows }\n|   |   |-- collapsed\n|   |   |-- collapsedContentId? ---------------------------+\n|   |   |                                                  |\n|   |   |-- DiagramBox                                     |\n|   |   |   `-- contentId ---------------------------------+----+\n|   |   |                                                       |\n|   |   `-- ContainerBox                                        |\n|   |       |-- children: GridBox[] (recursive)                 |\n|   |       `-- layout                                          |\n|   |           |-- collisionPolicy: push-right                 |\n|   |           `-- gap                                         |\n|   |                                                           v\n|   `-- contents: GridContent [contentId -> content]        GridContent\n|       `-------------------------------------------------> |-- id\n|                                                           |-- ascii\n|                                                           |-- revision\n|                                                           `-- mappings: EvidenceMapping[]\n|                                                               `-- sourceRanges[]\n|                                                                   |-- source/file identity\n|                                                                   `-- line/column range\n|\n|-- evidence: SourceEvidence [evidenceId -> record]\n|   `-- evidenceId <-------------------------------- EvidenceMapping\n|\n|-- nodes: DiagramNode[] [contentId -> nodes]\n|   |-- id\n|   |-- head { line, startColumn, endColumn }\n|   `-- sourceRanges[] ------------------------------------> SourceEvidence\n|\n`-- sections: DiagramSection[] [contentId -> sections]"
+}

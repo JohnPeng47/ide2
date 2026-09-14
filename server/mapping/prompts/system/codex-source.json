@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/openai/codex",
+  "checkout": "/home/john/codex",
+  "source": "codex-rs/models-manager/prompt.md",
+  "commit": "09ccae2c07d514d2201137e0940673aa04ef1006",
+  "sha256": "ac8ae107a0d72fe3476b430afb161ea4e67da2e446d778aefc44828160559807",
+  "usage": "Codex BASE_INSTRUCTIONS, included by codex-rs/models-manager/src/model_info.rs",
+  "license": "Apache-2.0"
+}

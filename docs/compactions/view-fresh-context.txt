@@ -1,0 +1,800 @@
+/home/john/code/vscode/src/vs/editor/browser/view.ts
++-- License header
+|   +-- Microsoft copyright
+|   +-- MIT License
++-- Imports
+|   +-- ../../base/browser/dom.js
+|   |   +-- * as dom
+|   +-- ../../base/browser/fastDomNode.js
+|   |   +-- FastDomNode
+|   |   +-- createFastDomNode
+|   +-- ../../base/browser/mouseEvent.js
+|   |   +-- IMouseWheelEvent
+|   +-- ../../base/browser/performance.js
+|   |   +-- inputLatency
+|   +-- ../../base/browser/window.js
+|   |   +-- CodeWindow
+|   +-- ../../base/common/errors.js
+|   |   +-- BugIndicatingError
+|   |   +-- onUnexpectedError
+|   +-- ../../base/common/lifecycle.js
+|   |   +-- Disposable
+|   |   +-- DisposableStore
+|   |   +-- IDisposable
+|   +-- ./controller/mouseHandler.js
+|   |   +-- IPointerHandlerHelper
+|   +-- ./controller/mouseTarget.js
+|   |   +-- PointerHandlerLastRenderData
+|   +-- ./controller/pointerHandler.js
+|   |   +-- PointerHandler
+|   +-- ./editorBrowser.js
+|   |   +-- IContentWidget
+|   |   +-- IContentWidgetPosition
+|   |   +-- IEditorAriaOptions
+|   |   +-- IGlyphMarginWidget
+|   |   +-- IGlyphMarginWidgetPosition
+|   |   +-- IMouseTarget
+|   |   +-- IOverlayWidget
+|   |   +-- IOverlayWidgetPosition
+|   |   +-- IViewZoneChangeAccessor
+|   +-- ./view/renderingContext.js
+|   |   +-- LineVisibleRanges
+|   |   +-- RenderingContext
+|   |   +-- RestrictedRenderingContext
+|   +-- ./view/viewController.js
+|   |   +-- ICommandDelegate
+|   |   +-- ViewController
+|   +-- ./view/viewOverlays.js
+|   |   +-- ContentViewOverlays
+|   |   +-- MarginViewOverlays
+|   +-- ./view/viewPart.js
+|   |   +-- PartFingerprint
+|   |   +-- PartFingerprints
+|   |   +-- ViewPart
+|   +-- ./view/viewUserInputEvents.js
+|   |   +-- ViewUserInputEvents
+|   +-- ./viewParts/blockDecorations/blockDecorations.js
+|   |   +-- BlockDecorations
+|   +-- ./viewParts/contentWidgets/contentWidgets.js
+|   |   +-- ViewContentWidgets
+|   +-- ./viewParts/currentLineHighlight/currentLineHighlight.js
+|   |   +-- CurrentLineHighlightOverlay
+|   |   +-- CurrentLineMarginHighlightOverlay
+|   +-- ./viewParts/decorations/decorations.js
+|   |   +-- DecorationsOverlay
+|   +-- ./viewParts/editorScrollbar/editorScrollbar.js
+|   |   +-- EditorScrollbar
+|   +-- ./viewParts/glyphMargin/glyphMargin.js
+|   |   +-- GlyphMarginWidgets
+|   +-- ./viewParts/indentGuides/indentGuides.js
+|   |   +-- IndentGuidesOverlay
+|   +-- ./viewParts/lineNumbers/lineNumbers.js
+|   |   +-- LineNumbersOverlay
+|   +-- ./viewParts/viewLines/viewLines.js
+|   |   +-- ViewLines
+|   +-- ./viewParts/linesDecorations/linesDecorations.js
+|   |   +-- LinesDecorationsOverlay
+|   +-- ./viewParts/margin/margin.js
+|   |   +-- Margin
+|   +-- ./viewParts/marginDecorations/marginDecorations.js
+|   |   +-- MarginViewLineDecorationsOverlay
+|   +-- ./viewParts/minimap/minimap.js
+|   |   +-- Minimap
+|   +-- ./viewParts/overlayWidgets/overlayWidgets.js
+|   |   +-- ViewOverlayWidgets
+|   +-- ./viewParts/overviewRuler/decorationsOverviewRuler.js
+|   |   +-- DecorationsOverviewRuler
+|   +-- ./viewParts/overviewRuler/overviewRuler.js
+|   |   +-- OverviewRuler
+|   +-- ./viewParts/rulers/rulers.js
+|   |   +-- Rulers
+|   +-- ./viewParts/scrollDecoration/scrollDecoration.js
+|   |   +-- ScrollDecorationViewPart
+|   +-- ./viewParts/selections/selections.js
+|   |   +-- SelectionsOverlay
+|   +-- ./viewParts/viewCursors/viewCursors.js
+|   |   +-- ViewCursors
+|   +-- ./viewParts/viewZones/viewZones.js
+|   |   +-- ViewZones
+|   +-- ./viewParts/whitespace/whitespace.js
+|   |   +-- WhitespaceOverlay
+|   +-- ../common/config/editorConfiguration.js
+|   |   +-- IEditorConfiguration
+|   +-- ../common/config/editorOptions.js
+|   |   +-- EditorOption
+|   +-- ../common/core/position.js
+|   |   +-- Position
+|   +-- ../common/core/range.js
+|   |   +-- Range
+|   +-- ../common/core/selection.js
+|   |   +-- Selection
+|   +-- ../common/editorCommon.js
+|   |   +-- ScrollType
+|   +-- ../common/model.js
+|   |   +-- GlyphMarginLane
+|   |   +-- IGlyphMarginLanesModel
+|   +-- ../common/viewEventHandler.js
+|   |   +-- ViewEventHandler
+|   +-- ../common/viewEvents.js
+|   |   +-- * as viewEvents
+|   +-- ../common/viewLayout/viewLinesViewportData.js
+|   |   +-- ViewportData
+|   +-- ../common/viewModel.js
+|   |   +-- IViewModel
+|   +-- ../common/viewModel/viewContext.js
+|   |   +-- ViewContext
+|   +-- ../../platform/instantiation/common/instantiation.js
+|   |   +-- IInstantiationService
+|   +-- ../../platform/theme/common/themeService.js
+|   |   +-- IColorTheme
+|   |   +-- getThemeTypeSelector
+|   +-- ./gpu/viewGpuContext.js
+|   |   +-- ViewGpuContext
+|   +-- ./viewParts/viewLinesGpu/viewLinesGpu.js
+|   |   +-- ViewLinesGpu
+|   +-- ./controller/editContext/editContext.js
+|   |   +-- AbstractEditContext
+|   +-- ./controller/editContext/clipboardUtils.js
+|   |   +-- IClipboardCopyEvent
+|   |   +-- IClipboardPasteEvent
+|   +-- ./controller/editContext/textArea/textAreaEditContext.js
+|   |   +-- IVisibleRangeProvider
+|   |   +-- TextAreaEditContext
+|   +-- ./controller/editContext/native/nativeEditContext.js
+|   |   +-- NativeEditContext
+|   +-- ./viewParts/rulersGpu/rulersGpu.js
+|   |   +-- RulersGpu
+|   +-- ./viewParts/gpuMark/gpuMark.js
+|   |   +-- GpuMarkOverlay
+|   +-- ../../platform/accessibility/common/accessibility.js
+|   |   +-- AccessibilitySupport
+|   +-- ../../base/common/event.js
+|   |   +-- Event
+|   |   +-- Emitter
+|   +-- ../../platform/userInteraction/browser/userInteractionService.js
+|   |   +-- IUserInteractionService
++-- export interface IContentWidgetData
+|   +-- widget: IContentWidget
+|   +-- position: IContentWidgetPosition | null
++-- export interface IOverlayWidgetData
+|   +-- widget: IOverlayWidget
+|   +-- position: IOverlayWidgetPosition | null
++-- export interface IGlyphMarginWidgetData
+|   +-- widget: IGlyphMarginWidget
+|   +-- position: IGlyphMarginWidgetPosition
++-- export class View extends ViewEventHandler
+|   +-- Core references and selection state
+|   |   +-- _widgetFocusTracker: CodeEditorWidgetFocusTracker
+|   |   +-- _scrollbar: readonly EditorScrollbar
+|   |   +-- _context: readonly ViewContext
+|   |   +-- _viewGpuContext?: readonly ViewGpuContext
+|   |   +-- _selections: Selection[]
+|   +-- View lines
+|   |   +-- _viewLines: readonly ViewLines
+|   |   +-- _viewLinesGpu?: readonly ViewLinesGpu
+|   +-- View parts retained for API calls
+|   |   +-- _viewZones: readonly ViewZones
+|   |   +-- _contentWidgets: readonly ViewContentWidgets
+|   |   +-- _overlayWidgets: readonly ViewOverlayWidgets
+|   |   +-- _glyphMarginWidgets: readonly GlyphMarginWidgets
+|   |   +-- _viewCursors: readonly ViewCursors
+|   |   +-- _viewParts: readonly ViewPart[]
+|   |   +-- _viewController: readonly ViewController
+|   +-- Input handling
+|   |   +-- _editContextEnabled: boolean
+|   |   +-- _accessibilitySupport: AccessibilitySupport
+|   |   +-- _editContext: AbstractEditContext
+|   |   +-- _editContextClipboardListeners = new DisposableStore()
+|   |   +-- _pointerHandler: readonly PointerHandler
+|   +-- Clipboard events relayed from editContext
+|   |   +-- Copy
+|   |   |   +-- _onWillCopy = registered Emitter<IClipboardCopyEvent>
+|   |   |   +-- onWillCopy = _onWillCopy.event
+|   |   +-- Cut
+|   |   |   +-- _onWillCut = registered Emitter<IClipboardCopyEvent>
+|   |   |   +-- onWillCut = _onWillCut.event
+|   |   +-- Paste
+|   |   |   +-- _onWillPaste = registered Emitter<IClipboardPasteEvent>
+|   |   |   +-- onWillPaste = _onWillPaste.event
+|   +-- DOM nodes
+|   |   +-- _linesContent: readonly FastDomNode<HTMLElement>
+|   |   +-- domNode: public readonly FastDomNode<HTMLElement>
+|   |   +-- _overflowGuardContainer: readonly FastDomNode<HTMLElement>
+|   +-- Mutable state
+|   |   +-- _shouldRecomputeGlyphMarginLanes: boolean = false
+|   |   +-- _renderAnimationFrame: IDisposable | null
+|   |   +-- _ownerID: string
+|   +-- constructor
+|   |   +-- Inputs
+|   |   |   +-- editorContainer: HTMLElement
+|   |   |   +-- ownerID: string
+|   |   |   +-- commandDelegate: ICommandDelegate
+|   |   |   +-- configuration: IEditorConfiguration
+|   |   |   +-- colorTheme: IColorTheme
+|   |   |   +-- model: IViewModel
+|   |   |   +-- userInputEvents: ViewUserInputEvents
+|   |   |   +-- overflowWidgetsDomNode: HTMLElement | undefined
+|   |   |   +-- Injected services retained on the instance
+|   |   |   |   +-- _instantiationService: IInstantiationService
+|   |   |   |   +-- _userInteractionService: IUserInteractionService
+|   |   +-- Initialize state and input
+|   |   |   +-- super()
+|   |   |   +-- _ownerID = ownerID
+|   |   |   +-- _widgetFocusTracker = registered CodeEditorWidgetFocusTracker
+|   |   |   |   +-- editorContainer
+|   |   |   |   +-- overflowWidgetsDomNode
+|   |   |   |   +-- _userInteractionService
+|   |   |   +-- Register onChange callback
+|   |   |   |   +-- viewModel.setHasWidgetFocus(_widgetFocusTracker.hasFocus())
+|   |   |   +-- _selections = [Selection(1, 1, 1, 1)]
+|   |   |   +-- _renderAnimationFrame = null
+|   |   |   +-- _overflowGuardContainer = FastDomNode div
+|   |   |   |   +-- Write OverflowGuard fingerprint
+|   |   |   |   +-- Class = overflow-guard
+|   |   |   +-- _viewController = new ViewController
+|   |   |   |   +-- configuration
+|   |   |   |   +-- model
+|   |   |   |   +-- userInputEvents
+|   |   |   |   +-- commandDelegate
+|   |   |   +-- _context = new ViewContext(configuration, colorTheme, model)
+|   |   |   +-- _context.addEventHandler(this) first, to update layout
+|   |   |   +-- _viewParts = []
+|   |   |   +-- _editContextEnabled = effectiveEditContext option
+|   |   |   +-- _accessibilitySupport = accessibilitySupport option
+|   |   |   +-- _editContext = _instantiateEditContext()
+|   |   |   +-- _connectEditContextClipboardEvents()
+|   |   |   +-- Append _editContext to _viewParts
+|   |   +-- Create layout DOM and line renderers
+|   |   |   +-- _linesContent = FastDomNode div
+|   |   |   |   +-- Class = lines-content monaco-editor-background
+|   |   |   |   +-- Position = absolute
+|   |   |   +-- domNode = FastDomNode div
+|   |   |   |   +-- Class = _getEditorClassName()
+|   |   |   |   +-- Role = code for screen readers
+|   |   |   +-- experimentalGpuAcceleration === 'on'?
+|   |   |   |   +-- yes --> _viewGpuContext = createInstance(ViewGpuContext, _context)
+|   |   |   +-- _scrollbar = new EditorScrollbar, appended to _viewParts
+|   |   |   |   +-- _context
+|   |   |   |   +-- _linesContent
+|   |   |   |   +-- domNode
+|   |   |   |   +-- _overflowGuardContainer
+|   |   |   +-- _viewLines = new ViewLines(_context, _viewGpuContext, _linesContent)
+|   |   |   +-- _viewGpuContext exists?
+|   |   |   |   +-- yes --> _viewLinesGpu = createInstance(ViewLinesGpu, _context, _viewGpuContext)
+|   |   +-- Construct and append view parts in order
+|   |   |   +-- _viewZones = new ViewZones(_context)
+|   |   |   +-- decorationsOverviewRuler = new DecorationsOverviewRuler(_context)
+|   |   |   +-- scrollDecoration = new ScrollDecorationViewPart(_context)
+|   |   |   +-- contentViewOverlays = new ContentViewOverlays(_context)
+|   |   |   |   +-- Add dynamic overlays in order, each using _context
+|   |   |   |   |   +-- CurrentLineHighlightOverlay
+|   |   |   |   |   +-- SelectionsOverlay
+|   |   |   |   |   +-- IndentGuidesOverlay
+|   |   |   |   |   +-- DecorationsOverlay
+|   |   |   |   |   +-- WhitespaceOverlay
+|   |   |   +-- marginViewOverlays = new MarginViewOverlays(_context)
+|   |   |   |   +-- Add dynamic overlays in order
+|   |   |   |   |   +-- CurrentLineMarginHighlightOverlay(_context)
+|   |   |   |   |   +-- MarginViewLineDecorationsOverlay(_context)
+|   |   |   |   |   +-- LinesDecorationsOverlay(_context)
+|   |   |   |   |   +-- LineNumbersOverlay(_context)
+|   |   |   |   |   +-- _viewGpuContext exists?
+|   |   |   |   |   |   +-- yes --> GpuMarkOverlay(_context, _viewGpuContext)
+|   |   |   +-- _glyphMarginWidgets = new GlyphMarginWidgets(_context)
+|   |   |   +-- margin = new Margin(_context)
+|   |   |   |   +-- Append DOM children in order before appending margin to _viewParts
+|   |   |   |   |   +-- _viewZones.marginDomNode
+|   |   |   |   |   +-- marginViewOverlays.getDomNode()
+|   |   |   |   |   +-- _glyphMarginWidgets.domNode
+|   |   |   +-- _contentWidgets = new ViewContentWidgets(_context, domNode)
+|   |   |   +-- _viewCursors = new ViewCursors(_context)
+|   |   |   +-- _overlayWidgets = new ViewOverlayWidgets(_context, domNode)
+|   |   |   +-- rulers depends on _viewGpuContext
+|   |   |   |   +-- present --> new RulersGpu(_context, _viewGpuContext)
+|   |   |   |   +-- absent --> new Rulers(_context)
+|   |   |   +-- blockOutline = new BlockDecorations(_context)
+|   |   |   +-- minimap = new Minimap(_context)
+|   |   +-- Wire DOM, then layout and pointer handling
+|   |   |   +-- decorationsOverviewRuler exists?
+|   |   |   |   +-- yes --> overviewRulerData = _scrollbar.getOverviewRulerLayoutInfo()
+|   |   |   |   +-- Insert ruler node at overviewRulerData.insertBefore in its parent
+|   |   |   +-- Append to _linesContent in order
+|   |   |   |   +-- contentViewOverlays.getDomNode()
+|   |   |   |   +-- 'domNode' in rulers?
+|   |   |   |   |   +-- yes --> rulers.domNode
+|   |   |   |   +-- _viewZones.domNode
+|   |   |   |   +-- _viewLines.getDomNode()
+|   |   |   |   +-- _contentWidgets.domNode
+|   |   |   |   +-- _viewCursors.getDomNode()
+|   |   |   +-- Append to _overflowGuardContainer in order
+|   |   |   |   +-- margin.getDomNode()
+|   |   |   |   +-- _scrollbar.getDomNode()
+|   |   |   |   +-- _viewGpuContext exists?
+|   |   |   |   |   +-- yes --> _viewGpuContext.canvas
+|   |   |   |   +-- scrollDecoration.getDomNode()
+|   |   |   |   +-- _overlayWidgets.getDomNode()
+|   |   |   |   +-- minimap.getDomNode()
+|   |   |   |   +-- blockOutline.domNode
+|   |   |   +-- domNode.appendChild(_overflowGuardContainer)
+|   |   |   +-- overflowWidgetsDomNode exists?
+|   |   |   |   +-- yes --> append native DOM nodes to overflowWidgetsDomNode
+|   |   |   |   |   +-- _contentWidgets.overflowingContentWidgetsDomNode.domNode
+|   |   |   |   |   +-- _overlayWidgets.overflowingOverlayWidgetsDomNode.domNode
+|   |   |   |   +-- no --> append FastDomNodes to domNode
+|   |   |   |   |   +-- _contentWidgets.overflowingContentWidgetsDomNode
+|   |   |   |   |   +-- _overlayWidgets.overflowingOverlayWidgetsDomNode
+|   |   |   +-- _applyLayout()
+|   |   |   +-- _pointerHandler = registered new PointerHandler
+|   |   |   |   +-- _context
+|   |   |   |   +-- _viewController
+|   |   |   |   +-- _createPointerHandlerHelper()
+|   +-- _instantiateEditContext(): AbstractEditContext
+|   |   +-- effectiveEditContext option enabled?
+|   |   |   +-- yes --> return createInstance(NativeEditContext, shared inputs)
+|   |   |   +-- no --> return createInstance(TextAreaEditContext, shared inputs)
+|   |   +-- Shared inputs
+|   |   |   +-- _ownerID
+|   |   |   +-- _context
+|   |   |   +-- _overflowGuardContainer
+|   |   |   +-- _viewController
+|   |   |   +-- _createTextAreaHandlerHelper()
+|   +-- _updateEditContext()
+|   |   +-- Read current options
+|   |   |   +-- editContextEnabled = effectiveEditContext
+|   |   |   +-- accessibilitySupport = accessibilitySupport
+|   |   +-- Both options match cached state?
+|   |   |   +-- yes --> return
+|   |   +-- Changed --> replace edit context
+|   |   |   +-- _editContextEnabled = editContextEnabled
+|   |   |   +-- _accessibilitySupport = accessibilitySupport
+|   |   |   +-- isEditContextFocused = _editContext.isFocused()
+|   |   |   +-- indexOfEditContext = _viewParts.indexOf(_editContext)
+|   |   |   +-- _editContext.dispose()
+|   |   |   +-- _editContext = _instantiateEditContext()
+|   |   |   +-- _connectEditContextClipboardEvents()
+|   |   |   +-- isEditContextFocused?
+|   |   |   |   +-- yes --> _editContext.focus()
+|   |   |   +-- indexOfEditContext !== -1?
+|   |   |   |   +-- yes --> replace old _viewParts entry with _editContext
+|   +-- _connectEditContextClipboardEvents()
+|   |   +-- _editContextClipboardListeners.clear()
+|   |   +-- Add listeners for current _editContext
+|   |   |   +-- onWillCopy(e) --> _onWillCopy.fire(e)
+|   |   |   +-- onWillCut(e) --> _onWillCut.fire(e)
+|   |   |   +-- onWillPaste(e) --> _onWillPaste.fire(e)
+|   +-- _computeGlyphMarginLanes(): IGlyphMarginLanesModel
+|   |   +-- Inputs and collection state
+|   |   |   +-- model = _context.viewModel.model
+|   |   |   +-- laneModel = _context.viewModel.glyphLanes
+|   |   |   +-- Glyph type
+|   |   |   |   +-- range: Range
+|   |   |   |   +-- lane: GlyphMarginLane
+|   |   |   |   +-- persist?: boolean
+|   |   |   +-- glyphs: Glyph[] = []
+|   |   |   +-- maxLineNumber = 0
+|   |   +-- Append mapped model.getAllMarginDecorations()
+|   |   |   +-- lane = glyphMargin.position, default Center
+|   |   |   +-- maxLineNumber = max(current, decoration.range.endLineNumber)
+|   |   |   +-- Return Glyph
+|   |   |   |   +-- range = decoration.range
+|   |   |   |   +-- lane
+|   |   |   |   +-- persist = glyphMargin.persistLane
+|   |   +-- Append mapped _glyphMarginWidgets.getWidgets()
+|   |   |   +-- range = model.validateRange(widget.preference.range)
+|   |   |   +-- maxLineNumber = max(current, range.endLineNumber)
+|   |   |   +-- Return Glyph
+|   |   |   |   +-- range
+|   |   |   |   +-- lane = widget.preference.lane
+|   |   +-- Sort glyphs using Range.compareRangesUsingStarts
+|   |   +-- laneModel.reset(maxLineNumber)
+|   |   +-- For each glyph --> laneModel.push(glyph.lane, glyph.range, glyph.persist)
+|   |   +-- return laneModel
+|   +-- _createPointerHandlerHelper(): IPointerHandlerHelper
+|   |   +-- Return helper object
+|   |   |   +-- Rendering references
+|   |   |   |   +-- viewDomNode = domNode.domNode
+|   |   |   |   +-- linesContentDomNode = _linesContent.domNode
+|   |   |   |   +-- viewLinesDomNode = _viewLines.getDomNode().domNode
+|   |   |   |   +-- viewLinesGpu = _viewLinesGpu
+|   |   |   +-- focusTextArea() --> this.focus()
+|   |   |   +-- dispatchTextAreaEvent(event) --> _editContext.domNode.domNode.dispatchEvent(event)
+|   |   |   +-- getLastRenderData()
+|   |   |   |   +-- lastViewCursorsRenderData = _viewCursors.getLastRenderData() || []
+|   |   |   |   +-- lastTextareaPosition = _editContext.getLastRenderData()
+|   |   |   |   +-- return new PointerHandlerLastRenderData(lastViewCursorsRenderData, lastTextareaPosition)
+|   |   |   +-- renderNow() --> render(true, false)
+|   |   |   +-- shouldSuppressMouseDownOnViewZone(viewZoneId)
+|   |   |   |   +-- return _viewZones.shouldSuppressMouseDownOnViewZone(viewZoneId)
+|   |   |   +-- shouldSuppressMouseDownOnWidget(widgetId)
+|   |   |   |   +-- return _contentWidgets.shouldSuppressMouseDownOnWidget(widgetId)
+|   |   |   +-- getPositionFromDOMInfo(spanNode, offset)
+|   |   |   |   +-- _flushAccumulatedAndRenderNow()
+|   |   |   |   +-- return _viewLines.getPositionFromDOMInfo(spanNode, offset)
+|   |   |   +-- visibleRangeForPosition(lineNumber, column)
+|   |   |   |   +-- _flushAccumulatedAndRenderNow()
+|   |   |   |   +-- position = new Position(lineNumber, column)
+|   |   |   |   +-- Return first non-nullish result
+|   |   |   |   |   +-- _viewLines.visibleRangeForPosition(position)
+|   |   |   |   |   +-- _viewLinesGpu?.visibleRangeForPosition(position)
+|   |   |   |   |   +-- null
+|   |   |   +-- getLineWidth(lineNumber)
+|   |   |   |   +-- _flushAccumulatedAndRenderNow()
+|   |   |   |   +-- _viewLinesGpu exists?
+|   |   |   |   |   +-- yes --> result = _viewLinesGpu.getLineWidth(lineNumber)
+|   |   |   |   |   +-- result !== undefined?
+|   |   |   |   |   |   +-- yes --> return result
+|   |   |   |   +-- Fall through --> return _viewLines.getLineWidth(lineNumber)
+|   +-- _createTextAreaHandlerHelper(): IVisibleRangeProvider
+|   |   +-- Return helper object
+|   |   |   +-- visibleRangeForPosition(position)
+|   |   |   |   +-- _flushAccumulatedAndRenderNow()
+|   |   |   |   +-- return _viewLines.visibleRangeForPosition(position)
+|   |   |   +-- linesVisibleRangesForRange(range, includeNewLines)
+|   |   |   |   +-- _flushAccumulatedAndRenderNow()
+|   |   |   |   +-- return _viewLines.linesVisibleRangesForRange(range, includeNewLines)
+|   +-- _applyLayout()
+|   |   +-- layoutInfo = configuration.options.get(EditorOption.layoutInfo)
+|   |   +-- domNode dimensions from layoutInfo
+|   |   |   +-- width
+|   |   |   +-- height
+|   |   +-- _overflowGuardContainer dimensions from layoutInfo
+|   |   |   +-- width
+|   |   |   +-- height
+|   |   +-- _linesContent dimensions capped for Chrome rendering
+|   |   |   +-- width = 16777216
+|   |   |   +-- height = 16777216
+|   +-- _getEditorClassName()
+|   |   +-- focused = _editContext.isFocused() ? ' focused' : ''
+|   |   +-- Return concatenated class name
+|   |   |   +-- editorClassName option
+|   |   |   +-- Space and getThemeTypeSelector(_context.theme.type)
+|   |   |   +-- focused suffix
+|   +-- handleEvents(events)
+|   |   +-- super.handleEvents(events)
+|   |   +-- _scheduleRender()
+|   +-- onConfigurationChanged(e): boolean
+|   |   +-- domNode.setClassName(_getEditorClassName())
+|   |   +-- _updateEditContext()
+|   |   +-- _applyLayout()
+|   |   +-- return false
+|   +-- onCursorStateChanged(e): boolean
+|   |   +-- _selections = e.selections
+|   |   +-- return false
+|   +-- onDecorationsChanged(e): boolean
+|   |   +-- e.affectsGlyphMargin?
+|   |   |   +-- yes --> _shouldRecomputeGlyphMarginLanes = true
+|   |   +-- return false
+|   +-- onFocusChanged(e): boolean
+|   |   +-- domNode.setClassName(_getEditorClassName())
+|   |   +-- return false
+|   +-- onThemeChanged(e): boolean
+|   |   +-- _context.theme.update(e.theme)
+|   |   +-- domNode.setClassName(_getEditorClassName())
+|   |   +-- return false
+|   +-- dispose()
+|   |   +-- _renderAnimationFrame !== null?
+|   |   |   +-- yes --> _renderAnimationFrame.dispose()
+|   |   |   +-- Then _renderAnimationFrame = null
+|   |   +-- _editContextClipboardListeners.dispose()
+|   |   +-- Remove overflowing content widgets DOM node
+|   |   +-- Remove overflowing overlay widgets DOM node
+|   |   +-- _context.removeEventHandler(this)
+|   |   +-- _viewGpuContext?.dispose()
+|   |   +-- _viewLines.dispose()
+|   |   +-- _viewLinesGpu?.dispose()
+|   |   +-- For each _viewParts entry --> viewPart.dispose()
+|   |   +-- super.dispose()
+|   +-- _scheduleRender()
+|   |   +-- _store.isDisposed?
+|   |   |   +-- yes --> throw BugIndicatingError
+|   |   +-- _renderAnimationFrame === null?
+|   |   |   +-- no --> leave current schedule in place
+|   |   |   +-- yes --> schedule coordinated rendering
+|   |   |   |   +-- _editContext instanceof NativeEditContext?
+|   |   |   |   |   +-- yes --> _editContext.setEditContextOnDomNode()
+|   |   |   |   +-- rendering = _createCoordinatedRendering()
+|   |   |   |   +-- _renderAnimationFrame = INSTANCE.scheduleCoordinatedRendering
+|   |   |   |   |   +-- window = dom.getWindow(domNode?.domNode)
+|   |   |   |   |   +-- prepareRenderText callback
+|   |   |   |   |   |   +-- Disposed --> throw BugIndicatingError
+|   |   |   |   |   |   +-- Otherwise try/finally
+|   |   |   |   |   |   |   +-- try --> return rendering.prepareRenderText()
+|   |   |   |   |   |   |   +-- finally --> _renderAnimationFrame = null
+|   |   |   |   |   +-- renderText(viewportData) callback
+|   |   |   |   |   |   +-- Disposed --> throw BugIndicatingError
+|   |   |   |   |   |   +-- Otherwise return rendering.renderText(viewportData)
+|   |   |   |   |   +-- prepareRender(viewParts, ctx: RenderingContext) callback
+|   |   |   |   |   |   +-- Disposed --> throw BugIndicatingError
+|   |   |   |   |   |   +-- Otherwise return rendering.prepareRender(viewParts, ctx)
+|   |   |   |   |   +-- render(viewParts, ctx: RestrictedRenderingContext) callback
+|   |   |   |   |   |   +-- Disposed --> throw BugIndicatingError
+|   |   |   |   |   |   +-- Otherwise return rendering.render(viewParts, ctx)
+|   +-- _flushAccumulatedAndRenderNow()
+|   |   +-- rendering = _createCoordinatedRendering()
+|   |   +-- viewportData = safeInvokeNoArg(() => rendering.prepareRenderText())
+|   |   +-- !viewportData?
+|   |   |   +-- yes --> return
+|   |   +-- data = safeInvokeNoArg(() => rendering.renderText(viewportData))
+|   |   +-- !data?
+|   |   |   +-- yes --> return
+|   |   +-- [viewParts, ctx] = data
+|   |   +-- safeInvokeNoArg(() => rendering.prepareRender(viewParts, ctx))
+|   |   +-- safeInvokeNoArg(() => rendering.render(viewParts, ctx))
+|   +-- _getViewPartsToRender(): ViewPart[]
+|   |   +-- result: ViewPart[] = []
+|   |   +-- resultLen = 0
+|   |   +-- For each viewPart in _viewParts
+|   |   |   +-- viewPart.shouldRender()?
+|   |   |   |   +-- yes --> result[resultLen++] = viewPart
+|   |   +-- return result
+|   +-- _createCoordinatedRendering(): return four callbacks
+|   |   +-- prepareRenderText callback
+|   |   |   +-- _shouldRecomputeGlyphMarginLanes?
+|   |   |   |   +-- yes --> _shouldRecomputeGlyphMarginLanes = false
+|   |   |   |   +-- Then model = _computeGlyphMarginLanes()
+|   |   |   |   +-- Then configuration.setGlyphMarginDecorationLaneCount(model.requiredLanes)
+|   |   |   +-- inputLatency.onRenderStart()
+|   |   |   +-- !domNode.domNode.isConnected?
+|   |   |   |   +-- yes --> return null
+|   |   |   +-- viewPartsToRender = _getViewPartsToRender()
+|   |   |   +-- viewLinesShouldRender = _viewLines.shouldRender()
+|   |   |   +-- !viewLinesShouldRender AND viewPartsToRender.length === 0?
+|   |   |   |   +-- yes --> return null
+|   |   |   +-- partialViewportData = viewLayout.getLinesViewportData()
+|   |   |   +-- viewModel.setViewport from partialViewportData
+|   |   |   |   +-- startLineNumber
+|   |   |   |   +-- endLineNumber
+|   |   |   |   +-- centeredLineNumber
+|   |   |   +-- viewportData = new ViewportData
+|   |   |   |   +-- _selections
+|   |   |   |   +-- partialViewportData
+|   |   |   |   +-- viewLayout.getWhitespaceViewportData()
+|   |   |   |   +-- viewModel
+|   |   |   +-- For each viewPart in _viewParts
+|   |   |   |   +-- viewPart.shouldRender()?
+|   |   |   |   |   +-- yes --> viewPart.onBeforeRender(viewportData)
+|   |   |   +-- return viewportData
+|   |   +-- renderText(viewportData): [ViewPart[], RenderingContext]
+|   |   |   +-- _viewLines.shouldRender()?
+|   |   |   |   +-- yes --> _viewLines.renderText(viewportData)
+|   |   |   |   +-- Then _viewLines.onDidRender()
+|   |   |   +-- _viewLinesGpu?.shouldRender()?
+|   |   |   |   +-- yes --> _viewLinesGpu.renderText(viewportData)
+|   |   |   |   +-- Then _viewLinesGpu.onDidRender()
+|   |   |   +-- Recollect viewPartsToRender = _getViewPartsToRender() after possible scroll events
+|   |   |   +-- Return tuple
+|   |   |   |   +-- viewPartsToRender
+|   |   |   |   +-- new RenderingContext
+|   |   |   |   |   +-- _context.viewLayout
+|   |   |   |   |   +-- viewportData
+|   |   |   |   |   +-- _viewLines
+|   |   |   |   |   +-- _viewLinesGpu
+|   |   +-- prepareRender(viewPartsToRender, ctx: RenderingContext)
+|   |   |   +-- For each viewPart --> viewPart.prepareRender(ctx)
+|   |   +-- render(viewPartsToRender, ctx: RestrictedRenderingContext)
+|   |   |   +-- For each viewPart in order
+|   |   |   |   +-- viewPart.render(ctx)
+|   |   |   |   +-- viewPart.onDidRender()
+|   +-- delegateVerticalScrollbarPointerDown(browserEvent)
+|   |   +-- _scrollbar.delegateVerticalScrollbarPointerDown(browserEvent)
+|   +-- delegateScrollFromMouseWheelEvent(browserEvent)
+|   |   +-- _scrollbar.delegateScrollFromMouseWheelEvent(browserEvent)
+|   +-- restoreState(scrollPosition)
+|   |   +-- viewModel.viewLayout.setScrollPosition
+|   |   |   +-- scrollTop = scrollPosition.scrollTop
+|   |   |   +-- scrollLeft = scrollPosition.scrollLeft
+|   |   |   +-- ScrollType.Immediate
+|   |   +-- viewModel.visibleLinesStabilized()
+|   +-- getOffsetForColumn(modelLineNumber, modelColumn): number
+|   |   +-- modelPosition = model.validatePosition
+|   |   |   +-- lineNumber = modelLineNumber
+|   |   |   +-- column = modelColumn
+|   |   +-- viewPosition = coordinatesConverter.convertModelPositionToViewPosition(modelPosition)
+|   |   +-- _flushAccumulatedAndRenderNow()
+|   |   +-- visibleRange = _viewLines.visibleRangeForPosition(new Position from viewPosition)
+|   |   +-- !visibleRange?
+|   |   |   +-- yes --> return -1
+|   |   +-- Otherwise return visibleRange.left
+|   +-- getLineWidth(modelLineNumber): number
+|   |   +-- model = _context.viewModel.model
+|   |   +-- viewLine = convertModelPositionToViewPosition(inputPosition).lineNumber
+|   |   |   +-- Input position = (modelLineNumber, model.getLineMaxColumn(modelLineNumber))
+|   |   +-- _flushAccumulatedAndRenderNow()
+|   |   +-- width = _viewLines.getLineWidth(viewLine)
+|   |   +-- return width
+|   +-- resetLineWidthCaches()
+|   |   +-- _viewLines.resetLineWidthCaches()
+|   +-- getTargetAtClientPoint(clientX, clientY): IMouseTarget | null
+|   |   +-- mouseTarget = _pointerHandler.getTargetAtClientPoint(clientX, clientY)
+|   |   +-- !mouseTarget?
+|   |   |   +-- yes --> return null
+|   |   +-- Otherwise return ViewUserInputEvents.convertViewToModelMouseTarget
+|   |   |   +-- mouseTarget
+|   |   |   +-- _context.viewModel.coordinatesConverter
+|   +-- createOverviewRuler(cssClassName): OverviewRuler
+|   |   +-- return new OverviewRuler(_context, cssClassName)
+|   +-- change(callback)
+|   |   +-- _viewZones.changeViewZones(callback)
+|   |   +-- _scheduleRender()
+|   +-- render(now, everything)
+|   |   +-- everything?
+|   |   |   +-- yes --> _viewLines.forceShouldRender()
+|   |   |   +-- Then for each _viewParts entry --> viewPart.forceShouldRender()
+|   |   +-- now?
+|   |   |   +-- yes --> _flushAccumulatedAndRenderNow()
+|   |   |   +-- no --> _scheduleRender()
+|   +-- writeScreenReaderContent(reason)
+|   |   +-- _editContext.writeScreenReaderContent(reason)
+|   +-- focus()
+|   |   +-- _editContext.focus()
+|   +-- isFocused(): boolean
+|   |   +-- return _editContext.isFocused()
+|   +-- isWidgetFocused(): boolean
+|   |   +-- return _widgetFocusTracker.hasFocus()
+|   +-- refreshFocusState()
+|   |   +-- _editContext.refreshFocusState()
+|   |   +-- _widgetFocusTracker.refreshState()
+|   +-- setAriaOptions(options)
+|   |   +-- _editContext.setAriaOptions(options)
+|   +-- addContentWidget(widgetData)
+|   |   +-- _contentWidgets.addWidget(widgetData.widget)
+|   |   +-- layoutContentWidget(widgetData)
+|   |   +-- _scheduleRender()
+|   +-- layoutContentWidget(widgetData)
+|   |   +-- _contentWidgets.setWidgetPosition
+|   |   |   +-- widget = widgetData.widget
+|   |   |   +-- position = widgetData.position?.position ?? null
+|   |   |   +-- secondaryPosition = widgetData.position?.secondaryPosition ?? null
+|   |   |   +-- preference = widgetData.position?.preference ?? null
+|   |   |   +-- positionAffinity = widgetData.position?.positionAffinity ?? null
+|   |   +-- _contentWidgets.shouldRender()?
+|   |   |   +-- yes --> _scheduleRender()
+|   +-- removeContentWidget(widgetData)
+|   |   +-- _contentWidgets.removeWidget(widgetData.widget)
+|   |   +-- _scheduleRender()
+|   +-- addOverlayWidget(widgetData)
+|   |   +-- _overlayWidgets.addWidget(widgetData.widget)
+|   |   +-- layoutOverlayWidget(widgetData)
+|   |   +-- _scheduleRender()
+|   +-- layoutOverlayWidget(widgetData)
+|   |   +-- shouldRender = _overlayWidgets.setWidgetPosition(widgetData.widget, widgetData.position)
+|   |   +-- shouldRender?
+|   |   |   +-- yes --> _scheduleRender()
+|   +-- removeOverlayWidget(widgetData)
+|   |   +-- _overlayWidgets.removeWidget(widgetData.widget)
+|   |   +-- _scheduleRender()
+|   +-- addGlyphMarginWidget(widgetData)
+|   |   +-- _glyphMarginWidgets.addWidget(widgetData.widget)
+|   |   +-- _shouldRecomputeGlyphMarginLanes = true
+|   |   +-- _scheduleRender()
+|   +-- layoutGlyphMarginWidget(widgetData)
+|   |   +-- newPreference = widgetData.position
+|   |   +-- shouldRender = _glyphMarginWidgets.setWidgetPosition(widgetData.widget, newPreference)
+|   |   +-- shouldRender?
+|   |   |   +-- yes --> _shouldRecomputeGlyphMarginLanes = true
+|   |   |   +-- Then _scheduleRender()
+|   +-- removeGlyphMarginWidget(widgetData)
+|   |   +-- _glyphMarginWidgets.removeWidget(widgetData.widget)
+|   |   +-- _shouldRecomputeGlyphMarginLanes = true
+|   |   +-- _scheduleRender()
++-- safeInvokeNoArg<T>(func: () => T): T | null
+|   +-- Invoke func() in try/catch
+|   |   +-- Returns --> return its value
+|   |   +-- Throws e
+|   |   |   +-- onUnexpectedError(e)
+|   |   |   +-- return null
++-- interface ICoordinatedRendering
+|   +-- window: readonly CodeWindow
+|   +-- prepareRenderText(): ViewportData | null
+|   +-- renderText(viewportData: ViewportData): [ViewPart[], RenderingContext]
+|   +-- prepareRender(viewParts: ViewPart[], ctx: RenderingContext): void
+|   +-- render(viewParts: ViewPart[], ctx: RestrictedRenderingContext): void
++-- class EditorRenderingCoordinator
+|   +-- Singleton and pending rendering state
+|   |   +-- INSTANCE = new EditorRenderingCoordinator()
+|   |   +-- _coordinatedRenderings: ICoordinatedRendering[] = []
+|   |   +-- _animationFrameRunners = new Map<CodeWindow, IDisposable>()
+|   +-- private constructor(): empty
+|   +-- scheduleCoordinatedRendering(rendering): IDisposable
+|   |   +-- _coordinatedRenderings.push(rendering)
+|   |   +-- _scheduleRender(rendering.window)
+|   |   +-- return cancellation handle
+|   |   |   +-- dispose()
+|   |   |   |   +-- renderingIndex = _coordinatedRenderings.indexOf(rendering)
+|   |   |   |   +-- renderingIndex === -1?
+|   |   |   |   |   +-- yes --> return
+|   |   |   |   +-- Otherwise remove rendering from queue
+|   |   |   |   +-- Queue now empty?
+|   |   |   |   |   +-- yes --> dispose every _animationFrameRunners handle
+|   |   |   |   |   +-- Then _animationFrameRunners.clear()
+|   |   |   |   |   +-- no --> retain pending runners
+|   +-- _scheduleRender(window)
+|   |   +-- Runner already registered for window?
+|   |   |   +-- yes --> finish
+|   |   |   +-- no --> create and register runner
+|   |   |   |   +-- WHEN runner executes
+|   |   |   |   |   +-- _animationFrameRunners.delete(window)
+|   |   |   |   |   +-- _onRenderScheduled()
+|   |   |   |   +-- Store handle in _animationFrameRunners[window]
+|   |   |   |   |   +-- dom.runAtThisOrScheduleAtNextAnimationFrame(window, runner, 100)
+|   +-- _onRenderScheduled()
+|   |   +-- coordinatedRenderings = _coordinatedRenderings.slice(0)
+|   |   +-- _coordinatedRenderings = []
+|   |   +-- Sequential batch passes: A and B illustrate iterations over the same batch
+|   |       PHASE                    EDITOR A                              EDITOR B
+|   |       Initialize               viewportDatas = []
+|   |       1. prepareRenderText      safeInvokeNoArg:                      safeInvokeNoArg:
+|   |                                rendering.prepareRenderText()         rendering.prepareRenderText()
+|   |                                viewportDatas[i] = result             viewportDatas[i] = result
+|   |                         whole first pass completes before phase 2
+|   |       Initialize               datas = []
+|   |       2. renderText             viewportDatas[i] exists?              viewportDatas[i] exists?
+|   |                                +-- no                                +-- no
+|   |                                |   datas[i] = null                   |   datas[i] = null
+|   |                                |   continue                          |   continue
+|   |                                +-- yes: safeInvokeNoArg              +-- yes: safeInvokeNoArg
+|   |                                    rendering.renderText(viewportData)    rendering.renderText(viewportData)
+|   |                                    datas[i] = result                    datas[i] = result
+|   |                         whole second pass completes before phase 3
+|   |       3. prepareRender          datas[i] exists?                      datas[i] exists?
+|   |                                +-- no: continue                      +-- no: continue
+|   |                                +-- yes                               +-- yes
+|   |                                    [viewParts, ctx] = data               [viewParts, ctx] = data
+|   |                                    safeInvokeNoArg:                     safeInvokeNoArg:
+|   |                                    rendering.prepareRender(viewParts, ctx)  rendering.prepareRender(viewParts, ctx)
+|   |                         whole third pass completes before phase 4
+|   |       4. render                 datas[i] exists?                      datas[i] exists?
+|   |                                +-- no: continue                      +-- no: continue
+|   |                                +-- yes                               +-- yes
+|   |                                    [viewParts, ctx] = data               [viewParts, ctx] = data
+|   |                                    safeInvokeNoArg:                     safeInvokeNoArg:
+|   |                                    rendering.render(viewParts, ctx)     rendering.render(viewParts, ctx)
+|   |   +-- Callback return handling
+|   |   |   +-- First two phases retain safeInvokeNoArg results
+|   |   |   +-- Last two phases ignore safeInvokeNoArg results
+|   |   |   +-- prepareRender result does not gate render
++-- class CodeEditorWidgetFocusTracker extends Disposable
+|   +-- Focus state and event
+|   |   +-- _hasDomElementFocus: boolean
+|   |   +-- _domFocusTracker: readonly dom.IFocusTracker
+|   |   +-- _overflowWidgetsDomNode: readonly dom.IFocusTracker | undefined
+|   |   +-- _onChange = registered Emitter<void>
+|   |   +-- onChange: Event<void> = _onChange.event
+|   |   +-- _overflowWidgetsDomNodeHasFocus: boolean
+|   |   +-- _hadFocus: boolean | undefined = undefined
+|   +-- constructor
+|   |   +-- Inputs
+|   |   |   +-- domElement: HTMLElement
+|   |   |   +-- overflowWidgetsDomNode: HTMLElement | undefined
+|   |   |   +-- userInteractionService: IUserInteractionService
+|   |   +-- super()
+|   |   +-- _hasDomElementFocus = false
+|   |   +-- _domFocusTracker = registered userInteractionService.createDomFocusTracker(domElement)
+|   |   +-- _overflowWidgetsDomNodeHasFocus = false
+|   |   +-- Register main DOM focus callbacks
+|   |   |   +-- onDidFocus
+|   |   |   |   +-- _hasDomElementFocus = true
+|   |   |   |   +-- _update()
+|   |   |   +-- onDidBlur
+|   |   |   |   +-- _hasDomElementFocus = false
+|   |   |   |   +-- _update()
+|   |   +-- overflowWidgetsDomNode exists?
+|   |   |   +-- yes
+|   |   |   |   +-- _overflowWidgetsDomNode = registered createDomFocusTracker(overflowWidgetsDomNode)
+|   |   |   |   +-- Register onDidFocus callback
+|   |   |   |   |   +-- _overflowWidgetsDomNodeHasFocus = true
+|   |   |   |   |   +-- _update()
+|   |   |   |   +-- Register onDidBlur callback
+|   |   |   |   |   +-- _overflowWidgetsDomNodeHasFocus = false
+|   |   |   |   |   +-- _update()
+|   +-- _update()
+|   |   +-- focused = _hasDomElementFocus || _overflowWidgetsDomNodeHasFocus
+|   |   +-- _hadFocus !== focused?
+|   |   |   +-- yes --> _hadFocus = focused
+|   |   |   +-- Then _onChange.fire(undefined)
+|   |   |   +-- no --> no event
+|   +-- hasFocus(): boolean
+|   |   +-- return _hadFocus ?? false
+|   +-- refreshState()
+|   |   +-- _domFocusTracker.refreshState()
+|   |   +-- _overflowWidgetsDomNode?.refreshState?.()

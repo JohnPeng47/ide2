@@ -81,7 +81,7 @@ export const SourceCodePane = memo(function SourceCodePane(props: {
     setRevealRequestId(id => id + 1);
   };
   const lookup = async (position: SourcePosition) => {
-    if (!loaded || !supportsDefinitions(content.sourceFile)) return;
+    if (!loaded?.lspEnabled || !supportsDefinitions(content.sourceFile)) return;
     definitionRequest.current?.abort();
     const controller = new AbortController(); definitionRequest.current = controller;
     setDefinitionMessage('Finding definition…'); setDefinitions([]);
@@ -117,7 +117,7 @@ export const SourceCodePane = memo(function SourceCodePane(props: {
           <button type="button" aria-label="Next mapped range" disabled={!loaded || stale || !entries.length} onClick={() => reveal((rangeIndex + 1) % entries.length)}>↓</button>
           <button type="button" aria-label="Reload source file" onClick={() => { definitionRequest.current?.abort(); setDefinitionMessage(''); setDefinitions([]); setAttempt(n => n + 1); }}>↻</button>
         </div>
-        {supportsDefinitions(content.sourceFile) && <small className="source-navigation-hint">Ctrl/Cmd+click or F12: go to definition</small>}
+        {loaded?.lspEnabled && supportsDefinitions(content.sourceFile) && <small className="source-navigation-hint">Ctrl/Cmd+click or F12: go to definition</small>}
         {definitionMessage && <div className="mapping-source-message" role="status">{definitionMessage}
           {definitions.map((location, index) => <button type="button" key={index} onClick={() => navigate(location)}>{location.path}:{(location.range?.start.line ?? 0) + 1}</button>)}
         </div>}
@@ -128,7 +128,7 @@ export const SourceCodePane = memo(function SourceCodePane(props: {
             range={range} compacted={Boolean(file && !stale && content.showCompactions)} presentation={presentation} highlightedRanges={stale ? emptyEntries : entries} deferOffscreen
             targetLine={destination?.range ? destination.range.start.line + 1 : stale ? 1 : target?.startLine}
             navigationRange={destination?.range} revealRequestId={revealRequestId}
-            onGoToDefinition={supportsDefinitions(content.sourceFile) ? lookup : undefined}
+            onGoToDefinition={loaded.lspEnabled && supportsDefinitions(content.sourceFile) ? lookup : undefined}
             initialScrollPosition={content.scroll} scrollState={scrollState} active={active}
             onScrollPositionChange={scrollState ? undefined : scroll => onChange({ scroll })} />}
       </div>

@@ -206,6 +206,7 @@ export async function fetchSourceSnippet(
 
 export interface ProjectSourceFile extends SourceSnippet {
   sourceSha256: string;
+  lspEnabled: boolean;
 }
 
 export async function fetchProjectSourceFile(projectId: string, path: string, signal?: AbortSignal): Promise<ProjectSourceFile> {

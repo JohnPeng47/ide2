@@ -1,0 +1,2465 @@
+{
+  "sourceFile": "/home/john/code/vscode/src/vs/editor/browser/view.ts",
+  "sourceSha256": "22edb04795705b7fc8675ba40d89c448a62141201f1a16b1f20d8b26e82771e2",
+  "treeFile": "/home/john/.herdr/worktrees/new-diagram/worktree-perf-debug/docs/compactions/round2-view.txt",
+  "mappings": [
+    {
+      "treeLine": 1,
+      "sourceRanges": [
+        {
+          "startLine": 1,
+          "endLine": 992
+        }
+      ]
+    },
+    {
+      "treeLine": 3,
+      "sourceRanges": [
+        {
+          "startLine": 134,
+          "endLine": 304
+        },
+        {
+          "startLine": 444,
+          "endLine": 457
+        },
+        {
+          "startLine": 459,
+          "endLine": 462
+        }
+      ]
+    },
+    {
+      "treeLine": 5,
+      "sourceRanges": [
+        {
+          "startLine": 134,
+          "endLine": 304
+        }
+      ]
+    },
+    {
+      "treeLine": 6,
+      "sourceRanges": [
+        {
+          "startLine": 149,
+          "endLine": 154
+        }
+      ]
+    },
+    {
+      "treeLine": 7,
+      "sourceRanges": [
+        {
+          "startLine": 152,
+          "endLine": 154
+        }
+      ]
+    },
+    {
+      "treeLine": 8,
+      "sourceRanges": [
+        {
+          "startLine": 156,
+          "endLine": 157
+        }
+      ]
+    },
+    {
+      "treeLine": 9,
+      "sourceRanges": [
+        {
+          "startLine": 159,
+          "endLine": 169
+        }
+      ]
+    },
+    {
+      "treeLine": 10,
+      "sourceRanges": [
+        {
+          "startLine": 168,
+          "endLine": 169
+        }
+      ]
+    },
+    {
+      "treeLine": 11,
+      "sourceRanges": [
+        {
+          "startLine": 171,
+          "endLine": 179
+        }
+      ]
+    },
+    {
+      "treeLine": 12,
+      "sourceRanges": [
+        {
+          "startLine": 176,
+          "endLine": 179
+        }
+      ]
+    },
+    {
+      "treeLine": 13,
+      "sourceRanges": [
+        {
+          "startLine": 179,
+          "endLine": 179
+        }
+      ]
+    },
+    {
+      "treeLine": 14,
+      "sourceRanges": [
+        {
+          "startLine": 181,
+          "endLine": 189
+        }
+      ]
+    },
+    {
+      "treeLine": 15,
+      "sourceRanges": [
+        {
+          "startLine": 191,
+          "endLine": 202
+        }
+      ]
+    },
+    {
+      "treeLine": 16,
+      "sourceRanges": [
+        {
+          "startLine": 191,
+          "endLine": 193
+        }
+      ]
+    },
+    {
+      "treeLine": 17,
+      "sourceRanges": [
+        {
+          "startLine": 195,
+          "endLine": 199
+        }
+      ]
+    },
+    {
+      "treeLine": 18,
+      "sourceRanges": [
+        {
+          "startLine": 200,
+          "endLine": 202
+        }
+      ]
+    },
+    {
+      "treeLine": 19,
+      "sourceRanges": [
+        {
+          "startLine": 204,
+          "endLine": 264
+        }
+      ]
+    },
+    {
+      "treeLine": 20,
+      "sourceRanges": [
+        {
+          "startLine": 204,
+          "endLine": 214
+        }
+      ]
+    },
+    {
+      "treeLine": 21,
+      "sourceRanges": [
+        {
+          "startLine": 216,
+          "endLine": 222
+        }
+      ]
+    },
+    {
+      "treeLine": 22,
+      "sourceRanges": [
+        {
+          "startLine": 218,
+          "endLine": 222
+        }
+      ]
+    },
+    {
+      "treeLine": 23,
+      "sourceRanges": [
+        {
+          "startLine": 224,
+          "endLine": 232
+        }
+      ]
+    },
+    {
+      "treeLine": 24,
+      "sourceRanges": [
+        {
+          "startLine": 226,
+          "endLine": 229
+        }
+      ]
+    },
+    {
+      "treeLine": 25,
+      "sourceRanges": [
+        {
+          "startLine": 230,
+          "endLine": 232
+        }
+      ]
+    },
+    {
+      "treeLine": 26,
+      "sourceRanges": [
+        {
+          "startLine": 234,
+          "endLine": 242
+        }
+      ]
+    },
+    {
+      "treeLine": 27,
+      "sourceRanges": [
+        {
+          "startLine": 244,
+          "endLine": 253
+        }
+      ]
+    },
+    {
+      "treeLine": 28,
+      "sourceRanges": [
+        {
+          "startLine": 255,
+          "endLine": 258
+        }
+      ]
+    },
+    {
+      "treeLine": 29,
+      "sourceRanges": [
+        {
+          "startLine": 260,
+          "endLine": 264
+        }
+      ]
+    },
+    {
+      "treeLine": 30,
+      "sourceRanges": [
+        {
+          "startLine": 268,
+          "endLine": 290
+        }
+      ]
+    },
+    {
+      "treeLine": 31,
+      "sourceRanges": [
+        {
+          "startLine": 268,
+          "endLine": 271
+        }
+      ]
+    },
+    {
+      "treeLine": 32,
+      "sourceRanges": [
+        {
+          "startLine": 273,
+          "endLine": 280
+        }
+      ]
+    },
+    {
+      "treeLine": 33,
+      "sourceRanges": [
+        {
+          "startLine": 273,
+          "endLine": 273
+        }
+      ]
+    },
+    {
+      "treeLine": 34,
+      "sourceRanges": [
+        {
+          "startLine": 274,
+          "endLine": 276
+        }
+      ]
+    },
+    {
+      "treeLine": 35,
+      "sourceRanges": [
+        {
+          "startLine": 277,
+          "endLine": 277
+        }
+      ]
+    },
+    {
+      "treeLine": 36,
+      "sourceRanges": [
+        {
+          "startLine": 278,
+          "endLine": 278
+        }
+      ]
+    },
+    {
+      "treeLine": 37,
+      "sourceRanges": [
+        {
+          "startLine": 279,
+          "endLine": 279
+        }
+      ]
+    },
+    {
+      "treeLine": 38,
+      "sourceRanges": [
+        {
+          "startLine": 280,
+          "endLine": 280
+        }
+      ]
+    },
+    {
+      "treeLine": 39,
+      "sourceRanges": [
+        {
+          "startLine": 281,
+          "endLine": 290
+        }
+      ]
+    },
+    {
+      "treeLine": 40,
+      "sourceRanges": [
+        {
+          "startLine": 281,
+          "endLine": 281
+        }
+      ]
+    },
+    {
+      "treeLine": 41,
+      "sourceRanges": [
+        {
+          "startLine": 282,
+          "endLine": 282
+        }
+      ]
+    },
+    {
+      "treeLine": 42,
+      "sourceRanges": [
+        {
+          "startLine": 283,
+          "endLine": 285
+        }
+      ]
+    },
+    {
+      "treeLine": 43,
+      "sourceRanges": [
+        {
+          "startLine": 286,
+          "endLine": 286
+        }
+      ]
+    },
+    {
+      "treeLine": 44,
+      "sourceRanges": [
+        {
+          "startLine": 287,
+          "endLine": 287
+        }
+      ]
+    },
+    {
+      "treeLine": 45,
+      "sourceRanges": [
+        {
+          "startLine": 288,
+          "endLine": 288
+        }
+      ]
+    },
+    {
+      "treeLine": 46,
+      "sourceRanges": [
+        {
+          "startLine": 289,
+          "endLine": 289
+        }
+      ]
+    },
+    {
+      "treeLine": 47,
+      "sourceRanges": [
+        {
+          "startLine": 292,
+          "endLine": 298
+        }
+      ]
+    },
+    {
+      "treeLine": 48,
+      "sourceRanges": [
+        {
+          "startLine": 292,
+          "endLine": 294
+        }
+      ]
+    },
+    {
+      "treeLine": 49,
+      "sourceRanges": [
+        {
+          "startLine": 295,
+          "endLine": 298
+        }
+      ]
+    },
+    {
+      "treeLine": 50,
+      "sourceRanges": [
+        {
+          "startLine": 300,
+          "endLine": 300
+        }
+      ]
+    },
+    {
+      "treeLine": 51,
+      "sourceRanges": [
+        {
+          "startLine": 302,
+          "endLine": 303
+        }
+      ]
+    },
+    {
+      "treeLine": 53,
+      "sourceRanges": [
+        {
+          "startLine": 444,
+          "endLine": 457
+        }
+      ]
+    },
+    {
+      "treeLine": 54,
+      "sourceRanges": [
+        {
+          "startLine": 445,
+          "endLine": 452
+        }
+      ]
+    },
+    {
+      "treeLine": 55,
+      "sourceRanges": [
+        {
+          "startLine": 454,
+          "endLine": 456
+        }
+      ]
+    },
+    {
+      "treeLine": 57,
+      "sourceRanges": [
+        {
+          "startLine": 459,
+          "endLine": 462
+        }
+      ]
+    },
+    {
+      "treeLine": 58,
+      "sourceRanges": [
+        {
+          "startLine": 460,
+          "endLine": 461
+        }
+      ]
+    },
+    {
+      "treeLine": 60,
+      "sourceRanges": [
+        {
+          "startLine": 306,
+          "endLine": 313
+        },
+        {
+          "startLine": 315,
+          "endLine": 334
+        },
+        {
+          "startLine": 336,
+          "endLine": 344
+        },
+        {
+          "startLine": 740,
+          "endLine": 763
+        },
+        {
+          "startLine": 933,
+          "endLine": 992
+        }
+      ]
+    },
+    {
+      "treeLine": 62,
+      "sourceRanges": [
+        {
+          "startLine": 306,
+          "endLine": 313
+        }
+      ]
+    },
+    {
+      "treeLine": 63,
+      "sourceRanges": [
+        {
+          "startLine": 307,
+          "endLine": 308
+        }
+      ]
+    },
+    {
+      "treeLine": 64,
+      "sourceRanges": [
+        {
+          "startLine": 309,
+          "endLine": 309
+        }
+      ]
+    },
+    {
+      "treeLine": 65,
+      "sourceRanges": [
+        {
+          "startLine": 310,
+          "endLine": 311
+        }
+      ]
+    },
+    {
+      "treeLine": 67,
+      "sourceRanges": [
+        {
+          "startLine": 315,
+          "endLine": 334
+        }
+      ]
+    },
+    {
+      "treeLine": 68,
+      "sourceRanges": [
+        {
+          "startLine": 316,
+          "endLine": 320
+        }
+      ]
+    },
+    {
+      "treeLine": 69,
+      "sourceRanges": [
+        {
+          "startLine": 321,
+          "endLine": 324
+        }
+      ]
+    },
+    {
+      "treeLine": 70,
+      "sourceRanges": [
+        {
+          "startLine": 325,
+          "endLine": 327
+        }
+      ]
+    },
+    {
+      "treeLine": 71,
+      "sourceRanges": [
+        {
+          "startLine": 327,
+          "endLine": 327
+        }
+      ]
+    },
+    {
+      "treeLine": 72,
+      "sourceRanges": [
+        {
+          "startLine": 328,
+          "endLine": 330
+        }
+      ]
+    },
+    {
+      "treeLine": 73,
+      "sourceRanges": [
+        {
+          "startLine": 331,
+          "endLine": 333
+        }
+      ]
+    },
+    {
+      "treeLine": 75,
+      "sourceRanges": [
+        {
+          "startLine": 336,
+          "endLine": 344
+        }
+      ]
+    },
+    {
+      "treeLine": 76,
+      "sourceRanges": [
+        {
+          "startLine": 337,
+          "endLine": 338
+        }
+      ]
+    },
+    {
+      "treeLine": 77,
+      "sourceRanges": [
+        {
+          "startLine": 340,
+          "endLine": 343
+        }
+      ]
+    },
+    {
+      "treeLine": 79,
+      "sourceRanges": [
+        {
+          "startLine": 740,
+          "endLine": 763
+        }
+      ]
+    },
+    {
+      "treeLine": 80,
+      "sourceRanges": [
+        {
+          "startLine": 740,
+          "endLine": 750
+        }
+      ]
+    },
+    {
+      "treeLine": 81,
+      "sourceRanges": [
+        {
+          "startLine": 752,
+          "endLine": 754
+        }
+      ]
+    },
+    {
+      "treeLine": 82,
+      "sourceRanges": [
+        {
+          "startLine": 756,
+          "endLine": 759
+        }
+      ]
+    },
+    {
+      "treeLine": 83,
+      "sourceRanges": [
+        {
+          "startLine": 761,
+          "endLine": 763
+        }
+      ]
+    },
+    {
+      "treeLine": 85,
+      "sourceRanges": [
+        {
+          "startLine": 933,
+          "endLine": 992
+        }
+      ]
+    },
+    {
+      "treeLine": 86,
+      "sourceRanges": [
+        {
+          "startLine": 946,
+          "endLine": 974
+        }
+      ]
+    },
+    {
+      "treeLine": 87,
+      "sourceRanges": [
+        {
+          "startLine": 949,
+          "endLine": 952
+        }
+      ]
+    },
+    {
+      "treeLine": 88,
+      "sourceRanges": [
+        {
+          "startLine": 954,
+          "endLine": 961
+        }
+      ]
+    },
+    {
+      "treeLine": 89,
+      "sourceRanges": [
+        {
+          "startLine": 963,
+          "endLine": 973
+        }
+      ]
+    },
+    {
+      "treeLine": 90,
+      "sourceRanges": [
+        {
+          "startLine": 964,
+          "endLine": 972
+        }
+      ]
+    },
+    {
+      "treeLine": 91,
+      "sourceRanges": [
+        {
+          "startLine": 976,
+          "endLine": 982
+        }
+      ]
+    },
+    {
+      "treeLine": 92,
+      "sourceRanges": [
+        {
+          "startLine": 977,
+          "endLine": 977
+        }
+      ]
+    },
+    {
+      "treeLine": 93,
+      "sourceRanges": [
+        {
+          "startLine": 978,
+          "endLine": 980
+        }
+      ]
+    },
+    {
+      "treeLine": 94,
+      "sourceRanges": [
+        {
+          "startLine": 984,
+          "endLine": 986
+        }
+      ]
+    },
+    {
+      "treeLine": 95,
+      "sourceRanges": [
+        {
+          "startLine": 988,
+          "endLine": 991
+        }
+      ]
+    },
+    {
+      "treeLine": 97,
+      "sourceRanges": [
+        {
+          "startLine": 465,
+          "endLine": 493
+        },
+        {
+          "startLine": 720,
+          "endLine": 723
+        },
+        {
+          "startLine": 765,
+          "endLine": 787
+        },
+        {
+          "startLine": 789,
+          "endLine": 805
+        },
+        {
+          "startLine": 807,
+          "endLine": 826
+        },
+        {
+          "startLine": 346,
+          "endLine": 376
+        }
+      ]
+    },
+    {
+      "treeLine": 99,
+      "sourceRanges": [
+        {
+          "startLine": 465,
+          "endLine": 493
+        }
+      ]
+    },
+    {
+      "treeLine": 100,
+      "sourceRanges": [
+        {
+          "startLine": 465,
+          "endLine": 468
+        }
+      ]
+    },
+    {
+      "treeLine": 101,
+      "sourceRanges": [
+        {
+          "startLine": 469,
+          "endLine": 474
+        }
+      ]
+    },
+    {
+      "treeLine": 102,
+      "sourceRanges": [
+        {
+          "startLine": 470,
+          "endLine": 472
+        }
+      ]
+    },
+    {
+      "treeLine": 103,
+      "sourceRanges": [
+        {
+          "startLine": 475,
+          "endLine": 478
+        }
+      ]
+    },
+    {
+      "treeLine": 104,
+      "sourceRanges": [
+        {
+          "startLine": 479,
+          "endLine": 484
+        }
+      ]
+    },
+    {
+      "treeLine": 105,
+      "sourceRanges": [
+        {
+          "startLine": 480,
+          "endLine": 483
+        }
+      ]
+    },
+    {
+      "treeLine": 106,
+      "sourceRanges": [
+        {
+          "startLine": 485,
+          "endLine": 488
+        }
+      ]
+    },
+    {
+      "treeLine": 107,
+      "sourceRanges": [
+        {
+          "startLine": 489,
+          "endLine": 493
+        }
+      ]
+    },
+    {
+      "treeLine": 109,
+      "sourceRanges": [
+        {
+          "startLine": 720,
+          "endLine": 723
+        }
+      ]
+    },
+    {
+      "treeLine": 110,
+      "sourceRanges": [
+        {
+          "startLine": 721,
+          "endLine": 722
+        }
+      ]
+    },
+    {
+      "treeLine": 112,
+      "sourceRanges": [
+        {
+          "startLine": 765,
+          "endLine": 787
+        }
+      ]
+    },
+    {
+      "treeLine": 113,
+      "sourceRanges": [
+        {
+          "startLine": 765,
+          "endLine": 769
+        }
+      ]
+    },
+    {
+      "treeLine": 114,
+      "sourceRanges": [
+        {
+          "startLine": 771,
+          "endLine": 782
+        }
+      ]
+    },
+    {
+      "treeLine": 115,
+      "sourceRanges": [
+        {
+          "startLine": 772,
+          "endLine": 778
+        }
+      ]
+    },
+    {
+      "treeLine": 116,
+      "sourceRanges": [
+        {
+          "startLine": 779,
+          "endLine": 781
+        }
+      ]
+    },
+    {
+      "treeLine": 117,
+      "sourceRanges": [
+        {
+          "startLine": 784,
+          "endLine": 787
+        }
+      ]
+    },
+    {
+      "treeLine": 119,
+      "sourceRanges": [
+        {
+          "startLine": 789,
+          "endLine": 805
+        }
+      ]
+    },
+    {
+      "treeLine": 120,
+      "sourceRanges": [
+        {
+          "startLine": 789,
+          "endLine": 793
+        }
+      ]
+    },
+    {
+      "treeLine": 121,
+      "sourceRanges": [
+        {
+          "startLine": 795,
+          "endLine": 800
+        }
+      ]
+    },
+    {
+      "treeLine": 122,
+      "sourceRanges": [
+        {
+          "startLine": 802,
+          "endLine": 805
+        }
+      ]
+    },
+    {
+      "treeLine": 124,
+      "sourceRanges": [
+        {
+          "startLine": 807,
+          "endLine": 826
+        }
+      ]
+    },
+    {
+      "treeLine": 125,
+      "sourceRanges": [
+        {
+          "startLine": 807,
+          "endLine": 811
+        }
+      ]
+    },
+    {
+      "treeLine": 126,
+      "sourceRanges": [
+        {
+          "startLine": 813,
+          "endLine": 820
+        }
+      ]
+    },
+    {
+      "treeLine": 127,
+      "sourceRanges": [
+        {
+          "startLine": 816,
+          "endLine": 819
+        }
+      ]
+    },
+    {
+      "treeLine": 128,
+      "sourceRanges": [
+        {
+          "startLine": 822,
+          "endLine": 826
+        }
+      ]
+    },
+    {
+      "treeLine": 130,
+      "sourceRanges": [
+        {
+          "startLine": 346,
+          "endLine": 376
+        }
+      ]
+    },
+    {
+      "treeLine": 131,
+      "sourceRanges": [
+        {
+          "startLine": 353,
+          "endLine": 358
+        }
+      ]
+    },
+    {
+      "treeLine": 132,
+      "sourceRanges": [
+        {
+          "startLine": 355,
+          "endLine": 357
+        }
+      ]
+    },
+    {
+      "treeLine": 133,
+      "sourceRanges": [
+        {
+          "startLine": 360,
+          "endLine": 365
+        }
+      ]
+    },
+    {
+      "treeLine": 134,
+      "sourceRanges": [
+        {
+          "startLine": 367,
+          "endLine": 368
+        }
+      ]
+    },
+    {
+      "treeLine": 135,
+      "sourceRanges": [
+        {
+          "startLine": 370,
+          "endLine": 370
+        }
+      ]
+    },
+    {
+      "treeLine": 136,
+      "sourceRanges": [
+        {
+          "startLine": 371,
+          "endLine": 373
+        }
+      ]
+    },
+    {
+      "treeLine": 137,
+      "sourceRanges": [
+        {
+          "startLine": 375,
+          "endLine": 375
+        }
+      ]
+    },
+    {
+      "treeLine": 139,
+      "sourceRanges": [
+        {
+          "startLine": 725,
+          "endLine": 738
+        },
+        {
+          "startLine": 523,
+          "endLine": 565
+        },
+        {
+          "startLine": 567,
+          "endLine": 580
+        },
+        {
+          "startLine": 582,
+          "endLine": 591
+        },
+        {
+          "startLine": 593,
+          "endLine": 661
+        }
+      ]
+    },
+    {
+      "treeLine": 141,
+      "sourceRanges": [
+        {
+          "startLine": 725,
+          "endLine": 738
+        }
+      ]
+    },
+    {
+      "treeLine": 142,
+      "sourceRanges": [
+        {
+          "startLine": 726,
+          "endLine": 732
+        }
+      ]
+    },
+    {
+      "treeLine": 143,
+      "sourceRanges": [
+        {
+          "startLine": 733,
+          "endLine": 737
+        }
+      ]
+    },
+    {
+      "treeLine": 144,
+      "sourceRanges": [
+        {
+          "startLine": 734,
+          "endLine": 734
+        }
+      ]
+    },
+    {
+      "treeLine": 145,
+      "sourceRanges": [
+        {
+          "startLine": 735,
+          "endLine": 736
+        }
+      ]
+    },
+    {
+      "treeLine": 147,
+      "sourceRanges": [
+        {
+          "startLine": 523,
+          "endLine": 565
+        }
+      ]
+    },
+    {
+      "treeLine": 148,
+      "sourceRanges": [
+        {
+          "startLine": 524,
+          "endLine": 526
+        }
+      ]
+    },
+    {
+      "treeLine": 149,
+      "sourceRanges": [
+        {
+          "startLine": 527,
+          "endLine": 564
+        }
+      ]
+    },
+    {
+      "treeLine": 150,
+      "sourceRanges": [
+        {
+          "startLine": 527,
+          "endLine": 564
+        }
+      ]
+    },
+    {
+      "treeLine": 151,
+      "sourceRanges": [
+        {
+          "startLine": 529,
+          "endLine": 563
+        }
+      ]
+    },
+    {
+      "treeLine": 152,
+      "sourceRanges": [
+        {
+          "startLine": 529,
+          "endLine": 531
+        }
+      ]
+    },
+    {
+      "treeLine": 153,
+      "sourceRanges": [
+        {
+          "startLine": 532,
+          "endLine": 532
+        }
+      ]
+    },
+    {
+      "treeLine": 154,
+      "sourceRanges": [
+        {
+          "startLine": 533,
+          "endLine": 563
+        }
+      ]
+    },
+    {
+      "treeLine": 155,
+      "sourceRanges": [
+        {
+          "startLine": 533,
+          "endLine": 534
+        }
+      ]
+    },
+    {
+      "treeLine": 156,
+      "sourceRanges": [
+        {
+          "startLine": 535,
+          "endLine": 544
+        }
+      ]
+    },
+    {
+      "treeLine": 157,
+      "sourceRanges": [
+        {
+          "startLine": 536,
+          "endLine": 538
+        }
+      ]
+    },
+    {
+      "treeLine": 158,
+      "sourceRanges": [
+        {
+          "startLine": 539,
+          "endLine": 543
+        }
+      ]
+    },
+    {
+      "treeLine": 159,
+      "sourceRanges": [
+        {
+          "startLine": 541,
+          "endLine": 543
+        }
+      ]
+    },
+    {
+      "treeLine": 160,
+      "sourceRanges": [
+        {
+          "startLine": 545,
+          "endLine": 562
+        }
+      ]
+    },
+    {
+      "treeLine": 161,
+      "sourceRanges": [
+        {
+          "startLine": 546,
+          "endLine": 561
+        }
+      ]
+    },
+    {
+      "treeLine": 163,
+      "sourceRanges": [
+        {
+          "startLine": 567,
+          "endLine": 580
+        }
+      ]
+    },
+    {
+      "treeLine": 164,
+      "sourceRanges": [
+        {
+          "startLine": 568,
+          "endLine": 568
+        }
+      ]
+    },
+    {
+      "treeLine": 165,
+      "sourceRanges": [
+        {
+          "startLine": 569,
+          "endLine": 572
+        }
+      ]
+    },
+    {
+      "treeLine": 166,
+      "sourceRanges": [
+        {
+          "startLine": 573,
+          "endLine": 576
+        }
+      ]
+    },
+    {
+      "treeLine": 167,
+      "sourceRanges": [
+        {
+          "startLine": 577,
+          "endLine": 578
+        }
+      ]
+    },
+    {
+      "treeLine": 168,
+      "sourceRanges": [
+        {
+          "startLine": 579,
+          "endLine": 579
+        }
+      ]
+    },
+    {
+      "treeLine": 170,
+      "sourceRanges": [
+        {
+          "startLine": 582,
+          "endLine": 591
+        }
+      ]
+    },
+    {
+      "treeLine": 171,
+      "sourceRanges": [
+        {
+          "startLine": 585,
+          "endLine": 590
+        }
+      ]
+    },
+    {
+      "treeLine": 173,
+      "sourceRanges": [
+        {
+          "startLine": 593,
+          "endLine": 661
+        }
+      ]
+    },
+    {
+      "treeLine": 174,
+      "sourceRanges": [
+        {
+          "startLine": 595,
+          "endLine": 631
+        }
+      ]
+    },
+    {
+      "treeLine": 175,
+      "sourceRanges": [
+        {
+          "startLine": 596,
+          "endLine": 600
+        }
+      ]
+    },
+    {
+      "treeLine": 176,
+      "sourceRanges": [
+        {
+          "startLine": 597,
+          "endLine": 599
+        }
+      ]
+    },
+    {
+      "treeLine": 177,
+      "sourceRanges": [
+        {
+          "startLine": 599,
+          "endLine": 599
+        }
+      ]
+    },
+    {
+      "treeLine": 178,
+      "sourceRanges": [
+        {
+          "startLine": 601,
+          "endLine": 601
+        }
+      ]
+    },
+    {
+      "treeLine": 179,
+      "sourceRanges": [
+        {
+          "startLine": 603,
+          "endLine": 605
+        }
+      ]
+    },
+    {
+      "treeLine": 180,
+      "sourceRanges": [
+        {
+          "startLine": 607,
+          "endLine": 612
+        }
+      ]
+    },
+    {
+      "treeLine": 181,
+      "sourceRanges": [
+        {
+          "startLine": 614,
+          "endLine": 615
+        }
+      ]
+    },
+    {
+      "treeLine": 182,
+      "sourceRanges": [
+        {
+          "startLine": 617,
+          "endLine": 622
+        }
+      ]
+    },
+    {
+      "treeLine": 183,
+      "sourceRanges": [
+        {
+          "startLine": 624,
+          "endLine": 628
+        }
+      ]
+    },
+    {
+      "treeLine": 184,
+      "sourceRanges": [
+        {
+          "startLine": 630,
+          "endLine": 630
+        }
+      ]
+    },
+    {
+      "treeLine": 185,
+      "sourceRanges": [
+        {
+          "startLine": 632,
+          "endLine": 648
+        }
+      ]
+    },
+    {
+      "treeLine": 186,
+      "sourceRanges": [
+        {
+          "startLine": 634,
+          "endLine": 637
+        }
+      ]
+    },
+    {
+      "treeLine": 187,
+      "sourceRanges": [
+        {
+          "startLine": 639,
+          "endLine": 642
+        }
+      ]
+    },
+    {
+      "treeLine": 188,
+      "sourceRanges": [
+        {
+          "startLine": 644,
+          "endLine": 645
+        }
+      ]
+    },
+    {
+      "treeLine": 189,
+      "sourceRanges": [
+        {
+          "startLine": 647,
+          "endLine": 647
+        }
+      ]
+    },
+    {
+      "treeLine": 190,
+      "sourceRanges": [
+        {
+          "startLine": 649,
+          "endLine": 653
+        }
+      ]
+    },
+    {
+      "treeLine": 191,
+      "sourceRanges": [
+        {
+          "startLine": 650,
+          "endLine": 652
+        }
+      ]
+    },
+    {
+      "treeLine": 192,
+      "sourceRanges": [
+        {
+          "startLine": 654,
+          "endLine": 659
+        }
+      ]
+    },
+    {
+      "treeLine": 193,
+      "sourceRanges": [
+        {
+          "startLine": 655,
+          "endLine": 658
+        }
+      ]
+    },
+    {
+      "treeLine": 195,
+      "sourceRanges": [
+        {
+          "startLine": 841,
+          "endLine": 856
+        },
+        {
+          "startLine": 858,
+          "endLine": 878
+        },
+        {
+          "startLine": 880,
+          "endLine": 888
+        },
+        {
+          "startLine": 890,
+          "endLine": 930
+        },
+        {
+          "startLine": 832,
+          "endLine": 839
+        }
+      ]
+    },
+    {
+      "treeLine": 197,
+      "sourceRanges": [
+        {
+          "startLine": 841,
+          "endLine": 856
+        }
+      ]
+    },
+    {
+      "treeLine": 198,
+      "sourceRanges": [
+        {
+          "startLine": 841,
+          "endLine": 847
+        }
+      ]
+    },
+    {
+      "treeLine": 199,
+      "sourceRanges": [
+        {
+          "startLine": 849,
+          "endLine": 854
+        }
+      ]
+    },
+    {
+      "treeLine": 200,
+      "sourceRanges": [
+        {
+          "startLine": 853,
+          "endLine": 853
+        }
+      ]
+    },
+    {
+      "treeLine": 201,
+      "sourceRanges": [
+        {
+          "startLine": 854,
+          "endLine": 854
+        }
+      ]
+    },
+    {
+      "treeLine": 203,
+      "sourceRanges": [
+        {
+          "startLine": 858,
+          "endLine": 878
+        }
+      ]
+    },
+    {
+      "treeLine": 204,
+      "sourceRanges": [
+        {
+          "startLine": 859,
+          "endLine": 859
+        }
+      ]
+    },
+    {
+      "treeLine": 205,
+      "sourceRanges": [
+        {
+          "startLine": 860,
+          "endLine": 860
+        }
+      ]
+    },
+    {
+      "treeLine": 206,
+      "sourceRanges": [
+        {
+          "startLine": 861,
+          "endLine": 877
+        }
+      ]
+    },
+    {
+      "treeLine": 207,
+      "sourceRanges": [
+        {
+          "startLine": 862,
+          "endLine": 876
+        }
+      ]
+    },
+    {
+      "treeLine": 208,
+      "sourceRanges": [
+        {
+          "startLine": 863,
+          "endLine": 866
+        }
+      ]
+    },
+    {
+      "treeLine": 209,
+      "sourceRanges": [
+        {
+          "startLine": 867,
+          "endLine": 867
+        }
+      ]
+    },
+    {
+      "treeLine": 210,
+      "sourceRanges": [
+        {
+          "startLine": 869,
+          "endLine": 875
+        }
+      ]
+    },
+    {
+      "treeLine": 211,
+      "sourceRanges": [
+        {
+          "startLine": 869,
+          "endLine": 875
+        }
+      ]
+    },
+    {
+      "treeLine": 212,
+      "sourceRanges": [
+        {
+          "startLine": 871,
+          "endLine": 874
+        }
+      ]
+    },
+    {
+      "treeLine": 214,
+      "sourceRanges": [
+        {
+          "startLine": 880,
+          "endLine": 888
+        }
+      ]
+    },
+    {
+      "treeLine": 215,
+      "sourceRanges": [
+        {
+          "startLine": 881,
+          "endLine": 887
+        }
+      ]
+    },
+    {
+      "treeLine": 216,
+      "sourceRanges": [
+        {
+          "startLine": 881,
+          "endLine": 887
+        }
+      ]
+    },
+    {
+      "treeLine": 217,
+      "sourceRanges": [
+        {
+          "startLine": 882,
+          "endLine": 886
+        }
+      ]
+    },
+    {
+      "treeLine": 218,
+      "sourceRanges": [
+        {
+          "startLine": 886,
+          "endLine": 886
+        }
+      ]
+    },
+    {
+      "treeLine": 219,
+      "sourceRanges": [
+        {
+          "startLine": 882,
+          "endLine": 885
+        }
+      ]
+    },
+    {
+      "treeLine": 220,
+      "sourceRanges": [
+        {
+          "startLine": 883,
+          "endLine": 883
+        }
+      ]
+    },
+    {
+      "treeLine": 221,
+      "sourceRanges": [
+        {
+          "startLine": 884,
+          "endLine": 884
+        }
+      ]
+    },
+    {
+      "treeLine": 223,
+      "sourceRanges": [
+        {
+          "startLine": 890,
+          "endLine": 930
+        }
+      ]
+    },
+    {
+      "treeLine": 224,
+      "sourceRanges": [
+        {
+          "startLine": 891,
+          "endLine": 892
+        }
+      ]
+    },
+    {
+      "treeLine": 225,
+      "sourceRanges": [
+        {
+          "startLine": 894,
+          "endLine": 929
+        }
+      ]
+    },
+    {
+      "treeLine": 226,
+      "sourceRanges": [
+        {
+          "startLine": 894,
+          "endLine": 898
+        }
+      ]
+    },
+    {
+      "treeLine": 227,
+      "sourceRanges": [
+        {
+          "startLine": 897,
+          "endLine": 897
+        }
+      ]
+    },
+    {
+      "treeLine": 228,
+      "sourceRanges": [
+        {
+          "startLine": 900,
+          "endLine": 909
+        }
+      ]
+    },
+    {
+      "treeLine": 229,
+      "sourceRanges": [
+        {
+          "startLine": 904,
+          "endLine": 906
+        }
+      ]
+    },
+    {
+      "treeLine": 230,
+      "sourceRanges": [
+        {
+          "startLine": 908,
+          "endLine": 908
+        }
+      ]
+    },
+    {
+      "treeLine": 231,
+      "sourceRanges": [
+        {
+          "startLine": 911,
+          "endLine": 919
+        }
+      ]
+    },
+    {
+      "treeLine": 232,
+      "sourceRanges": [
+        {
+          "startLine": 914,
+          "endLine": 915
+        }
+      ]
+    },
+    {
+      "treeLine": 233,
+      "sourceRanges": [
+        {
+          "startLine": 917,
+          "endLine": 918
+        }
+      ]
+    },
+    {
+      "treeLine": 234,
+      "sourceRanges": [
+        {
+          "startLine": 921,
+          "endLine": 929
+        }
+      ]
+    },
+    {
+      "treeLine": 235,
+      "sourceRanges": [
+        {
+          "startLine": 924,
+          "endLine": 925
+        }
+      ]
+    },
+    {
+      "treeLine": 236,
+      "sourceRanges": [
+        {
+          "startLine": 927,
+          "endLine": 928
+        }
+      ]
+    },
+    {
+      "treeLine": 237,
+      "sourceRanges": [
+        {
+          "startLine": 927,
+          "endLine": 928
+        }
+      ]
+    },
+    {
+      "treeLine": 239,
+      "sourceRanges": [
+        {
+          "startLine": 832,
+          "endLine": 839
+        }
+      ]
+    },
+    {
+      "treeLine": 240,
+      "sourceRanges": [
+        {
+          "startLine": 833,
+          "endLine": 834
+        }
+      ]
+    },
+    {
+      "treeLine": 241,
+      "sourceRanges": [
+        {
+          "startLine": 835,
+          "endLine": 837
+        }
+      ]
+    },
+    {
+      "treeLine": 243,
+      "sourceRanges": [
+        {
+          "startLine": 378,
+          "endLine": 429
+        },
+        {
+          "startLine": 431,
+          "endLine": 442
+        },
+        {
+          "startLine": 665,
+          "endLine": 679
+        },
+        {
+          "startLine": 681,
+          "endLine": 693
+        },
+        {
+          "startLine": 695,
+          "endLine": 706
+        },
+        {
+          "startLine": 708,
+          "endLine": 714
+        },
+        {
+          "startLine": 716,
+          "endLine": 718
+        }
+      ]
+    },
+    {
+      "treeLine": 245,
+      "sourceRanges": [
+        {
+          "startLine": 378,
+          "endLine": 429
+        }
+      ]
+    },
+    {
+      "treeLine": 246,
+      "sourceRanges": [
+        {
+          "startLine": 380,
+          "endLine": 383
+        }
+      ]
+    },
+    {
+      "treeLine": 247,
+      "sourceRanges": [
+        {
+          "startLine": 385,
+          "endLine": 390
+        }
+      ]
+    },
+    {
+      "treeLine": 248,
+      "sourceRanges": [
+        {
+          "startLine": 393,
+          "endLine": 397
+        }
+      ]
+    },
+    {
+      "treeLine": 249,
+      "sourceRanges": [
+        {
+          "startLine": 398,
+          "endLine": 400
+        }
+      ]
+    },
+    {
+      "treeLine": 250,
+      "sourceRanges": [
+        {
+          "startLine": 401,
+          "endLine": 406
+        }
+      ]
+    },
+    {
+      "treeLine": 251,
+      "sourceRanges": [
+        {
+          "startLine": 407,
+          "endLine": 410
+        }
+      ]
+    },
+    {
+      "treeLine": 252,
+      "sourceRanges": [
+        {
+          "startLine": 408,
+          "endLine": 409
+        }
+      ]
+    },
+    {
+      "treeLine": 253,
+      "sourceRanges": [
+        {
+          "startLine": 412,
+          "endLine": 416
+        }
+      ]
+    },
+    {
+      "treeLine": 254,
+      "sourceRanges": [
+        {
+          "startLine": 413,
+          "endLine": 415
+        }
+      ]
+    },
+    {
+      "treeLine": 255,
+      "sourceRanges": [
+        {
+          "startLine": 418,
+          "endLine": 427
+        }
+      ]
+    },
+    {
+      "treeLine": 256,
+      "sourceRanges": [
+        {
+          "startLine": 419,
+          "endLine": 419
+        }
+      ]
+    },
+    {
+      "treeLine": 257,
+      "sourceRanges": [
+        {
+          "startLine": 420,
+          "endLine": 425
+        }
+      ]
+    },
+    {
+      "treeLine": 258,
+      "sourceRanges": [
+        {
+          "startLine": 426,
+          "endLine": 426
+        }
+      ]
+    },
+    {
+      "treeLine": 260,
+      "sourceRanges": [
+        {
+          "startLine": 431,
+          "endLine": 442
+        }
+      ]
+    },
+    {
+      "treeLine": 261,
+      "sourceRanges": [
+        {
+          "startLine": 433,
+          "endLine": 436
+        }
+      ]
+    },
+    {
+      "treeLine": 262,
+      "sourceRanges": [
+        {
+          "startLine": 437,
+          "endLine": 440
+        }
+      ]
+    },
+    {
+      "treeLine": 264,
+      "sourceRanges": [
+        {
+          "startLine": 665,
+          "endLine": 679
+        }
+      ]
+    },
+    {
+      "treeLine": 265,
+      "sourceRanges": [
+        {
+          "startLine": 665,
+          "endLine": 671
+        }
+      ]
+    },
+    {
+      "treeLine": 266,
+      "sourceRanges": [
+        {
+          "startLine": 673,
+          "endLine": 679
+        }
+      ]
+    },
+    {
+      "treeLine": 267,
+      "sourceRanges": [
+        {
+          "startLine": 674,
+          "endLine": 677
+        }
+      ]
+    },
+    {
+      "treeLine": 268,
+      "sourceRanges": [
+        {
+          "startLine": 678,
+          "endLine": 678
+        }
+      ]
+    },
+    {
+      "treeLine": 270,
+      "sourceRanges": [
+        {
+          "startLine": 681,
+          "endLine": 693
+        }
+      ]
+    },
+    {
+      "treeLine": 271,
+      "sourceRanges": [
+        {
+          "startLine": 682,
+          "endLine": 686
+        }
+      ]
+    },
+    {
+      "treeLine": 272,
+      "sourceRanges": [
+        {
+          "startLine": 687,
+          "endLine": 687
+        }
+      ]
+    },
+    {
+      "treeLine": 273,
+      "sourceRanges": [
+        {
+          "startLine": 688,
+          "endLine": 692
+        }
+      ]
+    },
+    {
+      "treeLine": 274,
+      "sourceRanges": [
+        {
+          "startLine": 689,
+          "endLine": 690
+        }
+      ]
+    },
+    {
+      "treeLine": 275,
+      "sourceRanges": [
+        {
+          "startLine": 692,
+          "endLine": 692
+        }
+      ]
+    },
+    {
+      "treeLine": 277,
+      "sourceRanges": [
+        {
+          "startLine": 695,
+          "endLine": 706
+        }
+      ]
+    },
+    {
+      "treeLine": 278,
+      "sourceRanges": [
+        {
+          "startLine": 695,
+          "endLine": 702
+        }
+      ]
+    },
+    {
+      "treeLine": 279,
+      "sourceRanges": [
+        {
+          "startLine": 696,
+          "endLine": 697
+        }
+      ]
+    },
+    {
+      "treeLine": 280,
+      "sourceRanges": [
+        {
+          "startLine": 698,
+          "endLine": 701
+        }
+      ]
+    },
+    {
+      "treeLine": 281,
+      "sourceRanges": [
+        {
+          "startLine": 704,
+          "endLine": 706
+        }
+      ]
+    },
+    {
+      "treeLine": 283,
+      "sourceRanges": [
+        {
+          "startLine": 708,
+          "endLine": 714
+        }
+      ]
+    },
+    {
+      "treeLine": 284,
+      "sourceRanges": [
+        {
+          "startLine": 709,
+          "endLine": 709
+        }
+      ]
+    },
+    {
+      "treeLine": 285,
+      "sourceRanges": [
+        {
+          "startLine": 710,
+          "endLine": 712
+        }
+      ]
+    },
+    {
+      "treeLine": 286,
+      "sourceRanges": [
+        {
+          "startLine": 713,
+          "endLine": 713
+        }
+      ]
+    },
+    {
+      "treeLine": 288,
+      "sourceRanges": [
+        {
+          "startLine": 716,
+          "endLine": 718
+        }
+      ]
+    },
+    {
+      "treeLine": 289,
+      "sourceRanges": [
+        {
+          "startLine": 717,
+          "endLine": 717
+        }
+      ]
+    },
+    {
+      "treeLine": 291,
+      "sourceRanges": [
+        {
+          "startLine": 497,
+          "endLine": 521
+        }
+      ]
+    },
+    {
+      "treeLine": 293,
+      "sourceRanges": [
+        {
+          "startLine": 497,
+          "endLine": 521
+        }
+      ]
+    },
+    {
+      "treeLine": 294,
+      "sourceRanges": [
+        {
+          "startLine": 498,
+          "endLine": 501
+        }
+      ]
+    },
+    {
+      "treeLine": 295,
+      "sourceRanges": [
+        {
+          "startLine": 503,
+          "endLine": 504
+        }
+      ]
+    },
+    {
+      "treeLine": 296,
+      "sourceRanges": [
+        {
+          "startLine": 506,
+          "endLine": 507
+        }
+      ]
+    },
+    {
+      "treeLine": 297,
+      "sourceRanges": [
+        {
+          "startLine": 509,
+          "endLine": 509
+        }
+      ]
+    },
+    {
+      "treeLine": 298,
+      "sourceRanges": [
+        {
+          "startLine": 510,
+          "endLine": 510
+        }
+      ]
+    },
+    {
+      "treeLine": 299,
+      "sourceRanges": [
+        {
+          "startLine": 512,
+          "endLine": 513
+        }
+      ]
+    },
+    {
+      "treeLine": 300,
+      "sourceRanges": [
+        {
+          "startLine": 515,
+          "endLine": 518
+        }
+      ]
+    },
+    {
+      "treeLine": 301,
+      "sourceRanges": [
+        {
+          "startLine": 520,
+          "endLine": 520
+        }
+      ]
+    }
+  ]
+}

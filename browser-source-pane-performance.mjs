@@ -146,7 +146,7 @@ try {
   await writeFile(path.join(temp, '.diagrams/mapping-workspace.json'), JSON.stringify(workspace));
   const port = await new Promise(resolve => { const s = createServer(); s.listen(0, '127.0.0.1', () => {const p = s.address().port; s.close(() => resolve(p));}); });
   const url = `http://127.0.0.1:${port}`;
-  server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort'],
+  server = spawn(process.execPath, ['scripts/start-server.mjs', 'preview', ...(process.env.SOURCE_NAVIGATION === '1' ? ['--lsp'] : []), '--host', '127.0.0.1', '--port', String(port), '--strictPort'],
     {cwd: root, env: {...process.env, NEW_DIAGRAM_PROJECT_ROOT: temp, NEW_DIAGRAM_AGENT: 'fake'}, stdio: 'ignore'});
   await waitFor(async () => (await fetch(url).catch(() => null))?.ok, {timeoutMs: 15000});
   const results = [];
@@ -162,6 +162,9 @@ try {
     });
     await waitForSelector(cdp, `${viewer(5)}[data-highlighted=true]`, {timeoutMs: 60000});
     await evaluate(cdp, 'document.fonts.ready'); await settle(cdp);
+    assert.equal(await evaluate(cdp, `document.querySelectorAll('.source-code-viewer[data-definitions="true"]').length`),
+      process.env.SOURCE_NAVIGATION === '1' ? 5 : 0, 'Definition gestures must follow the server startup flag');
+    assert.equal(await evaluate(cdp, `document.querySelectorAll('.source-navigation-hint').length`), process.env.SOURCE_NAVIGATION === '1' ? 5 : 0);
     for (let id = 1; id <= 5; id++) await point(cdp, viewer(id));
     for (let id = 5; id >= 2; id--) await click(cdp, `${pane(id)} [aria-label="Collapse pane"]`);
     for (let count = 1; count <= 5; count++) {

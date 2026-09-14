@@ -1,0 +1,413 @@
+/home/john/code/vscode/src/vs/workbench/browser/parts/editor/editorGroupView.ts
+|
++-- Construction and restoration
+|   |
+|   +-- Factories: createNew / createFromSerialized / createCopy
+|   |   +-- createNew -> instantiate EditorGroupView with no previous model
+|   |   +-- createFromSerialized -> instantiate with serialized state
+|   |   \-- createCopy -> instantiate with the source group
+|   |
+|   +-- Owned state
+|   |   +-- model owns editor membership; active and lastLayout track group presentation
+|   |   +-- resourceContext, titleControl and editorPane represent the same group
+|   |   +-- _contentRightInset reserves docked space; onDidRelayout reports relayout
+|   |   +-- disposedEditorsWorker batches cleanup with delay 0
+|   |   +-- mapEditorToPendingConfirmation joins repeated close requests
+|   |   \-- whenRestored exposes deferred restoration completion
+|   |
+|   +-- constructor(from, services, options)
+|   |   +-- 1. Clone a group model, deserialize one, or create an empty model
+|   |   +-- 2. Scope context to element; register container UI and watermark
+|   |   +-- 3. Create hidden progress bar and scoped services for context/progress
+|   |   +-- 4. Bind context keys; create titleControl and EditorPanes; relay size changes
+|   |   +-- 5. Track focus, update containers, apply styles
+|   |   \-- 6. Start restoreEditors; attach WHEN-settled completion; registerListeners immediately
+|   |
+|   +-- restoreEditors(from, groupViewOptions)
+|   |   +-- Empty model -> return without restoring
+|   |   +-- Copy active view state from a group; no active model editor -> return
+|   |   +-- Preserve pinned/sticky state, focus and window order; skip individual title update
+|   |   +-- Capture focused element; start doShowEditor(active, restored)
+|   |   |   \-- WHEN fulfilled: focus only if group active, focus unchanged, and preserveFocus unset
+|   |   \-- Immediately restore all title tabs; return the show promise
+|   |
+|   \-- toJSON()
+|       \-- Return model.serialize()
+|
++-- Opening and revealing editors
+|   |
+|   +-- openEditor(editor, options, internalOptions)
+|   |   \-- Call doOpenEditor with side-by-side BOTH matching to reuse a split of the same editor
+|   |
+|   +-- doOpenEditor(editor, options, internalOptions)
+|   |   +-- 1. Missing/disposed input -> return; otherwise fire onWillOpenEditor
+|   |   +-- 2. Derive model open options
+|   |   |   +-- Pin for sticky, disabled preview unless transient, dirty, requested/index-based pin, sticky slot, or scratchpad
+|   |   |   \-- Sticky follows option/slot; active when empty or not inactive; carry transient and selection
+|   |   +-- 3. Inactive preview replacing active preview -> force active
+|   |   +-- 4. Choose group activation policy
+|   |   |   +-- ACTIVATE / RESTORE / PRESERVE -> force activation / restoration / neither
+|   |   |   \-- Otherwise active open -> activate unless preserveFocus, which requests restoration
+|   |   +-- 5. Existing editor at another requested index -> call doMoveEditorInsideGroup
+|   |   +-- 6. model.openEditor -> use returned existing/new input instance
+|   |   +-- 7. New first editor, multiple groups, configured editorId -> lock(true)
+|   |   \-- 8. Start doShowEditor; activate/restore group immediately; return show promise
+|   |
+|   +-- doShowEditor(editor, context, options, internalOptions)
+|   |   +-- Active?
+|   |   |   +-- yes -> start async editorPane.openEditor(newInGroup); await its result
+|   |   |   |   +-- Rejected editorPane.openEditor promise propagates
+|   |   |   |   +-- Cancelled by another operation -> return undefined before events/recovery
+|   |   |   |   +-- changed -> fire onDidActiveEditorChange
+|   |   |   |   +-- Reported error -> fire onDidOpenEditorFail without throwing that error
+|   |   |   |   \-- Missing pane and input still active -> doCloseEditor(fromError); return pane
+|   |   |   \-- no -> resolved undefined; do not open a pane
+|   |   \-- Update title unless skipped, without waiting for pane promise; return that promise
+|   |
+|   \-- openEditors(editors)
+|       +-- Filter missing entries/disposed inputs; no first editor -> return
+|       +-- Await first doOpenEditor using its options and BOTH matching
+|       +-- Start remaining opens inactive, pinned, at consecutive indexes; skip titles; await Promises.settled
+|       \-- Batch remaining title tabs; return whichever pane is active after the operation
+|
++-- Selection, pinning, and moving or replacing editors
+|   |
+|   +-- setSelection(activeSelectedEditor, inactiveSelectedEditors)
+|   |   +-- Requested active selection not active -> await openEditor(ACTIVATE, inactiveSelection)
+|   |   \-- Already active -> model.setSelection
+|   |
+|   +-- findEditors(resource, options)
+|   |   +-- Canonicalize requested URI; filter ordered editors by matching resource
+|   |   +-- PRIMARY or ANY -> also accept matching primary canonical URI
+|   |   \-- SECONDARY or ANY -> also accept secondary URI; otherwise reject
+|   |
+|   +-- pinEditor(candidate = activeEditor)
+|   |   \-- Candidate exists and unpinned -> model.pin; returned editor -> titleControl.pinEditor
+|   |
+|   +-- stickEditor / unstickEditor
+|   |   +-- stickEditor -> doStickEditor(candidate, true)
+|   |   \-- unstickEditor -> doStickEditor(candidate, false)
+|   |
+|   +-- doStickEditor(candidate, sticky)
+|   |   +-- Existing candidate with changed sticky state -> model.stick/unstick; no result -> return
+|   |   +-- Index changed -> titleControl.moveEditor with sticky change
+|   |   \-- Forward stick/unstick to titleControl
+|   |
+|   +-- moveEditors(editors, target)
+|   |   +-- Cross-group batch -> skip individual title updates
+|   |   +-- Call moveEditor for each; collect successes and remember any failure
+|   |   \-- If skipped, open successful titles at target and close source titles; return no failures
+|   |
+|   +-- moveEditor(editor, target, options)
+|   |   +-- Same group -> doMoveEditorInsideGroup; return true
+|   |   \-- Other group -> return doMoveOrCopyEditorAcrossGroups(keepCopy: false)
+|   |
+|   +-- doMoveEditorInsideGroup(candidate, options)
+|   |   +-- No numeric index or no matching model editor -> return
+|   |   +-- Changed index -> model.moveEditor then pin; forward move and pin to title
+|   |   \-- After moving, sticky option -> stickEditor (movement may have altered sticky state)
+|   |
+|   +-- doMoveOrCopyEditorAcrossGroups(editor, target, options)
+|   |   +-- Move, or singleton copy -> check canMove; string veto -> show error and return false
+|   |   +-- fillActiveEditorViewState; always pin; preserve sticky by default only for moves
+|   |   +-- keepCopy false -> fire onWillMoveEditor
+|   |   +-- Start target.doOpenEditor(copy for keepCopy, original otherwise); do not await
+|   |   \-- keepCopy false -> doCloseEditor(source, preserveFocus, MOVE); return true
+|   |
+|   +-- copyEditors(editors, target)
+|   |   +-- Cross-group batch skips title updates; call copyEditor for every input
+|   |   \-- If skipped, batch target titles using the requested input list
+|   |
+|   +-- copyEditor(editor, target, options)
+|   |   +-- Same group -> doMoveEditorInsideGroup
+|   |   \-- Other group -> call doMoveOrCopyEditorAcrossGroups(keepCopy: true)
+|   |
+|   \-- replaceEditors(editors)
+|       +-- Prepare only present inputs: preserve index, active/inactive status; default pinned; partition replacements
+|       +-- Process inactive replacements sequentially
+|       |   +-- Await doOpenEditor(replacement); matching old input needs no close
+|       |   +-- Different input -> forceReplaceDirty closes directly; otherwise await confirmation with force
+|       |   \-- Close veto -> return immediately, leaving earlier work applied
+|       \-- Process active replacement last
+|           +-- Start doOpenEditor(replacement) without awaiting yet
+|           +-- Different input -> direct forced-dirty close or await confirmation; boolean result ignored
+|           \-- Finally await the replacement open promise
+|
++-- Close requests and confirmation
+|   |
+|   +-- closeEditor(editor = activeEditor, options)
+|   |   \-- Return doCloseEditorWithConfirmationHandling
+|   |
+|   +-- doCloseEditorWithConfirmationHandling(editor, options, internalOptions)
+|   |   +-- Missing input, or CannotClose without external/internal force -> return false
+|   |   +-- Await handleCloseConfirmation([editor]); veto -> return false
+|   |   \-- doCloseEditor; return true (force bypasses CannotClose, not confirmation)
+|   |
+|   +-- closeEditors(args, options)
+|   |   +-- Empty group -> true; doGetEditorsToClose, filter CannotClose unless force; none -> true
+|   |   +-- Await handleCloseConfirmation on a copied list; veto -> false
+|   |   \-- doCloseEditors on approved list; return true
+|   |
+|   +-- doGetEditorsToClose(args)
+|   |   +-- Explicit array -> return it
+|   |   +-- Filter -> sequential when direction supplied, otherwise MRU; pass model filter
+|   |   \-- Apply only the first matching filter branch
+|   |       +-- savedOnly -> keep clean or saving inputs
+|   |       +-- else direction and except -> slice left/right of except
+|   |       \-- else except -> exclude matching input
+|   |
+|   +-- closeAllEditors(options)
+|   |   +-- Empty -> remove group if closeEmptyGroups; return true
+|   |   +-- excludeConfirming -> doCloseAllEditors synchronously; return true
+|   |   +-- Otherwise collect MRU editors, respecting filters and CannotClose/force; none -> true
+|   |   \-- Await handleCloseConfirmation; veto -> false; otherwise doCloseAllEditors and true
+|   |
+|   +-- shouldConfirmClose(editor)
+|   |   +-- Custom closeHandler -> return showConfirm(); on throw log and fall through
+|   |   \-- Fallback -> dirty AND not saving
+|   |
+|   +-- handleCloseConfirmation(editors)
+|   |   +-- Empty list -> false; otherwise remove first editor from list
+|   |   +-- Join editor's pending promise or create/store doHandleCloseConfirmation promise
+|   |   +-- Await result; always delete pending-map entry in finally, including on rejection
+|   |   \-- First veto -> return true; otherwise recurse into remaining editors
+|   |
+|   \-- doHandleCloseConfirmation(editor, options)
+|       +-- No shouldConfirmClose, or side-by-side primary also open in this model -> no veto
+|       +-- Other group retains matching input (BOTH), or closing pair's primary -> no veto
+|       +-- Choose automatic SAVE only for titled input, no skipAutoSave, and no closeHandler
+|       |   +-- ON_FOCUS_CHANGE -> SAVE with FOCUS_CHANGE reason
+|       |   \-- else native Windows/Linux ON_WINDOW_CHANGE -> SAVE with WINDOW_CHANGE reason
+|       +-- No automatic save -> obtain confirmation
+|       |   +-- Reveal editor if needed; await window focus
+|       |   +-- Custom confirm -> await result; throw -> log and mark handler error
+|       |   \-- Missing/failed handler -> showSaveConfirm; use primary name for side-by-side
+|       +-- Without handler, recheck shouldConfirmClose; no longer needed -> veto only if CANCEL
+|       \-- Dispatch confirmation result
+|           +-- SAVE -> await editor.save(reason)
+|           |   +-- Rejected save propagates; auto-save retry requires a returned failed result
+|           |   +-- Failed auto-save result -> recurse with skipAutoSave to permit dialog
+|           |   \-- Otherwise veto if editor remains dirty
+|           +-- DONT_SAVE -> await normal revert; return whether still dirty
+|           |   \-- Normal revert throws -> log, await soft revert; veto if still dirty
+|           |       \-- Rejected soft revert propagates
+|           \-- CANCEL -> true (veto)
+|
++-- Closing the model, pane, and titles
+|   |
+|   +-- doCloseEditor(editor, preserveFocus, internalOptions)
+|   |   +-- Default preserveFocus for inactive group; titleControl.beforeCloseEditor unless skipped
+|   |   +-- Active input -> doCloseActiveEditor; otherwise doCloseInactiveEditor
+|   |   \-- titleControl.closeEditor unless skipped
+|   |
+|   +-- doCloseActiveEditor(preserveFocus, internalOptions)
+|   |   +-- Capture old active input; restoreFocus = !preserveFocus AND shouldRestoreFocus(element)
+|   |   +-- Last editor in active group and closeEmptyGroups -> switch to next MRU group BEFORE model close
+|   |   |   \-- Next group exists -> focus if restoreFocus, otherwise activateGroup(nextActiveGroup, true)
+|   |   +-- Close captured input in model with requested context
+|   |   +-- Model has next active input -> start doOpenEditor without awaiting
+|   |   |   +-- preserveFocus in inactive group -> PRESERVE activation to retain group sizes
+|   |   |   \-- Forward preserveFocus; preserve window order; fromError -> ignoreError to silence repeated failure recovery
+|   |   \-- Model now empty
+|   |       +-- Close old input in editorPane
+|   |       +-- Restore focus only if requested and group is staying open
+|   |       \-- Fire active editor undefined; remove group if closeEmptyGroups
+|   |
+|   +-- shouldRestoreFocus(target)
+|   |   \-- True if active element is document body or isAncestor(activeElement, target)
+|   |
+|   +-- doCloseInactiveEditor(editor, internalOptions)
+|   |   \-- model.closeEditor(editor, context)
+|   |
+|   +-- doCloseEditors(editors, options)
+|   |   +-- First pass: doCloseInactiveEditor; remember whether active input was requested
+|   |   +-- Then close requested active input with preserveFocus
+|   |   \-- Finally batch titleControl.closeEditors for nonempty request
+|   |
+|   +-- doCloseAllEditors(options)
+|   |   +-- Read sequential model list; filter CannotClose unless force; optionally exclude confirming
+|   |   +-- Close inactive inputs first and record requested inputs
+|   |   +-- Close active input last only if still present in recorded list
+|   |   \-- Batch titleControl.closeEditors for recorded inputs
+|   |
+|   +-- handleOnDidCloseEditor(editor, index, context, sticky)
+|   |   +-- Fire onWillCloseEditor while processing model close notification
+|   |   +-- Build disposal candidates from input and both sides of side-by-side input
+|   |   +-- For each candidate: canDispose -> dispose
+|   |   \-- updateContainer; fire onDidCloseEditor
+|   |
+|   +-- canDispose(editor)
+|   |   +-- Any EditorGroupView model retains exact input or ANY side-by-side side -> false
+|   |   \-- Otherwise true
+|   |
+|   +-- onWillDisposeEditor(editor)
+|   |   \-- Queue disposedEditorsWorker; defer to allow immediate input replacement
+|   |
+|   \-- handleDisposedEditors(disposedEditors)
+|       +-- Resolve each candidate against current model; partition active/inactive
+|       |   \-- Missing now or matched input no longer disposed -> skip
+|       +-- First close all inactive inputs via doCloseEditor(preserveFocus: true)
+|       \-- Then close active input via doCloseEditor(preserveFocus: true)
+|
++-- Model events and command context
+|   |
+|   +-- registerListeners()
+|   |   +-- Model changes, part-option changes and visibility -> corresponding handlers
+|   |   \-- onDidFocus -> onDidGainFocus
+|   |
+|   +-- onDidGroupModelChange(e)
+|   |   +-- First re-emit onDidModelChange to observers
+|   |   +-- GROUP_LOCKED -> locked CSS; EDITORS_SELECTION -> onDidChangeEditorSelection
+|   |   +-- No editor attached -> return
+|   |   +-- Typed OPEN/CLOSE events -> onDidOpenEditor / handleOnDidCloseEditor
+|   |   +-- WILL_DISPOSE / DIRTY / TRANSIENT -> their editor handlers
+|   |   \-- LABEL / CAPABILITIES -> their editor handlers
+|   |
+|   +-- handleGroupContextKeys()
+|   |   +-- Bind group state and active-editor command keys; own mutable active-editor listener
+|   |   +-- observeActiveEditor callback
+|   |   |   +-- Clear old dirty listener; buffer context changes; set resource and available editor IDs
+|   |   |   +-- Active input -> capabilities/type and dirty-not-saving listener; absent -> false keys
+|   |   |   \-- Active pane?
+|   |   |       +-- yes -> set pane ID, revert eligibility and readonly state
+|   |   |       +-- yes -> diff swap requires writable original and supported URIs; readonly toggle requires writable provider
+|   |   |       +-- yes -> text compare active/visible follow TEXT_DIFF_EDITOR_ID
+|   |   |       \-- no -> reset pane ID, revert/readonly/swap/toggle keys
+|   |   +-- updateGroupContextKeys(event) callback
+|   |   |   +-- LOCKED -> lock key; ACTIVE -> first/last/pinned/sticky
+|   |   |   +-- CLOSE -> pinned/sticky; OPEN/MOVE -> first/last
+|   |   |   +-- Active input PIN/STICKY -> matching key; CAPABILITIES -> observeActiveEditor
+|   |   |   +-- SELECTION -> multiple/exactly-two keys; test all selected resources for a provider or untitled scheme
+|   |   |   \-- Always refresh editor count
+|   |   \-- Subscribe to model and active-editor events; initialize observer, ACTIVE and LOCKED contexts
+|   |
+|   +-- onDidChangeEditorDirty(editor)
+|   |   \-- pinEditor, then titleControl.updateEditorDirty
+|   |
+|   +-- onDidChangeEditorTransient(editor)
+|   |   \-- No longer transient and preview disabled -> pinEditor
+|   |
+|   +-- Label, capability, selection, and visibility handlers
+|   |   +-- Label change -> titleControl.updateEditorLabel
+|   |   +-- Capability change -> titleControl.updateEditorCapabilities
+|   |   +-- Selection change -> titleControl.updateEditorSelections
+|   |   \-- Visibility change -> editorPane.setVisible
+|   |
+|   +-- onDidGainFocus()
+|   |   \-- Active input exists -> clear model transient state immediately
+|   |
+|   +-- Group identity updates
+|   |   +-- Labels use one-based group number with optional groupsLabel prefix
+|   |   +-- Expose disposed, empty and title-height state
+|   |   +-- Changed index -> store index and model.setIndex
+|   |   \-- Changed label -> store label and model.setLabel
+|   |
+|   +-- setActive(isActive)
+|   |   +-- Store active flag; deactivation with multiple selection -> select only active input
+|   |   +-- Update active/inactive CSS, title state and styles
+|   |   \-- Notify model.setActive(undefined) for group-level activation
+|   |
+|   +-- isLocked / lock(locked)
+|   |   +-- isLocked reads model state
+|   |   \-- lock writes model state
+|   |
+|   \-- createEditorActions(disposables, menuId)
+|       +-- Active pane is EditorPane -> build menu actions
+|       |   +-- Use pane context or group context; menu owned by supplied disposables; expose menu changes
+|       |   +-- Primary navigation and secondary actions; inline navigation submenus with at most one action
+|       |   \-- EditorTitle menu and available alternate types -> append Reopen Editor With submenu
+|       +-- No EditorPane -> empty actions; owned emitter signals active-editor changes
+|       \-- Return actions and onDidChange
+|
++-- Container interaction, focus, and presentation
+|   |
+|   +-- registerContainerListeners()
+|   |   +-- Empty group double-click -> stop event; open pinned default untitled editor in this group
+|   |   \-- Empty group middle-click -> stop event; groupsView.removeGroup
+|   |
+|   +-- createContainerToolbar()
+|   |   +-- Create owned ActionBar and EmptyEditorGroup menu scoped to group
+|   |   +-- updateContainerToolbar callback
+|   |   |   +-- Replace disposable to clear previous toolbar actions
+|   |   |   \-- Push primary/secondary menu actions with groupId, icons and keybindings
+|   |   \-- Populate now; repopulate on menu changes
+|   |
+|   +-- createContainerContextMenu()
+|   |   \-- Register mouse and touch context-menu events -> onShowContainerContextMenu
+|   |
+|   +-- onShowContainerContextMenu(event)
+|   |   +-- Nonempty -> return; otherwise choose mouse or element anchor
+|   |   \-- Show EmptyEditorGroupContext; onHide -> focus
+|   |
+|   +-- doTrackFocus()
+|   |   +-- Container focus -> fire onDidFocus only if empty
+|   |   +-- Title click/touch callback
+|   |   |   +-- Reject non-left mouse or macOS Ctrl-click; otherwise resolve pointer target
+|   |   |   +-- Action bar or breadcrumb target -> return
+|   |   |   \-- Schedule focus with setTimeout, after mouse-up
+|   |   \-- Register title mouse/touch listeners; pane focus -> fire onDidFocus
+|   |
+|   +-- focus()
+|   |   +-- Focus active pane if present, otherwise group element
+|   |   \-- Fire onDidFocus
+|   |
+|   +-- updateContainer()
+|   |   +-- Empty -> empty CSS, tabIndex 0, empty-group aria-label
+|   |   +-- Nonempty -> remove empty CSS, tabIndex and aria-label
+|   |   \-- updateStyles
+|   |
+|   +-- updateTitleContainer()
+|   |   \-- Toggle tabs for multiple-tab mode and file icons from part options
+|   |
+|   +-- onDidChangeEditorPartOptions(event)
+|   |   +-- Update title container and titleControl options
+|   |   +-- Tab mode/height changed, or separate pinned row changed in multiple mode -> relayout
+|   |   |   \-- Then reopen sequential title tabs if active input exists
+|   |   +-- updateStyles
+|   |   \-- Preview just disabled and preview editor exists -> pinEditor
+|   |
+|   \-- updateStyles()
+|       +-- Empty group -> theme empty background; nonempty -> clear group background
+|       +-- Nonempty with header/contrast color -> title bottom border; otherwise remove
+|       \-- Choose tab/no-tab title background and editor background from theme
+|
++-- Sizing and lifecycle cleanup
+|   |
+|   +-- Size constraints and proportionalLayout
+|   |   +-- Own root element; size constraints delegate to editorPane
+|   |   +-- Proportional before first layout; otherwise false at minimum width or height
+|   |   \-- Relay exposes size-constraint changes
+|   |
+|   +-- layout(width, height, top, left)
+|   |   +-- Store lastLayout; toggle short-height class; contentWidth = max(0, width - inset)
+|   |   +-- titleControl.layout: full-width tabs; available height reserves pane minimum; header uses contentWidth
+|   |   +-- Place progress bar at max(titleHeight.offset - 2, 0)
+|   |   \-- Pane/container use contentWidth and max(0, height - title height); pane top follows title
+|   |
+|   +-- setContentRightInset(inset)
+|   |   +-- Round and clamp inset >= 0; unchanged -> return
+|   |   \-- Store inset; relayout
+|   |
+|   +-- relayout()
+|   |   \-- lastLayout exists -> layout with saved geometry; fire onDidRelayout
+|   |
+|   +-- setBoundarySashes(sashes)
+|   |   \-- Forward boundary sashes to editorPane
+|   |
+|   \-- dispose()
+|       \-- Set disposed flag -> fire onWillDispose -> super.dispose registered resources
+|
+\-- Editor-open telemetry
+    |
+    +-- onDidOpenEditor(editor, editorIndex)
+    |   \-- Log editorOpened with toEditorTelemetryDescriptor; updateContainer
+    |
+    +-- toEditorTelemetryDescriptor(editor)
+    |   +-- Start from input descriptor; resolve original URI for BOTH sides
+    |   +-- Single URI -> resource from toResourceTelemetryDescriptor
+    |   +-- Side-by-side URIs -> describe available primary and secondary separately
+    |   \-- No URI -> return base descriptor
+    |
+    \-- toResourceTelemetryDescriptor(resource)
+        +-- Missing resource/path -> undefined; use fsPath for file scheme, path otherwise
+        \-- Strip extension query; return trusted MIME types, scheme, extension and hashed path

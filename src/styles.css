@@ -1225,3 +1225,10 @@ button.experiment-tree-line:hover { background: rgb(255 255 255 / 3%); }
 .repository-file-list button { text-align: left; white-space: nowrap; padding: 3px 5px; }
 .repository-file-list button[aria-current="page"] { background: #243b45; color: var(--accent-cyan); }
 .repository-file-explorer button:focus-visible { outline: 1px solid var(--accent-cyan); }
+
+.canvas-paste-menu { position: fixed; z-index: 10000; width: 304px; max-width: calc(100vw - 16px); max-height: calc(100vh - 16px); overflow: auto; padding: 6px; background: #141920; border: 1px solid var(--border); border-radius: 6px; color: var(--fg); box-shadow: 0 8px 24px #0008; font: 12px var(--font-mono); }
+.canvas-paste-menu button { width: 100%; text-align: left; padding: 9px; border: 0; border-radius: 3px; background: transparent; color: inherit; cursor: pointer; font: inherit; }
+.canvas-paste-menu button:hover, .canvas-paste-menu button:focus-visible { background: #ffffff15; }
+.canvas-paste-menu button:disabled { opacity: .5; cursor: default; }
+.canvas-paste-menu textarea { display: block; box-sizing: border-box; width: 100%; margin: 8px 0; background: #0c1016; color: inherit; font: inherit; border: 1px solid var(--border); }
+.canvas-paste-menu p { margin: 8px; color: #ffb4a9; }

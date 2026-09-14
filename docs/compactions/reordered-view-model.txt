@@ -1,0 +1,367 @@
+/home/john/code/vscode/src/vs/editor/common/viewModel/viewModelImpl.ts
+|
++-- Ownership and event lifetime
+|   |
+|   +-- ViewModel constructor
+|   |   +--> initialize editor/model ownership, dispatcher and cursor configuration
+|   |   +--> register zero-delay RunOnceScheduler -> _updateConfigurationViewLineCountNow()
+|   |   +--> model too large for tokenization?
+|   |   |    +-- yes --> ViewModelLinesFromModelAsIs
+|   |   |    \-- no --> ViewModelLinesFromProjectedModel with font and wrapping settings
+|   |   +--> create coordinatesConverter -> register cursor -> register ViewLayout
+|   |   +--> register scroll callback
+|   |   |    +-- scrollTop changed --> _handleVisibleLinesChanged() -> invalidate anchor
+|   |   |    \--> emit view scroll event -> outgoing scroll event
+|   |   +--> register content-size callback -> forward outgoing event
+|   |   +--> create ViewModelDecorations -> _registerModelEvents()
+|   |   +--> register fast configuration callback
+|   |   |    \--> begin collector -> _onConfigurationChanged(); finally end collector
+|   |   +--> register minimap color callback -> ViewTokensColorsChangedEvent
+|   |   +--> register theme callback
+|   |   |    \--> _invalidateDecorationsColorCache() -> ViewThemeChangedEvent
+|   |   \--> update configured view-line count -> register this view model on model
+|   |
+|   +-- dispose()
+|   |   +--> super.dispose(): remove listeners before lines can emit decoration changes
+|   |   +--> dispose decorations -> lines -> viewport anchor -> dispatcher
+|   |   \--> unregister this view model from model
+|   |
+|   +-- _withViewEventsCollector(callback)
+|   |   \--> _transactionalTarget.batchChanges(() => _emitViewEvent(callback))
+|   |
+|   +-- _emitViewEvent(callback)
+|   |   +--> beginEmitViewEvents() -> invoke callback -> return its result
+|   |   \--> FINALLY endEmitViewEvents(), including when callback throws
+|   |
+|   +-- batchEvents(callback)
+|   |   \--> _withViewEventsCollector(() => callback())
+|   |
+|   \-- IBatchableTarget
+|       \--> batchChanges<T>(callback): apply callback changes as a batch, return T
+|
++-- Content and configuration synchronization
+|   |
+|   +-- onDidChangeContentOrInjectedText(e)
+|   |   +--> begin collector; content event supplies versionId, injected text supplies null
+|   |   +--> PASS 1: compute all requested line breaks before interpreting changes
+|   |   |    +--> request each inserted line and each changed line at post-edit positions
+|   |   |    \--> finalize() -> ArrayQueue of computed projections
+|   |   +--> prepare deferred model ranges for custom line heights
+|   |   +--> PASS 2: interpret changes in input order
+|   |   |    +-- Flush
+|   |   |    |    \--> flush lines -> emit flush -> reset decorations -> flush layout; mark other change
+|   |   |    +-- LinesDeleted
+|   |   |    |    +--> update lines; non-null event -> emit -> delete layout lines -> defer boundary height
+|   |   |    |    \--> mark other model change
+|   |   |    +-- LinesInserted
+|   |   |    |    +--> consume computed breaks -> update lines; non-null event -> emit and insert layout lines
+|   |   |    |    \--> defer inserted heights when event exists; mark other model change
+|   |   |    +-- LineChanged
+|   |   |    |    +--> consume one break -> onModelLineChanged(); overwrite mapping-change flag
+|   |   |    |    +--> if changed event exists -> emit it
+|   |   |    |    +--> if inserted event exists -> emit -> insert layout lines -> defer line height
+|   |   |    |    \--> if deleted event exists -> emit -> delete layout lines -> defer line height
+|   |   |    \-- EOLChanged --> no projection work
+|   |   +--> if versionId exists -> acceptVersionId(versionId)
+|   |   +--> after projections stabilize, apply deferred custom heights if any
+|   |   |    \--> changeSpecialLineHeights -> _getCustomLineHeightsForLines() -> insert/change each
+|   |   +--> viewLayout.onHeightMaybeChanged()
+|   |   +--> no other change AND final mapping-change flag is true?
+|   |   |    \-- yes --> emit mapping and decoration changes -> notify cursor -> notify decorations
+|   |   +--> FINALLY end collector; errors propagate and skip following work
+|   |   +--> remember anchor validity -> invalidate anchor -> update model and view line counts
+|   |   +--> unfocused AND at least two attached editors AND previously valid anchor?
+|   |   |    \-- yes, tracked range exists --> convert anchor; immediately set scrollTop = line top + stored delta
+|   |   \--> _handleVisibleLinesChanged()
+|   |
+|   +-- emitContentChangeEvent(e)
+|   |   \--> _emitViewEvent(callback)
+|   |        +-- internal content event --> emit outgoing ModelContentChangedEvent
+|   |        \--> always notify cursor.onModelContentChanged(collector, e)
+|   |
+|   +-- _onConfigurationChanged(collector, e)
+|   |   +--> _captureStableViewport()
+|   |   +--> setWrappingSettings() changed projection?
+|   |   |    +-- yes --> emit flush, mapping and decoration events -> notify cursor/decorations -> flush layout
+|   |   |    \-- yes --> schedule configured view-line count update
+|   |   +--> readOnly changed --> reset decoration filtering -> emit decoration change
+|   |   +--> renderValidationDecorations changed --> reset decorations -> emit decoration change
+|   |   +--> emit configuration change -> update layout -> recover stable viewport
+|   |   \--> CursorConfiguration.shouldRecreate(e)? recreate and update cursor configuration
+|   |
+|   +-- _registerModelEvents(): install callbacks
+|   |   +--> if variable line heights enabled, register onDidChangeLineHeight
+|   |   |    +--> retain changes owned by this editor or owner 0
+|   |   |    +--> convert model line to view range; multiplier present -> insert/change scaled height
+|   |   |    |    \-- null multiplier --> remove custom height
+|   |   |    \--> nonempty filtered changes -> emit outgoing ModelLineHeightChangedEvent
+|   |   +--> if variable fonts enabled, register onDidChangeFont
+|   |   |    \--> filter this editor/owner 0; nonempty -> emit outgoing ModelFontChangedEvent
+|   |   +--> onDidChangeTokens
+|   |   |    \--> convert model ranges to view ranges -> emit view token change -> outgoing original change
+|   |   +--> onDidChangeLanguageConfiguration
+|   |   |    \--> emit view language-configuration event -> recreate cursor config -> emit outgoing change
+|   |   +--> onDidChangeLanguage -> recreate cursor config -> emit outgoing language change
+|   |   +--> onDidChangeOptions
+|   |   |    +-- setTabSize() changes mapping?
+|   |   |    |    +-- yes --> begin collector -> emit flush/mapping/decorations -> notify cursor/decorations -> flush layout
+|   |   |    |    \-- yes --> FINALLY end collector; then schedule configured view-line count update
+|   |   |    \--> recreate cursor config -> update cursor -> emit outgoing options change
+|   |   \--> onDidChangeDecorations -> invalidate decorations -> emit view change -> outgoing change
+|   |
+|   +-- _getCustomLineHeights()
+|   |   +-- variable heights disabled --> []
+|   |   \-- enabled --> editor-owned height decorations -> CustomLineHeightData.fromDecorations()
+|   |
+|   +-- _getCustomLineHeightsForLines(from, to)
+|   |   +-- variable heights disabled --> []
+|   |   \-- enabled --> height decorations in model line range -> CustomLineHeightData.fromDecorations()
+|   |
+|   \-- _updateConfigurationViewLineCountNow()
+|       \--> configuration.setViewLineCount(_lines.getViewLineCount())
+|
++-- Viewport stability, hidden areas and visible ranges
+|   |
+|   +-- _captureStableViewport()
+|   |   +-- valid anchor AND scrollTop > 0 --> StableViewport(model position, stored delta)
+|   |   \-- otherwise --> StableViewport(null, 0)
+|   |
+|   +-- setViewport(startLineNumber, endLineNumber, centeredLineNumber)
+|   |   \--> _viewportStart.update(this, startLineNumber)
+|   |
+|   +-- ViewportStart: tracked model anchor and pixel delta
+|   |   +--> create(): track (1,1), never grow at typing edges; initially invalid, delta 0
+|   |   +--> dispose(): remove tracked range from model
+|   |   +--> update(viewModel, startLineNumber)
+|   |   |    +--> convert view start to model position -> replace tracked point
+|   |   |    \--> mark valid; save view line and scrollTop minus line top
+|   |   \--> invalidate(): mark invalid while retaining tracked range
+|   |
+|   +-- StableViewport.recoverViewportStart(converter, layout)
+|   |   +--> retain nullable model position and startLineDelta
+|   |   +-- no saved model position --> return
+|   |   \-- otherwise --> convert to view line -> immediately set scrollTop = line top + delta
+|   |
+|   +-- setHiddenAreas(ranges, source, forceUpdate)
+|   |   +--> hiddenAreasModel.setHiddenAreas() -> getMergedRanges()
+|   |   +-- same merged array as previous AND !forceUpdate --> return
+|   |   +--> cache merged array -> _captureStableViewport()
+|   |   +--> begin collector -> _lines.setHiddenAreas(mergedRanges)
+|   |   |    \-- mapping changed --> emit flush/mapping/decorations -> notify cursor/decorations -> flush layout -> height check
+|   |   +--> saved first model line is hidden?
+|   |   |    \-- no --> stableViewport.recoverViewportStart()
+|   |   +--> FINALLY end collector
+|   |   +--> schedule configured view-line count update
+|   |   \--> mapping changed --> outgoing HiddenAreasChangedEvent
+|   |
+|   +-- HiddenAreasModel: per-source ranges plus cached merged array
+|   |   +--> setHiddenAreas(source, ranges)
+|   |   |    +-- existing rangeArraysEqual() --> return
+|   |   |    \-- changed --> store ranges; mark shouldRecompute
+|   |   \--> getMergedRanges()
+|   |        +-- clean --> return cached array
+|   |        +-- dirty --> clear flag; fold sources with mergeLineRangeArray()
+|   |        +-- rangeArraysEqual(old, new) --> preserve cached array identity
+|   |        \-- different --> replace cache and return it
+|   |
+|   +-- mergeLineRangeArray(arr1, arr2)
+|   |   +--> walk both arrays while both have entries
+|   |   |    +-- heads separated by at least one line --> append earlier head; advance its array
+|   |   |    \-- heads touch/overlap --> append min-start/max-end range, columns 1; advance BOTH
+|   |   \--> append each remaining tail -> return result
+|   |
+|   +-- rangeArraysEqual(arr1, arr2)
+|   |   +-- lengths differ --> false
+|   |   +-- any corresponding equalsRange() fails --> false
+|   |   \-- otherwise --> true
+|   |
+|   +-- Report visible model lines to attached view
+|   |   +--> getModelVisibleRanges(): layout viewport -> full-column view range -> _toModelVisibleRanges()
+|   |   +--> visibleLinesStabilized(): getModelVisibleRanges() -> setVisibleLines(ranges, true)
+|   |   \--> _handleVisibleLinesChanged(): getModelVisibleRanges() -> setVisibleLines(ranges, false)
+|   |
+|   +-- Visible model range queries
+|   |   +--> getVisibleRangesPlusViewportAboveBelow()
+|   |   |    +--> extend completely visible lines by max(20, rounded viewport height / lineHeight)
+|   |   |    \--> clamp to view line bounds -> _toModelVisibleRanges()
+|   |   \--> getVisibleRanges(): getCompletelyVisibleViewRange() -> _toModelVisibleRanges()
+|   |
+|   +-- _toModelVisibleRanges(visibleViewRange)
+|   |   +--> convert view range to model range; read hidden areas
+|   |   +-- no hidden areas --> return converted range
+|   |   +--> for each hidden area
+|   |   |    +-- outside remaining visible interval --> skip
+|   |   |    +-- visible prefix exists --> append prefix ending before hidden area
+|   |   |    \--> move remaining start past hidden area, column 1
+|   |   \--> append nonempty remaining tail -> return visible pieces
+|   |
+|   +-- Completely visible view ranges
+|   |   +--> getCompletelyVisibleViewRange(): current layout viewport -> complete-line range
+|   |   \--> getCompletelyVisibleViewRangeAtScrollTop(): viewport at requested top -> complete-line range
+|   |
+|   +-- getViewRangeWithCursorPadding(viewRange)
+|   |   +--> padding = min(max(cursorSurroundingLines, enabled sticky-scroll lines), floor(half range height))
+|   |   +--> move start down by padding; move end up by max(0, padding - 1)
+|   |   +-- padding zero OR inverted result --> return original viewRange
+|   |   \-- otherwise --> return trimmed range with full line columns
+|   |
+|   +-- saveState()
+|   |   +--> save layout scroll -> first visible model position and line-top minus scrollTop delta
+|   |   \--> return scrollLeft, firstPosition, firstPositionDeltaTop
+|   |
+|   +-- reduceRestoreState(state)
+|   |   +-- firstPosition absent --> _reduceRestoreStateCompatibility(state)
+|   |   \-- present --> validate model position -> view position -> line top minus saved delta
+|   |        \--> return scrollLeft and computed scrollTop
+|   |
+|   \-- _reduceRestoreStateCompatibility(state)
+|       \--> return scrollLeft and scrollTopWithoutViewZones
+|
++-- Rendering data and decoration presentation
+|   |
+|   +-- getFontSizeAtPosition(position)
+|   |   +-- variable fonts disabled --> null
+|   |   \-- enabled --> first font-size decoration at position, or configured font size in px
+|   |
+|   +-- View-line queries
+|   |   +--> indent and bracket guide queries -> _lines
+|   |   +--> line content and length -> _lines
+|   |   \--> minimum and maximum view columns -> _lines
+|   |
+|   +-- Whitespace boundary columns
+|   |   +--> first non-whitespace: no character -> 0; otherwise index + 1
+|   |   \--> last non-whitespace: no character -> 0; otherwise index + 2
+|   |
+|   +-- Decoration and injected-text queries
+|   |   +--> minimap decorations -> _decorations.getMinimapDecorationsInRange()
+|   |   +--> viewport decorations -> _decorations.getDecorationsViewportData().decorations
+|   |   \--> injected text at view position -> _lines.getInjectedTextAt()
+|   |
+|   +-- Rendering entry points
+|   |   +--> viewport line -> viewport decorations and relative-line metadata -> _getViewLineRenderingData()
+|   |   \--> single line -> line decorations and metadata -> _getViewLineRenderingData()
+|   |
+|   +-- _getViewLineRenderingData(lineNumber, inlineDecorations, hasVariableFonts, decorations)
+|   |   +--> read model character flags, tab size and projected line data
+|   |   +--> projected inline decorations exist? append them after supplied inline decorations
+|   |   +--> assemble rendering data from line bounds, content, wrapping, tokens and visible column
+|   |   \--> include _getTextDirection(lineNumber, decorations) and hasVariableFonts
+|   |
+|   +-- _getTextDirection(lineNumber, decorations)
+|   |   +--> consider only decorations covering this view line
+|   |   +--> RTL increments count; LTR decrements count
+|   |   \--> positive count -> RTL; otherwise LTR
+|   |
+|   +-- getTextDirection(lineNumber)
+|   |   \--> read decorations on line -> _getTextDirection()
+|   |
+|   +-- Line and minimap data
+|   |   +--> getViewLineData() -> _lines.getViewLineData()
+|   |   \--> getMinimapLinesRenderingData() -> _lines.getViewLinesData(needed mask) plus tab size
+|   |
+|   +-- getAllOverviewRulerDecorations(theme)
+|   |   +--> query editor decorations with validation/font filters -> create OverviewRulerDecorations
+|   |   +--> for each decoration
+|   |   |    +-- no overview-ruler options OR lane zero --> skip
+|   |   |    \-- otherwise --> resolve theme color; convert endpoints -> result.accept()
+|   |   \--> return grouped result.asArray
+|   |
+|   +-- OverviewRulerDecorations.accept(color, zIndex, start, end, lane)
+|   |   +--> color indexes groups; each group stores lane/start/end triples
+|   |   +-- color group exists
+|   |   |    +-- same final lane AND final end + 1 >= start
+|   |   |    |    \--> extend final end if larger -> return
+|   |   |    \-- otherwise --> append lane/start/end triple
+|   |   \-- new color --> create group with supplied zIndex -> index and append group
+|   |
+|   +-- _invalidateDecorationsColorCache()
+|   |   \--> iterate model overview-ruler decorations; invalidate optional ruler and minimap colors
+|   |
+|   \-- Position normalization and indentation
+|       +--> normalizePosition(position, affinity) -> _lines.normalizePosition()
+|       \--> getLineIndentColumn(lineNumber) -> _lines.getLineIndentColumn()
+|
++-- Cursor state, edits and reveal requests
+|   |
+|   +-- Focus and composition notifications
+|   |   +--> setHasFocus(): store focus -> update cursor -> emit view and outgoing focus events
+|   |   +--> setHasWidgetFocus(): outgoing WidgetFocusChangedEvent
+|   |   \--> onCompositionStart/End(): emit matching view composition event
+|   |
+|   +-- Cursor state access and updates
+|   |   +--> cursor-state reads -> CursorsController
+|   |   +--> setCursorStates() -> _withViewEventsCollector() -> cursor.setStates()
+|   |   +--> column selection, auto-closed ranges and previous edit type -> CursorsController
+|   |   +--> selection reads and primary model position -> CursorsController
+|   |   +--> setSelections() -> _withViewEventsCollector() -> cursor.setSelections()
+|   |   +--> saveCursorState() -> cursor.saveState()
+|   |   \--> restoreCursorState() -> _withViewEventsCollector() -> cursor.restoreState()
+|   |
+|   +-- _executeCursorEdit(callback)
+|   |   +-- cursor configuration readOnly --> outgoing ReadOnlyEditAttemptEvent -> return
+|   |   \-- writable --> _withViewEventsCollector(callback)
+|   |
+|   +-- Editing entry points
+|   |   +--> executeEdits() -> _executeCursorEdit() -> cursor.executeEdits()
+|   |   +--> start/endComposition() -> _executeCursorEdit() -> matching cursor operation
+|   |   +--> type/compositionType() -> _executeCursorEdit() -> matching cursor operation
+|   |   +--> paste/cut() -> _executeCursorEdit() -> matching cursor operation
+|   |   \--> executeCommand(s)() -> _executeCursorEdit() -> matching cursor operation
+|   |
+|   +-- Reveal requests through _withViewEventsCollector()
+|   |   +--> all/primary cursor -> cursor reveal with Simple vertical reveal and Smooth scrolling
+|   |   +--> top/bottom cursor -> point view range -> ViewRevealRangeRequestEvent
+|   |   \--> revealRange() -> ViewRevealRangeRequestEvent with caller's range and scroll/reveal policy
+|   |
+|   \-- changeWhitespace(callback)
+|       +--> viewLayout.changeWhitespace(callback)
+|       \--> layout changed? emit view ViewZonesChangedEvent -> outgoing ViewZonesChangedEvent
+|
+\-- Text coordinates and clipboard output
+    |
+    +-- Range value queries
+    |   +--> getValueInRange(): convert view range to model range -> model text with requested EOL
+    |   \--> getValueLengthInRange(): convert view range to model range -> model length with requested EOL
+    |
+    +-- modifyPosition(position, offset)
+    |   \--> view position -> model position -> model.modifyPosition(offset) -> view position
+    |
+    +-- deduceModelPositionRelativeToViewPosition(viewAnchor, deltaOffset, lineFeedCnt)
+    |   +--> convert view anchor to model position
+    |   +--> model EOL is CRLF?
+    |   |    \-- yes --> negative delta subtracts lineFeedCnt; nonnegative delta adds it
+    |   \--> model.getPositionAt(anchor offset + adjusted delta)
+    |
+    +-- getPlainTextToCopy(modelRanges, emptySelectionClipboard, forceCRLF)
+    |   +--> choose output newline -> clone and sort ranges by start
+    |   +--> classify empty and nonempty selections
+    |   +-- no nonempty range AND empty-selection copying disabled --> empty ranges and empty text
+    |   +--> local pushRange: preserve source range; read text using requested EOL and append suffix
+    |   +-- empty range exists AND empty-selection copying enabled
+    |   |    +-- empty range, start line differs from previous range's start --> copy full line + newline
+    |   |    +-- nonempty range --> copy exact range
+    |   |    \--> remember current start line, including nonempty selections
+    |   +-- otherwise --> copy only nonempty ranges
+    |   \--> return source ranges; one result -> string, otherwise string array
+    |
+    +-- getRichTextToCopy(modelRanges, emptySelectionClipboard)
+    |   +-- plain-text language --> null
+    |   +-- selection count != 1 --> null
+    |   +-- empty selection
+    |   |    +-- empty-selection copying disabled --> null
+    |   |    \-- enabled --> expand range to whole line
+    |   +--> read font and _getColorMap(); choose CSS font family
+    |   |    +-- disallowed punctuation OR default family --> use default
+    |   |    \-- custom --> normalize quotes, quote space/plus names if needed, append default fallback
+    |   \--> return language mode and styled preformatted div containing _getHTMLToCopy()
+    |
+    +-- _getHTMLToCopy(modelRange, colorMap)
+    |   +--> for each selected line: read tokens; clip offsets to selection boundaries
+    |   |    +-- empty line --> append <br>
+    |   |    \-- nonempty --> append tokenizeLineToHTML(tokens, offsets, tabSize, platform.isWindows)
+    |   \--> return concatenated HTML
+    |
+    \-- _getColorMap()
+        +--> read TokenizationRegistry; initialize index 0 as #000000
+        +--> color map exists --> convert entries from index 1 to CSS hex
+        \--> return result

@@ -82,6 +82,8 @@ with evidence. It is separate from operating the Mapping canvas editor.
 | --- | --- | --- |
 | POST | `/diagrams` | Create/save a canvas representation and immutable revision |
 | POST | `/prompt` | Edit/generate from an editor selection; NDJSON |
+| POST | `/compactions` | Compact then refine one project file; NDJSON |
+| GET | `/compactions/:runId` | Read a saved compaction run, prompts, and outputs |
 | POST | `/chat` | Answer a question about selected content; NDJSON |
 | GET, PUT | `/workspace` | Load/save the editor workspace, including scenes, retained panes, drafts, and viewport |
 

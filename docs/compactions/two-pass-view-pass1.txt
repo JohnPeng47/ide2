@@ -1,0 +1,230 @@
+/home/john/code/vscode/src/vs/editor/browser/view.ts
+|
++-- View ownership and construction
+|   |
+|   +-- View: owned components and mutable state
+|   |   +-- _context shares configuration, theme and view model
+|   |   +-- _viewLines + optional _viewLinesGpu render text separately
+|   |   +-- _viewParts owns non-text render parts; widget references expose APIs
+|   |   +-- _editContext owns keyboard input; listeners relay clipboard events
+|   |   +-- _shouldRecomputeGlyphMarginLanes defers lane updates
+|   |   \-- _renderAnimationFrame holds the pending-render cancellation handle
+|   |
+|   +-- constructor()
+|   |   +-- register CodeEditorWidgetFocusTracker(editorContainer, overflowWidgetsDomNode)
+|   |       \-- WHEN focus changes -> viewModel.setHasWidgetFocus(tracker.hasFocus())
+|   |   +-- _selections = [Selection(1,1,1,1)]; _renderAnimationFrame = null
+|   |   +-- create overflow guard and ViewController; create shared ViewContext
+|   |   +-- add this as FIRST event handler -> layout updates precede other handlers
+|   |   +-- cache edit-context/accessibility options -> _instantiateEditContext()
+|   |   +-- _connectEditContextClipboardEvents(); add edit context to _viewParts
+|   |   +-- create absolute linesContent and editor domNode with role='code'
+|   |   +-- experimentalGpuAcceleration == 'on'? create ViewGpuContext
+|   |   +-- create scrollbar + ViewLines; GPU context? also create ViewLinesGpu
+|   |   +-- build view zones, overview ruler and scroll decoration as view parts
+|   |   +-- build content overlays: highlights, selections, guides, decorations, whitespace
+|   |   +-- build margin overlays; GPU context? add GpuMarkOverlay
+|   |   +-- build glyph widgets and margin; attach margin zones, overlays and widgets
+|   |   +-- build content widgets, cursors and overlay widgets as view parts
+|   |   +-- choose RulersGpu or Rulers; add block decorations and minimap
+|   |   +-- insert overview ruler into scrollbar layout
+|   |   +-- assemble linesContent: overlays -> DOM rulers if present -> zones -> lines -> widgets -> cursors
+|   |   +-- assemble overflow guard: margin -> scrollbar -> optional GPU canvas -> decorations/widgets/minimap
+|   |   +-- append overflow guard to editor root
+|   |   +-- external overflowWidgetsDomNode?
+|   |       +-- yes -> append overflowing content/overlay widgets there
+|   |       \-- no  -> append them to editor root
+|   |   \-- _applyLayout(); register PointerHandler(_createPointerHandlerHelper())
+|   |
+|   +-- _applyLayout()
+|   |   +-- size editor root and overflow guard from layoutInfo
+|   |   \-- size linesContent to 16777216 x 16777216 (Chrome rendering limit)
+|   |
+|   \-- _getEditorClassName()
+|       \-- return configured class + theme selector + ' focused' when edit context focused
+|
++-- Edit context, clipboard and focus
+|   |
+|   +-- _instantiateEditContext()
+|   |   \-- effectiveEditContext?
+|   |       +-- yes -> create NativeEditContext using _createTextAreaHandlerHelper()
+|   |       \-- no  -> create TextAreaEditContext using _createTextAreaHandlerHelper()
+|   |
+|   +-- _updateEditContext()
+|   |   +-- effectiveEditContext AND accessibilitySupport unchanged? return
+|   |   +-- cache new options; capture focus and old _viewParts index
+|   |   +-- dispose old context -> _instantiateEditContext() -> reconnect clipboard
+|   |   +-- previous context focused? focus replacement
+|   |   \-- old context found in _viewParts? replace that array entry
+|   |
+|   +-- _connectEditContextClipboardEvents()
+|   |   +-- clear old listeners
+|   |   \-- relay current context's onWillCopy / onWillCut / onWillPaste to View emitters
+|   |
+|   +-- Public accessibility and focus helpers
+|   |   +-- writeScreenReaderContent(reason) -> _editContext
+|   |   +-- focus() / isFocused() -> _editContext
+|   |   +-- isWidgetFocused() -> _widgetFocusTracker.hasFocus()
+|   |   +-- refreshFocusState() -> refresh edit context, then widget tracker
+|   |   \-- setAriaOptions(options) -> _editContext
+|   |
+|   \-- CodeEditorWidgetFocusTracker
+|       +-- constructor: initialize both focus flags false; register editor DOM tracker
+|       +-- WHEN editor focus/blur -> set editor flag -> _update()
+|       +-- overflowWidgetsDomNode present? register its DOM tracker
+|           \-- WHEN overflow focus/blur -> set overflow flag -> _update()
+|       +-- _update(): focused = editor flag OR overflow flag
+|           \-- focused changed? store _hadFocus -> fire onChange
+|       +-- hasFocus(): return _hadFocus ?? false
+|       \-- refreshState(): refresh editor tracker, then optional overflow tracker
+|
++-- Invalidation, widgets and glyph lanes
+|   |
+|   +-- View event handlers
+|   |   +-- handleEvents: super.handleEvents(events) -> _scheduleRender()
+|   |   +-- onConfigurationChanged: update class -> _updateEditContext() -> _applyLayout()
+|   |   +-- onCursorStateChanged: _selections = event.selections; return false
+|   |   +-- onDecorationsChanged: affectsGlyphMargin? mark lane recomputation; return false
+|   |   +-- onFocusChanged: update editor class; return false
+|   |   \-- onThemeChanged: update context theme -> editor class; return false
+|   |
+|   +-- change(callback)
+|   |   \-- _viewZones.changeViewZones(callback) -> _scheduleRender()
+|   |
+|   +-- Content widget API
+|   |   +-- addContentWidget: add -> layoutContentWidget() -> _scheduleRender()
+|   |   +-- layoutContentWidget: set positions, preference and affinity (missing values -> null)
+|   |       \-- _contentWidgets.shouldRender()? _scheduleRender()
+|   |   \-- removeContentWidget: remove -> _scheduleRender()
+|   |
+|   +-- Overlay widget API
+|   |   +-- addOverlayWidget: add -> layoutOverlayWidget() -> _scheduleRender()
+|   |   +-- layoutOverlayWidget: setWidgetPosition returns true? _scheduleRender()
+|   |   \-- removeOverlayWidget: remove -> _scheduleRender()
+|   |
+|   +-- Glyph margin widget API
+|   |   +-- addGlyphMarginWidget: add -> mark lane recomputation -> _scheduleRender()
+|   |   +-- layoutGlyphMarginWidget: setWidgetPosition returns true?
+|   |       \-- mark lane recomputation -> _scheduleRender()
+|   |   \-- removeGlyphMarginWidget: remove -> mark lane recomputation -> _scheduleRender()
+|   |
+|   \-- _computeGlyphMarginLanes()
+|       +-- collect margin decorations; default lane = Center; retain persistLane
+|       +-- collect glyph widgets; validate each preference.range
+|       +-- sort all glyphs by range start
+|       +-- laneModel.reset(max end line) -> push each (lane, range, persist)
+|       \-- return viewModel.glyphLanes
+|
++-- Render requests and shared frame coordination
+|   |
+|   +-- render(now, everything)
+|   |   +-- everything? force _viewLines and all _viewParts dirty
+|   |   \-- now? _flushAccumulatedAndRenderNow() : _scheduleRender()
+|   |
+|   +-- View._scheduleRender()
+|   |   +-- disposed? throw BugIndicatingError
+|   |   +-- _renderAnimationFrame already set? no further action
+|   |   +-- otherwise: NativeEditContext? setEditContextOnDomNode()
+|   |   +-- rendering = _createCoordinatedRendering()
+|   |   \-- store coordinator.scheduleCoordinatedRendering(window, callbacks) handle
+|   |       +-- WHEN prepareRenderText callback runs
+|   |           +-- disposed? throw BugIndicatingError before entering try
+|   |           \-- try rendering.prepareRenderText(); finally clear _renderAnimationFrame
+|   |       +-- WHEN renderText callback runs: disposed? throw; otherwise delegate
+|   |       +-- WHEN prepareRender callback runs: disposed? throw; otherwise delegate
+|   |       \-- WHEN render callback runs: disposed? throw; otherwise delegate
+|   |
+|   +-- _flushAccumulatedAndRenderNow()
+|   |   +-- rendering = _createCoordinatedRendering()
+|   |   +-- viewport = safeInvokeNoArg(prepareRenderText); absent? return
+|   |   +-- data = safeInvokeNoArg(renderText(viewport)); absent? return
+|   |   +-- safeInvokeNoArg(prepareRender(parts, ctx))
+|   |   \-- safeInvokeNoArg(render(parts, ctx)); prepare failure does not gate this call
+|   |
+|   +-- EditorRenderingCoordinator: singleton batch scheduler
+|   |   +-- state: one shared rendering queue; animation-frame handle per CodeWindow
+|   |   +-- scheduleCoordinatedRendering(rendering)
+|   |       +-- push rendering -> _scheduleRender(rendering.window)
+|   |       \-- return cancellation handle
+|   |           +-- WHEN dispose(): rendering no longer queued? return
+|   |           +-- otherwise remove rendering from queue
+|   |           \-- queue now empty? dispose ALL window runners -> clear runner map
+|   |   +-- _scheduleRender(window)
+|   |       +-- runner already registered? no further action
+|   |       \-- otherwise register runner through dom.runAtThisOrScheduleAtNextAnimationFrame
+|   |           +-- priority = 100; store returned handle for window
+|   |           \-- WHEN runner fires: delete this window's entry -> _onRenderScheduled()
+|   |   \-- _onRenderScheduled()
+|   |       +-- snapshot shared queue -> replace queue with []
+|   |       +-- PASS 1: all editors -> viewportDatas[i] = safeInvokeNoArg(prepareRenderText)
+|   |       +-- PASS 2: all editors -> no viewport? datas[i] = null; skip
+|   |           \-- otherwise datas[i] = safeInvokeNoArg(renderText(viewport))
+|   |       +-- PASS 3: all editors -> data present? safeInvokeNoArg(prepareRender(parts, ctx)); result ignored
+|   |       \-- PASS 4: all editors -> data present? safeInvokeNoArg(render(parts, ctx))
+|   |
+|   \-- safeInvokeNoArg(func)
+|       +-- try func() -> return result
+|       \-- catch error -> onUnexpectedError(error) -> return null
+|
++-- Per-view rendering phases
+|   |
+|   +-- _getViewPartsToRender()
+|   |   \-- return _viewParts filtered by shouldRender(), preserving order
+|   |
+|   \-- _createCoordinatedRendering(): return four callbacks
+|       +-- prepareRenderText()
+|           +-- lane recomputation requested?
+|               \-- clear flag -> _computeGlyphMarginLanes() -> set required lane count
+|           +-- inputLatency.onRenderStart()
+|           +-- editor DOM disconnected? return null
+|           +-- parts = _getViewPartsToRender(); DOM _viewLines not dirty AND parts empty? return null
+|           +-- get viewport lines -> viewModel.setViewport(start, end, center)
+|           +-- construct ViewportData(selections, lines, whitespace, viewModel)
+|           +-- for each currently dirty _viewPart: onBeforeRender(viewportData)
+|           \-- return viewportData
+|       +-- renderText(viewportData)
+|           +-- DOM _viewLines dirty? renderText(viewportData) -> onDidRender()
+|           +-- GPU _viewLinesGpu dirty? renderText(viewportData) -> onDidRender()
+|           +-- recollect _getViewPartsToRender(); text rendering may emit scroll events
+|           \-- return [parts, new RenderingContext(layout, viewportData, DOM lines, GPU lines)]
+|       +-- prepareRender(parts, ctx): for each part -> prepareRender(ctx)
+|       \-- render(parts, ctx): for each part -> render(ctx) -> onDidRender()
+|
++-- Input geometry and editor helpers
+|   |
+|   +-- _createPointerHandlerHelper()
+|   |   +-- expose editor, lines DOM and optional GPU lines to PointerHandler
+|   |   +-- focusTextArea -> focus(); dispatchTextAreaEvent -> current edit-context DOM
+|   |   +-- getLastRenderData -> cursor data (default []) + edit-context render data
+|   |   +-- renderNow -> render(true, false)
+|   |   +-- mouse-down suppression queries -> zones and content widgets
+|   |   +-- getPositionFromDOMInfo -> _flushAccumulatedAndRenderNow() -> DOM lines
+|   |   +-- visibleRangeForPosition -> flush -> DOM result ?? GPU result ?? null
+|   |   \-- getLineWidth -> flush -> GPU width if defined, otherwise DOM width
+|   |
+|   +-- _createTextAreaHandlerHelper()
+|   |   +-- visibleRangeForPosition -> _flushAccumulatedAndRenderNow() -> DOM lines
+|   |   \-- linesVisibleRangesForRange -> _flushAccumulatedAndRenderNow() -> DOM lines
+|   |
+|   +-- Scrollbar and scroll-state helpers
+|   |   +-- delegate scrollbar pointer-down and wheel events to _scrollbar
+|   |   \-- restoreState -> set scrollTop/scrollLeft immediately -> visibleLinesStabilized()
+|   |
+|   \-- Geometry and overview helpers
+|       +-- getOffsetForColumn: validate model position -> convert model to view
+|           \-- _flushAccumulatedAndRenderNow() -> DOM visible range; absent? -1 : left
+|       +-- getLineWidth: map model line's max column to view line -> flush -> DOM width
+|       +-- resetLineWidthCaches -> _viewLines.resetLineWidthCaches()
+|       +-- getTargetAtClientPoint -> pointer target absent? null : convert view target to model
+|       \-- createOverviewRuler -> new OverviewRuler(context, cssClassName)
+|
+\-- Cleanup
+    |
+    \-- View.dispose()
+        +-- pending render? dispose cancellation handle -> clear _renderAnimationFrame
+        +-- dispose clipboard listeners
+        +-- remove overflowing content and overlay widget DOM nodes
+        +-- remove this context event handler -> dispose optional GPU context
+        +-- dispose DOM lines and optional GPU lines
+        +-- dispose each _viewPart, including current edit context
+        \-- super.dispose() releases registered pointer/focus trackers and emitters

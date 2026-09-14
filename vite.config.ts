@@ -29,7 +29,8 @@ export default defineConfig({
       EXPERIMENTS_ROOT,
       DATASET_COLLECTIONS_ROOT,
       undefined,
-      ROOT
+      ROOT,
+      { lspEnabled: (globalThis as Record<symbol, unknown>)[Symbol.for('new-diagram.lsp-enabled')] === true }
     )
   ],
   build: {

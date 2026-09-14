@@ -1,0 +1,4332 @@
+{
+  "nodes": [
+    {
+      "id": 0,
+      "kind": "tree",
+      "text": "Workbench renderer",
+      "spans": [
+        {
+          "line": 1,
+          "column": 3,
+          "text": "Workbench renderer",
+          "branch_column": null,
+          "marker": "",
+          "node_id": 0,
+          "tree_node_id": 0,
+          "cleaned_column": 3,
+          "cleaned_branch_column": null,
+          "guide_columns": []
+        },
+        {
+          "line": 3,
+          "column": 7,
+          "text": "EditorPart",
+          "branch_column": 3,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 1,
+          "cleaned_column": 7,
+          "cleaned_branch_column": 3,
+          "guide_columns": []
+        },
+        {
+          "line": 4,
+          "column": 11,
+          "text": "SerializableGrid",
+          "branch_column": 7,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 2,
+          "cleaned_column": 11,
+          "cleaned_branch_column": 7,
+          "guide_columns": [
+            3
+          ]
+        },
+        {
+          "line": 5,
+          "column": 15,
+          "text": "SplitView / GridView",
+          "branch_column": 11,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 3,
+          "cleaned_column": 15,
+          "cleaned_branch_column": 11,
+          "guide_columns": [
+            3
+          ]
+        },
+        {
+          "line": 6,
+          "column": 19,
+          "text": "resize",
+          "branch_column": 15,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 4,
+          "cleaned_column": 19,
+          "cleaned_branch_column": 15,
+          "guide_columns": [
+            3,
+            11
+          ]
+        },
+        {
+          "line": 7,
+          "column": 23,
+          "text": "redistribute space among neighboring panes",
+          "branch_column": 19,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 5,
+          "cleaned_column": 23,
+          "cleaned_branch_column": 19,
+          "guide_columns": [
+            3,
+            11
+          ]
+        },
+        {
+          "line": 8,
+          "column": 23,
+          "text": "propagate dimensions",
+          "branch_column": 19,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 6,
+          "cleaned_column": 23,
+          "cleaned_branch_column": 19,
+          "guide_columns": [
+            3,
+            11
+          ]
+        },
+        {
+          "line": 10,
+          "column": 15,
+          "text": "EditorGroupView [one per group]",
+          "branch_column": 11,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 7,
+          "cleaned_column": 15,
+          "cleaned_branch_column": 11,
+          "guide_columns": [
+            3
+          ]
+        },
+        {
+          "line": 11,
+          "column": 19,
+          "text": "layout(width, height, top, left)",
+          "branch_column": 15,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 8,
+          "cleaned_column": 19,
+          "cleaned_branch_column": 15,
+          "guide_columns": [
+            3
+          ]
+        },
+        {
+          "line": 12,
+          "column": 23,
+          "text": "lay out title / tabs",
+          "branch_column": 19,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 9,
+          "cleaned_column": 23,
+          "cleaned_branch_column": 19,
+          "guide_columns": [
+            3,
+            15
+          ]
+        },
+        {
+          "line": 13,
+          "column": 23,
+          "text": "EditorPanes.layout",
+          "branch_column": 19,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 10,
+          "cleaned_column": 23,
+          "cleaned_branch_column": 19,
+          "guide_columns": [
+            3,
+            15
+          ]
+        },
+        {
+          "line": 14,
+          "column": 27,
+          "text": "active EditorPane.layout",
+          "branch_column": 23,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 11,
+          "cleaned_column": 27,
+          "cleaned_branch_column": 23,
+          "guide_columns": [
+            3,
+            15
+          ]
+        },
+        {
+          "line": 15,
+          "column": 31,
+          "text": "editor dimensions change",
+          "branch_column": 27,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 12,
+          "cleaned_column": 31,
+          "cleaned_branch_column": 27,
+          "guide_columns": [
+            3,
+            15
+          ]
+        },
+        {
+          "line": 16,
+          "column": 35,
+          "text": "viewport changes",
+          "branch_column": 31,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 13,
+          "cleaned_column": 35,
+          "cleaned_branch_column": 31,
+          "guide_columns": [
+            3,
+            15
+          ]
+        },
+        {
+          "line": 17,
+          "column": 35,
+          "text": "wrapping may change",
+          "branch_column": 31,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 14,
+          "cleaned_column": 35,
+          "cleaned_branch_column": 31,
+          "guide_columns": [
+            3,
+            15
+          ]
+        },
+        {
+          "line": 19,
+          "column": 19,
+          "text": "EditorPanes",
+          "branch_column": 15,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 15,
+          "cleaned_column": 19,
+          "cleaned_branch_column": 15,
+          "guide_columns": [
+            3
+          ]
+        },
+        {
+          "line": 20,
+          "column": 23,
+          "text": "active text editor",
+          "branch_column": 19,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 16,
+          "cleaned_column": 23,
+          "cleaned_branch_column": 19,
+          "guide_columns": [
+            3
+          ]
+        },
+        {
+          "line": 21,
+          "column": 27,
+          "text": "CodeEditorWidget",
+          "branch_column": 23,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 17,
+          "cleaned_column": 27,
+          "cleaned_branch_column": 23,
+          "guide_columns": [
+            3
+          ]
+        },
+        {
+          "line": 23,
+          "column": 31,
+          "text": "ITextModel",
+          "branch_column": 27,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 18,
+          "cleaned_column": 31,
+          "cleaned_branch_column": 27,
+          "guide_columns": [
+            3
+          ]
+        },
+        {
+          "line": 25,
+          "column": 31,
+          "text": "ViewModel [per editor]",
+          "branch_column": 27,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 19,
+          "cleaned_column": 31,
+          "cleaned_branch_column": 27,
+          "guide_columns": [
+            3
+          ]
+        },
+        {
+          "line": 26,
+          "column": 35,
+          "text": "view configuration",
+          "branch_column": 31,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 20,
+          "cleaned_column": 35,
+          "cleaned_branch_column": 31,
+          "guide_columns": [
+            3,
+            27
+          ]
+        },
+        {
+          "line": 27,
+          "column": 35,
+          "text": "model-to-view line mapping",
+          "branch_column": 31,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 21,
+          "cleaned_column": 35,
+          "cleaned_branch_column": 31,
+          "guide_columns": [
+            3,
+            27
+          ]
+        },
+        {
+          "line": 28,
+          "column": 35,
+          "text": "viewport / selections",
+          "branch_column": 31,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 22,
+          "cleaned_column": 35,
+          "cleaned_branch_column": 31,
+          "guide_columns": [
+            3,
+            27
+          ]
+        },
+        {
+          "line": 30,
+          "column": 31,
+          "text": "View",
+          "branch_column": 27,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 23,
+          "cleaned_column": 31,
+          "cleaned_branch_column": 27,
+          "guide_columns": [
+            3
+          ]
+        },
+        {
+          "line": 31,
+          "column": 35,
+          "text": "scrolling",
+          "branch_column": 31,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 24,
+          "cleaned_column": 35,
+          "cleaned_branch_column": 31,
+          "guide_columns": [
+            3
+          ]
+        },
+        {
+          "line": 32,
+          "column": 39,
+          "text": "visible line range changes",
+          "branch_column": 35,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 25,
+          "cleaned_column": 39,
+          "cleaned_branch_column": 35,
+          "guide_columns": [
+            3,
+            31
+          ]
+        },
+        {
+          "line": 34,
+          "column": 35,
+          "text": "changed view parts / lines",
+          "branch_column": 31,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 26,
+          "cleaned_column": 35,
+          "cleaned_branch_column": 31,
+          "guide_columns": [
+            3
+          ]
+        },
+        {
+          "line": 35,
+          "column": 39,
+          "text": "_scheduleRender",
+          "branch_column": 35,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 27,
+          "cleaned_column": 39,
+          "cleaned_branch_column": 35,
+          "guide_columns": [
+            3,
+            31
+          ]
+        },
+        {
+          "line": 36,
+          "column": 43,
+          "text": "pending frame?",
+          "branch_column": 39,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 28,
+          "cleaned_column": 43,
+          "cleaned_branch_column": 39,
+          "guide_columns": [
+            3,
+            31
+          ]
+        },
+        {
+          "line": 37,
+          "column": 47,
+          "text": "yes: reuse scheduled work",
+          "branch_column": 43,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 29,
+          "cleaned_column": 47,
+          "cleaned_branch_column": 43,
+          "guide_columns": [
+            3,
+            31
+          ]
+        },
+        {
+          "line": 38,
+          "column": 47,
+          "text": "no: enqueue",
+          "branch_column": 43,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 30,
+          "cleaned_column": 47,
+          "cleaned_branch_column": 43,
+          "guide_columns": [
+            3,
+            31
+          ]
+        },
+        {
+          "line": 40,
+          "column": 35,
+          "text": "rendering callbacks",
+          "branch_column": 31,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 31,
+          "cleaned_column": 35,
+          "cleaned_branch_column": 31,
+          "guide_columns": [
+            3
+          ]
+        },
+        {
+          "line": 54,
+          "column": 7,
+          "text": "EditorRenderingCoordinator",
+          "branch_column": 3,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 32,
+          "cleaned_column": 7,
+          "cleaned_branch_column": 3,
+          "guide_columns": []
+        },
+        {
+          "line": 56,
+          "column": 11,
+          "text": "queued editor renderings",
+          "branch_column": 7,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 33,
+          "cleaned_column": 11,
+          "cleaned_branch_column": 7,
+          "guide_columns": []
+        },
+        {
+          "line": 57,
+          "column": 11,
+          "text": "animation-frame runners [by window]",
+          "branch_column": 7,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 34,
+          "cleaned_column": 11,
+          "cleaned_branch_column": 7,
+          "guide_columns": []
+        },
+        {
+          "line": 59,
+          "column": 11,
+          "text": "_onRenderScheduled",
+          "branch_column": 7,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 35,
+          "cleaned_column": 11,
+          "cleaned_branch_column": 7,
+          "guide_columns": []
+        },
+        {
+          "line": 61,
+          "column": 15,
+          "text": "1. prepareRenderText [across queued editors]",
+          "branch_column": 11,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 36,
+          "cleaned_column": 15,
+          "cleaned_branch_column": 11,
+          "guide_columns": []
+        },
+        {
+          "line": 62,
+          "column": 19,
+          "text": "disconnected DOM?",
+          "branch_column": 15,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 37,
+          "cleaned_column": 19,
+          "cleaned_branch_column": 15,
+          "guide_columns": [
+            11
+          ]
+        },
+        {
+          "line": 63,
+          "column": 19,
+          "text": "nothing dirty?",
+          "branch_column": 15,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 38,
+          "cleaned_column": 19,
+          "cleaned_branch_column": 15,
+          "guide_columns": [
+            11
+          ]
+        },
+        {
+          "line": 64,
+          "column": 19,
+          "text": "compute ViewportData",
+          "branch_column": 15,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 39,
+          "cleaned_column": 19,
+          "cleaned_branch_column": 15,
+          "guide_columns": [
+            11
+          ]
+        },
+        {
+          "line": 65,
+          "column": 23,
+          "text": "visible lines + whitespace + selections",
+          "branch_column": 19,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 40,
+          "cleaned_column": 23,
+          "cleaned_branch_column": 19,
+          "guide_columns": [
+            11
+          ]
+        },
+        {
+          "line": 67,
+          "column": 15,
+          "text": "2. renderText [across prepared editors]",
+          "branch_column": 11,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 41,
+          "cleaned_column": 15,
+          "cleaned_branch_column": 11,
+          "guide_columns": []
+        },
+        {
+          "line": 68,
+          "column": 19,
+          "text": "ViewLines / ViewLinesGpu",
+          "branch_column": 15,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 42,
+          "cleaned_column": 19,
+          "cleaned_branch_column": 15,
+          "guide_columns": [
+            11
+          ]
+        },
+        {
+          "line": 69,
+          "column": 19,
+          "text": "collect view parts needing rendering",
+          "branch_column": 15,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 43,
+          "cleaned_column": 19,
+          "cleaned_branch_column": 15,
+          "guide_columns": [
+            11
+          ]
+        },
+        {
+          "line": 71,
+          "column": 15,
+          "text": "3. prepareRender [across prepared editors]",
+          "branch_column": 11,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 44,
+          "cleaned_column": 15,
+          "cleaned_branch_column": 11,
+          "guide_columns": []
+        },
+        {
+          "line": 72,
+          "column": 19,
+          "text": "prepare changed view parts / measure geometry",
+          "branch_column": 15,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 45,
+          "cleaned_column": 19,
+          "cleaned_branch_column": 15,
+          "guide_columns": [
+            11
+          ]
+        },
+        {
+          "line": 74,
+          "column": 15,
+          "text": "4. render [across prepared editors]",
+          "branch_column": 11,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 46,
+          "cleaned_column": 15,
+          "cleaned_branch_column": 11,
+          "guide_columns": []
+        },
+        {
+          "line": 75,
+          "column": 19,
+          "text": "update changed view parts",
+          "branch_column": 15,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 47,
+          "cleaned_column": 19,
+          "cleaned_branch_column": 15,
+          "guide_columns": []
+        },
+        {
+          "line": 77,
+          "column": 23,
+          "text": "browser rendering consequences [not code entities]",
+          "branch_column": 19,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 48,
+          "cleaned_column": 23,
+          "cleaned_branch_column": 19,
+          "guide_columns": []
+        },
+        {
+          "line": 78,
+          "column": 27,
+          "text": "style recalculation",
+          "branch_column": 23,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 49,
+          "cleaned_column": 27,
+          "cleaned_branch_column": 23,
+          "guide_columns": []
+        },
+        {
+          "line": 79,
+          "column": 27,
+          "text": "layout, when geometry is invalidated",
+          "branch_column": 23,
+          "marker": "|--",
+          "node_id": 0,
+          "tree_node_id": 50,
+          "cleaned_column": 27,
+          "cleaned_branch_column": 23,
+          "guide_columns": []
+        },
+        {
+          "line": 80,
+          "column": 27,
+          "text": "paint / compositing, as needed",
+          "branch_column": 23,
+          "marker": "`--",
+          "node_id": 0,
+          "tree_node_id": 51,
+          "cleaned_column": 27,
+          "cleaned_branch_column": 23,
+          "guide_columns": []
+        }
+      ],
+      "tree": {
+        "nodes": [
+          {
+            "id": 0,
+            "label": "Workbench renderer",
+            "parent_id": null,
+            "depth": 0,
+            "line": 1,
+            "column": 3,
+            "end_line": 1,
+            "branch_column": 2,
+            "children": [
+              1,
+              32
+            ],
+            "raw_lines": [
+              "  Workbench renderer"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 1,
+            "label": "EditorPart",
+            "parent_id": 0,
+            "depth": 1,
+            "line": 3,
+            "column": 7,
+            "end_line": 3,
+            "branch_column": 3,
+            "children": [
+              2
+            ],
+            "raw_lines": [
+              "  |-- EditorPart"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 2,
+            "label": "SerializableGrid",
+            "parent_id": 1,
+            "depth": 2,
+            "line": 4,
+            "column": 11,
+            "end_line": 4,
+            "branch_column": 7,
+            "children": [
+              3,
+              7
+            ],
+            "raw_lines": [
+              "      `-- SerializableGrid"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 3,
+            "label": "SplitView / GridView",
+            "parent_id": 2,
+            "depth": 3,
+            "line": 5,
+            "column": 15,
+            "end_line": 5,
+            "branch_column": 11,
+            "children": [
+              4
+            ],
+            "raw_lines": [
+              "          |-- SplitView / GridView"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 4,
+            "label": "resize",
+            "parent_id": 3,
+            "depth": 4,
+            "line": 6,
+            "column": 19,
+            "end_line": 6,
+            "branch_column": 15,
+            "children": [
+              5,
+              6
+            ],
+            "raw_lines": [
+              "              `-- resize"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 5,
+            "label": "redistribute space among neighboring panes",
+            "parent_id": 4,
+            "depth": 5,
+            "line": 7,
+            "column": 23,
+            "end_line": 7,
+            "branch_column": 19,
+            "children": [],
+            "raw_lines": [
+              "                  |-- redistribute space among neighboring panes"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 6,
+            "label": "propagate dimensions",
+            "parent_id": 4,
+            "depth": 5,
+            "line": 8,
+            "column": 23,
+            "end_line": 8,
+            "branch_column": 19,
+            "children": [],
+            "raw_lines": [
+              "                  `-- propagate dimensions"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 7,
+            "label": "EditorGroupView [one per group]",
+            "parent_id": 2,
+            "depth": 3,
+            "line": 10,
+            "column": 15,
+            "end_line": 10,
+            "branch_column": 11,
+            "children": [
+              8,
+              15
+            ],
+            "raw_lines": [
+              "          `-- EditorGroupView [one per group]"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 8,
+            "label": "layout(width, height, top, left)",
+            "parent_id": 7,
+            "depth": 4,
+            "line": 11,
+            "column": 19,
+            "end_line": 11,
+            "branch_column": 15,
+            "children": [
+              9,
+              10
+            ],
+            "raw_lines": [
+              "              |-- layout(width, height, top, left)"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 9,
+            "label": "lay out title / tabs",
+            "parent_id": 8,
+            "depth": 5,
+            "line": 12,
+            "column": 23,
+            "end_line": 12,
+            "branch_column": 19,
+            "children": [],
+            "raw_lines": [
+              "                  |-- lay out title / tabs"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 10,
+            "label": "EditorPanes.layout",
+            "parent_id": 8,
+            "depth": 5,
+            "line": 13,
+            "column": 23,
+            "end_line": 13,
+            "branch_column": 19,
+            "children": [
+              11
+            ],
+            "raw_lines": [
+              "                  `-- EditorPanes.layout"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 11,
+            "label": "active EditorPane.layout",
+            "parent_id": 10,
+            "depth": 6,
+            "line": 14,
+            "column": 27,
+            "end_line": 14,
+            "branch_column": 23,
+            "children": [
+              12
+            ],
+            "raw_lines": [
+              "                      `-- active EditorPane.layout"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 12,
+            "label": "editor dimensions change",
+            "parent_id": 11,
+            "depth": 7,
+            "line": 15,
+            "column": 31,
+            "end_line": 15,
+            "branch_column": 27,
+            "children": [
+              13,
+              14
+            ],
+            "raw_lines": [
+              "                          `-- editor dimensions change"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 13,
+            "label": "viewport changes",
+            "parent_id": 12,
+            "depth": 8,
+            "line": 16,
+            "column": 35,
+            "end_line": 16,
+            "branch_column": 31,
+            "children": [],
+            "raw_lines": [
+              "                              |-- viewport changes"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 14,
+            "label": "wrapping may change",
+            "parent_id": 12,
+            "depth": 8,
+            "line": 17,
+            "column": 35,
+            "end_line": 17,
+            "branch_column": 31,
+            "children": [],
+            "raw_lines": [
+              "                              `-- wrapping may change"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 15,
+            "label": "EditorPanes",
+            "parent_id": 7,
+            "depth": 4,
+            "line": 19,
+            "column": 19,
+            "end_line": 19,
+            "branch_column": 15,
+            "children": [
+              16
+            ],
+            "raw_lines": [
+              "              `-- EditorPanes"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 16,
+            "label": "active text editor",
+            "parent_id": 15,
+            "depth": 5,
+            "line": 20,
+            "column": 23,
+            "end_line": 20,
+            "branch_column": 19,
+            "children": [
+              17
+            ],
+            "raw_lines": [
+              "                  `-- active text editor"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 17,
+            "label": "CodeEditorWidget",
+            "parent_id": 16,
+            "depth": 6,
+            "line": 21,
+            "column": 27,
+            "end_line": 21,
+            "branch_column": 23,
+            "children": [
+              18,
+              19,
+              23
+            ],
+            "raw_lines": [
+              "                      `-- CodeEditorWidget"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 18,
+            "label": "ITextModel",
+            "parent_id": 17,
+            "depth": 7,
+            "line": 23,
+            "column": 31,
+            "end_line": 23,
+            "branch_column": 27,
+            "children": [],
+            "raw_lines": [
+              "                          |-- ITextModel"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 19,
+            "label": "ViewModel [per editor]",
+            "parent_id": 17,
+            "depth": 7,
+            "line": 25,
+            "column": 31,
+            "end_line": 25,
+            "branch_column": 27,
+            "children": [
+              20,
+              21,
+              22
+            ],
+            "raw_lines": [
+              "                          |-- ViewModel [per editor]"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 20,
+            "label": "view configuration",
+            "parent_id": 19,
+            "depth": 8,
+            "line": 26,
+            "column": 35,
+            "end_line": 26,
+            "branch_column": 31,
+            "children": [],
+            "raw_lines": [
+              "                              |-- view configuration"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 21,
+            "label": "model-to-view line mapping",
+            "parent_id": 19,
+            "depth": 8,
+            "line": 27,
+            "column": 35,
+            "end_line": 27,
+            "branch_column": 31,
+            "children": [],
+            "raw_lines": [
+              "                              |-- model-to-view line mapping"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 22,
+            "label": "viewport / selections",
+            "parent_id": 19,
+            "depth": 8,
+            "line": 28,
+            "column": 35,
+            "end_line": 28,
+            "branch_column": 31,
+            "children": [],
+            "raw_lines": [
+              "                              `-- viewport / selections"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 23,
+            "label": "View",
+            "parent_id": 17,
+            "depth": 7,
+            "line": 30,
+            "column": 31,
+            "end_line": 30,
+            "branch_column": 27,
+            "children": [
+              24,
+              26,
+              31
+            ],
+            "raw_lines": [
+              "                          `-- View"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 24,
+            "label": "scrolling",
+            "parent_id": 23,
+            "depth": 8,
+            "line": 31,
+            "column": 35,
+            "end_line": 31,
+            "branch_column": 31,
+            "children": [
+              25
+            ],
+            "raw_lines": [
+              "                              |-- scrolling"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 25,
+            "label": "visible line range changes",
+            "parent_id": 24,
+            "depth": 9,
+            "line": 32,
+            "column": 39,
+            "end_line": 32,
+            "branch_column": 35,
+            "children": [],
+            "raw_lines": [
+              "                                  `-- visible line range changes"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 26,
+            "label": "changed view parts / lines",
+            "parent_id": 23,
+            "depth": 8,
+            "line": 34,
+            "column": 35,
+            "end_line": 34,
+            "branch_column": 31,
+            "children": [
+              27
+            ],
+            "raw_lines": [
+              "                              |-- changed view parts / lines"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 27,
+            "label": "_scheduleRender",
+            "parent_id": 26,
+            "depth": 9,
+            "line": 35,
+            "column": 39,
+            "end_line": 35,
+            "branch_column": 35,
+            "children": [
+              28
+            ],
+            "raw_lines": [
+              "                                  `-- _scheduleRender"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 28,
+            "label": "pending frame?",
+            "parent_id": 27,
+            "depth": 10,
+            "line": 36,
+            "column": 43,
+            "end_line": 36,
+            "branch_column": 39,
+            "children": [
+              29,
+              30
+            ],
+            "raw_lines": [
+              "                                      `-- pending frame?"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 29,
+            "label": "yes: reuse scheduled work",
+            "parent_id": 28,
+            "depth": 11,
+            "line": 37,
+            "column": 47,
+            "end_line": 37,
+            "branch_column": 43,
+            "children": [],
+            "raw_lines": [
+              "                                          |-- yes: reuse scheduled work"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 30,
+            "label": "no: enqueue",
+            "parent_id": 28,
+            "depth": 11,
+            "line": 38,
+            "column": 47,
+            "end_line": 38,
+            "branch_column": 43,
+            "children": [],
+            "raw_lines": [
+              "                                          `-- no: enqueue"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 31,
+            "label": "rendering callbacks",
+            "parent_id": 23,
+            "depth": 8,
+            "line": 40,
+            "column": 35,
+            "end_line": 40,
+            "branch_column": 31,
+            "children": [],
+            "raw_lines": [
+              "                              `-- rendering callbacks"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 32,
+            "label": "EditorRenderingCoordinator",
+            "parent_id": 0,
+            "depth": 1,
+            "line": 54,
+            "column": 7,
+            "end_line": 54,
+            "branch_column": 3,
+            "children": [
+              33,
+              34,
+              35
+            ],
+            "raw_lines": [
+              "  `-- EditorRenderingCoordinator"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 33,
+            "label": "queued editor renderings",
+            "parent_id": 32,
+            "depth": 2,
+            "line": 56,
+            "column": 11,
+            "end_line": 56,
+            "branch_column": 7,
+            "children": [],
+            "raw_lines": [
+              "      |-- queued editor renderings"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 34,
+            "label": "animation-frame runners [by window]",
+            "parent_id": 32,
+            "depth": 2,
+            "line": 57,
+            "column": 11,
+            "end_line": 57,
+            "branch_column": 7,
+            "children": [],
+            "raw_lines": [
+              "      |-- animation-frame runners [by window]"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 35,
+            "label": "_onRenderScheduled",
+            "parent_id": 32,
+            "depth": 2,
+            "line": 59,
+            "column": 11,
+            "end_line": 59,
+            "branch_column": 7,
+            "children": [
+              36,
+              41,
+              44,
+              46
+            ],
+            "raw_lines": [
+              "      `-- _onRenderScheduled"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 36,
+            "label": "1. prepareRenderText [across queued editors]",
+            "parent_id": 35,
+            "depth": 3,
+            "line": 61,
+            "column": 15,
+            "end_line": 61,
+            "branch_column": 11,
+            "children": [
+              37,
+              38,
+              39
+            ],
+            "raw_lines": [
+              "          |-- 1. prepareRenderText [across queued editors]"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 37,
+            "label": "disconnected DOM?",
+            "parent_id": 36,
+            "depth": 4,
+            "line": 62,
+            "column": 19,
+            "end_line": 62,
+            "branch_column": 15,
+            "children": [],
+            "raw_lines": [
+              "              |-- disconnected DOM?"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 38,
+            "label": "nothing dirty?",
+            "parent_id": 36,
+            "depth": 4,
+            "line": 63,
+            "column": 19,
+            "end_line": 63,
+            "branch_column": 15,
+            "children": [],
+            "raw_lines": [
+              "              |-- nothing dirty?"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 39,
+            "label": "compute ViewportData",
+            "parent_id": 36,
+            "depth": 4,
+            "line": 64,
+            "column": 19,
+            "end_line": 64,
+            "branch_column": 15,
+            "children": [
+              40
+            ],
+            "raw_lines": [
+              "              `-- compute ViewportData"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 40,
+            "label": "visible lines + whitespace + selections",
+            "parent_id": 39,
+            "depth": 5,
+            "line": 65,
+            "column": 23,
+            "end_line": 65,
+            "branch_column": 19,
+            "children": [],
+            "raw_lines": [
+              "                  `-- visible lines + whitespace + selections"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 41,
+            "label": "2. renderText [across prepared editors]",
+            "parent_id": 35,
+            "depth": 3,
+            "line": 67,
+            "column": 15,
+            "end_line": 67,
+            "branch_column": 11,
+            "children": [
+              42,
+              43
+            ],
+            "raw_lines": [
+              "          |-- 2. renderText [across prepared editors]"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 42,
+            "label": "ViewLines / ViewLinesGpu",
+            "parent_id": 41,
+            "depth": 4,
+            "line": 68,
+            "column": 19,
+            "end_line": 68,
+            "branch_column": 15,
+            "children": [],
+            "raw_lines": [
+              "              |-- ViewLines / ViewLinesGpu"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 43,
+            "label": "collect view parts needing rendering",
+            "parent_id": 41,
+            "depth": 4,
+            "line": 69,
+            "column": 19,
+            "end_line": 69,
+            "branch_column": 15,
+            "children": [],
+            "raw_lines": [
+              "              `-- collect view parts needing rendering"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 44,
+            "label": "3. prepareRender [across prepared editors]",
+            "parent_id": 35,
+            "depth": 3,
+            "line": 71,
+            "column": 15,
+            "end_line": 71,
+            "branch_column": 11,
+            "children": [
+              45
+            ],
+            "raw_lines": [
+              "          |-- 3. prepareRender [across prepared editors]"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 45,
+            "label": "prepare changed view parts / measure geometry",
+            "parent_id": 44,
+            "depth": 4,
+            "line": 72,
+            "column": 19,
+            "end_line": 72,
+            "branch_column": 15,
+            "children": [],
+            "raw_lines": [
+              "              `-- prepare changed view parts / measure geometry"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 46,
+            "label": "4. render [across prepared editors]",
+            "parent_id": 35,
+            "depth": 3,
+            "line": 74,
+            "column": 15,
+            "end_line": 74,
+            "branch_column": 11,
+            "children": [
+              47
+            ],
+            "raw_lines": [
+              "          `-- 4. render [across prepared editors]"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 47,
+            "label": "update changed view parts",
+            "parent_id": 46,
+            "depth": 4,
+            "line": 75,
+            "column": 19,
+            "end_line": 75,
+            "branch_column": 15,
+            "children": [
+              48
+            ],
+            "raw_lines": [
+              "              `-- update changed view parts"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 48,
+            "label": "browser rendering consequences [not code entities]",
+            "parent_id": 47,
+            "depth": 5,
+            "line": 77,
+            "column": 23,
+            "end_line": 77,
+            "branch_column": 19,
+            "children": [
+              49,
+              50,
+              51
+            ],
+            "raw_lines": [
+              "                  `-- browser rendering consequences [not code entities]"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 49,
+            "label": "style recalculation",
+            "parent_id": 48,
+            "depth": 6,
+            "line": 78,
+            "column": 27,
+            "end_line": 78,
+            "branch_column": 23,
+            "children": [],
+            "raw_lines": [
+              "                      |-- style recalculation"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 50,
+            "label": "layout, when geometry is invalidated",
+            "parent_id": 48,
+            "depth": 6,
+            "line": 79,
+            "column": 27,
+            "end_line": 79,
+            "branch_column": 23,
+            "children": [],
+            "raw_lines": [
+              "                      |-- layout, when geometry is invalidated"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 51,
+            "label": "paint / compositing, as needed",
+            "parent_id": 48,
+            "depth": 6,
+            "line": 80,
+            "column": 27,
+            "end_line": 80,
+            "branch_column": 23,
+            "children": [],
+            "raw_lines": [
+              "                      `-- paint / compositing, as needed"
+            ],
+            "decorations": []
+          }
+        ],
+        "roots": [
+          0
+        ],
+        "diagnostics": [],
+        "lines": [
+          {
+            "line": 1,
+            "kind": "node",
+            "node_id": 0,
+            "raw": "  Workbench renderer"
+          },
+          {
+            "line": 2,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 3,
+            "kind": "node",
+            "node_id": 1,
+            "raw": "  |-- EditorPart"
+          },
+          {
+            "line": 4,
+            "kind": "node",
+            "node_id": 2,
+            "raw": "      `-- SerializableGrid"
+          },
+          {
+            "line": 5,
+            "kind": "node",
+            "node_id": 3,
+            "raw": "          |-- SplitView / GridView"
+          },
+          {
+            "line": 6,
+            "kind": "node",
+            "node_id": 4,
+            "raw": "              `-- resize"
+          },
+          {
+            "line": 7,
+            "kind": "node",
+            "node_id": 5,
+            "raw": "                  |-- redistribute space among neighboring panes"
+          },
+          {
+            "line": 8,
+            "kind": "node",
+            "node_id": 6,
+            "raw": "                  `-- propagate dimensions"
+          },
+          {
+            "line": 9,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 10,
+            "kind": "node",
+            "node_id": 7,
+            "raw": "          `-- EditorGroupView [one per group]"
+          },
+          {
+            "line": 11,
+            "kind": "node",
+            "node_id": 8,
+            "raw": "              |-- layout(width, height, top, left)"
+          },
+          {
+            "line": 12,
+            "kind": "node",
+            "node_id": 9,
+            "raw": "                  |-- lay out title / tabs"
+          },
+          {
+            "line": 13,
+            "kind": "node",
+            "node_id": 10,
+            "raw": "                  `-- EditorPanes.layout"
+          },
+          {
+            "line": 14,
+            "kind": "node",
+            "node_id": 11,
+            "raw": "                      `-- active EditorPane.layout"
+          },
+          {
+            "line": 15,
+            "kind": "node",
+            "node_id": 12,
+            "raw": "                          `-- editor dimensions change"
+          },
+          {
+            "line": 16,
+            "kind": "node",
+            "node_id": 13,
+            "raw": "                              |-- viewport changes"
+          },
+          {
+            "line": 17,
+            "kind": "node",
+            "node_id": 14,
+            "raw": "                              `-- wrapping may change"
+          },
+          {
+            "line": 18,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 19,
+            "kind": "node",
+            "node_id": 15,
+            "raw": "              `-- EditorPanes"
+          },
+          {
+            "line": 20,
+            "kind": "node",
+            "node_id": 16,
+            "raw": "                  `-- active text editor"
+          },
+          {
+            "line": 21,
+            "kind": "node",
+            "node_id": 17,
+            "raw": "                      `-- CodeEditorWidget"
+          },
+          {
+            "line": 22,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 23,
+            "kind": "node",
+            "node_id": 18,
+            "raw": "                          |-- ITextModel"
+          },
+          {
+            "line": 24,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 25,
+            "kind": "node",
+            "node_id": 19,
+            "raw": "                          |-- ViewModel [per editor]"
+          },
+          {
+            "line": 26,
+            "kind": "node",
+            "node_id": 20,
+            "raw": "                              |-- view configuration"
+          },
+          {
+            "line": 27,
+            "kind": "node",
+            "node_id": 21,
+            "raw": "                              |-- model-to-view line mapping"
+          },
+          {
+            "line": 28,
+            "kind": "node",
+            "node_id": 22,
+            "raw": "                              `-- viewport / selections"
+          },
+          {
+            "line": 29,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 30,
+            "kind": "node",
+            "node_id": 23,
+            "raw": "                          `-- View"
+          },
+          {
+            "line": 31,
+            "kind": "node",
+            "node_id": 24,
+            "raw": "                              |-- scrolling"
+          },
+          {
+            "line": 32,
+            "kind": "node",
+            "node_id": 25,
+            "raw": "                                  `-- visible line range changes"
+          },
+          {
+            "line": 33,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 34,
+            "kind": "node",
+            "node_id": 26,
+            "raw": "                              |-- changed view parts / lines"
+          },
+          {
+            "line": 35,
+            "kind": "node",
+            "node_id": 27,
+            "raw": "                                  `-- _scheduleRender"
+          },
+          {
+            "line": 36,
+            "kind": "node",
+            "node_id": 28,
+            "raw": "                                      `-- pending frame?"
+          },
+          {
+            "line": 37,
+            "kind": "node",
+            "node_id": 29,
+            "raw": "                                          |-- yes: reuse scheduled work"
+          },
+          {
+            "line": 38,
+            "kind": "node",
+            "node_id": 30,
+            "raw": "                                          `-- no: enqueue"
+          },
+          {
+            "line": 39,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 40,
+            "kind": "node",
+            "node_id": 31,
+            "raw": "                              `-- rendering callbacks"
+          },
+          {
+            "line": 41,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 42,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 43,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 44,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 45,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 46,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 47,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 48,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 49,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 50,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 51,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 52,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 53,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 54,
+            "kind": "node",
+            "node_id": 32,
+            "raw": "  `-- EditorRenderingCoordinator"
+          },
+          {
+            "line": 55,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 56,
+            "kind": "node",
+            "node_id": 33,
+            "raw": "      |-- queued editor renderings"
+          },
+          {
+            "line": 57,
+            "kind": "node",
+            "node_id": 34,
+            "raw": "      |-- animation-frame runners [by window]"
+          },
+          {
+            "line": 58,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 59,
+            "kind": "node",
+            "node_id": 35,
+            "raw": "      `-- _onRenderScheduled"
+          },
+          {
+            "line": 60,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 61,
+            "kind": "node",
+            "node_id": 36,
+            "raw": "          |-- 1. prepareRenderText [across queued editors]"
+          },
+          {
+            "line": 62,
+            "kind": "node",
+            "node_id": 37,
+            "raw": "              |-- disconnected DOM?"
+          },
+          {
+            "line": 63,
+            "kind": "node",
+            "node_id": 38,
+            "raw": "              |-- nothing dirty?"
+          },
+          {
+            "line": 64,
+            "kind": "node",
+            "node_id": 39,
+            "raw": "              `-- compute ViewportData"
+          },
+          {
+            "line": 65,
+            "kind": "node",
+            "node_id": 40,
+            "raw": "                  `-- visible lines + whitespace + selections"
+          },
+          {
+            "line": 66,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 67,
+            "kind": "node",
+            "node_id": 41,
+            "raw": "          |-- 2. renderText [across prepared editors]"
+          },
+          {
+            "line": 68,
+            "kind": "node",
+            "node_id": 42,
+            "raw": "              |-- ViewLines / ViewLinesGpu"
+          },
+          {
+            "line": 69,
+            "kind": "node",
+            "node_id": 43,
+            "raw": "              `-- collect view parts needing rendering"
+          },
+          {
+            "line": 70,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 71,
+            "kind": "node",
+            "node_id": 44,
+            "raw": "          |-- 3. prepareRender [across prepared editors]"
+          },
+          {
+            "line": 72,
+            "kind": "node",
+            "node_id": 45,
+            "raw": "              `-- prepare changed view parts / measure geometry"
+          },
+          {
+            "line": 73,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 74,
+            "kind": "node",
+            "node_id": 46,
+            "raw": "          `-- 4. render [across prepared editors]"
+          },
+          {
+            "line": 75,
+            "kind": "node",
+            "node_id": 47,
+            "raw": "              `-- update changed view parts"
+          },
+          {
+            "line": 76,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 77,
+            "kind": "node",
+            "node_id": 48,
+            "raw": "                  `-- browser rendering consequences [not code entities]"
+          },
+          {
+            "line": 78,
+            "kind": "node",
+            "node_id": 49,
+            "raw": "                      |-- style recalculation"
+          },
+          {
+            "line": 79,
+            "kind": "node",
+            "node_id": 50,
+            "raw": "                      |-- layout, when geometry is invalidated"
+          },
+          {
+            "line": 80,
+            "kind": "node",
+            "node_id": 51,
+            "raw": "                      `-- paint / compositing, as needed"
+          }
+        ]
+      }
+    },
+    {
+      "id": 1,
+      "kind": "tree",
+      "text": "TextModel [shared by editors displaying this document]",
+      "spans": [
+        {
+          "line": 42,
+          "column": 7,
+          "text": "TextModel [shared by editors displaying this document]",
+          "branch_column": null,
+          "marker": "",
+          "node_id": 1,
+          "tree_node_id": 0,
+          "cleaned_column": 7,
+          "cleaned_branch_column": null,
+          "guide_columns": []
+        },
+        {
+          "line": 44,
+          "column": 11,
+          "text": "typing / edits",
+          "branch_column": 7,
+          "marker": "|--",
+          "node_id": 1,
+          "tree_node_id": 1,
+          "cleaned_column": 11,
+          "cleaned_branch_column": 7,
+          "guide_columns": [
+            3
+          ]
+        },
+        {
+          "line": 45,
+          "column": 15,
+          "text": "piece-tree text buffer",
+          "branch_column": 11,
+          "marker": "`--",
+          "node_id": 1,
+          "tree_node_id": 2,
+          "cleaned_column": 15,
+          "cleaned_branch_column": 11,
+          "guide_columns": [
+            3,
+            7
+          ]
+        },
+        {
+          "line": 46,
+          "column": 19,
+          "text": "original buffers + change buffer",
+          "branch_column": 15,
+          "marker": "|--",
+          "node_id": 1,
+          "tree_node_id": 3,
+          "cleaned_column": 19,
+          "cleaned_branch_column": 15,
+          "guide_columns": [
+            3,
+            7
+          ]
+        },
+        {
+          "line": 47,
+          "column": 19,
+          "text": "update pieces instead of rebuilding the whole document",
+          "branch_column": 15,
+          "marker": "`--",
+          "node_id": 1,
+          "tree_node_id": 4,
+          "cleaned_column": 19,
+          "cleaned_branch_column": 15,
+          "guide_columns": [
+            3,
+            7
+          ]
+        },
+        {
+          "line": 49,
+          "column": 11,
+          "text": "content changes",
+          "branch_column": 7,
+          "marker": "`--",
+          "node_id": 1,
+          "tree_node_id": 5,
+          "cleaned_column": 11,
+          "cleaned_branch_column": 7,
+          "guide_columns": [
+            3
+          ]
+        },
+        {
+          "line": 50,
+          "column": 15,
+          "text": "attached ViewModels",
+          "branch_column": 11,
+          "marker": "`--",
+          "node_id": 1,
+          "tree_node_id": 6,
+          "cleaned_column": 15,
+          "cleaned_branch_column": 11,
+          "guide_columns": [
+            3
+          ]
+        },
+        {
+          "line": 51,
+          "column": 19,
+          "text": "each editor updates its own view state",
+          "branch_column": 15,
+          "marker": "`--",
+          "node_id": 1,
+          "tree_node_id": 7,
+          "cleaned_column": 19,
+          "cleaned_branch_column": 15,
+          "guide_columns": [
+            3
+          ]
+        },
+        {
+          "line": 52,
+          "column": 23,
+          "text": "affected Views schedule rendering",
+          "branch_column": 19,
+          "marker": "`--",
+          "node_id": 1,
+          "tree_node_id": 8,
+          "cleaned_column": 23,
+          "cleaned_branch_column": 19,
+          "guide_columns": [
+            3
+          ]
+        }
+      ],
+      "tree": {
+        "nodes": [
+          {
+            "id": 0,
+            "label": "TextModel [shared by editors displaying this document]",
+            "parent_id": null,
+            "depth": 0,
+            "line": 42,
+            "column": 7,
+            "end_line": 42,
+            "branch_column": 6,
+            "children": [
+              1,
+              5
+            ],
+            "raw_lines": [
+              "      TextModel [shared by editors displaying this document]"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 1,
+            "label": "typing / edits",
+            "parent_id": 0,
+            "depth": 1,
+            "line": 44,
+            "column": 11,
+            "end_line": 44,
+            "branch_column": 7,
+            "children": [
+              2
+            ],
+            "raw_lines": [
+              "      |-- typing / edits"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 2,
+            "label": "piece-tree text buffer",
+            "parent_id": 1,
+            "depth": 2,
+            "line": 45,
+            "column": 15,
+            "end_line": 45,
+            "branch_column": 11,
+            "children": [
+              3,
+              4
+            ],
+            "raw_lines": [
+              "          `-- piece-tree text buffer"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 3,
+            "label": "original buffers + change buffer",
+            "parent_id": 2,
+            "depth": 3,
+            "line": 46,
+            "column": 19,
+            "end_line": 46,
+            "branch_column": 15,
+            "children": [],
+            "raw_lines": [
+              "              |-- original buffers + change buffer"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 4,
+            "label": "update pieces instead of rebuilding the whole document",
+            "parent_id": 2,
+            "depth": 3,
+            "line": 47,
+            "column": 19,
+            "end_line": 47,
+            "branch_column": 15,
+            "children": [],
+            "raw_lines": [
+              "              `-- update pieces instead of rebuilding the whole document"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 5,
+            "label": "content changes",
+            "parent_id": 0,
+            "depth": 1,
+            "line": 49,
+            "column": 11,
+            "end_line": 49,
+            "branch_column": 7,
+            "children": [
+              6
+            ],
+            "raw_lines": [
+              "      `-- content changes"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 6,
+            "label": "attached ViewModels",
+            "parent_id": 5,
+            "depth": 2,
+            "line": 50,
+            "column": 15,
+            "end_line": 50,
+            "branch_column": 11,
+            "children": [
+              7
+            ],
+            "raw_lines": [
+              "          `-- attached ViewModels"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 7,
+            "label": "each editor updates its own view state",
+            "parent_id": 6,
+            "depth": 3,
+            "line": 51,
+            "column": 19,
+            "end_line": 51,
+            "branch_column": 15,
+            "children": [
+              8
+            ],
+            "raw_lines": [
+              "              `-- each editor updates its own view state"
+            ],
+            "decorations": []
+          },
+          {
+            "id": 8,
+            "label": "affected Views schedule rendering",
+            "parent_id": 7,
+            "depth": 4,
+            "line": 52,
+            "column": 23,
+            "end_line": 52,
+            "branch_column": 19,
+            "children": [],
+            "raw_lines": [
+              "                  `-- affected Views schedule rendering"
+            ],
+            "decorations": []
+          }
+        ],
+        "roots": [
+          0
+        ],
+        "diagnostics": [],
+        "lines": [
+          {
+            "line": 42,
+            "kind": "node",
+            "node_id": 0,
+            "raw": "      TextModel [shared by editors displaying this document]"
+          },
+          {
+            "line": 43,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 44,
+            "kind": "node",
+            "node_id": 1,
+            "raw": "      |-- typing / edits"
+          },
+          {
+            "line": 45,
+            "kind": "node",
+            "node_id": 2,
+            "raw": "          `-- piece-tree text buffer"
+          },
+          {
+            "line": 46,
+            "kind": "node",
+            "node_id": 3,
+            "raw": "              |-- original buffers + change buffer"
+          },
+          {
+            "line": 47,
+            "kind": "node",
+            "node_id": 4,
+            "raw": "              `-- update pieces instead of rebuilding the whole document"
+          },
+          {
+            "line": 48,
+            "kind": "blank",
+            "node_id": null,
+            "raw": ""
+          },
+          {
+            "line": 49,
+            "kind": "node",
+            "node_id": 5,
+            "raw": "      `-- content changes"
+          },
+          {
+            "line": 50,
+            "kind": "node",
+            "node_id": 6,
+            "raw": "          `-- attached ViewModels"
+          },
+          {
+            "line": 51,
+            "kind": "node",
+            "node_id": 7,
+            "raw": "              `-- each editor updates its own view state"
+          },
+          {
+            "line": 52,
+            "kind": "node",
+            "node_id": 8,
+            "raw": "                  `-- affected Views schedule rendering"
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "kind": "text",
+      "text": "skip editor",
+      "spans": [
+        {
+          "line": 62,
+          "column": 49,
+          "text": "skip editor",
+          "branch_column": null,
+          "marker": "",
+          "node_id": 2,
+          "tree_node_id": null,
+          "cleaned_column": 49,
+          "cleaned_branch_column": null,
+          "guide_columns": []
+        }
+      ],
+      "tree": null
+    },
+    {
+      "id": 3,
+      "kind": "text",
+      "text": "skip editor",
+      "spans": [
+        {
+          "line": 63,
+          "column": 49,
+          "text": "skip editor",
+          "branch_column": null,
+          "marker": "",
+          "node_id": 3,
+          "tree_node_id": null,
+          "cleaned_column": 49,
+          "cleaned_branch_column": null,
+          "guide_columns": []
+        }
+      ],
+      "tree": null
+    }
+  ],
+  "references": [
+    {
+      "source": {
+        "node_id": 0,
+        "tree_node_id": 6
+      },
+      "target": {
+        "node_id": 0,
+        "tree_node_id": 8
+      },
+      "arrow_line": 11,
+      "arrow_column": 52,
+      "wire_cells": [
+        [
+          8,
+          44
+        ],
+        [
+          8,
+          45
+        ],
+        [
+          8,
+          46
+        ],
+        [
+          8,
+          47
+        ],
+        [
+          8,
+          48
+        ],
+        [
+          8,
+          49
+        ],
+        [
+          8,
+          50
+        ],
+        [
+          8,
+          51
+        ],
+        [
+          8,
+          52
+        ],
+        [
+          8,
+          53
+        ],
+        [
+          8,
+          54
+        ],
+        [
+          8,
+          55
+        ],
+        [
+          8,
+          56
+        ],
+        [
+          8,
+          57
+        ],
+        [
+          8,
+          58
+        ],
+        [
+          8,
+          59
+        ],
+        [
+          8,
+          60
+        ],
+        [
+          8,
+          61
+        ],
+        [
+          8,
+          62
+        ],
+        [
+          8,
+          63
+        ],
+        [
+          8,
+          64
+        ],
+        [
+          8,
+          65
+        ],
+        [
+          8,
+          66
+        ],
+        [
+          8,
+          67
+        ],
+        [
+          8,
+          68
+        ],
+        [
+          8,
+          69
+        ],
+        [
+          8,
+          70
+        ],
+        [
+          8,
+          71
+        ],
+        [
+          8,
+          72
+        ],
+        [
+          8,
+          73
+        ],
+        [
+          9,
+          73
+        ],
+        [
+          10,
+          73
+        ],
+        [
+          11,
+          52
+        ],
+        [
+          11,
+          53
+        ],
+        [
+          11,
+          54
+        ],
+        [
+          11,
+          55
+        ],
+        [
+          11,
+          56
+        ],
+        [
+          11,
+          57
+        ],
+        [
+          11,
+          58
+        ],
+        [
+          11,
+          59
+        ],
+        [
+          11,
+          60
+        ],
+        [
+          11,
+          61
+        ],
+        [
+          11,
+          62
+        ],
+        [
+          11,
+          63
+        ],
+        [
+          11,
+          64
+        ],
+        [
+          11,
+          65
+        ],
+        [
+          11,
+          66
+        ],
+        [
+          11,
+          67
+        ],
+        [
+          11,
+          68
+        ],
+        [
+          11,
+          69
+        ],
+        [
+          11,
+          70
+        ],
+        [
+          11,
+          71
+        ],
+        [
+          11,
+          72
+        ],
+        [
+          11,
+          73
+        ]
+      ]
+    },
+    {
+      "source": {
+        "node_id": 0,
+        "tree_node_id": 14
+      },
+      "target": {
+        "node_id": 0,
+        "tree_node_id": 19
+      },
+      "arrow_line": 25,
+      "arrow_column": 54,
+      "wire_cells": [
+        [
+          17,
+          55
+        ],
+        [
+          17,
+          56
+        ],
+        [
+          17,
+          57
+        ],
+        [
+          17,
+          58
+        ],
+        [
+          17,
+          59
+        ],
+        [
+          17,
+          60
+        ],
+        [
+          17,
+          61
+        ],
+        [
+          17,
+          62
+        ],
+        [
+          17,
+          63
+        ],
+        [
+          17,
+          64
+        ],
+        [
+          17,
+          65
+        ],
+        [
+          17,
+          66
+        ],
+        [
+          17,
+          67
+        ],
+        [
+          18,
+          67
+        ],
+        [
+          19,
+          67
+        ],
+        [
+          20,
+          67
+        ],
+        [
+          21,
+          67
+        ],
+        [
+          22,
+          67
+        ],
+        [
+          23,
+          67
+        ],
+        [
+          24,
+          67
+        ],
+        [
+          25,
+          54
+        ],
+        [
+          25,
+          55
+        ],
+        [
+          25,
+          56
+        ],
+        [
+          25,
+          57
+        ],
+        [
+          25,
+          58
+        ],
+        [
+          25,
+          59
+        ],
+        [
+          25,
+          60
+        ],
+        [
+          25,
+          61
+        ],
+        [
+          25,
+          62
+        ],
+        [
+          25,
+          63
+        ],
+        [
+          25,
+          64
+        ],
+        [
+          25,
+          65
+        ],
+        [
+          25,
+          66
+        ],
+        [
+          25,
+          67
+        ]
+      ]
+    },
+    {
+      "source": {
+        "node_id": 0,
+        "tree_node_id": 18
+      },
+      "target": {
+        "node_id": 1,
+        "tree_node_id": null
+      },
+      "arrow_line": 42,
+      "arrow_column": 62,
+      "wire_cells": [
+        [
+          23,
+          42
+        ],
+        [
+          23,
+          43
+        ],
+        [
+          23,
+          44
+        ],
+        [
+          23,
+          45
+        ],
+        [
+          23,
+          46
+        ],
+        [
+          23,
+          47
+        ],
+        [
+          23,
+          48
+        ],
+        [
+          23,
+          49
+        ],
+        [
+          23,
+          50
+        ],
+        [
+          23,
+          51
+        ],
+        [
+          23,
+          52
+        ],
+        [
+          23,
+          53
+        ],
+        [
+          23,
+          54
+        ],
+        [
+          23,
+          55
+        ],
+        [
+          23,
+          56
+        ],
+        [
+          23,
+          57
+        ],
+        [
+          23,
+          58
+        ],
+        [
+          23,
+          59
+        ],
+        [
+          23,
+          60
+        ],
+        [
+          23,
+          61
+        ],
+        [
+          23,
+          62
+        ],
+        [
+          23,
+          63
+        ],
+        [
+          23,
+          64
+        ],
+        [
+          23,
+          65
+        ],
+        [
+          23,
+          66
+        ],
+        [
+          23,
+          67
+        ],
+        [
+          23,
+          68
+        ],
+        [
+          23,
+          69
+        ],
+        [
+          23,
+          70
+        ],
+        [
+          23,
+          71
+        ],
+        [
+          23,
+          72
+        ],
+        [
+          23,
+          73
+        ],
+        [
+          23,
+          74
+        ],
+        [
+          23,
+          75
+        ],
+        [
+          23,
+          76
+        ],
+        [
+          23,
+          77
+        ],
+        [
+          23,
+          78
+        ],
+        [
+          24,
+          78
+        ],
+        [
+          25,
+          78
+        ],
+        [
+          26,
+          78
+        ],
+        [
+          27,
+          78
+        ],
+        [
+          28,
+          78
+        ],
+        [
+          29,
+          78
+        ],
+        [
+          30,
+          78
+        ],
+        [
+          31,
+          78
+        ],
+        [
+          32,
+          78
+        ],
+        [
+          33,
+          78
+        ],
+        [
+          34,
+          78
+        ],
+        [
+          35,
+          78
+        ],
+        [
+          36,
+          78
+        ],
+        [
+          37,
+          78
+        ],
+        [
+          38,
+          78
+        ],
+        [
+          39,
+          78
+        ],
+        [
+          40,
+          78
+        ],
+        [
+          41,
+          78
+        ],
+        [
+          42,
+          62
+        ],
+        [
+          42,
+          63
+        ],
+        [
+          42,
+          64
+        ],
+        [
+          42,
+          65
+        ],
+        [
+          42,
+          66
+        ],
+        [
+          42,
+          67
+        ],
+        [
+          42,
+          68
+        ],
+        [
+          42,
+          69
+        ],
+        [
+          42,
+          70
+        ],
+        [
+          42,
+          71
+        ],
+        [
+          42,
+          72
+        ],
+        [
+          42,
+          73
+        ],
+        [
+          42,
+          74
+        ],
+        [
+          42,
+          75
+        ],
+        [
+          42,
+          76
+        ],
+        [
+          42,
+          77
+        ],
+        [
+          42,
+          78
+        ]
+      ]
+    },
+    {
+      "source": {
+        "node_id": 0,
+        "tree_node_id": 30
+      },
+      "target": {
+        "node_id": 0,
+        "tree_node_id": 32
+      },
+      "arrow_line": 54,
+      "arrow_column": 34,
+      "wire_cells": [
+        [
+          38,
+          59
+        ],
+        [
+          38,
+          60
+        ],
+        [
+          38,
+          61
+        ],
+        [
+          38,
+          62
+        ],
+        [
+          38,
+          63
+        ],
+        [
+          38,
+          64
+        ],
+        [
+          38,
+          65
+        ],
+        [
+          38,
+          66
+        ],
+        [
+          38,
+          67
+        ],
+        [
+          38,
+          68
+        ],
+        [
+          38,
+          69
+        ],
+        [
+          38,
+          70
+        ],
+        [
+          38,
+          71
+        ],
+        [
+          38,
+          72
+        ],
+        [
+          38,
+          73
+        ],
+        [
+          38,
+          74
+        ],
+        [
+          38,
+          75
+        ],
+        [
+          38,
+          76
+        ],
+        [
+          39,
+          76
+        ],
+        [
+          40,
+          76
+        ],
+        [
+          41,
+          76
+        ],
+        [
+          42,
+          76
+        ],
+        [
+          43,
+          76
+        ],
+        [
+          44,
+          76
+        ],
+        [
+          45,
+          76
+        ],
+        [
+          46,
+          76
+        ],
+        [
+          47,
+          76
+        ],
+        [
+          48,
+          76
+        ],
+        [
+          49,
+          76
+        ],
+        [
+          50,
+          76
+        ],
+        [
+          51,
+          76
+        ],
+        [
+          52,
+          76
+        ],
+        [
+          53,
+          76
+        ],
+        [
+          54,
+          34
+        ],
+        [
+          54,
+          35
+        ],
+        [
+          54,
+          36
+        ],
+        [
+          54,
+          37
+        ],
+        [
+          54,
+          38
+        ],
+        [
+          54,
+          39
+        ],
+        [
+          54,
+          40
+        ],
+        [
+          54,
+          41
+        ],
+        [
+          54,
+          42
+        ],
+        [
+          54,
+          43
+        ],
+        [
+          54,
+          44
+        ],
+        [
+          54,
+          45
+        ],
+        [
+          54,
+          46
+        ],
+        [
+          54,
+          47
+        ],
+        [
+          54,
+          48
+        ],
+        [
+          54,
+          49
+        ],
+        [
+          54,
+          50
+        ],
+        [
+          54,
+          51
+        ],
+        [
+          54,
+          52
+        ],
+        [
+          54,
+          53
+        ],
+        [
+          54,
+          54
+        ],
+        [
+          54,
+          55
+        ],
+        [
+          54,
+          56
+        ],
+        [
+          54,
+          57
+        ],
+        [
+          54,
+          58
+        ],
+        [
+          54,
+          59
+        ],
+        [
+          54,
+          60
+        ],
+        [
+          54,
+          61
+        ],
+        [
+          54,
+          62
+        ],
+        [
+          54,
+          63
+        ],
+        [
+          54,
+          64
+        ],
+        [
+          54,
+          65
+        ],
+        [
+          54,
+          66
+        ],
+        [
+          54,
+          67
+        ],
+        [
+          54,
+          68
+        ],
+        [
+          54,
+          69
+        ],
+        [
+          54,
+          70
+        ],
+        [
+          54,
+          71
+        ],
+        [
+          54,
+          72
+        ],
+        [
+          54,
+          73
+        ],
+        [
+          54,
+          74
+        ],
+        [
+          54,
+          75
+        ],
+        [
+          54,
+          76
+        ]
+      ]
+    },
+    {
+      "source": {
+        "node_id": 0,
+        "tree_node_id": 31
+      },
+      "target": {
+        "node_id": 0,
+        "tree_node_id": 33
+      },
+      "arrow_line": 56,
+      "arrow_column": 36,
+      "wire_cells": [
+        [
+          40,
+          55
+        ],
+        [
+          40,
+          56
+        ],
+        [
+          40,
+          57
+        ],
+        [
+          40,
+          58
+        ],
+        [
+          40,
+          59
+        ],
+        [
+          40,
+          60
+        ],
+        [
+          40,
+          61
+        ],
+        [
+          40,
+          62
+        ],
+        [
+          40,
+          63
+        ],
+        [
+          40,
+          64
+        ],
+        [
+          40,
+          65
+        ],
+        [
+          40,
+          66
+        ],
+        [
+          40,
+          67
+        ],
+        [
+          40,
+          68
+        ],
+        [
+          40,
+          69
+        ],
+        [
+          40,
+          70
+        ],
+        [
+          40,
+          71
+        ],
+        [
+          40,
+          72
+        ],
+        [
+          40,
+          73
+        ],
+        [
+          40,
+          74
+        ],
+        [
+          41,
+          74
+        ],
+        [
+          42,
+          74
+        ],
+        [
+          43,
+          74
+        ],
+        [
+          44,
+          74
+        ],
+        [
+          45,
+          74
+        ],
+        [
+          46,
+          74
+        ],
+        [
+          47,
+          74
+        ],
+        [
+          48,
+          74
+        ],
+        [
+          49,
+          74
+        ],
+        [
+          50,
+          74
+        ],
+        [
+          51,
+          74
+        ],
+        [
+          52,
+          74
+        ],
+        [
+          53,
+          74
+        ],
+        [
+          54,
+          74
+        ],
+        [
+          55,
+          74
+        ],
+        [
+          56,
+          36
+        ],
+        [
+          56,
+          37
+        ],
+        [
+          56,
+          38
+        ],
+        [
+          56,
+          39
+        ],
+        [
+          56,
+          40
+        ],
+        [
+          56,
+          41
+        ],
+        [
+          56,
+          42
+        ],
+        [
+          56,
+          43
+        ],
+        [
+          56,
+          44
+        ],
+        [
+          56,
+          45
+        ],
+        [
+          56,
+          46
+        ],
+        [
+          56,
+          47
+        ],
+        [
+          56,
+          48
+        ],
+        [
+          56,
+          49
+        ],
+        [
+          56,
+          50
+        ],
+        [
+          56,
+          51
+        ],
+        [
+          56,
+          52
+        ],
+        [
+          56,
+          53
+        ],
+        [
+          56,
+          54
+        ],
+        [
+          56,
+          55
+        ],
+        [
+          56,
+          56
+        ],
+        [
+          56,
+          57
+        ],
+        [
+          56,
+          58
+        ],
+        [
+          56,
+          59
+        ],
+        [
+          56,
+          60
+        ],
+        [
+          56,
+          61
+        ],
+        [
+          56,
+          62
+        ],
+        [
+          56,
+          63
+        ],
+        [
+          56,
+          64
+        ],
+        [
+          56,
+          65
+        ],
+        [
+          56,
+          66
+        ],
+        [
+          56,
+          67
+        ],
+        [
+          56,
+          68
+        ],
+        [
+          56,
+          69
+        ],
+        [
+          56,
+          70
+        ],
+        [
+          56,
+          71
+        ],
+        [
+          56,
+          72
+        ],
+        [
+          56,
+          73
+        ],
+        [
+          56,
+          74
+        ]
+      ]
+    },
+    {
+      "source": {
+        "node_id": 0,
+        "tree_node_id": 37
+      },
+      "target": {
+        "node_id": 2,
+        "tree_node_id": null
+      },
+      "arrow_line": 62,
+      "arrow_column": 47,
+      "wire_cells": [
+        [
+          62,
+          37
+        ],
+        [
+          62,
+          38
+        ],
+        [
+          62,
+          39
+        ],
+        [
+          62,
+          40
+        ],
+        [
+          62,
+          41
+        ],
+        [
+          62,
+          42
+        ],
+        [
+          62,
+          43
+        ],
+        [
+          62,
+          44
+        ],
+        [
+          62,
+          45
+        ],
+        [
+          62,
+          46
+        ],
+        [
+          62,
+          47
+        ]
+      ]
+    },
+    {
+      "source": {
+        "node_id": 0,
+        "tree_node_id": 38
+      },
+      "target": {
+        "node_id": 3,
+        "tree_node_id": null
+      },
+      "arrow_line": 63,
+      "arrow_column": 47,
+      "wire_cells": [
+        [
+          63,
+          34
+        ],
+        [
+          63,
+          35
+        ],
+        [
+          63,
+          36
+        ],
+        [
+          63,
+          37
+        ],
+        [
+          63,
+          38
+        ],
+        [
+          63,
+          39
+        ],
+        [
+          63,
+          40
+        ],
+        [
+          63,
+          41
+        ],
+        [
+          63,
+          42
+        ],
+        [
+          63,
+          43
+        ],
+        [
+          63,
+          44
+        ],
+        [
+          63,
+          45
+        ],
+        [
+          63,
+          46
+        ],
+        [
+          63,
+          47
+        ]
+      ]
+    }
+  ],
+  "diagnostics": [],
+  "repairs": [
+    {
+      "line": 8,
+      "column": 72,
+      "cleaned_column": 73,
+      "text": "+",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 9,
+      "column": 71,
+      "cleaned_column": 73,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 10,
+      "column": 72,
+      "cleaned_column": 73,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 17,
+      "column": 66,
+      "cleaned_column": 67,
+      "text": "+",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 18,
+      "column": 66,
+      "cleaned_column": 67,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 19,
+      "column": 66,
+      "cleaned_column": 67,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 20,
+      "column": 66,
+      "cleaned_column": 67,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 21,
+      "column": 66,
+      "cleaned_column": 67,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 22,
+      "column": 66,
+      "cleaned_column": 67,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 23,
+      "column": 66,
+      "cleaned_column": 67,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 24,
+      "column": 66,
+      "cleaned_column": 67,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 23,
+      "column": 77,
+      "cleaned_column": 78,
+      "text": "+",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 24,
+      "column": 77,
+      "cleaned_column": 78,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 26,
+      "column": 77,
+      "cleaned_column": 78,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 27,
+      "column": 77,
+      "cleaned_column": 78,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 28,
+      "column": 77,
+      "cleaned_column": 78,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 29,
+      "column": 77,
+      "cleaned_column": 78,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 30,
+      "column": 77,
+      "cleaned_column": 78,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 31,
+      "column": 77,
+      "cleaned_column": 78,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 32,
+      "column": 77,
+      "cleaned_column": 78,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 33,
+      "column": 77,
+      "cleaned_column": 78,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 34,
+      "column": 77,
+      "cleaned_column": 78,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 35,
+      "column": 77,
+      "cleaned_column": 78,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 36,
+      "column": 77,
+      "cleaned_column": 78,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 37,
+      "column": 77,
+      "cleaned_column": 78,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 38,
+      "column": 77,
+      "cleaned_column": 78,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 39,
+      "column": 77,
+      "cleaned_column": 78,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 40,
+      "column": 77,
+      "cleaned_column": 78,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 41,
+      "column": 77,
+      "cleaned_column": 78,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 38,
+      "column": 75,
+      "cleaned_column": 76,
+      "text": "+",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 39,
+      "column": 75,
+      "cleaned_column": 76,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 40,
+      "column": 75,
+      "cleaned_column": 76,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 41,
+      "column": 75,
+      "cleaned_column": 76,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 43,
+      "column": 75,
+      "cleaned_column": 76,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 44,
+      "column": 75,
+      "cleaned_column": 76,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 45,
+      "column": 75,
+      "cleaned_column": 76,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 46,
+      "column": 75,
+      "cleaned_column": 76,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 48,
+      "column": 75,
+      "cleaned_column": 76,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 49,
+      "column": 75,
+      "cleaned_column": 76,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 50,
+      "column": 75,
+      "cleaned_column": 76,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 51,
+      "column": 75,
+      "cleaned_column": 76,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 52,
+      "column": 75,
+      "cleaned_column": 76,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 53,
+      "column": 75,
+      "cleaned_column": 76,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 54,
+      "column": 75,
+      "cleaned_column": 76,
+      "text": "+",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 40,
+      "column": 73,
+      "cleaned_column": 74,
+      "text": "+",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 41,
+      "column": 73,
+      "cleaned_column": 74,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 43,
+      "column": 73,
+      "cleaned_column": 74,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 44,
+      "column": 73,
+      "cleaned_column": 74,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 45,
+      "column": 73,
+      "cleaned_column": 74,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 46,
+      "column": 73,
+      "cleaned_column": 74,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 48,
+      "column": 73,
+      "cleaned_column": 74,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 49,
+      "column": 73,
+      "cleaned_column": 74,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 50,
+      "column": 73,
+      "cleaned_column": 74,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 51,
+      "column": 73,
+      "cleaned_column": 74,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 52,
+      "column": 73,
+      "cleaned_column": 74,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 53,
+      "column": 73,
+      "cleaned_column": 74,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 54,
+      "column": 73,
+      "cleaned_column": 74,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 55,
+      "column": 73,
+      "cleaned_column": 74,
+      "text": "|",
+      "kind": "wire_alignment"
+    },
+    {
+      "line": 56,
+      "column": 73,
+      "cleaned_column": 74,
+      "text": "+",
+      "kind": "wire_alignment"
+    }
+  ],
+  "original_ascii": "  Workbench renderer\n  |\n  |-- EditorPart\n  |   `-- SerializableGrid\n  |       |-- SplitView / GridView\n  |       |   `-- resize\n  |       |       |-- redistribute space among neighboring panes\n  |       |       `-- propagate dimensions ----------------------------+\n  |       |                                                           |\n  |       `-- EditorGroupView [one per group]                          |\n  |           |-- layout(width, height, top, left) <--------------------+\n  |           |   |-- lay out title / tabs\n  |           |   `-- EditorPanes.layout\n  |           |       `-- active EditorPane.layout\n  |           |           `-- editor dimensions change\n  |           |               |-- viewport changes\n  |           |               `-- wrapping may change -----------+\n  |           |                                                  |\n  |           `-- EditorPanes                                    |\n  |               `-- active text editor                         |\n  |                   `-- CodeEditorWidget                       |\n  |                       |                                      |\n  |                       |-- ITextModel ------------------------|----------+\n  |                       |                                      |          |\n  |                       |-- ViewModel [per editor] <------------+          |\n  |                       |   |-- view configuration                        |\n  |                       |   |-- model-to-view line mapping                |\n  |                       |   `-- viewport / selections                     |\n  |                       |                                                 |\n  |                       `-- View                                          |\n  |                           |-- scrolling                                 |\n  |                           |   `-- visible line range changes            |\n  |                           |                                             |\n  |                           |-- changed view parts / lines                |\n  |                           |   `-- _scheduleRender                       |\n  |                           |       `-- pending frame?                    |\n  |                           |           |-- yes: reuse scheduled work     |\n  |                           |           `-- no: enqueue ----------------+ |\n  |                           |                                           | |\n  |                           `-- rendering callbacks ------------------+ | |\n  |                                                                     | | |\n  |   TextModel [shared by editors displaying this document] <-----------|-|-+\n  |   |                                                                 | |\n  |   |-- typing / edits                                                | |\n  |   |   `-- piece-tree text buffer                                    | |\n  |   |       |-- original buffers + change buffer                      | |\n  |   |       `-- update pieces instead of rebuilding the whole document | |\n  |   |                                                                 | |\n  |   `-- content changes                                               | |\n  |       `-- attached ViewModels                                       | |\n  |           `-- each editor updates its own view state                | |\n  |               `-- affected Views schedule rendering                 | |\n  |                                                                     | |\n  `-- EditorRenderingCoordinator <--------------------------------------|-+\n      |                                                                 |\n      |-- queued editor renderings <------------------------------------+\n      |-- animation-frame runners [by window]\n      |\n      `-- _onRenderScheduled\n          |\n          |-- 1. prepareRenderText [across queued editors]\n          |   |-- disconnected DOM? ----------> skip editor\n          |   |-- nothing dirty? -------------> skip editor\n          |   `-- compute ViewportData\n          |       `-- visible lines + whitespace + selections\n          |\n          |-- 2. renderText [across prepared editors]\n          |   |-- ViewLines / ViewLinesGpu\n          |   `-- collect view parts needing rendering\n          |\n          |-- 3. prepareRender [across prepared editors]\n          |   `-- prepare changed view parts / measure geometry\n          |\n          `-- 4. render [across prepared editors]\n              `-- update changed view parts\n                  |\n                  `-- browser rendering consequences [not code entities]\n                      |-- style recalculation\n                      |-- layout, when geometry is invalidated\n                      `-- paint / compositing, as needed\n",
+  "cleaned_ascii": "  Workbench renderer\n  |\n  |-- EditorPart\n  |   `-- SerializableGrid\n  |       |-- SplitView / GridView\n  |       |   `-- resize\n  |       |       |-- redistribute space among neighboring panes\n  |       |       `-- propagate dimensions -----------------------------+\n  |       |                                                             |\n  |       `-- EditorGroupView [one per group]                           |\n  |           |-- layout(width, height, top, left) <--------------------+\n  |           |   |-- lay out title / tabs\n  |           |   `-- EditorPanes.layout\n  |           |       `-- active EditorPane.layout\n  |           |           `-- editor dimensions change\n  |           |               |-- viewport changes\n  |           |               `-- wrapping may change ------------+\n  |           |                                                   |\n  |           `-- EditorPanes                                     |\n  |               `-- active text editor                          |\n  |                   `-- CodeEditorWidget                        |\n  |                       |                                       |\n  |                       |-- ITextModel -------------------------|----------+\n  |                       |                                       |          |\n  |                       |-- ViewModel [per editor] <------------+          |\n  |                       |   |-- view configuration                         |\n  |                       |   |-- model-to-view line mapping                 |\n  |                       |   `-- viewport / selections                      |\n  |                       |                                                  |\n  |                       `-- View                                           |\n  |                           |-- scrolling                                  |\n  |                           |   `-- visible line range changes             |\n  |                           |                                              |\n  |                           |-- changed view parts / lines                 |\n  |                           |   `-- _scheduleRender                        |\n  |                           |       `-- pending frame?                     |\n  |                           |           |-- yes: reuse scheduled work      |\n  |                           |           `-- no: enqueue -----------------+ |\n  |                           |                                            | |\n  |                           `-- rendering callbacks -------------------+ | |\n  |                                                                      | | |\n  |   TextModel [shared by editors displaying this document] <-----------|-|-+\n  |   |                                                                  | |\n  |   |-- typing / edits                                                 | |\n  |   |   `-- piece-tree text buffer                                     | |\n  |   |       |-- original buffers + change buffer                       | |\n  |   |       `-- update pieces instead of rebuilding the whole document | |\n  |   |                                                                  | |\n  |   `-- content changes                                                | |\n  |       `-- attached ViewModels                                        | |\n  |           `-- each editor updates its own view state                 | |\n  |               `-- affected Views schedule rendering                  | |\n  |                                                                      | |\n  `-- EditorRenderingCoordinator <---------------------------------------|-+\n      |                                                                  |\n      |-- queued editor renderings <-------------------------------------+\n      |-- animation-frame runners [by window]\n      |\n      `-- _onRenderScheduled\n          |\n          |-- 1. prepareRenderText [across queued editors]\n          |   |-- disconnected DOM? ----------> skip editor\n          |   |-- nothing dirty? -------------> skip editor\n          |   `-- compute ViewportData\n          |       `-- visible lines + whitespace + selections\n          |\n          |-- 2. renderText [across prepared editors]\n          |   |-- ViewLines / ViewLinesGpu\n          |   `-- collect view parts needing rendering\n          |\n          |-- 3. prepareRender [across prepared editors]\n          |   `-- prepare changed view parts / measure geometry\n          |\n          `-- 4. render [across prepared editors]\n              `-- update changed view parts\n                  |\n                  `-- browser rendering consequences [not code entities]\n                      |-- style recalculation\n                      |-- layout, when geometry is invalidated\n                      `-- paint / compositing, as needed"
+}

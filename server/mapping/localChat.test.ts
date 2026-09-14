@@ -61,6 +61,42 @@ describe("chat context and prompt", () => {
     expect(request.history.at(-1)?.text).toBe("Where is it called?");
   });
 
+  it.each(["unmapped text", "   "])("accepts a rectangle containing %j without entities or source mappings", (ascii) => {
+    const request = input();
+    request.context.diagramAscii = `Diagram\n${ascii}`;
+    request.context.mappings = [];
+    request.context.sourceRanges = [];
+    request.selection.nodeIds = [];
+    request.selection.rect = { startLine: 2, endLine: 2, startColumn: 1, endColumn: ascii.length };
+    expect(validateLocalChatRequest(request)).toEqual(request);
+    expect(renderLocalChatPrompt(request, [])).toContain(ascii);
+  });
+
+  it.each([
+    undefined, null, {},
+    { startLine: 0, endLine: 1, startColumn: 1, endColumn: 8 },
+    { startLine: 2, endLine: 1, startColumn: 1, endColumn: 8 },
+    { startLine: 1, endLine: 2, startColumn: 1, endColumn: 8 },
+    { startLine: 1, endLine: 1, startColumn: 0, endColumn: 8 },
+    { startLine: 1, endLine: 1, startColumn: 8, endColumn: 1 },
+    { startLine: 1, endLine: 1, startColumn: 1, endColumn: 9 },
+    { startLine: 1, endLine: 1, startColumn: 1.5, endColumn: 8 }
+  ])("still rejects an invalid rectangle %j when nodeIds is empty", (rect) => {
+    expect(() => validateLocalChatRequest({ ...input(), selection: { ...input().selection, nodeIds: [], rect } })).toThrow();
+  });
+
+  it.each([undefined, null, "", {}, [""], [null]])("rejects malformed nodeIds %j", (nodeIds) => {
+    expect(() => validateLocalChatRequest({ ...input(), selection: { ...input().selection, nodeIds } })).toThrow();
+  });
+
+  it.each(["", "   ", "\n"])("rejects empty diagram context %j", (diagramAscii) => {
+    expect(() => validateLocalChatRequest({ ...input(), context: { ...input().context, diagramAscii, mappings: [] } })).toThrow();
+  });
+
+  it.each([undefined, null, {}])("rejects a missing selection %j", (selection) => {
+    expect(() => validateLocalChatRequest({ ...input(), selection })).toThrow();
+  });
+
   it("rejects malformed selections, partial project identity, history and frozen ranges before starting an agent", () => {
     expect(validateLocalChatRequest(input())).toEqual(input());
     const invalid: unknown[] = [null, {}, { ...input(), verbosity: "medium" },
@@ -87,7 +123,7 @@ it("resolves project source snapshots, accepts historical revisions and freezes 
   } } as unknown as CoreApplication;
   const chatRuntime: LocalChatRuntime = {
     async reply(request, context) {
-      seen.push({ request, sourceRoot: context.sourceRoot, lines: context.sourceRanges[0].lines });
+      seen.push({ request, sourceRoot: context.sourceRoot, lines: context.sourceRanges.flatMap(range => range.lines) });
       if (request.history.at(-1)?.text === "fail") throw new Error("Model unavailable");
       return "Worker answer";
     }, dispose() {}
@@ -117,6 +153,21 @@ it("resolves project source snapshots, accepts historical revisions and freezes 
     const wrong = input(); wrong.context.projectId = "another-project";
     expect((await post(wrong)).status).toBe(400);
     expect(seen).toHaveLength(2);
+    // An unmapped region must not inherit sources from other mappings in the diagram.
+    for (const mappings of [input().context.mappings, []]) {
+      const empty = input();
+      empty.selection.nodeIds = [];
+      empty.context.diagramAscii += "\n   ";
+      empty.selection.rect = { startLine: 2, endLine: 2, startColumn: 1, endColumn: 3 };
+      empty.context.mappings = mappings;
+      const response = await post(empty);
+      expect(response.status).toBe(200);
+      expect((await response.text()).trim().split("\n").map(line => JSON.parse(line))).toEqual([
+        { type: "context", sourceRanges: [] }, { type: "result", text: "Worker answer" }
+      ]);
+      expect(seen.at(-1)?.lines).toEqual([]);
+      expect(seen.at(-1)?.request.selection.nodeIds).toEqual([]);
+    }
     const failed = input(); failed.history[0].text = "fail";
     expect(await (await post(failed)).text()).toContain('"type":"error","error":"Model unavailable"');
   } finally {

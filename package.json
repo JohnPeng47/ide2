@@ -13,16 +13,19 @@
     "check:source-performance": "npm run build && node browser-source-pane-performance.mjs",
     "check:mapping": "node browser-mapping-poc-check.mjs",
     "check:line-grid": "node browser-line-grid-check.mjs",
+    "check:canvas-paste": "npm run build && node browser-canvas-paste-check.mjs",
+    "check:unmapped-selection": "npm run build && node browser-unmapped-selection-check.mjs",
     "check:local-chat": "node browser-local-chat-check.mjs",
     "check:domain-profiles": "node browser-domain-profiles-check.mjs",
     "check:markdown": "tsx browser-markdown-check.mjs",
     "check:aux-views": "node browser-aux-views-check.mjs",
-    "dev": "vite --host 127.0.0.1",
+    "dev": "node scripts/start-server.mjs --host 127.0.0.1",
     "migrate:plans": "tsx migrate-plans.ts",
-    "preview": "vite preview --host 127.0.0.1",
+    "preview": "node scripts/start-server.mjs preview --host 127.0.0.1",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "check:source-navigation": "npm run build && SOURCE_PERF_TRIALS=0 SOURCE_NAVIGATION=1 node browser-source-pane-performance.mjs"
+    "check:source-navigation": "npm run build && SOURCE_PERF_TRIALS=0 SOURCE_NAVIGATION=1 node browser-source-pane-performance.mjs",
+    "start": "node scripts/start-server.mjs --host 127.0.0.1"
   },
   "dependencies": {
     "@earendil-works/pi-ai": "^0.84.2",

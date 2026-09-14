@@ -3,7 +3,9 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { GeneratedArtifactDraft } from "../../src/core/domain";
-import { documentCorpusTools, runGenerationPromptTurns } from "./agentRuntime";
+import { documentCorpusTools } from "./agentRuntime";
+import { runAgentWorkflow } from "../core/agentWorkflow";
+import { createGenerationWorkflow } from "./generationWorkflow";
 
 describe("generation prompt turns", () => {
   it("returns the mapped final artifact after generation and reference follow-up turns", async () => {
@@ -16,45 +18,58 @@ describe("generation prompt turns", () => {
         : { name: "Restyled", ascii: "[restyled]", codeEntityIds: [], ...(prompts.length === 3 ? { mappings: [] } : {}) });
     };
 
-    const result = await runGenerationPromptTurns({
+    const mappedSources: GeneratedArtifactDraft[] = [];
+    const workflow = createGenerationWorkflow({
       initialPrompt: "Create the diagram",
       referencePrompt: "Use @diagram/reference as its visual style",
-      mappingPrompt: () => "Map the final diagram",
-      prompt,
-      takeSubmission: () => submissions.shift(),
+      mappingPrompt: (artifact) => `Map ${artifact.ascii}`,
+      onMappingTurn: (artifact) => { mappedSources.push(artifact); },
       artifactLabel: "diagram"
+    });
+    const result = await runAgentWorkflow(workflow, async (request) => {
+      await prompt(request.prompt);
+      return submissions.shift();
     });
 
     expect(prompts).toEqual([
       "Create the diagram",
       "Use @diagram/reference as its visual style",
-      "Map the final diagram"
+      "Map [restyled]"
     ]);
+    expect(mappedSources).toEqual([{ name: "Restyled", ascii: "[restyled]", codeEntityIds: [] }]);
     expect(result).toMatchObject({ name: "Restyled", ascii: "[restyled]", mappings: [] });
   });
 
   it("runs the mandatory mapping turn when there is no reference follow-up", async () => {
     const submissions: GeneratedArtifactDraft[] = [];
     let promptCount = 0;
-    const result = await runGenerationPromptTurns({
+    const workflow = createGenerationWorkflow({
       initialPrompt: "Create the diagram",
       mappingPrompt: () => "Map the diagram",
-      prompt: async () => {
-        promptCount += 1;
-        submissions.push({
-          name: "Initial",
-          ascii: "[initial]",
-          codeEntityIds: [],
-          ...(promptCount === 2 ? { mappings: [] } : {})
-        });
-      },
-      takeSubmission: () => submissions.shift(),
       artifactLabel: "diagram"
+    });
+    const result = await runAgentWorkflow(workflow, async () => {
+      promptCount += 1;
+      submissions.push({
+        name: "Initial",
+        ascii: "[initial]",
+        codeEntityIds: [],
+        ...(promptCount === 2 ? { mappings: [] } : {})
+      });
+      return submissions.shift();
     });
 
     expect(promptCount).toBe(2);
     expect(result.name).toBe("Initial");
     expect(result.mappings).toEqual([]);
+  });
+
+  it("rejects a final turn without mappings", async () => {
+    const workflow = createGenerationWorkflow({
+      initialPrompt: "Generate", mappingPrompt: () => "Map", artifactLabel: "diagram"
+    });
+    await expect(runAgentWorkflow(workflow, async () => ({ name: "Draft", ascii: "draft", codeEntityIds: [] })))
+      .rejects.toThrow("no mappings");
   });
 });
 

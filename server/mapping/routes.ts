@@ -12,14 +12,20 @@ import { ProjectDiagramConflict } from "../core/projectCatalogStore";
 import { discoverDomainCorpus } from "../core/store";
 import { readBody, sendEvent, sendJson } from "../core/http";
 import type { MappingAgentRuntime } from "./agentRuntime";
+import { handleFileCompaction } from "./fileCompactionRoutes";
+import type { FileCompactionService } from "./fileCompactionService";
 
-export function createMappingRoutes({ application, runtime, chatRuntime, projectRoot, configuredDomainProfileId, mappingPocSourceRoot }: {
+export function createMappingRoutes({ application, runtime, chatRuntime, compactionService, projectRoot, configuredDomainProfileId, mappingPocSourceRoot }: {
   application: CoreApplication;
   chatRuntime: LocalChatRuntime;
+  compactionService: FileCompactionService;
   runtime: MappingAgentRuntime; projectRoot: string; configuredDomainProfileId?: BuiltInDomainProfileId; mappingPocSourceRoot: string;
 }) {
   const workspaceStore = new MappingWorkspaceStore(application.store.projectCatalogs.storeRoot);
   return async (request: Connect.IncomingMessage, response: ServerResponse, url: URL): Promise<void> => {
+    if (url.pathname === "/api/mapping/compactions" || url.pathname.startsWith("/api/mapping/compactions/")) {
+      return handleFileCompaction(request, response, url, compactionService);
+    }
 
     if (url.pathname === "/api/mapping/workspace") {
       const project = await application.store.loadProject();

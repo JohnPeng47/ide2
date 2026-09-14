@@ -1,3 +1,5 @@
+import { CanvasPasteMenu } from "./CanvasPasteMenu";
+import { pasteGridDiagram } from "../pasteDiagram";
 import { LocalChatVerbosityToggle } from "./LocalChatVerbosityToggle";
 import { formatAsciiWithCodeReferences } from "../../core/diagramClipboard";
 import { asciiForSelection } from "../../core/diagramSelection";
@@ -303,7 +305,7 @@ export function MappingPocSelectionCanvas(props: {
   const hasCompleteSourceCoverage = selectedNodes.length > 0
     && sourceCoveredNodeCount === selectedNodes.length;
   const copySelection = useCallback(async () => {
-    if (!selectionRect || !selectedNodes.length) return;
+    if (!selectionRect) return;
     const refs = selectedNodes.flatMap((node) => node.sourceRanges.map((range) =>
       `${node.label}: ${range.path}:${range.startLine}-${range.endLine}`
     ));
@@ -483,9 +485,9 @@ export function MappingPocSelectionCanvas(props: {
     setAskText("");
     setPromptPhase("ready");
     const sourceRangeCount = selected.reduce((count, node) => count + node.sourceRanges.length, 0);
-    setStatusMessage(`${sourceRangeCount} mapped corpus range${sourceRangeCount === 1 ? "" : "s"} ready`);
+    setStatusMessage(selected.length ? `${sourceRangeCount} mapped corpus range${sourceRangeCount === 1 ? "" : "s"} ready` : "Diagram region selected");
     setSelectedNodeIds(selected.map((node) => node.id));
-    setSelectionRect(selected.length ? rect : null);
+    setSelectionRect(rect);
   };
 
   const retainSelection = useCallback(() => {
@@ -567,18 +569,18 @@ export function MappingPocSelectionCanvas(props: {
   }, [hasCompleteSourceCoverage, promptPhase, selectedNodeIds.length, selectionRect, retainSelection]);
 
   const openAsk = useCallback(() => {
-    if (!selectionRect || !selectedNodeIds.length || promptPhase === "generating") return;
+    if (!selectionRect || promptPhase === "generating") return;
     retainSelection();
     setPromptOpen(false);
     setAskOpen(true);
     setStatusMessage("ask about the selected region");
-  }, [promptPhase, selectedNodeIds.length, selectionRect, retainSelection]);
+  }, [promptPhase, selectionRect, retainSelection]);
 
   const submitAsk = (event: FormEvent) => {
     event.preventDefault();
     const query = askText.trim();
-    if (!selectionRect || !selectedNodeIds.length || !query) return;
-    const summary = `${selectedNodeIds.length} selected diagram node${selectedNodeIds.length === 1 ? "" : "s"}`;
+    if (!selectionRect || !query) return;
+    const summary = selectedNodeIds.length ? `${selectedNodeIds.length} selected diagram node${selectedNodeIds.length === 1 ? "" : "s"}` : `Selected diagram region (lines ${selectionRect.startLine}–${selectionRect.endLine})`;
     const thread: LocalChatThread = {
       id: `local-thread-${crypto.randomUUID()}`,
       title: summary,
@@ -769,7 +771,7 @@ export function MappingPocSelectionCanvas(props: {
         }
         return;
       }
-      if (!selectedNodeIds.length || !selectionRect) return;
+      if (!selectionRect) return;
       if (event.key.toLowerCase() === "c" && !event.altKey && !promptOpen && !askOpen
         && !window.getSelection()?.toString()) {
         event.preventDefault(); void copySelection(); return;
@@ -812,7 +814,7 @@ export function MappingPocSelectionCanvas(props: {
   ]);
 
   useEffect(() => {
-    if (!selectedNodeIds.length
+    if (!selectionRect
       || retainedSelectionId
       || promptOpen
       || askOpen
@@ -826,7 +828,7 @@ export function MappingPocSelectionCanvas(props: {
     };
     window.addEventListener("pointerdown", onPointerDown, true);
     return () => window.removeEventListener("pointerdown", onPointerDown, true);
-  }, [props.active, askOpen, clearSelection, retainedSelectionId, diagramPlacement, promptOpen, promptPhase, selectedNodeIds.length]);
+  }, [props.active, askOpen, clearSelection, retainedSelectionId, diagramPlacement, promptOpen, promptPhase, selectionRect]);
 
   const rectStyle = selectionRect && cell.width > 0 && cell.height > 0 ? {
     left: (selectionRect.startColumn - 1) * cell.width,
@@ -842,6 +844,8 @@ export function MappingPocSelectionCanvas(props: {
     height: (activeThread.selection.rect.endLine - activeThread.selection.rect.startLine + 1) * cell.height
   } : undefined;
   const selectionPhase = askOpen ? "asking" : promptPhase;
+  const showSelectionMenu = Boolean(selectionRect && rectStyle && !diagramPlacement
+    && (!retainedSelectionId || promptOpen || askOpen || actionsOpen));
 
   return (
     <div
@@ -931,6 +935,15 @@ export function MappingPocSelectionCanvas(props: {
         setSelectionRect(null);
       }}
     >
+      <CanvasPasteMenu stageRef={stageRef} active={props.active !== false} busy={isGenerating || !!diagramPlacement || !!movingBoxId}
+        toGrid={scenePointAtClient} onPaste={(point, text) => {
+          const id = `diagram-${crypto.randomUUID()}`;
+          const next = pasteGridDiagram(gridDocument, point, text, id);
+          commit(next);
+          clearSelection();
+          setActiveBoxId(id);
+          setStatusMessage("Sub-diagram pasted; layout updated");
+        }} />
       <span ref={probeRef} className="mapping-poc-cell-probe" aria-hidden="true">0000000000</span>
       <pre
         ref={preRef}
@@ -1035,7 +1048,7 @@ export function MappingPocSelectionCanvas(props: {
         </div>
       ) : null}
 
-      {selectionRect && selectedNodes.length && rectStyle && !diagramPlacement && (!retainedSelectionId || promptOpen || askOpen || actionsOpen) ? (
+      {showSelectionMenu && rectStyle ? (
         <div
           ref={menuRef}
           className={`mapping-poc-selection-menu${askOpen && localChatVariant === "floating" ? " has-floating-ask" : ""}`}
@@ -1048,9 +1061,9 @@ export function MappingPocSelectionCanvas(props: {
           style={{ left: rectStyle.left + rectStyle.width + 12, top: rectStyle.top + rectStyle.height + 8 }}
         >
           <header>
-            <span>{selectedNodes.length} selected · {candidateProjection.mappedANodeIds.length} mapped</span>
+            <span>{selectedNodes.length ? `${selectedNodes.length} selected · ${candidateProjection.mappedANodeIds.length} mapped` : "Region selected · no code entities"}</span>
             <em className={hasCompleteSourceCoverage ? "is-covered" : "is-missing"}>
-              source {sourceCoveredNodeCount}/{selectedNodes.length} · {selectedSourceRangeCount} ranges
+              {selectedNodes.length ? `source ${sourceCoveredNodeCount}/${selectedNodes.length} · ${selectedSourceRangeCount} ranges` : "No source mappings"}
             </em>
             <small className={`is-${askOpen ? "asking" : promptPhase}`} aria-live="polite">{statusMessage}</small>
           </header>
@@ -1255,7 +1268,7 @@ export function MappingPocSelectionCanvas(props: {
         document.body
       ) : null}
 
-      {selectionRect && !selectedNodes.length && rectStyle && (promptPhase === "applied" || promptPhase === "error") ? (
+      {!showSelectionMenu && selectionRect && !selectedNodes.length && rectStyle && (promptPhase === "applied" || promptPhase === "error") ? (
         <div
           className={`mapping-poc-local-status is-${promptPhase}`}
           data-mapping-static-ui

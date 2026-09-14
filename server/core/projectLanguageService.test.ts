@@ -49,3 +49,10 @@ it('returns multiple definitions, no-result responses, and reports SDK targets o
   const controller = new AbortController(); controller.abort();
   await expect(service.definitions(binding, 'main.ts', { line: 2, character: 12 }, hash, controller.signal)).rejects.toThrow();
 }, 30000);
+
+
+it('a disposed service cannot start or restart a server', async () => {
+  const { service, binding, hash } = await fixture();
+  service.dispose();
+  await expect(service.definitions(binding, 'main.ts', { line: 1, character: 20 }, hash)).rejects.toThrow('stopped');
+});

@@ -38,7 +38,7 @@ export function validateLocalChatRequest(input: unknown): LocalChatReplyRequest 
   const s = r.selection;
   const rect = s?.rect;
   if (!s || !validString(s.boxId) || !validString(s.summary, 500)
-    || !Array.isArray(s.nodeIds) || !s.nodeIds.length || s.nodeIds.length > 5000
+    || !Array.isArray(s.nodeIds) || s.nodeIds.length > 5000
     || !s.nodeIds.every((id) => validString(id, 500))
     || !rect || ![rect.startLine, rect.endLine, rect.startColumn, rect.endColumn].every((n) => Number.isInteger(n) && n >= 1)
     || rect.startLine > rect.endLine || rect.startColumn > rect.endColumn

@@ -100,14 +100,19 @@ class FilesystemCorpusProvider implements CorpusProvider {
   }
 
   async readDocumentText(binding: CorpusBinding, relativePath: string): Promise<string> {
+    return (await this.readDocumentBytes(binding, relativePath)).toString("utf8");
+  }
+
+  async readDocumentBytes(binding: CorpusBinding, relativePath: string): Promise<Buffer> {
     const root = await canonicalBindingRoot(binding, this.kind);
     const filePath = await resolveWithoutSymlinks(root, relativePath, "corpus file");
     if (!(await stat(filePath)).isFile()) throw new Error(`corpus path is not a file: ${relativePath}`);
-    return readFile(filePath, "utf8");
+    return readFile(filePath);
   }
 }
 
 export type ReadableCorpusProvider = CorpusProvider & {
+  readDocumentBytes(binding: CorpusBinding, relativePath: string): Promise<Buffer>;
   readDocumentText(binding: CorpusBinding, relativePath: string): Promise<string>;
   readDocumentLines(binding: CorpusBinding, relativePath: string): Promise<string[]>;
 };

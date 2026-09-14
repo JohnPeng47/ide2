@@ -50,7 +50,7 @@ clients, services, and component directories:
 | Area | Namespace | Ownership |
 | --- | --- | --- |
 | Studio | `/api/studio/*` | Collection, generation, candidates, promotion, artifact edit sessions, templates, experiments, datasets |
-| Mapping | `/api/mapping/*` | Canvas saves, selection prompts, local chat, workspace persistence |
+| Mapping | `/api/mapping/*` | Canvas saves, selection prompts, file compaction, local chat, workspace persistence |
 | Core | `/api/core/*` | Workspace, corpus, representations, projections, imports, plans, highlights, shared rendering |
 
 Both features depend on Core; neither imports the other. `src/App.tsx` and
@@ -61,6 +61,25 @@ null before initialization). There is no second Mapping catalog endpoint.
 Old shared `/api/studio/*` URLs, `/internal/mapping/*`, and unnamespaced API
 URLs return 404. See [API ownership and migration](docs/api-ownership.md) for
 the route inventory, dependency rules, and client migration details.
+
+## Agent workflows
+
+Sequential agent workflows use `AgentWorkflow<T>` and `runAgentWorkflow` in
+`server/core/agentWorkflow.ts`. A workflow defines ordered, named steps with
+prompt builders, optional preparation hooks, and output validation. Each step
+receives the previous accepted output; missing submissions and failed validation
+stop the sequence. The executor owns sessions and tools, returns only the current
+turn's accepted submission, and must honor the supplied abort signal to cancel
+in-flight work. It can reuse a session or create one per step.
+
+Studio defines its generation -> optional reference -> mapping sequence in
+`server/studio/generationWorkflow.ts`. Feature-specific prompts, submission-tool
+validation, and persistence remain with their owning feature. Mapping workflows
+can use the same Core runner without importing Studio.
+
+Mapping defines `single-file-compaction` as two sequential steps: `compact`, then
+`refine`. See [the compaction API](docs/mapping-file-compaction.md) for requests,
+stream events, saved artifacts, and validation boundaries.
 
 ## Mapping project diagrams
 
