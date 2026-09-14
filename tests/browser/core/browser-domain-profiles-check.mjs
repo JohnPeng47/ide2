@@ -114,7 +114,8 @@ try {
     if (JSON.stringify(explorerTabs) !== JSON.stringify([
       { id: "files-tab", label: "Diagram Files" },
       { id: "markdown-sections-tab", label: "Sections" },
-      { id: "highlights-tab", label: "Highlights" }
+      { id: "highlights-tab", label: "Highlights" },
+      { id: "plans-tab", label: "Plans" }
     ])) {
       throw new Error(`document explorer tabs were incorrect: ${JSON.stringify(explorerTabs)}`);
     }
@@ -192,7 +193,15 @@ try {
   });
 
   const markdownSetId = "set-f66b6cb5-b157-49c3-ba9c-e5f31b3729a7";
-  await cp(path.join(packageRoot, "MARKDOWN.md"), path.join(fixtureRoot, "MARKDOWN.md"));
+  // Use the fixture's frozen evidence rather than an untracked repository-root file.
+  const markdownEntities = JSON.parse(await readFile(path.join(
+    fixtureRoot, ".diagrams", "diagram-sets", markdownSetId, "code-entities.json"
+  ), "utf8"));
+  const markdownSnapshot = markdownEntities.entities.flatMap(entity => entity.sourceRanges)
+    .find(range => range.path === "MARKDOWN.md" && range.startLine === 1
+      && range.originalLines?.length === range.endLine);
+  if (!markdownSnapshot) throw new Error("Markdown fixture has no complete source snapshot");
+  await writeFile(path.join(fixtureRoot, "MARKDOWN.md"), markdownSnapshot.originalLines.join("\n"), "utf8");
   project.diagramSetIds = [markdownSetId];
   await writeFile(projectPath, `${JSON.stringify(project, null, 2)}\n`, "utf8");
   const markdownSetPath = path.join(

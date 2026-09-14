@@ -85,7 +85,7 @@ generated canvas diagrams use the shared compositor.
 ## Validation
 
 ```sh
-npx vitest run domain/core/diagrams/__tests__/lineGrid.test.ts server/features/mapping/selection/__tests__/mappingGridPrompt.test.ts server/features/mapping/__tests__/mappingProject.test.ts
+npx vitest run domain/core/diagrams/__tests__/lineGrid.test.ts infrastructure/mapping/agents/selection/__tests__/mappingGridPrompt.test.ts infrastructure/mapping/__tests__/mappingProject.test.ts
 npm run build
 node tests/browser/mapping/browser-project-mapping-check.mjs
 node tests/browser/mapping/browser-line-grid-check.mjs

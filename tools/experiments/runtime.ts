@@ -8,7 +8,7 @@ import {
   SettingsManager
 } from "@earendil-works/pi-coding-agent";
 import { Type, type Model } from "@earendil-works/pi-ai";
-import { PiDiagramAgentRuntime, type ArtifactGenerationRequest } from "../../server/features/studio/generation/agentRuntime";
+import { PiDiagramAgentRuntime, type ArtifactGenerationRequest } from "../../infrastructure/studio/agents/agentRuntime";
 import type {
   AxisDefinition,
   CrossJudgment,

@@ -2,7 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
-import { diagramApi } from "./server/app/vitePlugin";
+import { diagramApi } from "./src/server/app/vitePlugin";
 
 const ROOT = fileURLToPath(new URL(".", import.meta.url));
 const DEFAULT_PROJECT_ROOT = path.resolve(ROOT, "../..");
@@ -21,6 +21,9 @@ const PREVIEW_ALLOWED_HOSTS = (process.env.NEW_DIAGRAM_ALLOWED_HOSTS || "")
 
 export default defineConfig({
   root: ROOT,
+  optimizeDeps: {
+    entries: ["index.html"]
+  },
   plugins: [
     react(),
     diagramApi(

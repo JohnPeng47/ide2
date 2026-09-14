@@ -9,8 +9,8 @@ import {
   type DiagramElementMappingDraft,
   type DiagramRecord
 } from "../../domain/core/records/domain";
-import { validateDiagramMappings } from "../../server/core/diagrams/diagramMapping";
-import { DiagramStore, discoverRepository } from "../../server/core/persistence/store";
+import { validateDiagramMappings } from "../../domain/core/diagrams/diagramMapping";
+import { DiagramStore, discoverRepository } from "../../infrastructure/core/persistence/store";
 
 const SET_NAME = "Compositional Domain Architecture";
 const DIAGRAM_ID = "diagram-compositional-domain-architecture-mapped";

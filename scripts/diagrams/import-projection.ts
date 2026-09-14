@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { ProjectCatalogStore, type SaveProjectedTreeInput } from "../../server/core/persistence/projectCatalogStore";
+import { ProjectCatalogStore, type SaveProjectedTreeInput } from "../../infrastructure/core/persistence/projectCatalogStore";
 
 // Explicit paths keep imports independent of whichever project a dev server uses.
 const [storeDirectory, artifactFile] = process.argv.slice(2);

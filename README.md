@@ -57,7 +57,7 @@ clients, services, and component directories:
 | Core | `/api/core/*` | Workspace, corpus, representations, projections, imports, plans, highlights, shared rendering |
 
 Both features depend on Core; neither imports the other. `src/app/App.tsx` and
-`server/app/vitePlugin.ts` compose them. The shared representation catalog is read through
+`src/server/app/vitePlugin.ts` compose them. The shared representation catalog is read through
 `GET /api/core/project/representations`, returning `{ project, catalog }` (both
 null before initialization). There is no second Mapping catalog endpoint.
 
@@ -68,7 +68,7 @@ the route inventory, dependency rules, and client migration details.
 ## Agent workflows
 
 Sequential agent workflows use `AgentWorkflow<T>` and `runAgentWorkflow` in
-`server/infrastructure/agents/agentWorkflow.ts`. A workflow defines ordered, named steps with
+`application/core/agents/agentWorkflow.ts`. A workflow defines ordered, named steps with
 prompt builders, optional preparation hooks, and output validation. Each step
 receives the previous accepted output; missing submissions and failed validation
 stop the sequence. The executor owns sessions and tools, returns only the current
@@ -76,7 +76,7 @@ turn's accepted submission, and must honor the supplied abort signal to cancel
 in-flight work. It can reuse a session or create one per step.
 
 Studio defines its generation -> optional reference -> mapping sequence in
-`server/features/studio/generation/generationWorkflow.ts`. Feature-specific prompts, submission-tool
+`application/studio/generation/generationWorkflow.ts`. Feature-specific prompts, submission-tool
 validation, and persistence remain with their owning feature. Mapping workflows
 can use the same Core runner without importing Studio.
 
@@ -167,8 +167,11 @@ curl --fail-with-body http://127.0.0.1:5173/api/core/workspace
 The response includes `diagramSets` and a `diagrams` dictionary keyed by id.
 Each set's `diagramIds` identifies its diagrams; `featuredViewIds` identifies
 starred views, and each diagram's `archivedAt` records its archive status.
-Route handlers live in `server/core/routes.ts` and
-`server/features/{studio,mapping}/routes.ts`. Shared persisted record types live
+Backend workflows live in `application/{core,studio,mapping}/`; filesystem,
+language-service, and agent integrations live in `infrastructure/`. Only
+`src/server/app/bootstrap.ts` wires concrete integrations into the application.
+Route handlers live in `src/server/routes/core/routes.ts` and
+`src/server/routes/{studio,mapping}/routes.ts`. Shared persisted record types live
 in `domain/core/records/domain.ts`; browser clients live in `src/shared/http/api.ts`
 and `src/features/{studio,mapping}/api.ts` (canvas saves in
 `src/features/mapping/workspace/mappingProjectApi.ts`).

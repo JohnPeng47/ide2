@@ -1,6 +1,6 @@
 import path from "node:path";
-import { migrateLegacyPlanBundles } from "../../server/core/persistence/planMigration";
-import { DiagramStore } from "../../server/core/persistence/store";
+import { migrateLegacyPlanBundles } from "../../infrastructure/core/persistence/planMigration";
+import { DiagramStore } from "../../infrastructure/core/persistence/store";
 
 const args = process.argv.slice(2);
 const directoryFlag = args.indexOf("--diagrams-dir");

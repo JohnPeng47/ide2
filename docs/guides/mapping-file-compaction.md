@@ -6,7 +6,7 @@
 frozen source -> compact -> validate/save -> refine -> validate/save -> result
 ```
 
-The workflow object is in `server/features/mapping/compaction/fileCompactionWorkflow.ts` and executes
+The workflow object is in `application/mapping/compaction/fileCompactionWorkflow.ts` and executes
 through Core's `runAgentWorkflow`. Each run uses one Pi session with only
 `submit_file_compaction`. Both prompts execute in that same chat. The submission
 collector is reset between turns; the conversation history is retained. The
@@ -44,7 +44,7 @@ Optional agent settings are supplied in the same request body:
 `low`, `medium`, `high`, `xhigh`, or `max`. `systemPrompt` accepts 1–64,000
 characters of literal text. It replaces the base instructions for that request;
 it is not a path to a file. Omit it to use the copied Codex base prompt in
-`server/features/mapping/compaction/prompts/system/codex.md`.
+`infrastructure/mapping/agents/compaction/prompts/system/codex.md`.
 
 The Codex prompt was copied without edits from
 `/home/john/codex/codex-rs/models-manager/prompt.md`, which Codex includes as
@@ -93,8 +93,8 @@ there is no automatic resume or retry. Submit another POST to start a new run.
 
 The canonical prompts are:
 
-- `server/features/mapping/compaction/prompts/compaction/single-file-compact.md`
-- `server/features/mapping/compaction/prompts/compaction/single-file-compact2.md`
+- `infrastructure/mapping/agents/compaction/prompts/compaction/single-file-compact.md`
+- `infrastructure/mapping/agents/compaction/prompts/compaction/single-file-compact2.md`
 
 Both are captured, with SHA-256 hashes, before execution. The runtime enforces structured
 submissions and server-managed output files, including when a template names an
@@ -137,6 +137,6 @@ verified. The current first-pass prompt permits reordering to group related code
 ## Verification
 
 ```sh
-npx vitest run server/features/mapping/compaction/__tests__/fileCompaction.test.ts server/features/mapping/compaction/__tests__/fileCompactionRuntime.test.ts server/infrastructure/agents/__tests__/agentWorkflow.test.ts
+npx vitest run infrastructure/mapping/agents/compaction/__tests__/fileCompaction.test.ts infrastructure/mapping/agents/compaction/__tests__/fileCompactionRuntime.test.ts application/core/agents/__tests__/agentWorkflow.test.ts
 npm run build
 ```

@@ -12,10 +12,14 @@ and evaluation tools.
 | `src/shared/` | Reusable browser capabilities: diagrams, source rendering, references, Markdown, panes, and Core HTTP clients. |
 | `domain/core/` | Shared records, geometry, projections, references, plans, profiles, prompts, highlights, and agent-work models. |
 | `domain/studio/`, `domain/mapping/` | Feature-owned models, contracts, validation, and pure algorithms used by browser and server. |
-| `server/app/` | Vite plugin and API/runtime composition. |
-| `server/core/` | Shared project resources, persistence, corpus access, and language services. |
-| `server/features/` | Studio and Mapping routes, services, and feature-specific agent runtimes. |
-| `server/infrastructure/` | HTTP helpers and shared agent/session/workflow machinery. |
+| `src/server/app/` | Vite middleware and startup wiring; `bootstrap.ts` selects and constructs integrations. |
+| `src/server/routes/{core,studio,mapping}/` | HTTP input decoding, route dispatch, response formatting, and connection lifecycle. |
+| `src/server/http/` | HTTP body, JSON, and NDJSON helpers. |
+| `application/core/` | Workspace assembly, source access, imports, plans, highlights, representation operations, and dependency interfaces. |
+| `application/studio/` | Collection, generation, editing, candidates, evidence mapping, prompt settings, datasets, and run recovery. |
+| `application/mapping/` | Diagram saves, workspace persistence, selection prompting, chat, and compaction workflows. |
+| `infrastructure/core/` | Filesystem repositories, corpus discovery/access, LSP clients, and shared provider/session machinery. |
+| `infrastructure/studio/`, `infrastructure/mapping/` | Feature-specific agent implementations and persistence adapters. |
 | `tests/browser/` | Browser checks grouped by Core, Studio, Mapping, and support helpers. |
 | `tests/performance/` | Performance and source-navigation browser runner. |
 | `tests/architecture/` | Import boundary checks. |
@@ -34,18 +38,41 @@ Existing `npm run check:*` commands point to the relocated browser checks.
 
 ## Dependencies
 
-Studio and Mapping depend on themselves and Core, never on each other. Core
-does not depend on either feature. Browser and server modules import shared
-contracts and algorithms from `domain/`; the domain layer imports neither
-browser nor server implementations. Application composition roots connect the
-features. `tests/architecture/dependencies.test.ts` enforces these boundaries.
+Studio and Mapping depend on their own capabilities and Core, never on each other.
+Core does not depend on either feature. The layer dependencies are:
 
-The initial reorganization moves modules intact. In particular,
-`domain/core/records/domain.ts` remains the aggregate schema module, and the
-existing Mapping chat and workspace models retain their current contents.
-Splitting these files, decomposing large React components, and dividing global
-CSS are separate refactors. Component exports retain their existing names even
-where the page/canvas filenames have been shortened.
+```text
+src (browser)   -> domain
+src/server/routes   -> application, domain, src/server/http
+application     -> application, domain
+infrastructure  -> application interfaces, domain, infrastructure
+src/server/app/bootstrap.ts -> all backend layers (composition only)
+```
+
+The browser portion of `src/` excludes `src/server/`; browser modules cannot
+import that backend subtree. Domain code has no Node, React, or HTTP dependency. Application code has no
+filesystem, subprocess, HTTP, or provider SDK dependency; it receives repository,
+corpus, language-service, and agent interfaces. Small backend computations may use
+Node crypto/path utilities. Only the bootstrap module selects concrete adapters.
+`tests/architecture/dependencies.test.ts` enforces layer and feature ownership.
+
+The Core and Studio application classes are compatibility facades over capability
+services. Studio uses explicit Core composition rather than inheritance. Shared
+record persistence retains an aggregate `DiagramRepository` contract; focused
+services accept the subset of operations they use. `DiagramStore` is a facade over
+filesystem modules grouped by records, templates, runs, imports, plans, and paths.
+Workspace assembly lives in `application/core/workspace/loadWorkspace.ts`.
+
+Catalog transitions and editing/compaction validation live in `domain/`. The
+catalog adapter keeps its serialization queue around the complete read, transition,
+and atomic write, preserving optimistic revision checks and immutable history.
+Application workflows publish events; routes serialize those events as NDJSON and
+own HTTP disconnect handling. Prompt files remain with the agent integration that
+loads them, alongside their license and provenance.
+
+The aggregate schema module `domain/core/records/domain.ts`, large React components,
+and global CSS retain their existing structure. No API URL, storage layout, or UI
+behavior changes are part of the backend separation.
 
 ## Source evidence and tools
 

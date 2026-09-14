@@ -967,7 +967,7 @@ export const MAPPING_POC_B_NODES: readonly MappingPocBNode[] = [
     ["sol-generate", "[R] SolExperimentRuntime.generate(request)"],
     ["fixed-generation-model", "[X] assertFixedGenerationModel()"]
   ]),
-  ...bNodes("server/features/studio/generation/agentRuntime.ts", 367, 520, [
+  ...bNodes("infrastructure/studio/agents/agentRuntime.ts", 98, 460, [
     ["pi-generate", "[R] PiDiagramAgentRuntime.generateArtifact(request)"],
     ["resolve-model", "[R] resolveModel()"],
     ["agent-domain-profile", "[R] agent.resolveDomainProfile()"],
@@ -1081,7 +1081,7 @@ export const MAPPING_POC_B_NODES: readonly MappingPocBNode[] = [
     ["runtime-dispose", "[X] ExperimentRuntime.dispose()"],
     ["output-filesystem", "[P] ExperimentOutputFilesystem"]
   ]),
-  ...bNodes("server/features/studio/experiments/experimentCatalog.ts", 37, 179, [
+  ...bNodes("infrastructure/studio/persistence/experiments/experimentCatalog.ts", 44, 180, [
     ["catalog-constructor", "[R] ExperimentCatalog.constructor(datasetRoot)"],
     ["catalog-directories", "[R] ExperimentCatalog.directories()"],
     ["catalog-readdir", "[R] readdirRoot()"],
@@ -1114,7 +1114,7 @@ export const MAPPING_POC_B_NODES: readonly MappingPocBNode[] = [
     ["open-add-dialog", "[R] openAddToDatasetDialog()"],
     ["selected-artifact-labels", "[P] selected artifact + labels"]
   ]),
-  ...bNodes("server/features/studio/datasets/diagramDatasetStore.ts", 66, 171, [
+  ...bNodes("infrastructure/studio/persistence/datasets/diagramDatasetStore.ts", 73, 172, [
     ["validate-dataset-id", "[X] validateDatasetId()"],
     ["validate-source-coordinates", "[X] validateSourceCoordinates()"],
     ["dataset-catalog-artifact", "[R] catalog.artifact()"],
@@ -1130,7 +1130,7 @@ export const MAPPING_POC_B_NODES: readonly MappingPocBNode[] = [
     ["dataset-item", "[P] DiagramDatasetItemRecord"],
     ["dataset-snapshot", "[P] DiagramDatasetCatalogSnapshot"]
   ]),
-  ...bNodes("server/features/studio/datasets/diagramDatasetStore.ts", 17, 23, [
+  ...bNodes("infrastructure/studio/persistence/datasets/diagramDatasetStore.ts", 17, 24, [
     ["dataset-record", "[P] DiagramDatasetRecord"]
   ])
 ];
@@ -1177,7 +1177,7 @@ function aNode(
 
 export const MAPPING_POC_A_NODES: readonly MappingPocANode[] = [
   aNode("a-prompt-stack", "Current LLM prompt stack", 1, "CurrentLLMPromptStack", 1, 183, [
-    sourceRange("domain/studio/generation/prompt.ts", 72, 513), sourceRange("server/features/studio/generation/agentRuntime.ts", 78, 561)
+    sourceRange("domain/studio/generation/prompt.ts", 72, 513), sourceRange("infrastructure/studio/agents/agentRuntime.ts", 51, 545)
   ]),
   aNode("a-system-templates", "system prompt templates", 5, "system-prompt-templates.json", 5, 21, [
     sourceRange("domain/core/records/domain.ts", 319, 319), sourceRange(".diagrams/system-prompt-templates.json", 1, 47)
@@ -1187,25 +1187,25 @@ export const MAPPING_POC_A_NODES: readonly MappingPocANode[] = [
   aNode("a-diagram-mapping", "diagram mapping template", 18, "diagram-mapping", 18, 21, [sourceRange(".diagrams/system-prompt-templates.json", 1, 47)]),
   aNode("a-code-entity-templates", "code entity prompt templates", 23, "code-entity-prompt-templates.json", 23, 29, [sourceRange(".diagrams/code-entity-prompt-templates.json", 1, 19)]),
   aNode("a-diagram-set", "DiagramSet", 31, "DiagramSet", 31, 42, [sourceRange("domain/core/records/domain.ts", 123, 172)]),
-  aNode("a-code-entity-config", "CodeEntityPromptConfigRecord", 38, "CodeEntityPromptConfigRecord", 38, 42, [sourceRange("server/features/studio/generation/codeEntityPrompt.ts", 81, 112)]),
-  aNode("a-evidence-collection", "evidence collection", 44, "evidenceCollection", 44, 66, [sourceRange("server/features/studio/generation/codeEntityPrompt.ts", 9, 112)]),
-  aNode("a-collection-prompt", "code entity collection prompt", 45, "codeEntityCollectionPrompt()", 45, 51, [sourceRange("server/features/studio/generation/codeEntityPrompt.ts", 9, 48)]),
-  aNode("a-collect-entities", "collect entities agent", 53, "PiDiagramAgentRuntime.collectEntities()", 53, 66, [sourceRange("server/features/studio/generation/agentRuntime.ts", 283, 408)]),
+  aNode("a-code-entity-config", "CodeEntityPromptConfigRecord", 38, "CodeEntityPromptConfigRecord", 38, 42, [sourceRange("application/studio/generation/codeEntityPrompt.ts", 81, 112)]),
+  aNode("a-evidence-collection", "evidence collection", 44, "evidenceCollection", 44, 66, [sourceRange("application/studio/generation/codeEntityPrompt.ts", 9, 112)]),
+  aNode("a-collection-prompt", "code entity collection prompt", 45, "codeEntityCollectionPrompt()", 45, 51, [sourceRange("application/studio/generation/codeEntityPrompt.ts", 9, 48)]),
+  aNode("a-collect-entities", "collect entities agent", 53, "PiDiagramAgentRuntime.collectEntities()", 53, 66, [sourceRange("infrastructure/studio/agents/agentRuntime.ts", 98, 460)]),
   aNode("a-runtime-request", "runtime generation request", 68, "runtimeGenerationRequest", 68, 85, [sourceRange("src/features/studio/StudioPage.tsx", 1018, 1085)]),
-  aNode("a-generate-artifacts", "generation HTTP client", 80, "generateArtifacts()", 80, 85, [sourceRange("src/features/studio/api.ts", 636, 689), sourceRange("server/features/studio/routes.ts", 758, 835)]),
-  aNode("a-application-generate", "application generation orchestration", 87, "StudioApplication.generate()", 87, 119, [sourceRange("server/features/studio/application.ts", 1640, 1813)]),
+  aNode("a-generate-artifacts", "generation HTTP client", 80, "generateArtifacts()", 80, 85, [sourceRange("src/features/studio/api.ts", 636, 689), sourceRange("server/routes/studio/routes.ts", 160, 740)]),
+  aNode("a-application-generate", "application generation orchestration", 87, "StudioApplication.generate()", 87, 119, [sourceRange("application/studio/application.ts", 173, 188)]),
   aNode("a-create-config", "create generation prompt config", 93, "createGenerationPromptConfig()", 93, 113, [sourceRange("domain/studio/generation/prompt.ts", 72, 513)]),
   aNode("a-generation-config", "GenerationPromptConfigRecord", 100, "GenerationPromptConfigRecord", 100, 113, [sourceRange("domain/core/records/domain.ts", 237, 286)]),
-  aNode("a-begin-batch", "begin generation batch", 115, "beginBatch()", 115, 119, [sourceRange("server/core/persistence/store.ts", 1439, 1464)]),
-  aNode("a-generate-artifact", "generate artifact agent", 121, "PiDiagramAgentRuntime.generateArtifact()", 121, 152, [sourceRange("server/features/studio/generation/agentRuntime.ts", 412, 561)]),
-  aNode("a-turn-one", "initial generation turn", 127, "turn 1: generate", 127, 138, [sourceRange("server/features/studio/generation/agentRuntime.ts", 78, 111)]),
-  aNode("a-turn-two", "reference restyle turn", 140, "turn 2: apply reference", 140, 145, [sourceRange("server/features/studio/generation/agentRuntime.ts", 78, 111)]),
-  aNode("a-turn-three", "final mapping turn", 147, "turn 3: map final artifact", 147, 152, [sourceRange("server/features/studio/generation/agentRuntime.ts", 78, 111)]),
+  aNode("a-begin-batch", "begin generation batch", 115, "beginBatch()", 115, 119, [sourceRange("infrastructure/core/persistence/store.ts", 172, 188)]),
+  aNode("a-generate-artifact", "generate artifact agent", 121, "PiDiagramAgentRuntime.generateArtifact()", 121, 152, [sourceRange("infrastructure/studio/agents/agentRuntime.ts", 98, 545)]),
+  aNode("a-turn-one", "initial generation turn", 127, "turn 1: generate", 127, 138, [sourceRange("infrastructure/studio/agents/agentRuntime.ts", 51, 85)]),
+  aNode("a-turn-two", "reference restyle turn", 140, "turn 2: apply reference", 140, 145, [sourceRange("infrastructure/studio/agents/agentRuntime.ts", 51, 85)]),
+  aNode("a-turn-three", "final mapping turn", 147, "turn 3: map final artifact", 147, 152, [sourceRange("infrastructure/studio/agents/agentRuntime.ts", 51, 85)]),
   aNode("a-submission-validation", "submission validation", 154, "submissionValidation", 154, 163, [
-    sourceRange("server/features/studio/generation/agentRuntime.ts", 424, 483), sourceRange("server/core/diagrams/diagramMapping.ts", 3, 65), sourceRange("server/features/studio/application.ts", 2221, 2234)
+    sourceRange("infrastructure/studio/agents/agentRuntime.ts", 98, 460), sourceRange("domain/core/diagrams/diagramMapping.ts", 3, 67), sourceRange("application/studio/generation/service.ts", 403, 413)
   ]),
-  aNode("a-persisted-outputs", "persisted outputs", 165, "persistedOutputs", 165, 183, [sourceRange("server/features/studio/application.ts", 1821, 1991)]),
-  aNode("a-complete-batch", "complete generation batch", 178, "completeBatch()", 178, 183, [sourceRange("server/core/persistence/store.ts", 1468, 1494)])
+  aNode("a-persisted-outputs", "persisted outputs", 165, "persistedOutputs", 165, 183, [sourceRange("application/studio/application.ts", 173, 188)]),
+  aNode("a-complete-batch", "complete generation batch", 178, "completeBatch()", 178, 183, [sourceRange("infrastructure/core/persistence/store.ts", 174, 174)])
 ];
 
 const A_NODES_BY_ID = new Map(MAPPING_POC_A_NODES.map((node) => [node.id, node]));

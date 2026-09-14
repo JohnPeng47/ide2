@@ -1,10 +1,10 @@
-import type { CodeEntityRecord, DiagramViewKind } from "../records/domain";
+import type { CodeEntityRecord,DiagramViewKind } from "../records/domain";
 import type {
-  BuiltInDomainProfileId,
-  DomainProfile,
-  DomainProfileId,
-  ElementCommandId,
-  EvidenceSchema
+BuiltInDomainProfileId,
+DomainProfile,
+DomainProfileId,
+ElementCommandId,
+EvidenceSchema
 } from "./domainProfile";
 
 function evidenceSchema(
@@ -123,4 +123,12 @@ export function representationKindForArtifact(artifact: {
   return artifact.viewKind === "call-graph" || artifact.viewKind === "dir-view"
     ? "tree"
     : "diagram";
+}
+
+export function isBuiltInDomainProfileId(value: unknown): value is BuiltInDomainProfileId {
+  return value === "source-code" || value === "document";
+}
+
+export function builtInDomainProfile(id: BuiltInDomainProfileId): DomainProfile {
+  return BUILT_IN_DOMAIN_PROFILES[id];
 }

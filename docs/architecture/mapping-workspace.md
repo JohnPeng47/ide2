@@ -129,7 +129,7 @@ avoidance, or bundled external artifact export in v2.
 ## Verification
 
 ```sh
-npx vitest run domain/mapping/workspace/__tests__/displayModel.test.ts domain/mapping/workspace/__tests__/mappingWorkspaceCodec.test.ts server/features/mapping/workspace/__tests__/mappingWorkspaceStore.test.ts
+npx vitest run domain/mapping/workspace/__tests__/displayModel.test.ts domain/mapping/workspace/__tests__/mappingWorkspaceCodec.test.ts infrastructure/mapping/persistence/workspace/__tests__/mappingWorkspaceStore.test.ts
 npm run build
 node tests/browser/mapping/browser-projection-check.mjs
 node tests/browser/mapping/browser-local-chat-check.mjs
@@ -192,12 +192,12 @@ Run `SOURCE_PERF_EXPLORERS=1 npm run check:source-performance` to benchmark 1–
 their repository explorers open. This variant shifts selection controls left so they do not
 cover the first pane's explorer button; source pane positions and sizes remain unchanged.
 
-`server/core/source/__tests__/lspStartup.test.ts` launches the actual CLI in both modes. It checks that
+`infrastructure/core/language-services/__tests__/lspStartup.test.ts` launches the actual CLI in both modes. It checks that
 inherited environment flags cannot enable LSP, disabled definition requests stay blocked,
 enabled sessions start only on the first lookup and are shared, and stopping the server
 terminates its language-server processes (process checks use `/proc` on Linux).
 
-Run `npm run check:unmapped-selection` to check unmapped text and whitespace selection, Copy/Ask, cancellation, and conversation save/reload in a disposable browser fixture. Server validation cases live in `server/features/mapping/chat/__tests__/localChat.test.ts`.
+Run `npm run check:unmapped-selection` to check unmapped text and whitespace selection, Copy/Ask, cancellation, and conversation save/reload in a disposable browser fixture. Server validation cases live in `infrastructure/mapping/agents/chat/__tests__/localChat.test.ts`.
 
 Right-click the diagram canvas and choose **Paste sub-diagram here** to insert clipboard ASCII at that grid cell, including on blank canvas space. The click location is captured before reading the clipboard and accounts for pan/zoom; positions before the grid origin clamp to zero. Paste inserts into the root container through the same `insertGridDiagram` / `layoutScene` path as generation: the new box stays anchored and overlapping siblings move right. It creates no source mappings. Undo/redo and diagram/workspace saves include the insertion.
 

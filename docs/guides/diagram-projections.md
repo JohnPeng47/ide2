@@ -58,7 +58,7 @@ Generated call labels were reviewed against repository source; they are not a st
 ## Checks
 
 ```sh
-npx vitest run domain/core/diagrams/__tests__/diagramProjection.test.ts domain/core/representations/__tests__/compactionProjection.test.ts domain/core/diagrams/__tests__/asciiTree.test.ts domain/core/representations/__tests__/representationIndex.test.ts server/core/diagrams/__tests__/projectProjection.test.ts
+npx vitest run domain/core/diagrams/__tests__/diagramProjection.test.ts domain/core/representations/__tests__/compactionProjection.test.ts domain/core/diagrams/__tests__/asciiTree.test.ts domain/core/representations/__tests__/representationIndex.test.ts infrastructure/core/diagrams/__tests__/projectProjection.test.ts
 npm run build
 node tests/browser/mapping/browser-projection-check.mjs
 ```

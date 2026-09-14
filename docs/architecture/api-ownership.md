@@ -16,31 +16,33 @@ owns project resources and reusable behavior shared by both features.
 
 | Layer | Core | Studio | Mapping |
 | --- | --- | --- | --- |
-| HTTP handlers | `server/core/routes.ts` | `server/features/studio/routes.ts` | `server/features/mapping/routes.ts` |
+| HTTP handlers | `src/server/routes/core/` | `src/server/routes/studio/` | `src/server/routes/mapping/` |
 | Browser clients | `src/shared/http/api.ts` | `src/features/studio/api.ts` | `src/features/mapping/api.ts`, `mappingProjectApi.ts` |
-| Services | `server/core/application.ts`, persistence and corpus services | `server/features/studio/application.ts`, generation runtime and experiment services | Selection runtime, source-context and chat services |
-| Browser UI | `src/shared/`, including panes, source rendering and reference tools | `src/features/studio/`, including `StudioPage.tsx` | `src/features/mapping/`, including the canvas editor |
-| Shared models and algorithms | `domain/core/` | `domain/studio/` | `domain/mapping/` |
+| Application operations | `application/core/` | `application/studio/` | `application/mapping/` |
+| External integrations | `infrastructure/core/` | `infrastructure/studio/` | `infrastructure/mapping/` |
+| Browser UI | `src/shared/` | `src/features/studio/` | `src/features/mapping/` |
+| Models and pure rules | `domain/core/` | `domain/studio/` | `domain/mapping/` |
 
-Features may import Core and their own modules. Core must not import either
-feature. Browser modules must not import server modules. Cross-feature navigation
-uses callbacks provided by `src/app/App.tsx`; runtime construction and route dispatch
-live in `server/app/vitePlugin.ts`. `tests/architecture/dependencies.test.ts` enforces these import rules.
+Features may import Core and their own modules. Browser code imports domain code,
+never backend implementations. Application services import domain models and
+receive integration interfaces; they do not import filesystem, HTTP, or agent SDK
+implementations. Infrastructure implements those interfaces. Runtime construction
+lives in `src/server/app/bootstrap.ts`; Vite middleware lives in `src/server/app/vitePlugin.ts`.
+`tests/architecture/dependencies.test.ts` enforces these rules.
 
-Neither server nor domain modules import browser implementations. Domain modules
-remain runtime-neutral. Shared HTTP and agent/session machinery lives in
-`server/infrastructure/`. See [file layout](file-layout.md) for the full directory
-ownership and the scope of the initial file moves.
+Routes decode HTTP requests, invoke operations, and encode responses/events.
+Project initialization, source evidence resolution, generation sequencing, dataset
+assembly, chat preparation, and compaction execution live in application services.
+Catalog revision transitions and mapping validation belong to domain code. Their
+filesystem adapter preserves serialized revision checks and writes.
 
-Core retains the shared persisted record schemas, aggregate workspace, and legacy
-record normalization, including records originally produced by Studio. That does
-not make generation a Core workflow. Generation prompt construction belongs to
-Studio; shared template records and their persistence normalization belong to Core.
+Core retains shared persisted schemas, aggregate workspace assembly, and legacy
+record normalization, including records originally produced by Studio. Studio owns
+generation and code-entity mapping workflows; these are separate from Mapping's
+canvas editing and selection prompting. Studio and Mapping have separate agent
+session lifecycles and share Core provider/session helpers.
 
-Studio and Mapping have separate agent runtimes and session lifecycles. They
-reuse Core's model/provider setup and session disposal. Canvas geometry and
-mapping validation are Core primitives; converting a scene into the editor's
-view model belongs to Mapping.
+See [file layout](file-layout.md) for the full dependency structure.
 
 ## API inventory
 

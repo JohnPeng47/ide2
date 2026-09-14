@@ -17,16 +17,21 @@ function files(directory: string): string[] {
 }
 
 function location(file: string) {
-  const [runtime, area, feature] = path.relative(root, file).split(path.sep);
+  const segments = path.relative(root, file).split(path.sep);
+  // src/server is a backend layer even though it shares the source root with React.
+  const [runtime, area, feature] = segments[0] === "src" && segments[1] === "server"
+    ? segments.slice(1)
+    : segments;
   const composition = runtime === "src" && (area === "app" || area === "main.tsx")
     || runtime === "server" && area === "app";
-  const owner = runtime === "domain" ? area : area === "features" ? feature : "core";
-  return { runtime, owner, composition, infrastructure: runtime === "server" && area === "infrastructure" };
+  const owner = ["domain", "application", "infrastructure"].includes(runtime) ? area
+    : area === "features" || area === "routes" ? feature : "core";
+  return { runtime, owner, composition, bootstrap: runtime === "server" && area === "app" && feature === "bootstrap.ts" };
 }
 
-it("preserves Core/Studio/Mapping ownership and browser/server/domain boundaries", () => {
+it("preserves feature ownership and HTTP/application/infrastructure/domain boundaries", () => {
   const violations: string[] = [];
-  for (const runtime of ["src", "server", "domain"]) {
+  for (const runtime of ["src", "application", "infrastructure", "domain"]) {
     for (const file of files(path.join(root, runtime))) {
       // Integration tests may exercise the composition root.
       if (/\.test\.tsx?$/.test(file)) continue;
@@ -53,15 +58,19 @@ it("preserves Core/Studio/Mapping ownership and browser/server/domain boundaries
             : resolved && !resolved.isExternalLibraryImport ? resolved.resolvedFileName : undefined;
           const externalRuntime = /^(?:node:|react(?:-dom)?(?:\/|$)|vite(?:\/|$))/.test(name);
           let invalid = from.runtime === "domain" && externalRuntime
-            || from.runtime === "src" && name.startsWith("node:");
+            || from.runtime === "src" && name.startsWith("node:")
+            || from.runtime === "application" && /^(?:node:(?:fs|child_process|http|https|net)(?:\/|$)|vite(?:\/|$)|react(?:-dom)?(?:\/|$)|@earendil-works\/|vscode-jsonrpc)/.test(name);
           if (target) {
             const to = location(target);
-            const runtimeAllowed = from.runtime === "domain" ? to.runtime === "domain"
-              : from.runtime === "src" ? ["src", "domain", "packages"].includes(to.runtime)
-                : ["server", "domain"].includes(to.runtime);
+            const allowedLayers: Record<string, string[]> = {
+              domain: ["domain"], src: ["src", "domain", "packages"],
+              application: ["application", "domain"],
+              infrastructure: ["infrastructure", "application", "domain"],
+              server: from.bootstrap ? ["server", "application", "infrastructure", "domain"] : ["server", "application", "domain"]
+            };
+            const runtimeAllowed = allowedLayers[from.runtime]?.includes(to.runtime) ?? false;
             const ownershipAllowed = from.composition || !to.composition && (to.owner === "core" || to.owner === from.owner);
-            const infrastructureAllowed = !from.infrastructure || to.runtime === "domain" || to.infrastructure;
-            invalid ||= !runtimeAllowed || !ownershipAllowed || !infrastructureAllowed;
+            invalid ||= !runtimeAllowed || !ownershipAllowed;
           }
           if (invalid) violations.push(`${path.relative(root, file)} imports ${name}`);
         }
