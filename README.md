@@ -3,6 +3,9 @@
 A repo-local workspace for collecting source-backed code entities and generating
 ASCII diagrams with parallel Pi agents.
 
+See [file layout](docs/architecture/file-layout.md) for source ownership, test
+locations, and tool entry points.
+
 ## UI test framework
 
 `packages/ui-test-framework` contains the repo-local
@@ -53,19 +56,19 @@ clients, services, and component directories:
 | Mapping | `/api/mapping/*` | Canvas saves, selection prompts, file compaction, local chat, workspace persistence |
 | Core | `/api/core/*` | Workspace, corpus, representations, projections, imports, plans, highlights, shared rendering |
 
-Both features depend on Core; neither imports the other. `src/App.tsx` and
-`server/http.ts` compose them. The shared representation catalog is read through
+Both features depend on Core; neither imports the other. `src/app/App.tsx` and
+`server/app/vitePlugin.ts` compose them. The shared representation catalog is read through
 `GET /api/core/project/representations`, returning `{ project, catalog }` (both
 null before initialization). There is no second Mapping catalog endpoint.
 
 Old shared `/api/studio/*` URLs, `/internal/mapping/*`, and unnamespaced API
-URLs return 404. See [API ownership and migration](docs/api-ownership.md) for
+URLs return 404. See [API ownership and migration](docs/architecture/api-ownership.md) for
 the route inventory, dependency rules, and client migration details.
 
 ## Agent workflows
 
 Sequential agent workflows use `AgentWorkflow<T>` and `runAgentWorkflow` in
-`server/core/agentWorkflow.ts`. A workflow defines ordered, named steps with
+`server/infrastructure/agents/agentWorkflow.ts`. A workflow defines ordered, named steps with
 prompt builders, optional preparation hooks, and output validation. Each step
 receives the previous accepted output; missing submissions and failed validation
 stop the sequence. The executor owns sessions and tools, returns only the current
@@ -73,12 +76,12 @@ turn's accepted submission, and must honor the supplied abort signal to cancel
 in-flight work. It can reuse a session or create one per step.
 
 Studio defines its generation -> optional reference -> mapping sequence in
-`server/studio/generationWorkflow.ts`. Feature-specific prompts, submission-tool
+`server/features/studio/generation/generationWorkflow.ts`. Feature-specific prompts, submission-tool
 validation, and persistence remain with their owning feature. Mapping workflows
 can use the same Core runner without importing Studio.
 
 Mapping defines `single-file-compaction` as two sequential steps: `compact`, then
-`refine`. See [the compaction API](docs/mapping-file-compaction.md) for requests,
+`refine`. See [the compaction API](docs/guides/mapping-file-compaction.md) for requests,
 stream events, saved artifacts, and validation boundaries.
 
 ## Mapping project diagrams
@@ -164,9 +167,11 @@ curl --fail-with-body http://127.0.0.1:5173/api/core/workspace
 The response includes `diagramSets` and a `diagrams` dictionary keyed by id.
 Each set's `diagramIds` identifies its diagrams; `featuredViewIds` identifies
 starred views, and each diagram's `archivedAt` records its archive status.
-Route handlers live in `server/{core,studio,mapping}/routes.ts`, shared persisted
-record types in `src/core/domain.ts`, and typed browser clients in
-`src/{core,studio,mapping}/api.ts` (canvas saves in `src/mapping/mappingProjectApi.ts`).
+Route handlers live in `server/core/routes.ts` and
+`server/features/{studio,mapping}/routes.ts`. Shared persisted record types live
+in `domain/core/records/domain.ts`; browser clients live in `src/shared/http/api.ts`
+and `src/features/{studio,mapping}/api.ts` (canvas saves in
+`src/features/mapping/workspace/mappingProjectApi.ts`).
 
 The studio supports the waiting state, immutable collected CodeEntitiesSets,
 typed `@entity/`, `@diagram/`, and `@component/` references, N parallel agents,
@@ -333,10 +338,10 @@ commands dry-run and validate by default; add `--apply` only after reviewing the
 summary. Run the entity migration first:
 
 ```sh
-node scripts/relabel-code-entity-identities.mjs /path/to/.diagrams
-node scripts/relabel-code-entity-identities.mjs /path/to/.diagrams --apply
-node scripts/relabel-artifact-ids.mjs --store /path/to/.diagrams --exclude-trash
-node scripts/relabel-artifact-ids.mjs --store /path/to/.diagrams --exclude-trash --apply
+node scripts/migrations/relabel-code-entity-identities.mjs /path/to/.diagrams
+node scripts/migrations/relabel-code-entity-identities.mjs /path/to/.diagrams --apply
+node scripts/migrations/relabel-artifact-ids.mjs --store /path/to/.diagrams --exclude-trash
+node scripts/migrations/relabel-artifact-ids.mjs --store /path/to/.diagrams --exclude-trash --apply
 ```
 
 Apply mode retains a timestamped backup. Recoverable deleted DiagramSets under

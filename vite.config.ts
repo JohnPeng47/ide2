@@ -2,7 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
-import { diagramApi } from "./server/http";
+import { diagramApi } from "./server/app/vitePlugin";
 
 const ROOT = fileURLToPath(new URL(".", import.meta.url));
 const DEFAULT_PROJECT_ROOT = path.resolve(ROOT, "../..");

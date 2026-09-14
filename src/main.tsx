@@ -1,8 +1,8 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { App } from "./App";
-import { RefBufferProvider } from "./core/ref-buffer/RefBufferContext";
-import "./styles.css";
+import { App } from "./app/App";
+import { RefBufferProvider } from "./shared/references/RefBufferContext";
+import "./app/styles/globals.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

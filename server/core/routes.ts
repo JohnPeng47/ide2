@@ -1,13 +1,13 @@
-import type { ProjectLanguageService } from './projectLanguageService';
+import type { ProjectLanguageService } from './source/projectLanguageService';
 import { createHash } from "node:crypto";
-import { corpusProvider } from "./corpus";
+import { corpusProvider } from "./corpus/corpus";
 import type { ServerResponse } from "node:http";
 import type { Connect } from "vite";
-import { SCHEMA_VERSION, type ArtifactImportInput } from "../../src/core/domain";
-import { unavailablePlanSelection, validatePlanRecord } from "../../src/core/plans";
-import { readBody, sendJson } from "./http";
+import { SCHEMA_VERSION, type ArtifactImportInput } from "../../domain/core/records/domain";
+import { unavailablePlanSelection, validatePlanRecord } from "../../domain/core/plans/plans";
+import { readBody, sendJson } from "../infrastructure/http/http";
 import type { CoreApplication } from "./application";
-import { type SaveProjectedTreeInput } from "./projectCatalogStore";
+import { type SaveProjectedTreeInput } from "./persistence/projectCatalogStore";
 
 function parseRepositoryFiles(pathname: string): { setId: string } | null {
   const match = pathname.match(/^\/api\/core\/diagram-sets\/([a-z0-9][a-z0-9-]*)\/files$/);
@@ -151,7 +151,7 @@ export function createCoreRoutes({ application, languageService }: {
       if (request.method !== "POST") return sendJson(response, 405, { error: "method not allowed" });
       const body = await readBody(request);
       return sendJson(response, 201, await application.upsertProjectFileCompaction(
-        body as import("../../src/core/projectCatalog").ProjectFileCompactionInput
+        body as import("../../domain/core/representations/projectCatalog").ProjectFileCompactionInput
       ));
     }
 

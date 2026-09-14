@@ -6,7 +6,7 @@ import {
   type CallGraphFocusRequest,
   type CallGraphFocusResult,
   type CodeEntityFocusIdentity
-} from "../../src/core/callGraphFocus";
+} from "../../domain/core/source/callGraphFocus";
 import {
   GLOBAL_IMPORTS_DIAGRAM_SET_ID,
   SCHEMA_VERSION,
@@ -25,16 +25,16 @@ import {
   type MappedArtifactBundle,
   type RepositoryDirectoryListing,
   type WorkspaceSnapshot
-} from "../../src/core/domain";
-import type { BuiltInDomainProfileId, CorpusBinding } from "../../src/core/domainProfile";
-import { representationKindForArtifact } from "../../src/core/domainProfiles";
-import type { HighlightRecordV2 } from "../../src/core/highlights";
-import type { ProjectFileCompactionInput } from "../../src/core/projectCatalog";
-import { buildRepresentationIndex, representationElementIdForMapping, treeRepresentationLineage } from "../../src/core/representationIndex";
-import { filterCallGraphTree, parseCallGraphTree } from "./callGraphTree";
-import { corpusProvider, readCorpusDocumentLines } from "./corpus";
-import { validateDiagramMappings } from "./diagramMapping";
-import { DiagramStore } from "./store";
+} from "../../domain/core/records/domain";
+import type { BuiltInDomainProfileId, CorpusBinding } from "../../domain/core/profiles/domainProfile";
+import { representationKindForArtifact } from "../../domain/core/profiles/domainProfiles";
+import type { HighlightRecordV2 } from "../../domain/core/highlights/highlights";
+import type { ProjectFileCompactionInput } from "../../domain/core/representations/projectCatalog";
+import { buildRepresentationIndex, representationElementIdForMapping, treeRepresentationLineage } from "../../domain/core/representations/representationIndex";
+import { filterCallGraphTree, parseCallGraphTree } from "./source/callGraphTree";
+import { corpusProvider, readCorpusDocumentLines } from "./corpus/corpus";
+import { validateDiagramMappings } from "./diagrams/diagramMapping";
+import { DiagramStore } from "./persistence/store";
 
 function timestamp(): string {
   return new Date().toISOString();
