@@ -1,3 +1,5 @@
+import { flattenGrid, resolveScene } from '../diagrams/lineGrid';
+import { buildDiagramContent } from '../diagrams/diagramContent';
 import { buildProjectionTree, validateProjection, type ProjectProjectionRecord } from "../diagrams/diagramProjection";
 import { projectCanvasSnapshot, sceneFromRevision, type SaveProjectDiagramInput } from "../diagrams/projectDiagramCanvas";
 import {
@@ -146,18 +148,33 @@ export function saveMappingDiagram(catalog: ProjectRepresentationCatalogRecord, 
   const sourceId = current?.currentRevisionId ?? input.sourceRevisionId;
   const source = sourceId ? catalog.revisions[sourceId] : undefined;
   if (sourceId && !source) throw new Error("Source revision does not belong to this Project");
-  const evidence = source?.evidence ?? {};
+  const evidence = input.evidence ?? source?.evidence ?? {};
+  for (const [key, entry] of Object.entries(evidence)) {
+    if (!entry || entry.id !== key || typeof entry.label !== 'string' || !Array.isArray(entry.sourceRanges)) throw new Error('Invalid diagram evidence');
+    for (const range of entry.sourceRanges) {
+      if (!range || typeof range.id !== 'string' || typeof range.path !== 'string' || range.path.startsWith('/') || range.path.split(/[\\/]/).includes('..')
+        || !Number.isInteger(range.startLine) || range.startLine < 1 || !Number.isInteger(range.endLine) || range.endLine < range.startLine
+        || !Array.isArray(range.originalLines) || range.originalLines.length !== range.endLine - range.startLine + 1 || range.originalLines.some(line => typeof line !== 'string')) throw new Error('Invalid diagram evidence range');
+    }
+  }
   const scene = structuredClone(input.scene);
   const { ascii, mappings } = projectCanvasSnapshot(scene, evidence);
+  for (const content of Object.values(scene.contents)) {
+    content.structureKind ??= source?.representationKind ?? 'diagram';
+    content.diagramContent = buildDiagramContent(content.ascii, `${content.id}:${content.revision}`, content.structureKind, content.mappings);
+  }
   const timestamp = environment.timestamp;
   const id = current?.id ?? environment.representationId;
   const revisionId = environment.revisionId;
+  const visibleDiagrams = flattenGrid(resolveScene(scene)).filter(node => node.box.kind === 'diagram');
+  const inferredKind = visibleDiagrams.length === 1 && visibleDiagrams[0].contentId
+    ? scene.contents[visibleDiagrams[0].contentId].structureKind ?? 'diagram' : 'diagram';
   const revision: ProjectRepresentationRevisionRecord = {
     schemaVersion: 1, id: revisionId, projectId, representationId: id,
     revision: (current?.revisionIds.length ?? 0) + 1,
     ascii, asciiSha256: environment.hash(ascii),
     content: { kind: "mapping-canvas", scene },
-    representationKind: current?.representationKind ?? source?.representationKind ?? "diagram",
+    representationKind: current?.representationKind ?? source?.representationKind ?? inferredKind,
     evidence, mappings, ...(source?.provenance ? { provenance: source.provenance } : {}), createdAt: timestamp
   };
   const representation: ProjectRepresentationRecord = {

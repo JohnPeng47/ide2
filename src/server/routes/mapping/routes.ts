@@ -1,3 +1,5 @@
+import type { AgentDiagrammingSessionService } from '../../../../application/mapping/agent/sessionService';
+import { handleAgentRoutes } from './agentRoutes';
 
 import type { ServerResponse } from 'node:http';
 import type { Connect } from 'vite';
@@ -11,11 +13,13 @@ import { readBody, sendEvent, sendJson } from '../../http/http';
 import { handleLocalChat } from './chat/localChatRoutes';
 import { handleFileCompaction } from './compaction/fileCompactionRoutes';
 
-export function createMappingRoutes({ selection, diagrams, workspace, chat, compactionService }: {
+export function createMappingRoutes({ selection, diagrams, workspace, chat, compactionService, agent }: {
+  agent?: AgentDiagrammingSessionService;
   selection: SelectionService; diagrams: MappingDiagramService; workspace: MappingWorkspaceService;
   chat: LocalChatService; compactionService: FileCompactionService;
 }) {
   return async (request: Connect.IncomingMessage, response: ServerResponse, url: URL): Promise<void> => {
+    if (url.pathname.startsWith('/api/mapping/agent/') && agent) return handleAgentRoutes(request, response, url, agent);
     if (url.pathname === '/api/mapping/compactions' || url.pathname.startsWith('/api/mapping/compactions/')) {
       return handleFileCompaction(request, response, url, compactionService);
     }

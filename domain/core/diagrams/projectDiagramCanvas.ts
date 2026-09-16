@@ -15,6 +15,7 @@ export interface SaveProjectDiagramInput {
   expectedRevisionId?: string;
   sourceRevisionId?: string;
   name: string;
+  evidence?: Record<string, ProjectRepresentationEvidenceRecord>;
   scene: LineGridScene;
 }
 
@@ -32,6 +33,7 @@ export function singleDiagramScene(ascii: string): LineGridScene {
 export function sceneFromRevision(revision: ProjectRepresentationRevisionRecord): LineGridScene {
   if (revision.content?.kind === "mapping-canvas") return revision.content.scene;
   const scene = singleDiagramScene(revision.ascii);
+  scene.contents.overview.structureKind = revision.representationKind;
   scene.contents.overview.mappings = revision.mappings.map((mapping) => ({
     id: mapping.id, entityId: mapping.evidenceId, sourceRangeId: mapping.sourceRangeId,
     sourceRangeIndex: revision.evidence[mapping.evidenceId]?.sourceRanges.findIndex((range) => range.id === mapping.sourceRangeId) ?? -1,

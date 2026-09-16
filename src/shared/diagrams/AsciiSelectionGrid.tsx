@@ -1,3 +1,4 @@
+import { contentTreeNodes, type DiagramContent } from "../../../domain/core/diagrams/diagramContent";
 import {
   useCallback,
   useEffect,
@@ -45,6 +46,7 @@ function mappingReferenceKey(
 }
 
 export function AsciiSelectionGrid(props: {
+  content?: DiagramContent;
   ascii: string;
   representationIndex?: RepresentationIndex;
   presentation: RepresentationPresentation;
@@ -86,8 +88,8 @@ export function AsciiSelectionGrid(props: {
   );
   const rawLines = useMemo(() => props.ascii.split("\n"), [props.ascii]);
   const treeNodes = useMemo(
-    () => props.representationIndex?.kind === "tree" ? parseAsciiTree(props.ascii) : [],
-    [props.ascii, props.representationIndex]
+    () => props.representationIndex?.kind === "tree" ? props.content ? contentTreeNodes(props.content) : parseAsciiTree(props.ascii) : [],
+    [props.ascii, props.representationIndex, props.content]
   );
   const treeNodesByLine = useMemo(
     () => new Map(treeNodes.map((node) => [node.line, node])),
@@ -106,8 +108,16 @@ export function AsciiSelectionGrid(props: {
     })
   ), [collapsedNodeIds, props.representationIndex]);
   const hiddenLines = useMemo(
-    () => props.mode === "read" ? hiddenAsciiTreeLines(props.ascii, collapsedNodeLines) : new Set<number>(),
-    [collapsedNodeLines, props.ascii, props.mode]
+    () => {
+      if (props.mode !== 'read' || !collapsedNodeLines.size) return new Set<number>();
+      if (props.content?.structure.kind !== 'tree') return hiddenAsciiTreeLines(props.ascii, collapsedNodeLines);
+      const hidden = new Set<number>();
+      for (const node of Object.values(props.content.structure.nodes)) if (collapsedNodeLines.has(node.line)) {
+        for (const range of node.foldRanges) for (let line = range.startLine; line <= range.endLine; line++) hidden.add(line);
+      }
+      return hidden;
+    },
+    [collapsedNodeLines, props.ascii, props.mode, props.content]
   );
   const columnCount = useMemo(
     () => Math.max(0, ...rawLines.map((line) => line.length)),

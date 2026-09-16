@@ -1,3 +1,6 @@
+import { AgentDiagrammingSessionService } from '../../../application/mapping/agent/sessionService';
+import { CanvasSessionBridge } from '../../../infrastructure/mapping/agent/canvasSessionBridge';
+import { QuickJsAgentRuntime } from '../../../infrastructure/mapping/agent/execRuntime';
 import { CoreApplication } from "../../../application/core/application";
 import { FileCompactionService } from "../../../application/mapping/compaction/fileCompactionService";
 import { StudioApplication } from "../../../application/studio/application";
@@ -65,6 +68,9 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, ex
   const compactionService = createFileCompactionService(core, fake ? new FakeFileCompactionRuntime() : new PiFileCompactionRuntime());
   const languageService = options.lspEnabled === true ? new ProjectLanguageService() : undefined;
   const studio = createStudioApplication(store, studioRuntime, configuredDomainProfileId ?? "source-code");
+  const diagrams = new MappingDiagramService(store, corpusAccess, projectRoot, configuredDomainProfileId);
+  const canvasBridge = new CanvasSessionBridge();
+  const agent = new AgentDiagrammingSessionService(canvasBridge, diagrams, store, new QuickJsAgentRuntime());
   const routes = {
     core: createCoreRoutes({
       application: core,
@@ -79,7 +85,7 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, ex
     }),
     mapping: createMappingRoutes({
       selection: new SelectionService(store, mappingRuntime, mappingPocSourceRoot),
-      diagrams: new MappingDiagramService(store, corpusAccess, projectRoot, configuredDomainProfileId),
+      diagrams, agent,
       workspace: new MappingWorkspaceService(store, new MappingWorkspaceStore(store.storeRoot)),
       chat: new LocalChatService(store, corpusAccess, chatRuntime, mappingPocSourceRoot),
       compactionService
@@ -87,7 +93,7 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, ex
   };
   return {
     routes, recover: () => studio.recoverInterruptedRuns(), dispose() {
-      languageService?.dispose(); studio.dispose(); mappingRuntime.dispose(); chatRuntime.dispose(); compactionService.dispose();
+      canvasBridge.dispose(); languageService?.dispose(); studio.dispose(); mappingRuntime.dispose(); chatRuntime.dispose(); compactionService.dispose();
     }
   };
 }

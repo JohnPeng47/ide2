@@ -1,3 +1,4 @@
+import { buildDiagramContent } from "../../../domain/core/diagrams/diagramContent";
 import { useEffect, useMemo, useState } from "react";
 import { validateSpatialProgressState, type SpatialProgressState } from "../../../domain/core/agent-work/agentWork";
 import { asciiSha256 } from "../../../domain/core/diagrams/asciiSha256";
@@ -129,10 +130,14 @@ export function DiagramView(props: {
     ? undefined
     : props.codeEntityMap;
   const mappings = currentCodeEntityMap?.mappings ?? [];
+  const diagramContent = useMemo(() => {
+    try { return buildDiagramContent(props.active.ascii, props.active.id, props.representationKind, currentCodeEntityMap?.mappings ?? []); }
+    catch { return undefined; }
+  }, [props.active.ascii, props.active.id, props.representationKind, currentCodeEntityMap]);
   const representationIndex = useMemo(() => {
     try {
       return buildRepresentationIndex({
-        kind: props.representationKind,
+        kind: props.representationKind, content: diagramContent,
         revision: {
           artifactId: props.active.id,
           asciiSha256: activeAsciiSha256
@@ -143,7 +148,7 @@ export function DiagramView(props: {
     } catch {
       return undefined;
     }
-  }, [activeAsciiSha256, currentCodeEntityMap, props.active.ascii, props.active.id, props.representationKind]);
+  }, [activeAsciiSha256, currentCodeEntityMap, props.active.ascii, props.active.id, props.representationKind, diagramContent]);
   const representationPresentation = useMemo(
     () => presentationForRepresentation(props.representationKind),
     [props.representationKind]
@@ -428,7 +433,7 @@ export function DiagramView(props: {
           enabled={canvasMode && gridMode === "read"}
           resetKey={`${props.active.id}:${activeAsciiSha256}`}
         >
-          <AsciiSelectionGrid
+          <AsciiSelectionGrid content={diagramContent}
             ascii={props.active.ascii}
             representationIndex={representationIndex}
             presentation={representationPresentation}

@@ -71,10 +71,10 @@ export interface ConversationPane extends DisplayNodeBase {
 export interface DetailPane extends DisplayNodeBase {
   kind: 'detail'; title: string; ascii: string; sectionId?: string;
 }
-export type DisplayNode = SelectionRegion | ProjectedPane | ConversationPane | DetailPane;
-export interface DisplayState { rootIds: string[]; nodes: Record<string, DisplayNode> }
+export type FloatingBox = SelectionRegion | ProjectedPane | ConversationPane | DetailPane;
+export interface DisplayState { rootIds: string[]; nodes: Record<string, FloatingBox> }
 export const emptyDisplayState = (): DisplayState => ({ rootIds: [], nodes: {} });
-export function addDisplayNode(state: DisplayState, node: DisplayNode, ownerId?: string): DisplayState {
+export function addDisplayNode(state: DisplayState, node: FloatingBox, ownerId?: string): DisplayState {
   if (state.nodes[node.id]) throw new Error('Display ID already exists');
   const owner = ownerId ? state.nodes[ownerId] : undefined;
   if (ownerId && !owner) throw new Error('Display owner does not exist');
@@ -129,3 +129,5 @@ export function visibleProjectionIds(state: DisplayState, id: string, mode: Chil
   const descendants = children.flatMap(child => visibleProjectionIds(state, child, mode));
   return node.kind === 'projection' ? mode === 'stacked' && descendants.length ? descendants : [id, ...descendants] : descendants;
 }
+
+export type { CanvasDisplayNode as DisplayNode } from './canvasDisplayNode';

@@ -8,6 +8,8 @@ export interface GridBounds extends GridPoint, GridSize {}
 export interface CanvasDiagram {
   id: string;
   revision: number;
+  structureKind?: 'diagram' | 'tree';
+  diagramContent?: import('./diagramContent').DiagramContent;
   ascii: string;
   mappings: readonly DiagramElementMapping[];
 }

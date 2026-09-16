@@ -1,3 +1,4 @@
+import { layoutFloatingSelections } from '../../../../domain/mapping/workspace/floatingBoxLayout';
 import { SourceCodePane } from "../source-pane/SourceCodePane";
 import { openSourceCodePane, updateSourceCodePane, type SourceCodePaneView } from "../source-pane/sourceCodePane";
 import { useCallback, useLayoutEffect, useState, type Dispatch, type SetStateAction } from 'react';
@@ -9,7 +10,7 @@ import type { ProjectRepresentationCatalogRecord } from '../../../../domain/core
 import { DisplayPane } from './DisplayPane';
 
 export function SelectionEffectsLayer(props: {
-  state: DisplayState; setState: Dispatch<SetStateAction<DisplayState>>;
+  state: DisplayState; setLayoutState: Dispatch<SetStateAction<DisplayState>>; setState: Dispatch<SetStateAction<DisplayState>>;
   boxes: ResolvedGridBox[]; scene: LineGridScene; cell: { width: number; height: number };
   catalog?: ProjectRepresentationCatalogRecord; dirtyRepresentationIds?: string[];
   onRemove: (id: string) => void;
@@ -18,32 +19,14 @@ export function SelectionEffectsLayer(props: {
 }) {
   const [draft, setDraft] = useState<{ paneId: string; start: number; end: number; dragging: boolean } | null>(null);
   const measure = useCallback((id: string, width: number, height: number) =>
-    props.setState(current => measureDisplayNode(current, id, width, height)), [props.setState]);
+    props.setLayoutState(current => measureDisplayNode(current, id, width, height)), [props.setLayoutState]);
   // Keep source content independent of the workspace renders caused by pan and selection gestures.
   const changeSource = useCallback((id: string, patch: Partial<SourceCodePaneView>) =>
     props.setState(state => updateSourceCodePane(state, id, patch)), [props.setState]);
   useLayoutEffect(() => {
     if (!props.cell.width || !props.cell.height) return;
-    props.setState(current => {
-      let next = current;
-      for (const id of current.rootIds) {
-        const root = next.nodes[id]; if (root?.kind !== 'selection') continue;
-        const box = props.boxes.find(box => box.box.id === root.sourceBoxId);
-        if (box && !box.box.collapsed && props.scene.contents[root.sourceContentId]?.ascii === root.sourceAscii) {
-          next = updateDisplayGeometry(next, id, {
-            ...(root.geometryPolicy.placement === 'automatic' ? { position: {
-              x: (box.bounds.column + root.rect.startColumn - 1) * props.cell.width,
-              y: (box.bounds.row + root.rect.startLine - 1) * props.cell.height } } : {}),
-            ...(root.geometryPolicy.sizing === 'content' ? { bounds: {
-              width: (root.rect.endColumn - root.rect.startColumn + 1) * props.cell.width,
-              height: (root.rect.endLine - root.rect.startLine + 1) * props.cell.height } } : {})
-          });
-        }
-        next = layoutProjectedPanes(next, next.nodes[id] as SelectionRegion).state;
-      }
-      return next;
-    });
-  }, [props.state, props.setState, props.boxes, props.scene, props.cell]);
+    props.setLayoutState(current => layoutFloatingSelections(current, props.boxes, props.scene, props.cell));
+  }, [props.state, props.setLayoutState, props.boxes, props.scene, props.cell]);
   const toggle = (id: string) => props.setState(state => setExpansion(state, id, state.nodes[id].expansion === 'expanded' ? 'collapsed' : 'expanded'));
   const openCompaction = (pane: ProjectedPane, selectedIds?: string[]) => {
     if (pane.content.kind !== 'call-tree') return;

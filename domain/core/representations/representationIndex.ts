@@ -1,3 +1,4 @@
+import { contentTreeNodes, type DiagramContent } from '../diagrams/diagramContent';
 import { parseAsciiTree } from "../diagrams/asciiTree";
 import type { DiagramCodeEntityMapRecord, DiagramElementMapping } from "../records/domain";
 
@@ -61,6 +62,7 @@ export interface SpatialEvidenceResolver {
 }
 
 export interface RepresentationIndexSource {
+  content?: DiagramContent;
   revision: RepresentationRevision;
   ascii: string;
   codeEntityMap?: DiagramCodeEntityMapRecord;
@@ -138,7 +140,8 @@ export function buildTreeRepresentationIndex(
   request: RepresentationIndexSource
 ): TreeRepresentationIndex {
   assertCurrentMap(request.revision, request.codeEntityMap);
-  const parsed = parseAsciiTree(request.ascii);
+  if (request.content && (request.content.ascii !== request.ascii || request.content.asciiSha256 !== request.revision.asciiSha256)) throw new Error('Stale DiagramContent');
+  const parsed = request.content ? contentTreeNodes(request.content) : parseAsciiTree(request.ascii);
   const scope = revisionScope(request.revision);
   const idByLine = new Map<number, string>();
   const pathByLine = new Map<number, string>();
@@ -154,7 +157,7 @@ export function buildTreeRepresentationIndex(
       ? undefined
       : pathByLine.get(parsedNode.parentLine);
     const path = parentPath === undefined ? `${siblingOrder}` : `${parentPath}.${siblingOrder}`;
-    const id = `tree:${scope}:${path}`;
+    const id = request.content?.structure.kind === 'tree' ? Object.values(request.content.structure.nodes).find(node => node.line === parsedNode.line)!.id : `tree:${scope}:${path}`;
     const parentId = parsedNode.parentLine === undefined
       ? undefined
       : idByLine.get(parsedNode.parentLine);

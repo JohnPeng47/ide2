@@ -1,3 +1,4 @@
+import { buildDiagramContent } from '../../core/diagrams/diagramContent';
 import { isRepositoryFilePath } from '../../core/source/sourceNavigation';
 import { displayGeometry, type DisplayState, type SelectionRegion } from './displayModel';
 import { layoutProjectedPanes } from './projectedPaneLayout';
@@ -21,6 +22,8 @@ function scene(value: any) {
     object(content); check(content.id === key, 'content ID mismatch'); string(content.ascii);
     check(Number.isInteger(content.revision) && content.revision >= 0 && Array.isArray(content.mappings), 'invalid scene content');
     validateMappingPocMappings(content.ascii, content.mappings);
+    if (content.structureKind !== undefined) check(content.structureKind === 'tree' || content.structureKind === 'diagram', 'invalid diagram structure kind');
+    if (content.diagramContent !== undefined) content.diagramContent = buildDiagramContent(content.ascii, `${content.id}:${content.revision}`, content.structureKind ?? 'diagram', content.mappings);
   }
   let count = 0;
   const expand = (box: any, depth: number): GridBox => {
@@ -50,7 +53,8 @@ export function deserializeWorkspace(json: string | unknown): MappingWorkspaceSn
   const docs = new Set<string>();
   for (const doc of value.documents) {
     object(doc); id(doc.representationId); check(!docs.has(doc.representationId), 'duplicate document'); docs.add(doc.representationId);
-    id(doc.revisionId); string(doc.name); string(doc.savedName); string(doc.savedScene);
+    if (doc.savedRepresentationId !== undefined) id(doc.savedRepresentationId);
+    if (doc.representationId.startsWith('draft-') && doc.revisionId === '') {} else id(doc.revisionId); string(doc.name); string(doc.savedName); string(doc.savedScene);
     object(doc.document); object(doc.document.scene); object(doc.document.nodes); object(doc.document.sections);
     scene(doc.document.scene);
     scene(JSON.parse(doc.savedScene));
