@@ -165,7 +165,7 @@ export function layoutScene(scene: LineGridScene, changedId: string): LineGridSc
   return next;
 }
 
-export function composeScene(scene: LineGridScene): string {
+export function composeScene(scene: LineGridScene, renderContent?: (content: CanvasDiagram, box: GridBox) => string): string {
   const root = resolveScene(scene);
   const width = root.bounds.column + root.bounds.columns;
   const height = root.bounds.row + root.bounds.rows;
@@ -180,7 +180,8 @@ export function composeScene(scene: LineGridScene): string {
       }
     }
     if (node.contentId) {
-      scene.contents[node.contentId].ascii.split("\n").forEach((line, index) => {
+      const content = scene.contents[node.contentId];
+      (renderContent ? renderContent(content, node.box) : content.ascii).split("\n").forEach((line, index) => {
         const row = node.bounds.row + index;
         const start = node.bounds.column;
         const existing = rows[row].padEnd(start, " ");

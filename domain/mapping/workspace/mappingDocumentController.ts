@@ -1,3 +1,4 @@
+import { normalizeDiagramViews, resolveDiagramContent, projectDiagramContent } from './diagramViewState';
 import { layoutFloatingSelections } from './floatingBoxLayout';
 import { layoutConversationPane } from '../chat/conversationPaneLayout';
 import { flattenGrid, resolveScene } from '../../core/diagrams/lineGrid';
@@ -17,7 +18,7 @@ export type DiagramOperation =
   | { method: 'draw'; id: string; ascii: string; structureKind?: 'diagram' | 'tree'; parentId?: string; position?: GridPoint; mappings?: DiagramElementMapping[]; evidence?: Record<string, ProjectRepresentationEvidenceRecord> }
   | { method: 'replace'; nodeId: string; ascii: string; structureKind?: 'diagram' | 'tree'; mappings?: DiagramElementMapping[]; evidence?: Record<string, ProjectRepresentationEvidenceRecord> }
   | { method: 'move'; nodeId: string; position: GridPoint | { x: number; y: number } }
-  | { method: 'collapse'; nodeId: string; collapsed: boolean }
+  | { method: 'collapse'; nodeId: string; contentNodeId?: string; collapsed: boolean }
   | { method: 'remove'; nodeId: string };
 type State = Pick<ControllerSnapshot, 'document' | 'canvas'>;
 export class MappingDocumentController {
@@ -32,7 +33,7 @@ export class MappingDocumentController {
   }
   private resolveFloatingGeometry(state: State): State {
     if (!this.layout) return state;
-    let display = layoutFloatingSelections(state.canvas.display, flattenGrid(resolveScene(state.document.scene)), state.document.scene, this.layout.cell);
+    let display = layoutFloatingSelections(state.canvas.display, flattenGrid(resolveScene(state.document.scene)), state.document.scene, this.layout.cell, state.canvas.diagramViews);
     for (const node of Object.values(display.nodes)) if (node.kind === 'conversation') display = layoutConversationPane(display, node, this.layout.viewport);
     return display === state.canvas.display ? state : { ...state, canvas: { ...state.canvas, display } };
   }
@@ -43,6 +44,8 @@ export class MappingDocumentController {
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   nodes() { return canvasDisplayNodes(this.snapshot.document, this.snapshot.canvas, this.snapshot.version); }
   private publish(next: State, record: boolean, increment = true) {
+    const diagramViews = normalizeDiagramViews(next.document.scene, next.canvas.diagramViews);
+    if (diagramViews !== next.canvas.diagramViews) next = { ...next, canvas: { ...next.canvas, diagramViews } };
     next = this.resolveFloatingGeometry(next);
     if (next.document === this.snapshot.document && next.canvas === this.snapshot.canvas) return;
     if (record) { this.past = [...this.past.slice(-49), this.snapshot]; this.future = []; }
@@ -66,7 +69,22 @@ export class MappingDocumentController {
     let { document, canvas } = structuredClone(this.snapshot);
     const safeId = (id: string) => { if (typeof id !== 'string' || !/^[a-zA-Z0-9_.:-]{1,180}$/.test(id) || ['__proto__','constructor','prototype'].includes(id)) throw new Error('Invalid node ID'); };
     for (const op of operations) {
-      if (op.method === 'draw' || op.method === 'replace') {
+      if (op.method === 'collapse' && op.contentNodeId !== undefined) {
+        if (typeof op.collapsed !== 'boolean') throw new Error('collapsed must be boolean');
+        const box = findBox(document.scene.root, this.gridId(op.nodeId));
+        if (box?.kind !== 'diagram') throw new Error('Subtree collapse requires a diagram DisplayNode');
+        const content = resolveDiagramContent(document.scene.contents[box.contentId]);
+        if (content.structure.kind !== 'tree' || !Object.hasOwn(content.structure.nodes, op.contentNodeId)) throw new Error('STALE_CONTENT_NODE');
+        if (!content.structure.nodes[op.contentNodeId].childIds.length) throw new Error('Content node has no children');
+        const old = canvas.diagramViews?.[op.nodeId];
+        const ids = new Set(old?.contentRevisionId === content.revisionId ? old.collapsedContentNodeIds : []);
+        if (op.collapsed) ids.add(op.contentNodeId); else ids.delete(op.contentNodeId);
+        canvas.diagramViews = { ...canvas.diagramViews, [op.nodeId]: { contentRevisionId: content.revisionId, collapsedContentNodeIds: [...ids] } };
+        if (canvas.controls.activeBoxId === box.id && canvas.controls.selectionRect
+          && !projectDiagramContent(content, canvas.diagramViews[op.nodeId]).rect(canvas.controls.selectionRect)) {
+          canvas.controls = { ...canvas.controls, selectionRect: null, selectedNodeIds: [], retainedSelectionId: null };
+        }
+      } else if (op.method === 'draw' || op.method === 'replace') {
         const ascii = op.ascii?.replace(/\r\n?/g, '\n');
         const mappings = op.mappings ?? [];
         buildDiagramContent(ascii, 'validation', op.structureKind ?? 'diagram', mappings);

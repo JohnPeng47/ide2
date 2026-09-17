@@ -1,0 +1,21 @@
+.mapping-subtree-toggle {
+  position: absolute;
+  z-index: 6;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  padding: 0;
+  border: 1px solid rgb(136 192 208 / 25%);
+  border-radius: 2px;
+  background: #11161c;
+  color: var(--fg);
+  font: 12px var(--font-mono);
+  white-space: pre;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.mapping-subtree-toggle:hover, .mapping-subtree-toggle:focus-visible {
+  border-color: var(--accent, #88c0d0);
+  color: var(--accent, #88c0d0);
+}
+.mapping-subtree-toggle:disabled { opacity: .4; cursor: default; }

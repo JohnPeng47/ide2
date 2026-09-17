@@ -78,6 +78,20 @@ FloatingBox placement preserves existing behavior: retained selections resolve a
 
 Diagram content carries source, hash, revision, mappings, and optional parsed tree structure. Structured content is rebuilt on edits/saves and reused by tree rendering and indexing. Old workspace v1/v2/v3 records remain readable; the added draft identity and content metadata are optional v3 fields. Tree structure does not infer arbitrary graph nodes from unstructured ASCII.
 
+## Subtree expansion
+
+Diagram DisplayNodes expose `collapsible.subtrees`: each target includes its revision-scoped `contentNodeId`, label, source line, current expansion, and zero-based `visibleRow` (omitted when hidden by an ancestor).
+
+```js
+const diagram = nodes.get({ nodeId: "grid:overview" });
+const target = diagram.collapsible.subtrees.find(target => target.label === "structure");
+return nodes.collapse({ nodeId: diagram.id, contentNodeId: target.contentNodeId, collapsed: true });
+```
+
+Supply the current document `expectedVersion` to this `exec` mutation. Omitting `contentNodeId` keeps the existing whole-object collapse behavior. Branch buttons in Mapping use the same controller operation. Nested expansion choices survive ancestor collapse, undo/redo, and workspace save/restore. Fold state belongs to `canvas.diagramViews[displayNodeId]`; it does not modify saved diagram source or grid allocation. Content edits reset incompatible revision-scoped state.
+
+Visible rows map back to source lines for selection and evidence. A selection spanning hidden lines must be expanded before editing/copying that region. Source-attached selection panes disappear while their source region is folded; they return when expanded. Existing parser limitations remain: only recognized non-leaf nodes get buttons, and folding uses the existing parsed ranges.
+
 ## Persistence and availability
 
 An open Mapping page is required for live reads and edits. Each page registers separately; switching selection does not redirect a session. Disconnects produce explicit errors. Saved representation search/read does not require a page. Diagram save is separate from workspace save (open documents, placement, and camera state).
@@ -89,6 +103,7 @@ The custom local-agent header/token scheme is not used. This is a local stdio to
 ```sh
 npm run build
 node tests/browser/mapping/browser-agent-diagramming-check.mjs
+node tests/browser/mapping/browser-subtree-collapse-check.mjs
 npx vitest run domain/mapping/workspace/__tests__/mappingDocumentController.test.ts domain/core/diagrams/__tests__/diagramContent.test.ts infrastructure/mapping/agent/__tests__
 ```
 

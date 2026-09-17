@@ -1,3 +1,4 @@
+import { normalizeDiagramViews } from './diagramViewState';
 import { buildDiagramContent } from '../../core/diagrams/diagramContent';
 import { isRepositoryFilePath } from '../../core/source/sourceNavigation';
 import { displayGeometry, type DisplayState, type SelectionRegion } from './displayModel';
@@ -67,6 +68,17 @@ export function deserializeWorkspace(json: string | unknown): MappingWorkspaceSn
       for (const node of nodes) { object(node); id(node.id); object(node.head); number(node.head.line); number(node.head.startColumn); number(node.head.endColumn); check(Array.isArray(node.sourceRanges), 'invalid source ranges'); }
     }
     object(doc.canvas); object(doc.canvas.display); object(doc.canvas.display.nodes); strings(doc.canvas.display.rootIds);
+    if (doc.canvas.diagramViews !== undefined) {
+      object(doc.canvas.diagramViews);
+      check(Object.keys(doc.canvas.diagramViews).length <= 2000, 'too many diagram views');
+      for (const [owner, view] of Object.entries(doc.canvas.diagramViews)) {
+        id(owner); object(view); id(view.contentRevisionId); strings(view.collapsedContentNodeIds);
+        check(view.collapsedContentNodeIds.length <= 20000, 'too many collapsed nodes');
+        check(new Set(view.collapsedContentNodeIds).size === view.collapsedContentNodeIds.length, 'duplicate collapsed node');
+      }
+      const normalized = normalizeDiagramViews(doc.document.scene as unknown as LineGridScene, doc.canvas.diagramViews);
+      check(JSON.stringify(normalized) === JSON.stringify(doc.canvas.diagramViews), 'stale diagram view or content node');
+    }
     const { nodes, rootIds } = doc.canvas.display;
     check(Object.keys(nodes).length <= 2000, 'too many display nodes');
     for (const [key, node] of Object.entries(nodes)) {

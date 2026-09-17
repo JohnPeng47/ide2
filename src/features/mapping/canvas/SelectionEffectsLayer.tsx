@@ -1,3 +1,4 @@
+import { diagramProjection, type DiagramViews } from '../../../../domain/mapping/workspace/diagramViewState';
 import { layoutFloatingSelections } from '../../../../domain/mapping/workspace/floatingBoxLayout';
 import { SourceCodePane } from "../source-pane/SourceCodePane";
 import { openSourceCodePane, updateSourceCodePane, type SourceCodePaneView } from "../source-pane/sourceCodePane";
@@ -11,7 +12,7 @@ import { DisplayPane } from './DisplayPane';
 
 export function SelectionEffectsLayer(props: {
   state: DisplayState; setLayoutState: Dispatch<SetStateAction<DisplayState>>; setState: Dispatch<SetStateAction<DisplayState>>;
-  boxes: ResolvedGridBox[]; scene: LineGridScene; cell: { width: number; height: number };
+  diagramViews?: DiagramViews; boxes: ResolvedGridBox[]; scene: LineGridScene; cell: { width: number; height: number };
   catalog?: ProjectRepresentationCatalogRecord; dirtyRepresentationIds?: string[];
   onRemove: (id: string) => void;
   busySelectionIds: string[];
@@ -25,8 +26,8 @@ export function SelectionEffectsLayer(props: {
     props.setState(state => updateSourceCodePane(state, id, patch)), [props.setState]);
   useLayoutEffect(() => {
     if (!props.cell.width || !props.cell.height) return;
-    props.setLayoutState(current => layoutFloatingSelections(current, props.boxes, props.scene, props.cell));
-  }, [props.state, props.setLayoutState, props.boxes, props.scene, props.cell]);
+    props.setLayoutState(current => layoutFloatingSelections(current, props.boxes, props.scene, props.cell, props.diagramViews));
+  }, [props.state, props.setLayoutState, props.boxes, props.scene, props.cell, props.diagramViews]);
   const toggle = (id: string) => props.setState(state => setExpansion(state, id, state.nodes[id].expansion === 'expanded' ? 'collapsed' : 'expanded'));
   const openCompaction = (pane: ProjectedPane, selectedIds?: string[]) => {
     if (pane.content.kind !== 'call-tree') return;
@@ -52,6 +53,7 @@ export function SelectionEffectsLayer(props: {
       if (box?.box.collapsed || !box && inScene(props.scene.root)) return null;
       const missing = !box;
       const stale = props.scene.contents[root.sourceContentId]?.ascii !== root.sourceAscii;
+      if (!missing && !stale && !diagramProjection(props.scene, root.sourceBoxId, root.sourceContentId, props.diagramViews).rect(root.rect)) return null;
       const rect = { ...root.position, ...root.bounds };
       const layout = layoutProjectedPanes(props.state, root);
       // Retain snapshots if their source changes, but never pretend the rectangle is still exact.

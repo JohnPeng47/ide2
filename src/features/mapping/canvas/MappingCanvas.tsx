@@ -1,3 +1,5 @@
+import { diagramProjection } from '../../../../domain/mapping/workspace/diagramViewState';
+import { DiagramSubtreeControls } from './DiagramSubtreeControls';
 import { MappingDocumentController } from "../../../../domain/mapping/workspace/mappingDocumentController";
 import { CanvasPasteMenu } from "./CanvasPasteMenu";
 import { pasteGridDiagram } from "./pasteDiagram";
@@ -242,7 +244,11 @@ export function MappingPocSelectionCanvas(props: {
   const diagramRevision = content.revision;
   const nodes = gridDocument.nodes[content.id] ?? [];
   const sections = gridDocument.sections[content.id] ?? [];
-  const composedAscii = useMemo(() => composeScene(scene), [scene]);
+  const contentProjections = useMemo(() => new Map(boxes.filter(box => box.contentId).map(box => [box.box.id,
+    diagramProjection(scene, box.box.id, box.contentId!, box.box.collapsed ? undefined : canvasState.diagramViews)])), [boxes, scene, canvasState.diagramViews]);
+  const activeProjection = contentProjections.get(activeBox.box.id)!;
+  const displayNodes = useMemo(() => controller.nodes(), [controller, scene, display, canvasState.diagramViews, controllerState.version]);
+  const composedAscii = useMemo(() => composeScene(scene, (content, box) => contentProjections.get(box.id)?.ascii ?? content.ascii), [scene, contentProjections]);
   const commit = (next: MappingGridDocument) => controller.commitDocument(next);
   const [promptOperation, setPromptOperation] = useControl("promptOperation", canvasState, setCanvasState);
   const [diagramPlacement, setDiagramPlacement] = useState<string | null>(null);
@@ -439,11 +445,12 @@ export function MappingPocSelectionCanvas(props: {
   }, [cell]);
   const pointAtClient = useCallback((clientX: number, clientY: number): GridPoint | null => {
     const point = scenePointAtClient(clientX, clientY);
-    return point ? {
-      line: Math.max(1, Math.min(lineCount, point.row - activeBox.bounds.row + 1)),
+    const line = point && activeProjection.lineForRow(Math.max(0, Math.min(activeProjection.sourceLines.length - 1, point.row - activeBox.bounds.row)));
+    return point && line ? {
+      line,
       column: Math.max(1, Math.min(maxColumn, point.column - activeBox.bounds.column + 1))
     } : null;
-  }, [scenePointAtClient, lineCount, maxColumn, activeBox]);
+  }, [scenePointAtClient, maxColumn, activeBox, activeProjection]);
 
   const requestLocalReply = useCallback((thread: LocalChatThread) => {
     if (replyControllers.current.has(thread.id)) return;
@@ -492,6 +499,10 @@ export function MappingPocSelectionCanvas(props: {
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
+    if (!activeProjection.rect(rect)) {
+      setSelectionRect(null); setSelectedNodeIds([]);
+      setStatusMessage('Expand the subtree before selecting across hidden lines'); return;
+    }
     setPromptOpen(false);
     setPromptText("");
     setAskOpen(false);
@@ -509,14 +520,14 @@ export function MappingPocSelectionCanvas(props: {
     const id = crypto.randomUUID();
     const root: SelectionRegion = { ...displayGeometry({
       x: (activeBox.bounds.column + selectionRect.startColumn - 1) * cell.width,
-      y: (activeBox.bounds.row + selectionRect.startLine - 1) * cell.height }, {
+      y: (activeBox.bounds.row + (activeProjection.rowForLine(selectionRect.startLine) ?? selectionRect.startLine - 1)) * cell.height }, {
       width: (selectionRect.endColumn - selectionRect.startColumn + 1) * cell.width,
       height: (selectionRect.endLine - selectionRect.startLine + 1) * cell.height }), id, kind: 'selection', childIds: [], expansion: 'expanded', displayMode: 'stacked',
       sourceBoxId: activeBox.box.id, sourceContentId: content.id, sourceAscii: content.ascii,
       sourceRevisionId: props.projectContext?.baseRevisionId, rect: { ...selectionRect }, selectedIds: [...selectedNodeIds] };
     setDisplay(current => addDisplayNode(current, root)); setRetainedSelectionId(id); setActionsOpen(false);
     return id;
-  }, [retainedSelectionId, display, selectionRect, activeBox, cell, content, props.projectContext?.baseRevisionId, selectedNodeIds, setDisplay, setRetainedSelectionId, setActionsOpen]);
+  }, [activeProjection, retainedSelectionId, display, selectionRect, activeBox, cell, content, props.projectContext?.baseRevisionId, selectedNodeIds, setDisplay, setRetainedSelectionId, setActionsOpen]);
   const openMapped = useCallback(() => {
     if (!candidateProjection.bRange) return;
     const ownerId = retainSelection(); if (!ownerId) return;
@@ -608,7 +619,7 @@ export function MappingPocSelectionCanvas(props: {
     if (!ownerId) return;
     const anchor = {
       x: (activeBox.bounds.column + selectionRect.endColumn) * cell.width,
-      y: (activeBox.bounds.row + selectionRect.startLine - 1) * cell.height
+      y: (activeBox.bounds.row + (activeProjection.rowForLine(selectionRect.startLine) ?? selectionRect.startLine - 1)) * cell.height
     };
     setDisplay(current => addDisplayNode(current, {
       ...displayGeometry({ x: anchor.x - 17, y: anchor.y - 17 }, { width: 34, height: 34 }),
@@ -836,18 +847,20 @@ export function MappingPocSelectionCanvas(props: {
     return () => window.removeEventListener("pointerdown", onPointerDown, true);
   }, [props.active, askOpen, clearSelection, retainedSelectionId, diagramPlacement, promptOpen, promptPhase, selectionRect]);
 
-  const rectStyle = selectionRect && cell.width > 0 && cell.height > 0 ? {
-    left: (selectionRect.startColumn - 1) * cell.width,
-    top: (selectionRect.startLine - 1) * cell.height,
-    width: (selectionRect.endColumn - selectionRect.startColumn + 1) * cell.width,
-    height: (selectionRect.endLine - selectionRect.startLine + 1) * cell.height
+  const visibleSelectionRect = selectionRect && activeProjection.rect(selectionRect);
+  const rectStyle = visibleSelectionRect && cell.width > 0 && cell.height > 0 ? {
+    left: (visibleSelectionRect.startColumn - 1) * cell.width,
+    top: (visibleSelectionRect.startLine - 1) * cell.height,
+    width: (visibleSelectionRect.endColumn - visibleSelectionRect.startColumn + 1) * cell.width,
+    height: (visibleSelectionRect.endLine - visibleSelectionRect.startLine + 1) * cell.height
   } : undefined;
   const threadSource = boxes.find((node) => node.box.id === (activeThread?.selection.boxId ?? "overview"));
-  const activeThreadRectStyle = activeThread && threadSource && !threadSource.box.collapsed && cell.width > 0 && cell.height > 0 ? {
-    left: (threadSource.bounds.column - activeBox.bounds.column + activeThread.selection.rect.startColumn - 1) * cell.width,
-    top: (threadSource.bounds.row - activeBox.bounds.row + activeThread.selection.rect.startLine - 1) * cell.height,
-    width: (activeThread.selection.rect.endColumn - activeThread.selection.rect.startColumn + 1) * cell.width,
-    height: (activeThread.selection.rect.endLine - activeThread.selection.rect.startLine + 1) * cell.height
+  const visibleThreadRect = activeThread && threadSource && contentProjections.get(threadSource.box.id)?.rect(activeThread.selection.rect);
+  const activeThreadRectStyle = visibleThreadRect && activeThread && threadSource && !threadSource.box.collapsed && cell.width > 0 && cell.height > 0 ? {
+    left: (threadSource.bounds.column - activeBox.bounds.column + visibleThreadRect.startColumn - 1) * cell.width,
+    top: (threadSource.bounds.row - activeBox.bounds.row + visibleThreadRect.startLine - 1) * cell.height,
+    width: (visibleThreadRect.endColumn - visibleThreadRect.startColumn + 1) * cell.width,
+    height: (visibleThreadRect.endLine - visibleThreadRect.startLine + 1) * cell.height
   } : undefined;
   const selectionPhase = askOpen ? "asking" : promptPhase;
   const showSelectionMenu = Boolean(selectionRect && rectStyle && !diagramPlacement
@@ -888,7 +901,9 @@ export function MappingPocSelectionCanvas(props: {
         const hit = scenePoint && hitTest(scene, scenePoint);
         const targetBox = hit && boxes.find((node) => node.box.id === hit.boxId);
         if (!hit || !targetBox?.contentId || targetBox.box.collapsed) return;
-        const anchor = { line: hit.local.row + 1, column: hit.local.column + 1 };
+        const line = contentProjections.get(hit.boxId)?.lineForRow(hit.local.row);
+        if (line === undefined) return;
+        const anchor = { line, column: hit.local.column + 1 };
         event.currentTarget.focus({ preventScroll: true });
         setActiveBoxId(hit.boxId);
 
@@ -960,6 +975,13 @@ export function MappingPocSelectionCanvas(props: {
         data-revision={diagramRevision}
       >{composedAscii}</pre>
 
+      <DiagramSubtreeControls nodes={displayNodes} visibleBoxIds={new Set(boxes.map(box => box.box.id))} cell={cell}
+        disabled={isGenerating || !!diagramPlacement || !!movingBoxId || !!promptOpen || !!askOpen}
+        onCollapse={(nodeId, contentNodeId, collapsed) => {
+          try {
+            controller.transact(controller.getSnapshot().version, [{ method: 'collapse', nodeId, contentNodeId, collapsed }]);
+          } catch (error) { setStatusMessage(error instanceof Error ? error.message : String(error)); }
+        }} />
       <div className="mapping-grid-tools" data-mapping-static-ui data-diagram-canvas-static-ui>
         <button type="button" disabled={!controllerState.canUndo || isGenerating} onClick={() => undo()}>Undo</button>
         <button type="button" disabled={!controllerState.canRedo || isGenerating} onClick={() => undo(true)}>Redo</button>
@@ -974,7 +996,10 @@ export function MappingPocSelectionCanvas(props: {
           <div className="mapping-grid-box-tools" data-mapping-static-ui data-diagram-canvas-static-ui>
             <button type="button" disabled={isGenerating || !!diagramPlacement}
               aria-label={`${node.box.collapsed ? "Expand" : "Collapse"} ${node.box.id}`}
-              onClick={() => commitScene(updateGridBox(scene, node.box.id, (box) => ({ ...box, collapsed: !box.collapsed })), node.box.id)}>
+              onClick={() => {
+                try { controller.transact(controller.getSnapshot().version, [{ method: 'collapse', nodeId: `grid:${node.box.id}`, collapsed: !node.box.collapsed }]); clearSelection(); }
+                catch (error) { setStatusMessage(error instanceof Error ? error.message : String(error)); }
+              }}>
               {node.box.collapsed ? "Expand" : "Collapse"}
             </button>
             <button type="button" disabled={isGenerating || !!diagramPlacement} onClick={() => { clearSelection(); setMovingBoxId(node.box.id); }}>Move</button>
@@ -992,14 +1017,14 @@ export function MappingPocSelectionCanvas(props: {
         left: activeBox.bounds.column * cell.width, top: activeBox.bounds.row * cell.height,
         width: maxColumn * cell.width, height: lineCount * cell.height }}>
       <div className="mapping-poc-node-layer" aria-hidden="true">
-        {!activeBox.box.collapsed && cell.width > 0 && cell.height > 0 ? nodes.map((node) => (
+        {!activeBox.box.collapsed && cell.width > 0 && cell.height > 0 ? nodes.filter(node => activeProjection.rowForLine(node.head.line) !== undefined).map((node) => (
           <span
             key={node.id}
             className={`mapping-poc-node-hit is-${node.selectableBecause}${selectedNodeIdSet.has(node.id) ? " is-selected" : ""}${selectedNodeIdSet.has(node.id) && (promptOpen || askOpen || promptPhase === "generating") ? " is-prompt-target" : ""}`}
             data-selectable-node={node.id}
             style={{
               left: (node.head.startColumn - 1) * cell.width,
-              top: (node.head.line - 1) * cell.height,
+              top: activeProjection.rowForLine(node.head.line)! * cell.height,
               width: (node.head.endColumn - node.head.startColumn + 1) * cell.width,
               height: cell.height
             }}
@@ -1009,14 +1034,14 @@ export function MappingPocSelectionCanvas(props: {
 
       {cell.width > 0 && cell.height > 0 ? (
         <div className="mapping-poc-a-section-layer" aria-label="Graph A detail sections">
-          {sections.map((section, index) => (
+          {sections.map(section => ({ ...section, visibleRect: activeProjection.rect({ startLine: section.startLine, endLine: section.endLine, startColumn: 1, endColumn: 1 }) })).filter(section => section.visibleRect).map((section, index) => (
             <section
               key={section.id}
               className={`mapping-poc-a-section${openDetailIds.has(section.id) ? " is-open" : ""}`}
               data-a-section={section.id}
               style={{
-                top: (section.startLine - 1) * cell.height,
-                height: (section.endLine - section.startLine + 1) * cell.height
+                top: (section.visibleRect!.startLine - 1) * cell.height,
+                height: (section.visibleRect!.endLine - section.visibleRect!.startLine + 1) * cell.height
               }}
             >
               <button
@@ -1203,6 +1228,7 @@ export function MappingPocSelectionCanvas(props: {
 
       {chatThreads.filter(thread => {
         const owner = Object.values(display.nodes).find(node => node.childIds.includes(thread.id));
+        if (owner?.kind === 'selection' && scene.contents[owner.sourceContentId]?.ascii === owner.sourceAscii && contentProjections.has(owner.sourceBoxId) && !contentProjections.get(owner.sourceBoxId)!.rect(owner.rect)) return false;
         return !owner || owner.expansion === 'expanded' && (owner.kind !== 'selection' || boxes.some(box => box.box.id === owner.sourceBoxId && !box.box.collapsed));
       }).map((thread) => {
         const isActive = display.nodes[thread.id]?.expansion === 'expanded';
@@ -1288,7 +1314,7 @@ export function MappingPocSelectionCanvas(props: {
       ) : null}
 
       </div>
-      <SelectionEffectsLayer state={display} setState={setDisplay} setLayoutState={setDisplayLayout} boxes={boxes} scene={scene} cell={cell}
+      <SelectionEffectsLayer diagramViews={canvasState.diagramViews} state={display} setState={setDisplay} setLayoutState={setDisplayLayout} boxes={boxes} scene={scene} cell={cell}
         catalog={props.projectionCatalog} dirtyRepresentationIds={props.dirtyRepresentationIds} onRemove={removeEffect}
         busySelectionIds={Object.entries(canvasState.controls.surfaces).filter(([, surface]) => surface.promptPhase === 'generating').map(([id]) => id)}
         onActivate={root => {

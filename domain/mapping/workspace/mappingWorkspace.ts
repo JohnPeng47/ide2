@@ -32,9 +32,9 @@ export interface MappingControls {
 }
 /** A control accessor resolves these values against the active selection's surface. */
 export type MappingControlValues = MappingControls & SelectionSurfaceState;
-export interface MappingCanvasState { display: DisplayState; controls: MappingControls }
+export interface MappingCanvasState { diagramViews?: import('./diagramViewState').DiagramViews; display: DisplayState; controls: MappingControls }
 export function initialCanvasState(): MappingCanvasState {
-  return { display: emptyDisplayState(), controls: { activeBoxId: 'overview', selectionRect: null,
+  return { diagramViews: {}, display: emptyDisplayState(), controls: { activeBoxId: 'overview', selectionRect: null,
     selectedNodeIds: [], retainedSelectionId: null, activeThreadId: null, surfaces: { draft: initialSelectionSurface() } } };
 }
 export interface MappingDocumentSnapshot {
