@@ -33,6 +33,11 @@ export function createMappingRoutes({ selection, diagrams, workspace, chat, comp
       if (request.method !== 'POST') return sendJson(response, 405, { error: 'method not allowed' });
       return sendJson(response, 200, await diagrams.save(await readBody(request) as SaveProjectDiagramInput));
     }
+    const diagram = url.pathname.match(/^\/api\/mapping\/diagrams\/([^/]+)$/);
+    if (diagram) {
+      if (request.method !== 'DELETE') return sendJson(response, 405, { error: 'method not allowed' });
+      return sendJson(response, 200, await diagrams.delete(decodeURIComponent(diagram[1])));
+    }
     if (url.pathname === '/api/mapping/prompt') {
       if (request.method !== 'POST') return sendJson(response, 405, { error: 'method not allowed' });
       const input = await selection.prepare(await readBody(request) as Record<string, unknown>);

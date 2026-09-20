@@ -137,6 +137,19 @@ describe("Studio, Mapping, and Core HTTP API", () => {
       })
     });
     expect(stalePrompt.status).toBe(409);
+    const deleteUrl = `${diagramsUrl}/${input.representationId}`;
+    expect((await fetch(deleteUrl)).status).toBe(405);
+    expect((await fetch(`${diagramsUrl}/missing`, { method: "DELETE" })).status).toBe(400);
+    const deleted = await fetch(deleteUrl, { method: "DELETE" });
+    expect(deleted.status).toBe(200);
+    const afterDelete = await deleted.json();
+    expect(afterDelete.catalog.representations[input.representationId].status).toBe("archived");
+    expect(afterDelete.catalog.revisions).toEqual(reopened.catalog.revisions);
+    expect(Object.values(afterDelete.catalog.activeByKind)).not.toContain(input.representationId);
+    expect((await fetch(deleteUrl, { method: "DELETE" })).status).toBe(200);
+    expect((await postDiagram({ ...input, expectedRevisionId: reopened.catalog.representations[input.representationId].currentRevisionId })).status).toBe(409);
+    const persisted = await (await fetch(`${origin}/api/core/project/representations`)).json();
+    expect(persisted.catalog.representations[input.representationId].status).toBe("archived");
   });
 
   it("creates, lists, reads, and updates project Plans", async () => {

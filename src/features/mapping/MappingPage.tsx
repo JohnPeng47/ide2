@@ -18,7 +18,7 @@ import { MappingDiagramExplorer } from "./workspace/MappingDiagramExplorer";
 import type { LocalChatVariant } from "../../../domain/mapping/chat/localChat";
 import type { MappingGridDocument } from "../../../domain/mapping/workspace/mappingGrid";
 import { sceneFromRevision, singleDiagramScene } from "../../../domain/core/diagrams/projectDiagramCanvas";
-import { saveMappingProjectDiagram } from "./workspace/mappingProjectApi";
+import { deleteMappingProjectDiagram, saveMappingProjectDiagram } from "./workspace/mappingProjectApi";
 import { SourcePaneViewState } from "./source-pane/sourcePaneViewState";
 import { SourcePaneDocumentActiveContext, SourcePaneDocumentContext, SourcePaneViewStateContext } from "./source-pane/SourcePaneViewStateContext";
 
@@ -63,6 +63,9 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
   const [activeId, setActiveId] = useState<string>();
   const [error, setError] = useState("");
   const [savingId, setSavingId] = useState<string>();
+  const [deletingId, setDeletingId] = useState<string>();
+  const activeIdRef = useRef(activeId);
+  activeIdRef.current = activeId;
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("New diagram");
   const [newAscii, setNewAscii] = useState("[New diagram]");
@@ -157,11 +160,17 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
 
   const restore = (workspace: MappingWorkspaceSnapshot, data = snapshot) => {
     if (workspace.projectId !== data?.project?.id) throw new Error("Workspace belongs to another project");
+    const documents = workspace.documents.filter(doc => doc.representationId.startsWith("draft-") || data?.catalog?.representations[doc.savedRepresentationId ?? doc.representationId]?.status === "settled");
     setViewState(new SourcePaneViewState());
-    setDrafts(Object.fromEntries(workspace.documents.map(doc => [doc.representationId, { ...doc, representationId: doc.savedRepresentationId, busy: false }])));
-    const id = workspace.activeDocumentId ?? workspace.documents[0]?.representationId;
+    setDrafts(Object.fromEntries(documents.map(doc => [doc.representationId, { ...doc, representationId: doc.savedRepresentationId, busy: false }])));
+    const id = documents.some(doc => doc.representationId === workspace.activeDocumentId)
+      ? workspace.activeDocumentId : documents[0]?.representationId
+        ?? Object.values(data?.catalog?.representations ?? {}).find(diagram => diagram.status === "settled")?.id;
     setActiveId(id); setWorkspaceEpoch(value => value + 1); setCreating(false);
-    if (id) { const url = new URL(location.href); url.searchParams.set('diagram', id); history.replaceState({}, '', url); }
+    if (id && !documents.some(doc => doc.representationId === id)) open(id, data, false);
+    const url = new URL(location.href);
+    if (id) url.searchParams.set('diagram', id); else url.searchParams.delete('diagram');
+    history.replaceState({}, '', url);
     setWorkspaceStatus('Workspace restored');
   };
   const capture = (): MappingWorkspaceSnapshot => {
@@ -200,9 +209,13 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
         if (cancelled) return;
         if (workspace && workspace.documents.length) restore(workspace, data);
         else {
-          const id = new URL(location.href).searchParams.get('diagram')
-            ?? Object.values(data.catalog?.representations ?? {}).find(diagram => diagram.status === 'settled')?.id;
+          const requestedId = new URL(location.href).searchParams.get('diagram');
+          const id = requestedId && data.catalog?.representations[requestedId]?.status === 'settled' ? requestedId
+            : Object.values(data.catalog?.representations ?? {}).find(diagram => diagram.status === 'settled')?.id;
           if (id) open(id, data, false);
+          const url = new URL(location.href);
+          if (id) url.searchParams.set('diagram', id); else url.searchParams.delete('diagram');
+          history.replaceState({}, '', url);
         }
         if (restoreError) setError(restoreError);
       } catch (error) { if (!cancelled) setError(error instanceof Error ? error.message : 'Could not load project'); }
@@ -227,7 +240,7 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
   }, [drafts, activeId, props.registerNavigationGuard]);
 
   const save = async () => {
-    if (!activeId || !active || active.busy || savingId) return;
+    if (!activeId || !active || active.busy || savingId || deletingId) return;
     const id = activeId;
     const captured = active;
     setSavingId(id); setError("");
@@ -242,7 +255,7 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
     finally { setSavingId(undefined); }
   };
   const create = async () => {
-    if (savingId || (copyCurrent && active?.busy)) return;
+    if (savingId || deletingId || (copyCurrent && active?.busy)) return;
     setSavingId("new"); setError("");
     try {
       const result = await saveMappingProjectDiagram({ projectId: snapshot?.project?.id, name: newName,
@@ -250,6 +263,34 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
       setSnapshot(result); setCreating(false); open(result.representation.id, result);
     } catch (error) { setError(error instanceof Error ? error.message : "Could not create diagram"); }
     finally { setSavingId(undefined); }
+  };
+
+  const remove = async (id: string) => {
+    const draftId = Object.entries(drafts).find(([key, draft]) => (draft.representationId ?? key) === id)?.[0] ?? id;
+    const diagram = snapshot?.catalog?.representations[id];
+    if (!diagram || deletingId || savingId || workspaceBusy || drafts[draftId]?.busy) return;
+    if (!window.confirm(`Delete diagram “${diagram.name}”?${drafts[draftId] && dirty(drafts[draftId]) ? "\n\nIts unsaved changes will be discarded." : ""}`)) return;
+    setDeletingId(id); setError("");
+    try {
+      const result = await deleteMappingProjectDiagram(id);
+      setSnapshot(result);
+      setDrafts(current => {
+        const next = { ...current };
+        delete next[draftId];
+        return next;
+      });
+      if (activeIdRef.current === draftId) {
+        const remaining = Object.values(result.catalog?.representations ?? {}).filter(diagram => diagram.status === "settled");
+        const index = diagrams.findIndex(diagram => diagram.id === id);
+        const nextId = remaining[Math.min(index, remaining.length - 1)]?.id;
+        if (nextId) open(nextId, result, false); else setActiveId(undefined);
+        const url = new URL(location.href);
+        if (nextId) url.searchParams.set("diagram", nextId); else url.searchParams.delete("diagram");
+        history.replaceState({}, "", url);
+      }
+      setWorkspaceStatus(`Deleted “${diagram.name}”`);
+    } catch (error) { setError(error instanceof Error ? error.message : "Could not delete diagram"); }
+    finally { setDeletingId(undefined); }
   };
 
   useEffect(() => {
@@ -261,14 +302,14 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
       <header className="studio-header mapping-poc-header">
         <MappingSubmenu projectName={snapshot?.project?.name ?? "Project"} name={active?.name ?? ""}
           status={savingId ? "Saving…" : active?.busy ? "Editing…" : active ? dirty(active) ? "Unsaved changes" : "Saved" : ""}
-          canSave={Boolean(active?.name.trim() && active && dirty(active) && !active.busy && !savingId)}
+          canSave={Boolean(active?.name.trim() && active && dirty(active) && !active.busy && !savingId && !deletingId)}
           onNameChange={(name) => { if (activeId) setDrafts((current) => ({ ...current, [activeId]: { ...current[activeId], name } })); }}
           onNew={() => { setCopyCurrent(false); setCreating(true); }} onSave={() => void save()} />
         <div className="mapping-workspace-actions">
-          <button disabled={workspaceBusy || !active || Object.values(drafts).some(draft => draft.busy)} onClick={() => void workspaceAction('save')}>Save workspace</button>
-          <button disabled={workspaceBusy || Object.values(drafts).some(draft => draft.busy)} onClick={() => void workspaceAction('restore')}>Restore workspace</button>
+          <button disabled={workspaceBusy || Boolean(deletingId) || !active || Object.values(drafts).some(draft => draft.busy)} onClick={() => void workspaceAction('save')}>Save workspace</button>
+          <button disabled={workspaceBusy || Boolean(deletingId) || Object.values(drafts).some(draft => draft.busy)} onClick={() => void workspaceAction('restore')}>Restore workspace</button>
           <button disabled={workspaceBusy || !active} onClick={() => void workspaceAction('export')}>Export</button>
-          <button disabled={workspaceBusy || Object.values(drafts).some(draft => draft.busy)} onClick={() => importRef.current?.click()}>Import</button>
+          <button disabled={workspaceBusy || Boolean(deletingId) || Object.values(drafts).some(draft => draft.busy)} onClick={() => importRef.current?.click()}>Import</button>
           <input ref={importRef} type="file" accept="application/json,.json" hidden aria-label="Import workspace" onChange={event => {
             const file = event.target.files?.[0]; event.target.value = '';
             if (file) void file.text().then(text => workspaceAction('restore', text)).catch(error => setError(String(error)));
@@ -291,8 +332,8 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
                 projectContext={draft.revisionId ? { projectId: snapshot!.project!.id, representationId: draft.representationId ?? id, baseRevisionId: draft.revisionId } : undefined}
                 projectionCatalog={snapshot?.catalog ?? undefined} savedScene={draft.savedScene}
                 dirtyRepresentationIds={Object.keys(drafts).filter((key) => JSON.stringify(drafts[key].document.scene) !== drafts[key].savedScene)}
-                onDocumentChange={(document) => setDrafts((current) => current[id].document === document ? current : { ...current, [id]: { ...current[id], document } })}
-                onBusyChange={(busy) => setDrafts((current) => current[id].busy === busy ? current : { ...current, [id]: { ...current[id], busy } })}
+                onDocumentChange={(document) => setDrafts((current) => !current[id] || current[id].document === document ? current : { ...current, [id]: { ...current[id], document } })}
+                onBusyChange={(busy) => setDrafts((current) => !current[id] || current[id].busy === busy ? current : { ...current, [id]: { ...current[id], busy } })}
                 localChatVariant={ui.variant as LocalChatVariant} />
             </DraggableDiagramCanvas>
           </div></SourcePaneDocumentActiveContext.Provider></SourcePaneDocumentContext.Provider>)}
@@ -300,6 +341,8 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
             {snapshot && <button type="button" onClick={() => setCreating(true)}>New diagram</button>}</div>}
           <FloatingPane><MappingDiagramExplorer projectName={snapshot?.project?.name ?? "Project"} diagrams={diagrams}
             activeId={active?.representationId ?? activeId} scene={active?.document.scene} dirtyIds={Object.keys(drafts).filter((id) => dirty(drafts[id])).map(id => drafts[id].representationId ?? id)}
+            onDelete={id => void remove(id)} deletingId={deletingId} deleteDisabled={Boolean(deletingId || savingId || workspaceBusy)}
+            busyIds={Object.keys(drafts).filter(id => drafts[id].busy).map(id => drafts[id].representationId ?? id)}
             onOpen={(id) => open(id)} onFocus={(id) => { if (activeId && !drafts[activeId]?.busy) setDrafts((current) => ({ ...current,
               [activeId]: { ...current[activeId], focusBox: { id, serial: (current[activeId].focusBox?.serial ?? 0) + 1 } } })); }} /></FloatingPane>
           {error && <div className="mapping-project-error" role="alert">{error}<button type="button" onClick={() => setError("")}>Dismiss</button></div>}

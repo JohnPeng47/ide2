@@ -44,7 +44,16 @@ async function drag(cdp, start, end, modifiers = 0) {
   await cdp.send("Input.dispatchMouseEvent", {type:"mouseReleased",...end,button:"left",modifiers,clickCount:1});
 }
 async function selectWorker(cdp) {
-  const rect = await evaluate(cdp, `(() => { const r=document.querySelector('.mapping-document-view:not([hidden]) [data-selectable-node]').getBoundingClientRect(); return {x:r.x,y:r.y,width:r.width,height:r.height}; })()`);
+  let rect;
+  let previous = "";
+  let stable = 0;
+  await waitFor(async () => {
+    rect = await evaluate(cdp, `(() => { const e=document.querySelector('.mapping-document-view:not([hidden]) [data-selectable-node]'); if (!e) return null; const r=e.getBoundingClientRect(); return r.width > 0 && r.height > 0 ? {x:r.x,y:r.y,width:r.width,height:r.height} : null; })()`);
+    const next = JSON.stringify(rect);
+    stable = rect && next === previous ? stable + 1 : 0;
+    previous = next;
+    return stable >= 2;
+  }, { message: "Selection target did not settle" });
   await drag(cdp,{x:rect.x+1,y:rect.y+rect.height/2},{x:rect.x+rect.width-1,y:rect.y+rect.height/2}, 2);
   await waitForSelector(cdp,".mapping-document-view:not([hidden]) .mapping-poc-selection-actions");
 }
@@ -65,7 +74,8 @@ try {
     await cdp.send("Page.enable"); await cdp.send("Runtime.enable");
     const errors=[]; cdp.on("Runtime.exceptionThrown",({exceptionDetails})=>errors.push(exceptionDetails.exception?.description??exceptionDetails.text));
     const dialogs=[];
-    cdp.on("Page.javascriptDialogOpening", async (dialog) => { dialogs.push(dialog.message); await cdp.send("Page.handleJavaScriptDialog", { accept: false }); });
+    let acceptDialog = false;
+    cdp.on("Page.javascriptDialogOpening", async (dialog) => { dialogs.push(dialog.message); await cdp.send("Page.handleJavaScriptDialog", { accept: acceptDialog }); });
     await waitForSelector(cdp,"[data-project-diagram='representation-seed']");
     await waitForSelector(cdp,"[data-selectable-node]");
     assert.equal(await evaluate(cdp,"Boolean(document.querySelector('.mapping-poc-toolbar'))"),false);
@@ -163,9 +173,62 @@ try {
     await click(cdp,`.representation-row:nth-child(${studioButton})`);
     await waitForSelector(cdp,".mapping-floating-pane");
     await captureScreenshot(cdp,{output:process.env.MAPPING_SCREENSHOT??path.join(temp,"mapping.png")});
+    // Save both open diagrams, then delete an inactive one without navigating to it.
+    await click(cdp, "[data-project-diagram='representation-seed']");
+    await fill(cdp, "[aria-label='Diagram name']", "Unsaved worker");
+    await click(cdp, `[data-project-diagram='${secondId}']`);
+    await click(cdp, ".mapping-workspace-actions button:first-child");
+    await waitFor(async () => (await evaluate(cdp, "document.querySelector('.mapping-poc-status').textContent")).includes("Workspace saved"));
+    const deleteSeed = '[aria-label="Delete diagram Worker overview"]';
+    const dialogCount = dialogs.length;
+    await click(cdp, deleteSeed);
+    await waitFor(() => dialogs.length > dialogCount);
+    assert.ok(dialogs.at(-1).includes("unsaved changes"));
+    assert.equal((await catalog()).representations[representation.id].status, "settled");
+    assert.equal(await evaluate(cdp, "document.querySelector('[aria-label=\"Diagram name\"]').value"), "Second diagram");
+    // A failed delete keeps the diagram available and reports the error.
+    acceptDialog = true;
+    await cdp.send("Fetch.enable", { patterns: [{ urlPattern: "*/api/mapping/diagrams/*", requestStage: "Request" }] });
+    cdp.on("Fetch.requestPaused", async ({ requestId }) => {
+      await cdp.send("Fetch.fulfillRequest", { requestId, responseCode: 500,
+        responseHeaders: [{ name: "Content-Type", value: "application/json" }],
+        body: Buffer.from(JSON.stringify({ error: "Delete failed for test" })).toString("base64") });
+    });
+    await click(cdp, deleteSeed);
+    await waitFor(async () => (await evaluate(cdp, "document.querySelector('.mapping-project-error')?.textContent ?? ''")).includes("Delete failed for test"));
+    assert.equal((await catalog()).representations[representation.id].status, "settled");
+    await cdp.send("Fetch.disable");
+    await waitForSelector(cdp, `${deleteSeed}:not(:disabled)`);
+    await click(cdp, deleteSeed);
+    await waitFor(async () => !await evaluate(cdp, "Boolean(document.querySelector('[data-project-diagram=\"representation-seed\"]'))"));
+    assert.equal(await evaluate(cdp, "document.querySelector('[aria-label=\"Diagram name\"]').value"), "Second diagram");
+    assert.equal((await catalog()).representations[representation.id].status, "archived");
+    // Explicit restore and reload must not resurrect the deleted saved draft.
+    await click(cdp, ".mapping-workspace-actions button:nth-child(2)");
+    await waitFor(async () => (await evaluate(cdp, "document.querySelector('.mapping-poc-status').textContent")).includes("Workspace restored"));
+    assert.equal(await evaluate(cdp, "document.querySelectorAll('.mapping-document-view').length"), 1);
+    await cdp.send("Page.reload", { ignoreCache: true });
+    await waitForSelector(cdp, `[data-project-diagram='${secondId}'][aria-current='page']`);
+    assert.equal(await evaluate(cdp, "document.querySelectorAll('.mapping-document-view').length"), 1);
+    // Deleting the active diagram selects its neighbor.
+    await click(cdp, ".mapping-submenu button:first-of-type");
+    await fill(cdp, "[aria-label='New diagram name']", "Temporary diagram");
+    await click(cdp, ".mapping-create-dialog button[type=submit]");
+    await waitForSelector(cdp, "[aria-label='Delete diagram Temporary diagram']:not(:disabled)");
+    await click(cdp, "[aria-label='Delete diagram Temporary diagram']");
+    await waitForSelector(cdp, `[data-project-diagram='${secondId}'][aria-current='page']`);
+    assert.equal(await evaluate(cdp, "new URL(location.href).searchParams.get('diagram')"), secondId);
+    // The final deletion clears the canvas and URL, including after restoring the old workspace.
+    await click(cdp, "[aria-label='Delete diagram Second diagram']:not(:disabled)");
+    await waitForSelector(cdp, ".mapping-empty");
+    assert.equal(await evaluate(cdp, "document.querySelectorAll('[data-project-diagram]').length"), 0);
+    assert.equal(await evaluate(cdp, "new URL(location.href).searchParams.get('diagram')"), null);
+    await cdp.send("Page.reload", { ignoreCache: true });
+    await waitFor(async () => (await evaluate(cdp, "document.querySelector('.mapping-empty h1')?.textContent ?? ''")).includes("Create a project diagram"));
+    assert.equal(await evaluate(cdp, "document.querySelectorAll('.mapping-document-view').length"), 0);
     assert.deepEqual(errors,[]);
   });
-  console.log("project Mapping browser check passed: create, save, reload, grouped scene, navigation, internal prompt across a switch, Studio catalog");
+  console.log("project Mapping browser check passed: create, save, reload, grouped scene, navigation, internal prompt across a switch, Studio catalog, delete cancellation/failure/retry, inactive/active/last deletion, workspace restore");
 } finally {
   if(server?.exitCode===null) { server.kill("SIGTERM"); await new Promise(resolve=>server.once("exit",resolve)); }
   await rm(temp,{recursive:true,force:true});

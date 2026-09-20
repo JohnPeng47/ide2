@@ -1127,6 +1127,11 @@ button.experiment-tree-line:hover { background: rgb(255 255 255 / 3%); }
 .mapping-floating-pane nav button { width: 100%; text-align: left; padding: 8px 5px; border: 0; border-radius: 3px; color: var(--muted); background: transparent; cursor: pointer; font: 11px var(--font-mono); overflow-wrap: anywhere; }
 .mapping-floating-pane nav button:hover, .mapping-floating-pane nav button:focus-visible { background: #88c0d014; color: var(--fg); }
 .mapping-floating-pane nav button.is-active { background: #88c0d025; color: var(--accent-cyan); }
+.mapping-explorer-row { display: flex; align-items: center; gap: 4px; }
+.mapping-explorer-row > button:first-child { flex: 1; min-width: 0; }
+.mapping-floating-pane nav .mapping-explorer-delete { width: 28px; flex: 0 0 28px; text-align: center; font-size: 16px; }
+.mapping-floating-pane nav .mapping-explorer-delete:hover, .mapping-floating-pane nav .mapping-explorer-delete:focus-visible { color: #ff9b9b; background: #bf616a25; }
+.mapping-floating-pane nav button:disabled { opacity: .4; cursor: default; }
 .mapping-empty { padding: 80px 24px 24px 360px; color: var(--muted); }
 .mapping-empty h1 { margin-bottom: 20px; font-size: 20px; }
 .mapping-project-error { position: absolute; right: 20px; top: 20px; max-width: 500px; padding: 12px; z-index: 12; color: #ebcb8b; background: #191d24; border: 1px solid #ebcb8b; }
