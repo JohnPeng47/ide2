@@ -1,0 +1,181 @@
+Workbench documents
+|
+|-- EditorService
+|   `-- openEditor(resource, options)
+|       |-- resolve editor type
+|       |   `-- FileEditorInput [ordinary text file]
+|       |
+|       `-- choose editor group
+|           `-- EditorGroupView
+|               |-- tabs / active editor
+|               `-- EditorPanes
+|                   `-- TextFileEditor
+|                       |-- input: FileEditorInput
+|                       |   |-- resource URI
+|                       |   |-- retained model reference
+|                       |   `-- resolve() ---------------------------+
+|                       |                                           |
+|                       `-- CodeEditorWidget                         |
+|                           |-- model ------------------------------|----+
+|                           `-- view state                          |    |
+|                               |-- cursor / selections             |    |
+|                               `-- scroll position                 |    |
+|                                                                   |    |
+|-- TextFileEditorModelManager                                       |    |
+|   |                                                               |    |
+|   |-- resolve(resource) <------------------------------------------+    |
+|   |   |-- resolution pending? -> join existing work                     |
+|   |   |-- model loaded? ------> reuse it                                |
+|   |   `-- otherwise ----------> create and resolve                      |
+|   |                                                                    |
+|   `-- TextFileEditorModel [one per resource]                            |
+|       |                                                                |
+|       |-- resource / encoding / last known file metadata               |
+|       |-- dirty / saving / conflict / error                            |
+|       |                                                                |
+|       |-- textEditorModel: TextModel <----------------------------------+
+|       |   |-- text buffer
+|       |   |-- edit history / document version
+|       |   `-- content changes
+|       |       |-- attached editors update their views
+|       |       `-- compare with saved version
+|       |           |-- different -> dirty
+|       |           `-- restored by undo -> clean
+|       |
+|       |-- resolve
+|       |   |-- dirty or saving? -> preserve current contents
+|       |   |-- initial backup? -> restore contents
+|       |   `-- TextFileService.readStream --------------------------+
+|       |       `-- decoded text -> create/update TextModel          |
+|       |                                                           |
+|       `-- save <--- explicit save / automatic save                 |
+|           |                                                       |
+|           |-- pending save                                        |
+|           |   |-- same version -> join                            |
+|           |   `-- newer version -> queue                          |
+|           |                                                       |
+|           |-- save participants                                   |
+|           |   `-- may edit TextModel before saving                 |
+|           |                                                       |
+|           |-- snapshot current text + version                     |
+|           |   `-- TextFileService.write ---------------------------+
+|           |                                                       |
+|           `-- result                                              |
+|               |-- success                                         |
+|               |   |-- update file metadata                        |
+|               |   |-- version unchanged -> clean                  |
+|               |   `-- newer edits -> retain current dirty state   |
+|               `-- failure                                         |
+|                   |-- changed externally -> conflict               |
+|                   `-- write error -> edits remain unsaved          |
+|                                                                   |
+|-- TextFileService <------------------------------------------------+
+|   |
+|   |-- readStream
+|   |   `-- provider bytes -> decode -> text buffer
+|   |
+|   |-- write
+|   |   `-- text snapshot -> encode -> provider bytes
+|   |
+|   `-- FileService
+|       |-- resource URI
+|       |   `-- scheme selects filesystem provider
+|       |       |-- file:
+|       |       `-- extension schemes, including git:
+|       |
+|       |-- read -> provider capabilities determine read operation
+|       `-- write
+|           |-- check for external modifications
+|           `-- provider writes contents or reports failure
+|
+`-- TextModelResolverService
+    `-- model references [shared document lifetime]
+        |-- FileEditorInput retains a reference while in use
+        |-- disposing the input releases its reference
+        `-- last reference released
+            |-- dirty / resolving -> wait
+            |-- reference acquired again -> keep model
+            `-- safe to dispose -> release document model
+
+
+SOURCE CONTROL AND GIT
+======================
+
+File changes ------+
+Explicit refresh --+--> Repository ---- resource groups ----> ExtHostSCM
+Git operations ----+    |                                    |-- provider / group registration --+
+                        |                                    `-- resource splices ---------------+
+                        |                                                                        |
+                        |                                                                        v
+                        |                                                                  MainThreadSCM
+                        |                                                                        |
+                        |                                                                        v
+                        |                                                           MainThreadSCMProvider
+                        |                                                           |-- identity / root
+                        |                                                           |-- groups / resources
+                        |                                                           `-- change notifications
+                        |                                                                        |
+                        |                     SCMService.repositories -----+                     |
+                        |                     focus / selection -----------+---------------------+
+                        |                                                  |
+                        |                                                  v
+                        |                                              SCMViewPane
+                        |                                              |-- tree / list
+                        |                                              |-- decorations
+                        |                                              `-- resource actions
+                        |                                                  |             |
+                        |                      +------- Stage -------------+             |
+                        |                      |                                         |
+                        |                      v                                         |
+                        |              CommandCenter.stage                               |
+                        |                      |                                         |
+                        `-- Repository.add <---+                                         |
+                            `-- git add -> status refresh                                |
+                                `-- resource groups update again                         |
+                                                                                         |
+                  +----------------------------- Open Changes ---------------------------+
+                  |
+                  v
+          ResourceCommandResolver
+          |-- single file -> vscode.open
+          |-- conflict -> merge editor
+          `-- comparison -> vscode.diff [COMMAND] -> EditorService -> DiffEditorInput
+                                                                          |        |
+                                                               original URI        modified URI
+                                                                          |        |
+                                                                          +---+----+
+                                                                              |
+                                                                              v
+                                                               TextModelResolverService
+                                                               |-- reuse loaded document
+                                                               `-- resolve missing contents
+                                                                              |
+                                                                              v
+          GitFileSystemProvider <----- git: ------------------------------ FileService
+          |-- readonly revision contents                                      |
+          `-- Repository.buffer                 File-system provider <--------+ file:
+              `-- git show                      `-- working-file contents
+                  |                                 |
+                  +----------------+----------------+
+                                   |
+                                   v
+                           TextFileService
+                           `-- decode each resource
+                                   |
+                         +---------+---------+
+                         |                   |
+                         v                   v
+                 original TextModel   modified TextModel
+                         |                   |
+                         +---------+---------+
+                                   |
+                                   v
+                           TextDiffEditorModel ------> TextDiffEditor / DiffEditorWidget
+                           |-- original reference      |-- compare models
+                           `-- modified reference      |-- original code editor
+                                                       `-- modified code editor
+                                                           `-- editing / undo / save
+
+
+[URI]       Resource identity shared by SCM entries, providers, and document models.
+[COMMAND]   Shared command dispatch connects UI actions to handlers.

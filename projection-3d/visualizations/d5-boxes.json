@@ -1,0 +1,1522 @@
+{
+  "format": "projection-3d",
+  "version": 2,
+  "kind": "node-boxes",
+  "id": "d5-boxes",
+  "name": "D5 — ink & paper",
+  "source": {
+    "id": "D5",
+    "name": "Source Control and Git",
+    "ascii": "SOURCE CONTROL AND GIT\n======================\n\nFile changes ------+\nExplicit refresh --+--> Repository ---- resource groups ----> ExtHostSCM\nGit operations ----+    |                                    |-- provider / group registration --+\n                        |                                    `-- resource splices ---------------+\n                        |                                                                        |\n                        |                                                                        v\n                        |                                                                  MainThreadSCM\n                        |                                                                        |\n                        |                                                                        v\n                        |                                                           MainThreadSCMProvider\n                        |                                                           |-- identity / root\n                        |                                                           |-- groups / resources\n                        |                                                           `-- change notifications\n                        |                                                                        |\n                        |                     SCMService.repositories -----+                     |\n                        |                     focus / selection -----------+---------------------+\n                        |                                                  |\n                        |                                                  v\n                        |                                              SCMViewPane\n                        |                                              |-- tree / list\n                        |                                              |-- decorations\n                        |                                              `-- resource actions\n                        |                                                  |             |\n                        |                      +------- Stage -------------+             |\n                        |                      |                                         |\n                        |                      v                                         |\n                        |              CommandCenter.stage                               |\n                        |                      |                                         |\n                        `-- Repository.add <---+                                         |\n                            `-- git add -> status refresh                                |\n                                `-- resource groups update again                         |\n                                                                                         |\n                  +----------------------------- Open Changes ---------------------------+\n                  |\n                  v\n          ResourceCommandResolver\n          |-- single file -> vscode.open\n          |-- conflict -> merge editor\n          `-- comparison -> vscode.diff [COMMAND] -> EditorService -> DiffEditorInput\n                                                                          |        |\n                                                               original URI        modified URI\n                                                                          |        |\n                                                                          +---+----+\n                                                                              |\n                                                                              v\n                                                               TextModelResolverService\n                                                               |-- reuse loaded document\n                                                               `-- resolve missing contents\n                                                                              |\n                                                                              v\n          GitFileSystemProvider <----- git: ------------------------------ FileService\n          |-- readonly revision contents                                      |\n          `-- Repository.buffer                 File-system provider <--------+ file:\n              `-- git show                      `-- working-file contents\n                  |                                 |\n                  +----------------+----------------+\n                                   |\n                                   v\n                           TextFileService\n                           `-- decode each resource\n                                   |\n                         +---------+---------+\n                         |                   |\n                         v                   v\n                 original TextModel   modified TextModel\n                         |                   |\n                         +---------+---------+\n                                   |\n                                   v\n                           TextDiffEditorModel ------> TextDiffEditor / DiffEditorWidget\n                           |-- original reference      |-- compare models\n                           `-- modified reference      |-- original code editor\n                                                       `-- modified code editor\n                                                           `-- editing / undo / save\n\n\n[URI]       Resource identity shared by SCM entries, providers, and document models.\n[COMMAND]   Shared command dispatch connects UI actions to handlers.\n",
+    "sourceRepresentationId": "representation-9ba46769-11c5-4ba3-ae00-476bd364849a",
+    "sourceRevisionId": "representation-revision-fb4b1e76-aeb1-4776-9a91-30ef37aad4a7"
+  },
+  "nodes": [
+    {
+      "id": "file-changes",
+      "label": "File changes",
+      "kind": "detail",
+      "source": {
+        "line": 4,
+        "startColumn": 1,
+        "endColumn": 12
+      },
+      "box": {
+        "x": 30,
+        "z": 0,
+        "width": 190,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "refresh",
+      "label": "Explicit refresh",
+      "kind": "detail",
+      "source": {
+        "line": 5,
+        "startColumn": 1,
+        "endColumn": 16
+      },
+      "box": {
+        "x": 360,
+        "z": 0,
+        "width": 190,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "git-operations",
+      "label": "Git operations",
+      "kind": "detail",
+      "source": {
+        "line": 6,
+        "startColumn": 1,
+        "endColumn": 14
+      },
+      "box": {
+        "x": 690,
+        "z": 0,
+        "width": 190,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "repository",
+      "label": "Repository",
+      "kind": "service",
+      "source": {
+        "line": 5,
+        "startColumn": 25,
+        "endColumn": 34
+      },
+      "box": {
+        "x": 990,
+        "z": 0,
+        "width": 250,
+        "depth": 155,
+        "height": 72
+      }
+    },
+    {
+      "id": "ext-host",
+      "label": "ExtHostSCM",
+      "kind": "service",
+      "source": {
+        "line": 5,
+        "startColumn": 63,
+        "endColumn": 72
+      },
+      "box": {
+        "x": 1320,
+        "z": 0,
+        "width": 250,
+        "depth": 155,
+        "height": 72
+      }
+    },
+    {
+      "id": "registration",
+      "label": "provider / group registration",
+      "kind": "detail",
+      "source": {
+        "line": 6,
+        "startColumn": 66,
+        "endColumn": 94
+      },
+      "box": {
+        "x": 1655,
+        "z": 0,
+        "width": 240,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "splices",
+      "label": "resource splices",
+      "kind": "detail",
+      "source": {
+        "line": 7,
+        "startColumn": 66,
+        "endColumn": 81
+      },
+      "box": {
+        "x": 1680,
+        "z": 240,
+        "width": 190,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "main-thread",
+      "label": "MainThreadSCM",
+      "kind": "service",
+      "source": {
+        "line": 10,
+        "startColumn": 92,
+        "endColumn": 104
+      },
+      "box": {
+        "x": 1320,
+        "z": 240,
+        "width": 250,
+        "depth": 155,
+        "height": 72
+      }
+    },
+    {
+      "id": "provider",
+      "label": "MainThreadSCMProvider",
+      "kind": "service",
+      "source": {
+        "line": 13,
+        "startColumn": 85,
+        "endColumn": 105
+      },
+      "box": {
+        "x": 990,
+        "z": 240,
+        "width": 250,
+        "depth": 155,
+        "height": 72
+      }
+    },
+    {
+      "id": "identity",
+      "label": "identity / root",
+      "kind": "detail",
+      "source": {
+        "line": 14,
+        "startColumn": 89,
+        "endColumn": 103
+      },
+      "box": {
+        "x": 690,
+        "z": 240,
+        "width": 190,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "groups",
+      "label": "groups / resources",
+      "kind": "detail",
+      "source": {
+        "line": 15,
+        "startColumn": 89,
+        "endColumn": 106
+      },
+      "box": {
+        "x": 335,
+        "z": 240,
+        "width": 240,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "notifications",
+      "label": "change notifications",
+      "kind": "detail",
+      "source": {
+        "line": 16,
+        "startColumn": 89,
+        "endColumn": 108
+      },
+      "box": {
+        "x": 5,
+        "z": 240,
+        "width": 240,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "repositories",
+      "label": "SCMService.repositories",
+      "kind": "service",
+      "source": {
+        "line": 18,
+        "startColumn": 47,
+        "endColumn": 69
+      },
+      "box": {
+        "x": 0,
+        "z": 480,
+        "width": 250,
+        "depth": 155,
+        "height": 72
+      }
+    },
+    {
+      "id": "focus",
+      "label": "focus / selection",
+      "kind": "detail",
+      "source": {
+        "line": 19,
+        "startColumn": 47,
+        "endColumn": 63
+      },
+      "box": {
+        "x": 335,
+        "z": 480,
+        "width": 240,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "view",
+      "label": "SCMViewPane",
+      "kind": "service",
+      "source": {
+        "line": 22,
+        "startColumn": 72,
+        "endColumn": 82
+      },
+      "box": {
+        "x": 660,
+        "z": 480,
+        "width": 250,
+        "depth": 155,
+        "height": 72
+      }
+    },
+    {
+      "id": "tree",
+      "label": "tree / list",
+      "kind": "detail",
+      "source": {
+        "line": 23,
+        "startColumn": 76,
+        "endColumn": 86
+      },
+      "box": {
+        "x": 1020,
+        "z": 480,
+        "width": 190,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "decorations",
+      "label": "decorations",
+      "kind": "detail",
+      "source": {
+        "line": 24,
+        "startColumn": 76,
+        "endColumn": 86
+      },
+      "box": {
+        "x": 1350,
+        "z": 480,
+        "width": 190,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "actions",
+      "label": "resource actions",
+      "kind": "detail",
+      "source": {
+        "line": 25,
+        "startColumn": 76,
+        "endColumn": 91
+      },
+      "box": {
+        "x": 1680,
+        "z": 480,
+        "width": 190,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "stage",
+      "label": "CommandCenter.stage",
+      "kind": "service",
+      "source": {
+        "line": 30,
+        "startColumn": 40,
+        "endColumn": 58
+      },
+      "box": {
+        "x": 0,
+        "z": 1000,
+        "width": 250,
+        "depth": 155,
+        "height": 72
+      }
+    },
+    {
+      "id": "add",
+      "label": "Repository.add",
+      "kind": "service",
+      "source": {
+        "line": 32,
+        "startColumn": 29,
+        "endColumn": 42
+      },
+      "box": {
+        "x": 330,
+        "z": 1000,
+        "width": 250,
+        "depth": 155,
+        "height": 72
+      }
+    },
+    {
+      "id": "git-add",
+      "label": "git add",
+      "kind": "detail",
+      "source": {
+        "line": 33,
+        "startColumn": 33,
+        "endColumn": 39
+      },
+      "box": {
+        "x": 690,
+        "z": 1000,
+        "width": 190,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "status-refresh",
+      "label": "status refresh",
+      "kind": "detail",
+      "source": {
+        "line": 33,
+        "startColumn": 44,
+        "endColumn": 57
+      },
+      "box": {
+        "x": 1020,
+        "z": 1000,
+        "width": 190,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "resource-update",
+      "label": "resource groups update again",
+      "kind": "detail",
+      "source": {
+        "line": 34,
+        "startColumn": 37,
+        "endColumn": 64
+      },
+      "box": {
+        "x": 1325,
+        "z": 1000,
+        "width": 240,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "command-resolver",
+      "label": "ResourceCommandResolver",
+      "kind": "service",
+      "source": {
+        "line": 39,
+        "startColumn": 11,
+        "endColumn": 33
+      },
+      "box": {
+        "x": 1650,
+        "z": 1000,
+        "width": 250,
+        "depth": 155,
+        "height": 72
+      }
+    },
+    {
+      "id": "single",
+      "label": "single file",
+      "kind": "detail",
+      "source": {
+        "line": 40,
+        "startColumn": 15,
+        "endColumn": 25
+      },
+      "box": {
+        "x": 1680,
+        "z": 1240,
+        "width": 190,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "open",
+      "label": "vscode.open",
+      "kind": "detail",
+      "source": {
+        "line": 40,
+        "startColumn": 30,
+        "endColumn": 40
+      },
+      "box": {
+        "x": 1350,
+        "z": 1240,
+        "width": 190,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "conflict",
+      "label": "conflict",
+      "kind": "detail",
+      "source": {
+        "line": 41,
+        "startColumn": 15,
+        "endColumn": 22
+      },
+      "box": {
+        "x": 1020,
+        "z": 1240,
+        "width": 190,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "merge",
+      "label": "merge editor",
+      "kind": "detail",
+      "source": {
+        "line": 41,
+        "startColumn": 27,
+        "endColumn": 38
+      },
+      "box": {
+        "x": 690,
+        "z": 1240,
+        "width": 190,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "comparison",
+      "label": "comparison",
+      "kind": "detail",
+      "source": {
+        "line": 42,
+        "startColumn": 15,
+        "endColumn": 24
+      },
+      "box": {
+        "x": 360,
+        "z": 1240,
+        "width": 190,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "diff-command",
+      "label": "vscode.diff [COMMAND]",
+      "kind": "detail",
+      "source": {
+        "line": 42,
+        "startColumn": 29,
+        "endColumn": 49
+      },
+      "box": {
+        "x": 5,
+        "z": 1240,
+        "width": 240,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "editor-service",
+      "label": "EditorService",
+      "kind": "service",
+      "source": {
+        "line": 42,
+        "startColumn": 54,
+        "endColumn": 66
+      },
+      "box": {
+        "x": 0,
+        "z": 1480,
+        "width": 250,
+        "depth": 155,
+        "height": 72
+      }
+    },
+    {
+      "id": "diff-input",
+      "label": "DiffEditorInput",
+      "kind": "service",
+      "source": {
+        "line": 42,
+        "startColumn": 71,
+        "endColumn": 85
+      },
+      "box": {
+        "x": 330,
+        "z": 1480,
+        "width": 250,
+        "depth": 155,
+        "height": 72
+      }
+    },
+    {
+      "id": "original-uri",
+      "label": "original URI",
+      "kind": "document",
+      "source": {
+        "line": 44,
+        "startColumn": 64,
+        "endColumn": 75
+      },
+      "box": {
+        "x": 690,
+        "z": 1480,
+        "width": 190,
+        "depth": 125,
+        "height": 22
+      }
+    },
+    {
+      "id": "modified-uri",
+      "label": "modified URI",
+      "kind": "document",
+      "source": {
+        "line": 44,
+        "startColumn": 84,
+        "endColumn": 95
+      },
+      "box": {
+        "x": 1020,
+        "z": 1480,
+        "width": 190,
+        "depth": 125,
+        "height": 22
+      }
+    },
+    {
+      "id": "model-resolver",
+      "label": "TextModelResolverService",
+      "kind": "service",
+      "source": {
+        "line": 49,
+        "startColumn": 64,
+        "endColumn": 87
+      },
+      "box": {
+        "x": 1320,
+        "z": 1480,
+        "width": 250,
+        "depth": 155,
+        "height": 72
+      }
+    },
+    {
+      "id": "reuse",
+      "label": "reuse loaded document",
+      "kind": "detail",
+      "source": {
+        "line": 50,
+        "startColumn": 68,
+        "endColumn": 88
+      },
+      "box": {
+        "x": 1655,
+        "z": 1480,
+        "width": 240,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "resolve",
+      "label": "resolve missing contents",
+      "kind": "detail",
+      "source": {
+        "line": 51,
+        "startColumn": 68,
+        "endColumn": 91
+      },
+      "box": {
+        "x": 1655,
+        "z": 1720,
+        "width": 240,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "file-service",
+      "label": "FileService",
+      "kind": "service",
+      "source": {
+        "line": 54,
+        "startColumn": 76,
+        "endColumn": 86
+      },
+      "box": {
+        "x": 0,
+        "z": 2000,
+        "width": 250,
+        "depth": 155,
+        "height": 72
+      }
+    },
+    {
+      "id": "git-provider",
+      "label": "GitFileSystemProvider",
+      "kind": "service",
+      "source": {
+        "line": 54,
+        "startColumn": 11,
+        "endColumn": 31
+      },
+      "box": {
+        "x": 330,
+        "z": 2000,
+        "width": 250,
+        "depth": 155,
+        "height": 72
+      }
+    },
+    {
+      "id": "readonly",
+      "label": "readonly revision contents",
+      "kind": "detail",
+      "source": {
+        "line": 55,
+        "startColumn": 15,
+        "endColumn": 40
+      },
+      "box": {
+        "x": 665,
+        "z": 2000,
+        "width": 240,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "buffer",
+      "label": "Repository.buffer",
+      "kind": "service",
+      "source": {
+        "line": 56,
+        "startColumn": 15,
+        "endColumn": 31
+      },
+      "box": {
+        "x": 990,
+        "z": 2000,
+        "width": 250,
+        "depth": 155,
+        "height": 72
+      }
+    },
+    {
+      "id": "git-show",
+      "label": "git show",
+      "kind": "detail",
+      "source": {
+        "line": 57,
+        "startColumn": 19,
+        "endColumn": 26
+      },
+      "box": {
+        "x": 1350,
+        "z": 2000,
+        "width": 190,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "filesystem",
+      "label": "File-system provider",
+      "kind": "service",
+      "source": {
+        "line": 56,
+        "startColumn": 49,
+        "endColumn": 68
+      },
+      "box": {
+        "x": 1650,
+        "z": 2000,
+        "width": 250,
+        "depth": 155,
+        "height": 72
+      }
+    },
+    {
+      "id": "working",
+      "label": "working-file contents",
+      "kind": "document",
+      "source": {
+        "line": 57,
+        "startColumn": 53,
+        "endColumn": 73
+      },
+      "box": {
+        "x": 1655,
+        "z": 2240,
+        "width": 240,
+        "depth": 125,
+        "height": 22
+      }
+    },
+    {
+      "id": "text-file",
+      "label": "TextFileService",
+      "kind": "service",
+      "source": {
+        "line": 62,
+        "startColumn": 28,
+        "endColumn": 42
+      },
+      "box": {
+        "x": 1320,
+        "z": 2240,
+        "width": 250,
+        "depth": 155,
+        "height": 72
+      }
+    },
+    {
+      "id": "decode",
+      "label": "decode each resource",
+      "kind": "detail",
+      "source": {
+        "line": 63,
+        "startColumn": 32,
+        "endColumn": 51
+      },
+      "box": {
+        "x": 995,
+        "z": 2240,
+        "width": 240,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "original-model",
+      "label": "original TextModel",
+      "kind": "document",
+      "source": {
+        "line": 68,
+        "startColumn": 18,
+        "endColumn": 35
+      },
+      "box": {
+        "x": 665,
+        "z": 2240,
+        "width": 240,
+        "depth": 125,
+        "height": 22
+      }
+    },
+    {
+      "id": "modified-model",
+      "label": "modified TextModel",
+      "kind": "document",
+      "source": {
+        "line": 68,
+        "startColumn": 39,
+        "endColumn": 56
+      },
+      "box": {
+        "x": 335,
+        "z": 2240,
+        "width": 240,
+        "depth": 125,
+        "height": 22
+      }
+    },
+    {
+      "id": "diff-model",
+      "label": "TextDiffEditorModel",
+      "kind": "service",
+      "source": {
+        "line": 73,
+        "startColumn": 28,
+        "endColumn": 46
+      },
+      "box": {
+        "x": 0,
+        "z": 2240,
+        "width": 250,
+        "depth": 155,
+        "height": 72
+      }
+    },
+    {
+      "id": "original-ref",
+      "label": "original reference",
+      "kind": "detail",
+      "source": {
+        "line": 74,
+        "startColumn": 32,
+        "endColumn": 49
+      },
+      "box": {
+        "x": 5,
+        "z": 2480,
+        "width": 240,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "modified-ref",
+      "label": "modified reference",
+      "kind": "detail",
+      "source": {
+        "line": 75,
+        "startColumn": 32,
+        "endColumn": 49
+      },
+      "box": {
+        "x": 335,
+        "z": 2480,
+        "width": 240,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "diff-editor",
+      "label": "TextDiffEditor / DiffEditorWidget",
+      "kind": "service",
+      "source": {
+        "line": 73,
+        "startColumn": 56,
+        "endColumn": 88
+      },
+      "box": {
+        "x": 660,
+        "z": 2480,
+        "width": 250,
+        "depth": 155,
+        "height": 72
+      }
+    },
+    {
+      "id": "compare",
+      "label": "compare models",
+      "kind": "detail",
+      "source": {
+        "line": 74,
+        "startColumn": 60,
+        "endColumn": 73
+      },
+      "box": {
+        "x": 1020,
+        "z": 2480,
+        "width": 190,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "original-editor",
+      "label": "original code editor",
+      "kind": "detail",
+      "source": {
+        "line": 75,
+        "startColumn": 60,
+        "endColumn": 79
+      },
+      "box": {
+        "x": 1325,
+        "z": 2480,
+        "width": 240,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "modified-editor",
+      "label": "modified code editor",
+      "kind": "detail",
+      "source": {
+        "line": 76,
+        "startColumn": 60,
+        "endColumn": 79
+      },
+      "box": {
+        "x": 1655,
+        "z": 2480,
+        "width": 240,
+        "depth": 110,
+        "height": 35
+      }
+    },
+    {
+      "id": "editing",
+      "label": "editing / undo / save",
+      "kind": "detail",
+      "source": {
+        "line": 77,
+        "startColumn": 64,
+        "endColumn": 84
+      },
+      "box": {
+        "x": 1655,
+        "z": 2720,
+        "width": 240,
+        "depth": 110,
+        "height": 35
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "file-changes:repository",
+      "from": "file-changes",
+      "to": "repository",
+      "kind": "flow",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "refresh:repository",
+      "from": "refresh",
+      "to": "repository",
+      "kind": "flow",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "git-operations:repository",
+      "from": "git-operations",
+      "to": "repository",
+      "kind": "flow",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "repository:ext-host",
+      "from": "repository",
+      "to": "ext-host",
+      "kind": "flow",
+      "label": "resource groups",
+      "sourceLine": 5
+    },
+    {
+      "id": "ext-host:registration",
+      "from": "ext-host",
+      "to": "registration",
+      "kind": "contains",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "ext-host:splices",
+      "from": "ext-host",
+      "to": "splices",
+      "kind": "contains",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "registration:main-thread",
+      "from": "registration",
+      "to": "main-thread",
+      "kind": "flow",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "splices:main-thread",
+      "from": "splices",
+      "to": "main-thread",
+      "kind": "flow",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "main-thread:provider",
+      "from": "main-thread",
+      "to": "provider",
+      "kind": "flow",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "provider:identity",
+      "from": "provider",
+      "to": "identity",
+      "kind": "contains",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "provider:groups",
+      "from": "provider",
+      "to": "groups",
+      "kind": "contains",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "provider:notifications",
+      "from": "provider",
+      "to": "notifications",
+      "kind": "contains",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "provider:view",
+      "from": "provider",
+      "to": "view",
+      "kind": "flow",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "repositories:view",
+      "from": "repositories",
+      "to": "view",
+      "kind": "flow",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "focus:view",
+      "from": "focus",
+      "to": "view",
+      "kind": "flow",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "view:tree",
+      "from": "view",
+      "to": "tree",
+      "kind": "contains",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "view:decorations",
+      "from": "view",
+      "to": "decorations",
+      "kind": "contains",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "view:actions",
+      "from": "view",
+      "to": "actions",
+      "kind": "contains",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "view:stage",
+      "from": "view",
+      "to": "stage",
+      "kind": "flow",
+      "label": "Stage",
+      "sourceLine": 27
+    },
+    {
+      "id": "stage:add",
+      "from": "stage",
+      "to": "add",
+      "kind": "flow",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "repository:add",
+      "from": "repository",
+      "to": "add",
+      "kind": "contains",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "add:git-add",
+      "from": "add",
+      "to": "git-add",
+      "kind": "contains",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "git-add:status-refresh",
+      "from": "git-add",
+      "to": "status-refresh",
+      "kind": "flow",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "git-add:resource-update",
+      "from": "git-add",
+      "to": "resource-update",
+      "kind": "contains",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "view:command-resolver",
+      "from": "view",
+      "to": "command-resolver",
+      "kind": "flow",
+      "label": "Open Changes",
+      "sourceLine": 36
+    },
+    {
+      "id": "command-resolver:single",
+      "from": "command-resolver",
+      "to": "single",
+      "kind": "contains",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "command-resolver:conflict",
+      "from": "command-resolver",
+      "to": "conflict",
+      "kind": "contains",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "command-resolver:comparison",
+      "from": "command-resolver",
+      "to": "comparison",
+      "kind": "contains",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "single:open",
+      "from": "single",
+      "to": "open",
+      "kind": "flow",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "conflict:merge",
+      "from": "conflict",
+      "to": "merge",
+      "kind": "flow",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "comparison:diff-command",
+      "from": "comparison",
+      "to": "diff-command",
+      "kind": "flow",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "diff-command:editor-service",
+      "from": "diff-command",
+      "to": "editor-service",
+      "kind": "flow",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "editor-service:diff-input",
+      "from": "editor-service",
+      "to": "diff-input",
+      "kind": "flow",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "diff-input:original-uri",
+      "from": "diff-input",
+      "to": "original-uri",
+      "kind": "flow",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "diff-input:modified-uri",
+      "from": "diff-input",
+      "to": "modified-uri",
+      "kind": "flow",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "original-uri:model-resolver",
+      "from": "original-uri",
+      "to": "model-resolver",
+      "kind": "flow",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "modified-uri:model-resolver",
+      "from": "modified-uri",
+      "to": "model-resolver",
+      "kind": "flow",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "model-resolver:reuse",
+      "from": "model-resolver",
+      "to": "reuse",
+      "kind": "contains",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "model-resolver:resolve",
+      "from": "model-resolver",
+      "to": "resolve",
+      "kind": "contains",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "model-resolver:file-service",
+      "from": "model-resolver",
+      "to": "file-service",
+      "kind": "flow",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "file-service:git-provider",
+      "from": "file-service",
+      "to": "git-provider",
+      "kind": "flow",
+      "label": "git:",
+      "sourceLine": 54
+    },
+    {
+      "id": "file-service:filesystem",
+      "from": "file-service",
+      "to": "filesystem",
+      "kind": "flow",
+      "label": "file:",
+      "sourceLine": 56
+    },
+    {
+      "id": "git-provider:readonly",
+      "from": "git-provider",
+      "to": "readonly",
+      "kind": "contains",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "git-provider:buffer",
+      "from": "git-provider",
+      "to": "buffer",
+      "kind": "contains",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "buffer:git-show",
+      "from": "buffer",
+      "to": "git-show",
+      "kind": "contains",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "filesystem:working",
+      "from": "filesystem",
+      "to": "working",
+      "kind": "contains",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "git-show:text-file",
+      "from": "git-show",
+      "to": "text-file",
+      "kind": "flow",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "working:text-file",
+      "from": "working",
+      "to": "text-file",
+      "kind": "flow",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "text-file:decode",
+      "from": "text-file",
+      "to": "decode",
+      "kind": "contains",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "text-file:original-model",
+      "from": "text-file",
+      "to": "original-model",
+      "kind": "flow",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "text-file:modified-model",
+      "from": "text-file",
+      "to": "modified-model",
+      "kind": "flow",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "original-model:diff-model",
+      "from": "original-model",
+      "to": "diff-model",
+      "kind": "flow",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "modified-model:diff-model",
+      "from": "modified-model",
+      "to": "diff-model",
+      "kind": "flow",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "diff-model:original-ref",
+      "from": "diff-model",
+      "to": "original-ref",
+      "kind": "contains",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "diff-model:modified-ref",
+      "from": "diff-model",
+      "to": "modified-ref",
+      "kind": "contains",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "diff-model:diff-editor",
+      "from": "diff-model",
+      "to": "diff-editor",
+      "kind": "flow",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "diff-editor:compare",
+      "from": "diff-editor",
+      "to": "compare",
+      "kind": "contains",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "diff-editor:original-editor",
+      "from": "diff-editor",
+      "to": "original-editor",
+      "kind": "contains",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "diff-editor:modified-editor",
+      "from": "diff-editor",
+      "to": "modified-editor",
+      "kind": "contains",
+      "label": null,
+      "sourceLine": null
+    },
+    {
+      "id": "modified-editor:editing",
+      "from": "modified-editor",
+      "to": "editing",
+      "kind": "contains",
+      "label": null,
+      "sourceLine": null
+    }
+  ],
+  "annotations": [
+    {
+      "role": "heading",
+      "line": 1,
+      "text": "SOURCE CONTROL AND GIT"
+    },
+    {
+      "role": "route",
+      "line": 5,
+      "text": "resource groups"
+    },
+    {
+      "role": "route",
+      "line": 27,
+      "text": "Stage"
+    },
+    {
+      "role": "route",
+      "line": 36,
+      "text": "Open Changes"
+    },
+    {
+      "role": "route",
+      "line": 54,
+      "text": "git:"
+    },
+    {
+      "role": "route",
+      "line": 56,
+      "text": "file:"
+    },
+    {
+      "role": "legend",
+      "line": 80,
+      "text": "[URI]       Resource identity shared by SCM entries, providers, and document models."
+    },
+    {
+      "role": "legend",
+      "line": 81,
+      "text": "[COMMAND]   Shared command dispatch connects UI actions to handlers."
+    }
+  ],
+  "chapters": [
+    {
+      "name": "01 / SOURCE CONTROL",
+      "x": -30,
+      "z": -105
+    },
+    {
+      "name": "02 / OPEN CHANGES",
+      "x": -30,
+      "z": 895
+    },
+    {
+      "name": "03 / DOCUMENT MODELS",
+      "x": -30,
+      "z": 1895
+    }
+  ],
+  "view": {
+    "azimuth": 45,
+    "elevation": 35.264,
+    "zoom": 1,
+    "panX": 0,
+    "panY": 0,
+    "selected": null,
+    "showConnections": true
+  },
+  "viewport": {
+    "width": 1400,
+    "height": 850
+  }
+}

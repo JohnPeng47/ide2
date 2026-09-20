@@ -1,0 +1,13 @@
+{
+  "name": "projection-3d",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node ../node_modules/vite/bin/vite.js --config vite.config.mjs",
+    "build": "node ../node_modules/vite/bin/vite.js build --config vite.config.mjs",
+    "preview": "node ../node_modules/vite/bin/vite.js preview --config vite.config.mjs",
+    "test": "node --test *.test.mjs",
+    "check:browser": "node browser-check.mjs && node boxes-browser-check.mjs",
+    "check:boxes": "node boxes-browser-check.mjs"
+  }
+}

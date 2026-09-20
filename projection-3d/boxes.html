@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="icon" href="data:,"/><title>Source Control & Git · Ink & Paper</title></head>
+<body>
+  <header><div class="heading"><a href="./" aria-label="Back to diagram planes">↖ PLANE VIEWS</a><h1>SOURCE CONTROL &amp; GIT</h1><span class="edition">INK / PAPER / SPACE</span></div><div class="header-actions"><span id="node-count"></span><button id="save-menu" aria-expanded="false" aria-controls="save-panel">Saved views ↗</button></div></header>
+  <nav aria-label="Scene chapters"><button id="overview" aria-pressed="true">Entire diagram</button><button data-chapter="0">01 Source control</button><button data-chapter="1">02 Open changes</button><button data-chapter="2">03 Document models</button><label class="connections-toggle"><input type="checkbox" id="connections" checked/>Connections</label></nav>
+  <main id="box-viewport" tabindex="0" aria-label="Oblique box diagram. Drag to pan, shift drag to orbit, scroll to zoom. Click a box to inspect it; double click to focus.">
+    <svg id="box-scene" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Source Control and Git, one box per ASCII node"></svg>
+    <div class="canvas-caption"><strong>D5 / SOURCE CONTROL AND GIT</strong><span id="scene-summary">One source node. One box.</span></div>
+    <div class="camera-tools"><button id="box-zoom-in" aria-label="Zoom in">+</button><button id="box-zoom-out" aria-label="Zoom out">−</button><button id="box-fit">Fit</button><output id="box-zoom"></output></div>
+    <div id="hover-label" role="status"></div>
+    <section id="node-panel" hidden aria-label="Selected node"><button class="panel-close" id="close-node" aria-label="Clear node selection">×</button><p class="eyebrow" id="node-id"></p><h2 id="node-label"></h2><p id="source-location"></p><button id="focus-node">Focus this box</button><h3>CONNECTED NODES</h3><ul id="node-links"></ul><details><summary>Original ASCII line</summary><pre id="source-line"></pre></details></section>
+    <section id="save-panel" hidden aria-label="Saved visualizations"><h2>Keep this view</h2><label for="box-name">Visualization name</label><input id="box-name" value="D5 — ink & paper" maxlength="150"/><div class="actions"><button id="save-boxes">Save copy</button><button id="export-boxes">Export JSON</button><button id="import-boxes">Import JSON</button></div><label for="box-saved">Saved visualization</label><div class="saved-row"><select id="box-saved"></select><button id="load-boxes">Load</button></div><input hidden type="file" id="box-file" accept=".json,application/json"/><p id="save-message" role="status">The source, boxes, connections, and camera are saved together.</p></section>
+    <div id="box-error" role="alert" hidden></div>
+  </main>
+  <footer><span>DRAG TO PAN · SHIFT DRAG TO ORBIT · SCROLL TO ZOOM · DOUBLE CLICK TO FOCUS</span><span id="box-status">56 source nodes / 56 boxes</span></footer>
+  <script type="module" src="./boxes.js"></script>
+</body>
+</html>
