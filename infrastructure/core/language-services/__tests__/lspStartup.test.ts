@@ -30,6 +30,7 @@ async function start(enabled: boolean) {
   await mkdir(path.join(root, '.git'));
   const store = new DiagramStore(root);
   const project = await store.ensureProject({ checkoutRoot: root, repositoryIdentity: path.join(root, '.git') });
+  await store.createDiagramSet({project,location:{checkoutRoot:root,repositoryIdentity:path.join(root,'.git')},name:'Source',initialPrompt:'Source'});
   const source = 'function answer() { return 42; }\nanswer();\n';
   await writeFile(path.join(root, 'main.ts'), source);
   const port = await new Promise<number>(resolve => { const s = createServer(); s.listen(0, '127.0.0.1', () => { const port = (s.address() as { port: number }).port; s.close(() => resolve(port)); }); });

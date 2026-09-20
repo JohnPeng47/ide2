@@ -18,8 +18,8 @@ describe('clipboard diagram insertion', () => {
     const boxes = resolveScene(next.scene).children;
     expect(boxes.find(box => box.box.id === 'pasted')?.bounds).toMatchObject({ column: 0, row: 0, columns: 5, rows: 2 });
     expect(boxes.find(box => box.box.id === 'overview')?.bounds.column).toBe(8);
-    expect(next.scene.contents.pasted).toEqual({ id: 'pasted', revision: 0, ascii: '[New]\n  |', mappings: [] });
-    expect(next.nodes.pasted).toEqual([]);
+    expect(next.scene.contents.pasted).toMatchObject({ id: 'pasted', revision: 0, content: { ascii: '[New]\n  |' }, sourceContext: {mappings: []} });
+    expect(next.scene.contents.pasted.sourceContext.mappings).toEqual([]);
     expect(document).toEqual(before);
   });
   it('rejects insertion beyond canvas limits without changing the document', () => {

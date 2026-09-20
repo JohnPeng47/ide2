@@ -326,7 +326,7 @@ export function StudioPage(props: { onOpenProjectDiagram: (id: string) => void; 
   const editQueue = useRef<Promise<void>>(Promise.resolve());
   const editShortcutHandlers = useRef({ undo: () => {}, redo: () => {} });
   const requestedPaneTabIdsRef = useRef<Partial<Record<"primary" | "context", string>>>({});
-  const domainProfile = resolveDomainProfile(workspace?.project?.domainProfileId);
+  const domainProfile = resolveDomainProfile(workspace?.diagramSets.find(set => set.id === activeSetId)?.source?.domainProfileId ?? workspace?.project?.defaultDomainProfileId);
   const selectedPlan = (workspace?.plans ?? []).find((plan) => plan.id === planSelection?.planId);
   const selectedPlanChange = selectedPlan?.changes.find(
     (change) => change.id === planSelection?.changeId

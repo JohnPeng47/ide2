@@ -4,6 +4,7 @@ export type FileCompactionStage = "compact" | "refine";
 export type FileCompactionThinkingLevel = "low" | "medium" | "high" | "xhigh" | "max";
 
 export interface FileCompactionRequest {
+  sourceId?: string;
   projectId: string;
   sourceFile: string;
   modelId?: string;

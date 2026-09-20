@@ -137,18 +137,14 @@ export interface ProjectRecord {
   schemaVersion: typeof SCHEMA_VERSION;
   id: string;
   name: string;
-  repositoryIdentity: string;
-  canonicalRepoRoot: string;
-  /** Application semantics for this corpus. Missing only while reading legacy records. */
-  domainProfileId: import("../profiles/domainProfile").DomainProfileId;
-  /** Concrete content source. Missing legacy records normalize to the canonical git worktree. */
-  corpus: import("../profiles/domainProfile").CorpusBinding;
+  defaultDomainProfileId?: import("../profiles/domainProfile").BuiltInDomainProfileId;
   diagramSetIds: string[];
   createdAt: string;
   updatedAt: string;
 }
 
 export interface DiagramSetRecord {
+  source?: import("../diagrams/diagram").DiagramSourceBinding;
   schemaVersion: typeof SCHEMA_VERSION;
   id: string;
   projectId: string;

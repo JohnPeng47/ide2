@@ -59,6 +59,7 @@ async function fixture(runtime: FileCompactionRuntime = new FakeFileCompactionRu
   await writeFile(path.join(root, source.sourceFile), sourceText);
   const store = new DiagramStore(root);
   const project = await store.ensureProject({ checkoutRoot: root, repositoryIdentity: path.join(root, ".git") });
+  await store.createDiagramSet({project, location: {checkoutRoot:root,repositoryIdentity:path.join(root,".git")},name:"Source",initialPrompt:"Source"});
   const application = createCoreApplication(store);
   const service = createFileCompactionService(application, runtime); services.push(service);
   const input = { projectId: project.id, sourceFile: source.sourceFile };

@@ -1,3 +1,4 @@
+import { createDiagram } from '../diagram';
 import { describe, expect, it } from "vitest";
 import {
   boxesOverlap,
@@ -19,7 +20,7 @@ function diagram(id: string, column: number, row = 0): GridBox {
 function fixture(children: GridBox[], texts: Record<string, string>): LineGridScene {
   return { root: { id: "root", kind: "container", position: { column: 0, row: 0 }, collapsed: false,
     children, layout: { collisionPolicy: "push-right", gap: 2 } },
-  contents: Object.fromEntries(Object.entries(texts).map(([id, ascii]) => [id, { id, ascii, revision: 0, mappings: [] }])) };
+  contents: Object.fromEntries(Object.entries(texts).map(([id, ascii]) => [id, createDiagram({ id, ascii, revision: 0 })])) };
 }
 function bounds(scene: LineGridScene, id: string) {
   return flattenGrid(resolveScene(scene)).find((node) => node.box.id === id)!.bounds;

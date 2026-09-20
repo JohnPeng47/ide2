@@ -1,3 +1,4 @@
+import { createDiagram } from '../../../../../domain/core/diagrams/diagram';
 import { LocalChatService } from '../../../../../application/mapping/chat/chatService';
 import { corpusAccess } from '../../../../../src/server/app/bootstrap';
 import {
@@ -121,18 +122,20 @@ it("resolves project source snapshots, accepts historical revisions and freezes 
   const seen: Array<{ request: LocalChatReplyRequest; sourceRoot: string; lines: string[] }> = [];
   const evidence = {
     worker: {
-      id: "worker", label: "Worker", sourceRanges: [
-        { path: "worker.ts", startLine: 2, endLine: 2, originalLines: ["original source"] }
+      id: "worker", handle:"worker", category:"operation" as const, summary:"Worker", label: "Worker", sourceRanges: [
+        { id:"worker-range", path: "worker.ts", startLine: 2, endLine: 2, originalLines: ["original source"] }
       ]
     }
   };
   const application = {
     store: {
-      loadProject: async () => ({ id: "project-one", corpus: { root: "/project/source" } }),
+      loadProject: async () => ({ id: "project-one", diagramSetIds: [] }),
       projectCatalogs: {
         loadRepresentationCatalog: async () => ({
-          representations: { "representation-one": { currentRevisionId: "revision-two" } },
-          revisions: { "revision-one": { representationId: "representation-one", evidence } }
+          representations: { "representation-one": { id:"representation-one", currentRevisionId: "revision-two", revisionIds:["revision-one","revision-two"] } },
+          revisions: { "revision-one": { representationId: "representation-one", evidence, content:{kind:"mapping-canvas",scene:{
+            contents:{"child-diagram":createDiagram({id:"child-diagram",revision:3,ascii:"[Worker]",mappings:input().context.mappings,evidence,
+              source:{sourceId:"worker-source",repositoryIdentity:"worker",domainProfileId:"source-code",corpus:{kind:"git-worktree",root:"/project/source"}}})},root:{}}} } }
         })
       }
     }

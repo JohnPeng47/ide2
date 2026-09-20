@@ -128,7 +128,7 @@ export async function createMaterializedDiagramSet(context: StudioContext, input
     const codeEntityIdsByKey = Object.fromEntries(
       [...entityByKey].map(([key, entity]) => [key, entity.id])
     );
-    const profile = resolveDomainProfile(project.domainProfileId);
+    const profile = resolveDomainProfile(diagramSet.source?.domainProfileId ?? "source-code");
     const diagramHandles = new Set<string>();
     const createdAt = timestamp();
     const diagrams: DiagramRecord[] = [];
@@ -268,26 +268,12 @@ export async function createMaterializedDiagramSet(context: StudioContext, input
 export async function validateDiagramSetTarget(context: StudioContext, inputPath: string, requestedDomainValue?: unknown): Promise<RepositoryLocation> {
   const existingProject = await context.store.loadProject();
   const requestedDomain = requestedDomainValue
-    ?? existingProject?.domainProfileId
+    ?? existingProject?.defaultDomainProfileId
     ?? context.defaultDomainProfileId;
   if (!isBuiltInDomainProfileId(requestedDomain)) {
     throw new Error(`unsupported domain profile: ${String(requestedDomain)}`);
   }
   const location = await context.core.corpus.discover(inputPath, requestedDomain);
-  if (path.resolve(location.checkoutRoot) !== context.store.checkoutRoot) {
-    throw new Error(`application store is rooted at ${context.store.checkoutRoot}, not ${location.checkoutRoot}`);
-  }
-  if (existingProject) {
-    const sameDocumentRoot = existingProject.domainProfileId === "document"
-      && requestedDomain === "document"
-      && path.resolve(existingProject.corpus.root) === path.resolve(location.checkoutRoot);
-    if (existingProject.repositoryIdentity !== location.repositoryIdentity && !sameDocumentRoot) {
-      throw new Error(".diagrams belongs to a different corpus identity");
-    }
-    if (existingProject.domainProfileId !== requestedDomain) {
-      throw new Error(`.diagrams belongs to the ${existingProject.domainProfileId} domain`);
-    }
-  }
   return location;
 }
 

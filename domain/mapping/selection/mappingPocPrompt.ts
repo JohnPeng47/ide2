@@ -4,6 +4,8 @@ import type { MappingPocGridRect } from "./mappingPoc";
 export const MAPPING_POC_PROMPT_CONTEXT_LINES = 3;
 
 export interface MappingPocPromptRequest {
+  contentId?: string;
+  sourceContext?: import("../../core/diagrams/diagram").DiagramSourceContext;
   projectId?: string;
   representationId?: string;
   baseRevisionId?: string;

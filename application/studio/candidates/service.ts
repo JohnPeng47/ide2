@@ -35,7 +35,7 @@ export async function promoteProjectRepresentation(context: StudioContext, input
     const ranges = await Promise.all(entity.sourceRanges.map(async (range, index) => {
       let originalLines = range.originalLines;
       if (!originalLines) {
-        const liveLines = await context.core.corpus.readDocumentLines(project.corpus, range.path);
+        const liveLines = await context.core.corpus.readDocumentLines((await context.core.projectCorpus(set)).corpus, range.path);
         originalLines = liveLines.slice(range.startLine - 1, range.endLine);
       }
       const rangeId = stableProjectId(
@@ -48,7 +48,7 @@ export async function promoteProjectRepresentation(context: StudioContext, input
       );
       rangeIdByLegacyAddress.set(`${entity.id}:${range.id ?? index}`, rangeId);
       rangeIdByLegacyAddress.set(`${entity.id}:${index}`, rangeId);
-      const activeCompactionId = compactions.activeByPath[range.path];
+      const activeCompactionId = compactions.activeByPath[JSON.stringify([set.source?.sourceId ?? null, range.path])];
       const activeCompaction = activeCompactionId
         ? compactions.compactions[activeCompactionId]
         : undefined;
@@ -100,6 +100,7 @@ export async function promoteProjectRepresentation(context: StudioContext, input
     };
   });
   await context.store.projectCatalogs.promoteRepresentation({
+    source: set.source,
     projectId: project.id,
     ...(input.representationId ? { representationId: input.representationId } : {}),
     ...(input.expectedRevisionId ? { expectedRevisionId: input.expectedRevisionId } : {}),

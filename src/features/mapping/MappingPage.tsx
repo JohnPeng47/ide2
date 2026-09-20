@@ -1,3 +1,4 @@
+import type { DiagramJumpTarget } from '../../../domain/core/diagrams/diagramJump';
 import { useAgentCanvasBridge } from './agent/useAgentCanvasBridge';
 import type { MappingDocumentController, DiagramOperation } from '../../../domain/mapping/workspace/mappingDocumentController';
 import type { CanvasCommand } from '../../../domain/mapping/agent/contracts';
@@ -40,14 +41,15 @@ interface Draft {
   name: string;
   document: MappingGridDocument;
   savedScene: string;
+  savedEdges?: string;
   savedName: string;
   revisionId: string;
   busy: boolean;
   canvas: MappingCanvasState;
   viewport?: CanvasTransform;
-  focusBox?: { id: string; serial: number };
+  focusBox?: { id: string; serial: number; contentNodeId?: string };
 }
-const dirty = (draft: Draft) => draft.name !== draft.savedName || JSON.stringify(draft.document.scene) !== draft.savedScene;
+const dirty = (draft: Draft) => draft.name !== draft.savedName || JSON.stringify(draft.document.scene) !== draft.savedScene || JSON.stringify(draft.document.edges) !== (draft.savedEdges ?? '[]');
 
 export function MappingPocPage(props: { onStudio: () => void; onExperiments: () => void;
   registerNavigationGuard?: (guard: (() => boolean) | undefined) => void }) {
@@ -81,9 +83,9 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
       const { name, snapshot: initialized, requestId } = command.payload as { name: string; requestId: string; snapshot: ProjectRepresentationsSnapshot };
       if (appliedRequests.current.has(`create:${requestId}`)) return appliedRequests.current.get(`create:${requestId}`);
       const id = `draft-${crypto.randomUUID()}`;
-      const document = mappingDocumentFromScene(singleDiagramScene('[New diagram]'), {});
+      const document = mappingDocumentFromScene(singleDiagramScene('[New diagram]'));
       setSnapshot(initialized);
-      setDrafts(current => ({ ...current, [id]: { name, document, savedScene: JSON.stringify(document.scene), savedName: '', revisionId: '', busy: false, canvas: initialCanvasState() } }));
+      setDrafts(current => ({ ...current, [id]: { name, document, savedEdges: JSON.stringify(document.edges), savedScene: JSON.stringify(document.scene), savedName: '', revisionId: '', busy: false, canvas: initialCanvasState() } }));
       setActiveId(id);
       await waitController(id);
       const result = { documentId: id };
@@ -105,12 +107,12 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
       appliedRequests.current.set(key, result);
       return result;
     }
-    const { result, wholeDocument, savedScene, name } = command.payload as {
-      result: Awaited<ReturnType<typeof saveMappingProjectDiagram>>; wholeDocument: boolean; savedScene: string; name: string;
+    const { result, wholeDocument, savedScene, savedEdges, name } = command.payload as {
+      result: Awaited<ReturnType<typeof saveMappingProjectDiagram>>; wholeDocument: boolean; savedScene: string; savedEdges: string; name: string;
     };
     setSnapshot(result);
     if (wholeDocument) setDrafts(current => ({ ...current, [id]: { ...current[id], representationId: result.representation.id,
-      revisionId: result.representation.currentRevisionId, savedScene, savedName: name, name: current[id].name === draft.name ? name : current[id].name } }));
+      revisionId: result.representation.currentRevisionId, savedScene, savedEdges, savedName: name, name: current[id].name === draft.name ? name : current[id].name } }));
     return { updated: true };
   };
   useAgentCanvasBridge({ projectId: snapshot?.project?.id, documents: Object.entries(drafts).map(([documentId, draft]) => ({ documentId, name: draft.name,
@@ -122,16 +124,35 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
     const revision = representation && data?.catalog?.revisions[representation.currentRevisionId];
     if (!representation || representation.status !== "settled" || !revision) { setError("Project diagram was not found"); return; }
     const existingId = Object.entries(drafts).find(([key, draft]) => (draft.representationId ?? key) === id)?.[0];
-    if (existingId) { setActiveId(existingId); return; }
-    const document = mappingDocumentFromScene(sceneFromRevision(revision), revision.evidence);
+    if (existingId) {
+      setActiveId(existingId); setError('');
+      if (navigate) { const url = new URL(location.href); url.searchParams.set('diagram', id); history.pushState({}, '', url); }
+      return existingId;
+    }
+    const document = mappingDocumentFromScene(sceneFromRevision(revision), revision.content?.kind === 'mapping-canvas' ? revision.content.edges ?? [] : []);
     setDrafts((current) => current[id] ? current : { ...current, [id]: { name: representation.name,
-      document, savedScene: JSON.stringify(document.scene), savedName: representation.name, revisionId: revision.id, busy: false, canvas: initialCanvasState() } });
+      document, savedEdges: JSON.stringify(document.edges), savedScene: JSON.stringify(document.scene), savedName: representation.name, revisionId: revision.id, busy: false, canvas: initialCanvasState() } });
     setActiveId(id);
     if (navigate) {
       const url = new URL(location.href); url.searchParams.set("diagram", id);
       history.pushState({}, "", url);
     }
     setError("");
+    return id;
+  };
+
+  const jumpTo = async (target: DiagramJumpTarget) => {
+    try {
+      const id = open(target.representationId);
+      if (!id || !target.displayNodeId) return;
+      const controller = await waitController(id);
+      const node = controller.nodes().find(node => node.id === target.displayNodeId && node.layout === 'grid');
+      if (!node || node.layout !== 'grid') { setError('Linked diagram was removed; opened its canvas'); return; }
+      const contentNode = target.contentNodeId && node.contentNodes?.find(item => item.id === target.contentNodeId);
+      if (target.contentNodeId && !contentNode) setError('Linked label changed; opened its diagram');
+      setDrafts(current => ({ ...current, [id]: { ...current[id], focusBox: { id: node.boxId,
+        contentNodeId: contentNode ? contentNode.id : undefined, serial: (current[id].focusBox?.serial ?? 0) + 1 } } }));
+    } catch (error) { setError(error instanceof Error ? error.message : 'Could not open linked diagram'); }
   };
 
   const restore = (workspace: MappingWorkspaceSnapshot, data = snapshot) => {
@@ -147,7 +168,7 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
     if (!snapshot?.project) throw new Error('Project is not initialized');
     return { schemaVersion: 3, projectId: snapshot.project.id, activeDocumentId: activeId,
       documents: Object.entries(drafts).map(([representationId, draft]) => ({ representationId, savedRepresentationId: draft.representationId, name: draft.name,
-        savedName: draft.savedName, savedScene: draft.savedScene, revisionId: draft.revisionId,
+        savedName: draft.savedName, savedScene: draft.savedScene, savedEdges: draft.savedEdges, revisionId: draft.revisionId,
         document: draft.document, canvas: { ...draft.canvas, display: viewState.captureDisplay(representationId, draft.canvas.display) },
         viewport: viewState.captureCamera(representationId, draft.viewport) })) };
   };
@@ -212,11 +233,11 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
     setSavingId(id); setError("");
     try {
       const result = await saveMappingProjectDiagram({ projectId: snapshot?.project?.id, representationId: captured.representationId ?? (id.startsWith('draft-') ? undefined : id),
-        evidence: captured.document.evidence, expectedRevisionId: captured.revisionId, name: captured.name, scene: captured.document.scene });
+        expectedRevisionId: captured.revisionId, name: captured.name, scene: captured.document.scene, edges: captured.document.edges });
       setSnapshot(result);
       setDrafts((current) => ({ ...current, [id]: { ...current[id], savedName: captured.name.trim(),
         name: current[id].name === captured.name ? captured.name.trim() : current[id].name,
-        representationId: result.representation.id, savedScene: JSON.stringify(captured.document.scene), revisionId: result.representation.currentRevisionId } }));
+        representationId: result.representation.id, savedScene: JSON.stringify(captured.document.scene), savedEdges: JSON.stringify(captured.document.edges), revisionId: result.representation.currentRevisionId } }));
     } catch (error) { setError(error instanceof Error ? error.message : "Could not save diagram"); }
     finally { setSavingId(undefined); }
   };
@@ -225,7 +246,7 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
     setSavingId("new"); setError("");
     try {
       const result = await saveMappingProjectDiagram({ projectId: snapshot?.project?.id, name: newName,
-        ...(copyCurrent && active ? { sourceRevisionId: active.revisionId, scene: active.document.scene } : { scene: singleDiagramScene(newAscii) }) });
+        ...(copyCurrent && active ? { sourceRevisionId: active.revisionId, scene: active.document.scene, edges: active.document.edges } : { scene: singleDiagramScene(newAscii) }) });
       setSnapshot(result); setCreating(false); open(result.representation.id, result);
     } catch (error) { setError(error instanceof Error ? error.message : "Could not create diagram"); }
     finally { setSavingId(undefined); }
@@ -264,7 +285,7 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
           {Object.entries(drafts).map(([id, draft]) => <SourcePaneDocumentContext.Provider key={`${workspaceEpoch}:${id}`} value={id}><SourcePaneDocumentActiveContext.Provider value={id === activeId}><div className="mapping-document-view" hidden={id !== activeId}>
             <DraggableDiagramCanvas className="mapping-poc-canvas" enabled resetKey={id} leftInset={340} focusBox={draft.focusBox}
               initialTransform={draft.viewport} onTransformChange={viewport => viewState.setCamera(id, viewport)}>
-              <MappingPocSelectionCanvas onController={controller => { if (controller) controllers.current.set(id, controller); else controllers.current.delete(id); }} initialCanvasState={draft.canvas}
+              <MappingPocSelectionCanvas onJump={target => void jumpTo(target)} onController={controller => { if (controller) controllers.current.set(id, controller); else controllers.current.delete(id); }} initialCanvasState={draft.canvas}
                 onCanvasStateChange={canvas => setDrafts(current => !current[id] || current[id].canvas === canvas ? current : { ...current, [id]: { ...current[id], canvas } })}
                 initialDocument={draft.document} active={id === activeId && !creating} focusBox={draft.focusBox}
                 projectContext={draft.revisionId ? { projectId: snapshot!.project!.id, representationId: draft.representationId ?? id, baseRevisionId: draft.revisionId } : undefined}

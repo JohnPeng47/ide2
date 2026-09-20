@@ -1,5 +1,5 @@
-import { buildDiagramContent, visibleContentLines, type DiagramContent } from '../../core/diagrams/diagramContent';
-import type { CanvasDiagram, GridBox, LineGridScene } from '../../core/diagrams/lineGrid';
+import { visibleContentLines, type DiagramContent } from '../../core/diagrams/diagramContent';
+import type { Diagram, GridBox, LineGridScene } from '../../core/diagrams/lineGrid';
 import type { MappingPocGridRect } from '../selection/mappingPoc';
 
 /** Presentation of one diagram instance; never part of its source content. */
@@ -8,15 +8,7 @@ export interface DiagramViewState {
   collapsedContentNodeIds: string[];
 }
 export type DiagramViews = Record<string, DiagramViewState>;
-const contentCache = new WeakMap<CanvasDiagram, DiagramContent>();
-export function resolveDiagramContent(content: CanvasDiagram): DiagramContent {
-  let parsed = contentCache.get(content);
-  if (!parsed) {
-    parsed = buildDiagramContent(content.ascii, `${content.id}:${content.revision}`, content.structureKind ?? content.diagramContent?.structure.kind ?? 'diagram', content.mappings);
-    contentCache.set(content, parsed);
-  }
-  return parsed;
-}
+export function resolveDiagramContent(diagram: Diagram): DiagramContent { return diagram.content; }
 export function projectDiagramContent(content: DiagramContent, view?: DiagramViewState) {
   const collapsed = view?.contentRevisionId === content.revisionId ? view.collapsedContentNodeIds : [];
   const sourceLines = visibleContentLines(content, collapsed);

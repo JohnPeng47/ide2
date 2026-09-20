@@ -39,7 +39,7 @@ export function initialCanvasState(): MappingCanvasState {
 }
 export interface MappingDocumentSnapshot {
   savedRepresentationId?: string;
-  representationId: string; name: string; revisionId: string; savedName: string; savedScene: string;
+  representationId: string; name: string; revisionId: string; savedName: string; savedScene: string; savedEdges?: string;
   document: MappingGridDocument; canvas: MappingCanvasState; viewport?: CanvasTransform;
 }
 export interface MappingWorkspaceSnapshot {

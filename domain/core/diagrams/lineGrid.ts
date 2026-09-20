@@ -5,14 +5,8 @@ export interface GridPoint { column: number; row: number }
 export interface GridSize { columns: number; rows: number }
 export interface GridBounds extends GridPoint, GridSize {}
 
-export interface CanvasDiagram {
-  id: string;
-  revision: number;
-  structureKind?: 'diagram' | 'tree';
-  diagramContent?: import('./diagramContent').DiagramContent;
-  ascii: string;
-  mappings: readonly DiagramElementMapping[];
-}
+export type { Diagram } from './diagram';
+import type { Diagram } from './diagram';
 
 export type GridBox = {
   id: string;
@@ -26,7 +20,7 @@ export type GridBox = {
 );
 
 export interface LineGridScene {
-  contents: Readonly<Record<string, CanvasDiagram>>;
+  contents: Readonly<Record<string, Diagram>>;
   root: GridBox;
 }
 
@@ -81,7 +75,7 @@ export function resolveScene(scene: LineGridScene): ResolvedGridBox {
     if (contentId) {
       const content = scene.contents[contentId];
       if (!content) throw new Error(`Missing grid content: ${contentId}`);
-      size = measureContent(content.ascii);
+      size = measureContent(content.content.ascii);
     }
     const children = box.kind === "container" && !box.collapsed
       ? box.children.map((child) => visit(child, origin)) : [];
@@ -165,7 +159,7 @@ export function layoutScene(scene: LineGridScene, changedId: string): LineGridSc
   return next;
 }
 
-export function composeScene(scene: LineGridScene, renderContent?: (content: CanvasDiagram, box: GridBox) => string): string {
+export function composeScene(scene: LineGridScene, renderContent?: (content: Diagram, box: GridBox) => string): string {
   const root = resolveScene(scene);
   const width = root.bounds.column + root.bounds.columns;
   const height = root.bounds.row + root.bounds.rows;
@@ -181,7 +175,7 @@ export function composeScene(scene: LineGridScene, renderContent?: (content: Can
     }
     if (node.contentId) {
       const content = scene.contents[node.contentId];
-      (renderContent ? renderContent(content, node.box) : content.ascii).split("\n").forEach((line, index) => {
+      (renderContent ? renderContent(content, node.box) : content.content.ascii).split("\n").forEach((line, index) => {
         const row = node.bounds.row + index;
         const start = node.bounds.column;
         const existing = rows[row].padEnd(start, " ");

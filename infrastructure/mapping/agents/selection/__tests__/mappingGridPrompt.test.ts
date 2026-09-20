@@ -7,7 +7,9 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { expect, it } from "vitest";
-import { generatedGridNodes } from "../../../../../domain/mapping/workspace/mappingGrid";
+import { initialMappingGrid } from "../../../../../domain/mapping/workspace/mappingGrid";
+import { diagramSelectionNodes } from "../../../../../domain/mapping/workspace/mappingDocument";
+import { createDiagram } from "../../../../../domain/core/diagrams/diagram";
 import { MAPPING_POC_GRAPH_A, projectASelectionToB } from "../../../../../domain/mapping/selection/mappingPoc";
 import { generatedMappingPocResult } from "../../../../../domain/mapping/selection/mappingPocPrompt";
 import { FakeMappingAgentRuntime } from "../agentRuntime";
@@ -25,7 +27,7 @@ it("generates mapped local content and can edit it without patching the source d
     });
     expect(generated.diagramAscii).toBe("Collection detail\n +-- code entity collection prompt");
     expect(generated.mappings).toEqual([expect.objectContaining({ entityId: "a-collection-prompt", line: 2, startColumn: 6 })]);
-    const nodes = generatedGridNodes({ id: "child", revision: 0, ascii: generated.diagramAscii, mappings: generated.mappings! });
+    const nodes = diagramSelectionNodes(createDiagram({ id: "child", revision: 0, ascii: generated.diagramAscii, mappings: generated.mappings!, evidence: initialMappingGrid().scene.contents.overview.sourceContext.evidence }));
     expect(projectASelectionToB([nodes[0].id], nodes).selectedANodeIds).toEqual([nodes[0].id]);
     const edited = await runtime.promptDiagramSelection({
       clientSessionId: "edit-local", sourceRoot: root,

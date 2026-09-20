@@ -1,3 +1,4 @@
+import type { EndpointBounds } from './endpointGeometry';
 import { resolveDiagramContent, projectDiagramContent } from './diagramViewState';
 export { resolveDiagramContent } from './diagramViewState';
 import { flattenGrid, resolveScene, type GridBounds } from '../../core/diagrams/lineGrid';
@@ -5,9 +6,12 @@ import type { DiagramContent } from '../../core/diagrams/diagramContent';
 import type { FloatingBox, DisplayGeometry } from './displayModel';
 import type { MappingGridDocument } from './mappingGrid';
 import type { MappingCanvasState } from './mappingWorkspace';
+import { drawEdge } from './connectionLayout';
+import { connectionContentNodes } from '../../core/diagrams/diagramConnection';
 export type { FloatingBox };
 
 export type FloatingPlacement =
+  | { kind: 'connection'; edgeId: string }
   | { kind: 'grid-region'; gridBoxId: string; contentId: string; rect: import('../selection/mappingPoc').MappingPocGridRect; sourceAscii: string }
   | { kind: 'parent'; ownerId: string }
   | { kind: 'conversation'; canvasAnchor: { x: number; y: number }; presentation: 'compact' | 'floating' | 'docked' }
@@ -24,13 +28,13 @@ export interface DisplayNodeCollapsible {
 export type CanvasDisplayNode = {
   id: string; version: number; childIds: string[]; expansion: 'expanded' | 'collapsed';
   collapsible: DisplayNodeCollapsible;
-} & ({ layout: 'grid'; kind: 'diagram' | 'group'; boxId: string; geometry: { units: 'cells'; bounds: GridBounds }; content?: DiagramContent }
+} & ({ layout: 'grid'; kind: 'diagram' | 'group'; boxId: string; geometry: { units: 'cells'; bounds: GridBounds }; content?: DiagramContent; contentNodes?: readonly import('../../core/diagrams/diagramContent').DiagramContentNode[]; diagram?: import("../../core/diagrams/diagram").Diagram }
   | { layout: 'floating'; kind: FloatingBox['kind']; geometry: DisplayGeometry & { units: 'pixels' }; placement: FloatingPlacement; value: FloatingBox });
 export const gridNodeId = (id: string) => `grid:${id}`;
 export const floatingNodeId = (id: string) => `floating:${id}`;
 
 /** Read-only registry over the two existing stores. Geometry has no second writable copy. */
-export function canvasDisplayNodes(document: MappingGridDocument, canvas: MappingCanvasState, version: number): CanvasDisplayNode[] {
+export function canvasDisplayNodes(document: MappingGridDocument, canvas: MappingCanvasState, version: number, cell = { width: 8, height: 18 }, endpointBounds?: EndpointBounds): CanvasDisplayNode[] {
   const visible = new Map(flattenGrid(resolveScene(document.scene)).map(node => [node.box.id, node]));
   const expand = (box: typeof document.scene.root): typeof box => box.kind === 'container'
     ? { ...box, collapsed: false, children: box.children.map(expand) } : { ...box, collapsed: false };
@@ -47,7 +51,7 @@ export function canvasDisplayNodes(document: MappingGridDocument, canvas: Mappin
     })) : [] }, id: gridNodeId(box.id), boxId: box.id, version, layout: 'grid', kind: box.kind === 'diagram' ? 'diagram' : 'group',
       childIds: box.kind === 'container' ? box.children.map(child => gridNodeId(child.id)) : [], expansion: box.collapsed ? 'collapsed' : 'expanded',
       geometry: { units: 'cells', bounds: visible.get(box.id)?.bounds ?? node.bounds },
-      ...(content ? { content: resolveDiagramContent(content) } : {}) };
+      ...(content ? { content: resolveDiagramContent(content), contentNodes: connectionContentNodes(content.content), diagram: content } : {}) };
   });
   const floating: CanvasDisplayNode[] = Object.values(canvas.display.nodes).map(node => {
     const owner = Object.values(canvas.display.nodes).find(parent => parent.childIds.includes(node.id));
@@ -60,7 +64,13 @@ export function canvasDisplayNodes(document: MappingGridDocument, canvas: Mappin
       childIds: node.childIds.map(floatingNodeId), expansion: node.expansion,
       geometry: { units: 'pixels', position: node.position, bounds: node.bounds, coordinateSpace: node.coordinateSpace }, placement, value: node };
   });
-  return structuredClone([...grid, ...floating]);
+  const arrows: CanvasDisplayNode[] = (document.edges ?? []).map(edge => {
+    const value = drawEdge(edge, document.scene, canvas.diagramViews, cell, endpointBounds);
+    return { id: `floating:${value.id}`, version, childIds: [], expansion: 'expanded', collapsible: { self: false, subtrees: [] },
+      layout: 'floating', kind: 'arrow', geometry: { units: 'pixels', position: value.position, bounds: value.bounds, coordinateSpace: 'canvas' },
+      placement: { kind: 'connection', edgeId: edge.id }, value };
+  });
+  return structuredClone([...grid, ...floating, ...arrows]);
 }
 export function findBox(box: import('../../core/diagrams/lineGrid').GridBox, id: string): typeof box | undefined {
   if (box.id === id) return box;

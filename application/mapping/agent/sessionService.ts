@@ -1,3 +1,5 @@
+import { rebaseDiagramJumps } from '../../../domain/core/diagrams/diagramJump';
+import { createDiagram, diagramSource, type Diagram, type DiagramSourceBinding } from '../../../domain/core/diagrams/diagram';
 import { randomUUID } from 'node:crypto';
 import type { CanvasSessionPort, AgentExecRuntime } from './ports';
 import { agentToolSchemas, canvasApiSpec, canvasMethods, type AgentToolName, type LiveDocumentSnapshot } from '../../../domain/mapping/agent/contracts';
@@ -41,11 +43,11 @@ export class AgentDiagrammingSessionService {
     if (name === 'save_diagram') return this.save(agentToolSchemas[name].parse(raw));
     const input = agentToolSchemas.draw_diagram.parse(raw);
     const operation = input.nodeId ? { method: 'replace', nodeId: input.nodeId, ...this.content(input) }
-      : { method: 'draw', id: `diagram-${randomUUID()}`, parentId: input.parentId, position: input.position, ...this.content(input) };
+      : { method: 'diagram-create', id: `diagram-${randomUUID()}`, parentId: input.parentId, position: input.position, ...this.content(input) };
     return this.apply(input.sessionId, input.expectedVersion, [operation as DiagramOperation], input.requestId);
   }
-  private content(input: { ascii: string; structureKind?: 'diagram'|'tree'; mappings?: unknown; evidence?: unknown }) {
-    return { ascii: input.ascii, structureKind: input.structureKind, mappings: input.mappings, evidence: input.evidence };
+  private content(input: { ascii: string; structureKind?: 'diagram'|'tree'; mappings?: unknown; evidence?: unknown; source?: DiagramSourceBinding }) {
+    return { ascii: input.ascii, structureKind: input.structureKind, mappings: input.mappings, evidence: input.evidence, source: input.source };
   }
   private session(id: string) {
     const session = this.sessions.get(id);
@@ -69,7 +71,7 @@ export class AgentDiagrammingSessionService {
   }
   private async exec(input: ReturnType<typeof agentToolSchemas.exec.parse>) {
     const original = input.sessionId ? await this.snapshot(input.sessionId) : undefined;
-    const shadow = original ? new MappingDocumentController(original.document, original.canvas, original.version) : undefined;
+    const shadow = original ? new MappingDocumentController(original.document, original.canvas, original.version, original.cell, original.endpointBounds) : undefined;
     const operations: DiagramOperation[] = [];
     let createdDocument = false;
     const value = await this.runtime.run(input.code, async (method, args) => {
@@ -85,6 +87,7 @@ export class AgentDiagrammingSessionService {
         return this.attach(parsed.canvasId, result.documentId);
       }
       if (!shadow || !original || !input.sessionId) throw new Error('sessionId is required for node operations');
+      if (method === 'edges.list') return { version: original.version + Number(operations.length > 0), edges: shadow.getSnapshot().document.edges };
       if (method === 'nodes.list') { const version = original.version + Number(operations.length > 0); return { version, nodes: shadow.nodes().map(node => ({ ...node, version })) }; }
       if (method === 'nodes.get') {
         const node = shadow.nodes().find(node => node.id === parsed.nodeId);
@@ -92,7 +95,14 @@ export class AgentDiagrammingSessionService {
         return { ...node, version: original.version + Number(operations.length > 0) };
       }
       if (input.expectedVersion !== original.version) throw new Error('VERSION_CONFLICT: mutations require current expectedVersion');
-      const operation = method === 'nodes.draw' ? { ...parsed, method: 'draw', id: `diagram-${randomUUID()}` } : { ...parsed, method: method.slice(6) };
+      if (method.startsWith('edges.')) {
+        const operation: DiagramOperation = method === 'edges.remove' ? { method: 'edge-remove', edgeId: parsed.edgeId }
+          : { method: method === 'edges.create' ? 'edge-create' : 'edge-update', edge: { ...parsed, id: method === 'edges.create' ? `connection-${randomUUID()}` : parsed.id } as import('../../../domain/core/diagrams/diagramConnection').DiagramConnection };
+        operations.push(operation);
+        shadow.transact(shadow.getSnapshot().version, [operation]);
+        return 'edge' in operation ? operation.edge : null;
+      }
+      const operation = method === 'nodes.draw' ? { ...parsed, method: 'diagram-create', id: `diagram-${randomUUID()}` } : { ...parsed, method: method.slice(6) };
       operations.push(operation as DiagramOperation);
       shadow.transact(shadow.getSnapshot().version, [operation as DiagramOperation]);
       const node = method === 'nodes.draw' ? shadow.nodes().find(node => node.id === `grid:${"id" in operation ? operation.id : ""}`) : shadow.nodes().find(node => node.id === parsed.nodeId);
@@ -105,14 +115,14 @@ export class AgentDiagrammingSessionService {
   private async search(input: ReturnType<(typeof agentToolSchemas)['diagram-search']['parse']>) {
     if (input.sessionId) {
       const snapshot = await this.snapshot(input.sessionId);
-      const controller = new MappingDocumentController(snapshot.document, snapshot.canvas, snapshot.version);
+      const controller = new MappingDocumentController(snapshot.document, snapshot.canvas, snapshot.version, snapshot.cell, snapshot.endpointBounds);
       const nodes = controller.nodes().filter(node => node.layout === 'grid' && node.kind === 'diagram');
       if (input.operation === 'read') {
         const node = nodes.find(node => node.id === input.nodeId);
         if (!node) throw new Error('A valid live nodeId is required');
-        return { origin: 'live', version: snapshot.version, node, evidence: snapshot.document.evidence ?? {} };
+        return { origin: 'live', version: snapshot.version, node, evidence: node.layout === 'grid' ? node.diagram?.sourceContext.evidence ?? {} : {} };
       }
-      const hits = nodes.flatMap(node => node.layout === 'grid' && node.content ? this.matches(node.content, snapshot.document.evidence ?? {}, input).map(match => ({ origin: 'live', nodeId: node.id, version: snapshot.version, ...match })) : []);
+      const hits = nodes.flatMap(node => node.layout === 'grid' && node.content ? this.matches(node.diagram!, input).map(match => ({ origin: 'live', nodeId: node.id, version: snapshot.version, ...match })) : []);
       return { total: hits.length, hits: hits.slice(input.offset, input.offset + input.limit) };
     }
     const project = await this.store.loadProject();
@@ -125,33 +135,31 @@ export class AgentDiagrammingSessionService {
       const revisionId = input.revisionId ?? representation.currentRevisionId;
       if (!representation.revisionIds.includes(revisionId)) throw new Error('Revision does not belong to representation');
       const revision = catalog.revisions[revisionId];
-      const document = mappingDocumentFromScene(sceneFromRevision(revision), revision.evidence);
+      const document = mappingDocumentFromScene(sceneFromRevision(revision), revision.content?.kind === 'mapping-canvas' ? revision.content.edges ?? [] : []);
       return { origin: 'saved', representation, revision, nodes: new MappingDocumentController(document, initialCanvasState()).nodes() };
     }
     const hits: unknown[] = [];
     for (const representation of representations) {
       const revision = catalog.revisions[representation.currentRevisionId];
-      const document = mappingDocumentFromScene(sceneFromRevision(revision), revision.evidence);
+      const document = mappingDocumentFromScene(sceneFromRevision(revision), revision.content?.kind === 'mapping-canvas' ? revision.content.edges ?? [] : []);
       const nodes = new MappingDocumentController(document, initialCanvasState()).nodes();
       const query = (input.query ?? '').toLowerCase();
       for (const node of nodes) if (node.layout === 'grid' && node.content) {
-        const matches = this.matches(node.content, revision.evidence, input);
+        const matches = this.matches(node.diagram!, input);
         if ((!input.mode || input.mode === 'text') && representation.name.toLowerCase().includes(query) && !matches.length) matches.push({ snippet: representation.name });
         for (const match of matches) hits.push({ origin: 'saved', representationId: representation.id, revisionId: revision.id, name: representation.name, nodeId: node.id, ...match });
       }
     }
     return { total: hits.length, hits: hits.slice(input.offset, input.offset + input.limit), nextOffset: input.offset + input.limit < hits.length ? input.offset + input.limit : null };
   }
-  private matches(content: import('../../../domain/core/diagrams/diagramContent').DiagramContent, evidence: Record<string, import('../../../domain/core/representations/projectCatalog').ProjectRepresentationEvidenceRecord>, input: ReturnType<(typeof agentToolSchemas)['diagram-search']['parse']>): { snippet: string; contentNodeId?: string; evidenceId?: string; line?: number }[] {
+  private matches(diagram: Diagram, input: ReturnType<(typeof agentToolSchemas)['diagram-search']['parse']>): { snippet: string; contentNodeId?: string; evidenceId?: string; line?: number }[] {
+    const content = diagram.content, source = diagramSource(diagram);
     const q = (input.query ?? '').toLowerCase();
-    if (input.mode === 'code-reference') return content.mappings.filter(mapping => {
-      const entry = evidence[mapping.entityId];
-      return [mapping.entityId, entry?.label, entry?.sourceRanges[mapping.sourceRangeIndex]?.path, entry?.sourceRanges[mapping.sourceRangeIndex]?.symbol].some(value => value?.toLowerCase().includes(q));
-    }).map(mapping => ({ snippet: evidence[mapping.entityId]?.label ?? mapping.entityId, evidenceId: mapping.entityId, line: mapping.line }));
+    if (input.mode === 'code-reference') return source.search(q).map(({mapping,entity}) => ({ snippet: entity.label, evidenceId: mapping.entityId, line: mapping.line }));
     if (input.mode === 'node') {
       const nodes = content.structure.kind === 'tree' ? Object.values(content.structure.nodes) : [];
       return [...nodes.filter(node => `${node.id} ${node.label}`.toLowerCase().includes(q)).map(node => ({ snippet: node.label, contentNodeId: node.id, line: node.line })),
-        ...content.mappings.filter(mapping => `${mapping.id} ${evidence[mapping.entityId]?.label ?? ''}`.toLowerCase().includes(q)).map(mapping => ({ snippet: evidence[mapping.entityId]?.label ?? mapping.id, contentNodeId: mapping.id, line: mapping.line }))];
+        ...source.entries().filter(({mapping,entity}) => `${mapping.id} ${entity.label}`.toLowerCase().includes(q)).map(({mapping,entity}) => ({ snippet: entity.label, contentNodeId: mapping.id, line: mapping.line }))];
     }
     return content.ascii.split('\n').flatMap((line, i) => line.toLowerCase().includes(q) ? [{ snippet: line, line: i + 1 }] : []);
   }
@@ -168,21 +176,21 @@ export class AgentDiagrammingSessionService {
     if (input.expectedVersion !== snapshot.version) throw new Error('VERSION_CONFLICT: read the canvas again');
     let scene = snapshot.document.scene;
     if (input.nodeId) {
-      const node = new MappingDocumentController(snapshot.document, snapshot.canvas, snapshot.version).nodes().find(node => node.id === input.nodeId);
+      const node = new MappingDocumentController(snapshot.document, snapshot.canvas, snapshot.version, snapshot.cell, snapshot.endpointBounds).nodes().find(node => node.id === input.nodeId);
       if (!node || node.layout !== 'grid' || node.kind !== 'diagram') throw new Error('Expected diagram GridBox');
       const box = findBox(scene.root, node.boxId)!;
       if (box.kind !== 'diagram') throw new Error('Expected diagram');
       const content = scene.contents[box.contentId];
-      const isolated = singleDiagramScene(content.ascii);
-      scene = { ...isolated, contents: { ...isolated.contents, overview: { ...content, id: 'overview' } } };
+      const isolated = singleDiagramScene(content.content.ascii);
+      scene = { ...isolated, contents: { ...isolated.contents, overview: createDiagram({id:'overview', revision:content.revision, ascii:content.content.ascii, structureKind:content.content.structure.kind, source:content.sourceContext.binding, evidence:content.sourceContext.evidence, mappings:content.sourceContext.mappings}) } };
+      if (content.jumps) scene.contents.overview.jumps = rebaseDiagramJumps(content.content, scene.contents.overview.content, content.jumps);
     }
     const representationId = input.representationId ?? (!input.nodeId ? snapshot.representationId : undefined);
-    const save: SaveProjectDiagramInput = { name: input.name, scene, representationId,
-      expectedRevisionId: input.expectedRevisionId ?? (representationId === snapshot.representationId ? snapshot.revisionId : undefined),
-      evidence: snapshot.document.evidence ?? {} };
+    const save: SaveProjectDiagramInput = { name: input.name, scene, edges: input.nodeId ? [] : snapshot.document.edges, representationId,
+      expectedRevisionId: input.expectedRevisionId ?? (representationId === snapshot.representationId ? snapshot.revisionId : undefined) };
     const result = await this.diagrams.save(save);
     let displayUpdated = true;
-    try { await this.bridge.dispatch(session.canvasId, { method: 'saved', documentId: session.documentId, payload: { result, capturedVersion: snapshot.version, wholeDocument: !input.nodeId, savedScene: JSON.stringify(scene), name: input.name } }); }
+    try { await this.bridge.dispatch(session.canvasId, { method: 'saved', documentId: session.documentId, payload: { result, capturedVersion: snapshot.version, wholeDocument: !input.nodeId, savedScene: JSON.stringify(scene), savedEdges: JSON.stringify(input.nodeId ? [] : snapshot.document.edges), name: input.name } }); }
     catch { displayUpdated = false; }
     return { representationId: result.representation.id, revisionId: result.representation.currentRevisionId, version: snapshot.version, displayUpdated };
   }

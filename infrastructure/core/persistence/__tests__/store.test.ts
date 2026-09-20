@@ -238,7 +238,7 @@ describe("DiagramStore", () => {
       .resolves.toContain("Implementation details");
   });
 
-  it("normalizes legacy projects to an explicit source-code corpus", async () => {
+  it("does not implicitly migrate unrelated legacy projects", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "new-diagram-legacy-project-"));
     roots.push(root);
     await mkdir(path.join(root, ".diagrams"));
@@ -254,8 +254,7 @@ describe("DiagramStore", () => {
     }));
 
     await expect(new DiagramStore(root).loadProject()).resolves.toMatchObject({
-      domainProfileId: "source-code",
-      corpus: { kind: "git-worktree", root }
+      id: "project-legacy", canonicalRepoRoot: root
     });
   });
 
@@ -271,12 +270,10 @@ describe("DiagramStore", () => {
     };
     const project = await store.ensureProject(location);
 
-    expect(project).toMatchObject({
-      domainProfileId: "document",
-      corpus: { kind: "filesystem-documents", root }
-    });
+    expect(project).toMatchObject({ defaultDomainProfileId: "document" });
+    expect(project).not.toHaveProperty("corpus");
     await expect(readFile(path.join(root, ".diagrams", "project.json"), "utf8"))
-      .resolves.toContain('"domainProfileId": "document"');
+      .resolves.toContain('"defaultDomainProfileId": "document"');
   });
 
   it("migrates an untouched source built-in prompt when a document project reads it", async () => {
@@ -411,7 +408,7 @@ describe("DiagramStore", () => {
       path.join(root, ".new_diagrams", "project.json"),
       "utf8"
     )) as { repositoryIdentity: string };
-    expect(project.repositoryIdentity).toBe(location.repositoryIdentity);
+    expect(project.repositoryIdentity).toBeUndefined();
   });
 
   it("migrates legacy DiagramSet imports into the global imports directory", async () => {

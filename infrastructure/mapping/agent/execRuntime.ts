@@ -18,7 +18,7 @@ export class QuickJsAgentRuntime implements AgentExecRuntime {
         return context.newString(result);
       });
       context.setProp(context.global, '__call', call); call.dispose();
-      const groups = ['canvas','nodes'].map(group => `const ${group} = Object.freeze({${Object.keys(canvasMethods).filter(name => name.startsWith(`${group}.`)).map(name => `${name.split('.')[1]}: (args = {}) => JSON.parse(__call(${JSON.stringify(name)}, JSON.stringify(args)))`).join(',')}});`).join('\n');
+      const groups = ['canvas','nodes','edges'].map(group => `const ${group} = Object.freeze({${Object.keys(canvasMethods).filter(name => name.startsWith(`${group}.`)).map(name => `${name.split('.')[1]}: (args = {}) => JSON.parse(__call(${JSON.stringify(name)}, JSON.stringify(args)))`).join(',')}});`).join('\n');
       const result = await context.evalCodeAsync(`"use strict"; ${groups}\nJSON.stringify((function() {\n${code}\n})() ?? null)`);
       if (result.error) { const error = context.dump(result.error); result.error.dispose(); throw new Error(error?.message ?? String(error)); }
       const json = context.getString(result.value); result.value.dispose();

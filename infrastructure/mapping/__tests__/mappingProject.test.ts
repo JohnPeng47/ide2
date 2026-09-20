@@ -58,10 +58,10 @@ it("converts a legacy ASCII project diagram in place and resolves prompt evidenc
   const normalized = (await db.loadRepresentationCatalog("project-one")).revisions[legacy.id];
   expect(normalized.content).toEqual({ kind: "ascii", ascii });
   const scene = sceneFromRevision(normalized);
-  expect(projectCanvasSnapshot(scene, evidence).mappings[0].sourceRangeId).toBe("range-worker");
+  expect(projectCanvasSnapshot(scene).mappings[0].sourceRangeId).toBe("range-worker");
   const result = await new FakeMappingAgentRuntime().promptDiagramSelection({
     clientSessionId: "project-prompt-test", sourceRoot: db.storeRoot,
-    projectEvidence: evidence, diagramAscii: ascii, diagramRevision: 0, mappings: [...scene.contents.overview.mappings],
+    projectEvidence: evidence, diagramAscii: ascii, diagramRevision: 0, mappings: [...scene.contents.overview.sourceContext.mappings],
     selection: { startLine: 1, endLine: 1, startColumn: 1, endColumn: 6 }, instruction: "Explain worker"
   });
   expect(result.diagramAscii).toContain("[edited: Explain worker]");
@@ -76,8 +76,8 @@ it("rejects foreign projects, invalid scenes, and unknown evidence without chang
   const before = await readFile(path.join(db.storeRoot, "representations/catalog.json"), "utf8");
   await expect(db.saveMappingDiagram("project-one", { projectId: "project-other", name: "Bad", scene: singleDiagramScene("Bad") })).rejects.toThrow("another Project");
   const scene = singleDiagramScene("Bad");
-  scene.contents.overview.mappings = [{ id: "m", entityId: "unknown", sourceRangeIndex: 0, line: 1, startColumn: 1, endColumn: 3 }];
-  await expect(db.saveMappingDiagram("project-one", { name: "Bad", scene })).rejects.toThrow("unknown project evidence");
+  scene.contents.overview.sourceContext.mappings = [{ id: "m", entityId: "unknown", sourceRangeIndex: 0, line: 1, startColumn: 1, endColumn: 3 }];
+  await expect(db.saveMappingDiagram("project-one", { name: "Bad", scene })).rejects.toThrow("unknown diagram evidence");
   const hidden = singleDiagramScene("Bad");
   hidden.root = {
     id: "root", kind: "container", collapsed: true, collapsedContentId: "overview-summary", position: { column: 0, row: 0 },

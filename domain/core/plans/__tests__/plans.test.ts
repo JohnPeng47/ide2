@@ -86,10 +86,7 @@ function workspace(): WorkspaceSnapshot {
       schemaVersion: SCHEMA_VERSION,
       id: "project-one",
       name: "Project one",
-      repositoryIdentity: "repo-one",
-      canonicalRepoRoot: "/repo",
-      domainProfileId: "source-code",
-      corpus: { kind: "git-worktree", root: "/repo" },
+      defaultDomainProfileId: "source-code",
       diagramSetIds: ["set-one"],
       createdAt: plan.createdAt,
       updatedAt: plan.updatedAt

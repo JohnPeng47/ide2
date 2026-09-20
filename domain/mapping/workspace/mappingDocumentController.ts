@@ -1,3 +1,5 @@
+import { equalEndpointBounds, type EndpointBounds } from './endpointGeometry';
+import { rebaseDiagramJumps, validateDiagramJumps, type DiagramJump } from '../../core/diagrams/diagramJump';
 import { normalizeDiagramViews, resolveDiagramContent, projectDiagramContent } from './diagramViewState';
 import { layoutFloatingSelections } from './floatingBoxLayout';
 import { layoutConversationPane } from '../chat/conversationPaneLayout';
@@ -5,18 +7,22 @@ import { flattenGrid, resolveScene } from '../../core/diagrams/lineGrid';
 import { projectCanvasSnapshot } from '../../core/diagrams/projectDiagramCanvas';
 import { layoutScene, updateGridBox, type GridPoint } from '../../core/diagrams/lineGrid';
 import type { DiagramElementMapping } from '../../core/records/domain';
-import { buildDiagramContent } from '../../core/diagrams/diagramContent';
+import { createDiagram, type DiagramSourceBinding } from '../../core/diagrams/diagram';
 import type { ProjectRepresentationEvidenceRecord } from '../../core/representations/projectCatalog';
 import { insertGridDiagram, type MappingGridDocument } from './mappingGrid';
-import { mappingDocumentFromScene } from './mappingDocument';
 import { canvasDisplayNodes, findBox } from './canvasDisplayNode';
 import { removeDisplayNode, setExpansion, updateDisplayGeometry } from './displayModel';
 import type { MappingCanvasState } from './mappingWorkspace';
+import { diagramConnectionSchema, reconcileConnections, validateConnectionAnchor, validateConnections, type DiagramConnection } from '../../core/diagrams/diagramConnection';
 
-export interface ControllerSnapshot { document: MappingGridDocument; canvas: MappingCanvasState; version: number; canUndo: boolean; canRedo: boolean }
+export interface ControllerSnapshot { endpointBounds?: EndpointBounds; document: MappingGridDocument; canvas: MappingCanvasState; version: number; canUndo: boolean; canRedo: boolean; cell?: { width: number; height: number } }
 export type DiagramOperation =
-  | { method: 'draw'; id: string; ascii: string; structureKind?: 'diagram' | 'tree'; parentId?: string; position?: GridPoint; mappings?: DiagramElementMapping[]; evidence?: Record<string, ProjectRepresentationEvidenceRecord> }
-  | { method: 'replace'; nodeId: string; ascii: string; structureKind?: 'diagram' | 'tree'; mappings?: DiagramElementMapping[]; evidence?: Record<string, ProjectRepresentationEvidenceRecord> }
+  | { method: 'setJumps'; nodeId: string; jumps: DiagramJump[] }
+  | { method: 'edge-create'; edge: DiagramConnection }
+  | { method: 'edge-update'; edge: DiagramConnection }
+  | { method: 'edge-remove'; edgeId: string }
+  | { method: 'diagram-create'; id: string; ascii: string; structureKind?: 'diagram' | 'tree'; source?: DiagramSourceBinding; parentId?: string; position?: GridPoint; mappings?: DiagramElementMapping[]; evidence?: Record<string, ProjectRepresentationEvidenceRecord> }
+  | { method: 'replace'; nodeId: string; ascii: string; structureKind?: 'diagram' | 'tree'; source?: DiagramSourceBinding; mappings?: DiagramElementMapping[]; evidence?: Record<string, ProjectRepresentationEvidenceRecord> }
   | { method: 'move'; nodeId: string; position: GridPoint | { x: number; y: number } }
   | { method: 'collapse'; nodeId: string; contentNodeId?: string; collapsed: boolean }
   | { method: 'remove'; nodeId: string };
@@ -26,10 +32,22 @@ export class MappingDocumentController {
   private future: State[] = [];
   private listeners = new Set<() => void>();
   private snapshot: ControllerSnapshot;
+  private nodeCache?: { snapshot: ControllerSnapshot; nodes: ReturnType<typeof canvasDisplayNodes> };
+  configureEndpointBounds(bounds: EndpointBounds) {
+    if (Object.values(bounds).some(rect => ![rect.x, rect.y, rect.width, rect.height].every(Number.isFinite)
+      || rect.width <= 0 || rect.height <= 0)) throw new Error('Invalid endpoint measurement');
+    if (equalEndpointBounds(this.snapshot.endpointBounds, bounds)) return;
+    this.snapshot = { ...this.snapshot, endpointBounds: structuredClone(bounds) };
+    this.listeners.forEach(listener => listener());
+  }
   private layout?: { cell: { width: number; height: number }; viewport: { width: number; height: number } };
   configureLayout(cell: { width: number; height: number }, viewport: { width: number; height: number }) {
     this.layout = { cell, viewport };
     this.publish(this.resolveFloatingGeometry(this.snapshot), false, false);
+    if (this.snapshot.cell?.width !== cell.width || this.snapshot.cell?.height !== cell.height) {
+      this.snapshot = { ...this.snapshot, cell, endpointBounds: this.snapshot.endpointBounds ? {} : undefined };
+      this.listeners.forEach(listener => listener());
+    }
   }
   private resolveFloatingGeometry(state: State): State {
     if (!this.layout) return state;
@@ -37,26 +55,36 @@ export class MappingDocumentController {
     for (const node of Object.values(display.nodes)) if (node.kind === 'conversation') display = layoutConversationPane(display, node, this.layout.viewport);
     return display === state.canvas.display ? state : { ...state, canvas: { ...state.canvas, display } };
   }
-  constructor(document: MappingGridDocument, canvas: MappingCanvasState, version = 0) {
-    this.snapshot = { document, canvas, version, canUndo: false, canRedo: false };
+  constructor(document: MappingGridDocument, canvas: MappingCanvasState, version = 0, cell?: ControllerSnapshot['cell'], endpointBounds?: EndpointBounds) {
+    this.snapshot = { document: { ...document, edges: validateConnections(document.scene, document.edges) }, canvas, version, canUndo: false, canRedo: false, cell, endpointBounds };
   }
   getSnapshot = () => this.snapshot;
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
-  nodes() { return canvasDisplayNodes(this.snapshot.document, this.snapshot.canvas, this.snapshot.version); }
+  nodes() {
+    if (this.nodeCache?.snapshot !== this.snapshot) this.nodeCache = { snapshot: this.snapshot,
+      nodes: canvasDisplayNodes(this.snapshot.document, this.snapshot.canvas, this.snapshot.version, this.snapshot.cell, this.snapshot.endpointBounds) };
+    return structuredClone(this.nodeCache.nodes);
+  }
   private publish(next: State, record: boolean, increment = true) {
+    if (next.document !== this.snapshot.document && next.document.scene !== this.snapshot.document.scene && record) {
+      next = { ...next, document: { ...next.document, edges: reconcileConnections(this.snapshot.document.scene, next.document.scene, next.document.edges ?? []) } };
+    }
+    if (next.document !== this.snapshot.document && record) validateConnections(next.document.scene, next.document.edges);
     const diagramViews = normalizeDiagramViews(next.document.scene, next.canvas.diagramViews);
     if (diagramViews !== next.canvas.diagramViews) next = { ...next, canvas: { ...next.canvas, diagramViews } };
     next = this.resolveFloatingGeometry(next);
     if (next.document === this.snapshot.document && next.canvas === this.snapshot.canvas) return;
     if (record) { this.past = [...this.past.slice(-49), this.snapshot]; this.future = []; }
-    this.snapshot = { ...next, version: this.snapshot.version + Number(increment), canUndo: !!this.past.length, canRedo: !!this.future.length };
+    const geometryChanged = next.document.scene !== this.snapshot.document.scene || next.canvas.diagramViews !== this.snapshot.canvas.diagramViews;
+    const endpointBounds = geometryChanged && this.snapshot.endpointBounds ? {} : this.snapshot.endpointBounds;
+    this.snapshot = { ...next, endpointBounds, cell: this.snapshot.cell, version: this.snapshot.version + Number(increment), canUndo: !!this.past.length, canRedo: !!this.future.length };
     this.listeners.forEach(listener => listener());
   }
   updateCanvas(value: MappingCanvasState | ((current: MappingCanvasState) => MappingCanvasState), record = false) {
     const next = typeof value === 'function' ? value(this.snapshot.canvas) : value;
     this.publish({ document: this.snapshot.document, canvas: next }, record, record);
   }
-  commitDocument(document: MappingGridDocument) { this.publish({ document, canvas: this.snapshot.canvas }, true); }
+  commitDocument(document: MappingGridDocument) { projectCanvasSnapshot(document.scene); this.publish({ document, canvas: this.snapshot.canvas }, true); }
   undo(redo = false) {
     const target = redo ? this.future.shift() : this.past.pop();
     if (!target) return;
@@ -69,7 +97,26 @@ export class MappingDocumentController {
     let { document, canvas } = structuredClone(this.snapshot);
     const safeId = (id: string) => { if (typeof id !== 'string' || !/^[a-zA-Z0-9_.:-]{1,180}$/.test(id) || ['__proto__','constructor','prototype'].includes(id)) throw new Error('Invalid node ID'); };
     for (const op of operations) {
-      if (op.method === 'collapse' && op.contentNodeId !== undefined) {
+      if (op.method === 'setJumps') {
+        const box = findBox(document.scene.root, this.gridId(op.nodeId));
+        if (box?.kind !== 'diagram') throw new Error('Expected diagram GridBox');
+        const diagram = document.scene.contents[box.contentId];
+        const jumps = validateDiagramJumps(diagram.content, op.jumps, false);
+        document = { ...document, scene: { ...document.scene, contents: { ...document.scene.contents, [box.contentId]: { ...diagram, jumps } } } };
+      } else if (op.method === 'edge-create' || op.method === 'edge-update') {
+        const edge = diagramConnectionSchema.parse(op.edge);
+        const previous = document.edges.find(item => item.id === edge.id);
+        if (op.method === 'edge-create' ? !!previous : !previous) throw new Error(op.method === 'edge-create' ? 'Connection ID already exists' : 'Unknown connection');
+        for (const end of ['source', 'target'] as const) {
+          const unchanged = previous && JSON.stringify(previous[end]) === JSON.stringify(edge[end]);
+          validateConnectionAnchor(document.scene, edge[end], !!unchanged);
+        }
+        document = { ...document, edges: previous ? document.edges.map(item => item.id === edge.id ? edge : item) : [...document.edges, edge] };
+        if (document.edges.length > 2000) throw new Error('Too many connections');
+      } else if (op.method === 'edge-remove') {
+        if (!document.edges.some(edge => edge.id === op.edgeId)) throw new Error('Unknown connection');
+        document = { ...document, edges: document.edges.filter(edge => edge.id !== op.edgeId) };
+      } else if (op.method === 'collapse' && op.contentNodeId !== undefined) {
         if (typeof op.collapsed !== 'boolean') throw new Error('collapsed must be boolean');
         const box = findBox(document.scene.root, this.gridId(op.nodeId));
         if (box?.kind !== 'diagram') throw new Error('Subtree collapse requires a diagram DisplayNode');
@@ -84,24 +131,32 @@ export class MappingDocumentController {
           && !projectDiagramContent(content, canvas.diagramViews[op.nodeId]).rect(canvas.controls.selectionRect)) {
           canvas.controls = { ...canvas.controls, selectionRect: null, selectedNodeIds: [], retainedSelectionId: null };
         }
-      } else if (op.method === 'draw' || op.method === 'replace') {
+      } else if (op.method === 'diagram-create' || op.method === 'replace') {
         const ascii = op.ascii?.replace(/\r\n?/g, '\n');
         const mappings = op.mappings ?? [];
-        buildDiagramContent(ascii, 'validation', op.structureKind ?? 'diagram', mappings);
-        if (op.evidence) document.evidence = { ...document.evidence, ...op.evidence };
-        if (op.method === 'draw') {
+
+        if (op.method === 'diagram-create') {
           safeId(op.id);
           if (findBox(document.scene.root, op.id) || Object.hasOwn(document.scene.contents, op.id) || Object.hasOwn(document.scene.contents, `${op.id}-summary`)) throw new Error('Node ID already exists');
           const parentId = op.parentId ? this.gridId(op.parentId) : document.scene.root.id;
           document = insertGridDiagram(document, parentId, { id: op.id, kind: 'diagram', contentId: op.id, collapsed: false, position: op.position ?? { column: 0, row: 0 } },
-            { id: op.id, ascii, revision: 0, structureKind: op.structureKind, mappings });
+            createDiagram({ id: op.id, ascii, revision: 0, structureKind: op.structureKind, mappings, source: op.source, evidence: op.evidence }));
         } else {
           const id = this.gridId(op.nodeId), box = findBox(document.scene.root, id);
           if (box?.kind !== 'diagram') throw new Error('Expected diagram GridBox');
           const old = document.scene.contents[box.contentId];
-          const scene = layoutScene({ ...document.scene, contents: { ...document.scene.contents, [old.id]: { ...old, ascii, mappings, revision: old.revision + 1, structureKind: op.structureKind ?? old.structureKind } } }, id);
-          document = mappingDocumentFromScene(scene, document.evidence ?? {});
+          const replacement = createDiagram({ id: old.id, ascii, mappings, revision: old.revision + 1,
+            structureKind: op.structureKind ?? old.content.structure.kind, source: op.source ?? old.sourceContext.binding,
+            evidence: op.evidence ?? old.sourceContext.evidence });
+          if (old.jumps) replacement.jumps = rebaseDiagramJumps(old.content, replacement.content, old.jumps);
+          const scene = layoutScene({ ...document.scene, contents: { ...document.scene.contents, [old.id]: replacement } }, id);
+          document = { ...document, scene, edges: reconcileConnections(document.scene, scene, document.edges) };
         }
+      } else if (op.nodeId?.startsWith('floating:edge:')) {
+        const edgeId = op.nodeId.slice('floating:edge:'.length);
+        if (op.method !== 'remove') throw new Error('Arrows follow their anchors; use edges.update to reattach');
+        if (!document.edges.some(edge => edge.id === edgeId)) throw new Error('Unknown connection');
+        document = { ...document, edges: document.edges.filter(edge => edge.id !== edgeId) };
       } else if (op.nodeId?.startsWith('grid:')) {
         const id = this.gridId(op.nodeId), box = findBox(document.scene.root, id);
         if (!box || id === document.scene.root.id) throw new Error('Unknown or protected GridBox');
@@ -116,7 +171,8 @@ export class MappingDocumentController {
           document = { ...document, scene: layoutScene(updateGridBox(document.scene, id, item => ({ ...item, collapsed: op.collapsed })), id) };
         } else if (op.method === 'remove') {
           const prune = (node: typeof box): typeof box => node.kind === 'container' ? { ...node, children: node.children.filter(child => child.id !== id).map(prune) } : node;
-          document = { ...document, scene: { ...document.scene, root: prune(document.scene.root) } };
+          const scene = { ...document.scene, root: prune(document.scene.root) };
+          document = { ...document, scene, edges: reconcileConnections(document.scene, scene, document.edges) };
         } else throw new Error('Unsupported GridBox operation');
       } else {
         const id = op.nodeId?.startsWith('floating:') ? op.nodeId.slice(9) : '';
@@ -138,9 +194,7 @@ export class MappingDocumentController {
         } else throw new Error('Unsupported FloatingBox operation');
       }
     }
-    projectCanvasSnapshot(document.scene, document.evidence ?? {});
-    if (operations.some(op => op.method === 'draw' || op.method === 'replace')) document = { ...document, scene: { ...document.scene, contents: Object.fromEntries(Object.entries(document.scene.contents).map(([id, content]) => [id,
-      { ...content, diagramContent: buildDiagramContent(content.ascii, `${content.id}:${content.revision}`, content.structureKind ?? 'diagram', content.mappings) }])) } };
+    projectCanvasSnapshot(document.scene);
     const active = findBox(document.scene.root, canvas.controls.activeBoxId);
     if (!active) {
       const first = canvasDisplayNodes(document, canvas, 0).find(node => node.layout === 'grid' && node.kind === 'diagram');

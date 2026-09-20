@@ -29,7 +29,7 @@ export async function systemPromptTemplates(context: StudioContext): Promise<Sys
 
 export async function codeEntityPromptTemplates(context: StudioContext): Promise<CodeEntityPromptTemplateRecord[]> {
   const project = await context.store.loadProject();
-  const domain = project?.domainProfileId === "document"
+  const domain = project?.defaultDomainProfileId === "document"
     ? "document"
     : context.defaultDomainProfileId;
   return context.store.loadCodeEntityPromptTemplates(domain);
@@ -43,7 +43,7 @@ export async function resolveCodeEntityPromptTemplate(context: StudioContext, id
   }
   const project = await context.store.loadProject();
   const domain = requestedDomain
-    ?? (project?.domainProfileId === "document" ? "document" : context.defaultDomainProfileId);
+    ?? (project?.defaultDomainProfileId === "document" ? "document" : context.defaultDomainProfileId);
   const templates = await context.store.loadCodeEntityPromptTemplates(domain);
   const template = templates.find((candidate) => candidate.id === requestedId)
     ?? (useDefault ? templates[0] : undefined);
@@ -276,7 +276,7 @@ export async function resetCodeEntityPromptTemplate(context: StudioContext, id: 
   const existing = templates.find((template) => template.id === id);
   if (!existing?.builtIn) throw new Error(`built-in CodeEntity prompt template not found: ${id}`);
   const project = await context.store.loadProject();
-  const domain = project?.domainProfileId === "document" ? "document" : "source-code";
+  const domain = project?.defaultDomainProfileId === "document" ? "document" : "source-code";
   const original = createBuiltInCodeEntityPromptTemplates(existing.createdAt, domain)
     .find((template) => template.id === id);
   if (!original) throw new Error(`built-in CodeEntity prompt template not found: ${id}`);

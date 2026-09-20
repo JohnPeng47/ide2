@@ -1,3 +1,4 @@
+import { sourceBindingFromLocation } from '../../../domain/core/diagrams/diagram';
 import {
   mkdir,
   rename
@@ -14,42 +15,18 @@ import {
 } from "../../../domain/core/records/domain";
 import type { PersistenceContext } from './context';
 import { entitiesPath, projectPath, setPath, setRoot } from './paths';
-import { makeId, normalizedProject, nowIso, projectIdFor, readJson, readJsonIfExists, writeJsonAtomic } from './shared';
+import { makeId, normalizedProject, nowIso, readJson, readJsonIfExists, writeJsonAtomic } from './shared';
 
 export async function ensureProject(context: PersistenceContext, location: RepositoryLocation): Promise<ProjectRecord> {
   const existing = await readJsonIfExists<ProjectRecord>(projectPath(context));
-  if (existing) {
-    const normalized = normalizedProject(existing);
-    const requestedDomain = location.domainProfileId ?? "source-code";
-    const sameDocumentRoot = normalized.domainProfileId === "document"
-      && requestedDomain === "document"
-      && path.resolve(normalized.corpus.root) === path.resolve(location.checkoutRoot);
-    if (normalized.repositoryIdentity !== location.repositoryIdentity && !sameDocumentRoot) {
-      throw new Error(".diagrams belongs to a different corpus identity");
-    }
-    if (normalized.domainProfileId !== requestedDomain) {
-      throw new Error(`.diagrams belongs to the ${normalized.domainProfileId} domain`);
-    }
-    if (!existing.domainProfileId || !existing.corpus) {
-      await writeJsonAtomic(projectPath(context), normalized);
-    }
-    return normalized;
-  }
+  if (existing) return normalizedProject(existing);
   const domainProfileId = location.domainProfileId ?? "source-code";
-  const corpus = location.corpus ?? {
-    kind: "git-worktree" as const,
-    root: location.checkoutRoot,
-    ...(location.gitRevision ? { revision: location.gitRevision } : {})
-  };
   const timestamp = nowIso();
   const project: ProjectRecord = {
     schemaVersion: SCHEMA_VERSION,
-    id: projectIdFor(location.repositoryIdentity),
+    id: makeId("project"),
     name: path.basename(location.checkoutRoot),
-    repositoryIdentity: location.repositoryIdentity,
-    canonicalRepoRoot: location.checkoutRoot,
-    domainProfileId,
-    corpus,
+    defaultDomainProfileId: domainProfileId,
     diagramSetIds: [],
     createdAt: timestamp,
     updatedAt: timestamp
@@ -74,6 +51,7 @@ export async function createDiagramSet(context: PersistenceContext, input: {
     projectId: input.project.id,
     name: input.name.trim(),
     initialPrompt: input.initialPrompt.trim(),
+    source: sourceBindingFromLocation(input.location),
     sourceCheckoutRoot: input.location.checkoutRoot,
     gitRevision: input.location.gitRevision,
     codeEntitiesSetId: entitySetId,

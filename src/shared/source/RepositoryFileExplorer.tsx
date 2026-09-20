@@ -4,18 +4,18 @@ import type { RepositoryDirectoryListing } from '../../../domain/core/records/do
 
 // Listings are shared, but subscriptions and expansion state belong to each explorer.
 const listings = new Map<string, Promise<RepositoryDirectoryListing>>();
-function load(projectId: string, directory: string) {
-  const key = JSON.stringify([projectId, directory]);
+function load(projectId: string, directory: string, sourceId?: string) {
+  const key = JSON.stringify([projectId, sourceId, directory]);
   let request = listings.get(key);
   if (!request) {
-    request = fetchProjectDirectory(projectId, directory);
+    request = fetchProjectDirectory(projectId, directory, undefined, sourceId);
     listings.set(key, request);
     if (listings.size > 256) listings.delete(listings.keys().next().value!);
     void request.catch(() => { if (listings.get(key) === request) listings.delete(key); });
   }
   return request;
 }
-function Directory(props: { projectId: string; directory: string; selected: string; onOpen: (path: string) => void; generation: number }) {
+function Directory(props: { projectId: string; sourceId?: string; directory: string; selected: string; onOpen: (path: string) => void; generation: number }) {
   const [listing, setListing] = useState<RepositoryDirectoryListing>();
   const [error, setError] = useState('');
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -23,9 +23,9 @@ function Directory(props: { projectId: string; directory: string; selected: stri
   useEffect(() => {
     let active = true;
     setError(''); setListing(undefined);
-    void load(props.projectId, props.directory).then(value => { if (active) setListing(value); }, error => { if (active) setError(String(error.message ?? error)); });
+    void load(props.projectId, props.directory, props.sourceId).then(value => { if (active) setListing(value); }, error => { if (active) setError(String(error.message ?? error)); });
     return () => { active = false; };
-  }, [props.projectId, props.directory, props.generation, attempt]);
+  }, [props.projectId, props.sourceId, props.directory, props.generation, attempt]);
   if (error) return <div role="alert">{error} <button onClick={() => setAttempt(n => n + 1)}>Retry directory</button></div>;
   if (!listing) return <span role="status">Loading files…</span>;
   return <ul className="repository-file-list">
@@ -41,7 +41,7 @@ function Directory(props: { projectId: string; directory: string; selected: stri
     {!listing.entries.length && <li>Empty directory</li>}
   </ul>;
 }
-export const RepositoryFileExplorer = memo(function RepositoryFileExplorer(props: { projectId: string; selected: string; onOpen: (path: string) => void }) {
+export const RepositoryFileExplorer = memo(function RepositoryFileExplorer(props: { projectId: string; sourceId?: string; selected: string; onOpen: (path: string) => void }) {
   const [generation, setGeneration] = useState(0);
   return <aside className="repository-file-explorer" aria-label="Repository files" onKeyDown={event => {
     if (!(event.target instanceof HTMLButtonElement)) return;

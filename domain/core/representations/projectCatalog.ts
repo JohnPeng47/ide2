@@ -17,6 +17,7 @@ export interface ProjectFileCompactionRecord {
   schemaVersion: 1;
   id: string;
   projectId: string;
+  sourceId?: string;
   path: string;
   sourceRevision?: string;
   sourceSha256: string;
@@ -44,6 +45,7 @@ export interface ProjectCorpusCompactionCatalogRecord {
 }
 
 export interface ProjectFileCompactionInput {
+  sourceId?: string;
   path: string;
   sourceRevision?: string;
   startLine: number;
@@ -70,6 +72,7 @@ export interface ProjectRepresentationEvidenceRange {
 }
 
 export interface ProjectRepresentationEvidenceRecord {
+  sourceId?: string;
   id: string;
   handle: string;
   label: string;
@@ -98,6 +101,7 @@ export interface ProjectRepresentationRevisionRecord {
   /** Absent legacy content is a single ASCII diagram. */
   content?: import("../diagrams/projectDiagramCanvas").ProjectDiagramContent;
   representationKind: "tree" | "diagram";
+  source?: import("../diagrams/diagram").DiagramSourceBinding;
   evidence: Record<string, ProjectRepresentationEvidenceRecord>;
   mappings: ProjectRepresentationMappingRecord[];
   provenance?: {

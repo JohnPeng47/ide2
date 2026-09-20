@@ -10,7 +10,7 @@ import { singleDiagramScene } from '../../../../domain/core/diagrams/projectDiag
 import { initialCanvasState } from '../../../../domain/mapping/workspace/mappingWorkspace';
 
 it('uses one committed version for staged results, live reads, undo, and request deduplication', async () => {
-  const controller = new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('[Original]'), {}), initialCanvasState(), 7);
+  const controller = new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('[Original]')), initialCanvasState(), 7);
   const bridge: CanvasSessionPort = {
     register() {}, list: () => [{canvasId:'canvas',documents:[{documentId:'doc',name:'Test'}]}], poll: async () => [], reply() {}, unregister() {}, dispose() {},
     async dispatch(_canvasId, command) {

@@ -1,5 +1,6 @@
+import { validateDiagram } from '../../core/diagrams/diagram';
+import { validateConnections } from '../../core/diagrams/diagramConnection';
 import { normalizeDiagramViews } from './diagramViewState';
-import { buildDiagramContent } from '../../core/diagrams/diagramContent';
 import { isRepositoryFilePath } from '../../core/source/sourceNavigation';
 import { displayGeometry, type DisplayState, type SelectionRegion } from './displayModel';
 import { layoutProjectedPanes } from './projectedPaneLayout';
@@ -20,11 +21,10 @@ function scene(value: any) {
   object(value); object(value.contents); object(value.root);
   check(Object.keys(value.contents).length <= 1000, 'too many scene contents');
   for (const [key, content] of Object.entries(value.contents)) {
-    object(content); check(content.id === key, 'content ID mismatch'); string(content.ascii);
-    check(Number.isInteger(content.revision) && content.revision >= 0 && Array.isArray(content.mappings), 'invalid scene content');
-    validateMappingPocMappings(content.ascii, content.mappings);
-    if (content.structureKind !== undefined) check(content.structureKind === 'tree' || content.structureKind === 'diagram', 'invalid diagram structure kind');
-    if (content.diagramContent !== undefined) content.diagramContent = buildDiagramContent(content.ascii, `${content.id}:${content.revision}`, content.structureKind ?? 'diagram', content.mappings);
+    object(content); check(content.id === key, 'content ID mismatch');
+    check(Number.isInteger(content.revision) && content.revision >= 0, 'invalid diagram revision');
+    validateDiagram(content as import('../../core/diagrams/diagram').Diagram);
+
   }
   let count = 0;
   const expand = (box: any, depth: number): GridBox => {
@@ -56,16 +56,18 @@ export function deserializeWorkspace(json: string | unknown): MappingWorkspaceSn
     object(doc); id(doc.representationId); check(!docs.has(doc.representationId), 'duplicate document'); docs.add(doc.representationId);
     if (doc.savedRepresentationId !== undefined) id(doc.savedRepresentationId);
     if (doc.representationId.startsWith('draft-') && doc.revisionId === '') {} else id(doc.revisionId); string(doc.name); string(doc.savedName); string(doc.savedScene);
-    object(doc.document); object(doc.document.scene); object(doc.document.nodes); object(doc.document.sections);
+    object(doc.document); object(doc.document.scene); object(doc.document.sections);
+    check(!Object.hasOwn(doc.document, 'nodes') && !Object.hasOwn(doc.document, 'evidence'), 'selection nodes and evidence belong to Diagram source contexts');
     scene(doc.document.scene);
     scene(JSON.parse(doc.savedScene));
+    doc.document.edges = validateConnections(doc.document.scene as unknown as LineGridScene, doc.document.edges);
+    if (doc.savedEdges !== undefined) {
+      string(doc.savedEdges);
+      validateConnections(JSON.parse(doc.savedScene), JSON.parse(doc.savedEdges));
+    }
     for (const sections of Object.values(doc.document.sections)) {
       check(Array.isArray(sections), 'invalid sections');
       for (const section of sections) { object(section); id(section.id); string(section.label); number(section.startLine); number(section.endLine); }
-    }
-    for (const nodes of Object.values(doc.document.nodes)) {
-      check(Array.isArray(nodes), 'invalid mapped nodes');
-      for (const node of nodes) { object(node); id(node.id); object(node.head); number(node.head.line); number(node.head.startColumn); number(node.head.endColumn); check(Array.isArray(node.sourceRanges), 'invalid source ranges'); }
     }
     object(doc.canvas); object(doc.canvas.display); object(doc.canvas.display.nodes); strings(doc.canvas.display.rootIds);
     if (doc.canvas.diagramViews !== undefined) {
@@ -107,6 +109,7 @@ export function deserializeWorkspace(json: string | unknown): MappingWorkspaceSn
         }
         if (node.content.kind === 'source-code') {
           const content = node.content;
+          if (content.sourceId !== undefined) id(content.sourceId);
           id(content.projectId); check(content.projectId === value.projectId, 'source pane belongs to another project');
           string(content.sourceFile);
           check(isRepositoryFilePath(content.sourceFile), 'invalid repository file path');

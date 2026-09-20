@@ -10,7 +10,7 @@ export function layoutFloatingSelections(state: DisplayState, boxes: readonly Re
   for (const id of state.rootIds) {
     const root = next.nodes[id]; if (root?.kind !== 'selection') continue;
     const box = boxes.find(box => box.box.id === root.sourceBoxId);
-    if (box && !box.box.collapsed && scene.contents[root.sourceContentId]?.ascii === root.sourceAscii) {
+    if (box && !box.box.collapsed && scene.contents[root.sourceContentId]?.content.ascii === root.sourceAscii) {
       const rect = diagramProjection(scene, root.sourceBoxId, root.sourceContentId, views).rect(root.rect);
       if (!rect) continue;
       next = updateDisplayGeometry(next, id, {

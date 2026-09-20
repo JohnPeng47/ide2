@@ -8,12 +8,12 @@ import { serializeWorkspace, deserializeWorkspace } from '../mappingWorkspaceCod
 const setup = () => {
   const canvas = initialCanvasState();
   canvas.display = { rootIds: ['pane'], nodes: { pane: { ...displayGeometry({ x: 20, y: 10 }, { width: 5000, height: 6000 }), id: 'pane', kind: 'detail', title: 'Detail', ascii: 'Detail', childIds: [], expansion: 'expanded' } } };
-  return new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('[Original]'), {}), canvas);
+  return new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('[Original]')), canvas);
 };
 describe('shared DisplayNode controller', () => {
   it('lays out new diagrams by content size, ignoring FloatingBox occupancy; undo restores the complete state', () => {
     const controller = setup(), before = controller.getSnapshot();
-    const result = controller.transact(0, [{ method: 'draw', id: 'new', ascii: '[Inserted diagram]', position: { column: 0, row: 0 } }]);
+    const result = controller.transact(0, [{ method: 'diagram-create', id: 'new', ascii: '[Inserted diagram]', position: { column: 0, row: 0 } }]);
     expect(result.nodes.find(node => node.id === 'grid:overview')).toMatchObject({ geometry: { bounds: { column: 21 } } });
     expect(result.nodes.find(node => node.id === 'grid:new')).toMatchObject({ geometry: { bounds: { column: 0, columns: 18 } } });
     expect(controller.getSnapshot().canvas).toEqual(before.canvas);
@@ -28,7 +28,7 @@ describe('shared DisplayNode controller', () => {
   });
   it('rejects wrong units and stale writes atomically', () => {
     const controller = setup(), before = controller.getSnapshot();
-    expect(() => controller.transact(0, [{ method: 'draw', id: 'ok', ascii: 'A' }, { method: 'move', nodeId: 'floating:pane', position: { column: 4, row: 0 } }])).toThrow('pixel');
+    expect(() => controller.transact(0, [{ method: 'diagram-create', id: 'ok', ascii: 'A' }, { method: 'move', nodeId: 'floating:pane', position: { column: 4, row: 0 } }])).toThrow('pixel');
     expect(controller.getSnapshot()).toBe(before);
     expect(() => controller.transact(99, [{ method: 'remove', nodeId: 'floating:pane' }])).toThrow('VERSION_CONFLICT');
     expect(() => controller.transact(0, [{ method: 'remove', nodeId: 'grid:overview' }])).toThrow('visible diagram');

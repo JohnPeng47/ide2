@@ -8,11 +8,11 @@ export class MappingDiagramService {
     private readonly corpus: CorpusAccess, private readonly root: string,
     private readonly profile: BuiltInDomainProfileId = 'source-code') { }
   async initialize() {
-    const project = await this.projects.loadProject() ?? await this.projects.ensureProject(await this.corpus.discover(this.root, this.profile));
+    const project = await this.projects.loadProject() ?? await this.projects.ensureProject({ checkoutRoot: this.root, repositoryIdentity: "", domainProfileId: this.profile });
     return { project, catalog: await this.projects.projectCatalogs.loadRepresentationCatalog(project.id) };
   }
   async save(input: SaveProjectDiagramInput) {
-    const project = await this.projects.loadProject() ?? await this.projects.ensureProject(await this.corpus.discover(this.root, this.profile));
+    const project = await this.projects.loadProject() ?? await this.projects.ensureProject({ checkoutRoot: this.root, repositoryIdentity: "", domainProfileId: this.profile });
     return { project, ...await this.projects.projectCatalogs.saveMappingDiagram(project.id, input) };
   }
 }

@@ -13,7 +13,7 @@ export class DiagramSetWorkflow {
     const requestedDomain = body.domainProfileId
       ?? body.domain
       ?? this.configuredDomainProfileId
-      ?? existingProject?.domainProfileId
+      ?? existingProject?.defaultDomainProfileId
       ?? "source-code";
     if (!isBuiltInDomainProfileId(requestedDomain)) {
       throw new Error(`unsupported domain profile: ${String(requestedDomain)}`);

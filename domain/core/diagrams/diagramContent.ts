@@ -1,22 +1,20 @@
 import { asciiSha256 } from './asciiSha256';
 import { parseAsciiTree } from './asciiTree';
-import { validateDiagramLocalMappings } from './diagramMappings';
-import type { DiagramElementMapping } from '../records/domain';
 
 export interface DiagramContentNode {
   id: string; label: string; line: number; branchColumn: number; startColumn: number; endColumn: number;
   parentId?: string; childIds: string[]; foldRanges: { startLine: number; endLine: number }[];
 }
 export interface DiagramContent {
-  revisionId: string; ascii: string; asciiSha256: string; mappings: readonly DiagramElementMapping[];
-  structure: { kind: 'diagram' } | { kind: 'tree'; parserVersion: 'ascii-tree-1'; rootIds: string[]; nodes: Record<string, DiagramContentNode> };
+  revisionId: string; ascii: string; asciiSha256: string;
+  structure: { kind: 'diagram' } | { kind: 'tree'; parserVersion: 'ascii-tree-1' | 'ascii-tree-2'; rootIds: string[]; nodes: Record<string, DiagramContentNode> };
 }
-export function buildDiagramContent(ascii: string, revisionId: string, kind: 'diagram' | 'tree' = 'diagram', mappings: readonly DiagramElementMapping[] = []): DiagramContent {
+export function buildDiagramContent(ascii: string, revisionId: string, kind: 'diagram' | 'tree' = 'diagram', parserVersion: 'ascii-tree-1' | 'ascii-tree-2' = 'ascii-tree-2'): DiagramContent {
+  if (!['ascii-tree-1', 'ascii-tree-2'].includes(parserVersion)) throw new Error('Unknown tree parser version');
   if (!ascii.trim() || ascii.length > 20000 || /[^\x20-\x7e\n]/.test(ascii)) throw new Error('Diagram must contain 1–20000 printable ASCII characters with LF newlines');
-  validateDiagramLocalMappings(ascii, mappings);
-  const content: DiagramContent = { revisionId, ascii, asciiSha256: asciiSha256(ascii), mappings: structuredClone(mappings), structure: { kind: 'diagram' } };
+  const content: DiagramContent = { revisionId, ascii, asciiSha256: asciiSha256(ascii), structure: { kind: 'diagram' } };
   if (kind === 'diagram') return content;
-  const parsed = parseAsciiTree(ascii);
+  const parsed = parseAsciiTree(ascii, parserVersion);
   const ids = new Map(parsed.map(node => [node.line, `${revisionId}:${content.asciiSha256}:line-${node.line}`]));
   const nodes: Record<string, DiagramContentNode> = {};
   for (const node of parsed) {
@@ -28,7 +26,7 @@ export function buildDiagramContent(ascii: string, revisionId: string, kind: 'di
       childIds: parsed.filter(child => child.parentLine === node.line).map(child => ids.get(child.line)!),
       foldRanges: node.descendantLines.length ? [{ startLine: node.line + 1, endLine: peer ? peer.line - 1 : ascii.split('\n').length }] : [] };
   }
-  content.structure = { kind: 'tree', parserVersion: 'ascii-tree-1', rootIds: Object.values(nodes).filter(node => !node.parentId).map(node => node.id), nodes };
+  content.structure = { kind: 'tree', parserVersion, rootIds: Object.values(nodes).filter(node => !node.parentId).map(node => node.id), nodes };
   return content;
 }
 export function visibleContentLines(content: DiagramContent, collapsedIds: readonly string[]): number[] {

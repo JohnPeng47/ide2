@@ -1,14 +1,15 @@
 import { isRepositoryFilePath } from '../../../../domain/core/source/sourceNavigation';
 import { addDisplayNode, displayGeometry, setExpansion, type DisplayState, type ProjectedPane, type SourceCodePaneContent } from '../../../../domain/mapping/workspace/displayModel';
 
-export type SourceCodePaneView = Pick<SourceCodePaneContent, 'sourceFile' | 'showCompactions' | 'rangeIndex' | 'scroll'>;
+export type SourceCodePaneView = Pick<SourceCodePaneContent, 'sourceId' | 'sourceFile' | 'showCompactions' | 'rangeIndex' | 'scroll'>;
 
 export function openSourceCodePane(state: DisplayState, parentId: string, projectId: string, sourceFile: string): DisplayState {
   const parent = state.nodes[parentId];
   if (parent?.kind !== 'projection' || parent.content.kind !== 'compaction'
     || !parent.content.files.some(file => file.sourceFile === sourceFile)) return state;
+  const sourceId = parent.content.files.find(file => file.sourceFile === sourceFile)?.sourceId;
   const existing = parent.childIds.map(id => state.nodes[id]).find((node): node is ProjectedPane =>
-    node?.kind === 'projection' && node.content.kind === 'source-code');
+    node?.kind === 'projection' && node.content.kind === 'source-code' && node.content.sourceId === sourceId);
   if (existing && existing.content.kind === 'source-code') {
     const next = updateSourceCodePane(state, existing.id, existing.content.sourceFile === sourceFile
       ? {} : { sourceFile, rangeIndex: 0, scroll: undefined });
@@ -19,7 +20,7 @@ export function openSourceCodePane(state: DisplayState, parentId: string, projec
     geometryPolicy: { placement: 'automatic', sizing: 'fixed' },
     id: crypto.randomUUID(), kind: 'projection', title: sourceFile, childIds: [], expansion: 'expanded',
     projectionId: parent.projectionId, sourceRevisionId: parent.sourceRevisionId, targetRevisionId: parent.targetRevisionId,
-    content: { kind: 'source-code', projectId, files: parent.content.files, sourceFile, showCompactions: true, rangeIndex: 0 }
+    content: { kind: 'source-code', projectId, sourceId, files: parent.content.files, sourceFile, showCompactions: true, rangeIndex: 0 }
   };
   return addDisplayNode(state, pane, parentId);
 }
@@ -29,7 +30,7 @@ export function updateSourceCodePane(state: DisplayState, id: string, patch: Par
   if (node?.kind !== 'projection' || node.content.kind !== 'source-code') return state;
   const content = { ...node.content, ...patch };
   if (!isRepositoryFilePath(content.sourceFile)) return state;
-  if (content.sourceFile === node.content.sourceFile && content.rangeIndex === node.content.rangeIndex
+  if (content.sourceId === node.content.sourceId && content.sourceFile === node.content.sourceFile && content.rangeIndex === node.content.rangeIndex
     && content.showCompactions === node.content.showCompactions
     && content.scroll?.top === node.content.scroll?.top && content.scroll?.left === node.content.scroll?.left) return state;
   return { ...state, nodes: { ...state.nodes, [id]: { ...node, title: content.sourceFile, content } } };

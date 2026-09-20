@@ -1,3 +1,4 @@
+import { resolveDiagramSource } from '../source/diagramSource';
 import {
   type DiagramSetRecord,
   type DiagramViewKind,
@@ -44,8 +45,10 @@ export async function settledViewIdsForSession(context: CoreContext, set: Diagra
 export async function upsertProjectFileCompaction(context: CoreContext, input: ProjectFileCompactionInput): Promise<WorkspaceSnapshot> {
   const project = await context.store.loadProject();
   if (!project) throw new Error("project corpus is not initialized");
+  const source = await resolveDiagramSource(context.store, {projectId: project.id, sourceId: input.sourceId}, context.corpus);
+  input = { ...input, sourceId: source.binding().sourceId };
   if (input.makeActive !== false) {
-    const documentLines = await context.corpus.readDocumentLines(project.corpus, input.path);
+    const documentLines = (await source.readText(input.path)).split(/\r?\n/);
     // Source coordinates count the final newline as the terminator of the last
     // source line, not as an additional empty line.
     const liveLines = documentLines.at(-1) === "" ? documentLines.slice(0, -1) : documentLines;

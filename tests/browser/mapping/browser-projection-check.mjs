@@ -206,6 +206,7 @@ try {
     links: [{ sourceEvidenceIds: ["b", "c"], targetNodeIds: [nodeId("shared()")] },
       { sourceEvidenceIds: ["c"], targetNodeIds: [nodeId("gamma()")] }] };
   // Set PROJECTION_SOURCE_LINES=3000 to exercise dragging with a large highlighted file.
+  sourceRevision.source = {sourceId:"projection-source",repositoryIdentity:path.join(temp,".git"),domainProfileId:"source-code",corpus:{kind:"git-worktree",root:temp}};
   const sourceLineCount = Number(process.env.PROJECTION_SOURCE_LINES ?? 120);
   const detailLine = sourceLineCount - 38;
   const mappedLines = [12, 13, 14, 15, detailLine, detailLine + 1, detailLine + 2];

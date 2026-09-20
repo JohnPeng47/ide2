@@ -23,6 +23,7 @@
     "migrate:plans": "tsx scripts/migrations/migrate-plans.ts",
     "preview": "node scripts/dev/start-server.mjs preview --host 127.0.0.1",
     "test": "vitest run",
+    "parse:diagram": "tsx scripts/diagrams/parse-diagram.ts",
     "typecheck": "tsc --noEmit",
     "check:source-navigation": "npm run build && SOURCE_PERF_TRIALS=0 SOURCE_NAVIGATION=1 node tests/performance/browser-source-pane-performance.mjs",
     "start": "node scripts/dev/start-server.mjs --host 127.0.0.1",

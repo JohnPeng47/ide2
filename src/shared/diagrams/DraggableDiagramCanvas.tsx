@@ -47,7 +47,7 @@ export function DraggableDiagramCanvas(props: {
   resetKey: string;
   className?: string;
   leftInset?: number;
-  focusBox?: { id: string; serial: number };
+  focusBox?: { id: string; serial: number; contentNodeId?: string };
   initialTransform?: CanvasTransform;
   onTransformChange?: (transform: CanvasTransform) => void;
 }) {
@@ -203,7 +203,11 @@ export function DraggableDiagramCanvas(props: {
     let innerFrame = 0;
     const frame = requestAnimationFrame(() => { innerFrame = requestAnimationFrame(() => {
       const viewport = viewportRef.current;
-      const target = Array.from(surfaceRef.current?.querySelectorAll<HTMLElement>("[data-grid-box]") ?? [])
+      surfaceRef.current?.querySelectorAll('[data-jump-focus]').forEach(element => element.removeAttribute('data-jump-focus'));
+      const label = props.focusBox?.contentNodeId && Array.from(surfaceRef.current?.querySelectorAll<HTMLElement>('.diagram-content-node') ?? [])
+        .find(element => element.dataset.contentNodeId === props.focusBox?.contentNodeId && element.dataset.displayNodeId === `grid:${props.focusBox?.id}`);
+      if (label) label.setAttribute('data-jump-focus', '');
+      const target = label || Array.from(surfaceRef.current?.querySelectorAll<HTMLElement>("[data-grid-box]") ?? [])
         .find((element) => element.dataset.gridBox === props.focusBox?.id);
       if (!viewport || !target) return;
       const bounds = viewport.getBoundingClientRect();

@@ -1,3 +1,4 @@
+import { PanelConnector } from '../../../shared/diagrams/PanelConnector';
 import { diagramProjection, type DiagramViews } from '../../../../domain/mapping/workspace/diagramViewState';
 import { layoutFloatingSelections } from '../../../../domain/mapping/workspace/floatingBoxLayout';
 import { SourceCodePane } from "../source-pane/SourceCodePane";
@@ -52,7 +53,7 @@ export function SelectionEffectsLayer(props: {
       // Scene containment controls visibility; missing sources retain a recoverable snapshot.
       if (box?.box.collapsed || !box && inScene(props.scene.root)) return null;
       const missing = !box;
-      const stale = props.scene.contents[root.sourceContentId]?.ascii !== root.sourceAscii;
+      const stale = props.scene.contents[root.sourceContentId]?.content.ascii !== root.sourceAscii;
       if (!missing && !stale && !diagramProjection(props.scene, root.sourceBoxId, root.sourceContentId, props.diagramViews).rect(root.rect)) return null;
       const rect = { ...root.position, ...root.bounds };
       const layout = layoutProjectedPanes(props.state, root);
@@ -80,7 +81,7 @@ export function SelectionEffectsLayer(props: {
           const left = Math.min(link.x1, link.x2), top = Math.min(link.y, link.y2) - 4;
           const x1 = link.x1 - left, x2 = link.x2 - left, y1 = link.y - top, y2 = link.y2 - top;
           return <svg key={link.id} className="projection-connector" style={{ left, top, width: Math.max(1, Math.abs(x2 - x1)), height: Math.abs(y2 - y1) + 8 }} aria-hidden="true">
-            <path d={`M${x1} ${y1} H${(x1 + x2) / 2} V${y2} H${x2} m-5 -3 l5 3 -5 3`} /></svg>;
+            <PanelConnector path={`M${x1} ${y1} H${(x1 + x2) / 2} V${y2} H${x2}`} target={{ x: x2, y: y2, side: 'left' }} /></svg>;
         })}
         {Object.keys(layout.placements).map(id => {
           const pane = props.state.nodes[id] as ProjectedPane;
@@ -119,7 +120,7 @@ export function SelectionEffectsLayer(props: {
                 if (draft?.paneId === id) { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); setDraft({ ...draft, dragging: false }); }
               }} onPointerCancel={() => setDraft(null)}>{content.result.ascii.split('\n').map((line, index) => <span key={index} className={draft?.paneId === id && index >= Math.min(draft.start, draft.end) && index <= Math.max(draft.start, draft.end) ? 'projected-row is-selected' : 'projected-row'}>{line}{index < content.result.ascii.split('\n').length - 1 ? '\n' : ''}</span>)}</pre>
               {draft?.paneId === id && !draft.dragging && <div className="projected-selection-actions"><button type="button" disabled={!canCompact || !selectedIds?.length} onClick={() => openCompaction(pane, selectedIds)}>Project selected rows</button><button type="button" onClick={() => setDraft(null)}>Cancel</button></div>}
-            </> : content.kind === 'source-code' ? <SourceCodePane id={id} content={content}
+            </> : content.kind === 'source-code' ? <SourceCodePane key={`${id}:${pane.content.kind === "source-code" ? pane.content.sourceId : ""}`} id={id} content={content}
               onChange={changeSource} /> : <div data-projected-compactions>{content.files.map(file => <section key={file.sourceFile} data-compaction-file={file.sourceFile} data-compaction-rows={file.rows.filter(row => row.selected).map(row => row.treeLine).join(' ')}>
               <header className="mapping-compaction-file"><span>{file.sourceFile}</span>
                 <button type="button" aria-label={`Open source ${file.sourceFile}`} disabled={!props.catalog?.projectId}

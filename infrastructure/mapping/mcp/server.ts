@@ -10,7 +10,7 @@ export function createMappingMcpServer(baseUrl: string) {
   const descriptions = {
     'diagram-search': 'Search diagrams by text, node, or code reference; operation read returns the complete saved or live diagram.',
     'canvas-api-search': 'Search API documentation, schemas, coordinate rules, and examples. Does not search canvas objects.',
-    exec: 'Execute JavaScript using only canvas and nodes APIs. API calls are synchronous. Node mutations commit together as one undoable transaction; failures roll back staged edits.',
+    exec: 'Execute JavaScript using only canvas, nodes, and edges APIs. API calls are synchronous. Mutations commit together as one undoable transaction; failures roll back staged edits.',
     draw_diagram: 'Create or replace a diagram from complete ASCII content. No reserved bounds; existing grid layout places the result.',
     save_diagram: 'Save a live diagram/document as a confirmed representation visible in explorer and search. nodeId saves one diagram independently.'
   };

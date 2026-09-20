@@ -39,6 +39,7 @@ export interface SelectionRegion extends DisplayNodeBase {
 export type ProjectedFile = ReturnType<typeof projectCompactions>[number];
 export interface SourceCodePaneContent {
   kind: 'source-code';
+  sourceId?: string;
   projectId: string;
   /** Projection metadata; navigation may select a file outside this list. */
   files: ProjectedFile[];
@@ -71,10 +72,12 @@ export interface ConversationPane extends DisplayNodeBase {
 export interface DetailPane extends DisplayNodeBase {
   kind: 'detail'; title: string; ascii: string; sectionId?: string;
 }
-export type FloatingBox = SelectionRegion | ProjectedPane | ConversationPane | DetailPane;
-export interface DisplayState { rootIds: string[]; nodes: Record<string, FloatingBox> }
+export type FloatingPane = SelectionRegion | ProjectedPane | ConversationPane | DetailPane;
+export type FloatingBox = FloatingPane | import('./connectionLayout').FloatingBoxArrow;
+// Arrows are derived from document.edges, never a second persisted copy here.
+export interface DisplayState { rootIds: string[]; nodes: Record<string, FloatingPane> }
 export const emptyDisplayState = (): DisplayState => ({ rootIds: [], nodes: {} });
-export function addDisplayNode(state: DisplayState, node: FloatingBox, ownerId?: string): DisplayState {
+export function addDisplayNode(state: DisplayState, node: FloatingPane, ownerId?: string): DisplayState {
   if (state.nodes[node.id]) throw new Error('Display ID already exists');
   const owner = ownerId ? state.nodes[ownerId] : undefined;
   if (ownerId && !owner) throw new Error('Display owner does not exist');

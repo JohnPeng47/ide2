@@ -1169,7 +1169,7 @@ button.experiment-tree-line:hover { background: rgb(255 255 255 / 3%); }
 .selection-effect-frame.mapping-poc-companion pre { border: 0; box-shadow: none; margin: 0; }
 .retained-selection-controls { position: absolute; display: flex; gap: 4px; font: 10px var(--font-mono); white-space: nowrap; color: var(--accent-yellow); pointer-events: auto; }
 .projection-connector { position: absolute; overflow: visible; pointer-events: none; }
-.projection-connector path { stroke: var(--accent-cyan); stroke-width: 1; fill: none; }
+.projection-connector { color: var(--accent-cyan); }
 .projection-join { position: absolute; z-index: 5; display: grid; place-content: center; width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--accent-cyan); background: #141920; color: var(--accent-cyan); font: 12px var(--font-mono); cursor: pointer; padding: 0; }
 .projected-row.is-selected { background: #ebcb8b33; }
 .projected-selection-actions { display: flex; gap: 8px; padding: 8px; }

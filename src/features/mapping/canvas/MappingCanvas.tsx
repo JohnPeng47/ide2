@@ -1,3 +1,11 @@
+import { useEndpointGeometry } from './useEndpointGeometry';
+import { DiagramText } from '../../../shared/diagrams/DiagramText';
+import { diagramSceneText } from '../../../../domain/mapping/workspace/diagramSceneText';
+import { rebaseDiagramJumps, type DiagramJumpTarget } from '../../../../domain/core/diagrams/diagramJump';
+import { DiagramConnections } from './DiagramConnections';
+import { exportedEvidenceId } from '../../../../domain/core/diagrams/projectDiagramCanvas';
+import { createDiagram, diagramSource } from '../../../../domain/core/diagrams/diagram';
+import { diagramSelectionNodes } from '../../../../domain/mapping/workspace/mappingDocument';
 import { diagramProjection } from '../../../../domain/mapping/workspace/diagramViewState';
 import { DiagramSubtreeControls } from './DiagramSubtreeControls';
 import { MappingDocumentController } from "../../../../domain/mapping/workspace/mappingDocumentController";
@@ -10,7 +18,7 @@ import { layoutConversationPane } from "../../../../domain/mapping/chat/conversa
 import { addDisplayNode, displayGeometry, measureDisplayNode, removeDisplayNode, setExpansion, type DisplayState, type SelectionRegion, type ConversationPane, type ProjectedPane } from "../../../../domain/mapping/workspace/displayModel";
 import { initialCanvasState, initialSelectionSurface, selectionSurfaceKeys, type MappingCanvasState, type MappingControlValues, type SelectionSurfaceState } from "../../../../domain/mapping/workspace/mappingWorkspace";
 import { SelectionEffectsLayer } from "./SelectionEffectsLayer";
-import { composeScene, flattenGrid, hitTest, layoutScene, resolveScene, updateGridBox, type GridPoint as ScenePoint } from "../../../../domain/core/diagrams/lineGrid";
+import { flattenGrid, hitTest, layoutScene, resolveScene, updateGridBox, type GridPoint as ScenePoint } from "../../../../domain/core/diagrams/lineGrid";
 import { initialMappingGrid, insertGridDiagram, type MappingGridDocument } from "../../../../domain/mapping/workspace/mappingGrid";
 import { mappingDocumentFromScene } from "../../../../domain/mapping/workspace/mappingDocument";
 import { projectSelection, validateProjection } from "../../../../domain/core/diagrams/diagramProjection";
@@ -102,23 +110,6 @@ function typingTarget(target: EventTarget | null): boolean {
     && (target.matches("input, textarea, select") || target.isContentEditable);
 }
 
-function nodesAfterPatch(
-  nodes: readonly MappingPocANode[],
-  result: MappingPocPromptResult
-): MappingPocANode[] {
-  return nodes.flatMap((node) => {
-    if (node.extent.endLine < result.startLine) return [node];
-    if (node.extent.startLine <= result.oldEndLine) return [];
-    return [{
-      ...node,
-      head: { ...node.head, line: node.head.line + result.verticalDelta },
-      extent: {
-        startLine: node.extent.startLine + result.verticalDelta,
-        endLine: node.extent.endLine + result.verticalDelta
-      }
-    }];
-  });
-}
 
 function sectionsAfterPatch(
   sections: readonly MappingPocASection[],
@@ -137,13 +128,14 @@ function sectionsAfterPatch(
 
 export function MappingPocSelectionCanvas(props: {
   initialDocument?: MappingGridDocument;
+  onJump?: (target: DiagramJumpTarget) => void;
   onController?: (controller: MappingDocumentController | null) => void;
   initialCanvasState?: MappingCanvasState;
   onCanvasStateChange?: (state: MappingCanvasState) => void;
   onDocumentChange?: (document: MappingGridDocument) => void;
   onBusyChange?: (busy: boolean) => void;
   active?: boolean;
-  focusBox?: { id: string; serial: number };
+  focusBox?: { id: string; serial: number; contentNodeId?: string };
   projectContext?: { projectId: string; representationId: string; baseRevisionId: string };
   projectionCatalog?: ProjectRepresentationCatalogRecord;
   savedScene?: string;
@@ -154,7 +146,7 @@ export function MappingPocSelectionCanvas(props: {
   const [controller] = useState(() => {
     const state = props.initialCanvasState ?? initialCanvasState();
     if (!props.initialCanvasState) state.controls.surfaces.draft.presentation = props.localChatVariant ?? 'compact';
-    return new MappingDocumentController(props.initialDocument ?? initialMappingGrid(), state);
+    return new MappingDocumentController(props.initialDocument ?? initialMappingGrid(), state, 0, undefined, {});
   });
   const controllerState = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
   const canvasState = controllerState.canvas;
@@ -227,6 +219,7 @@ export function MappingPocSelectionCanvas(props: {
   }, []);
   const [clientSessionId] = useState(() => `mapping-${crypto.randomUUID()}`);
   const [cell, setCell] = useState<CellMetrics>({ width: 0, height: 0 });
+  const [connectionsOpen, setConnectionsOpen] = useState(false);
   useLayoutEffect(() => {
     const configure = () => controller.configureLayout(cell, { width: window.innerWidth, height: window.innerHeight });
     configure(); window.addEventListener('resize', configure);
@@ -240,15 +233,17 @@ export function MappingPocSelectionCanvas(props: {
   const activeBox = boxes.find((node) => node.box.id === activeBoxId && node.contentId)
     ?? boxes.find((node) => node.contentId)!;
   const content = scene.contents[activeBox.contentId!];
-  const ascii = content.ascii;
+  const ascii = content.content.ascii;
   const diagramRevision = content.revision;
-  const nodes = gridDocument.nodes[content.id] ?? [];
+  const nodes = useMemo(() => diagramSelectionNodes(content), [content]);
   const sections = gridDocument.sections[content.id] ?? [];
   const contentProjections = useMemo(() => new Map(boxes.filter(box => box.contentId).map(box => [box.box.id,
     diagramProjection(scene, box.box.id, box.contentId!, box.box.collapsed ? undefined : canvasState.diagramViews)])), [boxes, scene, canvasState.diagramViews]);
   const activeProjection = contentProjections.get(activeBox.box.id)!;
-  const displayNodes = useMemo(() => controller.nodes(), [controller, scene, display, canvasState.diagramViews, controllerState.version]);
-  const composedAscii = useMemo(() => composeScene(scene, (content, box) => contentProjections.get(box.id)?.ascii ?? content.ascii), [scene, contentProjections]);
+  const displayNodes = useMemo(() => controller.nodes(), [controller, controllerState]);
+  const endpointGeometry = useEndpointGeometry(controller, props.active !== false);
+  const composedText = useMemo(() => diagramSceneText(scene, canvasState.diagramViews), [scene, canvasState.diagramViews]);
+  const composedAscii = composedText.ascii;
   const commit = (next: MappingGridDocument) => controller.commitDocument(next);
   const [promptOperation, setPromptOperation] = useControl("promptOperation", canvasState, setCanvasState);
   const [diagramPlacement, setDiagramPlacement] = useState<string | null>(null);
@@ -337,9 +332,9 @@ export function MappingPocSelectionCanvas(props: {
       setStatusMessage(`Copy failed: ${error instanceof Error ? error.message : "Clipboard access was denied"}`);
     }
   }, [ascii, selectionRect, selectedNodes]);
-  const selectedEvidenceIds = useMemo(() => [...new Set(content.mappings
+  const selectedEvidenceIds = useMemo(() => [...new Set(diagramSource(content).mappings()
     .filter((mapping) => selectedNodeIdSet.has(`${content.id}:${mapping.id}`))
-    .map((mapping) => mapping.entityId))], [content, selectedNodeIdSet]);
+    .map((mapping) => exportedEvidenceId(scene, content.id, mapping.entityId)))], [scene, content, selectedNodeIdSet]);
   const projections = Object.values(props.projectionCatalog?.projections ?? {})
     .reverse()
     .filter((projection) => projection.sourceRepresentationId === props.projectContext?.representationId)
@@ -378,7 +373,7 @@ export function MappingPocSelectionCanvas(props: {
       const result = callTreeProjection.result;
       const bRange = result?.ascii ? { startLine: 1, endLine: result.ascii.split("\n").length } : null;
       const matched = new Set(result?.matchedSourceEvidenceIds ?? []);
-      return { ...projection, mappedANodeIds: content.mappings.filter((mapping) => matched.has(mapping.entityId)
+      return { ...projection, mappedANodeIds: diagramSource(content).mappings().filter((mapping) => matched.has(exportedEvidenceId(scene, content.id, mapping.entityId))
         && selectedNodeIds.includes(`${content.id}:${mapping.id}`)).map((mapping) => `${content.id}:${mapping.id}`),
         directlyMappedBNodeIds: result?.targetNodeIds ?? [], selectedBNodeIds: result?.visibleNodeIds ?? [],
         alignedSectionIds: [], mappedBRange: bRange, alignedBRange: bRange, bRange, bAscii: result?.ascii ?? "" };
@@ -390,7 +385,9 @@ export function MappingPocSelectionCanvas(props: {
     const probe = probeRef.current;
     if (!pre || !probe) return undefined;
     const measure = () => {
-      const width = probe.offsetWidth / 10;
+      const matrix = endpointGeometry.svgRef.current?.getScreenCTM();
+      const scale = matrix ? Math.hypot(matrix.a, matrix.b) : 0;
+      const width = scale ? probe.getBoundingClientRect().width / scale / 10 : 0;
       const height = Number.parseFloat(getComputedStyle(pre).lineHeight);
       if (width > 0 && height > 0) setCell({ width, height });
     };
@@ -415,12 +412,26 @@ export function MappingPocSelectionCanvas(props: {
     if (!props.focusBox) return;
     const target = props.focusBox.id;
     const expand = (box: typeof scene.root): typeof scene.root => {
-      if (box.kind === "diagram") return box;
+      if (box.kind === "diagram") return box.id === target ? { ...box, collapsed: false } : box;
       const contains = (node: typeof scene.root): boolean => node.id === target || (node.kind === "container" && node.children.some(contains));
       return contains(box) ? { ...box, collapsed: false, children: box.children.map(expand) } : box;
     };
     const root = expand(scene.root);
     if (JSON.stringify(root) !== JSON.stringify(scene.root)) commit({ ...gridDocument, scene: layoutScene({ ...scene, root }, target) });
+    const focusNode = props.focusBox.contentNodeId;
+    const displayed = controller.nodes().find(node => node.id === `grid:${target}`);
+    if (focusNode && displayed?.layout === 'grid' && displayed.content?.structure.kind === 'tree') {
+      const content = displayed.content;
+      const ancestors = new Set<string>();
+      let node = content.structure.kind === 'tree' ? content.structure.nodes[focusNode] : undefined;
+      while (node?.parentId && content.structure.kind === 'tree') { ancestors.add(node.parentId); node = content.structure.nodes[node.parentId]; }
+      controller.updateCanvas(current => {
+        const view = current.diagramViews?.[displayed.id];
+        if (!view) return current;
+        return { ...current, diagramViews: { ...current.diagramViews, [displayed.id]: { ...view,
+          collapsedContentNodeIds: view.collapsedContentNodeIds.filter(id => !ancestors.has(id)) } } };
+      });
+    }
     setActiveBoxId(target);
     clearSelection();
   }, [props.focusBox]);
@@ -523,7 +534,7 @@ export function MappingPocSelectionCanvas(props: {
       y: (activeBox.bounds.row + (activeProjection.rowForLine(selectionRect.startLine) ?? selectionRect.startLine - 1)) * cell.height }, {
       width: (selectionRect.endColumn - selectionRect.startColumn + 1) * cell.width,
       height: (selectionRect.endLine - selectionRect.startLine + 1) * cell.height }), id, kind: 'selection', childIds: [], expansion: 'expanded', displayMode: 'stacked',
-      sourceBoxId: activeBox.box.id, sourceContentId: content.id, sourceAscii: content.ascii,
+      sourceBoxId: activeBox.box.id, sourceContentId: content.id, sourceAscii: content.content.ascii,
       sourceRevisionId: props.projectContext?.baseRevisionId, rect: { ...selectionRect }, selectedIds: [...selectedNodeIds] };
     setDisplay(current => addDisplayNode(current, root)); setRetainedSelectionId(id); setActionsOpen(false);
     return id;
@@ -609,8 +620,8 @@ export function MappingPocSelectionCanvas(props: {
       id: `local-thread-${crypto.randomUUID()}`,
       title: summary,
       selection: { boxId: activeBox.box.id, nodeIds: [...selectedNodeIds], rect: { ...selectionRect }, summary },
-      context: structuredClone({ ...props.projectContext, contentId: content.id, diagramAscii: ascii,
-        diagramRevision, mappings: [...content.mappings] }),
+      context: structuredClone({ ...props.projectContext, contentId: content.id, sourceContext: content.sourceContext, diagramAscii: ascii,
+        diagramRevision, mappings: [...diagramSource(content).mappings()] }),
       verbosity: askVerbosity,
       messages: [{ id: `local-message-${crypto.randomUUID()}`, role: "user", text: query }],
       pending: true
@@ -687,17 +698,17 @@ export function MappingPocSelectionCanvas(props: {
     updateSurface(owner, { statusMessage: "starting diagram agent…" });
     try {
       const result = await promptMappingPocSelection({
-        ...props.projectContext,
+        ...props.projectContext, contentId: content.id, sourceContext: content.sourceContext,
         clientSessionId: `${clientSessionId}-${crypto.randomUUID()}`,
-        diagramAscii: ascii, diagramRevision, mappings: [...content.mappings],
+        diagramAscii: ascii, diagramRevision, mappings: [...diagramSource(content).mappings()],
         selection: selectionRect, instruction: promptText.trim()
       }, (message) => updateSurface(owner, { statusMessage: message }));
-      const nextContent = { ...content, ascii: result.diagramAscii, revision: result.diagramRevision,
-        mappings: result.mappings ?? [] };
+      const nextContent = createDiagram({ id: content.id, ascii: result.diagramAscii, revision: result.diagramRevision,
+        structureKind: content.content.structure.kind, mappings: result.mappings ?? [],
+        source: content.sourceContext.binding, evidence: content.sourceContext.evidence });
+      if (content.jumps) nextContent.jumps = rebaseDiagramJumps(content.content, nextContent.content, content.jumps);
       const nextScene = layoutScene({ ...scene, contents: { ...scene.contents, [content.id]: nextContent } }, activeBox.box.id);
-      commit(gridDocument.evidence ? mappingDocumentFromScene(nextScene, gridDocument.evidence)
-        : { ...gridDocument, scene: nextScene, nodes: { ...gridDocument.nodes, [content.id]: nodesAfterPatch(nodes, result) },
-          sections: { ...gridDocument.sections, [content.id]: sectionsAfterPatch(sections, result) } });
+      commit({ ...mappingDocumentFromScene(nextScene, gridDocument.edges), sections: { ...gridDocument.sections, [content.id]: sectionsAfterPatch(sections, result) } });
       if (operationOwnerRef.current === owner) {
         setSelectedNodeIds([]);
         setSelectionRect({ startLine: result.startLine, endLine: result.newEndLine,
@@ -728,16 +739,16 @@ export function MappingPocSelectionCanvas(props: {
     updateSurface(owner, { statusMessage: "generating sub-diagram…" });
     try {
       const result = await promptMappingPocSelection({
-        ...props.projectContext,
+        ...props.projectContext, contentId: content.id, sourceContext: content.sourceContext,
         clientSessionId: `${clientSessionId}-${crypto.randomUUID()}`, operation: "generate",
-        diagramAscii: ascii, diagramRevision, mappings: [...content.mappings], selection: selectionRect,
+        diagramAscii: ascii, diagramRevision, mappings: [...diagramSource(content).mappings()], selection: selectionRect,
         instruction: `${diagramPlacement}\nAim for ${minimumSize.columns} columns by ${minimumSize.rows} rows; the canvas can grow if needed.`
       }, message => updateSurface(owner, { statusMessage: message }));
       const id = `diagram-${crypto.randomUUID()}`;
       const next = insertGridDiagram(gridDocument, targetParent.box.id, {
         id, kind: "diagram", contentId: id, collapsed: false, minimumSize,
         position: { column: column - targetParent.bounds.column, row: row - targetParent.bounds.row }
-      }, { id, ascii: result.diagramAscii, revision: result.diagramRevision, mappings: result.mappings ?? [] });
+      }, createDiagram({ id, ascii: result.diagramAscii, revision: result.diagramRevision, mappings: result.mappings ?? [], source: content.sourceContext.binding, evidence: content.sourceContext.evidence }));
       commit(next);
       if (operationOwnerRef.current === owner) { clearSelection(); setActiveBoxId(id); }
       updateSurface(owner, { promptPhase: "applied", promptOpen: false, statusMessage: "Sub-diagram generated; layout updated" });
@@ -752,7 +763,7 @@ export function MappingPocSelectionCanvas(props: {
     const id = `group-${crypto.randomUUID()}`;
     const summaryId = `${id}-summary`;
     const next = updateGridBox({ ...scene, contents: { ...scene.contents,
-      [summaryId]: { id: summaryId, revision: 0, ascii: "[Diagram group]", mappings: [] } } }, boxId, (box) => ({
+      [summaryId]: createDiagram({ id: summaryId, revision: 0, ascii: "[Diagram group]" }) } }, boxId, (box) => ({
       id, kind: "container", position: box.position, collapsed: false, collapsedContentId: summaryId,
       children: [{ ...box, position: { column: 0, row: 0 } }], layout: { collisionPolicy: "push-right", gap: 3 }
     }));
@@ -874,7 +885,7 @@ export function MappingPocSelectionCanvas(props: {
       aria-label="Graph A selectable nodes"
       style={cell.width ? { width: (resolved.bounds.columns + 65) * cell.width, minHeight: (resolved.bounds.rows + 16) * cell.height } : undefined}
       onPointerDown={(event) => {
-        if (event.button !== 0 || (event.target as Element).closest("[data-mapping-static-ui]")) return;
+        if (event.button !== 0 || ((event.target as Element).closest("[data-mapping-static-ui]") && !(event.ctrlKey && (event.target as Element).closest("[data-diagram-jump-id]")))) return;
         if (diagramPlacement || movingBoxId) {
           const point = scenePointAtClient(event.clientX, event.clientY);
           if (!point) return;
@@ -896,7 +907,7 @@ export function MappingPocSelectionCanvas(props: {
           || event.shiftKey
           || !event.ctrlKey
           || event.metaKey
-          || (event.target as Element).closest("[data-mapping-static-ui]")) return;
+          || ((event.target as Element).closest("[data-mapping-static-ui]") && !(event.ctrlKey && (event.target as Element).closest("[data-diagram-jump-id]")))) return;
         const scenePoint = scenePointAtClient(event.clientX, event.clientY);
         const hit = scenePoint && hitTest(scene, scenePoint);
         const targetBox = hit && boxes.find((node) => node.box.id === hit.boxId);
@@ -966,14 +977,14 @@ export function MappingPocSelectionCanvas(props: {
           setStatusMessage("Sub-diagram pasted; layout updated");
         }} />
       <span ref={probeRef} className="mapping-poc-cell-probe" aria-hidden="true">0000000000</span>
-      <pre
+      <DiagramText registerEndpoint={endpointGeometry.registerEndpoint} rows={composedText.rows} onJump={props.onJump}
         ref={preRef}
         className="mapping-poc-ascii"
         style={cell.width ? { width: resolved.bounds.columns * cell.width } : undefined}
         data-graph="A"
         data-line-count={resolved.bounds.rows}
         data-revision={diagramRevision}
-      >{composedAscii}</pre>
+      />
 
       <DiagramSubtreeControls nodes={displayNodes} visibleBoxIds={new Set(boxes.map(box => box.box.id))} cell={cell}
         disabled={isGenerating || !!diagramPlacement || !!movingBoxId || !!promptOpen || !!askOpen}
@@ -985,10 +996,15 @@ export function MappingPocSelectionCanvas(props: {
       <div className="mapping-grid-tools" data-mapping-static-ui data-diagram-canvas-static-ui>
         <button type="button" disabled={!controllerState.canUndo || isGenerating} onClick={() => undo()}>Undo</button>
         <button type="button" disabled={!controllerState.canRedo || isGenerating} onClick={() => undo(true)}>Redo</button>
+        <button type="button" aria-expanded={connectionsOpen} onClick={() => setConnectionsOpen(value => !value)}>Connections ({gridDocument.edges.length})</button>
         <span role="status">{diagramPlacement ? "Drag a region to place the sub-diagram · Esc cancels" : movingBoxId ? "Click to move the box · Esc cancels" : statusMessage}</span>
       </div>
-      {boxes.filter((node) => node.box.id !== "root").map((node) => (
-        <div key={node.box.id} className={`mapping-grid-box${node.box.kind === "container" ? " is-container" : ""}`}
+      <div ref={element => endpointGeometry.registerEndpoint({ displayNodeId: `grid:${scene.root.id}` }, element)}
+        data-grid-box={scene.root.id} aria-hidden="true"
+        style={{ position: 'absolute', pointerEvents: 'none', left: resolved.bounds.column * cell.width,
+          top: resolved.bounds.row * cell.height, width: resolved.bounds.columns * cell.width, height: resolved.bounds.rows * cell.height }} />
+      {boxes.filter((node) => node.box.id !== scene.root.id).map((node) => (
+        <div key={node.box.id} ref={element => endpointGeometry.registerEndpoint({ displayNodeId: `grid:${node.box.id}` }, element)} className={`mapping-grid-box${node.box.kind === "container" ? " is-container" : ""}`}
           data-grid-box={node.box.id} data-grid-column={node.bounds.column} data-grid-row={node.bounds.row}
           data-grid-columns={node.bounds.columns} data-grid-rows={node.bounds.rows} data-collapsed={node.box.collapsed}
           style={{ left: node.bounds.column * cell.width, top: node.bounds.row * cell.height,
@@ -1228,7 +1244,7 @@ export function MappingPocSelectionCanvas(props: {
 
       {chatThreads.filter(thread => {
         const owner = Object.values(display.nodes).find(node => node.childIds.includes(thread.id));
-        if (owner?.kind === 'selection' && scene.contents[owner.sourceContentId]?.ascii === owner.sourceAscii && contentProjections.has(owner.sourceBoxId) && !contentProjections.get(owner.sourceBoxId)!.rect(owner.rect)) return false;
+        if (owner?.kind === 'selection' && scene.contents[owner.sourceContentId]?.content.ascii === owner.sourceAscii && contentProjections.has(owner.sourceBoxId) && !contentProjections.get(owner.sourceBoxId)!.rect(owner.rect)) return false;
         return !owner || owner.expansion === 'expanded' && (owner.kind !== 'selection' || boxes.some(box => box.box.id === owner.sourceBoxId && !box.box.collapsed));
       }).map((thread) => {
         const isActive = display.nodes[thread.id]?.expansion === 'expanded';
@@ -1322,6 +1338,9 @@ export function MappingPocSelectionCanvas(props: {
           setActionsOpen(true);
           stageRef.current?.focus({ preventScroll: true });
         }} />
+      <DiagramConnections controller={controller} state={controllerState} cell={cell} displayNodes={displayNodes} svgRef={endpointGeometry.svgRef}
+        open={connectionsOpen && props.active !== false} onOpen={() => setConnectionsOpen(true)} onClose={() => setConnectionsOpen(false)}
+        disabled={isGenerating || !!diagramPlacement || !!movingBoxId} />
     </div>
   );
 }

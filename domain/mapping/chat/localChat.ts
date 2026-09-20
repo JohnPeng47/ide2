@@ -6,6 +6,7 @@ export type LocalChatVariant = "compact" | "floating" | "docked";
 export type LocalChatVerbosity = "low" | "high";
 
 export interface LocalChatContext {
+  sourceContext?: import("../../core/diagrams/diagram").DiagramSourceContext;
   projectId?: string;
   representationId?: string;
   baseRevisionId?: string;

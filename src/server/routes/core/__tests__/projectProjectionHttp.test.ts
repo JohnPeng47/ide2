@@ -1,3 +1,4 @@
+import { sourceBindingFromLocation } from '../../../../../domain/core/diagrams/diagram';
 import { createHash } from "node:crypto";
 import {
   mkdir,
@@ -42,6 +43,7 @@ async function fixture() {
   const project = await store.ensureProject({ checkoutRoot: root, repositoryIdentity: path.join(root, ".git") });
   const ascii = "Alpha\nBeta\nGamma";
   const source = await store.projectCatalogs.promoteRepresentation({
+    source: sourceBindingFromLocation({checkoutRoot:root,repositoryIdentity:path.join(root,".git")}),
     projectId: project.id, handle: "source", name: "Source", viewKind: "diagram", representationKind: "diagram",
     ascii, asciiSha256: createHash("sha256").update(ascii).digest("hex"),
     evidence: Object.fromEntries(["a", "b", "c"].map((id) => [id, {

@@ -5,6 +5,7 @@ import type { CompactionSnapshot } from "../../core/representations/compactionPr
 import type { FileCompactionResult, FileCompactionStage } from "./fileCompaction";
 
 export interface FileCompactionRun {
+  sourceId?: string;
   schemaVersion: 1;
   id: string;
   projectId: string;

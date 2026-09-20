@@ -1,3 +1,4 @@
+import { resolveDiagramSource, type DiagramSourceReference } from './diagramSource';
 import { createHash } from 'node:crypto';
 import type { SourcePosition } from '../../../domain/core/source/sourceNavigation';
 import type { CorpusAccess } from '../corpus/corpusAccess';
@@ -7,33 +8,30 @@ import type { LanguageService } from './languageService';
 
 export class ProjectSourceService {
   constructor(
-    private readonly projects: Pick<DiagramRepository, 'loadProject'>,
+    private readonly projects: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs' | 'loadDiagramSet'>,
     private readonly corpus: CorpusAccess,
     private readonly language?: LanguageService
   ) { }
 
-  async files(projectId: string | null, directory: string) {
-    const project = await this.projects.loadProject();
-    if (!project || projectId !== project.id) throw new ApplicationError('conflict', 'Repository belongs to another project');
-    return this.corpus.provider(project.corpus).listDirectory(project.corpus, directory);
+  async files(projectId: string | null, directory: string, sourceId?: string) {
+    const source = await resolveDiagramSource(this.projects, {projectId: projectId ?? '', sourceId}, this.corpus);
+    return source.listFiles(directory);
   }
 
   ensureDefinitionsEnabled(): void {
     if (!this.language) throw new ApplicationError('lsp-disabled', 'Definition lookup is disabled. Start the server with --lsp to enable it.');
   }
 
-  async definitions(input: { projectId: string; path: string; position: SourcePosition; sourceSha256: string }, signal: AbortSignal) {
+  async definitions(input: DiagramSourceReference & { path: string; position: SourcePosition; sourceSha256: string }, signal: AbortSignal) {
     if (!this.language) throw new ApplicationError('lsp-disabled', 'Definition lookup is disabled. Start the server with --lsp to enable it.');
-    const project = await this.projects.loadProject();
-    if (!project || input.projectId !== project.id) throw new ApplicationError('conflict', 'Source belongs to another project');
-    return this.language.definitions(project.corpus, input.path, input.position, input.sourceSha256, signal);
+    const source = await resolveDiagramSource(this.projects, input, this.corpus);
+    return this.language.definitions(source.binding().corpus, input.path, input.position, input.sourceSha256, signal);
   }
 
-  async source(projectId: string | null, sourcePath: string | null) {
-    const project = await this.projects.loadProject();
-    if (!project || projectId !== project.id) throw new ApplicationError('conflict', 'Source belongs to another project; reopen the diagram.');
+  async source(projectId: string | null, sourcePath: string | null, sourceId?: string) {
     if (!sourcePath) throw new ApplicationError('invalid-input', 'Source path is required');
-    const source = await this.corpus.provider(project.corpus).readDocumentText(project.corpus, sourcePath);
+    const resolved = await resolveDiagramSource(this.projects, {projectId: projectId ?? '', sourceId}, this.corpus);
+    const source = await resolved.readText(sourcePath);
     if (source.includes('\0')) throw new ApplicationError('binary-source', 'This is a binary file. The source pane displays text files.');
     return {
       path: sourcePath, startLine: 1, lines: source.split(/\r?\n/),

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "projectId": "performance-fixture",
   "activeDocumentId": "source",
   "documents": [
@@ -8,21 +8,43 @@
       "name": "Source pane performance",
       "savedName": "Source pane performance",
       "revisionId": "revision-source",
-      "savedScene": "{\"contents\":{\"overview\":{\"id\":\"overview\",\"revision\":0,\"ascii\":\"Source pane performance fixture\",\"mappings\":[]},\"overview-summary\":{\"id\":\"overview-summary\",\"revision\":0,\"ascii\":\"[Diagram]\",\"mappings\":[]}},\"root\":{\"id\":\"root\",\"kind\":\"container\",\"position\":{\"column\":0,\"row\":0},\"collapsed\":false,\"layout\":{\"collisionPolicy\":\"push-right\",\"gap\":3},\"children\":[{\"id\":\"overview\",\"kind\":\"diagram\",\"position\":{\"column\":0,\"row\":0},\"collapsed\":false,\"contentId\":\"overview\",\"collapsedContentId\":\"overview-summary\"}]}}",
+      "savedScene": "{\"contents\":{\"overview\":{\"id\":\"overview\",\"revision\":0,\"content\":{\"revisionId\":\"overview:0\",\"ascii\":\"Source pane performance fixture\",\"asciiSha256\":\"03f0af178485493b60049ecbe2d61c174f0fc85db7c67c7888d4335e2b89cf7b\",\"structure\":{\"kind\":\"diagram\"}},\"sourceContext\":{\"contentHash\":\"03f0af178485493b60049ecbe2d61c174f0fc85db7c67c7888d4335e2b89cf7b\",\"mappings\":[],\"evidence\":{}}},\"overview-summary\":{\"id\":\"overview-summary\",\"revision\":0,\"content\":{\"revisionId\":\"overview-summary:0\",\"ascii\":\"[Diagram]\",\"asciiSha256\":\"bd799efd6eec5ccb309984fe12304a557293a53c4cc6d52c4771aff09f842909\",\"structure\":{\"kind\":\"diagram\"}},\"sourceContext\":{\"contentHash\":\"bd799efd6eec5ccb309984fe12304a557293a53c4cc6d52c4771aff09f842909\",\"mappings\":[],\"evidence\":{}}}},\"root\":{\"id\":\"root\",\"kind\":\"container\",\"position\":{\"column\":0,\"row\":0},\"collapsed\":false,\"layout\":{\"collisionPolicy\":\"push-right\",\"gap\":3},\"children\":[{\"id\":\"overview\",\"kind\":\"diagram\",\"position\":{\"column\":0,\"row\":0},\"collapsed\":false,\"contentId\":\"overview\",\"collapsedContentId\":\"overview-summary\"}]}}",
       "document": {
         "scene": {
           "contents": {
             "overview": {
               "id": "overview",
               "revision": 0,
-              "ascii": "Source pane performance fixture",
-              "mappings": []
+              "content": {
+                "revisionId": "overview:0",
+                "ascii": "Source pane performance fixture",
+                "asciiSha256": "03f0af178485493b60049ecbe2d61c174f0fc85db7c67c7888d4335e2b89cf7b",
+                "structure": {
+                  "kind": "diagram"
+                }
+              },
+              "sourceContext": {
+                "contentHash": "03f0af178485493b60049ecbe2d61c174f0fc85db7c67c7888d4335e2b89cf7b",
+                "mappings": [],
+                "evidence": {}
+              }
             },
             "overview-summary": {
               "id": "overview-summary",
               "revision": 0,
-              "ascii": "[Diagram]",
-              "mappings": []
+              "content": {
+                "revisionId": "overview-summary:0",
+                "ascii": "[Diagram]",
+                "asciiSha256": "bd799efd6eec5ccb309984fe12304a557293a53c4cc6d52c4771aff09f842909",
+                "structure": {
+                  "kind": "diagram"
+                }
+              },
+              "sourceContext": {
+                "contentHash": "bd799efd6eec5ccb309984fe12304a557293a53c4cc6d52c4771aff09f842909",
+                "mappings": [],
+                "evidence": {}
+              }
             }
           },
           "root": {
@@ -52,7 +74,6 @@
             ]
           }
         },
-        "nodes": {},
         "sections": {}
       },
       "canvas": {

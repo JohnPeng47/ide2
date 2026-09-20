@@ -1,0 +1,18 @@
+.diagram-connections { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 6; }
+.diagram-connections text { font: 12px var(--font-mono); paint-order: stroke; stroke: #11161c; stroke-width: 3px; }
+.diagram-connection-hit { pointer-events: stroke; cursor: pointer; }
+.diagram-connection-hit:focus { outline: none; stroke: rgb(125 211 252 / 25%); }
+.diagram-anchor-target { position: absolute; z-index: 8; padding: 0; border: 1px solid #7dd3fc; background: rgb(125 211 252 / 12%); cursor: crosshair; }
+.diagram-anchor-target.is-box { z-index: 7; border: 2px dashed #7dd3fc; background: transparent; }
+.diagram-anchor-target:hover, .diagram-anchor-target:focus { background: rgb(125 211 252 / 30%); outline: 2px solid #bae6fd; }
+.diagram-connections-panel { position: fixed; right: 16px; top: 110px; z-index: 100; width: 330px; max-height: calc(100vh - 130px); overflow: auto; padding: 14px; border: 1px solid #456070; border-radius: 6px; background: #141920; color: #dce5ed; box-shadow: 0 8px 30px #0008; font: 12px var(--font-mono); }
+.diagram-connections-panel header, .diagram-connections-panel footer { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.diagram-connections-panel button, .diagram-connections-panel select, .diagram-connections-panel input { background: #202a35; color: inherit; border: 1px solid #456070; border-radius: 3px; padding: 5px; max-width: 100%; }
+.diagram-connections-panel button { cursor: pointer; }
+.diagram-connections-panel button:disabled { opacity: .45; cursor: default; }
+.diagram-connections-panel fieldset { margin: 10px 0; border: 1px solid #456070; padding: 8px; }
+.diagram-connections-panel fieldset > select { width: 100%; margin-bottom: 6px; }
+.diagram-connections-panel label { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 6px 0; }
+.diagram-connections-panel ul { padding: 0; list-style: none; max-height: 140px; overflow: auto; }
+.diagram-connections-panel li button { margin-bottom: 4px; width: 100%; text-align: left; }
+.diagram-connections-panel [role=alert] { color: #fca5a5; }

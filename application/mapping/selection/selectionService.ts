@@ -1,3 +1,5 @@
+import { createDiagram, type DiagramSourceContext } from '../../../domain/core/diagrams/diagram';
+import { resolveDiagramSource } from '../../core/source/diagramSource';
 import type { DiagramElementMapping } from '../../../domain/core/records/domain';
 import { ProjectDiagramConflict } from '../../../domain/core/representations/errors';
 import type { ProjectRepresentationEvidenceRecord } from '../../../domain/core/representations/projectCatalog';
@@ -6,7 +8,7 @@ import type { DiagramRepository } from '../../core/ports/diagramRepository';
 import type { MappingAgentRuntime } from './agent';
 
 export class SelectionService {
-  constructor(private readonly projects: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs'>,
+  constructor(private readonly projects: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs' | 'loadDiagramSet'>,
     private readonly runtime: MappingAgentRuntime, private readonly sourceRoot: string) { }
 
   async prepare(body: Record<string, unknown>) {
@@ -59,8 +61,15 @@ export class SelectionService {
       const representation = catalog.representations[String(body.representationId)];
       if (!representation || representation.status === "archived"
         || representation.currentRevisionId !== body.baseRevisionId) throw new ProjectDiagramConflict("Diagram revision has changed; reopen it before prompting");
-      projectEvidence = catalog.revisions[representation.currentRevisionId].evidence;
-      sourceRoot = project.corpus.root;
+      const context = body.sourceContext as DiagramSourceContext | undefined;
+      const live = context && createDiagram({ id: String(body.contentId), revision: diagramRevision, ascii: diagramAscii,
+        source: context.binding, mappings: context.mappings, evidence: context.evidence });
+      if (live && context!.contentHash !== live.content.asciiSha256) throw new Error('Diagram source context does not match content');
+      const resolved = await resolveDiagramSource(this.projects, {projectId: project.id, representationId: representation.id,
+        revisionId: representation.currentRevisionId, contentId: String(body.contentId)}, undefined, live);
+      projectEvidence = resolved.context.evidence;
+      mappings = [...resolved.mappings()];
+      sourceRoot = resolved.context.binding?.corpus.root ?? this.sourceRoot;
       if (!mappings) throw new Error("Project diagram mappings are required");
     }
 

@@ -82,7 +82,7 @@ describe("ProjectCatalogStore", () => {
     const second = await store.upsertFileCompaction("project-one", input);
 
     expect(second.compaction.id).toBe(first.compaction.id);
-    expect(second.catalog.activeByPath[input.path]).toBe(first.compaction.id);
+    expect(second.catalog.activeByPath[JSON.stringify([null, input.path])]).toBe(first.compaction.id);
     await expect(store.loadCompactionCatalog("project-one")).resolves.toEqual(second.catalog);
   });
 

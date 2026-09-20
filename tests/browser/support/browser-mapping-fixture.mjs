@@ -25,10 +25,10 @@ export async function seedMappingFixture(root, diagram) {
   }
   const timestamp = new Date().toISOString();
   const revision = { schemaVersion: 1, id: "revision-overview", projectId, representationId: "representation-overview", revision: 1, ascii,
+    source: {sourceId: "fixture-source", repositoryIdentity:path.join(root,".git"),domainProfileId:"source-code",corpus:{kind:"git-worktree",root}},
     asciiSha256: createHash("sha256").update(ascii).digest("hex"), representationKind: "tree", evidence, mappings, createdAt: timestamp };
   const representation = { schemaVersion: 1, id: revision.representationId, projectId, handle: "overview", name: "Current LLM prompt stack", viewKind: "diagram", representationKind: "tree", status: "settled", currentRevisionId: revision.id, revisionIds: [revision.id], createdAt: timestamp, updatedAt: timestamp };
   await mkdir(path.join(root, ".diagrams/representations"), { recursive: true });
-  await writeFile(path.join(root, ".diagrams/project.json"), JSON.stringify({ schemaVersion: 1, id: projectId, name: "Mapping fixture", repositoryIdentity: path.join(root, ".git"), canonicalRepoRoot: root,
-    domainProfileId: "source-code", corpus: { kind: "git-worktree", root }, diagramSetIds: [], createdAt: timestamp, updatedAt: timestamp }));
+  await writeFile(path.join(root, ".diagrams/project.json"), JSON.stringify({ schemaVersion: 1, id: projectId, name: "Mapping fixture", defaultDomainProfileId: "source-code", diagramSetIds: [], createdAt: timestamp, updatedAt: timestamp }));
   await writeFile(path.join(root, ".diagrams/representations/catalog.json"), JSON.stringify({ schemaVersion: 1, projectId, activeByKind: {}, representations: { [representation.id]: representation }, revisions: { [revision.id]: revision }, createdAt: timestamp, updatedAt: timestamp }));
 }

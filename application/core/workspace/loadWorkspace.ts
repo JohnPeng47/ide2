@@ -63,7 +63,7 @@ export async function loadWorkspace(store: DiagramRepository): Promise<Workspace
   const diagramComponents: Record<string, DiagramComponentRecord> = {};
   const codeEntityPromptConfigs: Record<string, CodeEntityPromptConfigRecord> = {};
   const codeEntityPromptTemplates = Object.fromEntries(
-    (await store.loadCodeEntityPromptTemplates(project.domainProfileId === "document"
+    (await store.loadCodeEntityPromptTemplates(project.defaultDomainProfileId === "document"
       ? "document"
       : "source-code")).map((template) => [template.id, template])
   );

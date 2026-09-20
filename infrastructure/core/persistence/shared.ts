@@ -12,8 +12,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import type { RepositoryLocation } from "../../../application/core/corpus/location";
 import { type HighlightRecordV2 } from "../../../domain/core/highlights/highlights";
-import type { BuiltInDomainProfileId, CorpusBinding } from "../../../domain/core/profiles/domainProfile";
-import { isBuiltInDomainProfileId } from "../../../domain/core/profiles/domainProfiles";
+import type { BuiltInDomainProfileId } from "../../../domain/core/profiles/domainProfile";
 import {
   SCHEMA_VERSION,
   type DiagramHighlightRecord,
@@ -106,20 +105,7 @@ export function projectIdFor(repositoryIdentity: string): string {
   return `project-${digest}`;
 }
 
-export function normalizedProject(project: ProjectRecord): ProjectRecord {
-  const stored = project as ProjectRecord & {
-    domainProfileId?: unknown;
-    corpus?: CorpusBinding;
-  };
-  const domainProfileId = isBuiltInDomainProfileId(stored.domainProfileId)
-    ? stored.domainProfileId
-    : "source-code";
-  const corpus = stored.corpus ?? {
-    kind: "git-worktree" as const,
-    root: stored.canonicalRepoRoot
-  };
-  return { ...stored, domainProfileId, corpus };
-}
+export function normalizedProject(project: ProjectRecord): ProjectRecord { return project; }
 
 export function nowIso(): string {
   return new Date().toISOString();

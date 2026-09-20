@@ -1,3 +1,4 @@
+import { resolveDiagramSource } from '../../core/source/diagramSource';
 import type { FileCompactionPrompts, FileCompactionSource } from "../../../domain/mapping/compaction/validation";
 import { compactionSnapshot } from "../../../domain/mapping/compaction/validation";
 import type { FileCompactionRepository } from "./repository";
@@ -19,6 +20,7 @@ import { createFileCompactionWorkflow } from "./fileCompactionWorkflow";
 
 interface PreparedCompaction {
   projectId: string;
+  sourceId: string;
   corpus: CorpusBinding;
   bytes: Buffer;
   source: FileCompactionSource;
@@ -47,8 +49,10 @@ export class FileCompactionService {
     }
     const project = await this.application.store.loadProject();
     if (!project || project.id !== request.projectId) throw new ProjectDiagramConflict("Compaction belongs to another Project");
-    if (project.domainProfileId !== "source-code") throw new Error("File compaction requires a source-code project");
-    const bytes = await this.application.corpus.provider(project.corpus).readDocumentBytes(project.corpus, request.sourceFile);
+    const resolved = await resolveDiagramSource(this.application.store, request, this.application.corpus);
+    const binding = resolved.binding();
+    if (binding.domainProfileId !== "source-code") throw new Error("File compaction requires a source-code diagram");
+    const bytes = await this.application.corpus.provider(binding.corpus).readDocumentBytes(binding.corpus, request.sourceFile);
     if (!bytes.length || bytes.length > 256 * 1024) throw new Error("Source must contain 1 to 262,144 bytes; it will not be truncated");
     const text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
     if (text.includes("\0")) throw new Error("Source must be a UTF-8 text file");
@@ -57,7 +61,7 @@ export class FileCompactionService {
       lineCount: text.split(/\r?\n/).length - (text.endsWith("\n") ? 1 : 0)
     };
     return {
-      projectId: project.id, corpus: project.corpus, source, bytes,
+      projectId: project.id, sourceId: binding.sourceId, corpus: binding.corpus, source, bytes,
       prompts: await this.settings.loadPrompts(), agent: await this.settings.resolveAgent(request)
     };
   }
@@ -72,7 +76,7 @@ export class FileCompactionService {
     const id = `compaction-${randomUUID()}`;
     const timestamp = new Date().toISOString();
     const run: FileCompactionRun = {
-      schemaVersion: 1, id, projectId: prepared.projectId,
+      schemaVersion: 1, id, projectId: prepared.projectId, sourceId: prepared.sourceId,
       sourceFile: prepared.source.sourceFile, sourceSha256: prepared.source.sourceSha256,
       workflowId: "single-file-compaction", status: "running", stage: "compact",
       createdAt: timestamp, updatedAt: timestamp, prompts: prepared.prompts, agent: prepared.agent, steps: {}

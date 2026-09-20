@@ -8,6 +8,7 @@ import type {
 } from "./projectCatalog";
 
 export interface ProjectRepresentationPromotionDraft {
+  source?: import("../diagrams/diagram").DiagramSourceBinding;
   projectId: string;
   representationId?: string;
   expectedRevisionId?: string;

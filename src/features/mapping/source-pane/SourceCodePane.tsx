@@ -21,8 +21,8 @@ export const SourceCodePane = memo(function SourceCodePane(props: {
   const viewState = useContext(SourcePaneViewStateContext);
   const documentId = useContext(SourcePaneDocumentContext);
   const active = useContext(SourcePaneDocumentActiveContext);
-  const scrollState = useMemo(() => viewState?.bind(documentId, props.id, content.sourceFile, content.scroll),
-    [viewState, documentId, props.id, content.sourceFile, content.scroll]);
+  const scrollState = useMemo(() => viewState?.bind(documentId, props.id, content.sourceFile, content.scroll, content.sourceId),
+    [viewState, documentId, props.id, content.sourceFile, content.scroll, content.sourceId]);
   const onChange = useCallback((patch: Partial<SourceCodePaneView>) => props.onChange(props.id, patch), [props.id, props.onChange]);
   const file = content.files.find(file => file.sourceFile === content.sourceFile);
   const root = useRef<HTMLElement>(null);
@@ -41,15 +41,15 @@ export const SourceCodePane = memo(function SourceCodePane(props: {
   useEffect(() => {
     const controller = new AbortController();
     setPreview(null); setError('');
-    void fetchProjectSourceFile(content.projectId, content.sourceFile, controller.signal)
+    void fetchProjectSourceFile(content.projectId, content.sourceFile, controller.signal, content.sourceId)
       .then(result => { if (!controller.signal.aborted) setPreview(result); })
       .catch((error: unknown) => { if (!controller.signal.aborted) setError(error instanceof Error ? error.message : 'Could not load source file'); });
     return () => controller.abort();
-  }, [content.projectId, content.sourceFile, attempt]);
+  }, [content.projectId, content.sourceId, content.sourceFile, attempt]);
   useEffect(() => {
     definitionRequest.current?.abort(); setDefinitionMessage(''); setDefinitions([]);
     return () => definitionRequest.current?.abort();
-  }, [content.projectId, content.sourceFile, active]);
+  }, [content.projectId, content.sourceId, content.sourceFile, active]);
 
   const loaded = preview?.path === content.sourceFile ? preview : null;
   const stale = Boolean(file && loaded && loaded.sourceSha256 !== file.sourceSha256);
@@ -86,7 +86,7 @@ export const SourceCodePane = memo(function SourceCodePane(props: {
     const controller = new AbortController(); definitionRequest.current = controller;
     setDefinitionMessage('Finding definition…'); setDefinitions([]);
     try {
-      const result = await fetchSourceDefinitions(content.projectId, content.sourceFile, position, loaded.sourceSha256, controller.signal);
+      const result = await fetchSourceDefinitions(content.projectId, content.sourceFile, position, loaded.sourceSha256, controller.signal, content.sourceId);
       if (controller.signal.aborted) return;
       if (result.locations.length === 1) navigate(result.locations[0]);
       else {
@@ -107,7 +107,7 @@ export const SourceCodePane = memo(function SourceCodePane(props: {
       </select>
     </div>
     <div className="mapping-source-body">
-      {explorerOpen && <RepositoryFileExplorer projectId={content.projectId} selected={content.sourceFile} onOpen={openFile} />}
+      {explorerOpen && <RepositoryFileExplorer projectId={content.projectId} sourceId={content.sourceId} selected={content.sourceFile} onOpen={openFile} />}
       <div className="mapping-source-main">
         <div className="mapping-source-toolbar">
           <button type="button" aria-pressed={content.showCompactions} disabled={!loaded || stale || !file}

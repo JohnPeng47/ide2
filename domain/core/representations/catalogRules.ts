@@ -1,5 +1,5 @@
+import { validateConnections } from '../diagrams/diagramConnection';
 import { flattenGrid, resolveScene } from '../diagrams/lineGrid';
-import { buildDiagramContent } from '../diagrams/diagramContent';
 import { buildProjectionTree, validateProjection, type ProjectProjectionRecord } from "../diagrams/diagramProjection";
 import { projectCanvasSnapshot, sceneFromRevision, type SaveProjectDiagramInput } from "../diagrams/projectDiagramCanvas";
 import {
@@ -50,6 +50,12 @@ export function saveProjectedTree(catalog: ProjectRepresentationCatalogRecord, p
     || sourceRevision?.representationId !== source.id) {
     throw new ProjectDiagramConflict("Source diagram changed or is unavailable; regenerate its projection");
   }
+  const linkedIds = new Set(input.links.flatMap(link => link.sourceEvidenceIds));
+  const sourceDiagrams = Object.values(sceneFromRevision(sourceRevision).contents).filter(d =>
+    Object.keys(d.sourceContext.evidence).some(id => linkedIds.has(id) || linkedIds.has(`${d.id}:${id}`)));
+  const bindings = new Map(sourceDiagrams.flatMap(d => d.sourceContext.binding ? [[d.sourceContext.binding.sourceId, d.sourceContext.binding] as const] : []));
+  if (bindings.size > 1) throw new Error("A projected diagram must select evidence from one source; create one diagram per source");
+  const diagramSource = [...bindings.values()][0];
   const asciiSha256 = environment.hash(input.ascii);
   const mappingSignature = JSON.stringify(input.links);
   const targetId = input.targetRepresentationId ?? environment.stableId("representation", source.id, sourceRevision.id, input.name.trim(), asciiSha256, mappingSignature);
@@ -67,7 +73,7 @@ export function saveProjectedTree(catalog: ProjectRepresentationCatalogRecord, p
     schemaVersion: 1, id: revisionId, projectId, representationId: targetId,
     revision: existingTarget ? (catalog.revisions[existingTarget.currentRevisionId]?.revision ?? 0) + 1 : 1,
     ascii: input.ascii, asciiSha256, representationKind: "tree", content: { kind: "ascii", ascii: input.ascii },
-    evidence: structuredClone(sourceRevision.evidence), mappings: [], createdAt: timestamp
+    ...(diagramSource ? {source: diagramSource} : {}), evidence: structuredClone(Object.fromEntries(Object.entries(sourceRevision.evidence).filter(([id]) => linkedIds.has(id)))), mappings: [], createdAt: timestamp
   };
   const tree = buildProjectionTree(revision);
   const byLine = new Map(Object.values(tree.nodes).map((node) => [node.line, node]));
@@ -93,6 +99,8 @@ export function saveProjectedTree(catalog: ProjectRepresentationCatalogRecord, p
     });
     return { sourceEvidenceIds: [...new Set(link.sourceEvidenceIds)], targetNodeIds: [...new Set(targetNodeIds)] };
   });
+  revision.content = {kind:"diagram", diagram:sceneFromRevision(revision).contents.overview};
+  delete revision.source;
   const representation: ProjectRepresentationRecord = {
     schemaVersion: 1, id: targetId, projectId, handle: targetId, name: input.name.trim(),
     viewKind: "call-graph", representationKind: "tree", status: "settled", currentRevisionId: revisionId,
@@ -114,7 +122,7 @@ export function saveProjectedTree(catalog: ProjectRepresentationCatalogRecord, p
       }
     }
     projection.compactionProjection = {
-      files: structuredClone(files), links: compactionLinks.map((link) => {
+      files: structuredClone(files).map(file => ({...file, ...(diagramSource ? {sourceId: diagramSource.sourceId} : {})})), links: compactionLinks.map((link) => {
         const node = byLine.get(link.callTreeLine);
         if (!node) throw new Error(`Unknown call-tree row ${link.callTreeLine}`);
         return { callTreeNodeId: node.id, file: link.file, treeLines: link.treeLines };
@@ -130,7 +138,7 @@ export function saveProjectedTree(catalog: ProjectRepresentationCatalogRecord, p
     projections: { ...catalog.projections, [projection.id]: projection }, updatedAt: timestamp
   };
   validateProjection(projection, next);
-  projectCanvasSnapshot(sceneFromRevision(revision), revision.evidence);
+  projectCanvasSnapshot(sceneFromRevision(revision));
 
   return { catalog: next, representation: next.representations[targetId], projection };
 
@@ -148,32 +156,19 @@ export function saveMappingDiagram(catalog: ProjectRepresentationCatalogRecord, 
   const sourceId = current?.currentRevisionId ?? input.sourceRevisionId;
   const source = sourceId ? catalog.revisions[sourceId] : undefined;
   if (sourceId && !source) throw new Error("Source revision does not belong to this Project");
-  const evidence = input.evidence ?? source?.evidence ?? {};
-  for (const [key, entry] of Object.entries(evidence)) {
-    if (!entry || entry.id !== key || typeof entry.label !== 'string' || !Array.isArray(entry.sourceRanges)) throw new Error('Invalid diagram evidence');
-    for (const range of entry.sourceRanges) {
-      if (!range || typeof range.id !== 'string' || typeof range.path !== 'string' || range.path.startsWith('/') || range.path.split(/[\\/]/).includes('..')
-        || !Number.isInteger(range.startLine) || range.startLine < 1 || !Number.isInteger(range.endLine) || range.endLine < range.startLine
-        || !Array.isArray(range.originalLines) || range.originalLines.length !== range.endLine - range.startLine + 1 || range.originalLines.some(line => typeof line !== 'string')) throw new Error('Invalid diagram evidence range');
-    }
-  }
   const scene = structuredClone(input.scene);
-  const { ascii, mappings } = projectCanvasSnapshot(scene, evidence);
-  for (const content of Object.values(scene.contents)) {
-    content.structureKind ??= source?.representationKind ?? 'diagram';
-    content.diagramContent = buildDiagramContent(content.ascii, `${content.id}:${content.revision}`, content.structureKind, content.mappings);
-  }
+  const { ascii, mappings, evidence } = projectCanvasSnapshot(scene);
   const timestamp = environment.timestamp;
   const id = current?.id ?? environment.representationId;
   const revisionId = environment.revisionId;
   const visibleDiagrams = flattenGrid(resolveScene(scene)).filter(node => node.box.kind === 'diagram');
   const inferredKind = visibleDiagrams.length === 1 && visibleDiagrams[0].contentId
-    ? scene.contents[visibleDiagrams[0].contentId].structureKind ?? 'diagram' : 'diagram';
+    ? scene.contents[visibleDiagrams[0].contentId].content.structure.kind : 'diagram';
   const revision: ProjectRepresentationRevisionRecord = {
     schemaVersion: 1, id: revisionId, projectId, representationId: id,
     revision: (current?.revisionIds.length ?? 0) + 1,
     ascii, asciiSha256: environment.hash(ascii),
-    content: { kind: "mapping-canvas", scene },
+    content: { kind: "mapping-canvas", scene, edges: validateConnections(scene, input.edges) },
     representationKind: current?.representationKind ?? source?.representationKind ?? inferredKind,
     evidence, mappings, ...(source?.provenance ? { provenance: source.provenance } : {}), createdAt: timestamp
   };
@@ -213,6 +208,7 @@ export function upsertFileCompaction(catalog: ProjectCorpusCompactionCatalogReco
   const id = environment.stableId(
     "compaction",
     projectId,
+    input.sourceId ?? "unbound",
     input.path,
     sourceSha256,
     profile.id,
@@ -225,7 +221,7 @@ export function upsertFileCompaction(catalog: ProjectCorpusCompactionCatalogReco
     schemaVersion: SCHEMA_VERSION,
     id,
     projectId,
-    path: input.path,
+    path: input.path, ...(input.sourceId ? {sourceId:input.sourceId} : {}),
     ...(input.sourceRevision ? { sourceRevision: input.sourceRevision } : {}),
     sourceSha256,
     startLine: input.startLine,
@@ -246,7 +242,7 @@ export function upsertFileCompaction(catalog: ProjectCorpusCompactionCatalogReco
   }
   const compaction = existing ?? proposed;
   const activeByPath = { ...catalog.activeByPath };
-  if (input.makeActive !== false) activeByPath[input.path] = id;
+  if (input.makeActive !== false) activeByPath[JSON.stringify([input.sourceId ?? null, input.path])] = id;
   const next: ProjectCorpusCompactionCatalogRecord = {
     ...catalog,
     activeByPath,
@@ -277,10 +273,12 @@ export function promoteRepresentation(catalog: ProjectRepresentationCatalogRecor
     throw new Error("Representation kind cannot change between revisions");
   }
   const evidenceSignature = JSON.stringify(draft.evidence);
+  const sourceSignature = JSON.stringify(draft.source);
   const mappingSignature = JSON.stringify(draft.mappings);
   const existingRevision = current?.revisionIds
     .map((id) => catalog.revisions[id])
     .find((revision) => revision?.asciiSha256 === draft.asciiSha256
+      && JSON.stringify(revision.content?.kind === "diagram" ? revision.content.diagram.sourceContext.binding : revision.source) === sourceSignature
       && JSON.stringify(revision.evidence) === evidenceSignature
       && JSON.stringify(revision.mappings) === mappingSignature);
   const revisionNumber = existingRevision?.revision ?? (current?.revisionIds.length ?? 0) + 1;
@@ -289,6 +287,7 @@ export function promoteRepresentation(catalog: ProjectRepresentationCatalogRecor
     representationId,
     draft.asciiSha256,
     evidenceSignature,
+    sourceSignature ?? "",
     mappingSignature
   );
   const timestamp = environment.timestamp;
@@ -299,7 +298,7 @@ export function promoteRepresentation(catalog: ProjectRepresentationCatalogRecor
     representationId,
     revision: revisionNumber,
     ascii: draft.ascii,
-    content: { kind: "ascii", ascii: draft.ascii },
+    content: { kind: "ascii", ascii: draft.ascii }, ...(draft.source ? {source: draft.source} : {}),
     asciiSha256: draft.asciiSha256,
     representationKind: draft.representationKind,
     evidence: draft.evidence,
@@ -307,6 +306,10 @@ export function promoteRepresentation(catalog: ProjectRepresentationCatalogRecor
     provenance: draft.provenance,
     createdAt: timestamp
   };
+  if (!existingRevision) {
+    revision.content = {kind:"diagram", diagram:sceneFromRevision(revision).contents.overview};
+    delete revision.source;
+  }
   const representation: ProjectRepresentationRecord = {
     schemaVersion: SCHEMA_VERSION,
     id: representationId,

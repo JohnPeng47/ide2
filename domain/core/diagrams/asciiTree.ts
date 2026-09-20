@@ -1,3 +1,5 @@
+import { parseDiagram } from './interpreter';
+
 export interface AsciiTreeNode {
   line: number;
   branchColumn: number;
@@ -7,41 +9,23 @@ export interface AsciiTreeNode {
   descendantLines: number[];
 }
 
-const BRANCH_LINE = /^([| ]*)([+`\\]--(?:>)?)(\s+)(.*)$/;
-
-/** Plain roots belong to conventional trees, not legacy arrow-tree headings. */
-function isPlainRoot(lines: string[], index: number): boolean {
-  if (!/^\S/.test(lines[index]) || /^[|+`\\]/.test(lines[index])) return false;
-  let next = index + 1;
-  while (next < lines.length && /^[| ]+$/.test(lines[next])) next += 1;
-  const branch = next < lines.length ? BRANCH_LINE.exec(lines[next]) : null;
-  return Boolean(branch && !branch[2].endsWith(">"));
-}
-
-/** Parse the indentation-based branches used by ASCII diagram trees. */
-export function parseAsciiTree(ascii: string): AsciiTreeNode[] {
-  const nodes: AsciiTreeNode[] = [];
-  const ancestors: AsciiTreeNode[] = [];
-  const lines = ascii.replace(/\r\n?/g, "\n").split("\n");
-  for (const [index, line] of lines.entries()) {
-    const match = BRANCH_LINE.exec(line);
-    const plainRoot = !match && isPlainRoot(lines, index);
-    if (!match && !plainRoot) continue;
-    const branchColumn = match ? match[1].length : -1;
-    while (ancestors.at(-1) && ancestors.at(-1)!.branchColumn >= branchColumn) ancestors.pop();
-    const parent = ancestors.at(-1);
-    const node: AsciiTreeNode = {
-      line: index + 1,
-      branchColumn,
-      // Coordinates exposed by diagram mappings are one-based and inclusive.
-      textColumn: match ? branchColumn + match[2].length + match[3].length + 1 : 1,
-      text: match ? match[4].trimEnd() : line.trimEnd(),
-      ...(parent ? { parentLine: parent.line } : {}),
-      descendantLines: []
-    };
-    for (const ancestor of ancestors) ancestor.descendantLines.push(node.line);
-    nodes.push(node);
-    ancestors.push(node);
+/** Compatibility projection of the shared spatial interpreter for existing tree consumers. */
+export function parseAsciiTree(ascii: string, compatibility: 'ascii-tree-1' | 'ascii-tree-2' = 'ascii-tree-2'): AsciiTreeNode[] {
+  const parsed = parseDiagram(ascii, { dialect: 'tree', compatibility,
+    treeTolerance: 0, wireTolerance: 0, continuation: 'separate', repairs: 'none' });
+  const lines = new Map(parsed.nodes.map(node => [node.id, node.spans[0].line]));
+  const nodes = parsed.nodes.map((node): AsciiTreeNode => ({
+    line: node.spans[0].line, branchColumn: node.branchColumn === undefined ? -1 : node.branchColumn - 1,
+    textColumn: node.spans[0].column, text: node.label,
+    ...(node.parentId ? { parentLine: lines.get(node.parentId) } : {}), descendantLines: []
+  }));
+  const byLine = new Map(nodes.map(node => [node.line, node]));
+  for (const node of nodes) {
+    let parent = node.parentLine === undefined ? undefined : byLine.get(node.parentLine);
+    while (parent) {
+      parent.descendantLines.push(node.line);
+      parent = parent.parentLine === undefined ? undefined : byLine.get(parent.parentLine);
+    }
   }
   return nodes;
 }

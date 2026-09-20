@@ -1,3 +1,5 @@
+import { createDiagram } from '../../../domain/core/diagrams/diagram';
+import { resolveDiagramSource } from '../../core/source/diagramSource';
 import { mappingsForSelection } from '../../../domain/core/diagrams/diagramSelection';
 import type { ProjectRepresentationEvidenceRecord } from '../../../domain/core/representations/projectCatalog';
 import { validateLocalChatRequest } from '../../../domain/mapping/chat/localChatPrompt';
@@ -7,7 +9,7 @@ import { mappingPocSourceContextForSelection } from '../selection/mappingPocSour
 import type { LocalChatRuntime } from './agent';
 
 export class LocalChatService {
-  constructor(private readonly projects: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs'>,
+  constructor(private readonly projects: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs' | 'loadDiagramSet'>,
     private readonly corpus: CorpusAccess, private readonly runtime: LocalChatRuntime, private readonly sourceRoot: string) { }
   async prepare(value: unknown) {
     const input = validateLocalChatRequest(value);
@@ -21,8 +23,15 @@ export class LocalChatService {
       const revision = catalog.revisions[context.baseRevisionId!];
       // Historical revisions remain valid: existing chats retain their original selection.
       if (!revision || revision.representationId !== context.representationId) throw new Error("Diagram revision does not belong to this representation");
-      projectEvidence = revision.evidence;
-      sourceRoot = project.corpus.root;
+      const captured = context.sourceContext;
+      const live = captured && createDiagram({id: context.contentId, revision: context.diagramRevision, ascii: context.diagramAscii,
+        source: captured.binding, mappings: captured.mappings, evidence: captured.evidence});
+      if (live && captured!.contentHash !== live.content.asciiSha256) throw new Error('Diagram source context does not match content');
+      const resolved = await resolveDiagramSource(this.projects, {projectId: project.id, representationId: context.representationId,
+        revisionId: context.baseRevisionId, contentId: context.contentId}, this.corpus, live);
+      projectEvidence = resolved.context.evidence;
+      context.mappings = [...resolved.mappings()];
+      sourceRoot = resolved.context.binding?.corpus.root ?? this.sourceRoot;
     }
     const sourceRanges = context.sourceRanges ?? (mappingsForSelection(context.mappings, selection.rect).length
       ? await mappingPocSourceContextForSelection({ sourceRoot, projectEvidence, mappings: context.mappings, selection: selection.rect }, this.corpus)

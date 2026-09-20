@@ -1,5 +1,11 @@
 # Diagram parser tool
 
+The application now has a TypeScript [spatial interpreter](../../domain/core/diagrams/interpreter/README.md)
+with independent recognition, interpretation, recovery, and source mapping.
+Run it from the repository root with `npm run parse:diagram -- <file> --dialect graph`.
+The Python implementation and its frozen evaluation artifacts remain available
+as historical tools and independently reviewed regression fixtures.
+
 The Python implementation, fixtures, and frozen evaluation bundles live together
 in [`diagram_parser/`](diagram_parser/README.md). The package was relocated intact
 so its internal paths and archived evidence retain their meaning.

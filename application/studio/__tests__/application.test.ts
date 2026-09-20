@@ -374,7 +374,7 @@ describe("StudioApplication", () => {
       }
     });
 
-    expect(workspace.corpusCompactions?.activeByPath["fixture.ts"]).toBeTruthy();
+    expect(workspace.corpusCompactions?.activeByPath[JSON.stringify([workspace.diagramSets[0].source?.sourceId, "fixture.ts"])]).toBeTruthy();
   });
 
   it("lists one live repository directory without exposing metadata or traversing links", async () => {
@@ -446,7 +446,7 @@ describe("StudioApplication", () => {
     await application.collectCodeEntities(set.id);
     const workspace = await application.workspace();
 
-    expect(workspace.project).toMatchObject({
+    expect(workspace.diagramSets[0].source).toMatchObject({
       domainProfileId: "document",
       corpus: { kind: "filesystem-documents", root }
     });

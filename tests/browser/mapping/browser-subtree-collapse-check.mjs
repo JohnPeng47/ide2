@@ -73,7 +73,7 @@ try {
     await waitFor(async()=>await evaluate(cdp,'window.__copiedDiagram?.includes("footer")'));
     await click('.mapping-workspace-actions button:first-child');
     let saved;await waitFor(async()=>{try{saved=JSON.parse(await readFile(path.join(root,'.diagrams/mapping-workspace.json'),'utf8'));return !!saved.documents[0].canvas.diagramViews?.['grid:overview'];}catch{return false;}});
-    assert.equal(saved.documents[0].document.scene.contents.overview.ascii,ascii);
+    assert.equal(saved.documents[0].document.scene.contents.overview.content.ascii,ascii);
     await captureScreenshot(cdp,{output:path.join(root,'subtree-collapsed.png')});
     const previousCanvasIds=new Set((await exec({code:'return canvas.list();'})).value.map(c=>c.canvasId));
     await cdp.send('Page.navigate',{url:`${url}/mapping`});await waitFor(async()=>await expanded(2)==='false');

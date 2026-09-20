@@ -209,21 +209,21 @@ export interface ProjectSourceFile extends SourceSnippet {
   lspEnabled: boolean;
 }
 
-export async function fetchProjectSourceFile(projectId: string, path: string, signal?: AbortSignal): Promise<ProjectSourceFile> {
-  const params = new URLSearchParams({ projectId, path });
+export async function fetchProjectSourceFile(projectId: string, path: string, signal?: AbortSignal, sourceId?: string): Promise<ProjectSourceFile> {
+  const params = new URLSearchParams({ projectId, path, ...(sourceId ? {sourceId} : {}) });
   const response = await apiFetch(`/api/core/project/source?${params}`, { cache: "no-store", signal });
   if (!response.ok) throw await errorFrom(response);
   return response.json();
 }
 
-export async function fetchProjectDirectory(projectId: string, path: string, signal?: AbortSignal): Promise<import('../../../domain/core/records/domain').RepositoryDirectoryListing> {
-  const response = await apiFetch(`/api/core/project/files?${new URLSearchParams({ projectId, path })}`, { signal });
+export async function fetchProjectDirectory(projectId: string, path: string, signal?: AbortSignal, sourceId?: string): Promise<import('../../../domain/core/records/domain').RepositoryDirectoryListing> {
+  const response = await apiFetch(`/api/core/project/files?${new URLSearchParams({ projectId, path, ...(sourceId ? {sourceId} : {}) })}`, { signal });
   if (!response.ok) throw await errorFrom(response);
   return response.json();
 }
-export async function fetchSourceDefinitions(projectId: string, path: string, position: import('../../../domain/core/source/sourceNavigation').SourcePosition, sourceSha256: string, signal?: AbortSignal): Promise<import('../../../domain/core/source/sourceNavigation').SourceDefinitions> {
+export async function fetchSourceDefinitions(projectId: string, path: string, position: import('../../../domain/core/source/sourceNavigation').SourcePosition, sourceSha256: string, signal?: AbortSignal, sourceId?: string): Promise<import('../../../domain/core/source/sourceNavigation').SourceDefinitions> {
   const response = await apiFetch('/api/core/project/definitions', { method: 'POST', signal,
-    headers: { 'content-type': 'application/json' }, body: JSON.stringify({ projectId, path, position, sourceSha256 }) });
+    headers: { 'content-type': 'application/json' }, body: JSON.stringify({ projectId, path, position, sourceSha256, sourceId }) });
   if (!response.ok) throw await errorFrom(response);
   return response.json();
 }

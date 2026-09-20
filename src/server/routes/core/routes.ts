@@ -47,7 +47,7 @@ export function createCoreRoutes({ application, source, plans, catalog }: {
 
     if (url.pathname === '/api/core/project/files') {
       if (request.method !== 'GET') return sendJson(response, 405, { error: 'method not allowed' });
-      return sendJson(response, 200, await source.files(url.searchParams.get('projectId'), url.searchParams.get('path') ?? ''));
+      return sendJson(response, 200, await source.files(url.searchParams.get('projectId'), url.searchParams.get('path') ?? '', url.searchParams.get('sourceId') ?? undefined));
     }
     if (url.pathname === '/api/core/project/definitions') {
       if (request.method !== 'POST') return sendJson(response, 405, { error: 'method not allowed' });
@@ -64,7 +64,7 @@ export function createCoreRoutes({ application, source, plans, catalog }: {
     }
     if (url.pathname === '/api/core/project/source') {
       if (request.method !== 'GET') return sendJson(response, 405, { error: 'method not allowed' });
-      return sendJson(response, 200, await source.source(url.searchParams.get('projectId'), url.searchParams.get('path')));
+      return sendJson(response, 200, await source.source(url.searchParams.get('projectId'), url.searchParams.get('path'), url.searchParams.get('sourceId') ?? undefined));
     }
     if (url.pathname === '/api/core/project/projections') {
       if (request.method !== 'POST') return sendJson(response, 405, { error: 'method not allowed' });

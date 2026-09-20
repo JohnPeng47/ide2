@@ -9,7 +9,7 @@ export function MappingDiagramExplorer(props: {
   const boxTree = (box: GridBox) => <li key={box.id}>
     <button type="button" onClick={() => props.onFocus(box.id)} data-explorer-box={box.id}>
       {box.kind === "container" ? "▸ " : "· "}{box.kind === "diagram"
-        ? props.scene?.contents[box.contentId]?.ascii.split("\n")[0].slice(0, 60) || box.id : "Group"}
+        ? props.scene?.contents[box.contentId]?.content.ascii.split("\n")[0].slice(0, 60) || box.id : "Group"}
     </button>
     {box.kind === "container" && <ul>{box.children.map(boxTree)}</ul>}
   </li>;

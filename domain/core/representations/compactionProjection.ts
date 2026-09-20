@@ -1,6 +1,7 @@
 import { buildTreeRepresentationIndex } from "./representationIndex";
 
 export interface CompactionSnapshot {
+  sourceId?: string;
   sourceFile: string;
   sourceSha256: string;
   ascii: string;
@@ -93,7 +94,7 @@ export function projectCompactions(projection: CompactionProjection, callTreeNod
       });
     };
     tree.rootIds.filter((id) => visible.has(id)).forEach((id) => render(id, "", "", ""));
-    return [{ sourceFile: file.sourceFile, sourceSha256: file.sourceSha256, ascii: lines.join("\n"), rows,
+    return [{ sourceFile: file.sourceFile, ...(file.sourceId ? {sourceId:file.sourceId} : {}), sourceSha256: file.sourceSha256, ascii: lines.join("\n"), rows,
       selectedLineCount: selectedLines.size }];
   });
 }

@@ -1,3 +1,7 @@
+import { createPortal } from 'react-dom';
+import { DiagramText } from './DiagramText';
+import { diagramTextRanges, textRow, mappingContentNodeId } from '../../../domain/core/diagrams/diagramText';
+import type { DiagramJump, DiagramJumpTarget } from '../../../domain/core/diagrams/diagramJump';
 import { contentTreeNodes, type DiagramContent } from "../../../domain/core/diagrams/diagramContent";
 import {
   useCallback,
@@ -47,6 +51,9 @@ function mappingReferenceKey(
 
 export function AsciiSelectionGrid(props: {
   content?: DiagramContent;
+  displayNodeId?: string;
+  jumps?: readonly DiagramJump[];
+  onJump?: (target: DiagramJumpTarget) => void;
   ascii: string;
   representationIndex?: RepresentationIndex;
   presentation: RepresentationPresentation;
@@ -72,6 +79,7 @@ export function AsciiSelectionGrid(props: {
   collapseSubtrees?: boolean;
   onMarker?: (line: number, column: number) => void;
 }) {
+  const [mappingChoices, setMappingChoices] = useState<{ mappings: readonly DiagramElementMapping[]; x: number; y: number } | null>(null);
   const preRef = useRef<HTMLPreElement>(null);
   const probeRef = useRef<HTMLSpanElement>(null);
   const activeRef = useRef<ActiveRectangle | null>(null);
@@ -138,6 +146,15 @@ export function AsciiSelectionGrid(props: {
     }
     return result;
   }, [props.mappings]);
+
+  const mappedContentNodes = useMemo(() => new Map(props.mappings.map(mapping => [mapping.id,
+    props.content?.ascii === props.ascii ? mappingContentNodeId(props.content, mapping) : undefined])),
+    [props.content, props.ascii, props.mappings]);
+  const textRows = useMemo(() => {
+    const ranges = diagramTextRanges({ ascii: props.ascii, content: props.content,
+      displayNodeId: props.displayNodeId ?? props.content?.revisionId ?? 'diagram', mappings: props.mappings, jumps: props.jumps });
+    return lines.flatMap((line, i) => hiddenLines.has(i + 1) ? [] : [textRow(line, ranges.get(i + 1) ?? [], i + 1)]);
+  }, [props.ascii, props.content, props.displayNodeId, props.mappings, props.jumps, lines, hiddenLines]);
 
   const updateLiveSelection = useCallback((bounds: DiagramSelectionBounds | null) => {
     setLiveSelection(bounds);
@@ -365,7 +382,7 @@ export function AsciiSelectionGrid(props: {
             })}
         </span>
       ) : null}
-      <pre
+      <DiagramText rows={textRows} onJump={props.mode === 'read' ? props.onJump : undefined}
         ref={preRef}
         className={`ascii-grid${props.mode === "read" ? "" : " ascii-selector"} ascii-selector--${props.mode}${props.mode === "marker" ? " is-marking" : ""}${activeRef.current ? " is-dragging" : ""}`}
         data-cell-width={cellMetrics.width || undefined}
@@ -377,80 +394,50 @@ export function AsciiSelectionGrid(props: {
         onPointerUp={finishRectangle}
         onPointerCancel={cancelRectangle}
         onClickCapture={onClickCapture}
-      >
-        {lines.map((line, lineIndex) => ({ line, lineNumber: lineIndex + 1 }))
-          .filter(({ lineNumber }) => !hiddenLines.has(lineNumber))
-          .map(({ line, lineNumber }, visibleIndex, visibleLines) => {
-          const mappings = mappingsByLine.get(lineNumber) ?? [];
-          const indexedTreeNode = indexedTreeNodesByLine.get(lineNumber);
-          const content = [];
-          let cursor = 0;
-          for (const mapping of mappings) {
-            const start = mapping.startColumn - 1;
-            const end = mapping.endColumn;
-            if (start > cursor) content.push(line.slice(cursor, start));
-            const entity = entitiesById.get(mapping.entityId);
-            const range = mapping.sourceRangeId
-              ? entity?.sourceRanges.find((candidate) => candidate.id === mapping.sourceRangeId)
-              : entity?.sourceRanges[mapping.sourceRangeIndex];
-            const classes = [
-              "mapped-element",
-              props.previewMappingIds.has(mapping.id) ? "is-selection-preview" : "",
-              props.bufferedReferenceKeys.has(mappingReferenceKey(mapping, props.entities)) ? "is-buffered-ref" : ""
-            ].filter(Boolean).join(" ");
-            const representationElementId = props.representationIndex
-              ? representationElementIdForMapping(props.representationIndex, mapping.id)
-              : undefined;
-            const spatialStatus = representationElementId
-              ? props.spatialProgressByElementId?.get(representationElementId)
-              : undefined;
-            content.push(
-              <span
-                className={`mapped-element-wrap${spatialStatus ? ` has-agent-${spatialStatus}` : ""}`}
-                data-representation-element-id={representationElementId}
-                data-agent-progress={spatialStatus}
-                key={mapping.id}
-              >
-                {props.onReveal ? (
-                  <button
-                    type="button"
-                    className={`${classes} representation-link--${props.presentation.evidenceLinks.kind}`}
-                    data-mapping-id={mapping.id}
-                    data-entity-id={mapping.entityId}
-                    data-reference-key={mappingReferenceKey(mapping, props.entities)}
-                    data-line={mapping.line}
-                    data-start-column={mapping.startColumn}
-                    data-end-column={mapping.endColumn}
-                    aria-label={entity ? `Reveal ${entity.label} in Code Entities` : "Reveal mapped CodeEntity"}
-                    title={entity
-                      ? `${entity.label}\n${entity.summary}${range ? `\n${range.path}:${range.startLine}-${range.endLine}` : ""}`
-                      : undefined}
-                    onClick={() => props.onReveal?.(mapping)}
-                  >
-                    {line.slice(start, end)}
-                  </button>
-                ) : line.slice(start, end)}
-              </span>
-            );
-            cursor = end;
-          }
-          if (cursor < line.length) content.push(line.slice(cursor));
-          const lineSpatialStatus = indexedTreeNode
-            ? props.spatialProgressByElementId?.get(indexedTreeNode.id)
-            : undefined;
-          return (
-            <span
-              className={`ascii-line mapped-ascii-line${lineSpatialStatus ? ` has-agent-${lineSpatialStatus}` : ""}`}
-              data-ascii-line={lineNumber}
-              data-representation-element-id={indexedTreeNode?.id}
-              data-agent-progress={lineSpatialStatus}
-              key={lineNumber}
-            >
-              {content}{visibleIndex < visibleLines.length - 1 ? "\n" : null}
-            </span>
-          );
-        })}
-      </pre>
+        rowProps={row => {
+          const indexed = indexedTreeNodesByLine.get(row.sourceLine!);
+          const status = indexed ? props.spatialProgressByElementId?.get(indexed.id) : undefined;
+          return { className: `ascii-line mapped-ascii-line${status ? ` has-agent-${status}` : ''}`,
+            'data-ascii-line': row.sourceLine, 'data-representation-element-id': indexed?.id, 'data-agent-progress': status };
+        }}
+        renderRun={run => {
+          const mapping = run.mappings[0];
+          if (!mapping) return run.text;
+          const entity = entitiesById.get(mapping.entityId);
+          const range = mapping.sourceRangeId ? entity?.sourceRanges.find(candidate => candidate.id === mapping.sourceRangeId)
+            : entity?.sourceRanges[mapping.sourceRangeIndex];
+          const referenceKey = mappingReferenceKey(mapping, props.entities);
+          const elementId = props.representationIndex ? representationElementIdForMapping(props.representationIndex, mapping.id) : undefined;
+          const status = elementId ? props.spatialProgressByElementId?.get(elementId) : undefined;
+          const classes = ['mapped-element', props.previewMappingIds.has(mapping.id) ? 'is-selection-preview' : '',
+            props.bufferedReferenceKeys.has(referenceKey) ? 'is-buffered-ref' : ''].filter(Boolean).join(' ');
+          return <span className={`mapped-element-wrap${status ? ` has-agent-${status}` : ''}`}
+            data-representation-element-id={elementId} data-agent-progress={status}
+            data-mapped-content-node-id={mappedContentNodes.get(mapping.id)}>
+            {props.onReveal ? <button type="button" className={`${classes} representation-link--${props.presentation.evidenceLinks.kind}`}
+              data-mapping-id={mapping.id} data-entity-id={mapping.entityId} data-reference-key={referenceKey}
+              data-line={mapping.line} data-start-column={mapping.startColumn} data-end-column={mapping.endColumn}
+              aria-label={entity ? `Reveal ${entity.label} in Code Entities` : 'Reveal mapped CodeEntity'}
+              title={entity ? `${entity.label}\n${entity.summary}${range ? `\n${range.path}:${range.startLine}-${range.endLine}` : ''}` : undefined}
+              aria-haspopup={run.mappings.length > 1 ? 'menu' : undefined}
+              onClick={event => {
+                if (run.mappings.length === 1) props.onReveal?.(mapping);
+                else { const bounds = event.currentTarget.getBoundingClientRect();
+                  setMappingChoices({ mappings: run.mappings, x: Math.max(0, Math.min(bounds.left, window.innerWidth - 280)), y: Math.max(0, Math.min(bounds.bottom, window.innerHeight - 180)) }); }
+              }}>{run.text}</button> : run.text}
+          </span>;
+        }}
+      />
+      {mappingChoices && createPortal(<div className="diagram-mapping-choices" role="menu" aria-label="Choose source mapping"
+        style={{ left: mappingChoices.x, top: mappingChoices.y }}
+        onPointerDown={event => event.stopPropagation()}
+        onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); setMappingChoices(null); } }}
+        onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setMappingChoices(null); }}>
+        {mappingChoices.mappings.map((mapping, index) => <button key={mapping.id} type="button" role="menuitem" autoFocus={index === 0}
+          data-mapping-id={mapping.id} onClick={() => { props.onReveal?.(mapping); setMappingChoices(null); }}>
+          {entitiesById.get(mapping.entityId)?.label ?? mapping.entityId} · {mapping.sourceRangeId ?? mapping.sourceRangeIndex + 1}
+        </button>)}
+      </div>, document.body)}
       {props.mode === "read" && props.partialDiff && cellMetrics.width > 0 && cellMetrics.height > 0 ? (
         <DiagramPartialDiffOverlay diff={props.partialDiff} cell={cellMetrics} />
       ) : null}

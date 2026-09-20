@@ -2,6 +2,7 @@ import type { DisplayState } from '../../../../domain/mapping/workspace/displayM
 import type { CanvasTransform } from '../../../../domain/core/diagrams/diagramCanvas';
 import type { ScrollPosition, SourceScrollState } from '../../../shared/source/sourceScrollState';
 interface Entry {
+  sourceId?: string;
   sourceFile: string;
   position: ScrollPosition;
   read?: () => ScrollPosition | undefined;
@@ -13,18 +14,18 @@ export class SourcePaneViewState {
   private readonly entries = new Map<string, Map<string, Entry>>();
   private readonly cameras = new Map<string, CanvasTransform>();
 
-  bind(documentId: string, paneId: string, sourceFile: string, fallback?: ScrollPosition): SourceScrollState {
+  bind(documentId: string, paneId: string, sourceFile: string, fallback?: ScrollPosition, sourceId?: string): SourceScrollState {
     const owner = Symbol();
     const current = () => {
       const entry = this.entries.get(documentId)?.get(paneId);
-      return entry?.sourceFile === sourceFile ? entry : undefined;
+      return entry?.sourceFile === sourceFile && entry.sourceId === sourceId ? entry : undefined;
     };
     return {
       read: () => current()?.position ?? fallback,
       connect: read => {
         let panes = this.entries.get(documentId);
         if (!panes) this.entries.set(documentId, panes = new Map());
-        const entry: Entry = { sourceFile, position: read() ?? current()?.position ?? fallback ?? { top: 0, left: 0 }, read, owner };
+        const entry: Entry = { sourceFile, sourceId, position: read() ?? current()?.position ?? fallback ?? { top: 0, left: 0 }, read, owner };
         panes.set(paneId, entry);
         return () => {
           // A reset or a newly mounted viewer takes ownership before an old cleanup may run.
@@ -50,7 +51,7 @@ export class SourcePaneViewState {
     if (!panes) return;
     for (const [id, entry] of panes) {
       const node = display.nodes[id];
-      if (node?.kind !== 'projection' || node.content.kind !== 'source-code' || node.content.sourceFile !== entry.sourceFile) panes.delete(id);
+      if (node?.kind !== 'projection' || node.content.kind !== 'source-code' || node.content.sourceFile !== entry.sourceFile || node.content.sourceId !== entry.sourceId) panes.delete(id);
     }
   }
 
@@ -60,7 +61,7 @@ export class SourcePaneViewState {
     const nodes = { ...display.nodes };
     for (const [id, entry] of panes) {
       const node = nodes[id];
-      if (node?.kind !== 'projection' || node.content.kind !== 'source-code' || node.content.sourceFile !== entry.sourceFile) continue;
+      if (node?.kind !== 'projection' || node.content.kind !== 'source-code' || node.content.sourceFile !== entry.sourceFile || node.content.sourceId !== entry.sourceId) continue;
       const scroll = entry.read?.() ?? entry.position;
       nodes[id] = { ...node, content: { ...node.content, scroll: { ...scroll } } };
     }

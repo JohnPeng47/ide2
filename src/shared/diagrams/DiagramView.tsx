@@ -1,3 +1,4 @@
+import type { DiagramJump, DiagramJumpTarget } from '../../../domain/core/diagrams/diagramJump';
 import { buildDiagramContent } from "../../../domain/core/diagrams/diagramContent";
 import { useEffect, useMemo, useState } from "react";
 import { validateSpatialProgressState, type SpatialProgressState } from "../../../domain/core/agent-work/agentWork";
@@ -60,6 +61,8 @@ export function EmptyDiagramView(props: {
 
 export function DiagramView(props: {
   active: DiagramRecord | DiagramComponentRecord;
+  jumps?: readonly DiagramJump[];
+  onJump?: (target: DiagramJumpTarget) => void;
   artifactKind: "diagram" | "diagram-component";
   representationKind: "tree" | "diagram";
   onGenerate: () => void;
@@ -131,7 +134,7 @@ export function DiagramView(props: {
     : props.codeEntityMap;
   const mappings = currentCodeEntityMap?.mappings ?? [];
   const diagramContent = useMemo(() => {
-    try { return buildDiagramContent(props.active.ascii, props.active.id, props.representationKind, currentCodeEntityMap?.mappings ?? []); }
+    try { return buildDiagramContent(props.active.ascii, props.active.id, props.representationKind); }
     catch { return undefined; }
   }, [props.active.ascii, props.active.id, props.representationKind, currentCodeEntityMap]);
   const representationIndex = useMemo(() => {
@@ -433,7 +436,7 @@ export function DiagramView(props: {
           enabled={canvasMode && gridMode === "read"}
           resetKey={`${props.active.id}:${activeAsciiSha256}`}
         >
-          <AsciiSelectionGrid content={diagramContent}
+          <AsciiSelectionGrid jumps={props.jumps} onJump={props.onJump} displayNodeId={props.active.id} content={diagramContent}
             ascii={props.active.ascii}
             representationIndex={representationIndex}
             presentation={representationPresentation}

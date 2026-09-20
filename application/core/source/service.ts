@@ -26,8 +26,8 @@ export async function projectCorpus(context: CoreContext, set?: DiagramSetRecord
   const project = await context.store.loadProject();
   if (!project) throw new Error("project corpus is not initialized");
   if (set && set.projectId !== project.id) throw new Error("DiagramSet belongs to another project");
-  const domainProfileId = project.domainProfileId === "document" ? "document" : "source-code";
-  return { domainProfileId, corpus: project.corpus };
+  if (!set?.source) throw new Error("Generation session has no source binding");
+  return { domainProfileId: set.source.domainProfileId, corpus: set.source.corpus };
 }
 
 export async function callGraphFocus(context: CoreContext, input: unknown): Promise<CallGraphFocusResult> {
