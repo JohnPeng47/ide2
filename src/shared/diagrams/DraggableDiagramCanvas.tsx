@@ -53,6 +53,8 @@ export function DraggableDiagramCanvas(props: {
 }) {
   const transformChange = useRef(props.onTransformChange); transformChange.current = props.onTransformChange;
   const initialTransform = useRef(props.initialTransform);
+  const focusBox = useRef(props.focusBox); focusBox.current = props.focusBox;
+  const initialFocusPending = useRef(false);
   const viewportRef = useRef<HTMLDivElement>(null);
   const surfaceRef = useRef<HTMLDivElement>(null);
   const zoomOutputRef = useRef<HTMLOutputElement>(null);
@@ -106,14 +108,24 @@ export function DraggableDiagramCanvas(props: {
     const surface = surfaceRef.current;
     if (!surface) return undefined;
     if (!props.enabled) {
+      initialFocusPending.current = false;
+      surface.style.visibility = "";
       surface.style.transition = "none";
       surface.style.transform = "";
       transformRef.current = { offset: { x: 0, y: 0 }, scale: 1 };
       return undefined;
     }
+    // A newly opened target needs the children's measured layout before focus.
+    // Keep the origin/default center offscreen until that initial focus is ready.
+    initialFocusPending.current = Boolean(focusBox.current);
+    if (initialFocusPending.current) {
+      surface.style.visibility = "hidden";
+      if (initialTransform.current) applyTransform(initialTransform.current);
+      return undefined;
+    }
     const frame = requestAnimationFrame(() => initialTransform.current ? applyTransform(initialTransform.current) : resetCanvas(false));
     return () => cancelAnimationFrame(frame);
-  }, [endGesture, props.enabled, props.resetKey, resetCanvas]);
+  }, [applyTransform, endGesture, props.enabled, props.resetKey, resetCanvas]);
 
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
@@ -199,26 +211,42 @@ export function DraggableDiagramCanvas(props: {
   }, [props.enabled, endGesture]);
 
   useEffect(() => {
-    if (!props.focusBox) return;
+    if (!props.enabled) return;
+    if (!props.focusBox) {
+      if (initialFocusPending.current) {
+        initialFocusPending.current = false;
+        resetCanvas(false);
+        if (surfaceRef.current) surfaceRef.current.style.visibility = "";
+      }
+      return;
+    }
     let innerFrame = 0;
     const frame = requestAnimationFrame(() => { innerFrame = requestAnimationFrame(() => {
       const viewport = viewportRef.current;
+      const surface = surfaceRef.current;
       surfaceRef.current?.querySelectorAll('[data-jump-focus]').forEach(element => element.removeAttribute('data-jump-focus'));
       const label = props.focusBox?.contentNodeId && Array.from(surfaceRef.current?.querySelectorAll<HTMLElement>('.diagram-content-node') ?? [])
         .find(element => element.dataset.contentNodeId === props.focusBox?.contentNodeId && element.dataset.displayNodeId === `grid:${props.focusBox?.id}`);
       if (label) label.setAttribute('data-jump-focus', '');
       const target = label || Array.from(surfaceRef.current?.querySelectorAll<HTMLElement>("[data-grid-box]") ?? [])
         .find((element) => element.dataset.gridBox === props.focusBox?.id);
-      if (!viewport || !target) return;
+      const initial = initialFocusPending.current;
+      initialFocusPending.current = false;
+      if (!viewport || !target) {
+        if (initial) resetCanvas(false);
+        if (surface) surface.style.visibility = "";
+        return;
+      }
       const bounds = viewport.getBoundingClientRect();
       const box = target.getBoundingClientRect();
       const inset = Math.min(props.leftInset ?? 0, bounds.width / 2);
       const current = transformRef.current;
       applyTransform({ ...current, offset: { x: current.offset.x + (bounds.width + inset) / 2 - (box.left - bounds.left + box.width / 2),
-        y: current.offset.y + Math.min(bounds.height / 2, box.height / 2 + 80) - (box.top - bounds.top + box.height / 2) } }, true);
+        y: current.offset.y + Math.min(bounds.height / 2, box.height / 2 + 80) - (box.top - bounds.top + box.height / 2) } }, !initial);
+      if (surface) surface.style.visibility = "";
     }); });
     return () => { cancelAnimationFrame(frame); cancelAnimationFrame(innerFrame); };
-  }, [props.focusBox, props.leftInset, applyTransform]);
+  }, [props.enabled, props.resetKey, props.focusBox, props.leftInset, applyTransform, resetCanvas]);
 
   const beginPinch = (points: Map<number, CanvasPoint>) => {
     const [first, second] = [...points.values()];

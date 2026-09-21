@@ -1,4 +1,6 @@
 import { equalEndpointBounds, type EndpointBounds } from './endpointGeometry';
+import { patchDiagram } from '../../core/diagrams/patchDiagram';
+import { connectionBox, type DiagramAnchor } from '../../core/diagrams/diagramConnection';
 import { rebaseDiagramJumps, validateDiagramJumps, type DiagramJump } from '../../core/diagrams/diagramJump';
 import { normalizeDiagramViews, resolveDiagramContent, projectDiagramContent } from './diagramViewState';
 import { layoutFloatingSelections } from './floatingBoxLayout';
@@ -17,6 +19,7 @@ import { diagramConnectionSchema, reconcileConnections, validateConnectionAnchor
 
 export interface ControllerSnapshot { endpointBounds?: EndpointBounds; document: MappingGridDocument; canvas: MappingCanvasState; version: number; canUndo: boolean; canRedo: boolean; cell?: { width: number; height: number } }
 export type DiagramOperation =
+  | { method: 'patchDiagram'; nodeId: string; start: number; end: number; patch: string }
   | { method: 'setJumps'; nodeId: string; jumps: DiagramJump[] }
   | { method: 'edge-create'; edge: DiagramConnection }
   | { method: 'edge-update'; edge: DiagramConnection }
@@ -97,7 +100,32 @@ export class MappingDocumentController {
     let { document, canvas } = structuredClone(this.snapshot);
     const safeId = (id: string) => { if (typeof id !== 'string' || !/^[a-zA-Z0-9_.:-]{1,180}$/.test(id) || ['__proto__','constructor','prototype'].includes(id)) throw new Error('Invalid node ID'); };
     for (const op of operations) {
-      if (op.method === 'setJumps') {
+      if (op.method === 'patchDiagram') {
+        const box = findBox(document.scene.root, this.gridId(op.nodeId));
+        if (box?.kind !== 'diagram') throw new Error('Expected diagram GridBox');
+        const before = document.scene.contents[box.contentId];
+        const { diagram, nodeIds, lineAfter } = patchDiagram(before, op.start, op.end, op.patch);
+        const reanchor = <T extends DiagramAnchor>(anchor: T): T => {
+          const owner = connectionBox(document.scene, anchor.displayNodeId);
+          if (anchor.kind !== 'content-node' || owner?.kind !== 'diagram' || owner.contentId !== before.id
+            || anchor.revisionId !== before.content.revisionId || !nodeIds.has(anchor.contentNodeId)) return anchor;
+          return { ...anchor, revisionId: diagram.content.revisionId, contentNodeId: nodeIds.get(anchor.contentNodeId)! };
+        };
+        const edges = document.edges.map(edge => ({ ...edge, source: reanchor(edge.source), target: reanchor(edge.target) }));
+        for (const [id, view] of Object.entries(canvas.diagramViews ?? {})) {
+          const owner = connectionBox(document.scene, id);
+          if (owner?.kind === 'diagram' && owner.contentId === before.id && view.contentRevisionId === before.content.revisionId) {
+            canvas.diagramViews![id] = { contentRevisionId: diagram.content.revisionId,
+              collapsedContentNodeIds: view.collapsedContentNodeIds.flatMap(id => nodeIds.has(id) ? [nodeIds.get(id)!] : []) };
+          }
+        }
+        const sections = (document.sections[before.id] ?? []).flatMap(section => {
+          const startLine = lineAfter(section.startLine), endLine = lineAfter(section.endLine);
+          return startLine === undefined || endLine === undefined ? [] : [{ ...section, startLine, endLine }];
+        });
+        document = { ...document, edges, sections: { ...document.sections, [before.id]: sections },
+          scene: layoutScene({ ...document.scene, contents: { ...document.scene.contents, [before.id]: diagram } }, box.id) };
+      } else if (op.method === 'setJumps') {
         const box = findBox(document.scene.root, this.gridId(op.nodeId));
         if (box?.kind !== 'diagram') throw new Error('Expected diagram GridBox');
         const diagram = document.scene.contents[box.contentId];

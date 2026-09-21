@@ -9,10 +9,12 @@ type Props = Omit<ComponentPropsWithRef<'pre'>, 'children'> & {
   onJump?: (target: DiagramJumpTarget) => void;
   renderRun?: (run: DiagramTextRun) => ReactNode;
   rowProps?: (row: DiagramTextRow) => HTMLAttributes<HTMLSpanElement>;
+  /** Optional display-only decoration; never changes source text or endpoint identity. */
+  nodeProps?: (owner: DiagramTextOwner) => HTMLAttributes<HTMLSpanElement> | undefined;
 };
 
 /** Shared JSX for both viewers. Controllers retain gestures, folding, and source actions. */
-export function DiagramText({ rows, onJump, renderRun, rowProps, registerEndpoint, ...pre }: Props) {
+export function DiagramText({ rows, onJump, renderRun, rowProps, nodeProps, registerEndpoint, ...pre }: Props) {
   return <pre {...pre}>{rows.map((row, index) => {
     // Keep one outline around a label even when source mappings split its text.
     const groups: DiagramTextRun[][] = [];
@@ -24,6 +26,7 @@ export function DiagramText({ rows, onJump, renderRun, rowProps, registerEndpoin
     }
     return <span key={index} className="ascii-line" {...rowProps?.(row)}>{groups.map(group => {
       const first = group[0], owner = first.owner;
+      const decoration = owner ? nodeProps?.(owner) : undefined;
       const pieces: DiagramTextRun[][] = [];
       for (const run of group) {
         if (run.jump && pieces.at(-1)?.[0].jump?.id === run.jump.id) pieces.at(-1)!.push(run);
@@ -40,9 +43,10 @@ export function DiagramText({ rows, onJump, renderRun, rowProps, registerEndpoin
           : piece.map(item => <Fragment key={item.start}>{renderRun ? renderRun(item) : item.text}</Fragment>)}</Fragment>;
       });
       return <span key={first.start}
+        {...decoration}
         ref={owner?.contentNodeId && registerEndpoint ? element => registerEndpoint({ displayNodeId: owner.displayNodeId,
           contentNodeId: owner.contentNodeId, revisionId: owner.revisionId }, element) : undefined}
-        className={owner?.contentNodeId ? 'diagram-content-node' : undefined}
+        className={[owner?.contentNodeId ? 'diagram-content-node' : '', decoration?.className].filter(Boolean).join(' ') || undefined}
         data-display-node-id={owner?.displayNodeId} data-content-node-id={owner?.contentNodeId}
         data-content-revision={owner?.revisionId} data-source-line={owner?.sourceLine}
         data-source-start-column={owner ? first.start - owner.columnOffset + 1 : undefined}

@@ -8,6 +8,12 @@ const registration = z.object({ canvasId: z.string().uuid(), projectId: z.string
 export async function handleAgentRoutes(request: Connect.IncomingMessage, response: ServerResponse, url: URL, service: AgentDiagrammingSessionService) {
   const path = url.pathname.slice('/api/mapping/agent'.length);
   try {
+    if (path === '/change-sessions' && request.method === 'GET') return sendJson(response, 200, await service.changes?.list() ?? []);
+    const changeSession = path.match(/^\/change-sessions\/([^/]+)$/);
+    if (changeSession && request.method === 'GET' && service.changes) {
+      const { receipts, ...session } = await service.changes.get(decodeURIComponent(changeSession[1]));
+      return sendJson(response, 200, session);
+    }
     if (path === '/canvases') {
       if (request.method === 'GET') return sendJson(response, 200, service.bridge.list());
       if (request.method !== 'POST') return sendJson(response, 405, { error: 'method not allowed' });

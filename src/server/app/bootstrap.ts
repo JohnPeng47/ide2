@@ -1,3 +1,5 @@
+import { ChangeSessionService } from '../../../application/mapping/changes/changeSessionService';
+import { DiagramChangeSessionStore } from '../../../infrastructure/mapping/changes/diagramChangeSessionStore';
 import { AgentDiagrammingSessionService } from '../../../application/mapping/agent/sessionService';
 import { CanvasSessionBridge } from '../../../infrastructure/mapping/agent/canvasSessionBridge';
 import { QuickJsAgentRuntime } from '../../../infrastructure/mapping/agent/execRuntime';
@@ -70,7 +72,8 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, ex
   const studio = createStudioApplication(store, studioRuntime, configuredDomainProfileId ?? "source-code");
   const diagrams = new MappingDiagramService(store, corpusAccess, projectRoot, configuredDomainProfileId);
   const canvasBridge = new CanvasSessionBridge();
-  const agent = new AgentDiagrammingSessionService(canvasBridge, diagrams, store, new QuickJsAgentRuntime());
+  const agent = new AgentDiagrammingSessionService(canvasBridge, diagrams, store, new QuickJsAgentRuntime(),
+    new ChangeSessionService(new DiagramChangeSessionStore(store.storeRoot), store, canvasBridge));
   const routes = {
     core: createCoreRoutes({
       application: core,

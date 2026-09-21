@@ -1,3 +1,5 @@
+import { ChangeSessionPreview } from './changes/ChangeSessionPreview';
+import type { DisplayModeChange } from './changes/changeSessionApi';
 import type { DiagramJumpTarget } from '../../../domain/core/diagrams/diagramJump';
 import { useAgentCanvasBridge } from './agent/useAgentCanvasBridge';
 import type { MappingDocumentController, DiagramOperation } from '../../../domain/mapping/workspace/mappingDocumentController';
@@ -53,6 +55,9 @@ const dirty = (draft: Draft) => draft.name !== draft.savedName || JSON.stringify
 
 export function MappingPocPage(props: { onStudio: () => void; onExperiments: () => void;
   registerNavigationGuard?: (guard: (() => boolean) | undefined) => void }) {
+  const [explorerTab, setExplorerTab] = useState<'diagrams'|'changes'>('diagrams');
+  const [changeMode, setChangeMode] = useState<DisplayModeChange>();
+  const closeChangePreview = () => { setChangeMode(undefined); setExplorerTab('diagrams'); };
   const [workspaceEpoch, setWorkspaceEpoch] = useState(0);
   const [viewState, setViewState] = useState(() => new SourcePaneViewState());
   const [workspaceStatus, setWorkspaceStatus] = useState("");
@@ -300,12 +305,12 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
   return <SourcePaneViewStateContext.Provider value={viewState}><UiTestFramework id="mapping-local-chat" title="Local chat variants" controls={LOCAL_CHAT_UI_CONTROLS}>
     {(ui) => <main className="mapping-poc-shell" data-local-chat-variant={ui.variant}>
       <header className="studio-header mapping-poc-header">
-        <MappingSubmenu projectName={snapshot?.project?.name ?? "Project"} name={active?.name ?? ""}
+        {!changeMode && <MappingSubmenu projectName={snapshot?.project?.name ?? "Project"} name={active?.name ?? ""}
           status={savingId ? "Saving…" : active?.busy ? "Editing…" : active ? dirty(active) ? "Unsaved changes" : "Saved" : ""}
           canSave={Boolean(active?.name.trim() && active && dirty(active) && !active.busy && !savingId && !deletingId)}
           onNameChange={(name) => { if (activeId) setDrafts((current) => ({ ...current, [activeId]: { ...current[activeId], name } })); }}
-          onNew={() => { setCopyCurrent(false); setCreating(true); }} onSave={() => void save()} />
-        <div className="mapping-workspace-actions">
+          onNew={() => { setCopyCurrent(false); setCreating(true); }} onSave={() => void save()} />}
+        {!changeMode && <div className="mapping-workspace-actions">
           <button disabled={workspaceBusy || Boolean(deletingId) || !active || Object.values(drafts).some(draft => draft.busy)} onClick={() => void workspaceAction('save')}>Save workspace</button>
           <button disabled={workspaceBusy || Boolean(deletingId) || Object.values(drafts).some(draft => draft.busy)} onClick={() => void workspaceAction('restore')}>Restore workspace</button>
           <button disabled={workspaceBusy || !active} onClick={() => void workspaceAction('export')}>Export</button>
@@ -314,7 +319,7 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
             const file = event.target.files?.[0]; event.target.value = '';
             if (file) void file.text().then(text => workspaceAction('restore', text)).catch(error => setError(String(error)));
           }} />
-        </div>
+        </div>}
         <nav className="screen-tabs" aria-label="Application pages">
           <button type="button" onClick={props.onStudio}>STUDIO</button>
           <button type="button" onClick={props.onExperiments}>EXPERIMENTS</button>
@@ -323,12 +328,12 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
       </header>
       <section className="mapping-poc-workspace">
         <div className="mapping-viewport">
-          {Object.entries(drafts).map(([id, draft]) => <SourcePaneDocumentContext.Provider key={`${workspaceEpoch}:${id}`} value={id}><SourcePaneDocumentActiveContext.Provider value={id === activeId}><div className="mapping-document-view" hidden={id !== activeId}>
-            <DraggableDiagramCanvas className="mapping-poc-canvas" enabled resetKey={id} leftInset={340} focusBox={draft.focusBox}
+          {Object.entries(drafts).map(([id, draft]) => <SourcePaneDocumentContext.Provider key={`${workspaceEpoch}:${id}`} value={id}><SourcePaneDocumentActiveContext.Provider value={id === activeId && !changeMode}><div className="mapping-document-view" hidden={id !== activeId || !!changeMode}>
+            <DraggableDiagramCanvas className="mapping-poc-canvas" enabled={id === activeId} resetKey={id} leftInset={340} focusBox={draft.focusBox}
               initialTransform={draft.viewport} onTransformChange={viewport => viewState.setCamera(id, viewport)}>
               <MappingPocSelectionCanvas onJump={target => void jumpTo(target)} onController={controller => { if (controller) controllers.current.set(id, controller); else controllers.current.delete(id); }} initialCanvasState={draft.canvas}
                 onCanvasStateChange={canvas => setDrafts(current => !current[id] || current[id].canvas === canvas ? current : { ...current, [id]: { ...current[id], canvas } })}
-                initialDocument={draft.document} active={id === activeId && !creating} focusBox={draft.focusBox}
+                initialDocument={draft.document} active={id === activeId && !creating && !changeMode} focusBox={draft.focusBox}
                 projectContext={draft.revisionId ? { projectId: snapshot!.project!.id, representationId: draft.representationId ?? id, baseRevisionId: draft.revisionId } : undefined}
                 projectionCatalog={snapshot?.catalog ?? undefined} savedScene={draft.savedScene}
                 dirtyRepresentationIds={Object.keys(drafts).filter((key) => JSON.stringify(drafts[key].document.scene) !== drafts[key].savedScene)}
@@ -337,13 +342,16 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
                 localChatVariant={ui.variant as LocalChatVariant} />
             </DraggableDiagramCanvas>
           </div></SourcePaneDocumentActiveContext.Provider></SourcePaneDocumentContext.Provider>)}
-          {!active && <div className="mapping-empty"><h1>{snapshot ? "Create a project diagram" : error ? "Could not load project diagrams" : "Loading project diagrams…"}</h1>
+          {!active && !changeMode && <div className="mapping-empty"><h1>{snapshot ? "Create a project diagram" : error ? "Could not load project diagrams" : "Loading project diagrams…"}</h1>
             {snapshot && <button type="button" onClick={() => setCreating(true)}>New diagram</button>}</div>}
-          <FloatingPane><MappingDiagramExplorer projectName={snapshot?.project?.name ?? "Project"} diagrams={diagrams}
+          {changeMode && <ChangeSessionPreview mode={changeMode} onClose={closeChangePreview} onSelect={setChangeMode} />}
+          <FloatingPane><MappingDiagramExplorer explorerTab={explorerTab}
+            onTabChange={tab => { setExplorerTab(tab); if (tab === 'diagrams') setChangeMode(undefined); }}
+            changeMode={changeMode} onChangeSelect={setChangeMode} projectName={snapshot?.project?.name ?? "Project"} diagrams={diagrams}
             activeId={active?.representationId ?? activeId} scene={active?.document.scene} dirtyIds={Object.keys(drafts).filter((id) => dirty(drafts[id])).map(id => drafts[id].representationId ?? id)}
             onDelete={id => void remove(id)} deletingId={deletingId} deleteDisabled={Boolean(deletingId || savingId || workspaceBusy)}
             busyIds={Object.keys(drafts).filter(id => drafts[id].busy).map(id => drafts[id].representationId ?? id)}
-            onOpen={(id) => open(id)} onFocus={(id) => { if (activeId && !drafts[activeId]?.busy) setDrafts((current) => ({ ...current,
+            onOpen={(id) => { setChangeMode(undefined); open(id); }} onFocus={(id) => { if (activeId && !drafts[activeId]?.busy) setDrafts((current) => ({ ...current,
               [activeId]: { ...current[activeId], focusBox: { id, serial: (current[activeId].focusBox?.serial ?? 0) + 1 } } })); }} /></FloatingPane>
           {error && <div className="mapping-project-error" role="alert">{error}<button type="button" onClick={() => setError("")}>Dismiss</button></div>}
         </div>

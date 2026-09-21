@@ -1,7 +1,11 @@
+import { ChangeSessionExplorer } from '../changes/ChangeSessionExplorer';
+import type { DisplayModeChange } from '../changes/changeSessionApi';
 import { useState } from "react";
 import type { GridBox, LineGridScene } from "../../../../domain/core/diagrams/lineGrid";
 import type { ProjectRepresentationRecord } from "../../../../domain/core/representations/projectCatalog";
 export function MappingDiagramExplorer(props: {
+  explorerTab: 'diagrams'|'changes'; onTabChange: (tab: 'diagrams'|'changes') => void;
+  changeMode?: DisplayModeChange; onChangeSelect: (mode: DisplayModeChange) => void;
   projectName: string; diagrams: ProjectRepresentationRecord[]; activeId?: string;
   scene?: LineGridScene; dirtyIds: string[]; onOpen: (id: string) => void; onFocus: (boxId: string) => void;
   onDelete: (id: string) => void; deletingId?: string; deleteDisabled: boolean; busyIds: string[];
@@ -16,6 +20,10 @@ export function MappingDiagramExplorer(props: {
   </li>;
   return <>
     <header><strong>{props.projectName}</strong><span>PROJECT DIAGRAMS</span></header>
+    <div className="mapping-explorer-tabs" role="tablist" aria-label="Explorer mode">
+      {(['diagrams','changes'] as const).map(tab => <button key={tab} role="tab" aria-selected={props.explorerTab === tab} onClick={() => props.onTabChange(tab)}>{tab === 'diagrams' ? 'Diagrams' : 'Changes'}</button>)}
+    </div>
+    {props.explorerTab === 'changes' ? <ChangeSessionExplorer mode={props.changeMode} onSelect={props.onChangeSelect} /> : <>
     <input type="search" aria-label="Filter diagrams" placeholder="Find a diagram…" value={query} onChange={(event) => setQuery(event.target.value)} />
     <nav aria-label="Project diagrams"><ul>{props.diagrams.filter((diagram) => diagram.name.toLowerCase().includes(query.toLowerCase())).map((diagram) =>
       <li key={diagram.id}>
@@ -34,5 +42,6 @@ export function MappingDiagramExplorer(props: {
       </li>
     )}</ul></nav>
     {!props.diagrams.length && <p>No project diagrams yet. Create one with New.</p>}
+    </>}
   </>;
 }

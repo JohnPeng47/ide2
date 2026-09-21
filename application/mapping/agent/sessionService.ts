@@ -1,3 +1,4 @@
+import type { ChangeSessionService } from '../changes/changeSessionService';
 import { rebaseDiagramJumps } from '../../../domain/core/diagrams/diagramJump';
 import { createDiagram, diagramSource, type Diagram, type DiagramSourceBinding } from '../../../domain/core/diagrams/diagram';
 import { randomUUID } from 'node:crypto';
@@ -12,21 +13,23 @@ import type { MappingDiagramService } from '../diagrams/diagramService';
 import type { DiagramRepository } from '../../core/ports/diagramRepository';
 
 export class AgentDiagrammingSessionService {
-  private sessions = new Map<string, { canvasId: string; documentId: string }>();
+  private sessions = new Map<string, { canvasId: string; documentId: string; changeSessionId?: string }>();
   private saves = new Map<string, Promise<unknown>>();
   private requests = new Map<string, { signature: string; promise: Promise<unknown> }>();
   constructor(readonly bridge: CanvasSessionPort, private readonly diagrams: MappingDiagramService,
-    private readonly store: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs'>, private readonly runtime: AgentExecRuntime) {}
+    private readonly store: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs'>, private readonly runtime: AgentExecRuntime, readonly changes?: ChangeSessionService) {}
   async call(name: AgentToolName, raw: unknown): Promise<unknown> {
     const schema = agentToolSchemas[name];
     if (!schema) throw new Error('Unknown agent tool');
     const input = schema.parse(raw);
     if ('requestId' in input) {
-      const key = `${name}:${'sessionId' in input ? input.sessionId ?? '' : ''}:${input.requestId}`;
+      const key = `${'changeSessionId' in input ? input.changeSessionId ?? '' : ''}:${name}:${'sessionId' in input ? input.sessionId ?? '' : ''}:${input.requestId}`;
       const signature = JSON.stringify(input), old = this.requests.get(key);
       if (old) { if (old.signature !== signature) throw new Error('REQUEST_ID_CONFLICT'); return old.promise; }
       if (this.requests.size >= 2000) throw new Error('Request capacity reached; restart the backend before a new session');
-      const promise = this.execute(name, input).catch(error => {
+      const execute = () => this.execute(name, input);
+      const promise = ('changeSessionId' in input && input.changeSessionId && 'sessionId' in input && input.sessionId && name !== 'save_diagram'
+        ? this.changeService().request(input.changeSessionId, `${name}:${input.requestId}`, signature, execute) : execute()).catch(error => {
         // The browser deduplicates request IDs too, so a lost acknowledgement can be recovered.
         if (error instanceof Error && error.message.includes('CANVAS_TIMEOUT')) this.requests.delete(key);
         throw error;
@@ -37,6 +40,8 @@ export class AgentDiagrammingSessionService {
     return this.execute(name, input);
   }
   private async execute(name: AgentToolName, raw: unknown): Promise<unknown> {
+    if (name === 'create_diagram_change_session') return this.changeService().create(agentToolSchemas[name].parse(raw));
+    if (name === 'update_diagram_change_session') return this.changeService().update(agentToolSchemas[name].parse(raw));
     if (name === 'canvas-api-search') return canvasApiSpec(agentToolSchemas[name].parse(raw).query);
     if (name === 'diagram-search') return this.search(agentToolSchemas[name].parse(raw));
     if (name === 'exec') return this.exec(agentToolSchemas[name].parse(raw));
@@ -44,33 +49,38 @@ export class AgentDiagrammingSessionService {
     const input = agentToolSchemas.draw_diagram.parse(raw);
     const operation = input.nodeId ? { method: 'replace', nodeId: input.nodeId, ...this.content(input) }
       : { method: 'diagram-create', id: `diagram-${randomUUID()}`, parentId: input.parentId, position: input.position, ...this.content(input) };
-    return this.apply(input.sessionId, input.expectedVersion, [operation as DiagramOperation], input.requestId);
+    return this.apply(input.sessionId, input.expectedVersion, [operation as DiagramOperation], input.requestId, input.changeSessionId);
   }
+  private changeService() { if (!this.changes) throw new Error('Change sessions unavailable'); return this.changes; }
   private content(input: { ascii: string; structureKind?: 'diagram'|'tree'; mappings?: unknown; evidence?: unknown; source?: DiagramSourceBinding }) {
     return { ascii: input.ascii, structureKind: input.structureKind, mappings: input.mappings, evidence: input.evidence, source: input.source };
   }
-  private session(id: string) {
+  private session(id: string, changeSessionId?: string) {
     const session = this.sessions.get(id);
-    if (!session || !this.bridge.list().some(canvas => canvas.canvasId === session.canvasId)) throw new Error('SESSION_UNAVAILABLE: attach to a live canvas');
+    if (session && session.changeSessionId !== changeSessionId) throw new Error('CHANGE_SESSION_MISMATCH: attachment and changeSessionId must match');
+    if (!session || !session.changeSessionId && !this.bridge.list().some(canvas => canvas.canvasId === session.canvasId)) throw new Error('SESSION_UNAVAILABLE: attach to a live canvas');
     return session;
   }
-  private async snapshot(sessionId: string): Promise<LiveDocumentSnapshot> {
-    const session = this.session(sessionId);
+  private async snapshot(sessionId: string, changeSessionId?: string): Promise<LiveDocumentSnapshot> {
+    const session = this.session(sessionId, changeSessionId);
+    if (session.changeSessionId) return this.changeService().snapshot(session.changeSessionId, session.documentId);
     return await this.bridge.dispatch(session.canvasId, { method: 'snapshot', documentId: session.documentId }) as LiveDocumentSnapshot;
   }
-  private async attach(canvasId: string, documentId: string) {
-    if (!this.bridge.list().some(canvas => canvas.canvasId === canvasId)) throw new Error('Unknown live document');
+  private async attach(canvasId: string, documentId: string, changeSessionId?: string) {
+    const canvases = changeSessionId ? await this.changeService().descriptor(changeSessionId) : this.bridge.list();
+    if (!canvases.some(canvas => canvas.canvasId === canvasId && canvas.documents.some(doc => doc.documentId === documentId))) throw new Error('Unknown live document');
     if (this.sessions.size >= 500) throw new Error('Session capacity reached');
-    const sessionId = randomUUID(); this.sessions.set(sessionId, { canvasId, documentId });
-    const snapshot = await this.snapshot(sessionId);
-    return { sessionId, canvasId, documentId, version: snapshot.version };
+    const sessionId = randomUUID(); this.sessions.set(sessionId, { canvasId, documentId, changeSessionId });
+    const snapshot = await this.snapshot(sessionId, changeSessionId);
+    return { sessionId, canvasId, documentId, changeSessionId, version: snapshot.version };
   }
-  private async apply(sessionId: string, expectedVersion: number, operations: DiagramOperation[], requestId: string) {
-    const session = this.session(sessionId);
+  private async apply(sessionId: string, expectedVersion: number, operations: DiagramOperation[], requestId: string, changeSessionId?: string) {
+    const session = this.session(sessionId, changeSessionId);
+    if (session.changeSessionId) return this.changeService().apply(session.changeSessionId, session.documentId, expectedVersion, operations, requestId);
     return this.bridge.dispatch(session.canvasId, { method: 'apply', documentId: session.documentId, payload: { expectedVersion, operations, requestId } });
   }
   private async exec(input: ReturnType<typeof agentToolSchemas.exec.parse>) {
-    const original = input.sessionId ? await this.snapshot(input.sessionId) : undefined;
+    const original = input.sessionId ? await this.snapshot(input.sessionId, input.changeSessionId) : undefined;
     const shadow = original ? new MappingDocumentController(original.document, original.canvas, original.version, original.cell, original.endpointBounds) : undefined;
     const operations: DiagramOperation[] = [];
     let createdDocument = false;
@@ -78,11 +88,16 @@ export class AgentDiagrammingSessionService {
       const entry = canvasMethods[method as keyof typeof canvasMethods];
       if (!entry) throw new Error('Unknown canvas method');
       const parsed = entry.schema.parse(args) as Record<string, any>;
-      if (method === 'canvas.list') return this.bridge.list();
-      if (method === 'canvas.attach') return this.attach(parsed.canvasId, parsed.documentId);
+      if (method === 'canvas.list') return input.changeSessionId ? this.changeService().descriptor(input.changeSessionId) : this.bridge.list();
+      if (method === 'canvas.attach') return this.attach(parsed.canvasId, parsed.documentId, input.changeSessionId);
       if (method === 'canvas.createDocument') {
         if (input.sessionId || createdDocument) throw new Error('Create one document per unbound exec call');
         createdDocument = true;
+        if (input.changeSessionId) {
+          if (parsed.canvasId !== input.changeSessionId) throw new Error('CHANGE_SESSION_MISMATCH');
+          const result = await this.changeService().createDocument(input.changeSessionId, parsed.name, input.requestId);
+          return this.attach(parsed.canvasId, result.documentId, input.changeSessionId);
+        }
         const result = await this.bridge.dispatch(parsed.canvasId, { method: 'create-document', payload: { name: parsed.name, requestId: input.requestId, snapshot: await this.diagrams.initialize() } }) as { documentId: string };
         return this.attach(parsed.canvasId, result.documentId);
       }
@@ -109,12 +124,29 @@ export class AgentDiagrammingSessionService {
       return node ? { ...node, version: original.version + 1 } : null;
     });
     if (!operations.length) return { value, ...(original ? { version: original.version } : {}) };
-    const result = await this.apply(input.sessionId!, original!.version, operations, input.requestId);
+    const result = await this.apply(input.sessionId!, original!.version, operations, input.requestId, input.changeSessionId);
     return { value, transaction: result };
   }
   private async search(input: ReturnType<(typeof agentToolSchemas)['diagram-search']['parse']>) {
+    if (input.changeSessionId && !input.sessionId) {
+      const session = await this.changeService().get(input.changeSessionId);
+      if (input.revisionId) throw new Error('Session reads use pinned proposal documents, not catalog revisions');
+      const docs = session.documents.filter(d => !input.representationId || d.id === input.representationId || d.representationId === input.representationId);
+      if (input.operation === 'read') {
+        if (docs.length !== 1) throw new Error('Specify representationId (or session document ID) for a session read');
+        const doc = docs[0];
+        return { origin: 'change-session', changeSessionId: session.id, documentId: doc.id, name: doc.name, version: doc.version,
+          nodes: new MappingDocumentController(doc.proposed.document, doc.proposed.canvas, doc.version).nodes(),
+          changeSession: { version: session.version, title: session.title, status: session.status, changes: session.changes } };
+      }
+      const hits = docs.flatMap(doc => new MappingDocumentController(doc.proposed.document, doc.proposed.canvas).nodes().flatMap(node =>
+        node.layout === 'grid' && node.diagram ? this.matches(node.diagram, input).map(match => ({ origin: 'change-session', documentId: doc.id,
+          representationId: doc.representationId, name: doc.name, nodeId: node.id, version: doc.version, ...match })) : []));
+      return { total: hits.length, hits: hits.slice(input.offset, input.offset + input.limit),
+        changeSession: { version: session.version, title: session.title, status: session.status, changes: session.changes } };
+    }
     if (input.sessionId) {
-      const snapshot = await this.snapshot(input.sessionId);
+      const snapshot = await this.snapshot(input.sessionId, input.changeSessionId);
       const controller = new MappingDocumentController(snapshot.document, snapshot.canvas, snapshot.version, snapshot.cell, snapshot.endpointBounds);
       const nodes = controller.nodes().filter(node => node.layout === 'grid' && node.kind === 'diagram');
       if (input.operation === 'read') {
@@ -164,6 +196,8 @@ export class AgentDiagrammingSessionService {
     return content.ascii.split('\n').flatMap((line, i) => line.toLowerCase().includes(q) ? [{ snippet: line, line: i + 1 }] : []);
   }
   private save(input: ReturnType<typeof agentToolSchemas.save_diagram.parse>) {
+    this.session(input.sessionId, input.changeSessionId);
+    if (input.changeSessionId) throw new Error('CHANGE_SESSION_SAVE_FORBIDDEN: preview edits cannot publish catalog revisions');
     const session = this.session(input.sessionId), key = `${session.canvasId}:${session.documentId}`;
     const previous = this.saves.get(key) ?? Promise.resolve();
     const result = previous.catch(() => undefined).then(() => this.saveNow(input));
@@ -172,7 +206,7 @@ export class AgentDiagrammingSessionService {
     return result;
   }
   private async saveNow(input: ReturnType<typeof agentToolSchemas.save_diagram.parse>) {
-    const session = this.session(input.sessionId), snapshot = await this.snapshot(input.sessionId);
+    const session = this.session(input.sessionId), snapshot = await this.snapshot(input.sessionId, input.changeSessionId);
     if (input.expectedVersion !== snapshot.version) throw new Error('VERSION_CONFLICT: read the canvas again');
     let scene = snapshot.document.scene;
     if (input.nodeId) {
