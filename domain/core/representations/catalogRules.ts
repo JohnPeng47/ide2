@@ -1,6 +1,6 @@
 import { validateConnections } from '../diagrams/diagramConnection';
-import { flattenGrid, resolveScene } from '../diagrams/lineGrid';
 import { buildProjectionTree, validateProjection, type ProjectProjectionRecord } from "../diagrams/diagramProjection";
+import { flattenGrid, resolveScene } from '../diagrams/lineGrid';
 import { projectCanvasSnapshot, sceneFromRevision, type SaveProjectDiagramInput } from "../diagrams/projectDiagramCanvas";
 import {
   SCHEMA_VERSION,
@@ -8,7 +8,7 @@ import {
   assertSourceRange,
   type DiagramViewKind
 } from "../records/domain";
-import type { ProjectRepresentationPromotionDraft, SaveProjectedTreeInput } from "./catalogCommands";
+import type { SaveProjectedTreeInput } from "./catalogCommands";
 import { ProjectDiagramConflict } from "./errors";
 import type {
   ProjectCorpusCompactionCatalogRecord,
@@ -251,104 +251,6 @@ export function upsertFileCompaction(catalog: ProjectCorpusCompactionCatalogReco
   };
 
   return { catalog: next, compaction };
-
-}
-
-export function promoteRepresentation(catalog: ProjectRepresentationCatalogRecord, draft: ProjectRepresentationPromotionDraft, environment: CatalogEnvironment) {
-
-  const representationId = draft.representationId ?? environment.stableId(
-    "representation",
-    draft.projectId,
-    draft.viewKind,
-    draft.provenance.diagramSetId,
-    draft.provenance.artifactId
-  );
-  assertSafeId(representationId, "Representation id");
-  const current = catalog.representations[representationId];
-  if (draft.expectedRevisionId !== undefined && current?.currentRevisionId !== draft.expectedRevisionId) {
-    throw new ProjectDiagramConflict("This diagram has changed. Reload before updating its source mappings.");
-  }
-  if (current && (current.viewKind !== draft.viewKind
-    || current.representationKind !== draft.representationKind)) {
-    throw new Error("Representation kind cannot change between revisions");
-  }
-  const evidenceSignature = JSON.stringify(draft.evidence);
-  const sourceSignature = JSON.stringify(draft.source);
-  const mappingSignature = JSON.stringify(draft.mappings);
-  const existingRevision = current?.revisionIds
-    .map((id) => catalog.revisions[id])
-    .find((revision) => revision?.asciiSha256 === draft.asciiSha256
-      && JSON.stringify(revision.content?.kind === "diagram" ? revision.content.diagram.sourceContext.binding : revision.source) === sourceSignature
-      && JSON.stringify(revision.evidence) === evidenceSignature
-      && JSON.stringify(revision.mappings) === mappingSignature);
-  const revisionNumber = existingRevision?.revision ?? (current?.revisionIds.length ?? 0) + 1;
-  const revisionId = existingRevision?.id ?? environment.stableId(
-    "representation-revision",
-    representationId,
-    draft.asciiSha256,
-    evidenceSignature,
-    sourceSignature ?? "",
-    mappingSignature
-  );
-  const timestamp = environment.timestamp;
-  const revision: ProjectRepresentationRevisionRecord = existingRevision ?? {
-    schemaVersion: SCHEMA_VERSION,
-    id: revisionId,
-    projectId: draft.projectId,
-    representationId,
-    revision: revisionNumber,
-    ascii: draft.ascii,
-    content: { kind: "ascii", ascii: draft.ascii }, ...(draft.source ? {source: draft.source} : {}),
-    asciiSha256: draft.asciiSha256,
-    representationKind: draft.representationKind,
-    evidence: draft.evidence,
-    mappings: draft.mappings,
-    provenance: draft.provenance,
-    createdAt: timestamp
-  };
-  if (!existingRevision) {
-    revision.content = {kind:"diagram", diagram:sceneFromRevision(revision).contents.overview};
-    delete revision.source;
-  }
-  const representation: ProjectRepresentationRecord = {
-    schemaVersion: SCHEMA_VERSION,
-    id: representationId,
-    projectId: draft.projectId,
-    handle: draft.handle,
-    name: draft.name,
-    viewKind: draft.viewKind,
-    representationKind: draft.representationKind,
-    status: "settled",
-    currentRevisionId: revisionId,
-    revisionIds: current?.revisionIds.includes(revisionId)
-      ? current.revisionIds
-      : [...(current?.revisionIds ?? []), revisionId],
-    createdAt: current?.createdAt ?? timestamp,
-    updatedAt: timestamp
-  };
-  const activeByKind = { ...catalog.activeByKind };
-  if (draft.makeActive) activeByKind[draft.viewKind] = representationId;
-  const next: ProjectRepresentationCatalogRecord = {
-    ...catalog,
-    activeByKind,
-    representations: { ...catalog.representations, [representationId]: representation },
-    revisions: { ...catalog.revisions, [revisionId]: revision },
-    updatedAt: timestamp
-  };
-
-  return { catalog: next, representation };
-
-}
-
-export function clearActiveRepresentation(catalog: ProjectRepresentationCatalogRecord, projectId: string, viewKind: DiagramViewKind, expectedRepresentationId: string | undefined, environment: CatalogEnvironment) {
-
-  if (expectedRepresentationId
-    && catalog.activeByKind[viewKind] !== expectedRepresentationId) return catalog;
-  const activeByKind = { ...catalog.activeByKind };
-  delete activeByKind[viewKind];
-  const next = { ...catalog, activeByKind, updatedAt: environment.timestamp };
-
-  return next;
 
 }
 

@@ -1,14 +1,14 @@
-import { resolveDiagramSource, type DiagramSourceReference } from './diagramSource';
 import { createHash } from 'node:crypto';
 import type { SourcePosition } from '../../../domain/core/source/sourceNavigation';
 import type { CorpusAccess } from '../corpus/corpusAccess';
 import { ApplicationError } from '../errors';
 import type { DiagramRepository } from '../ports/diagramRepository';
+import { resolveDiagramSource, type DiagramSourceReference } from './diagramSource';
 import type { LanguageService } from './languageService';
 
 export class ProjectSourceService {
   constructor(
-    private readonly projects: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs' | 'loadDiagramSet'>,
+    private readonly projects: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs'>,
     private readonly corpus: CorpusAccess,
     private readonly language?: LanguageService
   ) { }

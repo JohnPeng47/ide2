@@ -1,12 +1,11 @@
-import { sourceBindingFromLocation } from '../../../../../domain/core/diagrams/diagram';
 import { createHash } from "node:crypto";
 import {
   mkdir,
   mkdtemp,
   readFile,
-  writeFile,
+  rm,
   symlink,
-  rm
+  writeFile
 } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
@@ -19,11 +18,13 @@ import {
   expect,
   it
 } from "vitest";
+import { sourceBindingFromLocation } from '../../../../../domain/core/diagrams/diagram';
 import { projectSelection, validateProjection } from "../../../../../domain/core/diagrams/diagramProjection";
-import type { ProjectRepresentationCatalogRecord } from "../../../../../domain/core/representations/projectCatalog";
 import { singleDiagramScene } from "../../../../../domain/core/diagrams/projectDiagramCanvas";
-import { diagramApi } from "../../../app/vitePlugin";
+import type { ProjectRepresentationCatalogRecord } from "../../../../../domain/core/representations/projectCatalog";
 import { DiagramStore } from "../../../../../infrastructure/core/persistence/store";
+import { saveDiagramFixture } from '../../../../../tests/support/mappingDiagram';
+import { diagramApi } from "../../../app/vitePlugin";
 
 const roots: string[] = [];
 const servers: Server[] = [];
@@ -42,10 +43,10 @@ async function fixture() {
   const store = new DiagramStore(root);
   const project = await store.ensureProject({ checkoutRoot: root, repositoryIdentity: path.join(root, ".git") });
   const ascii = "Alpha\nBeta\nGamma";
-  const source = await store.projectCatalogs.promoteRepresentation({
+  const source = await saveDiagramFixture(store.projectCatalogs, {
     source: sourceBindingFromLocation({checkoutRoot:root,repositoryIdentity:path.join(root,".git")}),
-    projectId: project.id, handle: "source", name: "Source", viewKind: "diagram", representationKind: "diagram",
-    ascii, asciiSha256: createHash("sha256").update(ascii).digest("hex"),
+    projectId: project.id, name: "Source", representationKind: "diagram",
+    ascii,
     evidence: Object.fromEntries(["a", "b", "c"].map((id) => [id, {
       id, handle: id, label: id, category: "operation" as const, summary: id,
       sourceRanges: [{
@@ -56,9 +57,7 @@ async function fixture() {
     mappings: ["a", "b", "c"].map((id, index) => ({
       id: `mapping-${id}`, evidenceId: id, sourceRangeId: `range-${id}`, line: index + 1,
       startColumn: 1, endColumn: ascii.split("\n")[index].length
-    })),
-    provenance: { diagramSetId: "set-test", artifactId: "diagram-test" }, makeActive: true
-  });
+    })),});
   let middleware: Connect.NextHandleFunction | undefined;
   const server = createServer((request, response) => {
     if (!middleware) throw new Error("middleware was not attached");

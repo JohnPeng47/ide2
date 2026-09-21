@@ -9,20 +9,18 @@ import path from "node:path";
 import { type ProjectProjectionRecord } from "../../../domain/core/diagrams/diagramProjection";
 import { type SaveProjectDiagramInput } from "../../../domain/core/diagrams/projectDiagramCanvas";
 import {
-  SCHEMA_VERSION,
-  type DiagramViewKind
+  SCHEMA_VERSION
 } from "../../../domain/core/records/domain";
-import type { ProjectRepresentationPromotionDraft, SaveProjectedTreeInput } from "../../../domain/core/representations/catalogCommands";
+import type { SaveProjectedTreeInput } from "../../../domain/core/representations/catalogCommands";
 import * as rules from '../../../domain/core/representations/catalogRules';
 
 import type {
   ProjectCorpusCompactionCatalogRecord,
   ProjectFileCompactionInput,
   ProjectFileCompactionRecord,
-  ProjectRepresentationCatalogRecord,
-  ProjectRepresentationRecord
+  ProjectRepresentationCatalogRecord
 } from "../../../domain/core/representations/projectCatalog";
-export type { ProjectRepresentationPromotionDraft, SaveProjectedTreeInput } from "../../../domain/core/representations/catalogCommands";
+export type { SaveProjectedTreeInput } from "../../../domain/core/representations/catalogCommands";
 export { ProjectDiagramConflict } from "../../../domain/core/representations/errors";
 
 function nowIso(): string {
@@ -168,34 +166,6 @@ export class ProjectCatalogStore {
     await writeJsonAtomic(this.representationCatalogPath(), catalog);
   }
 
-  promoteRepresentation(draft: ProjectRepresentationPromotionDraft) {
-    return this.serialize(() => this.promoteRepresentationUnlocked(draft));
-  }
-
-  private async promoteRepresentationUnlocked(
-    draft: ProjectRepresentationPromotionDraft
-  ): Promise<{ catalog: ProjectRepresentationCatalogRecord; representation: ProjectRepresentationRecord }> {
-    const catalog = await this.loadRepresentationCatalog(draft.projectId);
-    const result = rules.promoteRepresentation(catalog, draft, catalogEnvironment());
-    if (result.catalog !== catalog) await this.saveRepresentationCatalog(result.catalog);
-    return result;
-  }
-
-  clearActiveRepresentation(projectId: string, viewKind: DiagramViewKind, expectedRepresentationId?: string) {
-    return this.serialize(() => this.clearActiveRepresentationUnlocked(projectId, viewKind, expectedRepresentationId));
-  }
-
-  private async clearActiveRepresentationUnlocked(
-    projectId: string,
-    viewKind: DiagramViewKind,
-    expectedRepresentationId?: string
-  ): Promise<ProjectRepresentationCatalogRecord> {
-    const catalog = await this.loadRepresentationCatalog(projectId);
-    const result = rules.clearActiveRepresentation(catalog, projectId, viewKind, expectedRepresentationId, catalogEnvironment());
-    if (result !== catalog) await this.saveRepresentationCatalog(result);
-    return result;
-  }
-
   archiveRepresentation(projectId: string, representationId: string) {
     return this.serialize(() => this.archiveRepresentationUnlocked(projectId, representationId));
   }
@@ -208,18 +178,6 @@ export class ProjectCatalogStore {
     const result = rules.archiveRepresentation(catalog, projectId, representationId, catalogEnvironment());
     if (result !== catalog) await this.saveRepresentationCatalog(result);
     return result;
-  }
-
-  representationForSource(
-    catalog: ProjectRepresentationCatalogRecord,
-    diagramSetId: string,
-    artifactId: string
-  ): ProjectRepresentationRecord | undefined {
-    const revision = Object.values(catalog.revisions).find((candidate) => (
-      candidate.provenance?.diagramSetId === diagramSetId
-      && candidate.provenance.artifactId === artifactId
-    ));
-    return revision ? catalog.representations[revision.representationId] : undefined;
   }
 }
 

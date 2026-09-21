@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SCHEMA_VERSION, type DiagramCodeEntityMapRecord, type DiagramElementMapping } from "../../records/domain";
+import { type DiagramElementMapping, type DiagramMappingSnapshot } from "../../records/domain";
 import {
   assertRepresentationRevision,
   buildDiagramRepresentationIndex,
@@ -45,17 +45,14 @@ function mapping(
 
 function codeEntityMap(
   mappings: DiagramElementMapping[],
-  overrides: Partial<Pick<DiagramCodeEntityMapRecord, "artifactId" | "asciiSha256">> = {}
-): DiagramCodeEntityMapRecord {
+  overrides: Partial<Pick<DiagramMappingSnapshot, "artifactId" | "asciiSha256">> = {}
+): DiagramMappingSnapshot {
   return {
-    schemaVersion: SCHEMA_VERSION,
-    diagramSetId: "set-1",
-    artifactKind: "diagram",
+
     artifactId: overrides.artifactId ?? revision.artifactId,
     asciiSha256: overrides.asciiSha256 ?? revision.asciiSha256,
     mappings,
-    producedByRunId: "run-1",
-    createdAt: "2026-08-31T00:00:00.000Z"
+
   };
 }
 

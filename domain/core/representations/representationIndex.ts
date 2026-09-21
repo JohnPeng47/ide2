@@ -1,6 +1,6 @@
-import { contentTreeNodes, type DiagramContent } from '../diagrams/diagramContent';
 import { parseAsciiTree } from "../diagrams/asciiTree";
-import type { DiagramCodeEntityMapRecord, DiagramElementMapping } from "../records/domain";
+import { contentTreeNodes, type DiagramContent } from '../diagrams/diagramContent';
+import type { DiagramElementMapping, DiagramMappingSnapshot } from "../records/domain";
 
 export interface RepresentationRevision {
   artifactId: string;
@@ -65,7 +65,7 @@ export interface RepresentationIndexSource {
   content?: DiagramContent;
   revision: RepresentationRevision;
   ascii: string;
-  codeEntityMap?: DiagramCodeEntityMapRecord;
+  codeEntityMap?: DiagramMappingSnapshot;
 }
 
 export type RepresentationIndexRequest = RepresentationIndexSource & (
@@ -123,7 +123,7 @@ export function isRepresentationRevisionCurrent(
 
 function assertCurrentMap(
   revision: RepresentationRevision,
-  codeEntityMap?: DiagramCodeEntityMapRecord
+  codeEntityMap?: DiagramMappingSnapshot
 ): void {
   if (!codeEntityMap) return;
   assertRepresentationRevision(

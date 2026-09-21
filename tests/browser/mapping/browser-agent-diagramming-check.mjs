@@ -31,7 +31,7 @@ try {
     return value;
   };
   const exec = args => call('exec', { requestId: randomUUID(), ...args });
-  assert.deepEqual((await client.listTools()).tools.map(tool => tool.name).sort(), ['canvas-api-search','diagram-search','draw_diagram','exec','save_diagram']);
+  assert.deepEqual((await client.listTools()).tools.map(tool => tool.name).sort(), ['canvas-api-search','create_diagram_change_session','diagram-search','draw_diagram','exec','save_diagram','update_diagram_change_session']);
   assert.ok((await call('canvas-api-search', { query: 'move' })).some(method => method.name === 'nodes.move'));
   await withHeadlessBrowser({ url: `${url}/mapping`, width: 1800, height: 1100, arguments: ['--disable-gpu'] }, async ({ cdp }) => {
     const send = cdp.send.bind(cdp);

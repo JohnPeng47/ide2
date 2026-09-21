@@ -1,11 +1,11 @@
-import { createDiagram, validateDiagram, diagramSource, type Diagram, type DiagramSourceBinding } from '../../../domain/core/diagrams/diagram';
+import { createDiagram, diagramSource, validateDiagram, type Diagram, type DiagramSourceBinding } from '../../../domain/core/diagrams/diagram';
 import { sceneFromRevision } from '../../../domain/core/diagrams/projectDiagramCanvas';
-import type { DiagramRepository } from '../ports/diagramRepository';
 import type { CorpusAccess } from '../corpus/corpusAccess';
 import { ApplicationError } from '../errors';
+import type { DiagramRepository } from '../ports/diagramRepository';
 export interface DiagramSourceReference { projectId: string; representationId?: string; revisionId?: string; contentId?: string; sourceId?: string }
 /** Resolve a saved diagram/revision, or an unambiguous registered source. Never infer a repository from Project. */
-export async function resolveDiagramSource(store: Pick<DiagramRepository,'loadProject'|'projectCatalogs'|'loadDiagramSet'>, ref: DiagramSourceReference, corpus?: CorpusAccess, liveDiagram?: Diagram) {
+export async function resolveDiagramSource(store: Pick<DiagramRepository,'loadProject'|'projectCatalogs'>, ref: DiagramSourceReference, corpus?: CorpusAccess, liveDiagram?: Diagram) {
   const project = await store.loadProject();
   if (!project || project.id !== ref.projectId) throw new ApplicationError('conflict','Diagram belongs to another project');
   const catalog = await store.projectCatalogs.loadRepresentationCatalog(project.id);
@@ -33,8 +33,7 @@ export async function resolveDiagramSource(store: Pick<DiagramRepository,'loadPr
       const binding = d.sourceContext.binding;
       if (binding && (!ref.sourceId || binding.sourceId === ref.sourceId)) register(binding);
     }
-    for (const setId of project.diagramSetIds) {
-      const binding = (await store.loadDiagramSet(setId)).source;
+    for (const binding of project.sources ?? []) {
       if (binding && (!ref.sourceId || binding.sourceId === ref.sourceId)) register(binding);
     }
     if (bindings.size !== 1) throw new Error('A valid diagram sourceId is required; the project has no single repository');

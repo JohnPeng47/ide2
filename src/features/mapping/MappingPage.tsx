@@ -1,28 +1,28 @@
-import { ChangeSessionPreview } from './changes/ChangeSessionPreview';
-import type { DisplayModeChange } from './changes/changeSessionApi';
+import { UiTestFramework } from "@new-diagram/ui-test-framework";
+import { useEffect, useRef, useState } from "react";
+import type { CanvasTransform } from "../../../domain/core/diagrams/diagramCanvas";
 import type { DiagramJumpTarget } from '../../../domain/core/diagrams/diagramJump';
-import { useAgentCanvasBridge } from './agent/useAgentCanvasBridge';
-import type { MappingDocumentController, DiagramOperation } from '../../../domain/mapping/workspace/mappingDocumentController';
+import { sceneFromRevision, singleDiagramScene } from "../../../domain/core/diagrams/projectDiagramCanvas";
 import type { CanvasCommand } from '../../../domain/mapping/agent/contracts';
+import type { LocalChatVariant } from "../../../domain/mapping/chat/localChat";
 import { mappingDocumentFromScene } from "../../../domain/mapping/workspace/mappingDocument";
-import { loadProjectRepresentations, type ProjectRepresentationsSnapshot } from "../../shared/http/api";
+import type { DiagramOperation, MappingDocumentController } from '../../../domain/mapping/workspace/mappingDocumentController';
+import type { MappingGridDocument } from "../../../domain/mapping/workspace/mappingGrid";
 import { initialCanvasState, type MappingCanvasState, type MappingWorkspaceSnapshot } from "../../../domain/mapping/workspace/mappingWorkspace";
 import { deserializeWorkspace, serializeWorkspace } from "../../../domain/mapping/workspace/mappingWorkspaceCodec";
-import { mappingWorkspaceRepository } from "./workspace/mappingWorkspaceRepository";
-import type { CanvasTransform } from "../../../domain/core/diagrams/diagramCanvas";
-import { useEffect, useRef, useState } from "react";
-import { UiTestFramework } from "@new-diagram/ui-test-framework";
 import { DraggableDiagramCanvas } from "../../shared/diagrams/DraggableDiagramCanvas";
+import { loadProjectRepresentations, type ProjectRepresentationsSnapshot } from "../../shared/http/api";
+import { useAgentCanvasBridge } from './agent/useAgentCanvasBridge';
 import { MappingPocSelectionCanvas } from "./canvas/MappingCanvas";
-import { MappingSubmenu } from "./workspace/MappingSubmenu";
-import { FloatingPane } from "./workspace/FloatingPane";
-import { MappingDiagramExplorer } from "./workspace/MappingDiagramExplorer";
-import type { LocalChatVariant } from "../../../domain/mapping/chat/localChat";
-import type { MappingGridDocument } from "../../../domain/mapping/workspace/mappingGrid";
-import { sceneFromRevision, singleDiagramScene } from "../../../domain/core/diagrams/projectDiagramCanvas";
-import { deleteMappingProjectDiagram, saveMappingProjectDiagram } from "./workspace/mappingProjectApi";
+import type { DisplayModeChange } from './changes/changeSessionApi';
+import { ChangeSessionPreview } from './changes/ChangeSessionPreview';
 import { SourcePaneViewState } from "./source-pane/sourcePaneViewState";
 import { SourcePaneDocumentActiveContext, SourcePaneDocumentContext, SourcePaneViewStateContext } from "./source-pane/SourcePaneViewStateContext";
+import { FloatingPane } from "./workspace/FloatingPane";
+import { MappingDiagramExplorer } from "./workspace/MappingDiagramExplorer";
+import { deleteMappingProjectDiagram, saveMappingProjectDiagram } from "./workspace/mappingProjectApi";
+import { MappingSubmenu } from "./workspace/MappingSubmenu";
+import { mappingWorkspaceRepository } from "./workspace/mappingWorkspaceRepository";
 
 const LOCAL_CHAT_UI_CONTROLS = {
   variant: {
@@ -53,8 +53,7 @@ interface Draft {
 }
 const dirty = (draft: Draft) => draft.name !== draft.savedName || JSON.stringify(draft.document.scene) !== draft.savedScene || JSON.stringify(draft.document.edges) !== (draft.savedEdges ?? '[]');
 
-export function MappingPocPage(props: { onStudio: () => void; onExperiments: () => void;
-  registerNavigationGuard?: (guard: (() => boolean) | undefined) => void }) {
+export function MappingPocPage() {
   const [explorerTab, setExplorerTab] = useState<'diagrams'|'changes'>('diagrams');
   const [changeMode, setChangeMode] = useState<DisplayModeChange>();
   const closeChangePreview = () => { setChangeMode(undefined); setExplorerTab('diagrams'); };
@@ -238,11 +237,7 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [drafts]);
-  useEffect(() => {
-    props.registerNavigationGuard?.(() => !Object.values(drafts).some((draft) => dirty(draft) || draft.busy)
-      || window.confirm("Leave Mapping and discard unsaved changes and pending edits?"));
-    return () => props.registerNavigationGuard?.(undefined);
-  }, [drafts, activeId, props.registerNavigationGuard]);
+
 
   const save = async () => {
     if (!activeId || !active || active.busy || savingId || deletingId) return;
@@ -304,7 +299,7 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
 
   return <SourcePaneViewStateContext.Provider value={viewState}><UiTestFramework id="mapping-local-chat" title="Local chat variants" controls={LOCAL_CHAT_UI_CONTROLS}>
     {(ui) => <main className="mapping-poc-shell" data-local-chat-variant={ui.variant}>
-      <header className="studio-header mapping-poc-header">
+      <header className="workspace-header mapping-poc-header">
         {!changeMode && <MappingSubmenu projectName={snapshot?.project?.name ?? "Project"} name={active?.name ?? ""}
           status={savingId ? "Saving…" : active?.busy ? "Editing…" : active ? dirty(active) ? "Unsaved changes" : "Saved" : ""}
           canSave={Boolean(active?.name.trim() && active && dirty(active) && !active.busy && !savingId && !deletingId)}
@@ -321,8 +316,6 @@ export function MappingPocPage(props: { onStudio: () => void; onExperiments: () 
           }} />
         </div>}
         <nav className="screen-tabs" aria-label="Application pages">
-          <button type="button" onClick={props.onStudio}>STUDIO</button>
-          <button type="button" onClick={props.onExperiments}>EXPERIMENTS</button>
           <button type="button" className="is-active" aria-current="page">MAPPING</button>
         </nav>
       </header>

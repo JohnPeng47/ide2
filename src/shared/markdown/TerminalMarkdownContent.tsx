@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { renderTerminalMarkdownFragment } from "./render";
 
-/** Embedded Markdown, using Studio's parser and code highlighter. Raw HTML stays escaped. */
+/** Embedded Markdown with shared parsing and code highlighting. Raw HTML stays escaped. */
 export function TerminalMarkdownContent(props: { source: string; className?: string; onRendered?: () => void }) {
   const [rendered, setRendered] = useState<{ source: string; html: string }>();
   useEffect(() => {

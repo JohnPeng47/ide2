@@ -1,11 +1,12 @@
 import { createServer } from "node:http";
 import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { tmpdir, homedir } from "node:os";
 import path from "node:path";
 import { renderTerminalMarkdownDocument } from "../../../src/shared/markdown/render";
 
 async function loadBrowserHarness() {
   const candidates = [
+    new URL(`file://${path.join(homedir(), ".codex/skills/front-end/browser-test.mjs")}`),
     new URL("../../../../../.agents/skills/front-end/browser-test.mjs", import.meta.url),
     new URL("../../../../../../../.codex/skills/front-end/browser-test.mjs", import.meta.url)
   ];

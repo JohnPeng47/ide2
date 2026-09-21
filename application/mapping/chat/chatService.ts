@@ -1,15 +1,15 @@
 import { createDiagram } from '../../../domain/core/diagrams/diagram';
-import { resolveDiagramSource } from '../../core/source/diagramSource';
 import { mappingsForSelection } from '../../../domain/core/diagrams/diagramSelection';
 import type { ProjectRepresentationEvidenceRecord } from '../../../domain/core/representations/projectCatalog';
 import { validateLocalChatRequest } from '../../../domain/mapping/chat/localChatPrompt';
 import type { CorpusAccess } from '../../core/corpus/corpusAccess';
 import type { DiagramRepository } from '../../core/ports/diagramRepository';
+import { resolveDiagramSource } from '../../core/source/diagramSource';
 import { mappingPocSourceContextForSelection } from '../selection/mappingPocSourceContext';
 import type { LocalChatRuntime } from './agent';
 
 export class LocalChatService {
-  constructor(private readonly projects: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs' | 'loadDiagramSet'>,
+  constructor(private readonly projects: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs'>,
     private readonly corpus: CorpusAccess, private readonly runtime: LocalChatRuntime, private readonly sourceRoot: string) { }
   async prepare(value: unknown) {
     const input = validateLocalChatRequest(value);

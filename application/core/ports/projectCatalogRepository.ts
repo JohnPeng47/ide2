@@ -1,7 +1,6 @@
 import { type ProjectProjectionRecord } from "../../../domain/core/diagrams/diagramProjection";
 import { type SaveProjectDiagramInput } from "../../../domain/core/diagrams/projectDiagramCanvas";
-import { type DiagramViewKind } from "../../../domain/core/records/domain";
-import type { ProjectRepresentationPromotionDraft, SaveProjectedTreeInput } from '../../../domain/core/representations/catalogCommands';
+import type { SaveProjectedTreeInput } from '../../../domain/core/representations/catalogCommands';
 import type { ProjectCorpusCompactionCatalogRecord, ProjectFileCompactionInput, ProjectFileCompactionRecord, ProjectRepresentationCatalogRecord, ProjectRepresentationRecord } from "../../../domain/core/representations/projectCatalog";
 export interface ProjectCatalogRepository {
   readonly storeRoot: string;
@@ -26,11 +25,5 @@ export interface ProjectCatalogRepository {
   }>;
   loadRepresentationCatalog(projectId: string): Promise<ProjectRepresentationCatalogRecord>;
   saveRepresentationCatalog(catalog: ProjectRepresentationCatalogRecord): Promise<void>;
-  promoteRepresentation(draft: ProjectRepresentationPromotionDraft): Promise<{
-    catalog: ProjectRepresentationCatalogRecord;
-    representation: ProjectRepresentationRecord;
-  }>;
-  clearActiveRepresentation(projectId: string, viewKind: DiagramViewKind, expectedRepresentationId?: string): Promise<ProjectRepresentationCatalogRecord>;
   archiveRepresentation(projectId: string, representationId: string): Promise<ProjectRepresentationCatalogRecord>;
-  representationForSource(catalog: ProjectRepresentationCatalogRecord, diagramSetId: string, artifactId: string): ProjectRepresentationRecord | undefined;
 }

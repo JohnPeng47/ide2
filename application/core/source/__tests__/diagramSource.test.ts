@@ -1,20 +1,20 @@
-import { afterEach, expect, it } from 'vitest';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { DiagramStore } from '../../../../infrastructure/core/persistence/store';
-import { corpusAccess } from '../../../../src/server/app/bootstrap';
-import { createDiagram, diagramSource, sourceBindingFromLocation } from '../../../../domain/core/diagrams/diagram';
-import { singleDiagramScene, sceneFromRevision } from '../../../../domain/core/diagrams/projectDiagramCanvas';
+import { afterEach, expect, it } from 'vitest';
+import { sourceBindingFromLocation } from '../../../../domain/core/diagrams/diagram';
+import { sceneFromRevision, singleDiagramScene } from '../../../../domain/core/diagrams/projectDiagramCanvas';
+import { diagramSelectionNodes, mappingDocumentFromScene } from '../../../../domain/mapping/workspace/mappingDocument';
 import { MappingDocumentController } from '../../../../domain/mapping/workspace/mappingDocumentController';
-import { mappingDocumentFromScene, diagramSelectionNodes } from '../../../../domain/mapping/workspace/mappingDocument';
 import { initialCanvasState } from '../../../../domain/mapping/workspace/mappingWorkspace';
-import { ProjectSourceService } from '../projectSource';
-import { resolveDiagramSource } from '../diagramSource';
+import { DiagramStore } from '../../../../infrastructure/core/persistence/store';
+import { QuickJsAgentRuntime } from '../../../../infrastructure/mapping/agent/execRuntime';
+import { corpusAccess } from '../../../../src/server/app/bootstrap';
+import type { CanvasSessionPort } from '../../../mapping/agent/ports';
 import { AgentDiagrammingSessionService } from '../../../mapping/agent/sessionService';
 import { MappingDiagramService } from '../../../mapping/diagrams/diagramService';
-import { QuickJsAgentRuntime } from '../../../../infrastructure/mapping/agent/execRuntime';
-import type { CanvasSessionPort } from '../../../mapping/agent/ports';
+import { resolveDiagramSource } from '../diagramSource';
+import { ProjectSourceService } from '../projectSource';
 
 const roots: string[] = [];
 afterEach(async () => { await Promise.all(roots.splice(0).map(root => rm(root,{recursive:true,force:true}))); });
@@ -29,13 +29,6 @@ it('isolates same-path source reads, mapped evidence and compactions across repo
   }));
   expect(await store.ensureProject({checkoutRoot:path.join(root,'b'),repositoryIdentity:'repo-b'})).toEqual(project);
   expect(project).not.toHaveProperty('corpus');
-  const promotion = {projectId:project.id,source:sources[0],handle:'source',name:'Source',viewKind:'diagram' as const,representationKind:'diagram' as const,
-    ascii:'Source',asciiSha256:'hash',mappings:[],evidence:{},provenance:{diagramSetId:'set-a',artifactId:'artifact-a'},makeActive:false};
-  const first=await store.projectCatalogs.promoteRepresentation(promotion);
-  const again=await store.projectCatalogs.promoteRepresentation(promotion);
-  expect(again.representation.currentRevisionId).toBe(first.representation.currentRevisionId);
-  expect(again.catalog.revisions[first.representation.currentRevisionId]).toEqual(first.catalog.revisions[first.representation.currentRevisionId]);
-  expect(again.catalog.revisions[first.representation.currentRevisionId]).not.toHaveProperty('source');
   const controller = new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('Canvas')),initialCanvasState());
   for (const [i,source] of sources.entries()) controller.transact(controller.getSnapshot().version,[{
     method:'diagram-create',id:`repo-${i}`,ascii:`Root ${i}\n+-- same`,structureKind:'tree',source,

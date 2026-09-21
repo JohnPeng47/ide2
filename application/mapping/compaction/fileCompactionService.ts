@@ -1,6 +1,6 @@
-import { resolveDiagramSource } from '../../core/source/diagramSource';
 import type { FileCompactionPrompts, FileCompactionSource } from "../../../domain/mapping/compaction/validation";
 import { compactionSnapshot } from "../../../domain/mapping/compaction/validation";
+import { resolveDiagramSource } from '../../core/source/diagramSource';
 import type { FileCompactionRepository } from "./repository";
 
 import { randomUUID } from "node:crypto";
@@ -13,7 +13,7 @@ import { sha256 } from "../../core/agents/hash";
 import type { FileCompactionEvent, FileCompactionRequest, FileCompactionResult, FileCompactionStage } from "../../../domain/mapping/compaction/fileCompaction";
 
 import { runAgentWorkflow } from "../../core/agents/agentWorkflow";
-import type { CoreApplication } from "../../core/application";
+import type { CoreContext } from "../../core/context";
 
 import type { FileCompactionRuntime, FileCompactionSession } from "./agent";
 import { createFileCompactionWorkflow } from "./fileCompactionWorkflow";
@@ -31,7 +31,7 @@ interface PreparedCompaction {
 export class FileCompactionService {
   private readonly active = new Map<string, AbortController>();
   constructor(
-    private readonly application: CoreApplication,
+    private readonly application: CoreContext,
     private readonly runtime: FileCompactionRuntime,
     private readonly store: FileCompactionRepository,
     private readonly settings: {

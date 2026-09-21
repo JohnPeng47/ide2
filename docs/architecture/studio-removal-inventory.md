@@ -1,10 +1,12 @@
+Execution status: the source removal is implemented in `worktree/mapping-only`. `yes` paths are removed; `maybe` paths retain Mapping responsibilities. Legacy source registrations migrate into project metadata, and catalog provenance remains readable. Persisted user data and the staged vendored repository are preserved. See [validation results](studio-removal-validation.md). The table below records the pre-removal dependency analysis.
+
 Studio / Experiment removal inventory, reviewed 2026-09-21 against the current working tree, including staged Mapping change-session work.
 
 `yes` means the listed implementation is specific to Studio/Experiments and has no Mapping feature responsibility. Delete it as part of the coordinated removal, including its callers/imports and dedicated tests. It does not mean deleting the path alone will leave the build passing.
 
 `maybe` means the file/folder also supports Mapping, or combines Studio behavior with shared infrastructure. Retain the Mapping portion and remove/extract the Studio portion; do not delete the whole path as listed.
 
-Folder rows include their contained tests unless stated otherwise. Companion tests explicitly listed below belong to the same classification. This is an inventory only; no implementation or persisted user data has been removed.
+Folder rows include their contained tests unless stated otherwise. Companion tests explicitly listed below belong to the same classification. The table describes the baseline before removal. Persisted user data is not a deletion target.
 
 | File / folder | Delete? | Responsibility and dependency evidence |
 | --- | --- | --- |

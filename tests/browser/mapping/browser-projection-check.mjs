@@ -594,7 +594,7 @@ try {
     assert.equal(saved.revisions[targetRevision.id].ascii, targetRevision.ascii);
     assert.deepEqual(errors, []);
   });
-  console.log("projection browser check passed: retained source panes, exact source highlights, Studio compaction folds and node expansion, file switching, stale/missing source and retry, source view save/reload, Ctrl-selection, retained groups, Escape, stacked/chained panes, edge connectors, recursive collapse, saved form drafts/viewport, workspace reload, and revision validation");
+  console.log("projection browser check passed: retained source panes, exact source highlights, source compaction folds and node expansion, file switching, stale/missing source and retry, source view save/reload, Ctrl-selection, retained groups, Escape, stacked/chained panes, edge connectors, recursive collapse, saved form drafts/viewport, workspace reload, and revision validation");
 } finally {
   if (server?.exitCode === null) {
     server.kill("SIGTERM");

@@ -3,9 +3,10 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, expect, it } from "vitest";
-import { projectCompactions } from "../../../../domain/core/representations/compactionProjection";
 import { projectSelection } from "../../../../domain/core/diagrams/diagramProjection";
 import { singleDiagramScene } from "../../../../domain/core/diagrams/projectDiagramCanvas";
+import { projectCompactions } from "../../../../domain/core/representations/compactionProjection";
+import { saveDiagramFixture } from '../../../../tests/support/mappingDiagram';
 import type { SaveProjectedTreeInput } from "../../persistence/projectCatalogStore";
 import { ProjectCatalogStore } from "../../persistence/projectCatalogStore";
 
@@ -22,14 +23,13 @@ async function fixture() {
       endLine: 1, originalLines: ["export function source() {}"]
     }]
   }]));
-  const source = await db.promoteRepresentation({
-    projectId: "project-test", handle: "source", name: "Source", viewKind: "diagram",
-    representationKind: "diagram", ascii, asciiSha256: createHash("sha256").update(ascii).digest("hex"), evidence,
+  const source = await saveDiagramFixture(db, {
+    projectId: "project-test", name: "Source",
+    representationKind: "diagram", ascii, evidence,
     mappings: ["a", "b", "c"].map((id, i) => ({
       id: `m-${id}`, evidenceId: id, sourceRangeId: `range-${id}`, line: i + 1,
       startColumn: 1, endColumn: ascii.split("\n")[i].length
-    })), provenance: { diagramSetId: "set-test", artifactId: "diagram-test" }, makeActive: true
-  });
+    })),});
   const input = {
     sourceRepresentationId: source.representation.id, sourceRevisionId: source.representation.currentRevisionId,
     name: "Detailed calls", ascii: "Calls\n|\n+-- shared()\n|   \\-- detail\n\\-- gamma()",
@@ -43,7 +43,7 @@ it("atomically persists a call tree and OR links, preserving source and active p
   const result = await db.saveProjectedTree("project-test", input);
   const loaded = await new ProjectCatalogStore(db.storeRoot).loadRepresentationCatalog("project-test");
   expect(loaded.activeByKind).toEqual(source.catalog.activeByKind);
-  expect(loaded.revisions[input.sourceRevisionId]).toMatchObject(source.catalog.revisions[input.sourceRevisionId]);
+  expect(loaded.revisions[input.sourceRevisionId]).toEqual(JSON.parse(JSON.stringify(source.catalog.revisions[input.sourceRevisionId])));
   const p = loaded.projections![result.projection.id];
   const target = loaded.revisions[p.targetRevisionId];
   expect(target.representationKind).toBe("tree");

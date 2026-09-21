@@ -1,25 +1,17 @@
-import { sourceBindingFromLocation } from '../../../domain/core/diagrams/diagram';
-import {
-  mkdir,
-  rename
-} from "node:fs/promises";
 import path from "node:path";
 import type { RepositoryLocation } from "../../../application/core/corpus/location";
 import {
   SCHEMA_VERSION,
   assertSafeId,
-  type CodeEntitiesSetRecord,
-  type DiagramSetRecord,
-  type DiagramViewKind,
   type ProjectRecord
 } from "../../../domain/core/records/domain";
 import type { PersistenceContext } from './context';
-import { entitiesPath, projectPath, setPath, setRoot } from './paths';
-import { makeId, normalizedProject, nowIso, readJson, readJsonIfExists, writeJsonAtomic } from './shared';
+import { projectPath } from './paths';
+import { makeId, normalizedProject, nowIso, readJsonIfExists, writeJsonAtomic } from './shared';
 
 export async function ensureProject(context: PersistenceContext, location: RepositoryLocation): Promise<ProjectRecord> {
   const existing = await readJsonIfExists<ProjectRecord>(projectPath(context));
-  if (existing) return normalizedProject(existing);
+  if (existing) return (await loadProject(context))!;
   const domainProfileId = location.domainProfileId ?? "source-code";
   const timestamp = nowIso();
   const project: ProjectRecord = {
@@ -27,7 +19,7 @@ export async function ensureProject(context: PersistenceContext, location: Repos
     id: makeId("project"),
     name: path.basename(location.checkoutRoot),
     defaultDomainProfileId: domainProfileId,
-    diagramSetIds: [],
+    sources: [],
     createdAt: timestamp,
     updatedAt: timestamp
   };
@@ -35,109 +27,26 @@ export async function ensureProject(context: PersistenceContext, location: Repos
   return project;
 }
 
-export async function createDiagramSet(context: PersistenceContext, input: {
-  project: ProjectRecord;
-  name: string;
-  initialPrompt: string;
-  location: RepositoryLocation;
-  creationMode?: "generate" | "materialized";
-}): Promise<{ diagramSet: DiagramSetRecord; codeEntities: CodeEntitiesSetRecord }> {
-  const timestamp = nowIso();
-  const setId = makeId("set");
-  const entitySetId = makeId("entities");
-  const diagramSet: DiagramSetRecord = {
-    schemaVersion: SCHEMA_VERSION,
-    id: setId,
-    projectId: input.project.id,
-    name: input.name.trim(),
-    initialPrompt: input.initialPrompt.trim(),
-    source: sourceBindingFromLocation(input.location),
-    sourceCheckoutRoot: input.location.checkoutRoot,
-    gitRevision: input.location.gitRevision,
-    codeEntitiesSetId: entitySetId,
-    featuredViewIds: {},
-    diagramIds: [],
-    diagramComponentIds: [],
-    generationBatchIds: [],
-    agentRunIds: [],
-    editSessionIds: [],
-    readiness: "collecting",
-    creationMode: input.creationMode ?? "generate",
-    createdAt: timestamp,
-    updatedAt: timestamp
-  };
-  const codeEntities: CodeEntitiesSetRecord = {
-    schemaVersion: SCHEMA_VERSION,
-    id: entitySetId,
-    diagramSetId: setId,
-    revision: 1,
-    status: "collecting",
-    entities: []
-  };
-  await writeJsonAtomic(entitiesPath(context, setId), codeEntities);
-  await writeJsonAtomic(setPath(context, setId), diagramSet);
-  const project = {
-    ...input.project,
-    diagramSetIds: [...input.project.diagramSetIds, setId],
-    updatedAt: timestamp
-  };
-  await writeJsonAtomic(projectPath(context), project);
-  return { diagramSet, codeEntities };
-}
-
-export async function moveDiagramSetToTrash(context: PersistenceContext, setId: string): Promise<string> {
-  assertSafeId(setId, "DiagramSet id");
-  const project = await loadProject(context);
-  if (!project || !project.diagramSetIds.includes(setId)) {
-    throw new Error(`unknown DiagramSet: ${setId}`);
-  }
-  await loadDiagramSet(context, setId);
-  const deletedAt = nowIso();
-  const activeRoot = setRoot(context, setId);
-  const trashRoot = path.join(
-    context.storeRoot,
-    "trash",
-    "diagram-sets",
-    `${setId}-${deletedAt.replace(/[:.]/g, "-")}`
-  );
-  await mkdir(path.dirname(trashRoot), { recursive: true });
-  const updatedProject = {
-    ...project,
-    diagramSetIds: project.diagramSetIds.filter((id) => id !== setId),
-    updatedAt: deletedAt
-  };
-  await writeJsonAtomic(projectPath(context), updatedProject);
-  try {
-    await rename(activeRoot, trashRoot);
-  } catch (error) {
-    await writeJsonAtomic(projectPath(context), project).catch(() => undefined);
-    throw error;
-  }
-  return trashRoot;
-}
-
+/** Preserve source access for catalogs that previously relied on legacy set registration.
+ * Read only source metadata; never change or delete the original records. */
 export async function loadProject(context: PersistenceContext): Promise<ProjectRecord | null> {
-  const project = await readJsonIfExists<ProjectRecord>(projectPath(context));
-  return project ? normalizedProject(project) : null;
-}
-
-export async function loadDiagramSet(context: PersistenceContext, setId: string): Promise<DiagramSetRecord> {
-  const stored = await readJson<DiagramSetRecord & {
-    diagramComponentIds?: string[];
-    editSessionIds?: string[];
-    featuredViewIds?: Partial<Record<DiagramViewKind, string>>;
-  }>(setPath(context, setId));
-  if (Array.isArray(stored.diagramComponentIds)
-    && Array.isArray(stored.editSessionIds)
-    && stored.featuredViewIds) {
-    return stored as DiagramSetRecord;
+  const project = await readJsonIfExists<ProjectRecord & { diagramSetIds?: string[] }>(projectPath(context));
+  if (!project) return null;
+  if (project.sources === undefined && project.diagramSetIds?.length) {
+    const sources = new Map<string, import('../../../domain/core/diagrams/diagram').DiagramSourceBinding>();
+    for (const id of project.diagramSetIds) {
+      assertSafeId(id, 'legacy source registration id');
+      const record = await readJsonIfExists<{ source?: import('../../../domain/core/diagrams/diagram').DiagramSourceBinding }>(
+        path.join(context.storeRoot, 'diagram-sets', id, 'diagram-set.json'));
+      if (!record?.source) continue;
+      const previous = sources.get(record.source.sourceId);
+      if (previous && (previous.corpus.root !== record.source.corpus.root || previous.corpus.kind !== record.source.corpus.kind || previous.repositoryIdentity !== record.source.repositoryIdentity)) {
+        throw new Error('Conflicting legacy source identity');
+      }
+      sources.set(record.source.sourceId, record.source);
+    }
+    project.sources = [...sources.values()];
+    await writeJsonAtomic(projectPath(context), project);
   }
-  const normalized: DiagramSetRecord = {
-    ...stored,
-    featuredViewIds: stored.featuredViewIds ?? {},
-    diagramComponentIds: stored.diagramComponentIds ?? [],
-    editSessionIds: stored.editSessionIds ?? []
-  };
-  await writeJsonAtomic(setPath(context, setId), normalized);
-  return normalized;
+  return normalizedProject(project);
 }

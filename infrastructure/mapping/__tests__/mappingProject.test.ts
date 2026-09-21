@@ -1,10 +1,10 @@
-import { createHash } from "node:crypto";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, expect, it } from "vitest";
 import { updateGridBox } from "../../../domain/core/diagrams/lineGrid";
 import { projectCanvasSnapshot, sceneFromRevision, singleDiagramScene } from "../../../domain/core/diagrams/projectDiagramCanvas";
+import { saveDiagramFixture } from '../../../tests/support/mappingDiagram';
 import { ProjectCatalogStore } from "../../core/persistence/projectCatalogStore";
 import { FakeMappingAgentRuntime } from "../agents/selection/agentRuntime";
 
@@ -46,12 +46,10 @@ it("converts a legacy ASCII project diagram in place and resolves prompt evidenc
       summary: "Does work", sourceRanges: [{ id: "range-worker", path: "worker.ts", startLine: 1, endLine: 1, originalLines: ["export function worker() {}"] }]
     }
   };
-  const promoted = await db.promoteRepresentation({
-    projectId: "project-one", name: "Worker", handle: "worker", viewKind: "diagram", representationKind: "diagram",
-    ascii, asciiSha256: createHash("sha256").update(ascii).digest("hex"), evidence,
-    mappings: [{ id: "mapping-worker", evidenceId: "evidence-worker", sourceRangeId: "range-worker", line: 1, startColumn: 1, endColumn: 6 }],
-    provenance: { diagramSetId: "set-one", artifactId: "diagram-one" }, makeActive: true
-  });
+  const promoted = await saveDiagramFixture(db, {
+    projectId: "project-one", name: "Worker", representationKind: "diagram",
+    ascii, evidence,
+    mappings: [{ id: "mapping-worker", evidenceId: "evidence-worker", sourceRangeId: "range-worker", line: 1, startColumn: 1, endColumn: 6 }],});
   const legacy = promoted.catalog.revisions[promoted.representation.currentRevisionId];
   delete legacy.content;
   await db.saveRepresentationCatalog(promoted.catalog);

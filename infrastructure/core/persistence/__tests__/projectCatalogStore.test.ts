@@ -1,4 +1,3 @@
-import { ProjectDiagramConflict } from "../../../../domain/core/representations/errors";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -8,7 +7,9 @@ import {
   expect,
   it
 } from "vitest";
-import { ProjectCatalogStore, type ProjectRepresentationPromotionDraft } from "../projectCatalogStore";
+import { ProjectDiagramConflict } from "../../../../domain/core/representations/errors";
+import { saveDiagramFixture, type MappingDiagramFixture } from '../../../../tests/support/mappingDiagram';
+import { ProjectCatalogStore } from "../projectCatalogStore";
 
 const roots: string[] = [];
 
@@ -21,37 +22,33 @@ describe("ProjectCatalogStore", () => {
     const root = await mkdtemp(path.join(tmpdir(), "mapping-correction-"));
     roots.push(root);
     const store = new ProjectCatalogStore(root);
-    const draft: ProjectRepresentationPromotionDraft = {
-      projectId: "project-one", representationId: "representation-one", handle: "wrapper", name: "Wrapper",
-      viewKind: "diagram", representationKind: "diagram", ascii: "Wrapper", asciiSha256: "a".repeat(64),
+    const draft: MappingDiagramFixture = {
+      projectId: "project-one", name: "Wrapper", representationKind: "diagram", ascii: "Wrapper",
       evidence: {
         wrapper: {
           id: "wrapper", handle: "wrapper", label: "Wrapper", category: "operation", summary: "UI wrapper",
           sourceRanges: [{ id: "range-one", path: "component.tsx", startLine: 1, endLine: 1, originalLines: ["const projection = compute();"] }]
         }
       },
-      mappings: [{ id: "map-one", evidenceId: "wrapper", sourceRangeId: "range-one", line: 1, startColumn: 1, endColumn: 7 }],
-      provenance: { diagramSetId: "set-one", artifactId: "diagram-one" }, makeActive: false
-    };
-    const first = await store.promoteRepresentation(draft);
+      mappings: [{ id: "map-one", evidenceId: "wrapper", sourceRangeId: "range-one", line: 1, startColumn: 1, endColumn: 7 }],};
+    const first = await saveDiagramFixture(store, draft);
     const firstId = first.representation.currentRevisionId;
-    const corrected = structuredClone(draft);
+    const corrected = { ...structuredClone(draft), representationId: first.representation.id };
     corrected.expectedRevisionId = firstId;
-    corrected.evidence.wrapper.sourceRanges[0] = { id: "range-one", path: "component.tsx", startLine: 20, endLine: 20, originalLines: ['<aside className="companion" />'] };
-    const second = await store.promoteRepresentation(corrected);
+    corrected.evidence!.wrapper.sourceRanges[0] = { id: "range-one", path: "component.tsx", startLine: 20, endLine: 20, originalLines: ['<aside className="companion" />'] };
+    const second = await saveDiagramFixture(store, corrected);
     const secondId = second.representation.currentRevisionId;
     expect(secondId).not.toBe(firstId);
     expect(second.catalog.revisions[firstId].evidence.wrapper.sourceRanges[0].startLine).toBe(1);
     expect(second.catalog.revisions[secondId].evidence.wrapper.sourceRanges[0].originalLines).toEqual(['<aside className="companion" />']);
-    await expect(store.promoteRepresentation(corrected)).rejects.toBeInstanceOf(ProjectDiagramConflict);
+    await expect(saveDiagramFixture(store, corrected)).rejects.toBeInstanceOf(ProjectDiagramConflict);
     corrected.expectedRevisionId = secondId;
-    expect((await store.promoteRepresentation(corrected)).representation.currentRevisionId).toBe(secondId);
-    corrected.mappings[0].endColumn = 6;
-    const third = await store.promoteRepresentation(corrected);
+    corrected.mappings![0].endColumn = 6;
+    const third = await saveDiagramFixture(store, corrected);
     expect(third.representation.revisionIds).toHaveLength(3);
     expect(third.catalog.revisions[third.representation.currentRevisionId].mappings[0].endColumn).toBe(6);
   });
-  it("shares one active file compaction across Project generation sessions", async () => {
+  it("shares one active file compaction across Mapping diagrams", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "new-diagram-project-catalog-"));
     roots.push(root);
     const store = new ProjectCatalogStore(path.join(root, ".diagrams"));
@@ -86,18 +83,15 @@ describe("ProjectCatalogStore", () => {
     await expect(store.loadCompactionCatalog("project-one")).resolves.toEqual(second.catalog);
   });
 
-  it("persists settled representation snapshots independently from their source session", async () => {
+  it("persists settled representation snapshots with their source evidence", async () => {
     const root = await mkdtemp(path.join(tmpdir(), "new-diagram-representation-catalog-"));
     roots.push(root);
     const store = new ProjectCatalogStore(path.join(root, ".diagrams"));
-    const promoted = await store.promoteRepresentation({
+    const promoted = await saveDiagramFixture(store, {
       projectId: "project-one",
-      handle: "settled-architecture",
       name: "Settled architecture",
-      viewKind: "diagram",
       representationKind: "diagram",
       ascii: "architecture",
-      asciiSha256: "a".repeat(64),
       evidence: {
         "evidence-one": {
           id: "evidence-one",
@@ -121,17 +115,12 @@ describe("ProjectCatalogStore", () => {
         line: 1,
         startColumn: 1,
         endColumn: 12
-      }],
-      provenance: { diagramSetId: "set-source", artifactId: "diagram-source" },
-      makeActive: true
-    });
+      }],});
 
     const catalog = await store.loadRepresentationCatalog("project-one");
-    expect(catalog.activeByKind.diagram).toBe(promoted.representation.id);
+    expect(catalog.activeByKind).toEqual({});
     expect(catalog.revisions[promoted.representation.currentRevisionId]).toMatchObject({
-      ascii: "architecture",
-      provenance: { diagramSetId: "set-source", artifactId: "diagram-source" }
-    });
+      ascii: "architecture",});
 
     const archived = await store.archiveRepresentation("project-one", promoted.representation.id);
     expect(archived.activeByKind.diagram).toBeUndefined();
@@ -143,21 +132,19 @@ it("serializes revision checks with writes when two updates share the same base"
   const root = await mkdtemp(path.join(tmpdir(), "catalog-concurrent-revisions-"));
   roots.push(root);
   const store = new ProjectCatalogStore(root);
-  const draft: ProjectRepresentationPromotionDraft = {
-    projectId: "project-one", representationId: "representation-one", handle: "root", name: "Root",
-    viewKind: "diagram", representationKind: "diagram", ascii: "Root", asciiSha256: "a".repeat(64),
-    evidence: {}, mappings: [], provenance: { diagramSetId: "set-one", artifactId: "diagram-one" }, makeActive: false
-  };
-  const initial = await store.promoteRepresentation(draft);
+  const draft: MappingDiagramFixture = {
+    projectId: "project-one", name: "Root", representationKind: "diagram", ascii: "Root",
+    evidence: {}, mappings: [],};
+  const initial = await saveDiagramFixture(store, draft);
   const base = initial.representation.currentRevisionId;
   const results = await Promise.allSettled([
-    store.promoteRepresentation({ ...draft, expectedRevisionId: base, ascii: "First", asciiSha256: "b".repeat(64) }),
-    store.promoteRepresentation({ ...draft, expectedRevisionId: base, ascii: "Second", asciiSha256: "c".repeat(64) })
+    saveDiagramFixture(store, { ...draft, representationId: initial.representation.id, expectedRevisionId: base, ascii: "First",}),
+    saveDiagramFixture(store, { ...draft, representationId: initial.representation.id, expectedRevisionId: base, ascii: "Second",})
   ]);
   expect(results.filter(result => result.status === "fulfilled")).toHaveLength(1);
   const rejected = results.find(result => result.status === "rejected");
   expect(rejected?.status === "rejected" && rejected.reason).toBeInstanceOf(ProjectDiagramConflict);
   const catalog = await store.loadRepresentationCatalog(draft.projectId);
-  expect(catalog.representations[draft.representationId!].revisionIds).toHaveLength(2);
+  expect(catalog.representations[initial.representation.id].revisionIds).toHaveLength(2);
   expect(catalog.revisions[base]).toEqual(initial.catalog.revisions[base]);
 });

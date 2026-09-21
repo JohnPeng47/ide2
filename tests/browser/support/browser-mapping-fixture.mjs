@@ -1,9 +1,9 @@
 import { execFileSync } from "node:child_process";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
 const packageRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../../..');
-/** Seed the old overview as a real project diagram for interaction regression tests. */
+/** Seed historical diagram shapes with deterministic evidence, independent of deleted source files. */
 export async function seedMappingFixture(root, diagram) {
   execFileSync("git", ["init", "-q", root]);
   const { ascii, nodes } = diagram ?? JSON.parse(execFileSync(process.execPath, [path.join(packageRoot, "node_modules/tsx/dist/cli.mjs"), "-e",
@@ -15,10 +15,9 @@ export async function seedMappingFixture(root, diagram) {
   for (const node of nodes) {
     const sourceRanges = await Promise.all(node.sourceRanges.map(async (range, index) => ({
       ...range, id: `${node.id}-range-${index + 1}`,
-      originalLines: (await readFile(path.join(packageRoot, range.path), "utf8").catch((error) => {
-        if (error.code !== "ENOENT") throw error;
-        return execFileSync("git", ["show", `HEAD:${range.path}`], { cwd: packageRoot, encoding: "utf8" });
-      })).split("\n").slice(range.startLine - 1, range.endLine)
+      originalLines: Array.from({ length: range.endLine - range.startLine + 1 }, (_, offset) =>
+        `// ${node.label}: fixture source line ${range.startLine + offset}`)
+
     })));
     evidence[node.id] = { id: node.id, handle: node.id, label: node.label, category: "operation", summary: node.label, sourceRanges };
     sourceRanges.forEach((range, index) => mappings.push({ id: `${node.id}:range-${index+1}`, evidenceId: node.id, sourceRangeId: range.id, ...node.head }));

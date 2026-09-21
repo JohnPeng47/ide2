@@ -11,18 +11,15 @@ import { sendEvent, sendJson } from "../http/http";
 export function diagramApi(
   projectRoot: string,
   diagramsDirectory = ".diagrams",
-  experimentsRoot = `${projectRoot}/.datasets`,
-  datasetCollectionsRoot = `${experimentsRoot}/diagram-collections`,
   configuredDomainProfileId: BuiltInDomainProfileId | undefined = isBuiltInDomainProfileId(
     process.env.NEW_DIAGRAM_DOMAIN
   ) ? process.env.NEW_DIAGRAM_DOMAIN : undefined,
   mappingPocSourceRoot = projectRoot,
   options: { lspEnabled?: boolean } = {}
 ): Plugin {
-  const backend = createBackend(projectRoot, diagramsDirectory, experimentsRoot, datasetCollectionsRoot,
+  const backend = createBackend(projectRoot, diagramsDirectory,
     configuredDomainProfileId, mappingPocSourceRoot, options);
   const { routes } = backend;
-  let recovered: Promise<void> | undefined;
   const middleware: Connect.NextHandleFunction = async (request, response, next) => {
     const url = new URL(request.url ?? "/", "http://localhost");
     if (!url.pathname.startsWith("/api/") && !url.pathname.startsWith("/internal/mapping/")) {
@@ -34,7 +31,6 @@ export function diagramApi(
       return sendJson(response, 404, { error: "API route not found" });
     }
     try {
-      await (recovered ??= backend.recover());
       await routes[namespace as keyof typeof routes](request, response, url);
     } catch (error) {
       const message = error instanceof Error ? error.message : "request failed";

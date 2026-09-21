@@ -11,49 +11,11 @@ import {
 import path from "node:path";
 import { promisify } from "node:util";
 import type { RepositoryLocation } from "../../../application/core/corpus/location";
-import { type HighlightRecordV2 } from "../../../domain/core/highlights/highlights";
 import type { BuiltInDomainProfileId } from "../../../domain/core/profiles/domainProfile";
 import {
   SCHEMA_VERSION,
-  type DiagramHighlightRecord,
-  type DiagramRecord,
-  type PlanChange,
-  type PlanCodeEntityCompactionChange,
-  type PlanModifiedDiagramChange,
-  type PlanRecord,
   type ProjectRecord
 } from "../../../domain/core/records/domain";
-
-export type PersistedHighlight = DiagramHighlightRecord | HighlightRecordV2;
-
-export interface PersistedPlanChangeReference {
-  id: string;
-  kind: PlanChange["kind"];
-  mode?: "partial" | "complete";
-  path: string;
-}
-
-export type PersistedPlanManifest = Omit<PlanRecord, "markdown" | "selection" | "changes"> & {
-  markdownPath: "plan.md";
-  selectionPath: "selection.json";
-  changes: PersistedPlanChangeReference[];
-};
-
-export type PersistedModifiedDiagramChange = Omit<
-  PlanModifiedDiagramChange,
-  "baseDiagram" | "outputAscii" | "semanticDiff"
-> & {
-  schemaVersion: typeof SCHEMA_VERSION;
-  baseDiagram: Omit<DiagramRecord, "ascii">;
-  basePath: "base.txt";
-  outputPath: "output.txt";
-  semanticDiffPath?: "semantic-diff.json";
-};
-
-export interface PersistedCompactionArtifact {
-  schemaVersion: typeof SCHEMA_VERSION;
-  compactedSource: PlanCodeEntityCompactionChange["compactedSource"] | null;
-}
 
 export const execFileAsync = promisify(execFile);
 

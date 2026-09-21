@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "build": "tsc --noEmit && vite build",
-    "check:browser": "node tests/browser/studio/browser-check.mjs",
+    "check:browser": "npm run check:mapping",
     "check:canvas": "node tests/browser/core/browser-diagram-canvas-check.mjs",
     "check:source-performance": "npm run build && node tests/performance/browser-source-pane-performance.mjs",
     "check:mapping": "node tests/browser/mapping/browser-mapping-poc-check.mjs",
@@ -18,9 +18,7 @@
     "check:local-chat": "node tests/browser/mapping/browser-local-chat-check.mjs",
     "check:domain-profiles": "node tests/browser/core/browser-domain-profiles-check.mjs",
     "check:markdown": "tsx tests/browser/core/browser-markdown-check.mjs",
-    "check:aux-views": "node tests/browser/core/browser-aux-views-check.mjs",
     "dev": "node scripts/dev/start-server.mjs --host 127.0.0.1",
-    "migrate:plans": "tsx scripts/migrations/migrate-plans.ts",
     "preview": "node scripts/dev/start-server.mjs preview --host 127.0.0.1",
     "test": "vitest run",
     "parse:diagram": "tsx scripts/diagrams/parse-diagram.ts",

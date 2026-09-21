@@ -1,10 +1,12 @@
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:net';
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, expect, it } from 'vitest';
+import { sourceBindingFromLocation } from '../../../../domain/core/diagrams/diagram';
+import { saveDiagramFixture } from '../../../../tests/support/mappingDiagram';
 import { DiagramStore } from '../../persistence/store';
 
 const cleanup: Array<() => Promise<void>> = [];
@@ -30,7 +32,7 @@ async function start(enabled: boolean) {
   await mkdir(path.join(root, '.git'));
   const store = new DiagramStore(root);
   const project = await store.ensureProject({ checkoutRoot: root, repositoryIdentity: path.join(root, '.git') });
-  await store.createDiagramSet({project,location:{checkoutRoot:root,repositoryIdentity:path.join(root,'.git')},name:'Source',initialPrompt:'Source'});
+  await saveDiagramFixture(store.projectCatalogs, { projectId: project.id, name: 'Source', ascii: 'Source', source: sourceBindingFromLocation({checkoutRoot:root,repositoryIdentity:path.join(root,'.git')}) });
   const source = 'function answer() { return 42; }\nanswer();\n';
   await writeFile(path.join(root, 'main.ts'), source);
   const port = await new Promise<number>(resolve => { const s = createServer(); s.listen(0, '127.0.0.1', () => { const port = (s.address() as { port: number }).port; s.close(() => resolve(port)); }); });

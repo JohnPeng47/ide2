@@ -84,13 +84,10 @@ export function buildProjectionTree(revision: ProjectRepresentationRevisionRecor
     revision: { artifactId: revision.id, asciiSha256: revision.asciiSha256 },
     ascii: revision.ascii,
     codeEntityMap: {
-      schemaVersion: 1,
-      diagramSetId: revision.projectId,
-      artifactKind: "diagram",
+
       artifactId: revision.id,
       asciiSha256: revision.asciiSha256,
-      producedByRunId: revision.id,
-      createdAt: revision.createdAt,
+
       mappings: revision.mappings.map((mapping) => ({
         id: mapping.id,
         entityId: mapping.evidenceId,

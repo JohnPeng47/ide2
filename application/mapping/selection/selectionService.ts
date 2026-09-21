@@ -1,14 +1,14 @@
 import { createDiagram, type DiagramSourceContext } from '../../../domain/core/diagrams/diagram';
-import { resolveDiagramSource } from '../../core/source/diagramSource';
 import type { DiagramElementMapping } from '../../../domain/core/records/domain';
 import { ProjectDiagramConflict } from '../../../domain/core/representations/errors';
 import type { ProjectRepresentationEvidenceRecord } from '../../../domain/core/representations/projectCatalog';
 import { validateMappingPocMappings } from '../../../domain/mapping/selection/mappingPocPrompt';
 import type { DiagramRepository } from '../../core/ports/diagramRepository';
+import { resolveDiagramSource } from '../../core/source/diagramSource';
 import type { MappingAgentRuntime } from './agent';
 
 export class SelectionService {
-  constructor(private readonly projects: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs' | 'loadDiagramSet'>,
+  constructor(private readonly projects: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs'>,
     private readonly runtime: MappingAgentRuntime, private readonly sourceRoot: string) { }
 
   async prepare(body: Record<string, unknown>) {

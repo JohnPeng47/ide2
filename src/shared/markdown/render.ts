@@ -18,7 +18,7 @@ markdownRenderer.renderer.rules.heading_open = (tokens, index, options, environm
   return `${renderer.renderToken(tokens, index, options)}${marker}`;
 };
 
-/** The same parser/highlighter as Studio documents, without the document shell or required title. */
+/** Shared markdown parser/highlighter without a document shell or required title. */
 export async function renderTerminalMarkdownFragment(
   source: string,
   documentPath = "",

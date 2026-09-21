@@ -79,11 +79,7 @@ try {
     await waitForSelector(cdp,"[data-project-diagram='representation-seed']");
     await waitForSelector(cdp,"[data-selectable-node]");
     assert.equal(await evaluate(cdp,"Boolean(document.querySelector('.mapping-poc-toolbar'))"),false);
-    await fill(cdp, "[aria-label='Diagram name']", "Unsaved name");
-    await click(cdp, ".mapping-poc-header .screen-tabs button:first-child");
-    await waitFor(() => dialogs.length === 1);
-    assert.equal(await evaluate(cdp, "document.querySelector('[aria-label=\"Diagram name\"]').value"), "Unsaved name");
-    await fill(cdp, "[aria-label='Diagram name']", "Worker overview");
+    assert.equal(await evaluate(cdp, "document.querySelectorAll('.screen-tabs button').length"), 1);
     const paneBefore=await evaluate(cdp,"(()=>{const r=document.querySelector('.mapping-floating-pane').getBoundingClientRect();return {x:r.x,y:r.y,width:r.width};})()");
     await click(cdp,".mapping-submenu button:first-of-type");
     await waitForSelector(cdp,".mapping-create-dialog");
@@ -134,43 +130,14 @@ try {
     assert.equal(saved.revisions["revision-seed"].ascii,"Worker\n +-- task");
     await cdp.send("Page.reload",{ignoreCache:true});
     await waitFor(async()=>await evaluate(cdp,"document.querySelector('.mapping-poc-ascii')?.textContent.includes('[edited: Explain worker]')"));
-    // New project diagrams remain available in Studio even without a generation session.
-    await click(cdp,".mapping-poc-header .screen-tabs button:first-child");
-    await waitForSelector(cdp,".representations-panel");
-    assert.equal(await evaluate(cdp,"document.querySelectorAll('.representation-row').length"),2);
-    // Without DiagramSets, preserve Studio's original empty state and keep the
-    // saved-diagram list at its content height instead of a full viewport tall.
-    async function checkEmptyStudioLayout() {
-      const layout = await evaluate(cdp, `(() => {
-        const workspace = document.querySelector('.empty-workspace');
-        const panel = workspace?.querySelector('.representations-panel');
-        const rows = [...document.querySelectorAll('.representation-row')];
-        const mappingButton = workspace?.querySelector(':scope > button');
-        const rect = element => element.getBoundingClientRect();
-        return workspace && panel && mappingButton && rows.length ? {
-          heading: workspace.querySelector('h1')?.textContent,
-          trailingSpace: rect(panel).bottom - rect(rows.at(-1)).bottom,
-          buttonGap: rect(mappingButton).top - rect(panel).bottom,
-          horizontalOverflow: workspace.scrollWidth - workspace.clientWidth,
-          lastRowVisible: rect(rows.at(-1)).bottom <= innerHeight,
-          headingVisible: rect(workspace.querySelector('h1')).bottom <= innerHeight
-        } : null;
-      })()`);
-      assert.ok(layout, 'Original Studio empty state and saved diagrams must render together');
-      assert.equal(layout.heading, 'Create your first DiagramSet.');
-      assert.ok(layout.trailingSpace >= 0 && layout.trailingSpace <= 24, `Diagram list stretched: ${JSON.stringify(layout)}`);
-      assert.ok(layout.buttonGap >= 0 && layout.buttonGap <= 24, `Unexpected gap: ${JSON.stringify(layout)}`);
-      assert.ok(layout.horizontalOverflow <= 1);
-      assert.ok(layout.lastRowVisible && layout.headingVisible);
+    // Root and old bookmarks all reopen the Mapping workspace and saved catalog.
+    for (const pathname of ['/', '/experiments', '/mapping']) {
+      await cdp.send('Page.navigate', { url: url + pathname });
+      await waitForSelector(cdp, `[data-project-diagram="${secondId}"]`);
+      assert.equal(await evaluate(cdp, "Boolean(document.querySelector('.mapping-poc-header'))"), true);
+      assert.equal(await evaluate(cdp, "document.querySelectorAll('.screen-tabs button').length"), 1);
     }
-    await checkEmptyStudioLayout();
-    await captureScreenshot(cdp, { output: path.join(temp, 'studio-empty-wide.png') });
-    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: false });
-    await checkEmptyStudioLayout();
-    await captureScreenshot(cdp, { output: path.join(temp, 'studio-empty-narrow.png') });
-    await cdp.send('Emulation.clearDeviceMetricsOverride');
-    const studioButton=await evaluate(cdp,"Array.from(document.querySelectorAll('.representation-row')).findIndex(e=>e.textContent.includes('Second diagram'))+1");
-    await click(cdp,`.representation-row:nth-child(${studioButton})`);
+    await click(cdp, `[data-project-diagram="${secondId}"]`);
     await waitForSelector(cdp,".mapping-floating-pane");
     await captureScreenshot(cdp,{output:process.env.MAPPING_SCREENSHOT??path.join(temp,"mapping.png")});
     // Save both open diagrams, then delete an inactive one without navigating to it.
@@ -228,7 +195,7 @@ try {
     assert.equal(await evaluate(cdp, "document.querySelectorAll('.mapping-document-view').length"), 0);
     assert.deepEqual(errors,[]);
   });
-  console.log("project Mapping browser check passed: create, save, reload, grouped scene, navigation, internal prompt across a switch, Studio catalog, delete cancellation/failure/retry, inactive/active/last deletion, workspace restore");
+  console.log("project Mapping browser check passed: create, save, reload, grouped scene, navigation, internal prompt across a switch, Mapping-only entry paths, delete cancellation/failure/retry, inactive/active/last deletion, workspace restore");
 } finally {
   if(server?.exitCode===null) { server.kill("SIGTERM"); await new Promise(resolve=>server.once("exit",resolve)); }
   await rm(temp,{recursive:true,force:true});

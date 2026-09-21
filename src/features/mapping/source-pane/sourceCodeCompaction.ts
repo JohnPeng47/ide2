@@ -1,7 +1,7 @@
 import type { CompactedSource, CompactedSourceNode } from '../../../../domain/core/records/domain';
 import type { ProjectedFile } from '../../../../domain/mapping/workspace/displayModel';
 
-/** Adapt exact projection mappings to the same folding model used by Studio. */
+/** Adapt exact projection mappings to the shared source folding model. */
 export function sourceCodeCompaction(file: ProjectedFile) {
   const lines = file.ascii.split('\n');
   const ranges = new Map<string, { startLine: number; endLine: number; rows: number[] }>();
