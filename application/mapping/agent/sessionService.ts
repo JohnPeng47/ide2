@@ -1,3 +1,4 @@
+import { documentFromRevision } from '../../../domain/core/diagrams/projectDiagramCanvas';
 import type { ChangeSessionService } from '../changes/changeSessionService';
 import { rebaseDiagramJumps } from '../../../domain/core/diagrams/diagramJump';
 import { createDiagram, diagramSource, type Diagram, type DiagramSourceBinding } from '../../../domain/core/diagrams/diagram';
@@ -81,7 +82,7 @@ export class AgentDiagrammingSessionService {
   }
   private async exec(input: ReturnType<typeof agentToolSchemas.exec.parse>) {
     const original = input.sessionId ? await this.snapshot(input.sessionId, input.changeSessionId) : undefined;
-    const shadow = original ? new MappingDocumentController(original.document, original.canvas, original.version, original.cell, original.endpointBounds) : undefined;
+    const shadow = original ? new MappingDocumentController(original.document, original.canvas, original.version, original.cell, original.endpointBounds, original.history) : undefined;
     const operations: DiagramOperation[] = [];
     let createdDocument = false;
     const value = await this.runtime.run(input.code, async (method, args) => {
@@ -167,13 +168,13 @@ export class AgentDiagrammingSessionService {
       const revisionId = input.revisionId ?? representation.currentRevisionId;
       if (!representation.revisionIds.includes(revisionId)) throw new Error('Revision does not belong to representation');
       const revision = catalog.revisions[revisionId];
-      const document = mappingDocumentFromScene(sceneFromRevision(revision), revision.content?.kind === 'mapping-canvas' ? revision.content.edges ?? [] : []);
+      const document = documentFromRevision(revision);
       return { origin: 'saved', representation, revision, nodes: new MappingDocumentController(document, initialCanvasState()).nodes() };
     }
     const hits: unknown[] = [];
     for (const representation of representations) {
       const revision = catalog.revisions[representation.currentRevisionId];
-      const document = mappingDocumentFromScene(sceneFromRevision(revision), revision.content?.kind === 'mapping-canvas' ? revision.content.edges ?? [] : []);
+      const document = documentFromRevision(revision);
       const nodes = new MappingDocumentController(document, initialCanvasState()).nodes();
       const query = (input.query ?? '').toLowerCase();
       for (const node of nodes) if (node.layout === 'grid' && node.content) {
@@ -220,7 +221,7 @@ export class AgentDiagrammingSessionService {
       if (content.jumps) scene.contents.overview.jumps = rebaseDiagramJumps(content.content, scene.contents.overview.content, content.jumps);
     }
     const representationId = input.representationId ?? (!input.nodeId ? snapshot.representationId : undefined);
-    const save: SaveProjectDiagramInput = { name: input.name, scene, edges: input.nodeId ? [] : snapshot.document.edges, representationId,
+    const save: SaveProjectDiagramInput = { name: input.name, history: input.nodeId ? undefined : snapshot.history, scene, edges: input.nodeId ? [] : snapshot.document.edges, representationId,
       expectedRevisionId: input.expectedRevisionId ?? (representationId === snapshot.representationId ? snapshot.revisionId : undefined) };
     const result = await this.diagrams.save(save);
     let displayUpdated = true;

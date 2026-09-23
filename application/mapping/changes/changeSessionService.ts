@@ -1,4 +1,5 @@
-import { patchDiagram } from '../../../domain/core/diagrams/patchDiagram';
+import { CanvasHistory } from '../../../domain/mapping/workspace/canvasHistory';
+import { historyFromRevision, documentFromRevision } from '../../../domain/core/diagrams/projectDiagramCanvas';
 import { diagramContentNodes } from '../../../domain/core/diagrams/diagramContentNodes';
 import { createHash, randomUUID } from 'node:crypto';
 import type { DiagramRepository } from '../../core/ports/diagramRepository';
@@ -9,7 +10,7 @@ import { summarizeChangeSession, type ChangeDocumentState, type ChangeSessionDoc
 import { MappingDocumentController, type DiagramOperation } from '../../../domain/mapping/workspace/mappingDocumentController';
 import { initialCanvasState } from '../../../domain/mapping/workspace/mappingWorkspace';
 import { mappingDocumentFromScene } from '../../../domain/mapping/workspace/mappingDocument';
-import { sceneFromRevision, singleDiagramScene } from '../../../domain/core/diagrams/projectDiagramCanvas';
+import { singleDiagramScene } from '../../../domain/core/diagrams/projectDiagramCanvas';
 import { connectionBox, validateConnectionAnchor } from '../../../domain/core/diagrams/diagramConnection';
 
 export class ChangeSessionService {
@@ -40,8 +41,8 @@ export class ChangeSessionService {
       const catalog = await this.source.projectCatalogs.loadRepresentationCatalog(projectId);
       for (const rep of Object.values(catalog.representations).filter(r => r.status === 'settled')) {
         const revision = catalog.revisions[rep.currentRevisionId];
-        const baseline = { document: mappingDocumentFromScene(sceneFromRevision(revision), revision.content?.kind === 'mapping-canvas' ? revision.content.edges ?? [] : []), canvas: initialCanvasState() };
-        documents.set(rep.id, { id: rep.id, name: rep.name, representationId: rep.id, savedRevisionId: revision.id,
+        const baseline = { document: documentFromRevision(revision), canvas: initialCanvasState() };
+        documents.set(rep.id, { id: rep.id, name: rep.name, representationId: rep.id, savedRevisionId: revision.id, history: new CanvasHistory(baseline.document, baseline.canvas, historyFromRevision(revision)).fork(baseline.canvas),
           baseline, proposed: structuredClone(baseline), version: 0, past: [], future: [] });
       }
       const live = this.bridge.list().filter(c => c.projectId === projectId && (!input.canvasId || c.canvasId === input.canvasId));
@@ -52,6 +53,7 @@ export class ChangeSessionService {
         const baseline = structuredClone({ document: snapshot.document, canvas: snapshot.canvas });
         const key = snapshot.representationId ?? doc.representationId ?? doc.documentId;
         documents.set(key, { id: key, name: snapshot.name, representationId: snapshot.representationId ?? doc.representationId,
+          history: new CanvasHistory(baseline.document, baseline.canvas, snapshot.history).fork(baseline.canvas),
           savedRevisionId: snapshot.revisionId, capturedVersion: snapshot.version, baseline, proposed: structuredClone(baseline), version: 0, past: [], future: [] });
       }
       const result = { changeSessionId: id, canvasId: id, version: 0, documents: [...documents.values()].map(d => ({ documentId: d.id, name: d.name })) };
@@ -81,7 +83,7 @@ export class ChangeSessionService {
   async snapshot(id: string, documentId: string): Promise<LiveDocumentSnapshot> {
     const s = await this.get(id), doc = this.document(s, documentId);
     return { ...structuredClone(doc.proposed), name: doc.name, representationId: doc.representationId, revisionId: doc.savedRevisionId,
-      version: doc.version, canUndo: !!doc.past.length, canRedo: !!doc.future.length } as LiveDocumentSnapshot;
+      version: doc.version, history: doc.history, contextId: doc.history?.contextId, canUndo: !!(doc.history?.past.length || doc.past.length), canRedo: !!(doc.history?.future.length || doc.future.length) } as LiveDocumentSnapshot;
   }
   private async mutate<T>(id: string, requestId: string, signature: string, fn: (s: DiagramChangeSession) => T) {
     return this.serialize(id, async () => {
@@ -98,53 +100,52 @@ export class ChangeSessionService {
   async apply(id: string, documentId: string, version: number, operations: DiagramOperation[], requestId: string) {
     return this.mutate(id, requestId, JSON.stringify({ documentId, version, operations }), s => {
       const doc = this.document(s, documentId);
-      const controller = new MappingDocumentController(doc.proposed.document, doc.proposed.canvas, doc.version);
-      const origins = this.projectOrigins(doc.baseline ? doc.proposed : { ...doc.proposed, nodeOrigins: {} }, operations);
-      const result = controller.transact(version, operations);
-      this.record(doc, { ...controller.getSnapshot(), nodeOrigins: origins });
+      const controller = this.controller(doc);
+      const result = controller.applyUpdate(version, operations);
+      this.record(doc, controller);
       this.refreshChanges(s); s.status = 'draft';
       return result;
     });
   }
-  private projectOrigins(state: ChangeDocumentState, operations: DiagramOperation[]) {
-    let origins = state.nodeOrigins ?? Object.fromEntries(Object.values(state.document.scene.contents)
-      .flatMap(d => diagramContentNodes(d.content).map(n => [n.id, n.id])));
-    const shadow = new MappingDocumentController(state.document, state.canvas);
-    for (const operation of operations) {
-      const before = shadow.getSnapshot().document.scene;
-      shadow.transact(shadow.getSnapshot().version, [operation]);
-      const after = shadow.getSnapshot().document.scene;
-      const next: Record<string,string> = {};
-      for (const diagram of Object.values(after.contents)) {
-        const old = before.contents[diagram.id];
-        const nodes = diagramContentNodes(diagram.content);
-        if (old?.content.revisionId === diagram.content.revisionId) {
-          for (const node of nodes) if (origins[node.id]) next[node.id] = origins[node.id];
-        } else if (old && operation.method === 'patchDiagram') {
-          const box = connectionBox(before, operation.nodeId);
-          if (box?.kind === 'diagram' && box.contentId === diagram.id) for (const [prior, current] of patchDiagram(old, operation.start, operation.end, operation.patch).nodeIds) {
-            if (origins[prior]) next[current] = origins[prior];
-          }
-        } else if (old?.content.ascii === diagram.content.ascii) {
-          for (const node of nodes) {
-            const prior = diagramContentNodes(old.content).find(n => n.line === node.line && n.startColumn === node.startColumn && n.label === node.label);
-            if (prior && origins[prior.id]) next[node.id] = origins[prior.id];
-          }
-        }
+  private controller(doc: ChangeSessionDocument) {
+    // Older proposals are imported once, preserving their available undo states.
+    if (!doc.history) {
+      const baseline = doc.baseline ?? doc.past[0] ?? doc.proposed;
+      const history = new CanvasHistory(baseline.document, baseline.canvas);
+      const record = history.export();
+      const states = [...doc.past, doc.proposed, ...[...doc.future].reverse()];
+      const ids: string[] = [];
+      for (const state of states) {
+        const checkpoint = history.append(state.document, state.canvas);
+        ids.push(checkpoint.id);
       }
-      origins = next;
+      const migrated = history.export();
+      states.forEach((state, index) => {
+        if (state.nodeOrigins) migrated.snapshots[ids[index]].nodeOrigins = structuredClone(state.nodeOrigins);
+      });
+      migrated.baselineId = record.baselineId;
+      migrated.headId = ids[doc.past.length];
+      migrated.past = ids.slice(0, doc.past.length);
+      migrated.future = ids.slice(doc.past.length + 1).reverse();
+      doc.history = migrated;
     }
-    return origins;
+    return new MappingDocumentController(doc.proposed.document, doc.proposed.canvas, doc.version, undefined, undefined, doc.history);
   }
-  private record(doc: ChangeSessionDocument, after: ChangeDocumentState) {
-    doc.past = [...doc.past.slice(-49), doc.proposed]; doc.future = [];
-    doc.proposed = structuredClone({ document: after.document, canvas: after.canvas, nodeOrigins: after.nodeOrigins }); doc.version++;
+  private record(doc: ChangeSessionDocument, controller: MappingDocumentController) {
+    const snapshot = controller.getSnapshot();
+    doc.history = controller.exportHistory();
+    doc.proposed = { document: snapshot.document, canvas: snapshot.canvas,
+      nodeOrigins: doc.history.snapshots[doc.history.headId].nodeOrigins };
+    doc.version = snapshot.version;
+    // Canonical history owns undo/redo; these remain empty for old readers.
+    doc.past = []; doc.future = [];
   }
   async createDocument(id: string, name: string, requestId: string) {
     return this.mutate(id, requestId, JSON.stringify({ name }), s => {
       const documentId = `draft-${randomUUID()}`;
       s.documents.push({ id: documentId, name, baseline: null, proposed: { document: mappingDocumentFromScene(singleDiagramScene('[New diagram]')),
         canvas: initialCanvasState() }, version: 0, past: [], future: [] });
+      this.controller(s.documents[s.documents.length - 1]);
       this.refreshChanges(s); s.status = 'draft'; return { documentId };
     });
   }
@@ -178,12 +179,16 @@ export class ChangeSessionService {
       if (input.action) {
         if (!input.documentId) throw new Error('documentId is required');
         const doc = this.document(s, input.documentId);
-        if (input.action === 'reset') { if (!doc.baseline) throw new Error('A new canvas has no baseline'); this.record(doc, doc.baseline); }
-        else {
-          const target = input.action === 'undo' ? doc.past.pop() : doc.future.pop();
-          if (!target) throw new Error('No history available');
-          (input.action === 'undo' ? doc.future : doc.past).push(doc.proposed); doc.proposed = target; doc.version++;
+        const controller = this.controller(doc);
+        if (input.action === 'reset') {
+          if (!doc.baseline) throw new Error('A new canvas has no baseline');
+          controller.reset();
+        } else {
+          const snapshot = controller.getSnapshot();
+          if (input.action === 'undo' ? !snapshot.canUndo : !snapshot.canRedo) throw new Error('No history available');
+          controller.undo(input.action === 'redo');
         }
+        this.record(doc, controller);
         this.refreshChanges(s); s.status = 'draft';
       }
       if (input.title) s.title = input.title;

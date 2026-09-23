@@ -1,8 +1,10 @@
+import type { CanvasHistoryRecord } from '../../../domain/mapping/workspace/canvasHistory';
+import { historyFromRevision, documentFromRevision } from '../../../domain/core/diagrams/projectDiagramCanvas';
 import { UiTestFramework } from "@new-diagram/ui-test-framework";
 import { useEffect, useRef, useState } from "react";
 import type { CanvasTransform } from "../../../domain/core/diagrams/diagramCanvas";
 import type { DiagramJumpTarget } from '../../../domain/core/diagrams/diagramJump';
-import { sceneFromRevision, singleDiagramScene } from "../../../domain/core/diagrams/projectDiagramCanvas";
+import { singleDiagramScene } from "../../../domain/core/diagrams/projectDiagramCanvas";
 import type { CanvasCommand } from '../../../domain/mapping/agent/contracts';
 import type { LocalChatVariant } from "../../../domain/mapping/chat/localChat";
 import { mappingDocumentFromScene } from "../../../domain/mapping/workspace/mappingDocument";
@@ -39,6 +41,7 @@ const LOCAL_CHAT_UI_CONTROLS = {
 } as const;
 
 interface Draft {
+  history?: CanvasHistoryRecord;
   representationId?: string;
   name: string;
   document: MappingGridDocument;
@@ -60,6 +63,7 @@ export function MappingPocPage() {
   const [viewState, setViewState] = useState(() => new SourcePaneViewState());
   const [workspaceStatus, setWorkspaceStatus] = useState("");
   const [workspaceBusy, setWorkspaceBusy] = useState(false);
+  const [workspaceLoaded, setWorkspaceLoaded] = useState(false);
   const importRef = useRef<HTMLInputElement>(null);
   const [snapshot, setSnapshot] = useState<ProjectRepresentationsSnapshot>();
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
@@ -102,14 +106,14 @@ export function MappingPocPage() {
     const controller = await waitController(id);
     const draft = draftRef.current[id];
     if (!draft) throw new Error('DOCUMENT_UNAVAILABLE');
-    if (command.method === 'snapshot') return { ...structuredClone(controller.getSnapshot()), name: draft.name,
+    if (command.method === 'snapshot') return { ...structuredClone(controller.getSnapshot()), history: controller.exportHistory(), name: draft.name,
       representationId: draft.representationId ?? (id.startsWith('draft-') ? undefined : id), revisionId: draft.revisionId || undefined };
     if (command.method === 'apply') {
       const { requestId, expectedVersion, operations } = command.payload as { requestId: string; expectedVersion: number; operations: DiagramOperation[] };
       const key = `${id}:${requestId}`;
       if (appliedRequests.current.has(key)) return appliedRequests.current.get(key);
       if (draft.busy) throw new Error('DOCUMENT_BUSY');
-      const result = controller.transact(expectedVersion, operations);
+      const result = controller.applyUpdate(expectedVersion, operations);
       appliedRequests.current.set(key, result);
       return result;
     }
@@ -135,9 +139,9 @@ export function MappingPocPage() {
       if (navigate) { const url = new URL(location.href); url.searchParams.set('diagram', id); history.pushState({}, '', url); }
       return existingId;
     }
-    const document = mappingDocumentFromScene(sceneFromRevision(revision), revision.content?.kind === 'mapping-canvas' ? revision.content.edges ?? [] : []);
+    const document = documentFromRevision(revision);
     setDrafts((current) => current[id] ? current : { ...current, [id]: { name: representation.name,
-      document, savedEdges: JSON.stringify(document.edges), savedScene: JSON.stringify(document.scene), savedName: representation.name, revisionId: revision.id, busy: false, canvas: initialCanvasState() } });
+      history: historyFromRevision(revision), document, savedEdges: JSON.stringify(document.edges), savedScene: JSON.stringify(document.scene), savedName: representation.name, revisionId: revision.id, busy: false, canvas: initialCanvasState() } });
     setActiveId(id);
     if (navigate) {
       const url = new URL(location.href); url.searchParams.set("diagram", id);
@@ -180,8 +184,8 @@ export function MappingPocPage() {
     if (!snapshot?.project) throw new Error('Project is not initialized');
     return { schemaVersion: 3, projectId: snapshot.project.id, activeDocumentId: activeId,
       documents: Object.entries(drafts).map(([representationId, draft]) => ({ representationId, savedRepresentationId: draft.representationId, name: draft.name,
-        savedName: draft.savedName, savedScene: draft.savedScene, savedEdges: draft.savedEdges, revisionId: draft.revisionId,
-        document: draft.document, canvas: { ...draft.canvas, display: viewState.captureDisplay(representationId, draft.canvas.display) },
+        history: controllers.current.get(representationId)?.exportHistory() ?? draft.history, savedName: draft.savedName, savedScene: draft.savedScene, savedEdges: draft.savedEdges, revisionId: draft.revisionId,
+        document: controllers.current.get(representationId)?.getSnapshot().document ?? draft.document, canvas: { ...(controllers.current.get(representationId)?.getSnapshot().canvas ?? draft.canvas), display: viewState.captureDisplay(representationId, draft.canvas.display) },
         viewport: viewState.captureCamera(representationId, draft.viewport) })) };
   };
   const workspaceAction = async (action: 'save' | 'restore' | 'export', imported?: string) => {
@@ -222,9 +226,23 @@ export function MappingPocPage() {
         }
         if (restoreError) setError(restoreError);
       } catch (error) { if (!cancelled) setError(error instanceof Error ? error.message : 'Could not load project'); }
+      finally { if (!cancelled) setWorkspaceLoaded(true); }
     })();
     return () => { cancelled = true; };
   }, []);
+
+  // Every checkpoint contains the complete immutable history, including edits made
+  // during this debounce. View measurements do not trigger document persistence.
+  const persistenceKey = JSON.stringify(Object.entries(drafts).map(([id, draft]) =>
+    [id, draft.history?.headId, draft.name, draft.revisionId, draft.representationId]));
+  useEffect(() => {
+    if (!workspaceLoaded || !snapshot?.project || workspaceBusy) return;
+    const timer = window.setTimeout(() => {
+      void mappingWorkspaceRepository.save(capture()).then(() => setWorkspaceStatus('Editing history saved'))
+        .catch(error => setError(error instanceof Error ? error.message : 'Could not save editing history'));
+    }, 150);
+    return () => window.clearTimeout(timer);
+  }, [persistenceKey, workspaceLoaded, workspaceBusy, snapshot?.project?.id]);
 
   useEffect(() => {
     const back = () => { const id = new URL(location.href).searchParams.get("diagram"); if (id) open(id, snapshot, false); };
@@ -241,11 +259,12 @@ export function MappingPocPage() {
   const save = async () => {
     if (!activeId || !active || active.busy || savingId || deletingId) return;
     const id = activeId;
-    const captured = active;
+    const controller = controllers.current.get(id);
+    const captured = { ...active, ...(controller ? { document: controller.getSnapshot().document, history: controller.exportHistory() } : {}) };
     setSavingId(id); setError("");
     try {
       const result = await saveMappingProjectDiagram({ projectId: snapshot?.project?.id, representationId: captured.representationId ?? (id.startsWith('draft-') ? undefined : id),
-        expectedRevisionId: captured.revisionId, name: captured.name, scene: captured.document.scene, edges: captured.document.edges });
+        history: captured.history, expectedRevisionId: captured.revisionId, name: captured.name, scene: captured.document.scene, edges: captured.document.edges });
       setSnapshot(result);
       setDrafts((current) => ({ ...current, [id]: { ...current[id], savedName: captured.name.trim(),
         name: current[id].name === captured.name ? captured.name.trim() : current[id].name,
@@ -325,6 +344,8 @@ export function MappingPocPage() {
               initialTransform={draft.viewport} onTransformChange={viewport => viewState.setCamera(id, viewport)}>
               <MappingPocSelectionCanvas onJump={target => void jumpTo(target)} onController={controller => { if (controller) controllers.current.set(id, controller); else controllers.current.delete(id); }} initialCanvasState={draft.canvas}
                 onCanvasStateChange={canvas => setDrafts(current => !current[id] || current[id].canvas === canvas ? current : { ...current, [id]: { ...current[id], canvas } })}
+                initialHistory={draft.history}
+                onHistoryChange={history => setDrafts(current => !current[id] || current[id].history?.headId === history.headId ? current : { ...current, [id]: { ...current[id], history } })}
                 initialDocument={draft.document} active={id === activeId && !creating && !changeMode} focusBox={draft.focusBox}
                 projectContext={draft.revisionId ? { projectId: snapshot!.project!.id, representationId: draft.representationId ?? id, baseRevisionId: draft.revisionId } : undefined}
                 projectionCatalog={snapshot?.catalog ?? undefined} savedScene={draft.savedScene}

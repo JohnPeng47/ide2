@@ -38,6 +38,7 @@ export function initialCanvasState(): MappingCanvasState {
     selectedNodeIds: [], retainedSelectionId: null, activeThreadId: null, surfaces: { draft: initialSelectionSurface() } } };
 }
 export interface MappingDocumentSnapshot {
+  history?: import('./canvasHistory').CanvasHistoryRecord;
   savedRepresentationId?: string;
   representationId: string; name: string; revisionId: string; savedName: string; savedScene: string; savedEdges?: string;
   document: MappingGridDocument; canvas: MappingCanvasState; viewport?: CanvasTransform;

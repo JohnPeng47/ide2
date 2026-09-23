@@ -1,7 +1,9 @@
+import { RevisionedDiagramService } from '../diagrams/diagramService';
+import { CanvasHistory, documentFromHistory, validateCanvasHistory, stateKey } from '../diagrams/canvasHistory';
 import { validateConnections } from '../diagrams/diagramConnection';
 import { buildProjectionTree, validateProjection, type ProjectProjectionRecord } from "../diagrams/diagramProjection";
 import { flattenGrid, resolveScene } from '../diagrams/lineGrid';
-import { projectCanvasSnapshot, sceneFromRevision, type SaveProjectDiagramInput } from "../diagrams/projectDiagramCanvas";
+import { projectCanvasSnapshot, sceneFromRevision, historyFromRevision, type SaveProjectDiagramInput } from "../diagrams/projectDiagramCanvas";
 import {
   SCHEMA_VERSION,
   assertSafeId,
@@ -150,12 +152,40 @@ export function saveMappingDiagram(catalog: ProjectRepresentationCatalogRecord, 
 
   const current = input.representationId ? catalog.representations[input.representationId] : undefined;
   if (input.representationId && !current) throw new Error("Project diagram was not found");
-  if (current && (current.status === "archived" || current.currentRevisionId !== input.expectedRevisionId)) {
-    throw new ProjectDiagramConflict("This diagram has changed. Reload the page to open the latest revision before saving.");
+  if (current?.status === 'archived') throw new ProjectDiagramConflict('Canvas is archived');
+  if (current && current.currentRevisionId !== input.expectedRevisionId) {
+    const baseline = input.expectedRevisionId && catalog.revisions[input.expectedRevisionId];
+    const latest = catalog.revisions[current.currentRevisionId];
+    if (!baseline || baseline.representationId !== current.id || !latest) throw new ProjectDiagramConflict('Unknown canvas baseline');
+    // Legacy revisions have no binding table: use their complete diagram payload as identity.
+    const bindings = (revision: ProjectRepresentationRevisionRecord) => {
+      const history = historyFromRevision(revision);
+      return history ? history.snapshots[history.headId].diagramBindings
+        : Object.fromEntries(Object.entries(sceneFromRevision(revision).contents).map(([id, diagram]) => [id, stateKey(diagram)]));
+    };
+    try {
+      new RevisionedDiagramService({}, () => ({})).merge(bindings(baseline), bindings(latest),
+        input.history?.snapshots[input.history.headId]?.diagramBindings ?? {});
+    } catch (error) {
+      throw new ProjectDiagramConflict(error instanceof Error ? error.message : 'MERGE_REQUIRED');
+    }
+    // The merge stub cannot reconcile concurrent composition/layout changes either.
+    throw new ProjectDiagramConflict('CANVAS_CONFLICT: canvas advanced; reread before publishing');
   }
   const sourceId = current?.currentRevisionId ?? input.sourceRevisionId;
   const source = sourceId ? catalog.revisions[sourceId] : undefined;
   if (sourceId && !source) throw new Error("Source revision does not belong to this Project");
+  if (input.history) {
+    validateCanvasHistory(input.history);
+    const projected = documentFromHistory(input.history);
+    if (stateKey(projected.scene) !== stateKey(input.scene) || stateKey(projected.edges) !== stateKey(input.edges ?? []))
+      throw new Error('Canvas history does not match save input');
+    const savedHistory = source && historyFromRevision(source);
+    if (savedHistory) for (const [id, revision] of Object.entries(input.history.diagramRevisions)) {
+      const existing = savedHistory.diagramRevisions[id];
+      if (existing && stateKey(existing) !== stateKey(revision)) throw new Error('Diagram revision is immutable');
+    }
+  }
   const scene = structuredClone(input.scene);
   const { ascii, mappings, evidence } = projectCanvasSnapshot(scene);
   const timestamp = environment.timestamp;
@@ -164,11 +194,21 @@ export function saveMappingDiagram(catalog: ProjectRepresentationCatalogRecord, 
   const visibleDiagrams = flattenGrid(resolveScene(scene)).filter(node => node.box.kind === 'diagram');
   const inferredKind = visibleDiagrams.length === 1 && visibleDiagrams[0].contentId
     ? scene.contents[visibleDiagrams[0].contentId].content.structure.kind : 'diagram';
+  let history = input.history;
+  if (!history) {
+    const priorHistory = current && source ? historyFromRevision(source) : undefined;
+    const document = { scene, edges: validateConnections(scene, input.edges), sections: {} };
+    const working = priorHistory
+      ? new CanvasHistory(documentFromHistory(priorHistory), {}, priorHistory)
+      : new CanvasHistory(document, {});
+    if (priorHistory) working.append(document, {});
+    history = working.export();
+  }
   const revision: ProjectRepresentationRevisionRecord = {
     schemaVersion: 1, id: revisionId, projectId, representationId: id,
     revision: (current?.revisionIds.length ?? 0) + 1,
     ascii, asciiSha256: environment.hash(ascii),
-    content: { kind: "mapping-canvas", scene, edges: validateConnections(scene, input.edges) },
+    content: { kind: "canvas-history", history: structuredClone(history) },
     representationKind: current?.representationKind ?? source?.representationKind ?? inferredKind,
     evidence, mappings, ...(source?.provenance ? { provenance: source.provenance } : {}), createdAt: timestamp
   };

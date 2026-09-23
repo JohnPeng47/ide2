@@ -1,3 +1,4 @@
+import { CanvasHistory, validateCanvasHistory, type CanvasHistoryRecord } from '../workspace/canvasHistory';
 import { z } from 'zod';
 import type { MappingGridDocument } from '../workspace/mappingGrid';
 import type { MappingCanvasState } from '../workspace/mappingWorkspace';
@@ -12,6 +13,7 @@ export const diagramChangeSchema = z.object({
 export type DiagramChange = z.infer<typeof diagramChangeSchema>;
 export interface ChangeDocumentState { nodeOrigins?: Record<string, string>; document: MappingGridDocument; canvas: MappingCanvasState }
 export interface ChangeSessionDocument {
+  history?: CanvasHistoryRecord;
   id: string; name: string; representationId?: string; savedRevisionId?: string; capturedVersion?: number;
   baseline: ChangeDocumentState | null;
   proposed: ChangeDocumentState;
@@ -37,7 +39,7 @@ export function validateChangeSession(input: unknown): DiagramChangeSession {
   const parsed = z.object({
     schemaVersion: z.literal(1), id: changeId, projectId: changeId, title: z.string().min(1).max(200), description: z.string().max(100000),
     status: z.enum(['draft','ready','archived']), version: z.number().int().nonnegative(), createdAt: z.string(), updatedAt: z.string(),
-    documents: z.array(z.object({ id: changeId, name: z.string().min(1).max(200), representationId: changeId.optional(), savedRevisionId: changeId.optional(),
+    documents: z.array(z.object({ history: z.custom<CanvasHistoryRecord>().optional(), id: changeId, name: z.string().min(1).max(200), representationId: changeId.optional(), savedRevisionId: changeId.optional(),
       capturedVersion: z.number().int().nonnegative().optional(), baseline: state.nullable(), proposed: state, version: z.number().int().nonnegative(),
       past: z.array(state).max(50), future: z.array(state).max(50) }).strict()).max(100),
     changes: z.array(diagramChangeSchema).max(2000),
@@ -47,6 +49,7 @@ export function validateChangeSession(input: unknown): DiagramChangeSession {
   for (const doc of parsed.documents) {
     if (ids.has(doc.id)) throw new Error('Duplicate change-session document');
     ids.add(doc.id);
+    if (doc.history) { validateCanvasHistory(doc.history); new CanvasHistory(doc.proposed.document, doc.proposed.canvas, doc.history); }
     for (const snapshot of [doc.baseline, doc.proposed, ...doc.past, ...doc.future]) if (snapshot) {
       deserializeWorkspace({ schemaVersion: 3, projectId: parsed.projectId, documents: [{ representationId: doc.id,
         name: doc.name, savedName: doc.name, revisionId: doc.savedRevisionId ?? 'session-baseline', savedScene: JSON.stringify(snapshot.document.scene),

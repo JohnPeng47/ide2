@@ -148,3 +148,31 @@ it("serializes revision checks with writes when two updates share the same base"
   expect(catalog.representations[initial.representation.id].revisionIds).toHaveLength(2);
   expect(catalog.revisions[base]).toEqual(initial.catalog.revisions[base]);
 });
+
+it('persists coordinated histories and rejects publication after the saved diagram advances', async () => {
+  const { MappingDocumentController } = await import('../../../../domain/mapping/workspace/mappingDocumentController');
+  const { initialCanvasState } = await import('../../../../domain/mapping/workspace/mappingWorkspace');
+  const { mappingDocumentFromScene } = await import('../../../../domain/mapping/workspace/mappingDocument');
+  const { singleDiagramScene, historyFromRevision, documentFromRevision } = await import('../../../../domain/core/diagrams/projectDiagramCanvas');
+  const root = await mkdtemp(path.join(tmpdir(), 'canvas-history-publish-')); roots.push(root);
+  const store = new ProjectCatalogStore(root);
+  const controller = new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('Original')), initialCanvasState());
+  const save = (representationId?: string, expectedRevisionId?: string) => store.saveMappingDiagram('project', {
+    representationId, expectedRevisionId, name: 'Canvas', history: controller.exportHistory(),
+    scene: controller.getSnapshot().document.scene, edges: controller.getSnapshot().document.edges
+  });
+  const first = await save(), id = first.representation.id, base = first.representation.currentRevisionId;
+  controller.applyUpdate(0, [{ method: 'replace', nodeId: 'grid:overview', ascii: 'Edited' }]);
+  const second = await save(id, base);
+  const latest = second.catalog.revisions[second.representation.currentRevisionId];
+  expect(historyFromRevision(latest)).toEqual(controller.exportHistory());
+  expect(documentFromRevision(latest)).toEqual(controller.getSnapshot().document);
+  await expect(save(id, base)).rejects.toThrow('MERGE_REQUIRED');
+  expect((await store.loadRepresentationCatalog('project')).representations[id].currentRevisionId).toBe(latest.id);
+  const restored = new MappingDocumentController(documentFromRevision(latest), initialCanvasState(), 0, undefined, undefined, historyFromRevision(latest));
+  restored.undo(); expect(restored.resolveDiagram('overview').ascii).toBe('Original');
+  const beforeBindings = historyFromRevision(latest)!;
+  const fallback = await store.saveMappingDiagram('project', { representationId: id, expectedRevisionId: latest.id, name: 'Renamed', scene: documentFromRevision(latest).scene });
+  const after = historyFromRevision(fallback.catalog.revisions[fallback.representation.currentRevisionId])!;
+  expect(after.snapshots[after.headId].diagramBindings).toEqual(beforeBindings.snapshots[beforeBindings.headId].diagramBindings);
+});

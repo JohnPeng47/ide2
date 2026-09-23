@@ -1,16 +1,17 @@
+import type { CanvasHistoryRecord } from '../../../../domain/mapping/workspace/canvasHistory';
 import { useEndpointGeometry } from './useEndpointGeometry';
 import { DiagramText } from '../../../shared/diagrams/DiagramText';
 import { diagramSceneText } from '../../../../domain/mapping/workspace/diagramSceneText';
-import { rebaseDiagramJumps, type DiagramJumpTarget } from '../../../../domain/core/diagrams/diagramJump';
+import { type DiagramJumpTarget } from '../../../../domain/core/diagrams/diagramJump';
 import { DiagramConnections } from './DiagramConnections';
 import { exportedEvidenceId } from '../../../../domain/core/diagrams/projectDiagramCanvas';
-import { createDiagram, diagramSource } from '../../../../domain/core/diagrams/diagram';
+import { diagramSource } from '../../../../domain/core/diagrams/diagram';
 import { diagramSelectionNodes } from '../../../../domain/mapping/workspace/mappingDocument';
 import { diagramProjection } from '../../../../domain/mapping/workspace/diagramViewState';
 import { DiagramSubtreeControls } from './DiagramSubtreeControls';
 import { MappingDocumentController } from "../../../../domain/mapping/workspace/mappingDocumentController";
 import { CanvasPasteMenu } from "./CanvasPasteMenu";
-import { pasteGridDiagram } from "./pasteDiagram";
+import { normalizePastedDiagram } from "./pasteDiagram";
 import { LocalChatVerbosityToggle } from "../chat/LocalChatVerbosityToggle";
 import { formatAsciiWithCodeReferences } from "../../../../domain/core/diagrams/diagramClipboard";
 import { asciiForSelection } from "../../../../domain/core/diagrams/diagramSelection";
@@ -19,8 +20,7 @@ import { addDisplayNode, displayGeometry, measureDisplayNode, removeDisplayNode,
 import { initialCanvasState, initialSelectionSurface, selectionSurfaceKeys, type MappingCanvasState, type MappingControlValues, type SelectionSurfaceState } from "../../../../domain/mapping/workspace/mappingWorkspace";
 import { SelectionEffectsLayer } from "./SelectionEffectsLayer";
 import { flattenGrid, hitTest, layoutScene, resolveScene, updateGridBox, type GridPoint as ScenePoint } from "../../../../domain/core/diagrams/lineGrid";
-import { initialMappingGrid, insertGridDiagram, type MappingGridDocument } from "../../../../domain/mapping/workspace/mappingGrid";
-import { mappingDocumentFromScene } from "../../../../domain/mapping/workspace/mappingDocument";
+import { initialMappingGrid, type MappingGridDocument } from "../../../../domain/mapping/workspace/mappingGrid";
 import { projectSelection, validateProjection } from "../../../../domain/core/diagrams/diagramProjection";
 import type { ProjectRepresentationCatalogRecord } from "../../../../domain/core/representations/projectCatalog";
 import {
@@ -44,11 +44,9 @@ import {
 } from "../../../../domain/mapping/selection/mappingPoc";
 import {
   MAPPING_POC_DETAIL_OVERLAYS,
-  MAPPING_POC_OVERLAY_PLACEMENTS,
-  type MappingPocASection
+  MAPPING_POC_OVERLAY_PLACEMENTS
 } from "../../../../domain/mapping/selection/mappingPocOverlays";
 import { localChatResponder, promptMappingPocSelection } from "../api";
-import type { MappingPocPromptResult } from "../../../../domain/mapping/selection/mappingPocPrompt";
 import {
   isLocalChatSubmitHotkey,
   type LocalChatVerbosity,
@@ -111,27 +109,14 @@ function typingTarget(target: EventTarget | null): boolean {
 }
 
 
-function sectionsAfterPatch(
-  sections: readonly MappingPocASection[],
-  result: MappingPocPromptResult
-): MappingPocASection[] {
-  return sections.flatMap((section) => {
-    if (section.endLine < result.startLine) return [section];
-    if (section.startLine <= result.oldEndLine) return [];
-    return [{
-      ...section,
-      startLine: section.startLine + result.verticalDelta,
-      endLine: section.endLine + result.verticalDelta
-    }];
-  });
-}
-
 export function MappingPocSelectionCanvas(props: {
   initialDocument?: MappingGridDocument;
   onJump?: (target: DiagramJumpTarget) => void;
   onController?: (controller: MappingDocumentController | null) => void;
   initialCanvasState?: MappingCanvasState;
   onCanvasStateChange?: (state: MappingCanvasState) => void;
+  initialHistory?: CanvasHistoryRecord;
+  onHistoryChange?: (history: CanvasHistoryRecord) => void;
   onDocumentChange?: (document: MappingGridDocument) => void;
   onBusyChange?: (busy: boolean) => void;
   active?: boolean;
@@ -146,9 +131,12 @@ export function MappingPocSelectionCanvas(props: {
   const [controller] = useState(() => {
     const state = props.initialCanvasState ?? initialCanvasState();
     if (!props.initialCanvasState) state.controls.surfaces.draft.presentation = props.localChatVariant ?? 'compact';
-    return new MappingDocumentController(props.initialDocument ?? initialMappingGrid(), state, 0, undefined, {});
+    return new MappingDocumentController(props.initialDocument ?? initialMappingGrid(), state, 0, undefined, {}, props.initialHistory);
   });
   const controllerState = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
+  const historyChange = useRef(props.onHistoryChange);
+  historyChange.current = props.onHistoryChange;
+  useEffect(() => { historyChange.current?.(controller.exportHistory()); }, [controller, controllerState.canvasRevisionId]);
   const canvasState = controllerState.canvas;
   const setCanvasState = useCallback((value: SetStateAction<MappingCanvasState>) => controller.updateCanvas(value), [controller]);
   const controllerCallback = useRef(props.onController); controllerCallback.current = props.onController;
@@ -696,6 +684,7 @@ export function MappingPocSelectionCanvas(props: {
     }
     updateSurface(owner, { promptPhase: "generating" });
     updateSurface(owner, { statusMessage: "starting diagram agent…" });
+    const expectedVersion = controller.getSnapshot().version;
     try {
       const result = await promptMappingPocSelection({
         ...props.projectContext, contentId: content.id, sourceContext: content.sourceContext,
@@ -703,12 +692,9 @@ export function MappingPocSelectionCanvas(props: {
         diagramAscii: ascii, diagramRevision, mappings: [...diagramSource(content).mappings()],
         selection: selectionRect, instruction: promptText.trim()
       }, (message) => updateSurface(owner, { statusMessage: message }));
-      const nextContent = createDiagram({ id: content.id, ascii: result.diagramAscii, revision: result.diagramRevision,
-        structureKind: content.content.structure.kind, mappings: result.mappings ?? [],
-        source: content.sourceContext.binding, evidence: content.sourceContext.evidence });
-      if (content.jumps) nextContent.jumps = rebaseDiagramJumps(content.content, nextContent.content, content.jumps);
-      const nextScene = layoutScene({ ...scene, contents: { ...scene.contents, [content.id]: nextContent } }, activeBox.box.id);
-      commit({ ...mappingDocumentFromScene(nextScene, gridDocument.edges), sections: { ...gridDocument.sections, [content.id]: sectionsAfterPatch(sections, result) } });
+      controller.applyUpdate(expectedVersion, [{ method: 'patchDiagram', nodeId: `grid:${activeBox.box.id}`,
+        start: result.startLine, end: result.oldEndLine,
+        patch: result.diagramAscii.split('\n').slice(result.startLine - 1, result.newEndLine).join('\n'), mappings: result.mappings }]);
       if (operationOwnerRef.current === owner) {
         setSelectedNodeIds([]);
         setSelectionRect({ startLine: result.startLine, endLine: result.newEndLine,
@@ -717,7 +703,7 @@ export function MappingPocSelectionCanvas(props: {
       updateSurface(owner, { promptOpen: false });
       updateSurface(owner, { promptText: "" });
       updateSurface(owner, { promptPhase: "applied" });
-      updateSurface(owner, { statusMessage: `patch applied · ${result.verticalDelta >= 0 ? "+" : ""}${result.verticalDelta} rows · revision ${result.diagramRevision}` });
+      updateSurface(owner, { statusMessage: `patch applied · ${result.verticalDelta >= 0 ? "+" : ""}${result.verticalDelta} rows` });
     } catch (error) {
       updateSurface(owner, { promptPhase: "error" });
       updateSurface(owner, { statusMessage: error instanceof Error ? error.message : "diagram prompt failed" });
@@ -737,6 +723,7 @@ export function MappingPocSelectionCanvas(props: {
     setPlacementPreview(null);
     updateSurface(owner, { promptPhase: "generating" });
     updateSurface(owner, { statusMessage: "generating sub-diagram…" });
+    const expectedVersion = controller.getSnapshot().version;
     try {
       const result = await promptMappingPocSelection({
         ...props.projectContext, contentId: content.id, sourceContext: content.sourceContext,
@@ -745,11 +732,9 @@ export function MappingPocSelectionCanvas(props: {
         instruction: `${diagramPlacement}\nAim for ${minimumSize.columns} columns by ${minimumSize.rows} rows; the canvas can grow if needed.`
       }, message => updateSurface(owner, { statusMessage: message }));
       const id = `diagram-${crypto.randomUUID()}`;
-      const next = insertGridDiagram(gridDocument, targetParent.box.id, {
-        id, kind: "diagram", contentId: id, collapsed: false, minimumSize,
-        position: { column: column - targetParent.bounds.column, row: row - targetParent.bounds.row }
-      }, createDiagram({ id, ascii: result.diagramAscii, revision: result.diagramRevision, mappings: result.mappings ?? [], source: content.sourceContext.binding, evidence: content.sourceContext.evidence }));
-      commit(next);
+      controller.applyUpdate(expectedVersion, [{ method: 'diagram-create', id, parentId: `grid:${targetParent.box.id}`,
+        minimumSize, position: { column: column - targetParent.bounds.column, row: row - targetParent.bounds.row },
+        ascii: result.diagramAscii, mappings: result.mappings ?? [], source: content.sourceContext.binding, evidence: content.sourceContext.evidence }]);
       if (operationOwnerRef.current === owner) { clearSelection(); setActiveBoxId(id); }
       updateSurface(owner, { promptPhase: "applied", promptOpen: false, statusMessage: "Sub-diagram generated; layout updated" });
       if (operationOwnerRef.current === 'draft') setStatusMessage("Sub-diagram generated; layout updated");
@@ -761,13 +746,10 @@ export function MappingPocSelectionCanvas(props: {
 
   const wrapInGroup = (boxId: string) => {
     const id = `group-${crypto.randomUUID()}`;
-    const summaryId = `${id}-summary`;
-    const next = updateGridBox({ ...scene, contents: { ...scene.contents,
-      [summaryId]: createDiagram({ id: summaryId, revision: 0, ascii: "[Diagram group]" }) } }, boxId, (box) => ({
-      id, kind: "container", position: box.position, collapsed: false, collapsedContentId: summaryId,
-      children: [{ ...box, position: { column: 0, row: 0 } }], layout: { collisionPolicy: "push-right", gap: 3 }
-    }));
-    commitScene(next, id);
+    try {
+      controller.applyUpdate(controller.getSnapshot().version, [{ method: 'group', nodeId: `grid:${boxId}`, id }]);
+      clearSelection();
+    } catch (error) { setStatusMessage(error instanceof Error ? error.message : 'Grouping failed'); }
   };
 
   const hotkeyHandler = useRef<(event: globalThis.KeyboardEvent) => void>(() => {});
@@ -970,8 +952,7 @@ export function MappingPocSelectionCanvas(props: {
       <CanvasPasteMenu stageRef={stageRef} active={props.active !== false} busy={isGenerating || !!diagramPlacement || !!movingBoxId}
         toGrid={scenePointAtClient} onPaste={(point, text) => {
           const id = `diagram-${crypto.randomUUID()}`;
-          const next = pasteGridDiagram(gridDocument, point, text, id);
-          commit(next);
+          controller.applyUpdate(controller.getSnapshot().version, [{ method: 'diagram-create', id, position: point, ascii: normalizePastedDiagram(text) }]);
           clearSelection();
           setActiveBoxId(id);
           setStatusMessage("Sub-diagram pasted; layout updated");

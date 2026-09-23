@@ -1,3 +1,4 @@
+import { documentFromHistory, type CanvasHistoryRecord } from './canvasHistory';
 import { createDiagram, validateDiagram, diagramSource, type DiagramSourceBinding } from "./diagram";
 import {
   composeScene,
@@ -8,8 +9,9 @@ import {
 } from "./lineGrid";
 import type { ProjectRepresentationEvidenceRecord, ProjectRepresentationMappingRecord, ProjectRepresentationRevisionRecord } from "../representations/projectCatalog";
 
-export type ProjectDiagramContent = { kind: "diagram"; diagram: import("./diagram").Diagram } | { kind: "ascii"; ascii: string } | { kind: "mapping-canvas"; scene: LineGridScene; edges?: import('./diagramConnection').DiagramConnection[] };
+export type ProjectDiagramContent = { kind: "canvas-history"; history: CanvasHistoryRecord } | { kind: "diagram"; diagram: import("./diagram").Diagram } | { kind: "ascii"; ascii: string } | { kind: "mapping-canvas"; scene: LineGridScene; edges?: import('./diagramConnection').DiagramConnection[] };
 export interface SaveProjectDiagramInput {
+  history?: CanvasHistoryRecord;
   projectId?: string;
   representationId?: string;
   expectedRevisionId?: string;
@@ -31,6 +33,7 @@ export function singleDiagramScene(ascii: string, source?: DiagramSourceBinding)
 }
 
 export function sceneFromRevision(revision: ProjectRepresentationRevisionRecord): LineGridScene {
+  if (revision.content?.kind === "canvas-history") return documentFromHistory(revision.content.history).scene;
   if (revision.content?.kind === "mapping-canvas") return revision.content.scene;
   const scene = singleDiagramScene(revision.ascii);
   if (revision.content?.kind === "diagram") return { ...scene, contents: { ...scene.contents, overview: revision.content.diagram } };
@@ -96,4 +99,17 @@ export function exportedEvidenceId(scene: LineGridScene, diagramId: string, evid
   const owners = Object.values(scene.contents).filter(d => d.sourceContext.evidence[evidenceId]);
   const signatures = new Set(owners.map(d => JSON.stringify([d.sourceContext.binding?.sourceId, d.sourceContext.evidence[evidenceId]])));
   return signatures.size > 1 ? `${diagramId}:${evidenceId}` : evidenceId;
+}
+
+export function edgesFromRevision(revision: ProjectRepresentationRevisionRecord) {
+  return revision.content?.kind === 'canvas-history' ? documentFromHistory(revision.content.history).edges
+    : revision.content?.kind === 'mapping-canvas' ? revision.content.edges ?? [] : [];
+}
+export function historyFromRevision(revision: ProjectRepresentationRevisionRecord) {
+  return revision.content?.kind === 'canvas-history' ? structuredClone(revision.content.history) : undefined;
+}
+
+export function documentFromRevision(revision: ProjectRepresentationRevisionRecord) {
+  return revision.content?.kind === 'canvas-history' ? documentFromHistory(revision.content.history)
+    : { scene: sceneFromRevision(revision), edges: edgesFromRevision(revision), sections: {} };
 }

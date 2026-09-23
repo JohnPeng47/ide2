@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, it } from 'vitest';
 import { connectionContentNodes, defaultArrowAppearance, type DiagramConnection } from '../../../domain/core/diagrams/diagramConnection';
-import { singleDiagramScene, sceneFromRevision } from '../../../domain/core/diagrams/projectDiagramCanvas';
+import { singleDiagramScene, sceneFromRevision, documentFromRevision, historyFromRevision } from '../../../domain/core/diagrams/projectDiagramCanvas';
 import { ProjectCatalogStore } from '../../core/persistence/projectCatalogStore';
 
 it('persists connections in immutable document revisions while preserving diagram content exactly', async () => {
@@ -21,12 +21,18 @@ it('persists connections in immutable document revisions while preserving diagra
     const created = await store.saveMappingDiagram('project-one', { name: 'Connections', scene, edges: [edge] });
     const reopened = await new ProjectCatalogStore(root).loadRepresentationCatalog('project-one');
     const revision = reopened.revisions[created.representation.currentRevisionId];
-    expect(revision.content).toEqual({ kind: 'mapping-canvas', scene, edges: [edge] });
+    expect(revision.content?.kind).toBe('canvas-history');
+    expect(documentFromRevision(revision)).toEqual({ scene, edges: [edge], sections: {} });
+    const history = historyFromRevision(revision)!;
+    expect(history.snapshots[history.headId].document.edges[0].source).not.toHaveProperty('revisionId');
     expect(sceneFromRevision(revision)).toEqual(scene);
     const saved = await store.saveMappingDiagram('project-one', { name: 'Connections', scene, edges: [],
       representationId: created.representation.id, expectedRevisionId: revision.id });
     expect(saved.catalog.revisions[revision.id].content).toEqual(revision.content);
-    expect(saved.catalog.revisions[saved.representation.currentRevisionId].content).toEqual({ kind: 'mapping-canvas', scene, edges: [] });
+    const next = saved.catalog.revisions[saved.representation.currentRevisionId];
+    expect(documentFromRevision(next)).toEqual({ scene, edges: [], sections: {} });
+    const nextHistory = historyFromRevision(next)!;
+    expect(nextHistory.snapshots[nextHistory.headId].diagramBindings).toEqual(history.snapshots[history.headId].diagramBindings);
     await expect(store.saveMappingDiagram('project-one', { name: 'Invalid', scene, edges: [{ ...edge, target: { ...edge.target, displayNodeId: 'grid:missing' } }] })).rejects.toThrow('GridBox');
   } finally { await rm(root, { recursive: true, force: true }); }
 });

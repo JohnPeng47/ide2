@@ -5,15 +5,22 @@ export interface MappingWorkspaceRepository {
   save(snapshot: MappingWorkspaceSnapshot): Promise<void>;
 }
 const endpoint = () => `${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/mapping/workspace`;
+let writes: Promise<void> = Promise.resolve();
 export const mappingWorkspaceRepository: MappingWorkspaceRepository = {
   async load() {
+    await writes.catch(() => {});
     const response = await fetch(endpoint(), { cache: 'no-store' });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error ?? 'Could not load workspace');
     return result ? deserializeWorkspace(result) : null;
   },
-  async save(snapshot) {
-    const response = await fetch(endpoint(), { method: 'PUT', headers: { 'content-type': 'application/json' }, body: serializeWorkspace(snapshot) });
-    if (!response.ok) throw new Error((await response.json()).error ?? 'Could not save workspace');
+  save(snapshot) {
+    const body = serializeWorkspace(snapshot);
+    const next = writes.catch(() => {}).then(async () => {
+      const response = await fetch(endpoint(), { method: 'PUT', headers: { 'content-type': 'application/json' }, body });
+      if (!response.ok) throw new Error((await response.json()).error ?? 'Could not save workspace');
+    });
+    writes = next;
+    return next;
   }
 };

@@ -47,6 +47,8 @@ export function canvasApiSpec(query: string) {
 export interface CanvasDescriptor { canvasId: string; projectId?: string; documents: { documentId: string; name: string; representationId?: string }[] }
 export interface CanvasCommand { id: string; method: 'snapshot' | 'apply' | 'create-document' | 'saved'; documentId?: string; payload?: unknown }
 export interface LiveDocumentSnapshot {
+  contextId?: string;
+  history?: import('../workspace/canvasHistory').CanvasHistoryRecord;
   endpointBounds?: import('../workspace/endpointGeometry').EndpointBounds;
   cell?: { width: number; height: number };
   document: import('../workspace/mappingGrid').MappingGridDocument;

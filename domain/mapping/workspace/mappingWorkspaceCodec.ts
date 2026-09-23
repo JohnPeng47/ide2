@@ -1,3 +1,4 @@
+import { CanvasHistory } from './canvasHistory';
 import { validateDiagram } from '../../core/diagrams/diagram';
 import { validateConnections } from '../../core/diagrams/diagramConnection';
 import { normalizeDiagramViews } from './diagramViewState';
@@ -59,6 +60,7 @@ export function deserializeWorkspace(json: string | unknown): MappingWorkspaceSn
     object(doc.document); object(doc.document.scene); object(doc.document.sections);
     check(!Object.hasOwn(doc.document, 'nodes') && !Object.hasOwn(doc.document, 'evidence'), 'selection nodes and evidence belong to Diagram source contexts');
     scene(doc.document.scene);
+    if (doc.history) new CanvasHistory(doc.document as unknown as import('./mappingGrid').MappingGridDocument, doc.canvas, doc.history);
     scene(JSON.parse(doc.savedScene));
     doc.document.edges = validateConnections(doc.document.scene as unknown as LineGridScene, doc.document.edges);
     if (doc.savedEdges !== undefined) {

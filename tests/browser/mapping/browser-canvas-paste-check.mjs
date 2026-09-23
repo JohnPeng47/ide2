@@ -17,7 +17,7 @@ try {
   server = spawn(process.execPath, ['scripts/dev/start-server.mjs', 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort'],
     { cwd: process.cwd(), env: { ...process.env, NEW_DIAGRAM_PROJECT_ROOT: root, NEW_DIAGRAMS_DIR: path.join(root, '.diagrams'), NEW_DIAGRAM_AGENT: 'fake' }, stdio: 'ignore' });
   await waitFor(async () => (await fetch(url).catch(() => null))?.ok, { timeoutMs: 20000 });
-  await withHeadlessBrowser({ url: `${url}/mapping`, width: 1800, height: 1100, arguments: ['--disable-gpu'] }, async ({ cdp }) => {
+  await withHeadlessBrowser({ url: `${url}/mapping`, width: 1800, height: 1100, chromePath: process.env.CHROME_PATH, arguments: ['--disable-gpu', ...(process.env.CHROME_PATH ? ['--no-sandbox'] : [])] }, async ({ cdp }) => {
     const send = cdp.send.bind(cdp);
     cdp.send = (method, params) => {
       let timer;
@@ -137,17 +137,25 @@ try {
     // Escape may dismiss the dialog as well as the native context menu.
     if (await evaluate(cdp, '!!document.querySelector(".mapping-create-dialog")')) await click('.mapping-create-dialog footer button:first-child');
     await waitFor(async () => await evaluate(cdp, '!document.querySelector(".mapping-create-dialog")'));
-    await click('.mapping-workspace-actions button:first-child');
     await waitFor(async () => {
       const workspace = await (await fetch(`${url}/api/mapping/workspace`)).json();
-      return Object.values(workspace?.documents[0]?.document?.scene?.contents ?? {}).some(content => content.ascii === '[Manual]');
+      return Object.values(workspace?.documents[0]?.document?.scene?.contents ?? {}).some(content => content.content.ascii === '[Manual]');
     });
-    console.log('Persistence passed');
+    const savedWorkspace = await (await fetch(`${url}/api/mapping/workspace`)).json();
+    const history = savedWorkspace.documents[0].history;
+    assert.ok(history.contextId);
+    assert.ok(history.past.length);
+    assert.ok(!('contents' in history.snapshots[history.headId].document.scene));
+    console.log('Automatic checkpoint persistence passed');
     cdp.on('Page.javascriptDialogOpening', () => void cdp.send('Page.handleJavaScriptDialog', {accept:true}));
     await cdp.send('Page.reload', {ignoreCache:true});
     await waitForSelector(cdp, '[data-grid-box="overview"]');
     await waitFor(async () => (await count()) === initialCount + 3);
     assert.match(await evaluate(cdp, 'document.querySelector(".mapping-poc-ascii").textContent'), /Manual/);
+    await click('.mapping-grid-tools button:first-child');
+    await waitFor(async () => (await count()) === initialCount + 2);
+    await click('.mapping-grid-tools button:nth-child(2)');
+    await waitFor(async () => (await count()) === initialCount + 3);
     console.log('Canvas paste passed: menu dismissal, pan/zoom coordinates, collision layout, undo/redo, clipboard validation/fallback, stale reads, and save/reload.');
 
   });
