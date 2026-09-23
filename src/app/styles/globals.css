@@ -331,6 +331,15 @@ select:focus-visible,
 
 .mapping-floating-pane { height: min(620px, calc(100% - 100px)); overflow: hidden; }
 .mapping-floating-pane nav { overflow: auto; min-height: 0; flex: 1; margin-top: 8px; }
+.mapping-floating-pane-content { display: contents; }
+.mapping-floating-pane-content[hidden] { display: none; }
+.mapping-floating-pane header { padding-right: 28px; }
+.mapping-floating-pane header strong { overflow-wrap: anywhere; }
+.mapping-explorer-toggle { position: absolute; top: 8px; right: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 28px; height: 28px; padding: 4px; border: 1px solid var(--gutter); border-radius: 4px; background: transparent; color: var(--muted); cursor: pointer; font: 11px var(--font-mono); }
+.mapping-explorer-toggle:hover { background: #88c0d014; color: var(--fg); }
+.mapping-explorer-toggle:focus-visible { outline: 2px solid var(--accent-cyan); outline-offset: 2px; }
+.mapping-floating-pane.is-minimized { width: auto; height: auto; padding: 6px; }
+.mapping-floating-pane.is-minimized .mapping-explorer-toggle { position: static; padding: 4px 8px; color: var(--fg); }
 .mapping-compaction-file {
   display: flex;
   gap: 2rem;
