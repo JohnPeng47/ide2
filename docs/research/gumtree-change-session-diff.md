@@ -1,6 +1,21 @@
 # GumTree assessment and ChangeSession diff implementation plan
 
-Status: proposed; no application implementation changes.
+Status: matcher implementation complete. Parser/content-model changes remain out of scope.
+
+## Implemented scope
+
+`domain/mapping/changes/diagramNodeMatcher.ts` independently implements staged correspondence over existing parsed nodes; it does not copy/translate upstream source or introduce a GumTree runtime dependency. `diagramContentDiff.ts` retains classification, move/LIS handling, counts, ancestor indicators, and loose-line fallback.
+
+- Valid, nonconflicting patch origins are locked first, then unique exact labels (including roots/leaves), atomic exact subtrees, and contextual exact matches. Unequal duplicate groups remain unresolved without occurrence evidence.
+- Container recovery aggregates mapped-descendant overlap in postorder. Acceptance requires coverage of at least `max(0.5, 1 / (1 + log(oldSize + newSize)))`. Direct-child evidence, label similarity, and matched-parent context distinguish candidates. Both directions must prefer the pair by more than 0.1 score units; ties remain unresolved.
+- Label recovery retains the single-gap replacement rule and adds bounded sequence alignment. Multi-node candidates require shared meaningful words, token/bigram similarity of at least 0.65, and a greater-than-0.1 advantage in both directions. Maximum gap: 64 nodes on each side and 4,096 cells. Larger uncertain gaps remain additions/removals.
+- Recovery repeats while matches are added. Every phase uses a guarded bijection. Matching never updates content IDs, edge anchors, source mappings, or `nodeOrigins`.
+
+Tests cover the reconstructed FloatingPane regression, exact-root preservation, subtree moves, container splits/merges, duplicate ambiguity/provenance, multiple label edits, generated correspondence invariants, parser compatibility, and cumulative session history. The existing controller fixture remains conservative. The full planning matrix in `gumtree-change-session-test-plan.md` includes additional parser/adapter work outside this implementation; it is not a claim that every proposed case was implemented.
+
+Known separate gaps remain: text/node representation transitions when a bare root gains its first child; normalized quoted coordinates (currently raw-line fallback); and partial raw-text coverage when a filtered span shares a row with a valid node. No parser versions or adapters changed.
+
+Run the benchmark with `node --import tsx tests/performance/diagram-content-diff.mjs`. It verifies expected counts before timing already-parsed inputs within the 20,000-character limit. On this development host, 12-run medians were approximately 28 ms for 1,300 siblings plus an insertion, 71 ms for an 85-container renamed chain, 20 ms for 1,500 ambiguous repeated siblings, and 1–8 ms for bounded label-recovery cases. Timings are observations, not CI thresholds or browser latency guarantees.
 
 ## Recommendation
 

@@ -9,10 +9,31 @@ import { initialCanvasState } from '../../workspace/mappingWorkspace';
 import { diffDiagramContent, type DiagramDiffSide } from '../diagramContentDiff';
 import { diffChangeDocument } from '../changeDocumentDiff';
 import { controllerBefore, controllerPatch, expectedAddedLabels, expectedUnchangedLabels } from './controllerDiffFixture';
+import { floatingBefore, floatingAfter } from './floatingPaneDiffFixture';
 
 const tree = (ascii: string, revision = 'new:1') => buildDiagramContent(ascii, revision, 'tree');
 const node = (content: DiagramContent, label: string) => diagramContentNodes(content).find(n => n.label === label)!;
 const decoration = (side: DiagramDiffSide, content: DiagramContent, label: string) => side.nodes.get(node(content, label).id);
+
+it('recovers the renamed DisplayNodeBase inside an inserted FloatingPane', () => {
+  const before = tree(floatingBefore, 'before'), after = tree(floatingAfter, 'after');
+  const diff = diffDiagramContent(before, after);
+  expect(diff.counts).toEqual({ added: 2, removed: 0, modified: 1, moved: 2 });
+  expect(decoration(diff.proposed, after, 'DisplayNodeBase')).toEqual({ status: 'modified', moved: true, containsChanges: true });
+  for (const label of ['expandedGeometry?', 'geometryPolicy', 'placement: automatic | manual', 'sizing: content | fixed']) {
+    expect(decoration(diff.proposed, after, label), label).toBeUndefined();
+  }
+  expect(decoration(diff.proposed, after, 'FloatingPane')).toEqual({ status: 'added', containsChanges: true });
+  expect(decoration(diff.proposed, after, 'SelectionRegion')).toEqual({ moved: true });
+});
+
+it('recovers several edited field labels without treating unrelated replacements as renames', () => {
+  const before = tree('Root\n|-- placement: automatic | manual\n`-- sizing: content | fixed');
+  const after = tree('Root\n|-- placement = automatic / manual\n`-- sizing = content / fixed');
+  expect(diffDiagramContent(before, after).counts).toEqual({ added: 0, removed: 0, modified: 2, moved: 0 });
+  expect(diffDiagramContent(tree('Root\n|-- A\n`-- B'), tree('Root\n|-- X\n`-- Y')).counts)
+    .toEqual({ added: 2, removed: 2, modified: 0, moved: 0 });
+});
 
 it('highlights the expected text in the actual controller/session demo', () => {
   const before = createDiagram({ id: 'controller', revision: 0, ascii: controllerBefore, structureKind: 'tree' });

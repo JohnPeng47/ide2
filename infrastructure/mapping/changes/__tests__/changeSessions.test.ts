@@ -11,7 +11,55 @@ import type { CanvasSessionPort } from '../../../../application/mapping/agent/po
 import type { DiagramRepository } from '../../../../application/core/ports/diagramRepository';
 import type { MappingDiagramService } from '../../../../application/mapping/diagrams/diagramService';
 import { createDiagram } from '../../../../domain/core/diagrams/diagram';
+import { diagramContentNodes } from '../../../../domain/core/diagrams/diagramContentNodes';
 import { singleDiagramScene } from '../../../../domain/core/diagrams/projectDiagramCanvas';
+import { diffChangeDocument } from '../../../../domain/mapping/changes/changeDocumentDiff';
+import { floatingBefore, floatingAfter } from '../../../../domain/mapping/changes/__tests__/floatingPaneDiffFixture';
+
+it('recomputes inferred correspondence after cumulative patches, undo, redo and reset without persisting it as provenance', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'change-session-matching-'));
+  try {
+    const catalog = new ProjectCatalogStore(root), scene = singleDiagramScene(floatingBefore);
+    scene.contents = { ...scene.contents, overview: createDiagram({ id: 'overview', revision: 0, ascii: floatingBefore, structureKind: 'tree' }) };
+    const saved = await catalog.saveMappingDiagram('project', { name: 'Floating', scene });
+    const source = { loadProject: async () => ({ id: 'project' }), projectCatalogs: catalog } as unknown as DiagramRepository;
+    const bridge: CanvasSessionPort = { register() {}, list: () => [], poll: async () => [], reply() {}, unregister() {}, dispose() {}, dispatch: async () => { throw Error('Touched live bridge'); } };
+    const changes = new ChangeSessionService(new DiagramChangeSessionStore(root), source, bridge);
+    await changes.create({ title: 'Matching regression', requestId: 'create' });
+    const id = (await changes.list())[0].id, documentId = saved.representation.id;
+    await changes.apply(id, documentId, 0, [{ method: 'patchDiagram', nodeId: 'grid:overview', start: 1,
+      end: floatingBefore.split('\n').length, patch: floatingAfter }], 'wrapper');
+    const check = async (modified: number, cleared = false) => {
+      const session = await changes.get(id), doc = session.documents[0], snapshot = structuredClone(doc);
+      expect(diffChangeDocument(doc).counts).toEqual(cleared
+        ? { added: 0, removed: 0, modified: 0, moved: 0 }
+        : { added: 2, removed: 0, modified, moved: 2 });
+      expect(doc).toEqual(snapshot);
+      if (!cleared) {
+        // The broad patch provides no exact origins for this diagram; unrelated
+        // content (including the collapsed summary) retains its real provenance.
+        for (const node of diagramContentNodes(doc.proposed.document.scene.contents.overview.content)) {
+          expect(doc.proposed.nodeOrigins?.[node.id]).toBeUndefined();
+        }
+      }
+      expect(doc.baseline!.document.scene).toEqual(scene);
+      return session;
+    };
+    await check(1);
+    await changes.apply(id, documentId, 1, [{ method: 'patchDiagram', nodeId: 'grid:overview', start: 7, end: 8,
+      patch: '    |       |-- placement = automatic / manual\n    |       `-- sizing = content / fixed' }], 'fields');
+    await check(3);
+    for (const [action, modified, cleared] of [['undo', 1, false], ['redo', 3, false], ['reset', 0, true], ['undo', 3, false]] as const) {
+      const session = await changes.get(id);
+      await changes.update({ changeSessionId: id, documentId, expectedVersion: session.version, action, requestId: `${action}-${session.version}` });
+      await check(modified, cleared);
+    }
+    const reopened = new ChangeSessionService(new DiagramChangeSessionStore(root), source, bridge);
+    expect(await reopened.get(id)).toEqual(await changes.get(id));
+    expect(diffChangeDocument((await reopened.get(id)).documents[0]).counts.modified).toBe(3);
+    expect(await catalog.loadRepresentationCatalog('project')).toEqual(saved.catalog);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
 
 it('isolates shared MCP operations, persists sessions and history, rejects bad routing, and validates proposal readiness', async () => {
   const root = await mkdtemp(path.join(tmpdir(),'change-sessions-'));
