@@ -6,11 +6,8 @@
 nav[aria-label="Diagram changes"] button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
 nav[aria-label="Diagram changes"] summary { padding: 10px 0; cursor: pointer; }
 nav[aria-label="Diagram changes"] small { color: var(--muted); }
-.change-session-preview { position: absolute; inset: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); background: var(--bg, #0d1117); }
-.change-session-preview > .mapping-poc-canvas { grid-row: 2; width: 100%; height: 100%; }
-.change-preview-toolbar { position: relative; z-index: 12; margin: 10px 16px 10px 355px; display: flex; justify-content: flex-end; align-items: center; gap: 8px; flex-wrap: wrap; }
-.change-preview-toolbar button { color: var(--fg); background: #202a35; border: 1px solid #456070; padding: 5px 8px; border-radius: 3px; cursor: pointer; }
-.change-preview-toolbar button[aria-pressed=true] { border-color: #88c0d0; background: #30434e; }
+.change-session-preview { position: absolute; inset: 0; display: grid; grid-template-rows: minmax(0, 1fr); background: var(--bg, #0d1117); }
+.change-session-preview > .mapping-poc-canvas { grid-row: 1; width: 100%; height: 100%; }
 .change-preview-message { position: absolute; top: 95px; left: 360px; z-index: 12; }
 .change-preview-box { position: absolute; pointer-events: none; border: 1px dotted #456070; }
 .change-preview-box.is-change-target { outline: 1px solid #f2ca75; }

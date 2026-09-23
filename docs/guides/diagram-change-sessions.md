@@ -3,15 +3,17 @@
 The originating agent creates and edits a persisted proposal; no second agent is involved.
 Original documents and their saved catalog revisions remain independent. In Mapping,
 open **Changes**, expand a session and canvas, and select a change to preview it.
-**Original / Proposed** switches snapshots. **Return to diagrams** restores the
-working view, including its unsaved draft. Preview supports pan, zoom, local subtree
+The unified preview shows proposed content with deleted text inserted in place.
+The **Diagrams** explorer tab restores the working view, including its unsaved draft. Preview supports pan, zoom, local subtree
 folding, label outlines and measured connections. It has no catalog Save or editing
 controls. Acceptance/merging is not implemented in this display-focused release.
 
 Preview highlights text only in diagrams classified as Modify (type 1), showing the
 cumulative difference between the captured baseline and the current proposal.
-Added nodes within a modified diagram are green, edited labels amber, removed nodes red in
-Original, and moved/reparented nodes outlined blue. Unchanged ancestors get a dotted
+Added nodes within a modified diagram are green, edited labels amber (previous/current
+rows), removed node labels red in the same view, and moved/reparented nodes outlined
+blue. Deleted rows preserve indentation and branches without highlighting them. They
+have no live anchors or links and fold with their surviving ancestors. Unchanged ancestors get a dotted
 underline when they contain changes, including when collapsed. Highlights are always shown.
 Backgrounds and outlines preserve character positions and connection geometry.
 

@@ -13,6 +13,7 @@ import { seedMappingFixture } from '../support/browser-mapping-fixture.mjs';
 import { createDiagram } from '../../../domain/core/diagrams/diagram.ts';
 import { projectCanvasSnapshot, singleDiagramScene } from '../../../domain/core/diagrams/projectDiagramCanvas.ts';
 import { controllerBefore, controllerPatch, expectedAddedLabels, expectedUnchangedLabels } from '../../../domain/mapping/changes/__tests__/controllerDiffFixture.ts';
+import { floatingBefore, floatingAfter } from '../../../domain/mapping/changes/__tests__/floatingPaneDiffFixture.ts';
 const { evaluate, waitFor, waitForSelector, withHeadlessBrowser, captureScreenshot } = await import(pathToFileURL(path.join(homedir(), '.codex/skills/front-end/browser-test.mjs')).href);
 const root = await mkdtemp(path.join(tmpdir(), 'change-sessions-browser-'));
 let server, client;
@@ -29,6 +30,11 @@ try {
   catalog.representations['representation-controller']={...catalog.representations['representation-overview'],id:'representation-controller',handle:'controller',name:'Controller diff regression',currentRevisionId:'revision-controller',revisionIds:['revision-controller']};
   const controllerAscii=projectCanvasSnapshot(controllerScene).ascii;
   catalog.revisions['revision-controller']={...catalog.revisions['revision-overview'],id:'revision-controller',representationId:'representation-controller',ascii:controllerAscii,asciiSha256:createHash('sha256').update(controllerAscii).digest('hex'),content:{kind:'mapping-canvas',scene:controllerScene,edges:[]}};
+  const floatingScene=singleDiagramScene(floatingBefore);
+  floatingScene.contents.overview=createDiagram({id:'overview',revision:0,ascii:floatingBefore,structureKind:'tree'});
+  const floatingAscii=projectCanvasSnapshot(floatingScene).ascii;
+  catalog.representations['representation-floating']={...catalog.representations['representation-overview'],id:'representation-floating',handle:'floating',name:'FloatingPane diff regression',currentRevisionId:'revision-floating',revisionIds:['revision-floating']};
+  catalog.revisions['revision-floating']={...catalog.revisions['revision-overview'],id:'revision-floating',representationId:'representation-floating',ascii:floatingAscii,asciiSha256:createHash('sha256').update(floatingAscii).digest('hex'),content:{kind:'mapping-canvas',scene:floatingScene,edges:[]}};
   const originalCatalog=JSON.stringify(catalog); await writeFile(catalogPath,originalCatalog);
   const port=await new Promise(resolve=>{const s=createServer();s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(()=>resolve(p));});});
   const url=`http://127.0.0.1:${port}`;
@@ -42,7 +48,7 @@ try {
   const tool=async(name,args)=>{const result=await client.callTool({name,arguments:args});assert.ok(!result.isError,JSON.stringify(result));return JSON.parse(result.content[0].text);};
   let sequence=0;
   const exec=(code,options={})=>tool('exec',{code,requestId:`exec-${++sequence}`,...options});
-  await withHeadlessBrowser({url:`${url}/mapping`,width:1800,height:1100,arguments:['--disable-gpu']},async({cdp})=>{
+  await withHeadlessBrowser({url:`${url}/mapping`,width:1800,height:1100,chromePath:process.env.CHROME_PATH,arguments:['--disable-gpu']},async({cdp})=>{
     const send=cdp.send.bind(cdp);
     cdp.send=(method,params)=>{let timer;return Promise.race([send(method,params),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(`CDP timeout: ${method}`)),15000);})]).finally(()=>clearTimeout(timer));};
     await cdp.send('Page.enable'); cdp.on('Page.javascriptDialogOpening',()=>void cdp.send('Page.handleJavaScriptDialog',{accept:true}));
@@ -121,8 +127,17 @@ try {
     assert.ok(await evaluate(cdp,'document.querySelector(".change-session-preview .mapping-poc-ascii").textContent.includes("Proposed")'));
     await waitForSelector(cdp,'[data-preview-edge]');
     const diffLabels = () => evaluate(cdp,`[...document.querySelectorAll('.change-session-preview .diagram-content-node')].map(n=>({text:n.textContent,status:n.dataset.diffStatus,moved:n.dataset.diffMoved,inside:n.dataset.diffDescendants}))`);
+    const assertModifiedPair = async(previous,current)=>{
+      const rows=await evaluate(cdp,`[...document.querySelectorAll('.change-session-preview .ascii-line')].map(row=>({text:row.textContent,highlights:[...row.querySelectorAll('[data-diff-status="modified"]')].map(n=>({text:n.textContent,color:getComputedStyle(n).backgroundColor}))}))`);
+      const oldIndex=rows.findIndex(row=>row.text.includes('[-] '+previous)), newIndex=rows.findIndex(row=>row.text.includes('[+] '+current));
+      assert.ok(oldIndex>=0,`Missing previous line: ${previous}`); assert.equal(newIndex,oldIndex+1,'Modified lines must be consecutive and previous-first');
+      for(const row of [rows[oldIndex],rows[newIndex]]) {
+        assert.ok(row.highlights.length); assert.ok(row.highlights.every(n=>n.color==='rgb(81, 64, 30)'),JSON.stringify(row));
+      }
+    };
     const proposedLabels = await diffLabels();
     assert.equal(proposedLabels.find(n=>n.text==='Proposed').status,'modified');
+    await assertModifiedPair('Original','Proposed');
     const newChild=proposedLabels.find(n=>n.text==='New child');
     assert.ok(newChild);
     assert.equal(newChild.status,undefined,'New diagrams must not receive text highlighting');
@@ -133,13 +148,10 @@ try {
     assert.equal(proposedLabels.find(n=>n.text==='Root').inside,'true');
     assert.equal(await evaluate(cdp,'!!document.querySelector(".mapping-submenu")'),false);
     assert.equal(await evaluate(cdp,'!!document.querySelector(".mapping-workspace-actions")'),false);
-    await click('.change-preview-toolbar button','Original');
-    await waitFor(async()=>await evaluate(cdp,'document.querySelector(".change-session-preview .mapping-poc-ascii")?.textContent.includes("Original")'));
-    assert.equal((await diffLabels()).find(n=>n.text==='Gone').status,'removed');
-    assert.equal((await diffLabels()).find(n=>n.text==='Original').status,'modified');
-    assert.equal(await evaluate(cdp,'document.querySelectorAll("[data-preview-edge]").length'),0);
-    await click('.change-preview-toolbar button','Proposed');
-    await waitForSelector(cdp,'[data-preview-edge]');
+    const removedLabels = () => evaluate(cdp,`[...document.querySelectorAll('.change-preview-stage [data-diff-status="removed"]')].map(n=>({text:n.textContent,color:getComputedStyle(n).backgroundColor}))`);
+    assert.deepEqual(await removedLabels(),[{text:'Gone',color:'rgb(83, 44, 53)'}]);
+    assert.equal(await evaluate(cdp,'!!document.querySelector(".change-preview-toolbar")'),false,'The corner submenu must be removed');
+    assert.equal(await evaluate(cdp,`[...document.querySelectorAll('.change-preview-stage .ascii-line')].find(row=>row.textContent.includes('Gone')).querySelector('[data-diff-status="removed"]').textContent`),'Gone','Only the deleted label receives a red background');
     // DOM presence alone does not prove the canvas or its contents are visible.
     await waitFor(async()=>await evaluate(cdp,`(()=>{
       const viewport=document.querySelector('.change-session-preview .mapping-poc-canvas').getBoundingClientRect();
@@ -154,10 +166,12 @@ try {
     await waitForSelector(cdp,'.change-session-preview [aria-label="Expand subtree Root"]');
     assert.equal((await diffLabels()).find(n=>n.text==='Root').inside,'true');
     assert.equal((await diffLabels()).some(n=>n.text==='Proposed'),false);
+    assert.deepEqual(await removedLabels(),[],'Deleted descendants must fold with their surviving ancestor');
     await click('.change-session-preview [aria-label="Expand subtree Root"]');
     await waitForSelector(cdp,'.change-session-preview [aria-label="Collapse subtree Root"]');
+    assert.deepEqual(await removedLabels(),[{text:'Gone',color:'rgb(83, 44, 53)'}]);
     await captureScreenshot(cdp,{output:process.env.CHANGE_SESSION_SCREENSHOT??path.join(root,'changes.png')});
-    await click('.change-preview-toolbar button','Return to diagrams');
+    await click('[role=tab]','Diagrams');
     assert.equal(await evaluate(cdp,'document.querySelector("[aria-label=\\"Diagram name\\"]").value'),'Unsaved working draft');
     assert.equal(await evaluate(cdp,'document.querySelector(".mapping-document-view:not([hidden]) .mapping-poc-ascii").textContent'),ascii);
     assert.equal(await evaluate(cdp,'document.querySelector(".mapping-document-view:not([hidden]) .diagram-canvas__surface").style.transform'),workingTransform);
@@ -168,8 +182,6 @@ try {
     await waitFor(async()=>await evaluate(cdp,'document.querySelector(".change-session-preview .mapping-poc-ascii")?.textContent.includes("New canvas preview")'));
     const highlightedNodes = () => evaluate(cdp,`document.querySelectorAll('.change-preview-stage [data-diff-status], .change-preview-stage [data-diff-moved], .change-preview-stage [data-diff-descendants]').length`);
     assert.equal(await highlightedNodes(),0,'New canvases must not receive text highlighting');
-    await click('.change-preview-toolbar button','Original');
-    await waitFor(async()=>await evaluate(cdp,'document.querySelector(".change-preview-message")?.textContent.includes("no original")'));
     await click('nav[aria-label="Diagram changes"] summary','Second proposal draft · 1');
     await click('[data-change-id]','Root1 Modify');
     await waitFor(async()=>await evaluate(cdp,'document.querySelector(".change-session-preview .mapping-poc-ascii")?.textContent.includes("Alternative")'));
@@ -184,9 +196,41 @@ try {
     const addedText=await evaluate(cdp,`[...document.querySelectorAll('.change-preview-stage [data-diff-status="added"]')].map(n=>n.textContent).join('\\n')`);
     assert.ok(addedText.includes('Session edits persist without saving originals.'));
     if(process.env.CHANGE_SESSION_SCREENSHOT) await captureScreenshot(cdp,{output:process.env.CHANGE_SESSION_SCREENSHOT+'.controller.png'});
-    await click('.change-preview-toolbar button','Original');
     await waitFor(async()=>await evaluate(cdp,`document.querySelector('.change-session-preview .mapping-poc-ascii')?.textContent.includes('CanvasSessionBridge -> browser poll/reply')`));
-    assert.equal((await diffLabels()).find(n=>n.text==='CanvasSessionBridge -> browser poll/reply').status,'removed');
+    assert.ok((await removedLabels()).some(n=>n.text==='CanvasSessionBridge -> browser poll/reply'));
+    const floatingAttachment=(await exec(`return canvas.attach({canvasId:${JSON.stringify(second.canvasId)},documentId:'representation-floating'});`,{changeSessionId:second.changeSessionId})).value;
+    await exec(`return nodes.patchDiagram({nodeId:'grid:overview',start:1,end:${floatingBefore.split('\n').length},patch:${JSON.stringify(floatingAfter)}});`,{changeSessionId:second.changeSessionId,sessionId:floatingAttachment.sessionId,expectedVersion:0});
+    await exec(`const d=nodes.get({nodeId:'grid:overview'});const from=d.contentNodes.find(n=>n.label==='DisplayNodeBase');const to=d.contentNodes.find(n=>n.label==='SelectionRegion');return edges.create({source:{kind:'content-node',displayNodeId:d.id,contentNodeId:from.id,revisionId:d.content.revisionId,side:'right'},target:{kind:'content-node',displayNodeId:d.id,contentNodeId:to.id,revisionId:d.content.revisionId,side:'left'},appearance:{}});`,{changeSessionId:second.changeSessionId,sessionId:floatingAttachment.sessionId,expectedVersion:1});
+    await waitFor(async()=>await evaluate(cdp,`[...document.querySelectorAll('[data-change-id]')].some(n=>n.textContent.includes('FloatingBox variants'))`));
+    await click('[data-change-id]','FloatingBox variants1 Modify');
+    await waitFor(async()=>await evaluate(cdp,`document.querySelector('.change-session-preview .mapping-poc-ascii')?.textContent.includes('FloatingPane')`));
+    const floatingLabels=await diffLabels();
+    assert.equal(floatingLabels.find(n=>n.text==='FloatingPane').status,'added');
+    assert.equal(floatingLabels.find(n=>n.text==='pixel geometry / expansion').status,'added');
+    const renamed=floatingLabels.find(n=>n.text==='DisplayNodeBase');
+    assert.equal(renamed.status,'modified'); assert.equal(renamed.moved,'true'); assert.equal(renamed.inside,'true');
+    await assertModifiedPair('DisplayNodeBase: pixel geometry + policies','DisplayNodeBase');
+    await waitFor(async()=>await evaluate(cdp,`(()=>{
+      const label=[...document.querySelectorAll('.change-session-preview .diagram-content-node')].find(n=>n.textContent==='DisplayNodeBase');
+      const control=document.querySelector('.change-session-preview [aria-label="Collapse subtree DisplayNodeBase"]');
+      const previous=[...document.querySelectorAll('.change-session-preview [data-diff-version="previous"]')].find(n=>n.textContent.includes('DisplayNodeBase:'));
+      const path=document.querySelector('.change-session-preview [data-preview-edge] path');
+      if(!label||!control||!previous||!path) return false;
+      const r=label.getBoundingClientRect(), c=control.getBoundingClientRect();
+      const before=previous.getBoundingClientRect();
+      const point=path.getPointAtLength(0), p=new DOMPoint(point.x,point.y).matrixTransform(path.getScreenCTM());
+      return Math.abs(before.top-c.top)<2 && r.top>c.top && Math.abs(p.x-r.right)<2 && Math.abs(p.y-(r.top+r.height/2))<2;
+    })()`),{message:'Fold control must align with the previous row while the edge stays on the current label'});
+    for(const label of ['expandedGeometry?','geometryPolicy','placement: automatic | manual','sizing: content | fixed']) {
+      const found=floatingLabels.find(n=>n.text===label); assert.ok(found,label);
+      assert.equal(found.status,undefined,label); assert.equal(found.moved,undefined,label); assert.equal(found.inside,undefined,label);
+    }
+    await click('.change-session-preview [aria-label="Collapse subtree DisplayNodeBase"]');
+    await waitForSelector(cdp,'.change-session-preview [aria-label="Expand subtree DisplayNodeBase"]');
+    assert.equal((await diffLabels()).find(n=>n.text==='DisplayNodeBase').inside,'true');
+    assert.equal((await diffLabels()).some(n=>n.text==='geometryPolicy'),false);
+    await click('.change-session-preview [aria-label="Expand subtree DisplayNodeBase"]');
+    if(process.env.CHANGE_SESSION_SCREENSHOT) await captureScreenshot(cdp,{output:process.env.CHANGE_SESSION_SCREENSHOT+'.floating.png'});
     console.log('Reloading original page');
     await cdp.send('Page.navigate',{url:`${url}/mapping`});
     await waitForSelector(cdp,'[role=tab]'); await click('[role=tab]','Changes');
@@ -197,11 +241,11 @@ try {
     await waitForSelector(cdp,'[data-preview-edge]');
     // A patch applied while viewing the session refreshes the cumulative baseline diff.
     await exec('return nodes.patchDiagram({nodeId:"grid:overview",start:2,end:2,patch:"|-- Original"});',{...scope,expectedVersion:3});
-    await waitFor(async()=>await evaluate(cdp,'document.querySelector(".change-session-preview .mapping-poc-ascii")?.textContent.includes("Original")'));
+    await waitFor(async()=>(await diffLabels()).some(n=>n.text==='Original' && !n.status));
     assert.equal((await diffLabels()).find(n=>n.text==='Original').status,undefined);
     const beforeUndo=await (await fetch(`${url}/api/mapping/agent/change-sessions/${changeSessionId}`)).json();
     await tool('update_diagram_change_session',{changeSessionId,requestId:'undo-visible-patch',expectedVersion:beforeUndo.version,action:'undo',documentId:'representation-overview'});
-    await waitFor(async()=>await evaluate(cdp,'document.querySelector(".change-session-preview .mapping-poc-ascii")?.textContent.includes("Proposed")'));
+    await waitFor(async()=>(await diffLabels()).some(n=>n.text==='Proposed' && n.status==='modified'));
     assert.equal((await diffLabels()).find(n=>n.text==='Proposed').status,'modified');
     // Classification changes must update decoration even without a document edit.
     const beforeMajor=await (await fetch(`${url}/api/mapping/agent/change-sessions/${changeSessionId}`)).json();
@@ -209,11 +253,8 @@ try {
       changes:beforeMajor.changes.map(change=>change.type===1?{...change,type:4}:change)});
     await waitFor(async()=>await highlightedNodes()===0,{message:'Major updates must not receive text highlighting'});
     assert.ok((await diffLabels()).some(n=>n.text==='Proposed'));
-    await click('.change-preview-toolbar button','Original');
-    await waitFor(async()=>await evaluate(cdp,'document.querySelector(".change-session-preview .mapping-poc-ascii")?.textContent.includes("Original")'));
-    assert.equal(await highlightedNodes(),0,'Major updates must not highlight the original either');
     assert.equal(await readFile(catalogPath,'utf8'),originalCatalog,'Canonical catalog was modified');
     assert.deepEqual(errors,[]);
-    console.log('Change sessions: three-change set, colored node diff, removals in Original, folded indicators, multiple sessions, draft/camera retention and reload passed; originals unchanged.');
+    console.log('Change sessions: three-change set, colored node diff, wrapper/rename recovery, unchanged descendants, inline removals with label-only highlighting, folded indicators, multiple sessions, draft/camera retention and reload passed; originals unchanged.');
   });
 }finally{await client?.close();server?.kill('SIGTERM');await rm(root,{recursive:true,force:true});}

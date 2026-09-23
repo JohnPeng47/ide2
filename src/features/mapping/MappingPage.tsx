@@ -56,7 +56,6 @@ const dirty = (draft: Draft) => draft.name !== draft.savedName || JSON.stringify
 export function MappingPocPage() {
   const [explorerTab, setExplorerTab] = useState<'diagrams'|'changes'>('diagrams');
   const [changeMode, setChangeMode] = useState<DisplayModeChange>();
-  const closeChangePreview = () => { setChangeMode(undefined); setExplorerTab('diagrams'); };
   const [workspaceEpoch, setWorkspaceEpoch] = useState(0);
   const [viewState, setViewState] = useState(() => new SourcePaneViewState());
   const [workspaceStatus, setWorkspaceStatus] = useState("");
@@ -337,7 +336,7 @@ export function MappingPocPage() {
           </div></SourcePaneDocumentActiveContext.Provider></SourcePaneDocumentContext.Provider>)}
           {!active && !changeMode && <div className="mapping-empty"><h1>{snapshot ? "Create a project diagram" : error ? "Could not load project diagrams" : "Loading project diagrams…"}</h1>
             {snapshot && <button type="button" onClick={() => setCreating(true)}>New diagram</button>}</div>}
-          {changeMode && <ChangeSessionPreview mode={changeMode} onClose={closeChangePreview} onSelect={setChangeMode} />}
+          {changeMode && <ChangeSessionPreview mode={changeMode} onSelect={setChangeMode} />}
           <FloatingPane><MappingDiagramExplorer explorerTab={explorerTab}
             onTabChange={tab => { setExplorerTab(tab); if (tab === 'diagrams') setChangeMode(undefined); }}
             changeMode={changeMode} onChangeSelect={setChangeMode} projectName={snapshot?.project?.name ?? "Project"} diagrams={diagrams}

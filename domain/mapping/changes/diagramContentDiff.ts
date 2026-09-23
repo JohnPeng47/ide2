@@ -12,14 +12,18 @@ export interface DiagramDiffSide {
 }
 export interface DiagramContentDiff {
   original: DiagramDiffSide; proposed: DiagramDiffSide;
+  modifications: { original: ModifiedText; proposed: ModifiedText }[];
+  /** Baseline-only text inserted before a proposed source line, without live anchors. */
+  removals: { text: string; beforeLine: number; ancestorIds: string[]; spans: { start: number; end: number }[] }[];
   counts: { added: number; removed: number; modified: number; moved: number };
 }
+export interface ModifiedText { contentNodeId?: string; sourceLine: number; text: string }
 
 /** Rendering-only correspondence. Never use these heuristic matches for edge anchors. */
 export function diffDiagramContent(before: DiagramContent | undefined, after: DiagramContent | undefined,
   origins: Readonly<Record<string, string>> = {}): DiagramContentDiff {
   const result: DiagramContentDiff = { original: { nodes: new Map(), lines: new Map() },
-    proposed: { nodes: new Map(), lines: new Map() }, counts: { added: 0, removed: 0, modified: 0, moved: 0 } };
+    proposed: { nodes: new Map(), lines: new Map() }, modifications: [], removals: [], counts: { added: 0, removed: 0, modified: 0, moved: 0 } };
   if (before?.ascii === after?.ascii) return result;
   const index = (content?: DiagramContent) => {
     const lines = content?.ascii.split('\n') ?? [];
@@ -40,6 +44,8 @@ export function diffDiagramContent(before: DiagramContent | undefined, after: Di
   for (const [oldId, nextId] of forward) {
     const old = a.byId.get(oldId)!, next = b.byId.get(nextId)!;
     if (old.label !== next.label) {
+      result.modifications.push({ original: { contentNodeId: oldId, sourceLine: old.line, text: old.label },
+        proposed: { contentNodeId: nextId, sourceLine: next.line, text: next.label } });
       update(result.original, oldId, { status: 'modified' }); update(result.proposed, nextId, { status: 'modified' }); result.counts.modified++;
     }
     if (old.parentId ? !forward.has(old.parentId) || forward.get(old.parentId) !== next.parentId : !!next.parentId) moved.add(oldId);
@@ -74,10 +80,14 @@ export function diffDiagramContent(before: DiagramContent | undefined, after: Di
     return side.lines.flatMap((text, i) => !occupied.has(i + 1) && /[^\s|+`\\/-]/.test(text) ? [{ text, line: i + 1 }] : []);
   };
   const oldText = loose(a), newText = loose(b);
+  const lineMatches = new Map<number, number>();
+  for (const [oldId, newId] of forward) lineMatches.set(a.byId.get(oldId)!.line, b.byId.get(newId)!.line);
   const lineDiff = (left: typeof oldText, right: typeof newText) => {
     let start = 0, endA = left.length, endB = right.length;
-    while (start < endA && start < endB && left[start].text === right[start].text) start++;
-    while (endA > start && endB > start && left[endA - 1].text === right[endB - 1].text) { endA--; endB--; }
+    while (start < endA && start < endB && left[start].text === right[start].text) {
+      lineMatches.set(left[start].line, right[start].line); start++;
+    }
+    while (endA > start && endB > start && left[endA - 1].text === right[endB - 1].text) { endA--; endB--; lineMatches.set(left[endA].line, right[endB].line); }
     const l = left.slice(start, endA), r = right.slice(start, endB);
     const oldPositions = new Map<string, number[]>(), newPositions = new Map<string, number[]>();
     l.forEach((n, i) => oldPositions.set(n.text, [...(oldPositions.get(n.text) ?? []), i]));
@@ -86,10 +96,13 @@ export function diffDiagramContent(before: DiagramContent | undefined, after: Di
     const stable = orderedIndices(anchors.map(n => n.j)), ordered = anchors.filter((_, i) => stable.has(i));
     if (ordered.length) {
       let i = 0, j = 0;
-      for (const n of ordered) { lineDiff(l.slice(i, n.i), r.slice(j, n.j)); i = n.i + 1; j = n.j + 1; }
+      for (const n of ordered) { lineMatches.set(l[n.i].line, r[n.j].line); lineDiff(l.slice(i, n.i), r.slice(j, n.j)); i = n.i + 1; j = n.j + 1; }
       lineDiff(l.slice(i), r.slice(j)); return;
     }
     const modified = l.length === 1 && r.length === 1;
+    if (modified) lineMatches.set(l[0].line, r[0].line);
+    if (modified) result.modifications.push({ original: { sourceLine: l[0].line, text: l[0].text },
+      proposed: { sourceLine: r[0].line, text: r[0].text } });
     for (const n of l) result.original.lines.set(n.line, modified ? 'modified' : 'removed');
     for (const n of r) result.proposed.lines.set(n.line, modified ? 'modified' : 'added');
     result.counts.modified += Number(modified);
@@ -103,5 +116,33 @@ export function diffDiagramContent(before: DiagramContent | undefined, after: Di
     }
   };
   foldedText(a, result.original, result.proposed, forward); foldedText(b, result.proposed, result.original, reverse);
+  // Place deleted text near surviving context. A surviving ancestor bounds the
+  // search so a deleted final child stays inside its branch, even after a move.
+  const rows = new Map<number, typeof a.nodes>();
+  for (const node of a.nodes) rows.set(node.line, [...(rows.get(node.line) ?? []), node]);
+  const anchors = [...lineMatches].sort(([left], [right]) => left - right);
+  for (let line = 1; line <= a.lines.length; line++) {
+    const nodes = rows.get(line) ?? [];
+    const removed = nodes.filter(node => result.original.nodes.get(node.id)?.status === 'removed');
+    if (!removed.length && result.original.lines.get(line) !== 'removed') continue;
+    // For multi-column diagrams, do not repeat surviving labels on the ghost row.
+    const chars = a.lines[line - 1].split('');
+    for (const node of nodes) if (!removed.includes(node)) chars.fill(' ', node.startColumn - 1, node.endColumn);
+    const containing = a.nodes.filter(node => node.foldRanges.some(range => line >= range.startLine && line <= range.endLine)
+      && node.line !== line && forward.has(node.id));
+    const ancestorIds = containing.map(node => forward.get(node.id)!);
+    const parent = containing.sort((left, right) => right.line - left.line)[0];
+    const parentEnd = parent ? Math.max(parent.line, ...parent.foldRanges.map(range => range.endLine)) : a.lines.length;
+    const next = anchors.find(([oldLine]) => oldLine > line && oldLine <= parentEnd);
+    const proposedParent = parent && b.byId.get(forward.get(parent.id)!);
+    const previous = anchors.filter(([oldLine]) => oldLine < line).at(-1);
+    const beforeLine = next?.[1] ?? (proposedParent
+      ? Math.max(proposedParent.line, ...proposedParent.foldRanges.map(range => range.endLine)) + 1
+      : previous ? previous[1] + 1 : b.lines.length + 1);
+    const text = chars.join('').trimEnd();
+    const spans = removed.length ? removed.map(node => ({ start: node.startColumn - 1, end: node.endColumn }))
+      : [{ start: text.length - text.trimStart().length, end: text.length }];
+    result.removals.push({ text, beforeLine, ancestorIds, spans });
+  }
   return result;
 }
