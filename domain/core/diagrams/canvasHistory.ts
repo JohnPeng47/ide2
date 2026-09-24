@@ -1,6 +1,6 @@
 import { validateDiagram, type Diagram } from './diagram';
 import { diagramContentNodes } from './diagramContentNodes';
-import { correspondingNodes, RevisionedDiagramService, type DiagramRevision } from './diagramService';
+import { correspondingNodes, DiagramRevisionEditor, type DiagramRevision } from './diagramRevisionEditor';
 import type { LineGridScene } from './lineGrid';
 import type { DiagramConnection, DiagramAnchor, ContentNodeAnchor } from './diagramConnection';
 export interface ResolvedCanvasDocument { scene: LineGridScene; edges: DiagramConnection[]; sections: Readonly<Record<string, readonly {id: string; label: string; startLine: number; endLine: number; anchorToken: string}[]>> }
@@ -49,7 +49,7 @@ const equal = (a: unknown, b: unknown) => stateKey(a) === stateKey(b);
 /** Shared by live controllers, MCP staging and persisted change-session copies. */
 export class CanvasHistory {
   private record: CanvasHistoryRecord;
-  readonly diagrams: RevisionedDiagramService;
+  readonly diagrams: DiagramRevisionEditor;
   constructor(document: ResolvedCanvasDocument, view: unknown, record?: CanvasHistoryRecord) {
     if (record) {
       validateCanvasHistory(record);
@@ -61,7 +61,7 @@ export class CanvasHistory {
       this.record.baselineId = this.record.headId;
       this.record.past = [];
     }
-    this.diagrams = new RevisionedDiagramService(this.record.diagramRevisions, contextId => {
+    this.diagrams = new DiagramRevisionEditor(this.record.diagramRevisions, contextId => {
       if (contextId !== this.record.contextId) throw new Error('Unknown editing context');
       return this.head.diagramBindings;
     });

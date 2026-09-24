@@ -57,7 +57,7 @@ it("atomically persists a call tree and OR links, preserving source and active p
 
 it("rejects invalid links and stale imports without partially creating the target", async () => {
   const { db, source, input } = await fixture();
-  const catalogPath = path.join(db.storeRoot, "representations/catalog.json");
+  const catalogPath = path.join(db.storeRoot, "canvases/catalog.json");
   const before = await readFile(catalogPath, "utf8");
   for (const links of [[{ sourceEvidenceIds: ["missing"], targetLines: [3] }], [{ sourceEvidenceIds: ["a"], targetLines: [2] }]]) {
     await expect(db.saveProjectedTree("project-test", { ...input, links })).rejects.toThrow();

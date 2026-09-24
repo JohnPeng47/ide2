@@ -71,7 +71,7 @@ it("converts a legacy ASCII project diagram in place and resolves prompt evidenc
 it("rejects foreign projects, invalid scenes, and unknown evidence without changing the catalog", async () => {
   const db = await store();
   await db.saveMappingDiagram("project-one", { name: "First", scene: singleDiagramScene("First") });
-  const before = await readFile(path.join(db.storeRoot, "representations/catalog.json"), "utf8");
+  const before = await readFile(path.join(db.storeRoot, "canvases/catalog.json"), "utf8");
   await expect(db.saveMappingDiagram("project-one", { projectId: "project-other", name: "Bad", scene: singleDiagramScene("Bad") })).rejects.toThrow("another Project");
   const scene = singleDiagramScene("Bad");
   scene.contents.overview.sourceContext.mappings = [{ id: "m", entityId: "unknown", sourceRangeIndex: 0, line: 1, startColumn: 1, endColumn: 3 }];
@@ -89,5 +89,5 @@ it("rejects foreign projects, invalid scenes, and unknown evidence without chang
       contents: { overview: missingSummary.contents.overview }
     }
   })).rejects.toThrow("Unknown collapsed canvas content");
-  expect(await readFile(path.join(db.storeRoot, "representations/catalog.json"), "utf8")).toBe(before);
+  expect(await readFile(path.join(db.storeRoot, "canvases/catalog.json"), "utf8")).toBe(before);
 });

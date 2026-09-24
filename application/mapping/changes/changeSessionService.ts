@@ -1,4 +1,4 @@
-import { CanvasHistory } from '../../../domain/mapping/workspace/canvasHistory';
+import { RevisionedDiagramService, type DiagramService } from '../../../domain/core/diagrams/diagramService';
 import { historyFromRevision, documentFromRevision } from '../../../domain/core/diagrams/projectDiagramCanvas';
 import { diagramContentNodes } from '../../../domain/core/diagrams/diagramContentNodes';
 import { createHash, randomUUID } from 'node:crypto';
@@ -16,7 +16,7 @@ import { connectionBox, validateConnectionAnchor } from '../../../domain/core/di
 export class ChangeSessionService {
   private queues = new Map<string, Promise<unknown>>();
   constructor(private readonly repository: DiagramChangeSessionRepository,
-    private readonly source: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs'>, private readonly bridge: CanvasSessionPort) {}
+    private readonly source: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs'>, private readonly bridge: CanvasSessionPort, private readonly diagrams: DiagramService = new RevisionedDiagramService()) {}
   private async projectId() { const p = await this.source.loadProject(); if (!p) throw new Error('Project is not initialized'); return p.id; }
   private serialize<T>(id: string, fn: () => Promise<T>): Promise<T> {
     const next = (this.queues.get(id) ?? Promise.resolve()).catch(() => {}).then(fn);
@@ -42,7 +42,7 @@ export class ChangeSessionService {
       for (const rep of Object.values(catalog.representations).filter(r => r.status === 'settled')) {
         const revision = catalog.revisions[rep.currentRevisionId];
         const baseline = { document: documentFromRevision(revision), canvas: initialCanvasState() };
-        documents.set(rep.id, { id: rep.id, name: rep.name, representationId: rep.id, savedRevisionId: revision.id, history: new CanvasHistory(baseline.document, baseline.canvas, historyFromRevision(revision)).fork(baseline.canvas),
+        documents.set(rep.id, { id: rep.id, name: rep.name, representationId: rep.id, savedRevisionId: revision.id, history: this.forkHistory(baseline, historyFromRevision(revision)),
           baseline, proposed: structuredClone(baseline), version: 0, past: [], future: [] });
       }
       const live = this.bridge.list().filter(c => c.projectId === projectId && (!input.canvasId || c.canvasId === input.canvasId));
@@ -53,7 +53,7 @@ export class ChangeSessionService {
         const baseline = structuredClone({ document: snapshot.document, canvas: snapshot.canvas });
         const key = snapshot.representationId ?? doc.representationId ?? doc.documentId;
         documents.set(key, { id: key, name: snapshot.name, representationId: snapshot.representationId ?? doc.representationId,
-          history: new CanvasHistory(baseline.document, baseline.canvas, snapshot.history).fork(baseline.canvas),
+          history: this.forkHistory(baseline, snapshot.history),
           savedRevisionId: snapshot.revisionId, capturedVersion: snapshot.version, baseline, proposed: structuredClone(baseline), version: 0, past: [], future: [] });
       }
       const result = { changeSessionId: id, canvasId: id, version: 0, documents: [...documents.values()].map(d => ({ documentId: d.id, name: d.name })) };
@@ -62,6 +62,10 @@ export class ChangeSessionService {
         createdAt: now, updatedAt: now, documents: [...documents.values()], changes: [], receipts: { create: { signature, result } } });
       return result;
     });
+  }
+  private forkHistory(state: ChangeDocumentState, history?: import('../../../domain/core/diagrams/canvasHistory').CanvasHistoryRecord) {
+    const context = this.diagrams.openContext(state.document, state.canvas, history);
+    return this.diagrams.forkContext(context, state.canvas);
   }
   /** Replay a completed bound MCP mutation before consulting its now-stale version. */
   async request<T>(id: string, requestId: string, signature: string, execute: () => Promise<T>): Promise<T> {
@@ -111,15 +115,15 @@ export class ChangeSessionService {
     // Older proposals are imported once, preserving their available undo states.
     if (!doc.history) {
       const baseline = doc.baseline ?? doc.past[0] ?? doc.proposed;
-      const history = new CanvasHistory(baseline.document, baseline.canvas);
-      const record = history.export();
+      const context = this.diagrams.openContext(baseline.document, baseline.canvas);
+      const record = this.diagrams.exportContext(context);
       const states = [...doc.past, doc.proposed, ...[...doc.future].reverse()];
       const ids: string[] = [];
       for (const state of states) {
-        const checkpoint = history.append(state.document, state.canvas);
-        ids.push(checkpoint.id);
+        this.diagrams.append(context, state.document, state.canvas);
+        ids.push(this.diagrams.state(context).checkpointId);
       }
-      const migrated = history.export();
+      const migrated = this.diagrams.exportContext(context);
       states.forEach((state, index) => {
         if (state.nodeOrigins) migrated.snapshots[ids[index]].nodeOrigins = structuredClone(state.nodeOrigins);
       });
@@ -129,7 +133,7 @@ export class ChangeSessionService {
       migrated.future = ids.slice(doc.past.length + 1).reverse();
       doc.history = migrated;
     }
-    return new MappingDocumentController(doc.proposed.document, doc.proposed.canvas, doc.version, undefined, undefined, doc.history);
+    return new MappingDocumentController(doc.proposed.document, doc.proposed.canvas, doc.version, undefined, undefined, doc.history, this.diagrams);
   }
   private record(doc: ChangeSessionDocument, controller: MappingDocumentController) {
     const snapshot = controller.getSnapshot();
@@ -153,8 +157,8 @@ export class ChangeSessionService {
     const changes: DiagramChange[] = [];
     for (const doc of s.documents) {
       if (!doc.baseline) { changes.push({ id: `canvas:${doc.id}`, documentId: doc.id, title: doc.name, type: 3, reasons: [], dependsOn: [] }); continue; }
-      const before = new MappingDocumentController(doc.baseline.document, doc.baseline.canvas).nodes();
-      const after = new MappingDocumentController(doc.proposed.document, doc.proposed.canvas).nodes();
+      const before = new MappingDocumentController(doc.baseline.document, doc.baseline.canvas, 0, undefined, undefined, undefined, this.diagrams).nodes();
+      const after = new MappingDocumentController(doc.proposed.document, doc.proposed.canvas, 0, undefined, undefined, undefined, this.diagrams).nodes();
       const candidates = new Map([...before, ...after].filter(n => n.layout === 'grid' && n.kind === 'diagram').map(n => [n.id, n]));
       for (const [nodeId, node] of candidates) {
         const a = before.find(n => n.id === nodeId), b = after.find(n => n.id === nodeId);

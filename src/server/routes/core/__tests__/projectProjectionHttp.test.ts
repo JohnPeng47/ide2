@@ -88,7 +88,7 @@ async function fixture() {
   };
   return {
     root, sourceEndpoint: `${origin}/api/core/project/source`, store, project, source, endpoint, diagramsEndpoint, post, snapshot, input,
-    catalogPath: path.join(store.storeRoot, "representations/catalog.json")
+    catalogPath: path.join(store.storeRoot, "canvases/catalog.json")
   };
 }
 

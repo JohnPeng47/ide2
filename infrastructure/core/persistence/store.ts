@@ -1,3 +1,5 @@
+import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService';
+import { DiagramRevisionStore } from './diagramRevisionStore';
 import path from "node:path";
 import type { RepositoryLocation } from "../../../application/core/corpus/location";
 import {
@@ -14,11 +16,15 @@ export class DiagramStore {
   readonly checkoutRoot: string;
   readonly storeRoot: string;
   readonly projectCatalogs: ProjectCatalogStore;
+  readonly diagrams: RevisionedDiagramService;
+  readonly canvases: ProjectCatalogStore;
   private readonly context: PersistenceContext;
   constructor(checkoutRoot: string, diagramsDirectory = ".diagrams") {
     this.checkoutRoot = path.resolve(checkoutRoot);
     this.storeRoot = path.resolve(this.checkoutRoot, diagramsDirectory);
-    this.projectCatalogs = new ProjectCatalogStore(this.storeRoot);
+    this.diagrams = new RevisionedDiagramService(new DiagramRevisionStore(this.storeRoot));
+    this.canvases = new ProjectCatalogStore(this.storeRoot, this.diagrams);
+    this.projectCatalogs = this.canvases;
     this.context = { checkoutRoot: this.checkoutRoot, storeRoot: this.storeRoot, projectCatalogs: this.projectCatalogs };
   }
   async ensureProject(location: RepositoryLocation): Promise<ProjectRecord> { return projectsStore.ensureProject(this.context, location); }

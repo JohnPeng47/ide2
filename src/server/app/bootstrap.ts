@@ -57,7 +57,7 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
   const diagrams = new MappingDiagramService(store, corpusAccess, projectRoot, configuredDomainProfileId);
   const canvasBridge = new CanvasSessionBridge();
   const agent = new AgentDiagrammingSessionService(canvasBridge, diagrams, store, new QuickJsAgentRuntime(),
-    new ChangeSessionService(new DiagramChangeSessionStore(store.storeRoot), store, canvasBridge));
+    new ChangeSessionService(new DiagramChangeSessionStore(store.storeRoot, store.diagrams), store, canvasBridge, store.diagrams));
   const routes = {
     core: createCoreRoutes({
       application: core,
@@ -67,7 +67,7 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
     mapping: createMappingRoutes({
       selection: new SelectionService(store, mappingRuntime, mappingPocSourceRoot),
       diagrams, agent,
-      workspace: new MappingWorkspaceService(store, new MappingWorkspaceStore(store.storeRoot)),
+      workspace: new MappingWorkspaceService(store, new MappingWorkspaceStore(store.storeRoot, store.diagrams)),
       chat: new LocalChatService(store, corpusAccess, chatRuntime, mappingPocSourceRoot),
       compactionService
     })

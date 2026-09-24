@@ -1,104 +1,83 @@
-import { createDiagram, validateDiagram, type Diagram, type DiagramInput } from './diagram';
-import { patchDiagram } from './patchDiagram';
-import { diagramContentNodes } from './diagramContentNodes';
-import { activeDiagramJumps, validateDiagramJumps, type DiagramJump } from './diagramJump';
+import { CanvasHistory, type CanvasHistoryRecord, type ResolvedCanvasDocument } from './canvasHistory';
+import { DiagramRevisionEditor, type DiagramEdit, type DiagramView, type PreparedDiagramEdit } from './diagramRevisionEditor';
+import type { DiagramInput } from './diagram';
+import { persistDiagramData, restoreDiagramData, type DiagramRecordStore } from './diagramPersistence';
 
-export type ContextId = string;
-export type DiagramRevisionId = string;
-export interface DiagramRevision {
-  id: DiagramRevisionId;
-  diagramId: string;
-  parentId?: DiagramRevisionId;
-  /** Storage/legacy transport payload. Never returned by resolve(). */
-  diagram: Diagram;
-  nodeRefs: Record<string, string>;
-}
-export interface DiagramView {
-  id: string;
-  ascii: string;
-  asciiSha256: string;
-  structureKind: 'diagram' | 'tree';
-  nodes: ReturnType<typeof diagramContentNodes>;
-  sourceContext: Diagram['sourceContext'];
-  jumps: { id: string; source: Omit<DiagramJump['source'], 'revisionId' | 'contentHash'>; target: DiagramJump['target'] }[];
-}
-export interface PreparedDiagramEdit {
-  diagram: Diagram;
-  nodeIds: ReadonlyMap<string, string>;
-  lineAfter?: (line: number) => number | undefined;
-}
-export type DiagramEdit =
-  | { kind: 'patch'; start: number; end: number; patch: string; mappings?: DiagramInput['mappings'] }
-  | { kind: 'replace'; input: Omit<DiagramInput, 'id' | 'revision'> }
-  | { kind: 'jumps'; jumps: DiagramJump[] };
+export type { DiagramEdit, DiagramView, DiagramRevision, DiagramRevisionId, ContextId, PreparedDiagramEdit } from './diagramRevisionEditor';
+export type { DiagramRecordStore } from './diagramPersistence';
 
-/** Canonical content ownership; context bindings are supplied by canvas history. */
+/** Runtime handle. Neither it nor the service belongs in a saved canvas. */
+export interface DiagramEditingContext { readonly contextId: string }
+export interface DiagramContextState {
+  checkpointId: string;
+  document: import('./canvasHistory').CanvasDocument;
+  view: unknown;
+  canUndo: boolean;
+  canRedo: boolean;
+}
+
+/** Canvas controllers coordinate edits; this boundary owns history and its storage. */
 export interface DiagramService {
-  resolve(contextId: ContextId, diagramId: string): DiagramView;
+  openContext(document: ResolvedCanvasDocument, view: unknown, history?: CanvasHistoryRecord): DiagramEditingContext;
+  state(context: DiagramEditingContext): DiagramContextState;
+  resolve(context: DiagramEditingContext, diagramId: string): DiagramView;
+  document(context: DiagramEditingContext): ResolvedCanvasDocument;
+  append(context: DiagramEditingContext, document: ResolvedCanvasDocument, view: unknown, correspondence?: ReadonlyMap<string, string>): void;
+  navigate(context: DiagramEditingContext, redo?: boolean): boolean;
+  reset(context: DiagramEditingContext): void;
+  /** Portable transport adapters; callers must not interpret diagram revision tables. */
+  exportContext(context: DiagramEditingContext): CanvasHistoryRecord;
+  forkContext(context: DiagramEditingContext, view: unknown): CanvasHistoryRecord;
   prepareCreate(input: DiagramInput): PreparedDiagramEdit;
-  prepareEdit(contextId: ContextId, diagramId: string, edit: DiagramEdit): PreparedDiagramEdit;
-  merge(baseline: Readonly<Record<string, DiagramRevisionId>>, current: Readonly<Record<string, DiagramRevisionId>>,
-    proposed: Readonly<Record<string, DiagramRevisionId>>): Record<string, DiagramRevisionId>;
+  prepareEdit(document: ResolvedCanvasDocument, diagramId: string, edit: DiagramEdit): PreparedDiagramEdit;
+  persist(value: unknown): Promise<unknown>;
+  restore<T>(value: unknown): Promise<T>;
 }
 
 export class RevisionedDiagramService implements DiagramService {
-  constructor(private readonly revisions: Record<string, DiagramRevision>,
-    private readonly bindings: (contextId: ContextId) => Readonly<Record<string, DiagramRevisionId>>) {}
+  // Object handles isolate two viewers of the same persisted context, and allow GC on close.
+  private readonly contexts = new WeakMap<DiagramEditingContext, CanvasHistory>();
+  constructor(private readonly store?: DiagramRecordStore) {}
 
-  private revision(contextId: ContextId, diagramId: string): DiagramRevision {
-    const id = this.bindings(contextId)[diagramId], revision = id && this.revisions[id];
-    if (!revision || revision.diagramId !== diagramId) throw new Error(`Unknown diagram: ${diagramId}`);
-    return revision;
+  openContext(document: ResolvedCanvasDocument, view: unknown, record?: CanvasHistoryRecord): DiagramEditingContext {
+    const history = new CanvasHistory(document, view, record);
+    const context = Object.freeze({ contextId: history.contextId });
+    this.contexts.set(context, history);
+    return context;
   }
-  resolve(contextId: ContextId, diagramId: string): DiagramView {
-    const { diagram, nodeRefs } = this.revision(contextId, diagramId);
-    const nodes = diagramContentNodes(diagram.content).map(node => ({ ...node, id: nodeRefs[node.id],
-      parentId: node.parentId ? nodeRefs[node.parentId] : undefined, childIds: node.childIds.map(id => nodeRefs[id]) }));
-    return structuredClone({ id: diagramId, ascii: diagram.content.ascii, asciiSha256: diagram.content.asciiSha256,
-      structureKind: diagram.content.structure.kind, nodes, sourceContext: diagram.sourceContext,
-      jumps: activeDiagramJumps(diagram.content, diagram.jumps).map(jump => {
-        const { revisionId: _, contentHash: __, ...source } = jump.source;
-        return { id: jump.id, source: { ...source, contentNodeId: source.contentNodeId ? nodeRefs[source.contentNodeId] : undefined }, target: jump.target };
-      }) });
+  private history(context: DiagramEditingContext) {
+    const history = this.contexts.get(context);
+    if (!history) throw new Error('Unknown diagram editing context');
+    return history;
   }
-  prepareCreate(input: DiagramInput): PreparedDiagramEdit {
-    return { diagram: createDiagram(input), nodeIds: new Map() };
+  state(context: DiagramEditingContext): DiagramContextState {
+    const history = this.history(context), head = history.head;
+    return { checkpointId: head.id, document: head.document, view: head.view, canUndo: history.canUndo, canRedo: history.canRedo };
   }
-  prepareEdit(contextId: ContextId, diagramId: string, edit: DiagramEdit): PreparedDiagramEdit {
-    const before = this.revision(contextId, diagramId).diagram;
-    if (edit.kind === 'patch') {
-      const prepared = patchDiagram(before, edit.start, edit.end, edit.patch);
-      if (edit.mappings) {
-        const sourceContext = createDiagram({ id: diagramId, revision: prepared.diagram.revision,
-          ascii: prepared.diagram.content.ascii, structureKind: prepared.diagram.content.structure.kind,
-          source: before.sourceContext.binding, evidence: before.sourceContext.evidence, mappings: edit.mappings }).sourceContext;
-        prepared.diagram = { ...prepared.diagram, sourceContext };
-      }
-      return prepared;
-    }
-    const diagram = edit.kind === 'jumps'
-      ? { ...structuredClone(before), jumps: validateDiagramJumps(before.content, edit.jumps, false) }
-      : createDiagram({ ...edit.input, id: diagramId, revision: before.revision + 1 });
-    validateDiagram(diagram);
-    return { diagram, nodeIds: correspondingNodes(before, diagram) };
+  resolve(context: DiagramEditingContext, diagramId: string) {
+    const history = this.history(context);
+    return history.diagrams.resolve(history.contextId, diagramId);
   }
-  /** Deliberately conservative until three-way merge is implemented. */
-  merge(baseline: Readonly<Record<string, string>>, current: Readonly<Record<string, string>>, proposed: Readonly<Record<string, string>>) {
-    for (const id of new Set([...Object.keys(baseline), ...Object.keys(current)])) {
-      if (baseline[id] !== current[id]) throw new Error(`MERGE_REQUIRED: diagram ${id} advanced; automatic merge is not implemented`);
-    }
-    return { ...proposed };
+  document(context: DiagramEditingContext) { return this.history(context).document(); }
+  append(context: DiagramEditingContext, document: ResolvedCanvasDocument, view: unknown, correspondence?: ReadonlyMap<string, string>) {
+    this.history(context).append(document, view, correspondence);
   }
-}
-
-/** Exact identity only. Heuristic preview matches must never establish anchors. */
-export function correspondingNodes(before: Diagram, after: Diagram): Map<string, string> {
-  const result = new Map<string, string>();
-  if (before.content.ascii !== after.content.ascii || before.content.structure.kind !== after.content.structure.kind) return result;
-  const next = diagramContentNodes(after.content);
-  for (const node of diagramContentNodes(before.content)) {
-    const matches = next.filter(n => n.line === node.line && n.startColumn === node.startColumn && n.endColumn === node.endColumn && n.label === node.label);
-    if (matches.length === 1) result.set(node.id, matches[0].id);
+  navigate(context: DiagramEditingContext, redo = false) { return !!this.history(context).navigate(redo); }
+  reset(context: DiagramEditingContext) { this.history(context).reset(); }
+  exportContext(context: DiagramEditingContext) { return this.history(context).export(); }
+  forkContext(context: DiagramEditingContext, view: unknown) { return this.history(context).fork(view); }
+  prepareCreate(input: DiagramInput) { return new DiagramRevisionEditor({}, () => ({})).prepareCreate(input); }
+  prepareEdit(document: ResolvedCanvasDocument, diagramId: string, edit: DiagramEdit) {
+    // Staging observes earlier operations in the batch without changing a live context.
+    const staged = new CanvasHistory(document, {});
+    return staged.diagrams.prepareEdit(staged.contextId, diagramId, edit);
   }
-  return result;
+  async persist(value: unknown) {
+    if (!this.store) throw new Error('Diagram persistence is unavailable in this runtime');
+    return persistDiagramData(value, this.store);
+  }
+  async restore<T>(value: unknown): Promise<T> {
+    if (!this.store) throw new Error('Diagram persistence is unavailable in this runtime');
+    return restoreDiagramData(value, this.store) as Promise<T>;
+  }
 }

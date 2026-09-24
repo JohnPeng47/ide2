@@ -1,4 +1,4 @@
-import { RevisionedDiagramService } from '../diagrams/diagramService';
+import { DiagramRevisionEditor } from '../diagrams/diagramRevisionEditor';
 import { CanvasHistory, documentFromHistory, validateCanvasHistory, stateKey } from '../diagrams/canvasHistory';
 import { validateConnections } from '../diagrams/diagramConnection';
 import { buildProjectionTree, validateProjection, type ProjectProjectionRecord } from "../diagrams/diagramProjection";
@@ -164,7 +164,7 @@ export function saveMappingDiagram(catalog: ProjectRepresentationCatalogRecord, 
         : Object.fromEntries(Object.entries(sceneFromRevision(revision).contents).map(([id, diagram]) => [id, stateKey(diagram)]));
     };
     try {
-      new RevisionedDiagramService({}, () => ({})).merge(bindings(baseline), bindings(latest),
+      new DiagramRevisionEditor({}, () => ({})).merge(bindings(baseline), bindings(latest),
         input.history?.snapshots[input.history.headId]?.diagramBindings ?? {});
     } catch (error) {
       throw new ProjectDiagramConflict(error instanceof Error ? error.message : 'MERGE_REQUIRED');
