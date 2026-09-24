@@ -230,7 +230,9 @@ export function MappingPocSelectionCanvas(props: {
   const contentProjections = useMemo(() => new Map(boxes.filter(box => box.contentId).map(box => [box.box.id,
     diagramProjection(scene, box.box.id, box.contentId!, box.box.collapsed ? undefined : canvasState.diagramViews)])), [boxes, scene, canvasState.diagramViews]);
   const activeProjection = contentProjections.get(activeBox.box.id)!;
-  const displayNodes = useMemo(() => controller.nodes(), [controller, controllerState]);
+  // Selection controls do not change the display-node registry.
+  const displayNodes = useMemo(() => controller.nodes(), [controller, gridDocument, display,
+    canvasState.diagramViews, controllerState.version, controllerState.cell, controllerState.endpointBounds]);
   const endpointGeometry = useEndpointGeometry(controller, props.active !== false);
   const composedText = useMemo(() => diagramSceneText(scene, canvasState.diagramViews), [scene, canvasState.diagramViews]);
   const composedAscii = composedText.ascii;
@@ -861,6 +863,16 @@ export function MappingPocSelectionCanvas(props: {
   const showSelectionMenu = Boolean(selectionRect && rectStyle && !diagramPlacement
     && (!retainedSelectionId || promptOpen || askOpen || actionsOpen));
 
+  const jumpCallback = useRef(props.onJump); jumpCallback.current = props.onJump;
+  const onDiagramJump = useCallback((target: Parameters<NonNullable<typeof props.onJump>>[0]) => jumpCallback.current?.(target), []);
+  const diagramText = useMemo(() => <DiagramText registerEndpoint={endpointGeometry.registerEndpoint}
+    rows={composedText.rows} onJump={props.onJump ? onDiagramJump : undefined} ref={preRef}
+    className="mapping-poc-ascii"
+    style={cell.width ? { width: resolved.bounds.columns * cell.width } : undefined}
+    data-graph="A" data-line-count={resolved.bounds.rows} data-revision={diagramRevision}
+  />, [endpointGeometry.registerEndpoint, composedText.rows, Boolean(props.onJump), onDiagramJump,
+    cell.width, resolved.bounds.columns, resolved.bounds.rows, diagramRevision]);
+
   return (
     <div
       ref={stageRef}
@@ -960,14 +972,7 @@ export function MappingPocSelectionCanvas(props: {
           setStatusMessage("Sub-diagram pasted; layout updated");
         }} />
       <span ref={probeRef} className="mapping-poc-cell-probe" aria-hidden="true">0000000000</span>
-      <DiagramText registerEndpoint={endpointGeometry.registerEndpoint} rows={composedText.rows} onJump={props.onJump}
-        ref={preRef}
-        className="mapping-poc-ascii"
-        style={cell.width ? { width: resolved.bounds.columns * cell.width } : undefined}
-        data-graph="A"
-        data-line-count={resolved.bounds.rows}
-        data-revision={diagramRevision}
-      />
+      {diagramText}
 
       <DiagramSubtreeControls nodes={displayNodes} visibleBoxIds={new Set(boxes.map(box => box.box.id))} cell={cell}
         disabled={isGenerating || !!diagramPlacement || !!movingBoxId || !!promptOpen || !!askOpen}
@@ -982,12 +987,12 @@ export function MappingPocSelectionCanvas(props: {
         <button type="button" aria-expanded={connectionsOpen} onClick={() => setConnectionsOpen(value => !value)}>Connections ({gridDocument.edges.length})</button>
         <span role="status">{diagramPlacement ? "Drag a region to place the sub-diagram · Esc cancels" : movingBoxId ? "Click to move the box · Esc cancels" : statusMessage}</span>
       </div>
-      <div ref={element => endpointGeometry.registerEndpoint({ displayNodeId: `grid:${scene.root.id}` }, element)}
+      <div ref={endpointGeometry.refForEndpoint({ displayNodeId: `grid:${scene.root.id}` })}
         data-grid-box={scene.root.id} aria-hidden="true"
         style={{ position: 'absolute', pointerEvents: 'none', left: resolved.bounds.column * cell.width,
           top: resolved.bounds.row * cell.height, width: resolved.bounds.columns * cell.width, height: resolved.bounds.rows * cell.height }} />
       {boxes.filter((node) => node.box.id !== scene.root.id).map((node) => (
-        <div key={node.box.id} ref={element => endpointGeometry.registerEndpoint({ displayNodeId: `grid:${node.box.id}` }, element)} className={`mapping-grid-box${node.box.kind === "container" ? " is-container" : ""}`}
+        <div key={node.box.id} ref={endpointGeometry.refForEndpoint({ displayNodeId: `grid:${node.box.id}` })} className={`mapping-grid-box${node.box.kind === "container" ? " is-container" : ""}`}
           data-grid-box={node.box.id} data-grid-column={node.bounds.column} data-grid-row={node.bounds.row}
           data-grid-columns={node.bounds.columns} data-grid-rows={node.bounds.rows} data-collapsed={node.box.collapsed}
           style={{ left: node.bounds.column * cell.width, top: node.bounds.row * cell.height,

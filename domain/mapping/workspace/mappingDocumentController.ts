@@ -90,6 +90,7 @@ export class MappingDocumentController {
     return structuredClone(this.nodeCache.nodes);
   }
   private updateSnapshot(next: State, record: boolean, increment = true) {
+    if (next.document === this.snapshot.document && next.canvas === this.snapshot.canvas) return;
     if (next.document !== this.snapshot.document && next.document.scene !== this.snapshot.document.scene && record) {
       next = { ...next, document: { ...next.document, edges: reconcileConnections(this.snapshot.document.scene, next.document.scene, next.document.edges ?? []) } };
     }
@@ -101,7 +102,11 @@ export class MappingDocumentController {
     if (record) this.diagrams.append(this.context, next.document, next.canvas, this.pendingNodeIds);
     const geometryChanged = next.document.scene !== this.snapshot.document.scene || next.canvas.diagramViews !== this.snapshot.canvas.diagramViews;
     const endpointBounds = geometryChanged && this.snapshot.endpointBounds ? {} : this.snapshot.endpointBounds;
-    const historyState = this.diagrams.state(this.context);
+    // Transient selection/layout updates do not advance history. Reading state
+    // clones the checkpoint's document and view, which can be large.
+    const historyState = record || increment ? this.diagrams.state(this.context) : {
+      checkpointId: this.snapshot.canvasRevisionId, canUndo: this.snapshot.canUndo, canRedo: this.snapshot.canRedo
+    };
     this.snapshot = { ...next, contextId: this.context.contextId, canvasRevisionId: historyState.checkpointId, endpointBounds, cell: this.snapshot.cell, version: this.snapshot.version + Number(increment), canUndo: historyState.canUndo, canRedo: historyState.canRedo };
     this.listeners.forEach(listener => listener());
   }

@@ -43,6 +43,16 @@ export function useEndpointGeometry(controller: MappingDocumentController, activ
     else elements.current.delete(key);
     schedule();
   }, [schedule]);
+  const endpointRefs = useRef(new Map<string, (element: Element | null) => void>());
+  const refForEndpoint = useCallback((identity: EndpointIdentity) => {
+    const key = endpointKey(identity);
+    let callback = endpointRefs.current.get(key);
+    if (!callback) {
+      callback = element => registerEndpoint(identity, element);
+      endpointRefs.current.set(key, callback);
+    }
+    return callback;
+  }, [registerEndpoint]);
   useLayoutEffect(() => {
     observer.current = new ResizeObserver(schedule);
     for (const element of elements.current.values()) observer.current.observe(element);
@@ -57,11 +67,12 @@ export function useEndpointGeometry(controller: MappingDocumentController, activ
       frame.current = undefined;
     };
   }, [schedule]);
-  // Read after every commit: movement/folding can relocate labels without resizing them.
-  // configureEndpointBounds suppresses equal measurements, so this does not loop.
+  // Movement/folding can relocate labels without resizing them. Selection controls
+  // do neither, so they must not trigger a full-canvas DOM measurement.
+  const { document: documentState, canvas, cell } = controller.getSnapshot();
   useLayoutEffect(() => {
     if (frame.current !== undefined) cancelAnimationFrame(frame.current);
     measure();
-  });
-  return { svgRef, registerEndpoint };
+  }, [measure, active, documentState.scene, canvas.diagramViews, canvas.display, cell]);
+  return { svgRef, registerEndpoint, refForEndpoint };
 }
