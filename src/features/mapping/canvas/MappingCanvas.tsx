@@ -1,3 +1,4 @@
+import { useMappingServices } from '../services/MappingServices';
 import type { CanvasHistoryRecord } from '../../../../domain/mapping/workspace/canvasHistory';
 import { useEndpointGeometry } from './useEndpointGeometry';
 import { DiagramText } from '../../../shared/diagrams/DiagramText';
@@ -128,10 +129,11 @@ export function MappingPocSelectionCanvas(props: {
   onLineCountChange?: (lineCount: number) => void;
   localChatVariant?: LocalChatVariant;
 }) {
+  const { diagrams } = useMappingServices();
   const [controller] = useState(() => {
     const state = props.initialCanvasState ?? initialCanvasState();
     if (!props.initialCanvasState) state.controls.surfaces.draft.presentation = props.localChatVariant ?? 'compact';
-    return new MappingDocumentController(props.initialDocument ?? initialMappingGrid(), state, 0, undefined, {}, props.initialHistory);
+    return new MappingDocumentController(props.initialDocument ?? initialMappingGrid(), state, 0, undefined, {}, props.initialHistory, diagrams);
   });
   const controllerState = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
   const historyChange = useRef(props.onHistoryChange);

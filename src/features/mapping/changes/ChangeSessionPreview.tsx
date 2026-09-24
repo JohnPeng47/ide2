@@ -1,3 +1,4 @@
+import { useMappingServices } from '../services/MappingServices';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { MappingDocumentController } from '../../../../domain/mapping/workspace/mappingDocumentController';
 import type { ChangeSessionDocument } from '../../../../domain/mapping/changes/diagramChangeSession';
@@ -47,14 +48,15 @@ export function ChangeSessionPreview(props: { mode: DisplayModeChange; onSelect:
 function PreviewCanvas({ doc, focusId, serial, onJump, diff, modifiedDiagramIds }: { doc: ChangeSessionDocument; focusId?: string; serial: number;
   diff: ReturnType<typeof diffChangeDocument>; modifiedDiagramIds: ReadonlySet<string>;
   onJump: NonNullable<Parameters<typeof DiagramText>[0]['onJump']> }) {
+  const { diagrams } = useMappingServices();
   const controller = useMemo(() => {
     const state = structuredClone(doc.proposed);
     // Preview folds are local to this viewer; opening a change starts with visible content.
     const expand = (box: typeof state.document.scene.root): typeof box => box.kind === 'container'
       ? { ...box, collapsed: false, children: box.children.map(expand) } : { ...box, collapsed: false };
     state.document.scene.root = expand(state.document.scene.root); state.canvas.diagramViews = {};
-    return new MappingDocumentController(state.document, state.canvas, doc.version, undefined, {});
-  }, [doc.id, doc.version]);
+    return new MappingDocumentController(state.document, state.canvas, doc.version, undefined, {}, undefined, diagrams);
+  }, [doc.id, doc.version, diagrams]);
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
   const geometry = useEndpointGeometry(controller, true);
   const [cell, setCell] = useState({ width: 8, height: 18.2 });

@@ -8,16 +8,17 @@ isolated.
 
 ## Boundaries
 
-- `domain/core/diagrams/diagramService.ts`: `DiagramService.resolve(contextId,
-  diagramId)` returns a detached view with logical node IDs and no diagram revision
-  field. `prepareEdit` and `prepareCreate` validate proposed content without
-  changing the context head. Content, source bindings, mappings, evidence, and
-  jumps all belong to the diagram revision.
-- `domain/core/diagrams/canvasHistory.ts`: canonical `CanvasDocument` contains
-  layout, diagram instances, connections, and sections. `StoredCanvasSnapshot`
-  keeps its private `diagramBindings` beside that document. Content-node edges use
-  logical node references; the canvas document does not contain `DiagramContent`
-  or endpoint revision IDs.
+- `domain/core/diagrams/diagramService.ts`: the injected `DiagramService` owns
+  editing contexts, content preparation, history navigation, and calls to diagram
+  persistence. `openContext` returns an opaque runtime handle. `resolve(handle,
+  diagramId)` returns a detached view with logical node IDs. Handles isolate even
+  two viewers restored from the same persisted context; local diagram IDs such as
+  `overview` are scoped to a context rather than treated as global identities.
+- `domain/core/diagrams/canvasHistory.ts`: history implementation used behind the
+  service boundary. Canonical `CanvasDocument` contains layout, diagram instances,
+  connections, and sections. Content-node edges use logical node references.
+  `diagramRevisionEditor.ts` implements revision-local preparation and conservative
+  merge checks; it is not the page's injected service.
 - `domain/mapping/workspace/mappingDocumentController.ts`: `applyUpdate` stages
   commands, prepares diagram edits, reconciles anchors and sections, runs layout
   and validation, and appends one coordinated checkpoint before notifying readers.
@@ -44,14 +45,47 @@ Camera, selection and measured geometry updates do not create content revisions.
 Personal view state is stored separately from each checkpoint's canvas document.
 
 The live page queues automatic workspace saves after checkpoint changes (150 ms
-coalescing); each save includes all checkpoints created during that interval.
-Writes remain asynchronous, and failures appear in the page error display.
-The existing project workspace file is still the persistence scope; this is not
-a multi-workspace synchronization protocol. Explicit catalog Save publishes a
-`canvas-history` revision containing the canonical checkpoint and diagram tables.
-The existing atomic catalog write persists both together. Old `ascii`, `diagram`,
-and `mapping-canvas` revisions remain readable. History bundles currently grow
-without compaction and remain subject to the existing HTTP request-size limit.
+coalescing). Writes remain asynchronous, and failures appear in the page error
+display. The controller coordinates composition and diagram edits; no separate
+CanvasService is introduced.
+
+The app creates one `RevisionedDiagramService` and an unconnected `CodeRepoService`
+contract implementation and injects them into `MappingPocPage`. A React provider
+passes them to nested consumers. All live canvas controllers and proposal preview
+controllers use the injected diagram service. Each controller has its own context.
+CodeRepoService reports `available: false` and its methods reject explicitly until
+an implementation is wired. Existing source APIs are unchanged.
+
+### Disk layout and publication
+
+- `canvases/catalog.json`: canvas catalog, composition checkpoints, and opaque
+  diagram-history references. `CanvasCatalogStore` owns this file. The old
+  `ProjectCatalogStore` is a compatibility facade that also retains compaction APIs.
+- `diagrams/diagram/<sha256>.json`: immutable diagram content, source context, and jumps.
+- `diagrams/revision/<sha256>.json`: immutable revision metadata, logical node
+  identities, and a reference to its diagram record.
+- `diagrams/history/<sha256>.json`: revision-record references and bindings for
+  diagram checkpoints. Canvas snapshots refer to checkpoint IDs rather than
+  carrying diagram bindings or revision tables on disk.
+- Workspace and change-session files use the same references through DiagramService.
+  Their materialized diagram objects are also externalized. Derived catalog exports
+  and legacy saved-scene strings remain compatibility data, not revision storage.
+
+DiagramService calls `DiagramRevisionStore` through a storage port. All referenced
+records are persisted before atomically replacing the parent canvas/workspace/session
+file. An interrupted save may leave unreferenced immutable records, but cannot
+publish a pointer before its dependency is written. Record hashes are verified on
+read, and missing records are errors. Garbage collection is not implemented.
+
+Loading falls back to `representations/catalog.json` if the new canvas catalog is
+absent. Legacy embedded histories remain readable. The next save writes the new
+format without deleting or modifying the legacy catalog. Consumers should back up
+the entire diagram directory, not just its catalog file.
+
+HTTP responses and explicit workspace exports remain portable expanded documents;
+compatibility adapters hydrate references before existing rendering and MCP code
+sees them. Export/import therefore does not depend on the original store directory.
+History bundles remain subject to the existing HTTP request-size limit.
 
 ## ChangeSessions and merge
 
@@ -62,7 +96,7 @@ histories are migrated on mutation, preserving available undo and redo states.
 Preview correspondence remains separate from exact patch provenance used for
 logical anchors and proposal readiness.
 
-`DiagramService.merge(baselineBindings, currentBindings, proposedBindings)` is a
+`DiagramRevisionEditor.merge(baselineBindings, currentBindings, proposedBindings)` is a
 conservative stub: any advanced/added/removed current diagram binding throws
 `MERGE_REQUIRED`; unchanged targets return the proposed bindings without publishing.
 Catalog saves invoke it when the expected saved canvas revision has advanced.

@@ -1,3 +1,4 @@
+import { MappingServicesContext, type MappingServices } from './services/MappingServices';
 import type { CanvasHistoryRecord } from '../../../domain/mapping/workspace/canvasHistory';
 import { historyFromRevision, documentFromRevision } from '../../../domain/core/diagrams/projectDiagramCanvas';
 import { UiTestFramework } from "@new-diagram/ui-test-framework";
@@ -56,7 +57,11 @@ interface Draft {
 }
 const dirty = (draft: Draft) => draft.name !== draft.savedName || JSON.stringify(draft.document.scene) !== draft.savedScene || JSON.stringify(draft.document.edges) !== (draft.savedEdges ?? '[]');
 
-export function MappingPocPage() {
+export function MappingPocPage({ services }: { services: MappingServices }) {
+  return <MappingServicesContext.Provider value={services}><MappingWorkspacePage /></MappingServicesContext.Provider>;
+}
+
+function MappingWorkspacePage() {
   const [explorerTab, setExplorerTab] = useState<'diagrams'|'changes'>('diagrams');
   const [changeMode, setChangeMode] = useState<DisplayModeChange>();
   const [workspaceEpoch, setWorkspaceEpoch] = useState(0);
