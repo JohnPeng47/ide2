@@ -1,0 +1,47 @@
+{
+  "head": "653684f59ea396195d9a974676e7cd81fd4f932e",
+  "workingTree": "Includes existing uncommitted edits; this is a working-tree audit, not a HEAD-only audit.",
+  "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+  "live": [
+    {
+      "name": "Canvas domain model - implemented at 4f2ba39",
+      "diagrams": [
+        {
+          "id": "grid:overview",
+          "title": "MappingPocPage                         canvas hierarchy @ 4f2ba39",
+          "mappings": 0
+        },
+        {
+          "id": "grid:diagram-8d5a9c1b-83a1-4cb6-8bef-bbfad3caa333",
+          "title": "[A] GridBox / LineGridScene",
+          "mappings": 0
+        },
+        {
+          "id": "grid:diagram-4c382090-edbc-4d0c-97f5-c4c8bf1815ba",
+          "title": "[B] Diagram",
+          "mappings": 0
+        },
+        {
+          "id": "grid:diagram-aa1f212d-1544-41b4-8d0d-12e52d9755a4",
+          "title": "[C] FloatingBox variants",
+          "mappings": 0
+        },
+        {
+          "id": "grid:diagram-3846b0fa-3043-4d97-b813-cde56b6b49fe",
+          "title": "[D] Controller edits / agent access",
+          "mappings": 0
+        }
+      ]
+    },
+    {
+      "name": "PersistentLayer",
+      "diagrams": [
+        {
+          "id": "grid:overview",
+          "title": "PersistentLayer",
+          "mappings": 25
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,163 @@
+[
+  {
+    "name": "Canvas domain model - implemented at 4f2ba39",
+    "nodes": 139,
+    "mappedNodes": 53,
+    "verifiedMappedNodes": 44,
+    "uniqueHistoricalLines": 452,
+    "uniqueVerifiedLines": 252,
+    "historicalLinesPerAllNodes": 3.2517985611510793,
+    "verifiedLinesPerAllNodes": 1.8129496402877698,
+    "meanNodeMappedHistoricalLines": 9.11320754716981,
+    "meanNodeMappedVerifiedLines": 6.132075471698113,
+    "unmatchedMappings": [
+      {
+        "contentId": "overview",
+        "mapping": {
+          "id": "map-1-11",
+          "entityId": "entity-c3JjL2ZlYXR1cmVzL21hcHBpbmcvTWFwcGluZ1BhZ2UudHN4Ok1hcHBpbmdQb2NQYWdl",
+          "sourceRangeIndex": 0,
+          "sourceRangeId": "range-c3JjL2ZlYXR1cmVzL21hcHBpbmcvTWFwcGluZ1BhZ2UudHN4Ok1hcHBpbmdQb2NQYWdl",
+          "line": 1,
+          "startColumn": 11,
+          "endColumn": 24
+        },
+        "matches": 0
+      },
+      {
+        "contentId": "overview",
+        "mapping": {
+          "id": "map-85-11",
+          "entityId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2NhbnZhc0Rpc3BsYXlOb2RlLnRzOkNhbnZhc0Rpc3BsYXlOb2Rl",
+          "sourceRangeIndex": 0,
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2NhbnZhc0Rpc3BsYXlOb2RlLnRzOkNhbnZhc0Rpc3BsYXlOb2Rl",
+          "line": 85,
+          "startColumn": 11,
+          "endColumn": 21
+        },
+        "matches": 0
+      },
+      {
+        "contentId": "diagram-4c382090-edbc-4d0c-97f5-c4c8bf1815ba",
+        "mapping": {
+          "id": "map-26-1",
+          "entityId": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpjcmVhdGVEaWFncmFt",
+          "sourceRangeIndex": 0,
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpjcmVhdGVEaWFncmFt",
+          "line": 26,
+          "startColumn": 1,
+          "endColumn": 13
+        },
+        "matches": 0
+      },
+      {
+        "contentId": "diagram-4c382090-edbc-4d0c-97f5-c4c8bf1815ba",
+        "mapping": {
+          "id": "map-27-1",
+          "entityId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2RpYWdyYW1WaWV3U3RhdGUudHM6cmVzb2x2ZURpYWdyYW1Db250ZW50",
+          "sourceRangeIndex": 0,
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2RpYWdyYW1WaWV3U3RhdGUudHM6cmVzb2x2ZURpYWdyYW1Db250ZW50",
+          "line": 27,
+          "startColumn": 1,
+          "endColumn": 21
+        },
+        "matches": 0
+      },
+      {
+        "contentId": "diagram-4c382090-edbc-4d0c-97f5-c4c8bf1815ba",
+        "mapping": {
+          "id": "map-31-1",
+          "entityId": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpkaWFncmFtU291cmNl",
+          "sourceRangeIndex": 0,
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpkaWFncmFtU291cmNl",
+          "line": 31,
+          "startColumn": 1,
+          "endColumn": 13
+        },
+        "matches": 0
+      },
+      {
+        "contentId": "diagram-4c382090-edbc-4d0c-97f5-c4c8bf1815ba",
+        "mapping": {
+          "id": "map-32-1",
+          "entityId": "entity-YXBwbGljYXRpb24vY29yZS9zb3VyY2UvZGlhZ3JhbVNvdXJjZS50czpyZXNvbHZlRGlhZ3JhbVNvdXJjZQ",
+          "sourceRangeIndex": 0,
+          "sourceRangeId": "range-YXBwbGljYXRpb24vY29yZS9zb3VyY2UvZGlhZ3JhbVNvdXJjZS50czpyZXNvbHZlRGlhZ3JhbVNvdXJjZQ",
+          "line": 32,
+          "startColumn": 1,
+          "endColumn": 20
+        },
+        "matches": 0
+      },
+      {
+        "contentId": "diagram-4c382090-edbc-4d0c-97f5-c4c8bf1815ba",
+        "mapping": {
+          "id": "map-36-21",
+          "entityId": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpEaWFncmFtU291cmNlQ29udGV4dA",
+          "sourceRangeIndex": 0,
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpEaWFncmFtU291cmNlQ29udGV4dA",
+          "line": 36,
+          "startColumn": 21,
+          "endColumn": 40
+        },
+        "matches": 0
+      },
+      {
+        "contentId": "diagram-3846b0fa-3043-4d97-b813-cde56b6b49fe",
+        "mapping": {
+          "id": "map-21-38",
+          "entityId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6dHJhbnNhY3Q",
+          "sourceRangeIndex": 0,
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6dHJhbnNhY3Q",
+          "line": 21,
+          "startColumn": 38,
+          "endColumn": 45
+        },
+        "matches": 0
+      },
+      {
+        "contentId": "diagram-3846b0fa-3043-4d97-b813-cde56b6b49fe",
+        "mapping": {
+          "id": "map-22-25",
+          "entityId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6dW5kbw",
+          "sourceRangeIndex": 0,
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6dW5kbw",
+          "line": 22,
+          "startColumn": 25,
+          "endColumn": 28
+        },
+        "matches": 0
+      }
+    ],
+    "definition": "All-node ratios are total unique saved-diagram source coverage divided by parsed tree-node count. Some mapped free text is not a parsed node. Per-node means count shared source again for each referencing node, deduplicating within each node."
+  },
+  {
+    "name": "PersistentLayer",
+    "nodes": 99,
+    "mappedNodes": 25,
+    "verifiedMappedNodes": 12,
+    "uniqueHistoricalLines": 219,
+    "uniqueVerifiedLines": 99,
+    "historicalLinesPerAllNodes": 2.212121212121212,
+    "verifiedLinesPerAllNodes": 1.0,
+    "historicalLinesPerMappedNode": 8.76,
+    "verifiedLinesPerMappedNode": 3.96,
+    "meanNodeMappedHistoricalLines": 10.2,
+    "meanNodeMappedVerifiedLines": 4.4,
+    "unmatchedMappings": [],
+    "definition": "All-node ratios are total unique saved-diagram source coverage divided by parsed tree-node count. Some mapped free text is not a parsed node. Per-node means count shared source again for each referencing node, deduplicating within each node."
+  },
+  {
+    "name": "All saved diagrams",
+    "nodes": 238,
+    "mappedNodes": 78,
+    "verifiedMappedNodes": 56,
+    "uniqueHistoricalLines": 653,
+    "uniqueVerifiedLines": 338,
+    "historicalLinesPerAllNodes": 2.7436974789915967,
+    "verifiedLinesPerAllNodes": 1.4201680672268908,
+    "meanNodeMappedHistoricalLines": 9.461538461538462,
+    "meanNodeMappedVerifiedLines": 5.576923076923077,
+    "definition": "All-node ratios are total unique saved-diagram source coverage divided by parsed tree-node count. Some mapped free text is not a parsed node. Per-node means count shared source again for each referencing node, deduplicating within each node."
+  }
+]

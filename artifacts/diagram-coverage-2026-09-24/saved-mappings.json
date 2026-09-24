@@ -1,0 +1,2761 @@
+[
+  {
+    "representation": {
+      "schemaVersion": 1,
+      "id": "representation-b697fd11-5c8d-49e7-a6b5-b12030f2f79a",
+      "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+      "handle": "representation-b697fd11-5c8d-49e7-a6b5-b12030f2f79a",
+      "name": "Canvas domain model - implemented at 4f2ba39",
+      "viewKind": "diagram",
+      "representationKind": "diagram",
+      "status": "settled",
+      "currentRevisionId": "representation-revision-7bfb9890-211a-42a7-932a-9da15ac06d0b",
+      "revisionIds": [
+        "representation-revision-7ae43963-448d-4c10-b6e6-7e10398d979a",
+        "representation-revision-fadce059-9670-49d9-8c7f-55c856c5b9f8",
+        "representation-revision-ba6ee45d-02d1-478c-b064-357bc857231b",
+        "representation-revision-cee93744-0dd5-45b1-be87-e7d8b4b960c9",
+        "representation-revision-3252ff49-2f2d-4299-b580-eae15b6077c5",
+        "representation-revision-7bfb9890-211a-42a7-932a-9da15ac06d0b"
+      ],
+      "createdAt": "2026-09-16T18:57:13.637Z",
+      "updatedAt": "2026-09-20T00:28:46.573Z"
+    },
+    "revision": {
+      "id": "representation-revision-7bfb9890-211a-42a7-932a-9da15ac06d0b",
+      "ascii": "\n\n                                                                            MappingPocPage                         canvas hierarchy @ 4f2ba39               \n                                                                            |                                                                                    [B] Diagram\n                                                                            |-- drafts[documentId]: Draft           page metadata + mirrored state               |\n                                                                            |   |-- representationId?              absent until diagram is saved                 |-- id / revision\n                                                                            |   |-- name / revisionId                                                            |-- content: DiagramContent\n                                                                            |   |-- savedName / savedScene          dirty-state baseline                         |   |-- revisionId             <contentId>:<revision>\n                                                                            |   |-- busy                                                                         |   |-- ascii / asciiSha256\n                                                                            |   |-- document / canvas              mirror controller state                       |   `-- structure\n        [A] GridBox / LineGridScene                                         |   |-- viewport?: CanvasTransform     camera pan / zoom                             |       |-- kind: diagram      unstructured ASCII\n        |                                                                   |   `-- focusBox? { id, serial }                                                     |       `-- kind: tree\n        |-- position { column, row }    parent-relative cells               |                                                                                    |           |-- parserVersion  ascii-tree-1\n        |-- minimumSize? { columns, rows }                                  |-- controllers[documentId]: MappingDocumentController                               |           |-- rootIds[]\n        |-- collapsed / collapsedContentId?                                 |   |                                                                                |           `-- nodes[id]: DiagramContentNode\n        `-- kind                                                            |   |-- getSnapshot(): ControllerSnapshot                                            |               |-- label / line / branchColumn\n            |-- diagram                contentId                            |   |   |-- version                    committed document version                    |               |-- startColumn / endColumn\n            `-- container                                                   |   |   |-- canUndo / canRedo                                                        |               |-- parentId? / childIds[]\n                |-- children[]         nested GridBoxes                     |   |   |                                                                            |               `-- foldRanges[]\n                `-- layout             push-right + gap                     |   |   |-- document: MappingGridDocument                                            |\n                                                                            |   |   |   |-- scene: LineGridScene                                                 `-- sourceContext: DiagramSourceContext\n        Content edit or insertion                                           |   |   |   |   |-- root: GridBox      grid containment + layout                         |-- contentHash            tied to this ASCII\n        `-- measureContent(ascii)                                           |   |   |   |   `-- contents[id]: Diagram                                                |-- binding?               per-diagram source\n            `-- layoutScene(scene, changedId)                               |   |   |   |       |-- id / revision                                                    |   |-- sourceId / repositoryIdentity\n                |-- anchor changed box                                      |   |   |   |       |-- content: DiagramContent                                          |   `-- corpus / domainProfileId\n                |-- push colliding siblings right                           |   |   |   |       `-- sourceContext: DiagramSourceContext                              |-- mappings[]             entityId + sourceRangeIndex\n                `-- publish final cell bounds                               |   |   |   |           |-- binding?         per-diagram repository                      `-- evidence[id]           captured source ranges\n                                                                            |   |   |   |           |-- mappings[]                                               \n        Insertion: parent-relative; move: absolute cells.                   |   |   |   |           `-- evidence         selection nodes derived                 createDiagram(...)             content + source validated\n        Tree folds do not define grid sizing.                               |   |   |   `-- sections[contentId][]                                                resolveDiagramContent(...)     returns diagram.content\n        FloatingBoxes consume bounds, never block layout.                   |   |   |                                                                            DiagramView                    shares content with\n                                                                            |   |   `-- canvas: MappingCanvasState                                               `-- index + AsciiSelectionGrid  parsed nodes / fold ranges\n        Source: domain/core/diagrams/lineGrid.ts                            |   |       |-- display: DisplayState FLOATING OBJECTS ONLY                          \n                                                                            |   |       |   |-- rootIds[]                                                        diagramSource(diagram)          mappings / selection / search\n                                                                            |   |       |   `-- nodes[id]: FloatingBox                                           resolveDiagramSource(...)      source reads / definitions\n                                                                            |   |       `-- controls: MappingControls                                                                           selection / chat / compaction\n                                                                            |   |           |-- activeBoxId                                                      \n                                                                            |   |           |-- selectionRect / selectedNodeIds[]                                Project no longer selects one repository for the canvas.\n                                                                            |   |           |-- retainedSelectionId / activeThreadId                             Evidence belongs to DiagramSourceContext.\n                                                                            |   |           `-- surfaces[ownerId]: SelectionSurfaceState                         Selection nodes are derived, not stored in the document.\n                                                                            |   |                                                                                \n                                                                            |   `-- nodes(): DisplayNode[]         derived public registry                       Source: domain/core/diagrams/diagram.ts\n                                                                            |       |                                                                       \n                                                                            |       |-- DisplayNode = CanvasDisplayNode                                     \n                                                                            |       |   |-- id                     grid:... or floating:...                 \n                                                                            |       |   |-- version                document version at read time            \n                                                                            |       |   |-- childIds[]                                                      \n                                                                            |       |   `-- expansion              expanded | collapsed                     \n                                                                            |       |                                                                       \n                                                                            |       |-- Grid branch                layout: \"grid\"                           \n                                                                            |       |   |-- kind                   diagram | group                          \n                                                                            |       |   |-- boxId                  authoritative GridBox ID                 \n                                                                            |       |   |-- geometry                                                        \n                                                                            |       |   |   |-- units              \"cells\"                                  \n                                                                            |       |   |   `-- bounds: GridBounds                                          \n                                                                            |       |   |       `-- column / row / columns / rows                           \n                                                                            |       |   `-- content?: DiagramContent                                             [C] FloatingBox variants\n                                                                            |       |                                                                            |\n                                                                            |       `-- Floating branch            layout: \"floating\"                            |-- DisplayNodeBase             pixel geometry + policies\n                                                                            |           |-- geometry                                                             |   |-- expandedGeometry?\n                                                                            |           |   |-- units              \"pixels\"                                      |   `-- geometryPolicy\n                                                                            |           |   |-- position { x, y }                                                |       |-- placement          automatic | manual\n                                                                            |           |   |-- bounds { width, height }                                         |       `-- sizing             content | fixed\n[D] Controller edits / agent access                                         |           |   `-- coordinateSpace    canvas | viewport                             |\n|                                                                           |           |-- placement: FloatingPlacement                                         |-- SelectionRegion\n|-- UI -> MappingDocumentController                                         |           |   |-- grid-region        selected source rectangle                     |   `-- sourceBoxId / sourceContentId / sourceAscii\n|   |-- commitDocument(...)    grid edits                                   |           |   |-- parent             projection owner                              |       + rect / selectedIds[] / displayMode\n|   |-- updateCanvas(...)     pane/control state                            |           |   |-- conversation       anchor + presentation                         |-- ProjectedPane\n|   `-- undo(redo = false)    document + canvas history                     |           |   `-- stored             retained coordinate space                     |   `-- content: call-tree | compaction | source-code\n|                                                                           |           `-- value: FloatingBox                                                   |-- ConversationPane\n`-- Agent -> MCP -> HTTP backend                                            |               |-- SelectionRegion   kind: selection                                |   `-- thread / canvasAnchor / presentation / draft\n    `-- AgentDiagrammingSessionService                                      |               |-- ProjectedPane     kind: projection                               `-- DetailPane\n        `-- CanvasSessionBridge -> browser poll/reply                       |               |-- ConversationPane  kind: conversation                                 `-- title / ascii / sectionId?\n            `-- transact(expectedVersion, operations[])                     |               `-- DetailPane        kind: detail                                   \n                |-- draw / replace / move / collapse / remove               |                                                                                    Final grid bounds -> layoutFloatingSelections(...)\n                |-- clone + validate + layout                               |-- useAgentCanvasBridge(...)          agent access + controller edits               |-- source rect -> pixel anchor -> projection chain\n                `-- publish -> floating layout -> one undo                  |                                                                                    `-- conversations -> canvas anchor / viewport docking\n                                                                            `-- capture(): MappingWorkspaceSnapshot                                              \nexec: synchronous QuickJS canvas/nodes methods.                                 |-- schemaVersion: 3 / projectId / activeDocumentId?                             Manual positions persist; details use stored placement.\ndiagram-search: search + full saved/live reads.                                 `-- documents[]: MappingDocumentSnapshot                                         Source references alone do not create follow behavior.\ncanvas-api-search: documentation, not drawn objects.                                |-- representationId          document key, possibly draft-...               No floating measurement feeds grid collision layout.\nsave_diagram: catalog revision -> explorer + search.                                |-- savedRepresentationId?    saved catalog identity                         \n                                                                                    |-- name / revisionId / savedName / savedScene                               Source: domain/mapping/workspace/displayModel.ts\nUI shares history; not all edits use transact validation.                           |-- document / canvas                                                   \nMeasurements do not add undo entries or bump version.                               `-- viewport?                                                           \nLive edits require an open Mapping page.                                                                                                                    \n                                                                            DisplayNode snapshots expose both stores without duplicating geometry.          \nSource: mappingDocumentController.ts; sessionService.ts                     GridBoxes occupy grid space; FloatingBoxes never displace them.                 ",
+      "mappings": [
+        {
+          "id": "overview:map-1-11",
+          "evidenceId": "entity-c3JjL2ZlYXR1cmVzL21hcHBpbmcvTWFwcGluZ1BhZ2UudHN4Ok1hcHBpbmdQb2NQYWdl",
+          "sourceRangeId": "range-c3JjL2ZlYXR1cmVzL21hcHBpbmcvTWFwcGluZ1BhZ2UudHN4Ok1hcHBpbmdQb2NQYWdl",
+          "line": 3,
+          "startColumn": 77,
+          "endColumn": 90
+        },
+        {
+          "id": "overview:map-3-35",
+          "evidenceId": "entity-c3JjL2ZlYXR1cmVzL21hcHBpbmcvTWFwcGluZ1BhZ2UudHN4OkRyYWZ0",
+          "sourceRangeId": "range-c3JjL2ZlYXR1cmVzL21hcHBpbmcvTWFwcGluZ1BhZ2UudHN4OkRyYWZ0",
+          "line": 5,
+          "startColumn": 101,
+          "endColumn": 105
+        },
+        {
+          "id": "overview:map-9-30",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbUNhbnZhcy50czpDYW52YXNUcmFuc2Zvcm0",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbUNhbnZhcy50czpDYW52YXNUcmFuc2Zvcm0",
+          "line": 11,
+          "startColumn": 96,
+          "endColumn": 110
+        },
+        {
+          "id": "overview:map-12-40",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6TWFwcGluZ0RvY3VtZW50Q29udHJvbGxlcg",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6TWFwcGluZ0RvY3VtZW50Q29udHJvbGxlcg",
+          "line": 14,
+          "startColumn": 106,
+          "endColumn": 130
+        },
+        {
+          "id": "overview:map-14-34",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6Q29udHJvbGxlclNuYXBzaG90",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6Q29udHJvbGxlclNuYXBzaG90",
+          "line": 16,
+          "startColumn": 100,
+          "endColumn": 117
+        },
+        {
+          "id": "overview:map-14-19",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6Z2V0U25hcHNob3Q",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6Z2V0U25hcHNob3Q",
+          "line": 16,
+          "startColumn": 85,
+          "endColumn": 95
+        },
+        {
+          "id": "overview:map-18-33",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdHcmlkLnRzOk1hcHBpbmdHcmlkRG9jdW1lbnQ",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdHcmlkLnRzOk1hcHBpbmdHcmlkRG9jdW1lbnQ",
+          "line": 20,
+          "startColumn": 99,
+          "endColumn": 117
+        },
+        {
+          "id": "overview:map-19-34",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6TGluZUdyaWRTY2VuZQ",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6TGluZUdyaWRTY2VuZQ",
+          "line": 21,
+          "startColumn": 100,
+          "endColumn": 112
+        },
+        {
+          "id": "overview:map-20-37",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6R3JpZEJveA",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6R3JpZEJveA",
+          "line": 22,
+          "startColumn": 103,
+          "endColumn": 109
+        },
+        {
+          "id": "overview:map-21-45",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpEaWFncmFt",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpEaWFncmFt",
+          "line": 23,
+          "startColumn": 111,
+          "endColumn": 117
+        },
+        {
+          "id": "overview:map-23-44",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbUNvbnRlbnQudHM6RGlhZ3JhbUNvbnRlbnQ",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbUNvbnRlbnQudHM6RGlhZ3JhbUNvbnRlbnQ",
+          "line": 25,
+          "startColumn": 110,
+          "endColumn": 123
+        },
+        {
+          "id": "overview:map-24-50",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpEaWFncmFtU291cmNlQ29udGV4dA",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpEaWFncmFtU291cmNlQ29udGV4dA",
+          "line": 26,
+          "startColumn": 116,
+          "endColumn": 135
+        },
+        {
+          "id": "overview:map-30-31",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ0NhbnZhc1N0YXRl",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ0NhbnZhc1N0YXRl",
+          "line": 32,
+          "startColumn": 97,
+          "endColumn": 114
+        },
+        {
+          "id": "overview:map-31-36",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpEaXNwbGF5U3RhdGU",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpEaXNwbGF5U3RhdGU",
+          "line": 33,
+          "startColumn": 102,
+          "endColumn": 113
+        },
+        {
+          "id": "overview:map-33-42",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpGbG9hdGluZ0JveA",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpGbG9hdGluZ0JveA",
+          "line": 35,
+          "startColumn": 108,
+          "endColumn": 118
+        },
+        {
+          "id": "overview:map-34-37",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ0NvbnRyb2xz",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ0NvbnRyb2xz",
+          "line": 36,
+          "startColumn": 103,
+          "endColumn": 117
+        },
+        {
+          "id": "overview:map-38-50",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6U2VsZWN0aW9uU3VyZmFjZVN0YXRl",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6U2VsZWN0aW9uU3VyZmFjZVN0YXRl",
+          "line": 40,
+          "startColumn": 116,
+          "endColumn": 136
+        },
+        {
+          "id": "overview:map-40-28",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2NhbnZhc0Rpc3BsYXlOb2RlLnRzOkNhbnZhc0Rpc3BsYXlOb2Rl",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2NhbnZhc0Rpc3BsYXlOb2RlLnRzOkNhbnZhc0Rpc3BsYXlOb2Rl",
+          "line": 42,
+          "startColumn": 94,
+          "endColumn": 104
+        },
+        {
+          "id": "overview:map-40-19",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6bm9kZXM",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6bm9kZXM",
+          "line": 42,
+          "startColumn": 85,
+          "endColumn": 89
+        },
+        {
+          "id": "overview:map-42-37",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2NhbnZhc0Rpc3BsYXlOb2RlLnRzOkNhbnZhc0Rpc3BsYXlOb2Rl",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2NhbnZhc0Rpc3BsYXlOb2RlLnRzOkNhbnZhc0Rpc3BsYXlOb2Rl",
+          "line": 44,
+          "startColumn": 103,
+          "endColumn": 119
+        },
+        {
+          "id": "overview:map-42-23",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2NhbnZhc0Rpc3BsYXlOb2RlLnRzOkNhbnZhc0Rpc3BsYXlOb2Rl",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2NhbnZhc0Rpc3BsYXlOb2RlLnRzOkNhbnZhc0Rpc3BsYXlOb2Rl",
+          "line": 44,
+          "startColumn": 89,
+          "endColumn": 99
+        },
+        {
+          "id": "overview:map-50-64",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6R3JpZEJveA",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6R3JpZEJveA",
+          "line": 52,
+          "startColumn": 130,
+          "endColumn": 136
+        },
+        {
+          "id": "overview:map-53-39",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6R3JpZEJvdW5kcw",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6R3JpZEJvdW5kcw",
+          "line": 55,
+          "startColumn": 105,
+          "endColumn": 114
+        },
+        {
+          "id": "overview:map-55-37",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbUNvbnRlbnQudHM6RGlhZ3JhbUNvbnRlbnQ",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbUNvbnRlbnQudHM6RGlhZ3JhbUNvbnRlbnQ",
+          "line": 57,
+          "startColumn": 103,
+          "endColumn": 116
+        },
+        {
+          "id": "overview:map-63-38",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2NhbnZhc0Rpc3BsYXlOb2RlLnRzOkZsb2F0aW5nUGxhY2VtZW50",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2NhbnZhc0Rpc3BsYXlOb2RlLnRzOkZsb2F0aW5nUGxhY2VtZW50",
+          "line": 65,
+          "startColumn": 104,
+          "endColumn": 120
+        },
+        {
+          "id": "overview:map-68-34",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpGbG9hdGluZ0JveA",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpGbG9hdGluZ0JveA",
+          "line": 70,
+          "startColumn": 100,
+          "endColumn": 110
+        },
+        {
+          "id": "overview:map-69-31",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpTZWxlY3Rpb25SZWdpb24",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpTZWxlY3Rpb25SZWdpb24",
+          "line": 71,
+          "startColumn": 97,
+          "endColumn": 111
+        },
+        {
+          "id": "overview:map-70-31",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpQcm9qZWN0ZWRQYW5l",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpQcm9qZWN0ZWRQYW5l",
+          "line": 72,
+          "startColumn": 97,
+          "endColumn": 109
+        },
+        {
+          "id": "overview:map-71-31",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpDb252ZXJzYXRpb25QYW5l",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpDb252ZXJzYXRpb25QYW5l",
+          "line": 73,
+          "startColumn": 97,
+          "endColumn": 112
+        },
+        {
+          "id": "overview:map-72-31",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpEZXRhaWxQYW5l",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpEZXRhaWxQYW5l",
+          "line": 74,
+          "startColumn": 97,
+          "endColumn": 106
+        },
+        {
+          "id": "overview:map-74-15",
+          "evidenceId": "entity-c3JjL2ZlYXR1cmVzL21hcHBpbmcvYWdlbnQvdXNlQWdlbnRDYW52YXNCcmlkZ2UudHM6dXNlQWdlbnRDYW52YXNCcmlkZ2U",
+          "sourceRangeId": "range-c3JjL2ZlYXR1cmVzL21hcHBpbmcvYWdlbnQvdXNlQWdlbnRDYW52YXNCcmlkZ2UudHM6dXNlQWdlbnRDYW52YXNCcmlkZ2U",
+          "line": 76,
+          "startColumn": 81,
+          "endColumn": 100
+        },
+        {
+          "id": "overview:map-76-26",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ1dvcmtzcGFjZVNuYXBzaG90",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ1dvcmtzcGFjZVNuYXBzaG90",
+          "line": 78,
+          "startColumn": 92,
+          "endColumn": 115
+        },
+        {
+          "id": "overview:map-76-15",
+          "evidenceId": "entity-c3JjL2ZlYXR1cmVzL21hcHBpbmcvTWFwcGluZ1BhZ2UudHN4OmNhcHR1cmU",
+          "sourceRangeId": "range-c3JjL2ZlYXR1cmVzL21hcHBpbmcvTWFwcGluZ1BhZ2UudHN4OmNhcHR1cmU",
+          "line": 78,
+          "startColumn": 81,
+          "endColumn": 87
+        },
+        {
+          "id": "overview:map-78-32",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ0RvY3VtZW50U25hcHNob3Q",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ0RvY3VtZW50U25hcHNob3Q",
+          "line": 80,
+          "startColumn": 98,
+          "endColumn": 120
+        },
+        {
+          "id": "overview:map-85-11",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2NhbnZhc0Rpc3BsYXlOb2RlLnRzOkNhbnZhc0Rpc3BsYXlOb2Rl",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2NhbnZhc0Rpc3BsYXlOb2RlLnRzOkNhbnZhc0Rpc3BsYXlOb2Rl",
+          "line": 87,
+          "startColumn": 77,
+          "endColumn": 87
+        },
+        {
+          "id": "diagram-8d5a9c1b-83a1-4cb6-8bef-bbfad3caa333:map-1-15",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6TGluZUdyaWRTY2VuZQ",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6TGluZUdyaWRTY2VuZQ",
+          "line": 11,
+          "startColumn": 23,
+          "endColumn": 35
+        },
+        {
+          "id": "diagram-8d5a9c1b-83a1-4cb6-8bef-bbfad3caa333:map-1-5",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6R3JpZEJveA",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6R3JpZEJveA",
+          "line": 11,
+          "startColumn": 13,
+          "endColumn": 19
+        },
+        {
+          "id": "diagram-8d5a9c1b-83a1-4cb6-8bef-bbfad3caa333:map-13-5",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6bWVhc3VyZUNvbnRlbnQ",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6bWVhc3VyZUNvbnRlbnQ",
+          "line": 23,
+          "startColumn": 13,
+          "endColumn": 26
+        },
+        {
+          "id": "diagram-8d5a9c1b-83a1-4cb6-8bef-bbfad3caa333:map-14-9",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6bGF5b3V0U2NlbmU",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6bGF5b3V0U2NlbmU",
+          "line": 24,
+          "startColumn": 17,
+          "endColumn": 27
+        },
+        {
+          "id": "diagram-4c382090-edbc-4d0c-97f5-c4c8bf1815ba:map-1-5",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpEaWFncmFt",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpEaWFncmFt",
+          "line": 4,
+          "startColumn": 166,
+          "endColumn": 172
+        },
+        {
+          "id": "diagram-4c382090-edbc-4d0c-97f5-c4c8bf1815ba:map-4-14",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbUNvbnRlbnQudHM6RGlhZ3JhbUNvbnRlbnQ",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbUNvbnRlbnQudHM6RGlhZ3JhbUNvbnRlbnQ",
+          "line": 7,
+          "startColumn": 175,
+          "endColumn": 188
+        },
+        {
+          "id": "diagram-4c382090-edbc-4d0c-97f5-c4c8bf1815ba:map-12-28",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbUNvbnRlbnQudHM6RGlhZ3JhbUNvbnRlbnROb2Rl",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbUNvbnRlbnQudHM6RGlhZ3JhbUNvbnRlbnROb2Rl",
+          "line": 15,
+          "startColumn": 189,
+          "endColumn": 206
+        },
+        {
+          "id": "diagram-4c382090-edbc-4d0c-97f5-c4c8bf1815ba:map-18-20",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpEaWFncmFtU291cmNlQ29udGV4dA",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpEaWFncmFtU291cmNlQ29udGV4dA",
+          "line": 21,
+          "startColumn": 181,
+          "endColumn": 200
+        },
+        {
+          "id": "diagram-4c382090-edbc-4d0c-97f5-c4c8bf1815ba:map-26-1",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpjcmVhdGVEaWFncmFt",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpjcmVhdGVEaWFncmFt",
+          "line": 29,
+          "startColumn": 162,
+          "endColumn": 174
+        },
+        {
+          "id": "diagram-4c382090-edbc-4d0c-97f5-c4c8bf1815ba:map-27-1",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2RpYWdyYW1WaWV3U3RhdGUudHM6cmVzb2x2ZURpYWdyYW1Db250ZW50",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2RpYWdyYW1WaWV3U3RhdGUudHM6cmVzb2x2ZURpYWdyYW1Db250ZW50",
+          "line": 30,
+          "startColumn": 162,
+          "endColumn": 182
+        },
+        {
+          "id": "diagram-4c382090-edbc-4d0c-97f5-c4c8bf1815ba:map-28-1",
+          "evidenceId": "entity-c3JjL3NoYXJlZC9kaWFncmFtcy9EaWFncmFtVmlldy50c3g6RGlhZ3JhbVZpZXc",
+          "sourceRangeId": "range-c3JjL3NoYXJlZC9kaWFncmFtcy9EaWFncmFtVmlldy50c3g6RGlhZ3JhbVZpZXc",
+          "line": 31,
+          "startColumn": 162,
+          "endColumn": 172
+        },
+        {
+          "id": "diagram-4c382090-edbc-4d0c-97f5-c4c8bf1815ba:map-29-13",
+          "evidenceId": "entity-c3JjL3NoYXJlZC9kaWFncmFtcy9Bc2NpaVNlbGVjdGlvbkdyaWQudHN4OkFzY2lpU2VsZWN0aW9uR3JpZA",
+          "sourceRangeId": "range-c3JjL3NoYXJlZC9kaWFncmFtcy9Bc2NpaVNlbGVjdGlvbkdyaWQudHN4OkFzY2lpU2VsZWN0aW9uR3JpZA",
+          "line": 32,
+          "startColumn": 174,
+          "endColumn": 191
+        },
+        {
+          "id": "diagram-4c382090-edbc-4d0c-97f5-c4c8bf1815ba:map-31-1",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpkaWFncmFtU291cmNl",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpkaWFncmFtU291cmNl",
+          "line": 34,
+          "startColumn": 162,
+          "endColumn": 174
+        },
+        {
+          "id": "diagram-4c382090-edbc-4d0c-97f5-c4c8bf1815ba:map-32-1",
+          "evidenceId": "entity-YXBwbGljYXRpb24vY29yZS9zb3VyY2UvZGlhZ3JhbVNvdXJjZS50czpyZXNvbHZlRGlhZ3JhbVNvdXJjZQ",
+          "sourceRangeId": "range-YXBwbGljYXRpb24vY29yZS9zb3VyY2UvZGlhZ3JhbVNvdXJjZS50czpyZXNvbHZlRGlhZ3JhbVNvdXJjZQ",
+          "line": 35,
+          "startColumn": 162,
+          "endColumn": 181
+        },
+        {
+          "id": "diagram-4c382090-edbc-4d0c-97f5-c4c8bf1815ba:map-36-21",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpEaWFncmFtU291cmNlQ29udGV4dA",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpEaWFncmFtU291cmNlQ29udGV4dA",
+          "line": 39,
+          "startColumn": 182,
+          "endColumn": 201
+        },
+        {
+          "id": "diagram-aa1f212d-1544-41b4-8d0d-12e52d9755a4:map-1-5",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpGbG9hdGluZ0JveA",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpGbG9hdGluZ0JveA",
+          "line": 57,
+          "startColumn": 166,
+          "endColumn": 176
+        },
+        {
+          "id": "diagram-aa1f212d-1544-41b4-8d0d-12e52d9755a4:map-3-5",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpEaXNwbGF5Tm9kZUJhc2U",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpEaXNwbGF5Tm9kZUJhc2U",
+          "line": 59,
+          "startColumn": 166,
+          "endColumn": 180
+        },
+        {
+          "id": "diagram-aa1f212d-1544-41b4-8d0d-12e52d9755a4:map-9-5",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpTZWxlY3Rpb25SZWdpb24",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpTZWxlY3Rpb25SZWdpb24",
+          "line": 65,
+          "startColumn": 166,
+          "endColumn": 180
+        },
+        {
+          "id": "diagram-aa1f212d-1544-41b4-8d0d-12e52d9755a4:map-12-5",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpQcm9qZWN0ZWRQYW5l",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpQcm9qZWN0ZWRQYW5l",
+          "line": 68,
+          "startColumn": 166,
+          "endColumn": 178
+        },
+        {
+          "id": "diagram-aa1f212d-1544-41b4-8d0d-12e52d9755a4:map-14-5",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpDb252ZXJzYXRpb25QYW5l",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpDb252ZXJzYXRpb25QYW5l",
+          "line": 70,
+          "startColumn": 166,
+          "endColumn": 181
+        },
+        {
+          "id": "diagram-aa1f212d-1544-41b4-8d0d-12e52d9755a4:map-16-5",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpEZXRhaWxQYW5l",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpEZXRhaWxQYW5l",
+          "line": 72,
+          "startColumn": 166,
+          "endColumn": 175
+        },
+        {
+          "id": "diagram-aa1f212d-1544-41b4-8d0d-12e52d9755a4:map-19-22",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Zsb2F0aW5nQm94TGF5b3V0LnRzOmxheW91dEZsb2F0aW5nU2VsZWN0aW9ucw",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Zsb2F0aW5nQm94TGF5b3V0LnRzOmxheW91dEZsb2F0aW5nU2VsZWN0aW9ucw",
+          "line": 75,
+          "startColumn": 183,
+          "endColumn": 206
+        },
+        {
+          "id": "diagram-3846b0fa-3043-4d97-b813-cde56b6b49fe:map-3-11",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6TWFwcGluZ0RvY3VtZW50Q29udHJvbGxlcg",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6TWFwcGluZ0RvY3VtZW50Q29udHJvbGxlcg",
+          "line": 66,
+          "startColumn": 11,
+          "endColumn": 35
+        },
+        {
+          "id": "diagram-3846b0fa-3043-4d97-b813-cde56b6b49fe:map-4-9",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6Y29tbWl0RG9jdW1lbnQ",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6Y29tbWl0RG9jdW1lbnQ",
+          "line": 67,
+          "startColumn": 9,
+          "endColumn": 22
+        },
+        {
+          "id": "diagram-3846b0fa-3043-4d97-b813-cde56b6b49fe:map-5-9",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6dXBkYXRlQ2FudmFz",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6dXBkYXRlQ2FudmFz",
+          "line": 68,
+          "startColumn": 9,
+          "endColumn": 20
+        },
+        {
+          "id": "diagram-3846b0fa-3043-4d97-b813-cde56b6b49fe:map-6-9",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6dW5kbw",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6dW5kbw",
+          "line": 69,
+          "startColumn": 9,
+          "endColumn": 12
+        },
+        {
+          "id": "diagram-3846b0fa-3043-4d97-b813-cde56b6b49fe:map-9-9",
+          "evidenceId": "entity-YXBwbGljYXRpb24vbWFwcGluZy9hZ2VudC9zZXNzaW9uU2VydmljZS50czpBZ2VudERpYWdyYW1taW5nU2Vzc2lvblNlcnZpY2U",
+          "sourceRangeId": "range-YXBwbGljYXRpb24vbWFwcGluZy9hZ2VudC9zZXNzaW9uU2VydmljZS50czpBZ2VudERpYWdyYW1taW5nU2Vzc2lvblNlcnZpY2U",
+          "line": 72,
+          "startColumn": 9,
+          "endColumn": 38
+        },
+        {
+          "id": "diagram-3846b0fa-3043-4d97-b813-cde56b6b49fe:map-10-13",
+          "evidenceId": "entity-aW5mcmFzdHJ1Y3R1cmUvbWFwcGluZy9hZ2VudC9jYW52YXNTZXNzaW9uQnJpZGdlLnRzOkNhbnZhc1Nlc3Npb25CcmlkZ2U",
+          "sourceRangeId": "range-aW5mcmFzdHJ1Y3R1cmUvbWFwcGluZy9hZ2VudC9jYW52YXNTZXNzaW9uQnJpZGdlLnRzOkNhbnZhc1Nlc3Npb25CcmlkZ2U",
+          "line": 73,
+          "startColumn": 13,
+          "endColumn": 31
+        },
+        {
+          "id": "diagram-3846b0fa-3043-4d97-b813-cde56b6b49fe:map-11-17",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6dHJhbnNhY3Q",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6dHJhbnNhY3Q",
+          "line": 74,
+          "startColumn": 17,
+          "endColumn": 24
+        },
+        {
+          "id": "diagram-3846b0fa-3043-4d97-b813-cde56b6b49fe:map-14-55",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6dW5kbw",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6dW5kbw",
+          "line": 77,
+          "startColumn": 55,
+          "endColumn": 58
+        },
+        {
+          "id": "diagram-3846b0fa-3043-4d97-b813-cde56b6b49fe:map-21-38",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6dHJhbnNhY3Q",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6dHJhbnNhY3Q",
+          "line": 84,
+          "startColumn": 38,
+          "endColumn": 45
+        },
+        {
+          "id": "diagram-3846b0fa-3043-4d97-b813-cde56b6b49fe:map-22-25",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6dW5kbw",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6dW5kbw",
+          "line": 85,
+          "startColumn": 25,
+          "endColumn": 28
+        }
+      ],
+      "evidence": {
+        "entity-c3JjL2ZlYXR1cmVzL21hcHBpbmcvTWFwcGluZ1BhZ2UudHN4Ok1hcHBpbmdQb2NQYWdl": {
+          "id": "entity-c3JjL2ZlYXR1cmVzL21hcHBpbmcvTWFwcGluZ1BhZ2UudHN4Ok1hcHBpbmdQb2NQYWdl",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "MappingPocPage",
+          "label": "MappingPocPage",
+          "category": "interface-data-struct",
+          "summary": "Source definition of MappingPocPage in src/features/mapping/MappingPage.tsx.",
+          "sourceRanges": [
+            {
+              "id": "range-c3JjL2ZlYXR1cmVzL21hcHBpbmcvTWFwcGluZ1BhZ2UudHN4Ok1hcHBpbmdQb2NQYWdl",
+              "path": "src/features/mapping/MappingPage.tsx",
+              "startLine": 54,
+              "endLine": 54,
+              "originalLines": [
+                "export function MappingPocPage(props: { onStudio: () => void; onExperiments: () => void;"
+              ],
+              "symbol": "MappingPocPage"
+            }
+          ]
+        },
+        "entity-c3JjL2ZlYXR1cmVzL21hcHBpbmcvTWFwcGluZ1BhZ2UudHN4OkRyYWZ0": {
+          "id": "entity-c3JjL2ZlYXR1cmVzL21hcHBpbmcvTWFwcGluZ1BhZ2UudHN4OkRyYWZ0",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "Draft",
+          "label": "Draft",
+          "category": "interface-data-struct",
+          "summary": "Source definition of Draft in src/features/mapping/MappingPage.tsx.",
+          "sourceRanges": [
+            {
+              "id": "range-c3JjL2ZlYXR1cmVzL21hcHBpbmcvTWFwcGluZ1BhZ2UudHN4OkRyYWZ0",
+              "path": "src/features/mapping/MappingPage.tsx",
+              "startLine": 39,
+              "endLine": 51,
+              "originalLines": [
+                "interface Draft {",
+                "  representationId?: string;",
+                "  name: string;",
+                "  document: MappingGridDocument;",
+                "  savedScene: string;",
+                "  savedEdges?: string;",
+                "  savedName: string;",
+                "  revisionId: string;",
+                "  busy: boolean;",
+                "  canvas: MappingCanvasState;",
+                "  viewport?: CanvasTransform;",
+                "  focusBox?: { id: string; serial: number; contentNodeId?: string };",
+                "}"
+              ],
+              "symbol": "Draft"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbUNhbnZhcy50czpDYW52YXNUcmFuc2Zvcm0": {
+          "id": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbUNhbnZhcy50czpDYW52YXNUcmFuc2Zvcm0",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "CanvasTransform",
+          "label": "CanvasTransform",
+          "category": "interface-data-struct",
+          "summary": "Source definition of CanvasTransform in domain/core/diagrams/diagramCanvas.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbUNhbnZhcy50czpDYW52YXNUcmFuc2Zvcm0",
+              "path": "domain/core/diagrams/diagramCanvas.ts",
+              "startLine": 9,
+              "endLine": 12,
+              "originalLines": [
+                "export interface CanvasTransform {",
+                "  offset: CanvasPoint;",
+                "  scale: number;",
+                "}"
+              ],
+              "symbol": "CanvasTransform"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6TWFwcGluZ0RvY3VtZW50Q29udHJvbGxlcg": {
+          "id": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6TWFwcGluZ0RvY3VtZW50Q29udHJvbGxlcg",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "MappingDocumentController",
+          "label": "MappingDocumentController",
+          "category": "interface-data-struct",
+          "summary": "Source definition of MappingDocumentController in domain/mapping/workspace/mappingDocumentController.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6TWFwcGluZ0RvY3VtZW50Q29udHJvbGxlcg",
+              "path": "domain/mapping/workspace/mappingDocumentController.ts",
+              "startLine": 30,
+              "endLine": 30,
+              "originalLines": [
+                "export class MappingDocumentController {"
+              ],
+              "symbol": "MappingDocumentController"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6Q29udHJvbGxlclNuYXBzaG90": {
+          "id": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6Q29udHJvbGxlclNuYXBzaG90",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "ControllerSnapshot",
+          "label": "ControllerSnapshot",
+          "category": "interface-data-struct",
+          "summary": "Source definition of ControllerSnapshot in domain/mapping/workspace/mappingDocumentController.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6Q29udHJvbGxlclNuYXBzaG90",
+              "path": "domain/mapping/workspace/mappingDocumentController.ts",
+              "startLine": 18,
+              "endLine": 18,
+              "originalLines": [
+                "export interface ControllerSnapshot { endpointBounds?: EndpointBounds; document: MappingGridDocument; canvas: MappingCanvasState; version: number; canUndo: boolean; canRedo: boolean; cell?: { width: number; height: number } }"
+              ],
+              "symbol": "ControllerSnapshot"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6Z2V0U25hcHNob3Q": {
+          "id": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6Z2V0U25hcHNob3Q",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "getSnapshot",
+          "label": "getSnapshot",
+          "category": "operation",
+          "summary": "Source definition of getSnapshot in domain/mapping/workspace/mappingDocumentController.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6Z2V0U25hcHNob3Q",
+              "path": "domain/mapping/workspace/mappingDocumentController.ts",
+              "startLine": 61,
+              "endLine": 61,
+              "originalLines": [
+                "  getSnapshot = () => this.snapshot;"
+              ],
+              "symbol": "getSnapshot"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdHcmlkLnRzOk1hcHBpbmdHcmlkRG9jdW1lbnQ": {
+          "id": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdHcmlkLnRzOk1hcHBpbmdHcmlkRG9jdW1lbnQ",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "MappingGridDocument",
+          "label": "MappingGridDocument",
+          "category": "interface-data-struct",
+          "summary": "Source definition of MappingGridDocument in domain/mapping/workspace/mappingGrid.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdHcmlkLnRzOk1hcHBpbmdHcmlkRG9jdW1lbnQ",
+              "path": "domain/mapping/workspace/mappingGrid.ts",
+              "startLine": 13,
+              "endLine": 17,
+              "originalLines": [
+                "export interface MappingGridDocument {",
+                "  scene: LineGridScene;",
+                "  edges: import('../../core/diagrams/diagramConnection').DiagramConnection[];",
+                "  sections: Readonly<Record<string, readonly MappingPocASection[]>>;",
+                "}"
+              ],
+              "symbol": "MappingGridDocument"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6TGluZUdyaWRTY2VuZQ": {
+          "id": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6TGluZUdyaWRTY2VuZQ",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "LineGridScene",
+          "label": "LineGridScene",
+          "category": "interface-data-struct",
+          "summary": "Source definition of LineGridScene in domain/core/diagrams/lineGrid.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6TGluZUdyaWRTY2VuZQ",
+              "path": "domain/core/diagrams/lineGrid.ts",
+              "startLine": 22,
+              "endLine": 25,
+              "originalLines": [
+                "export interface LineGridScene {",
+                "  contents: Readonly<Record<string, Diagram>>;",
+                "  root: GridBox;",
+                "}"
+              ],
+              "symbol": "LineGridScene"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6R3JpZEJveA": {
+          "id": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6R3JpZEJveA",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "GridBox",
+          "label": "GridBox",
+          "category": "interface-data-struct",
+          "summary": "Source definition of GridBox in domain/core/diagrams/lineGrid.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6R3JpZEJveA",
+              "path": "domain/core/diagrams/lineGrid.ts",
+              "startLine": 11,
+              "endLine": 20,
+              "originalLines": [
+                "export type GridBox = {",
+                "  id: string;",
+                "  position: GridPoint;",
+                "  minimumSize?: GridSize;",
+                "  collapsed: boolean;",
+                "  collapsedContentId?: string;",
+                "} & (",
+                "  | { kind: \"diagram\"; contentId: string }",
+                "  | { kind: \"container\"; children: readonly GridBox[]; layout: { collisionPolicy: \"push-right\"; gap: number } }",
+                ");"
+              ],
+              "symbol": "GridBox"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpEaWFncmFt": {
+          "id": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpEaWFncmFt",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "Diagram",
+          "label": "Diagram",
+          "category": "interface-data-struct",
+          "summary": "Source definition of Diagram in domain/core/diagrams/diagram.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpEaWFncmFt",
+              "path": "domain/core/diagrams/diagram.ts",
+              "startLine": 23,
+              "endLine": 29,
+              "originalLines": [
+                "export interface Diagram {",
+                "  id: string;",
+                "  revision: number;",
+                "  content: DiagramContent;",
+                "  sourceContext: DiagramSourceContext;",
+                "  jumps?: readonly DiagramJump[];",
+                "}"
+              ],
+              "symbol": "Diagram"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbUNvbnRlbnQudHM6RGlhZ3JhbUNvbnRlbnQ": {
+          "id": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbUNvbnRlbnQudHM6RGlhZ3JhbUNvbnRlbnQ",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "DiagramContent",
+          "label": "DiagramContent",
+          "category": "interface-data-struct",
+          "summary": "Source definition of DiagramContent in domain/core/diagrams/diagramContent.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbUNvbnRlbnQudHM6RGlhZ3JhbUNvbnRlbnQ",
+              "path": "domain/core/diagrams/diagramContent.ts",
+              "startLine": 8,
+              "endLine": 11,
+              "originalLines": [
+                "export interface DiagramContent {",
+                "  revisionId: string; ascii: string; asciiSha256: string;",
+                "  structure: { kind: 'diagram' } | { kind: 'tree'; parserVersion: 'ascii-tree-1' | 'ascii-tree-2'; rootIds: string[]; nodes: Record<string, DiagramContentNode> };",
+                "}"
+              ],
+              "symbol": "DiagramContent"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpEaWFncmFtU291cmNlQ29udGV4dA": {
+          "id": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpEaWFncmFtU291cmNlQ29udGV4dA",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "DiagramSourceContext",
+          "label": "DiagramSourceContext",
+          "category": "interface-data-struct",
+          "summary": "Source definition of DiagramSourceContext in domain/core/diagrams/diagram.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpEaWFncmFtU291cmNlQ29udGV4dA",
+              "path": "domain/core/diagrams/diagram.ts",
+              "startLine": 16,
+              "endLine": 21,
+              "originalLines": [
+                "export interface DiagramSourceContext {",
+                "  binding?: DiagramSourceBinding;",
+                "  contentHash: string;",
+                "  mappings: readonly DiagramElementMapping[];",
+                "  evidence: Record<string, ProjectRepresentationEvidenceRecord>;",
+                "}"
+              ],
+              "symbol": "DiagramSourceContext"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ0NhbnZhc1N0YXRl": {
+          "id": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ0NhbnZhc1N0YXRl",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "MappingCanvasState",
+          "label": "MappingCanvasState",
+          "category": "interface-data-struct",
+          "summary": "Source definition of MappingCanvasState in domain/mapping/workspace/mappingWorkspace.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ0NhbnZhc1N0YXRl",
+              "path": "domain/mapping/workspace/mappingWorkspace.ts",
+              "startLine": 35,
+              "endLine": 35,
+              "originalLines": [
+                "export interface MappingCanvasState { diagramViews?: import('./diagramViewState').DiagramViews; display: DisplayState; controls: MappingControls }"
+              ],
+              "symbol": "MappingCanvasState"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpEaXNwbGF5U3RhdGU": {
+          "id": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpEaXNwbGF5U3RhdGU",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "DisplayState",
+          "label": "DisplayState",
+          "category": "interface-data-struct",
+          "summary": "Source definition of DisplayState in domain/mapping/workspace/displayModel.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpEaXNwbGF5U3RhdGU",
+              "path": "domain/mapping/workspace/displayModel.ts",
+              "startLine": 78,
+              "endLine": 78,
+              "originalLines": [
+                "export interface DisplayState { rootIds: string[]; nodes: Record<string, FloatingPane> }"
+              ],
+              "symbol": "DisplayState"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpGbG9hdGluZ0JveA": {
+          "id": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpGbG9hdGluZ0JveA",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "FloatingBox",
+          "label": "FloatingBox",
+          "category": "interface-data-struct",
+          "summary": "Source definition of FloatingBox in domain/mapping/workspace/displayModel.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpGbG9hdGluZ0JveA",
+              "path": "domain/mapping/workspace/displayModel.ts",
+              "startLine": 76,
+              "endLine": 76,
+              "originalLines": [
+                "export type FloatingBox = FloatingPane | import('./connectionLayout').FloatingBoxArrow;"
+              ],
+              "symbol": "FloatingBox"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ0NvbnRyb2xz": {
+          "id": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ0NvbnRyb2xz",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "MappingControls",
+          "label": "MappingControls",
+          "category": "interface-data-struct",
+          "summary": "Source definition of MappingControls in domain/mapping/workspace/mappingWorkspace.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ0NvbnRyb2xz",
+              "path": "domain/mapping/workspace/mappingWorkspace.ts",
+              "startLine": 25,
+              "endLine": 32,
+              "originalLines": [
+                "export interface MappingControls {",
+                "  activeBoxId: string;",
+                "  selectionRect: MappingPocGridRect | null;",
+                "  selectedNodeIds: string[];",
+                "  retainedSelectionId: string | null;",
+                "  activeThreadId: string | null;",
+                "  surfaces: Record<string, SelectionSurfaceState>;",
+                "}"
+              ],
+              "symbol": "MappingControls"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6U2VsZWN0aW9uU3VyZmFjZVN0YXRl": {
+          "id": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6U2VsZWN0aW9uU3VyZmFjZVN0YXRl",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "SelectionSurfaceState",
+          "label": "SelectionSurfaceState",
+          "category": "interface-data-struct",
+          "summary": "Source definition of SelectionSurfaceState in domain/mapping/workspace/mappingWorkspace.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6U2VsZWN0aW9uU3VyZmFjZVN0YXRl",
+              "path": "domain/mapping/workspace/mappingWorkspace.ts",
+              "startLine": 8,
+              "endLine": 20,
+              "originalLines": [
+                "export interface SelectionSurfaceState {",
+                "  actionsOpen: boolean;",
+                "  presentation: 'compact' | 'floating' | 'docked';",
+                "  projectionChoice: string;",
+                "  promptOperation: 'edit' | 'generate';",
+                "  promptOpen: boolean;",
+                "  promptText: string;",
+                "  askOpen: boolean;",
+                "  askText: string;",
+                "  askVerbosity: \"low\" | \"high\";",
+                "  promptPhase: 'ready' | 'composing' | 'generating' | 'applied' | 'error';",
+                "  statusMessage: string;",
+                "}"
+              ],
+              "symbol": "SelectionSurfaceState"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2NhbnZhc0Rpc3BsYXlOb2RlLnRzOkNhbnZhc0Rpc3BsYXlOb2Rl": {
+          "id": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2NhbnZhc0Rpc3BsYXlOb2RlLnRzOkNhbnZhc0Rpc3BsYXlOb2Rl",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "CanvasDisplayNode",
+          "label": "CanvasDisplayNode",
+          "category": "interface-data-struct",
+          "summary": "Source definition of CanvasDisplayNode in domain/mapping/workspace/canvasDisplayNode.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2NhbnZhc0Rpc3BsYXlOb2RlLnRzOkNhbnZhc0Rpc3BsYXlOb2Rl",
+              "path": "domain/mapping/workspace/canvasDisplayNode.ts",
+              "startLine": 28,
+              "endLine": 32,
+              "originalLines": [
+                "export type CanvasDisplayNode = {",
+                "  id: string; version: number; childIds: string[]; expansion: 'expanded' | 'collapsed';",
+                "  collapsible: DisplayNodeCollapsible;",
+                "} & ({ layout: 'grid'; kind: 'diagram' | 'group'; boxId: string; geometry: { units: 'cells'; bounds: GridBounds }; content?: DiagramContent; contentNodes?: readonly import('../../core/diagrams/diagramContent').DiagramContentNode[]; diagram?: import(\"../../core/diagrams/diagram\").Diagram }",
+                "  | { layout: 'floating'; kind: FloatingBox['kind']; geometry: DisplayGeometry & { units: 'pixels' }; placement: FloatingPlacement; value: FloatingBox });"
+              ],
+              "symbol": "CanvasDisplayNode"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6bm9kZXM": {
+          "id": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6bm9kZXM",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "nodes",
+          "label": "nodes",
+          "category": "operation",
+          "summary": "Source definition of nodes in domain/mapping/workspace/mappingDocumentController.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6bm9kZXM",
+              "path": "domain/mapping/workspace/mappingDocumentController.ts",
+              "startLine": 63,
+              "endLine": 67,
+              "originalLines": [
+                "  nodes() {",
+                "    if (this.nodeCache?.snapshot !== this.snapshot) this.nodeCache = { snapshot: this.snapshot,",
+                "      nodes: canvasDisplayNodes(this.snapshot.document, this.snapshot.canvas, this.snapshot.version, this.snapshot.cell, this.snapshot.endpointBounds) };",
+                "    return structuredClone(this.nodeCache.nodes);",
+                "  }"
+              ],
+              "symbol": "nodes"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6R3JpZEJvdW5kcw": {
+          "id": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6R3JpZEJvdW5kcw",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "GridBounds",
+          "label": "GridBounds",
+          "category": "interface-data-struct",
+          "summary": "Source definition of GridBounds in domain/core/diagrams/lineGrid.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6R3JpZEJvdW5kcw",
+              "path": "domain/core/diagrams/lineGrid.ts",
+              "startLine": 6,
+              "endLine": 6,
+              "originalLines": [
+                "export interface GridBounds extends GridPoint, GridSize {}"
+              ],
+              "symbol": "GridBounds"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2NhbnZhc0Rpc3BsYXlOb2RlLnRzOkZsb2F0aW5nUGxhY2VtZW50": {
+          "id": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2NhbnZhc0Rpc3BsYXlOb2RlLnRzOkZsb2F0aW5nUGxhY2VtZW50",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "FloatingPlacement",
+          "label": "FloatingPlacement",
+          "category": "interface-data-struct",
+          "summary": "Source definition of FloatingPlacement in domain/mapping/workspace/canvasDisplayNode.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2NhbnZhc0Rpc3BsYXlOb2RlLnRzOkZsb2F0aW5nUGxhY2VtZW50",
+              "path": "domain/mapping/workspace/canvasDisplayNode.ts",
+              "startLine": 13,
+              "endLine": 18,
+              "originalLines": [
+                "export type FloatingPlacement =",
+                "  | { kind: 'connection'; edgeId: string }",
+                "  | { kind: 'grid-region'; gridBoxId: string; contentId: string; rect: import('../selection/mappingPoc').MappingPocGridRect; sourceAscii: string }",
+                "  | { kind: 'parent'; ownerId: string }",
+                "  | { kind: 'conversation'; canvasAnchor: { x: number; y: number }; presentation: 'compact' | 'floating' | 'docked' }",
+                "  | { kind: 'stored'; coordinateSpace: 'canvas' | 'viewport' };"
+              ],
+              "symbol": "FloatingPlacement"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpTZWxlY3Rpb25SZWdpb24": {
+          "id": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpTZWxlY3Rpb25SZWdpb24",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "SelectionRegion",
+          "label": "SelectionRegion",
+          "category": "interface-data-struct",
+          "summary": "Source definition of SelectionRegion in domain/mapping/workspace/displayModel.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpTZWxlY3Rpb25SZWdpb24",
+              "path": "domain/mapping/workspace/displayModel.ts",
+              "startLine": 28,
+              "endLine": 38,
+              "originalLines": [
+                "export interface SelectionRegion extends DisplayNodeBase {",
+                "  kind: 'selection';",
+                "  sourceBoxId: string;",
+                "  sourceContentId: string;",
+                "  sourceAscii: string;",
+                "  sourceRevisionId?: string;",
+                "  rect: MappingPocGridRect;",
+                "  selectedIds: string[];",
+                "  displayMode: ChildDisplayMode;",
+                "  activeChildId?: string;",
+                "}"
+              ],
+              "symbol": "SelectionRegion"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpQcm9qZWN0ZWRQYW5l": {
+          "id": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpQcm9qZWN0ZWRQYW5l",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "ProjectedPane",
+          "label": "ProjectedPane",
+          "category": "interface-data-struct",
+          "summary": "Source definition of ProjectedPane in domain/mapping/workspace/displayModel.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpQcm9qZWN0ZWRQYW5l",
+              "path": "domain/mapping/workspace/displayModel.ts",
+              "startLine": 53,
+              "endLine": 63,
+              "originalLines": [
+                "export interface ProjectedPane extends DisplayNodeBase {",
+                "  kind: 'projection';",
+                "  title: string;",
+                "  projectionId?: string;",
+                "  sourceRevisionId?: string;",
+                "  targetRevisionId?: string;",
+                "  activeChildId?: string;",
+                "  content: { kind: 'call-tree'; result: ProjectionSelectionResult; coverage: string }",
+                "    | { kind: 'compaction'; files: ProjectedFile[] }",
+                "    | SourceCodePaneContent;",
+                "}"
+              ],
+              "symbol": "ProjectedPane"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpDb252ZXJzYXRpb25QYW5l": {
+          "id": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpDb252ZXJzYXRpb25QYW5l",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "ConversationPane",
+          "label": "ConversationPane",
+          "category": "interface-data-struct",
+          "summary": "Source definition of ConversationPane in domain/mapping/workspace/displayModel.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpDb252ZXJzYXRpb25QYW5l",
+              "path": "domain/mapping/workspace/displayModel.ts",
+              "startLine": 64,
+              "endLine": 71,
+              "originalLines": [
+                "export interface ConversationPane extends DisplayNodeBase {",
+                "  kind: 'conversation';",
+                "  presentation: LocalChatVariant;",
+                "  thread: LocalChatThread;",
+                "  /** Semantic attachment for the bubble; independent of an expanded or docked panel. */",
+                "  canvasAnchor: DisplayPosition;",
+                "  draft: string;",
+                "}"
+              ],
+              "symbol": "ConversationPane"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpEZXRhaWxQYW5l": {
+          "id": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpEZXRhaWxQYW5l",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "DetailPane",
+          "label": "DetailPane",
+          "category": "interface-data-struct",
+          "summary": "Source definition of DetailPane in domain/mapping/workspace/displayModel.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpEZXRhaWxQYW5l",
+              "path": "domain/mapping/workspace/displayModel.ts",
+              "startLine": 72,
+              "endLine": 74,
+              "originalLines": [
+                "export interface DetailPane extends DisplayNodeBase {",
+                "  kind: 'detail'; title: string; ascii: string; sectionId?: string;",
+                "}"
+              ],
+              "symbol": "DetailPane"
+            }
+          ]
+        },
+        "entity-c3JjL2ZlYXR1cmVzL21hcHBpbmcvYWdlbnQvdXNlQWdlbnRDYW52YXNCcmlkZ2UudHM6dXNlQWdlbnRDYW52YXNCcmlkZ2U": {
+          "id": "entity-c3JjL2ZlYXR1cmVzL21hcHBpbmcvYWdlbnQvdXNlQWdlbnRDYW52YXNCcmlkZ2UudHM6dXNlQWdlbnRDYW52YXNCcmlkZ2U",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "useAgentCanvasBridge",
+          "label": "useAgentCanvasBridge",
+          "category": "operation",
+          "summary": "Source definition of useAgentCanvasBridge in src/features/mapping/agent/useAgentCanvasBridge.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-c3JjL2ZlYXR1cmVzL21hcHBpbmcvYWdlbnQvdXNlQWdlbnRDYW52YXNCcmlkZ2UudHM6dXNlQWdlbnRDYW52YXNCcmlkZ2U",
+              "path": "src/features/mapping/agent/useAgentCanvasBridge.ts",
+              "startLine": 5,
+              "endLine": 48,
+              "originalLines": [
+                "export function useAgentCanvasBridge(descriptor: Omit<CanvasDescriptor, 'canvasId'>, handle: (command: CanvasCommand) => Promise<unknown>) {",
+                "  const [canvasId] = useState(() => crypto.randomUUID());",
+                "  const latest = useRef({ descriptor, handle }); latest.current = { descriptor, handle };",
+                "  const registration = JSON.stringify({ ...descriptor, canvasId });",
+                "  useEffect(() => {",
+                "    void apiFetch('/api/mapping/agent/canvases', { method: 'POST', headers: { 'content-type': 'application/json' }, body: registration }).catch(() => undefined);",
+                "  }, [registration]);",
+                "  useEffect(() => {",
+                "    const abort = new AbortController();",
+                "    let timer: ReturnType<typeof setTimeout> | undefined;",
+                "    const results = new Map<string, { value?: unknown; error?: string }>();",
+                "    const request = async (path: string, body?: unknown, method = body === undefined ? 'GET' : 'POST') => {",
+                "      const response = await apiFetch(`/api/mapping/agent${path}`, { method, signal: abort.signal,",
+                "        ...(body === undefined ? {} : { headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }) });",
+                "      if (!response.ok) throw await errorFrom(response);",
+                "      return response.json();",
+                "    };",
+                "    const register = () => request('/canvases', { ...latest.current.descriptor, canvasId });",
+                "    const run = async () => {",
+                "      try {",
+                "        await register();",
+                "        while (!abort.signal.aborted) {",
+                "          const commands: CanvasCommand[] = await request(`/canvases/${canvasId}/commands`);",
+                "          for (const command of commands) {",
+                "            let result = results.get(command.id);",
+                "            if (!result) {",
+                "              try { result = { value: await latest.current.handle(command) }; }",
+                "              catch (error) { result = { error: error instanceof Error ? error.message : String(error) }; }",
+                "              results.set(command.id, result);",
+                "              if (results.size > 200) results.delete(results.keys().next().value!);",
+                "            }",
+                "            await request(`/canvases/${canvasId}/reply`, { commandId: command.id, ...result });",
+                "          }",
+                "          await register();",
+                "        }",
+                "      } catch {",
+                "        if (!abort.signal.aborted) timer = setTimeout(() => void run(), 1000);",
+                "      }",
+                "    };",
+                "    void run();",
+                "    return () => { abort.abort(); clearTimeout(timer); void apiFetch(`/api/mapping/agent/canvases/${canvasId}`, { method: 'DELETE', keepalive: true }).catch(() => undefined); };",
+                "  }, [canvasId]);",
+                "  return canvasId;",
+                "}"
+              ],
+              "symbol": "useAgentCanvasBridge"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ1dvcmtzcGFjZVNuYXBzaG90": {
+          "id": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ1dvcmtzcGFjZVNuYXBzaG90",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "MappingWorkspaceSnapshot",
+          "label": "MappingWorkspaceSnapshot",
+          "category": "interface-data-struct",
+          "summary": "Source definition of MappingWorkspaceSnapshot in domain/mapping/workspace/mappingWorkspace.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ1dvcmtzcGFjZVNuYXBzaG90",
+              "path": "domain/mapping/workspace/mappingWorkspace.ts",
+              "startLine": 45,
+              "endLine": 47,
+              "originalLines": [
+                "export interface MappingWorkspaceSnapshot {",
+                "  schemaVersion: 3; projectId: string; activeDocumentId?: string; documents: MappingDocumentSnapshot[];",
+                "}"
+              ],
+              "symbol": "MappingWorkspaceSnapshot"
+            }
+          ]
+        },
+        "entity-c3JjL2ZlYXR1cmVzL21hcHBpbmcvTWFwcGluZ1BhZ2UudHN4OmNhcHR1cmU": {
+          "id": "entity-c3JjL2ZlYXR1cmVzL21hcHBpbmcvTWFwcGluZ1BhZ2UudHN4OmNhcHR1cmU",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "capture",
+          "label": "capture",
+          "category": "operation",
+          "summary": "Source definition of capture in src/features/mapping/MappingPage.tsx.",
+          "sourceRanges": [
+            {
+              "id": "range-c3JjL2ZlYXR1cmVzL21hcHBpbmcvTWFwcGluZ1BhZ2UudHN4OmNhcHR1cmU",
+              "path": "src/features/mapping/MappingPage.tsx",
+              "startLine": 176,
+              "endLine": 183,
+              "originalLines": [
+                "  const capture = (): MappingWorkspaceSnapshot => {",
+                "    if (!snapshot?.project) throw new Error('Project is not initialized');",
+                "    return { schemaVersion: 3, projectId: snapshot.project.id, activeDocumentId: activeId,",
+                "      documents: Object.entries(drafts).map(([representationId, draft]) => ({ representationId, savedRepresentationId: draft.representationId, name: draft.name,",
+                "        savedName: draft.savedName, savedScene: draft.savedScene, savedEdges: draft.savedEdges, revisionId: draft.revisionId,",
+                "        document: draft.document, canvas: { ...draft.canvas, display: viewState.captureDisplay(representationId, draft.canvas.display) },",
+                "        viewport: viewState.captureCamera(representationId, draft.viewport) })) };",
+                "  };"
+              ],
+              "symbol": "capture"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ0RvY3VtZW50U25hcHNob3Q": {
+          "id": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ0RvY3VtZW50U25hcHNob3Q",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "MappingDocumentSnapshot",
+          "label": "MappingDocumentSnapshot",
+          "category": "interface-data-struct",
+          "summary": "Source definition of MappingDocumentSnapshot in domain/mapping/workspace/mappingWorkspace.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ0RvY3VtZW50U25hcHNob3Q",
+              "path": "domain/mapping/workspace/mappingWorkspace.ts",
+              "startLine": 40,
+              "endLine": 44,
+              "originalLines": [
+                "export interface MappingDocumentSnapshot {",
+                "  savedRepresentationId?: string;",
+                "  representationId: string; name: string; revisionId: string; savedName: string; savedScene: string; savedEdges?: string;",
+                "  document: MappingGridDocument; canvas: MappingCanvasState; viewport?: CanvasTransform;",
+                "}"
+              ],
+              "symbol": "MappingDocumentSnapshot"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6bWVhc3VyZUNvbnRlbnQ": {
+          "id": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6bWVhc3VyZUNvbnRlbnQ",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "measureContent",
+          "label": "measureContent",
+          "category": "operation",
+          "summary": "Source definition of measureContent in domain/core/diagrams/lineGrid.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6bWVhc3VyZUNvbnRlbnQ",
+              "path": "domain/core/diagrams/lineGrid.ts",
+              "startLine": 45,
+              "endLine": 49,
+              "originalLines": [
+                "export function measureContent(ascii: string): GridSize {",
+                "  if (/[^\\x20-\\x7e\\n]/.test(ascii)) throw new Error(\"Grid content must be printable ASCII with LF newlines\");",
+                "  const lines = ascii.split(\"\\n\");",
+                "  return { columns: Math.max(1, ...lines.map((line) => line.length)), rows: lines.length };",
+                "}"
+              ],
+              "symbol": "measureContent"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6bGF5b3V0U2NlbmU": {
+          "id": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6bGF5b3V0U2NlbmU",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "layoutScene",
+          "label": "layoutScene",
+          "category": "operation",
+          "summary": "Source definition of layoutScene in domain/core/diagrams/lineGrid.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvbGluZUdyaWQudHM6bGF5b3V0U2NlbmU",
+              "path": "domain/core/diagrams/lineGrid.ts",
+              "startLine": 126,
+              "endLine": 160,
+              "originalLines": [
+                "export function layoutScene(scene: LineGridScene, changedId: string): LineGridScene {",
+                "  function visit(box: GridBox): { box: GridBox; changed: boolean } {",
+                "    if (box.kind === \"diagram\") return { box, changed: box.id === changedId };",
+                "    const descendants = box.children.map(visit);",
+                "    let children = descendants.map((child) => child.box);",
+                "    const anchoredId = descendants.find((child) => child.changed)?.box.id;",
+                "    if (!box.collapsed) {",
+                "      const measure = (child: GridBox) => resolveScene({ ...scene, root: child }).bounds;",
+                "      const ordered = children.map((child, index) => ({ child, index })).sort((a, b) =>",
+                "        Number(b.child.id === anchoredId) - Number(a.child.id === anchoredId)",
+                "        || a.child.position.column - b.child.position.column",
+                "        || a.child.position.row - b.child.position.row || a.index - b.index);",
+                "      const settled: GridBounds[] = [];",
+                "      const replacements = new Map<string, GridBox>();",
+                "      for (const { child } of ordered) {",
+                "        const bounds = { ...measure(child) };",
+                "        let collisions = settled.filter((other) => boxesOverlap(bounds, other, box.layout.gap));",
+                "        while (collisions.length) {",
+                "          bounds.column = Math.max(...collisions.map((other) => other.column + other.columns + box.layout.gap));",
+                "          collisions = settled.filter((other) => boxesOverlap(bounds, other, box.layout.gap));",
+                "        }",
+                "        settled.push(bounds);",
+                "        replacements.set(child.id, { ...child, position: { column: bounds.column, row: bounds.row } });",
+                "      }",
+                "      children = children.map((child) => replacements.get(child.id)!);",
+                "    }",
+                "    return { box: { ...box, children }, changed: box.id === changedId || descendants.some((child) => child.changed) };",
+                "  }",
+                "  const result = visit(scene.root);",
+                "  if (!result.changed) throw new Error(`Unknown GridBox: ${changedId}`);",
+                "  const next = { ...scene, root: result.box };",
+                "  // Check all final bounds before publishing a transaction.",
+                "  composeScene(next);",
+                "  return next;",
+                "}"
+              ],
+              "symbol": "layoutScene"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbUNvbnRlbnQudHM6RGlhZ3JhbUNvbnRlbnROb2Rl": {
+          "id": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbUNvbnRlbnQudHM6RGlhZ3JhbUNvbnRlbnROb2Rl",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "DiagramContentNode",
+          "label": "DiagramContentNode",
+          "category": "interface-data-struct",
+          "summary": "Source definition of DiagramContentNode in domain/core/diagrams/diagramContent.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbUNvbnRlbnQudHM6RGlhZ3JhbUNvbnRlbnROb2Rl",
+              "path": "domain/core/diagrams/diagramContent.ts",
+              "startLine": 4,
+              "endLine": 7,
+              "originalLines": [
+                "export interface DiagramContentNode {",
+                "  id: string; label: string; line: number; branchColumn: number; startColumn: number; endColumn: number;",
+                "  parentId?: string; childIds: string[]; foldRanges: { startLine: number; endLine: number }[];",
+                "}"
+              ],
+              "symbol": "DiagramContentNode"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpjcmVhdGVEaWFncmFt": {
+          "id": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpjcmVhdGVEaWFncmFt",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "createDiagram",
+          "label": "createDiagram",
+          "category": "operation",
+          "summary": "Source definition of createDiagram in domain/core/diagrams/diagram.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpjcmVhdGVEaWFncmFt",
+              "path": "domain/core/diagrams/diagram.ts",
+              "startLine": 37,
+              "endLine": 45,
+              "originalLines": [
+                "export function createDiagram(input: DiagramInput): Diagram {",
+                "  const content = buildDiagramContent(input.ascii, `${input.id}:${input.revision}`, input.structureKind ?? 'diagram');",
+                "  const diagram: Diagram = { id: input.id, revision: input.revision, content,",
+                "    ...(input.jumps ? { jumps: structuredClone(input.jumps) } : {}),",
+                "    sourceContext: { ...(input.source ? { binding: structuredClone(input.source) } : {}), contentHash: content.asciiSha256,",
+                "      mappings: structuredClone(input.mappings ?? []), evidence: structuredClone(input.evidence ?? {}) } };",
+                "  validateDiagram(diagram);",
+                "  return diagram;",
+                "}"
+              ],
+              "symbol": "createDiagram"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2RpYWdyYW1WaWV3U3RhdGUudHM6cmVzb2x2ZURpYWdyYW1Db250ZW50": {
+          "id": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2RpYWdyYW1WaWV3U3RhdGUudHM6cmVzb2x2ZURpYWdyYW1Db250ZW50",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "resolveDiagramContent",
+          "label": "resolveDiagramContent",
+          "category": "operation",
+          "summary": "Source definition of resolveDiagramContent in domain/mapping/workspace/diagramViewState.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2RpYWdyYW1WaWV3U3RhdGUudHM6cmVzb2x2ZURpYWdyYW1Db250ZW50",
+              "path": "domain/mapping/workspace/diagramViewState.ts",
+              "startLine": 11,
+              "endLine": 11,
+              "originalLines": [
+                "export function resolveDiagramContent(diagram: Diagram): DiagramContent { return diagram.content; }"
+              ],
+              "symbol": "resolveDiagramContent"
+            }
+          ]
+        },
+        "entity-c3JjL3NoYXJlZC9kaWFncmFtcy9EaWFncmFtVmlldy50c3g6RGlhZ3JhbVZpZXc": {
+          "id": "entity-c3JjL3NoYXJlZC9kaWFncmFtcy9EaWFncmFtVmlldy50c3g6RGlhZ3JhbVZpZXc",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "DiagramView",
+          "label": "DiagramView",
+          "category": "interface-data-struct",
+          "summary": "Source definition of DiagramView in src/shared/diagrams/DiagramView.tsx.",
+          "sourceRanges": [
+            {
+              "id": "range-c3JjL3NoYXJlZC9kaWFncmFtcy9EaWFncmFtVmlldy50c3g6RGlhZ3JhbVZpZXc",
+              "path": "src/shared/diagrams/DiagramView.tsx",
+              "startLine": 62,
+              "endLine": 62,
+              "originalLines": [
+                "export function DiagramView(props: {"
+              ],
+              "symbol": "DiagramView"
+            }
+          ]
+        },
+        "entity-c3JjL3NoYXJlZC9kaWFncmFtcy9Bc2NpaVNlbGVjdGlvbkdyaWQudHN4OkFzY2lpU2VsZWN0aW9uR3JpZA": {
+          "id": "entity-c3JjL3NoYXJlZC9kaWFncmFtcy9Bc2NpaVNlbGVjdGlvbkdyaWQudHN4OkFzY2lpU2VsZWN0aW9uR3JpZA",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "AsciiSelectionGrid",
+          "label": "AsciiSelectionGrid",
+          "category": "interface-data-struct",
+          "summary": "Source definition of AsciiSelectionGrid in src/shared/diagrams/AsciiSelectionGrid.tsx.",
+          "sourceRanges": [
+            {
+              "id": "range-c3JjL3NoYXJlZC9kaWFncmFtcy9Bc2NpaVNlbGVjdGlvbkdyaWQudHN4OkFzY2lpU2VsZWN0aW9uR3JpZA",
+              "path": "src/shared/diagrams/AsciiSelectionGrid.tsx",
+              "startLine": 52,
+              "endLine": 52,
+              "originalLines": [
+                "export function AsciiSelectionGrid(props: {"
+              ],
+              "symbol": "AsciiSelectionGrid"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpkaWFncmFtU291cmNl": {
+          "id": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpkaWFncmFtU291cmNl",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "diagramSource",
+          "label": "diagramSource",
+          "category": "operation",
+          "summary": "Source definition of diagramSource in domain/core/diagrams/diagram.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpkaWFncmFtU291cmNl",
+              "path": "domain/core/diagrams/diagram.ts",
+              "startLine": 79,
+              "endLine": 81,
+              "originalLines": [
+                "export function diagramSource(diagram: Diagram) {",
+                "  return queryDiagramSourceContext(diagram.sourceContext);",
+                "}"
+              ],
+              "symbol": "diagramSource"
+            }
+          ]
+        },
+        "entity-YXBwbGljYXRpb24vY29yZS9zb3VyY2UvZGlhZ3JhbVNvdXJjZS50czpyZXNvbHZlRGlhZ3JhbVNvdXJjZQ": {
+          "id": "entity-YXBwbGljYXRpb24vY29yZS9zb3VyY2UvZGlhZ3JhbVNvdXJjZS50czpyZXNvbHZlRGlhZ3JhbVNvdXJjZQ",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "resolveDiagramSource",
+          "label": "resolveDiagramSource",
+          "category": "operation",
+          "summary": "Source definition of resolveDiagramSource in application/core/source/diagramSource.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-YXBwbGljYXRpb24vY29yZS9zb3VyY2UvZGlhZ3JhbVNvdXJjZS50czpyZXNvbHZlRGlhZ3JhbVNvdXJjZQ",
+              "path": "application/core/source/diagramSource.ts",
+              "startLine": 8,
+              "endLine": 54,
+              "originalLines": [
+                "export async function resolveDiagramSource(store: Pick<DiagramRepository,'loadProject'|'projectCatalogs'|'loadDiagramSet'>, ref: DiagramSourceReference, corpus?: CorpusAccess, liveDiagram?: Diagram) {",
+                "  const project = await store.loadProject();",
+                "  if (!project || project.id !== ref.projectId) throw new ApplicationError('conflict','Diagram belongs to another project');",
+                "  const catalog = await store.projectCatalogs.loadRepresentationCatalog(project.id);",
+                "  let diagram: Diagram | undefined;",
+                "  const representation = ref.representationId ? catalog.representations[ref.representationId] : undefined;",
+                "  const revisionId = ref.revisionId ?? representation?.currentRevisionId;",
+                "  if (ref.representationId && (!representation || !revisionId || !representation.revisionIds.includes(revisionId))) throw new Error('Unknown diagram revision');",
+                "  if (liveDiagram) {",
+                "    validateDiagram(liveDiagram);",
+                "    if (ref.contentId && liveDiagram.id !== ref.contentId) throw new Error('Live diagram identity does not match selection');",
+                "    diagram = liveDiagram;",
+                "  } else if (ref.representationId) {",
+                "    const scene = sceneFromRevision(catalog.revisions[revisionId!]);",
+                "    const candidates = Object.values(scene.contents).filter(d => ref.contentId ? d.id === ref.contentId : !!d.sourceContext.binding);",
+                "    if (candidates.length !== 1) throw new Error('Select an individual diagram with contentId');",
+                "    diagram = candidates[0];",
+                "  } else {",
+                "    const bindings = new Map<string,DiagramSourceBinding>();",
+                "    const register = (binding: DiagramSourceBinding) => {",
+                "      const old = bindings.get(binding.sourceId);",
+                "      if (old && (old.corpus.root !== binding.corpus.root || old.corpus.kind !== binding.corpus.kind || old.repositoryIdentity !== binding.repositoryIdentity)) throw new Error('Conflicting diagram source identity');",
+                "      bindings.set(binding.sourceId,binding);",
+                "    };",
+                "    for (const revision of Object.values(catalog.revisions)) for (const d of Object.values(sceneFromRevision(revision).contents)) {",
+                "      const binding = d.sourceContext.binding;",
+                "      if (binding && (!ref.sourceId || binding.sourceId === ref.sourceId)) register(binding);",
+                "    }",
+                "    for (const setId of project.diagramSetIds) {",
+                "      const binding = (await store.loadDiagramSet(setId)).source;",
+                "      if (binding && (!ref.sourceId || binding.sourceId === ref.sourceId)) register(binding);",
+                "    }",
+                "    if (bindings.size !== 1) throw new Error('A valid diagram sourceId is required; the project has no single repository');",
+                "    diagram = createDiagram({id:'source-query',revision:0,ascii:'Source',source:[...bindings.values()][0]});",
+                "  }",
+                "  if (ref.sourceId && diagram.sourceContext.binding?.sourceId !== ref.sourceId) throw new Error('Source does not belong to diagram');",
+                "  const query = diagramSource(diagram);",
+                "  const binding = () => {",
+                "    const result = query.context.binding;",
+                "    if (!result) throw new Error('This diagram has no source repository');",
+                "    return result;",
+                "  };",
+                "  return { ...query, diagram, binding,",
+                "    readText: (file: string) => { const source=binding(); if (!corpus) throw new Error('Source access unavailable'); return corpus.provider(source.corpus).readDocumentText(source.corpus,file); },",
+                "    listFiles: (directory: string) => { const source=binding(); if (!corpus) throw new Error('Source access unavailable'); return corpus.provider(source.corpus).listDirectory(source.corpus,directory); }",
+                "  };",
+                "}"
+              ],
+              "symbol": "resolveDiagramSource"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpEaXNwbGF5Tm9kZUJhc2U": {
+          "id": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpEaXNwbGF5Tm9kZUJhc2U",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "DisplayNodeBase",
+          "label": "DisplayNodeBase",
+          "category": "interface-data-struct",
+          "summary": "Source definition of DisplayNodeBase in domain/mapping/workspace/displayModel.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Rpc3BsYXlNb2RlbC50czpEaXNwbGF5Tm9kZUJhc2U",
+              "path": "domain/mapping/workspace/displayModel.ts",
+              "startLine": 16,
+              "endLine": 23,
+              "originalLines": [
+                "export interface DisplayNodeBase extends DisplayGeometry {",
+                "  id: string;",
+                "  childIds: string[];",
+                "  expansion: Expansion;",
+                "  geometryPolicy: { placement: 'automatic' | 'manual'; sizing: 'content' | 'fixed' };",
+                "  /** Restores the expanded allocation after rendering a collapsed header/bubble. */",
+                "  expandedGeometry?: DisplayGeometry;",
+                "}"
+              ],
+              "symbol": "DisplayNodeBase"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Zsb2F0aW5nQm94TGF5b3V0LnRzOmxheW91dEZsb2F0aW5nU2VsZWN0aW9ucw": {
+          "id": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Zsb2F0aW5nQm94TGF5b3V0LnRzOmxheW91dEZsb2F0aW5nU2VsZWN0aW9ucw",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "layoutFloatingSelections",
+          "label": "layoutFloatingSelections",
+          "category": "operation",
+          "summary": "Source definition of layoutFloatingSelections in domain/mapping/workspace/floatingBoxLayout.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL2Zsb2F0aW5nQm94TGF5b3V0LnRzOmxheW91dEZsb2F0aW5nU2VsZWN0aW9ucw",
+              "path": "domain/mapping/workspace/floatingBoxLayout.ts",
+              "startLine": 7,
+              "endLine": 28,
+              "originalLines": [
+                "export function layoutFloatingSelections(state: DisplayState, boxes: readonly ResolvedGridBox[], scene: LineGridScene, cell: { width: number; height: number }, views?: DiagramViews): DisplayState {",
+                "  if (!cell.width || !cell.height) return state;",
+                "  let next = state;",
+                "  for (const id of state.rootIds) {",
+                "    const root = next.nodes[id]; if (root?.kind !== 'selection') continue;",
+                "    const box = boxes.find(box => box.box.id === root.sourceBoxId);",
+                "    if (box && !box.box.collapsed && scene.contents[root.sourceContentId]?.content.ascii === root.sourceAscii) {",
+                "      const rect = diagramProjection(scene, root.sourceBoxId, root.sourceContentId, views).rect(root.rect);",
+                "      if (!rect) continue;",
+                "      next = updateDisplayGeometry(next, id, {",
+                "        ...(root.geometryPolicy.placement === 'automatic' ? { position: {",
+                "          x: (box.bounds.column + root.rect.startColumn - 1) * cell.width,",
+                "          y: (box.bounds.row + rect.startLine - 1) * cell.height } } : {}),",
+                "        ...(root.geometryPolicy.sizing === 'content' ? { bounds: {",
+                "          width: (root.rect.endColumn - root.rect.startColumn + 1) * cell.width,",
+                "          height: (rect.endLine - rect.startLine + 1) * cell.height } } : {})",
+                "      });",
+                "    }",
+                "    next = layoutProjectedPanes(next, next.nodes[id] as typeof root).state;",
+                "  }",
+                "  return next;",
+                "}"
+              ],
+              "symbol": "layoutFloatingSelections"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6Y29tbWl0RG9jdW1lbnQ": {
+          "id": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6Y29tbWl0RG9jdW1lbnQ",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "commitDocument",
+          "label": "commitDocument",
+          "category": "operation",
+          "summary": "Source definition of commitDocument in domain/mapping/workspace/mappingDocumentController.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6Y29tbWl0RG9jdW1lbnQ",
+              "path": "domain/mapping/workspace/mappingDocumentController.ts",
+              "startLine": 87,
+              "endLine": 87,
+              "originalLines": [
+                "  commitDocument(document: MappingGridDocument) { projectCanvasSnapshot(document.scene); this.publish({ document, canvas: this.snapshot.canvas }, true); }"
+              ],
+              "symbol": "commitDocument"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6dXBkYXRlQ2FudmFz": {
+          "id": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6dXBkYXRlQ2FudmFz",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "updateCanvas",
+          "label": "updateCanvas",
+          "category": "operation",
+          "summary": "Source definition of updateCanvas in domain/mapping/workspace/mappingDocumentController.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6dXBkYXRlQ2FudmFz",
+              "path": "domain/mapping/workspace/mappingDocumentController.ts",
+              "startLine": 83,
+              "endLine": 86,
+              "originalLines": [
+                "  updateCanvas(value: MappingCanvasState | ((current: MappingCanvasState) => MappingCanvasState), record = false) {",
+                "    const next = typeof value === 'function' ? value(this.snapshot.canvas) : value;",
+                "    this.publish({ document: this.snapshot.document, canvas: next }, record, record);",
+                "  }"
+              ],
+              "symbol": "updateCanvas"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6dW5kbw": {
+          "id": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6dW5kbw",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "undo",
+          "label": "undo",
+          "category": "operation",
+          "summary": "Source definition of undo in domain/mapping/workspace/mappingDocumentController.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6dW5kbw",
+              "path": "domain/mapping/workspace/mappingDocumentController.ts",
+              "startLine": 88,
+              "endLine": 93,
+              "originalLines": [
+                "  undo(redo = false) {",
+                "    const target = redo ? this.future.shift() : this.past.pop();",
+                "    if (!target) return;",
+                "    if (redo) this.past.push(this.snapshot); else this.future.unshift(this.snapshot);",
+                "    this.publish(target, false);",
+                "  }"
+              ],
+              "symbol": "undo"
+            }
+          ]
+        },
+        "entity-YXBwbGljYXRpb24vbWFwcGluZy9hZ2VudC9zZXNzaW9uU2VydmljZS50czpBZ2VudERpYWdyYW1taW5nU2Vzc2lvblNlcnZpY2U": {
+          "id": "entity-YXBwbGljYXRpb24vbWFwcGluZy9hZ2VudC9zZXNzaW9uU2VydmljZS50czpBZ2VudERpYWdyYW1taW5nU2Vzc2lvblNlcnZpY2U",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "AgentDiagrammingSessionService",
+          "label": "AgentDiagrammingSessionService",
+          "category": "interface-data-struct",
+          "summary": "Source definition of AgentDiagrammingSessionService in application/mapping/agent/sessionService.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-YXBwbGljYXRpb24vbWFwcGluZy9hZ2VudC9zZXNzaW9uU2VydmljZS50czpBZ2VudERpYWdyYW1taW5nU2Vzc2lvblNlcnZpY2U",
+              "path": "application/mapping/agent/sessionService.ts",
+              "startLine": 14,
+              "endLine": 14,
+              "originalLines": [
+                "export class AgentDiagrammingSessionService {"
+              ],
+              "symbol": "AgentDiagrammingSessionService"
+            }
+          ]
+        },
+        "entity-aW5mcmFzdHJ1Y3R1cmUvbWFwcGluZy9hZ2VudC9jYW52YXNTZXNzaW9uQnJpZGdlLnRzOkNhbnZhc1Nlc3Npb25CcmlkZ2U": {
+          "id": "entity-aW5mcmFzdHJ1Y3R1cmUvbWFwcGluZy9hZ2VudC9jYW52YXNTZXNzaW9uQnJpZGdlLnRzOkNhbnZhc1Nlc3Npb25CcmlkZ2U",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "CanvasSessionBridge",
+          "label": "CanvasSessionBridge",
+          "category": "interface-data-struct",
+          "summary": "Source definition of CanvasSessionBridge in infrastructure/mapping/agent/canvasSessionBridge.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-aW5mcmFzdHJ1Y3R1cmUvbWFwcGluZy9hZ2VudC9jYW52YXNTZXNzaW9uQnJpZGdlLnRzOkNhbnZhc1Nlc3Npb25CcmlkZ2U",
+              "path": "infrastructure/mapping/agent/canvasSessionBridge.ts",
+              "startLine": 4,
+              "endLine": 4,
+              "originalLines": [
+                "export class CanvasSessionBridge implements CanvasSessionPort {"
+              ],
+              "symbol": "CanvasSessionBridge"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6dHJhbnNhY3Q": {
+          "id": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6dHJhbnNhY3Q",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "transact",
+          "label": "transact",
+          "category": "operation",
+          "summary": "Source definition of transact in domain/mapping/workspace/mappingDocumentController.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdEb2N1bWVudENvbnRyb2xsZXIudHM6dHJhbnNhY3Q",
+              "path": "domain/mapping/workspace/mappingDocumentController.ts",
+              "startLine": 94,
+              "endLine": 205,
+              "originalLines": [
+                "  transact(expectedVersion: number, operations: DiagramOperation[]) {",
+                "    if (expectedVersion !== this.snapshot.version) throw new Error('VERSION_CONFLICT: read the canvas again');",
+                "    if (!Array.isArray(operations) || !operations.length || operations.length > 100) throw new Error('Expected 1\u2013100 operations');",
+                "    let { document, canvas } = structuredClone(this.snapshot);",
+                "    const safeId = (id: string) => { if (typeof id !== 'string' || !/^[a-zA-Z0-9_.:-]{1,180}$/.test(id) || ['__proto__','constructor','prototype'].includes(id)) throw new Error('Invalid node ID'); };",
+                "    for (const op of operations) {",
+                "      if (op.method === 'setJumps') {",
+                "        const box = findBox(document.scene.root, this.gridId(op.nodeId));",
+                "        if (box?.kind !== 'diagram') throw new Error('Expected diagram GridBox');",
+                "        const diagram = document.scene.contents[box.contentId];",
+                "        const jumps = validateDiagramJumps(diagram.content, op.jumps, false);",
+                "        document = { ...document, scene: { ...document.scene, contents: { ...document.scene.contents, [box.contentId]: { ...diagram, jumps } } } };",
+                "      } else if (op.method === 'edge-create' || op.method === 'edge-update') {",
+                "        const edge = diagramConnectionSchema.parse(op.edge);",
+                "        const previous = document.edges.find(item => item.id === edge.id);",
+                "        if (op.method === 'edge-create' ? !!previous : !previous) throw new Error(op.method === 'edge-create' ? 'Connection ID already exists' : 'Unknown connection');",
+                "        for (const end of ['source', 'target'] as const) {",
+                "          const unchanged = previous && JSON.stringify(previous[end]) === JSON.stringify(edge[end]);",
+                "          validateConnectionAnchor(document.scene, edge[end], !!unchanged);",
+                "        }",
+                "        document = { ...document, edges: previous ? document.edges.map(item => item.id === edge.id ? edge : item) : [...document.edges, edge] };",
+                "        if (document.edges.length > 2000) throw new Error('Too many connections');",
+                "      } else if (op.method === 'edge-remove') {",
+                "        if (!document.edges.some(edge => edge.id === op.edgeId)) throw new Error('Unknown connection');",
+                "        document = { ...document, edges: document.edges.filter(edge => edge.id !== op.edgeId) };",
+                "      } else if (op.method === 'collapse' && op.contentNodeId !== undefined) {",
+                "        if (typeof op.collapsed !== 'boolean') throw new Error('collapsed must be boolean');",
+                "        const box = findBox(document.scene.root, this.gridId(op.nodeId));",
+                "        if (box?.kind !== 'diagram') throw new Error('Subtree collapse requires a diagram DisplayNode');",
+                "        const content = resolveDiagramContent(document.scene.contents[box.contentId]);",
+                "        if (content.structure.kind !== 'tree' || !Object.hasOwn(content.structure.nodes, op.contentNodeId)) throw new Error('STALE_CONTENT_NODE');",
+                "        if (!content.structure.nodes[op.contentNodeId].childIds.length) throw new Error('Content node has no children');",
+                "        const old = canvas.diagramViews?.[op.nodeId];",
+                "        const ids = new Set(old?.contentRevisionId === content.revisionId ? old.collapsedContentNodeIds : []);",
+                "        if (op.collapsed) ids.add(op.contentNodeId); else ids.delete(op.contentNodeId);",
+                "        canvas.diagramViews = { ...canvas.diagramViews, [op.nodeId]: { contentRevisionId: content.revisionId, collapsedContentNodeIds: [...ids] } };",
+                "        if (canvas.controls.activeBoxId === box.id && canvas.controls.selectionRect",
+                "          && !projectDiagramContent(content, canvas.diagramViews[op.nodeId]).rect(canvas.controls.selectionRect)) {",
+                "          canvas.controls = { ...canvas.controls, selectionRect: null, selectedNodeIds: [], retainedSelectionId: null };",
+                "        }",
+                "      } else if (op.method === 'diagram-create' || op.method === 'replace') {",
+                "        const ascii = op.ascii?.replace(/\\r\\n?/g, '\\n');",
+                "        const mappings = op.mappings ?? [];",
+                "",
+                "        if (op.method === 'diagram-create') {",
+                "          safeId(op.id);",
+                "          if (findBox(document.scene.root, op.id) || Object.hasOwn(document.scene.contents, op.id) || Object.hasOwn(document.scene.contents, `${op.id}-summary`)) throw new Error('Node ID already exists');",
+                "          const parentId = op.parentId ? this.gridId(op.parentId) : document.scene.root.id;",
+                "          document = insertGridDiagram(document, parentId, { id: op.id, kind: 'diagram', contentId: op.id, collapsed: false, position: op.position ?? { column: 0, row: 0 } },",
+                "            createDiagram({ id: op.id, ascii, revision: 0, structureKind: op.structureKind, mappings, source: op.source, evidence: op.evidence }));",
+                "        } else {",
+                "          const id = this.gridId(op.nodeId), box = findBox(document.scene.root, id);",
+                "          if (box?.kind !== 'diagram') throw new Error('Expected diagram GridBox');",
+                "          const old = document.scene.contents[box.contentId];",
+                "          const replacement = createDiagram({ id: old.id, ascii, mappings, revision: old.revision + 1,",
+                "            structureKind: op.structureKind ?? old.content.structure.kind, source: op.source ?? old.sourceContext.binding,",
+                "            evidence: op.evidence ?? old.sourceContext.evidence });",
+                "          if (old.jumps) replacement.jumps = rebaseDiagramJumps(old.content, replacement.content, old.jumps);",
+                "          const scene = layoutScene({ ...document.scene, contents: { ...document.scene.contents, [old.id]: replacement } }, id);",
+                "          document = { ...document, scene, edges: reconcileConnections(document.scene, scene, document.edges) };",
+                "        }",
+                "      } else if (op.nodeId?.startsWith('floating:edge:')) {",
+                "        const edgeId = op.nodeId.slice('floating:edge:'.length);",
+                "        if (op.method !== 'remove') throw new Error('Arrows follow their anchors; use edges.update to reattach');",
+                "        if (!document.edges.some(edge => edge.id === edgeId)) throw new Error('Unknown connection');",
+                "        document = { ...document, edges: document.edges.filter(edge => edge.id !== edgeId) };",
+                "      } else if (op.nodeId?.startsWith('grid:')) {",
+                "        const id = this.gridId(op.nodeId), box = findBox(document.scene.root, id);",
+                "        if (!box || id === document.scene.root.id) throw new Error('Unknown or protected GridBox');",
+                "        if (op.method === 'move') {",
+                "          if (!('column' in op.position) || !('row' in op.position)) throw new Error('GridBoxes require cell coordinates');",
+                "          const absolute = canvasDisplayNodes(document, canvas, 0).find(node => node.id === op.nodeId)!;",
+                "          if (absolute.layout !== 'grid') throw new Error('Expected GridBox');",
+                "          const position = { column: op.position.column - (absolute.geometry.bounds.column - box.position.column), row: op.position.row - (absolute.geometry.bounds.row - box.position.row) };",
+                "          document = { ...document, scene: layoutScene(updateGridBox(document.scene, id, item => ({ ...item, position })), id) };",
+                "        } else if (op.method === 'collapse') {",
+                "          if (typeof op.collapsed !== 'boolean') throw new Error('collapsed must be boolean');",
+                "          document = { ...document, scene: layoutScene(updateGridBox(document.scene, id, item => ({ ...item, collapsed: op.collapsed })), id) };",
+                "        } else if (op.method === 'remove') {",
+                "          const prune = (node: typeof box): typeof box => node.kind === 'container' ? { ...node, children: node.children.filter(child => child.id !== id).map(prune) } : node;",
+                "          const scene = { ...document.scene, root: prune(document.scene.root) };",
+                "          document = { ...document, scene, edges: reconcileConnections(document.scene, scene, document.edges) };",
+                "        } else throw new Error('Unsupported GridBox operation');",
+                "      } else {",
+                "        const id = op.nodeId?.startsWith('floating:') ? op.nodeId.slice(9) : '';",
+                "        const node = canvas.display.nodes[id];",
+                "        if (!node) throw new Error('Unknown FloatingBox');",
+                "        if (op.method === 'move') {",
+                "          if (!('x' in op.position) || !('y' in op.position) || !Number.isFinite(op.position.x) || !Number.isFinite(op.position.y)) throw new Error('FloatingBoxes require finite pixel coordinates');",
+                "          canvas.display = updateDisplayGeometry(canvas.display, id, { position: op.position });",
+                "          canvas.display.nodes[id] = { ...canvas.display.nodes[id], geometryPolicy: { ...node.geometryPolicy, placement: 'manual' } };",
+                "        } else if (op.method === 'collapse') {",
+                "          if (typeof op.collapsed !== 'boolean') throw new Error('collapsed must be boolean');",
+                "          canvas.display = setExpansion(canvas.display, id, op.collapsed ? 'collapsed' : 'expanded');",
+                "        } else if (op.method === 'remove') {",
+                "          canvas.display = removeDisplayNode(canvas.display, id);",
+                "          const controls = canvas.controls;",
+                "          canvas.controls = { ...controls, surfaces: Object.fromEntries(Object.entries(controls.surfaces).filter(([key]) => key === 'draft' || canvas.display.nodes[key])),",
+                "            retainedSelectionId: controls.retainedSelectionId && canvas.display.nodes[controls.retainedSelectionId] ? controls.retainedSelectionId : null,",
+                "            activeThreadId: controls.activeThreadId && canvas.display.nodes[controls.activeThreadId] ? controls.activeThreadId : null };",
+                "        } else throw new Error('Unsupported FloatingBox operation');",
+                "      }",
+                "    }",
+                "    projectCanvasSnapshot(document.scene);",
+                "    const active = findBox(document.scene.root, canvas.controls.activeBoxId);",
+                "    if (!active) {",
+                "      const first = canvasDisplayNodes(document, canvas, 0).find(node => node.layout === 'grid' && node.kind === 'diagram');",
+                "      if (first?.layout === 'grid') canvas.controls.activeBoxId = first.boxId;",
+                "    }",
+                "    this.publish({ document, canvas }, true);",
+                "    return { version: this.snapshot.version, nodes: this.nodes() };",
+                "  }"
+              ],
+              "symbol": "transact"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "representation": {
+      "schemaVersion": 1,
+      "id": "representation-c7177725-a7dd-4caa-9ac5-a1c702f3350d",
+      "projectId": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+      "handle": "representation-c7177725-a7dd-4caa-9ac5-a1c702f3350d",
+      "name": "PersistentLayer",
+      "viewKind": "diagram",
+      "representationKind": "tree",
+      "status": "settled",
+      "currentRevisionId": "representation-revision-e709abf4-4a33-490d-a27d-7e3e4ef6d0a8",
+      "revisionIds": [
+        "representation-revision-1ec0e919-f0ee-417b-9054-65de9fdd0163",
+        "representation-revision-4ec4e45b-ae9e-497d-a468-6a4dfc3f01cc",
+        "representation-revision-1f540039-9f40-4b36-a71c-61dadb3405d2",
+        "representation-revision-e709abf4-4a33-490d-a27d-7e3e4ef6d0a8"
+      ],
+      "createdAt": "2026-09-17T04:17:35.199Z",
+      "updatedAt": "2026-09-20T00:28:46.937Z"
+    },
+    "revision": {
+      "id": "representation-revision-e709abf4-4a33-490d-a27d-7e3e4ef6d0a8",
+      "ascii": "PersistentLayer\n|\n|-- DiagramStore                                  main repository facade\n|   |\n|   |-- Project\n|   |   |-- id / name\n|   |   `-- diagramSetIds[] -----------------------> DiagramSet records\n|   |\n|   |-- DiagramSet                                collection and generation context\n|   |   |-- id / projectId / name\n|   |   |\n|   |   |-- codeEntities: CodeEntitiesSet\n|   |   |   `-- entities[]: CodeEntity\n|   |   |       |-- id / label / category\n|   |   |       `-- sourceRanges[]\n|   |   |           |-- source path\n|   |   |           |-- startLine / endLine\n|   |   |           `-- originalLines              captured source evidence\n|   |   |\n|   |   |-- diagrams[]: Diagram                    generated artifacts\n|   |   |   |-- id / name\n|   |   |   |-- ASCII content\n|   |   |   `-- mappings[]\n|   |   |       |-- diagram text span\n|   |   |       `-- entity + source range ---------> codeEntities\n|   |   |\n|   |   `-- components[]: DiagramComponent         reusable diagram fragments\n|   |       `-- Content and source mappings\n|   |\n|   `-- projectCatalogs: ProjectCatalogStore       owns saved identities and revisions\n|       |\n|       |-- RepresentationCatalog\n|       |   |-- projectId\n|       |   |-- activeByKind                       selected representation per view\n|       |   |\n|       |   |-- representations[id]: Representation\n|       |   |   |-- id / name / kind / status\n|       |   |   |-- currentRevisionId ------------> revisions[id]\n|       |   |   `-- revisionIds[]                  retained history\n|       |   |\n|       |   |-- revisions[id]: RepresentationRevision\n|       |   |   |-- id / revision\n|       |   |   |-- representationId -------------> representations[id]\n|       |   |   |-- provenance?                    originating artifact\n|       |   |   |\n|       |   |   `-- content                        single diagram or composed scene\n|       |   |       |\n|       |   |       |-- DiagramContent\n|       |   |       |   |-- ASCII / content hash\n|       |   |       |   `-- structure\n|       |   |       |       |-- unstructured diagram\n|       |   |       |       `-- parsed tree\n|       |   |       |           `-- nodes[id]\n|       |   |       |               |-- label / original line\n|       |   |       |               `-- parent / children\n|       |   |       |\n|       |   |       `-- DiagramSourceContext       per diagram within the saved content\n|       |   |           |-- binding?               identifies the source repository\n|       |   |           |-- evidence[id]           captured source entities and ranges\n|       |   |           `-- mappings[]\n|       |   |               |-- diagram text span\n|       |   |               `-- entity + range ----> evidence[id].sourceRanges\n|       |   |\n|       |   `-- projections[id]                    relationships between representations\n|       |       |-- source representation / revision\n|       |       |-- target representation / revision\n|       |       `-- links                          source evidence -> target tree nodes\n|       |\n|       |-- CompactionCatalog\n|       |   |-- activeByPath[path] ----------------> compactions[id]\n|       |   `-- compactions[id]: FileCompaction\n|       |       |-- source path / source hash\n|       |       |-- startLine / endLine\n|       |       |-- originalLines\n|       |       `-- compactedSource                retained source presentation\n|       |\n|       `-- Operations\n|           |-- promoteRepresentation(...)\n|           |   `-- Generated artifact -> saved identity + captured revision.\n|           |\n|           |-- saveMappingDiagram(...)\n|           |   `-- Editable document content -> new representation revision.\n|           |\n|           |-- saveProjectedTree(...)\n|           |   `-- Derived tree -> saved representation + projection relationship.\n|           |\n|           `-- archiveRepresentation(...)\n|               `-- Retire the saved identity while retaining its history.\n|\n|-- MappingWorkspaceStore                         owns the saved editing session\n|   |\n|   `-- MappingWorkspaceSnapshot\n|       |-- projectId\n|       |-- activeDocumentId ---------------------> documents[id]\n|       |\n|       `-- documents[]: MappingDocumentSnapshot\n|           |-- document identity / name\n|           |-- savedRepresentationId? -----------> RepresentationCatalog.representations\n|           |-- revisionId -----------------------> baseline saved revision\n|           |\n|           |-- document                          current editable content\n|           |   `-- Scene + diagrams + their source contexts\n|           |       `-- May contain changes absent from the saved revision.\n|           |\n|           |-- canvas                            retained panes and controls\n|           `-- viewport                          camera position\n|               |\n|               |-- Open representation -> create an editable document.\n|               |-- Save diagram --------> ProjectCatalogStore saves a revision.\n|               `-- Save workspace ------> capture the complete editing session.\n|\n`-- SearchArtifact persistence                    PROPOSED derived output\n    |\n    |-- DiagramSearchArtifact\n    |   |-- derived from -------------------------> parsed diagram content\n    |   |-- searchable text                       node labels with original line labels\n    |   `-- row metadata -------------------------> node ID + original text location\n    |\n    |-- Mapped source-file membership\n    |   |-- derived from -------------------------> diagram source mappings\n    |   |-- source identity + path                one entry per referenced file\n    |   |-- search scope                          complete file contents\n    |   `-- owners -------------------------------> referencing diagram nodes\n    |\n    `-- Persistence hooks\n        |-- Diagram created / revised -> write its SearchArtifact.\n        |-- Mappings saved -----------> update mapped source-file membership.\n        `-- Diagram archived / removed -> remove obsolete search membership.",
+      "mappings": [
+        {
+          "id": "overview:map-3-5",
+          "evidenceId": "entity-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9zdG9yZS50czpEaWFncmFtU3RvcmU",
+          "sourceRangeId": "range-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9zdG9yZS50czpEaWFncmFtU3RvcmU",
+          "line": 3,
+          "startColumn": 5,
+          "endColumn": 16
+        },
+        {
+          "id": "overview:map-5-9",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6UHJvamVjdFJlY29yZA",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6UHJvamVjdFJlY29yZA",
+          "line": 5,
+          "startColumn": 9,
+          "endColumn": 15
+        },
+        {
+          "id": "overview:map-7-54",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6RGlhZ3JhbVNldFJlY29yZA",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6RGlhZ3JhbVNldFJlY29yZA",
+          "line": 7,
+          "startColumn": 54,
+          "endColumn": 63
+        },
+        {
+          "id": "overview:map-9-9",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6RGlhZ3JhbVNldFJlY29yZA",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6RGlhZ3JhbVNldFJlY29yZA",
+          "line": 9,
+          "startColumn": 9,
+          "endColumn": 18
+        },
+        {
+          "id": "overview:map-12-27",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6Q29kZUVudGl0aWVzU2V0UmVjb3Jk",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6Q29kZUVudGl0aWVzU2V0UmVjb3Jk",
+          "line": 12,
+          "startColumn": 27,
+          "endColumn": 41
+        },
+        {
+          "id": "overview:map-13-29",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6Q29kZUVudGl0eVJlY29yZA",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6Q29kZUVudGl0eVJlY29yZA",
+          "line": 13,
+          "startColumn": 29,
+          "endColumn": 38
+        },
+        {
+          "id": "overview:map-20-25",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6RGlhZ3JhbVJlY29yZA",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6RGlhZ3JhbVJlY29yZA",
+          "line": 20,
+          "startColumn": 25,
+          "endColumn": 31
+        },
+        {
+          "id": "overview:map-27-27",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6RGlhZ3JhbUNvbXBvbmVudFJlY29yZA",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6RGlhZ3JhbUNvbXBvbmVudFJlY29yZA",
+          "line": 27,
+          "startColumn": 27,
+          "endColumn": 42
+        },
+        {
+          "id": "overview:map-30-26",
+          "evidenceId": "entity-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9wcm9qZWN0Q2F0YWxvZ1N0b3JlLnRzOlByb2plY3RDYXRhbG9nU3RvcmU",
+          "sourceRangeId": "range-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9wcm9qZWN0Q2F0YWxvZ1N0b3JlLnRzOlByb2plY3RDYXRhbG9nU3RvcmU",
+          "line": 30,
+          "startColumn": 26,
+          "endColumn": 44
+        },
+        {
+          "id": "overview:map-32-13",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvcmVwcmVzZW50YXRpb25zL3Byb2plY3RDYXRhbG9nLnRzOlByb2plY3RSZXByZXNlbnRhdGlvbkNhdGFsb2dSZWNvcmQ",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvcmVwcmVzZW50YXRpb25zL3Byb2plY3RDYXRhbG9nLnRzOlByb2plY3RSZXByZXNlbnRhdGlvbkNhdGFsb2dSZWNvcmQ",
+          "line": 32,
+          "startColumn": 13,
+          "endColumn": 33
+        },
+        {
+          "id": "overview:map-36-38",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvcmVwcmVzZW50YXRpb25zL3Byb2plY3RDYXRhbG9nLnRzOlByb2plY3RSZXByZXNlbnRhdGlvblJlY29yZA",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvcmVwcmVzZW50YXRpb25zL3Byb2plY3RDYXRhbG9nLnRzOlByb2plY3RSZXByZXNlbnRhdGlvblJlY29yZA",
+          "line": 36,
+          "startColumn": 38,
+          "endColumn": 51
+        },
+        {
+          "id": "overview:map-41-32",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvcmVwcmVzZW50YXRpb25zL3Byb2plY3RDYXRhbG9nLnRzOlByb2plY3RSZXByZXNlbnRhdGlvblJldmlzaW9uUmVjb3Jk",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvcmVwcmVzZW50YXRpb25zL3Byb2plY3RDYXRhbG9nLnRzOlByb2plY3RSZXByZXNlbnRhdGlvblJldmlzaW9uUmVjb3Jk",
+          "line": 41,
+          "startColumn": 32,
+          "endColumn": 53
+        },
+        {
+          "id": "overview:map-48-25",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbUNvbnRlbnQudHM6RGlhZ3JhbUNvbnRlbnQ",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbUNvbnRlbnQudHM6RGlhZ3JhbUNvbnRlbnQ",
+          "line": 48,
+          "startColumn": 25,
+          "endColumn": 38
+        },
+        {
+          "id": "overview:map-57-25",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpEaWFncmFtU291cmNlQ29udGV4dA",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpEaWFncmFtU291cmNlQ29udGV4dA",
+          "line": 57,
+          "startColumn": 25,
+          "endColumn": 44
+        },
+        {
+          "id": "overview:map-69-13",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvcmVwcmVzZW50YXRpb25zL3Byb2plY3RDYXRhbG9nLnRzOlByb2plY3RDb3JwdXNDb21wYWN0aW9uQ2F0YWxvZ1JlY29yZA",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvcmVwcmVzZW50YXRpb25zL3Byb2plY3RDYXRhbG9nLnRzOlByb2plY3RDb3JwdXNDb21wYWN0aW9uQ2F0YWxvZ1JlY29yZA",
+          "line": 69,
+          "startColumn": 13,
+          "endColumn": 29
+        },
+        {
+          "id": "overview:map-71-34",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvcmVwcmVzZW50YXRpb25zL3Byb2plY3RDYXRhbG9nLnRzOlByb2plY3RGaWxlQ29tcGFjdGlvblJlY29yZA",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvcmVwcmVzZW50YXRpb25zL3Byb2plY3RDYXRhbG9nLnRzOlByb2plY3RGaWxlQ29tcGFjdGlvblJlY29yZA",
+          "line": 71,
+          "startColumn": 34,
+          "endColumn": 47
+        },
+        {
+          "id": "overview:map-78-17",
+          "evidenceId": "entity-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9wcm9qZWN0Q2F0YWxvZ1N0b3JlLnRzOnByb21vdGVSZXByZXNlbnRhdGlvbg",
+          "sourceRangeId": "range-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9wcm9qZWN0Q2F0YWxvZ1N0b3JlLnRzOnByb21vdGVSZXByZXNlbnRhdGlvbg",
+          "line": 78,
+          "startColumn": 17,
+          "endColumn": 37
+        },
+        {
+          "id": "overview:map-81-17",
+          "evidenceId": "entity-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9wcm9qZWN0Q2F0YWxvZ1N0b3JlLnRzOnNhdmVNYXBwaW5nRGlhZ3JhbQ",
+          "sourceRangeId": "range-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9wcm9qZWN0Q2F0YWxvZ1N0b3JlLnRzOnNhdmVNYXBwaW5nRGlhZ3JhbQ",
+          "line": 81,
+          "startColumn": 17,
+          "endColumn": 34
+        },
+        {
+          "id": "overview:map-84-17",
+          "evidenceId": "entity-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9wcm9qZWN0Q2F0YWxvZ1N0b3JlLnRzOnNhdmVQcm9qZWN0ZWRUcmVl",
+          "sourceRangeId": "range-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9wcm9qZWN0Q2F0YWxvZ1N0b3JlLnRzOnNhdmVQcm9qZWN0ZWRUcmVl",
+          "line": 84,
+          "startColumn": 17,
+          "endColumn": 33
+        },
+        {
+          "id": "overview:map-87-17",
+          "evidenceId": "entity-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9wcm9qZWN0Q2F0YWxvZ1N0b3JlLnRzOmFyY2hpdmVSZXByZXNlbnRhdGlvbg",
+          "sourceRangeId": "range-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9wcm9qZWN0Q2F0YWxvZ1N0b3JlLnRzOmFyY2hpdmVSZXByZXNlbnRhdGlvbg",
+          "line": 87,
+          "startColumn": 17,
+          "endColumn": 37
+        },
+        {
+          "id": "overview:map-90-5",
+          "evidenceId": "entity-aW5mcmFzdHJ1Y3R1cmUvbWFwcGluZy9wZXJzaXN0ZW5jZS93b3Jrc3BhY2UvbWFwcGluZ1dvcmtzcGFjZVN0b3JlLnRzOk1hcHBpbmdXb3Jrc3BhY2VTdG9yZQ",
+          "sourceRangeId": "range-aW5mcmFzdHJ1Y3R1cmUvbWFwcGluZy9wZXJzaXN0ZW5jZS93b3Jrc3BhY2UvbWFwcGluZ1dvcmtzcGFjZVN0b3JlLnRzOk1hcHBpbmdXb3Jrc3BhY2VTdG9yZQ",
+          "line": 90,
+          "startColumn": 5,
+          "endColumn": 25
+        },
+        {
+          "id": "overview:map-92-9",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ1dvcmtzcGFjZVNuYXBzaG90",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ1dvcmtzcGFjZVNuYXBzaG90",
+          "line": 92,
+          "startColumn": 9,
+          "endColumn": 32
+        },
+        {
+          "id": "overview:map-96-26",
+          "evidenceId": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ0RvY3VtZW50U25hcHNob3Q",
+          "sourceRangeId": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ0RvY3VtZW50U25hcHNob3Q",
+          "line": 96,
+          "startColumn": 26,
+          "endColumn": 48
+        },
+        {
+          "id": "overview:map-98-53",
+          "evidenceId": "entity-ZG9tYWluL2NvcmUvcmVwcmVzZW50YXRpb25zL3Byb2plY3RDYXRhbG9nLnRzOlByb2plY3RSZXByZXNlbnRhdGlvbkNhdGFsb2dSZWNvcmQ",
+          "sourceRangeId": "range-ZG9tYWluL2NvcmUvcmVwcmVzZW50YXRpb25zL3Byb2plY3RDYXRhbG9nLnRzOlByb2plY3RSZXByZXNlbnRhdGlvbkNhdGFsb2dSZWNvcmQ",
+          "line": 98,
+          "startColumn": 53,
+          "endColumn": 73
+        },
+        {
+          "id": "overview:map-109-44",
+          "evidenceId": "entity-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9wcm9qZWN0Q2F0YWxvZ1N0b3JlLnRzOlByb2plY3RDYXRhbG9nU3RvcmU",
+          "sourceRangeId": "range-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9wcm9qZWN0Q2F0YWxvZ1N0b3JlLnRzOlByb2plY3RDYXRhbG9nU3RvcmU",
+          "line": 109,
+          "startColumn": 44,
+          "endColumn": 62
+        }
+      ],
+      "evidence": {
+        "entity-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9zdG9yZS50czpEaWFncmFtU3RvcmU": {
+          "id": "entity-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9zdG9yZS50czpEaWFncmFtU3RvcmU",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "DiagramStore",
+          "label": "DiagramStore",
+          "category": "interface-data-struct",
+          "summary": "Source definition of DiagramStore in infrastructure/core/persistence/store.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9zdG9yZS50czpEaWFncmFtU3RvcmU",
+              "path": "infrastructure/core/persistence/store.ts",
+              "startLine": 43,
+              "endLine": 43,
+              "originalLines": [
+                "export class DiagramStore {"
+              ],
+              "symbol": "DiagramStore"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6UHJvamVjdFJlY29yZA": {
+          "id": "entity-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6UHJvamVjdFJlY29yZA",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "ProjectRecord",
+          "label": "ProjectRecord",
+          "category": "interface-data-struct",
+          "summary": "Source definition of ProjectRecord in domain/core/records/domain.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6UHJvamVjdFJlY29yZA",
+              "path": "domain/core/records/domain.ts",
+              "startLine": 136,
+              "endLine": 144,
+              "originalLines": [
+                "export interface ProjectRecord {",
+                "  schemaVersion: typeof SCHEMA_VERSION;",
+                "  id: string;",
+                "  name: string;",
+                "  defaultDomainProfileId?: import(\"../profiles/domainProfile\").BuiltInDomainProfileId;",
+                "  diagramSetIds: string[];",
+                "  createdAt: string;",
+                "  updatedAt: string;",
+                "}"
+              ],
+              "symbol": "ProjectRecord"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6RGlhZ3JhbVNldFJlY29yZA": {
+          "id": "entity-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6RGlhZ3JhbVNldFJlY29yZA",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "DiagramSetRecord",
+          "label": "DiagramSetRecord",
+          "category": "interface-data-struct",
+          "summary": "Source definition of DiagramSetRecord in domain/core/records/domain.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6RGlhZ3JhbVNldFJlY29yZA",
+              "path": "domain/core/records/domain.ts",
+              "startLine": 146,
+              "endLine": 169,
+              "originalLines": [
+                "export interface DiagramSetRecord {",
+                "  source?: import(\"../diagrams/diagram\").DiagramSourceBinding;",
+                "  schemaVersion: typeof SCHEMA_VERSION;",
+                "  id: string;",
+                "  projectId: string;",
+                "  name: string;",
+                "  initialPrompt: string;",
+                "  sourceCheckoutRoot: string;",
+                "  gitRevision?: string;",
+                "  codeEntitiesSetId: string;",
+                "  /** The preferred candidate for each full-diagram view category. */",
+                "  featuredViewIds: Partial<Record<DiagramViewKind, string>>;",
+                "  diagramIds: string[];",
+                "  diagramComponentIds: string[];",
+                "  generationBatchIds: string[];",
+                "  agentRunIds: string[];",
+                "  editSessionIds: string[];",
+                "  readiness: DiagramSetReadiness;",
+                "  /** How the initial evidence and diagrams entered this set. Missing legacy values mean generated. */",
+                "  creationMode?: \"generate\" | \"materialized\";",
+                "  createdAt: string;",
+                "  updatedAt: string;",
+                "  error?: string;",
+                "}"
+              ],
+              "symbol": "DiagramSetRecord"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6Q29kZUVudGl0aWVzU2V0UmVjb3Jk": {
+          "id": "entity-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6Q29kZUVudGl0aWVzU2V0UmVjb3Jk",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "CodeEntitiesSetRecord",
+          "label": "CodeEntitiesSetRecord",
+          "category": "interface-data-struct",
+          "summary": "Source definition of CodeEntitiesSetRecord in domain/core/records/domain.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6Q29kZUVudGl0aWVzU2V0UmVjb3Jk",
+              "path": "domain/core/records/domain.ts",
+              "startLine": 123,
+              "endLine": 134,
+              "originalLines": [
+                "export interface CodeEntitiesSetRecord {",
+                "  schemaVersion: typeof SCHEMA_VERSION;",
+                "  id: string;",
+                "  diagramSetId: string;",
+                "  revision: number;",
+                "  status: \"collecting\" | \"finalized\" | \"failed\";",
+                "  entities: CodeEntityRecord[];",
+                "  /** Immutable prompt snapshot used to collect this set. Absent on legacy records. */",
+                "  promptConfigId?: string;",
+                "  finalizedAt?: string;",
+                "  error?: string;",
+                "}"
+              ],
+              "symbol": "CodeEntitiesSetRecord"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6Q29kZUVudGl0eVJlY29yZA": {
+          "id": "entity-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6Q29kZUVudGl0eVJlY29yZA",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "CodeEntityRecord",
+          "label": "CodeEntityRecord",
+          "category": "interface-data-struct",
+          "summary": "Source definition of CodeEntityRecord in domain/core/records/domain.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6Q29kZUVudGl0eVJlY29yZA",
+              "path": "domain/core/records/domain.ts",
+              "startLine": 112,
+              "endLine": 121,
+              "originalLines": [
+                "export interface CodeEntityRecord {",
+                "  id: string;",
+                "  /** Exact immutable collection that owns this entity. Optional on legacy records. */",
+                "  origin?: CodeEntityOrigin;",
+                "  handle: string;",
+                "  label: string;",
+                "  category: CodeEntityCategory;",
+                "  summary: string;",
+                "  sourceRanges: SourceRange[];",
+                "}"
+              ],
+              "symbol": "CodeEntityRecord"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6RGlhZ3JhbVJlY29yZA": {
+          "id": "entity-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6RGlhZ3JhbVJlY29yZA",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "DiagramRecord",
+          "label": "DiagramRecord",
+          "category": "interface-data-struct",
+          "summary": "Source definition of DiagramRecord in domain/core/records/domain.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6RGlhZ3JhbVJlY29yZA",
+              "path": "domain/core/records/domain.ts",
+              "startLine": 379,
+              "endLine": 401,
+              "originalLines": [
+                "export interface DiagramRecord {",
+                "  schemaVersion: typeof SCHEMA_VERSION;",
+                "  id: string;",
+                "  /** Original owner; differs from diagramSetId for globally imported artifacts. */",
+                "  recordOrigin?: ArtifactOrigin;",
+                "  diagramSetId: string;",
+                "  viewKind: DiagramViewKind;",
+                "  /** Main diagram that supplied mandatory context for an auxiliary view. */",
+                "  basedOnDiagramId?: string;",
+                "  handle: string;",
+                "  name: string;",
+                "  ascii: string;",
+                "  /** Presentation semantics. Optional only on legacy records. */",
+                "  representationKind?: \"tree\" | \"diagram\";",
+                "  codeEntityIds: string[];",
+                "  origin: \"generated\" | \"imported\" | \"edited\" | \"materialized\";",
+                "  producedByRunId?: string;",
+                "  generationPromptConfigId?: string;",
+                "  editSessionId?: string;",
+                "  derivedFromDiagramIds: string[];",
+                "  createdAt: string;",
+                "  archivedAt?: string;",
+                "}"
+              ],
+              "symbol": "DiagramRecord"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6RGlhZ3JhbUNvbXBvbmVudFJlY29yZA": {
+          "id": "entity-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6RGlhZ3JhbUNvbXBvbmVudFJlY29yZA",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "DiagramComponentRecord",
+          "label": "DiagramComponentRecord",
+          "category": "interface-data-struct",
+          "summary": "Source definition of DiagramComponentRecord in domain/core/records/domain.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL2NvcmUvcmVjb3Jkcy9kb21haW4udHM6RGlhZ3JhbUNvbXBvbmVudFJlY29yZA",
+              "path": "domain/core/records/domain.ts",
+              "startLine": 350,
+              "endLine": 373,
+              "originalLines": [
+                "export interface DiagramComponentRecord {",
+                "  schemaVersion: typeof SCHEMA_VERSION;",
+                "  id: string;",
+                "  /** Original owner; differs from diagramSetId for globally imported artifacts. */",
+                "  recordOrigin?: ArtifactOrigin;",
+                "  diagramSetId: string;",
+                "  handle: string;",
+                "  name: string;",
+                "  ascii: string;",
+                "  /** Presentation semantics. Optional only on legacy records. */",
+                "  representationKind?: \"tree\" | \"diagram\";",
+                "  codeEntityIds: string[];",
+                "  origin: \"selection\" | \"generated\" | \"imported\" | \"edited\" | \"materialized\";",
+                "  sourceDiagramId?: string;",
+                "  sourceDiagramComponentId?: string;",
+                "  selectionBounds?: DiagramSelectionBounds;",
+                "  producedByRunId?: string;",
+                "  generationPromptConfigId?: string;",
+                "  editSessionId?: string;",
+                "  derivedFromDiagramIds: string[];",
+                "  derivedFromDiagramComponentIds: string[];",
+                "  createdAt: string;",
+                "  archivedAt?: string;",
+                "}"
+              ],
+              "symbol": "DiagramComponentRecord"
+            }
+          ]
+        },
+        "entity-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9wcm9qZWN0Q2F0YWxvZ1N0b3JlLnRzOlByb2plY3RDYXRhbG9nU3RvcmU": {
+          "id": "entity-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9wcm9qZWN0Q2F0YWxvZ1N0b3JlLnRzOlByb2plY3RDYXRhbG9nU3RvcmU",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "ProjectCatalogStore",
+          "label": "ProjectCatalogStore",
+          "category": "interface-data-struct",
+          "summary": "Source definition of ProjectCatalogStore in infrastructure/core/persistence/projectCatalogStore.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9wcm9qZWN0Q2F0YWxvZ1N0b3JlLnRzOlByb2plY3RDYXRhbG9nU3RvcmU",
+              "path": "infrastructure/core/persistence/projectCatalogStore.ts",
+              "startLine": 83,
+              "endLine": 83,
+              "originalLines": [
+                "export class ProjectCatalogStore {"
+              ],
+              "symbol": "ProjectCatalogStore"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL2NvcmUvcmVwcmVzZW50YXRpb25zL3Byb2plY3RDYXRhbG9nLnRzOlByb2plY3RSZXByZXNlbnRhdGlvbkNhdGFsb2dSZWNvcmQ": {
+          "id": "entity-ZG9tYWluL2NvcmUvcmVwcmVzZW50YXRpb25zL3Byb2plY3RDYXRhbG9nLnRzOlByb2plY3RSZXByZXNlbnRhdGlvbkNhdGFsb2dSZWNvcmQ",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "ProjectRepresentationCatalogRecord",
+          "label": "ProjectRepresentationCatalogRecord",
+          "category": "interface-data-struct",
+          "summary": "Source definition of ProjectRepresentationCatalogRecord in domain/core/representations/projectCatalog.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL2NvcmUvcmVwcmVzZW50YXRpb25zL3Byb2plY3RDYXRhbG9nLnRzOlByb2plY3RSZXByZXNlbnRhdGlvbkNhdGFsb2dSZWNvcmQ",
+              "path": "domain/core/representations/projectCatalog.ts",
+              "startLine": 129,
+              "endLine": 139,
+              "originalLines": [
+                "export interface ProjectRepresentationCatalogRecord {",
+                "  schemaVersion: 1;",
+                "  projectId: string;",
+                "  activeByKind: Partial<Record<DiagramViewKind, string>>;",
+                "  representations: Record<string, ProjectRepresentationRecord>;",
+                "  revisions: Record<string, ProjectRepresentationRevisionRecord>;",
+                "  /** Revision-pinned correspondences to complementary project diagrams. */",
+                "  projections?: Record<string, import(\"../diagrams/diagramProjection\").ProjectProjectionRecord>;",
+                "  createdAt: string;",
+                "  updatedAt: string;",
+                "}"
+              ],
+              "symbol": "ProjectRepresentationCatalogRecord"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL2NvcmUvcmVwcmVzZW50YXRpb25zL3Byb2plY3RDYXRhbG9nLnRzOlByb2plY3RSZXByZXNlbnRhdGlvblJlY29yZA": {
+          "id": "entity-ZG9tYWluL2NvcmUvcmVwcmVzZW50YXRpb25zL3Byb2plY3RDYXRhbG9nLnRzOlByb2plY3RSZXByZXNlbnRhdGlvblJlY29yZA",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "ProjectRepresentationRecord",
+          "label": "ProjectRepresentationRecord",
+          "category": "interface-data-struct",
+          "summary": "Source definition of ProjectRepresentationRecord in domain/core/representations/projectCatalog.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL2NvcmUvcmVwcmVzZW50YXRpb25zL3Byb2plY3RDYXRhbG9nLnRzOlByb2plY3RSZXByZXNlbnRhdGlvblJlY29yZA",
+              "path": "domain/core/representations/projectCatalog.ts",
+              "startLine": 114,
+              "endLine": 127,
+              "originalLines": [
+                "export interface ProjectRepresentationRecord {",
+                "  schemaVersion: 1;",
+                "  id: string;",
+                "  projectId: string;",
+                "  handle: string;",
+                "  name: string;",
+                "  viewKind: DiagramViewKind;",
+                "  representationKind: \"tree\" | \"diagram\";",
+                "  status: \"settled\" | \"archived\";",
+                "  currentRevisionId: string;",
+                "  revisionIds: string[];",
+                "  createdAt: string;",
+                "  updatedAt: string;",
+                "}"
+              ],
+              "symbol": "ProjectRepresentationRecord"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL2NvcmUvcmVwcmVzZW50YXRpb25zL3Byb2plY3RDYXRhbG9nLnRzOlByb2plY3RSZXByZXNlbnRhdGlvblJldmlzaW9uUmVjb3Jk": {
+          "id": "entity-ZG9tYWluL2NvcmUvcmVwcmVzZW50YXRpb25zL3Byb2plY3RDYXRhbG9nLnRzOlByb2plY3RSZXByZXNlbnRhdGlvblJldmlzaW9uUmVjb3Jk",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "ProjectRepresentationRevisionRecord",
+          "label": "ProjectRepresentationRevisionRecord",
+          "category": "interface-data-struct",
+          "summary": "Source definition of ProjectRepresentationRevisionRecord in domain/core/representations/projectCatalog.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL2NvcmUvcmVwcmVzZW50YXRpb25zL3Byb2plY3RDYXRhbG9nLnRzOlByb2plY3RSZXByZXNlbnRhdGlvblJldmlzaW9uUmVjb3Jk",
+              "path": "domain/core/representations/projectCatalog.ts",
+              "startLine": 93,
+              "endLine": 112,
+              "originalLines": [
+                "export interface ProjectRepresentationRevisionRecord {",
+                "  schemaVersion: 1;",
+                "  id: string;",
+                "  projectId: string;",
+                "  representationId: string;",
+                "  revision: number;",
+                "  ascii: string;",
+                "  asciiSha256: string;",
+                "  /** Absent legacy content is a single ASCII diagram. */",
+                "  content?: import(\"../diagrams/projectDiagramCanvas\").ProjectDiagramContent;",
+                "  representationKind: \"tree\" | \"diagram\";",
+                "  source?: import(\"../diagrams/diagram\").DiagramSourceBinding;",
+                "  evidence: Record<string, ProjectRepresentationEvidenceRecord>;",
+                "  mappings: ProjectRepresentationMappingRecord[];",
+                "  provenance?: {",
+                "    diagramSetId: string;",
+                "    artifactId: string;",
+                "  };",
+                "  createdAt: string;",
+                "}"
+              ],
+              "symbol": "ProjectRepresentationRevisionRecord"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbUNvbnRlbnQudHM6RGlhZ3JhbUNvbnRlbnQ": {
+          "id": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbUNvbnRlbnQudHM6RGlhZ3JhbUNvbnRlbnQ",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "DiagramContent",
+          "label": "DiagramContent",
+          "category": "interface-data-struct",
+          "summary": "Source definition of DiagramContent in domain/core/diagrams/diagramContent.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbUNvbnRlbnQudHM6RGlhZ3JhbUNvbnRlbnQ",
+              "path": "domain/core/diagrams/diagramContent.ts",
+              "startLine": 8,
+              "endLine": 11,
+              "originalLines": [
+                "export interface DiagramContent {",
+                "  revisionId: string; ascii: string; asciiSha256: string;",
+                "  structure: { kind: 'diagram' } | { kind: 'tree'; parserVersion: 'ascii-tree-1' | 'ascii-tree-2'; rootIds: string[]; nodes: Record<string, DiagramContentNode> };",
+                "}"
+              ],
+              "symbol": "DiagramContent"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpEaWFncmFtU291cmNlQ29udGV4dA": {
+          "id": "entity-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpEaWFncmFtU291cmNlQ29udGV4dA",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "DiagramSourceContext",
+          "label": "DiagramSourceContext",
+          "category": "interface-data-struct",
+          "summary": "Source definition of DiagramSourceContext in domain/core/diagrams/diagram.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL2NvcmUvZGlhZ3JhbXMvZGlhZ3JhbS50czpEaWFncmFtU291cmNlQ29udGV4dA",
+              "path": "domain/core/diagrams/diagram.ts",
+              "startLine": 16,
+              "endLine": 21,
+              "originalLines": [
+                "export interface DiagramSourceContext {",
+                "  binding?: DiagramSourceBinding;",
+                "  contentHash: string;",
+                "  mappings: readonly DiagramElementMapping[];",
+                "  evidence: Record<string, ProjectRepresentationEvidenceRecord>;",
+                "}"
+              ],
+              "symbol": "DiagramSourceContext"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL2NvcmUvcmVwcmVzZW50YXRpb25zL3Byb2plY3RDYXRhbG9nLnRzOlByb2plY3RDb3JwdXNDb21wYWN0aW9uQ2F0YWxvZ1JlY29yZA": {
+          "id": "entity-ZG9tYWluL2NvcmUvcmVwcmVzZW50YXRpb25zL3Byb2plY3RDYXRhbG9nLnRzOlByb2plY3RDb3JwdXNDb21wYWN0aW9uQ2F0YWxvZ1JlY29yZA",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "ProjectCorpusCompactionCatalogRecord",
+          "label": "ProjectCorpusCompactionCatalogRecord",
+          "category": "interface-data-struct",
+          "summary": "Source definition of ProjectCorpusCompactionCatalogRecord in domain/core/representations/projectCatalog.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL2NvcmUvcmVwcmVzZW50YXRpb25zL3Byb2plY3RDYXRhbG9nLnRzOlByb2plY3RDb3JwdXNDb21wYWN0aW9uQ2F0YWxvZ1JlY29yZA",
+              "path": "domain/core/representations/projectCatalog.ts",
+              "startLine": 37,
+              "endLine": 45,
+              "originalLines": [
+                "export interface ProjectCorpusCompactionCatalogRecord {",
+                "  schemaVersion: 1;",
+                "  projectId: string;",
+                "  /** The current compaction for a live corpus path; historical source revisions remain addressable. */",
+                "  activeByPath: Record<string, string>;",
+                "  compactions: Record<string, ProjectFileCompactionRecord>;",
+                "  createdAt: string;",
+                "  updatedAt: string;",
+                "}"
+              ],
+              "symbol": "ProjectCorpusCompactionCatalogRecord"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL2NvcmUvcmVwcmVzZW50YXRpb25zL3Byb2plY3RDYXRhbG9nLnRzOlByb2plY3RGaWxlQ29tcGFjdGlvblJlY29yZA": {
+          "id": "entity-ZG9tYWluL2NvcmUvcmVwcmVzZW50YXRpb25zL3Byb2plY3RDYXRhbG9nLnRzOlByb2plY3RGaWxlQ29tcGFjdGlvblJlY29yZA",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "ProjectFileCompactionRecord",
+          "label": "ProjectFileCompactionRecord",
+          "category": "interface-data-struct",
+          "summary": "Source definition of ProjectFileCompactionRecord in domain/core/representations/projectCatalog.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL2NvcmUvcmVwcmVzZW50YXRpb25zL3Byb2plY3RDYXRhbG9nLnRzOlByb2plY3RGaWxlQ29tcGFjdGlvblJlY29yZA",
+              "path": "domain/core/representations/projectCatalog.ts",
+              "startLine": 16,
+              "endLine": 35,
+              "originalLines": [
+                "export interface ProjectFileCompactionRecord {",
+                "  schemaVersion: 1;",
+                "  id: string;",
+                "  projectId: string;",
+                "  sourceId?: string;",
+                "  path: string;",
+                "  sourceRevision?: string;",
+                "  sourceSha256: string;",
+                "  startLine: number;",
+                "  endLine: number;",
+                "  originalLines: string[];",
+                "  compactedSource: CompactedSource;",
+                "  profile: {",
+                "    id: string;",
+                "    version: number;",
+                "  };",
+                "  provenance?: ProjectCompactionProvenance;",
+                "  createdAt: string;",
+                "  updatedAt: string;",
+                "}"
+              ],
+              "symbol": "ProjectFileCompactionRecord"
+            }
+          ]
+        },
+        "entity-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9wcm9qZWN0Q2F0YWxvZ1N0b3JlLnRzOnByb21vdGVSZXByZXNlbnRhdGlvbg": {
+          "id": "entity-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9wcm9qZWN0Q2F0YWxvZ1N0b3JlLnRzOnByb21vdGVSZXByZXNlbnRhdGlvbg",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "promoteRepresentation",
+          "label": "promoteRepresentation",
+          "category": "operation",
+          "summary": "Source definition of promoteRepresentation in infrastructure/core/persistence/projectCatalogStore.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9wcm9qZWN0Q2F0YWxvZ1N0b3JlLnRzOnByb21vdGVSZXByZXNlbnRhdGlvbg",
+              "path": "infrastructure/core/persistence/projectCatalogStore.ts",
+              "startLine": 171,
+              "endLine": 173,
+              "originalLines": [
+                "  promoteRepresentation(draft: ProjectRepresentationPromotionDraft) {",
+                "    return this.serialize(() => this.promoteRepresentationUnlocked(draft));",
+                "  }"
+              ],
+              "symbol": "promoteRepresentation"
+            }
+          ]
+        },
+        "entity-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9wcm9qZWN0Q2F0YWxvZ1N0b3JlLnRzOnNhdmVNYXBwaW5nRGlhZ3JhbQ": {
+          "id": "entity-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9wcm9qZWN0Q2F0YWxvZ1N0b3JlLnRzOnNhdmVNYXBwaW5nRGlhZ3JhbQ",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "saveMappingDiagram",
+          "label": "saveMappingDiagram",
+          "category": "operation",
+          "summary": "Source definition of saveMappingDiagram in infrastructure/core/persistence/projectCatalogStore.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9wcm9qZWN0Q2F0YWxvZ1N0b3JlLnRzOnNhdmVNYXBwaW5nRGlhZ3JhbQ",
+              "path": "infrastructure/core/persistence/projectCatalogStore.ts",
+              "startLine": 112,
+              "endLine": 119,
+              "originalLines": [
+                "  saveMappingDiagram(projectId: string, input: SaveProjectDiagramInput) {",
+                "    return this.serialize(async () => {",
+                "      const catalog = await this.loadRepresentationCatalog(projectId);",
+                "      const result = rules.saveMappingDiagram(catalog, projectId, input, catalogEnvironment());",
+                "      if (result.catalog !== catalog) await this.saveRepresentationCatalog(result.catalog);",
+                "      return result;",
+                "    });",
+                "  }"
+              ],
+              "symbol": "saveMappingDiagram"
+            }
+          ]
+        },
+        "entity-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9wcm9qZWN0Q2F0YWxvZ1N0b3JlLnRzOnNhdmVQcm9qZWN0ZWRUcmVl": {
+          "id": "entity-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9wcm9qZWN0Q2F0YWxvZ1N0b3JlLnRzOnNhdmVQcm9qZWN0ZWRUcmVl",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "saveProjectedTree",
+          "label": "saveProjectedTree",
+          "category": "operation",
+          "summary": "Source definition of saveProjectedTree in infrastructure/core/persistence/projectCatalogStore.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9wcm9qZWN0Q2F0YWxvZ1N0b3JlLnRzOnNhdmVQcm9qZWN0ZWRUcmVl",
+              "path": "infrastructure/core/persistence/projectCatalogStore.ts",
+              "startLine": 103,
+              "endLine": 110,
+              "originalLines": [
+                "  saveProjectedTree(projectId: string, input: SaveProjectedTreeInput) {",
+                "    return this.serialize(async () => {",
+                "      const catalog = await this.loadRepresentationCatalog(projectId);",
+                "      const result = rules.saveProjectedTree(catalog, projectId, input, catalogEnvironment());",
+                "      if (result.catalog !== catalog) await this.saveRepresentationCatalog(result.catalog);",
+                "      return result;",
+                "    });",
+                "  }"
+              ],
+              "symbol": "saveProjectedTree"
+            }
+          ]
+        },
+        "entity-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9wcm9qZWN0Q2F0YWxvZ1N0b3JlLnRzOmFyY2hpdmVSZXByZXNlbnRhdGlvbg": {
+          "id": "entity-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9wcm9qZWN0Q2F0YWxvZ1N0b3JlLnRzOmFyY2hpdmVSZXByZXNlbnRhdGlvbg",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "archiveRepresentation",
+          "label": "archiveRepresentation",
+          "category": "operation",
+          "summary": "Source definition of archiveRepresentation in infrastructure/core/persistence/projectCatalogStore.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-aW5mcmFzdHJ1Y3R1cmUvY29yZS9wZXJzaXN0ZW5jZS9wcm9qZWN0Q2F0YWxvZ1N0b3JlLnRzOmFyY2hpdmVSZXByZXNlbnRhdGlvbg",
+              "path": "infrastructure/core/persistence/projectCatalogStore.ts",
+              "startLine": 199,
+              "endLine": 201,
+              "originalLines": [
+                "  archiveRepresentation(projectId: string, representationId: string) {",
+                "    return this.serialize(() => this.archiveRepresentationUnlocked(projectId, representationId));",
+                "  }"
+              ],
+              "symbol": "archiveRepresentation"
+            }
+          ]
+        },
+        "entity-aW5mcmFzdHJ1Y3R1cmUvbWFwcGluZy9wZXJzaXN0ZW5jZS93b3Jrc3BhY2UvbWFwcGluZ1dvcmtzcGFjZVN0b3JlLnRzOk1hcHBpbmdXb3Jrc3BhY2VTdG9yZQ": {
+          "id": "entity-aW5mcmFzdHJ1Y3R1cmUvbWFwcGluZy9wZXJzaXN0ZW5jZS93b3Jrc3BhY2UvbWFwcGluZ1dvcmtzcGFjZVN0b3JlLnRzOk1hcHBpbmdXb3Jrc3BhY2VTdG9yZQ",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "MappingWorkspaceStore",
+          "label": "MappingWorkspaceStore",
+          "category": "interface-data-struct",
+          "summary": "Source definition of MappingWorkspaceStore in infrastructure/mapping/persistence/workspace/mappingWorkspaceStore.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-aW5mcmFzdHJ1Y3R1cmUvbWFwcGluZy9wZXJzaXN0ZW5jZS93b3Jrc3BhY2UvbWFwcGluZ1dvcmtzcGFjZVN0b3JlLnRzOk1hcHBpbmdXb3Jrc3BhY2VTdG9yZQ",
+              "path": "infrastructure/mapping/persistence/workspace/mappingWorkspaceStore.ts",
+              "startLine": 7,
+              "endLine": 7,
+              "originalLines": [
+                "export class MappingWorkspaceStore {"
+              ],
+              "symbol": "MappingWorkspaceStore"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ1dvcmtzcGFjZVNuYXBzaG90": {
+          "id": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ1dvcmtzcGFjZVNuYXBzaG90",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "MappingWorkspaceSnapshot",
+          "label": "MappingWorkspaceSnapshot",
+          "category": "interface-data-struct",
+          "summary": "Source definition of MappingWorkspaceSnapshot in domain/mapping/workspace/mappingWorkspace.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ1dvcmtzcGFjZVNuYXBzaG90",
+              "path": "domain/mapping/workspace/mappingWorkspace.ts",
+              "startLine": 45,
+              "endLine": 47,
+              "originalLines": [
+                "export interface MappingWorkspaceSnapshot {",
+                "  schemaVersion: 3; projectId: string; activeDocumentId?: string; documents: MappingDocumentSnapshot[];",
+                "}"
+              ],
+              "symbol": "MappingWorkspaceSnapshot"
+            }
+          ]
+        },
+        "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ0RvY3VtZW50U25hcHNob3Q": {
+          "id": "entity-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ0RvY3VtZW50U25hcHNob3Q",
+          "sourceId": "source-3fe4f45713dca806c6aa1ba8",
+          "handle": "MappingDocumentSnapshot",
+          "label": "MappingDocumentSnapshot",
+          "category": "interface-data-struct",
+          "summary": "Source definition of MappingDocumentSnapshot in domain/mapping/workspace/mappingWorkspace.ts.",
+          "sourceRanges": [
+            {
+              "id": "range-ZG9tYWluL21hcHBpbmcvd29ya3NwYWNlL21hcHBpbmdXb3Jrc3BhY2UudHM6TWFwcGluZ0RvY3VtZW50U25hcHNob3Q",
+              "path": "domain/mapping/workspace/mappingWorkspace.ts",
+              "startLine": 40,
+              "endLine": 44,
+              "originalLines": [
+                "export interface MappingDocumentSnapshot {",
+                "  savedRepresentationId?: string;",
+                "  representationId: string; name: string; revisionId: string; savedName: string; savedScene: string; savedEdges?: string;",
+                "  document: MappingGridDocument; canvas: MappingCanvasState; viewport?: CanvasTransform;",
+                "}"
+              ],
+              "symbol": "MappingDocumentSnapshot"
+            }
+          ]
+        }
+      }
+    }
+  }
+]

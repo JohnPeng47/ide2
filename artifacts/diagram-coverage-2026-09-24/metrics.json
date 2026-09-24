@@ -1,0 +1,837 @@
+{
+  "scope": "production TS/JS/CSS in src, domain, application, infrastructure; exclude tests and declaration-only files",
+  "files": 184,
+  "lines": 17143,
+  "nonblank": 16374,
+  "diagrams": [
+    {
+      "name": "Canvas domain model - implemented at 4f2ba39",
+      "id": "representation-b697fd11-5c8d-49e7-a6b5-b12030f2f79a",
+      "mappings": 67,
+      "entities": 46,
+      "raw": {
+        "files": 18,
+        "lines": 452,
+        "existingFiles": 16
+      },
+      "verified": {
+        "files": 14,
+        "lines": 252,
+        "existingFiles": 14
+      },
+      "paths": [
+        "application/core/source/diagramSource.ts",
+        "application/mapping/agent/sessionService.ts",
+        "domain/core/diagrams/diagram.ts",
+        "domain/core/diagrams/diagramCanvas.ts",
+        "domain/core/diagrams/diagramContent.ts",
+        "domain/core/diagrams/lineGrid.ts",
+        "domain/mapping/workspace/canvasDisplayNode.ts",
+        "domain/mapping/workspace/diagramViewState.ts",
+        "domain/mapping/workspace/displayModel.ts",
+        "domain/mapping/workspace/floatingBoxLayout.ts",
+        "domain/mapping/workspace/mappingDocumentController.ts",
+        "domain/mapping/workspace/mappingGrid.ts",
+        "domain/mapping/workspace/mappingWorkspace.ts",
+        "infrastructure/mapping/agent/canvasSessionBridge.ts",
+        "src/features/mapping/MappingPage.tsx",
+        "src/features/mapping/agent/useAgentCanvasBridge.ts",
+        "src/shared/diagrams/AsciiSelectionGrid.tsx",
+        "src/shared/diagrams/DiagramView.tsx"
+      ],
+      "statuses": {
+        "stale": 12,
+        "unchanged": 29,
+        "relocated": 5
+      },
+      "ranges": [
+        {
+          "symbol": "MappingPocPage",
+          "path": "src/features/mapping/MappingPage.tsx",
+          "oldStart": 54,
+          "oldEnd": 54,
+          "currentStart": null,
+          "status": "stale"
+        },
+        {
+          "symbol": "Draft",
+          "path": "src/features/mapping/MappingPage.tsx",
+          "oldStart": 39,
+          "oldEnd": 51,
+          "currentStart": null,
+          "status": "stale"
+        },
+        {
+          "symbol": "CanvasTransform",
+          "path": "domain/core/diagrams/diagramCanvas.ts",
+          "oldStart": 9,
+          "oldEnd": 12,
+          "currentStart": 9,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "MappingDocumentController",
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "oldStart": 30,
+          "oldEnd": 30,
+          "currentStart": 35,
+          "status": "relocated"
+        },
+        {
+          "symbol": "ControllerSnapshot",
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "oldStart": 18,
+          "oldEnd": 18,
+          "currentStart": null,
+          "status": "stale"
+        },
+        {
+          "symbol": "getSnapshot",
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "oldStart": 61,
+          "oldEnd": 61,
+          "currentStart": 72,
+          "status": "relocated"
+        },
+        {
+          "symbol": "MappingGridDocument",
+          "path": "domain/mapping/workspace/mappingGrid.ts",
+          "oldStart": 13,
+          "oldEnd": 17,
+          "currentStart": 13,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "LineGridScene",
+          "path": "domain/core/diagrams/lineGrid.ts",
+          "oldStart": 22,
+          "oldEnd": 25,
+          "currentStart": 22,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "GridBox",
+          "path": "domain/core/diagrams/lineGrid.ts",
+          "oldStart": 11,
+          "oldEnd": 20,
+          "currentStart": 11,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "Diagram",
+          "path": "domain/core/diagrams/diagram.ts",
+          "oldStart": 23,
+          "oldEnd": 29,
+          "currentStart": 23,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "DiagramContent",
+          "path": "domain/core/diagrams/diagramContent.ts",
+          "oldStart": 8,
+          "oldEnd": 11,
+          "currentStart": 8,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "DiagramSourceContext",
+          "path": "domain/core/diagrams/diagram.ts",
+          "oldStart": 16,
+          "oldEnd": 21,
+          "currentStart": 16,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "MappingCanvasState",
+          "path": "domain/mapping/workspace/mappingWorkspace.ts",
+          "oldStart": 35,
+          "oldEnd": 35,
+          "currentStart": 35,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "DisplayState",
+          "path": "domain/mapping/workspace/displayModel.ts",
+          "oldStart": 78,
+          "oldEnd": 78,
+          "currentStart": 78,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "FloatingBox",
+          "path": "domain/mapping/workspace/displayModel.ts",
+          "oldStart": 76,
+          "oldEnd": 76,
+          "currentStart": 76,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "MappingControls",
+          "path": "domain/mapping/workspace/mappingWorkspace.ts",
+          "oldStart": 25,
+          "oldEnd": 32,
+          "currentStart": 25,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "SelectionSurfaceState",
+          "path": "domain/mapping/workspace/mappingWorkspace.ts",
+          "oldStart": 8,
+          "oldEnd": 20,
+          "currentStart": 8,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "CanvasDisplayNode",
+          "path": "domain/mapping/workspace/canvasDisplayNode.ts",
+          "oldStart": 28,
+          "oldEnd": 32,
+          "currentStart": 28,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "nodes",
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "oldStart": 63,
+          "oldEnd": 67,
+          "currentStart": 87,
+          "status": "relocated"
+        },
+        {
+          "symbol": "GridBounds",
+          "path": "domain/core/diagrams/lineGrid.ts",
+          "oldStart": 6,
+          "oldEnd": 6,
+          "currentStart": 6,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "FloatingPlacement",
+          "path": "domain/mapping/workspace/canvasDisplayNode.ts",
+          "oldStart": 13,
+          "oldEnd": 18,
+          "currentStart": 13,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "SelectionRegion",
+          "path": "domain/mapping/workspace/displayModel.ts",
+          "oldStart": 28,
+          "oldEnd": 38,
+          "currentStart": 28,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "ProjectedPane",
+          "path": "domain/mapping/workspace/displayModel.ts",
+          "oldStart": 53,
+          "oldEnd": 63,
+          "currentStart": 53,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "ConversationPane",
+          "path": "domain/mapping/workspace/displayModel.ts",
+          "oldStart": 64,
+          "oldEnd": 71,
+          "currentStart": 64,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "DetailPane",
+          "path": "domain/mapping/workspace/displayModel.ts",
+          "oldStart": 72,
+          "oldEnd": 74,
+          "currentStart": 72,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "useAgentCanvasBridge",
+          "path": "src/features/mapping/agent/useAgentCanvasBridge.ts",
+          "oldStart": 5,
+          "oldEnd": 48,
+          "currentStart": 5,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "MappingWorkspaceSnapshot",
+          "path": "domain/mapping/workspace/mappingWorkspace.ts",
+          "oldStart": 45,
+          "oldEnd": 47,
+          "currentStart": 46,
+          "status": "relocated"
+        },
+        {
+          "symbol": "capture",
+          "path": "src/features/mapping/MappingPage.tsx",
+          "oldStart": 176,
+          "oldEnd": 183,
+          "currentStart": null,
+          "status": "stale"
+        },
+        {
+          "symbol": "MappingDocumentSnapshot",
+          "path": "domain/mapping/workspace/mappingWorkspace.ts",
+          "oldStart": 40,
+          "oldEnd": 44,
+          "currentStart": null,
+          "status": "stale"
+        },
+        {
+          "symbol": "measureContent",
+          "path": "domain/core/diagrams/lineGrid.ts",
+          "oldStart": 45,
+          "oldEnd": 49,
+          "currentStart": 45,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "layoutScene",
+          "path": "domain/core/diagrams/lineGrid.ts",
+          "oldStart": 126,
+          "oldEnd": 160,
+          "currentStart": 126,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "DiagramContentNode",
+          "path": "domain/core/diagrams/diagramContent.ts",
+          "oldStart": 4,
+          "oldEnd": 7,
+          "currentStart": 4,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "createDiagram",
+          "path": "domain/core/diagrams/diagram.ts",
+          "oldStart": 37,
+          "oldEnd": 45,
+          "currentStart": 37,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "resolveDiagramContent",
+          "path": "domain/mapping/workspace/diagramViewState.ts",
+          "oldStart": 11,
+          "oldEnd": 11,
+          "currentStart": 11,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "DiagramView",
+          "path": "src/shared/diagrams/DiagramView.tsx",
+          "oldStart": 62,
+          "oldEnd": 62,
+          "currentStart": null,
+          "status": "stale"
+        },
+        {
+          "symbol": "AsciiSelectionGrid",
+          "path": "src/shared/diagrams/AsciiSelectionGrid.tsx",
+          "oldStart": 52,
+          "oldEnd": 52,
+          "currentStart": null,
+          "status": "stale"
+        },
+        {
+          "symbol": "diagramSource",
+          "path": "domain/core/diagrams/diagram.ts",
+          "oldStart": 79,
+          "oldEnd": 81,
+          "currentStart": 79,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "resolveDiagramSource",
+          "path": "application/core/source/diagramSource.ts",
+          "oldStart": 8,
+          "oldEnd": 54,
+          "currentStart": null,
+          "status": "stale"
+        },
+        {
+          "symbol": "DisplayNodeBase",
+          "path": "domain/mapping/workspace/displayModel.ts",
+          "oldStart": 16,
+          "oldEnd": 23,
+          "currentStart": 16,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "layoutFloatingSelections",
+          "path": "domain/mapping/workspace/floatingBoxLayout.ts",
+          "oldStart": 7,
+          "oldEnd": 28,
+          "currentStart": 7,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "commitDocument",
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "oldStart": 87,
+          "oldEnd": 87,
+          "currentStart": null,
+          "status": "stale"
+        },
+        {
+          "symbol": "updateCanvas",
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "oldStart": 83,
+          "oldEnd": 86,
+          "currentStart": null,
+          "status": "stale"
+        },
+        {
+          "symbol": "undo",
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "oldStart": 88,
+          "oldEnd": 93,
+          "currentStart": null,
+          "status": "stale"
+        },
+        {
+          "symbol": "AgentDiagrammingSessionService",
+          "path": "application/mapping/agent/sessionService.ts",
+          "oldStart": 14,
+          "oldEnd": 14,
+          "currentStart": 16,
+          "status": "relocated"
+        },
+        {
+          "symbol": "CanvasSessionBridge",
+          "path": "infrastructure/mapping/agent/canvasSessionBridge.ts",
+          "oldStart": 4,
+          "oldEnd": 4,
+          "currentStart": 4,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "transact",
+          "path": "domain/mapping/workspace/mappingDocumentController.ts",
+          "oldStart": 94,
+          "oldEnd": 205,
+          "currentStart": null,
+          "status": "stale"
+        }
+      ]
+    },
+    {
+      "name": "PersistentLayer",
+      "id": "representation-c7177725-a7dd-4caa-9ac5-a1c702f3350d",
+      "mappings": 25,
+      "entities": 22,
+      "raw": {
+        "files": 8,
+        "lines": 219,
+        "existingFiles": 8
+      },
+      "verified": {
+        "files": 7,
+        "lines": 99,
+        "existingFiles": 7
+      },
+      "paths": [
+        "domain/core/diagrams/diagram.ts",
+        "domain/core/diagrams/diagramContent.ts",
+        "domain/core/records/domain.ts",
+        "domain/core/representations/projectCatalog.ts",
+        "domain/mapping/workspace/mappingWorkspace.ts",
+        "infrastructure/core/persistence/projectCatalogStore.ts",
+        "infrastructure/core/persistence/store.ts",
+        "infrastructure/mapping/persistence/workspace/mappingWorkspaceStore.ts"
+      ],
+      "statuses": {
+        "relocated": 4,
+        "stale": 11,
+        "unchanged": 7
+      },
+      "ranges": [
+        {
+          "symbol": "DiagramStore",
+          "path": "infrastructure/core/persistence/store.ts",
+          "oldStart": 43,
+          "oldEnd": 43,
+          "currentStart": 15,
+          "status": "relocated"
+        },
+        {
+          "symbol": "ProjectRecord",
+          "path": "domain/core/records/domain.ts",
+          "oldStart": 136,
+          "oldEnd": 144,
+          "currentStart": null,
+          "status": "stale"
+        },
+        {
+          "symbol": "DiagramSetRecord",
+          "path": "domain/core/records/domain.ts",
+          "oldStart": 146,
+          "oldEnd": 169,
+          "currentStart": null,
+          "status": "stale"
+        },
+        {
+          "symbol": "CodeEntitiesSetRecord",
+          "path": "domain/core/records/domain.ts",
+          "oldStart": 123,
+          "oldEnd": 134,
+          "currentStart": null,
+          "status": "stale"
+        },
+        {
+          "symbol": "CodeEntityRecord",
+          "path": "domain/core/records/domain.ts",
+          "oldStart": 112,
+          "oldEnd": 121,
+          "currentStart": 63,
+          "status": "relocated"
+        },
+        {
+          "symbol": "DiagramRecord",
+          "path": "domain/core/records/domain.ts",
+          "oldStart": 379,
+          "oldEnd": 401,
+          "currentStart": null,
+          "status": "stale"
+        },
+        {
+          "symbol": "DiagramComponentRecord",
+          "path": "domain/core/records/domain.ts",
+          "oldStart": 350,
+          "oldEnd": 373,
+          "currentStart": null,
+          "status": "stale"
+        },
+        {
+          "symbol": "ProjectCatalogStore",
+          "path": "infrastructure/core/persistence/projectCatalogStore.ts",
+          "oldStart": 83,
+          "oldEnd": 83,
+          "currentStart": null,
+          "status": "stale"
+        },
+        {
+          "symbol": "ProjectRepresentationCatalogRecord",
+          "path": "domain/core/representations/projectCatalog.ts",
+          "oldStart": 129,
+          "oldEnd": 139,
+          "currentStart": 129,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "ProjectRepresentationRecord",
+          "path": "domain/core/representations/projectCatalog.ts",
+          "oldStart": 114,
+          "oldEnd": 127,
+          "currentStart": 114,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "ProjectRepresentationRevisionRecord",
+          "path": "domain/core/representations/projectCatalog.ts",
+          "oldStart": 93,
+          "oldEnd": 112,
+          "currentStart": 93,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "DiagramContent",
+          "path": "domain/core/diagrams/diagramContent.ts",
+          "oldStart": 8,
+          "oldEnd": 11,
+          "currentStart": 8,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "DiagramSourceContext",
+          "path": "domain/core/diagrams/diagram.ts",
+          "oldStart": 16,
+          "oldEnd": 21,
+          "currentStart": 16,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "ProjectCorpusCompactionCatalogRecord",
+          "path": "domain/core/representations/projectCatalog.ts",
+          "oldStart": 37,
+          "oldEnd": 45,
+          "currentStart": 37,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "ProjectFileCompactionRecord",
+          "path": "domain/core/representations/projectCatalog.ts",
+          "oldStart": 16,
+          "oldEnd": 35,
+          "currentStart": 16,
+          "status": "unchanged"
+        },
+        {
+          "symbol": "promoteRepresentation",
+          "path": "infrastructure/core/persistence/projectCatalogStore.ts",
+          "oldStart": 171,
+          "oldEnd": 173,
+          "currentStart": null,
+          "status": "stale"
+        },
+        {
+          "symbol": "saveMappingDiagram",
+          "path": "infrastructure/core/persistence/projectCatalogStore.ts",
+          "oldStart": 112,
+          "oldEnd": 119,
+          "currentStart": null,
+          "status": "stale"
+        },
+        {
+          "symbol": "saveProjectedTree",
+          "path": "infrastructure/core/persistence/projectCatalogStore.ts",
+          "oldStart": 103,
+          "oldEnd": 110,
+          "currentStart": null,
+          "status": "stale"
+        },
+        {
+          "symbol": "archiveRepresentation",
+          "path": "infrastructure/core/persistence/projectCatalogStore.ts",
+          "oldStart": 199,
+          "oldEnd": 201,
+          "currentStart": null,
+          "status": "stale"
+        },
+        {
+          "symbol": "MappingWorkspaceStore",
+          "path": "infrastructure/mapping/persistence/workspace/mappingWorkspaceStore.ts",
+          "oldStart": 7,
+          "oldEnd": 7,
+          "currentStart": 9,
+          "status": "relocated"
+        },
+        {
+          "symbol": "MappingWorkspaceSnapshot",
+          "path": "domain/mapping/workspace/mappingWorkspace.ts",
+          "oldStart": 45,
+          "oldEnd": 47,
+          "currentStart": 46,
+          "status": "relocated"
+        },
+        {
+          "symbol": "MappingDocumentSnapshot",
+          "path": "domain/mapping/workspace/mappingWorkspace.ts",
+          "oldStart": 40,
+          "oldEnd": 44,
+          "currentStart": null,
+          "status": "stale"
+        }
+      ]
+    }
+  ],
+  "unionRaw": {
+    "files": 23,
+    "lines": 653,
+    "existingFiles": 21
+  },
+  "unionVerified": {
+    "files": 18,
+    "lines": 338,
+    "existingFiles": 18
+  },
+  "referencedPaths": 23,
+  "mappedFiles": 21,
+  "missingPaths": [
+    "src/shared/diagrams/AsciiSelectionGrid.tsx",
+    "src/shared/diagrams/DiagramView.tsx"
+  ],
+  "mappedFileLines": 2402,
+  "areas": [
+    {
+      "area": "domain/core",
+      "files": 39,
+      "lines": 4104,
+      "mappedFiles": 6,
+      "verifiedLines": 176,
+      "rawLines": 221
+    },
+    {
+      "area": "domain/mapping",
+      "files": 32,
+      "lines": 3765,
+      "mappedFiles": 7,
+      "verifiedLines": 114,
+      "rawLines": 243
+    },
+    {
+      "area": "src/features",
+      "files": 31,
+      "lines": 3365,
+      "mappedFiles": 2,
+      "verifiedLines": 44,
+      "rawLines": 66
+    },
+    {
+      "area": "src/shared",
+      "files": 16,
+      "lines": 2106,
+      "mappedFiles": 0,
+      "verifiedLines": 0,
+      "rawLines": 0
+    },
+    {
+      "area": "application/mapping",
+      "files": 16,
+      "lines": 950,
+      "mappedFiles": 1,
+      "verifiedLines": 1,
+      "rawLines": 1
+    },
+    {
+      "area": "infrastructure/mapping",
+      "files": 11,
+      "lines": 863,
+      "mappedFiles": 2,
+      "verifiedLines": 2,
+      "rawLines": 2
+    },
+    {
+      "area": "infrastructure/core",
+      "files": 13,
+      "lines": 823,
+      "mappedFiles": 2,
+      "verifiedLines": 1,
+      "rawLines": 0
+    },
+    {
+      "area": "src/app",
+      "files": 3,
+      "lines": 469,
+      "mappedFiles": 0,
+      "verifiedLines": 0,
+      "rawLines": 0
+    },
+    {
+      "area": "src/server",
+      "files": 8,
+      "lines": 386,
+      "mappedFiles": 0,
+      "verifiedLines": 0,
+      "rawLines": 0
+    },
+    {
+      "area": "application/core",
+      "files": 14,
+      "lines": 302,
+      "mappedFiles": 1,
+      "verifiedLines": 0,
+      "rawLines": 46
+    },
+    {
+      "area": "src/main.tsx",
+      "files": 1,
+      "lines": 10,
+      "mappedFiles": 0,
+      "verifiedLines": 0,
+      "rawLines": 0
+    }
+  ],
+  "largestUnmapped": [
+    {
+      "path": "src/features/mapping/canvas/MappingCanvas.tsx",
+      "lines": 1334
+    },
+    {
+      "path": "domain/mapping/selection/mappingPoc.ts",
+      "lines": 1301
+    },
+    {
+      "path": "src/shared/source/SourceCodeView.tsx",
+      "lines": 517
+    },
+    {
+      "path": "src/app/styles/globals.css",
+      "lines": 446
+    },
+    {
+      "path": "src/shared/diagrams/DraggableDiagramCanvas.tsx",
+      "lines": 387
+    },
+    {
+      "path": "infrastructure/mapping/agents/selection/agentRuntime.ts",
+      "lines": 351
+    },
+    {
+      "path": "domain/core/representations/representationIndex.ts",
+      "lines": 342
+    },
+    {
+      "path": "src/shared/markdown/render.ts",
+      "lines": 322
+    },
+    {
+      "path": "domain/core/representations/catalogRules.ts",
+      "lines": 319
+    },
+    {
+      "path": "domain/mapping/selection/mappingPocOverlays.ts",
+      "lines": 260
+    },
+    {
+      "path": "src/shared/markdown/sidenotes.ts",
+      "lines": 257
+    },
+    {
+      "path": "domain/mapping/changes/diagramNodeMatcher.ts",
+      "lines": 235
+    },
+    {
+      "path": "application/mapping/changes/changeSessionService.ts",
+      "lines": 235
+    },
+    {
+      "path": "domain/mapping/selection/mappingPocPrompt.ts",
+      "lines": 234
+    },
+    {
+      "path": "domain/mapping/workspace/mappingWorkspaceCodec.ts",
+      "lines": 228
+    },
+    {
+      "path": "domain/core/diagrams/diagramProjection.ts",
+      "lines": 222
+    },
+    {
+      "path": "domain/core/diagrams/interpreter/trees.ts",
+      "lines": 220
+    },
+    {
+      "path": "domain/core/diagrams/interpreter/wires.ts",
+      "lines": 207
+    },
+    {
+      "path": "domain/core/diagrams/canvasHistory.ts",
+      "lines": 202
+    },
+    {
+      "path": "domain/core/diagrams/interpreter/types.ts",
+      "lines": 170
+    },
+    {
+      "path": "src/features/mapping/canvas/DiagramConnections.tsx",
+      "lines": 167
+    },
+    {
+      "path": "infrastructure/core/language-services/projectLanguageService.ts",
+      "lines": 153
+    },
+    {
+      "path": "src/shared/markdown/links.ts",
+      "lines": 149
+    },
+    {
+      "path": "domain/mapping/changes/diagramContentDiff.ts",
+      "lines": 148
+    },
+    {
+      "path": "domain/core/diagrams/interpreter/layout.ts",
+      "lines": 147
+    }
+  ]
+}
