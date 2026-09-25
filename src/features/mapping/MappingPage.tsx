@@ -1,4 +1,5 @@
 import { MappingServicesContext, type MappingServices } from './services/MappingServices';
+import { reconcileWorkspaceDocument } from '../../../domain/mapping/workspace/reconcileWorkspace';
 import type { CanvasHistoryRecord } from '../../../domain/mapping/workspace/canvasHistory';
 import { historyFromRevision, documentFromRevision } from '../../../domain/core/diagrams/projectDiagramCanvas';
 import { UiTestFramework } from "@new-diagram/ui-test-framework";
@@ -47,6 +48,7 @@ const LOCAL_CHAT_UI_CONTROLS = {
 } as const;
 
 interface Draft {
+  newerRevision?: boolean;
   history?: CanvasHistoryRecord;
   representationId?: string;
   name: string;
@@ -225,7 +227,10 @@ function MappingWorkspacePage() {
     if (workspace.projectId !== data?.project?.id) throw new Error("Workspace belongs to another project");
     const documents = workspace.documents.filter(doc => doc.representationId.startsWith("draft-") || data?.catalog?.representations[doc.savedRepresentationId ?? doc.representationId]?.status === "settled");
     setViewState(new SourcePaneViewState());
-    setDrafts(Object.fromEntries(documents.map(doc => [doc.representationId, { ...doc, representationId: doc.savedRepresentationId, busy: false }])));
+    setDrafts(Object.fromEntries(documents.map(doc => {
+      const refreshed = data?.catalog ? reconcileWorkspaceDocument(doc, data.catalog) : { document: doc, newerRevision: false };
+      return [doc.representationId, { ...refreshed.document, newerRevision: refreshed.newerRevision, representationId: doc.savedRepresentationId, busy: false }];
+    })));
     const id = documents.some(doc => doc.representationId === workspace.activeDocumentId)
       ? workspace.activeDocumentId : documents[0]?.representationId
         ?? Object.values(data?.catalog?.representations ?? {}).find(diagram => diagram.status === "settled")?.id;
@@ -429,7 +434,7 @@ function MappingWorkspacePage() {
           {error && <div className="mapping-project-error" role="alert">{error}<button type="button" onClick={() => setError("")}>Dismiss</button></div>}
         </div>
         <footer className="mapping-poc-status"><span>{active?.name ?? "PROJECT DIAGRAMS"}</span>
-          <span>{workspaceStatus || 'Ctrl + drag to select · N opens call tree · P patches · A asks locally'}</span></footer>
+          <span>{active?.newerRevision ? 'A newer saved revision is available. Your local edits were preserved.' : workspaceStatus || 'Ctrl + drag to select · N opens call tree · P patches · A asks locally'}</span></footer>
       </section>
       {creating && <div className="mapping-dialog-backdrop"><form className="mapping-create-dialog" role="dialog" aria-modal="true" aria-label="New project diagram"
         onKeyDown={(event) => {
