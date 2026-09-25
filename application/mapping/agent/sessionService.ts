@@ -43,6 +43,7 @@ export class AgentDiagrammingSessionService {
   private async execute(name: AgentToolName, raw: unknown): Promise<unknown> {
     if (name === 'create_diagram_change_session') return this.changeService().create(agentToolSchemas[name].parse(raw));
     if (name === 'update_diagram_change_session') return this.changeService().update(agentToolSchemas[name].parse(raw));
+    if (name === 'accept_diagram_change_session') return this.changeService().accept(agentToolSchemas[name].parse(raw));
     if (name === 'canvas-api-search') return canvasApiSpec(agentToolSchemas[name].parse(raw).query);
     if (name === 'diagram-search') return this.search(agentToolSchemas[name].parse(raw));
     if (name === 'exec') return this.exec(agentToolSchemas[name].parse(raw));

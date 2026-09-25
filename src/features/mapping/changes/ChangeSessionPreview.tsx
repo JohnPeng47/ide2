@@ -1,14 +1,14 @@
 import { useMappingServices } from '../services/MappingServices';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { MappingDocumentController } from '../../../../domain/mapping/workspace/mappingDocumentController';
-import type { ChangeSessionDocument } from '../../../../domain/mapping/changes/diagramChangeSession';
+import type { ChangeSessionDocument, DiagramChangeSession } from '../../../../domain/mapping/changes/diagramChangeSession';
 import { diffChangeDocument } from '../../../../domain/mapping/changes/changeDocumentDiff';
 import { DraggableDiagramCanvas } from '../../../shared/diagrams/DraggableDiagramCanvas';
 import { DiagramText } from '../../../shared/diagrams/DiagramText';
 import { PanelConnector } from '../../../shared/diagrams/PanelConnector';
 import { DiagramSubtreeControls } from '../canvas/DiagramSubtreeControls';
 import { useEndpointGeometry } from '../canvas/useEndpointGeometry';
-import { readChangeSession, type DisplayModeChange } from './changeSessionApi';
+import { acceptChangeSession, readChangeSession, type DisplayModeChange } from './changeSessionApi';
 import { changePreviewText, type PreviewTextRun } from './changePreviewText';
 import type { SearchDocument } from '../search/diagramSearchService';
 import { SearchHighlight, type DiagramFocus } from '../search/SearchHighlight';
@@ -17,15 +17,17 @@ import './changeSessions.css';
 
 export function ChangeSessionPreview(props: { mode: DisplayModeChange; onSelect: (mode: DisplayModeChange) => void;
   onSearchDocument?: (document: SearchDocument) => void; searchFocus?: DiagramFocus;
-  }) {
+  onOpenAccepted: (session: Omit<DiagramChangeSession, 'receipts'>, documentId: string) => Promise<void> }) {
   const [session, setSession] = useState<Awaited<ReturnType<typeof readChangeSession>>>();
   const [error, setError] = useState('');
+  const [accepting, setAccepting] = useState(false);
+  const pendingAcceptance = useRef<{ sessionId: string; version: number; requestId: string } | undefined>(undefined);
   useEffect(() => {
     const abort = new AbortController(); let timer: ReturnType<typeof setTimeout>;
     setSession(undefined); setError('');
     const refresh = async () => {
       try { const next = await readChangeSession(props.mode.sessionId, abort.signal);
-        if (!abort.signal.aborted) { setSession(old => old?.id === next.id && old.version === next.version ? old : next); setError(''); } }
+        if (!abort.signal.aborted) { setSession(old => old?.id === next.id && old.version >= next.version ? old : next); } }
       catch (e) { if (!abort.signal.aborted) setError(e instanceof Error ? e.message : String(e)); }
       finally { if (!abort.signal.aborted) timer = setTimeout(refresh, 2000); }
     };
@@ -41,7 +43,28 @@ export function ChangeSessionPreview(props: { mode: DisplayModeChange; onSelect:
   const diff = useMemo(() => doc ? diffChangeDocument(doc) : undefined, [doc]);
   const modifiedDiagramIds = useMemo(() => new Set(session?.changes.flatMap(change =>
     change.documentId === doc?.id && change.type === 1 && change.nodeId ? [change.nodeId] : [])), [session, doc?.id]);
+  const accept = async () => {
+    if (!session || accepting) return;
+    if (pendingAcceptance.current?.sessionId !== session.id || pendingAcceptance.current.version !== session.version)
+      pendingAcceptance.current = { sessionId: session.id, version: session.version, requestId: crypto.randomUUID() };
+    const request = pendingAcceptance.current;
+    setAccepting(true); setError('');
+    try {
+      await acceptChangeSession(request.sessionId, request.version, request.requestId);
+      const accepted = await readChangeSession(request.sessionId);
+      setSession(accepted);
+      await props.onOpenAccepted(accepted, props.mode.documentId);
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
+    finally { setAccepting(false); }
+  };
   return <div className="change-session-preview" data-change-session={props.mode.sessionId}>
+    {session && <div className="change-session-actions">
+      <span>{session.status === 'accepted' ? 'Accepted — original review diff retained' : session.title}</span>
+      {session.status === 'ready' && <button disabled={accepting} onClick={() => void accept()}>{accepting ? 'Accepting…' : 'Accept all changes'}</button>}
+      {session.status === 'draft' && <span>Mark this proposal ready before accepting.</span>}
+      {session.status === 'accepted' && <button onClick={() => void props.onOpenAccepted(session, props.mode.documentId)
+        .catch(e => setError(e instanceof Error ? e.message : String(e)))}>Open canvas</button>}
+    </div>}
     {error && <p className="change-preview-message" role="alert">{error}</p>}
     {doc
       ? <PreviewCanvas key={`${session!.id}:${doc.id}:${doc.version}`} doc={doc}

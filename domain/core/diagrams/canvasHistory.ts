@@ -126,6 +126,22 @@ export class CanvasHistory {
     this.record.headId = target;
     return this.head;
   }
+  /** Publish a reviewed state as one checkpoint, retaining its exact diagram revision IDs. */
+  adopt(proposed: CanvasHistoryRecord): void {
+    validateCanvasHistory(proposed);
+    for (const [key, revision] of Object.entries(proposed.diagramRevisions)) {
+      const existing = this.record.diagramRevisions[key];
+      if (existing && !equal(existing, revision)) throw new Error('Diagram revision is immutable');
+    }
+    const snapshot = structuredClone({ ...proposed.snapshots[proposed.headId], id: id('canvas-revision'), parentId: this.record.headId });
+    const next = { ...this.record, snapshots: { ...this.record.snapshots, [snapshot.id]: snapshot },
+      diagramRevisions: { ...this.record.diagramRevisions, ...proposed.diagramRevisions },
+      past: [...this.record.past, this.record.headId], future: [], headId: snapshot.id };
+    validateCanvasHistory(next);
+    // Keep the revision table object used by the internal resolver alive.
+    Object.assign(this.record.diagramRevisions, structuredClone(proposed.diagramRevisions));
+    this.record = { ...next, diagramRevisions: this.record.diagramRevisions };
+  }
   reset(view?: unknown) {
     const baseline = this.record.snapshots[this.record.baselineId];
     const snapshot = structuredClone({ ...baseline, id: id('canvas-revision'), parentId: this.record.headId, view: view ?? baseline.view });

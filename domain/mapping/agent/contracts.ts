@@ -20,7 +20,8 @@ export const execSchema = z.object({ code: z.string().min(1).max(30000), session
 export const apiSearchSchema = z.object({ query: z.string().max(1000).default('') }).strict();
 export const createChangeSessionSchema = z.object({ title: z.string().trim().min(1).max(200), description: z.string().max(100000).optional(), canvasId: idSchema.optional(), requestId: idSchema }).strict();
 export const updateChangeSessionSchema = z.object({ changeSessionId: idSchema, requestId: idSchema, expectedVersion: z.number().int().nonnegative(), title: z.string().trim().min(1).max(200).optional(), status: z.enum(['draft','ready','archived']).optional(), changes: z.array(diagramChangeSchema).max(2000).optional(), action: z.enum(['undo','redo','reset']).optional(), documentId: idSchema.optional() }).strict();
-export const agentToolSchemas = { create_diagram_change_session: createChangeSessionSchema, update_diagram_change_session: updateChangeSessionSchema, 'diagram-search': searchSchema, 'canvas-api-search': apiSearchSchema, exec: execSchema, draw_diagram: drawSchema, save_diagram: saveSchema, set_diagram_source_mappings: setSourceMappingsSchema };
+export const acceptChangeSessionSchema = z.object({ changeSessionId: idSchema, requestId: idSchema, expectedVersion: z.number().int().nonnegative() }).strict();
+export const agentToolSchemas = { create_diagram_change_session: createChangeSessionSchema, update_diagram_change_session: updateChangeSessionSchema, accept_diagram_change_session: acceptChangeSessionSchema, 'diagram-search': searchSchema, 'canvas-api-search': apiSearchSchema, exec: execSchema, draw_diagram: drawSchema, save_diagram: saveSchema, set_diagram_source_mappings: setSourceMappingsSchema };
 export type AgentToolName = keyof typeof agentToolSchemas;
 
 export const canvasMethods = {

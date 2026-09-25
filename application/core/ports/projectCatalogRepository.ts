@@ -3,6 +3,7 @@ import { type SaveProjectDiagramInput } from "../../../domain/core/diagrams/proj
 import type { SaveProjectedTreeInput } from '../../../domain/core/representations/catalogCommands';
 import type { ProjectCorpusCompactionCatalogRecord, ProjectFileCompactionInput, ProjectFileCompactionRecord, ProjectRepresentationCatalogRecord, ProjectRepresentationRecord } from "../../../domain/core/representations/projectCatalog";
 export interface ProjectCatalogRepository {
+  acceptCanvasChanges(projectId: string, input: import('../../../domain/core/representations/changeAcceptance').AcceptCanvasChangesInput): Promise<import('../../../domain/core/representations/changeAcceptance').ChangeSessionAcceptance>;
   readonly storeRoot: string;
   saveProjection(projectId: string, projection: ProjectProjectionRecord): Promise<{
     catalog: ProjectRepresentationCatalogRecord;

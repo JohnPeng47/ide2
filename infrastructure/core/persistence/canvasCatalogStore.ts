@@ -1,4 +1,6 @@
 import path from 'node:path';
+import type { AcceptCanvasChangesInput, ChangeSessionAcceptance } from '../../../domain/core/representations/changeAcceptance';
+import { documentFromRevision, historyFromRevision } from '../../../domain/core/diagrams/projectDiagramCanvas';
 import type { ProjectProjectionRecord } from '../../../domain/core/diagrams/diagramProjection';
 import type { SaveProjectDiagramInput } from '../../../domain/core/diagrams/projectDiagramCanvas';
 import type { SaveProjectedTreeInput } from '../../../domain/core/representations/catalogCommands';
@@ -45,6 +47,49 @@ export class CanvasCatalogStore {
       const result = rules.saveMappingDiagram(catalog, projectId, input, catalogEnvironment());
       if (result.catalog !== catalog) await this.saveRepresentationCatalog(result.catalog);
       return result;
+    });
+  }
+
+  acceptCanvasChanges(projectId: string, input: AcceptCanvasChangesInput): Promise<ChangeSessionAcceptance> {
+    return this.serialize(async () => {
+      let catalog = await this.loadRepresentationCatalog(projectId);
+      const prior = catalog.changeSessionAcceptances?.[input.changeSessionId];
+      if (prior) {
+        if (prior.requestId !== input.requestId || prior.sessionVersion !== input.sessionVersion)
+          throw new Error('REQUEST_ID_CONFLICT: proposal already accepted');
+        return prior;
+      }
+      if (!input.documents.length || new Set(input.documents.map(d => d.documentId)).size !== input.documents.length)
+        throw new Error('Acceptance requires distinct changed documents');
+      const targets = input.documents.flatMap(d => d.representationId ? [d.representationId] : []);
+      if (new Set(targets).size !== targets.length) throw new Error('Duplicate acceptance target');
+      const acceptance: ChangeSessionAcceptance = { changeSessionId: input.changeSessionId, sessionVersion: input.sessionVersion,
+        requestId: input.requestId, acceptedAt: new Date().toISOString(), changeIds: [...input.changeIds], documents: [] };
+      for (const doc of input.documents) {
+        const current = doc.representationId ? catalog.representations[doc.representationId] : undefined;
+        if (doc.representationId && (!current || current.status !== 'settled' || current.currentRevisionId !== doc.expectedRevisionId))
+          throw new Error('VERSION_CONFLICT: original canvas changed; create a new proposal');
+        const proposed = this.diagrams.openContext(doc.document, doc.history.snapshots[doc.history.headId].view, doc.history);
+        let history = this.diagrams.forkContext(proposed, doc.history.snapshots[doc.history.headId].view);
+        let before: ChangeSessionAcceptance['documents'][number]['before'] = null;
+        if (current) {
+          const revision = catalog.revisions[current.currentRevisionId], saved = historyFromRevision(revision);
+          const context = this.diagrams.openContext(documentFromRevision(revision), saved?.snapshots[saved.headId].view ?? {}, saved);
+          before = { revisionId: revision.id, checkpointId: this.diagrams.state(context).checkpointId };
+          this.diagrams.adopt(context, doc.history);
+          history = this.diagrams.exportContext(context);
+        }
+        const result = rules.saveMappingDiagram(catalog, projectId, { name: doc.name, representationId: doc.representationId,
+          expectedRevisionId: doc.expectedRevisionId, scene: doc.document.scene, edges: doc.document.edges, history }, catalogEnvironment());
+        catalog = result.catalog;
+        acceptance.documents.push({ documentId: doc.documentId, representationId: result.representation.id, before,
+          after: { revisionId: result.representation.currentRevisionId, checkpointId: history.headId }, proposedCheckpointId: doc.history.headId });
+      }
+      catalog = { ...catalog, changeSessionAcceptances: { ...catalog.changeSessionAcceptances, [input.changeSessionId]: acceptance } };
+      // A failure before this write publishes none of the canvases. The receipt and
+      // all new heads become visible in the same atomic catalog replacement.
+      await this.saveRepresentationCatalog(catalog);
+      return acceptance;
     });
   }
 

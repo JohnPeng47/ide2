@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { MappingGridDocument } from '../workspace/mappingGrid';
 import type { MappingCanvasState } from '../workspace/mappingWorkspace';
 import { deserializeWorkspace } from '../workspace/mappingWorkspaceCodec';
+import type { ChangeSessionAcceptance } from '../../core/representations/changeAcceptance';
 
 export const changeId = z.string().min(1).max(200).regex(/^[a-zA-Z0-9_.:-]+$/).refine(id => !['__proto__','constructor','prototype'].includes(id));
 export const diagramChangeSchema = z.object({
@@ -23,7 +24,8 @@ export interface ChangeSessionDocument {
 }
 export interface DiagramChangeSession {
   schemaVersion: 1; id: string; projectId: string; title: string; description: string;
-  status: 'draft' | 'ready' | 'archived'; version: number; createdAt: string; updatedAt: string;
+  status: 'draft' | 'ready' | 'accepted' | 'archived'; version: number; createdAt: string; updatedAt: string;
+  acceptance?: ChangeSessionAcceptance;
   documents: ChangeSessionDocument[]; changes: DiagramChange[];
   receipts: Record<string, { signature: string; result: unknown }>;
 }
@@ -35,16 +37,22 @@ export function summarizeChangeSession(session: DiagramChangeSession): ChangeSes
   return { ...summary, documents: documents.map(({ id, name, representationId, version }) => ({ id, name, representationId, version })) };
 }
 export function validateChangeSession(input: unknown): DiagramChangeSession {
+  const checkpoint = z.object({ revisionId: changeId, checkpointId: changeId }).strict();
+  const acceptance = z.object({ changeSessionId: changeId, sessionVersion: z.number().int().nonnegative(), requestId: z.string().min(1),
+    acceptedAt: z.string(), changeIds: z.array(changeId), documents: z.array(z.object({ documentId: changeId, representationId: changeId,
+      before: checkpoint.nullable(), after: checkpoint, proposedCheckpointId: changeId }).strict()) }).strict();
   const state = z.custom<ChangeDocumentState>(value => !!value && typeof value === 'object' && 'document' in value && 'canvas' in value);
   const parsed = z.object({
     schemaVersion: z.literal(1), id: changeId, projectId: changeId, title: z.string().min(1).max(200), description: z.string().max(100000),
-    status: z.enum(['draft','ready','archived']), version: z.number().int().nonnegative(), createdAt: z.string(), updatedAt: z.string(),
+    status: z.enum(['draft','ready','accepted','archived']), acceptance: acceptance.optional(), version: z.number().int().nonnegative(), createdAt: z.string(), updatedAt: z.string(),
     documents: z.array(z.object({ history: z.custom<CanvasHistoryRecord>().optional(), id: changeId, name: z.string().min(1).max(200), representationId: changeId.optional(), savedRevisionId: changeId.optional(),
       capturedVersion: z.number().int().nonnegative().optional(), baseline: state.nullable(), proposed: state, version: z.number().int().nonnegative(),
       past: z.array(state).max(50), future: z.array(state).max(50) }).strict()).max(100),
     changes: z.array(diagramChangeSchema).max(2000),
     receipts: z.record(z.string(), z.object({ signature: z.string(), result: z.unknown() }))
   }).strict().parse(input);
+  if ((parsed.status === 'accepted') !== !!parsed.acceptance || parsed.acceptance && parsed.acceptance.changeSessionId !== parsed.id)
+    throw new Error('Invalid change-session acceptance');
   const ids = new Set<string>();
   for (const doc of parsed.documents) {
     if (ids.has(doc.id)) throw new Error('Duplicate change-session document');

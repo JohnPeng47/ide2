@@ -100,6 +100,41 @@ logical anchors and proposal readiness.
 conservative stub: any advanced/added/removed current diagram binding throws
 `MERGE_REQUIRED`; unchanged targets return the proposed bindings without publishing.
 Catalog saves invoke it when the expected saved canvas revision has advanced.
-Concurrent composition changes also fail with `CANVAS_CONFLICT`. No automatic
-three-way merge, ChangeSession acceptance UI, or alternative-generation UI is
-implemented here.
+Concurrent composition changes also fail with `CANVAS_CONFLICT`. Automatic
+three-way merge and alternative-generation UI are not implemented.
+
+## Accepting a proposal
+
+The preview's **Accept all changes** button and the MCP/HTTP tool
+`accept_diagram_change_session({changeSessionId, expectedVersion, requestId})`
+accept an entire ready session. Acceptance revalidates readiness, checks saved
+canvas revisions and available live documents against the captured originals,
+and rejects stale originals with `VERSION_CONFLICT` rather than merging them.
+Agents must have an explicit user instruction to accept; marking ready is not acceptance.
+
+`CanvasCatalogStore.acceptCanvasChanges` serializes publication with ordinary
+catalog saves. It stages all affected canvases, then atomically writes their new
+catalog revisions and a `changeSessionAcceptances[changeSessionId]` receipt.
+`DiagramService.adopt` appends one checkpoint to each existing canvas's history,
+preserving the proposal's exact diagram revision IDs, layout, edges and sections.
+An entirely new canvas receives a saved representation ID.
+
+The receipt records the accepted session version, request ID, timestamp, change
+IDs, and for each document: saved representation ID, proposed checkpoint ID,
+before `{revisionId, checkpointId}` (null for new canvases), and after
+`{revisionId, checkpointId}`. Both before and after checkpoints can be resolved
+from the after catalog revision's retained history, including legacy originals
+that did not previously have a checkpoint. The before catalog revision describes
+the saved original; the session baseline can also contain captured unsaved drafts.
+
+After publication, the session becomes `accepted` and cannot be edited. Its
+baseline, proposed state, annotations and history remain available for reviewing
+the original diff. A failed final session write is recovered from the atomic
+catalog receipt on the next read/retry; the same acceptance request never publishes
+twice. The UI opens the published canvas without diff overlays, preserves newer
+local edits, and keeps the accepted session in Changes. Other open browser
+workspaces retain their drafts and ordinary saved-revision conflict protection.
+
+The data needed for a future revert is persisted; a dedicated revert command/UI
+is not implemented. Reverting after subsequent edits will need its own conflict
+check. There is still no command-replay engine or partial acceptance.

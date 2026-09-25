@@ -12,6 +12,8 @@ import { initialCanvasState } from '../../../domain/mapping/workspace/mappingWor
 import { mappingDocumentFromScene } from '../../../domain/mapping/workspace/mappingDocument';
 import { singleDiagramScene } from '../../../domain/core/diagrams/projectDiagramCanvas';
 import { connectionBox, validateConnectionAnchor } from '../../../domain/core/diagrams/diagramConnection';
+import { stateKey } from '../../../domain/core/diagrams/canvasHistory';
+import type { ChangeSessionAcceptance } from '../../../domain/core/representations/changeAcceptance';
 
 export class ChangeSessionService {
   private queues = new Map<string, Promise<unknown>>();
@@ -24,9 +26,57 @@ export class ChangeSessionService {
     void next.finally(() => { if (this.queues.get(id) === next) this.queues.delete(id); }).catch(() => {});
     return next;
   }
-  async list() { return (await this.repository.list(await this.projectId())).filter(s => s.status !== 'archived')
-    .sort((a,b) => b.updatedAt.localeCompare(a.updatedAt)).map(summarizeChangeSession); }
-  async get(id: string) { return this.repository.read(await this.projectId(), id); }
+  async list() {
+    const projectId = await this.projectId(), sessions = await this.repository.list(projectId);
+    const accepted = sessions.some(s => s.status === 'ready')
+      ? (await this.source.projectCatalogs.loadRepresentationCatalog(projectId)).changeSessionAcceptances : undefined;
+    for (const session of sessions) if (session.status === 'ready' && accepted?.[session.id]) await this.finishAcceptance(session, accepted[session.id]);
+    return sessions.filter(s => s.status !== 'archived').sort((a,b) => b.updatedAt.localeCompare(a.updatedAt)).map(summarizeChangeSession);
+  }
+  async get(id: string) {
+    const session = await this.repository.read(await this.projectId(), id);
+    if (session.status === 'ready') {
+      const accepted = (await this.source.projectCatalogs.loadRepresentationCatalog(session.projectId)).changeSessionAcceptances?.[id];
+      if (accepted) await this.finishAcceptance(session, accepted);
+    }
+    return session;
+  }
+  private async finishAcceptance(session: DiagramChangeSession, acceptance: ChangeSessionAcceptance) {
+    if (session.version !== acceptance.sessionVersion) throw new Error('Acceptance does not match saved proposal version');
+    session.status = 'accepted'; session.acceptance = acceptance;
+    session.version = acceptance.sessionVersion + 1; session.updatedAt = acceptance.acceptedAt;
+    await this.repository.write(session);
+  }
+  async accept(input: { changeSessionId: string; requestId: string; expectedVersion: number }) {
+    return this.serialize(input.changeSessionId, async () => {
+      const session = await this.get(input.changeSessionId);
+      if (session.acceptance) {
+        if (session.acceptance.requestId !== input.requestId || session.acceptance.sessionVersion !== input.expectedVersion)
+          throw new Error('REQUEST_ID_CONFLICT: proposal already accepted');
+        return summarizeChangeSession(session);
+      }
+      if (session.version !== input.expectedVersion) throw new Error('VERSION_CONFLICT: reread change session');
+      if (session.status !== 'ready') throw new Error('Only a ready change session can be accepted');
+      this.validateReady(session);
+      const affected = session.documents.filter(d => session.changes.some(c => c.documentId === d.id));
+      // Captured drafts must not silently replace newer edits in any live workspace.
+      for (const canvas of this.bridge.list().filter(c => c.projectId === session.projectId)) for (const live of canvas.documents) {
+        const doc = affected.find(d => d.id === live.documentId || !!d.representationId && d.representationId === live.representationId);
+        if (!doc?.baseline) continue;
+        const current = await this.bridge.dispatch(canvas.canvasId, { method: 'snapshot', documentId: live.documentId }) as LiveDocumentSnapshot;
+        if (stateKey(current.document) !== stateKey(doc.baseline.document) || current.name !== doc.name)
+          throw new Error('VERSION_CONFLICT: live canvas changed since capture; create a new proposal');
+      }
+      const acceptance = await this.source.projectCatalogs.acceptCanvasChanges(session.projectId, {
+        changeSessionId: session.id, sessionVersion: session.version, requestId: input.requestId, changeIds: session.changes.map(c => c.id),
+        documents: affected.map(doc => ({ documentId: doc.id, representationId: doc.representationId, expectedRevisionId: doc.savedRevisionId,
+          name: doc.name, document: doc.proposed.document, history: this.controller(doc).exportHistory() }))
+      });
+      // The catalog receipt recovers this step after a crash or a failed session write.
+      await this.finishAcceptance(session, acceptance);
+      return summarizeChangeSession(session);
+    });
+  }
   async create(input: { title: string; description?: string; canvasId?: string; requestId: string }) {
     const projectId = await this.projectId();
     const id = `change-${createHash('sha256').update(`${projectId}:${input.requestId}`).digest('hex').slice(0,32)}`;
@@ -94,6 +144,7 @@ export class ChangeSessionService {
       const s = await this.get(id), key = `request:${requestId}`, receipt = s.receipts[key];
       if (receipt) { if (receipt.signature !== signature) throw new Error('REQUEST_ID_CONFLICT'); return receipt.result as T; }
       if (s.status === 'archived') throw new Error('Change session is archived');
+      if (s.status === 'accepted') throw new Error('Change session is accepted and cannot be edited');
       if (Object.keys(s.receipts).length >= 2000) throw new Error('Change session request capacity reached');
       const result = fn(s);
       s.version++; s.updatedAt = new Date().toISOString(); s.receipts[key] = { signature, result };

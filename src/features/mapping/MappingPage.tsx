@@ -25,6 +25,8 @@ import { useAgentCanvasBridge } from './agent/useAgentCanvasBridge';
 import { MappingPocSelectionCanvas } from "./canvas/MappingCanvas";
 import type { DisplayModeChange } from './changes/changeSessionApi';
 import { ChangeSessionPreview } from './changes/ChangeSessionPreview';
+import type { DiagramChangeSession } from '../../../domain/mapping/changes/diagramChangeSession';
+import { stateKey } from '../../../domain/core/diagrams/canvasHistory';
 import { SourcePaneViewState } from "./source-pane/sourcePaneViewState";
 import { SourcePaneDocumentActiveContext, SourcePaneDocumentContext, SourcePaneViewStateContext } from "./source-pane/SourcePaneViewStateContext";
 import { FloatingPane } from "./workspace/FloatingPane";
@@ -49,6 +51,7 @@ const LOCAL_CHAT_UI_CONTROLS = {
 
 interface Draft {
   newerRevision?: boolean;
+  reloadKey?: string;
   history?: CanvasHistoryRecord;
   representationId?: string;
   name: string;
@@ -221,6 +224,40 @@ function MappingWorkspacePage() {
     const controller = await waitController(id);
     check(controller.getSnapshot().document);
     setDrafts(current => current[id] ? { ...current, [id]: { ...current[id], focusBox: focus } } : current);
+  };
+
+  const openAccepted = async (session: Omit<DiagramChangeSession, 'receipts'>, documentId: string) => {
+    const acceptance = session.acceptance;
+    const selected = acceptance?.documents.find(d => d.documentId === documentId);
+    if (!acceptance || !selected) throw new Error('Accepted canvas was not found');
+    const data = await loadProjectRepresentations();
+    const next = { ...draftRef.current };
+    let selectedId = selected.representationId, keptLocalEdits = false;
+    for (const published of acceptance.documents) {
+      const representation = data.catalog?.representations[published.representationId];
+      const revision = representation && data.catalog?.revisions[representation.currentRevisionId];
+      if (!representation || representation.status !== 'settled' || !revision) throw new Error('Published canvas was not found or is archived');
+      const existingId = Object.keys(next).find(id => id === published.documentId || (next[id].representationId ?? id) === published.representationId);
+      if (!existingId && published.documentId !== documentId) continue;
+      const key = existingId ?? published.representationId, previous = next[key];
+      if (published.documentId === documentId) selectedId = key;
+      const live = controllers.current.get(key)?.getSnapshot();
+      const previousDocument = live?.document ?? previous?.document;
+      const reviewed = session.documents.find(d => d.id === published.documentId);
+      const capturedOriginal = previous && reviewed?.baseline && previous.revisionId === (published.before?.revisionId ?? '') &&
+        stateKey(previousDocument) === stateKey(reviewed.baseline.document) && previous.name === reviewed.name;
+      if (previous && dirty({ ...previous, document: previousDocument! }) && !capturedOriginal) {
+        keptLocalEdits = true; continue;
+      }
+      const document = documentFromRevision(revision), history = historyFromRevision(revision);
+      const view = history?.snapshots[history.headId].view as MappingCanvasState | undefined;
+      next[key] = { ...previous, representationId: representation.id, name: representation.name, document, history,
+        canvas: view?.display ? view : initialCanvasState(), revisionId: revision.id, savedName: representation.name,
+        savedScene: JSON.stringify(document.scene), savedEdges: JSON.stringify(document.edges), busy: false, reloadKey: revision.id };
+    }
+    setSnapshot(data); setDrafts(next); setActiveId(selectedId); setChangeMode(undefined); setExplorerTab('diagrams');
+    setWorkspaceStatus(keptLocalEdits ? 'Changes accepted; newer local edits were preserved.' : 'Changes accepted. The review diff remains in Changes.');
+    const url = new URL(location.href); url.searchParams.set('diagram', selected.representationId); history.replaceState({}, '', url);
   };
 
   const restore = (workspace: MappingWorkspaceSnapshot, data = snapshot) => {
@@ -400,7 +437,7 @@ function MappingWorkspacePage() {
       </header>
       <section className="mapping-poc-workspace">
         <div className="mapping-viewport">
-          {Object.entries(drafts).map(([id, draft]) => <SourcePaneDocumentContext.Provider key={`${workspaceEpoch}:${id}`} value={id}><SourcePaneDocumentActiveContext.Provider value={id === activeId && !changeMode}><div className="mapping-document-view" hidden={id !== activeId || !!changeMode}>
+          {Object.entries(drafts).map(([id, draft]) => <SourcePaneDocumentContext.Provider key={`${workspaceEpoch}:${id}:${draft.reloadKey ?? ''}`} value={id}><SourcePaneDocumentActiveContext.Provider value={id === activeId && !changeMode}><div className="mapping-document-view" hidden={id !== activeId || !!changeMode}>
             <DraggableDiagramCanvas className="mapping-poc-canvas" enabled={id === activeId} resetKey={id} leftInset={340} focusBox={draft.focusBox}
               initialTransform={draft.viewport} onTransformChange={viewport => viewState.setCamera(id, viewport)}>
               <MappingPocSelectionCanvas onJump={target => void jumpTo(target)} onController={controller => { if (controller) controllers.current.set(id, controller); else controllers.current.delete(id); }} initialCanvasState={draft.canvas}
@@ -418,7 +455,7 @@ function MappingWorkspacePage() {
           </div></SourcePaneDocumentActiveContext.Provider></SourcePaneDocumentContext.Provider>)}
           {!active && !changeMode && <div className="mapping-empty"><h1>{snapshot ? "Create a project diagram" : error ? "Could not load project diagrams" : "Loading project diagrams…"}</h1>
             {snapshot && <button type="button" onClick={() => setCreating(true)}>New diagram</button>}</div>}
-          {changeMode && <ChangeSessionPreview mode={changeMode} onSelect={setChangeMode}
+          {changeMode && <ChangeSessionPreview mode={changeMode} onSelect={setChangeMode} onOpenAccepted={openAccepted}
             onSearchDocument={onProposalSearchDocument} searchFocus={proposalSearchFocus && proposalSearchFocus.documentId === proposalSearchId ? proposalSearchFocus.focus : undefined} />}
           <DiagramSearchPanel service={search} activeDocumentId={proposalSearchId ?? activeId}
             activeName={changeMode ? proposalSearchDocument && proposalSearchDocument.id === proposalSearchId ? proposalSearchDocument.name : 'Loading proposal…' : active?.name}

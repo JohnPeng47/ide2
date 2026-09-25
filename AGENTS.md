@@ -8,7 +8,12 @@ node --import tsx scripts/mapping/mcp.ts http://IP:PORT
 
 Use a change session to propose edits on isolated copies. Session edits persist
 automatically and appear in the explorer's **Changes** tab. They do not modify the
-original canvases. Do not call `save_diagram` for a proposal; acceptance is not implemented.
+original canvases. Do not call `save_diagram` for a proposal. To accept a ready
+proposal, call `accept_diagram_change_session`
+with its `changeSessionId`, session `expectedVersion`, and a unique `requestId`.
+Acceptance publishes all changed canvases together and freezes the proposal while
+preserving its review diff and before/after revision references. Retry the identical
+acceptance request with the same ID after a transport failure.
 
 ### APIs to call
 

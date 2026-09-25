@@ -28,6 +28,7 @@ export interface DiagramService {
   /** Portable transport adapters; callers must not interpret diagram revision tables. */
   exportContext(context: DiagramEditingContext): CanvasHistoryRecord;
   forkContext(context: DiagramEditingContext, view: unknown): CanvasHistoryRecord;
+  adopt(context: DiagramEditingContext, proposed: CanvasHistoryRecord): void;
   prepareCreate(input: DiagramInput): PreparedDiagramEdit;
   prepareEdit(document: ResolvedCanvasDocument, diagramId: string, edit: DiagramEdit): PreparedDiagramEdit;
   persist(value: unknown): Promise<unknown>;
@@ -66,6 +67,7 @@ export class RevisionedDiagramService implements DiagramService {
   reset(context: DiagramEditingContext) { this.history(context).reset(); }
   exportContext(context: DiagramEditingContext) { return this.history(context).export(); }
   forkContext(context: DiagramEditingContext, view: unknown) { return this.history(context).fork(view); }
+  adopt(context: DiagramEditingContext, proposed: CanvasHistoryRecord) { this.history(context).adopt(proposed); }
   prepareCreate(input: DiagramInput) { return new DiagramRevisionEditor({}, () => ({})).prepareCreate(input); }
   prepareEdit(document: ResolvedCanvasDocument, diagramId: string, edit: DiagramEdit) {
     // Staging observes earlier operations in the batch without changing a live context.

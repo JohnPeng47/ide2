@@ -40,3 +40,25 @@ it('isolates restored viewers of the same context and stages batches without pub
   ])).toThrow();
   expect(restored.exportHistory()).toEqual(before);
 });
+
+it('adopts a proposal as one checkpoint without aliasing its records or rewriting diagram revisions', () => {
+  const service = new RevisionedDiagramService(), view = initialCanvasState();
+  const document = mappingDocumentFromScene(singleDiagramScene('Original'));
+  const original = service.openContext(document, view);
+  const fork = service.forkContext(original, view);
+  const proposal = new MappingDocumentController(document, view, 0, undefined, undefined, fork, service);
+  proposal.applyUpdate(0, [{ method: 'replace', nodeId: 'grid:overview', ascii: 'Accepted' }]);
+  const proposed = proposal.exportHistory(), bindings = proposed.snapshots[proposed.headId].diagramBindings;
+  const before = service.exportContext(original);
+  service.adopt(original, proposed);
+  const after = service.exportContext(original);
+  expect(after.contextId).toBe(before.contextId);
+  expect(after.snapshots[after.headId].parentId).toBe(before.headId);
+  expect(after.snapshots[after.headId].diagramBindings).toEqual(bindings);
+  proposed.diagramRevisions[bindings.overview].diagram.content.ascii = 'Mutated caller data';
+  expect(service.resolve(original, 'overview').ascii).toBe('Accepted');
+  service.navigate(original);
+  expect(service.resolve(original, 'overview').ascii).toBe('Original');
+  service.navigate(original, true);
+  expect(service.resolve(original, 'overview').ascii).toBe('Accepted');
+});

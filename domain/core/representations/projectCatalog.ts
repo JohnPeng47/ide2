@@ -132,6 +132,8 @@ export interface ProjectRepresentationCatalogRecord {
   activeByKind: Partial<Record<DiagramViewKind, string>>;
   representations: Record<string, ProjectRepresentationRecord>;
   revisions: Record<string, ProjectRepresentationRevisionRecord>;
+  /** Committed atomically with every canvas affected by an accepted proposal. */
+  changeSessionAcceptances?: Record<string, import('./changeAcceptance').ChangeSessionAcceptance>;
   /** Revision-pinned correspondences to complementary project diagrams. */
   projections?: Record<string, import("../diagrams/diagramProjection").ProjectProjectionRecord>;
   createdAt: string;
