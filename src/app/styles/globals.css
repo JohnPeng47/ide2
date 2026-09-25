@@ -163,7 +163,8 @@ select:focus-visible,
 .local-chat-source-highlight { position: absolute; z-index: 3; border: 1px solid var(--accent-green); background: rgb(163 190 140 / 13%); box-shadow: 0 0 0 1px rgb(163 190 140 / 28%), inset 0 0 30px rgb(163 190 140 / 8%), 0 0 22px rgb(163 190 140 / 14%); pointer-events: none; }
 .local-chat-source-highlight > span { position: absolute; right: -1px; bottom: 100%; border: 1px solid var(--accent-green); border-bottom: 0; padding: 0.2rem 0.35rem; background: rgb(15 17 21 / 96%); color: var(--accent-green); font: 700 7px var(--font-mono); letter-spacing: 0.1em; white-space: nowrap; }
 @keyframes mapping-poc-prompt-pulse { 50% { background: rgb(235 203 139 / 19%); box-shadow: 0 0 0 1px rgb(235 203 139 / 35%), 0 0 28px rgb(235 203 139 / 22%); } }
-.mapping-poc-selection-menu { position: absolute; z-index: 5; display: flex; width: 224px; overflow: hidden; border: 1px solid var(--gutter); border-radius: 4px; background: rgb(15 17 21 / 98%); box-shadow: 0 10px 30px rgb(0 0 0 / 45%); flex-direction: column; cursor: default; font: 9px var(--font-mono); }
+/* Keep selection actions above connections, subtree toggles, and anchor targets (layers 6–8). */
+.mapping-poc-selection-menu { position: absolute; z-index: 10; display: flex; width: 224px; overflow: hidden; border: 1px solid var(--gutter); border-radius: 4px; background: #0f1115; box-shadow: 0 10px 30px rgb(0 0 0 / 45%); flex-direction: column; cursor: default; font: 9px var(--font-mono); }
 .mapping-poc-selection-menu.has-floating-ask { overflow: visible; }
 .mapping-poc-selection-menu > header { display: flex; min-width: 0; padding: 0.5rem 0.6rem; color: var(--muted); flex-direction: column; gap: 0.22rem; }
 .mapping-poc-selection-menu > header em { color: var(--muted); font: 8px var(--font-mono); font-style: normal; }
