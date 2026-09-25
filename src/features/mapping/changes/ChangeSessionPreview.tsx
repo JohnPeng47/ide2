@@ -10,10 +10,14 @@ import { DiagramSubtreeControls } from '../canvas/DiagramSubtreeControls';
 import { useEndpointGeometry } from '../canvas/useEndpointGeometry';
 import { readChangeSession, type DisplayModeChange } from './changeSessionApi';
 import { changePreviewText, type PreviewTextRun } from './changePreviewText';
+import type { SearchDocument } from '../search/diagramSearchService';
+import { SearchHighlight, type DiagramFocus } from '../search/SearchHighlight';
 import '../canvas/diagramConnections.css';
 import './changeSessions.css';
 
-export function ChangeSessionPreview(props: { mode: DisplayModeChange; onSelect: (mode: DisplayModeChange) => void }) {
+export function ChangeSessionPreview(props: { mode: DisplayModeChange; onSelect: (mode: DisplayModeChange) => void;
+  onSearchDocument?: (document: SearchDocument) => void; searchFocus?: DiagramFocus;
+  }) {
   const [session, setSession] = useState<Awaited<ReturnType<typeof readChangeSession>>>();
   const [error, setError] = useState('');
   useEffect(() => {
@@ -28,6 +32,11 @@ export function ChangeSessionPreview(props: { mode: DisplayModeChange; onSelect:
     void refresh(); return () => { abort.abort(); clearTimeout(timer); };
   }, [props.mode.sessionId]);
   const doc = session?.documents.find(d => d.id === props.mode.documentId);
+  useEffect(() => {
+    if (doc && session?.id === props.mode.sessionId) props.onSearchDocument?.({
+      id: `proposal:${session.id}:${doc.id}`, name: `${doc.name} (proposal)`, scope: 'proposal', document: doc.proposed.document
+    });
+  }, [doc, session?.id, props.mode.sessionId, props.onSearchDocument]);
   const change = session?.changes.find(c => c.id === props.mode.changeId);
   const diff = useMemo(() => doc ? diffChangeDocument(doc) : undefined, [doc]);
   const modifiedDiagramIds = useMemo(() => new Set(session?.changes.flatMap(change =>
@@ -36,6 +45,7 @@ export function ChangeSessionPreview(props: { mode: DisplayModeChange; onSelect:
     {error && <p className="change-preview-message" role="alert">{error}</p>}
     {doc
       ? <PreviewCanvas key={`${session!.id}:${doc.id}:${doc.version}`} doc={doc}
+          searchFocus={props.searchFocus}
           diff={diff!} modifiedDiagramIds={modifiedDiagramIds}
           focusId={change?.nodeId} serial={props.mode.serial} onJump={target => {
             const destination = session!.documents.find(d => d.representationId === target.representationId || d.id === target.representationId);
@@ -45,7 +55,7 @@ export function ChangeSessionPreview(props: { mode: DisplayModeChange; onSelect:
       : <p className="change-preview-message">{session ? 'Select a canvas in Changes.' : 'Loading preview…'}</p>}
   </div>;
 }
-function PreviewCanvas({ doc, focusId, serial, onJump, diff, modifiedDiagramIds }: { doc: ChangeSessionDocument; focusId?: string; serial: number;
+function PreviewCanvas({ doc, focusId, serial, onJump, diff, modifiedDiagramIds, searchFocus }: { doc: ChangeSessionDocument; focusId?: string; serial: number; searchFocus?: DiagramFocus;
   diff: ReturnType<typeof diffChangeDocument>; modifiedDiagramIds: ReadonlySet<string>;
   onJump: NonNullable<Parameters<typeof DiagramText>[0]['onJump']> }) {
   const { diagrams } = useMappingServices();
@@ -58,6 +68,19 @@ function PreviewCanvas({ doc, focusId, serial, onJump, diff, modifiedDiagramIds 
     return new MappingDocumentController(state.document, state.canvas, doc.version, undefined, {}, undefined, diagrams);
   }, [doc.id, doc.version, diagrams]);
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
+  useEffect(() => {
+    const result = searchFocus?.search;
+    if (!result) return;
+    controller.updateCanvas(current => {
+      const view = current.diagramViews?.[result.displayNodeId];
+      const content = controller.nodes().find(node => node.id === result.displayNodeId);
+      if (!view || content?.layout !== 'grid' || content.content?.structure.kind !== 'tree'
+        || content.content.revisionId !== result.revisionId || content.content.asciiSha256 !== result.asciiSha256) return current;
+      const nodes = content.content.structure.nodes;
+      return { ...current, diagramViews: { ...current.diagramViews, [result.displayNodeId]: { ...view,
+        collapsedContentNodeIds: view.collapsedContentNodeIds.filter(id => !nodes[id]?.foldRanges.some(range => range.startLine <= result.line && range.endLine >= result.line)) } } };
+    });
+  }, [controller, searchFocus]);
   const geometry = useEndpointGeometry(controller, true);
   const [cell, setCell] = useState({ width: 8, height: 18.2 });
   const pre = useRef<HTMLPreElement>(null);
@@ -86,10 +109,21 @@ function PreviewCanvas({ doc, focusId, serial, onJump, diff, modifiedDiagramIds 
         visibleRow: projection.prefixRowForNode.get(target.contentNodeId) ?? projection.rowForLine.get(target.line),
         branchColumn: projection.columnForLine(target.line, target.branchColumn) })) } };
   });
-  const focusBox = useMemo(() => focusId?.startsWith('grid:') ? { id: focusId.slice(5), serial } : undefined, [focusId, serial]);
+  const focusBox = useMemo(() => searchFocus ?? (focusId?.startsWith('grid:') ? { id: focusId.slice(5), serial } : undefined), [focusId, serial, searchFocus]);
   return <DraggableDiagramCanvas enabled resetKey={doc.id} className="mapping-poc-canvas" leftInset={340}
     focusBox={focusBox}>
     <div className="change-preview-stage" style={{ position: 'relative', width: resolved.bounds.columns * cell.width, height: resolved.bounds.rows * cell.height }}>
+      {searchFocus?.search && (() => {
+        const result = searchFocus.search, projection = text.projections.get(result.displayNodeId);
+        const box = boxes.find(box => box.box.id === searchFocus.id);
+        const row = projection?.rowForLine.get(result.line);
+        return <SearchHighlight focus={searchFocus} content={box?.box.kind === 'diagram' ? scene.contents[box.box.contentId].content : undefined}
+          origin={box?.bounds} row={row} cell={cell} columnFor={column => {
+            const run = row === undefined ? undefined : projection?.rows[row]?.runs.find(run => run.owner &&
+              run.start - run.owner.columnOffset <= column && run.end - run.owner.columnOffset > column);
+            return run?.owner ? column + run.owner.columnOffset : projection?.columnForLine(result.line, column) ?? column;
+          }} />;
+      })()}
       <DiagramText ref={pre} className="mapping-poc-ascii" rows={text.rows} registerEndpoint={geometry.registerEndpoint} onJump={onJump}
         renderRun={run => (run as PreviewTextRun).diffStatus === 'removed'
           ? <span className="change-diff-removed" data-diff-status="removed">{run.text}</span>

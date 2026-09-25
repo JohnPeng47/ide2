@@ -26,7 +26,8 @@
     "check:source-navigation": "npm run build && SOURCE_PERF_TRIALS=0 SOURCE_NAVIGATION=1 node tests/performance/browser-source-pane-performance.mjs",
     "start": "node scripts/dev/start-server.mjs --host 127.0.0.1",
     "mcp:mapping": "tsx scripts/mapping/mcp.ts",
-    "check:agent-diagramming": "npm run build && node tests/browser/mapping/browser-agent-diagramming-check.mjs"
+    "check:agent-diagramming": "npm run build && node tests/browser/mapping/browser-agent-diagramming-check.mjs",
+    "check:diagram-search": "npm run build && node --import tsx tests/browser/mapping/browser-diagram-search-check.mjs"
   },
   "dependencies": {
     "@earendil-works/pi-ai": "^0.84.2",

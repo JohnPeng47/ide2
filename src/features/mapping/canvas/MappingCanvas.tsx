@@ -3,6 +3,7 @@ import type { CanvasHistoryRecord } from '../../../../domain/mapping/workspace/c
 import { useEndpointGeometry } from './useEndpointGeometry';
 import { DiagramText } from '../../../shared/diagrams/DiagramText';
 import { diagramSceneText } from '../../../../domain/mapping/workspace/diagramSceneText';
+import { SearchHighlight, type DiagramFocus } from '../search/SearchHighlight';
 import { type DiagramJumpTarget } from '../../../../domain/core/diagrams/diagramJump';
 import { DiagramConnections } from './DiagramConnections';
 import { exportedEvidenceId } from '../../../../domain/core/diagrams/projectDiagramCanvas';
@@ -121,7 +122,7 @@ export function MappingPocSelectionCanvas(props: {
   onDocumentChange?: (document: MappingGridDocument) => void;
   onBusyChange?: (busy: boolean) => void;
   active?: boolean;
-  focusBox?: { id: string; serial: number; contentNodeId?: string };
+  focusBox?: DiagramFocus;
   projectContext?: { projectId: string; representationId: string; baseRevisionId: string };
   projectionCatalog?: ProjectRepresentationCatalogRecord;
   savedScene?: string;
@@ -412,11 +413,14 @@ export function MappingPocSelectionCanvas(props: {
     if (JSON.stringify(root) !== JSON.stringify(scene.root)) commit({ ...gridDocument, scene: layoutScene({ ...scene, root }, target) });
     const focusNode = props.focusBox.contentNodeId;
     const displayed = controller.nodes().find(node => node.id === `grid:${target}`);
-    if (focusNode && displayed?.layout === 'grid' && displayed.content?.structure.kind === 'tree') {
+    if ((focusNode || props.focusBox.search) && displayed?.layout === 'grid' && displayed.content?.structure.kind === 'tree') {
       const content = displayed.content;
       const ancestors = new Set<string>();
-      let node = content.structure.kind === 'tree' ? content.structure.nodes[focusNode] : undefined;
+      let node = content.structure.kind === 'tree' && focusNode ? content.structure.nodes[focusNode] : undefined;
       while (node?.parentId && content.structure.kind === 'tree') { ancestors.add(node.parentId); node = content.structure.nodes[node.parentId]; }
+      const line = props.focusBox.search?.line;
+      if (line && content.structure.kind === 'tree') for (const node of Object.values(content.structure.nodes))
+        if (node.foldRanges.some(range => range.startLine <= line && range.endLine >= line)) ancestors.add(node.id);
       controller.updateCanvas(current => {
         const view = current.diagramViews?.[displayed.id];
         if (!view) return current;
@@ -973,6 +977,11 @@ export function MappingPocSelectionCanvas(props: {
         }} />
       <span ref={probeRef} className="mapping-poc-cell-probe" aria-hidden="true">0000000000</span>
       {diagramText}
+      {props.focusBox?.search && (() => {
+        const box = boxes.find(box => box.box.id === props.focusBox!.id);
+        return <SearchHighlight focus={props.focusBox} content={box?.contentId ? scene.contents[box.contentId].content : undefined}
+          origin={box?.bounds} cell={cell} row={contentProjections.get(props.focusBox.id)?.rowForLine(props.focusBox.search.line)} />;
+      })()}
 
       <DiagramSubtreeControls nodes={displayNodes} visibleBoxIds={new Set(boxes.map(box => box.box.id))} cell={cell}
         disabled={isGenerating || !!diagramPlacement || !!movingBoxId || !!promptOpen || !!askOpen}

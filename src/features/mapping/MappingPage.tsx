@@ -2,7 +2,12 @@ import { MappingServicesContext, type MappingServices } from './services/Mapping
 import type { CanvasHistoryRecord } from '../../../domain/mapping/workspace/canvasHistory';
 import { historyFromRevision, documentFromRevision } from '../../../domain/core/diagrams/projectDiagramCanvas';
 import { UiTestFramework } from "@new-diagram/ui-test-framework";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { DiagramSearchService, type SearchDocument } from './search/diagramSearchService';
+import type { DiagramLineSearchResult } from '../../../domain/mapping/search/diagramSearch';
+import { findBox } from '../../../domain/mapping/workspace/canvasDisplayNode';
+import { DiagramSearchPanel } from './search/DiagramSearchPanel';
+import type { DiagramFocus } from './search/SearchHighlight';
 import type { CanvasTransform } from "../../../domain/core/diagrams/diagramCanvas";
 import type { DiagramJumpTarget } from '../../../domain/core/diagrams/diagramJump';
 import { singleDiagramScene } from "../../../domain/core/diagrams/projectDiagramCanvas";
@@ -53,7 +58,7 @@ interface Draft {
   busy: boolean;
   canvas: MappingCanvasState;
   viewport?: CanvasTransform;
-  focusBox?: { id: string; serial: number; contentNodeId?: string };
+  focusBox?: DiagramFocus;
 }
 const dirty = (draft: Draft) => draft.name !== draft.savedName || JSON.stringify(draft.document.scene) !== draft.savedScene || JSON.stringify(draft.document.edges) !== (draft.savedEdges ?? '[]');
 
@@ -85,6 +90,30 @@ function MappingWorkspacePage() {
   const active = activeId ? drafts[activeId] : undefined;
   const controllers = useRef(new Map<string, MappingDocumentController>());
   const draftRef = useRef(drafts); draftRef.current = drafts;
+  const [search] = useState(() => new DiagramSearchService(() => new Worker(new URL('./search/diagramSearch.worker.ts', import.meta.url), { type: 'module' })));
+  const savedSearchDocuments = useRef(new WeakMap<object, MappingGridDocument>());
+  const [proposalSearchDocument, setProposalSearchDocument] = useState<SearchDocument>();
+  const [proposalSearchFocus, setProposalSearchFocus] = useState<{ documentId: string; focus: DiagramFocus }>();
+  useEffect(() => { setProposalSearchFocus(undefined); }, [changeMode?.sessionId, changeMode?.documentId, changeMode?.serial]);
+  const onProposalSearchDocument = useCallback((document: SearchDocument) => setProposalSearchDocument(document), []);
+  const proposalSearchId = changeMode ? `proposal:${changeMode.sessionId}:${changeMode.documentId}` : undefined;
+  const searchDocuments = useMemo(() => {
+    const documents: SearchDocument[] = [];
+    const overridden = new Set(Object.entries(drafts).map(([id, draft]) => draft.representationId ?? id));
+    for (const representation of Object.values(snapshot?.catalog?.representations ?? {})) {
+      if (representation.status !== 'settled' || overridden.has(representation.id)) continue;
+      const revision = snapshot?.catalog?.revisions[representation.currentRevisionId];
+      if (!revision) continue;
+      let document = savedSearchDocuments.current.get(revision);
+      if (!document) { document = documentFromRevision(revision); savedSearchDocuments.current.set(revision, document); }
+      documents.push({ id: representation.id, name: representation.name, document, scope: 'project' });
+    }
+    for (const [id, draft] of Object.entries(drafts)) documents.push({ id, name: draft.name, document: draft.document, scope: 'project' });
+    if (proposalSearchDocument && proposalSearchDocument.id === proposalSearchId) documents.push(proposalSearchDocument);
+    return documents;
+  }, [drafts, snapshot?.catalog, proposalSearchDocument, proposalSearchId]);
+  useEffect(() => { search.sync(searchDocuments); }, [search, searchDocuments]);
+  useEffect(() => () => search.dispose(), [search]);
   const appliedRequests = useRef(new Map<string, unknown>());
   const waitController = async (id: string) => {
     const deadline = Date.now() + 5000;
@@ -168,6 +197,28 @@ function MappingWorkspacePage() {
       setDrafts(current => ({ ...current, [id]: { ...current[id], focusBox: { id: node.boxId,
         contentNodeId: contentNode ? contentNode.id : undefined, serial: (current[id].focusBox?.serial ?? 0) + 1 } } }));
     } catch (error) { setError(error instanceof Error ? error.message : 'Could not open linked diagram'); }
+  };
+
+  const revealSearchResult = async (result: DiagramLineSearchResult) => {
+    const source = searchDocuments.find(document => document.id === result.canvasDocumentId);
+    const check = (document: MappingGridDocument | undefined) => {
+      const box = document && findBox(document.scene.root, result.displayNodeId.slice(5));
+      const content = box?.kind === 'diagram' && document?.scene.contents[box.contentId]?.content;
+      if (!content || content.revisionId !== result.revisionId || content.asciiSha256 !== result.asciiSha256)
+        throw new Error('This result changed. Search again for the current line.');
+    };
+    check(source?.document);
+    const focus: DiagramFocus = { id: result.displayNodeId.slice(5), serial: Date.now(), search: result };
+    if (source?.scope === 'proposal') {
+      setProposalSearchFocus({ documentId: source.id, focus }); return;
+    }
+    setChangeMode(undefined);
+    const id = drafts[result.canvasDocumentId] ? result.canvasDocumentId : open(result.canvasDocumentId);
+    if (!id) throw new Error('Canvas is no longer available.');
+    setActiveId(id);
+    const controller = await waitController(id);
+    check(controller.getSnapshot().document);
+    setDrafts(current => current[id] ? { ...current, [id]: { ...current[id], focusBox: focus } } : current);
   };
 
   const restore = (workspace: MappingWorkspaceSnapshot, data = snapshot) => {
@@ -362,7 +413,11 @@ function MappingWorkspacePage() {
           </div></SourcePaneDocumentActiveContext.Provider></SourcePaneDocumentContext.Provider>)}
           {!active && !changeMode && <div className="mapping-empty"><h1>{snapshot ? "Create a project diagram" : error ? "Could not load project diagrams" : "Loading project diagrams…"}</h1>
             {snapshot && <button type="button" onClick={() => setCreating(true)}>New diagram</button>}</div>}
-          {changeMode && <ChangeSessionPreview mode={changeMode} onSelect={setChangeMode} />}
+          {changeMode && <ChangeSessionPreview mode={changeMode} onSelect={setChangeMode}
+            onSearchDocument={onProposalSearchDocument} searchFocus={proposalSearchFocus && proposalSearchFocus.documentId === proposalSearchId ? proposalSearchFocus.focus : undefined} />}
+          <DiagramSearchPanel service={search} activeDocumentId={proposalSearchId ?? activeId}
+            activeName={changeMode ? proposalSearchDocument && proposalSearchDocument.id === proposalSearchId ? proposalSearchDocument.name : 'Loading proposal…' : active?.name}
+            onReveal={revealSearchResult} />
           <FloatingPane><MappingDiagramExplorer explorerTab={explorerTab}
             onTabChange={tab => { setExplorerTab(tab); if (tab === 'diagrams') setChangeMode(undefined); }}
             changeMode={changeMode} onChangeSelect={setChangeMode} projectName={snapshot?.project?.name ?? "Project"} diagrams={diagrams}

@@ -18,6 +18,7 @@ import {
   type CanvasPoint,
   type CanvasTransform
 } from "../../../domain/core/diagrams/diagramCanvas";
+import type { DiagramFocus } from '../../../domain/core/diagrams/diagramCanvas';
 
 const ZOOM_SENSITIVITY = 0.0015;
 const PAN_KEY_STEP = 32;
@@ -47,7 +48,7 @@ export function DraggableDiagramCanvas(props: {
   resetKey: string;
   className?: string;
   leftInset?: number;
-  focusBox?: { id: string; serial: number; contentNodeId?: string };
+  focusBox?: DiagramFocus;
   initialTransform?: CanvasTransform;
   onTransformChange?: (transform: CanvasTransform) => void;
 }) {
@@ -228,7 +229,9 @@ export function DraggableDiagramCanvas(props: {
       const label = props.focusBox?.contentNodeId && Array.from(surfaceRef.current?.querySelectorAll<HTMLElement>('.diagram-content-node') ?? [])
         .find(element => element.dataset.contentNodeId === props.focusBox?.contentNodeId && element.dataset.displayNodeId === `grid:${props.focusBox?.id}`);
       if (label) label.setAttribute('data-jump-focus', '');
-      const target = label || Array.from(surfaceRef.current?.querySelectorAll<HTMLElement>("[data-grid-box]") ?? [])
+      const searchLine = props.focusBox?.search && Array.from(surfaceRef.current?.querySelectorAll<HTMLElement>('[data-search-focus]') ?? [])
+        .find(element => element.dataset.searchBox === props.focusBox?.id && element.dataset.searchFocus === String(props.focusBox?.serial));
+      const target = searchLine || label || Array.from(surfaceRef.current?.querySelectorAll<HTMLElement>("[data-grid-box]") ?? [])
         .find((element) => element.dataset.gridBox === props.focusBox?.id);
       const initial = initialFocusPending.current;
       initialFocusPending.current = false;

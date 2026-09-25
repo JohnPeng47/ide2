@@ -124,3 +124,11 @@ export function recenterCanvasTransform(
     scale: transform.scale
   };
 }
+/** A transient navigation request, never part of persisted diagram content. */
+export interface DiagramFocus {
+  id: string; serial: number; contentNodeId?: string;
+  search?: {
+    displayNodeId: string; revisionId: string; asciiSha256: string; line: number;
+    matches: { startColumn: number; endColumn: number }[];
+  };
+}
