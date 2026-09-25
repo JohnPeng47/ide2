@@ -47,6 +47,10 @@ export class AgentDiagrammingSessionService {
     if (name === 'diagram-search') return this.search(agentToolSchemas[name].parse(raw));
     if (name === 'exec') return this.exec(agentToolSchemas[name].parse(raw));
     if (name === 'save_diagram') return this.save(agentToolSchemas[name].parse(raw));
+    if (name === 'set_diagram_source_mappings') {
+      const { sessionId, changeSessionId, expectedVersion, requestId, ...fields } = agentToolSchemas[name].parse(raw);
+      return this.apply(sessionId, expectedVersion, [{ method: 'setSourceMappings', ...fields }], requestId, changeSessionId);
+    }
     const input = agentToolSchemas.draw_diagram.parse(raw);
     const operation = input.nodeId ? { method: 'replace', nodeId: input.nodeId, ...this.content(input) }
       : { method: 'diagram-create', id: `diagram-${randomUUID()}`, parentId: input.parentId, position: input.position, ...this.content(input) };

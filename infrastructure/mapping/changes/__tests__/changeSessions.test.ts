@@ -121,3 +121,30 @@ it('isolates shared MCP operations, persists sessions and history, rejects bad r
     await expect(repository.read('project','../escape')).rejects.toThrow();
   } finally {await rm(root,{recursive:true,force:true});}
 });
+
+it('persists mappings-only MCP proposals, preserves their baseline, and validates ready', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'mapping-proposal-'));
+  try {
+    const catalog = new ProjectCatalogStore(root), scene = singleDiagramScene('Root');
+    const saved = await catalog.saveMappingDiagram('project', {name:'Original',scene});
+    const store = {loadProject:async()=>({id:'project'}),projectCatalogs:catalog} as unknown as DiagramRepository;
+    const bridge: CanvasSessionPort = {register(){},list:()=>[],poll:async()=>[],reply(){},unregister(){},dispose(){},dispatch:async()=>{throw Error('Touched live bridge');}};
+    const changes = new ChangeSessionService(new DiagramChangeSessionStore(root),store,bridge);
+    const agent = new AgentDiagrammingSessionService(bridge,{} as MappingDiagramService,store,new QuickJsAgentRuntime(),changes);
+    const created = await agent.call('create_diagram_change_session',{title:'Source mappings',requestId:'create'}) as any;
+    const changeSessionId = created.changeSessionId;
+    const attached = await agent.call('exec',{changeSessionId,requestId:'attach',code:`return canvas.attach({canvasId:${JSON.stringify(changeSessionId)},documentId:${JSON.stringify(saved.representation.id)}});`}) as any;
+    await agent.call('set_diagram_source_mappings',{changeSessionId,sessionId:attached.value.sessionId,requestId:'mappings',expectedVersion:0,
+      nodeId:'grid:overview',expectedContentHash:scene.contents.overview.content.asciiSha256,
+      mappings:[{id:'m',entityId:'e',sourceRangeIndex:0,line:1,startColumn:1,endColumn:4}],
+      evidence:{e:{id:'e',handle:'Root',label:'Root',category:'operation',summary:'Root',sourceRanges:[{id:'r',path:'root.ts',startLine:1,endLine:1,originalLines:['function Root() {}']}]}}});
+    const session = await changes.get(changeSessionId);
+    expect(session.changes).toMatchObject([{type:1,nodeId:'grid:overview'}]);
+    await agent.call('update_diagram_change_session',{changeSessionId,requestId:'ready',expectedVersion:session.version,status:'ready',changes:session.changes});
+    const reopened = await new ChangeSessionService(new DiagramChangeSessionStore(root),store,bridge).get(changeSessionId);
+    expect(reopened.status).toBe('ready');
+    expect(reopened.documents[0].proposed.document.scene.contents.overview.sourceContext.mappings).toHaveLength(1);
+    expect(reopened.documents[0].baseline!.document.scene).toEqual(scene);
+    expect(await catalog.loadRepresentationCatalog('project')).toEqual(saved.catalog);
+  } finally { await rm(root,{recursive:true,force:true}); }
+});

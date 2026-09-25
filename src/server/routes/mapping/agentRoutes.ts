@@ -35,6 +35,6 @@ export async function handleAgentRoutes(request: Connect.IncomingMessage, respon
     return sendJson(response, 404, { error: 'Unknown agent endpoint' });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    return sendJson(response, message.includes('VERSION_CONFLICT') || message.includes('REQUEST_ID_CONFLICT') ? 409 : message.includes('UNAVAILABLE') ? 503 : 400, { error: message });
+    return sendJson(response, message.includes('VERSION_CONFLICT') || message.includes('REQUEST_ID_CONFLICT') || message.includes('CONTENT_HASH_CONFLICT') ? 409 : message.includes('UNAVAILABLE') ? 503 : 400, { error: message });
   }
 }

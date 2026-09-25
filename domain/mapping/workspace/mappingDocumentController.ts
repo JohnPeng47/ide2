@@ -20,6 +20,7 @@ import { diagramConnectionSchema, reconcileConnections, validateConnectionAnchor
 
 export interface ControllerSnapshot { contextId: string; canvasRevisionId: string; endpointBounds?: EndpointBounds; document: MappingGridDocument; canvas: MappingCanvasState; version: number; canUndo: boolean; canRedo: boolean; cell?: { width: number; height: number } }
 export type DiagramOperation =
+  | { method: 'setSourceMappings'; nodeId: string; expectedContentHash: string; mappings: DiagramElementMapping[]; evidence: Record<string, ProjectRepresentationEvidenceRecord>; source?: DiagramSourceBinding }
   | { method: 'patchDiagram'; nodeId: string; start: number; end: number; patch: string; mappings?: DiagramElementMapping[] }
   | { method: 'setJumps'; nodeId: string; jumps: DiagramJump[] }
   | { method: 'edge-create'; edge: DiagramConnection }
@@ -163,11 +164,12 @@ export class MappingDocumentController {
         });
         document = { ...document, edges, sections: { ...document.sections, [before.id]: sections },
           scene: layoutScene({ ...document.scene, contents: { ...document.scene.contents, [before.id]: diagram } }, box.id) };
-      } else if (op.method === 'setJumps') {
+      } else if (op.method === 'setJumps' || op.method === 'setSourceMappings') {
         const box = findBox(document.scene.root, this.gridId(op.nodeId));
         if (box?.kind !== 'diagram') throw new Error('Expected diagram GridBox');
         const diagram = document.scene.contents[box.contentId];
-        const prepared = this.prepareDiagramEdit(document, diagram.id, { kind: 'jumps', jumps: op.jumps });
+        const prepared = this.prepareDiagramEdit(document, diagram.id, op.method === 'setJumps' ? { kind: 'jumps', jumps: op.jumps }
+          : { kind: 'source-mappings', expectedContentHash: op.expectedContentHash, mappings: op.mappings, evidence: op.evidence, source: op.source });
         this.trackNodes(prepared.nodeIds);
         document = { ...document, scene: { ...document.scene, contents: { ...document.scene.contents, [box.contentId]: prepared.diagram } } };
       } else if (op.method === 'edge-create' || op.method === 'edge-update') {

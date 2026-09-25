@@ -36,6 +36,12 @@ Top-level MCP tools:
 
 Methods inside `exec.code`:
 
+- `nodes.setSourceMappings({nodeId, expectedContentHash, mappings, evidence, source?})`:
+  replace a diagram's complete mappings and captured evidence without changing its
+  ASCII or anchors. Read `expectedContentHash` from `content.asciiSha256`. Omitted
+  `source` preserves the binding. Also available as top-level MCP tool
+  `set_diagram_source_mappings` with `sessionId`, `expectedVersion`, `requestId`,
+  and `changeSessionId` for proposals. Empty mappings/evidence clears mappings.
 - `nodes.list()` / `nodes.get({nodeId})`: read diagrams, raw `content.ascii`, and
   `contentNodes` for edge anchors.
 - `nodes.patchDiagram({nodeId, start, end, patch})`: modify existing ASCII lines.

@@ -28,6 +28,7 @@ export interface PreparedDiagramEdit {
   lineAfter?: (line: number) => number | undefined;
 }
 export type DiagramEdit =
+  | { kind: 'source-mappings'; expectedContentHash: string; mappings: NonNullable<DiagramInput['mappings']>; evidence: NonNullable<DiagramInput['evidence']>; source?: DiagramInput['source'] }
   | { kind: 'patch'; start: number; end: number; patch: string; mappings?: DiagramInput['mappings'] }
   | { kind: 'replace'; input: Omit<DiagramInput, 'id' | 'revision'> }
   | { kind: 'jumps'; jumps: DiagramJump[] };
@@ -66,6 +67,14 @@ export class DiagramRevisionEditor implements DiagramRevisionOperations {
   }
   prepareEdit(contextId: ContextId, diagramId: string, edit: DiagramEdit): PreparedDiagramEdit {
     const before = this.revision(contextId, diagramId).diagram;
+    if (edit.kind === 'source-mappings') {
+      if (edit.expectedContentHash !== before.content.asciiSha256) throw new Error('CONTENT_HASH_CONFLICT: read the diagram again');
+      const diagram = structuredClone(before);
+      diagram.sourceContext = { ...diagram.sourceContext, mappings: structuredClone(edit.mappings), evidence: structuredClone(edit.evidence),
+        ...(edit.source ? { binding: structuredClone(edit.source) } : {}) };
+      validateDiagram(diagram);
+      return { diagram, nodeIds: correspondingNodes(before, diagram) };
+    }
     if (edit.kind === 'patch') {
       const prepared = patchDiagram(before, edit.start, edit.end, edit.patch);
       if (edit.mappings) {
