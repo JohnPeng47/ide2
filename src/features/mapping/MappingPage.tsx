@@ -145,6 +145,8 @@ function MappingWorkspacePage() {
     const controller = await waitController(id);
     const draft = draftRef.current[id];
     if (!draft) throw new Error('DOCUMENT_UNAVAILABLE');
+    // Acceptance only compares the current state; exporting all history can make replies enormous.
+    if (command.method === 'document-state') return { document: controller.getSnapshot().document, name: draft.name };
     if (command.method === 'snapshot') return { ...structuredClone(controller.getSnapshot()), history: controller.exportHistory(), name: draft.name,
       representationId: draft.representationId ?? (id.startsWith('draft-') ? undefined : id), revisionId: draft.revisionId || undefined };
     if (command.method === 'apply') {

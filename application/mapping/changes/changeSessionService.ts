@@ -4,7 +4,7 @@ import { diagramContentNodes } from '../../../domain/core/diagrams/diagramConten
 import { createHash, randomUUID } from 'node:crypto';
 import type { DiagramRepository } from '../../core/ports/diagramRepository';
 import type { CanvasSessionPort } from '../agent/ports';
-import type { LiveDocumentSnapshot } from '../../../domain/mapping/agent/contracts';
+import type { LiveDocumentSnapshot, LiveDocumentState } from '../../../domain/mapping/agent/contracts';
 import type { DiagramChangeSessionRepository } from './ports';
 import { summarizeChangeSession, type ChangeDocumentState, type ChangeSessionDocument, type DiagramChangeSession, type DiagramChange } from '../../../domain/mapping/changes/diagramChangeSession';
 import { MappingDocumentController, type DiagramOperation } from '../../../domain/mapping/workspace/mappingDocumentController';
@@ -63,7 +63,7 @@ export class ChangeSessionService {
       for (const canvas of this.bridge.list().filter(c => c.projectId === session.projectId)) for (const live of canvas.documents) {
         const doc = affected.find(d => d.id === live.documentId || !!d.representationId && d.representationId === live.representationId);
         if (!doc?.baseline) continue;
-        const current = await this.bridge.dispatch(canvas.canvasId, { method: 'snapshot', documentId: live.documentId }) as LiveDocumentSnapshot;
+        const current = await this.bridge.dispatch(canvas.canvasId, { method: 'document-state', documentId: live.documentId }) as LiveDocumentState;
         if (stateKey(current.document) !== stateKey(doc.baseline.document) || current.name !== doc.name)
           throw new Error('VERSION_CONFLICT: live canvas changed since capture; create a new proposal');
       }

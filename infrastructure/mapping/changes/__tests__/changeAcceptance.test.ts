@@ -128,9 +128,21 @@ it('requires readiness and the reviewed version', () => fixture(async f => {
 it('detects newer unsaved live edits before publication', () => fixture(async f => {
   const id = await f.create(), input = await f.ready(id);
   f.bridge.list = () => [{ canvasId: 'live', projectId: 'project', documents: [{ documentId: f.saved.representation.id, name: 'Original' }] }];
-  f.bridge.dispatch = async () => ({ name: 'Original', document: { scene: singleDiagramScene('Unsaved concurrent edit'), edges: [], sections: {} } });
+  f.bridge.dispatch = vi.fn(async () => ({ name: 'Original', document: { scene: singleDiagramScene('Unsaved concurrent edit'), edges: [], sections: {} } }));
+  await expect(f.changes.accept(input)).rejects.toThrow('live canvas changed');
+  expect(f.bridge.dispatch).toHaveBeenCalledWith('live', { method: 'document-state', documentId: f.saved.representation.id });
+  expect(await f.catalog.loadRepresentationCatalog('project')).toEqual(f.saved.catalog);
+}));
+
+it('accepts unchanged live state without history but still rejects an unsaved rename', () => fixture(async f => {
+  const id = await f.create(), input = await f.ready(id);
+  const document = (await f.changes.get(id)).documents[0].baseline!.document;
+  f.bridge.list = () => [{ canvasId: 'live', projectId: 'project', documents: [{ documentId: f.saved.representation.id, name: 'Original' }] }];
+  f.bridge.dispatch = async () => ({ name: 'Renamed', document });
   await expect(f.changes.accept(input)).rejects.toThrow('live canvas changed');
   expect(await f.catalog.loadRepresentationCatalog('project')).toEqual(f.saved.catalog);
+  f.bridge.dispatch = async () => ({ name: 'Original', document });
+  expect((await f.changes.accept(input)).status).toBe('accepted');
 }));
 
 it('serializes two competing acceptances so only one advances the original', () => fixture(async f => {

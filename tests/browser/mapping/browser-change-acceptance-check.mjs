@@ -33,6 +33,12 @@ try {
     arguments: ['--disable-gpu', ...(process.platform === 'linux' ? ['--no-sandbox'] : [])] }, async ({ cdp }) => {
     const errors = [];
     await cdp.send('Runtime.enable'); cdp.on('Runtime.exceptionThrown', event => errors.push(event.exceptionDetails.text));
+    const canvasReplies = [];
+    await cdp.send('Network.enable');
+    cdp.on('Network.requestWillBeSent', ({ request }) => {
+      if (request.url.includes('/canvases/') && request.url.endsWith('/reply') && request.postData)
+        canvasReplies.push(JSON.parse(request.postData));
+    });
     const click = async (selector, text) => {
       let point;
       await waitFor(async () => {
@@ -48,8 +54,13 @@ try {
     await click('nav[aria-label="Diagram changes"] summary', 'Acceptance browser fixture');
     await click('nav[aria-label="Diagram changes"] button', 'Current LLM prompt stack');
     await waitForSelector(cdp, '[data-diff-status="modified"]');
+    canvasReplies.length = 0;
     await click('.change-session-actions button', 'Accept all changes');
     await waitFor(async () => (await visibleCanvasText()).includes('After acceptance'));
+    const stateReplies = canvasReplies.filter(reply => reply.value?.document);
+    assert.ok(stateReplies.length > 0, 'acceptance checked the live browser state');
+    for (const reply of stateReplies)
+      assert.deepEqual(Object.keys(reply.value).sort(), ['document', 'name'], 'acceptance does not transfer history or rendering metadata');
     assert.equal(await evaluate(cdp, '!!document.querySelector("[data-change-session]")'), false);
     assert.equal(await evaluate(cdp, '!!document.querySelector("[data-diff-status]")'), false);
     const accepted = await changes.get(changeSessionId);
