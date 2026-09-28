@@ -1,3 +1,4 @@
+import { WorkspaceStorage } from '../features/mapping/workspace/workspaceStorage';
 import { RevisionedDiagramService } from '../../domain/core/diagrams/diagramService';
 import type { CodeRepoService } from '../../domain/core/source/codeRepoService';
 import type { MappingServices } from '../features/mapping/services/MappingServices';
@@ -10,5 +11,5 @@ export const unconnectedCodeRepoService: CodeRepoService = {
   git: { resolveCommit: unavailable, listCommits: unavailable, changedFiles: unavailable, diff: unavailable, readFileAt: unavailable }
 };
 export function createMappingServices(): MappingServices {
-  return { diagrams: new RevisionedDiagramService(), codeRepo: unconnectedCodeRepoService };
+  return { diagrams: new RevisionedDiagramService(), workspaceStorage: new WorkspaceStorage(), codeRepo: unconnectedCodeRepoService };
 }

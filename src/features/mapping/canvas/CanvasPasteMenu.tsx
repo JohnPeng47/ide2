@@ -11,6 +11,9 @@ export function CanvasPasteMenu(props: {
   busy: boolean;
   toGrid: (x: number, y: number) => GridPoint | null;
   onPaste: (point: GridPoint, text: string) => void;
+  selectionCount?: number;
+  onTransfer?: (mode: 'copy' | 'move') => void;
+  onCancelSelection?: () => void;
 }) {
   const [menu, setMenu] = useState<Menu | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -42,7 +45,7 @@ export function CanvasPasteMenu(props: {
     const outside = (event: PointerEvent) => { if (!menuRef.current?.contains(event.target as Node)) dismiss(); };
     const wheel = (event: WheelEvent) => { if (!menuRef.current?.contains(event.target as Node)) dismiss(); };
     const key = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); dismiss(); }
+      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); dismiss(); current.current.onCancelSelection?.(); }
     };
     window.addEventListener('pointerdown', outside, true);
     window.addEventListener('keydown', key, true);
@@ -81,11 +84,15 @@ export function CanvasPasteMenu(props: {
   return createPortal(
     <div ref={menuRef} className="canvas-paste-menu" role={menu.manual ? 'dialog' : 'menu'} aria-label="Canvas actions"
       data-diagram-canvas-static-ui data-mapping-static-ui
-      style={{ left: Math.max(8, Math.min(menu.x, window.innerWidth - 328)), top: Math.max(8, Math.min(menu.y, window.innerHeight - (menu.manual ? 310 : 60))) }}
+      style={{ left: Math.max(8, Math.min(menu.x, window.innerWidth - 328)), top: Math.max(8, Math.min(menu.y, window.innerHeight - (menu.manual ? 310 : props.selectionCount ? 135 : 60))) }}
       onContextMenu={event => {
         if (!(event.target as Element).closest('input, textarea, [contenteditable="true"]')) event.preventDefault();
       }}>
-      {menu.manual ? <form onSubmit={event => { event.preventDefault(); void paste(true); }}>
+      {props.selectionCount && props.onTransfer ? <>
+        <span>{props.selectionCount} diagrams selected</span>
+        <button role="menuitem" onClick={() => { dismiss(); props.onTransfer?.('copy'); }}>Copy to canvas…</button>
+        <button role="menuitem" onClick={() => { dismiss(); props.onTransfer?.('move'); }}>Move to canvas…</button>
+      </> : menu.manual ? <form onSubmit={event => { event.preventDefault(); void paste(true); }}>
         <label>Paste ASCII diagram<textarea aria-label="ASCII diagram" rows={6} value={menu.text}
           onChange={event => setMenu(value => value && { ...value, text: event.target.value })} /></label>
         <button type="submit" disabled={menu.pending || !menu.text.trim()}>Paste sub-diagram here</button>

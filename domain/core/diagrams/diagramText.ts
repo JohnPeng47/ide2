@@ -17,6 +17,7 @@ export interface DiagramTextRange {
   mapping?: DiagramElementMapping; jump?: DiagramJump;
 }
 export interface DiagramTextRun {
+  jumps?: readonly DiagramJump[];
   start: number; end: number; text: string; owner?: DiagramTextOwner;
   mappings: readonly DiagramElementMapping[]; jump?: DiagramJump;
 }
@@ -36,7 +37,7 @@ export function textRow(text: string, ranges: readonly DiagramTextRange[], sourc
     const jumps = covering.flatMap(range => range.jump ? [range.jump] : []);
     runs.push({ start, end, text: text.slice(start, end), owner,
       mappings: covering.flatMap(range => range.mapping ? [range.mapping] : []),
-      ...(jumps.length === 1 ? { jump: jumps[0] } : {}) });
+      ...(jumps.length ? { jump: jumps[0], jumps } : {}) });
   }
   return { text, sourceLine, runs };
 }

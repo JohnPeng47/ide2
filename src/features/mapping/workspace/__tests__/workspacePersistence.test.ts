@@ -1,0 +1,83 @@
+import { afterEach, expect, it, vi } from 'vitest';
+import { RecordStorage } from '../recordStorage';
+import { WorkspacePersistence } from '../workspacePersistence';
+import { CanvasWorkspace } from '../canvasWorkspace';
+import { SourcePaneViewState } from '../../source-pane/sourcePaneViewState';
+import { initialCanvasState } from '../../../../../domain/mapping/workspace/mappingWorkspace';
+import { singleDiagramScene } from '../../../../../domain/core/diagrams/projectDiagramCanvas';
+import { documentPrefix, recordsWorkspace, validateRecordUpdate } from '../../../../../domain/mapping/workspace/workspaceRecords';
+import type { WorkspaceBatch } from '../../../../../domain/mapping/workspace/workspaceRecords';
+afterEach(() => vi.useRealTimers());
+it('submits cheaply, coalesces keys, and keeps edits arriving during a write pending', async () => {
+  vi.useFakeTimers(); let finish!: (value: { revision: number }) => void;
+  const write = vi.fn().mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })).mockResolvedValue({ revision: 2 });
+  const storage = new RecordStorage({ revision: 0, records: {} }, { write });
+  storage.store('a', 1); storage.store('a', 2); storage.store('b', 3);
+  expect(write).not.toHaveBeenCalled();
+  await vi.advanceTimersByTimeAsync(150);
+  expect(write.mock.calls[0][0].changes).toEqual([{ key: 'a', value: 2 }, { key: 'b', value: 3 }]);
+  storage.store('a', 4); const flushed = storage.flush();
+  finish({ revision: 1 }); await flushed;
+  expect(write.mock.calls[1][0]).toMatchObject({ expectedRevision: 1, changes: [{ key: 'a', value: 4 }] });
+  expect(storage.status.pending).toBe(false); storage.dispose();
+});
+it('retries an ambiguous failure with identical request ID and content before newer changes', async () => {
+  vi.useFakeTimers(); const write = vi.fn().mockRejectedValueOnce(Error('connection lost')).mockResolvedValueOnce({ revision: 1 }).mockResolvedValue({ revision: 2 });
+  const storage = new RecordStorage({ revision: 0, records: {} }, { write });
+  storage.store('a', 1); await expect(storage.flush()).rejects.toThrow('connection lost');
+  storage.store('a', 2); await storage.flush();
+  expect(write.mock.calls[1][0]).toEqual(write.mock.calls[0][0]);
+  expect(write.mock.calls[2][0]).toMatchObject({ expectedRevision: 1, changes: [{ key: 'a', value: 2 }] }); storage.dispose();
+});
+it('a definitive rejection cannot later publish an abandoned explicit transaction', async () => {
+  vi.useFakeTimers(); const write = vi.fn().mockRejectedValue(Error('REJECTED: disk full'));
+  const storage = new RecordStorage({ revision: 0, records: { a: 1 } }, { write });
+  await expect(storage.commit([{ key: 'a', value: 2 }])).rejects.toThrow('disk full');
+  await vi.advanceTimersByTimeAsync(10000);
+  expect([storage.get('a'), write.mock.calls.length, storage.status.pending]).toEqual([1, 1, false]); storage.dispose();
+});
+it('bounds postponement during continuous edits and stops retrying rejected writes', async () => {
+  vi.useFakeTimers(); const write = vi.fn().mockRejectedValue(Error('REJECTED: VERSION_CONFLICT'));
+  const storage = new RecordStorage({ revision: 0, records: {} }, { write });
+  for (let i = 0; i < 10; i++) { storage.store('a', i); await vi.advanceTimersByTimeAsync(100); }
+  expect(write).toHaveBeenCalledTimes(1);
+  await vi.advanceTimersByTimeAsync(10000);
+  expect(write).toHaveBeenCalledTimes(1);
+  expect(storage.status).toMatchObject({ pending: true, error: 'REJECTED: VERSION_CONFLICT' }); storage.dispose();
+});
+it('replaces an imported history graph without retaining the previous graph', async () => {
+  vi.useFakeTimers(); let revision = 0;
+  const storage = new RecordStorage({ revision: 0, records: {} }, { write: async () => ({ revision: ++revision }) });
+  const workspace = new CanvasWorkspace();
+  const seed = (name: string) => { const document = { scene: singleDiagramScene(name), edges: [], sections: {} }; return { name, savedName: name, savedScene: JSON.stringify(document.scene), revisionId: '', busy: false, document, canvas: initialCanvasState() }; };
+  workspace.setDrafts({ 'draft-a': seed('Alpha') });
+  const persistence = new WorkspacePersistence(workspace, storage, 'project', new SourcePaneViewState()); await storage.flush();
+  const oldGraph = storage.keys().filter(key => key.includes('/checkpoint/') || key.includes('/revision/'));
+  workspace.setDrafts({ 'draft-a': seed('Replacement') }); await storage.flush();
+  expect(oldGraph.some(key => storage.get(key))).toBe(false);
+  const records = Object.fromEntries(storage.keys().map(key => [key, storage.get(key)]));
+  validateRecordUpdate(records, storage.keys(), 'project');
+  expect(recordsWorkspace(records)?.documents[0].document.scene.contents.overview.content.ascii).toBe('Replacement');
+  persistence.dispose(); workspace.dispose(); storage.dispose();
+});
+it('persists only the edited canvas and new history records, with no history export', async () => {
+  vi.useFakeTimers(); const batches: WorkspaceBatch[] = [];
+  const storage = new RecordStorage({ revision: 0, records: {} }, { write: async batch => { batches.push(batch); return { revision: batches.length }; } });
+  const workspace = new CanvasWorkspace();
+  const seed = (name: string) => { const document = { scene: singleDiagramScene(name), edges: [], sections: {} }; return { name, savedName: name, savedScene: JSON.stringify(document.scene), revisionId: '', busy: false, document, canvas: initialCanvasState() }; };
+  workspace.setDrafts({ 'draft-a': seed('Alpha'), 'draft-b': seed('Beta') });
+  const persistence = new WorkspacePersistence(workspace, storage, 'project', new SourcePaneViewState()); await storage.flush(); batches.length = 0;
+  for (const controller of workspace.controllers.values()) vi.spyOn(controller, 'exportHistory').mockImplementation(() => { throw Error('Full export must not run'); });
+  const controller = workspace.controllers.get('draft-a')!;
+  controller.applyUpdate(0, [{ method: 'patchDiagram', nodeId: 'grid:overview', start: 1, end: 1, patch: 'Changed Alpha' }]);
+  await storage.flush();
+  const keys = batches.flatMap(b => b.changes.map(c => c.key));
+  expect(keys.some(k => k.startsWith(documentPrefix('draft-b')))).toBe(false);
+  expect(keys.filter(k => k.includes('/revision/'))).toHaveLength(1);
+  expect(keys.filter(k => k.includes('/checkpoint/'))).toHaveLength(1);
+  const records = Object.fromEntries(storage.keys().map(key => [key, storage.get(key)]));
+  expect(recordsWorkspace(records)?.documents[0].document.scene.contents.overview.content.ascii).toBe('Changed Alpha');
+  controller.undo(); await storage.flush();
+  expect(batches.at(-1)!.changes.some(c => c.key.includes('/revision/'))).toBe(false);
+  persistence.dispose(); workspace.dispose(); storage.dispose();
+});

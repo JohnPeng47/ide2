@@ -1,3 +1,4 @@
+import type { CanvasJump } from '../../../../domain/core/diagrams/canvasJump';
 import { composeScene, flattenGrid, layoutScene, measureContent, resolveScene, type GridBox, type LineGridScene } from '../../../../domain/core/diagrams/lineGrid';
 import { diagramTextRanges, textRow, type DiagramTextRow, type DiagramTextRun } from '../../../../domain/core/diagrams/diagramText';
 import { projectDiagramContent, type DiagramViews } from '../../../../domain/mapping/workspace/diagramViewState';
@@ -9,7 +10,7 @@ type Edit = { start: number; end: number; previous: string; current: string; con
 
 /** Display-only rows. Source content, IDs, jumps, mappings and provenance stay intact. */
 export function changePreviewText(scene: LineGridScene, views: DiagramViews | undefined,
-  diffs: ReadonlyMap<string, DiagramContentDiff>, modifiedDiagramIds: ReadonlySet<string>) {
+  diffs: ReadonlyMap<string, DiagramContentDiff>, modifiedDiagramIds: ReadonlySet<string>, jumps: readonly CanvasJump[] = []) {
   const projections = new Map<string, {
     rows: PreviewTextRow[]; ascii: string; rowForLine: Map<number, number>; prefixRowForNode: Map<string, number>;
     columnForLine: (line: number, column: number) => number;
@@ -18,7 +19,7 @@ export function changePreviewText(scene: LineGridScene, views: DiagramViews | un
     if (box.kind !== 'diagram') continue;
     const displayNodeId = `grid:${box.id}`, diagram = scene.contents[box.contentId], content = diagram.content;
     const visible = projectDiagramContent(content, views?.[displayNodeId]);
-    const ranges = diagramTextRanges({ ascii: content.ascii, content, displayNodeId, mappings: diagram.sourceContext.mappings, jumps: diagram.jumps });
+    const ranges = diagramTextRanges({ ascii: content.ascii, content, displayNodeId, mappings: diagram.sourceContext.mappings, jumps: [...(diagram.jumps ?? []), ...jumps.filter(jump => jump.sourceDisplayNodeId === displayNodeId)] });
     const source = content.ascii.split('\n'), edits = new Map<number, Edit[]>();
     if (modifiedDiagramIds.has(displayNodeId)) for (const modification of diffs.get(displayNodeId)?.modifications ?? []) {
       const selected = modification.proposed;

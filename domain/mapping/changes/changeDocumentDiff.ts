@@ -1,9 +1,9 @@
 import type { DiagramContent } from '../../core/diagrams/diagramContent';
-import type { ChangeDocumentState, ChangeSessionDocument } from './diagramChangeSession';
+import type { ChangeDocumentState, ChangePreviewDocument, ChangeSessionDocument } from './diagramChangeSession';
 import { diffDiagramContent } from './diagramContentDiff';
 
 /** All displayed diagrams, including those currently hidden by group folds. */
-export function diffChangeDocument(doc: ChangeSessionDocument) {
+export function diffChangeDocument(doc: ChangePreviewDocument | ChangeSessionDocument) {
   const contents = (state: ChangeDocumentState | null) => {
     const result = new Map<string, DiagramContent>();
     const visit = (box: NonNullable<typeof state>['document']['scene']['root']) => {

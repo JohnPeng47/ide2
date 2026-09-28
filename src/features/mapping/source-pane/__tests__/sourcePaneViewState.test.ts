@@ -16,6 +16,9 @@ describe('source viewport snapshots', () => {
     expect(captured.nodes['source-1']).toMatchObject({ content: { scroll: position } });
     expect(original.nodes['source-1']).toMatchObject({ content: { scroll: { top: 0, left: 0 } } });
     expect(captured.nodes['source-2']).toBe(original.nodes['source-2']);
+    expect(state.captureDisplay('source', original)).toBe(captured);
+    state.setCamera('source', { offset: { x: 80, y: 90 }, scale: .8 });
+    expect(state.captureDisplay('source', original)).toBe(captured); // Panning must not resubmit source contents.
     disconnect();
     position = { top: 0, left: 0 };
     expect(state.bind('source', 'source-1', 'src/large.ts').read()).toEqual({ top: 400, left: 70 });

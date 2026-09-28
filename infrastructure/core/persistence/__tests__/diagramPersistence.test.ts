@@ -88,9 +88,11 @@ it('externalizes workspace and change-session diagrams while keeping their publi
     status: 'draft', version: 0, createdAt: time, updatedAt: time, changes: [], receipts: {}, documents: [{ id: 'doc', name: 'Canvas',
       history, baseline: { document, canvas }, proposed: { document, canvas }, version: 0, past: [], future: [] }] };
   await new DiagramChangeSessionStore(root, service).write(session);
-  const sessionDisk = JSON.parse(await readFile(path.join(root, 'mapping-change-sessions/project/change-test.json'), 'utf8'));
-  expect(sessionDisk.documents[0].history.diagramRevisions).toBeUndefined();
-  expect(sessionDisk.documents[0].proposed.document.scene.contents.overview.$diagramRecord).toBe('diagram');
+  const sessionDisk = JSON.parse(await readFile(path.join(root, 'mapping-change-sessions/project/change-test.manifest.json'), 'utf8'));
+  const blob = async (id: string) => JSON.parse(await readFile(path.join(root, 'change-session-records', `${id}.json`), 'utf8'));
+  const storedDoc = await blob(sessionDisk.documents.doc);
+  expect((await blob(storedDoc.history.header)).diagramRevisions).toBeUndefined();
+  expect((await blob(storedDoc.proposed)).document.scene.contents.overview.$diagramRecord).toBe('diagram');
   expect(await new DiagramChangeSessionStore(root).read('project', 'change-test')).toEqual(JSON.parse(JSON.stringify(session)));
   // Missing dependencies must be reported, not interpreted as an absent workspace.
   await rm(path.join(root, 'diagrams'), { recursive: true });

@@ -1,0 +1,46 @@
+{
+  "createdAt": "2026-09-28T18:35:58.282Z",
+  "sessionId": "change-0bc0efbe28a58d2f425f19a1efea9ce9",
+  "measurements": [
+    {
+      "name": "legacy full preview",
+      "ms": 10545.921046000001,
+      "bytes": 9099616
+    },
+    {
+      "name": "legacy cold summary index",
+      "ms": 1937.831419,
+      "bytes": 47184
+    },
+    {
+      "name": "cached summary index",
+      "ms": 24.938998999999967,
+      "bytes": 47184
+    },
+    {
+      "name": "scoped preview including migration",
+      "ms": 684.9812419999998,
+      "bytes": 320367
+    },
+    {
+      "name": "scoped preview cached",
+      "ms": 6.319940000001225,
+      "bytes": 320367
+    },
+    {
+      "name": "version metadata",
+      "ms": 1.363601999999446,
+      "bytes": 2304
+    },
+    {
+      "name": "scoped preview new reader",
+      "ms": 69.2266010000003,
+      "bytes": 320367
+    },
+    {
+      "name": "summary index during full history hydration",
+      "ms": 40.24134699999922,
+      "bytes": 47184
+    }
+  ]
+}

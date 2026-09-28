@@ -1,0 +1,61 @@
+{
+  "date": "2026-09-28T17:01:38.666Z",
+  "fixtureBytes": 4793695,
+  "measurements": [
+    {
+      "kind": "create",
+      "inputMs": 9.974999000000025,
+      "uiMs": 64.40768800000023,
+      "persistedMs": 289.9996579999997,
+      "mainThreadMs": 32.37099999999998,
+      "longTasks": [],
+      "worstFrameMs": 16.800000000000182
+    },
+    {
+      "kind": "delete",
+      "inputMs": 20.202037999999447,
+      "uiMs": 77.72597899999982,
+      "persistedMs": 116.4104699999998,
+      "mainThreadMs": 38.52100000000003,
+      "longTasks": [],
+      "worstFrameMs": 16.700000000000273
+    },
+    {
+      "kind": "create",
+      "inputMs": 8.714409999999589,
+      "uiMs": 61.500144999999975,
+      "persistedMs": 538.2146560000001,
+      "mainThreadMs": 37.31299999999999,
+      "longTasks": [],
+      "worstFrameMs": 16.800000000000182
+    },
+    {
+      "kind": "delete",
+      "inputMs": 13.318443000000116,
+      "uiMs": 67.65646199999992,
+      "persistedMs": 108.7746189999998,
+      "mainThreadMs": 29.85799999999994,
+      "longTasks": [],
+      "worstFrameMs": 16.700000000000273
+    },
+    {
+      "kind": "create",
+      "inputMs": 9.67478200000005,
+      "uiMs": 62.946907000000465,
+      "persistedMs": 484.4544249999999,
+      "mainThreadMs": 31.768999999999934,
+      "longTasks": [],
+      "worstFrameMs": 16.800000000000182
+    },
+    {
+      "kind": "delete",
+      "inputMs": 14.555631999999605,
+      "uiMs": 70.40280499999972,
+      "persistedMs": 107.39064899999994,
+      "mainThreadMs": 35.40100000000002,
+      "longTasks": [],
+      "worstFrameMs": 16.700000000000273
+    }
+  ],
+  "exceptions": []
+}

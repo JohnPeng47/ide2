@@ -3,22 +3,25 @@ import { diagramContentNodes } from './diagramContentNodes';
 import { correspondingNodes, DiagramRevisionEditor, type DiagramRevision } from './diagramRevisionEditor';
 import type { LineGridScene } from './lineGrid';
 import type { DiagramConnection, DiagramAnchor, ContentNodeAnchor } from './diagramConnection';
-export interface ResolvedCanvasDocument { scene: LineGridScene; edges: DiagramConnection[]; sections: Readonly<Record<string, readonly {id: string; label: string; startLine: number; endLine: number; anchorToken: string}[]>> }
+export interface ResolvedCanvasDocument { scene: LineGridScene; edges: DiagramConnection[]; jumps?: CanvasJump[]; sections: Readonly<Record<string, readonly {id: string; label: string; startLine: number; endLine: number; anchorToken: string}[]>> }
 import { projectCanvasSnapshot } from './projectDiagramCanvas';
 import { validateConnections } from './diagramConnection';
+import { validateCanvasJumps, type CanvasJump } from './canvasJump';
 
 export type CanvasNodeAnchor = Omit<ContentNodeAnchor, 'revisionId'>;
 export type CanvasConnection = Omit<DiagramConnection, 'source' | 'target'> & {
   source: CanvasNodeAnchor;
   target: CanvasNodeAnchor | Extract<DiagramAnchor, {kind: 'box'}>;
 };
-/** Canonical canvas state has no embedded DiagramContent or revision-bearing anchors. */
+/** Canonical canvas state separates diagram bindings from composition. Jump spans retain their source revision for stale-link detection. */
 export interface CanvasDocument {
+  jumps?: CanvasJump[];
   scene: Pick<ResolvedCanvasDocument['scene'], 'root'>;
   edges: CanvasConnection[];
   sections: ResolvedCanvasDocument['sections'];
 }
 export interface StoredCanvasSnapshot {
+  transactionId?: string;
   id: string;
   parentId?: string;
   document: CanvasDocument;
@@ -28,6 +31,12 @@ export interface StoredCanvasSnapshot {
   nodeOrigins: Record<string, string>;
   /** Legacy adapter only: preserve already-stale endpoints without guessing. */
   unresolvedAnchors?: Record<string, ContentNodeAnchor>;
+}
+export interface HistoryChanges {
+  sequence: number;
+  header: Omit<CanvasHistoryRecord, "snapshots" | "diagramRevisions">;
+  snapshots: CanvasHistoryRecord["snapshots"];
+  diagramRevisions: CanvasHistoryRecord["diagramRevisions"];
 }
 export interface CanvasHistoryRecord {
   schemaVersion: 1;
@@ -49,6 +58,7 @@ const equal = (a: unknown, b: unknown) => stateKey(a) === stateKey(b);
 /** Shared by live controllers, MCP staging and persisted change-session copies. */
 export class CanvasHistory {
   private record: CanvasHistoryRecord;
+  private changes: { snapshots: CanvasHistoryRecord["snapshots"]; diagramRevisions: CanvasHistoryRecord["diagramRevisions"] }[] = [];
   readonly diagrams: DiagramRevisionEditor;
   constructor(document: ResolvedCanvasDocument, view: unknown, record?: CanvasHistoryRecord) {
     if (record) {
@@ -66,10 +76,19 @@ export class CanvasHistory {
       return this.head.diagramBindings;
     });
   }
+  get headId() { return this.record.headId; }
   get contextId() { return this.record.contextId; }
   get head(): StoredCanvasSnapshot { return structuredClone(this.record.snapshots[this.record.headId]); }
   get canUndo() { return !!this.record.past.length; }
   get canRedo() { return !!this.record.future.length; }
+  /** Trusted persistence adapter: records are immutable; only tables/navigation are copied. */
+  persistenceChanges(since?: number): HistoryChanges {
+    const { snapshots, diagramRevisions, ...header } = this.record;
+    const updates = since === undefined ? { snapshots: { ...snapshots }, diagramRevisions: { ...diagramRevisions } }
+      : this.changes.slice(since).reduce((out, change) => ({ snapshots: Object.assign(out.snapshots, change.snapshots),
+        diagramRevisions: Object.assign(out.diagramRevisions, change.diagramRevisions) }), { snapshots: {}, diagramRevisions: {} });
+    return { sequence: this.changes.length, header: { ...header, past: [...header.past], future: [...header.future] }, ...updates };
+  }
   export(): CanvasHistoryRecord { return structuredClone(this.record); }
   fork(view: unknown = this.head.view): CanvasHistoryRecord {
     const record = this.export(), head = this.head;
@@ -86,6 +105,7 @@ export class CanvasHistory {
   append(document: ResolvedCanvasDocument, view: unknown, correspondence: ReadonlyMap<string, string> = new Map()): StoredCanvasSnapshot {
     projectCanvasSnapshot(document.scene);
     validateConnections(document.scene, document.edges);
+    if (document.jumps) validateCanvasJumps(document.scene, document.jumps);
     const previous = this.record.snapshots[this.record.headId];
     const bindings: Record<string, string> = {}, additions: Record<string, DiagramRevision> = {}, origins: Record<string, string> = {};
     for (const [diagramId, diagram] of Object.entries(document.scene.contents)) {
@@ -109,15 +129,20 @@ export class CanvasHistory {
     const revisions = { ...this.record.diagramRevisions, ...additions };
     const edges = document.edges.map(edge => ({ ...edge, source: encodeAnchor(edge.source, edge.id + ':source', document.scene, bindings, revisions, unresolvedAnchors) as CanvasNodeAnchor, target: encodeAnchor(edge.target, edge.id + ':target', document.scene, bindings, revisions, unresolvedAnchors) }));
     const snapshot: StoredCanvasSnapshot = { id: id('canvas-revision'), parentId: previous?.id,
-      document: { scene: { root: structuredClone(document.scene.root) }, edges, sections: structuredClone(document.sections) },
+      document: { scene: { root: structuredClone(document.scene.root) }, edges, sections: structuredClone(document.sections), ...(document.jumps ? { jumps: structuredClone(document.jumps) } : {}) },
       diagramBindings: bindings, unresolvedAnchors, view: structuredClone(view), nodeOrigins: origins };
     // Validation above must complete before any canonical state changes.
     Object.assign(this.record.diagramRevisions, additions);
+    this.changes.push({ snapshots: {}, diagramRevisions: additions });
     this.record.snapshots[snapshot.id] = snapshot;
+    this.changes.push({ snapshots: { [snapshot.id]: snapshot }, diagramRevisions: {} });
     if (previous) this.record.past.push(previous.id);
     this.record.headId = snapshot.id;
     this.record.future = [];
     return this.head;
+  }
+  navigationTransactionId(redo = false) {
+    return this.record.snapshots[redo ? this.record.future.at(-1)! : this.record.headId]?.transactionId;
   }
   navigate(redo = false): StoredCanvasSnapshot | undefined {
     const target = redo ? this.record.future.pop() : this.record.past.pop();
@@ -126,9 +151,22 @@ export class CanvasHistory {
     this.record.headId = target;
     return this.head;
   }
+  linkTransaction(transactionId: string) {
+    const snapshot = { ...this.record.snapshots[this.record.headId], transactionId };
+    this.record.snapshots[snapshot.id] = snapshot;
+    this.changes.push({ snapshots: { [snapshot.id]: snapshot }, diagramRevisions: {} });
+  }
+  retireTransactions(ids: ReadonlySet<string>) {
+    for (const prior of Object.values(this.record.snapshots)) if (prior.transactionId && ids.has(prior.transactionId)) {
+      const { transactionId: _, ...snapshot } = prior;
+      this.record.snapshots[snapshot.id] = snapshot;
+      this.changes.push({ snapshots: { [snapshot.id]: snapshot }, diagramRevisions: {} });
+    }
+  }
   /** Publish a reviewed state as one checkpoint, retaining its exact diagram revision IDs. */
   adopt(proposed: CanvasHistoryRecord): void {
     validateCanvasHistory(proposed);
+    const added = Object.fromEntries(Object.entries(proposed.diagramRevisions).filter(([key]) => !this.record.diagramRevisions[key]));
     for (const [key, revision] of Object.entries(proposed.diagramRevisions)) {
       const existing = this.record.diagramRevisions[key];
       if (existing && !equal(existing, revision)) throw new Error('Diagram revision is immutable');
@@ -141,11 +179,13 @@ export class CanvasHistory {
     // Keep the revision table object used by the internal resolver alive.
     Object.assign(this.record.diagramRevisions, structuredClone(proposed.diagramRevisions));
     this.record = { ...next, diagramRevisions: this.record.diagramRevisions };
+    this.changes.push({ snapshots: { [snapshot.id]: snapshot }, diagramRevisions: Object.fromEntries(Object.keys(added).map(key => [key, this.record.diagramRevisions[key]])) });
   }
   reset(view?: unknown) {
     const baseline = this.record.snapshots[this.record.baselineId];
     const snapshot = structuredClone({ ...baseline, id: id('canvas-revision'), parentId: this.record.headId, view: view ?? baseline.view });
     this.record.snapshots[snapshot.id] = snapshot;
+    this.changes.push({ snapshots: { [snapshot.id]: snapshot }, diagramRevisions: {} });
     this.record.past.push(this.record.headId);
     this.record.headId = snapshot.id;
     this.record.future = [];
@@ -153,13 +193,13 @@ export class CanvasHistory {
   }
 }
 
-export function validateCanvasHistory(value: CanvasHistoryRecord): void {
+export function validateCanvasHistory(value: CanvasHistoryRecord, changed?: { revisions: string[]; snapshots: string[] }): void {
   if (!value || value.schemaVersion !== 1 || typeof value.contextId !== 'string' || !value.contextId
     || !value.snapshots || !value.diagramRevisions || !Array.isArray(value.past) || !Array.isArray(value.future)) throw new Error('Invalid canvas history');
   for (const key of [value.headId, value.baselineId, ...value.past, ...value.future]) {
     if (typeof key !== 'string' || !Object.hasOwn(value.snapshots, key)) throw new Error('Unknown canvas history reference');
   }
-  for (const [key, revision] of Object.entries(value.diagramRevisions)) {
+  for (const [key, revision] of (changed ? changed.revisions.map(key => [key, value.diagramRevisions[key]] as const) : Object.entries(value.diagramRevisions))) {
     if (revision.id !== key || revision.diagramId !== revision.diagram.id || !revision.nodeRefs) throw new Error('Invalid diagram history identity');
     validateDiagram(revision.diagram);
     if (revision.parentId && (!Object.hasOwn(value.diagramRevisions, revision.parentId)
@@ -167,7 +207,7 @@ export function validateCanvasHistory(value: CanvasHistoryRecord): void {
     const refs = diagramContentNodes(revision.diagram.content).map(n => revision.nodeRefs[n.id]);
     if (refs.some(ref => typeof ref !== 'string' || !ref) || new Set(refs).size !== refs.length) throw new Error('Invalid logical node identities');
   }
-  for (const [key, snapshot] of Object.entries(value.snapshots)) {
+  for (const [key, snapshot] of (changed ? changed.snapshots.map(key => [key, value.snapshots[key]] as const) : Object.entries(value.snapshots))) {
     if (snapshot.id !== key || !snapshot.document || !snapshot.view || !snapshot.nodeOrigins || !snapshot.diagramBindings
       || snapshot.parentId && !Object.hasOwn(value.snapshots, snapshot.parentId)) throw new Error('Invalid canvas checkpoint');
     if ('contents' in snapshot.document.scene) throw new Error('Canvas checkpoint must not embed diagrams');
@@ -179,6 +219,8 @@ export function validateCanvasHistory(value: CanvasHistoryRecord): void {
     }
     const scene = { root: snapshot.document.scene.root, contents };
     projectCanvasSnapshot(scene);
+    if (snapshot.transactionId !== undefined && (typeof snapshot.transactionId !== 'string' || !snapshot.transactionId)) throw Error('Invalid transaction reference');
+    if (snapshot.document.jumps) validateCanvasJumps(scene, snapshot.document.jumps);
     validateConnections(scene, documentFromHistory(value, key).edges);
   }
 }

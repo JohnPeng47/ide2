@@ -32,15 +32,32 @@ export interface DiagramChangeSession {
 export type ChangeSessionSummary = Omit<DiagramChangeSession, 'documents' | 'receipts'> & {
   documents: Pick<ChangeSessionDocument, 'id' | 'name' | 'representationId' | 'version'>[];
 };
+export type ChangePreviewDocument = Omit<ChangeSessionDocument, 'history' | 'past' | 'future'>;
+export type ChangeSessionPreview = ChangeSessionSummary & { document: ChangePreviewDocument };
+const checkpoint = z.object({ revisionId: changeId, checkpointId: changeId }).strict();
+const acceptance = z.object({ changeSessionId: changeId, sessionVersion: z.number().int().nonnegative(), requestId: z.string().min(1),
+  acceptedAt: z.string(), changeIds: z.array(changeId), documents: z.array(z.object({ documentId: changeId, representationId: changeId,
+    before: checkpoint.nullable(), after: checkpoint, proposedCheckpointId: changeId }).strict()) }).strict();
+/** Read list metadata without restoring document references, histories, or replay receipts. */
+export function validateChangeSessionSummary(input: unknown): ChangeSessionSummary {
+  const summary = z.object({
+    schemaVersion: z.literal(1), id: changeId, projectId: changeId, title: z.string().min(1).max(200), description: z.string().max(100000),
+    status: z.enum(['draft', 'ready', 'accepted', 'archived']), acceptance: acceptance.optional(),
+    version: z.number().int().nonnegative(), createdAt: z.string(), updatedAt: z.string(),
+    changes: z.array(diagramChangeSchema).max(2000),
+    documents: z.array(z.object({ id: changeId, name: z.string().min(1).max(200), representationId: changeId.optional(),
+      version: z.number().int().nonnegative() })).max(100)
+  }).parse(input);
+  if ((summary.status === 'accepted') !== !!summary.acceptance || summary.acceptance && summary.acceptance.changeSessionId !== summary.id)
+    throw new Error('Invalid change-session acceptance');
+  if (new Set(summary.documents.map(doc => doc.id)).size !== summary.documents.length) throw new Error('Duplicate change-session document');
+  return summary;
+}
 export function summarizeChangeSession(session: DiagramChangeSession): ChangeSessionSummary {
   const { receipts: _, documents, ...summary } = session;
   return { ...summary, documents: documents.map(({ id, name, representationId, version }) => ({ id, name, representationId, version })) };
 }
 export function validateChangeSession(input: unknown): DiagramChangeSession {
-  const checkpoint = z.object({ revisionId: changeId, checkpointId: changeId }).strict();
-  const acceptance = z.object({ changeSessionId: changeId, sessionVersion: z.number().int().nonnegative(), requestId: z.string().min(1),
-    acceptedAt: z.string(), changeIds: z.array(changeId), documents: z.array(z.object({ documentId: changeId, representationId: changeId,
-      before: checkpoint.nullable(), after: checkpoint, proposedCheckpointId: changeId }).strict()) }).strict();
   const state = z.custom<ChangeDocumentState>(value => !!value && typeof value === 'object' && 'document' in value && 'canvas' in value);
   const parsed = z.object({
     schemaVersion: z.literal(1), id: changeId, projectId: changeId, title: z.string().min(1).max(200), description: z.string().max(100000),

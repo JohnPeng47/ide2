@@ -1,5 +1,6 @@
 import type { MappingWorkspaceSnapshot } from '../../../../domain/mapping/workspace/mappingWorkspace';
-import { deserializeWorkspace, serializeWorkspace } from '../../../../domain/mapping/workspace/mappingWorkspaceCodec';
+import { deserializeWorkspace } from '../../../../domain/mapping/workspace/mappingWorkspaceCodec';
+import { runWorkspaceTask } from './runWorkspaceTask';
 export interface MappingWorkspaceRepository {
   load(): Promise<MappingWorkspaceSnapshot | null>;
   save(snapshot: MappingWorkspaceSnapshot): Promise<void>;
@@ -15,8 +16,10 @@ export const mappingWorkspaceRepository: MappingWorkspaceRepository = {
     return result ? deserializeWorkspace(result) : null;
   },
   save(snapshot) {
-    const body = serializeWorkspace(snapshot);
+    // Reserve the write's place before asynchronous validation so older autosaves
+    // cannot arrive after a transfer has been published.
     const next = writes.catch(() => {}).then(async () => {
+      const body = await runWorkspaceTask({ type: 'serialize', snapshot });
       const response = await fetch(endpoint(), { method: 'PUT', headers: { 'content-type': 'application/json' }, body });
       if (!response.ok) throw new Error((await response.json()).error ?? 'Could not save workspace');
     });

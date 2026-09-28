@@ -1,7 +1,7 @@
 import { useMappingServices } from '../services/MappingServices';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { MappingDocumentController } from '../../../../domain/mapping/workspace/mappingDocumentController';
-import type { ChangeSessionDocument, DiagramChangeSession } from '../../../../domain/mapping/changes/diagramChangeSession';
+import type { ChangePreviewDocument, ChangeSessionPreview as Preview, DiagramChangeSession } from '../../../../domain/mapping/changes/diagramChangeSession';
 import { diffChangeDocument } from '../../../../domain/mapping/changes/changeDocumentDiff';
 import { DraggableDiagramCanvas } from '../../../shared/diagrams/DraggableDiagramCanvas';
 import { DiagramText } from '../../../shared/diagrams/DiagramText';
@@ -18,29 +18,37 @@ import './changeSessions.css';
 export function ChangeSessionPreview(props: { mode: DisplayModeChange; onSelect: (mode: DisplayModeChange) => void;
   onSearchDocument?: (document: SearchDocument) => void; searchFocus?: DiagramFocus;
   onOpenAccepted: (session: Omit<DiagramChangeSession, 'receipts'>, documentId: string) => Promise<void> }) {
-  const [session, setSession] = useState<Awaited<ReturnType<typeof readChangeSession>>>();
+  const [loaded, setLoaded] = useState<{ session: Preview; diff: ReturnType<typeof diffChangeDocument> }>();
+  const session = loaded?.session;
   const [error, setError] = useState('');
   const [accepting, setAccepting] = useState(false);
   const pendingAcceptance = useRef<{ sessionId: string; version: number; requestId: string } | undefined>(undefined);
   useEffect(() => {
-    const abort = new AbortController(); let timer: ReturnType<typeof setTimeout>;
-    setSession(undefined); setError('');
-    const refresh = async () => {
-      try { const next = await readChangeSession(props.mode.sessionId, abort.signal);
-        if (!abort.signal.aborted) { setSession(old => old?.id === next.id && old.version >= next.version ? old : next); } }
-      catch (e) { if (!abort.signal.aborted) setError(e instanceof Error ? e.message : String(e)); }
-      finally { if (!abort.signal.aborted) timer = setTimeout(refresh, 2000); }
+    let timer: ReturnType<typeof setTimeout>, version: number | undefined;
+    setLoaded(undefined); setError('');
+    const worker = new Worker(new URL('./changePreview.worker.ts', import.meta.url), { type: 'module' });
+    const refresh = () => {
+      const endpoint = new URL(`/api/mapping/agent/change-sessions/${encodeURIComponent(props.mode.sessionId)}/preview`, location.href);
+      endpoint.searchParams.set('documentId', props.mode.documentId);
+      if (version !== undefined) endpoint.searchParams.set('version', String(version));
+      worker.postMessage({ endpoint: endpoint.href });
     };
-    void refresh(); return () => { abort.abort(); clearTimeout(timer); };
-  }, [props.mode.sessionId]);
-  const doc = session?.documents.find(d => d.id === props.mode.documentId);
+    worker.onmessage = ({ data }: MessageEvent<{ session?: Preview | null; diff?: ReturnType<typeof diffChangeDocument>; error?: string }>) => {
+      if (data.error) setError(data.error);
+      else if (data.session && data.diff) { version = data.session.version; setLoaded({ session: data.session, diff: data.diff }); setError(''); }
+      if (data.session?.status !== 'accepted' && data.session?.status !== 'archived') timer = setTimeout(refresh, 2000);
+    };
+    worker.onerror = () => setError('Preview worker stopped. Reopen the proposal to retry.');
+    refresh(); return () => { clearTimeout(timer); worker.terminate(); };
+  }, [props.mode.sessionId, props.mode.documentId]);
+  const doc = session?.document;
   useEffect(() => {
     if (doc && session?.id === props.mode.sessionId) props.onSearchDocument?.({
       id: `proposal:${session.id}:${doc.id}`, name: `${doc.name} (proposal)`, scope: 'proposal', document: doc.proposed.document
     });
   }, [doc, session?.id, props.mode.sessionId, props.onSearchDocument]);
   const change = session?.changes.find(c => c.id === props.mode.changeId);
-  const diff = useMemo(() => doc ? diffChangeDocument(doc) : undefined, [doc]);
+  const diff = loaded?.diff;
   const modifiedDiagramIds = useMemo(() => new Set(session?.changes.flatMap(change =>
     change.documentId === doc?.id && change.type === 1 && change.nodeId ? [change.nodeId] : [])), [session, doc?.id]);
   const accept = async () => {
@@ -52,7 +60,6 @@ export function ChangeSessionPreview(props: { mode: DisplayModeChange; onSelect:
     try {
       await acceptChangeSession(request.sessionId, request.version, request.requestId);
       const accepted = await readChangeSession(request.sessionId);
-      setSession(accepted);
       await props.onOpenAccepted(accepted, props.mode.documentId);
     } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
     finally { setAccepting(false); }
@@ -62,7 +69,7 @@ export function ChangeSessionPreview(props: { mode: DisplayModeChange; onSelect:
       <span>{session.status === 'accepted' ? 'Accepted — original review diff retained' : session.title}</span>
       {session.status === 'ready' && <button disabled={accepting} onClick={() => void accept()}>{accepting ? 'Accepting…' : 'Accept all changes'}</button>}
       {session.status === 'draft' && <span>Mark this proposal ready before accepting.</span>}
-      {session.status === 'accepted' && <button onClick={() => void props.onOpenAccepted(session, props.mode.documentId)
+      {session.status === 'accepted' && <button onClick={() => void readChangeSession(session.id).then(full => props.onOpenAccepted(full, props.mode.documentId))
         .catch(e => setError(e instanceof Error ? e.message : String(e)))}>Open canvas</button>}
     </div>}
     {error && <p className="change-preview-message" role="alert">{error}</p>}
@@ -78,7 +85,7 @@ export function ChangeSessionPreview(props: { mode: DisplayModeChange; onSelect:
       : <p className="change-preview-message">{session ? 'Select a canvas in Changes.' : 'Loading preview…'}</p>}
   </div>;
 }
-function PreviewCanvas({ doc, focusId, serial, onJump, diff, modifiedDiagramIds, searchFocus }: { doc: ChangeSessionDocument; focusId?: string; serial: number; searchFocus?: DiagramFocus;
+function PreviewCanvas({ doc, focusId, serial, onJump, diff, modifiedDiagramIds, searchFocus }: { doc: ChangePreviewDocument; focusId?: string; serial: number; searchFocus?: DiagramFocus;
   diff: ReturnType<typeof diffChangeDocument>; modifiedDiagramIds: ReadonlySet<string>;
   onJump: NonNullable<Parameters<typeof DiagramText>[0]['onJump']> }) {
   const { diagrams } = useMappingServices();
@@ -119,8 +126,8 @@ function PreviewCanvas({ doc, focusId, serial, onJump, diff, modifiedDiagramIds,
     return () => document.fonts.removeEventListener('loadingdone', measure);
   }, []);
   const scene = state.document.scene;
-  const text = useMemo(() => changePreviewText(scene, state.canvas.diagramViews, diff.diagrams, modifiedDiagramIds),
-    [scene, state.canvas.diagramViews, diff, modifiedDiagramIds]);
+  const text = useMemo(() => changePreviewText(scene, state.canvas.diagramViews, diff.diagrams, modifiedDiagramIds, state.document.jumps),
+    [scene, state.canvas.diagramViews, diff, modifiedDiagramIds, state.document.jumps]);
   const { resolved, boxes } = text;
   const nodes = controller.nodes();
   const controlNodes = nodes.map(node => {

@@ -445,3 +445,23 @@ select:focus-visible,
 .canvas-paste-menu button:disabled { opacity: .5; cursor: default; }
 .canvas-paste-menu textarea { display: block; box-sizing: border-box; width: 100%; margin: 8px 0; background: #0c1016; color: inherit; font: inherit; border: 1px solid var(--border); }
 .canvas-paste-menu p { margin: 8px; color: #ffb4a9; }
+
+[data-diagram-selected="true"] { outline: 2px solid #88c0d0; outline-offset: 3px; background: rgb(136 192 208 / 9%); }
+.diagram-selection-marquee { position: fixed; border: 1px solid #88c0d0; background: rgb(136 192 208 / 15%); pointer-events: none; z-index: 1000; }
+.mapping-empty-canvas { position: absolute; top: 48px; left: 0; white-space: nowrap; color: var(--muted); }
+.mapping-transfer-busy { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; background: rgb(0 0 0 / 25%); cursor: progress; }
+
+.mapping-floating-pane.is-transfer-target { border: 2px solid var(--accent-cyan); box-shadow: 0 0 0 5px rgb(136 192 208 / 18%), 0 8px 25px #0008; }
+.mapping-transfer-picker { padding: 10px; border: 1px solid var(--accent-cyan); border-radius: 4px; margin-bottom: 12px; background: rgb(136 192 208 / 8%); }
+.mapping-transfer-picker p { margin: 0 0 8px; color: var(--fg); font-size: 11px; }
+.mapping-transfer-picker button { padding: 6px 9px; margin: 4px 6px 0 0; border: 1px solid var(--gutter); border-radius: 3px; color: var(--fg); background: var(--bg); cursor: pointer; }
+.mapping-transfer-picker button:disabled { opacity: .4; cursor: default; }
+.mapping-transfer-picker label { color: var(--fg); font: 11px var(--font-mono); }
+.mapping-transfer-picker h2 { font: 600 14px var(--font-mono); margin: 0 0 10px; color: var(--accent-cyan); }
+.mapping-transfer-picker input { display: block; box-sizing: border-box; width: 100%; margin: 6px 0; padding: 8px; }
+.mapping-transfer-picker p.mapping-transfer-error { color: #ffb4ab; padding: 8px; border: 1px solid #a65353; }
+.mapping-transfer-picker p.mapping-transfer-hint { margin: 10px 0 0; color: var(--muted); }
+.mapping-transfer-busy > div { max-width: 480px; padding: 24px; border: 1px solid var(--accent-cyan); border-radius: 6px; background: var(--bg); }
+.mapping-transfer-busy p { font-size: 12px; }
+.mapping-diagram-selection-actions { position: fixed; bottom: 38px; left: 50%; transform: translateX(-50%); z-index: 1100; display: flex; flex-wrap: wrap; width: max-content; max-width: calc(100vw - 48px); align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--accent-cyan); border-radius: 6px; background: var(--bg); box-shadow: 0 4px 16px #0008; font: 12px var(--font-mono); }
+.mapping-diagram-selection-actions button { padding: 8px; background: var(--bg); color: var(--fg); border: 1px solid var(--gutter); border-radius: 4px; cursor: pointer; }

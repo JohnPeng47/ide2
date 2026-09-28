@@ -6,3 +6,7 @@
 
 .diagram-mapping-choices { position: fixed; z-index: 100; display: grid; max-width: 280px; max-height: 170px; overflow: auto; border: 1px solid var(--gutter); background: #141920; padding: 4px; }
 .diagram-mapping-choices button { border: 0; background: transparent; color: var(--accent-cyan); text-align: left; padding: 5px; cursor: pointer; }
+.diagram-jump-container { position: relative; }
+.diagram-jump-choices { position: absolute; z-index: 40; top: 100%; left: 0; display: flex; flex-direction: column; min-width: 220px; padding: 6px; border: 1px solid var(--gutter); background: #141920; white-space: normal; }
+.diagram-jump-choices button { font: 12px var(--font-mono); padding: 8px; text-align: left; color: var(--fg); background: #141920; border: 0; cursor: pointer; }
+.diagram-jump-choices button:hover { background: #263343; }

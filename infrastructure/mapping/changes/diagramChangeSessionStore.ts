@@ -1,30 +1,32 @@
-import { RevisionedDiagramService, type DiagramService } from '../../../domain/core/diagrams/diagramService';
-import { DiagramRevisionStore } from '../../core/persistence/diagramRevisionStore';
-import { mkdir, readdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
-import path from 'node:path';
-import { randomUUID } from 'node:crypto';
-import type { DiagramChangeSessionRepository } from '../../../application/mapping/changes/ports';
-import { changeId, validateChangeSession, type DiagramChangeSession } from '../../../domain/mapping/changes/diagramChangeSession';
+import type { DiagramService } from '../../../domain/core/diagrams/diagramService';
+import type { ChangeSessionWriteScope, DiagramChangeSessionRepository } from '../../../application/mapping/changes/ports';
+import { summarizeChangeSession, type ChangeSessionSummary, type ChangeSessionPreview, type DiagramChangeSession } from '../../../domain/mapping/changes/diagramChangeSession';
+import { ChangeSessionRecords, type SessionWrite } from './changeSessionRecords';
+import { changeSessionWorker } from './changeSessionWorker';
 
+/** Metadata reads remain on the request thread; hydration/migration/writes can run in a worker. */
 export class DiagramChangeSessionStore implements DiagramChangeSessionRepository {
-  constructor(private readonly storeRoot: string, private readonly diagrams: DiagramService = new RevisionedDiagramService(new DiagramRevisionStore(storeRoot))) {}
-  private directory(projectId: string) { return path.join(this.storeRoot, 'mapping-change-sessions', changeId.parse(projectId)); }
-  async list(projectId: string) {
-    const names = await readdir(this.directory(projectId)).catch(error => { if (error.code === 'ENOENT') return []; throw error; });
-    return Promise.all(names.filter(name => name.endsWith('.json')).map(name => this.read(projectId, name.slice(0, -5))));
+  private readonly records: ChangeSessionRecords;
+  private readonly tokens = new WeakMap<DiagramChangeSession, string>();
+  constructor(private readonly root: string, diagrams?: DiagramService, private readonly background = false) {
+    this.records = new ChangeSessionRecords(root, diagrams);
+  }
+  listSummaries(projectId: string) { return this.records.listSummaries(projectId, id => this.readSummary(projectId, id)); }
+  readSummary(projectId: string, id: string): Promise<ChangeSessionSummary> {
+    return this.records.readSummary(projectId, id, this.background ? () => changeSessionWorker(this.root).request('readSummary', [projectId, id]) : undefined);
+  }
+  readPreview(projectId: string, id: string, documentId: string): Promise<ChangeSessionPreview> {
+    return this.background ? changeSessionWorker(this.root).request('readPreview', [projectId, id, documentId]) : this.records.readPreview(projectId, id, documentId);
   }
   async read(projectId: string, id: string) {
-    const session = validateChangeSession(await this.diagrams.restore(JSON.parse(await readFile(path.join(this.directory(projectId), `${changeId.parse(id)}.json`), 'utf8'))));
-    if (session.id !== id || session.projectId !== projectId) throw new Error('Change session identity mismatch');
-    return session;
+    const result = this.background ? await changeSessionWorker(this.root).request<{ session: DiagramChangeSession; token: string }>('read', [projectId, id]) : await this.records.read(projectId, id);
+    this.tokens.set(result.session, result.token); return result.session;
   }
-  async write(session: DiagramChangeSession) {
-    validateChangeSession(session);
-    const stored = await this.diagrams.persist(session);
-    const directory = this.directory(session.projectId);
-    await mkdir(directory, { recursive: true });
-    const target = path.join(directory, `${changeId.parse(session.id)}.json`), temp = `${target}.${randomUUID()}.tmp`;
-    try { await writeFile(temp, JSON.stringify(stored), 'utf8'); await rename(temp, target); }
-    finally { await unlink(temp).catch(error => { if (error.code !== 'ENOENT') throw error; }); }
+  async write(session: DiagramChangeSession, scope?: ChangeSessionWriteScope) {
+    const input: SessionWrite = { summary: summarizeChangeSession(session), expected: this.tokens.get(session),
+      documents: scope ? session.documents.filter(doc => scope.documents.includes(doc.id)) : session.documents,
+      receipts: scope ? Object.fromEntries(scope.receipts.map(key => [key, session.receipts[key]])) : session.receipts };
+    const token = this.background ? await changeSessionWorker(this.root).request<string>('write', [input]) : await this.records.write(input);
+    this.tokens.set(session, token);
   }
 }

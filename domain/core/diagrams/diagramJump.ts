@@ -3,7 +3,7 @@ import type { DiagramContent } from './diagramContent';
 import { diagramContentNodes } from './diagramContentNodes';
 
 const id = z.string().min(1).max(500);
-/** Destinations use catalog representation IDs, never ephemeral agent canvas/session IDs. */
+/** Destinations use catalog IDs or persisted workspace document IDs, never agent session IDs. */
 export const diagramJumpSchema = z.object({
   id,
   source: z.object({

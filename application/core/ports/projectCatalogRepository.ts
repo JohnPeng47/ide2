@@ -25,6 +25,7 @@ export interface ProjectCatalogRepository {
     compaction: ProjectFileCompactionRecord;
   }>;
   loadRepresentationCatalog(projectId: string): Promise<ProjectRepresentationCatalogRecord>;
+  loadChangeSessionAcceptances(projectId: string): Promise<NonNullable<ProjectRepresentationCatalogRecord['changeSessionAcceptances']>>;
   saveRepresentationCatalog(catalog: ProjectRepresentationCatalogRecord): Promise<void>;
   archiveRepresentation(projectId: string, representationId: string): Promise<ProjectRepresentationCatalogRecord>;
 }

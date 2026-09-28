@@ -27,25 +27,51 @@ export class ChangeSessionService {
     return next;
   }
   async list() {
-    const projectId = await this.projectId(), sessions = await this.repository.list(projectId);
+    const projectId = await this.projectId(), sessions = await this.repository.listSummaries(projectId);
     const accepted = sessions.some(s => s.status === 'ready')
-      ? (await this.source.projectCatalogs.loadRepresentationCatalog(projectId)).changeSessionAcceptances : undefined;
-    for (const session of sessions) if (session.status === 'ready' && accepted?.[session.id]) await this.finishAcceptance(session, accepted[session.id]);
-    return sessions.filter(s => s.status !== 'archived').sort((a,b) => b.updatedAt.localeCompare(a.updatedAt)).map(summarizeChangeSession);
+      ? await this.source.projectCatalogs.loadChangeSessionAcceptances(projectId) : undefined;
+    // The catalog receipt is authoritative after an interrupted session write. Listing
+    // projects that status; opening/accepting the proposal repairs the full record.
+    for (const session of sessions) if (session.status === 'ready' && accepted?.[session.id]) {
+      const receipt = accepted[session.id];
+      if (session.version !== receipt.sessionVersion) throw new Error('Acceptance does not match saved proposal version');
+      session.status = 'accepted'; session.acceptance = receipt;
+      session.version = receipt.sessionVersion + 1; session.updatedAt = receipt.acceptedAt;
+    }
+    return sessions.filter(s => s.status !== 'archived').sort((a,b) => b.updatedAt.localeCompare(a.updatedAt));
   }
   async get(id: string) {
     const session = await this.repository.read(await this.projectId(), id);
     if (session.status === 'ready') {
-      const accepted = (await this.source.projectCatalogs.loadRepresentationCatalog(session.projectId)).changeSessionAcceptances?.[id];
+      const accepted = (await this.source.projectCatalogs.loadChangeSessionAcceptances(session.projectId))[id];
       if (accepted) await this.finishAcceptance(session, accepted);
     }
     return session;
+  }
+  private async effectiveSummary(summary: import('../../../domain/mapping/changes/diagramChangeSession').ChangeSessionSummary) {
+    if (summary.status === 'ready') {
+      const receipt = (await this.source.projectCatalogs.loadChangeSessionAcceptances(summary.projectId))[summary.id];
+      if (receipt) {
+        if (summary.version !== receipt.sessionVersion) throw Error('Acceptance does not match saved proposal version');
+        return { ...summary, status: 'accepted' as const, acceptance: receipt, version: receipt.sessionVersion + 1, updatedAt: receipt.acceptedAt };
+      }
+    }
+    return summary;
+  }
+  async preview(id: string, documentId: string, version?: number) {
+    const projectId = await this.projectId();
+    const summary = await this.effectiveSummary(await this.repository.readSummary(projectId, id));
+    if (!summary.documents.some(doc => doc.id === documentId)) throw Error('Unknown change-session document');
+    if (summary.version === version) return null;
+    const preview = await this.repository.readPreview(projectId, id, documentId);
+    // Resolve acceptance against the exact generation returned by the scoped read.
+    return { ...preview, ...await this.effectiveSummary(preview), document: preview.document };
   }
   private async finishAcceptance(session: DiagramChangeSession, acceptance: ChangeSessionAcceptance) {
     if (session.version !== acceptance.sessionVersion) throw new Error('Acceptance does not match saved proposal version');
     session.status = 'accepted'; session.acceptance = acceptance;
     session.version = acceptance.sessionVersion + 1; session.updatedAt = acceptance.acceptedAt;
-    await this.repository.write(session);
+    await this.repository.write(session, { documents: [], receipts: [] });
   }
   async accept(input: { changeSessionId: string; requestId: string; expectedVersion: number }) {
     return this.serialize(input.changeSessionId, async () => {
@@ -126,7 +152,7 @@ export class ChangeSessionService {
       await this.serialize(id, async () => {
         const session = await this.get(id);
         session.receipts[key] = { signature, result };
-        await this.repository.write(session);
+        await this.repository.write(session, { documents: [], receipts: [key] });
       });
       return result;
     });
@@ -146,9 +172,10 @@ export class ChangeSessionService {
       if (s.status === 'archived') throw new Error('Change session is archived');
       if (s.status === 'accepted') throw new Error('Change session is accepted and cannot be edited');
       if (Object.keys(s.receipts).length >= 2000) throw new Error('Change session request capacity reached');
+      const before = new Map(s.documents.map(doc => [doc.id, doc.version]));
       const result = fn(s);
       s.version++; s.updatedAt = new Date().toISOString(); s.receipts[key] = { signature, result };
-      await this.repository.write(s);
+      await this.repository.write(s, { documents: s.documents.filter(doc => before.get(doc.id) !== doc.version).map(doc => doc.id), receipts: [key] });
       return result;
     });
   }
@@ -158,7 +185,7 @@ export class ChangeSessionService {
       const controller = this.controller(doc);
       const result = controller.applyUpdate(version, operations);
       this.record(doc, controller);
-      this.refreshChanges(s); s.status = 'draft';
+      this.refreshChanges(s, new Set([documentId])); s.status = 'draft';
       return result;
     });
   }
@@ -201,12 +228,13 @@ export class ChangeSessionService {
       s.documents.push({ id: documentId, name, baseline: null, proposed: { document: mappingDocumentFromScene(singleDiagramScene('[New diagram]')),
         canvas: initialCanvasState() }, version: 0, past: [], future: [] });
       this.controller(s.documents[s.documents.length - 1]);
-      this.refreshChanges(s); s.status = 'draft'; return { documentId };
+      this.refreshChanges(s, new Set([documentId])); s.status = 'draft'; return { documentId };
     });
   }
-  private refreshChanges(s: DiagramChangeSession) {
+  private refreshChanges(s: DiagramChangeSession, affected: ReadonlySet<string>) {
     const changes: DiagramChange[] = [];
     for (const doc of s.documents) {
+      if (!affected.has(doc.id)) { changes.push(...s.changes.filter(change => change.documentId === doc.id)); continue; }
       if (!doc.baseline) { changes.push({ id: `canvas:${doc.id}`, documentId: doc.id, title: doc.name, type: 3, reasons: [], dependsOn: [] }); continue; }
       const before = new MappingDocumentController(doc.baseline.document, doc.baseline.canvas, 0, undefined, undefined, undefined, this.diagrams).nodes();
       const after = new MappingDocumentController(doc.proposed.document, doc.proposed.canvas, 0, undefined, undefined, undefined, this.diagrams).nodes();
@@ -244,7 +272,7 @@ export class ChangeSessionService {
           controller.undo(input.action === 'redo');
         }
         this.record(doc, controller);
-        this.refreshChanges(s); s.status = 'draft';
+        this.refreshChanges(s, new Set([doc.id])); s.status = 'draft';
       }
       if (input.title) s.title = input.title;
       if (input.changes) {

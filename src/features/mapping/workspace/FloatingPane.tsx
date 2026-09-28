@@ -1,9 +1,10 @@
-import { useId, useState, type ReactNode } from "react";
-export function FloatingPane(props: { children: ReactNode }) {
+import { useEffect, useId, useState, type ReactNode } from "react";
+export function FloatingPane(props: { children: ReactNode; highlighted?: boolean }) {
   const [minimized, setMinimized] = useState(false);
   const contentId = useId();
-  return <aside className={`mapping-floating-pane${minimized ? " is-minimized" : ""}`} aria-label="Project diagram explorer" data-diagram-canvas-static-ui>
-    <button type="button" className="mapping-explorer-toggle" aria-label={minimized ? "Restore explorer" : "Minimize explorer"}
+  useEffect(() => { if (props.highlighted) setMinimized(false); }, [props.highlighted]);
+  return <aside className={`mapping-floating-pane${minimized ? " is-minimized" : ""}${props.highlighted ? " is-transfer-target" : ""}`} aria-label="Project diagram explorer" data-diagram-canvas-static-ui>
+    <button type="button" disabled={props.highlighted} className="mapping-explorer-toggle" aria-label={minimized ? "Restore explorer" : "Minimize explorer"}
       title={minimized ? "Restore explorer" : "Minimize explorer"} aria-expanded={!minimized} aria-controls={contentId}
       onClick={() => setMinimized(value => !value)}>
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">

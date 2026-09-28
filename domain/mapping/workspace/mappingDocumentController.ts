@@ -2,7 +2,7 @@ import { equalEndpointBounds, type EndpointBounds } from './endpointGeometry';
 import type { CanvasHistoryRecord } from './canvasHistory';
 import { RevisionedDiagramService, type DiagramService, type DiagramEditingContext, type DiagramEdit } from '../../core/diagrams/diagramService';
 import { connectionBox, type DiagramAnchor } from '../../core/diagrams/diagramConnection';
-import { rebaseDiagramJumps, type DiagramJump } from '../../core/diagrams/diagramJump';
+import { activeDiagramJumps, rebaseDiagramJumps, type DiagramJump } from '../../core/diagrams/diagramJump';
 import { normalizeDiagramViews, resolveDiagramContent, projectDiagramContent } from './diagramViewState';
 import { layoutFloatingSelections } from './floatingBoxLayout';
 import { layoutConversationPane } from '../chat/conversationPaneLayout';
@@ -71,7 +71,18 @@ export class MappingDocumentController {
     this.snapshot = { contextId: this.context.contextId, canvasRevisionId: historyState.checkpointId, document: { ...structuredClone(document), edges: validateConnections(document.scene, document.edges) }, canvas, version, canUndo: historyState.canUndo, canRedo: historyState.canRedo, cell, endpointBounds };
   }
   getSnapshot = () => this.snapshot;
+  prepareTransfer(input: import('../../core/diagrams/canvasTransfer').TransferInput, destination?: MappingDocumentController) {
+    return this.diagrams.prepareTransfer(this.context, input, destination?.context);
+  }
+  transferBoundary(transaction: import('../../core/diagrams/canvasTransfer').CanvasTransfer, canvasId: string, redo = false) {
+    return this.diagrams.transferBoundary(this.context, transaction, canvasId, redo);
+  }
+  prepareTransferNavigation(destination: MappingDocumentController, transaction: import('../../core/diagrams/canvasTransfer').CanvasTransfer, redo = false) {
+    return this.diagrams.prepareTransferNavigation(this.context, destination.context, transaction, redo);
+  }
   /** Canonical persistence boundary. Legacy document snapshots are read projections. */
+  persistenceChanges(since?: number) { return this.diagrams.persistenceChanges(this.context, since); }
+  retireTransactions(ids: ReadonlySet<string>) { this.diagrams.retireTransactions(this.context, ids); }
   exportHistory() { return this.diagrams.exportContext(this.context); }
   forkHistory() { return this.diagrams.forkContext(this.context, this.snapshot.canvas); }
   resolveDiagram(diagramId: string) { return this.diagrams.resolve(this.context, diagramId); }
@@ -93,7 +104,14 @@ export class MappingDocumentController {
   private updateSnapshot(next: State, record: boolean, increment = true) {
     if (next.document === this.snapshot.document && next.canvas === this.snapshot.canvas) return;
     if (next.document !== this.snapshot.document && next.document.scene !== this.snapshot.document.scene && record) {
-      next = { ...next, document: { ...next.document, edges: reconcileConnections(this.snapshot.document.scene, next.document.scene, next.document.edges ?? []) } };
+      next = { ...next, document: { ...next.document, edges: reconcileConnections(this.snapshot.document.scene, next.document.scene, next.document.edges ?? []),
+        ...(next.document.jumps ? { jumps: next.document.jumps.flatMap(jump => {
+          const owner = connectionBox(next.document.scene, jump.sourceDisplayNodeId);
+          if (owner?.kind !== 'diagram') return [];
+          const previous = connectionBox(this.snapshot.document.scene, jump.sourceDisplayNodeId);
+          const before = previous?.kind === 'diagram' && this.snapshot.document.scene.contents[previous.contentId];
+          return [before ? { ...jump, ...rebaseDiagramJumps(before.content, next.document.scene.contents[owner.contentId].content, [jump])[0] } : jump];
+        }) } : {}) } };
     }
     if (next.document !== this.snapshot.document && record) validateConnections(next.document.scene, next.document.edges);
     const diagramViews = normalizeDiagramViews(next.document.scene, next.canvas.diagramViews);
@@ -151,6 +169,13 @@ export class MappingDocumentController {
           return { ...anchor, revisionId: diagram.content.revisionId, contentNodeId: nodeIds.get(anchor.contentNodeId)! };
         };
         const edges = document.edges.map(edge => ({ ...edge, source: reanchor(edge.source), target: reanchor(edge.target) }));
+        const jumps = document.jumps?.map(jump => {
+          const owner = connectionBox(document.scene, jump.sourceDisplayNodeId), line = lineAfter(jump.source.line);
+          if (owner?.kind !== 'diagram' || owner.contentId !== before.id || line === undefined || !activeDiagramJumps(before.content, [jump]).length) return jump;
+          const nodeId = jump.source.contentNodeId ? nodeIds.get(jump.source.contentNodeId) : undefined;
+          if (jump.source.contentNodeId && !nodeId) return jump;
+          return { ...jump, source: { ...jump.source, line, revisionId: diagram.content.revisionId, contentHash: diagram.content.asciiSha256, contentNodeId: nodeId } };
+        });
         for (const [id, view] of Object.entries(canvas.diagramViews ?? {})) {
           const owner = connectionBox(document.scene, id);
           if (owner?.kind === 'diagram' && owner.contentId === before.id && view.contentRevisionId === before.content.revisionId) {
@@ -162,7 +187,7 @@ export class MappingDocumentController {
           const startLine = lineAfter(section.startLine), endLine = lineAfter(section.endLine);
           return startLine === undefined || endLine === undefined ? [] : [{ ...section, startLine, endLine }];
         });
-        document = { ...document, edges, sections: { ...document.sections, [before.id]: sections },
+        document = { ...document, edges, ...(jumps ? { jumps } : {}), sections: { ...document.sections, [before.id]: sections },
           scene: layoutScene({ ...document.scene, contents: { ...document.scene.contents, [before.id]: diagram } }, box.id) };
       } else if (op.method === 'setJumps' || op.method === 'setSourceMappings') {
         const box = findBox(document.scene.root, this.gridId(op.nodeId));
@@ -276,6 +301,8 @@ export class MappingDocumentController {
       }
     }
     projectCanvasSnapshot(document.scene);
+    if (operations.some(op => op.method === 'remove') && !flattenGrid(resolveScene(document.scene)).some(node => node.contentId))
+      throw Error('Canvas must contain a visible diagram; use a transfer to move the last diagram');
     const active = findBox(document.scene.root, canvas.controls.activeBoxId);
     if (!active) {
       const first = canvasDisplayNodes(document, canvas, 0).find(node => node.layout === 'grid' && node.kind === 'diagram');

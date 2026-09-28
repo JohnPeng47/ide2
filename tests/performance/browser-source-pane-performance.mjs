@@ -127,7 +127,7 @@ try {
   const representation = { schemaVersion: 1, id: 'source', projectId, handle: 'source', name: doc.name, viewKind: 'diagram',
     representationKind: 'diagram', status: 'settled', currentRevisionId: 'revision-source', revisionIds: ['revision-source'], createdAt: timestamp, updatedAt: timestamp };
   const revision = { schemaVersion: 1, id: 'revision-source', projectId, representationId: 'source', revision: 1,
-    ascii: doc.document.scene.contents.overview.ascii, asciiSha256: hash(doc.document.scene.contents.overview.ascii),
+    ascii: doc.document.scene.contents.overview.content.ascii, asciiSha256: hash(doc.document.scene.contents.overview.content.ascii),
     representationKind: 'diagram', evidence: {}, mappings: [], content: {kind: 'mapping-canvas', scene: doc.document.scene}, createdAt: timestamp };
   const other = {...representation, id: 'other', handle: 'other', name: 'Other document', currentRevisionId: 'revision-other', revisionIds: ['revision-other']};
   const otherRevision = {...revision, id: 'revision-other', representationId: 'other'};
@@ -139,6 +139,7 @@ try {
   await writeFile(path.join(temp, 'tsconfig.json'), JSON.stringify(tsconfig));
   await writeFile(path.join(temp, '.diagrams/project.json'), JSON.stringify({ schemaVersion: 1, id: projectId, name: doc.name,
     repositoryIdentity: path.join(temp, '.git'), canonicalRepoRoot: temp, domainProfileId: 'source-code', corpus: {kind: 'git-worktree', root: temp},
+    sources: [{ sourceId: 'source-fixture', repositoryIdentity: path.join(temp, '.git'), domainProfileId: 'source-code', corpus: { kind: 'git-worktree', root: temp } }],
     diagramSetIds: [], createdAt: timestamp, updatedAt: timestamp }));
   await writeFile(path.join(temp, '.diagrams/representations/catalog.json'), JSON.stringify({schemaVersion: 1, projectId,
     activeByKind: {diagram: 'source'}, representations: {source: representation, other},
@@ -151,7 +152,8 @@ try {
   await waitFor(async () => (await fetch(url).catch(() => null))?.ok, {timeoutMs: 15000});
   const results = [];
   let browserVersion;
-  await withHeadlessBrowser({url: `${url}/mapping`, width: 2400, height: 1500}, async ({cdp, profilePath}) => {
+  await withHeadlessBrowser({url: `${url}/mapping`, width: 2400, height: 1500, chromePath: process.env.CHROME_PATH,
+    arguments: process.platform === 'linux' ? ['--no-sandbox', '--disable-gpu'] : []}, async ({cdp, profilePath}) => {
     await cdp.send('Page.enable'); await cdp.send('Runtime.enable'); await cdp.send('Performance.enable');
     browserVersion = await cdp.send('Browser.getVersion');
     const errors = [];
@@ -160,7 +162,10 @@ try {
       console.log(`Fixture dialog (${type}): ${message}`);
       void cdp.send('Page.handleJavaScriptDialog', {accept: true});
     });
-    await waitForSelector(cdp, `${viewer(5)}[data-highlighted=true]`, {timeoutMs: 60000});
+    await waitForSelector(cdp, `${viewer(5)}[data-highlighted=true]`, {timeoutMs: 60000}).catch(async error => {
+      console.log('Source fixture diagnostics:', await evaluate(cdp, 'document.body.innerText.slice(0,2000)'), errors);
+      throw error;
+    });
     await evaluate(cdp, 'document.fonts.ready'); await settle(cdp);
     assert.equal(await evaluate(cdp, `document.querySelectorAll('.source-code-viewer[data-definitions="true"]').length`),
       process.env.SOURCE_NAVIGATION === '1' ? 5 : 0, 'Definition gestures must follow the server startup flag');
@@ -237,13 +242,13 @@ try {
       catch { return false; }
     }, {message: 'Workspace export did not finish'});
     assert.deepEqual(exported.documents[0].canvas.display.nodes['source-1'].content.scroll, exportPosition, 'Export samples the live position without a prior save');
-    console.log('Persistence: restore discards live positions');
+    console.log('Persistence: restore flushes the latest live positions');
     await click(cdp, '.mapping-workspace-actions button:nth-child(2)');
-    await waitFor(async () => (await positions(cdp))['source-1']?.top === beforeSave['source-1'].top, {message: 'Restore discards the newer runtime cache'});
+    beforeSave['source-1'] = exportPosition;
+    await waitFor(async () => (await positions(cdp))['source-1']?.top === exportPosition.top, {message: 'Restore retains the latest automatically submitted view state'});
     console.log('Persistence: reload saved workspace');
     await reload(cdp);
     await waitForSelector(cdp, `${viewer(4)}[data-highlighted=true]`, {timeoutMs: 60000});
-    await click(cdp, `${pane(5)} [aria-label="Expand pane"]`);
     await waitFor(async () => JSON.stringify(await positions(cdp)) === JSON.stringify(beforeSave), {message: 'Reload must restore all five source positions'});
     await click(cdp, `${pane(1)} [aria-label="Collapse pane"]`);
     await click(cdp, `${pane(1)} [aria-label="Expand pane"]`);

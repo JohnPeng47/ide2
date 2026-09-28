@@ -23,6 +23,7 @@ export const selectionSurfaceKeys = ['actionsOpen', 'presentation', 'projectionC
 export const initialSelectionSurface = (): SelectionSurfaceState => ({ actionsOpen: true, presentation: 'compact', projectionChoice: '', promptOperation: 'edit',
   promptOpen: false, promptText: '', askOpen: false, askText: '', askVerbosity: 'low', promptPhase: 'ready', statusMessage: 'Ctrl + drag to select' });
 export interface MappingControls {
+  selectedDiagramIds?: string[];
   activeBoxId: string;
   selectionRect: MappingPocGridRect | null;
   selectedNodeIds: string[];
@@ -38,11 +39,13 @@ export function initialCanvasState(): MappingCanvasState {
     selectedNodeIds: [], retainedSelectionId: null, activeThreadId: null, surfaces: { draft: initialSelectionSurface() } } };
 }
 export interface MappingDocumentSnapshot {
+  hidden?: boolean;
   history?: import('./canvasHistory').CanvasHistoryRecord;
   savedRepresentationId?: string;
   representationId: string; name: string; revisionId: string; savedName: string; savedScene: string; savedEdges?: string;
   document: MappingGridDocument; canvas: MappingCanvasState; viewport?: CanvasTransform;
 }
 export interface MappingWorkspaceSnapshot {
+  transfers?: import('../../core/diagrams/canvasTransfer').CanvasTransfer[];
   schemaVersion: 3; projectId: string; activeDocumentId?: string; documents: MappingDocumentSnapshot[];
 }

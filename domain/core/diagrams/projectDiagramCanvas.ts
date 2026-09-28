@@ -79,7 +79,6 @@ export function projectCanvasSnapshot(scene: LineGridScene) {
       evidence[exported] = { ...structuredClone(entry), id: exported, sourceId: diagram.sourceContext.binding?.sourceId };
     }
   }
-  if (!flattenGrid(resolveScene(scene)).some((node) => node.contentId)) throw new Error("Canvas must contain a visible diagram");
   const ascii = composeScene(scene);
   const mappings: ProjectRepresentationMappingRecord[] = [];
   for (const node of flattenGrid(resolveScene(scene))) {

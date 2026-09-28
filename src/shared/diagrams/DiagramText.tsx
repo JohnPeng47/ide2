@@ -1,4 +1,4 @@
-import { Fragment, type ComponentPropsWithRef, type ReactNode, type HTMLAttributes } from 'react';
+import { Fragment, useEffect, useRef, useState, type ComponentPropsWithRef, type ReactNode, type HTMLAttributes } from 'react';
 import type { DiagramTextRow, DiagramTextRun, DiagramTextOwner } from '../../../domain/core/diagrams/diagramText';
 import type { DiagramJumpTarget } from '../../../domain/core/diagrams/diagramJump';
 import './diagramText.css';
@@ -29,17 +29,13 @@ export function DiagramText({ rows, onJump, renderRun, rowProps, nodeProps, regi
       const decoration = owner ? nodeProps?.(owner) : undefined;
       const pieces: DiagramTextRun[][] = [];
       for (const run of group) {
-        if (run.jump && pieces.at(-1)?.[0].jump?.id === run.jump.id) pieces.at(-1)!.push(run);
+        if (run.jump && pieces.at(-1)?.[0].jump?.id === run.jump.id && pieces.at(-1)?.[0].jumps?.map(j => j.id).join(',') === run.jumps?.map(j => j.id).join(',')) pieces.at(-1)!.push(run);
         else pieces.push([run]);
       }
       const contents = pieces.map(piece => {
         const run = piece[0];
         return <Fragment key={run.start}>{run.jump && onJump
-          ? <button type="button" className="diagram-jump" data-diagram-jump-id={run.jump.id}
-              data-mapping-static-ui data-diagram-canvas-static-ui
-              onPointerDown={event => { if (!event.ctrlKey) event.stopPropagation(); }}
-              onClick={event => { if (event.ctrlKey) return; event.stopPropagation(); onJump(run.jump!.target); }}
-              title="Open linked diagram">{piece.map(item => item.text).join('')}</button>
+          ? <JumpChoices run={run} onJump={onJump} text={piece.map(item => item.text).join('')} />
           : piece.map(item => <Fragment key={item.start}>{renderRun ? renderRun(item) : item.text}</Fragment>)}</Fragment>;
       });
       return <span key={first.start}
@@ -58,4 +54,28 @@ export function DiagramText({ rows, onJump, renderRun, rowProps, nodeProps, regi
       >{contents}</span>;
     })}{index < rows.length - 1 ? '\n' : null}</span>;
   })}</pre>;
+}
+
+function JumpChoices({ run, onJump, text }: { run: DiagramTextRun; text: string; onJump: (target: DiagramJumpTarget) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const outside = (event: PointerEvent) => { if (!ref.current?.contains(event.target as Node)) setOpen(false); };
+    window.addEventListener('pointerdown', outside, true);
+    return () => window.removeEventListener('pointerdown', outside, true);
+  }, [open]);
+  const jumps = run.jumps ?? [run.jump!];
+  return <span ref={ref} className="diagram-jump-container" onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); setOpen(false); } }}>
+    <button type="button" className="diagram-jump" data-diagram-jump-id={run.jump!.id} data-mapping-static-ui data-diagram-canvas-static-ui
+      onPointerDown={event => { if (!event.ctrlKey) event.stopPropagation(); }}
+      onClick={event => { if (event.ctrlKey || event.metaKey) return; event.stopPropagation();
+        if (jumps.length === 1) onJump(jumps[0].target); else setOpen(value => !value); }}
+      title={jumps.length === 1 ? 'Open linked diagram' : `Choose from ${jumps.length} linked diagrams`}>{text}</button>
+    {open && <span className="diagram-jump-choices" role="menu" aria-label="Linked diagrams" data-mapping-static-ui data-diagram-canvas-static-ui>
+      {jumps.map((jump, i) => <button key={jump.id} type="button" role="menuitem" onClick={event => { event.stopPropagation(); setOpen(false); onJump(jump.target); }}>
+        {(jump as { label?: string }).label || `Destination ${i + 1}: ${jump.target.displayNodeId ?? jump.target.representationId}`}
+      </button>)}
+    </span>}
+  </span>;
 }

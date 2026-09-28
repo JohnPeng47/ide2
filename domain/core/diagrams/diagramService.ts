@@ -2,6 +2,7 @@ import { CanvasHistory, type CanvasHistoryRecord, type ResolvedCanvasDocument } 
 import { DiagramRevisionEditor, type DiagramEdit, type DiagramView, type PreparedDiagramEdit } from './diagramRevisionEditor';
 import type { DiagramInput } from './diagram';
 import { persistDiagramData, restoreDiagramData, type DiagramRecordStore } from './diagramPersistence';
+import { prepareCanvasTransfer, prepareTransferNavigation, transferBoundary, type CanvasTransfer, type TransferInput, type PreparedCanvasTransfer, type TransferState } from './canvasTransfer';
 
 export type { DiagramEdit, DiagramView, DiagramRevision, DiagramRevisionId, ContextId, PreparedDiagramEdit } from './diagramRevisionEditor';
 export type { DiagramRecordStore } from './diagramPersistence';
@@ -18,6 +19,9 @@ export interface DiagramContextState {
 
 /** Canvas controllers coordinate edits; this boundary owns history and its storage. */
 export interface DiagramService {
+  prepareTransfer(context: DiagramEditingContext, input: TransferInput, destination?: DiagramEditingContext): PreparedCanvasTransfer;
+  transferBoundary(context: DiagramEditingContext, transaction: CanvasTransfer, canvasId: string, redo?: boolean): boolean;
+  prepareTransferNavigation(source: DiagramEditingContext, destination: DiagramEditingContext, transaction: CanvasTransfer, redo?: boolean): { source: TransferState; destination: TransferState; transaction: CanvasTransfer };
   openContext(document: ResolvedCanvasDocument, view: unknown, history?: CanvasHistoryRecord): DiagramEditingContext;
   state(context: DiagramEditingContext): DiagramContextState;
   resolve(context: DiagramEditingContext, diagramId: string): DiagramView;
@@ -27,6 +31,8 @@ export interface DiagramService {
   reset(context: DiagramEditingContext): void;
   /** Portable transport adapters; callers must not interpret diagram revision tables. */
   exportContext(context: DiagramEditingContext): CanvasHistoryRecord;
+  persistenceChanges(context: DiagramEditingContext, since?: number): import("./canvasHistory").HistoryChanges;
+  retireTransactions(context: DiagramEditingContext, ids: ReadonlySet<string>): void;
   forkContext(context: DiagramEditingContext, view: unknown): CanvasHistoryRecord;
   adopt(context: DiagramEditingContext, proposed: CanvasHistoryRecord): void;
   prepareCreate(input: DiagramInput): PreparedDiagramEdit;
@@ -63,8 +69,23 @@ export class RevisionedDiagramService implements DiagramService {
   append(context: DiagramEditingContext, document: ResolvedCanvasDocument, view: unknown, correspondence?: ReadonlyMap<string, string>) {
     this.history(context).append(document, view, correspondence);
   }
-  navigate(context: DiagramEditingContext, redo = false) { return !!this.history(context).navigate(redo); }
+  navigate(context: DiagramEditingContext, redo = false) {
+    const linked = this.history(context).navigationTransactionId(redo);
+    if (linked) throw Error('Use workspace undo/redo for a canvas transfer.');
+    return !!this.history(context).navigate(redo);
+  }
+  prepareTransfer(context: DiagramEditingContext, input: TransferInput, destination?: DiagramEditingContext) {
+    return prepareCanvasTransfer(this.history(context).export(), input, destination ? this.history(destination).export() : undefined);
+  }
+  transferBoundary(context: DiagramEditingContext, transaction: CanvasTransfer, canvasId: string, redo = false) {
+    return transferBoundary({ headId: this.history(context).headId }, transaction, canvasId, redo);
+  }
+  prepareTransferNavigation(source: DiagramEditingContext, destination: DiagramEditingContext, transaction: CanvasTransfer, redo = false) {
+    return prepareTransferNavigation(this.history(source).export(), this.history(destination).export(), transaction, redo);
+  }
   reset(context: DiagramEditingContext) { this.history(context).reset(); }
+  persistenceChanges(context: DiagramEditingContext, since?: number) { return this.history(context).persistenceChanges(since); }
+  retireTransactions(context: DiagramEditingContext, ids: ReadonlySet<string>) { this.history(context).retireTransactions(ids); }
   exportContext(context: DiagramEditingContext) { return this.history(context).export(); }
   forkContext(context: DiagramEditingContext, view: unknown) { return this.history(context).fork(view); }
   adopt(context: DiagramEditingContext, proposed: CanvasHistoryRecord) { this.history(context).adopt(proposed); }

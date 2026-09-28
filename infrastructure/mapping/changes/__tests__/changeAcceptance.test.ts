@@ -101,7 +101,15 @@ it('recovers acceptance after catalog commit but failed session persistence, wit
   });
   await expect(f.changes.accept(input)).rejects.toThrow('session disk failure');
   const published = await f.catalog.loadRepresentationCatalog('project');
-  const reopened = new ChangeSessionService(new DiagramChangeSessionStore(f.root), f.source, f.bridge);
+  const repository = new DiagramChangeSessionStore(f.root);
+  const reopened = new ChangeSessionService(repository, f.source, f.bridge);
+  const read = vi.spyOn(repository, 'read'), write = vi.spyOn(repository, 'write');
+  const loadCatalog = vi.spyOn(f.catalog, 'loadRepresentationCatalog');
+  expect((await reopened.list())[0]).toMatchObject({ status: 'accepted', version: input.expectedVersion + 1,
+    acceptance: published.changeSessionAcceptances?.[id] });
+  expect(read).not.toHaveBeenCalled();
+  expect(write).not.toHaveBeenCalled();
+  expect(loadCatalog).not.toHaveBeenCalled();
   const result = await reopened.accept(input);
   expect(result.status).toBe('accepted');
   expect(result.acceptance).toEqual(published.changeSessionAcceptances?.[id]);

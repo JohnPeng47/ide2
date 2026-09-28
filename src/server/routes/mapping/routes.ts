@@ -1,3 +1,4 @@
+import type { WorkspaceBatch } from '../../../../domain/mapping/workspace/workspaceRecords';
 import type { AgentDiagrammingSessionService } from '../../../../application/mapping/agent/sessionService';
 import { handleAgentRoutes } from './agentRoutes';
 
@@ -23,10 +24,16 @@ export function createMappingRoutes({ selection, diagrams, workspace, chat, comp
     if (url.pathname === '/api/mapping/compactions' || url.pathname.startsWith('/api/mapping/compactions/')) {
       return handleFileCompaction(request, response, url, compactionService);
     }
+    if (url.pathname === '/api/mapping/workspace/records') {
+      if (request.method === 'GET') return sendJson(response, 200, await workspace.loadRecords());
+      if (request.method === 'POST') return sendJson(response, 200, await workspace.applyBatch(await readBody(request, 64 * 1024 * 1024) as WorkspaceBatch));
+      return sendJson(response, 405, { error: 'method not allowed' });
+    }
     if (url.pathname === '/api/mapping/workspace') {
       if (request.method === 'GET') return sendJson(response, 200, await workspace.load());
       if (request.method !== 'PUT') return sendJson(response, 405, { error: 'method not allowed' });
-      return sendJson(response, 200, await workspace.save(await readBody(request)));
+      // Workspace saves include revision histories and captured source evidence.
+      return sendJson(response, 200, await workspace.save(await readBody(request, 64 * 1024 * 1024)));
     }
     if (url.pathname === '/api/mapping/chat') return handleLocalChat(request, response, chat);
     if (url.pathname === '/api/mapping/diagrams') {

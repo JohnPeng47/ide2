@@ -24,6 +24,44 @@ selection is made. Existing captured projection content remains available.
 
 ## State ownership
 
+`CanvasWorkspace` owns one `CanvasSession` per open document. The page's draft registry
+contains metadata and stable session handles; it does not mirror documents, canvas state,
+or exported history. A session owns the existing `MappingDocumentController` and exposes
+read-only Zustand stores for document, presentation, controls, geometry, saved status,
+and temporary interaction. Commands still go through the controller; subscriptions publish
+its immutable references rather than creating another editable model.
+
+The interaction boundary is deliberately separate from controller commits:
+
+```text
+Ctrl-drag pointer movement
+  -> CanvasSession.previewSelection
+     -> interaction store
+        -> SelectionPreviewOverlay
+
+Pan pointer movement
+  -> imperative canvas transform + SourcePaneViewState
+
+Completed selection / document command
+  -> MappingDocumentController
+     -> changed session stores -> subscribed UI
+     -> document change -> cached saved-status comparison + search/explorer update
+     -> history commit -> debounced workspace persistence
+        -> submit changed records; serialize batches in a worker
+```
+
+Dirty comparisons use canonical scene/edge keys computed only when those references or
+the saved baseline change. Rendering, selection previews, and presentation-only commits
+never serialize the document to determine dirty status. Save acknowledgements update the
+captured baseline, so edits made while Save is in flight remain dirty. Undo/redo compare
+against that same baseline. Persistence subscribes outside React and coalesces commits;
+history is exported when capturing a snapshot, not on every controller notification.
+
+Keep new pointer previews in the interaction store, and let each new content renderer
+select its own presentation node. Do not restore Canvas-to-page callbacks that copy domain
+state. The session/workspace tests enforce that 1,000 preview updates produce no controller,
+document, history export, dirty calculation, persistence, or other-canvas notifications.
+
 - `LineGridScene` remains authoritative for diagram/group contents, geometry, and expansion.
   Generated sub-diagrams are ordinary scene boxes. There is no duplicate copy of their state
   in the display-node registry.
@@ -58,9 +96,9 @@ axis. This change adds geometry policies, not new drag/resize gestures.
 
 ## Save and reload
 
-Save workspace writes a versioned snapshot of all opened documents, including unsaved scene
-edits, retained effects, control drafts, and pan/zoom. Restore workspace replaces the current
-workspace with the saved snapshot. The saved workspace is also restored on page reload.
+Workspace editing history is saved incrementally in the background. Save workspace samples
+live views and waits for all submitted changes to become durable. Restore workspace flushes
+pending changes and reloads the persisted workspace. The workspace also restores on page reload.
 These explicit commands are separate from Save, which creates a diagram representation revision.
 
 Live source scroll offsets and camera transforms are kept in a workspace-scoped
@@ -69,6 +107,8 @@ viewport entry; camera movements write the canvas transform without updating the
 drafts. `capture()` samples mounted source viewers directly, retains the last position of
 unmounted panes, and merges those positions and the camera into the workspace snapshot.
 This also captures scrolling immediately before Save or Export, before a scroll event arrives.
+Viewport changes submit after a 250 ms coalescing interval; persistence then batches them with
+other changed records. Camera-only changes use a separate viewport record.
 Restore/Import replaces the runtime state; file switches and pane deletion discard obsolete
 entries. Source rows are memoized independently of viewport callbacks, so scrolling and
 panning cannot restart the full-file block measurements. The current renderer retains native
@@ -105,7 +145,7 @@ an older build; persistence and real interaction checks remain enabled.
 trials per gesture and pane count.
 
 Export downloads the same snapshot as JSON. Import validates it and replaces the current
-workspace; Save workspace makes an imported workspace the default on reload. Import requires
+workspace; background persistence makes it the default on reload. Import requires
 the same project ID. It is not a portable project/artifact export: projection content is
 captured, but continuing a projection still requires the corresponding catalog/revisions.
 
@@ -119,16 +159,33 @@ stay exact. Unknown schema versions are rejected. Restore normalizes unfinished 
 state rather than automatically restarting them. Source context and verbosity are preserved with each conversation. Older transcripts without captured source context remain readable; start a new conversation to ask further questions. Interrupted replies remain retryable without inserting synthetic assistant messages. Chat replies and prompt updates target their
 original owner, including when the active selection changes.
 
-`mappingWorkspaceRepository.ts` provides the load/save interface. The current implementation
-uses GET/PUT `/api/mapping/workspace`; `MappingWorkspaceStore` writes
-`mapping-workspace.json` atomically in the project's diagram store. Invalid writes leave the
-last saved snapshot intact. Saves replace the single workspace snapshot; concurrent writers
-use last-write-wins semantics. There is no autosave, undo-history serialization, collision
-avoidance, or bundled external artifact export in v2.
+`WorkspaceStorage` owns a persistent browser worker and a cached `StorageService` implementation.
+`store`/`remove` submit synchronously; `flush()` is the asynchronous durability barrier.
+`WorkspacePersistence` subscribes to committed canvas changes and submits metadata, history
+headers, newly created checkpoints/revisions, presentation, and viewports by key. Ordinary
+autosaves never export every canvas history. The worker normalizes and encodes changed records
+and posts serialized batches to `/api/mapping/workspace/records`.
+
+`WorkspaceRecordStore` writes immutable content-addressed record files and atomically replaces
+`workspace-records.json`, the manifest linking a complete workspace. A batch carries its expected
+workspace revision and a durable request ID; stale clients get a conflict and interrupted
+responses can be retried without applying a transaction twice. Legacy GET/PUT snapshot APIs
+remain available. The first records load migrates `mapping-workspace.json` without deleting it;
+after migration the record manifest is authoritative. Export remains workspace JSON, including
+undo/redo history but excluding external repository files. See
+[incremental persistence and measurements](../research/workspace-persistence.md) for scheduling,
+transaction boundaries, browser shutdown limits, and the create/delete benchmark.
+
+Change sessions have their own record manifests and scoped preview API. The Changes explorer
+reads summaries; previews load only the selected canvas's baseline/proposed state. Migration,
+hydration, and validation run in a server worker, while preview diffing runs in a browser
+worker. See [change-session storage](../research/change-session-storage.md) for record layout,
+incremental writes, version checks, and acceptance compatibility.
 
 ## Verification
 
 ```sh
+npx vitest run src/features/mapping/workspace/__tests__
 npx vitest run domain/mapping/workspace/__tests__/displayModel.test.ts domain/mapping/workspace/__tests__/mappingWorkspaceCodec.test.ts infrastructure/mapping/persistence/workspace/__tests__/mappingWorkspaceStore.test.ts
 npm run build
 node tests/browser/mapping/browser-projection-check.mjs

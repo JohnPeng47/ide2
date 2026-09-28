@@ -1,4 +1,6 @@
 import { CanvasHistory } from './canvasHistory';
+import { canvasTransferSchema } from '../../core/diagrams/canvasTransfer';
+import { validateCanvasJumps } from '../../core/diagrams/canvasJump';
 import { validateDiagram } from '../../core/diagrams/diagram';
 import { validateConnections } from '../../core/diagrams/diagramConnection';
 import { normalizeDiagramViews } from './diagramViewState';
@@ -53,13 +55,20 @@ export function deserializeWorkspace(json: string | unknown): MappingWorkspaceSn
   const legacy = value.schemaVersion === 1;
   check(Array.isArray(value.documents) && value.documents.length <= 100, 'invalid document list');
   const docs = new Set<string>();
+  if (value.transfers !== undefined) {
+    check(Array.isArray(value.transfers) && value.transfers.length <= 1000, 'invalid transfer history');
+    value.transfers = value.transfers.map((transfer: unknown) => canvasTransferSchema.parse(transfer));
+    check(new Set(value.transfers.map((transfer: any) => transfer.id)).size === value.transfers.length, 'duplicate transfer');
+  }
   for (const doc of value.documents) {
     object(doc); id(doc.representationId); check(!docs.has(doc.representationId), 'duplicate document'); docs.add(doc.representationId);
+    if (doc.hidden !== undefined) check(typeof doc.hidden === 'boolean', 'invalid canvas visibility');
     if (doc.savedRepresentationId !== undefined) id(doc.savedRepresentationId);
     if (doc.representationId.startsWith('draft-') && doc.revisionId === '') {} else id(doc.revisionId); string(doc.name); string(doc.savedName); string(doc.savedScene);
     object(doc.document); object(doc.document.scene); object(doc.document.sections);
     check(!Object.hasOwn(doc.document, 'nodes') && !Object.hasOwn(doc.document, 'evidence'), 'selection nodes and evidence belong to Diagram source contexts');
     scene(doc.document.scene);
+    if (doc.document.jumps) doc.document.jumps = validateCanvasJumps(doc.document.scene as unknown as LineGridScene, doc.document.jumps);
     if (doc.history) new CanvasHistory(doc.document as unknown as import('./mappingGrid').MappingGridDocument, doc.canvas, doc.history);
     scene(JSON.parse(doc.savedScene));
     doc.document.edges = validateConnections(doc.document.scene as unknown as LineGridScene, doc.document.edges);
@@ -200,6 +209,7 @@ export function deserializeWorkspace(json: string | unknown): MappingWorkspaceSn
       doc.canvas.display = display;
     }
     const c = doc.canvas.controls; object(c);
+    if (c.selectedDiagramIds !== undefined) strings(c.selectedDiagramIds);
     string(c.activeBoxId); object(c.surfaces); check(Object.hasOwn(c.surfaces, 'draft'), 'missing draft controls');
     for (const [owner, surface] of Object.entries(c.surfaces)) {
       check(owner === 'draft' || nodes[owner]?.kind === 'selection', 'missing control surface owner'); object(surface);
@@ -218,11 +228,21 @@ export function deserializeWorkspace(json: string | unknown): MappingWorkspaceSn
     if (c.activeThreadId) check(nodes[c.activeThreadId].kind === 'conversation', 'invalid conversation owner');
     if (doc.viewport) { object(doc.viewport); object(doc.viewport.offset); number(doc.viewport.offset.x); number(doc.viewport.offset.y); check(doc.viewport.scale >= .25 && doc.viewport.scale <= 4, 'invalid zoom'); }
   }
+  for (const tx of value.transfers ?? []) {
+    const source = value.documents.find((doc: any) => doc.representationId === tx.sourceId);
+    const destination = value.documents.find((doc: any) => doc.representationId === tx.destinationId);
+    check(source && destination && source !== destination, 'missing transfer participant');
+    for (const [doc, before, after] of [[source, tx.sourceBefore, tx.sourceAfter], [destination, tx.destinationBefore, tx.destinationAfter]]) {
+      check(doc.history?.snapshots[before] && doc.history?.snapshots[after], 'missing transfer checkpoint');
+    }
+    check(destination.history.snapshots[tx.destinationAfter].transactionId === tx.id, 'unlinked destination checkpoint');
+    if (tx.mode === 'move') check(source.history.snapshots[tx.sourceAfter].transactionId === tx.id, 'unlinked source checkpoint');
+  }
   if (value.activeDocumentId !== undefined) check(docs.has(value.activeDocumentId), 'missing active document');
   value.schemaVersion = 3;
   return value as unknown as MappingWorkspaceSnapshot;
 }
-export function serializeWorkspace(value: MappingWorkspaceSnapshot): string {
+export function serializeWorkspace(value: MappingWorkspaceSnapshot, pretty = true): string {
   // Validation also normalizes non-resumable operations in the saved copy, never live state.
-  return JSON.stringify(deserializeWorkspace(value), null, 2);
+  return JSON.stringify(deserializeWorkspace(value), null, pretty ? 2 : undefined);
 }

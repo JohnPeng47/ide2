@@ -1,3 +1,5 @@
+import { WorkspaceRecordStore } from './workspaceRecordStore';
+import type { WorkspaceBatch } from '../../../../domain/mapping/workspace/workspaceRecords';
 import { RevisionedDiagramService, type DiagramService } from '../../../../domain/core/diagrams/diagramService';
 import { DiagramRevisionStore } from '../../../core/persistence/diagramRevisionStore';
 import { randomUUID } from 'node:crypto';
@@ -7,8 +9,14 @@ import type { MappingWorkspaceSnapshot } from '../../../../domain/mapping/worksp
 import { deserializeWorkspace } from '../../../../domain/mapping/workspace/mappingWorkspaceCodec';
 /** Separate from representation revisions: UI changes do not create diagram revisions. */
 export class MappingWorkspaceStore {
-  constructor(private readonly root: string, private readonly diagrams: DiagramService = new RevisionedDiagramService(new DiagramRevisionStore(root))) {}
+  constructor(private readonly root: string, private readonly diagrams: DiagramService = new RevisionedDiagramService(new DiagramRevisionStore(root))) { this.records = new WorkspaceRecordStore(root); }
+  private readonly records: WorkspaceRecordStore;
+  loadRecords(projectId: string) { return this.records.state(projectId, () => this.loadLegacy(projectId)); }
+  applyBatch(projectId: string, batch: WorkspaceBatch) { return this.records.apply(projectId, batch); }
   async load(projectId: string): Promise<MappingWorkspaceSnapshot | null> {
+    return await this.records.load(projectId) ?? this.loadLegacy(projectId);
+  }
+  private async loadLegacy(projectId: string): Promise<MappingWorkspaceSnapshot | null> {
     let json: string;
     try { json = await readFile(path.join(this.root, 'mapping-workspace.json'), 'utf8'); }
     catch (error) {
@@ -24,6 +32,7 @@ export class MappingWorkspaceStore {
   async save(projectId: string, input: unknown): Promise<void> {
     const snapshot = deserializeWorkspace(input);
     if (snapshot.projectId !== projectId) throw new Error('Workspace belongs to another project');
+    if (await this.records.replace(projectId, snapshot)) return;
     const json = JSON.stringify(await this.diagrams.persist(snapshot));
     await mkdir(this.root, { recursive: true });
     const temp = path.join(this.root, `.mapping-workspace-${randomUUID()}.tmp`);

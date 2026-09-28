@@ -57,7 +57,7 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
   const diagrams = new MappingDiagramService(store, corpusAccess, projectRoot, configuredDomainProfileId);
   const canvasBridge = new CanvasSessionBridge();
   const agent = new AgentDiagrammingSessionService(canvasBridge, diagrams, store, new QuickJsAgentRuntime(),
-    new ChangeSessionService(new DiagramChangeSessionStore(store.storeRoot, store.diagrams), store, canvasBridge, store.diagrams));
+    new ChangeSessionService(new DiagramChangeSessionStore(store.storeRoot, undefined, true), store, canvasBridge, store.diagrams));
   const routes = {
     core: createCoreRoutes({
       application: core,

@@ -97,9 +97,20 @@ export class CanvasCatalogStore {
     return path.join(this.storeRoot, 'canvases', 'catalog.json');
   }
 
+  private async readStoredCatalog(projectId: string) {
+    const raw = await readJsonIfExists<ProjectRepresentationCatalogRecord>(this.representationCatalogPath())
+      ?? await readJsonIfExists<ProjectRepresentationCatalogRecord>(path.join(this.storeRoot, 'representations', 'catalog.json'));
+    if (raw && raw.projectId !== projectId) throw new Error('representation catalog belongs to another Project');
+    return raw;
+  }
+
+  /** Publication receipts contain no diagram references; listing proposals needs no restored catalog. */
+  async loadChangeSessionAcceptances(projectId: string) {
+    return (await this.readStoredCatalog(projectId))?.changeSessionAcceptances ?? {};
+  }
+
   async loadRepresentationCatalog(projectId: string): Promise<ProjectRepresentationCatalogRecord> {
-    const raw = await readJsonIfExists<unknown>(this.representationCatalogPath())
-      ?? await readJsonIfExists<unknown>(path.join(this.storeRoot, 'representations', 'catalog.json'));
+    const raw = await this.readStoredCatalog(projectId);
     const stored = raw == null ? null : await this.diagrams.restore<ProjectRepresentationCatalogRecord>(raw);
     if (!stored) return emptyRepresentationCatalog(projectId);
     if (stored.projectId !== projectId) {

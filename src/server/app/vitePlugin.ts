@@ -5,7 +5,7 @@ import { isBuiltInDomainProfileId } from "../../../domain/core/profiles/domainPr
 import { ProjectDiagramConflict } from "../../../domain/core/representations/errors";
 import { createBackend } from './bootstrap';
 
-import { sendEvent, sendJson } from "../http/http";
+import { RequestTooLarge, sendEvent, sendJson } from "../http/http";
 
 /** Vite adapter: mount HTTP routes and translate transport errors. */
 export function diagramApi(
@@ -38,8 +38,8 @@ export function diagramApi(
         sendEvent(response, { type: "error", error: message });
         if (!response.destroyed && !response.writableEnded) response.end();
       } else {
-        const status = error instanceof ProjectDiagramConflict ? 409 : error instanceof ApplicationError
-          ? { conflict: 409, 'invalid-input': 400, 'binary-source': 415, 'lsp-disabled': 503 }[error.code] : 400;
+        const status = error instanceof RequestTooLarge ? 413 : error instanceof ProjectDiagramConflict ? 409 : error instanceof ApplicationError
+          ? { conflict: 409, 'invalid-input': 400, 'binary-source': 415, 'lsp-disabled': 503, 'storage-unavailable': 503 }[error.code] : 400;
         sendJson(response, status, { ...(error instanceof ApplicationError && error.code === 'lsp-disabled' ? { code: 'LSP_DISABLED' } : {}), error: message });
       }
     }

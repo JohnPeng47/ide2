@@ -31,9 +31,23 @@ try {
   await waitFor(async () => (await fetch(url).catch(() => null))?.ok, { timeoutMs: 20000 }).catch(error => { throw new Error(`${error}\n${serverErrors}`); });
   await withHeadlessBrowser({ url: `${url}/mapping`, width: 1800, height: 1100, chromePath: process.env.CHROME_PATH,
     arguments: ['--disable-gpu', ...(process.platform === 'linux' ? ['--no-sandbox'] : [])] }, async ({ cdp }) => {
+    const send = cdp.send.bind(cdp);
+    cdp.send = async (method, params) => {
+      let timer;
+      try { return await Promise.race([send(method, params), new Promise((_, reject) => { timer = setTimeout(() => reject(Error(`CDP timed out: ${method}`)), 30000); })]); }
+      finally { clearTimeout(timer); }
+    };
     const errors = [];
+    await cdp.send('Page.enable');
+    cdp.on('Page.javascriptDialogOpening', () => void cdp.send('Page.handleJavaScriptDialog', { accept: true }));
     await cdp.send('Runtime.enable'); cdp.on('Runtime.exceptionThrown', event => errors.push(event.exceptionDetails.text));
     const canvasReplies = [];
+    const changeReads = [];
+    cdp.on('Fetch.requestPaused', event => {
+      changeReads.push(event.request.url);
+      void cdp.send('Fetch.continueRequest', { requestId: event.requestId });
+    });
+    await cdp.send('Fetch.enable', { patterns: [{ urlPattern: '*/api/mapping/agent/change-sessions*' }] });
     await cdp.send('Network.enable');
     cdp.on('Network.requestWillBeSent', ({ request }) => {
       if (request.url.includes('/canvases/') && request.url.endsWith('/reply') && request.postData)
@@ -54,6 +68,14 @@ try {
     await click('nav[aria-label="Diagram changes"] summary', 'Acceptance browser fixture');
     await click('nav[aria-label="Diagram changes"] button', 'Current LLM prompt stack');
     await waitForSelector(cdp, '[data-diff-status="modified"]');
+    await waitFor(() => changeReads.some(url => url.includes('/preview?')));
+    assert.ok(!changeReads.some(url => url.endsWith(`/change-sessions/${changeSessionId}`)), 'Opening a preview must not request the full session');
+    await waitFor(() => changeReads.some(url => url.includes('/preview?') && new URL(url).searchParams.has('version')));
+    const scoped = await fetch(`${url}/api/mapping/agent/change-sessions/${changeSessionId}/preview?documentId=${documentId}`).then(r => r.json());
+    assert.equal(scoped.document.id, documentId);
+    assert.ok(!('history' in scoped.document) && !('past' in scoped.document) && !('receipts' in scoped));
+    assert.equal(await fetch(`${url}/api/mapping/agent/change-sessions/${changeSessionId}/preview?documentId=${documentId}&version=${scoped.version}`).then(r => r.json()), null);
+    console.log('Scoped preview rendered; accepting');
     canvasReplies.length = 0;
     await click('.change-session-actions button', 'Accept all changes');
     await waitFor(async () => (await visibleCanvasText()).includes('After acceptance'));
@@ -73,6 +95,7 @@ try {
       return JSON.stringify(await response.json()).includes(accepted.acceptance.documents[0].after.revisionId);
     });
     await cdp.send('Page.reload', { ignoreCache: true });
+    console.log('Reloading accepted canvas');
     await waitFor(async () => (await visibleCanvasText()).includes('After acceptance'));
     await click('[role="tab"]', 'Changes');
     await click('nav[aria-label="Diagram changes"] summary', 'Acceptance browser fixture');
@@ -80,6 +103,10 @@ try {
     await waitForSelector(cdp, '[data-diff-status="modified"]');
     assert.ok(await evaluate(cdp, 'document.querySelector(".change-session-actions").textContent.includes("Accepted")'));
     assert.equal(await evaluate(cdp, '[...document.querySelectorAll(".change-session-actions button")].some(b=>b.textContent.includes("Accept all"))'), false);
+    const previewCount = changeReads.filter(url => url.includes('/preview?')).length;
+    const listCount = changeReads.filter(url => url.endsWith('/change-sessions')).length;
+    await waitFor(() => changeReads.filter(url => url.endsWith('/change-sessions')).length >= listCount + 2);
+    assert.equal(changeReads.filter(url => url.includes('/preview?')).length, previewCount, 'Accepted previews stop polling while the explorer continues refreshing summaries');
     await click('.change-session-actions button', 'Open canvas');
     await waitFor(async () => (await visibleCanvasText()).includes('After acceptance'));
     await click('.mapping-document-view:not([hidden]) button', 'Undo');
