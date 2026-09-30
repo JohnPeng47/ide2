@@ -1,8 +1,10 @@
+import { publishLiveCanvasSelections } from './liveCanvasPublisher';
+import type { CanvasWorkspace } from '../workspace/canvasWorkspace';
 import { useEffect, useRef, useState } from 'react';
 import type { CanvasCommand, CanvasDescriptor } from '../../../../domain/mapping/agent/contracts';
 import { apiFetch, errorFrom } from '../../../shared/http/http';
 
-export function useAgentCanvasBridge(descriptor: Omit<CanvasDescriptor, 'canvasId'>, handle: (command: CanvasCommand) => Promise<unknown>) {
+export function useAgentCanvasBridge(descriptor: Omit<CanvasDescriptor, 'canvasId'>, handle: (command: CanvasCommand) => Promise<unknown>, workspace?: CanvasWorkspace) {
   const [canvasId] = useState(() => crypto.randomUUID());
   const latest = useRef({ descriptor, handle }); latest.current = { descriptor, handle };
   const registration = JSON.stringify({ ...descriptor, canvasId });
@@ -44,5 +46,11 @@ export function useAgentCanvasBridge(descriptor: Omit<CanvasDescriptor, 'canvasI
     void run();
     return () => { abort.abort(); clearTimeout(timer); void apiFetch(`/api/mapping/agent/canvases/${canvasId}`, { method: 'DELETE', keepalive: true }).catch(() => undefined); };
   }, [canvasId]);
+  useEffect(() => {
+    if (!workspace) return;
+    const endpoint = new URL(`${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/mapping/live`, location.href);
+    endpoint.protocol = endpoint.protocol === 'https:' ? 'wss:' : 'ws:';
+    return publishLiveCanvasSelections(workspace, canvasId, endpoint.href);
+  }, [workspace, canvasId]);
   return canvasId;
 }

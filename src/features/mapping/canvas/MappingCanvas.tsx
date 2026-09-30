@@ -17,8 +17,7 @@ import { DiagramSubtreeControls } from './DiagramSubtreeControls';
 import { CanvasPasteMenu } from "./CanvasPasteMenu";
 import { normalizePastedDiagram } from "./pasteDiagram";
 import { LocalChatVerbosityToggle } from "../chat/LocalChatVerbosityToggle";
-import { formatAsciiWithCodeReferences } from "../../../../domain/core/diagrams/diagramClipboard";
-import { asciiForSelection } from "../../../../domain/core/diagrams/diagramSelection";
+import { selectionClipboardText } from "../../../../domain/mapping/workspace/selectionClipboard";
 import { layoutConversationPane } from "../../../../domain/mapping/chat/conversationPaneLayout";
 import { addDisplayNode, displayGeometry, measureDisplayNode, removeDisplayNode, setExpansion, type DisplayState, type SelectionRegion, type ConversationPane, type ProjectedPane } from "../../../../domain/mapping/workspace/displayModel";
 import { initialSelectionSurface, selectionSurfaceKeys, type MappingCanvasState, type MappingControlValues, type SelectionSurfaceState } from "../../../../domain/mapping/workspace/mappingWorkspace";
@@ -310,18 +309,15 @@ export function MappingPocSelectionCanvas(props: {
     && sourceCoveredNodeCount === selectedNodes.length;
   const copySelection = useCallback(async () => {
     if (!selectionRect) return;
-    const refs = selectedNodes.flatMap((node) => node.sourceRanges.map((range) =>
-      `${node.label}: ${range.path}:${range.startLine}-${range.endLine}`
-    ));
-    const text = formatAsciiWithCodeReferences([asciiForSelection(ascii, selectionRect)], refs);
+    const text = selectionClipboardText(content, selectionRect, selectedNodeIds)!;
     try {
       if (!navigator.clipboard?.writeText) throw new Error("Clipboard is unavailable in this browser");
       await navigator.clipboard.writeText(text);
-      setStatusMessage(refs.length ? "Copied ASCII + code refs" : "Copied ASCII (no code refs mapped)");
+      setStatusMessage(selectedSourceRangeCount ? "Copied ASCII + code refs" : "Copied ASCII (no code refs mapped)");
     } catch (error) {
       setStatusMessage(`Copy failed: ${error instanceof Error ? error.message : "Clipboard access was denied"}`);
     }
-  }, [ascii, selectionRect, selectedNodes]);
+  }, [content, selectionRect, selectedNodeIds, selectedSourceRangeCount]);
   const selectedEvidenceIds = useMemo(() => [...new Set(diagramSource(content).mappings()
     .filter((mapping) => selectedNodeIdSet.has(`${content.id}:${mapping.id}`))
     .map((mapping) => exportedEvidenceId(scene, content.id, mapping.entityId)))], [scene, content, selectedNodeIdSet]);

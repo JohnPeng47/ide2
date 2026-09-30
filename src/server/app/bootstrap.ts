@@ -1,3 +1,4 @@
+import { LiveCanvasService } from '../../../application/mapping/agent/liveCanvasService';
 import { CoreApplication } from "../../../application/core/application";
 import { AgentDiagrammingSessionService } from '../../../application/mapping/agent/sessionService';
 import { ChangeSessionService } from '../../../application/mapping/changes/changeSessionService';
@@ -56,6 +57,7 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
   const languageService = options.lspEnabled === true ? new ProjectLanguageService() : undefined;
   const diagrams = new MappingDiagramService(store, corpusAccess, projectRoot, configuredDomainProfileId);
   const canvasBridge = new CanvasSessionBridge();
+  const liveCanvas = new LiveCanvasService(() => canvasBridge.list());
   const agent = new AgentDiagrammingSessionService(canvasBridge, diagrams, store, new QuickJsAgentRuntime(),
     new ChangeSessionService(new DiagramChangeSessionStore(store.storeRoot, undefined, true), store, canvasBridge, store.diagrams));
   const routes = {
@@ -66,14 +68,14 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
     }),
     mapping: createMappingRoutes({
       selection: new SelectionService(store, mappingRuntime, mappingPocSourceRoot),
-      diagrams, agent,
+      diagrams, agent, liveCanvas,
       workspace: new MappingWorkspaceService(store, new MappingWorkspaceStore(store.storeRoot, store.diagrams)),
       chat: new LocalChatService(store, corpusAccess, chatRuntime, mappingPocSourceRoot),
       compactionService
     })
   };
   return {
-    routes, dispose() {
+    routes, liveCanvas, dispose() {
       canvasBridge.dispose(); languageService?.dispose(); mappingRuntime.dispose(); chatRuntime.dispose(); compactionService.dispose();
     }
   };

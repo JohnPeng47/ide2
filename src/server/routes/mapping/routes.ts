@@ -1,3 +1,5 @@
+import type { LiveCanvasService } from '../../../../application/mapping/agent/liveCanvasService';
+import { readLiveSelection } from './liveCanvasRoutes';
 import type { WorkspaceBatch } from '../../../../domain/mapping/workspace/workspaceRecords';
 import type { AgentDiagrammingSessionService } from '../../../../application/mapping/agent/sessionService';
 import { handleAgentRoutes } from './agentRoutes';
@@ -14,12 +16,14 @@ import { readBody, sendEvent, sendJson } from '../../http/http';
 import { handleLocalChat } from './chat/localChatRoutes';
 import { handleFileCompaction } from './compaction/fileCompactionRoutes';
 
-export function createMappingRoutes({ selection, diagrams, workspace, chat, compactionService, agent }: {
-  agent?: AgentDiagrammingSessionService;
+export function createMappingRoutes({ selection, diagrams, workspace, chat, compactionService, agent, liveCanvas }: {
+  agent?: AgentDiagrammingSessionService; liveCanvas?: LiveCanvasService;
   selection: SelectionService; diagrams: MappingDiagramService; workspace: MappingWorkspaceService;
   chat: LocalChatService; compactionService: FileCompactionService;
 }) {
   return async (request: Connect.IncomingMessage, response: ServerResponse, url: URL): Promise<void> => {
+    const selectionRead = url.pathname.match(/^\/api\/mapping\/live\/connections\/([^/]+)\/selection$/);
+    if (selectionRead && liveCanvas) return readLiveSelection(request, response, decodeURIComponent(selectionRead[1]), liveCanvas);
     if (url.pathname.startsWith('/api/mapping/agent/') && agent) return handleAgentRoutes(request, response, url, agent);
     if (url.pathname === '/api/mapping/compactions' || url.pathname.startsWith('/api/mapping/compactions/')) {
       return handleFileCompaction(request, response, url, compactionService);

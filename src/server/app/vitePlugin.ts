@@ -1,4 +1,5 @@
-import type { Connect, Plugin } from "vite";
+import { attachLiveCanvasSockets } from '../routes/mapping/liveCanvasRoutes';
+import type { Connect, Plugin, ViteDevServer, PreviewServer } from "vite";
 import { ApplicationError } from '../../../application/core/errors';
 import type { BuiltInDomainProfileId } from "../../../domain/core/profiles/domainProfile";
 import { isBuiltInDomainProfileId } from "../../../domain/core/profiles/domainProfiles";
@@ -44,13 +45,11 @@ export function diagramApi(
       }
     }
   };
-  const attach = (server: {
-    middlewares: { use(handler: Connect.NextHandleFunction): void };
-    httpServer?: { once(event: "close", listener: () => void): void } | null;
-  }) => {
+  const attach = (server: ViteDevServer | PreviewServer) => {
     server.middlewares.use(middleware);
+    const disposeSockets = server.httpServer ? attachLiveCanvasSockets(server.httpServer, backend.liveCanvas) : undefined;
     server.httpServer?.once("close", () => {
-      backend.dispose();
+      disposeSockets?.(); backend.dispose();
     });
   };
   return { name: "new-diagram-api", configureServer: attach, configurePreviewServer: attach };
