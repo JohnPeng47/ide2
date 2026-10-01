@@ -1,4 +1,6 @@
 import { deselectCanvas } from '../../../domain/mapping/selection/canvasSelection';
+import { DiagramRevisionReceiver } from './agent/diagramRevisionReceiver';
+import type { DiagramRevisionApplication } from '../../../domain/mapping/agent/diagramEdit';
 import { DefaultCanvasHistoryService } from '../../../domain/core/diagrams/canvasHistoryService';
 import { useStore } from 'zustand';
 import { CanvasWorkspace, type CanvasDraft as Draft, type CanvasDraftSeed } from './workspace/canvasWorkspace';
@@ -154,6 +156,7 @@ function MappingWorkspacePage() {
   useEffect(() => { search.sync(searchDocuments); }, [search, searchDocuments]);
   useEffect(() => () => search.dispose(), [search]);
   const appliedRequests = useRef(new Map<string, unknown>());
+  const [revisionReceiver] = useState(() => new DiagramRevisionReceiver());
   const waitController = async (id: string) => {
     const deadline = Date.now() + 5000;
     while (!controllers.current.has(id) && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 10));
@@ -202,6 +205,14 @@ function MappingWorkspacePage() {
     if (command.method === 'document-state') return { document: controller.getSnapshot().document, name: draft.name };
     if (command.method === 'snapshot') return { ...structuredClone(controller.getSnapshot()), history: controller.exportHistory(), name: draft.name,
       representationId: draft.representationId ?? (id.startsWith('draft-') ? undefined : id), revisionId: draft.revisionId || undefined };
+    if (command.method === 'apply-diagram-revision') {
+      if (workspaceBusy || draft.busy) throw new Error('WORKSPACE_BUSY');
+      if (!persistence.current || !storage.records) throw Error('WORKSPACE_UNAVAILABLE: persistence is not ready');
+      return revisionReceiver.apply(id, command.payload as DiagramRevisionApplication, controller, async () => {
+        persistence.current?.sync([id]);
+        await storage.flush();
+      });
+    }
     if (command.method === 'apply') {
       const { requestId, expectedVersion, operations } = command.payload as { requestId: string; expectedVersion: number; operations: DiagramOperation[] };
       const key = `${id}:${requestId}`;

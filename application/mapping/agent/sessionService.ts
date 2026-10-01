@@ -1,3 +1,4 @@
+import { DiagramEditService } from './diagramEditService';
 import { DefaultCanvasHistoryService } from '../../../domain/core/diagrams/canvasHistoryService';
 import { documentFromRevision } from '../../../domain/core/diagrams/projectDiagramCanvas';
 import type { ChangeSessionService } from '../changes/changeSessionService';
@@ -34,16 +35,37 @@ interface ExecRun {
 const canvasTimeout = (error: unknown) => error instanceof Error && error.message.includes('CANVAS_TIMEOUT');
 
 export class AgentDiagrammingSessionService {
+  private readonly edits?: DiagramEditService;
   private sessions = new Map<string, { canvasId: string; documentId: string; changeSessionId?: string }>();
   private saves = new Map<string, Promise<unknown>>();
   private execRuns = new Map<string, ExecRun>();
   private requests = new Map<string, { signature: string; promise: Promise<unknown> }>();
   constructor(readonly bridge: CanvasSessionPort, private readonly diagrams: MappingDiagramService,
-    private readonly store: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs'>, private readonly runtime: AgentExecRuntime, readonly changes?: ChangeSessionService) {}
+    private readonly store: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs'>, private readonly runtime: AgentExecRuntime, readonly changes?: ChangeSessionService,
+    editDiagrams?: DiagramService) {
+    if (editDiagrams) this.edits = new DiagramEditService(editDiagrams, {
+      snapshot: sessionId => this.snapshot(sessionId),
+      apply: async (sessionId, input) => {
+        const session = this.session(sessionId);
+        return await this.bridge.dispatch(session.canvasId, { method: 'apply-diagram-revision', documentId: session.documentId, payload: input }) as { version: number; unresolvedEdgeIds: string[] };
+      }
+    });
+  }
+  dispose() { this.edits?.dispose(); }
   async call(name: AgentToolName, raw: unknown): Promise<unknown> {
     const schema = agentToolSchemas[name];
     if (!schema) throw new Error('Unknown agent tool');
     const input = schema.parse(raw);
+    if (name === 'edit-diagram' || name === 'edit-diagram-status' || name === 'cancel-diagram-edit') {
+      if (!this.edits) throw Error('Diagram editing UNAVAILABLE in this runtime');
+      if (name === 'edit-diagram') {
+        const edit = agentToolSchemas['edit-diagram'].parse(input);
+        this.session(edit.sessionId); // Live attachment only; never creates a proposal.
+        return this.edits.start(edit);
+      }
+      const { runId } = agentToolSchemas['edit-diagram-status'].parse(input);
+      return name === 'edit-diagram-status' ? this.edits.get(runId) : this.edits.cancel(runId);
+    }
     if ('requestId' in input) {
       const key = `${'changeSessionId' in input ? input.changeSessionId ?? '' : ''}:${name}:${'sessionId' in input ? input.sessionId ?? '' : ''}:${input.requestId}`;
       const signature = JSON.stringify(input), old = this.requests.get(key);

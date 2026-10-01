@@ -14,6 +14,7 @@ For an agent host that launches MCP servers directly, use `node`, arguments `--i
 - `canvas-api-search`: returns matching API descriptions, JSON schemas, and examples. It searches documentation, not drawn objects.
 - `exec`: runs JavaScript with only `canvas` and `nodes` APIs. Calls are synchronous; use `return`, not `await`. No DOM, filesystem, network, Node globals, or module loader is exposed. Execution has memory, instruction, result-size, and API-call limits.
 - `draw_diagram`: takes completed printable ASCII, optional mappings/evidence, a `sessionId`, `requestId`, and `expectedVersion`. Omit `nodeId` to insert; provide it to replace a diagram. Content determines size and the existing grid algorithm resolves collisions.
+- `edit-diagram`: takes a prompt and a live diagram base revision; returns an asynchronous generation run. Poll `edit-diagram-status`, or cancel before application with `cancel-diagram-edit`. See [Prompt-driven diagram edits](#prompt-driven-diagram-edits).
 - `save_diagram`: publishes a confirmed (`settled`) representation. Omit `nodeId` to save the document; provide it to save one diagram independently. Supply `representationId` and `expectedRevisionId` when updating a previously saved independent diagram.
 
 ## Workflow
@@ -182,4 +183,4 @@ node tests/browser/mapping/browser-subtree-collapse-check.mjs
 npx vitest run domain/mapping/workspace/__tests__/mappingDocumentController.test.ts domain/core/diagrams/__tests__/diagramContent.test.ts infrastructure/mapping/agent/__tests__
 ```
 
-The browser test uses a disposable project and actual stdio MCP calls. It checks discovery, live reads, drawing/layout, duplicate requests, conflicts, rollback, pointer-driven undo/redo, standalone and whole-document saves, explorer/search visibility, and reload.
+The browser test uses a disposable project and actual stdio MCP calls. It checks discovery, live reads, drawing/layout, duplicate requests, conflicts, partial failures, per-edit pointer-driven undo/redo, standalone and whole-document saves, explorer/search visibility, and reload.

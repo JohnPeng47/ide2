@@ -1,4 +1,6 @@
 import { LiveCanvasService } from '../../../application/mapping/agent/liveCanvasService';
+import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService';
+import { FakeDiagramEditRuntime, PiDiagramEditRuntime } from '../../../infrastructure/mapping/agents/diagram-edit/diagramEditRuntime';
 import { CoreApplication } from "../../../application/core/application";
 import { AgentDiagrammingSessionService } from '../../../application/mapping/agent/sessionService';
 import { ChangeSessionService } from '../../../application/mapping/changes/changeSessionService';
@@ -51,6 +53,7 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
   const fake = process.env.NEW_DIAGRAM_AGENT === "fake";
   const chatRuntime = fake ? new FakeLocalChatRuntime() : new CodexLocalChatRuntime();
   const mappingRuntime = fake ? new FakeMappingAgentRuntime() : new PiMappingAgentRuntime();
+  const diagramEditRuntime = fake ? new FakeDiagramEditRuntime() : new PiDiagramEditRuntime(mappingPocSourceRoot);
   const store = new DiagramStore(projectRoot, diagramsDirectory);
   const core = createCoreApplication(store);
   const compactionService = createFileCompactionService(core, fake ? new FakeFileCompactionRuntime() : new PiFileCompactionRuntime());
@@ -60,7 +63,7 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
   const liveCanvas = new LiveCanvasService(() => canvasBridge.list(), async (workspaceInstanceId, documentId) =>
     await canvasBridge.dispatch(workspaceInstanceId, { method: 'context', documentId }) as import('../../../domain/mapping/agent/liveCanvasStatus').LiveCanvasContext);
   const agent = new AgentDiagrammingSessionService(canvasBridge, diagrams, store, new QuickJsAgentRuntime(),
-    new ChangeSessionService(new DiagramChangeSessionStore(store.storeRoot, undefined, true), store, canvasBridge));
+    new ChangeSessionService(new DiagramChangeSessionStore(store.storeRoot, undefined, true), store, canvasBridge), new RevisionedDiagramService(diagramEditRuntime));
   const routes = {
     core: createCoreRoutes({
       application: core,
@@ -77,7 +80,7 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
   };
   return {
     routes, liveCanvas, dispose() {
-      canvasBridge.dispose(); languageService?.dispose(); mappingRuntime.dispose(); chatRuntime.dispose(); compactionService.dispose();
+      agent.dispose(); diagramEditRuntime.dispose(); canvasBridge.dispose(); languageService?.dispose(); mappingRuntime.dispose(); chatRuntime.dispose(); compactionService.dispose();
     }
   };
 }

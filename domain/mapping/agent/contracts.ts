@@ -1,3 +1,4 @@
+import { editDiagramSchema, diagramEditRunSchema } from './diagramEdit';
 import { diagramChangeSchema } from '../changes/diagramChangeSession';
 import { diagramJumpSchema } from '../../core/diagrams/diagramJump';
 import { z } from 'zod';
@@ -21,7 +22,8 @@ export const apiSearchSchema = z.object({ query: z.string().max(1000).default(''
 export const createChangeSessionSchema = z.object({ title: z.string().trim().min(1).max(200), description: z.string().max(100000).optional(), canvasId: idSchema.optional(), requestId: idSchema }).strict();
 export const updateChangeSessionSchema = z.object({ changeSessionId: idSchema, requestId: idSchema, expectedVersion: z.number().int().nonnegative(), title: z.string().trim().min(1).max(200).optional(), status: z.enum(['draft','ready','archived']).optional(), changes: z.array(diagramChangeSchema).max(2000).optional(), action: z.enum(['undo','redo','reset']).optional(), documentId: idSchema.optional() }).strict();
 export const acceptChangeSessionSchema = z.object({ changeSessionId: idSchema, requestId: idSchema, expectedVersion: z.number().int().nonnegative() }).strict();
-export const agentToolSchemas = { create_diagram_change_session: createChangeSessionSchema, update_diagram_change_session: updateChangeSessionSchema, accept_diagram_change_session: acceptChangeSessionSchema, 'diagram-search': searchSchema, 'canvas-api-search': apiSearchSchema, exec: execSchema, draw_diagram: drawSchema, save_diagram: saveSchema, set_diagram_source_mappings: setSourceMappingsSchema };
+export const agentToolSchemas = { 'edit-diagram': editDiagramSchema, 'edit-diagram-status': diagramEditRunSchema,
+  'cancel-diagram-edit': diagramEditRunSchema, create_diagram_change_session: createChangeSessionSchema, update_diagram_change_session: updateChangeSessionSchema, accept_diagram_change_session: acceptChangeSessionSchema, 'diagram-search': searchSchema, 'canvas-api-search': apiSearchSchema, exec: execSchema, draw_diagram: drawSchema, save_diagram: saveSchema, set_diagram_source_mappings: setSourceMappingsSchema };
 export type AgentToolName = keyof typeof agentToolSchemas;
 
 export const canvasMethods = {
@@ -50,7 +52,7 @@ export function canvasApiSpec(query: string) {
     .map(([name, entry]) => ({ name, description: entry.description, inputSchema: z.toJSONSchema(entry.schema), example: entry.example }));
 }
 export interface CanvasDescriptor { canvasId: string; stableWorkspaceId?: string; projectId?: string; documents: { documentId: string; name: string; representationId?: string }[] }
-export interface CanvasCommand { id: string; method: 'snapshot' | 'context' | 'document-state' | 'apply' | 'create-document' | 'copy-document' | 'saved'; documentId?: string; payload?: unknown }
+export interface CanvasCommand { id: string; method: 'snapshot' | 'context' | 'document-state' | 'apply' | 'apply-diagram-revision' | 'create-document' | 'copy-document' | 'saved'; documentId?: string; payload?: unknown }
 export type LiveDocumentState = Pick<LiveDocumentSnapshot, 'document' | 'name'>;
 export interface LiveDocumentSnapshot {
   contextId?: string;

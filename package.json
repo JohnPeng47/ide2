@@ -30,6 +30,7 @@
     "check:live-canvas": "npm run build && node --import tsx tests/browser/mapping/browser-live-canvas-check.mjs",
     "check:change-acceptance": "npm run build && node --import tsx tests/browser/mapping/browser-change-acceptance-check.mjs",
     "check:diagram-search": "npm run build && node --import tsx tests/browser/mapping/browser-diagram-search-check.mjs",
+    "check:diagram-edit": "npm run build && node tests/browser/mapping/browser-diagram-edit-check.mjs",
     "check:diagram-transfer": "npm run build && node --import tsx tests/browser/mapping/browser-diagram-transfer-check.mjs"
   },
   "dependencies": {
