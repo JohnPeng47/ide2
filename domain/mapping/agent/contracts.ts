@@ -48,8 +48,8 @@ export function canvasApiSpec(query: string) {
   return Object.entries(canvasMethods).filter(([name, entry]) => terms.every(term => `${name} ${entry.description}`.toLowerCase().includes(term)))
     .map(([name, entry]) => ({ name, description: entry.description, inputSchema: z.toJSONSchema(entry.schema), example: entry.example }));
 }
-export interface CanvasDescriptor { canvasId: string; projectId?: string; documents: { documentId: string; name: string; representationId?: string }[] }
-export interface CanvasCommand { id: string; method: 'snapshot' | 'document-state' | 'apply' | 'create-document' | 'saved'; documentId?: string; payload?: unknown }
+export interface CanvasDescriptor { canvasId: string; stableWorkspaceId?: string; projectId?: string; documents: { documentId: string; name: string; representationId?: string }[] }
+export interface CanvasCommand { id: string; method: 'snapshot' | 'context' | 'document-state' | 'apply' | 'create-document' | 'saved'; documentId?: string; payload?: unknown }
 export type LiveDocumentState = Pick<LiveDocumentSnapshot, 'document' | 'name'>;
 export interface LiveDocumentSnapshot {
   contextId?: string;

@@ -27,7 +27,7 @@
     "start": "node scripts/dev/start-server.mjs --host 127.0.0.1",
     "mcp:mapping": "tsx scripts/mapping/mcp.ts",
     "check:agent-diagramming": "npm run build && node tests/browser/mapping/browser-agent-diagramming-check.mjs",
-    "check:live-canvas": "npm run build && node tests/browser/mapping/browser-live-canvas-check.mjs",
+    "check:live-canvas": "npm run build && node --import tsx tests/browser/mapping/browser-live-canvas-check.mjs",
     "check:change-acceptance": "npm run build && node --import tsx tests/browser/mapping/browser-change-acceptance-check.mjs",
     "check:diagram-search": "npm run build && node --import tsx tests/browser/mapping/browser-diagram-search-check.mjs",
     "check:diagram-transfer": "npm run build && node --import tsx tests/browser/mapping/browser-diagram-transfer-check.mjs"

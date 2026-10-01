@@ -1,29 +1,7 @@
 import { isRepositoryFilePath } from '../../../../domain/core/source/sourceNavigation';
-import { addDisplayNode, displayGeometry, setExpansion, type DisplayState, type ProjectedPane, type SourceCodePaneContent } from '../../../../domain/mapping/workspace/displayModel';
+import { type DisplayState, type SourceCodePaneContent } from '../../../../domain/mapping/workspace/displayModel';
 
 export type SourceCodePaneView = Pick<SourceCodePaneContent, 'sourceId' | 'sourceFile' | 'showCompactions' | 'rangeIndex' | 'scroll'>;
-
-export function openSourceCodePane(state: DisplayState, parentId: string, projectId: string, sourceFile: string): DisplayState {
-  const parent = state.nodes[parentId];
-  if (parent?.kind !== 'projection' || parent.content.kind !== 'compaction'
-    || !parent.content.files.some(file => file.sourceFile === sourceFile)) return state;
-  const sourceId = parent.content.files.find(file => file.sourceFile === sourceFile)?.sourceId;
-  const existing = parent.childIds.map(id => state.nodes[id]).find((node): node is ProjectedPane =>
-    node?.kind === 'projection' && node.content.kind === 'source-code' && node.content.sourceId === sourceId);
-  if (existing && existing.content.kind === 'source-code') {
-    const next = updateSourceCodePane(state, existing.id, existing.content.sourceFile === sourceFile
-      ? {} : { sourceFile, rangeIndex: 0, scroll: undefined });
-    return setExpansion({ ...next, nodes: { ...next.nodes, [parentId]: { ...parent, activeChildId: existing.id } } }, existing.id, 'expanded');
-  }
-  const pane: ProjectedPane = {
-    ...displayGeometry({ x: 0, y: 0 }, { width: 860, height: 640 }),
-    geometryPolicy: { placement: 'automatic', sizing: 'fixed' },
-    id: crypto.randomUUID(), kind: 'projection', title: sourceFile, childIds: [], expansion: 'expanded',
-    projectionId: parent.projectionId, sourceRevisionId: parent.sourceRevisionId, targetRevisionId: parent.targetRevisionId,
-    content: { kind: 'source-code', projectId, sourceId, files: parent.content.files, sourceFile, showCompactions: true, rangeIndex: 0 }
-  };
-  return addDisplayNode(state, pane, parentId);
-}
 
 export function updateSourceCodePane(state: DisplayState, id: string, patch: Partial<SourceCodePaneView>): DisplayState {
   const node = state.nodes[id];

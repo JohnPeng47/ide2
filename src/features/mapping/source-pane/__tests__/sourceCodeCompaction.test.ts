@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ProjectedFile } from '../../../../../domain/mapping/workspace/displayModel';
-import { sourceCodeCompaction } from '../sourceCodeCompaction';
+import { importLegacyCompactionPresentation as sourceCodeCompaction } from '../../../../../domain/mapping/workspace/importLegacyCompactionPresentation';
 
 function file(ranges: { startLine: number; endLine: number }[][]): ProjectedFile {
   return { sourceFile: 'example.ts', sourceSha256: 'a'.repeat(64), selectedLineCount: ranges.length,
@@ -9,7 +9,7 @@ function file(ranges: { startLine: number; endLine: number }[][]): ProjectedFile
       ...ranges.map((sourceRanges, index) => ({ treeLine: index + 2, selected: true, sourceRanges }))] };
 }
 
-describe('projected Studio source compaction', () => {
+describe('legacy source presentation import', () => {
   it('folds only mapped ranges, retaining exact node expansion targets and unmapped gaps', () => {
     const result = sourceCodeCompaction(file([[{ startLine: 10, endLine: 20 }], [{ startLine: 40, endLine: 45 }]]));
     expect(result.compactedSource.sections).toEqual([

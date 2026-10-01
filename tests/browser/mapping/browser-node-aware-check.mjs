@@ -1,3 +1,4 @@
+import { canvasSaveFixture } from '../../support/mappingDiagram.ts';
 // Run after npm run build: node --import tsx tests/browser/mapping/browser-node-aware-check.mjs
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
@@ -7,7 +8,7 @@ import { createServer } from 'node:net';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { seedMappingFixture } from '../support/browser-mapping-fixture.mjs';
-import { createDiagram } from '../../../domain/core/diagrams/diagram.ts';
+import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService.ts';
 import { projectCanvasSnapshot, singleDiagramScene } from '../../../domain/core/diagrams/projectDiagramCanvas.ts';
 import { asciiSha256 } from '../../../domain/core/diagrams/asciiSha256.ts';
 const { evaluate, waitFor, waitForSelector, withHeadlessBrowser, captureScreenshot } = await import(pathToFileURL(path.join(homedir(), '.codex/skills/front-end/browser-test.mjs')).href);
@@ -19,11 +20,11 @@ try {
   const catalogPath = path.join(root, '.diagrams/representations/catalog.json');
   const catalog = JSON.parse(await readFile(catalogPath, 'utf8'));
   const source = singleDiagramScene(ascii);
-  source.contents.overview = createDiagram({ id: 'overview', revision: 0, ascii, structureKind: 'tree' });
+  source.contents.overview = new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii, structureKind: 'tree' }).diagram;
   source.root.children.push({ ...source.root.children[0], id: 'second', position: { column: 35, row: 1 } });
   const targetAscii = 'Node-aware rendering\n|-- Shared renderer\n|   `-- DOM labels\n`-- Coordinates';
   const target = singleDiagramScene(targetAscii);
-  target.contents.overview = createDiagram({ id: 'overview', revision: 0, ascii: targetAscii, structureKind: 'tree' });
+  target.contents.overview = new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii: targetAscii, structureKind: 'tree' }).diagram;
   const targetNode = Object.values(target.contents.overview.content.structure.nodes).find(node => node.label === 'DOM labels');
   const content = source.contents.overview.content;
   const from = (line, startColumn) => ({ revisionId: content.revisionId, contentHash: content.asciiSha256,
@@ -33,11 +34,11 @@ try {
     { id: 'fallback', source: from(7, 1), target: { representationId: 'representation-target' } }
   ];
   const revision = catalog.revisions['revision-overview'];
-  revision.content = { kind: 'mapping-canvas', scene: source, edges: [] };
+  revision.content = { kind: 'canvas-history', history: canvasSaveFixture({ name: 'Fixture', scene: source, edges: [] }).history };
   revision.ascii = projectCanvasSnapshot(source).ascii;
   revision.asciiSha256 = asciiSha256(revision.ascii);
   const targetRevision = { ...revision, id: 'revision-target', representationId: 'representation-target',
-    ascii: targetAscii, asciiSha256: asciiSha256(targetAscii), content: { kind: 'mapping-canvas', scene: target, edges: [] } };
+    ascii: targetAscii, asciiSha256: asciiSha256(targetAscii), content: { kind: 'canvas-history', history: canvasSaveFixture({ name: 'Fixture', scene: target, edges: [] }).history } };
   catalog.revisions[targetRevision.id] = targetRevision;
   catalog.representations['representation-target'] = { ...catalog.representations['representation-overview'], id: 'representation-target',
     handle: 'rendering', name: 'Node-aware rendering', currentRevisionId: targetRevision.id, revisionIds: [targetRevision.id] };

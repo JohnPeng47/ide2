@@ -232,6 +232,7 @@ export function SourceCodeView(props: {
   preview: SourceSnippet;
   range: SourceRange;
   compacted: boolean;
+  foldPresentation?: 'compaction' | 'gap';
   highlightedRanges?: readonly Pick<SourceRange, "startLine" | "endLine">[];
   lineAnnotations?: readonly { startLine: number; content: ReactNode }[];
   presentation: ContentPresentation;
@@ -358,6 +359,16 @@ export function SourceCodeView(props: {
       const expanded = section ? expandedSections.has(key) : false;
 
       if (props.presentation.sourceCompaction && props.compacted && section && !expanded) {
+        if (props.foldPresentation === 'gap') {
+          rows.push(<div className="source-gap" data-line={section.startLine} key={`fold:${key}`}>
+            <button type="button" aria-label={`Reveal all original lines ${section.startLine} through ${section.endLine}`}
+              onClick={() => setExpandedSections(current => new Set(current).add(key))}>
+              ··· {section.endLine - section.startLine + 1} lines hidden ···
+            </button>
+          </div>);
+          index += section.endLine - section.startLine + 1;
+          continue;
+        }
         const graphLines = section.comment.replace(/\r\n?/g, "\n").split("\n");
         const nodesByGraphLine = new Map(section.nodes?.map((node) => [node.graphLine, node]) ?? []);
         const sourceIndent = props.preview.lines[index]?.match(/^\s*/)?.[0] ?? "";
@@ -469,7 +480,7 @@ export function SourceCodeView(props: {
 
     return rows;
   }, [props.preview, props.highlightedRanges, props.range.startLine, props.range.endLine, props.lineAnnotations,
-    props.presentation.sourceCompaction, props.compacted, sectionsByStart, expandedSections, expandedGraphNodes, highlighted]);
+    props.presentation.sourceCompaction, props.compacted, props.foldPresentation, sectionsByStart, expandedSections, expandedGraphNodes, highlighted]);
 
   const rootStyle = {
     "--source-bg": highlighted?.bg ?? "#1e1e1e",

@@ -1,3 +1,5 @@
+import { tsImport } from 'tsx/esm/api';
+const { revisionCanvasFixture } = await tsImport('../../support/mappingDiagram.ts', import.meta.url);
 import assert from "node:assert/strict";
 import { spawn, execFileSync } from "node:child_process";
 import { createServer } from "node:net";
@@ -65,12 +67,13 @@ try {
   const evidence={ worker: {id:"worker",handle:"worker",label:"Worker",category:"operation",summary:"Does work",sourceRanges:[{id:"range-worker",path:"worker.ts",startLine:1,endLine:1,originalLines:["export function worker() {}"]}]} };
   const representation={schemaVersion:1,id:"representation-seed",projectId,handle:"worker",name:"Worker overview",viewKind:"diagram",representationKind:"diagram",status:"settled",currentRevisionId:"revision-seed",revisionIds:["revision-seed"],createdAt:timestamp,updatedAt:timestamp};
   const revision={schemaVersion:1,id:"revision-seed",projectId,representationId:representation.id,revision:1,ascii:"Worker\n +-- task",asciiSha256:createHash("sha256").update("Worker\n +-- task").digest("hex"),representationKind:"diagram",evidence,mappings:[{id:"m-worker",evidenceId:"worker",sourceRangeId:"range-worker",line:1,startColumn:1,endColumn:6}],createdAt:timestamp};
+  revision.content = revisionCanvasFixture(revision);
   await mkdir(path.join(temp,".diagrams/representations"),{recursive:true});
   await writeFile(path.join(temp,".diagrams/project.json"),JSON.stringify({schemaVersion:1,id:projectId,name:"Mapping fixture",repositoryIdentity:path.join(temp,".git"),canonicalRepoRoot:temp,domainProfileId:"source-code",corpus:{kind:"git-worktree",root:temp},diagramSetIds:[],createdAt:timestamp,updatedAt:timestamp}));
   await writeFile(path.join(temp,".diagrams/representations/catalog.json"),JSON.stringify({schemaVersion:1,projectId,activeByKind:{diagram:representation.id},representations:{[representation.id]:representation},revisions:{[revision.id]:revision},createdAt:timestamp,updatedAt:timestamp}));
   server=spawn(process.execPath,["node_modules/vite/bin/vite.js","preview","--host","127.0.0.1","--port",String(port),"--strictPort"],{cwd:root,env:{...process.env,NEW_DIAGRAM_PROJECT_ROOT:temp,NEW_DIAGRAM_AGENT:"fake",NEW_DIAGRAM_FAKE_PROMPT_DELAY_MS:"1200"},stdio:"ignore"});
   await waitFor(async()=>Boolean((await fetch(url).catch(()=>null))?.ok),{timeoutMs:15000});
-  await withHeadlessBrowser({url:`${url}/mapping`,width:1600,height:1000},async({cdp})=>{
+  await withHeadlessBrowser({ chromePath: process.env.CHROME_PATH, arguments: process.env.CHROME_PATH ? ['--no-sandbox'] : [],url:`${url}/mapping`,width:1600,height:1000},async({cdp})=>{
     await cdp.send("Page.enable"); await cdp.send("Runtime.enable");
     const errors=[]; cdp.on("Runtime.exceptionThrown",({exceptionDetails})=>errors.push(exceptionDetails.exception?.description??exceptionDetails.text));
     const dialogs=[];

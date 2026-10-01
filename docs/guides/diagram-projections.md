@@ -33,11 +33,11 @@ The selection menu also offers **Copy ASCII + code refs** (**C** or **Ctrl/Cmd+C
 
 Rendering uses the conventional ASCII tree grammar: an unindented root, `+--` / `\\--` (or backtick) child branches, and optional `|` spacer lines. Put source annotations and descriptions on child branches so they stay with their parent when filtering. Legacy arrow-style branches continue to be supported.
 
-### Call tree -> compaction -> source
+### Source display
 
-An optional `compactionProjection` stores immutable file-tree snapshots (ASCII/hash, source path/hash, and each tree row's source ranges) plus links from pinned call-tree node IDs to exact compaction rows. The second hop uses **matched subtree nodes**, not ancestors inserted solely as display context. It unions exact target rows, preserves original file/tree order, and adds only necessary ancestors. Unlike the first hop, selecting a compaction parent does **not** implicitly include its children.
+Node selection opens [CodePanel](code-panel.md), resolving direct or nearest-ancestor source mappings. The runtime call-tree-to-compaction-to-source traversal has been removed. Existing saved compaction panes retain their presentation, and legacy source panes import their saved range/fold presentation when decoded.
 
-The displayed file headers identify captured source hashes. These views are pinned snapshots, not claims about currently edited source files. Source ranges remain in the mapping data and are not printed in the ASCII. Import validates snapshot hashes, complete semantic-row source coverage, call-tree node identity, and target row existence before the atomic catalog write.
+Catalogs may still contain immutable `compactionProjection` artifacts. Their import validation and generation remain independent of CodePanel.
 
 ## Importing generated trees
 

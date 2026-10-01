@@ -1,21 +1,49 @@
 # Mapping workspace state
 
-Mapping uses Ctrl + left-drag to select a rectangle, including text or whitespace without code entities. Plain dragging pans the canvas. Unmapped regions support Copy and Ask; source-dependent generation and projection actions still require mappings.
-A selection without a follow-up is temporary: Escape cancels it. Opening a projection,
-prompt, or local question retains the selection. Its source rectangle and effects remain
-until explicitly removed. More selections can be made without replacing retained groups.
+Mapping uses one Ctrl + left-drag marquee for diagram-local regions and whole diagrams, including text or whitespace without code entities. Shift-drag does not select. A diagram is promoted when fully enclosed; promotion stays in effect until the drag completes. A marquee can select regions in multiple diagrams, and whole diagrams replace their selected regions. Plain dragging pans the canvas. Unmapped regions support Copy and Ask; source-dependent generation and projection actions still require mappings.
+Completed gestures update `canvas.selection.items`, the only source of selection membership.
+Each item has an ID and display-node ID; an optional `region` captures a rectangle,
+source content/revision/ASCII, and mapped node IDs. Absence of `region` selects the
+whole diagram. `selectionCommand` implements replacement, addition, diagram toggling,
+removal, and clearing. Selecting a whole diagram removes its regions; selecting a
+region removes its whole-diagram item. Repeated region gestures reuse item identity.
+Plain double-click on diagram background replaces the entire selection. Ctrl/Meta
+double-click toggles a diagram while preserving unrelated items; a plain double-click
+on a node label remains a region selection. Deselected regions never reappear merely
+because a whole diagram is deselected.
 
-Each retained selection has Actions, a Stacked/Chained selector, and a remove button.
-Actions reopens its control surface, including its instruction/question draft. The join
+Opening a projection, prompt, code panel, or local question attaches effects to a
+captured region context in the display tree. Those contexts have no membership flag:
+panels can survive selection removal, and creating a panel does not select its source.
+`controls.selectionFocusId` identifies the item whose actions are focused; changing
+focus does not add or remove items. Rectangle and mapped-node action inputs are derived
+from that item. Pointer previews remain separate and never enter the selection queue.
+
+The publisher reads this same collection and derives the compatible `diagramIds` and
+`regions` payload. It does not synthesize IDs or merge display/focus state. Region text
+uses captured ASCII when stale. The server only validates and mirrors snapshots/deltas.
+Old workspace fields and checkpoint views migrate through `importLegacySelection` at
+load/undo boundaries; runtime consumers never fall back to legacy membership.
+Escape during a drag cancels its preview without changing the prior selection.
+More Ctrl-drags add to the current selection; outside clicks preserve it. Escape
+or the remove control deselects it. Existing code-panel Escape behavior still closes the focused pane first.
+
+Each retained selection has Actions (A), a Stacked/Chained selector, and a remove button.
+Selection initially shows only its outline and controls, with hover-style outlines on
+selected node labels. Actions (or A) opens its control surface, including its instruction/question draft. The join
 on the source rectangle toggles all owned effects recursively without discarding data.
 Pane headers also have collapse and close controls. Close removes that pane and its
 owned descendants; removing a selection removes its whole effect tree.
 
 Stacked mode shows the active projection path in one slot per selection. Back and Forward
 navigate without deleting content. Chained mode displays the related panes beside their
-parents with connectors on one horizontal axis. Ctrl-drag in a projected call tree selects
-rendered rows; Project selected rows creates a compaction child using stable node IDs.
-Compaction files offer Open source, which creates a source-code child rendered inside the same DisplayPane frame. Source file choice, Studio-style compaction mode, range navigation, and scroll position are retained with the child. Escape cancels that uncommitted row selection. Content collisions are intentionally not resolved.
+parents with connectors on one horizontal axis. **Actions (A) → open mapped source**
+opens [CodePanel](../guides/code-panel.md), which resolves direct or nearest-ancestor mapped
+resources independently of projections. One panel combines source ranges across files;
+the existing pane frame, connectors, folding renderer, and navigation remain shared.
+Saved compaction panes retain their presentation, but the old runtime compaction mapping
+chain and its Open compaction/Open source actions have been removed.
+
 
 Source movement updates selection anchors. Collapsing a source scene box hides its attached
 effects. Changed/missing content is marked as a saved snapshot: the original rectangle is
@@ -27,7 +55,7 @@ selection is made. Existing captured projection content remains available.
 `CanvasWorkspace` owns one `CanvasSession` per open document. The page's draft registry
 contains metadata and stable session handles; it does not mirror documents, canvas state,
 or exported history. A session owns the existing `MappingDocumentController` and exposes
-read-only Zustand stores for document, presentation, controls, geometry, saved status,
+read-only Zustand stores for document, presentation, selection, controls, geometry, saved status,
 and temporary interaction. Commands still go through the controller; subscriptions publish
 its immutable references rather than creating another editable model.
 
@@ -35,9 +63,9 @@ The interaction boundary is deliberately separate from controller commits:
 
 ```text
 Ctrl-drag pointer movement
-  -> CanvasSession.previewSelection
-     -> interaction store
-        -> SelectionPreviewOverlay
+  -> CanvasSelectionLayer local preview
+     -> selectCanvasMarquee hit testing (no controller writes)
+        -> one marquee plus whole-diagram outlines
 
 Pan pointer movement
   -> imperative canvas transform + SourcePaneViewState
@@ -45,9 +73,10 @@ Pan pointer movement
 Completed selection / document command
   -> MappingDocumentController
      -> changed session stores -> subscribed UI
+        -> CodePanel content subscribes by panel ID
      -> document change -> cached saved-status comparison + search/explorer update
      -> history commit -> debounced workspace persistence
-        -> submit changed records; serialize batches in a worker
+        -> capture current documents, views, and history once per write
 ```
 
 Dirty comparisons use canonical scene/edge keys computed only when those references or
@@ -261,3 +290,22 @@ Right-click the diagram canvas and choose **Paste sub-diagram here** to insert c
 Clipboard paste preserves indentation, normalizes CRLF/CR newlines, and accepts one enclosing Markdown code fence. Empty/whitespace-only content, tabs, non-ASCII characters, and more than 20,000 characters are rejected. Clipboard failures or invalid text open a manual paste field. Escape, outside click, pan/zoom, and switching diagrams dismiss the menu and cancel pending clipboard reads. Right-click inside code panes and editable fields keeps native behavior.
 
 Run `npm run check:canvas-paste` for the disposable production-browser regression (placement after pan/zoom, collisions, undo/redo, clipboard fallback, stale reads, and save/reload). Parsing and atomic insertion tests are in `src/features/mapping/canvas/__tests__/pasteDiagram.test.ts`.
+
+## Selection responsibilities
+
+- `CanvasSelectionLayer` owns Ctrl-drag, pointer capture, cancellation, and diagram
+  double-clicks. It replaces both the old region handler in `MappingCanvas` and
+  `DiagramSelectionLayer`; the old session preview store and overlay are removed.
+- `canvasSelection.ts` resolves the marquee across diagrams and enforces whole-diagram
+  precedence. `selectedDiagramIds` contains `nodes.list()` IDs. Region records live
+  in the display tree; `selectionActive` separates selection membership from panel
+  ownership. The rectangle and mapped IDs in controls describe the focused region
+  used by the action menu, rather than a second multi-selection collection.
+- A plain node click activates a retained region through the same model. Source
+  panels open only through Actions → open mapped source. Structural node IDs identify diagram nodes;
+  `selectedNodeIds`/`selectedIds` are source-mapping annotation IDs used for Copy.
+- `diagramSelection.ts` and `selectionClipboard.ts` are shared geometry/text helpers,
+  not competing gesture handlers. `SelectionService` runs prompted edits.
+- `liveCanvasPublisher` observes completed selection state and serializes it; it
+  does not own selection. Source-editor text selections and call-tree/source-pane
+  navigation are local to their panes.

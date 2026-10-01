@@ -1,23 +1,24 @@
 import { memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { fetchProjectSourceFile, fetchSourceDefinitions, type ProjectSourceFile } from '../../../shared/http/api';
+import type { ProjectSourceFile } from '../../../shared/http/api';
+import { useMappingServices } from '../services/MappingServices';
 import { SourceCodeView } from '../../../shared/source/SourceCodeView';
 import { RepositoryFileExplorer } from '../../../shared/source/RepositoryFileExplorer';
 import { supportsDefinitions, type SourceLocation, type SourcePosition } from '../../../../domain/core/source/sourceNavigation';
 import type { SourceCodePaneView } from './sourceCodePane';
 import type { SourceCodePaneContent } from '../../../../domain/mapping/workspace/displayModel';
-import { sourceCodeCompaction } from './sourceCodeCompaction';
 import { SourcePaneDocumentActiveContext, SourcePaneDocumentContext, SourcePaneViewStateContext } from './SourcePaneViewStateContext';
 
 const presentation = { syntaxHighlighting: 'code', markdownRendering: 'source', wrap: false, sourceCompaction: true } as const;
-const emptyEntries: ReturnType<typeof sourceCodeCompaction>['entries'] = [];
+const emptyEntries: { startLine: number; endLine: number }[] = [];
 type Visit = SourceLocation & { scroll?: { top: number; left: number }; rangeIndex?: number };
 
 /** Source navigation stays within the existing display pane and its projection ownership. */
 export const SourceCodePane = memo(function SourceCodePane(props: {
-  id: string; content: SourceCodePaneContent;
+  id: string; content: SourceCodePaneContent; initialLocation?: SourceLocation;
   onChange: (id: string, patch: Partial<SourceCodePaneView>) => void;
 }) {
   const { content } = props;
+  const { codeRepo } = useMappingServices();
   const viewState = useContext(SourcePaneViewStateContext);
   const documentId = useContext(SourcePaneDocumentContext);
   const active = useContext(SourcePaneDocumentActiveContext);
@@ -30,22 +31,23 @@ export const SourceCodePane = memo(function SourceCodePane(props: {
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
   const [revealRequestId, setRevealRequestId] = useState(0);
-  const [navigation, setNavigation] = useState<{ visit: Visit; id: number }>();
+  const [navigation, setNavigation] = useState<{ visit: Visit; id: number } | undefined>(() => props.initialLocation ? { visit: props.initialLocation, id: 1 } : undefined);
   const [explorerOpen, setExplorerOpen] = useState(false);
   const [history, setHistory] = useState<{ back: Visit[]; forward: Visit[] }>({ back: [], forward: [] });
   const [definitionMessage, setDefinitionMessage] = useState('');
   const [definitions, setDefinitions] = useState<SourceLocation[]>([]);
   const definitionRequest = useRef<AbortController | undefined>(undefined);
-  const { entries, compactedSource } = useMemo(() => file ? sourceCodeCompaction(file) : { entries: emptyEntries, compactedSource: undefined }, [file]);
+  const entries = file?.ranges ?? emptyEntries;
+  const compactedSource = file?.compactedSource;
 
   useEffect(() => {
     const controller = new AbortController();
     setPreview(null); setError('');
-    void fetchProjectSourceFile(content.projectId, content.sourceFile, controller.signal, content.sourceId)
-      .then(result => { if (!controller.signal.aborted) setPreview(result); })
+    void codeRepo.readFile({ projectId: content.projectId, sourceId: content.sourceId ?? '' }, content.sourceFile, { signal: controller.signal })
+      .then(result => { if (!controller.signal.aborted) setPreview({ path: result.path, startLine: 1, lines: result.text.split('\n'), sourceSha256: result.sha256, lspEnabled: Boolean(result.lspEnabled) }); })
       .catch((error: unknown) => { if (!controller.signal.aborted) setError(error instanceof Error ? error.message : 'Could not load source file'); });
     return () => controller.abort();
-  }, [content.projectId, content.sourceId, content.sourceFile, attempt]);
+  }, [codeRepo, content.projectId, content.sourceId, content.sourceFile, attempt]);
   useEffect(() => {
     definitionRequest.current?.abort(); setDefinitionMessage(''); setDefinitions([]);
     return () => definitionRequest.current?.abort();
@@ -86,7 +88,7 @@ export const SourceCodePane = memo(function SourceCodePane(props: {
     const controller = new AbortController(); definitionRequest.current = controller;
     setDefinitionMessage('Finding definition…'); setDefinitions([]);
     try {
-      const result = await fetchSourceDefinitions(content.projectId, content.sourceFile, position, loaded.sourceSha256, controller.signal, content.sourceId);
+      const result = await codeRepo.definitions({ projectId: content.projectId, sourceId: content.sourceId ?? '' }, { path: content.sourceFile, position, sourceSha256: loaded.sourceSha256 }, { signal: controller.signal });
       if (controller.signal.aborted) return;
       if (result.locations.length === 1) navigate(result.locations[0]);
       else {
@@ -107,7 +109,7 @@ export const SourceCodePane = memo(function SourceCodePane(props: {
       </select>
     </div>
     <div className="mapping-source-body">
-      {explorerOpen && <RepositoryFileExplorer projectId={content.projectId} sourceId={content.sourceId} selected={content.sourceFile} onOpen={openFile} />}
+      {explorerOpen && <RepositoryFileExplorer codeRepo={codeRepo} projectId={content.projectId} sourceId={content.sourceId} selected={content.sourceFile} onOpen={openFile} />}
       <div className="mapping-source-main">
         <div className="mapping-source-toolbar">
           <button type="button" aria-pressed={content.showCompactions} disabled={!loaded || stale || !file}

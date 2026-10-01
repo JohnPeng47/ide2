@@ -1,3 +1,4 @@
+import { deselectCanvas } from '../../../domain/mapping/selection/canvasSelection';
 import { DefaultCanvasHistoryService } from '../../../domain/core/diagrams/canvasHistoryService';
 import { useStore } from 'zustand';
 import { CanvasWorkspace, type CanvasDraft as Draft, type CanvasDraftSeed } from './workspace/canvasWorkspace';
@@ -110,7 +111,7 @@ function MappingWorkspacePage() {
   const cancelTransfer = useCallback(() => {
     if (transferBusy.current) return;
     const source = pendingTransfer && controllers.current.get(pendingTransfer.sourceId);
-    source?.updateCanvas(current => ({ ...current, controls: { ...current.controls, selectedDiagramIds: [], selectedNodeIds: [], selectionRect: null } }));
+    source?.updateCanvas(deselectCanvas, true);
     setPendingTransfer(undefined); setError(''); setWorkspaceStatus('Transfer cancelled');
   }, [pendingTransfer]);
   useEffect(() => {
@@ -180,6 +181,10 @@ function MappingWorkspacePage() {
     const draft = draftRef.current[id];
     if (!draft || draft.hidden) throw new Error('DOCUMENT_UNAVAILABLE');
     // Acceptance only compares the current state; exporting all history can make replies enormous.
+    if (command.method === 'context') {
+      const snapshot = controller.getSnapshot();
+      return { version: snapshot.version, name: draft.name, nodes: controller.nodes(), edges: structuredClone(snapshot.document.edges) };
+    }
     if (command.method === 'document-state') return { document: controller.getSnapshot().document, name: draft.name };
     if (command.method === 'snapshot') return { ...structuredClone(controller.getSnapshot()), history: controller.exportHistory(), name: draft.name,
       representationId: draft.representationId ?? (id.startsWith('draft-') ? undefined : id), revisionId: draft.revisionId || undefined };
@@ -200,7 +205,7 @@ function MappingWorkspacePage() {
       revisionId: result.representation.currentRevisionId, savedScene, savedEdges, savedName: name, name: current[id].name === draft.name ? name : current[id].name } }));
     return { updated: true };
   };
-  useAgentCanvasBridge({ projectId: snapshot?.project?.id, documents: Object.entries(drafts).filter(([, draft]) => !draft.hidden).map(([documentId, draft]) => ({ documentId, name: draft.name,
+  const { agentStatus } = useAgentCanvasBridge({ projectId: snapshot?.project?.id, documents: Object.entries(drafts).filter(([, draft]) => !draft.hidden).map(([documentId, draft]) => ({ documentId, name: draft.name,
     representationId: draft.representationId ?? (documentId.startsWith('draft-') ? undefined : documentId) })) }, handleAgentCommand, workspace);
   const draftAliases = new Set(Object.entries(drafts).map(([id, draft]) => draft.representationId ?? id));
   const diagrams = [...Object.values(snapshot?.catalog?.representations ?? {}).filter(diagram => diagram.status === 'settled' && !draftAliases.has(diagram.id)),
@@ -382,6 +387,7 @@ function MappingWorkspacePage() {
       for (const node of Object.values(sourceView.display.nodes)) if (node.kind === 'selection' && selectedIds.includes(`grid:${node.sourceBoxId}`))
         sourceView.display = removeDisplayNode(sourceView.display, node.id);
       sourceView.diagramViews = Object.fromEntries(Object.entries(sourceView.diagramViews ?? {}).filter(([id]) => !selectedIds.includes(id)));
+      sourceView.selection = { items: [] };
       sourceView.controls = { ...initialCanvasState().controls, activeBoxId: sourceView.controls.activeBoxId };
       const prepared = await runWorkspaceTask({ type: 'transfer', source: source.exportHistory(), destination: destination?.exportHistory(),
         input: { mode, sourceId, sourceAliases: [sourceId, drafts[sourceId].representationId ?? sourceId],
@@ -389,7 +395,7 @@ function MappingWorkspacePage() {
       workspace.documents = workspace.documents.map(doc => {
         if (doc.representationId === sourceId) return mode === 'move'
           ? { ...doc, document: prepared.source.document, history: prepared.source.history, canvas: prepared.source.view as MappingCanvasState }
-          : { ...doc, canvas: { ...doc.canvas, controls: { ...doc.canvas.controls, selectedDiagramIds: [] } } };
+          : { ...doc, canvas: deselectCanvas(doc.canvas) };
         if (doc.representationId === destinationId) return { ...doc, document: prepared.destination.document, history: prepared.destination.history, canvas: prepared.destination.view as MappingCanvasState };
         return doc;
       });
@@ -582,6 +588,13 @@ function MappingWorkspacePage() {
           onNameChange={(name) => { if (activeId) setDrafts((current) => ({ ...current, [activeId]: { ...current[activeId], name } })); }}
           onNew={() => { setCopyCurrent(false); setCreating(true); }} onSave={() => void save()} />}
         {!changeMode && <div className="mapping-workspace-actions">
+          <span className="mapping-agent-status" role="status" aria-live="polite" aria-atomic="true"
+            data-state={!agentStatus.connected ? 'unavailable' : agentStatus.count ? 'connected' : 'idle'}
+            title={agentStatus.connected ? 'Live agent connections across this workspace' : 'Reconnecting to check agent connections'}>
+            <span className="mapping-agent-status-dot" aria-hidden="true" />
+            {!agentStatus.connected ? 'Agents unavailable' : agentStatus.count
+              ? `${agentStatus.count} agent${agentStatus.count === 1 ? '' : 's'} connected` : 'No agents connected'}
+          </span>
           <button disabled={workspaceBusy || Boolean(deletingId) || !active || Object.values(drafts).some(draft => draft.busy)} onClick={() => void workspaceAction('save')}>Save workspace</button>
           <button disabled={workspaceBusy || Boolean(deletingId) || Object.values(drafts).some(draft => draft.busy)} onClick={() => void workspaceAction('restore')}>Restore workspace</button>
           <button disabled={workspaceBusy || !active} onClick={() => void workspaceAction('export')}>Export</button>
@@ -631,7 +644,7 @@ function MappingWorkspacePage() {
           {error && !pendingTransfer && <div className="mapping-project-error" role="alert">{error}<button type="button" onClick={() => setError("")}>Dismiss</button></div>}
         </div>
         <footer className="mapping-poc-status"><span>{active?.name ?? "PROJECT DIAGRAMS"}</span>
-          <span>{active?.newerRevision ? 'A newer saved revision is available. Your local edits were preserved.' : workspaceStatus || 'Ctrl + drag to select · N opens call tree · P patches · A asks locally'}</span></footer>
+          <span>{active?.newerRevision ? 'A newer saved revision is available. Your local edits were preserved.' : workspaceStatus || 'Click a node or Ctrl-drag to select · Actions (A) opens selection actions · Double-click background selects diagrams'}</span></footer>
       </section>
       {creating && <div className="mapping-dialog-backdrop"><form className="mapping-create-dialog" role="dialog" aria-modal="true" aria-label="New project diagram"
         onKeyDown={(event) => {

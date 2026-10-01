@@ -1,5 +1,5 @@
 .diagram-content-node { font: inherit; letter-spacing: inherit; }
-.diagram-content-node:hover { outline: 1px solid var(--accent-cyan); outline-offset: 0; }
+.diagram-content-node:hover, .diagram-content-node.is-selected { outline: 1px solid var(--accent-cyan); outline-offset: 0; }
 .diagram-content-node[data-jump-focus] { outline: 1px solid var(--accent-yellow); }
 .diagram-jump { display: inline; border: 0; border-radius: 0; padding: 0; margin: 0; background: transparent; color: var(--accent-cyan); font: inherit; letter-spacing: inherit; line-height: inherit; white-space: pre; vertical-align: baseline; cursor: pointer; }
 .diagram-jump:hover, .diagram-jump:focus-visible { outline: 1px solid currentColor; outline-offset: 0; }

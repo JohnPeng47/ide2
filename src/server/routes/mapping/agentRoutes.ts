@@ -4,7 +4,7 @@ import { z } from 'zod';
 import type { AgentDiagrammingSessionService } from '../../../../application/mapping/agent/sessionService';
 import { agentToolSchemas, type AgentToolName } from '../../../../domain/mapping/agent/contracts';
 import { readBody, sendJson } from '../../http/http';
-const registration = z.object({ canvasId: z.string().uuid(), projectId: z.string().optional(), documents: z.array(z.object({ documentId: z.string().min(1), name: z.string(), representationId: z.string().optional() })).max(100) }).strict();
+const registration = z.object({ canvasId: z.string().uuid(), stableWorkspaceId: z.string().uuid().optional(), projectId: z.string().optional(), documents: z.array(z.object({ documentId: z.string().min(1), name: z.string(), representationId: z.string().optional() })).max(100) }).strict();
 export async function handleAgentRoutes(request: Connect.IncomingMessage, response: ServerResponse, url: URL, service: AgentDiagrammingSessionService) {
   const path = url.pathname.slice('/api/mapping/agent'.length);
   try {
@@ -33,7 +33,7 @@ export async function handleAgentRoutes(request: Connect.IncomingMessage, respon
       if (!canvas[2] && request.method === 'DELETE') { service.bridge.unregister(id); return sendJson(response, 200, {}); }
       if (canvas[2] === 'commands' && request.method === 'GET') return sendJson(response, 200, await service.bridge.poll(id));
       if (canvas[2] === 'reply' && request.method === 'POST') {
-        const body = z.object({ commandId: z.string(), value: z.unknown().optional(), error: z.string().optional() }).parse(await readBody(request));
+        const body = z.object({ commandId: z.string(), value: z.unknown().optional(), error: z.string().optional() }).parse(await readBody(request, 64 * 1024 * 1024));
         service.bridge.reply(id, body.commandId, body); return sendJson(response, 200, {});
       }
       return sendJson(response, 405, { error: 'method not allowed' });

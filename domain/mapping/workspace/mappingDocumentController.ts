@@ -1,3 +1,6 @@
+import { importLegacySelection } from '../selection/importLegacySelection';
+import { updateSelection } from '../selection/canvasSelection';
+import type { SelectionCommand } from '../selection/selectionState';
 import { receiveDiagramRevision } from '../../core/diagrams/diagramRevisionTransfer';
 import type { DiagramRevision } from '../../core/diagrams/diagramRevisionEditor';
 import { DefaultCanvasHistoryService, type CanvasHistoryService, type CanvasEditingContext } from '../../core/diagrams/canvasHistoryService';
@@ -69,6 +72,7 @@ export class MappingDocumentController {
     return display === state.canvas.display ? state : { ...state, canvas: { ...state.canvas, display } };
   }
   constructor(document: MappingGridDocument, canvas: MappingCanvasState, version = 0, cell?: ControllerSnapshot['cell'], endpointBounds?: EndpointBounds, history?: CanvasHistoryRecord, private readonly diagrams: DiagramService = new RevisionedDiagramService(), private readonly historyService: CanvasHistoryService = defaultHistoryService) {
+    canvas = importLegacySelection(canvas, document.scene);
     const normalized = history && structuredClone(history);
     if (normalized) for (const snapshot of Object.values(normalized.snapshots)) {
       if (!snapshot.view || typeof snapshot.view !== 'object' || !('display' in snapshot.view)) snapshot.view = structuredClone(canvas);
@@ -109,6 +113,24 @@ export class MappingDocumentController {
     return structuredClone(this.nodeCache.nodes);
   }
   private updateSnapshot(next: State, record: boolean, increment = true) {
+    next = { ...next, canvas: importLegacySelection(next.canvas, next.document.scene) };
+    if (next.document.scene !== this.snapshot.document.scene || next.canvas.selection !== this.snapshot.canvas.selection
+      || next.canvas.controls.selectionFocusId !== this.snapshot.canvas.controls.selectionFocusId) {
+      // Deleted instances disappear from membership; captured regions remain available as stale snapshots.
+      const boxes = new Map<string, string>();
+      const visit = (box: typeof next.document.scene.root) => {
+        if (box.kind === 'container') box.children.forEach(visit); else boxes.set(`grid:${box.id}`, box.contentId);
+      };
+      visit(next.document.scene.root);
+      const items = next.canvas.selection.items.filter(item => item.region || boxes.has(item.displayNodeId));
+      const focus = items.find(item => item.id === next.canvas.controls.selectionFocusId);
+      const validFocus = focus?.region && boxes.get(focus.displayNodeId) === focus.region.sourceContentId
+        && next.document.scene.contents[focus.region.sourceContentId]?.content.ascii === focus.region.sourceAscii;
+      if (items.length !== next.canvas.selection.items.length || next.canvas.controls.selectionFocusId && !validFocus)
+        next = { ...next, canvas: { ...next.canvas, selection: { items },
+          controls: { ...next.canvas.controls, selectionFocusId: validFocus ? next.canvas.controls.selectionFocusId : null } } };
+    }
+
     if (next.document === this.snapshot.document && next.canvas === this.snapshot.canvas) return;
     if (next.document !== this.snapshot.document && next.document.scene !== this.snapshot.document.scene && record) {
       next = { ...next, document: { ...next.document, edges: reconcileConnections(this.snapshot.document.scene, next.document.scene, next.document.edges ?? []),
@@ -143,6 +165,7 @@ export class MappingDocumentController {
     const next = typeof value === 'function' ? value(this.snapshot.canvas) : value;
     this.updateSnapshot({ document: this.snapshot.document, canvas: next }, record, record);
   }
+  select(command: SelectionCommand) { this.updateCanvas(state => updateSelection(state, command), true); }
   commitDocument(document: MappingGridDocument) { projectCanvasSnapshot(document.scene); this.updateSnapshot({ document, canvas: this.snapshot.canvas }, true); }
   undo(redo = false) {
     if (!this.historyService.navigate(this.context, redo)) return;
@@ -231,10 +254,10 @@ export class MappingDocumentController {
         const ids = new Set(old?.contentRevisionId === content.revisionId ? old.collapsedContentNodeIds : []);
         if (op.collapsed) ids.add(op.contentNodeId); else ids.delete(op.contentNodeId);
         canvas.diagramViews = { ...canvas.diagramViews, [op.nodeId]: { contentRevisionId: content.revisionId, collapsedContentNodeIds: [...ids] } };
-        if (canvas.controls.activeBoxId === box.id && canvas.controls.selectionRect
-          && !projectDiagramContent(content, canvas.diagramViews[op.nodeId]).rect(canvas.controls.selectionRect)) {
-          canvas.controls = { ...canvas.controls, selectionRect: null, selectedNodeIds: [], retainedSelectionId: null };
-        }
+        const focused = canvas.selection.items.find(item => item.id === canvas.controls.selectionFocusId);
+        if (focused?.region && focused.displayNodeId === op.nodeId
+          && !projectDiagramContent(content, canvas.diagramViews[op.nodeId]).rect(focused.region.rect))
+          canvas.controls = { ...canvas.controls, selectionFocusId: null };
       } else if (op.method === 'diagram-revision-apply') {
         const box = findBox(document.scene.root, this.gridId(op.nodeId));
         if (box?.kind !== 'diagram') throw Error('Expected diagram GridBox');
@@ -318,9 +341,10 @@ export class MappingDocumentController {
           canvas.display = setExpansion(canvas.display, id, op.collapsed ? 'collapsed' : 'expanded');
         } else if (op.method === 'remove') {
           canvas.display = removeDisplayNode(canvas.display, id);
+          canvas = updateSelection(canvas, { type: 'remove', id });
           const controls = canvas.controls;
           canvas.controls = { ...controls, surfaces: Object.fromEntries(Object.entries(controls.surfaces).filter(([key]) => key === 'draft' || canvas.display.nodes[key])),
-            retainedSelectionId: controls.retainedSelectionId && canvas.display.nodes[controls.retainedSelectionId] ? controls.retainedSelectionId : null,
+
             activeThreadId: controls.activeThreadId && canvas.display.nodes[controls.activeThreadId] ? controls.activeThreadId : null };
         } else throw new Error('Unsupported FloatingBox operation');
       }

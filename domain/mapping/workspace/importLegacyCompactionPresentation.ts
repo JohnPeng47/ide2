@@ -1,8 +1,8 @@
-import type { CompactedSource, CompactedSourceNode } from '../../../../domain/core/records/domain';
-import type { ProjectedFile } from '../../../../domain/mapping/workspace/displayModel';
+import type { CompactedSource, CompactedSourceNode } from '../../core/records/domain';
+import type { ProjectedFile } from './displayModel';
 
-/** Adapt exact projection mappings to the shared source folding model. */
-export function sourceCodeCompaction(file: ProjectedFile) {
+/** One-time upgrade of saved compaction panes. Never used to resolve node selections. */
+export function importLegacyCompactionPresentation(file: ProjectedFile) {
   const lines = file.ascii.split('\n');
   const ranges = new Map<string, { startLine: number; endLine: number; rows: number[] }>();
   file.rows.forEach((row, index) => {

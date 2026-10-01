@@ -2,7 +2,7 @@ import type { SourcePosition, SourceDefinitions } from './sourceNavigation';
 
 export interface CodeRepoReference { projectId: string; sourceId: string }
 export interface CodeRepoRequest { signal?: AbortSignal }
-export interface CodeRepoFile { path: string; text: string; sha256: string }
+export interface CodeRepoFile { path: string; text: string; sha256: string; lspEnabled?: boolean }
 export interface CodeRepoEntry { path: string; kind: 'file' | 'directory' }
 export interface CodeRepoCommit { id: string; parents: string[]; author: string; date: string; message: string }
 export interface CodeRepoFileChange {

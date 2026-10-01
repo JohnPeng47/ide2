@@ -1,7 +1,7 @@
 import type { DisplayState } from './displayModel';
 import { emptyDisplayState } from './displayModel';
 import type { MappingGridDocument } from './mappingGrid';
-import type { MappingPocGridRect } from '../selection/mappingPoc';
+import type { SelectionState } from '../selection/selectionState';
 import type { CanvasTransform } from '../../core/diagrams/diagramCanvas';
 
 /** Control surfaces are persisted separately from the display ownership tree. */
@@ -23,20 +23,17 @@ export const selectionSurfaceKeys = ['actionsOpen', 'presentation', 'projectionC
 export const initialSelectionSurface = (): SelectionSurfaceState => ({ actionsOpen: true, presentation: 'compact', projectionChoice: '', promptOperation: 'edit',
   promptOpen: false, promptText: '', askOpen: false, askText: '', askVerbosity: 'low', promptPhase: 'ready', statusMessage: 'Ctrl + drag to select' });
 export interface MappingControls {
-  selectedDiagramIds?: string[];
   activeBoxId: string;
-  selectionRect: MappingPocGridRect | null;
-  selectedNodeIds: string[];
-  retainedSelectionId: string | null;
+  /** Action-menu focus only; selection membership lives in selection.items. */
+  selectionFocusId: string | null;
   activeThreadId: string | null;
   surfaces: Record<string, SelectionSurfaceState>;
 }
 /** A control accessor resolves these values against the active selection's surface. */
 export type MappingControlValues = MappingControls & SelectionSurfaceState;
-export interface MappingCanvasState { diagramViews?: import('./diagramViewState').DiagramViews; display: DisplayState; controls: MappingControls }
+export interface MappingCanvasState { selection: SelectionState; diagramViews?: import('./diagramViewState').DiagramViews; display: DisplayState; controls: MappingControls }
 export function initialCanvasState(): MappingCanvasState {
-  return { diagramViews: {}, display: emptyDisplayState(), controls: { activeBoxId: 'overview', selectionRect: null,
-    selectedNodeIds: [], retainedSelectionId: null, activeThreadId: null, surfaces: { draft: initialSelectionSurface() } } };
+  return { selection: { items: [] }, diagramViews: {}, display: emptyDisplayState(), controls: { activeBoxId: 'overview', selectionFocusId: null, activeThreadId: null, surfaces: { draft: initialSelectionSurface() } } };
 }
 export interface MappingDocumentSnapshot {
   hidden?: boolean;

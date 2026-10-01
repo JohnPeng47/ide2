@@ -1,3 +1,5 @@
+import { importLegacySelection } from '../selection/importLegacySelection';
+import { importLegacyCompactionPresentation } from './importLegacyCompactionPresentation';
 import { CanvasHistory } from './canvasHistory';
 import { canvasTransferSchema } from '../../core/diagrams/canvasTransfer';
 import { validateCanvasJumps } from '../../core/diagrams/canvasJump';
@@ -100,6 +102,7 @@ export function deserializeWorkspace(json: string | unknown): MappingWorkspaceSn
       if (node.activeChildId !== undefined) check(node.childIds.includes(node.activeChildId), 'active child is not owned');
       for (const key of ['projectionId', 'sourceRevisionId', 'targetRevisionId']) if (node[key] !== undefined) id(node[key]);
       if (node.kind === 'selection') {
+        if (node.selectionActive !== undefined) check(typeof node.selectionActive === 'boolean', 'invalid selection state');
         id(node.sourceBoxId); id(node.sourceContentId); string(node.sourceAscii); rect(node.rect); strings(node.selectedIds);
         check(['stacked', 'chained'].includes(node.displayMode), 'invalid display mode');
       } else if (node.kind === 'projection') {
@@ -110,12 +113,46 @@ export function deserializeWorkspace(json: string | unknown): MappingWorkspaceSn
           for (const key of ['matchedSourceEvidenceIds', 'unmatchedSourceEvidenceIds', 'targetNodeIds', 'visibleNodeIds', 'projectedNodeIds']) strings(node.content.result[key]);
           check(Array.isArray(node.content.result.rows), 'invalid projection rows');
           for (const row of node.content.result.rows) { object(row); id(row.nodeId); number(row.sourceLine); }
+        } else if (node.content.kind === 'code-panel') {
+          const content = node.content, panel = content.panel;
+          id(content.selectionId); object(panel);
+          const owner = nodes[content.selectionId];
+          check(owner?.kind === 'selection' && owner.childIds.includes(node.id), 'invalid CodePanel owner');
+          check(panel.mappedResourceType === 'source-range', 'invalid mapped resource type');
+          id(panel.diagramId); id(panel.revisionId); string(panel.contentHash);
+          check(panel.diagramId === owner.sourceContentId && /^[a-f0-9]{64}$/.test(panel.contentHash), 'invalid panel diagram snapshot');
+          strings(panel.selectedNodeIds); strings(panel.unmappedNodeIds);
+          check(new Set(panel.selectedNodeIds).size === panel.selectedNodeIds.length && panel.unmappedNodeIds.every((id: string) => panel.selectedNodeIds.includes(id)), 'invalid panel selection');
+          check(Array.isArray(panel.items), 'invalid mapped resources');
+          for (const item of panel.items) {
+            object(item); object(item.resource); check(item.resource.type === panel.mappedResourceType, 'resource type mismatch');
+            const target = item.resource.target; object(target); object(target.repo);
+            id(target.repo.projectId); check(target.repo.projectId === value.projectId, 'resource belongs to another project');
+            string(target.repo.sourceId); string(target.path); check(isRepositoryFilePath(target.path), 'invalid mapped source path');
+            ranges([target]); string(target.rangeSha256); check(/^[a-f0-9]{64}$/.test(target.rangeSha256), 'invalid source snapshot hash');
+            check(Array.isArray(item.origins) && item.origins.length > 0, 'missing mapping origins');
+            for (const origin of item.origins) {
+              object(origin); id(origin.selectedNodeId); id(origin.mappedNodeId); id(origin.mappingId);
+              string(origin.selectedLabel); string(origin.mappedLabel);
+              check(panel.selectedNodeIds.includes(origin.selectedNodeId), 'mapping origin is not selected');
+            }
+          }
+          if (content.scroll !== undefined) {
+            object(content.scroll); number(content.scroll.top); number(content.scroll.left);
+            check(content.scroll.top >= 0 && content.scroll.left >= 0, 'invalid panel scroll');
+          }
         } else {
           check(['compaction', 'source-code'].includes(node.content.kind) && Array.isArray(node.content.files), 'invalid pane content');
           for (const file of node.content.files) {
             object(file); string(file.sourceFile); string(file.sourceSha256); string(file.ascii); number(file.selectedLineCount);
             check(Array.isArray(file.rows), 'invalid compaction rows');
             for (const row of file.rows) { object(row); number(row.treeLine); check(typeof row.selected === 'boolean', 'invalid row selection'); ranges(row.sourceRanges); }
+            if (file.ranges !== undefined) ranges(file.ranges);
+            if (node.content.kind === 'source-code' && !file.ranges) {
+              const imported = importLegacyCompactionPresentation(file as any);
+              file.ranges = imported.entries.map(({ startLine, endLine }) => ({ startLine, endLine }));
+              file.compactedSource = imported.compactedSource;
+            }
           }
         }
         if (node.content.kind === 'source-code') {
@@ -209,7 +246,12 @@ export function deserializeWorkspace(json: string | unknown): MappingWorkspaceSn
       doc.canvas.display = display;
     }
     const c = doc.canvas.controls; object(c);
-    if (c.selectedDiagramIds !== undefined) strings(c.selectedDiagramIds);
+    // Validate legacy fields before migration; new workspaces store only selection.items.
+    if (!doc.canvas.selection) {
+      if (c.selectedDiagramIds !== undefined) strings(c.selectedDiagramIds);
+      strings(c.selectedNodeIds); if (c.selectionRect !== null) rect(c.selectionRect);
+      if (c.retainedSelectionId !== null) check(Object.hasOwn(nodes, c.retainedSelectionId), 'missing control owner');
+    }
     string(c.activeBoxId); object(c.surfaces); check(Object.hasOwn(c.surfaces, 'draft'), 'missing draft controls');
     for (const [owner, surface] of Object.entries(c.surfaces)) {
       check(owner === 'draft' || nodes[owner]?.kind === 'selection', 'missing control surface owner'); object(surface);
@@ -222,9 +264,23 @@ export function deserializeWorkspace(json: string | unknown): MappingWorkspaceSn
       check(['ready', 'composing', 'generating', 'applied', 'error'].includes(surface.promptPhase), 'invalid prompt phase');
       if (surface.promptPhase === 'generating') { surface.promptPhase = 'error'; surface.statusMessage = 'Operation interrupted by workspace reload; review before retrying.'; }
     }
-    strings(c.selectedNodeIds); if (c.selectionRect !== null) rect(c.selectionRect);
-    for (const key of ['retainedSelectionId', 'activeThreadId']) if (c[key] !== null) check(Object.hasOwn(nodes, c[key]), 'missing control owner');
-    if (c.retainedSelectionId) { check(nodes[c.retainedSelectionId].kind === 'selection', 'invalid selection owner'); check(Object.hasOwn(c.surfaces, c.retainedSelectionId), 'missing selection controls'); }
+    doc.canvas = importLegacySelection(doc.canvas as MappingWorkspaceSnapshot['documents'][number]['canvas'], doc.document.scene as unknown as LineGridScene);
+    const selection = doc.canvas.selection; object(selection);
+    check(Object.keys(selection).length === 1 && Array.isArray(selection.items) && selection.items.length <= 2000, 'invalid selection');
+    const selectionIds = new Set<string>(), diagrams = new Set<string>(), regions = new Set<string>();
+    for (const item of selection.items) {
+      object(item); id(item.id); id(item.displayNodeId); check(item.displayNodeId.startsWith('grid:'), 'invalid selected diagram');
+      check(!selectionIds.has(item.id), 'duplicate selection ID'); selectionIds.add(item.id);
+      if (item.region !== undefined) {
+        object(item.region); id(item.region.sourceContentId); string(item.region.sourceAscii);
+        if (item.region.sourceRevisionId !== undefined) id(item.region.sourceRevisionId);
+        rect(item.region.rect); strings(item.region.selectedIds); regions.add(item.displayNodeId);
+      } else { check(!diagrams.has(item.displayNodeId), 'duplicate selected diagram'); diagrams.add(item.displayNodeId); }
+    }
+    check(![...diagrams].some(id => regions.has(id)), 'whole diagram overlaps selected region');
+    const focusId = doc.canvas.controls.selectionFocusId;
+    check(focusId === null || selection.items.some((item: any) => item.id === focusId && item.region), 'missing selection focus');
+    if (c.activeThreadId !== null) check(Object.hasOwn(nodes, c.activeThreadId), 'missing control owner');
     if (c.activeThreadId) check(nodes[c.activeThreadId].kind === 'conversation', 'invalid conversation owner');
     if (doc.viewport) { object(doc.viewport); object(doc.viewport.offset); number(doc.viewport.offset.x); number(doc.viewport.offset.y); check(doc.viewport.scale >= .25 && doc.viewport.scale <= 4, 'invalid zoom'); }
   }

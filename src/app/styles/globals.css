@@ -382,6 +382,11 @@ select:focus-visible,
 .projected-selection-actions { display: flex; gap: 8px; padding: 8px; }
 .mapping-workspace-actions { display: flex; align-items: center; gap: 4px; }
 .mapping-workspace-actions button:disabled { opacity: .4; }
+.mapping-agent-status { display: inline-flex; align-items: center; justify-content: flex-end; gap: 7px; min-width: 148px; margin-right: 12px; white-space: nowrap; color: var(--muted); font: 11px var(--font-mono); }
+.mapping-agent-status-dot { width: 6px; height: 6px; flex: 0 0 6px; border-radius: 50%; background: currentColor; }
+.mapping-agent-status[data-state="connected"] { color: var(--accent-green); }
+.mapping-agent-status[data-state="connected"] .mapping-agent-status-dot { box-shadow: 0 0 6px color-mix(in srgb, var(--accent-green) 35%, transparent); }
+.mapping-agent-status[data-state="unavailable"] { color: var(--accent-yellow); }
 .retained-selection-controls { z-index: 6; }
 .selection-effect-header > div { min-width: 0; }
 .selection-effect-header strong { display: block; }
@@ -405,6 +410,7 @@ select:focus-visible,
 .local-chat-error button { margin-top: 6px; padding: 4px 9px; border: 1px solid currentColor; border-radius: 3px; }
 
 /* Source content uses the retained DisplayPane frame and its saved allocation. */
+.selection-effect-frame[data-pane-content="code-panel"] > .selection-effect-body,
 .selection-effect-frame[data-pane-content="source-code"] > .selection-effect-body { flex: 1; overflow: hidden; }
 /* Keep canvas drag selection styles from propagating through every source token. */
 .mapping-source-pane { display: flex; height: 100%; min-height: 0; min-width: 0; flex-direction: column; font: 12px/1.5 var(--font-mono); user-select: text; }
@@ -465,3 +471,18 @@ select:focus-visible,
 .mapping-transfer-busy p { font-size: 12px; }
 .mapping-diagram-selection-actions { position: fixed; bottom: 38px; left: 50%; transform: translateX(-50%); z-index: 1100; display: flex; flex-wrap: wrap; width: max-content; max-width: calc(100vw - 48px); align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--accent-cyan); border-radius: 6px; background: var(--bg); box-shadow: 0 4px 16px #0008; font: 12px var(--font-mono); }
 .mapping-diagram-selection-actions button { padding: 8px; background: var(--bg); color: var(--fg); border: 1px solid var(--gutter); border-radius: 4px; cursor: pointer; }
+
+.code-panel { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.code-panel-summary, .code-panel-file > header { display: flex; align-items: center; gap: 10px; padding: 8px 12px; flex-wrap: wrap; }
+.code-panel-summary { flex: 0 0 auto; border-bottom: 1px solid #444; }
+.code-panel-content { overflow: auto; flex: 1; min-height: 0; overflow-anchor: auto; }
+.code-panel-file > header { position: sticky; top: 0; z-index: 2; background: #242731; }
+.code-panel-file > header strong { flex: 1; overflow-wrap: anywhere; }
+.code-panel-file > header small { color: #adb6c9; }
+.code-panel-file .source-code-viewer { max-height: none; height: auto; overflow: visible; flex: none; }
+.code-panel-file > p { padding: 8px 12px; }
+.code-panel-origins { display: flex; gap: 8px; padding: 5px 8px; color: #b7cff8; }
+.code-panel-origins > span { border: 1px solid #536078; border-radius: 4px; padding: 2px 6px; }
+[data-code-panel-highlight=true], [data-panel-node-highlight=true] { background: #405c85 !important; outline: 1px solid #96bdff; }
+.source-gap { padding: 4px 12px; border-block: 1px solid #333b48; background: #22262e; }
+.source-gap button { width: 100%; color: #a7bbd9; font: inherit; background: none; border: 0; cursor: pointer; }

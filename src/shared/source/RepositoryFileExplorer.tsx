@@ -1,21 +1,28 @@
 import { memo, useEffect, useState } from 'react';
-import { fetchProjectDirectory } from '../http/api';
+import type { CodeRepoService } from '../../../domain/core/source/codeRepoService';
 import type { RepositoryDirectoryListing } from '../../../domain/core/records/domain';
 
 // Listings are shared, but subscriptions and expansion state belong to each explorer.
-const listings = new Map<string, Promise<RepositoryDirectoryListing>>();
-function load(projectId: string, directory: string, sourceId?: string) {
+const serviceListings = new WeakMap<CodeRepoService, Map<string, Promise<RepositoryDirectoryListing>>>();
+function cache(service: CodeRepoService) {
+  let entries = serviceListings.get(service);
+  if (!entries) { entries = new Map(); serviceListings.set(service, entries); }
+  return entries;
+}
+function load(service: CodeRepoService, projectId: string, directory: string, sourceId?: string) {
+  const listings = cache(service);
   const key = JSON.stringify([projectId, sourceId, directory]);
   let request = listings.get(key);
   if (!request) {
-    request = fetchProjectDirectory(projectId, directory, undefined, sourceId);
+    request = service.listDirectory({ projectId, sourceId: sourceId ?? '' }, directory).then(entries => ({ directory, entries: entries.map(entry => ({ ...entry, name: entry.path.split('/').at(-1)! })) }));
     listings.set(key, request);
     if (listings.size > 256) listings.delete(listings.keys().next().value!);
     void request.catch(() => { if (listings.get(key) === request) listings.delete(key); });
   }
   return request;
 }
-function Directory(props: { projectId: string; sourceId?: string; directory: string; selected: string; onOpen: (path: string) => void; generation: number }) {
+function Directory(props: { codeRepo: CodeRepoService; projectId: string; sourceId?: string; directory: string; selected: string; onOpen: (path: string) => void; generation: number }) {
+  const { codeRepo } = props;
   const [listing, setListing] = useState<RepositoryDirectoryListing>();
   const [error, setError] = useState('');
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -23,9 +30,9 @@ function Directory(props: { projectId: string; sourceId?: string; directory: str
   useEffect(() => {
     let active = true;
     setError(''); setListing(undefined);
-    void load(props.projectId, props.directory, props.sourceId).then(value => { if (active) setListing(value); }, error => { if (active) setError(String(error.message ?? error)); });
+    void load(codeRepo, props.projectId, props.directory, props.sourceId).then(value => { if (active) setListing(value); }, error => { if (active) setError(String(error.message ?? error)); });
     return () => { active = false; };
-  }, [props.projectId, props.sourceId, props.directory, props.generation, attempt]);
+  }, [codeRepo, props.projectId, props.sourceId, props.directory, props.generation, attempt]);
   if (error) return <div role="alert">{error} <button onClick={() => setAttempt(n => n + 1)}>Retry directory</button></div>;
   if (!listing) return <span role="status">Loading files…</span>;
   return <ul className="repository-file-list">
@@ -41,7 +48,9 @@ function Directory(props: { projectId: string; sourceId?: string; directory: str
     {!listing.entries.length && <li>Empty directory</li>}
   </ul>;
 }
-export const RepositoryFileExplorer = memo(function RepositoryFileExplorer(props: { projectId: string; sourceId?: string; selected: string; onOpen: (path: string) => void }) {
+export const RepositoryFileExplorer = memo(function RepositoryFileExplorer(props: { codeRepo: CodeRepoService; projectId: string; sourceId?: string; selected: string; onOpen: (path: string) => void }) {
+  const { codeRepo } = props;
+  const listings = cache(codeRepo);
   const [generation, setGeneration] = useState(0);
   return <aside className="repository-file-explorer" aria-label="Repository files" onKeyDown={event => {
     if (!(event.target instanceof HTMLButtonElement)) return;

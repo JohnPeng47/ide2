@@ -1,3 +1,4 @@
+import { canvasSaveFixture } from '../../support/mappingDiagram.ts';
 import assert from 'node:assert/strict';
 import { diagramContentNodes } from '../../../domain/core/diagrams/diagramContentNodes.ts';
 import { defaultArrowAppearance } from '../../../domain/core/diagrams/diagramConnection.ts';
@@ -9,7 +10,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { seedMappingFixture } from '../support/browser-mapping-fixture.mjs';
 import { singleDiagramScene } from '../../../domain/core/diagrams/projectDiagramCanvas.ts';
-import { createDiagram } from '../../../domain/core/diagrams/diagram.ts';
+import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService.ts';
 import { DiagramStore } from '../../../infrastructure/core/persistence/store.ts';
 const { evaluate, waitFor, waitForSelector, withHeadlessBrowser, captureScreenshot } = await import(pathToFileURL(path.join(homedir(), '.codex/skills/front-end/browser-test.mjs')).href);
 const root = await mkdtemp(path.join(tmpdir(), 'diagram-transfer-browser-'));
@@ -20,8 +21,8 @@ try {
   const catalogPath = path.join(root, '.diagrams/representations/catalog.json');
   const catalog = JSON.parse(await readFile(catalogPath, 'utf8'));
   const scene = singleDiagramScene(ascii);
-  scene.contents = Object.fromEntries(['a','b','c'].map((id, i) => [id, createDiagram({ id, revision: 0,
-    ascii: `${['Alpha','Beta','Gamma'][i]}\n|-- ${id.toUpperCase()} branch\n\x60-- ${id.toUpperCase()} tail`, structureKind: 'tree' })]));
+  scene.contents = Object.fromEntries(['a','b','c'].map((id, i) => [id, new RevisionedDiagramService().create({ id, revision: 0,
+    ascii: `${['Alpha','Beta','Gamma'][i]}\n|-- ${id.toUpperCase()} branch\n\x60-- ${id.toUpperCase()} tail`, structureKind: 'tree' }).diagram]));
   scene.root.children = ['a','b','c'].map((id, i) => ({ id, kind: 'diagram', contentId: id, collapsed: false, position: { column: i * 25, row: 5 } }));
   if (process.env.TRANSFER_LARGE_FIXTURE) {
     scene.contents.a.sourceContext.evidence.large = { id: 'large', label: 'Large captured source', sourceRanges: [
@@ -32,17 +33,17 @@ try {
     source: { kind: 'content-node', displayNodeId: `grid:${a}`, contentNodeId: diagramContentNodes(scene.contents[a].content).find(n => n.line === 2).id,
       revisionId: scene.contents[a].content.revisionId, side: 'auto' },
     target: { kind: 'box', displayNodeId: `grid:${b}`, side: 'auto' }, appearance: { ...defaultArrowAppearance, label: `${a} to ${b}` } }));
-  catalog.revisions['revision-overview'].content = { kind: 'mapping-canvas', scene, edges };
+  catalog.revisions['revision-overview'].content = { kind: 'canvas-history', history: canvasSaveFixture({ name: 'Fixture', scene, edges }).history };
   const existingScene = singleDiagramScene('Destination');
   existingScene.contents = {
-    a: createDiagram({id:'a',revision:0,ascii:'Existing large diagram\n|-- Keep here\n|-- Still here\n`-- Fixed',structureKind:'tree'}),
-    b: createDiagram({id:'b',revision:0,ascii:'Small\n`-- Keep',structureKind:'tree'})
+    a: new RevisionedDiagramService().create({id:'a',revision:0,ascii:'Existing large diagram\n|-- Keep here\n|-- Still here\n`-- Fixed',structureKind:'tree'}).diagram,
+    b: new RevisionedDiagramService().create({id:'b',revision:0,ascii:'Small\n`-- Keep',structureKind:'tree'}).diagram
   };
   existingScene.root.children = [{id:'a',kind:'diagram',contentId:'a',collapsed:false,position:{column:50,row:10}},
     {id:'b',kind:'diagram',contentId:'b',collapsed:false,position:{column:100,row:12}}];
   const persistedExistingScene = JSON.parse(JSON.stringify(existingScene));
   catalog.revisions['revision-existing'] = {...catalog.revisions['revision-overview'],id:'revision-existing',representationId:'representation-existing',
-    content:{kind:'mapping-canvas',scene:existingScene,edges:[]}};
+    content:{ kind: 'canvas-history', history: canvasSaveFixture({ name: 'Fixture', scene:existingScene, edges:[] }).history }};
   catalog.representations['representation-existing'] = {...catalog.representations['representation-overview'],id:'representation-existing',
     name:'Existing canvas',currentRevisionId:'revision-existing',revisionIds:['revision-existing']};
   await writeFile(catalogPath, JSON.stringify(catalog));
@@ -109,7 +110,7 @@ try {
       await mouse('mousePressed',p,modifiers); await mouse('mouseReleased',p,modifiers);
       await mouse('mousePressed',p,modifiers,2); await mouse('mouseReleased',p,modifiers,2);
     };
-    const drag = async (from,to,modifiers=8) => {
+    const drag = async (from,to,modifiers=2) => {
       await mouse('mousePressed',from,modifiers);
       await mouse('mouseMoved',to,modifiers);
       await mouse('mouseReleased',to,modifiers);
@@ -167,8 +168,8 @@ try {
     await key('Escape','Escape',27); await selected([]);
     const a=await box('a'), b=await box('b');
     await drag({x:a.left-4,y:a.top+2},{x:a.x,y:a.bottom+4}); await selected([]); // one corner
-    await drag({x:a.left-4,y:a.top-2},{x:a.right+4,y:a.y}); await selected(['a']); // two top corners
-    await drag({x:b.left-4,y:b.top-2},{x:b.right+4,y:b.y},10); await selected(['a','b']); // additive
+    await drag({x:a.left-4,y:a.top-2},{x:a.right+4,y:a.bottom+4}); await selected(['a']); // complete enclosure
+    await drag({x:b.left-4,y:b.top-2},{x:b.right+4,y:b.bottom+4}); await selected(['a','b']); // another Ctrl-drag adds
     await drag({x:a.left-4,y:a.top-2},{x:b.right+4,y:b.bottom+4}); await selected(['a','b']);
     await captureScreenshot(cdp,{output:path.join(root,'diagram-selection.png')});
     await click('[aria-label="Minimize explorer"]');
@@ -341,7 +342,7 @@ try {
     const redone = await persisted(w => w?.transfers?.at(-1)?.applied===true);
     assert.deepEqual(redone.documents.find(d=>d.representationId==='representation-existing').document,existing.document);
     assert.deepEqual(exceptions,[]);
-    console.log('PASS: double-click, Ctrl toggle, rectangle corner threshold, additive rectangle, copy/move, all edge directions, fan-out jumps, paired CanvasHistory, undo/redo, reload, empty source, draft/saved canvas deletion, explorer destination picking, Escape deselection, existing-canvas copy/move, unchanged destination layout');
+    console.log('PASS: double-click, Ctrl toggle, Ctrl-marquee full enclosure, additive selection, copy/move, all edge directions, fan-out jumps, paired CanvasHistory, undo/redo, reload, empty source, draft/saved canvas deletion, explorer destination picking, Escape deselection, existing-canvas copy/move, unchanged destination layout');
   });
 } finally {
   if (server && server.exitCode === null) { server.kill('SIGTERM'); await new Promise(resolve => server.once('exit', resolve)); }

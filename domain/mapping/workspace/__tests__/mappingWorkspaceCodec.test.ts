@@ -3,8 +3,20 @@ import { describe, expect, it } from 'vitest';
 import { deserializeWorkspace, serializeWorkspace } from '../mappingWorkspaceCodec';
 import { initialCanvasState, type MappingWorkspaceSnapshot } from '../mappingWorkspace';
 import { initialMappingGrid } from '../mappingGrid';
+import { diagramSelectionItem, regionSelectionItem } from '../../selection/selectionState';
 function snapshot(): MappingWorkspaceSnapshot { const document = initialMappingGrid(); return { schemaVersion: 3, projectId: 'project', activeDocumentId: 'diagram', documents: [{ representationId: 'diagram', revisionId: 'revision', name: 'Diagram', savedName: 'Diagram', savedScene: JSON.stringify(document.scene), document, canvas: initialCanvasState(), viewport: { offset: { x: 42, y: 51 }, scale: .8 } }] }; }
 describe('workspace codec', () => {
+  it('round trips the canonical collection independently of panels and rejects conflicting membership', () => {
+    const input = snapshot(), doc = input.documents[0];
+    const content = Object.values(doc.document.scene.contents)[0];
+    const item = regionSelectionItem(content, 'overview', { startLine: 1, endLine: 1, startColumn: 1, endColumn: 2 }, 'selection');
+    doc.canvas.selection = { items: [item] }; doc.canvas.controls.selectionFocusId = item.id;
+    expect(deserializeWorkspace(serializeWorkspace(input))).toEqual(input);
+    doc.canvas.selection = { items: [item, diagramSelectionItem('grid:overview')] };
+    expect(() => deserializeWorkspace(input)).toThrow('overlaps');
+    doc.canvas.selection = { items: [item, item] };
+    expect(() => deserializeWorkspace(input)).toThrow('duplicate selection');
+  });
   it('round trips scene, control drafts, and viewport without coupling controls to display nodes', () => {
     const input = snapshot(); input.documents[0].canvas.controls.surfaces.draft.promptText = 'Keep this draft';
     expect(deserializeWorkspace(serializeWorkspace(input))).toEqual(input);
@@ -18,8 +30,8 @@ describe('workspace codec', () => {
     expect(() => deserializeWorkspace({ ...snapshot(), schemaVersion: 99 })).toThrow('version');
     const input = snapshot(); input.documents[0].viewport!.scale = Infinity;
     expect(() => deserializeWorkspace(input)).toThrow('zoom');
-    delete input.documents[0].viewport; input.documents[0].canvas.controls.retainedSelectionId = 'missing';
-    expect(() => deserializeWorkspace(input)).toThrow('owner');
+    delete input.documents[0].viewport; input.documents[0].canvas.controls.selectionFocusId = 'missing';
+    expect(() => deserializeWorkspace(input)).toThrow('focus');
   });
   it('rejects cycles and duplicate ownership', () => {
     const input = snapshot(); const display = input.documents[0].canvas.display;

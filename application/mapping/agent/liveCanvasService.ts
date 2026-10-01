@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
+import { selectionDelta } from '../../../domain/mapping/agent/liveCanvasStatus';
 import type { CanvasDescriptor } from '../../../domain/mapping/agent/contracts';
-import type { BoundSelection, LiveCanvasEvent, LiveSelection } from '../../../domain/mapping/agent/liveCanvasStatus';
+import type { BoundSelection, LiveCanvasContext, LiveCanvasEvent, LiveSelection, LiveSelectionDelta } from '../../../domain/mapping/agent/liveCanvasStatus';
 
 export class LiveCanvasError extends Error {
   constructor(readonly code: string, readonly status: number, message = code) { super(message); }
@@ -11,26 +12,71 @@ type Binding = { workspaceInstanceId: string; documentId: string; canvasEpoch: s
 
 /** Ephemeral selection mirror. Never hydrates a document, exports history or writes storage. */
 export class LiveCanvasService {
-  private publishers = new Map<string, { owner: object; selections: Map<string, Snapshot> }>();
+  private publishers = new Map<string, { owner: object; selections: Map<string, Snapshot>; notify: (event: LiveCanvasEvent) => void }>();
   private bindings = new Map<string, Binding>();
-  constructor(private readonly listCanvases: () => CanvasDescriptor[]) {}
-  publish(owner: object, workspaceInstanceId: string) {
+  constructor(private readonly listCanvases: () => CanvasDescriptor[],
+    private readonly loadContext?: (workspaceInstanceId: string, documentId: string) => Promise<LiveCanvasContext>) {}
+  async contextForCanvas(workspaceInstanceId: string, documentId: string) {
+    const publisher = this.publishers.get(workspaceInstanceId);
+    const canvases = this.listCanvases();
+    if (!publisher && canvases.length && !canvases.some(canvas => canvas.canvasId === workspaceInstanceId))
+      throw new LiveCanvasError('CANVAS_INSTANCE_GONE', 410, 'The browser workspace instance is no longer available. Discover the current canvas ID and reconnect.');
+    const selection = publisher?.selections.get(documentId);
+    if (!selection) throw new LiveCanvasError('CANVAS_NOT_READY', 503, 'Canvas has not published a selection snapshot; retry attach');
+    if (!this.loadContext) throw new LiveCanvasError('CONTEXT_UNAVAILABLE', 503, 'Canvas context is unavailable on this server');
+    const context = await this.loadContext(workspaceInstanceId, documentId);
+    if (this.publishers.get(workspaceInstanceId) !== publisher
+      || publisher?.selections.get(documentId)?.canvasEpoch !== selection.canvasEpoch)
+      throw new LiveCanvasError('CANVAS_REPLACED', 409, 'Canvas changed identity while reading context; reconnect');
+    return context;
+  }
+  async context(connectionId: string) {
+    const before = this.read(connectionId);
+    const context = await this.contextForCanvas(before.workspaceInstanceId, before.documentId);
+    this.read(connectionId); // A close or replacement while awaiting the browser invalidates this response.
+    return { connectionId, workspaceInstanceId: before.workspaceInstanceId, documentId: before.documentId, canvasEpoch: before.canvasEpoch, context };
+  }
+  publish(owner: object, workspaceInstanceId: string, notify: (event: LiveCanvasEvent) => void = () => {}) {
     if (!this.listCanvases().some(c => c.canvasId === workspaceInstanceId)) throw new LiveCanvasError('CANVAS_UNAVAILABLE', 503);
     if (this.publishers.has(workspaceInstanceId)) throw new LiveCanvasError('PUBLISHER_EXISTS', 409);
-    this.publishers.set(workspaceInstanceId, { owner, selections: new Map() });
+    this.publishers.set(workspaceInstanceId, { owner, selections: new Map(), notify });
   }
-  update(owner: object, workspaceInstanceId: string, selection: LiveSelection) {
+  update(owner: object, workspaceInstanceId: string, update: LiveSelection | LiveSelectionDelta) {
     const publisher = this.publisher(owner, workspaceInstanceId);
-    // A newly opened document can publish before the legacy HTTP registration refresh.
-    // The registered browser publisher is authoritative for its current documents.
-    if (!publisher.selections.has(selection.documentId) && publisher.selections.size >= 100)
-      throw new LiveCanvasError('DOCUMENT_LIMIT', 400);
-    const previous = publisher.selections.get(selection.documentId);
-    if (previous?.canvasEpoch === selection.canvasEpoch && selection.sequence <= previous.sequence) return;
+    const previous = publisher.selections.get(update.documentId);
+    if (previous?.canvasEpoch === update.canvasEpoch && update.sequence <= previous.sequence) return;
+    if (!previous && publisher.selections.size >= 100) throw new LiveCanvasError('DOCUMENT_LIMIT', 400);
+    let selection: LiveSelection;
+    if ('regions' in update) selection = update;
+    else {
+      if (!previous || previous.canvasEpoch !== update.canvasEpoch || previous.sequence !== update.baseSequence)
+        throw new LiveCanvasError('SELECTION_OUT_OF_SYNC', 409, 'Reconnect and publish a fresh snapshot');
+      if (new Set(update.upserted.map(region => region.id)).size !== update.upserted.length
+        || new Set(update.removed).size !== update.removed.length
+        || update.upserted.some(region => update.removed.includes(region.id)))
+        throw new LiveCanvasError('INVALID_REGIONS', 400);
+      const regions = new Map(previous.regions.map(region => [region.id, region]));
+      update.removed.forEach(id => regions.delete(id));
+      update.upserted.forEach(region => regions.set(region.id, region));
+      selection = { documentId: update.documentId, canvasEpoch: update.canvasEpoch, sequence: update.sequence,
+        documentVersion: update.documentVersion, regions: [...regions.values()], diagramIds: update.diagramIds ?? previous.diagramIds ?? [] };
+    }
+    const diagramIds = selection.diagramIds ?? [];
+    if (diagramIds.length > 1000 || new Set(diagramIds).size !== diagramIds.length
+      || diagramIds.some(id => !id.startsWith('grid:'))
+      || selection.regions.some(region => diagramIds.includes(`grid:${region.sourceBoxId}`)))
+      throw new LiveCanvasError('INVALID_REGIONS', 400, 'Whole diagrams replace their regions and must have unique grid IDs');
+    if (selection.regions.length > 1000 || new Set(selection.regions.map(region => region.id)).size !== selection.regions.length
+      || selection.regions.reduce((size, region) => size + region.text.length, 0) > 2_000_000)
+      throw new LiveCanvasError('INVALID_REGIONS', 400, 'Regions must have unique IDs and fit the canvas payload limit');
     if (previous && previous.canvasEpoch !== selection.canvasEpoch) this.invalidate(workspaceInstanceId, selection.documentId, 'canvas.replaced');
-    publisher.selections.set(selection.documentId, { ...selection, receivedAt: new Date().toISOString() });
-    for (const [id, binding] of this.bindings) if (!binding.unavailable && binding.workspaceInstanceId === workspaceInstanceId
-      && binding.documentId === selection.documentId) binding.notify({ type: 'selection.changed', ...this.read(id) });
+    const receivedAt = new Date().toISOString();
+    publisher.selections.set(selection.documentId, { ...selection, receivedAt });
+    if (previous && previous.canvasEpoch === selection.canvasEpoch) {
+      const delta = selectionDelta(previous, selection);
+      for (const [connectionId, binding] of this.bindings) if (!binding.unavailable && binding.workspaceInstanceId === workspaceInstanceId
+        && binding.documentId === selection.documentId) binding.notify({ type: 'selection.delta', ...delta, connectionId, workspaceInstanceId, receivedAt });
+    }
   }
   remove(owner: object, workspaceInstanceId: string, documentId: string, canvasEpoch: string) {
     const publisher = this.publisher(owner, workspaceInstanceId);
@@ -43,6 +89,7 @@ export class LiveCanvasService {
     if (!selection) throw new LiveCanvasError('CANVAS_NOT_READY', 503, 'Canvas has not published a selection snapshot; retry attach');
     const connectionId = randomUUID();
     this.bindings.set(connectionId, { workspaceInstanceId, documentId, canvasEpoch: selection.canvasEpoch, notify });
+    this.notifyAgents(workspaceInstanceId);
     return this.read(connectionId);
   }
   read(connectionId: string): BoundSelection {
@@ -51,9 +98,18 @@ export class LiveCanvasService {
     if (binding.unavailable) throw new LiveCanvasError(binding.unavailable, binding.unavailable === 'canvas.disconnected' ? 503 : 410);
     const selection = this.publishers.get(binding.workspaceInstanceId)?.selections.get(binding.documentId);
     if (!selection || selection.canvasEpoch !== binding.canvasEpoch) throw new LiveCanvasError('CANVAS_UNAVAILABLE', 503);
-    return { ...selection, connectionId, workspaceInstanceId: binding.workspaceInstanceId };
+    return { ...selection, protocolVersion: 2, connectionId, workspaceInstanceId: binding.workspaceInstanceId };
   }
-  detach(connectionId: string) { this.bindings.delete(connectionId); }
+  detach(connectionId: string) {
+    const binding = this.bindings.get(connectionId);
+    if (!binding) return;
+    this.bindings.delete(connectionId);
+    if (!binding.unavailable) this.notifyAgents(binding.workspaceInstanceId);
+  }
+  private notifyAgents(workspaceInstanceId: string) {
+    const count = [...this.bindings.values()].filter(binding => binding.workspaceInstanceId === workspaceInstanceId && !binding.unavailable).length;
+    this.publishers.get(workspaceInstanceId)?.notify({ type: 'agents.changed', count });
+  }
   disconnect(owner: object, workspaceInstanceId: string) {
     if (this.publishers.get(workspaceInstanceId)?.owner !== owner) return;
     this.publishers.delete(workspaceInstanceId);
@@ -65,10 +121,13 @@ export class LiveCanvasService {
     return publisher;
   }
   private invalidate(workspaceInstanceId: string, documentId: string | undefined, reason: NonNullable<Binding['unavailable']>) {
+    let changed = false;
     for (const [connectionId, binding] of this.bindings) if (!binding.unavailable && binding.workspaceInstanceId === workspaceInstanceId
       && (!documentId || binding.documentId === documentId)) {
+      changed = true;
       binding.unavailable = reason;
       binding.notify({ type: reason, connectionId, canvasEpoch: binding.canvasEpoch });
     }
+    if (changed) this.notifyAgents(workspaceInstanceId);
   }
 }

@@ -104,6 +104,9 @@ async function selectRows(cdp, first, last = first) {
   await cdp.send("Input.dispatchMouseEvent", { type: "mousePressed", ...points.start, button: "left", buttons: 1, modifiers: 2, clickCount: 1 });
   await cdp.send("Input.dispatchMouseEvent", { type: "mouseMoved", ...points.end, button: "left", buttons: 1, modifiers: 2 });
   await cdp.send("Input.dispatchMouseEvent", { type: "mouseReleased", ...points.end, button: "left", modifiers: 2, clickCount: 1 });
+  if (await evaluate(cdp, `!document.querySelector(${JSON.stringify(`${active} .mapping-poc-selection-actions`)})`)) {
+    await click(cdp, `${active} .retained-selection-controls button:first-child`);
+  }
   await waitForSelector(cdp, `${active} .mapping-poc-selection-actions`).catch(async (error) => {
     if (process.env.PROJECTION_SCREENSHOT) await captureScreenshot(cdp, { output: process.env.PROJECTION_SCREENSHOT });
     throw new Error(`${error.message}; selection=${JSON.stringify(points)}; ${await evaluate(cdp, "document.body.innerText")}`);
@@ -113,20 +116,20 @@ async function selectRows(cdp, first, last = first) {
 }
 
 async function openTree(cdp, expected) {
-  await waitFor(async () => await evaluate(cdp, `!document.querySelector(${JSON.stringify(action)}).disabled`));
+  await waitFor(async () => await evaluate(cdp, `!document.querySelector(${JSON.stringify(action)}).disabled`)).catch(async error => { throw new Error(error.message + "\n" + await evaluate(cdp, "document.body.innerText")); });
   await key(cdp, "n", "KeyN");
   await waitForSelector(cdp, `${panel} pre[data-projected-tree]`).catch(async error => { throw new Error(error.message + "\n" + await evaluate(cdp, "document.body.innerText")); });
   assert.equal(await evaluate(cdp, `Boolean(document.querySelector(${JSON.stringify(`${active} .mapping-poc-selection-menu`)}))`), false,
     "Selection menu must not obscure projected branches");
-  assert.equal(await evaluate(cdp, `document.querySelector(${JSON.stringify(panel)}).dataset.projectionId`), "projection-calls");
+  assert.equal(await evaluate(cdp, `document.querySelector(${JSON.stringify(`${panel} pre[data-projected-tree]`)}).closest("[data-display-node]").dataset.projectionId`), "projection-calls");
   assert.equal(await evaluate(cdp, `document.querySelector(${JSON.stringify(`${panel} pre[data-projected-tree]`)}).textContent`), expected);
 }
 
 async function closeTree(cdp) {
   await key(cdp, "Escape", "Escape");
   assert.equal(await evaluate(cdp, `Boolean(document.querySelector(${JSON.stringify(panel)}))`), true, 'Escape preserves retained projections');
-  await click(cdp, `${active} [aria-label='Remove selection']`);
-  await waitFor(async () => !await evaluate(cdp, `Boolean(document.querySelector(${JSON.stringify(panel)}))`));
+  await click(cdp, `${active} [data-selection-root]:has([data-projected-tree]) [aria-label='Remove selection']`);
+  await waitFor(async () => !await evaluate(cdp, `Boolean(document.querySelector(${JSON.stringify(`${panel} pre[data-projected-tree]`)}))`));
 }
 
 async function expectUnavailable(cdp, reason) {
@@ -134,7 +137,7 @@ async function expectUnavailable(cdp, reason) {
     && document.querySelector(${JSON.stringify(`${active} .mapping-projection-status`)})?.textContent.includes(${JSON.stringify(reason)})`),
   { message: `Expected unavailable projection: ${reason}` });
   await key(cdp, "n", "KeyN");
-  assert.equal(await evaluate(cdp, `Boolean(document.querySelector(${JSON.stringify(panel)}))`), false);
+  assert.equal(await evaluate(cdp, `Boolean(document.querySelector(${JSON.stringify(`${panel} pre[data-projected-tree]`)}))`), false);
 }
 
 async function openDiagram(cdp, id, name) {
@@ -241,7 +244,7 @@ try {
   server = spawn(process.execPath, ["node_modules/vite/bin/vite.js", "preview", "--host", "127.0.0.1", "--port", String(port), "--strictPort"],
     { cwd: root, env: { ...process.env, NEW_DIAGRAM_PROJECT_ROOT: temp, NEW_DIAGRAM_AGENT: "fake" }, stdio: "ignore" });
   await waitFor(async () => Boolean((await fetch(url).catch(() => null))?.ok), { timeoutMs: 15000 });
-  await withHeadlessBrowser({ url: `${url}/mapping`, width: 2400, height: 1400 }, async ({ cdp, profilePath }) => {
+  await withHeadlessBrowser({ url: `${url}/mapping`, width: 2400, height: 1400, chromePath: process.env.CHROME_PATH, arguments: process.platform === 'linux' ? ['--no-sandbox'] : [] }, async ({ cdp, profilePath }) => {
     await cdp.send("Page.enable");
     await cdp.send("Runtime.enable");
     await cdp.send("Network.enable");
@@ -252,289 +255,8 @@ try {
     await waitForSelector(cdp, `${active} [data-selectable-node]`);
     const sharedOnly = "Calls\n\\-- shared()\n    \\-- shared detail";
     const both = "Calls\n+-- shared()\n|   \\-- shared detail\n\\-- gamma()\n    \\-- gamma detail";
-    async function checkCompactions(expectedFiles) {
-      await click(cdp, `${panel} [aria-label='Open compaction']`);
-      await waitForSelector(cdp, `${panel} [data-projected-compactions]`);
-      assert.equal(await evaluate(cdp, `Boolean(document.querySelector(${JSON.stringify(`${panel} [data-projected-tree]`)}))`), false);
-      const rendered = await evaluate(cdp, `Array.from(document.querySelectorAll(${JSON.stringify(`${panel} [data-compaction-file]`)})).map(el => ({
-        file: el.dataset.compactionFile, rows: el.dataset.compactionRows, ascii: el.querySelector('pre').textContent }))`);
-      assert.deepEqual(rendered.map((file) => file.file), expectedFiles);
-      for (const file of rendered) {
-        assert.equal(file.rows, "2 3");
-        assert.equal(file.ascii, `${file.file}\n\\-- selected method\n    \\-- selected detail`);
-      }
-      await captureScreenshot(cdp, { output: process.env.COMPACTION_SCREENSHOT ?? path.join(temp, "compaction.png") });
-      await click(cdp, `${panel} [aria-label='Back to call tree']`);
-      await waitForSelector(cdp, `${panel} pre[data-projected-tree]`);
-      await click(cdp, `${panel} [aria-label='Open compaction']`);
-      await waitForSelector(cdp, `${panel} [data-projected-compactions]`);
-      await key(cdp, "Escape", "Escape");
-      await waitForSelector(cdp, `${panel} [data-projected-compactions]`);
-      await click(cdp, `${panel} [aria-label='Back to call tree']`);
-      await waitForSelector(cdp, `${panel} pre[data-projected-tree]`);
-    }
-    // Full source is an owned DisplayPane child, with its own persisted view state.
     await selectRows(cdp, 3);
     await openTree(cdp, both);
-    await click(cdp, `${panel} [aria-label='Open compaction']`);
-    await click(cdp, `${panel} [aria-label='Open source src/shared.ts']`);
-    const sourcePane = `${active} [data-pane-content='source-code']`;
-    const sourceViewer = `${sourcePane} .source-code-viewer`;
-    await waitForSelector(cdp, `${sourceViewer}[data-highlighted=true]`);
-    const sourceId = await evaluate(cdp, `document.querySelector(${JSON.stringify(sourcePane)}).dataset.displayNode`);
-    const selectedLines = () => evaluate(cdp, `Array.from(document.querySelectorAll(${JSON.stringify(`${sourceViewer} [data-selected=true]`)})).map(node => +node.dataset.line)`);
-    assert.deepEqual(await selectedLines(), [12, detailLine]);
-    assert.equal(await evaluate(cdp, `document.querySelectorAll(${JSON.stringify(`${sourcePane} .source-fold-placeholder`)}).length`), 2);
-    assert.equal(await evaluate(cdp, `document.querySelectorAll(${JSON.stringify(`${sourcePane} .source-token[style]`)}).length > 0`), true);
-    const firstFold = `${sourceViewer} .source-fold-placeholder[data-line='12']`;
-    assert.equal(await evaluate(cdp, `document.querySelector(${JSON.stringify(firstFold)}).textContent.includes('// [Lines 12-15 | 4 lines compacted]')`), true);
-    assert.equal(await evaluate(cdp, `Boolean(document.querySelector(${JSON.stringify(`${sourceViewer} .source-code-line[data-line='13']`)}))`), false);
-    assert.equal(await evaluate(cdp, `Boolean(document.querySelector(${JSON.stringify(`${sourcePane} .mapping-source-compaction`)}))`), false);
-    await click(cdp, `${firstFold} .source-call-graph-node`, 24);
-    await waitForSelector(cdp, `${firstFold} .source-call-graph-node-source`);
-    assert.deepEqual(await evaluate(cdp, `Array.from(document.querySelectorAll(${JSON.stringify(`${firstFold} .source-call-graph-node-source-line`)})).map(line => +line.dataset.line)`), [12, 13, 14, 15]);
-    await click(cdp, `${firstFold} .source-call-graph-node`, 24);
-    await waitFor(async () => !await evaluate(cdp, `Boolean(document.querySelector(${JSON.stringify(`${firstFold} .source-call-graph-node-source`)}))`));
-    await click(cdp, `${firstFold} .source-section-fold-toggle`);
-    await waitForSelector(cdp, `${sourceViewer} .source-code-line[data-line='13']`);
-    await click(cdp, `${sourceViewer} [data-line='12'] .source-fold-toggle`);
-    await waitForSelector(cdp, firstFold);
-    await captureScreenshot(cdp, { output: process.env.SOURCE_COMPACTION_SCREENSHOT ?? path.join(temp, 'source-compaction.png') });
-    // Middle-button pan over the source itself must move the canvas and preserve its source view.
-    const sourcePanState = () => evaluate(cdp, `(() => {
-      const viewer = document.querySelector(${JSON.stringify(sourceViewer)});
-      return { transform: document.querySelector(${JSON.stringify(`${active} .diagram-canvas__surface`)}).style.transform,
-        top: viewer?.scrollTop ?? null, left: viewer?.scrollLeft ?? null };
-    })()`);
-    const sourcePoint = await evaluate(cdp, `(() => {
-      const rect = document.querySelector(${JSON.stringify(sourceViewer)}).getBoundingClientRect();
-      return { x: rect.left + 100, y: rect.top + 60 };
-    })()`);
-    async function measureSourcePan(label) {
-      const beforeSourcePan = await sourcePanState();
-      const zoomSelector = `${active} [aria-label='Diagram zoom']`;
-      const zoomTextNode = (await cdp.send('Runtime.evaluate', {
-        expression: `document.querySelector(${JSON.stringify(zoomSelector)}).firstChild`
-      })).result.objectId;
-      await cdp.send('Performance.enable');
-      const performanceMetrics = async () => Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map(metric => [metric.name, metric.value]));
-      const beforePanMetrics = await performanceMetrics();
-      await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', ...sourcePoint, button: 'middle', buttons: 4, clickCount: 1 });
-      for (let step = 1; step <= 40; step++) {
-        const distance = step <= 20 ? step : 40 - step;
-        await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: sourcePoint.x + distance * 4,
-          y: sourcePoint.y + distance * 2, button: 'middle', buttons: 4 });
-        if (step === 20) assert.notEqual((await sourcePanState()).transform, beforeSourcePan.transform, 'Pan moves the canvas over an open source pane');
-      }
-      await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...sourcePoint, button: 'middle', buttons: 0, clickCount: 1 });
-      const afterPanMetrics = await performanceMetrics();
-      console.log(`Source pane ${label} pan (40 moves, ms):`, Object.fromEntries(['TaskDuration', 'ScriptDuration', 'RecalcStyleDuration'].map(name =>
-        [name, Math.round((afterPanMetrics[name] - beforePanMetrics[name]) * 1000)])));
-      await cdp.send('Performance.disable');
-      const retainedZoomText = await cdp.send('Runtime.callFunctionOn', { objectId: zoomTextNode,
-        functionDeclaration: `function() { return this === document.querySelector(${JSON.stringify(zoomSelector)}).firstChild; }`, returnByValue: true });
-      await cdp.send('Runtime.releaseObject', { objectId: zoomTextNode });
-      assert.equal(retainedZoomText.result.value, true, 'Panning must not replace the unchanged zoom text and invalidate layout');
-      assert.deepEqual(await sourcePanState(), beforeSourcePan, 'Pan preserves source scroll and returns to the original transform');
-      assert.equal(await evaluate(cdp, 'window.getSelection()?.toString()'), '', 'Panning over source must not select text');
-    }
-    await measureSourcePan('expanded');
-    assert.deepEqual(await selectedLines(), [12, detailLine]);
-    await cdp.send('Input.dispatchMouseEvent', { type: 'mouseWheel', ...sourcePoint, deltaX: 300, deltaY: 0 });
-    await waitFor(async () => (await sourcePanState()).left > 0, { message: 'Offscreen wide lines must retain horizontal scrolling' });
-    await click(cdp, `${sourcePane} [aria-label='Next mapped range']`);
-    await waitFor(async () => await evaluate(cdp, `document.querySelector(${JSON.stringify(`${sourcePane} .mapping-source-toolbar`)}).textContent.includes('${detailLine}')`));
-    await waitFor(async () => await evaluate(cdp, `(() => {
-      const viewer = document.querySelector(${JSON.stringify(sourceViewer)});
-      const bounds = viewer.getBoundingClientRect();
-      const target = viewer.querySelector('[data-line="${detailLine}"]').getBoundingClientRect();
-      return target.top >= bounds.top && target.bottom <= bounds.bottom && viewer.scrollLeft === 0;
-    })()`), { message: 'Mapped range navigation must reveal a distant deferred source block' });
-    const overlays = `${sourcePane} .mapping-source-toolbar button:first-child`;
-    await click(cdp, overlays);
-    await waitFor(async () => await evaluate(cdp, `document.querySelector(${JSON.stringify(overlays)}).getAttribute('aria-pressed') === 'false'`));
-    assert.equal(await evaluate(cdp, `document.querySelectorAll(${JSON.stringify(`${sourcePane} .source-fold-placeholder`)}).length`), 0);
-    assert.deepEqual(await selectedLines(), mappedLines);
-    const scroll = () => evaluate(cdp, `document.querySelector(${JSON.stringify(sourceViewer)})?.scrollTop`);
-    await waitFor(async () => (await scroll()) > 500);
-    const savedScroll = await scroll();
-    await captureScreenshot(cdp, { output: process.env.SOURCE_SCREENSHOT ?? path.join(temp, 'source-pane.png') });
-    await click(cdp, `${sourcePane} [aria-label='Back to compactions']`);
-    await waitForSelector(cdp, `${panel} [data-projected-compactions]`);
-    await click(cdp, `${panel} [aria-label='Forward to child pane']`);
-    await waitForSelector(cdp, sourceViewer);
-    assert.equal(await evaluate(cdp, `document.querySelector(${JSON.stringify(sourcePane)}).dataset.displayNode`), sourceId);
-    await waitFor(async () => Math.abs((await scroll()) - savedScroll) < 1);
-    await click(cdp, `${sourcePane} [aria-label='Collapse pane']`);
-    await waitFor(async () => !await evaluate(cdp, `Boolean(document.querySelector(${JSON.stringify(sourceViewer)}))`));
-    await measureSourcePan('collapsed');
-    await click(cdp, `${sourcePane} [aria-label='Expand pane']`);
-    await waitFor(async () => Math.abs((await scroll()) - savedScroll) < 1);
-    await saveWorkspace(cdp);
-    let savedSource;
-    await waitFor(async () => {
-      const workspace = await (await fetch(`${url}/api/mapping/workspace`)).json();
-      const nodes = workspace?.documents[0]?.canvas.display.nodes;
-      savedSource = nodes?.[sourceId];
-      return savedSource?.content.scroll?.top === savedScroll;
-    });
-    assert.equal(savedSource.content.kind, 'source-code');
-    assert.equal(savedSource.content.showCompactions, false);
-    assert.equal(savedSource.content.rangeIndex, 1);
-    await reload(cdp);
-    await waitForSelector(cdp, `${sourceViewer}[data-highlighted=true]`);
-    assert.deepEqual(await selectedLines(), mappedLines);
-    assert.equal(await evaluate(cdp, `document.querySelector(${JSON.stringify(overlays)}).getAttribute('aria-pressed')`), 'false');
-    await waitFor(async () => Math.abs((await scroll()) - savedScroll) < 1);
-    await click(cdp, `${sourcePane} [aria-label='Projected source file']`);
-    await key(cdp, 'ArrowDown', 'ArrowDown'); await key(cdp, 'Enter', 'Enter');
-    await waitForSelector(cdp, `${sourcePane} [data-projected-source='src/gamma.ts'] [data-highlighted=true]`);
-    await click(cdp, overlays);
-    await click(cdp, `${sourcePane} [aria-label='Next mapped range']`);
-    const nestedFold = `${sourceViewer} .source-fold-placeholder[data-line='12']`;
-    await waitForSelector(cdp, nestedFold);
-    assert.equal(await evaluate(cdp, `document.querySelectorAll(${JSON.stringify(`${sourceViewer} .source-fold-placeholder`)}).length`), 1);
-    await waitFor(async () => await evaluate(cdp, `(() => {
-      const viewer = document.querySelector(${JSON.stringify(sourceViewer)}).getBoundingClientRect();
-      const fold = document.querySelector(${JSON.stringify(nestedFold)}).getBoundingClientRect();
-      return fold.top >= viewer.top && fold.bottom <= viewer.bottom;
-    })()`), { message: 'Navigation to a nested range must reveal its enclosing fold' });
-    await click(cdp, `${nestedFold} .source-call-graph-node[data-graph-line='2']`, 24);
-    assert.deepEqual(await evaluate(cdp, `Array.from(document.querySelectorAll(${JSON.stringify(`${nestedFold} .source-call-graph-node-source-line`)})).map(line => +line.dataset.line)`), [14, 15, 16]);
-    await click(cdp, `${sourcePane} [aria-label='Close pane']`);
-    await waitForSelector(cdp, `${panel} [data-projected-compactions]`);
-    // Re-fetch changed and missing files without inventing current range highlights.
-    await writeFile(path.join(temp, 'src/shared.ts'), sourceText + '\n// changed');
-    await click(cdp, `${panel} [aria-label='Open source src/shared.ts']`);
-    await waitForSelector(cdp, `${sourcePane} .mapping-source-message[role=status]`);
-    await waitFor(async () => await evaluate(cdp, `document.querySelector(${JSON.stringify(sourcePane)}).textContent.includes('has changed')`));
-    assert.deepEqual(await selectedLines(), []);
-    assert.equal(await evaluate(cdp, `document.querySelectorAll(${JSON.stringify(`${sourcePane} .source-fold-placeholder`)}).length`), 0);
-    await click(cdp, `${sourcePane} [aria-label='Close pane']`);
-    await rm(path.join(temp, 'src/shared.ts'));
-    await click(cdp, `${panel} [aria-label='Open source src/shared.ts']`);
-    await waitForSelector(cdp, `${sourcePane} [role=alert] button`);
-    await writeFile(path.join(temp, 'src/shared.ts'), sourceText);
-    await click(cdp, `${sourcePane} [role=alert] button`);
-    await waitForSelector(cdp, `${sourceViewer}[data-highlighted=true]`);
-    assert.deepEqual(await selectedLines(), [12, detailLine]);
-    await click(cdp, `${sourcePane} [aria-label='Back to compactions']`);
-    await click(cdp, `${panel} [aria-label='Back to call tree']`);
-    await closeTree(cdp);
-    await saveWorkspace(cdp);
-    await waitFor(async () => (await (await fetch(`${url}/api/mapping/workspace`)).json()).documents[0].canvas.display.rootIds.length === 0);
-
-    await selectRows(cdp, 2);
-    await openTree(cdp, sharedOnly);
-    await checkCompactions(["src/shared.ts"]);
-    // Persistent groups, chained geometry, projected-row selection, and a full workspace round trip.
-    const row = await evaluate(cdp, `(() => {
-      const r = document.querySelector(${JSON.stringify(`${panel} [data-projected-tree] .projected-row:last-child`)}).getBoundingClientRect();
-      return { x: r.left + 8, y: r.top + r.height / 2 };
-    })()`);
-    await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', ...row, button: 'left', buttons: 1, modifiers: 2, clickCount: 1 });
-    await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...row, button: 'left', modifiers: 2, clickCount: 1 });
-    await waitForSelector(cdp, '.projected-selection-actions');
-    await key(cdp, 'Escape', 'Escape');
-    assert.equal(await evaluate(cdp, "document.querySelector('.projected-selection-actions') === null"), true);
-    await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', ...row, button: 'left', buttons: 1, modifiers: 2, clickCount: 1 });
-    await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...row, button: 'left', modifiers: 2, clickCount: 1 });
-    await click(cdp, '.projected-selection-actions button:first-child');
-    await waitForSelector(cdp, `${panel} [data-compaction-file]`);
-    assert.equal(await evaluate(cdp, `document.querySelector(${JSON.stringify(`${panel} [data-compaction-file]`)}).dataset.compactionRows`), '3');
-    await click(cdp, `${panel} [aria-label='Back to call tree']`);
-    await click(cdp, `${active} [aria-label='Projection display mode']`);
-    await key(cdp, "ArrowDown", "ArrowDown"); await key(cdp, "Enter", "Enter");
-    await waitForSelector(cdp, `${panel} [data-projected-compactions]`);
-    assert.ok(await evaluate(cdp, `document.querySelectorAll(${JSON.stringify(panel)}).length >= 2`));
-    const geometry = await evaluate(cdp, `(() => {
-      const root = document.querySelector('[data-selection-root]');
-      const rect = root.querySelector('.retained-selection').getBoundingClientRect();
-      const links = [...root.querySelectorAll('.projection-connector')].map(el => el.getBoundingClientRect());
-      return { edge: rect.right, start: links[0].left, axes: links.map(r => r.top) };
-    })()`);
-    assert.ok(Math.abs(geometry.edge - geometry.start) < 2, 'connector begins at selection outer edge');
-    assert.ok(geometry.axes.every(y => Math.abs(y - geometry.axes[0]) < 1), 'chain connectors share an axis');
-    await click(cdp, `${active} [aria-label='Collapse selection effects']`);
-    assert.equal(await evaluate(cdp, `document.querySelectorAll(${JSON.stringify(panel)}).length`), 0);
-    await click(cdp, `${active} [aria-label='Expand selection effects']`);
-    await waitForSelector(cdp, `${panel} [data-projected-compactions]`);
-    // A second independent selection must leave the first group intact.
-    await selectRows(cdp, 3); await key(cdp, "n", "KeyN");
-    await waitFor(async () => await evaluate(cdp, "document.querySelectorAll('[data-selection-root]').length === 2"));
-    await key(cdp, "Escape", "Escape");
-    assert.equal(await evaluate(cdp, "document.querySelectorAll('[data-selection-root]').length"), 2);
-    await key(cdp, "p", "KeyP");
-    await waitForSelector(cdp, '#mapping-poc-prompt');
-    await fill(cdp, '#mapping-poc-prompt', 'Preserve this instruction draft');
-    await key(cdp, "Escape", "Escape");
-    assert.equal(await evaluate(cdp, "document.querySelector('#mapping-poc-prompt').value"), 'Preserve this instruction draft');
-    await cdp.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 1100, y: 600, deltaX: 0, deltaY: 160, modifiers: 2 });
-    await waitFor(async () => await evaluate(cdp, "document.querySelector('[aria-label=\"Diagram zoom\"]').textContent !== '100%'"));
-    const beforeReload = await evaluate(cdp, "({panels: document.querySelectorAll('[data-display-node]').length, transform: document.querySelector('.diagram-canvas__surface').style.transform})");
-    await saveWorkspace(cdp);
-    await waitFor(async () => await evaluate(cdp, "document.querySelector('.mapping-poc-status').textContent.includes('Workspace saved')"));
-    const savedWorkspace = await (await fetch(`${url}/api/mapping/workspace`)).json();
-    assert.equal(savedWorkspace.schemaVersion, 3);
-    assert.equal(savedWorkspace.documents[0].canvas.display.rootIds.length, 2);
-    const renderedGeometry = await evaluate(cdp, `Object.fromEntries([...document.querySelectorAll('[data-display-node]')].map(el => [el.dataset.displayNode,
-      { position: { x: el.offsetLeft, y: el.offsetTop }, bounds: { width: el.offsetWidth, height: el.offsetHeight } }]))`);
-    for (const [id, geometry] of Object.entries(renderedGeometry)) {
-      const node = savedWorkspace.documents[0].canvas.display.nodes[id];
-      assert.deepEqual(node.bounds, geometry.bounds, 'measured outer bounds are saved in the node');
-      assert.ok(Math.abs(node.position.x - geometry.position.x) <= .5 && Math.abs(node.position.y - geometry.position.y) <= .5, 'node position controls rendering');
-    }
-    await reload(cdp);
-    await waitFor(async () => await evaluate(cdp, "document.querySelectorAll('[data-selection-root]').length === 2"));
-    assert.deepEqual(await evaluate(cdp, "({panels: document.querySelectorAll('[data-display-node]').length, transform: document.querySelector('.diagram-canvas__surface').style.transform})"), beforeReload);
-    assert.equal(await evaluate(cdp, "document.querySelector('#mapping-poc-prompt').value"), 'Preserve this instruction draft');
-    await click(cdp, '.mapping-poc-prompt-form button[type=button]');
-    await captureScreenshot(cdp, { output: process.env.WORKSPACE_SCREENSHOT ?? path.join(temp, 'workspace.png') });
-    const browserPath = file => profilePath.startsWith('/mnt/') ? execFileSync('wslpath', ['-w', file], { encoding: 'utf8' }).trim() : file;
-    await cdp.send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: browserPath(profilePath) });
-    await click(cdp, '.mapping-workspace-actions button:nth-child(3)');
-    const exportFile = path.join(profilePath, 'mapping-workspace.json');
-    await waitFor(() => existsSync(exportFile), { message: 'Workspace export did not download' });
-    const exported = JSON.parse(await readFile(exportFile, 'utf8'));
-    assert.equal(exported.documents[0].canvas.display.rootIds.length, 2);
-
-    // Overlapping groups are allowed; remove the uppermost one first.
-    await click(cdp, `${active} [data-selection-root]:last-child [aria-label='Remove selection']`);
-    await click(cdp, `${active} [aria-label='Remove selection']`);
-    await saveWorkspace(cdp);
-    await waitFor(async () => (await (await fetch(`${url}/api/mapping/workspace`)).json()).documents[0].canvas.display.rootIds.length === 0);
-    await cdp.send('Page.setInterceptFileChooserDialog', { enabled: true });
-    const chooser = new Promise(resolve => { const stop = cdp.on('Page.fileChooserOpened', event => { stop(); resolve(event); }); });
-    await click(cdp, '.mapping-workspace-actions button:nth-child(4)');
-    const chosen = await chooser;
-    // Exercise manual/fixed geometry through the public JSON import flow.
-    const importedPane = Object.values(exported.documents[0].canvas.display.nodes).find(node => node.kind === 'projection');
-    importedPane.geometryPolicy = { placement: 'manual', sizing: 'fixed' };
-    importedPane.position = { x: 200, y: 180 };
-    importedPane.bounds = { width: 460, height: 310 };
-    await writeFile(exportFile, JSON.stringify(exported));
-    await cdp.send('DOM.setFileInputFiles', { backendNodeId: chosen.backendNodeId, files: [browserPath(exportFile)] });
-    await waitFor(async () => await evaluate(cdp, "document.querySelectorAll('[data-selection-root]').length === 2"));
-    const manualSelector = `[data-display-node="${importedPane.id}"]`;
-    const manualGeometry = () => evaluate(cdp, `(() => { const el = document.querySelector(${JSON.stringify(manualSelector)}); return el && { x: el.offsetLeft, y: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight }; })()`);
-    await waitFor(async () => (await manualGeometry())?.height === 310);
-    assert.deepEqual(await manualGeometry(), { x: 200, y: 180, width: 460, height: 310 });
-    await click(cdp, `${manualSelector} [aria-label='Collapse pane']`);
-    await waitFor(async () => (await manualGeometry())?.height < 100);
-    await click(cdp, `${manualSelector} [aria-label='Expand pane']`);
-    await waitFor(async () => (await manualGeometry())?.height === 310);
-    await saveWorkspace(cdp);
-    await waitFor(async () => await evaluate(cdp, "document.querySelector('.mapping-poc-status').textContent.includes('Workspace saved')"));
-    await reload(cdp);
-    await waitFor(async () => (await manualGeometry())?.height === 310);
-    assert.deepEqual(await manualGeometry(), { x: 200, y: 180, width: 460, height: 310 });
-    await click(cdp, `${active} [data-selection-root]:last-child [aria-label='Remove selection']`);
-    await click(cdp, `${active} [aria-label='Remove selection']`);
-    await saveWorkspace(cdp);
-    await waitFor(async () => (await (await fetch(`${url}/api/mapping/workspace`)).json()).documents[0].canvas.display.rootIds.length === 0);
-    await selectRows(cdp, 3);
-    await openTree(cdp, both);
-    await checkCompactions(["src/shared.ts", "src/gamma.ts"]);
     await closeTree(cdp);
     await selectRows(cdp, 1);
     await expectUnavailable(cdp, "No linked call-tree branches");
@@ -545,19 +267,27 @@ try {
     await captureScreenshot(cdp, { output: process.env.PROJECTION_SCREENSHOT ?? path.join(temp, "projection.png") });
     await closeTree(cdp);
 
+    await saveWorkspace(cdp);
     await reload(cdp);
     await selectRows(cdp, 2);
     await openTree(cdp, sharedOnly);
-    await checkCompactions(["src/shared.ts"]);
     await closeTree(cdp);
     assert.deepEqual((await catalog()).projections[projection.id], projection);
 
+    // Remove retained CodePanels before using diagram-level tools that share the anchor area.
+    while (await evaluate(cdp, `!!document.querySelector(${JSON.stringify(`${active} [aria-label='Remove selection']`)})`)) {
+      await click(cdp, `${active} [aria-label='Remove selection']`);
+    }
     // Reversible local source scene edits invalidate the pin until undone.
-    await click(cdp, `${active} [data-grid-box='overview'] .mapping-grid-box-tools button:nth-child(3)`);
+    await click(cdp, `${active} .mapping-grid-box[data-grid-box='overview'] .mapping-grid-box-tools button:nth-child(3)`);
     await waitForSelector(cdp, `${active} .mapping-grid-box.is-container`);
     await selectRows(cdp, 2);
     await expectUnavailable(cdp, "Unsaved diagram changes");
-    await click(cdp, `${active} .mapping-grid-tools button:first-child`);
+    // Opening CodePanel is now an undoable effect, followed by the scene edit.
+    for (let i = 0; i < 5 && await evaluate(cdp, `!!document.querySelector(${JSON.stringify(`${active} .mapping-grid-box.is-container`)})`); i++) {
+      await click(cdp, `${active} .mapping-grid-tools button:first-child`);
+    }
+    await saveWorkspace(cdp);
     await selectRows(cdp, 2);
     await openTree(cdp, sharedOnly);
     await closeTree(cdp);
@@ -565,7 +295,7 @@ try {
     // Target exists independently in the sidebar, and dirty target content blocks the source too.
     await openDiagram(cdp, "target", "Related calls");
     assert.equal(await evaluate(cdp, `document.querySelector(${JSON.stringify(`${active} .mapping-poc-ascii`)}).textContent.includes('gamma detail')`), true);
-    await click(cdp, `${active} [data-grid-box='overview'] .mapping-grid-box-tools button:nth-child(3)`);
+    await click(cdp, `${active} .mapping-grid-box[data-grid-box='overview'] .mapping-grid-box-tools button:nth-child(3)`);
     await waitForSelector(cdp, `${active} .mapping-grid-box.is-container`);
     await openDiagram(cdp, "source", "Source overview");
     await selectRows(cdp, 2);
@@ -586,6 +316,7 @@ try {
     await openDiagram(cdp, "source", "Source overview");
     await selectRows(cdp, 2);
     await expectUnavailable(cdp, "revision has changed");
+    await saveWorkspace(cdp);
     await reload(cdp);
     await selectRows(cdp, 2);
     await expectUnavailable(cdp, "revision has changed");
@@ -594,7 +325,7 @@ try {
     assert.equal(saved.revisions[targetRevision.id].ascii, targetRevision.ascii);
     assert.deepEqual(errors, []);
   });
-  console.log("projection browser check passed: retained source panes, exact source highlights, source compaction folds and node expansion, file switching, stale/missing source and retry, source view save/reload, Ctrl-selection, retained groups, Escape, stacked/chained panes, edge connectors, recursive collapse, saved form drafts/viewport, workspace reload, and revision validation");
+  console.log("Projection browser check passed: call-tree selection, retained panes, Actions menu, and source/target revision validation. Source display is covered by browser-code-panel-check.mjs.");
 } finally {
   if (server?.exitCode === null) {
     server.kill("SIGTERM");

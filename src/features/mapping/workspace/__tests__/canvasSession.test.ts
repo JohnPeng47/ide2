@@ -1,3 +1,4 @@
+import { selectCanvasMarquee } from '../../../../../domain/mapping/selection/canvasSelection';
 import { describe, expect, it, vi } from 'vitest';
 import { singleDiagramScene } from '../../../../../domain/core/diagrams/projectDiagramCanvas';
 import { mappingDocumentFromScene } from '../../../../../domain/mapping/workspace/mappingDocument';
@@ -20,7 +21,7 @@ function edit(session: ReturnType<typeof setup>['session'], text: string) {
 }
 
 describe('CanvasSession state boundaries', () => {
-  it('isolates 1000 pointer updates from documents, panels, status, registry, history and persistence', () => {
+  it('isolates 1000 marquee hit tests from documents, panels, status, registry, history and persistence', () => {
     const { workspace, session } = setup();
     const stores = [session.document, session.presentation, session.controls, session.geometry, session.status,
       workspace.store, workspace.dirtyScenes, workspace.changes, workspace.store.getState().drafts.b.session.document];
@@ -28,8 +29,8 @@ describe('CanvasSession state boundaries', () => {
     const controller = vi.fn(); session.controller.subscribe(controller);
     const exportHistory = vi.spyOn(session.controller, 'exportHistory');
     const fingerprints = vi.spyOn(history, 'stateKey');
-    for (let i = 0; i < 1000; i++) session.previewSelection({ boxId: 'overview', rect: { startLine: 1, endLine: i + 1, startColumn: 1, endColumn: 10 } });
-    session.previewSelection(null);
+    for (let i = 0; i < 1000; i++) selectCanvasMarquee(session.document.getState().document.scene, undefined,
+      { left: 0, top: 0, right: 10, bottom: i / 1000 });
     expect(listeners.every(listener => listener.mock.calls.length === 0)).toBe(true);
     expect(controller).not.toHaveBeenCalled(); expect(exportHistory).not.toHaveBeenCalled(); expect(fingerprints).not.toHaveBeenCalled();
     fingerprints.mockRestore(); workspace.dispose();

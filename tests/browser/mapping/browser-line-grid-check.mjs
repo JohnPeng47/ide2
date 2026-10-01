@@ -33,13 +33,21 @@ async function gridPoint(cdp, column, row) {
   return evaluate(cdp, `(() => { const pre=document.querySelector('.mapping-poc-ascii'); const r=pre.getBoundingClientRect(); const scale=r.width/pre.offsetWidth; const w=document.querySelector('.mapping-poc-cell-probe').offsetWidth/10; const h=parseFloat(getComputedStyle(pre).lineHeight); return {x:r.x+(${column}+.3)*w*scale,y:r.y+(${row}+.3)*h*scale}; })()`);
 }
 async function state(cdp) {
-  return evaluate(cdp, `({ascii:document.querySelector('.mapping-poc-ascii').textContent,boxes:[...document.querySelectorAll('[data-grid-box]')].map(e=>({id:e.dataset.gridBox,column:+e.dataset.gridColumn,row:+e.dataset.gridRow,columns:+e.dataset.gridColumns,rows:+e.dataset.gridRows,collapsed:e.dataset.collapsed}))})`);
+  return evaluate(cdp, `({ascii:document.querySelector('.mapping-poc-ascii').textContent,boxes:[...document.querySelectorAll('[data-grid-box][data-grid-column]')].map(e=>({id:e.dataset.gridBox,column:+e.dataset.gridColumn,row:+e.dataset.gridRow,columns:+e.dataset.gridColumns,rows:+e.dataset.gridRows,collapsed:e.dataset.collapsed}))})`);
 }
 async function generate(cdp, column, row, title, sourceSelector = '[data-selectable-node="overview:a-system-templates:range-1"]') {
   await waitForSelector(cdp, sourceSelector);
   // A source-mapped node, using rendered geometry after layout.
   const rect = await evaluate(cdp, `(() => { const r=document.querySelector(${JSON.stringify(sourceSelector)}).getBoundingClientRect();return {x:r.x+1,y:r.y+2,width:r.width,height:r.height};})()`);
   await drag(cdp, rect, { x: rect.x + rect.width - 2, y: rect.y + rect.height - 4 }, 2);
+  // Source panes open automatically on selection; fold them before placing on the canvas.
+  while (await evaluate(cdp, "Boolean(document.querySelector('.selection-root-join[aria-expanded=true]'))"))
+    await click(cdp, '.selection-root-join[aria-expanded=true]');
+  if (!await evaluate(cdp, "Boolean(document.querySelector('.mapping-poc-selection-actions'))")) {
+    await waitForSelector(cdp, '.retained-selection-controls');
+    const actions = await evaluate(cdp, `(() => { const e=[...document.querySelectorAll('.retained-selection-controls button')].filter(e=>e.textContent==='Actions').at(-1);const r=e.getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2};})()`);
+    await mouse(cdp, 'mousePressed', actions, 1); await mouse(cdp, 'mouseReleased', actions);
+  }
   await waitForSelector(cdp, ".mapping-poc-selection-actions");
   await click(cdp, ".mapping-poc-selection-actions button", "Generate sub-diagram");
   await waitForSelector(cdp, "#mapping-poc-prompt");
@@ -48,7 +56,12 @@ async function generate(cdp, column, row, title, sourceSelector = '[data-selecta
   await click(cdp, ".mapping-poc-prompt-form button[type=submit]");
   await waitFor(async () => (await evaluate(cdp, "document.querySelector('.mapping-grid-tools').textContent")).includes("Drag a region"));
   await drag(cdp, await gridPoint(cdp, column, row), await gridPoint(cdp, column + 20, row + 4));
-  await waitFor(async () => (await state(cdp)).ascii.includes(title), { timeoutMs: 10000, message: "sub-diagram did not appear" });
+  try {
+    await waitFor(async () => (await state(cdp)).ascii.includes(title), { timeoutMs: 10000, message: "sub-diagram did not appear" });
+  } catch (error) {
+    console.error(await evaluate(cdp, "document.body.innerText.slice(-6000)"));
+    throw error;
+  }
 }
 
 try {
@@ -58,7 +71,7 @@ try {
   });
   const url = `http://127.0.0.1:${port}/mapping`;
   await waitFor(async () => (await fetch(url).catch(() => null))?.ok, { timeoutMs: 15000 });
-  await withHeadlessBrowser({ url, width: 2400, height: 1400 }, async ({ cdp }) => {
+  await withHeadlessBrowser({ chromePath: process.env.CHROME_PATH, arguments: process.env.CHROME_PATH ? ['--no-sandbox'] : [], url, width: 2400, height: 1400 }, async ({ cdp }) => {
     await waitForSelector(cdp, "[data-grid-box=overview]");
     await waitFor(async () => await evaluate(cdp, "document.querySelector('.diagram-canvas__surface')?.style.transform.includes('translate3d')"),
       { timeoutMs: 15000, message: 'Canvas has not applied its initial viewport transform' });

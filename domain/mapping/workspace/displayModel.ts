@@ -1,6 +1,7 @@
 import type { MappingPocGridRect } from '../selection/mappingPoc';
 import type { ProjectionSelectionResult } from '../../core/diagrams/diagramProjection';
-import type { projectCompactions } from '../../core/representations/compactionProjection';
+import type { PanelContent } from '../code-panel/codePanel';
+import type { CompactedSource } from '../../core/records/domain';
 import type { LocalChatThread, LocalChatVariant } from '../chat/localChat';
 
 export type Expansion = 'expanded' | 'collapsed';
@@ -27,6 +28,7 @@ export function displayGeometry(position: DisplayPosition = { x: 0, y: 0 },
 }
 export interface SelectionRegion extends DisplayNodeBase {
   kind: 'selection';
+  /** Captured panel context; membership is owned exclusively by SelectionState. */
   sourceBoxId: string;
   sourceContentId: string;
   sourceAscii: string;
@@ -36,7 +38,17 @@ export interface SelectionRegion extends DisplayNodeBase {
   displayMode: ChildDisplayMode;
   activeChildId?: string;
 }
-export type ProjectedFile = ReturnType<typeof projectCompactions>[number];
+/** Legacy saved compaction presentation, independent of projection traversal. */
+export interface ProjectedFile {
+  sourceFile: string; sourceId?: string; sourceSha256: string; ascii: string; selectedLineCount: number;
+  rows: { treeLine: number; selected: boolean; sourceRanges: { startLine: number; endLine: number }[] }[];
+  ranges?: { startLine: number; endLine: number }[];
+  compactedSource?: CompactedSource;
+}
+export interface CodePanelPaneContent {
+  kind: 'code-panel'; selectionId: string; panel: PanelContent;
+  scroll?: { top: number; left: number };
+}
 export interface SourceCodePaneContent {
   kind: 'source-code';
   sourceId?: string;
@@ -59,7 +71,7 @@ export interface ProjectedPane extends DisplayNodeBase {
   activeChildId?: string;
   content: { kind: 'call-tree'; result: ProjectionSelectionResult; coverage: string }
     | { kind: 'compaction'; files: ProjectedFile[] }
-    | SourceCodePaneContent;
+    | SourceCodePaneContent | CodePanelPaneContent;
 }
 export interface ConversationPane extends DisplayNodeBase {
   kind: 'conversation';

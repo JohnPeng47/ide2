@@ -1,4 +1,4 @@
-import type { DisplayState } from '../../../../domain/mapping/workspace/displayModel';
+import type { DisplayState, ProjectedPane } from '../../../../domain/mapping/workspace/displayModel';
 import type { CanvasTransform } from '../../../../domain/core/diagrams/diagramCanvas';
 import type { ScrollPosition, SourceScrollState } from '../../../shared/source/sourceScrollState';
 interface Entry {
@@ -7,6 +7,11 @@ interface Entry {
   position: ScrollPosition;
   read?: () => ScrollPosition | undefined;
   owner?: symbol;
+}
+
+function ownsViewport(content: ProjectedPane['content'], entry: Entry): content is Extract<ProjectedPane['content'], { kind: 'code-panel' | 'source-code' }> {
+  if (content.kind === 'code-panel') return entry.sourceFile === '@code-panel';
+  return content.kind === 'source-code' && content.sourceFile === entry.sourceFile && content.sourceId === entry.sourceId;
 }
 
 /** Live viewport state is sampled at snapshot time, never published into the React display tree. */
@@ -63,7 +68,7 @@ export class SourcePaneViewState {
     if (!panes) return;
     for (const [id, entry] of panes) {
       const node = display.nodes[id];
-      if (node?.kind !== 'projection' || node.content.kind !== 'source-code' || node.content.sourceFile !== entry.sourceFile || node.content.sourceId !== entry.sourceId) panes.delete(id);
+      if (node?.kind !== 'projection' || !ownsViewport(node.content, entry)) panes.delete(id);
     }
   }
 
@@ -75,7 +80,7 @@ export class SourcePaneViewState {
     let nodes = base.nodes;
     for (const [id, entry] of panes) {
       const node = nodes[id];
-      if (node?.kind !== 'projection' || node.content.kind !== 'source-code' || node.content.sourceFile !== entry.sourceFile || node.content.sourceId !== entry.sourceId) continue;
+      if (node?.kind !== 'projection' || !ownsViewport(node.content, entry)) continue;
       const scroll = entry.read?.() ?? entry.position;
       if (node.content.scroll?.top === scroll.top && node.content.scroll?.left === scroll.left) continue;
       if (nodes === base.nodes) nodes = { ...nodes };

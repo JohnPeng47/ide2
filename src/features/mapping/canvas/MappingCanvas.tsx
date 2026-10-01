@@ -1,8 +1,12 @@
+import { diagramSelectionItem, regionSelectionItem, selectedDiagramIds } from '../../../../domain/mapping/selection/selectionState';
 import { useMappingServices } from '../services/MappingServices';
 import { useStore } from 'zustand';
 import type { CanvasSession } from '../workspace/canvasSession';
-import { SelectionPreviewOverlay } from './SelectionPreviewOverlay';
-import { DiagramSelectionLayer } from './DiagramSelectionLayer';
+import { deselectCanvas, selectCanvasMarquee, updateSelection, type CanvasMarqueeSelection, type SelectionBounds } from '../../../../domain/mapping/selection/canvasSelection';
+import { diagramContentNodes } from '../../../../domain/core/diagrams/diagramContentNodes';
+import { handleNodeSelect, DEFAULT_MAPPED_RESOURCE_TYPE } from '../../../../domain/mapping/code-panel/codePanel';
+import { upsertCodePanel } from '../code-panel/codePanelState';
+import { CanvasSelectionLayer } from './CanvasSelectionLayer';
 import { singleDiagramScene } from '../../../../domain/core/diagrams/projectDiagramCanvas';
 import { useEndpointGeometry } from './useEndpointGeometry';
 import { DiagramText } from '../../../shared/diagrams/DiagramText';
@@ -23,7 +27,7 @@ import { layoutConversationPane } from "../../../../domain/mapping/chat/conversa
 import { addDisplayNode, displayGeometry, measureDisplayNode, removeDisplayNode, setExpansion, type DisplayState, type SelectionRegion, type ConversationPane, type ProjectedPane } from "../../../../domain/mapping/workspace/displayModel";
 import { initialSelectionSurface, selectionSurfaceKeys, type MappingCanvasState, type MappingControlValues, type SelectionSurfaceState } from "../../../../domain/mapping/workspace/mappingWorkspace";
 import { SelectionEffectsLayer } from "./SelectionEffectsLayer";
-import { flattenGrid, hitTest, layoutScene, resolveScene, updateGridBox, type GridPoint as ScenePoint } from "../../../../domain/core/diagrams/lineGrid";
+import { flattenGrid, layoutScene, resolveScene, updateGridBox, type GridPoint as ScenePoint } from "../../../../domain/core/diagrams/lineGrid";
 import { type MappingGridDocument } from "../../../../domain/mapping/workspace/mappingGrid";
 import { projectSelection, validateProjection } from "../../../../domain/core/diagrams/diagramProjection";
 import type { ProjectRepresentationCatalogRecord } from "../../../../domain/core/representations/projectCatalog";
@@ -36,8 +40,7 @@ import {
   useState,
   type Dispatch,
   type SetStateAction,
-  type FormEvent,
-  type PointerEvent
+  type FormEvent
 } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -58,53 +61,30 @@ import {
 } from "../../../../domain/mapping/chat/localChat";
 import { LocalChatConvo } from "../chat/LocalChatConvo";
 
-interface GridPoint {
-  line: number;
-  column: number;
-}
-
-interface CellMetrics {
-  width: number;
-  height: number;
-}
-
-interface ActiveSelection {
-  pointerId: number;
-  anchor: GridPoint;
-  start: { x: number; y: number };
-}
+interface CellMetrics { width: number; height: number }
 
 function useControl<K extends keyof MappingControlValues>(key: K, state: MappingCanvasState,
   setState: Dispatch<SetStateAction<MappingCanvasState>>): [MappingControlValues[K], Dispatch<SetStateAction<MappingControlValues[K]>>] {
   const isSurface = (selectionSurfaceKeys as readonly string[]).includes(key);
   const read = (current: MappingCanvasState) => (isSurface
-    ? current.controls.surfaces[current.controls.retainedSelectionId ?? 'draft']
+    ? (current.controls.surfaces[current.controls.selectionFocusId ?? 'draft'] ?? current.controls.surfaces.draft)
     : current.controls) as MappingControlValues;
   const set = useCallback((value: SetStateAction<MappingControlValues[K]>) => setState(current => {
     const nextValue = typeof value === 'function' ? (value as (old: MappingControlValues[K]) => MappingControlValues[K])(read(current)[key]) : value;
     if (isSurface) {
-      const owner = current.controls.retainedSelectionId ?? 'draft';
+      const owner = current.controls.selectionFocusId && current.controls.surfaces[current.controls.selectionFocusId] ? current.controls.selectionFocusId : 'draft';
       return { ...current, controls: { ...current.controls, surfaces: { ...current.controls.surfaces,
         [owner]: { ...current.controls.surfaces[owner], [key]: nextValue } } } };
     }
     const surfaces = { ...current.controls.surfaces };
-    if (key === 'retainedSelectionId' && nextValue !== current.controls.retainedSelectionId) {
+    if (key === 'selectionFocusId' && nextValue !== current.controls.selectionFocusId) {
       const target = nextValue as string | null;
-      if (!target) surfaces.draft = { ...initialSelectionSurface(), presentation: surfaces[current.controls.retainedSelectionId ?? 'draft'].presentation };
-      else surfaces[target] ??= { ...surfaces[current.controls.retainedSelectionId ?? 'draft'] };
+      if (!target) surfaces.draft = { ...initialSelectionSurface(), presentation: (surfaces[current.controls.selectionFocusId ?? 'draft'] ?? surfaces.draft).presentation };
+      else if (current.display.nodes[target]) surfaces[target] ??= { ...surfaces[current.controls.selectionFocusId ?? 'draft'] ?? initialSelectionSurface() };
     }
     return { ...current, controls: { ...current.controls, [key]: nextValue, surfaces } };
   }), [key, isSurface, setState]);
   return [read(state)[key], set];
-}
-
-function normalizeRect(anchor: GridPoint, focus: GridPoint): MappingPocGridRect {
-  return {
-    startLine: Math.min(anchor.line, focus.line),
-    endLine: Math.max(anchor.line, focus.line),
-    startColumn: Math.min(anchor.column, focus.column),
-    endColumn: Math.max(anchor.column, focus.column)
-  };
 }
 
 function typingTarget(target: EventTarget | null): boolean {
@@ -138,10 +118,11 @@ export function MappingPocSelectionCanvas(props: {
   const controls = useStore(session.controls, state => state);
   const geometry = useStore(session.geometry, state => state);
   const status = useStore(session.status, state => state);
-  const controllerState = useMemo(() => controller.getSnapshot(), [controller, documentState, presentation, controls, geometry, status]);
-  const canvasState = useMemo(() => ({ ...presentation, controls }), [presentation, controls]);
+  const selection = useStore(session.selection, state => state);
+  const controllerState = useMemo(() => controller.getSnapshot(), [controller, documentState, presentation, controls, geometry, status, selection]);
+  const canvasState = useMemo(() => ({ ...presentation, controls, selection }), [presentation, controls, selection]);
   const setCanvasState = useCallback((value: SetStateAction<MappingCanvasState>) => controller.updateCanvas(value), [controller]);
-  const localChatVariant = canvasState.controls.surfaces[canvasState.controls.retainedSelectionId ?? 'draft'].presentation;
+  const localChatVariant = (canvasState.controls.surfaces[canvasState.controls.selectionFocusId ?? 'draft'] ?? canvasState.controls.surfaces.draft).presentation;
   const previousVariant = useRef(props.localChatVariant);
   useEffect(() => {
     if (previousVariant.current === props.localChatVariant) return;
@@ -153,7 +134,7 @@ export function MappingPocSelectionCanvas(props: {
     }));
   }, [props.localChatVariant]);
   const display = canvasState.display;
-  const operationOwnerRef = useRef<string>('draft'); operationOwnerRef.current = canvasState.controls.retainedSelectionId ?? 'draft';
+  const operationOwnerRef = useRef<string>('draft'); operationOwnerRef.current = canvasState.controls.selectionFocusId && canvasState.controls.surfaces[canvasState.controls.selectionFocusId] ? canvasState.controls.selectionFocusId : 'draft';
   const isGenerating = Object.values(canvasState.controls.surfaces).some(surface => surface.promptPhase === 'generating');
   const updateSurface = (owner: string, patch: Partial<SelectionSurfaceState>) => setCanvasState(current =>
     current.controls.surfaces[owner] ? { ...current, controls: { ...current.controls, surfaces: { ...current.controls.surfaces,
@@ -181,7 +162,9 @@ export function MappingPocSelectionCanvas(props: {
     return display === current.display ? current : { ...current, display };
   }, true), [controller]);
   const [actionsOpen, setActionsOpen] = useControl('actionsOpen', canvasState, setCanvasState);
-  const [retainedSelectionId, setRetainedSelectionId] = useControl('retainedSelectionId', canvasState, setCanvasState);
+  const [selectionFocusId, setSelectionFocusId] = useControl('selectionFocusId', canvasState, setCanvasState);
+  const focusedItem = selection.items.find(item => item.id === selectionFocusId && item.region);
+  const retainedSelectionId = focusedItem && display.nodes[focusedItem.id]?.kind === 'selection' ? focusedItem.id : null;
   const [ctrlSelecting, setCtrlSelecting] = useState(false);
   useEffect(() => {
     const down = (event: KeyboardEvent) => setCtrlSelecting(event.ctrlKey);
@@ -197,7 +180,7 @@ export function MappingPocSelectionCanvas(props: {
   const openMappedRef = useRef<HTMLButtonElement>(null);
   const promptInputRef = useRef<HTMLTextAreaElement>(null);
   const askInputRef = useRef<HTMLTextAreaElement>(null);
-  const activeSelectionRef = useRef<ActiveSelection | null>(null);
+  const codePanelFocus = useRef<{ panelId: string; selectionId: string } | null>(null);
   const replyControllers = useRef(new Map<string, AbortController>());
   useEffect(() => () => {
     for (const controller of replyControllers.current.values()) controller.abort();
@@ -239,11 +222,11 @@ export function MappingPocSelectionCanvas(props: {
   const placementPointerRef = useRef<number | null>(null);
   const [placementPreview, setPlacementPreview] = useState<{ start: ScenePoint; end: ScenePoint } | null>(null);
   const [movingBoxId, setMovingBoxId] = useState<string | null>(null);
-  const [selectionRect, setSelectionRect] = useControl("selectionRect", canvasState, setCanvasState);
-  const [diagramSelection, setDiagramSelection] = useControl('selectedDiagramIds', canvasState, setCanvasState);
+  const selectionRect = focusedItem?.region?.rect ?? null;
+  const diagramSelection = selectedDiagramIds(selection);
   const selectedDiagrams = (diagramSelection ?? []).filter(id => boxes.some(box => `grid:${box.box.id}` === id && box.box.kind === 'diagram'));
-  const [selectedNodeIds, setSelectedNodeIds] = useControl("selectedNodeIds", canvasState, setCanvasState);
-  const [projectionChoice, setProjectionChoice] = useControl("projectionChoice", canvasState, setCanvasState);
+  const selectedNodeIds = focusedItem?.region?.selectedIds ?? [];
+  const [projectionChoice] = useControl("projectionChoice", canvasState, setCanvasState);
   const openDetailIds = new Set(Object.values(display.nodes).filter(node => node.kind === 'detail').map(node => node.kind === 'detail' ? node.sectionId : undefined));
   const openDetail = (sectionId: string) => {
     const existing = Object.values(display.nodes).find(node => node.kind === 'detail' && node.sectionId === sectionId);
@@ -420,7 +403,7 @@ export function MappingPocSelectionCanvas(props: {
       });
     }
     setActiveBoxId(target);
-    clearSelection();
+    clearSelectionFocus();
   }, [props.focusBox]);
 
   useEffect(() => {
@@ -441,14 +424,15 @@ export function MappingPocSelectionCanvas(props: {
       column: Math.max(0, Math.floor((clientX - bounds.left) / (cell.width * scale)))
     };
   }, [cell]);
-  const pointAtClient = useCallback((clientX: number, clientY: number): GridPoint | null => {
-    const point = scenePointAtClient(clientX, clientY);
-    const line = point && activeProjection.lineForRow(Math.max(0, Math.min(activeProjection.sourceLines.length - 1, point.row - activeBox.bounds.row)));
-    return point && line ? {
-      line,
-      column: Math.max(1, Math.min(maxColumn, point.column - activeBox.bounds.column + 1))
-    } : null;
-  }, [scenePointAtClient, maxColumn, activeBox, activeProjection]);
+  const resolveMarquee = (bounds: SelectionBounds, promoted: string[]) => {
+    const pre = preRef.current;
+    if (!pre || !cell.width || !cell.height) return { diagramIds: promoted, regions: [] };
+    const screen = pre.getBoundingClientRect(), scale = screen.width / pre.offsetWidth;
+    return selectCanvasMarquee(scene, canvasState.diagramViews, {
+      left: (bounds.left - screen.left) / (cell.width * scale), right: (bounds.right - screen.left) / (cell.width * scale),
+      top: (bounds.top - screen.top) / (cell.height * scale), bottom: (bounds.bottom - screen.top) / (cell.height * scale)
+    }, promoted, boxes);
+  };
 
   const requestLocalReply = useCallback((thread: LocalChatThread) => {
     if (replyControllers.current.has(thread.id)) return;
@@ -480,94 +464,123 @@ export function MappingPocSelectionCanvas(props: {
     }).finally(() => replyControllers.current.delete(thread.id));
   }, [setChatThreads]);
 
-  const finishSelection = (event: PointerEvent<HTMLDivElement>) => {
-    const active = activeSelectionRef.current;
-    if (!active || active.pointerId !== event.pointerId) return;
-    event.preventDefault();
-    event.stopPropagation();
-    const focus = pointAtClient(event.clientX, event.clientY) ?? active.anchor;
-    const rect = normalizeRect(active.anchor, focus);
-    const selected = nodes.filter((node) => (
-      node.head.line >= rect.startLine
-      && node.head.line <= rect.endLine
-      && node.head.startColumn <= rect.endColumn
-      && node.head.endColumn >= rect.startColumn
-    ));
-    activeSelectionRef.current = null;
-    session.previewSelection(null);
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-    if (!activeProjection.rect(rect)) {
-      setSelectionRect(null); setSelectedNodeIds([]);
-      setStatusMessage('Expand the subtree before selecting across hidden lines'); return;
-    }
-    setPromptOpen(false);
-    setPromptText("");
-    setAskOpen(false);
-    setAskText("");
-    setPromptPhase("ready");
-    const sourceRangeCount = selected.reduce((count, node) => count + node.sourceRanges.length, 0);
-    setStatusMessage(selected.length ? `${sourceRangeCount} mapped corpus range${sourceRangeCount === 1 ? "" : "s"} ready` : "Diagram region selected");
-    setSelectedNodeIds(selected.map((node) => node.id));
-    setSelectionRect(rect);
+  const completeMarquee = (marquee: CanvasMarqueeSelection) => {
+    controller.updateCanvas(current => {
+      const items = marquee.diagramIds.map(diagramSelectionItem);
+      for (const { boxId, rect } of marquee.regions) {
+        if (marquee.diagramIds.includes(`grid:${boxId}`)) continue;
+        const box = boxes.find(box => box.box.id === boxId), diagram = box?.contentId && scene.contents[box.contentId];
+        if (!diagram) continue;
+        const existing = Object.values(current.display.nodes).find((node): node is SelectionRegion => node.kind === 'selection'
+          && node.sourceBoxId === boxId && node.sourceAscii === diagram.content.ascii
+          && JSON.stringify(node.rect) === JSON.stringify(rect));
+        items.push(regionSelectionItem(diagram, boxId, rect, existing?.id));
+      }
+      let next = updateSelection(current, { type: 'add', items });
+      const surfaces = { ...next.controls.surfaces };
+      let last: SelectionRegion | undefined;
+      for (const requested of items.filter(item => item.region)) {
+        // The reducer may reuse an existing identity for a repeated gesture.
+        const item = next.selection.items.find(item => item.region && item.displayNodeId === requested.displayNodeId
+          && JSON.stringify(item.region.rect) === JSON.stringify(requested.region!.rect))!;
+        const region = item.region!, existing = next.display.nodes[item.id];
+        last = { ...displayGeometry(), id: item.id, kind: 'selection', childIds: [], expansion: 'expanded', displayMode: 'stacked',
+          ...(existing?.kind === 'selection' ? existing : {}), sourceBoxId: item.displayNodeId.slice(5),
+          sourceContentId: region.sourceContentId, sourceAscii: region.sourceAscii, sourceRevisionId: region.sourceRevisionId,
+          rect: region.rect, selectedIds: [...region.selectedIds] };
+        next = { ...next, display: existing ? { ...next.display, nodes: { ...next.display.nodes, [last.id]: last } }
+          : addDisplayNode(next.display, last) };
+        surfaces[last.id] = { ...surfaces[last.id] ?? initialSelectionSurface(), actionsOpen: false };
+      }
+      return { ...next, controls: { ...next.controls, surfaces, selectionFocusId: last?.id ?? null,
+        ...(last ? { activeBoxId: last.sourceBoxId } : {}) } };
+    }, true);
   };
+
+  const nodeSelectionInteraction = useRef({ boxes, scene, select: (selection: CanvasMarqueeSelection) => completeMarquee(selection) });
+  nodeSelectionInteraction.current = { boxes, scene, select: completeMarquee };
+
+  // Listen through canvas pointer capture: a click selects a node; a drag still pans.
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage || props.active === false || isGenerating || diagramPlacement || movingBoxId) return;
+    let pressed: { x: number; y: number; pointerId: number; boxId: string; nodeId: string; revision: string } | undefined;
+    const down = (event: globalThis.PointerEvent) => {
+      pressed = undefined;
+      if (event.button || event.ctrlKey || event.metaKey || event.shiftKey || (event.target as Element).closest('[data-mapping-static-ui], button, a')) return;
+      const label = (event.target as Element).closest<HTMLElement>('[data-content-node-id]');
+      if (!label?.dataset.displayNodeId?.startsWith('grid:')) return;
+      pressed = { x: event.clientX, y: event.clientY, pointerId: event.pointerId,
+        boxId: label.dataset.displayNodeId.slice(5), nodeId: label.dataset.contentNodeId!, revision: label.dataset.contentRevision! };
+    };
+    const up = (event: globalThis.PointerEvent) => {
+      const prior = pressed; pressed = undefined;
+      if (!prior || prior.pointerId !== event.pointerId || Math.hypot(event.clientX - prior.x, event.clientY - prior.y) > 4) return;
+      const { boxes, scene, select } = nodeSelectionInteraction.current;
+      const box = boxes.find(box => box.box.id === prior.boxId);
+      const diagram = box?.contentId ? scene.contents[box.contentId] : undefined;
+      if (!diagram || diagram.content.revisionId !== prior.revision) return;
+      const node = diagramContentNodes(diagram.content).find(node => node.id === prior.nodeId);
+      if (node) select({ diagramIds: selectedDiagramIds(controller.getSnapshot().canvas.selection).filter(id => id !== `grid:${prior.boxId}`),
+        regions: [{ boxId: prior.boxId, rect: { startLine: node.line, endLine: node.line, startColumn: node.startColumn, endColumn: node.endColumn } }] });
+    };
+    const cancel = () => { pressed = undefined; };
+    stage.addEventListener('pointerdown', down, true); window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', cancel);
+    return () => { stage.removeEventListener('pointerdown', down, true); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', cancel); };
+  }, [props.active, isGenerating, diagramPlacement, movingBoxId]);
 
   const retainSelection = useCallback(() => {
     if (retainedSelectionId && display.nodes[retainedSelectionId]) return retainedSelectionId;
-    if (!selectionRect) return undefined;
-    const id = crypto.randomUUID();
+    if (!focusedItem?.region) return undefined;
+    const { id, region } = focusedItem;
     const root: SelectionRegion = { ...displayGeometry({
-      x: (activeBox.bounds.column + selectionRect.startColumn - 1) * cell.width,
-      y: (activeBox.bounds.row + (activeProjection.rowForLine(selectionRect.startLine) ?? selectionRect.startLine - 1)) * cell.height }, {
-      width: (selectionRect.endColumn - selectionRect.startColumn + 1) * cell.width,
-      height: (selectionRect.endLine - selectionRect.startLine + 1) * cell.height }), id, kind: 'selection', childIds: [], expansion: 'expanded', displayMode: 'stacked',
-      sourceBoxId: activeBox.box.id, sourceContentId: content.id, sourceAscii: content.content.ascii,
-      sourceRevisionId: props.projectContext?.baseRevisionId, rect: { ...selectionRect }, selectedIds: [...selectedNodeIds] };
-    setDisplay(current => addDisplayNode(current, root)); setRetainedSelectionId(id); setActionsOpen(false);
+      x: (activeBox.bounds.column + region.rect.startColumn - 1) * cell.width,
+      y: (activeBox.bounds.row + (activeProjection.rowForLine(region.rect.startLine) ?? region.rect.startLine - 1)) * cell.height }, {
+      width: (region.rect.endColumn - region.rect.startColumn + 1) * cell.width,
+      height: (region.rect.endLine - region.rect.startLine + 1) * cell.height }), id, kind: 'selection', childIds: [], expansion: 'expanded', displayMode: 'stacked',
+      sourceBoxId: focusedItem.displayNodeId.slice(5), sourceContentId: region.sourceContentId, sourceAscii: region.sourceAscii,
+      sourceRevisionId: region.sourceRevisionId, rect: { ...region.rect }, selectedIds: [...region.selectedIds] };
+    controller.updateCanvas(current => ({ ...current, display: addDisplayNode(current.display, root), controls: { ...current.controls,
+      surfaces: { ...current.controls.surfaces, [id]: { ...current.controls.surfaces.draft, actionsOpen: false } } } }), true);
     return id;
-  }, [activeProjection, retainedSelectionId, display, selectionRect, activeBox, cell, content, props.projectContext?.baseRevisionId, selectedNodeIds, setDisplay, setRetainedSelectionId, setActionsOpen]);
+  }, [activeProjection, retainedSelectionId, display, focusedItem, activeBox, cell, controller]);
+
+  const selectedContentNodes = useMemo(() => selectionRect ? diagramContentNodes(content.content).filter(node =>
+    node.line >= selectionRect.startLine && node.line <= selectionRect.endLine
+      && node.startColumn <= selectionRect.endColumn && node.endColumn >= selectionRect.startColumn) : [], [content, selectionRect]);
   const openMapped = useCallback(() => {
-    if (!candidateProjection.bRange) return;
+    if (!props.projectContext || !selectedContentNodes.length) return;
     const ownerId = retainSelection(); if (!ownerId) return;
-    const result = callTreeProjection.result ?? { ascii: candidateProjection.bAscii, matchedSourceEvidenceIds: [],
-      unmatchedSourceEvidenceIds: [], targetNodeIds: candidateProjection.directlyMappedBNodeIds,
-      visibleNodeIds: candidateProjection.selectedBNodeIds, projectedNodeIds: candidateProjection.selectedBNodeIds,
-      rows: candidateProjection.bAscii.split('\n').map((_, index) => ({ nodeId: String(index), sourceLine: index + 1 })) };
-    const pane: ProjectedPane = { ...displayGeometry(), id: crypto.randomUUID(), kind: 'projection', childIds: [], expansion: 'expanded',
-      title: callTreeProjection.title ?? 'Related branches', projectionId: chosenProjection?.id,
-      sourceRevisionId: chosenProjection?.sourceRevisionId, targetRevisionId: chosenProjection?.targetRevisionId,
-      content: { kind: 'call-tree', result, coverage: `${result.matchedSourceEvidenceIds.length}/${selectedEvidenceIds.length} entities linked · ${result.targetNodeIds.length} branches` } };
-    setDisplay(current => addDisplayNode(current, pane, ownerId));
-    setActionsOpen(false);
-    setStatusMessage("Projection opened");
-  }, [candidateProjection, retainSelection, callTreeProjection, chosenProjection, selectedEvidenceIds.length, setDisplay]);
+    const panel = handleNodeSelect({ diagram: content, projectId: props.projectContext.projectId }, selectedContentNodes, DEFAULT_MAPPED_RESOURCE_TYPE);
+    controller.updateCanvas(current => {
+      const owner = current.display.nodes[ownerId];
+      if (owner?.kind !== 'selection') return current;
+      const display = upsertCodePanel(current.display, owner, panel);
+      const pane = Object.values(display.nodes).find(node => node.kind === 'projection' && node.content.kind === 'code-panel'
+        && node.content.selectionId === ownerId);
+      if (pane) codePanelFocus.current = { panelId: pane.id, selectionId: ownerId };
+      return { ...current, display, controls: { ...current.controls, surfaces: { ...current.controls.surfaces,
+        [ownerId]: { ...current.controls.surfaces[ownerId], actionsOpen: false } } } };
+    }, true);
+  }, [props.projectContext, selectedContentNodes, content, retainSelection, controller]);
   const removeEffect = (id: string) => controller.updateCanvas(current => {
     if (current.controls.surfaces[id]?.promptPhase === 'generating') return current;
     const display = removeDisplayNode(current.display, id);
-    const ownerRemoved = current.controls.retainedSelectionId && !display.nodes[current.controls.retainedSelectionId];
-    return { ...current, display, controls: { ...current.controls,
-      ...(ownerRemoved ? { retainedSelectionId: null, selectionRect: null, selectedNodeIds: [] } : {}),
+    const next = updateSelection(current, { type: 'remove', id });
+    return { ...next, display, controls: { ...next.controls,
       surfaces: Object.fromEntries(Object.entries(current.controls.surfaces).filter(([key]) => key === 'draft' || display.nodes[key])),
       activeThreadId: current.controls.activeThreadId && display.nodes[current.controls.activeThreadId] ? current.controls.activeThreadId : null } };
   }, true);
 
-  const clearSelection = useCallback(() => {
-    const active = activeSelectionRef.current;
+  const clearSelectionFocus = useCallback(() => {
     const stage = stageRef.current;
-    if (active && stage?.hasPointerCapture(active.pointerId)) {
-      stage.releasePointerCapture(active.pointerId);
-    }
-    activeSelectionRef.current = null;
-    session.previewSelection(null);
     if (placementPointerRef.current !== null && stage?.hasPointerCapture(placementPointerRef.current)) {
       stage.releasePointerCapture(placementPointerRef.current);
     }
     placementDragRef.current = null;
     placementPointerRef.current = null;
-    setSelectedNodeIds([]);
-    setSelectionRect(null);
-    setRetainedSelectionId(null);
+    setSelectionFocusId(null);
     setPromptOpen(false);
     setPromptText("");
     setAskOpen(false);
@@ -629,9 +642,7 @@ export function MappingPocSelectionCanvas(props: {
     setActiveThreadId(thread.id);
     setAskOpen(false);
     setAskText("");
-    setSelectedNodeIds([]);
-    setSelectionRect(null);
-    setRetainedSelectionId(null);
+    setSelectionFocusId(null);
     setPromptPhase("ready");
     setStatusMessage("selection ready");
     requestLocalReply(thread);
@@ -662,7 +673,7 @@ export function MappingPocSelectionCanvas(props: {
   const commitScene = (nextScene: typeof scene, changedId: string) => {
     try {
       commit({ ...gridDocument, scene: layoutScene(nextScene, changedId) });
-      clearSelection();
+      clearSelectionFocus();
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : "Layout failed");
     }
@@ -670,8 +681,7 @@ export function MappingPocSelectionCanvas(props: {
 
   const undo = (redo = false) => {
     if (isGenerating) return;
-    clearSelection();
-    setDiagramSelection([]);
+    clearSelectionFocus();
     if (props.onUndo) props.onUndo(redo); else controller.undo(redo);
   };
 
@@ -694,13 +704,19 @@ export function MappingPocSelectionCanvas(props: {
         diagramAscii: ascii, diagramRevision, mappings: [...diagramSource(content).mappings()],
         selection: selectionRect, instruction: promptText.trim()
       }, (message) => updateSurface(owner, { statusMessage: message }));
+      // Checkpoints must not capture an in-flight agent state that redo would revive.
+      updateSurface(owner, { promptPhase: 'applied', promptOpen: false, promptText: '' });
       controller.applyUpdate(expectedVersion, [{ method: 'patchDiagram', nodeId: `grid:${activeBox.box.id}`,
         start: result.startLine, end: result.oldEndLine,
         patch: result.diagramAscii.split('\n').slice(result.startLine - 1, result.newEndLine).join('\n'), mappings: result.mappings }]);
       if (operationOwnerRef.current === owner) {
-        setSelectedNodeIds([]);
-        setSelectionRect({ startLine: result.startLine, endLine: result.newEndLine,
+        const diagram = controller.getSnapshot().document.scene.contents[content.id];
+        const item = regionSelectionItem(diagram, activeBox.box.id, { startLine: result.startLine, endLine: result.newEndLine,
           startColumn: selectionRect.startColumn, endColumn: selectionRect.endColumn });
+        controller.updateCanvas(current => {
+          const next = updateSelection(current, { type: 'add', items: [item] });
+          return { ...next, controls: { ...next.controls, selectionFocusId: item.id } };
+        }, true);
       }
       updateSurface(owner, { promptOpen: false });
       updateSurface(owner, { promptText: "" });
@@ -738,7 +754,7 @@ export function MappingPocSelectionCanvas(props: {
       controller.applyUpdate(expectedVersion, [{ method: 'diagram-insert', id, revisionId: result.revision.id,
         parentId: `grid:${targetParent.box.id}`, minimumSize,
         position: { column: column - targetParent.bounds.column, row: row - targetParent.bounds.row } }]);
-      if (operationOwnerRef.current === owner) { clearSelection(); setActiveBoxId(id); }
+      if (operationOwnerRef.current === owner) { clearSelectionFocus(); setActiveBoxId(id); }
       if (operationOwnerRef.current === 'draft') setStatusMessage("Sub-diagram generated; layout updated");
     } catch (error) {
       updateSurface(owner, { promptPhase: "error" });
@@ -750,7 +766,7 @@ export function MappingPocSelectionCanvas(props: {
     const id = `group-${crypto.randomUUID()}`;
     try {
       controller.applyUpdate(controller.getSnapshot().version, [{ method: 'group', nodeId: `grid:${boxId}`, id }]);
-      clearSelection();
+      clearSelectionFocus();
     } catch (error) { setStatusMessage(error instanceof Error ? error.message : 'Grouping failed'); }
   };
 
@@ -763,13 +779,35 @@ export function MappingPocSelectionCanvas(props: {
   useLayoutEffect(() => {
     hotkeyHandler.current = (event: globalThis.KeyboardEvent) => {
       if (props.active === false || event.defaultPrevented) return;
-      if (event.key === "Escape" && activeSelectionRef.current) {
-        event.preventDefault(); clearSelection(); return;
+      if (!typingTarget(event.target) && event.key === 'Escape' && diagramSelection?.length) {
+        event.preventDefault(); clearSelectionFocus(); controller.updateCanvas(deselectCanvas, true); return;
+      }
+      const targetPane = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-display-node]') : null;
+      if (event.key === 'Escape' && !event.repeat && !typingTarget(event.target)
+        && !(event.target instanceof Element && event.target.closest('.mapping-floating-pane, .mapping-submenu'))
+        && (!targetPane || targetPane.dataset.paneContent === 'code-panel')) {
+        const current = controller.getSnapshot().canvas;
+        const focusedId = targetPane?.dataset.displayNode ?? codePanelFocus.current?.panelId;
+        const panel = focusedId ? current.display.nodes[focusedId]
+          : Object.values(current.display.nodes).find(node => node.kind === 'projection' && node.content.kind === 'code-panel'
+            && node.content.selectionId === current.controls.selectionFocusId);
+        if (panel?.kind === 'projection' && panel.content.kind === 'code-panel') {
+          event.preventDefault();
+          codePanelFocus.current = { panelId: panel.id, selectionId: panel.content.selectionId };
+          removeEffect(panel.id);
+          stageRef.current?.focus({ preventScroll: true });
+          return;
+        }
+        const ownerId = codePanelFocus.current?.selectionId;
+        const owner = ownerId ? current.display.nodes[ownerId] : undefined;
+        if (owner?.kind === 'selection' && owner.childIds.length === 0) {
+          event.preventDefault(); removeEffect(owner.id); codePanelFocus.current = null; return;
+        }
       }
       if (event.target instanceof Element && event.target.closest(".mapping-floating-pane, .mapping-submenu, [data-display-node]")) return;
       if (event.key === "Escape" && (diagramPlacement || movingBoxId)) {
         event.preventDefault();
-        clearSelection();
+        clearSelectionFocus();
         return;
       }
       if (typingTarget(event.target)) {
@@ -783,15 +821,12 @@ export function MappingPocSelectionCanvas(props: {
         }
         return;
       }
-      if (event.key === 'Escape' && diagramSelection?.length) {
-        event.preventDefault(); clearSelection(); setDiagramSelection([]); return;
-      }
       if (!selectionRect) return;
       if (event.key.toLowerCase() === "c" && !event.altKey && !promptOpen && !askOpen
         && !window.getSelection()?.toString()) {
         event.preventDefault(); void copySelection(); return;
       }
-      if (event.key.toLowerCase() === "n" && candidateProjection.bRange && !promptOpen && !askOpen) {
+      if (event.key.toLowerCase() === "n" && actionsOpen && selectedContentNodes.length && props.projectContext && !promptOpen && !askOpen) {
         event.preventDefault();
         openMapped();
         return;
@@ -801,13 +836,13 @@ export function MappingPocSelectionCanvas(props: {
         openPrompt();
         return;
       }
-      if (event.key.toLowerCase() === "a" && promptPhase !== "generating" && !promptOpen) {
+      if (event.key.toLowerCase() === "a" && !event.ctrlKey && !event.metaKey && !event.altKey && !askOpen && promptPhase !== "generating" && !promptOpen) {
         event.preventDefault();
-        openAsk();
+        setActionsOpen(value => !value);
         return;
       }
-      if (event.key === "Escape" && !retainedSelectionId && promptPhase !== "generating") {
-        clearSelection();
+      if (event.key === "Escape" && promptPhase !== "generating") {
+        clearSelectionFocus(); controller.updateCanvas(deselectCanvas, true);
       }
     };
   }, [
@@ -818,9 +853,12 @@ export function MappingPocSelectionCanvas(props: {
     askOpen,
     diagramPlacement,
     movingBoxId,
-    candidateProjection.bRange,
+    actionsOpen,
+    selectedContentNodes,
+    props.projectContext,
+    setActionsOpen,
     copySelection,
-    clearSelection,
+    clearSelectionFocus,
     openMapped,
     retainedSelectionId,
     openAsk,
@@ -830,23 +868,6 @@ export function MappingPocSelectionCanvas(props: {
     selectedNodeIds.length,
     selectionRect
   ]);
-
-  useEffect(() => {
-    if (!selectionRect
-      || retainedSelectionId
-      || promptOpen
-      || askOpen
-      || diagramPlacement
-      || promptPhase === "generating") return undefined;
-    const onPointerDown = (event: globalThis.PointerEvent) => {
-      if (props.active === false) return;
-      const stage = stageRef.current;
-      if (stage && event.composedPath().includes(stage)) return;
-      clearSelection();
-    };
-    window.addEventListener("pointerdown", onPointerDown, true);
-    return () => window.removeEventListener("pointerdown", onPointerDown, true);
-  }, [props.active, askOpen, clearSelection, retainedSelectionId, diagramPlacement, promptOpen, promptPhase, selectionRect]);
 
   const visibleSelectionRect = selectionRect && activeProjection.rect(selectionRect);
   const rectStyle = visibleSelectionRect && cell.width > 0 && cell.height > 0 ? {
@@ -869,12 +890,29 @@ export function MappingPocSelectionCanvas(props: {
 
   const jumpCallback = useRef(props.onJump); jumpCallback.current = props.onJump;
   const onDiagramJump = useCallback((target: Parameters<NonNullable<typeof props.onJump>>[0]) => jumpCallback.current?.(target), []);
+  const selectedContentKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const item of selection.items) {
+      const region = item.region;
+      if (!region) continue;
+      const diagram = scene.contents[region.sourceContentId];
+      if (!diagram || diagram.content.ascii !== region.sourceAscii) continue;
+      for (const contentNode of diagramContentNodes(diagram.content)) {
+        if (contentNode.line >= region.rect.startLine && contentNode.line <= region.rect.endLine
+          && contentNode.startColumn <= region.rect.endColumn && contentNode.endColumn >= region.rect.startColumn)
+          keys.add(JSON.stringify([item.displayNodeId, contentNode.id]));
+      }
+    }
+    return keys;
+  }, [selection, scene.contents]);
   const diagramText = useMemo(() => <DiagramText registerEndpoint={endpointGeometry.registerEndpoint}
+    nodeProps={owner => selectedContentKeys.has(JSON.stringify([owner.displayNodeId, owner.contentNodeId]))
+      ? { className: 'is-selected' } : undefined}
     rows={composedText.rows} onJump={props.onJump ? onDiagramJump : undefined} ref={preRef}
     className="mapping-poc-ascii"
     style={cell.width ? { width: resolved.bounds.columns * cell.width } : undefined}
     data-graph="A" data-line-count={resolved.bounds.rows} data-revision={diagramRevision}
-  />, [endpointGeometry.registerEndpoint, composedText.rows, Boolean(props.onJump), onDiagramJump,
+  />, [selectedContentKeys, endpointGeometry.registerEndpoint, composedText.rows, Boolean(props.onJump), onDiagramJump,
     cell.width, resolved.bounds.columns, resolved.bounds.rows, diagramRevision]);
 
   return (
@@ -883,6 +921,12 @@ export function MappingPocSelectionCanvas(props: {
       tabIndex={-1}
       className={`mapping-poc-graph-stage${ctrlSelecting ? " is-selecting" : ""}`}
       aria-label="Graph A selectable nodes"
+      onPointerDownCapture={event => {
+        const id = (event.target as Element).closest<HTMLElement>('[data-pane-content="code-panel"]')?.dataset.displayNode;
+        const pane = id ? controller.getSnapshot().canvas.display.nodes[id] : undefined;
+        if (pane?.kind === 'projection' && pane.content.kind === 'code-panel')
+          codePanelFocus.current = { panelId: pane.id, selectionId: pane.content.selectionId };
+      }}
       style={cell.width ? { width: (resolved.bounds.columns + 65) * cell.width, minHeight: (resolved.bounds.rows + 16) * cell.height } : undefined}
       onPointerDown={(event) => {
         if (props.active === false) return;
@@ -903,34 +947,7 @@ export function MappingPocSelectionCanvas(props: {
           }
           return;
         }
-        if (isGenerating
-          || event.button !== 0
-          || event.shiftKey
-          || !event.ctrlKey
-          || event.metaKey
-          || ((event.target as Element).closest("[data-mapping-static-ui]") && !(event.ctrlKey && (event.target as Element).closest("[data-diagram-jump-id]")))) return;
-        const scenePoint = scenePointAtClient(event.clientX, event.clientY);
-        const hit = scenePoint && hitTest(scene, scenePoint);
-        const targetBox = hit && boxes.find((node) => node.box.id === hit.boxId);
-        if (!hit || !targetBox?.contentId || targetBox.box.collapsed) return;
-        const line = contentProjections.get(hit.boxId)?.lineForRow(hit.local.row);
-        if (line === undefined) return;
-        const anchor = { line, column: hit.local.column + 1 };
-        event.currentTarget.focus({ preventScroll: true });
-        setActiveBoxId(hit.boxId);
-
-        event.preventDefault();
-        event.stopPropagation();
-        window.getSelection()?.removeAllRanges();
-        event.currentTarget.setPointerCapture(event.pointerId);
-        activeSelectionRef.current = { pointerId: event.pointerId, anchor, start: { x: event.clientX, y: event.clientY } };
-        setRetainedSelectionId(null);
-        setPromptPhase("ready");
-        setStatusMessage("selection ready");
-        setSelectionRect(null);
-        session.previewSelection({ boxId: hit.boxId, rect: normalizeRect(anchor, anchor) });
-        setSelectedNodeIds([]);
-          }}
+      }}
       onPointerMove={(event) => {
         if (placementDragRef.current) {
           const point = scenePointAtClient(event.clientX, event.clientY);
@@ -938,13 +955,6 @@ export function MappingPocSelectionCanvas(props: {
           event.preventDefault(); event.stopPropagation();
           return;
         }
-        const active = activeSelectionRef.current;
-        if (!active || active.pointerId !== event.pointerId) return;
-        const focus = pointAtClient(event.clientX, event.clientY);
-        if (!focus) return;
-        event.preventDefault();
-        event.stopPropagation();
-        session.previewSelection({ boxId: activeBox.box.id, rect: normalizeRect(active.anchor, focus) });
       }}
       onPointerUp={(event) => {
         const start = placementDragRef.current;
@@ -957,37 +967,33 @@ export function MappingPocSelectionCanvas(props: {
           void generateAt(start, end);
           return;
         }
-        finishSelection(event);
       }}
       onPointerCancel={(event) => {
         placementDragRef.current = null;
         placementPointerRef.current = null;
         setPlacementPreview(null);
-        if (activeSelectionRef.current?.pointerId !== event.pointerId) return;
-        event.stopPropagation();
-        activeSelectionRef.current = null;
-        session.previewSelection(null);
-        setSelectionRect(null);
       }}
     >
-      <DiagramSelectionLayer stageRef={stageRef} active={props.active !== false && !isGenerating && !diagramPlacement && !movingBoxId}
+      <CanvasSelectionLayer stageRef={stageRef} active={props.active !== false && !isGenerating && !diagramPlacement && !movingBoxId}
         diagramIds={boxes.filter(box => box.box.kind === 'diagram').map(box => `grid:${box.box.id}`)} selected={selectedDiagrams}
-        onSelect={ids => { clearSelection(); setDiagramSelection(ids); }} />
+        resolve={resolveMarquee} onComplete={completeMarquee}
+        onSelectDiagram={(id, toggle) => { clearSelectionFocus(); controller.select(toggle
+          ? { type: 'toggleDiagram', displayNodeId: id } : { type: 'replace', items: [diagramSelectionItem(id)] }); }} />
       {props.active !== false && props.onTransfer && selectedDiagrams.length > 0 && !selectionRect && createPortal(
         <div className="mapping-diagram-selection-actions" role="toolbar" aria-label="Selected diagrams" data-diagram-canvas-static-ui data-mapping-static-ui>
           <strong role="status">{selectedDiagrams.length} {selectedDiagrams.length === 1 ? 'diagram' : 'diagrams'} selected</strong>
           <button type="button" disabled={isGenerating || !!diagramPlacement || !!movingBoxId} onClick={() => props.onTransfer?.('copy', selectedDiagrams)}>Copy to canvas…</button>
           <button type="button" disabled={isGenerating || !!diagramPlacement || !!movingBoxId} onClick={() => props.onTransfer?.('move', selectedDiagrams)}>Move to canvas…</button>
-          <button type="button" onClick={() => { clearSelection(); setDiagramSelection([]); }}>Deselect (Esc)</button>
+          <button type="button" onClick={() => { clearSelectionFocus(); controller.updateCanvas(deselectCanvas, true); }}>Deselect (Esc)</button>
         </div>, document.body)}
       {!boxes.some(box => box.contentId) && <p className="mapping-empty-canvas">Empty canvas — right-click to paste a diagram, or Undo to restore.</p>}
       <CanvasPasteMenu selectionCount={!selectionRect ? selectedDiagrams.length : 0}
-        onCancelSelection={() => { clearSelection(); setDiagramSelection([]); }}
+        onCancelSelection={() => { clearSelectionFocus(); controller.updateCanvas(deselectCanvas, true); }}
         onTransfer={props.onTransfer ? mode => props.onTransfer!(mode, selectedDiagrams) : undefined} stageRef={stageRef} active={props.active !== false} busy={isGenerating || !!diagramPlacement || !!movingBoxId}
         toGrid={scenePointAtClient} onPaste={(point, text) => {
           const id = `diagram-${crypto.randomUUID()}`;
           controller.applyUpdate(controller.getSnapshot().version, [{ method: 'diagram-create', id, position: point, ascii: normalizePastedDiagram(text) }]);
-          clearSelection();
+          clearSelectionFocus();
           setActiveBoxId(id);
           setStatusMessage("Sub-diagram pasted; layout updated");
         }} />
@@ -1026,12 +1032,12 @@ export function MappingPocSelectionCanvas(props: {
             <button type="button" disabled={isGenerating || !!diagramPlacement}
               aria-label={`${node.box.collapsed ? "Expand" : "Collapse"} ${node.box.id}`}
               onClick={() => {
-                try { controller.transact(controller.getSnapshot().version, [{ method: 'collapse', nodeId: `grid:${node.box.id}`, collapsed: !node.box.collapsed }]); clearSelection(); }
+                try { controller.transact(controller.getSnapshot().version, [{ method: 'collapse', nodeId: `grid:${node.box.id}`, collapsed: !node.box.collapsed }]); clearSelectionFocus(); }
                 catch (error) { setStatusMessage(error instanceof Error ? error.message : String(error)); }
               }}>
               {node.box.collapsed ? "Expand" : "Collapse"}
             </button>
-            <button type="button" disabled={isGenerating || !!diagramPlacement} onClick={() => { clearSelection(); setMovingBoxId(node.box.id); }}>Move</button>
+            <button type="button" disabled={isGenerating || !!diagramPlacement} onClick={() => { clearSelectionFocus(); setMovingBoxId(node.box.id); }}>Move</button>
             <button type="button" disabled={isGenerating || !!diagramPlacement} onClick={() => wrapInGroup(node.box.id)}>Group</button>
           </div>
         </div>
@@ -1049,7 +1055,7 @@ export function MappingPocSelectionCanvas(props: {
         {!activeBox.box.collapsed && cell.width > 0 && cell.height > 0 ? nodes.filter(node => activeProjection.rowForLine(node.head.line) !== undefined).map((node) => (
           <span
             key={node.id}
-            className={`mapping-poc-node-hit is-${node.selectableBecause}${selectedNodeIdSet.has(node.id) ? " is-selected" : ""}${selectedNodeIdSet.has(node.id) && (promptOpen || askOpen || promptPhase === "generating") ? " is-prompt-target" : ""}`}
+            className={`mapping-poc-node-hit is-${node.selectableBecause}${selectedNodeIdSet.has(node.id) && (promptOpen || askOpen || promptPhase === "generating") ? " is-selected is-prompt-target" : ""}`}
             data-selectable-node={node.id}
             style={{
               left: (node.head.startColumn - 1) * cell.width,
@@ -1089,7 +1095,6 @@ export function MappingPocSelectionCanvas(props: {
         </div>
       ) : null}
 
-      <SelectionPreviewOverlay session={session} boxId={activeBox.box.id} projection={activeProjection} cell={cell} />
       {rectStyle && !retainedSelectionId ? (
         <span
           className={`mapping-poc-selection-rect is-${selectionPhase}`}
@@ -1133,26 +1138,19 @@ export function MappingPocSelectionCanvas(props: {
               <button type="button" aria-label="Copy ASCII + code refs" aria-keyshortcuts="C Control+C Meta+C" onClick={() => void copySelection()}>
                 Copy ASCII + code refs
               </button>
-              {props.projectContext && projections.length > 1 && <label className="mapping-projection-choice">
-                Call tree<select aria-label="Call-tree projection" value={chosenProjection?.id ?? ""}
-                  onChange={(event) => setProjectionChoice(event.target.value)}>
-                  {projections.map((projection) => <option key={projection.id} value={projection.id}>{projection.name}</option>)}
-                </select>
-              </label>}
-              {props.projectContext && callTreeProjection.error && <small className="mapping-projection-status" role="status">{callTreeProjection.error}</small>}
               <button type="button" disabled={!hasCompleteSourceCoverage} onClick={() => {
                 openPrompt(); setPromptOperation("generate"); setStatusMessage("Describe the sub-diagram, then choose its region");
               }}>Generate sub-diagram</button>
               <button
                 ref={openMappedRef}
                 type="button"
-                disabled={!candidateProjection.bRange}
+                disabled={!props.projectContext || !selectedContentNodes.length}
                 aria-keyshortcuts="N"
-                title={props.projectContext ? callTreeProjection.error ?? "Show related call-tree branches" : "Show related branches"}
+                title="Open mapped source ranges for the selected nodes"
                 onClick={openMapped}
               >
                 <kbd>N</kbd>
-                open call tree
+                open mapped source
               </button>
               <button
                 type="button"
@@ -1167,11 +1165,9 @@ export function MappingPocSelectionCanvas(props: {
               <button
                 type="button"
                 className="is-ask"
-                aria-keyshortcuts="A"
                 title="Ask about the selected region"
                 onClick={openAsk}
               >
-                <kbd>A</kbd>
                 ask about selection
               </button>
             </div>
@@ -1344,11 +1340,17 @@ export function MappingPocSelectionCanvas(props: {
       ) : null}
 
       </div>
-      <SelectionEffectsLayer diagramViews={canvasState.diagramViews} state={display} setState={setDisplay} setLayoutState={setDisplayLayout} boxes={boxes} scene={scene} cell={cell}
+      <SelectionEffectsLayer session={session} selection={selection} diagramViews={canvasState.diagramViews} state={display} setState={setDisplay} setLayoutState={setDisplayLayout} boxes={boxes} scene={scene} cell={cell}
         catalog={props.projectionCatalog} dirtyRepresentationIds={props.dirtyRepresentationIds} onRemove={removeEffect}
         busySelectionIds={Object.entries(canvasState.controls.surfaces).filter(([, surface]) => surface.promptPhase === 'generating').map(([id]) => id)}
         onActivate={root => {
-          setActiveBoxId(root.sourceBoxId); setRetainedSelectionId(root.id); setSelectionRect(root.rect); setSelectedNodeIds(root.selectedIds);
+          controller.updateCanvas(current => {
+            const next = updateSelection(current, { type: 'add', items: [{ id: root.id, displayNodeId: `grid:${root.sourceBoxId}`, region: {
+              sourceContentId: root.sourceContentId, sourceRevisionId: root.sourceRevisionId, sourceAscii: root.sourceAscii,
+              rect: root.rect, selectedIds: root.selectedIds
+            } }] });
+            return { ...next, controls: { ...next.controls, activeBoxId: root.sourceBoxId, selectionFocusId: root.id } };
+          }, true);
           setActionsOpen(true);
           stageRef.current?.focus({ preventScroll: true });
         }} />

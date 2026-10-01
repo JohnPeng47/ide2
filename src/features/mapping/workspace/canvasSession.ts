@@ -7,7 +7,6 @@ import type { MappingCanvasState } from '../../../../domain/mapping/workspace/ma
 import type { CanvasHistoryRecord } from '../../../../domain/core/diagrams/canvasHistory';
 import { stateKey } from '../../../../domain/core/diagrams/canvasHistory';
 import type { DiagramService } from '../../../../domain/core/diagrams/diagramService';
-import type { MappingPocGridRect } from '../../../../domain/mapping/selection/mappingPoc';
 
 /** Consumers can select and subscribe; mutations stay behind session commands. */
 export function readable<T>(store: StoreApi<T>): Pick<StoreApi<T>, 'getState' | 'getInitialState' | 'subscribe'> {
@@ -16,7 +15,6 @@ export function readable<T>(store: StoreApi<T>): Pick<StoreApi<T>, 'getState' | 
 
 export interface SavedDocumentState { name: string; savedName: string; savedScene: string; savedEdges?: string }
 export interface DocumentStatus { isDirty: boolean; sceneDirty: boolean; canUndo: boolean; canRedo: boolean }
-export interface SelectionPreview { rect: MappingPocGridRect; boxId: string }
 
 /** Domain state remains owned by the controller. Stores publish immutable references,
  * never a second editable document. Pointer previews have no route to the controller. */
@@ -26,14 +24,14 @@ export class CanvasSession {
   private readonly documentState;
   readonly presentation;
   private readonly presentationState;
+  readonly selection;
+  private readonly selectionState;
   readonly controls;
   private readonly controlsState;
   readonly geometry;
   private readonly geometryState;
   readonly status;
   private readonly statusState;
-  private readonly interactionState = createStore(() => ({ selection: null as SelectionPreview | null }));
-  readonly interaction = readable(this.interactionState);
   private baseline: SavedDocumentState;
   private savedSceneKey: string;
   private savedEdgesKey: string;
@@ -53,11 +51,13 @@ export class CanvasSession {
     this.savedSceneKey = stateKey(JSON.parse(input.savedScene)); this.savedEdgesKey = stateKey(JSON.parse(input.savedEdges ?? '[]'));
     this.documentState = createStore(() => ({ document: snapshot.document }));
     this.presentationState = createStore(() => ({ display: snapshot.canvas.display, diagramViews: snapshot.canvas.diagramViews }));
+    this.selectionState = createStore(() => snapshot.canvas.selection);
     this.controlsState = createStore(() => snapshot.canvas.controls);
     this.geometryState = createStore(() => this.geometryOf(snapshot));
     this.statusState = createStore(() => this.statusOf(snapshot));
     this.document = readable(this.documentState);
     this.presentation = readable(this.presentationState);
+    this.selection = readable(this.selectionState);
     this.controls = readable(this.controlsState);
     this.geometry = readable(this.geometryState);
     this.status = readable(this.statusState);
@@ -69,6 +69,7 @@ export class CanvasSession {
       // Publish all controller changes synchronously; React observes one completed transaction.
       if (next.canvas.display !== previous.canvas.display || next.canvas.diagramViews !== previous.canvas.diagramViews)
         this.presentationState.setState({ display: next.canvas.display, diagramViews: next.canvas.diagramViews });
+      if (next.canvas.selection !== previous.canvas.selection) this.selectionState.setState(next.canvas.selection, true);
       if (next.canvas.controls !== previous.canvas.controls) this.controlsState.setState(next.canvas.controls, true);
       if (next.endpointBounds !== previous.endpointBounds || next.cell !== previous.cell || next.version !== previous.version)
         this.geometryState.setState(this.geometryOf(next));
@@ -96,7 +97,6 @@ export class CanvasSession {
     this.baseline = { name: input.name, savedName: input.savedName, savedScene: input.savedScene, savedEdges: input.savedEdges };
     this.publishStatus();
   }
-  previewSelection(selection: SelectionPreview | null) { this.interactionState.setState({ selection }); }
   onCommit(listener: () => void) { this.commitListeners.add(listener); return () => { this.commitListeners.delete(listener); }; }
   dispose() { this.unsubscribe(); this.commitListeners.clear(); }
 }

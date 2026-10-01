@@ -57,7 +57,8 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
   const languageService = options.lspEnabled === true ? new ProjectLanguageService() : undefined;
   const diagrams = new MappingDiagramService(store, corpusAccess, projectRoot, configuredDomainProfileId);
   const canvasBridge = new CanvasSessionBridge();
-  const liveCanvas = new LiveCanvasService(() => canvasBridge.list());
+  const liveCanvas = new LiveCanvasService(() => canvasBridge.list(), async (workspaceInstanceId, documentId) =>
+    await canvasBridge.dispatch(workspaceInstanceId, { method: 'context', documentId }) as import('../../../domain/mapping/agent/liveCanvasStatus').LiveCanvasContext);
   const agent = new AgentDiagrammingSessionService(canvasBridge, diagrams, store, new QuickJsAgentRuntime(),
     new ChangeSessionService(new DiagramChangeSessionStore(store.storeRoot, undefined, true), store, canvasBridge));
   const routes = {

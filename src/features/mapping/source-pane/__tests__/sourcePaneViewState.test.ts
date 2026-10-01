@@ -6,6 +6,20 @@ import fixture from '../../../../../tests/fixtures/source-pane-performance/works
 const display = () => deserializeWorkspace(fixture).documents[0].canvas.display;
 
 describe('source viewport snapshots', () => {
+  it('captures and prunes the shared CodePanel viewport independently of source-file viewers', () => {
+    const state = new SourcePaneViewState(), original = display();
+    const node = original.nodes['source-1'];
+    if (node.kind !== 'projection') throw Error();
+    node.content = { kind: 'code-panel', selectionId: 'selection', panel: { mappedResourceType: 'source-range',
+      diagramId: 'diagram', revisionId: 'revision', contentHash: 'hash', selectedNodeIds: [], unmappedNodeIds: [], items: [] } };
+    const binding = state.bind('source', 'source-1', '@code-panel');
+    binding.connect(() => ({ top: 320, left: 8 }));
+    state.prune('source', original);
+    expect(state.captureDisplay('source', original).nodes['source-1']).toMatchObject({ content: { scroll: { top: 320, left: 8 } } });
+    delete original.nodes['source-1']; state.prune('source', original);
+    expect(binding.read()).toBeUndefined();
+  });
+
   it('samples live DOM readers at save time without changing the display model', () => {
     const state = new SourcePaneViewState(), original = display();
     let position = { top: 12, left: 3 };
