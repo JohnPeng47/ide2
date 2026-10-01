@@ -1,8 +1,11 @@
 .diagram-search-open { position: absolute; z-index: 14; right: 20px; top: 64px; padding: 6px 12px; border: 1px solid var(--gutter); border-radius: 4px; background: #141920; color: var(--fg); cursor: pointer; }
 .diagram-search-panel { position: absolute; z-index: 30; right: 16px; top: 64px; width: min(420px, calc(100% - 32px)); max-height: calc(100% - 90px); display: flex; flex-direction: column; gap: 10px; padding: 14px; box-sizing: border-box; border: 1px solid var(--gutter); border-radius: 6px; background: #141920; box-shadow: 0 8px 30px #0008; color: var(--fg); font: 12px var(--font-mono); }
 .diagram-search-panel header, .diagram-search-options { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.diagram-search-options { flex-wrap: wrap; }
 .diagram-search-panel button, .diagram-search-panel select, .diagram-search-panel input[type=search] { font: inherit; background: #0d1117; color: var(--fg); border: 1px solid var(--gutter); border-radius: 3px; padding: 5px; }
 .diagram-search-panel input[type=search] { width: 100%; }
+.diagram-search-query { display: flex; gap: 6px; }
+.diagram-search-query input { min-width: 0; }
 .diagram-search-panel label { display: flex; align-items: center; gap: 5px; }
 .diagram-search-panel small, .diagram-search-panel p { color: var(--muted); margin: 0; }
 .diagram-search-results { overflow: auto; min-height: 0; }
@@ -14,3 +17,4 @@
 .diagram-search-line-number { color: var(--muted); min-width: 3ch; text-align: right; }
 .diagram-search-results mark { background: #ebcb8b; color: #141920; }
 .diagram-search-highlight { position: absolute; z-index: 7; pointer-events: none; background: rgb(235 203 139 / 30%); outline: 1px solid #ebcb8b; }
+.diagram-search-highlight.is-current { background: rgb(235 203 139 / 55%); outline-width: 2px; }

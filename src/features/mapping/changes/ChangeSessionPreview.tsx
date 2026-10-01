@@ -11,11 +11,14 @@ import { acceptChangeSession, readChangeSession, type DisplayModeChange } from '
 import { changePreviewText, type PreviewTextRun } from './changePreviewText';
 import type { SearchDocument } from '../search/diagramSearchService';
 import { SearchHighlight, type DiagramFocus } from '../search/SearchHighlight';
+import type { DiagramLineSearchResult } from '../../../../domain/mapping/search/diagramSearch';
+import { revealSearchMatches } from '../search/revealSearchMatches';
 import '../canvas/diagramConnections.css';
 import './changeSessions.css';
 
 export function ChangeSessionPreview(props: { mode: DisplayModeChange; onSelect: (mode: DisplayModeChange) => void;
   onSearchDocument?: (document: SearchDocument) => void; searchFocus?: DiagramFocus;
+  searchMatches?: readonly DiagramLineSearchResult[];
   onOpenAccepted: (session: Omit<DiagramChangeSession, 'receipts'>, documentId: string) => Promise<void> }) {
   const [loaded, setLoaded] = useState<{ session: Preview; diff: ReturnType<typeof diffChangeDocument> }>();
   const session = loaded?.session;
@@ -75,6 +78,7 @@ export function ChangeSessionPreview(props: { mode: DisplayModeChange; onSelect:
     {doc
       ? <PreviewCanvas key={`${session!.id}:${doc.id}:${doc.version}`} doc={doc}
           searchFocus={props.searchFocus}
+          searchMatches={props.searchMatches}
           diff={diff!} modifiedDiagramIds={modifiedDiagramIds}
           focusId={change?.nodeId} serial={props.mode.serial} onJump={target => {
             const destination = session!.documents.find(d => d.representationId === target.representationId || d.id === target.representationId);
@@ -84,7 +88,8 @@ export function ChangeSessionPreview(props: { mode: DisplayModeChange; onSelect:
       : <p className="change-preview-message">{session ? 'Select a canvas in Changes.' : 'Loading preview…'}</p>}
   </div>;
 }
-function PreviewCanvas({ doc, focusId, serial, onJump, diff, modifiedDiagramIds, searchFocus }: { doc: ChangePreviewDocument; focusId?: string; serial: number; searchFocus?: DiagramFocus;
+function PreviewCanvas({ doc, focusId, serial, onJump, diff, modifiedDiagramIds, searchFocus, searchMatches }: { doc: ChangePreviewDocument; focusId?: string; serial: number; searchFocus?: DiagramFocus;
+  searchMatches?: readonly DiagramLineSearchResult[];
   diff: ReturnType<typeof diffChangeDocument>; modifiedDiagramIds: ReadonlySet<string>;
   onJump: NonNullable<Parameters<typeof DiagramText>[0]['onJump']> }) {
   const controller = useMemo(() => {
@@ -96,6 +101,13 @@ function PreviewCanvas({ doc, focusId, serial, onJump, diff, modifiedDiagramIds,
     return new ChangePreviewState(state, doc.version);
   }, [doc.id, doc.version]);
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
+  useEffect(() => {
+    if (!searchMatches?.length) return;
+    controller.updateCanvas(current => {
+      const revealed = revealSearchMatches(controller.getSnapshot().document.scene, current.diagramViews, searchMatches);
+      return revealed.views === current.diagramViews ? current : { ...current, diagramViews: revealed.views };
+    });
+  }, [controller, searchMatches]);
   useEffect(() => {
     const result = searchFocus?.search;
     if (!result) return;
@@ -141,17 +153,18 @@ function PreviewCanvas({ doc, focusId, serial, onJump, diff, modifiedDiagramIds,
   return <DraggableDiagramCanvas enabled resetKey={doc.id} className="mapping-poc-canvas" leftInset={340}
     focusBox={focusBox}>
     <div className="change-preview-stage" style={{ position: 'relative', width: resolved.bounds.columns * cell.width, height: resolved.bounds.rows * cell.height }}>
-      {searchFocus?.search && (() => {
-        const result = searchFocus.search, projection = text.projections.get(result.displayNodeId);
-        const box = boxes.find(box => box.box.id === searchFocus.id);
+      {(searchMatches?.length ? searchMatches : searchFocus?.search ? [searchFocus.search] : []).map(result => {
+        const projection = text.projections.get(result.displayNodeId);
+        const box = boxes.find(box => box.box.id === result.displayNodeId.slice(5));
+        const focused = searchFocus?.search?.displayNodeId === result.displayNodeId && searchFocus.search.line === result.line;
         const row = projection?.rowForLine.get(result.line);
-        return <SearchHighlight focus={searchFocus} content={box?.box.kind === 'diagram' ? scene.contents[box.box.contentId].content : undefined}
+        return <SearchHighlight key={`${result.displayNodeId}:${result.line}`} result={result} focus={focused ? searchFocus : undefined} content={box?.box.kind === 'diagram' ? scene.contents[box.box.contentId].content : undefined}
           origin={box?.bounds} row={row} cell={cell} columnFor={column => {
             const run = row === undefined ? undefined : projection?.rows[row]?.runs.find(run => run.owner &&
               run.start - run.owner.columnOffset <= column && run.end - run.owner.columnOffset > column);
             return run?.owner ? column + run.owner.columnOffset : projection?.columnForLine(result.line, column) ?? column;
           }} />;
-      })()}
+      })}
       <DiagramText ref={pre} className="mapping-poc-ascii" rows={text.rows} registerEndpoint={geometry.registerEndpoint} onJump={onJump}
         renderRun={run => (run as PreviewTextRun).diffStatus === 'removed'
           ? <span className="change-diff-removed" data-diff-status="removed">{run.text}</span>

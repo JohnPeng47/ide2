@@ -12,6 +12,7 @@ import { useEndpointGeometry } from './useEndpointGeometry';
 import { DiagramText } from '../../../shared/diagrams/DiagramText';
 import { diagramSceneText } from '../../../../domain/mapping/workspace/diagramSceneText';
 import { SearchHighlight, type DiagramFocus } from '../search/SearchHighlight';
+import { revealSearchMatches } from '../search/revealSearchMatches';
 import { type DiagramJumpTarget } from '../../../../domain/core/diagrams/diagramJump';
 import { DiagramConnections } from './DiagramConnections';
 import { exportedEvidenceId } from '../../../../domain/core/diagrams/projectDiagramCanvas';
@@ -106,6 +107,7 @@ export function MappingPocSelectionCanvas(props: {
   onBusyChange?: (busy: boolean) => void;
   active?: boolean;
   focusBox?: DiagramFocus;
+  searchMatches?: readonly import('../../../../domain/mapping/search/diagramSearch').DiagramLineSearchResult[];
   projectContext?: { projectId: string; representationId: string; baseRevisionId: string };
   projectionCatalog?: ProjectRepresentationCatalogRecord;
   dirtyRepresentationIds?: string[];
@@ -374,6 +376,16 @@ export function MappingPocSelectionCanvas(props: {
   const busyHandler = useRef(props.onBusyChange);
   busyHandler.current = props.onBusyChange;
   useEffect(() => { busyHandler.current?.(isGenerating); }, [isGenerating]);
+
+  useEffect(() => {
+    if (!props.searchMatches?.length || props.active === false) return;
+    const current = controller.getSnapshot();
+    const revealed = revealSearchMatches(current.document.scene, current.canvas.diagramViews, props.searchMatches);
+    if (revealed.root !== current.document.scene.root)
+      controller.commitDocument({ ...current.document, scene: layoutScene({ ...current.document.scene, root: revealed.root }, revealed.root.id) });
+    if (revealed.views !== current.canvas.diagramViews)
+      controller.updateCanvas(canvas => ({ ...canvas, diagramViews: revealed.views }));
+  }, [controller, props.searchMatches, props.active]);
 
   useEffect(() => {
     if (!props.focusBox) return;
@@ -999,11 +1011,13 @@ export function MappingPocSelectionCanvas(props: {
         }} />
       <span ref={probeRef} className="mapping-poc-cell-probe" aria-hidden="true">0000000000</span>
       {diagramText}
-      {props.focusBox?.search && (() => {
-        const box = boxes.find(box => box.box.id === props.focusBox!.id);
-        return <SearchHighlight focus={props.focusBox} content={box?.contentId ? scene.contents[box.contentId].content : undefined}
-          origin={box?.bounds} cell={cell} row={contentProjections.get(props.focusBox.id)?.rowForLine(props.focusBox.search.line)} />;
-      })()}
+      {(props.searchMatches?.length ? props.searchMatches : props.focusBox?.search ? [props.focusBox.search] : []).map(result => {
+        const id = result.displayNodeId.slice(5), box = boxes.find(box => box.box.id === id);
+        const focused = props.focusBox?.search?.displayNodeId === result.displayNodeId && props.focusBox.search.line === result.line;
+        return <SearchHighlight key={`${id}:${result.line}`} result={result} focus={focused ? props.focusBox : undefined}
+          content={box?.contentId ? scene.contents[box.contentId].content : undefined}
+          origin={box?.bounds} cell={cell} row={contentProjections.get(id)?.rowForLine(result.line)} />;
+      })}
 
       <DiagramSubtreeControls nodes={displayNodes} visibleBoxIds={new Set(boxes.map(box => box.box.id))} cell={cell}
         disabled={isGenerating || !!diagramPlacement || !!movingBoxId || !!promptOpen || !!askOpen}

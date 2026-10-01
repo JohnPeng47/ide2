@@ -135,6 +135,23 @@ function MappingWorkspacePage() {
   const savedSearchDocuments = useRef(new WeakMap<object, MappingGridDocument>());
   const [proposalSearchDocument, setProposalSearchDocument] = useState<SearchDocument>();
   const [proposalSearchFocus, setProposalSearchFocus] = useState<{ documentId: string; focus: DiagramFocus }>();
+  const [searchMatches, setSearchMatches] = useState<readonly DiagramLineSearchResult[]>([]);
+  const searchMatchesByDocument = useMemo(() => {
+    const grouped = new Map<string, DiagramLineSearchResult[]>();
+    for (const match of searchMatches) {
+      const matches = grouped.get(match.canvasDocumentId) ?? [];
+      matches.push(match); grouped.set(match.canvasDocumentId, matches);
+    }
+    return grouped;
+  }, [searchMatches]);
+  const searchNavigation = useRef(0);
+  const clearSearchFocus = useCallback(() => {
+    searchNavigation.current++;
+    setProposalSearchFocus(undefined);
+    setSearchMatches([]);
+    setDrafts(current => Object.values(current).some(draft => draft.focusBox?.search)
+      ? Object.fromEntries(Object.entries(current).map(([id, draft]) => [id, draft.focusBox?.search ? { ...draft, focusBox: undefined } : draft])) : current);
+  }, []);
   useEffect(() => { setProposalSearchFocus(undefined); }, [changeMode?.sessionId, changeMode?.documentId, changeMode?.serial]);
   const onProposalSearchDocument = useCallback((document: SearchDocument) => setProposalSearchDocument(document), []);
   const proposalSearchId = changeMode ? `proposal:${changeMode.sessionId}:${changeMode.documentId}` : undefined;
@@ -274,6 +291,7 @@ function MappingWorkspacePage() {
   };
 
   const revealSearchResult = async (result: DiagramLineSearchResult) => {
+    const navigation = ++searchNavigation.current;
     const source = searchDocuments.find(document => document.id === result.canvasDocumentId);
     const check = (document: MappingGridDocument | undefined) => {
       const box = document && findBox(document.scene.root, result.displayNodeId.slice(5));
@@ -291,6 +309,7 @@ function MappingWorkspacePage() {
     if (!id) throw new Error('Canvas is no longer available.');
     setActiveId(id);
     const controller = await waitController(id);
+    if (navigation !== searchNavigation.current) return;
     check(controller.getSnapshot().document);
     setDrafts(current => current[id] ? { ...current, [id]: { ...current[id], focusBox: focus } } : current);
   };
@@ -639,7 +658,7 @@ function MappingWorkspacePage() {
             <DraggableDiagramCanvas className="mapping-poc-canvas" enabled={id === activeId} resetKey={id} leftInset={340} focusBox={draft.focusBox}
               initialTransform={draft.viewport} onTransformChange={viewport => viewState.setCamera(id, viewport)}>
               <MappingPocSelectionCanvas onTransfer={(mode, selected) => beginTransfer(id, mode, selected)}
-                onUndo={redo => void undo(id, redo)} canWorkspaceUndo={!!boundary(id)} canWorkspaceRedo={!!boundary(id, true)} onJump={target => void jumpTo(target)} session={draft.session} active={id === activeId && !draft.hidden && !workspaceBusy && !pendingTransfer && !creating && !changeMode} focusBox={draft.focusBox}
+                onUndo={redo => void undo(id, redo)} canWorkspaceUndo={!!boundary(id)} canWorkspaceRedo={!!boundary(id, true)} onJump={target => void jumpTo(target)} session={draft.session} active={id === activeId && !draft.hidden && !workspaceBusy && !pendingTransfer && !creating && !changeMode} focusBox={draft.focusBox} searchMatches={searchMatchesByDocument.get(id)}
                 projectContext={draft.revisionId ? { projectId: snapshot!.project!.id, representationId: draft.representationId ?? id, baseRevisionId: draft.revisionId } : undefined}
                 projectionCatalog={snapshot?.catalog ?? undefined}
                 dirtyRepresentationIds={dirtySceneIds}
@@ -650,10 +669,11 @@ function MappingWorkspacePage() {
           {!active && !changeMode && <div className="mapping-empty"><h1>{snapshot ? "Create a project diagram" : error ? "Could not load project diagrams" : "Loading project diagrams…"}</h1>
             {snapshot && <button type="button" onClick={() => setCreating(true)}>New diagram</button>}</div>}
           {changeMode && <ChangeSessionPreview mode={changeMode} onSelect={setChangeMode} onOpenAccepted={openAccepted}
-            onSearchDocument={onProposalSearchDocument} searchFocus={proposalSearchFocus && proposalSearchFocus.documentId === proposalSearchId ? proposalSearchFocus.focus : undefined} />}
+            onSearchDocument={onProposalSearchDocument} searchFocus={proposalSearchFocus && proposalSearchFocus.documentId === proposalSearchId ? proposalSearchFocus.focus : undefined}
+            searchMatches={proposalSearchId ? searchMatchesByDocument.get(proposalSearchId) : undefined} />}
           {!pendingTransfer && <DiagramSearchPanel service={search} activeDocumentId={proposalSearchId ?? activeId}
             activeName={changeMode ? proposalSearchDocument && proposalSearchDocument.id === proposalSearchId ? proposalSearchDocument.name : 'Loading proposal…' : active?.name}
-            onReveal={revealSearchResult} />}
+            onReveal={revealSearchResult} onClear={clearSearchFocus} onMatches={setSearchMatches} />}
           <FloatingPane highlighted={!!pendingTransfer}><MappingDiagramExplorer explorerTab={explorerTab}
             transfer={pendingTransfer ? { mode: pendingTransfer.mode, count: pendingTransfer.selectedIds.length,
               sourceId: drafts[pendingTransfer.sourceId]?.representationId ?? pendingTransfer.sourceId, busy: workspaceBusy, error, progress: transferProgress,
