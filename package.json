@@ -7,6 +7,8 @@
     "packages/*"
   ],
   "scripts": {
+    "benchmark": "node benchmarks/runner.mjs",
+    "test:benchmarks": "node --test benchmarks/tests/*.test.mjs",
     "build": "tsc --noEmit && vite build",
     "check:browser": "npm run check:mapping",
     "check:canvas": "node tests/browser/core/browser-diagram-canvas-check.mjs",
