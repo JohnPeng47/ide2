@@ -34,6 +34,17 @@ return canvas.createDocument({ canvasId: "...", name: "Proposed design" });
 
 The result supplies a `sessionId`. Pass it on subsequent tool calls. A new document starts with an editable `grid:overview` placeholder; replace it with the initial diagram.
 
+To copy an existing live document, use a separate `exec` without `sessionId` or `changeSessionId`:
+
+```js
+return canvas.copyDocument({
+  canvasId: "...", documentId: "...", name: "Design copy",
+  expectedVersion: 12
+});
+```
+
+The optional `expectedVersion` checks the source document when the browser creates the copy. This operation uses the normal command bridge and workspace/controller history machinery. It copies the current state, including unsaved ASCII (and blank lines), source mappings, connections, layout, folds, panes, and camera. Transient controls and pending conversation requests are reset. The result attaches to a new unsaved draft at version `0`, with a fresh undo baseline and no saved-representation identity. Editing, undoing, or saving the copy leaves the source unchanged. Workspace persistence retains the draft; `save_diagram` publishes it separately. Copies currently support live documents only.
+
 Read current state:
 
 ```js

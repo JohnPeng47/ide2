@@ -35,6 +35,7 @@ export const canvasMethods = {
   'canvas.list': { schema: z.object({}).strict(), description: 'List registered live Mapping pages and their documents.', example: 'return canvas.list();' },
   'canvas.attach': { schema: z.object({ canvasId: idSchema, documentId: idSchema }).strict(), description: 'Bind a new session to a live document. Use returned sessionId on subsequent calls.', example: 'return canvas.attach({canvasId:"…",documentId:"…"});' },
   'canvas.createDocument': { schema: z.object({ canvasId: idSchema, name: z.string().trim().min(1).max(120) }).strict(), description: 'Create an unsaved document and attach a session. Does not create a confirmed representation.', example: 'return canvas.createDocument({canvasId:"…",name:"Proposed design"});' },
+  'canvas.copyDocument': { schema: z.object({ canvasId: idSchema, documentId: idSchema, name: z.string().trim().min(1).max(120), expectedVersion: z.number().int().nonnegative().optional() }).strict(), description: 'Copy a live document, including unsaved edits, diagrams, mappings, edges, layout and pane presentation, into an independent unsaved draft with a fresh undo baseline. Returns its attachment. Optional expectedVersion checks the source. Use an unbound exec without sessionId or changeSessionId. Does not publish or modify the source; transient controls and pending requests are reset.', example: 'return canvas.copyDocument({canvasId:"…",documentId:"…",name:"Canvas copy",expectedVersion:0});' },
   'nodes.list': { schema: z.object({}).strict(), description: 'Read the DisplayNode registry including GridBoxes and FloatingBoxes.', example: 'return nodes.list();' },
   'nodes.get': { schema: z.object({ nodeId: idSchema }).strict(), description: 'Read a complete DisplayNode and its diagram content.', example: 'return nodes.get({nodeId:"grid:overview"});' },
   'nodes.draw': { schema: z.object({ ...contentFields, parentId: idSchema.optional(), position: point.optional() }).strict(), description: 'Create a diagram; natural content size feeds push-right grid layout. Position is parent-relative cells.', example: 'return nodes.draw({ascii:"[Service]",position:{column:0,row:0}});' },
@@ -49,7 +50,7 @@ export function canvasApiSpec(query: string) {
     .map(([name, entry]) => ({ name, description: entry.description, inputSchema: z.toJSONSchema(entry.schema), example: entry.example }));
 }
 export interface CanvasDescriptor { canvasId: string; stableWorkspaceId?: string; projectId?: string; documents: { documentId: string; name: string; representationId?: string }[] }
-export interface CanvasCommand { id: string; method: 'snapshot' | 'context' | 'document-state' | 'apply' | 'create-document' | 'saved'; documentId?: string; payload?: unknown }
+export interface CanvasCommand { id: string; method: 'snapshot' | 'context' | 'document-state' | 'apply' | 'create-document' | 'copy-document' | 'saved'; documentId?: string; payload?: unknown }
 export type LiveDocumentState = Pick<LiveDocumentSnapshot, 'document' | 'name'>;
 export interface LiveDocumentSnapshot {
   contextId?: string;

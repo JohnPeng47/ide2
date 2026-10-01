@@ -163,6 +163,20 @@ function MappingWorkspacePage() {
   };
   const handleAgentCommand = async (command: CanvasCommand): Promise<unknown> => {
     if (transferBusy.current) throw new Error('WORKSPACE_BUSY');
+    if (command.method === 'copy-document') {
+      const { name, expectedVersion, requestId } = command.payload as { name: string; expectedVersion?: number; requestId: string };
+      const key = `copy:${command.documentId}:${requestId}`;
+      if (appliedRequests.current.has(key)) return appliedRequests.current.get(key);
+      const sourceId = command.documentId!, source = draftRef.current[sourceId];
+      if (!source || source.hidden) throw new Error('DOCUMENT_UNAVAILABLE');
+      const result = workspace.copyDocument({ documentId: sourceId, name, expectedVersion,
+        display: viewState.captureDisplay(sourceId, source.session.controller.getSnapshot().canvas.display),
+        viewport: viewState.captureCamera(sourceId, source.viewport) });
+      // Record the receipt immediately: a lost acknowledgement must not create another copy.
+      appliedRequests.current.set(key, result);
+      setActiveId(result.documentId);
+      return result;
+    }
     if (command.method === 'create-document') {
       const { name, snapshot: initialized, requestId } = command.payload as { name: string; requestId: string; snapshot: ProjectRepresentationsSnapshot };
       if (appliedRequests.current.has(`create:${requestId}`)) return appliedRequests.current.get(`create:${requestId}`);

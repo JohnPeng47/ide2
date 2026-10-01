@@ -101,6 +101,9 @@ export class AgentDiagrammingSessionService {
   private async attach(canvasId: string, documentId: string, changeSessionId?: string) {
     const canvases = changeSessionId ? await this.changeService().descriptor(changeSessionId) : this.bridge.list();
     if (!canvases.some(canvas => canvas.canvasId === canvasId && canvas.documents.some(doc => doc.documentId === documentId))) throw new Error('Unknown live document');
+    return this.attachDocument(canvasId, documentId, changeSessionId);
+  }
+  private async attachDocument(canvasId: string, documentId: string, changeSessionId?: string) {
     if (this.sessions.size >= 500) throw new Error('Session capacity reached');
     const sessionId = randomUUID(); this.sessions.set(sessionId, { canvasId, documentId, changeSessionId });
     try {
@@ -144,6 +147,19 @@ export class AgentDiagrammingSessionService {
             let execute: () => Promise<unknown>;
             if (method === 'canvas.list') execute = async () => input.changeSessionId ? this.changeService().descriptor(input.changeSessionId) : this.bridge.list();
             else if (method === 'canvas.attach') execute = () => this.attach(parsed.canvasId, parsed.documentId, input.changeSessionId);
+            else if (method === 'canvas.copyDocument') {
+              if (input.changeSessionId) throw new Error('Copy supports live canvases only');
+              if (input.sessionId || state.createdDocument) throw new Error('Create one document per unbound exec call');
+              if (!this.bridge.list().some(canvas => canvas.canvasId === parsed.canvasId && canvas.documents.some(doc => doc.documentId === parsed.documentId)))
+                throw new Error('Unknown live document');
+              state.createdDocument = true;
+              execute = async () => {
+                const result = await this.bridge.dispatch(parsed.canvasId, { method: 'copy-document', documentId: parsed.documentId,
+                  payload: { name: parsed.name, expectedVersion: parsed.expectedVersion, requestId: `${requestPrefix}:${stepIndex}` } }) as { documentId: string };
+                // The browser has created the document; its descriptor refresh may still be in flight.
+                return this.attachDocument(parsed.canvasId, result.documentId);
+              };
+            }
             else if (method === 'canvas.createDocument') {
               if (input.sessionId || state.createdDocument) throw new Error('Create one document per unbound exec call');
               state.createdDocument = true;

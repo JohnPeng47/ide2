@@ -11,7 +11,49 @@ import { mappingDocumentFromScene } from '../../../../domain/mapping/workspace/m
 import { singleDiagramScene } from '../../../../domain/core/diagrams/projectDiagramCanvas';
 import { initialCanvasState } from '../../../../domain/mapping/workspace/mappingWorkspace';
 
-it('uses one committed version for staged results, live reads, undo, and request deduplication', async () => {
+it('routes document copies through the live bridge and retries a lost reply without duplicating the copy', async () => {
+  const source = new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('Unsaved source')), initialCanvasState(), 3);
+  const before = source.getSnapshot();
+  let copied: MappingDocumentController | undefined, loseReply = true;
+  const receipts = new Map<string, { documentId: string }>();
+  const attempts: unknown[] = [];
+  const bridge: CanvasSessionPort = {
+    // The browser descriptor deliberately has not caught up with the newly created draft.
+    register() {}, list: () => [{canvasId:'canvas',documents:[{documentId:'source',name:'Source'}]}], poll: async () => [], reply() {}, unregister() {}, dispose() {},
+    async dispatch(canvasId, command) {
+      expect(canvasId).toBe('canvas');
+      if (command.method === 'snapshot') return { ...(command.documentId === 'copy' ? copied! : source).getSnapshot(), name:'Test' };
+      expect(command.method).toBe('copy-document');
+      expect(command.documentId).toBe('source');
+      const payload = command.payload as {name:string;expectedVersion:number;requestId:string};
+      expect(payload).toMatchObject({name:'Independent copy',expectedVersion:3});
+      attempts.push(payload);
+      if (!receipts.has(payload.requestId)) {
+        copied = new MappingDocumentController(before.document, before.canvas, 0, undefined, undefined, source.forkHistory());
+        receipts.set(payload.requestId, { documentId:'copy' });
+      }
+      if (loseReply) { loseReply = false; throw Error('CANVAS_TIMEOUT: lost copy acknowledgement'); }
+      return receipts.get(payload.requestId);
+    }
+  };
+  const service = new AgentDiagrammingSessionService(bridge, {} as MappingDiagramService, {} as DiagramRepository, new QuickJsAgentRuntime());
+  const input = {requestId:'copy',code:'return canvas.copyDocument({canvasId:"canvas",documentId:"source",name:"Independent copy",expectedVersion:3});'};
+  await expect(service.call('exec', input)).rejects.toThrow('CANVAS_TIMEOUT');
+  const result = await service.call('exec', input) as {value:{sessionId:string;documentId:string;version:number}};
+  expect(result.value).toMatchObject({documentId:'copy',version:0});
+  expect(await service.call('exec', input)).toEqual(result);
+  expect(attempts).toHaveLength(2); expect(attempts[0]).toEqual(attempts[1]);
+  expect(receipts.size).toBe(1);
+  const read = await service.call('exec', {sessionId:result.value.sessionId,requestId:'read-copy',code:'return nodes.list();'}) as {value:{nodes:unknown[]}};
+  expect(read.value.nodes).toEqual(copied!.nodes());
+  expect(source.getSnapshot()).toBe(before);
+  await expect(service.call('exec', {...input,requestId:'bound-copy',sessionId:result.value.sessionId})).rejects.toThrow('unbound exec');
+  await expect(service.call('exec', {...input,requestId:'proposal-copy',changeSessionId:'proposal'})).rejects.toThrow('live canvases only');
+  await expect(service.call('exec', {...input,requestId:'missing-copy',code:input.code.replace('"source"','"missing"')})).rejects.toThrow('Unknown live document');
+  expect(receipts.size).toBe(1);
+});
+
+it('commits each exec edit immediately with distinct versions, undo entries and request deduplication', async () => {
   const controller = new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('[Original]')), initialCanvasState(), 7);
   const bridge: CanvasSessionPort = {
     register() {}, list: () => [{canvasId:'canvas',documents:[{documentId:'doc',name:'Test'}]}], poll: async () => [], reply() {}, unregister() {}, dispose() {},

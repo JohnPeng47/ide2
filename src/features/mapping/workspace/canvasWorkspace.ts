@@ -3,6 +3,8 @@ import { createStore } from 'zustand/vanilla';
 import type { CanvasTransform } from '../../../../domain/core/diagrams/diagramCanvas';
 import type { DiagramService } from '../../../../domain/core/diagrams/diagramService';
 import type { MappingDocumentController } from '../../../../domain/mapping/workspace/mappingDocumentController';
+import { initialCanvasState } from '../../../../domain/mapping/workspace/mappingWorkspace';
+import type { DisplayState } from '../../../../domain/mapping/workspace/displayModel';
 import type { DiagramFocus } from '../search/SearchHighlight';
 import { CanvasSession, readable, type SavedDocumentState } from './canvasSession';
 
@@ -35,6 +37,25 @@ export class CanvasWorkspace {
     const prior = this.dirtyScenes.getState().ids;
     if (ids.length !== prior.length || ids.some((id, i) => id !== prior[i])) this.dirtyScenesState.setState({ ids });
   };
+  copyDocument(input: { documentId: string; name: string; expectedVersion?: number; display?: DisplayState; viewport?: CanvasTransform }) {
+    const source = this.store.getState().drafts[input.documentId];
+    if (!source || source.hidden) throw new Error('DOCUMENT_UNAVAILABLE');
+    if (source.busy) throw new Error('DOCUMENT_BUSY');
+    const name = input.name.trim();
+    if (!name || name.length > 120) throw new Error('Expected a canvas name between 1 and 120 characters');
+    const controller = source.session.controller, snapshot = controller.getSnapshot();
+    if (input.expectedVersion !== undefined && input.expectedVersion !== snapshot.version) throw new Error('VERSION_CONFLICT: read the source canvas again');
+    const canvas = structuredClone({ ...snapshot.canvas, display: input.display ?? snapshot.canvas.display, selection: { items: [] }, controls: initialCanvasState().controls });
+    // A copied conversation retains its messages, but has no running request.
+    for (const node of Object.values(canvas.display.nodes)) if (node.kind === 'conversation') node.thread.pending = false;
+    const documentId = `draft-${crypto.randomUUID()}`;
+    this.setDrafts(current => ({ ...current, [documentId]: {
+      name, savedName: '', revisionId: '', busy: false, document: snapshot.document, canvas,
+      history: controller.forkHistory(canvas), viewport: structuredClone(input.viewport ?? source.viewport),
+      savedScene: JSON.stringify(snapshot.document.scene), savedEdges: JSON.stringify(snapshot.document.edges)
+    } }));
+    return { documentId };
+  }
   setDrafts = (value: Record<string, DraftInput> | ((current: Drafts) => Record<string, DraftInput>)) => {
     const prior = this.store.getState().drafts;
     const input = typeof value === 'function' ? value(prior) : value;
