@@ -53,12 +53,12 @@ return nodes.patchDiagram({
 });
 ```
 
-Line ranges are 1-based, inclusive, and refer to raw ASCII in the current staged
-proposal. Each call in a batch sees previous calls, so use descending line ranges
+Line ranges are 1-based, inclusive, and refer to raw ASCII in the current
+proposal. Each call commits and persists separately and sees previous calls, so use descending line ranges
 when preparing several patches against one baseline. Empty text deletes the range;
 a trailing newline in replacement text adds an empty line. Other whitespace is
 preserved and CRLF is normalized. Empty/invalid diagrams and invalid ranges fail
-atomically. Identical patches preserve the content revision. Shared content updates
+without changing the document; earlier successful calls in the same script remain. Identical patches preserve the content revision. Shared content updates
 all GridBox instances displaying it.
 
 Mappings on untouched lines shift; mappings intersecting the replacement are removed.

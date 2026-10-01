@@ -10,7 +10,7 @@ import { singleDiagramScene } from '../../../../domain/core/diagrams/projectDiag
 import { initialCanvasState } from '../../../../domain/mapping/workspace/mappingWorkspace';
 import { endpointKey } from '../../../../domain/mapping/workspace/endpointGeometry';
 
-it('exposes anchored edge CRUD to agents with atomic batches, rollback, version checks and undo', async () => {
+it('exposes anchored edge CRUD to agents with immediate edits, partial failures, version checks and undo', async () => {
   const controller = new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('[Source]')), initialCanvasState());
   controller.configureLayout({ width: 11, height: 23 }, { width: 1000, height: 800 });
   const original = structuredClone(controller.getSnapshot().document.scene);
@@ -44,10 +44,13 @@ it('exposes anchored edge CRUD to agents with atomic batches, rollback, version 
   expect(controller.getSnapshot().document.scene).toEqual(original);
   const before = controller.getSnapshot();
   await expect(exec(`edges.remove({edgeId:${JSON.stringify(edge.id)}}); nodes.remove({nodeId:'grid:root'});`)).rejects.toThrow('protected');
-  expect(controller.getSnapshot()).toBe(before);
+  expect(controller.getSnapshot().version).toBe(before.version + 1);
+  expect(controller.getSnapshot().document.edges).toEqual([]);
+  controller.undo(); expect(controller.getSnapshot().document.edges).toEqual([edge]);
   await expect(exec(`edges.remove({edgeId:${JSON.stringify(edge.id)}});`, 0)).rejects.toThrow('VERSION_CONFLICT');
   await exec(`const e=edges.list().edges[0]; edges.update({...e,appearance:{...e.appearance,label:'Calls'}}); edges.remove({edgeId:e.id});`);
   expect(controller.getSnapshot().document.edges).toEqual([]);
+  controller.undo(); expect(controller.getSnapshot().document.edges[0].appearance.label).toBe('Calls');
   controller.undo(); expect(controller.getSnapshot().document.edges).toEqual([edge]);
   expect(controller.getSnapshot().document.scene).toEqual(original);
   const jumpResult = await exec(`const n=nodes.get({nodeId:'grid:overview'}); return nodes.setJumps({nodeId:n.id,jumps:[{
@@ -57,7 +60,9 @@ it('exposes anchored edge CRUD to agents with atomic batches, rollback, version 
   expect(controller.getSnapshot().document.scene.contents.overview.content.ascii).toBe('[Source]');
   const withJump = controller.getSnapshot();
   await expect(exec(`nodes.setJumps({nodeId:'grid:overview',jumps:[]}); nodes.remove({nodeId:'grid:root'});`)).rejects.toThrow('protected');
-  expect(controller.getSnapshot()).toBe(withJump);
+  expect(controller.getSnapshot().version).toBe(withJump.version + 1);
+  expect(controller.getSnapshot().document.scene.contents.overview.jumps).toEqual([]);
+  controller.undo(); expect(controller.getSnapshot().document.scene.contents.overview.jumps).toEqual(withJump.document.scene.contents.overview.jumps);
   controller.undo(); expect(controller.getSnapshot().document.scene.contents.overview.jumps).toBeUndefined();
 
 });

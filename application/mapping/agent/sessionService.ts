@@ -4,7 +4,7 @@ import type { ChangeSessionService } from '../changes/changeSessionService';
 import { rebaseDiagramJumps } from '../../../domain/core/diagrams/diagramJump';
 import { diagramSource, type Diagram, type DiagramSourceBinding } from '../../../domain/core/diagrams/diagram';
 import { RevisionedDiagramService, type DiagramService } from '../../../domain/core/diagrams/diagramService';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import type { CanvasSessionPort, AgentExecRuntime } from './ports';
 import { agentToolSchemas, canvasApiSpec, canvasMethods, type AgentToolName, type LiveDocumentSnapshot } from '../../../domain/mapping/agent/contracts';
 import { MappingDocumentController, type DiagramOperation } from '../../../domain/mapping/workspace/mappingDocumentController';
@@ -15,9 +15,28 @@ import { canvasDisplayNodes, findBox } from '../../../domain/mapping/workspace/c
 import type { MappingDiagramService } from '../diagrams/diagramService';
 import type { DiagramRepository } from '../../core/ports/diagramRepository';
 
+type EditResult = ReturnType<MappingDocumentController['applyUpdate']>;
+interface ExecStep {
+  signature: string;
+  execute: () => Promise<unknown>;
+  outcome?: { value: unknown } | { error: unknown };
+}
+interface ExecRun {
+  signature: string;
+  initialVersion?: number;
+  version?: number;
+  nodes?: EditResult['nodes'];
+  edges?: LiveDocumentSnapshot['document']['edges'];
+  lastEdit?: EditResult;
+  createdDocument: boolean;
+  steps: ExecStep[];
+}
+const canvasTimeout = (error: unknown) => error instanceof Error && error.message.includes('CANVAS_TIMEOUT');
+
 export class AgentDiagrammingSessionService {
   private sessions = new Map<string, { canvasId: string; documentId: string; changeSessionId?: string }>();
   private saves = new Map<string, Promise<unknown>>();
+  private execRuns = new Map<string, ExecRun>();
   private requests = new Map<string, { signature: string; promise: Promise<unknown> }>();
   constructor(readonly bridge: CanvasSessionPort, private readonly diagrams: MappingDiagramService,
     private readonly store: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs'>, private readonly runtime: AgentExecRuntime, readonly changes?: ChangeSessionService) {}
@@ -29,12 +48,17 @@ export class AgentDiagrammingSessionService {
       const key = `${'changeSessionId' in input ? input.changeSessionId ?? '' : ''}:${name}:${'sessionId' in input ? input.sessionId ?? '' : ''}:${input.requestId}`;
       const signature = JSON.stringify(input), old = this.requests.get(key);
       if (old) { if (old.signature !== signature) throw new Error('REQUEST_ID_CONFLICT'); return old.promise; }
+      if (name === 'exec') {
+        const exec = input as ReturnType<typeof agentToolSchemas.exec.parse>;
+        const pending = this.execRuns.get(JSON.stringify([exec.changeSessionId, exec.sessionId, exec.requestId]));
+        if (pending && pending.signature !== signature) throw new Error('REQUEST_ID_CONFLICT');
+      }
       if (this.requests.size >= 2000) throw new Error('Request capacity reached; restart the backend before a new session');
       const execute = () => this.execute(name, input);
       const promise = ('changeSessionId' in input && input.changeSessionId && 'sessionId' in input && input.sessionId && name !== 'save_diagram'
         ? this.changeService().request(input.changeSessionId, `${name}:${input.requestId}`, signature, execute) : execute()).catch(error => {
         // The browser deduplicates request IDs too, so a lost acknowledgement can be recovered.
-        if (error instanceof Error && error.message.includes('CANVAS_TIMEOUT')) this.requests.delete(key);
+        if (canvasTimeout(error)) this.requests.delete(key);
         throw error;
       });
       this.requests.set(key, { signature, promise });
@@ -79,8 +103,10 @@ export class AgentDiagrammingSessionService {
     if (!canvases.some(canvas => canvas.canvasId === canvasId && canvas.documents.some(doc => doc.documentId === documentId))) throw new Error('Unknown live document');
     if (this.sessions.size >= 500) throw new Error('Session capacity reached');
     const sessionId = randomUUID(); this.sessions.set(sessionId, { canvasId, documentId, changeSessionId });
-    const snapshot = await this.snapshot(sessionId, changeSessionId);
-    return { sessionId, canvasId, documentId, changeSessionId, version: snapshot.version };
+    try {
+      const snapshot = await this.snapshot(sessionId, changeSessionId);
+      return { sessionId, canvasId, documentId, changeSessionId, version: snapshot.version };
+    } catch (error) { this.sessions.delete(sessionId); throw error; }
   }
   private async apply(sessionId: string, expectedVersion: number, operations: DiagramOperation[], requestId: string, changeSessionId?: string) {
     const session = this.session(sessionId, changeSessionId);
@@ -88,52 +114,106 @@ export class AgentDiagrammingSessionService {
     return this.bridge.dispatch(session.canvasId, { method: 'apply', documentId: session.documentId, payload: { expectedVersion, operations, requestId } });
   }
   private async exec(input: ReturnType<typeof agentToolSchemas.exec.parse>) {
-    const original = input.sessionId ? await this.snapshot(input.sessionId, input.changeSessionId) : undefined;
-    const shadow = original ? new MappingDocumentController(original.document, original.canvas, original.version, original.cell, original.endpointBounds, original.history) : undefined;
-    const operations: DiagramOperation[] = [];
-    let createdDocument = false;
-    const value = await this.runtime.run(input.code, async (method, args) => {
-      const entry = canvasMethods[method as keyof typeof canvasMethods];
-      if (!entry) throw new Error('Unknown canvas method');
-      const parsed = entry.schema.parse(args) as Record<string, any>;
-      if (method === 'canvas.list') return input.changeSessionId ? this.changeService().descriptor(input.changeSessionId) : this.bridge.list();
-      if (method === 'canvas.attach') return this.attach(parsed.canvasId, parsed.documentId, input.changeSessionId);
-      if (method === 'canvas.createDocument') {
-        if (input.sessionId || createdDocument) throw new Error('Create one document per unbound exec call');
-        createdDocument = true;
-        if (input.changeSessionId) {
-          if (parsed.canvasId !== input.changeSessionId) throw new Error('CHANGE_SESSION_MISMATCH');
-          const result = await this.changeService().createDocument(input.changeSessionId, parsed.name, input.requestId);
-          return this.attach(parsed.canvasId, result.documentId, input.changeSessionId);
+    const key = JSON.stringify([input.changeSessionId, input.sessionId, input.requestId]);
+    const signature = JSON.stringify(input);
+    let run = this.execRuns.get(key);
+    if (run && run.signature !== signature) throw new Error('REQUEST_ID_CONFLICT');
+    if (!run) {
+      if (this.execRuns.size >= 2000) throw new Error('Execution retry capacity reached');
+      const snapshot = input.sessionId ? await this.snapshot(input.sessionId, input.changeSessionId) : undefined;
+      run = { signature, initialVersion: snapshot?.version, version: snapshot?.version, createdDocument: false, steps: [],
+        nodes: snapshot && canvasDisplayNodes(snapshot.document, snapshot.canvas, snapshot.version, snapshot.cell, snapshot.endpointBounds),
+        edges: snapshot?.document.edges };
+      this.execRuns.set(key, run);
+    }
+    const state = run;
+    // A retry replays completed API results and resends only an unacknowledged call.
+    // The pending call retains its operation ID, expected version and request ID.
+    const requestPrefix = `exec-${createHash('sha256').update(key).digest('hex')}`;
+    let cursor = 0;
+    try {
+      const value = await this.runtime.run(input.code, async (method, args) => {
+        const stepIndex = cursor++, stepSignature = JSON.stringify({ method, args });
+        let step = state.steps[stepIndex];
+        if (step && step.signature !== stepSignature) throw new Error('REQUEST_ID_CONFLICT: execution changed during retry');
+        if (!step) {
+          try {
+            const entry = canvasMethods[method as keyof typeof canvasMethods];
+            if (!entry) throw new Error('Unknown canvas method');
+            const parsed = entry.schema.parse(args) as Record<string, any>;
+            let execute: () => Promise<unknown>;
+            if (method === 'canvas.list') execute = async () => input.changeSessionId ? this.changeService().descriptor(input.changeSessionId) : this.bridge.list();
+            else if (method === 'canvas.attach') execute = () => this.attach(parsed.canvasId, parsed.documentId, input.changeSessionId);
+            else if (method === 'canvas.createDocument') {
+              if (input.sessionId || state.createdDocument) throw new Error('Create one document per unbound exec call');
+              state.createdDocument = true;
+              if (input.changeSessionId && parsed.canvasId !== input.changeSessionId) throw new Error('CHANGE_SESSION_MISMATCH');
+              execute = async () => {
+                const result = input.changeSessionId
+                  ? await this.changeService().createDocument(input.changeSessionId, parsed.name, input.requestId)
+                  : await this.bridge.dispatch(parsed.canvasId, { method: 'create-document', payload: { name: parsed.name,
+                      requestId: input.requestId, snapshot: await this.diagrams.initialize() } }) as { documentId: string };
+                return this.attach(parsed.canvasId, result.documentId, input.changeSessionId);
+              };
+            } else {
+              if (!input.sessionId || state.version === undefined) throw new Error('sessionId is required for node operations');
+              const sessionId = input.sessionId;
+              if (method === 'edges.list') execute = async () => {
+                if (!state.edges) {
+                  const snapshot = await this.snapshot(sessionId, input.changeSessionId);
+                  if (snapshot.version !== state.version) throw new Error('VERSION_CONFLICT: canvas changed during execution');
+                  state.edges = snapshot.document.edges;
+                }
+                return { version: state.version, edges: state.edges };
+              };
+              else if (method === 'nodes.list') execute = async () => ({ version: state.version, nodes: state.nodes });
+              else if (method === 'nodes.get') execute = async () => {
+                const node = state.nodes!.find(node => node.id === parsed.nodeId);
+                if (!node) throw new Error('Unknown DisplayNode');
+                return node;
+              };
+              else {
+                if (input.expectedVersion !== state.initialVersion) throw new Error('VERSION_CONFLICT: mutations require current expectedVersion');
+                const expectedVersion = state.version;
+                const operation = (method.startsWith('edges.')
+                  ? method === 'edges.remove' ? { method: 'edge-remove', edgeId: parsed.edgeId }
+                    : { method: method === 'edges.create' ? 'edge-create' : 'edge-update',
+                        edge: { ...parsed, id: method === 'edges.create' ? `connection-${randomUUID()}` : parsed.id } }
+                  : method === 'nodes.draw' ? { ...parsed, method: 'diagram-create', id: `diagram-${randomUUID()}` }
+                    : { ...parsed, method: method.slice(6) }) as DiagramOperation;
+                execute = async () => {
+                  const result = await this.apply(sessionId, expectedVersion, [operation], `${requestPrefix}:${stepIndex}`, input.changeSessionId) as EditResult;
+                  state.version = result.version; state.nodes = result.nodes; state.edges = undefined; state.lastEdit = result;
+                  if (method.startsWith('edges.')) return 'edge' in operation ? operation.edge : null;
+                  const nodeId = operation.method === 'diagram-create' ? `grid:${operation.id}` : parsed.nodeId;
+                  return result.nodes.find(node => node.id === nodeId) ?? null;
+                };
+              }
+            }
+            step = { signature: stepSignature, execute };
+            state.steps[stepIndex] = step;
+          } catch (error) {
+            state.steps[stepIndex] = { signature: stepSignature, execute: async () => { throw error; }, outcome: { error } };
+            throw error;
+          }
         }
-        const result = await this.bridge.dispatch(parsed.canvasId, { method: 'create-document', payload: { name: parsed.name, requestId: input.requestId, snapshot: await this.diagrams.initialize() } }) as { documentId: string };
-        return this.attach(parsed.canvasId, result.documentId);
-      }
-      if (!shadow || !original || !input.sessionId) throw new Error('sessionId is required for node operations');
-      if (method === 'edges.list') return { version: original.version + Number(operations.length > 0), edges: shadow.getSnapshot().document.edges };
-      if (method === 'nodes.list') { const version = original.version + Number(operations.length > 0); return { version, nodes: shadow.nodes().map(node => ({ ...node, version })) }; }
-      if (method === 'nodes.get') {
-        const node = shadow.nodes().find(node => node.id === parsed.nodeId);
-        if (!node) throw new Error('Unknown DisplayNode');
-        return { ...node, version: original.version + Number(operations.length > 0) };
-      }
-      if (input.expectedVersion !== original.version) throw new Error('VERSION_CONFLICT: mutations require current expectedVersion');
-      if (method.startsWith('edges.')) {
-        const operation: DiagramOperation = method === 'edges.remove' ? { method: 'edge-remove', edgeId: parsed.edgeId }
-          : { method: method === 'edges.create' ? 'edge-create' : 'edge-update', edge: { ...parsed, id: method === 'edges.create' ? `connection-${randomUUID()}` : parsed.id } as import('../../../domain/core/diagrams/diagramConnection').DiagramConnection };
-        operations.push(operation);
-        shadow.transact(shadow.getSnapshot().version, [operation]);
-        return 'edge' in operation ? operation.edge : null;
-      }
-      const operation = method === 'nodes.draw' ? { ...parsed, method: 'diagram-create', id: `diagram-${randomUUID()}` } : { ...parsed, method: method.slice(6) };
-      operations.push(operation as DiagramOperation);
-      shadow.transact(shadow.getSnapshot().version, [operation as DiagramOperation]);
-      const node = method === 'nodes.draw' ? shadow.nodes().find(node => node.id === `grid:${"id" in operation ? operation.id : ""}`) : shadow.nodes().find(node => node.id === parsed.nodeId);
-      return node ? { ...node, version: original.version + 1 } : null;
-    });
-    if (!operations.length) return { value, ...(original ? { version: original.version } : {}) };
-    const result = await this.apply(input.sessionId!, original!.version, operations, input.requestId, input.changeSessionId);
-    return { value, transaction: result };
+        if (!step.outcome) {
+          try { step.outcome = { value: await step.execute() }; }
+          catch (error) { if (!canvasTimeout(error)) step.outcome = { error }; throw error; }
+        }
+        if ('error' in step.outcome) throw step.outcome.error;
+        return step.outcome.value;
+      });
+      // A script may catch a transport timeout. Keep it retryable until the unknown
+      // outcome is acknowledged, rather than reporting a completed execution.
+      if (state.steps.some(step => !step.outcome)) throw new Error('CANVAS_TIMEOUT: retry execution with the same requestId');
+      this.execRuns.delete(key);
+      // Retain the response shape; transaction describes the last individual edit.
+      return state.lastEdit ? { value, transaction: state.lastEdit } : { value, ...(state.version === undefined ? {} : { version: state.version }) };
+    } catch (error) {
+      if (!canvasTimeout(error)) this.execRuns.delete(key);
+      throw error;
+    }
   }
   private async search(input: ReturnType<(typeof agentToolSchemas)['diagram-search']['parse']>) {
     if (input.changeSessionId && !input.sessionId) {

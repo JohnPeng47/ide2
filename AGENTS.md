@@ -4,9 +4,38 @@ For canvas editing, connect to the running app's MCP server and inspect its tool
 node --import tsx scripts/mapping/mcp.ts http://IP:PORT
 ```
 
+## Diagram Upload
+When uploading diagrams don't omit newlines
+
+## Modifying the Canvas
+Unless explicitly instructed by the user, do not use the ChangeSession to create changes
+to the diagram.
+
+### `exec` behavior
+
+These rules apply to both live canvases and ChangeSession proposals:
+
+- Methods inside `exec.code` are synchronous JS; use `return`, not `await`.
+- Each document mutation commits immediately through the existing persistence
+  path, with its own document version and undo step. Later calls see earlier edits.
+  There is no final batch commit or rollback if a later operation or the script fails.
+- Supply the current document `expectedVersion` when starting a mutating script.
+  `exec` advances the version for subsequent edits automatically. A successful
+  mutating response's `transaction.version` is the version after its last edit;
+  `transaction` describes that edit, not an atomic batch. Attached read-only
+  responses return `version` instead.
+- Use a unique `requestId` for each new request. After a transport failure, retry
+  the identical request with the same ID. Timeout retries replay completed API
+  results and retry the unacknowledged step without duplicating edits; the script
+  must reproduce the same API calls and arguments. Retry state is held in memory
+  and does not survive a backend restart.
+- After a script or validation error, reread the document to see which edits
+  succeeded, then submit corrected work with its current version and a new
+  `requestId`.
+
 ## Diagram change sessions
 
-Use a change session to propose edits on isolated copies. Session edits persist
+Session edits persist
 automatically and appear in the explorer's **Changes** tab. They do not modify the
 original canvases. Do not call `save_diagram` for a proposal. To accept a ready
 proposal, call `accept_diagram_change_session`
@@ -30,8 +59,7 @@ Top-level MCP tools:
    `canvas.attach({canvasId, documentId})` within the proposal. Attach returns a
    `sessionId` and the document's current `version`.
 5. `exec({changeSessionId, sessionId, expectedVersion, requestId, code})`:
-   read/edit that document using the methods below. Methods are synchronous JS;
-   use `return`, not `await`. Batch document edits commit together.
+   read/edit that document using the methods below and the `exec` behavior above.
 6. `diagram-search({operation: "search", changeSessionId})`: omit `sessionId` to
    retrieve `changeSession.changes` and `changeSession.version` alongside search hits.
 7. `update_diagram_change_session({changeSessionId, expectedVersion, requestId,
@@ -63,7 +91,8 @@ Methods inside `exec.code`:
 Pass `changeSessionId` on every proposal-targeted call. `sessionId` identifies an
 attached document; it is not interchangeable with `changeSessionId`. Edit calls use
 the **document version**; `update_diagram_change_session` uses the **session version**.
-Use a unique `requestId` per request; retry the identical request with the same ID.
+Use a unique `requestId` per request; after a transport failure, retry the identical
+request with the same ID.
 Session history is available through `update_diagram_change_session` with
 `action: "undo" | "redo" | "reset"` and `documentId`.
 

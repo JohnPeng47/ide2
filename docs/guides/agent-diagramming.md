@@ -52,9 +52,73 @@ nodes.move({ nodeId: diagram.id, position: { column: 20, row: 5 } });
 return diagram.id;
 ```
 
-All node changes in one execution commit as one undoable transaction. If execution or validation fails, none of those staged changes commit. Bootstrap operations (`canvas.attach` and `canvas.createDocument`) establish sessions/documents separately; create documents in an unbound call.
+Each node or edge mutation commits immediately, advances the document version, and creates its own undo entry. Later calls see earlier committed edits. If execution or validation fails, earlier successful edits remain; only the failing operation is rejected. Supply the initial document version as `expectedVersion`; the service advances its expected version after each successful edit. A concurrent edit causes the next mutation to fail with a version conflict. The response retains `transaction`, which now describes the last individual edit rather than an atomic script-wide batch. Bootstrap operations (`canvas.attach`, `canvas.createDocument`, and `canvas.copyDocument`) establish sessions/documents separately; create or copy one document per unbound call.
 
-Retries with the same request ID and arguments return the same backend result; reusing an ID with different arguments is rejected. On a version conflict, read again and submit revised work with a new request ID. Backend restart ends sessions and clears request history. The backend currently bounds session/request history; a capacity error explicitly requires a restart rather than silently forgetting duplicate protection.
+Retries with the same request ID and arguments return the same backend result. After a canvas transport timeout, the backend replays completed API-call results and resends the unacknowledged operation with its original ID and version, avoiding duplicate edits. Retry scripts must reproduce the same API-call sequence; changed calls are rejected. A normal script error is retained for that request ID; read the current canvas and use a new ID for revised work. Reusing an ID with different arguments is rejected; on a version conflict, read again and submit revised work with a new request ID. Backend restart ends sessions and clears request history. The backend currently bounds session/request history; a capacity error explicitly requires a restart rather than silently forgetting duplicate protection.
+
+## Prompt-driven diagram edits
+
+`edit-diagram` is a top-level MCP tool, also available as
+`POST /api/mapping/agent/tools/edit-diagram`. It edits one diagram in an open live
+canvas; it does not create a ChangeSession or publish a saved representation.
+
+First attach using `canvas.attach`, then read the target with
+`nodes.get({nodeId: "grid:overview"})` or `diagram-search` operation `read`.
+Use the document version and **`node.diagram.revisionId`** from that read:
+this is the immutable service revision ID, distinct from `node.content.revisionId`.
+
+```json
+{
+  "sessionId": "<attachment sessionId>",
+  "nodeId": "grid:overview",
+  "expectedVersion": 12,
+  "baseRevisionId": "diagram-revision-<uuid>",
+  "prompt": "Add the persistence service beneath its owning controller",
+  "requestId": "<unique request ID>"
+}
+```
+
+The response contains `runId` and `status`. Poll `edit-diagram-status` with
+`{"runId":"..."}` (HTTP: `POST /api/mapping/agent/tools/edit-diagram-status`).
+`cancel-diagram-edit` accepts the same body.
+
+The backend captures the base diagram, source evidence, mappings, and canvas
+connections, renders the checked-in
+[`edit-diagram.md`](../../infrastructure/mapping/agents/diagram-edit/prompts/edit-diagram.md)
+template, and invokes the existing internal agent runtime. The agent submits the
+complete ASCII and mappings through a validation tool; rejected candidates can be
+corrected in the same run. No canvas edits occur during generation. Model/auth
+configuration is shared with the existing runtime (`NEW_DIAGRAM_MODEL`);
+`NEW_DIAGRAM_AGENT=fake` selects the deterministic test generator.
+
+DiagramService issues one child revision with the same diagram identity. The
+browser validates and installs that exact revision into its canvas history,
+checks both the document version and base revision again, and acknowledges
+workspace persistence. Installation creates one undo step. Undo, redo, and
+workspace reload preserve the issued revision IDs. `save_diagram` remains the
+separate operation for publishing the workspace to the saved catalog.
+
+| Status | Meaning / next action |
+| --- | --- |
+| `generating` | Capturing context or running the agent; cancellation is available. |
+| `applying` | Installing/persisting the issued revision; cancellation cannot undo it. |
+| `completed` | Workspace persistence acknowledged. `result` includes `diagramId`, `previousRevisionId`, `revisionId`, `documentVersion`, and `unresolvedEdgeIds`. |
+| `conflict` | The base/document changed. The canvas edit was rejected; reread and use a new request ID. A generated candidate, if any, remains in `generated`. |
+| `failed` | Capture, generation, validation, or application failed; inspect `error`. |
+| `cancelled` | Cancelled before application; no canvas edit. |
+| `awaiting-acknowledgement` | Application may have happened, but persistence or transport acknowledgement failed. Resubmit the identical `edit-diagram` request to retry installation/flush without regenerating or duplicating the edit. |
+
+Repeat the same request ID and arguments after a transport failure; changing the
+arguments under that ID is rejected. Status reads return current state, not a
+cached initial response. An edit can leave connections with stale content-node
+anchors; `unresolvedEdgeIds` identifies those requiring repair with the existing
+edge APIs. Box anchors and provably unchanged endpoints follow normal reconciliation.
+
+Runs, unapplied/conflicted candidates, and retry receipts are in memory. Backend
+restart ends these runs; browser reload ends its application receipts. After either,
+reread the diagram before starting new work. Installed revisions are durable in
+workspace history. This first API requires an open browser canvas and adds no UI
+or multi-diagram generation.
 
 ## Object and layout contract
 

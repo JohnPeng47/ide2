@@ -62,14 +62,16 @@ try {
     assert.equal(read.node.content.structure.kind, 'tree');
     const stale = await call('draw_diagram', { ...args, requestId: randomUUID() }, true);
     assert.match(stale.error, /VERSION_CONFLICT/);
-    const staged = await call('exec', { sessionId, expectedVersion: read.version, requestId: randomUUID(), code: 'nodes.draw({ascii:"Should roll back"}); throw new Error("stop");' }, true);
-    assert.match(staged.error, /stop/);
-    assert.equal((await exec({ sessionId, code:'return nodes.list();' })).value.nodes.filter(node => node.kind === 'diagram').length, 2);
+    const partial = await call('exec', { sessionId, expectedVersion: read.version, requestId: randomUUID(), code: 'nodes.draw({ascii:"Committed before error"}); throw new Error("stop");' }, true);
+    assert.match(partial.error, /stop/);
+    assert.equal((await exec({ sessionId, code:'return nodes.list();' })).value.nodes.filter(node => node.kind === 'diagram').length, 3);
     const click = async selector => {
       const p = await evaluate(cdp, `(() => {const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};})()`);
       await cdp.send('Input.dispatchMouseEvent', {type:'mousePressed', ...p, button:'left', buttons:1, clickCount:1});
       await cdp.send('Input.dispatchMouseEvent', {type:'mouseReleased', ...p, button:'left', buttons:0, clickCount:1});
     };
+    await click('.mapping-grid-tools button:first-child');
+    await waitFor(async () => !(await evaluate(cdp, `document.querySelector('.mapping-poc-ascii')?.textContent.includes('Committed before error')`)));
     await click('.mapping-grid-tools button:first-child');
     await waitFor(async () => !(await evaluate(cdp, `Boolean(document.querySelector('[data-grid-box="${boxId}"]'))`)));
     await click('.mapping-grid-tools button:nth-child(2)');
@@ -78,6 +80,9 @@ try {
     const batch = await exec({sessionId, expectedVersion:batchVersion, code:'const a = nodes.draw({ascii:"[Batch A]",position:{column:30,row:10}}); const b = nodes.draw({ascii:"[Batch B]",position:{column:45,row:10}}); return [nodes.get({nodeId:a.id}).id,b.id];'});
     assert.equal(batch.value.length, 2);
     for (const id of batch.value) await waitForSelector(cdp, `[data-grid-box="${id.slice(5)}"]`);
+    await click('.mapping-grid-tools button:first-child');
+    await waitFor(async () => !(await evaluate(cdp, `Boolean(document.querySelector('[data-grid-box="${batch.value[1].slice(5)}"]'))`)));
+    assert.ok(await evaluate(cdp, `Boolean(document.querySelector('[data-grid-box="${batch.value[0].slice(5)}"]'))`));
     await click('.mapping-grid-tools button:first-child');
     await waitFor(async () => !(await evaluate(cdp, `Boolean(document.querySelector('[data-grid-box="${batch.value[0].slice(5)}"]'))`)));
     assert.equal((await exec({sessionId,code:'return nodes.list();'})).value.nodes.filter(node => node.kind === 'diagram').length, 2);

@@ -94,12 +94,13 @@ it('isolates shared MCP operations, persists sessions and history, rejects bad r
     expect(current.documents[0].version).toBe(1);
     expect(current.changes).toMatchObject([{type:1,nodeId:'grid:overview'}]);
     await expect(call('save_diagram',{sessionId,changeSessionId,requestId:'save',expectedVersion:1,name:'Bad'})).rejects.toThrow('SAVE_FORBIDDEN');
-    await expect(exec('nodes.patchDiagram({nodeId:"grid:overview",start:2,end:2,patch:"X"}); nodes.remove({nodeId:"grid:root"});',{sessionId,expectedVersion:1})).rejects.toThrow('protected');
-    expect((await changes.get(changeSessionId)).documents[0].version).toBe(1);
-    const newNode=await exec('return nodes.draw({ascii:"Detail\\n`-- Child",structureKind:"tree",position:{column:40,row:0}});',{sessionId,expectedVersion:1});
+    await expect(exec('nodes.patchDiagram({nodeId:"grid:overview",start:2,end:2,patch:"|-- Changed again"}); nodes.remove({nodeId:"grid:root"});',{sessionId,expectedVersion:1})).rejects.toThrow('protected');
+    expect((await changes.get(changeSessionId)).documents[0].version).toBe(2);
+    expect((await new ChangeSessionService(new DiagramChangeSessionStore(root),store,bridge).get(changeSessionId)).documents[0].proposed.document.scene.contents.overview.content.ascii).toContain('Changed again');
+    const newNode=await exec('return nodes.draw({ascii:"Detail\\n`-- Child",structureKind:"tree",position:{column:40,row:0}});',{sessionId,expectedVersion:2});
     let session=await changes.get(changeSessionId);
     await expect(call('update_diagram_change_session',{changeSessionId,requestId:'readybad',expectedVersion:session.version,status:'ready'})).rejects.toThrow('needs an edge');
-    await exec(`const source=nodes.get({nodeId:'grid:overview'}); return edges.create({source:{kind:'content-node',displayNodeId:source.id,contentNodeId:source.contentNodes[0].id,revisionId:source.content.revisionId},target:{kind:'box',displayNodeId:${JSON.stringify(newNode.value.id)}},appearance:{}});`,{sessionId,expectedVersion:2});
+    await exec(`const source=nodes.get({nodeId:'grid:overview'}); return edges.create({source:{kind:'content-node',displayNodeId:source.id,contentNodeId:source.contentNodes[0].id,revisionId:source.content.revisionId},target:{kind:'box',displayNodeId:${JSON.stringify(newNode.value.id)}},appearance:{}});`,{sessionId,expectedVersion:3});
     session=await changes.get(changeSessionId);
     await call('update_diagram_change_session',{changeSessionId,requestId:'ready',expectedVersion:session.version,status:'ready',changes:session.changes.map(c=>({...c,title:`Review ${c.title}`,type:c.type===1?4:c.type}))});
     expect((await changes.get(changeSessionId)).status).toBe('ready');
