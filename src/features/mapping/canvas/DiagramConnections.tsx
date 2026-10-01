@@ -3,7 +3,7 @@ import type { CanvasDisplayNode } from '../../../../domain/mapping/workspace/can
 import { PanelConnector } from '../../../shared/diagrams/PanelConnector';
 import { useEffect, useMemo, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
-import { connectionContentNodes, defaultArrowAppearance, type DiagramAnchor, type DiagramConnection } from '../../../../domain/core/diagrams/diagramConnection';
+import { connectionContentNodes, defaultArrowAppearance, getArrowLabel, type DiagramAnchor, type DiagramConnection } from '../../../../domain/core/diagrams/diagramConnection';
 import { drawEdge, type FloatingBoxArrow } from '../../../../domain/mapping/workspace/connectionLayout';
 import type { MappingDocumentController, ControllerSnapshot } from '../../../../domain/mapping/workspace/mappingDocumentController';
 import './diagramConnections.css';
@@ -81,14 +81,14 @@ export function DiagramConnections({ controller, state, cell, displayNodes, svgR
   const previewArrow = preview && drawEdge(preview, doc.scene, canvas.diagramViews, cell, state.endpointBounds ?? {});
   const renderArrow = (edge: DiagramConnection, arrow: FloatingBoxArrow, preview = false) => {
     if (!arrow.path || !arrow.source || !arrow.target) return null;
-    const label = edge.appearance.label || 'Connection';
+    const label = getArrowLabel(edge.appearance).text || 'Connection';
     return <g key={preview ? 'preview' : edge.id} data-connection-id={preview ? undefined : edge.id} data-connection-status={arrow.status} data-geometry-source={arrow.geometrySource}
       style={{ color: edge.appearance.color, opacity: preview ? .55 : 1 }}>
       <PanelConnector path={arrow.path} target={arrow.target} selected={selectedId === edge.id}
         dashed={edge.appearance.lineStyle === 'dashed' || arrow.status === 'proxy'} />
       {arrow.status === 'proxy' && <circle cx={arrow.source.proxy ? arrow.source.x : arrow.target.x} cy={arrow.source.proxy ? arrow.source.y : arrow.target.y} r={4} fill="currentColor" />}
-      {edge.appearance.label && <text x={(arrow.source.x + arrow.target.x) / 2} y={(arrow.source.y + arrow.target.y) / 2 - 8}
-        textAnchor="middle" fill="currentColor">{edge.appearance.label}</text>}
+      {arrow.label?.text && <text x={arrow.label.position.x} y={arrow.label.position.y}
+        textAnchor="middle" fill="currentColor">{arrow.label.text}</text>}
       {!preview && <path className="diagram-connection-hit" d={arrow.path} fill="none" stroke="transparent" strokeWidth={14}
         role="button" tabIndex={disabled ? -1 : 0} aria-label={`Edit connection: ${label}`} data-mapping-static-ui data-diagram-canvas-static-ui
         onClick={() => !disabled && edit(edge)} onKeyDown={event => {
@@ -116,7 +116,7 @@ export function DiagramConnections({ controller, state, cell, displayNodes, svgR
       <header><strong>Connections</strong><button type="button" aria-label="Close connections" onClick={onClose}>×</button></header>
       <button type="button" disabled={disabled} onClick={create}>New connection</button>
       <ul>{arrows.map(({ edge, arrow }) => <li key={edge.id}><button type="button" disabled={disabled} onClick={() => edit(edge)}>
-        {edge.appearance.label || `${edge.source.displayNodeId.slice(5)} → ${edge.target.displayNodeId.slice(5)}`}
+        {getArrowLabel(edge.appearance).text || `${edge.source.displayNodeId.slice(5)} → ${edge.target.displayNodeId.slice(5)}`}
         {arrow.status === 'stale' ? ' · needs reattachment' : arrow.status === 'proxy' ? ' · folded endpoint' : arrow.status === 'pending' ? ' · waiting for layout' : arrow.status === 'blocked' ? ' · endpoint boxes block the route' : ''}
       </button></li>)}</ul>
       <form onSubmit={event => { event.preventDefault(); save(); }}>
@@ -145,8 +145,9 @@ export function DiagramConnections({ controller, state, cell, displayNodes, svgR
               }} /></label>
           </fieldset>;
         })}
-        <label>Label <input aria-label="Connection label" maxLength={120} value={draft.appearance?.label ?? ''} disabled={disabled}
-          onChange={event => setDraft(current => ({ ...current, appearance: { ...current.appearance!, label: event.target.value } }))} /></label>
+        <label>Label <input aria-label="Connection label" maxLength={120} value={draft.appearance ? getArrowLabel(draft.appearance).text : ''} disabled={disabled}
+          onChange={event => setDraft(current => ({ ...current, appearance: { ...current.appearance!,
+            label: { ...getArrowLabel(current.appearance!), text: event.target.value } } }))} /></label>
         <label>Color <input type="color" aria-label="Connection color" value={draft.appearance?.color ?? defaultArrowAppearance.color} disabled={disabled}
           onChange={event => setDraft(current => ({ ...current, appearance: { ...current.appearance!, color: event.target.value } }))} /></label>
         <label>Line <select aria-label="Connection line style" value={draft.appearance?.lineStyle ?? 'solid'} disabled={disabled}

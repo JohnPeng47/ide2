@@ -1,3 +1,4 @@
+import { canvasSaveFixture } from '../../support/mappingDiagram.ts';
 // Run after npm run build: node --import tsx tests/browser/mapping/browser-connections-check.mjs
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
@@ -7,7 +8,7 @@ import { createServer } from 'node:net';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { seedMappingFixture } from '../support/browser-mapping-fixture.mjs';
-import { createDiagram } from '../../../domain/core/diagrams/diagram.ts';
+import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService.ts';
 import { projectCanvasSnapshot, singleDiagramScene } from '../../../domain/core/diagrams/projectDiagramCanvas.ts';
 const { evaluate, waitFor, waitForSelector, withHeadlessBrowser, captureScreenshot } = await import(pathToFileURL(path.join(homedir(), '.codex/skills/front-end/browser-test.mjs')).href);
 const root = await mkdtemp(path.join(tmpdir(), 'diagram-connections-'));
@@ -18,10 +19,10 @@ try {
   const catalogPath = path.join(root, '.diagrams/representations/catalog.json');
   const catalog = JSON.parse(await readFile(catalogPath, 'utf8'));
   const scene = singleDiagramScene(ascii);
-  scene.contents.overview = createDiagram({ id: 'overview', revision: 0, ascii, structureKind: 'tree' });
+  scene.contents.overview = new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii, structureKind: 'tree' }).diagram;
   scene.root.children.push({ id: 'second', kind: 'diagram', contentId: 'overview', collapsed: false, position: { column: 40, row: 3 }, collapsedContentId: 'overview-summary' });
   const revision = catalog.revisions['revision-overview'];
-  revision.content = { kind: 'mapping-canvas', scene, edges: [] };
+  revision.content = { kind: 'canvas-history', history: canvasSaveFixture({ name: 'Fixture', scene, edges: [] }).history };
   revision.ascii = projectCanvasSnapshot(scene).ascii;
   // Fixtures are seeded before startup. Every interaction below uses real pointer/keyboard input.
   await writeFile(catalogPath, JSON.stringify(catalog));

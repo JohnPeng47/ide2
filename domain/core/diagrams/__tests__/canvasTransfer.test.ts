@@ -71,6 +71,15 @@ it('copies independent diagram identities, source mappings and internal edges wh
   expect(c.getSnapshot().document.scene.contents[copied.id].content.ascii).toContain('Edited copy');
   expect(documentFromHistory(history)).toEqual(document);
 });
+it('preserves structured labels on copy and extracts their text when converting edges to jumps', () => {
+  const { document, input } = setup();
+  document.edges[0].appearance.label = { text: 'Calls', position: { x: 150, y: 50 } };
+  const history = new CanvasHistory(document, initialCanvasState()).export();
+  const copied = prepareCanvasTransfer(history, { ...input, mode: 'copy', selectedIds: ['grid:a', 'grid:b'] });
+  expect(copied.destination.document.edges[0].appearance.label).toEqual(document.edges[0].appearance.label);
+  const moved = prepareCanvasTransfer(history, input);
+  expect(moved.destination.document.jumps!.find(j => j.target.displayNodeId === 'grid:b')?.label).toBe('Calls');
+});
 it('allows moving every diagram, and prevents partial undo or overwriting newer edits', () => {
   const { history, input } = setup();
   const p = prepareCanvasTransfer(history, { ...input, selectedIds: ['grid:a','grid:b','grid:c'] });

@@ -1,6 +1,6 @@
 import { endpointKey, type EndpointBounds, type EndpointIdentity, type EndpointRect } from './endpointGeometry';
 import { routeEdge, routePath } from './edgeRouting';
-import { connectionBox, connectionContentNodes, type DiagramAnchor, type DiagramConnection } from '../../core/diagrams/diagramConnection';
+import { connectionBox, connectionContentNodes, getArrowLabel, type DiagramAnchor, type DiagramConnection } from '../../core/diagrams/diagramConnection';
 import { flattenGrid, resolveScene, type GridBox, type LineGridScene } from '../../core/diagrams/lineGrid';
 import { projectDiagramContent, type DiagramViews } from './diagramViewState';
 
@@ -9,6 +9,7 @@ export interface FloatingBoxArrow {
   kind: 'arrow'; id: string; edgeId: string;
   coordinateSpace: 'canvas'; position: { x: number; y: number }; bounds: { width: number; height: number };
   source?: AnchorPoint; target?: AnchorPoint; path?: string;
+  label?: { text: string; position: { x: number; y: number } };
   status: 'resolved' | 'proxy' | 'stale' | 'pending' | 'blocked';
   geometrySource: 'measured' | 'estimated';
 }
@@ -73,7 +74,9 @@ export function drawEdge(edge: DiagramConnection, scene: LineGridScene, views: D
   const points = routeEdge(source, target, [ar, br]);
   if (!points) return { ...base, source, target, status: 'blocked' };
   const xs = points.map(p => p.x), ys = points.map(p => p.y);
+  const label = getArrowLabel(edge.appearance);
   return { ...base, source, target, path: routePath(points), status: a.rect.proxy || b.rect.proxy ? 'proxy' : 'resolved',
+    label: { text: label.text, position: label.position ?? { x: (source.x + target.x) / 2, y: (source.y + target.y) / 2 - 8 } },
     position: { x: Math.min(...xs) - 6, y: Math.min(...ys) - 6 },
     bounds: { width: Math.max(...xs) - Math.min(...xs) + 12, height: Math.max(...ys) - Math.min(...ys) + 12 } };
 }

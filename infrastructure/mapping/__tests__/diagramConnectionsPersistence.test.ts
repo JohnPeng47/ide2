@@ -8,7 +8,7 @@ import { connectionContentNodes, defaultArrowAppearance, type DiagramConnection 
 import { singleDiagramScene, sceneFromRevision, documentFromRevision, historyFromRevision } from '../../../domain/core/diagrams/projectDiagramCanvas';
 import { ProjectCatalogStore } from '../../core/persistence/projectCatalogStore';
 
-it('persists connections in immutable document revisions while preserving diagram content exactly', async () => {
+it.each(['Uses', { text: 'Uses', position: { x: 250.5, y: -10.25 } }])('persists label %j in immutable revisions while preserving diagram content exactly', async label => {
   const root = await mkdtemp(path.join(tmpdir(), 'connection-persistence-'));
   try {
     const store = new ProjectCatalogStore(root);
@@ -17,7 +17,7 @@ it('persists connections in immutable document revisions while preserving diagra
     scene.root.children = [...scene.root.children, { ...scene.root.children[0], id: 'second', position: { column: 40, row: 2 } }];
     const content = scene.contents.overview.content;
     const edge: DiagramConnection = { id: 'edge-1', source: { kind: 'content-node', displayNodeId: 'grid:overview', revisionId: content.revisionId,
-      contentNodeId: connectionContentNodes(content)[0].id, side: 'right' }, target: { kind: 'box', displayNodeId: 'grid:second', side: 'left' }, appearance: { ...defaultArrowAppearance, label: 'Uses' } };
+      contentNodeId: connectionContentNodes(content)[0].id, side: 'right' }, target: { kind: 'box', displayNodeId: 'grid:second', side: 'left' }, appearance: { ...defaultArrowAppearance, label } };
     scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().revise(scene.contents.overview.revisionId, { kind: 'jumps', jumps: [{ id: 'jump', source: { revisionId: content.revisionId, contentHash: content.asciiSha256,
       line: 1, startColumn: 1, endColumn: 7 }, target: { representationId: 'another-saved-canvas', displayNodeId: 'grid:overview' } }] }).diagram };
     const created = await store.saveMappingDiagram('project-one', canvasSaveFixture({ name: 'Connections', scene, edges: [edge] }));

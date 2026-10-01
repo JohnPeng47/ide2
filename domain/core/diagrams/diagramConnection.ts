@@ -11,10 +11,15 @@ export const contentNodeAnchorSchema = z.object({
 }).strict();
 export const boxAnchorSchema = z.object({ kind: z.literal('box'), displayNodeId: id, side, offset }).strict();
 export const anchorSchema = z.discriminatedUnion('kind', [contentNodeAnchorSchema, boxAnchorSchema]);
+export const arrowLabelSchema = z.object({
+  text: z.string().max(120),
+  /** Absolute canvas pixels: horizontal center and text baseline, before pan/zoom. */
+  position: z.object({ x: z.number().finite(), y: z.number().finite() }).strict().optional()
+}).strict();
 export const arrowAppearanceSchema = z.object({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).default('#88c0d0'),
   lineStyle: z.enum(['solid', 'dashed']).default('solid'),
-  label: z.string().max(120).default('')
+  label: z.union([z.string().max(120), arrowLabelSchema]).default('')
 }).strict();
 export const diagramConnectionSchema = z.object({
   id, source: contentNodeAnchorSchema, target: anchorSchema,
@@ -25,7 +30,13 @@ export type GridBoxAnchor = z.infer<typeof boxAnchorSchema>;
 export type DiagramAnchor = ContentNodeAnchor | GridBoxAnchor;
 export type DiagramConnection = z.infer<typeof diagramConnectionSchema>;
 export type ArrowAppearance = DiagramConnection['appearance'];
+export type ArrowLabel = z.infer<typeof arrowLabelSchema>;
 export const defaultArrowAppearance: ArrowAppearance = { color: '#88c0d0', lineStyle: 'solid', label: '' };
+
+/** Legacy saved edges and callers may still supply a plain string. */
+export function getArrowLabel(appearance: ArrowAppearance): ArrowLabel {
+  return typeof appearance.label === 'string' ? { text: appearance.label } : appearance.label;
+}
 
 export function connectionBox(scene: LineGridScene, displayNodeId: string): GridBox | undefined {
   if (!displayNodeId.startsWith('grid:')) return undefined;

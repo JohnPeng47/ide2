@@ -96,7 +96,7 @@ it('copies the current workspace document with independent history and preserved
   controller.applyUpdate(1, [{ method: 'edge-create', edge: { id: 'edge', source: { kind: 'content-node', displayNodeId: first.id,
     contentNodeId: first.contentNodes[0].id, revisionId: first.content.revisionId, side: 'right' },
     target: { kind: 'box', displayNodeId: 'grid:second', side: 'left' },
-    appearance: { color: '#88c0d0', lineStyle: 'solid', label: 'Related' } } }]);
+    appearance: { color: '#88c0d0', lineStyle: 'solid', label: { text: 'Related', position: { x: 250, y: 80 } } } } }]);
   controller.updateCanvas(current => ({ ...current, display: { rootIds: ['detail'], nodes: { detail: {
     id: 'detail', kind: 'detail', title: 'Notes', ascii: 'Kept', childIds: [], expansion: 'expanded',
     coordinateSpace: 'canvas', position: { x: 450, y: 200 }, bounds: { width: 300, height: 180 },

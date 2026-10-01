@@ -53,6 +53,20 @@ it('exposes anchored edge CRUD to agents with immediate edits, partial failures,
   controller.undo(); expect(controller.getSnapshot().document.edges[0].appearance.label).toBe('Calls');
   controller.undo(); expect(controller.getSnapshot().document.edges).toEqual([edge]);
   expect(controller.getSnapshot().document.scene).toEqual(original);
+  const positioned = { text: 'Calls', position: { x: 150.5, y: -20.25 } };
+  await exec(`const e=edges.list().edges[0]; return edges.update({...e,appearance:{...e.appearance,label:${JSON.stringify(positioned)}}});`);
+  expect((await exec('return edges.list();')).value.edges[0].appearance.label).toEqual(positioned);
+  controller.configureEndpointBounds({
+    [endpointKey(edge.source)]: { x: 50.25, y: 20.5, width: 75.125, height: 16.75 },
+    [endpointKey(edge.target)]: { x: 200.25, y: 40.5, width: 120.125, height: 80.75 }
+  });
+  expect((await exec(`return nodes.get({nodeId:${JSON.stringify(rendered.id)}});`)).value.value.label).toEqual(positioned);
+  const positionedVersion = controller.getSnapshot().version;
+  await expect(exec(`const e=edges.list().edges[0]; return edges.update({...e,appearance:{...e.appearance,label:{text:'Bad',position:{x:1}}}});`)).rejects.toThrow();
+  expect(controller.getSnapshot().version).toBe(positionedVersion);
+  controller.undo(); expect(controller.getSnapshot().document.edges).toEqual([edge]);
+  controller.undo(true); expect(controller.getSnapshot().document.edges[0].appearance.label).toEqual(positioned);
+  controller.undo();
   const jumpResult = await exec(`const n=nodes.get({nodeId:'grid:overview'}); return nodes.setJumps({nodeId:n.id,jumps:[{
     id:'jump', source:{revisionId:n.content.revisionId,contentHash:n.content.asciiSha256,line:1,startColumn:1,endColumn:8},
     target:{representationId:'saved-canvas'}}]});`);

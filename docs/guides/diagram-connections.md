@@ -69,7 +69,8 @@ Saved mapping-canvas revisions carry `edges` alongside `scene`. Workspace
 
 `canvas-api-search` documents `edges.list`, `edges.create`, `edges.update`, and
 `edges.remove`. These run inside `exec` with the same session, expected-version,
-request deduplication, and atomic transaction rules as node operations.
+request deduplication, and immediate per-edit commit rules as node operations.
+A later script failure leaves earlier successful edits in place.
 
 For example, with a bound session and its current `expectedVersion`:
 
@@ -85,11 +86,23 @@ return edges.create({
     side: 'right'
   },
   target: { kind: 'box', displayNodeId: b.id, side: 'left' },
-  appearance: { label: 'Details', color: '#7dd3fc', lineStyle: 'solid' }
+  appearance: {
+    label: { text: 'Details', position: { x: 400, y: 180 } },
+    color: '#7dd3fc', lineStyle: 'solid'
+  }
 });
 ```
 
 `edges.update` accepts the complete connection, including its ID. Unchanged stale
 endpoints may be retained while editing appearance or repairing the other end.
+`appearance.label` accepts `{text, position?: {x, y}}`. Position is in absolute,
+unscaled canvas pixels: `x` is the horizontal center and `y` is the text baseline.
+The label pans and zooms with the canvas; an explicit position stays fixed in
+canvas coordinates when endpoints move. There are no width, height, or spacing
+parameters. Omit `position` to use the existing automatic endpoint-midpoint
+placement. String labels remain compatible with saved documents and older callers.
+Editing label text in the Connections panel preserves an explicit position.
+Label positions participate in connection undo/redo and persistence, and render
+the same way in live canvases and change-session previews.
 `nodes.remove` on a derived arrow removes its connection. Moving or collapsing an
 arrow is rejected; use `edges.update` to change its anchors.

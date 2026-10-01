@@ -4,7 +4,7 @@ import { CanvasHistory, documentFromHistory, type CanvasHistoryRecord, type Reso
 import { rebaseDiagramJumps, type DiagramJumpTarget } from './diagramJump';
 import { RevisionedDiagramService } from './diagramService';
 import { diagramContentNodes } from './diagramContentNodes';
-import { connectionBox, validateConnectionAnchor } from './diagramConnection';
+import { connectionBox, getArrowLabel, validateConnectionAnchor } from './diagramConnection';
 import { flattenGrid, resolveScene, type GridBox, type LineGridScene } from './lineGrid';
 
 import type { CanvasJump } from './canvasJump';
@@ -118,7 +118,7 @@ export function prepareCanvasTransfer(record: CanvasHistoryRecord, input: Transf
       const content = before.scene.contents[owner.contentId].content;
       const node = diagramContentNodes(content).find(node => node.id === edge.source.contentNodeId)!;
       const movedSource = selected.has(edge.source.displayNodeId), movedTarget = selected.has(edge.target.displayNodeId);
-      const jump: CanvasJump = { id: fresh('jump'), label: edge.appearance.label || undefined,
+      const jump: CanvasJump = { id: fresh('jump'), label: getArrowLabel(edge.appearance).text || undefined,
         sourceDisplayNodeId: movedSource ? `grid:${boxIds.get(owner.id)}` : edge.source.displayNodeId,
         source: { revisionId: content.revisionId, contentHash: content.asciiSha256, contentNodeId: node.id,
           line: node.line, startColumn: node.startColumn, endColumn: node.endColumn },

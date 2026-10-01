@@ -197,7 +197,8 @@ function PreviewCanvas({ doc, focusId, serial, onJump, diff, modifiedDiagramIds,
           if (!arrow.path || !arrow.target || !arrow.source) return [];
           return <g key={node.id} style={{ color: edge.appearance.color }} data-preview-edge={edge.id}>
             <PanelConnector path={arrow.path} target={arrow.target} dashed={edge.appearance.lineStyle === 'dashed' || arrow.status === 'proxy'} />
-            <text fill={edge.appearance.color ?? '#88c0d0'} x={(arrow.source.x + arrow.target.x)/2} y={(arrow.source.y + arrow.target.y)/2 - 8}>{edge.appearance.label}</text>
+            {arrow.label?.text && <text fill={edge.appearance.color} textAnchor="middle"
+              x={arrow.label.position.x} y={arrow.label.position.y}>{arrow.label.text}</text>}
           </g>;
         })}
       </svg>

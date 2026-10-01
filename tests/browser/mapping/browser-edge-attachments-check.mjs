@@ -1,3 +1,4 @@
+import { canvasSaveFixture } from '../../support/mappingDiagram.ts';
 // Run after npm run build: node --import tsx tests/browser/mapping/browser-edge-attachments-check.mjs
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
@@ -7,9 +8,10 @@ import { createServer } from 'node:net';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { seedMappingFixture } from '../support/browser-mapping-fixture.mjs';
-import { createDiagram } from '../../../domain/core/diagrams/diagram.ts';
+import { CanvasCatalogStore } from '../../../infrastructure/core/persistence/canvasCatalogStore.ts';
+import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService.ts';
 import { connectionContentNodes, defaultArrowAppearance } from '../../../domain/core/diagrams/diagramConnection.ts';
-import { projectCanvasSnapshot, singleDiagramScene } from '../../../domain/core/diagrams/projectDiagramCanvas.ts';
+import { documentFromRevision, projectCanvasSnapshot, singleDiagramScene } from '../../../domain/core/diagrams/projectDiagramCanvas.ts';
 const { evaluate, waitFor, waitForSelector, withHeadlessBrowser, captureScreenshot } = await import(pathToFileURL(path.join(homedir(), '.codex/skills/front-end/browser-test.mjs')).href);
 const root = await mkdtemp(path.join(tmpdir(), 'edge-attachments-'));
 const ascii = 'Root\n|-- Parent\n|   `-- Long source label\n`-- Footer';
@@ -19,7 +21,7 @@ try {
   const catalogPath = path.join(root, '.diagrams/representations/catalog.json');
   const catalog = JSON.parse(await readFile(catalogPath, 'utf8'));
   const scene = singleDiagramScene(ascii);
-  scene.contents.overview = createDiagram({ id: 'overview', revision: 0, ascii, structureKind: 'tree' });
+  scene.contents.overview = new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii, structureKind: 'tree' }).diagram;
   scene.root.children[0].position = { column: 66, row: 4 };
   scene.root.children.push({ ...scene.root.children[0], id: 'second', position: { column: 120, row: 13 } });
   const content = scene.contents.overview.content;
@@ -27,12 +29,13 @@ try {
   const footer = connectionContentNodes(content).find(node => node.label === 'Footer');
   const edges = [{ id: 'box-edge', source: { kind: 'content-node', displayNodeId: 'grid:overview', contentNodeId: sourceNode.id,
     revisionId: content.revisionId, side: 'right', offset: 0.25 },
-    target: { kind: 'box', displayNodeId: 'grid:second', side: 'left', offset: 0.75 }, appearance: { ...defaultArrowAppearance, label: 'Box edge' } },
+    target: { kind: 'box', displayNodeId: 'grid:second', side: 'left', offset: 0.75 },
+    appearance: { ...defaultArrowAppearance, label: { text: 'Box edge', position: { x: 980.25, y: 205.5 } } } },
   { id: 'node-edge', source: { kind: 'content-node', displayNodeId: 'grid:overview', contentNodeId: footer.id,
     revisionId: content.revisionId, side: 'bottom' }, target: { kind: 'content-node', displayNodeId: 'grid:second', contentNodeId: footer.id,
     revisionId: content.revisionId, side: 'top' }, appearance: { ...defaultArrowAppearance, label: 'Node edge' } }];
   const revision = catalog.revisions['revision-overview'];
-  revision.content = { kind: 'mapping-canvas', scene, edges };
+  revision.content = { kind: 'canvas-history', history: canvasSaveFixture({ name: 'Fixture', scene, edges }).history };
   revision.ascii = projectCanvasSnapshot(scene).ascii;
   const savedCatalog = JSON.stringify(catalog);
   await writeFile(catalogPath, savedCatalog);
@@ -46,6 +49,8 @@ try {
   await withHeadlessBrowser({ url: `${url}/mapping`, width: 1800, height: 1100 }, async ({ cdp }) => {
     try {
     const browserErrors = [];
+    await cdp.send('Page.enable');
+    cdp.on('Page.javascriptDialogOpening', () => { void cdp.send('Page.handleJavaScriptDialog', { accept: true }); });
     await cdp.send('Runtime.enable'); cdp.on('Runtime.exceptionThrown', e => browserErrors.push(e.exceptionDetails.text));
     const click = async (selector, text) => {
       const p = await evaluate(cdp, `(() => {const e=[...document.querySelectorAll(${JSON.stringify(selector)})].find(e=>!${JSON.stringify(text ?? '')}||e.textContent.trim()===${JSON.stringify(text ?? '')}); const r=e.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2};})()`);
@@ -67,9 +72,23 @@ try {
       for (const [actual, expected] of [[result.a, result.expectedA], [result.b, result.expectedB]])
         assert.ok(Math.hypot(actual.x - expected.x, actual.y - expected.y) < .2, JSON.stringify(result));
     };
+    const checkLabels = async () => {
+      const positions = await evaluate(cdp, `(() => {
+        const manual=document.querySelector('[data-connection-id="box-edge"] text');
+        const auto=document.querySelector('[data-connection-id="node-edge"] text');
+        const path=document.querySelector('[data-connection-id="node-edge"] .diagram-connection-hit');
+        const start=path.getPointAtLength(0),end=path.getPointAtLength(path.getTotalLength());
+        return {manual:{x:Number(manual.getAttribute('x')),y:Number(manual.getAttribute('y')),anchor:manual.getAttribute('text-anchor')},
+          auto:{x:Number(auto.getAttribute('x')),y:Number(auto.getAttribute('y'))},expected:{x:(start.x+end.x)/2,y:(start.y+end.y)/2-8}};
+      })()`);
+      assert.deepEqual(positions.manual, { x: 980.25, y: 205.5, anchor: 'middle' });
+      assert.ok(Math.abs(positions.auto.x - positions.expected.x) < .02);
+      assert.ok(Math.abs(positions.auto.y - positions.expected.y) < .02);
+    };
     const checkAll = () => Promise.all([
       check('box-edge', label('overview', 3), '[data-grid-box="second"]', 'right', 'left', .25, .75),
-      check('node-edge', label('overview', 4), label('second', 4), 'bottom', 'top')
+      check('node-edge', label('overview', 4), label('second', 4), 'bottom', 'top'),
+      checkLabels()
     ]);
     await waitForSelector(cdp, '[data-connection-id="box-edge"]');
     await checkAll();
@@ -101,8 +120,44 @@ try {
     await checkAll();
     await captureScreenshot(cdp, { output: process.env.EDGE_SCREENSHOT ?? path.join(root, 'attachments.png') });
     assert.equal(await readFile(catalogPath, 'utf8'), savedCatalog);
+    // Editing text must preserve explicit positioning through undo, save and reload.
+    await click('.mapping-grid-tools button', 'Connections (2)');
+    await click('.diagram-connections-panel li button', 'Box edge');
+    await click('[aria-label="Connection label"]');
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'a', code: 'KeyA', windowsVirtualKeyCode: 65, modifiers: 2 });
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'a', code: 'KeyA', windowsVirtualKeyCode: 65, modifiers: 2 });
+    await cdp.send('Input.insertText', { text: 'Positioned label' });
+    await click('.diagram-connections-panel button', 'Update connection');
+    await click('[aria-label="Close connections"]');
+    const labelText = () => evaluate(cdp, 'document.querySelector("[data-connection-id=box-edge] text")?.textContent');
+    await waitFor(async () => await labelText() === 'Positioned label');
+    await checkAll();
+    await click('.mapping-grid-tools button', 'Undo');
+    await waitFor(async () => await labelText() === 'Box edge');
+    await checkLabels();
+    await click('.mapping-grid-tools button', 'Redo');
+    await waitFor(async () => await labelText() === 'Positioned label');
+    await checkLabels();
+    await click('.mapping-submenu button', 'Save');
+    await waitFor(async () => await evaluate(cdp, 'document.querySelector(".mapping-submenu [role=status]").textContent') === 'Saved');
+    const saved = await new CanvasCatalogStore(path.join(root, '.diagrams')).loadRepresentationCatalog(catalog.projectId);
+    const document = documentFromRevision(saved.revisions[saved.representations['representation-overview'].currentRevisionId]);
+    assert.deepEqual(document.edges.find(edge => edge.id === 'box-edge').appearance.label,
+      { text: 'Positioned label', position: { x: 980.25, y: 205.5 } });
+    let reloaded = false;
+    const stopWatchingReload = cdp.on('Page.loadEventFired', () => { reloaded = true; });
+    await cdp.send('Page.reload');
+    await waitFor(() => reloaded);
+    stopWatchingReload();
+    await waitFor(async () => await evaluate(cdp, `['box-edge','node-edge'].every(id => {
+      const edge = document.querySelector('[data-connection-id="' + id + '"]');
+      return edge?.dataset.geometrySource === 'measured' && edge.querySelector('text');
+    })`));
+    assert.equal(await labelText(), 'Positioned label');
+    await checkAll();
+    await captureScreenshot(cdp, { output: process.env.EDGE_SCREENSHOT ?? path.join(root, 'attachments.png') });
     assert.deepEqual(browserErrors, []);
-    console.log('Measured arrow borders: node/box targets, offsets, large columns, zoom, pan, subtree/box proxies and undo passed; catalog unchanged.');
+    console.log('Measured arrow borders and explicit/legacy labels: zoom, pan, folds, text editing, undo/redo, save and reload passed.');
     } catch (error) {
       if (process.env.EDGE_SCREENSHOT) await captureScreenshot(cdp, { output: process.env.EDGE_SCREENSHOT });
       throw error;

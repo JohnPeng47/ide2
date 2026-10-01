@@ -28,6 +28,35 @@ function fixture() {
 }
 
 describe('measured edge attachments', () => {
+  it('resolves explicit label positions in canvas pixels and keeps legacy automatic placement', () => {
+    const { edge, scene, bounds } = fixture();
+    const position = { x: -12.5, y: 210.25 };
+    const positioned = { ...edge, appearance: { ...edge.appearance, label: { text: 'Calls', position } } };
+    expect(diagramConnectionSchema.parse(positioned)).toEqual(positioned);
+    const arrow = drawEdge(positioned, scene, undefined, { width: 8, height: 18 }, bounds);
+    expect(arrow.label).toEqual({ text: 'Calls', position });
+    const shifted = Object.fromEntries(Object.entries(bounds).map(([id, rect]) => [id, { ...rect, x: rect.x + 100 }]));
+    expect(drawEdge(positioned, scene, undefined, { width: 8, height: 18 }, shifted).label).toEqual(arrow.label);
+    for (const label of ['Calls', { text: 'Calls' }]) {
+      const automatic = drawEdge({ ...edge, appearance: { ...edge.appearance, label } }, scene, undefined, { width: 8, height: 18 }, bounds);
+      expect(automatic.label).toEqual({ text: 'Calls', position: {
+        x: (automatic.source!.x + automatic.target!.x) / 2,
+        y: (automatic.source!.y + automatic.target!.y) / 2 - 8
+      } });
+    }
+  });
+
+  it('rejects incomplete or non-finite label positions and unsupported sizing fields', () => {
+    const { edge } = fixture();
+    for (const label of [
+      { text: 'Calls', position: { x: 1 } },
+      { text: 'Calls', position: { x: Infinity, y: 2 } },
+      { text: 'Calls', position: { x: 1, y: NaN } },
+      { text: 'Calls', position: { x: 1, y: 2 }, width: 100 },
+      { position: { x: 1, y: 2 } }
+    ]) expect(() => diagramConnectionSchema.parse({ ...edge, appearance: { ...edge.appearance, label } })).toThrow();
+  });
+
   it('uses the measured span border and side offsets, independently of cell estimates', () => {
     const { edge, scene, bounds, a, b } = fixture();
     const result = drawEdge(edge, scene, undefined, { width: 7.1, height: 18.2 }, bounds);
