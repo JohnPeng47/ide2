@@ -1,4 +1,4 @@
-import { createDiagram } from '../../../../domain/core/diagrams/diagram';
+import { RevisionedDiagramService } from '../../../../domain/core/diagrams/diagramService';
 import { defaultArrowAppearance } from '../../../../domain/core/diagrams/diagramConnection';
 import { expect, it } from 'vitest';
 import { AgentDiagrammingSessionService } from '../../../../application/mapping/agent/sessionService';
@@ -42,7 +42,7 @@ it('uses one committed version for staged results, live reads, undo, and request
 
 it('sets source mappings through MCP with atomic validation, stable anchors, history and live reads', async () => {
   const scene = singleDiagramScene('Root\n`-- Child');
-  scene.contents = { ...scene.contents, overview: createDiagram({ id: 'overview', revision: 0, ascii: 'Root\n`-- Child', structureKind: 'tree' }) };
+  scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii: 'Root\n`-- Child', structureKind: 'tree' }).diagram };
   const controller = new MappingDocumentController(mappingDocumentFromScene(scene), initialCanvasState());
   const node = controller.nodes().find(n => n.id === 'grid:overview')!;
   if (node.layout !== 'grid') throw Error('Expected grid');

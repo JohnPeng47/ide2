@@ -2,7 +2,7 @@ import { placeTransferredGroup } from './canvasTransferPlacement';
 import { z } from 'zod';
 import { CanvasHistory, documentFromHistory, type CanvasHistoryRecord, type ResolvedCanvasDocument } from './canvasHistory';
 import { rebaseDiagramJumps, type DiagramJumpTarget } from './diagramJump';
-import { buildDiagramContent } from './diagramContent';
+import { RevisionedDiagramService } from './diagramService';
 import { diagramContentNodes } from './diagramContentNodes';
 import { connectionBox, validateConnectionAnchor } from './diagramConnection';
 import { flattenGrid, resolveScene, type GridBox, type LineGridScene } from './lineGrid';
@@ -30,6 +30,7 @@ const state = (history: CanvasHistory): TransferState => ({ document: history.do
 /** Preparation operates on isolated histories. Publication belongs to the workspace transaction. */
 export function prepareCanvasTransfer(record: CanvasHistoryRecord, input: TransferInput, destinationRecord?: CanvasHistoryRecord): PreparedCanvasTransfer {
   if (input.sourceId === input.destinationId) throw Error('Choose another canvas as the destination');
+  const diagrams = new RevisionedDiagramService();
   const original = new CanvasHistory(documentFromHistory(record), {}, record), before = original.document();
   if (!input.selectedIds.length || new Set(input.selectedIds).size !== input.selectedIds.length) throw Error('Select one or more diagrams');
   const existing = destinationRecord ? documentFromHistory(destinationRecord) : emptyCanvasDocument();
@@ -51,10 +52,14 @@ export function prepareCanvasTransfer(record: CanvasHistoryRecord, input: Transf
       const next = input.mode === 'copy' || Object.hasOwn(existing.scene.contents, id) ? fresh('diagram-content') : id;
       contentIds.set(id, next);
       const old = before.scene.contents[id];
-      const content = next !== id ? buildDiagramContent(old.content.ascii, `${next}:0`, old.content.structure.kind,
-        old.content.structure.kind === 'tree' ? old.content.structure.parserVersion : undefined) : old.content;
-      contents[next] = { ...structuredClone(old), id: next, revision: next !== id ? 0 : old.revision, content,
-        ...(old.jumps ? { jumps: rebaseDiagramJumps(old.content, content, old.jumps) } : {}) };
+      if (next === id) contents[next] = old;
+      else {
+        const created = diagrams.create({ id: next, revision: 0, ascii: old.content.ascii,
+          structureKind: old.content.structure.kind, source: old.sourceContext.binding,
+          mappings: old.sourceContext.mappings, evidence: old.sourceContext.evidence }).diagram;
+        contents[next] = old.jumps ? diagrams.revise(created.revisionId,
+          { kind: 'jumps', jumps: rebaseDiagramJumps(old.content, created.content, old.jumps) }).diagram : created;
+      }
       if (before.sections[id]) sections[next] = structuredClone(before.sections[id]);
     }
     return contentIds.get(id)!;
@@ -78,7 +83,9 @@ export function prepareCanvasTransfer(record: CanvasHistoryRecord, input: Transf
   const remapTarget = (jump: DiagramJumpTarget): DiagramJumpTarget => input.sourceAliases.includes(jump.representationId) && jump.displayNodeId && selected.has(jump.displayNodeId)
     ? { ...jump, representationId: input.destinationId, displayNodeId: `grid:${boxIds.get(jump.displayNodeId.slice(5))}`,
       ...(jump.contentNodeId ? { contentNodeId: remapNode(jump.displayNodeId, jump.contentNodeId) } : {}) } : jump;
-  for (const diagram of Object.values(contents)) diagram.jumps = diagram.jumps?.map(jump => ({ ...jump, target: remapTarget(jump.target) }));
+  const remapJumps = (diagram: LineGridScene['contents'][string]) => diagram.jumps
+    ? diagrams.revise(diagram.revisionId, { kind: 'jumps', jumps: diagram.jumps.map(jump => ({ ...jump, target: remapTarget(jump.target) })) }).diagram : diagram;
+  for (const [id, diagram] of Object.entries(contents)) contents[id] = remapJumps(diagram);
   const targetJumps: CanvasJump[] = [], sourceJumps: CanvasJump[] = [];
   for (const jump of before.jumps ?? []) {
     if (selected.has(jump.sourceDisplayNodeId)) {
@@ -134,7 +141,7 @@ export function prepareCanvasTransfer(record: CanvasHistoryRecord, input: Transf
       scene: { root, contents: Object.fromEntries(Object.entries(before.scene.contents).filter(([id]) => used.has(id))) } };
     // Diagram-local links on remaining placements also follow moved targets.
     source.scene = { ...source.scene, contents: Object.fromEntries(Object.entries(source.scene.contents).map(([id, diagram]) =>
-      [id, { ...diagram, jumps: diagram.jumps?.map(jump => ({ ...jump, target: remapTarget(jump.target) })) }])) };
+      [id, remapJumps(diagram)])) };
     original.append(source, input.sourceView ?? original.head.view);
   }
   target.jumps = targetJumps;
@@ -150,7 +157,7 @@ export function prepareCanvasTransfer(record: CanvasHistoryRecord, input: Transf
       row: child.position.row + placement.row - parent.position.row
     } }));
     const existingContents = Object.fromEntries(Object.entries(existing.scene.contents).map(([id, diagram]) => [id,
-      input.mode === 'move' && diagram.jumps ? { ...diagram, jumps: diagram.jumps.map(jump => ({ ...jump, target: remapTarget(jump.target) })) } : diagram]));
+      input.mode === 'move' ? remapJumps(diagram) : diagram]));
     target.scene = { contents: { ...existingContents, ...contents }, root: { ...parent, children: [...parent.children, ...placed] } };
     target.edges = [...existing.edges, ...target.edges];
     target.jumps = [...(existing.jumps ?? []).map(jump => input.mode === 'move' ? { ...jump, target: remapTarget(jump.target) } : jump), ...targetJumps];

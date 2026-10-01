@@ -9,11 +9,13 @@ isolated.
 ## Boundaries
 
 - `domain/core/diagrams/diagramService.ts`: the injected `DiagramService` owns
-  editing contexts, content preparation, history navigation, and calls to diagram
-  persistence. `openContext` returns an opaque runtime handle. `resolve(handle,
-  diagramId)` returns a detached view with logical node IDs. Handles isolate even
-  two viewers restored from the same persisted context; local diagram IDs such as
-  `overview` are scoped to a context rather than treated as global identities.
+  immutable diagram revisions through `create`, `getRevision`, `listRevisions`,
+  `revise`, and `generate`. Canvas readers receive the complete, deeply readonly
+  and frozen `Diagram`. Content edits and construction go through this service.
+- `domain/core/diagrams/canvasHistoryService.ts`: `CanvasHistoryService` owns editing
+  contexts, checkpoints, undo/redo/reset, fork/adopt, and transfer coordination.
+  `openContext` returns an opaque runtime handle. Handles isolate viewers even
+  when they restore the same persisted context.
 - `domain/core/diagrams/canvasHistory.ts`: history implementation used behind the
   service boundary. Canonical `CanvasDocument` contains layout, diagram instances,
   connections, and sections. Content-node edges use logical node references.
@@ -24,15 +26,13 @@ isolated.
   and validation, and appends one coordinated checkpoint before notifying readers.
   Prompt edits, generation, paste and grouping also enter through `applyUpdate`.
   `commitDocument` is the compatibility entry point for remaining layout document
-  producers and uses the same checkpoint path. `transact` remains an adapter for
-  the existing atomic MCP batch contract.
+  producers and uses the same checkpoint path. `transact` remains a compatibility alias for `applyUpdate`. MCP `exec` calls
+  apply each mutation separately, creating one checkpoint per successful edit.
 
-`getCanvasSnapshot()` and `resolveDiagram()` expose the new read interfaces.
-Existing rendering, source-selection and MCP consumers still use the materialized
-`getSnapshot().document` / `nodes()` adapters. These legacy adapters retain embedded
-content and revision-bearing endpoints. They are not the canonical persisted canvas
-model. Prepared edits likewise carry a legacy diagram payload for the coordinator.
-Do not add new consumers that depend on those legacy revision fields.
+`getCanvasSnapshot()` and `resolveDiagram()` expose canvas bindings and derived views.
+Rendering, source-selection and MCP consumers can also read the full diagram through
+`getSnapshot().document` / `nodes()`. Layout edits use canvas commands; changing
+content requires a service-issued revision. A modified clone is rejected at commit.
 
 ## Checkpoints and persistence
 
@@ -49,12 +49,10 @@ coalescing). Writes remain asynchronous, and failures appear in the page error
 display. The controller coordinates composition and diagram edits; no separate
 CanvasService is introduced.
 
-The app creates one `RevisionedDiagramService` and an unconnected `CodeRepoService`
-contract implementation and injects them into `MappingPocPage`. A React provider
-passes them to nested consumers. All live canvas controllers and proposal preview
-controllers use the injected diagram service. Each controller has its own context.
-CodeRepoService reports `available: false` and its methods reject explicitly until
-an implementation is wired. Existing source APIs are unchanged.
+The app injects `RevisionedDiagramService` into live canvas controllers and the
+existing generation UI. Each controller owns a context through `CanvasHistoryService`.
+Read-only proposal previews and searches use display projections without opening an
+editing context or loading undo history.
 
 ### Disk layout and publication
 
@@ -67,19 +65,18 @@ an implementation is wired. Existing source APIs are unchanged.
 - `diagrams/history/<sha256>.json`: revision-record references and bindings for
   diagram checkpoints. Canvas snapshots refer to checkpoint IDs rather than
   carrying diagram bindings or revision tables on disk.
-- Workspace and change-session files use the same references through DiagramService.
+- Workspace and change-session files use the same references through the diagram persistence adapter.
   Their materialized diagram objects are also externalized. Derived catalog exports
   and legacy saved-scene strings remain compatibility data, not revision storage.
 
-DiagramService calls `DiagramRevisionStore` through a storage port. All referenced
+The diagram persistence adapter calls `DiagramRevisionStore` through a storage port. All referenced
 records are persisted before atomically replacing the parent canvas/workspace/session
 file. An interrupted save may leave unreferenced immutable records, but cannot
 publish a pointer before its dependency is written. Record hashes are verified on
 read, and missing records are errors. Garbage collection is not implemented.
 
 Loading falls back to `representations/catalog.json` if the new canvas catalog is
-absent. Legacy embedded histories remain readable. The next save writes the new
-format without deleting or modifying the legacy catalog. Consumers should back up
+absent. Only current canvas-history payloads with service-issued diagram identities are accepted. Retired ASCII, diagram, and mapping-canvas payloads are rejected. Saving requires supplied history matching the document. Consumers should back up
 the entire diagram directory, not just its catalog file.
 
 HTTP responses and explicit workspace exports remain portable expanded documents;
@@ -115,7 +112,7 @@ Agents must have an explicit user instruction to accept; marking ready is not ac
 `CanvasCatalogStore.acceptCanvasChanges` serializes publication with ordinary
 catalog saves. It stages all affected canvases, then atomically writes their new
 catalog revisions and a `changeSessionAcceptances[changeSessionId]` receipt.
-`DiagramService.adopt` appends one checkpoint to each existing canvas's history,
+`CanvasHistoryService.adopt` appends one checkpoint to each existing canvas's history,
 preserving the proposal's exact diagram revision IDs, layout, edges and sections.
 An entirely new canvas receives a saved representation ID.
 

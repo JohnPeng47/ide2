@@ -1,5 +1,6 @@
+import { diagramRevisions as revisionRegistry } from './internal/revisionRegistry';
 import { validateDiagram, type Diagram } from './diagram';
-import { validateCanvasHistory, type CanvasHistoryRecord } from './canvasHistory';
+import { currentHistoryChanges, validateCanvasHistory, type CanvasHistoryRecord, type HistoryValidation } from './canvasHistory';
 import type { DiagramRevision } from './diagramRevisionEditor';
 
 export type DiagramRecordKind = 'diagram' | 'revision' | 'history';
@@ -28,7 +29,7 @@ function recordDetector(restoring: boolean) {
   const contains = (value: unknown): boolean => {
     if (!value || typeof value !== 'object') return false;
     if (cache.has(value)) return cache.get(value)!;
-    if (object(value) && (restoring ? !!value.$diagramRecord || !!value.diagramHistory : isHistory(value) || isDiagram(value))) return true;
+    if (object(value) && (restoring ? !!value.$diagramRecord || !!value.diagramHistory || isHistory(value) || isDiagram(value) : isHistory(value) || isDiagram(value))) return true;
     const result = Object.values(value).some(contains);
     cache.set(value, result);
     return result;
@@ -63,8 +64,8 @@ export async function persistDiagramData(value: unknown, store: DiagramRecordSto
   return visit(value);
 }
 
-/** Accepts old embedded documents as well as the reference-only storage representation. */
-export async function restoreDiagramData(value: unknown, store: DiagramRecordStore): Promise<unknown> {
+/** Restore current portable documents or their content-addressed storage representation. */
+export async function restoreDiagramData(value: unknown, store: DiagramRecordStore, historyValidation: HistoryValidation = 'all'): Promise<unknown> {
   const contains = recordDetector(true);
   const hydrated = new Map<string, Promise<unknown>>();
   const records = new Map<string, Promise<unknown>>();
@@ -74,34 +75,53 @@ export async function restoreDiagramData(value: unknown, store: DiagramRecordSto
     if (!records.has(key)) records.set(key, store.get(ref.$diagramRecord, ref.id));
     return records.get(key)!;
   };
-  const visit = async (value: unknown): Promise<unknown> => {
+  const visit = async (value: unknown, deferred = false): Promise<unknown> => {
     if (!contains(value)) return value;
-    if (Array.isArray(value)) return Promise.all(value.map(item => item && typeof item === 'object' ? visit(item) : item));
+    if (Array.isArray(value)) return Promise.all(value.map(item => item && typeof item === 'object' ? visit(item, deferred) : item));
     if (!object(value) || isEvidence(value)) return value;
     if (typeof value.$diagramRecord === 'string' && typeof value.id === 'string' && Object.keys(value).length === 2) {
       const ref = value as Reference;
       const key = `${ref.$diagramRecord}:${ref.id}`;
       if (!hydrated.has(key)) hydrated.set(key, (async () => {
-        const restored = await visit(await read(ref));
-        if (ref.$diagramRecord === 'diagram') validateDiagram(restored as Diagram);
+        const restored = await visit(await read(ref), deferred);
         return restored;
       })());
-      return structuredClone(await hydrated.get(key));
+      const restored = await hydrated.get(key);
+      if (ref.$diagramRecord === 'diagram' && !deferred) validateDiagram(restored as Diagram);
+      return structuredClone(restored);
     }
     if (typeof value.contextId === 'string' && value.snapshots && value.diagramHistory?.$diagramRecord === 'history') {
       const stored = await read(value.diagramHistory) as StoredHistory;
       const { diagramHistory: _, snapshots, ...rest } = value;
-      const diagramRevisions = await visit(stored.revisions) as Record<string, DiagramRevision>;
+      const diagramRevisions = await visit(stored.revisions, historyValidation === 'current') as Record<string, DiagramRevision>;
       const restoredSnapshots = Object.fromEntries(await Promise.all(Object.entries(snapshots).map(async ([id, raw]) => {
         const { diagramCheckpointId, ...canvas } = raw as Record<string, unknown>;
         if (diagramCheckpointId !== id || !Object.hasOwn(stored.bindings, id)) throw new Error('Unknown diagram checkpoint');
         return [id, { ...await visit(canvas) as object, diagramBindings: stored.bindings[id] }];
       })));
       const history = { ...rest, snapshots: restoredSnapshots, diagramRevisions } as CanvasHistoryRecord;
-      validateCanvasHistory(history);
+      validateCanvasHistory(history, historyValidation === 'current' ? currentHistoryChanges(history) : undefined);
+      for (const revision of Object.values(history.diagramRevisions)) {
+        if (historyValidation === 'current') revisionRegistry.restore(revision); else revisionRegistry.register(revision);
+      }
       return history;
     }
-    return Object.fromEntries(await Promise.all(Object.entries(value).map(async ([key, item]) => [key, !item || typeof item !== 'object' ? item : await visit(item)])));
+    if (isHistory(value)) {
+      const history = value as CanvasHistoryRecord;
+      validateCanvasHistory(history, historyValidation === 'current' ? currentHistoryChanges(history) : undefined);
+      for (const revision of Object.values(history.diagramRevisions)) {
+        if (historyValidation === 'current') revisionRegistry.restore(revision); else revisionRegistry.register(revision);
+      }
+      return structuredClone(history);
+    }
+    if (isDiagram(value)) { if (!deferred) validateDiagram(value as Diagram); return structuredClone(value); }
+    return Object.fromEntries(await Promise.all(Object.entries(value).map(async ([key, item]) => [key, !item || typeof item !== 'object' ? item : await visit(item, deferred)])));
   };
   return visit(value);
+}
+
+export class DiagramPersistence {
+  constructor(private readonly store: DiagramRecordStore) {}
+  persist(value: unknown) { return persistDiagramData(value, this.store); }
+  async restore<T>(value: unknown, historyValidation: HistoryValidation = 'all'): Promise<T> { return restoreDiagramData(value, this.store, historyValidation) as Promise<T>; }
 }

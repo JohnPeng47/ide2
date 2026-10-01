@@ -1,5 +1,7 @@
+import { mutableFixture } from '../../../../tests/support/mappingDiagram';
 import { describe, expect, it } from 'vitest';
-import { createDiagram, validateDiagram } from '../diagram';
+import { validateDiagram } from '../diagram';
+import { RevisionedDiagramService } from '../diagramService';
 import { buildDiagramContent } from '../diagramContent';
 import { parseAsciiTree, hiddenAsciiTreeLines } from '../asciiTree';
 import { diagramTextRanges, textRow, mappingContentNodeId } from '../diagramText';
@@ -23,8 +25,8 @@ describe('node-aware text and compatibility', () => {
   });
 
   it('keeps old saved structures valid without silently reparsing or migrating them', () => {
-    const diagram = createDiagram({ id: 'old', revision: 0, ascii, structureKind: 'tree' });
-    diagram.content = buildDiagramContent(ascii, 'old:0', 'tree', 'ascii-tree-1');
+    const diagram = mutableFixture(new RevisionedDiagramService().create({ id: 'old', revision: 0, ascii, structureKind: 'tree' }).diagram);
+    diagram.content = mutableFixture(buildDiagramContent(ascii, 'old:0', 'tree', 'ascii-tree-1'));
     const before = JSON.stringify(diagram);
     expect(() => validateDiagram(diagram)).not.toThrow();
     expect(JSON.stringify(diagram)).toBe(before);
@@ -49,7 +51,7 @@ describe('node-aware text and compatibility', () => {
     expect(textRow(prose, range.get(1)!).runs[0].owner?.contentNodeId).toBeUndefined();
     const stale = diagramTextRanges({ ascii, content, displayNodeId: 'grid:a' });
     expect([...stale.values()].flat().some(range => range.owner?.contentNodeId)).toBe(false);
-    const parsed = buildDiagramContent(ascii, 'v2', 'tree');
+    const parsed = mutableFixture(buildDiagramContent(ascii, 'v2', 'tree'));
     if (parsed.structure.kind !== 'tree') throw new Error();
     const node = Object.values(parsed.structure.nodes).find(node => node.line === 3)!;
     parsed.structure.nodes.duplicate = { ...node, id: 'duplicate' };
@@ -59,7 +61,7 @@ describe('node-aware text and compatibility', () => {
 
   it('preserves scene painting, repeated instance identity and source coordinates after folding', () => {
     const scene = singleDiagramScene(ascii);
-    scene.contents = { ...scene.contents, overview: createDiagram({ id: 'overview', revision: 0, ascii, structureKind: 'tree' }) };
+    scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii, structureKind: 'tree' }).diagram };
     if (scene.root.kind !== 'container') throw new Error();
     scene.root.children = [...scene.root.children, { ...scene.root.children[0], id: 'second', position: { column: 30, row: 2 } }];
     const content = scene.contents.overview.content;

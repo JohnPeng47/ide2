@@ -1,9 +1,11 @@
+import { tsImport } from 'tsx/esm/api';
+const { revisionCanvasFixture } = await tsImport('../../support/mappingDiagram.ts', import.meta.url);
 import { execFileSync } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
 const packageRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../../..');
-/** Seed historical diagram shapes with deterministic evidence, independent of deleted source files. */
+/** Seed current canvas records with deterministic evidence, independent of deleted source files. */
 export async function seedMappingFixture(root, diagram) {
   execFileSync("git", ["init", "-q", root]);
   const { ascii, nodes } = diagram ?? JSON.parse(execFileSync(process.execPath, [path.join(packageRoot, "node_modules/tsx/dist/cli.mjs"), "-e",
@@ -26,6 +28,8 @@ export async function seedMappingFixture(root, diagram) {
   const revision = { schemaVersion: 1, id: "revision-overview", projectId, representationId: "representation-overview", revision: 1, ascii,
     source: {sourceId: "fixture-source", repositoryIdentity:path.join(root,".git"),domainProfileId:"source-code",corpus:{kind:"git-worktree",root}},
     asciiSha256: createHash("sha256").update(ascii).digest("hex"), representationKind: "tree", evidence, mappings, createdAt: timestamp };
+  revision.content = revisionCanvasFixture(revision);
+  delete revision.source;
   const representation = { schemaVersion: 1, id: revision.representationId, projectId, handle: "overview", name: "Current LLM prompt stack", viewKind: "diagram", representationKind: "tree", status: "settled", currentRevisionId: revision.id, revisionIds: [revision.id], createdAt: timestamp, updatedAt: timestamp };
   await mkdir(path.join(root, ".diagrams/representations"), { recursive: true });
   await writeFile(path.join(root, ".diagrams/project.json"), JSON.stringify({ schemaVersion: 1, id: projectId, name: "Mapping fixture", defaultDomainProfileId: "source-code", diagramSetIds: [], createdAt: timestamp, updatedAt: timestamp }));

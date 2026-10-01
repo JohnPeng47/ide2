@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createDiagram } from '../../../core/diagrams/diagram';
+import { RevisionedDiagramService } from '../../../core/diagrams/diagramService';
 import { connectionContentNodes, diagramConnectionSchema, defaultArrowAppearance, type DiagramConnection } from '../../../core/diagrams/diagramConnection';
 import { singleDiagramScene } from '../../../core/diagrams/projectDiagramCanvas';
 import { drawEdge } from '../connectionLayout';
@@ -11,8 +11,8 @@ import { initialCanvasState } from '../mappingWorkspace';
 
 function fixture() {
   const scene = singleDiagramScene('Root\n|-- Parent\n|   `-- Child');
-  scene.contents = { ...scene.contents, overview: createDiagram({ id: 'overview', revision: 0,
-    ascii: scene.contents.overview.content.ascii, structureKind: 'tree' }) };
+  scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({ id: 'overview', revision: 0,
+    ascii: scene.contents.overview.content.ascii, structureKind: 'tree' }).diagram };
   if (scene.root.kind !== 'container') throw new Error();
   scene.root.children = [...scene.root.children, { ...scene.root.children[0], id: 'second', position: { column: 50, row: 2 } }];
   const content = scene.contents.overview.content;

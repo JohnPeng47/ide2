@@ -1,5 +1,6 @@
+import { mutableFixture } from '../../../../tests/support/mappingDiagram';
 import { expect, it } from 'vitest';
-import { createDiagram } from '../../../core/diagrams/diagram';
+import { RevisionedDiagramService } from '../../../core/diagrams/diagramService';
 import { buildDiagramContent } from '../../../core/diagrams/diagramContent';
 import { activeDiagramJumps, validateDiagramJumps, type DiagramJump } from '../../../core/diagrams/diagramJump';
 import { singleDiagramScene } from '../../../core/diagrams/projectDiagramCanvas';
@@ -12,7 +13,7 @@ import { serializeWorkspace, deserializeWorkspace } from '../mappingWorkspaceCod
 function fixture() {
   const ascii = 'Root\n|-- [*] Rendering\nplain text';
   const scene = singleDiagramScene(ascii);
-  scene.contents = { ...scene.contents, overview: createDiagram({ id: 'overview', revision: 0, ascii, structureKind: 'tree' }) };
+  scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii, structureKind: 'tree' }).diagram };
   const content = scene.contents.overview.content;
   const jump: DiagramJump = { id: 'rendering', source: { revisionId: content.revisionId, contentHash: content.asciiSha256,
     line: 2, startColumn: 5, endColumn: 17 }, target: { representationId: 'saved-target', displayNodeId: 'grid:overview' } };
@@ -57,8 +58,9 @@ it('rejects stale source ranges, invalid node IDs and overlapping links atomical
 it('restores legacy parsed structures exactly instead of upgrading their grammar on workspace load', () => {
   const { controller } = fixture();
   const { document, canvas } = structuredClone(controller.getSnapshot());
-  const diagram = document.scene.contents.overview;
-  diagram.content = buildDiagramContent(diagram.content.ascii, diagram.content.revisionId, 'tree', 'ascii-tree-1');
+  const diagram = mutableFixture(document.scene.contents.overview);
+  document.scene.contents = { ...document.scene.contents, overview: diagram };
+  diagram.content = mutableFixture( buildDiagramContent(diagram.content.ascii, diagram.content.revisionId, 'tree', 'ascii-tree-1'));
   const workspace = { schemaVersion: 3 as const, projectId: 'project', documents: [{ representationId: 'source', name: 'Source',
     savedName: 'Source', revisionId: 'revision', savedScene: JSON.stringify(document.scene), document, canvas }] };
   const restored = deserializeWorkspace(serializeWorkspace(workspace));

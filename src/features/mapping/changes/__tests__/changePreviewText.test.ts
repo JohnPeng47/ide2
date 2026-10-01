@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { createDiagram } from '../../../../../domain/core/diagrams/diagram';
+import { RevisionedDiagramService } from '../../../../../domain/core/diagrams/diagramService';
 import { diagramContentNodes } from '../../../../../domain/core/diagrams/diagramContentNodes';
 import { singleDiagramScene } from '../../../../../domain/core/diagrams/projectDiagramCanvas';
 import { boxesOverlap } from '../../../../../domain/core/diagrams/lineGrid';
@@ -7,8 +7,8 @@ import { diffDiagramContent } from '../../../../../domain/mapping/changes/diagra
 import { changePreviewText } from '../changePreviewText';
 
 function fixture(before: string, after: string, kind: 'tree' | 'diagram' = 'tree') {
-  const old = createDiagram({ id: 'overview', revision: 0, ascii: before, structureKind: kind });
-  const next = createDiagram({ id: 'overview', revision: 1, ascii: after, structureKind: kind });
+  const old = new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii: before, structureKind: kind }).diagram;
+  const next = new RevisionedDiagramService().create({ id: 'overview', revision: 1, ascii: after, structureKind: kind }).diagram;
   const scene = singleDiagramScene(after);
   scene.contents = { ...scene.contents, overview: next };
   const diffs = new Map([['grid:overview', diffDiagramContent(old.content, next.content)]]);
@@ -35,7 +35,7 @@ it('shows previous/current rows in order, with only current labels owning anchor
 it('reserves the longer old label width and reflows neighboring boxes without changing the document', () => {
   const f = fixture('Root\n`-- A very long previous label', 'Root\n`-- Short');
   if (f.scene.root.kind !== 'container') throw Error();
-  f.scene.contents = { ...f.scene.contents, other: createDiagram({ id: 'other', revision: 0, ascii: 'Neighbor' }) };
+  f.scene.contents = { ...f.scene.contents, other: new RevisionedDiagramService().create({ id: 'other', revision: 0, ascii: 'Neighbor' }).diagram };
   f.scene.root = { ...f.scene.root, children: [...f.scene.root.children,
     { kind: 'diagram', id: 'other', contentId: 'other', collapsed: false, position: { column: 15, row: 0 } }] };
   const snapshot = structuredClone(f.scene);

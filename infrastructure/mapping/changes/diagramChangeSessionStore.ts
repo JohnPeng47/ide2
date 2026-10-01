@@ -1,4 +1,4 @@
-import type { DiagramService } from '../../../domain/core/diagrams/diagramService';
+import { DiagramPersistence } from '../../../domain/core/diagrams/diagramPersistence';
 import type { ChangeSessionWriteScope, DiagramChangeSessionRepository } from '../../../application/mapping/changes/ports';
 import { summarizeChangeSession, type ChangeSessionSummary, type ChangeSessionPreview, type DiagramChangeSession } from '../../../domain/mapping/changes/diagramChangeSession';
 import { ChangeSessionRecords, type SessionWrite } from './changeSessionRecords';
@@ -8,7 +8,7 @@ import { changeSessionWorker } from './changeSessionWorker';
 export class DiagramChangeSessionStore implements DiagramChangeSessionRepository {
   private readonly records: ChangeSessionRecords;
   private readonly tokens = new WeakMap<DiagramChangeSession, string>();
-  constructor(private readonly root: string, diagrams?: DiagramService, private readonly background = false) {
+  constructor(private readonly root: string, diagrams?: DiagramPersistence, private readonly background = false) {
     this.records = new ChangeSessionRecords(root, diagrams);
   }
   listSummaries(projectId: string) { return this.records.listSummaries(projectId, id => this.readSummary(projectId, id)); }

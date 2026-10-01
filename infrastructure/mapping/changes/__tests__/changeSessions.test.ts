@@ -1,3 +1,4 @@
+import { canvasSaveFixture } from '../../../../tests/support/mappingDiagram';
 import { mkdtemp, rm, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -10,7 +11,7 @@ import { ProjectCatalogStore } from '../../../core/persistence/projectCatalogSto
 import type { CanvasSessionPort } from '../../../../application/mapping/agent/ports';
 import type { DiagramRepository } from '../../../../application/core/ports/diagramRepository';
 import type { MappingDiagramService } from '../../../../application/mapping/diagrams/diagramService';
-import { createDiagram } from '../../../../domain/core/diagrams/diagram';
+import { RevisionedDiagramService } from '../../../../domain/core/diagrams/diagramService';
 import { diagramContentNodes } from '../../../../domain/core/diagrams/diagramContentNodes';
 import { singleDiagramScene } from '../../../../domain/core/diagrams/projectDiagramCanvas';
 import { diffChangeDocument } from '../../../../domain/mapping/changes/changeDocumentDiff';
@@ -20,8 +21,8 @@ it('recomputes inferred correspondence after cumulative patches, undo, redo and 
   const root = await mkdtemp(path.join(tmpdir(), 'change-session-matching-'));
   try {
     const catalog = new ProjectCatalogStore(root), scene = singleDiagramScene(floatingBefore);
-    scene.contents = { ...scene.contents, overview: createDiagram({ id: 'overview', revision: 0, ascii: floatingBefore, structureKind: 'tree' }) };
-    const saved = await catalog.saveMappingDiagram('project', { name: 'Floating', scene });
+    scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii: floatingBefore, structureKind: 'tree' }).diagram };
+    const saved = await catalog.saveMappingDiagram('project', canvasSaveFixture({ name: 'Floating', scene }));
     const source = { loadProject: async () => ({ id: 'project' }), projectCatalogs: catalog } as unknown as DiagramRepository;
     const bridge: CanvasSessionPort = { register() {}, list: () => [], poll: async () => [], reply() {}, unregister() {}, dispose() {}, dispatch: async () => { throw Error('Touched live bridge'); } };
     const changes = new ChangeSessionService(new DiagramChangeSessionStore(root), source, bridge);
@@ -65,8 +66,8 @@ it('isolates shared MCP operations, persists sessions and history, rejects bad r
   const root = await mkdtemp(path.join(tmpdir(),'change-sessions-'));
   try {
     const catalog = new ProjectCatalogStore(root), scene = singleDiagramScene('Root\n|-- Old\n`-- Keep');
-    scene.contents = { ...scene.contents, overview: createDiagram({id:'overview',revision:0,ascii:scene.contents.overview.content.ascii,structureKind:'tree'}) };
-    const saved = await catalog.saveMappingDiagram('project',{name:'Original',scene});
+    scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({id:'overview',revision:0,ascii:scene.contents.overview.content.ascii,structureKind:'tree'}).diagram };
+    const saved = await catalog.saveMappingDiagram('project',canvasSaveFixture({name:'Original',scene}));
     const store = { loadProject: async()=>({id:'project'}), projectCatalogs:catalog } as unknown as DiagramRepository;
     const bridge: CanvasSessionPort = {register(){},list:()=>[],poll:async()=>[],reply(){},unregister(){},dispose(){},dispatch:async()=>{throw Error('Touched live bridge');}};
     const repository = new DiagramChangeSessionStore(root);
@@ -126,7 +127,7 @@ it('persists mappings-only MCP proposals, preserves their baseline, and validate
   const root = await mkdtemp(path.join(tmpdir(), 'mapping-proposal-'));
   try {
     const catalog = new ProjectCatalogStore(root), scene = singleDiagramScene('Root');
-    const saved = await catalog.saveMappingDiagram('project', {name:'Original',scene});
+    const saved = await catalog.saveMappingDiagram('project', canvasSaveFixture({name:'Original',scene}));
     const store = {loadProject:async()=>({id:'project'}),projectCatalogs:catalog} as unknown as DiagramRepository;
     const bridge: CanvasSessionPort = {register(){},list:()=>[],poll:async()=>[],reply(){},unregister(){},dispose(){},dispatch:async()=>{throw Error('Touched live bridge');}};
     const changes = new ChangeSessionService(new DiagramChangeSessionStore(root),store,bridge);

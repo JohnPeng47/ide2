@@ -1,3 +1,4 @@
+import type { CanvasHistoryService } from '../../../../domain/core/diagrams/canvasHistoryService';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 
 import { MappingDocumentController, type ControllerSnapshot } from '../../../../domain/mapping/workspace/mappingDocumentController';
@@ -43,9 +44,9 @@ export class CanvasSession {
   private unsubscribe: () => void;
   private commitListeners = new Set<() => void>();
 
-  constructor(input: SavedDocumentState & { document: MappingGridDocument; canvas: MappingCanvasState; history?: CanvasHistoryRecord }, diagrams?: DiagramService) {
+  constructor(input: SavedDocumentState & { document: MappingGridDocument; canvas: MappingCanvasState; history?: CanvasHistoryRecord }, diagrams?: DiagramService, history?: CanvasHistoryService) {
     this.baseline = { name: input.name, savedName: input.savedName, savedScene: input.savedScene, savedEdges: input.savedEdges };
-    this.controller = new MappingDocumentController(input.document, input.canvas, 0, undefined, {}, input.history, diagrams);
+    this.controller = new MappingDocumentController(input.document, input.canvas, 0, undefined, {}, input.history, diagrams, history);
     const snapshot = this.controller.getSnapshot();
     this.scene = snapshot.document.scene; this.edges = snapshot.document.edges;
     this.sceneKey = stateKey(this.scene); this.edgesKey = stateKey(this.edges);

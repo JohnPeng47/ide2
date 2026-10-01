@@ -1,3 +1,4 @@
+import { useMappingServices } from '../services/MappingServices';
 import { useStore } from 'zustand';
 import type { CanvasSession } from '../workspace/canvasSession';
 import { SelectionPreviewOverlay } from './SelectionPreviewOverlay';
@@ -711,6 +712,7 @@ export function MappingPocSelectionCanvas(props: {
     }
   };
 
+  const { diagrams: diagramService } = useMappingServices();
   const generateAt = async (start: ScenePoint, end: ScenePoint) => {
     const owner = operationOwnerRef.current;
     if (!diagramPlacement || !selectionRect) return;
@@ -726,18 +728,17 @@ export function MappingPocSelectionCanvas(props: {
     updateSurface(owner, { statusMessage: "generating sub-diagram…" });
     const expectedVersion = controller.getSnapshot().version;
     try {
-      const result = await promptMappingPocSelection({
-        ...props.projectContext, contentId: content.id, sourceContext: content.sourceContext,
-        clientSessionId: `${clientSessionId}-${crypto.randomUUID()}`, operation: "generate",
-        diagramAscii: ascii, diagramRevision, mappings: [...diagramSource(content).mappings()], selection: selectionRect,
-        instruction: `${diagramPlacement}\nAim for ${minimumSize.columns} columns by ${minimumSize.rows} rows; the canvas can grow if needed.`
-      }, message => updateSurface(owner, { statusMessage: message }));
       const id = `diagram-${crypto.randomUUID()}`;
-      controller.applyUpdate(expectedVersion, [{ method: 'diagram-create', id, parentId: `grid:${targetParent.box.id}`,
-        minimumSize, position: { column: column - targetParent.bounds.column, row: row - targetParent.bounds.row },
-        ascii: result.diagramAscii, mappings: result.mappings ?? [], source: content.sourceContext.binding, evidence: content.sourceContext.evidence }]);
-      if (operationOwnerRef.current === owner) { clearSelection(); setActiveBoxId(id); }
+      const result = await diagramService.generate({ input: { id },
+        context: { ...props.projectContext, diagram: content, selection: selectionRect },
+        instruction: `${diagramPlacement}\nAim for ${minimumSize.columns} columns by ${minimumSize.rows} rows; the canvas can grow if needed.`
+      }, { onProgress: message => updateSurface(owner, { statusMessage: message }) });
+      // Generation has finished before the canvas checkpoint is captured.
       updateSurface(owner, { promptPhase: "applied", promptOpen: false, statusMessage: "Sub-diagram generated; layout updated" });
+      controller.applyUpdate(expectedVersion, [{ method: 'diagram-insert', id, revisionId: result.revision.id,
+        parentId: `grid:${targetParent.box.id}`, minimumSize,
+        position: { column: column - targetParent.bounds.column, row: row - targetParent.bounds.row } }]);
+      if (operationOwnerRef.current === owner) { clearSelection(); setActiveBoxId(id); }
       if (operationOwnerRef.current === 'draft') setStatusMessage("Sub-diagram generated; layout updated");
     } catch (error) {
       updateSurface(owner, { promptPhase: "error" });

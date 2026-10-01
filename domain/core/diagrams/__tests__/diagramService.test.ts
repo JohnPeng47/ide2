@@ -1,3 +1,4 @@
+import { DefaultCanvasHistoryService } from '../canvasHistoryService';
 import { expect, it, vi } from 'vitest';
 import { RevisionedDiagramService } from '../diagramService';
 import { singleDiagramScene } from '../projectDiagramCanvas';
@@ -8,9 +9,10 @@ import { initialCanvasState } from '../../../mapping/workspace/mappingWorkspace'
 
 it('injects one service into independent canvases with the same local diagram IDs', () => {
   const service = new RevisionedDiagramService();
-  const open = vi.spyOn(service, 'openContext'), edits = vi.spyOn(service, 'prepareEdit');
+  const histories = new DefaultCanvasHistoryService();
+  const open = vi.spyOn(histories, 'openContext'), edits = vi.spyOn(service, 'revise');
   const controller = (ascii: string) => new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene(ascii)),
-    initialCanvasState(), 0, undefined, undefined, undefined, service);
+    initialCanvasState(), 0, undefined, undefined, undefined, service, histories);
   const first = controller('First'), second = controller('Second');
   expect(open).toHaveBeenCalledTimes(2);
   first.applyUpdate(0, [{ method: 'replace', nodeId: 'grid:overview', ascii: 'Changed' }]);
@@ -42,11 +44,11 @@ it('isolates restored viewers of the same context and stages batches without pub
 });
 
 it('adopts a proposal as one checkpoint without aliasing its records or rewriting diagram revisions', () => {
-  const service = new RevisionedDiagramService(), view = initialCanvasState();
+  const service = new DefaultCanvasHistoryService(), view = initialCanvasState();
   const document = mappingDocumentFromScene(singleDiagramScene('Original'));
   const original = service.openContext(document, view);
   const fork = service.forkContext(original, view);
-  const proposal = new MappingDocumentController(document, view, 0, undefined, undefined, fork, service);
+  const proposal = new MappingDocumentController(document, view, 0, undefined, undefined, fork);
   proposal.applyUpdate(0, [{ method: 'replace', nodeId: 'grid:overview', ascii: 'Accepted' }]);
   const proposed = proposal.exportHistory(), bindings = proposed.snapshots[proposed.headId].diagramBindings;
   const before = service.exportContext(original);
@@ -55,7 +57,7 @@ it('adopts a proposal as one checkpoint without aliasing its records or rewritin
   expect(after.contextId).toBe(before.contextId);
   expect(after.snapshots[after.headId].parentId).toBe(before.headId);
   expect(after.snapshots[after.headId].diagramBindings).toEqual(bindings);
-  proposed.diagramRevisions[bindings.overview].diagram.content.ascii = 'Mutated caller data';
+  (proposed.diagramRevisions[bindings.overview].diagram.content as { ascii: string }).ascii = 'Mutated caller data';
   expect(service.resolve(original, 'overview').ascii).toBe('Accepted');
   service.navigate(original);
   expect(service.resolve(original, 'overview').ascii).toBe('Original');

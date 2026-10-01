@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { createDiagram } from '../../../core/diagrams/diagram';
+import { RevisionedDiagramService } from '../../../core/diagrams/diagramService';
 import { diagramContentNodes } from '../../../core/diagrams/diagramContentNodes';
 import { activeDiagramJumps } from '../../../core/diagrams/diagramJump';
 import { patchDiagram } from '../../../core/diagrams/patchDiagram';
@@ -10,7 +10,7 @@ import { initialCanvasState } from '../mappingWorkspace';
 import { defaultArrowAppearance } from '../../../core/diagrams/diagramConnection';
 
 it('patches inclusive lines, preserves whitespace, deletes ranges and rejects invalid input', () => {
-  const d = createDiagram({ id: 'x', revision: 0, ascii: 'Root\n|-- A  \n`-- B\n', structureKind: 'tree' });
+  const d = new RevisionedDiagramService().create({ id: 'x', revision: 0, ascii: 'Root\n|-- A  \n`-- B\n', structureKind: 'tree' }).diagram;
   expect(patchDiagram(d, 2, 2, '|-- X\r\n|-- Y').diagram.content.ascii).toBe('Root\n|-- X\n|-- Y\n`-- B\n');
   expect(patchDiagram(d, 2, 2, '').diagram.content.ascii).toBe('Root\n`-- B\n');
   expect(patchDiagram(d, 2, 2, '|-- A  ').diagram).toBe(d);
@@ -21,14 +21,14 @@ it('patches inclusive lines, preserves whitespace, deletes ranges and rejects in
 
 it('shifts untouched mappings, jumps and repeated-instance anchors; keeps edited anchors stale; undo restores everything', () => {
   const scene = singleDiagramScene('Root\n|-- Old\n`-- Keep');
-  scene.contents = { ...scene.contents, overview: createDiagram({ id: 'overview', revision: 0, ascii: scene.contents.overview.content.ascii, structureKind: 'tree',
+  scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii: scene.contents.overview.content.ascii, structureKind: 'tree',
     evidence: { e: { id:'e', handle:'e', label:'Evidence', category:'operation', summary:'', sourceRanges:[{id:'r',path:'x.ts',startLine:1,endLine:1,originalLines:['x']}] } },
-    mappings: [{id:'old',entityId:'e',sourceRangeIndex:0,line:2,startColumn:5,endColumn:7},{id:'keep',entityId:'e',sourceRangeIndex:0,line:3,startColumn:5,endColumn:8}] }) };
+    mappings: [{id:'old',entityId:'e',sourceRangeIndex:0,line:2,startColumn:5,endColumn:7},{id:'keep',entityId:'e',sourceRangeIndex:0,line:3,startColumn:5,endColumn:8}] }).diagram };
   if (scene.root.kind !== 'container') throw Error();
   scene.root.children = [...scene.root.children, { ...scene.root.children[0], id:'second',position:{column:30,row:1} }];
   const beforeContent = scene.contents.overview.content;
   const anchor = (line:number, box='overview') => ({kind:'content-node' as const, displayNodeId:`grid:${box}`, contentNodeId:diagramContentNodes(beforeContent).find(n=>n.line===line)!.id,revisionId:beforeContent.revisionId,side:'right' as const});
-  scene.contents.overview.jumps = [2,3].map(line => ({id:`jump${line}`,source:{revisionId:beforeContent.revisionId,contentHash:beforeContent.asciiSha256,line,startColumn:5,endColumn:line===2?7:8},target:{representationId:'target'}}));
+  scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().revise(scene.contents.overview.revisionId, { kind: 'jumps', jumps: [2,3].map(line => ({id:`jump${line}`,source:{revisionId:beforeContent.revisionId,contentHash:beforeContent.asciiSha256,line,startColumn:5,endColumn:line===2?7:8},target:{representationId:'target'}})) }).diagram };
   const edges = [{id:'keep',source:anchor(3),target:anchor(3,'second'),appearance:defaultArrowAppearance}, {id:'old',source:anchor(2),target:{kind:'box' as const, displayNodeId:'grid:second',side:'left' as const},appearance:defaultArrowAppearance}];
   const c = new MappingDocumentController(mappingDocumentFromScene(scene,edges), initialCanvasState());
   const before = structuredClone(c.getSnapshot());

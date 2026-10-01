@@ -1,3 +1,4 @@
+import type { DeepReadonly } from '../immutability';
 import { validateDiagramJumps, type DiagramJump } from './diagramJump';
 import { buildDiagramContent, type DiagramContent } from './diagramContent';
 import { validateDiagramLocalMappings } from './diagramMappings';
@@ -13,35 +14,29 @@ export interface DiagramSourceBinding {
   corpus: CorpusBinding;
   domainProfileId: BuiltInDomainProfileId;
 }
-export interface DiagramSourceContext {
+export type DiagramSourceContext = DeepReadonly<{
   binding?: DiagramSourceBinding;
   contentHash: string;
   mappings: readonly DiagramElementMapping[];
   evidence: Record<string, ProjectRepresentationEvidenceRecord>;
-}
+}>;
 /** Repository-independent diagram, shared by canvas, persistence, and agents. */
 export interface Diagram {
-  id: string;
-  revision: number;
-  content: DiagramContent;
-  sourceContext: DiagramSourceContext;
-  jumps?: readonly DiagramJump[];
+  /** Stable service identity; id remains the local canvas content key. */
+  readonly diagramId: string;
+  readonly revisionId: string;
+  readonly id: string;
+  readonly revision: number;
+  readonly content: DeepReadonly<DiagramContent>;
+  readonly sourceContext: DeepReadonly<DiagramSourceContext>;
+  readonly jumps?: DeepReadonly<DiagramJump[]>;
 }
 export interface DiagramInput {
   id: string; revision: number; ascii: string; structureKind?: 'diagram' | 'tree';
   mappings?: readonly DiagramElementMapping[];
-  evidence?: Record<string, ProjectRepresentationEvidenceRecord>;
+  evidence?: DiagramSourceContext['evidence'];
   source?: DiagramSourceBinding;
   jumps?: readonly DiagramJump[];
-}
-export function createDiagram(input: DiagramInput): Diagram {
-  const content = buildDiagramContent(input.ascii, `${input.id}:${input.revision}`, input.structureKind ?? 'diagram');
-  const diagram: Diagram = { id: input.id, revision: input.revision, content,
-    ...(input.jumps ? { jumps: structuredClone(input.jumps) } : {}),
-    sourceContext: { ...(input.source ? { binding: structuredClone(input.source) } : {}), contentHash: content.asciiSha256,
-      mappings: structuredClone(input.mappings ?? []), evidence: structuredClone(input.evidence ?? {}) } };
-  validateDiagram(diagram);
-  return diagram;
 }
 export function validateSourceBinding(binding: DiagramSourceBinding): void {
   if (!binding || typeof binding.sourceId !== 'string' || !binding.sourceId || binding.sourceId.length > 200
@@ -52,7 +47,9 @@ export function validateSourceBinding(binding: DiagramSourceBinding): void {
     || (binding.domainProfileId === 'source-code') !== (binding.corpus.kind === 'git-worktree')) throw new Error('Invalid diagram source binding');
 }
 export function validateDiagram(diagram: Diagram): void {
-  if (!diagram || typeof diagram.id !== 'string' || !diagram.id || !Number.isInteger(diagram.revision) || diagram.revision < 0 || !diagram.content) throw new Error('Invalid diagram');
+  if (diagram?.content && (!diagram.diagramId || !diagram.revisionId))
+    throw new Error('Diagram storage migration required: saved diagrams lack service identities. Run the offline diagram identity migration before loading this store.');
+  if (!diagram || typeof diagram.diagramId !== 'string' || !diagram.diagramId.startsWith('diagram-') || typeof diagram.revisionId !== 'string' || !diagram.revisionId.startsWith('diagram-revision-') || typeof diagram.id !== 'string' || !diagram.id || !Number.isInteger(diagram.revision) || diagram.revision < 0 || !diagram.content) throw new Error('Invalid diagram');
   if (['ascii','mappings','diagramContent','structureKind'].some(key => Object.hasOwn(diagram,key))) throw new Error('Diagram data must live in content and sourceContext');
   const { content, sourceContext: source } = diagram;
   const canonical = buildDiagramContent(content.ascii, `${diagram.id}:${diagram.revision}`, content.structure.kind, content.structure.kind === 'tree' ? content.structure.parserVersion : undefined);
@@ -67,7 +64,7 @@ export function validateDiagram(diagram: Diagram): void {
     for (const range of entry.sourceRanges) {
       if (!range || typeof range.id !== 'string' || typeof range.path !== 'string' || range.path.startsWith('/') || range.path.split(/[\\/]/).includes('..')
         || !Number.isInteger(range.startLine) || range.startLine < 1 || !Number.isInteger(range.endLine) || range.endLine < range.startLine
-        || !Array.isArray(range.originalLines) || range.originalLines.length !== range.endLine - range.startLine + 1 || range.originalLines.some(line => typeof line !== 'string')) throw new Error('Invalid diagram evidence range');
+        || !Array.isArray(range.originalLines) || range.originalLines.length !== range.endLine - range.startLine + 1 || range.originalLines.some((line: unknown) => typeof line !== 'string')) throw new Error('Invalid diagram evidence range');
     }
   }
   for (const mapping of source.mappings) {

@@ -1,4 +1,4 @@
-import { createDiagram } from '../../../../domain/core/diagrams/diagram';
+import { RevisionedDiagramService } from '../../../../domain/core/diagrams/diagramService';
 import { measureContent, type GridPoint } from '../../../../domain/core/diagrams/lineGrid';
 import { insertGridDiagram, type MappingGridDocument } from '../../../../domain/mapping/workspace/mappingGrid';
 
@@ -16,5 +16,5 @@ export function pasteGridDiagram(document: MappingGridDocument, point: GridPoint
   const ascii = normalizePastedDiagram(text);
   return insertGridDiagram(document, document.scene.root.id, {
     id, kind: 'diagram', contentId: id, collapsed: false, position: point
-  }, createDiagram({ id, revision: 0, ascii }));
+  }, new RevisionedDiagramService().create({ id, revision: 0, ascii }).diagram);
 }

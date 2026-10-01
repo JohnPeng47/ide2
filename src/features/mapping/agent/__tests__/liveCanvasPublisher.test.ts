@@ -8,7 +8,7 @@ import { selectionClipboardText } from '../../../../../domain/mapping/workspace/
 
 afterEach(() => vi.useRealTimers());
 it('preserves padding, blank lines and deduplicated references in the shared copy payload', () => {
-  const diagram = new RevisionedDiagramService().prepareCreate({ id: 'test', revision: 0, ascii: ' AB\n\nEnd', evidence: {
+  const diagram = new RevisionedDiagramService().create({ id: 'test', revision: 0, ascii: ' AB\n\nEnd', evidence: {
     source: { id: 'source', handle: 'source', label: 'Example', category: 'operation', summary: 'Example',
       sourceRanges: [{ id: 'range', path: 'file.ts', startLine: 4, endLine: 6, originalLines: ['a', 'b', 'c'] }] }
   }, mappings: ['a', 'b'].map((id, i) => ({ id, entityId: 'source', sourceRangeIndex: 0, line: 1, startColumn: i + 2, endColumn: i + 2 })) }).diagram;

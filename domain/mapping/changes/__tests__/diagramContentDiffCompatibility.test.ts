@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import { buildDiagramContent, type DiagramContent } from '../../../core/diagrams/diagramContent';
 import { diagramContentNodes } from '../../../core/diagrams/diagramContentNodes';
-import { createDiagram } from '../../../core/diagrams/diagram';
+import { RevisionedDiagramService } from '../../../core/diagrams/diagramService';
 import { patchDiagram } from '../../../core/diagrams/patchDiagram';
 import { diffDiagramContent } from '../diagramContentDiff';
 
@@ -130,7 +130,7 @@ it('keeps one-character and last-character label edits inside inclusive source b
 });
 
 it('does not mutate content/provenance after a broad patch or depend on patch history for unique nodes', () => {
-  const a = createDiagram({ id: 'test', revision: 0, ascii: 'Root\n|-- Before\n|   `-- Leaf\n`-- Keep', structureKind: 'tree' });
+  const a = new RevisionedDiagramService().create({ id: 'test', revision: 0, ascii: 'Root\n|-- Before\n|   `-- Leaf\n`-- Keep', structureKind: 'tree' }).diagram;
   const text = 'Root\n|-- Wrapper\n|   `-- After\n|       `-- Leaf\n`-- Keep';
   const patched = patchDiagram(a, 1, 4, text);
   const origins = Object.fromEntries([...patched.nodeIds].map(([old, next]) => [next, old]));
@@ -148,7 +148,7 @@ it.each(['', '   ', 'Root\tChild', 'Root\r\nChild', 'Root\n\u2514-- Child', '\x1
 });
 
 it('normalizes patch newlines while retaining trailing blank lines and rejecting invalid ranges', () => {
-  const original = createDiagram({ id: 'd', revision: 0, ascii: 'Root\n`-- Old', structureKind: 'tree' });
+  const original = new RevisionedDiagramService().create({ id: 'd', revision: 0, ascii: 'Root\n`-- Old', structureKind: 'tree' }).diagram;
   const next = patchDiagram(original, 2, 2, '|-- New\r\n`-- Added\r').diagram.content;
   expect(next.ascii).toBe('Root\n|-- New\n`-- Added\n');
   expect(() => patchDiagram(original, 0, 1, 'X')).toThrow();

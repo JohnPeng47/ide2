@@ -1,4 +1,5 @@
-import { createDiagram, diagramSource, validateDiagram, type Diagram, type DiagramSourceBinding } from '../../../domain/core/diagrams/diagram';
+import { diagramSource, validateDiagram, type Diagram, type DiagramSourceBinding } from '../../../domain/core/diagrams/diagram';
+import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService';
 import { sceneFromRevision } from '../../../domain/core/diagrams/projectDiagramCanvas';
 import type { CorpusAccess } from '../corpus/corpusAccess';
 import { ApplicationError } from '../errors';
@@ -37,7 +38,7 @@ export async function resolveDiagramSource(store: Pick<DiagramRepository,'loadPr
       if (binding && (!ref.sourceId || binding.sourceId === ref.sourceId)) register(binding);
     }
     if (bindings.size !== 1) throw new Error('A valid diagram sourceId is required; the project has no single repository');
-    diagram = createDiagram({id:'source-query',revision:0,ascii:'Source',source:[...bindings.values()][0]});
+    diagram = new RevisionedDiagramService().create({id:'source-query',revision:0,ascii:'Source',source:[...bindings.values()][0]}).diagram;
   }
   if (ref.sourceId && diagram.sourceContext.binding?.sourceId !== ref.sourceId) throw new Error('Source does not belong to diagram');
   const query = diagramSource(diagram);

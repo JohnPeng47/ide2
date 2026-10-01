@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { CanvasHistory, documentFromHistory } from '../canvasHistory';
-import { createDiagram } from '../diagram';
+import { RevisionedDiagramService } from '../diagramService';
 import { diagramContentNodes } from '../diagramContentNodes';
 import { defaultArrowAppearance, type ContentNodeAnchor } from '../diagramConnection';
 import { emptyCanvasDocument, prepareCanvasTransfer, prepareTransferNavigation } from '../canvasTransfer';
@@ -11,7 +11,7 @@ import { diagramSceneText } from '../../../mapping/workspace/diagramSceneText';
 
 function setup() {
   const document = emptyCanvasDocument();
-  document.scene.contents = { shared: createDiagram({ id: 'shared', revision: 0, ascii: 'Root\n|-- Branch\n`-- Tail', structureKind: 'tree' }) };
+  document.scene.contents = { shared: new RevisionedDiagramService().create({ id: 'shared', revision: 0, ascii: 'Root\n|-- Branch\n`-- Tail', structureKind: 'tree' }).diagram };
   if (document.scene.root.kind !== 'container') throw Error();
   document.scene.root.children = ['a', 'b', 'c'].map((id, i) => ({ id, kind: 'diagram', contentId: 'shared', collapsed: false, position: { column: i * 24, row: i } }));
   const content = document.scene.contents.shared.content;
@@ -102,7 +102,7 @@ it('rebases copied source jumps, internal targets and edge anchors to independen
   const link = { id: 'local', source: { revisionId: diagram.content.revisionId, contentHash: diagram.content.asciiSha256,
     line: node.line, startColumn: node.startColumn, endColumn: node.endColumn, contentNodeId: node.id },
     target: { representationId: 'source', displayNodeId: 'grid:a', contentNodeId: node.id } };
-  diagram.jumps = [link];
+  document.scene.contents = { ...document.scene.contents, shared: new RevisionedDiagramService().revise(diagram.revisionId, { kind: 'jumps', jumps: [link] }).diagram };
   document.jumps = [{ ...link, id: 'placement', sourceDisplayNodeId: 'grid:b' }];
   const original = new CanvasHistory(document, initialCanvasState()).export();
   const p = prepareCanvasTransfer(original, { ...input, mode: 'copy', selectedIds: ['grid:a', 'grid:b'] });
@@ -118,7 +118,7 @@ it('rebases copied source jumps, internal targets and edge anchors to independen
 it.each(['copy','move'] as const)('%s appends to an existing canvas without moving its diagrams and restores both histories', mode => {
   const { history, input } = setup();
   const existing = emptyCanvasDocument();
-  existing.scene.contents = { shared: createDiagram({ id: 'shared', revision: 0, ascii: 'Existing\n`-- Keep', structureKind: 'tree' }) };
+  existing.scene.contents = { shared: new RevisionedDiagramService().create({ id: 'shared', revision: 0, ascii: 'Existing\n`-- Keep', structureKind: 'tree' }).diagram };
   if (existing.scene.root.kind !== 'container') throw Error();
   // Both placement and content IDs collide with the incoming group.
   existing.scene.root.children = [{ id: 'a', kind: 'diagram', contentId: 'shared', collapsed: false, position: { column: 60, row: 8 } }];
@@ -144,7 +144,7 @@ it.each(['copy','move'] as const)('%s appends to an existing canvas without movi
 it('preserves an existing diagram root and its absolute position when adding incoming diagrams', () => {
   const { history, input } = setup();
   const existing = emptyCanvasDocument();
-  existing.scene.contents = { single: createDiagram({ id: 'single', revision: 0, ascii: 'Single' }) };
+  existing.scene.contents = { single: new RevisionedDiagramService().create({ id: 'single', revision: 0, ascii: 'Single' }).diagram };
   existing.scene.root = { id: 'single', kind: 'diagram', contentId: 'single', collapsed: false, position: { column: 20, row: 4 } };
   const destination = new CanvasHistory(existing, initialCanvasState()).export();
   const p = prepareCanvasTransfer(history, { ...input, mode: 'copy' }, destination);

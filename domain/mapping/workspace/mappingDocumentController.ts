@@ -1,6 +1,9 @@
+import { receiveDiagramRevision } from '../../core/diagrams/diagramRevisionTransfer';
+import type { DiagramRevision } from '../../core/diagrams/diagramRevisionEditor';
+import { DefaultCanvasHistoryService, type CanvasHistoryService, type CanvasEditingContext } from '../../core/diagrams/canvasHistoryService';
 import { equalEndpointBounds, type EndpointBounds } from './endpointGeometry';
 import type { CanvasHistoryRecord } from './canvasHistory';
-import { RevisionedDiagramService, type DiagramService, type DiagramEditingContext, type DiagramEdit } from '../../core/diagrams/diagramService';
+import { RevisionedDiagramService, type DiagramService, type DiagramEdit } from '../../core/diagrams/diagramService';
 import { connectionBox, type DiagramAnchor } from '../../core/diagrams/diagramConnection';
 import { activeDiagramJumps, rebaseDiagramJumps, type DiagramJump } from '../../core/diagrams/diagramJump';
 import { normalizeDiagramViews, resolveDiagramContent, projectDiagramContent } from './diagramViewState';
@@ -20,12 +23,14 @@ import { diagramConnectionSchema, reconcileConnections, validateConnectionAnchor
 
 export interface ControllerSnapshot { contextId: string; canvasRevisionId: string; endpointBounds?: EndpointBounds; document: MappingGridDocument; canvas: MappingCanvasState; version: number; canUndo: boolean; canRedo: boolean; cell?: { width: number; height: number } }
 export type DiagramOperation =
+  | { method: 'diagram-revision-apply'; nodeId: string; expectedRevisionId: string; revision: DiagramRevision }
   | { method: 'setSourceMappings'; nodeId: string; expectedContentHash: string; mappings: DiagramElementMapping[]; evidence: Record<string, ProjectRepresentationEvidenceRecord>; source?: DiagramSourceBinding }
   | { method: 'patchDiagram'; nodeId: string; start: number; end: number; patch: string; mappings?: DiagramElementMapping[] }
   | { method: 'setJumps'; nodeId: string; jumps: DiagramJump[] }
   | { method: 'edge-create'; edge: DiagramConnection }
   | { method: 'edge-update'; edge: DiagramConnection }
   | { method: 'edge-remove'; edgeId: string }
+  | { method: 'diagram-insert'; id: string; revisionId: string; parentId?: string; position?: GridPoint; minimumSize?: { columns: number; rows: number } }
   | { method: 'diagram-create'; id: string; ascii: string; structureKind?: 'diagram' | 'tree'; source?: DiagramSourceBinding; parentId?: string; position?: GridPoint; minimumSize?: { columns: number; rows: number }; mappings?: DiagramElementMapping[]; evidence?: Record<string, ProjectRepresentationEvidenceRecord> }
   | { method: 'replace'; nodeId: string; ascii: string; structureKind?: 'diagram' | 'tree'; source?: DiagramSourceBinding; mappings?: DiagramElementMapping[]; evidence?: Record<string, ProjectRepresentationEvidenceRecord> }
   | { method: 'move'; nodeId: string; position: GridPoint | { x: number; y: number } }
@@ -33,8 +38,10 @@ export type DiagramOperation =
   | { method: 'group'; nodeId: string; id: string }
   | { method: 'remove'; nodeId: string };
 type State = Pick<ControllerSnapshot, 'document' | 'canvas'>;
+const defaultHistoryService = new DefaultCanvasHistoryService();
+
 export class MappingDocumentController {
-  private readonly context: DiagramEditingContext;
+  private readonly context: CanvasEditingContext;
   private pendingNodeIds = new Map<string, string>();
   private listeners = new Set<() => void>();
   private snapshot: ControllerSnapshot;
@@ -61,35 +68,35 @@ export class MappingDocumentController {
     for (const node of Object.values(display.nodes)) if (node.kind === 'conversation') display = layoutConversationPane(display, node, this.layout.viewport);
     return display === state.canvas.display ? state : { ...state, canvas: { ...state.canvas, display } };
   }
-  constructor(document: MappingGridDocument, canvas: MappingCanvasState, version = 0, cell?: ControllerSnapshot['cell'], endpointBounds?: EndpointBounds, history?: CanvasHistoryRecord, private readonly diagrams: DiagramService = new RevisionedDiagramService()) {
+  constructor(document: MappingGridDocument, canvas: MappingCanvasState, version = 0, cell?: ControllerSnapshot['cell'], endpointBounds?: EndpointBounds, history?: CanvasHistoryRecord, private readonly diagrams: DiagramService = new RevisionedDiagramService(), private readonly historyService: CanvasHistoryService = defaultHistoryService) {
     const normalized = history && structuredClone(history);
     if (normalized) for (const snapshot of Object.values(normalized.snapshots)) {
       if (!snapshot.view || typeof snapshot.view !== 'object' || !('display' in snapshot.view)) snapshot.view = structuredClone(canvas);
     }
-    this.context = diagrams.openContext(document, canvas, normalized);
-    const historyState = diagrams.state(this.context);
-    this.snapshot = { contextId: this.context.contextId, canvasRevisionId: historyState.checkpointId, document: { ...structuredClone(document), edges: validateConnections(document.scene, document.edges) }, canvas, version, canUndo: historyState.canUndo, canRedo: historyState.canRedo, cell, endpointBounds };
+    this.context = this.historyService.openContext(document, canvas, normalized);
+    const historyState = this.historyService.state(this.context);
+    this.snapshot = { contextId: this.context.contextId, canvasRevisionId: historyState.checkpointId, document: this.historyService.document(this.context), canvas, version, canUndo: historyState.canUndo, canRedo: historyState.canRedo, cell, endpointBounds };
   }
   getSnapshot = () => this.snapshot;
   prepareTransfer(input: import('../../core/diagrams/canvasTransfer').TransferInput, destination?: MappingDocumentController) {
-    return this.diagrams.prepareTransfer(this.context, input, destination?.context);
+    return this.historyService.prepareTransfer(this.context, input, destination?.context);
   }
   transferBoundary(transaction: import('../../core/diagrams/canvasTransfer').CanvasTransfer, canvasId: string, redo = false) {
-    return this.diagrams.transferBoundary(this.context, transaction, canvasId, redo);
+    return this.historyService.transferBoundary(this.context, transaction, canvasId, redo);
   }
   prepareTransferNavigation(destination: MappingDocumentController, transaction: import('../../core/diagrams/canvasTransfer').CanvasTransfer, redo = false) {
-    return this.diagrams.prepareTransferNavigation(this.context, destination.context, transaction, redo);
+    return this.historyService.prepareTransferNavigation(this.context, destination.context, transaction, redo);
   }
   /** Canonical persistence boundary. Legacy document snapshots are read projections. */
-  persistenceChanges(since?: number) { return this.diagrams.persistenceChanges(this.context, since); }
-  retireTransactions(ids: ReadonlySet<string>) { this.diagrams.retireTransactions(this.context, ids); }
-  exportHistory() { return this.diagrams.exportContext(this.context); }
-  forkHistory() { return this.diagrams.forkContext(this.context, this.snapshot.canvas); }
-  resolveDiagram(diagramId: string) { return this.diagrams.resolve(this.context, diagramId); }
-  getCanvasSnapshot() { return this.diagrams.state(this.context).document; }
+  persistenceChanges(since?: number) { return this.historyService.persistenceChanges(this.context, since); }
+  retireTransactions(ids: ReadonlySet<string>) { this.historyService.retireTransactions(this.context, ids); }
+  exportHistory() { return this.historyService.exportContext(this.context); }
+  forkHistory(view = this.snapshot.canvas) { return this.historyService.forkContext(this.context, view); }
+  resolveDiagram(diagramId: string) { return this.historyService.resolve(this.context, diagramId); }
+  getCanvasSnapshot() { return this.historyService.state(this.context).document; }
   private prepareDiagramEdit(document: MappingGridDocument, diagramId: string, edit: DiagramEdit) {
     // MCP batches see preceding staged operations without advancing the live head.
-    return this.diagrams.prepareEdit(document, diagramId, edit);
+    return this.diagrams.revise(document.scene.contents[diagramId].revisionId, edit);
   }
   private trackNodes(ids: ReadonlyMap<string, string>) {
     for (const [original, current] of this.pendingNodeIds) if (ids.has(current)) this.pendingNodeIds.set(original, ids.get(current)!);
@@ -118,14 +125,17 @@ export class MappingDocumentController {
     if (diagramViews !== next.canvas.diagramViews) next = { ...next, canvas: { ...next.canvas, diagramViews } };
     next = this.resolveFloatingGeometry(next);
     if (next.document === this.snapshot.document && next.canvas === this.snapshot.canvas) return;
-    if (record) this.diagrams.append(this.context, next.document, next.canvas, this.pendingNodeIds);
+    if (record) this.historyService.append(this.context, next.document, next.canvas, this.pendingNodeIds);
     const geometryChanged = next.document.scene !== this.snapshot.document.scene || next.canvas.diagramViews !== this.snapshot.canvas.diagramViews;
     const endpointBounds = geometryChanged && this.snapshot.endpointBounds ? {} : this.snapshot.endpointBounds;
     // Transient selection/layout updates do not advance history. Reading state
     // clones the checkpoint's document and view, which can be large.
-    const historyState = record || increment ? this.diagrams.state(this.context) : {
+    const historyState = record || increment ? this.historyService.state(this.context) : {
       checkpointId: this.snapshot.canvasRevisionId, canUndo: this.snapshot.canUndo, canRedo: this.snapshot.canRedo
     };
+    if (next.document !== this.snapshot.document) next = { ...next, document: { ...next.document,
+      scene: { ...next.document.scene, contents: Object.freeze(Object.fromEntries(Object.entries(next.document.scene.contents)
+        .map(([id, diagram]) => [id, this.diagrams.getRevision(diagram.revisionId).diagram]))) } } };
     this.snapshot = { ...next, contextId: this.context.contextId, canvasRevisionId: historyState.checkpointId, endpointBounds, cell: this.snapshot.cell, version: this.snapshot.version + Number(increment), canUndo: historyState.canUndo, canRedo: historyState.canRedo };
     this.listeners.forEach(listener => listener());
   }
@@ -135,12 +145,12 @@ export class MappingDocumentController {
   }
   commitDocument(document: MappingGridDocument) { projectCanvasSnapshot(document.scene); this.updateSnapshot({ document, canvas: this.snapshot.canvas }, true); }
   undo(redo = false) {
-    if (!this.diagrams.navigate(this.context, redo)) return;
-    this.updateSnapshot({ document: this.diagrams.document(this.context), canvas: this.diagrams.state(this.context).view as MappingCanvasState }, false);
+    if (!this.historyService.navigate(this.context, redo)) return;
+    this.updateSnapshot({ document: this.historyService.document(this.context), canvas: this.historyService.state(this.context).view as MappingCanvasState }, false);
   }
   reset() {
-    this.diagrams.reset(this.context);
-    this.updateSnapshot({ document: this.diagrams.document(this.context), canvas: this.diagrams.state(this.context).view as MappingCanvasState }, false);
+    this.historyService.reset(this.context);
+    this.updateSnapshot({ document: this.historyService.document(this.context), canvas: this.historyService.state(this.context).view as MappingCanvasState }, false);
   }
   /** One shared command path. transact is retained as the MCP batch adapter. */
   applyUpdate(expectedVersion: number, operations: DiagramOperation[]) {
@@ -225,6 +235,22 @@ export class MappingDocumentController {
           && !projectDiagramContent(content, canvas.diagramViews[op.nodeId]).rect(canvas.controls.selectionRect)) {
           canvas.controls = { ...canvas.controls, selectionRect: null, selectedNodeIds: [], retainedSelectionId: null };
         }
+      } else if (op.method === 'diagram-revision-apply') {
+        const box = findBox(document.scene.root, this.gridId(op.nodeId));
+        if (box?.kind !== 'diagram') throw Error('Expected diagram GridBox');
+        const before = document.scene.contents[box.contentId];
+        if (before.revisionId !== op.expectedRevisionId) throw Error('VERSION_CONFLICT: diagram changed during generation');
+        const prepared = receiveDiagramRevision(op.expectedRevisionId, op.revision);
+        this.trackNodes(prepared.nodeIds);
+        const scene = layoutScene({ ...document.scene, contents: { ...document.scene.contents, [before.id]: prepared.diagram } }, box.id);
+        document = { ...document, scene, edges: reconcileConnections(document.scene, scene, document.edges) };
+      } else if (op.method === 'diagram-insert') {
+        safeId(op.id);
+        if (findBox(document.scene.root, op.id) || Object.hasOwn(document.scene.contents, op.id) || Object.hasOwn(document.scene.contents, `${op.id}-summary`)) throw new Error('Node ID already exists');
+        const diagram = this.diagrams.getRevision(op.revisionId).diagram;
+        if (diagram.id !== op.id) throw new Error('Diagram revision belongs to another diagram');
+        document = insertGridDiagram(document, op.parentId ? this.gridId(op.parentId) : document.scene.root.id,
+          { id: op.id, kind: 'diagram', contentId: op.id, collapsed: false, minimumSize: op.minimumSize, position: op.position ?? { column: 0, row: 0 } }, diagram, this.diagrams);
       } else if (op.method === 'diagram-create' || op.method === 'replace') {
         const ascii = op.ascii?.replace(/\r\n?/g, '\n');
         const mappings = op.mappings ?? [];
@@ -234,7 +260,7 @@ export class MappingDocumentController {
           if (findBox(document.scene.root, op.id) || Object.hasOwn(document.scene.contents, op.id) || Object.hasOwn(document.scene.contents, `${op.id}-summary`)) throw new Error('Node ID already exists');
           const parentId = op.parentId ? this.gridId(op.parentId) : document.scene.root.id;
           document = insertGridDiagram(document, parentId, { id: op.id, kind: 'diagram', contentId: op.id, collapsed: false, minimumSize: op.minimumSize, position: op.position ?? { column: 0, row: 0 } },
-            this.diagrams.prepareCreate({ id: op.id, ascii, revision: 0, structureKind: op.structureKind, mappings, source: op.source, evidence: op.evidence }).diagram);
+            this.diagrams.create({ id: op.id, ascii, revision: 0, structureKind: op.structureKind, mappings, source: op.source, evidence: op.evidence }).diagram, this.diagrams);
         } else {
           const id = this.gridId(op.nodeId), box = findBox(document.scene.root, id);
           if (box?.kind !== 'diagram') throw new Error('Expected diagram GridBox');
@@ -244,7 +270,6 @@ export class MappingDocumentController {
             evidence: op.evidence ?? old.sourceContext.evidence } });
           const replacement = prepared.diagram;
           this.trackNodes(prepared.nodeIds);
-          if (old.jumps) replacement.jumps = rebaseDiagramJumps(old.content, replacement.content, old.jumps);
           const scene = layoutScene({ ...document.scene, contents: { ...document.scene.contents, [old.id]: replacement } }, id);
           document = { ...document, scene, edges: reconcileConnections(document.scene, scene, document.edges) };
         }
@@ -269,7 +294,7 @@ export class MappingDocumentController {
           safeId(op.id);
           const summaryId = `${op.id}-summary`;
           if (findBox(document.scene.root, op.id) || Object.hasOwn(document.scene.contents, summaryId)) throw new Error('Node ID already exists');
-          const summary = this.diagrams.prepareCreate({ id: summaryId, revision: 0, ascii: '[Diagram group]' }).diagram;
+          const summary = this.diagrams.create({ id: summaryId, revision: 0, ascii: '[Diagram group]' }).diagram;
           const scene = updateGridBox({ ...document.scene, contents: { ...document.scene.contents, [summaryId]: summary } }, id, box => ({
             id: op.id, kind: 'container', position: box.position, collapsed: false, collapsedContentId: summaryId,
             children: [{ ...box, position: { column: 0, row: 0 } }], layout: { collisionPolicy: 'push-right', gap: 3 }

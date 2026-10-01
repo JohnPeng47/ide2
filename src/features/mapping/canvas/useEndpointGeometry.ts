@@ -12,7 +12,7 @@ export function measureEndpoint(element: Element, inverse: DOMMatrix): EndpointR
   return { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), width: Math.abs(b.x - a.x), height: Math.abs(b.y - a.y) };
 }
 
-export function useEndpointGeometry(controller: MappingDocumentController, active: boolean) {
+export function useEndpointGeometry(controller: { getSnapshot(): Pick<ReturnType<MappingDocumentController['getSnapshot']>, 'document' | 'canvas' | 'cell'>; configureEndpointBounds(bounds: EndpointBounds): void }, active: boolean) {
   const svgRef = useRef<SVGSVGElement>(null);
   const elements = useRef(new Map<string, Element>());
   const observer = useRef<ResizeObserver | null>(null);

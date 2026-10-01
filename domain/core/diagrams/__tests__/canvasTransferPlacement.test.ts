@@ -1,11 +1,11 @@
 import { expect, it } from 'vitest';
 import { emptyCanvasDocument } from '../canvasTransfer';
 import { diagramCenterOfMass, placeTransferredGroup } from '../canvasTransferPlacement';
-import { createDiagram } from '../diagram';
+import { RevisionedDiagramService } from '../diagramService';
 import { boxesOverlap, resolveScene, type GridBounds } from '../lineGrid';
 const scene = (bounds: GridBounds[]) => {
   const result = emptyCanvasDocument().scene;
-  result.contents = { text: createDiagram({ id: 'text', revision: 0, ascii: 'X' }) };
+  result.contents = { text: new RevisionedDiagramService().create({ id: 'text', revision: 0, ascii: 'X' }).diagram };
   if (result.root.kind !== 'container') throw Error();
   result.root.children = bounds.map((bounds, index) => ({ id: `box${index}`, kind: 'diagram', contentId: 'text',
     position: { column: bounds.column, row: bounds.row }, minimumSize: { columns: bounds.columns, rows: bounds.rows }, collapsed: false }));

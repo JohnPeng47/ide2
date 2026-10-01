@@ -1,3 +1,4 @@
+import { DefaultCanvasHistoryService, type CanvasHistoryService } from '../../../../domain/core/diagrams/canvasHistoryService';
 import { createStore } from 'zustand/vanilla';
 import type { CanvasTransform } from '../../../../domain/core/diagrams/diagramCanvas';
 import type { DiagramService } from '../../../../domain/core/diagrams/diagramService';
@@ -24,7 +25,7 @@ export class CanvasWorkspace {
   readonly changes = readable(this.changesState);
   readonly dirtyScenes = readable(this.dirtyScenesState);
   private subscriptions = new Map<string, (() => void)[]>();
-  constructor(private readonly diagrams?: DiagramService) {}
+  constructor(private readonly diagrams?: DiagramService, private readonly history: CanvasHistoryService = new DefaultCanvasHistoryService()) {}
   private persistenceListeners = new Set<(ids: string[]) => void>();
   onPersist(listener: (ids: string[]) => void) { this.persistenceListeners.add(listener); return () => { this.persistenceListeners.delete(listener); }; }
   private persist(ids: string[]) { this.persistenceListeners.forEach(listener => listener(ids)); }
@@ -45,7 +46,7 @@ export class CanvasWorkspace {
       if (item === prior[id]) { next[id] = prior[id]; continue; }
       if ('document' in item) {
         const { document, canvas, history, ...metadata } = item;
-        next[id] = { ...metadata, session: new CanvasSession({ ...metadata, document, canvas, history }, this.diagrams) };
+        next[id] = { ...metadata, session: new CanvasSession({ ...metadata, document, canvas, history }, this.diagrams, this.history) };
       } else next[id] = item;
       next[id].session.updateBaseline(next[id]);
       const old = prior[id];

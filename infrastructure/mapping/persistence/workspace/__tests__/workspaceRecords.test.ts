@@ -1,11 +1,13 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { mkdtemp, rm, rename } from 'node:fs/promises';
+import { mkdtemp, rm, rename, readFile, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { WorkspaceRecordStore } from '../workspaceRecordStore';
 import { initialCanvasState } from '../../../../../domain/mapping/workspace/mappingWorkspace';
 import { singleDiagramScene } from '../../../../../domain/core/diagrams/projectDiagramCanvas';
 import { documentPrefix, type WorkspaceBatch, type WorkspaceIndex } from '../../../../../domain/mapping/workspace/workspaceRecords';
+import { MappingDocumentController } from '../../../../../domain/mapping/workspace/mappingDocumentController';
 vi.mock('node:fs/promises', async importOriginal => { const actual = await importOriginal<typeof import('node:fs/promises')>(); return { ...actual, rename: vi.fn(actual.rename) }; });
 const roots: string[] = [];
 afterEach(async () => { vi.mocked(rename).mockClear(); await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true }))); });
@@ -73,4 +75,33 @@ it('requires canvas removal to delete all its indexed records in the same batch'
   await expect(store.apply('project', { ...batch, changes: [{ key: 'workspace', value: {
     ...state.records.workspace as WorkspaceIndex, documentIds: [], activeDocumentId: undefined
   } }] })).rejects.toThrow('Record belongs to a removed canvas');
+});
+
+it('defers historical checkpoint validation on startup without weakening full reads or new writes', async () => {
+  const { root, store, prefix } = await fixture();
+  const document = { scene: singleDiagramScene('Start'), edges: [], sections: {} };
+  const controller = new MappingDocumentController(document, initialCanvasState());
+  controller.applyUpdate(0, [{ method: 'replace', nodeId: 'grid:overview', ascii: 'Current' }]);
+  const history = controller.exportHistory();
+  await store.replace('project', { schemaVersion: 3, projectId: 'project', activeDocumentId: 'draft-a', documents: [{
+    representationId: 'draft-a', name: 'Current', savedName: 'Current', savedScene: JSON.stringify(controller.getSnapshot().document.scene),
+    revisionId: '', document: controller.getSnapshot().document, canvas: initialCanvasState(), history
+  }] });
+  const file = path.join(root, 'workspace-records.json');
+  const manifest = JSON.parse(await readFile(file, 'utf8'));
+  const key = prefix + 'checkpoint/' + history.past.at(-1);
+  const checkpoint = JSON.parse(await readFile(path.join(root, 'workspace-records', manifest.records[key] + '.json'), 'utf8'));
+  checkpoint.document.scene.root.kind = 'invalid';
+  const text = JSON.stringify(checkpoint), hash = createHash('sha256').update(text).digest('hex');
+  await writeFile(path.join(root, 'workspace-records', hash + '.json'), text);
+  manifest.records[key] = hash; await writeFile(file, JSON.stringify(manifest));
+  const restarted = new WorkspaceRecordStore(root);
+  const state = await restarted.state('project', async () => null, 'current');
+  expect(state.records[key]).toEqual(checkpoint);
+  await expect(restarted.state('project', async () => null)).rejects.toThrow('Invalid canvas box kind');
+  await expect(restarted.apply('project', { requestId: 'invalid-checkpoint', expectedRevision: state.revision,
+    changes: [{ key, value: checkpoint }] })).rejects.toThrow('Invalid canvas box kind');
+  // Integrity checking is independent of the deferred semantic validation.
+  await writeFile(path.join(root, 'workspace-records', hash + '.json'), '{}');
+  await expect(new WorkspaceRecordStore(root).state('project', async () => null, 'current')).rejects.toThrow('integrity');
 });

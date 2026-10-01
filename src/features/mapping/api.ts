@@ -3,10 +3,11 @@ import type { MappingPocPromptRequest, MappingPocPromptResult } from "../../../d
 
 export async function promptMappingPocSelection(
   request: MappingPocPromptRequest,
-  onProgress: (message: string) => void
+  onProgress: (message: string) => void,
+  signal?: AbortSignal
 ): Promise<MappingPocPromptResult> {
   const response = await apiFetch("/api/mapping/prompt", {
-    method: "POST",
+    method: "POST", signal,
     headers: { "content-type": "application/json" },
     body: JSON.stringify(request)
   });

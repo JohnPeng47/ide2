@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, it, vi } from 'vitest';
 import { DiagramChangeSessionStore } from '../diagramChangeSessionStore';
-import { RevisionedDiagramService } from '../../../../domain/core/diagrams/diagramService';
+import { DiagramPersistence } from '../../../../domain/core/diagrams/diagramPersistence';
 
 it('lists metadata without restoring bodies, refreshes after external atomic writes, and drops deleted entries', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'change-summary-'));
@@ -16,7 +16,7 @@ it('lists metadata without restoring bodies, refreshes after external atomic wri
       documents: [{ id: 'doc', name: 'Canvas', version: 0, proposed: { document: { $diagramRecord: 'diagram', id: 'missing' } } }],
       receipts: { huge: { signature: '', result: 'x'.repeat(100000) } } };
     await writeFile(file, JSON.stringify(session));
-    const diagrams = new RevisionedDiagramService();
+    const diagrams = new DiagramPersistence({ put: async () => { throw Error('unused'); }, get: async () => { throw Error('unused'); } });
     const restore = vi.spyOn(diagrams, 'restore').mockRejectedValue(new Error('Full document restore'));
     const store = new DiagramChangeSessionStore(root, diagrams);
     const first = await store.listSummaries('project');

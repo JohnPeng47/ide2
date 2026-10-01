@@ -1,17 +1,18 @@
-import { createDiagram, validateDiagram, type Diagram, type DiagramInput } from './diagram';
+import { validateDiagram, type Diagram, type DiagramInput } from './diagram';
+import { constructDiagram } from './internal/constructDiagram';
 import { patchDiagram } from './patchDiagram';
 import { diagramContentNodes } from './diagramContentNodes';
-import { activeDiagramJumps, validateDiagramJumps, type DiagramJump } from './diagramJump';
+import { activeDiagramJumps, rebaseDiagramJumps, validateDiagramJumps, type DiagramJump } from './diagramJump';
 
 export type ContextId = string;
 export type DiagramRevisionId = string;
 export interface DiagramRevision {
-  id: DiagramRevisionId;
-  diagramId: string;
-  parentId?: DiagramRevisionId;
-  /** Storage/legacy transport payload. Never returned by resolve(). */
-  diagram: Diagram;
-  nodeRefs: Record<string, string>;
+  readonly id: DiagramRevisionId;
+  readonly diagramId: string;
+  readonly parentId?: DiagramRevisionId;
+  /** Immutable diagram payload. Never returned by resolve(). */
+  readonly diagram: Diagram;
+  readonly nodeRefs: Readonly<Record<string, string>>;
 }
 export interface DiagramView {
   id: string;
@@ -23,8 +24,8 @@ export interface DiagramView {
   jumps: { id: string; source: Omit<DiagramJump['source'], 'revisionId' | 'contentHash'>; target: DiagramJump['target'] }[];
 }
 export interface PreparedDiagramEdit {
-  diagram: Diagram;
-  nodeIds: ReadonlyMap<string, string>;
+  readonly diagram: Diagram;
+  readonly nodeIds: ReadonlyMap<string, string>;
   lineAfter?: (line: number) => number | undefined;
 }
 export type DiagramEdit =
@@ -48,7 +49,7 @@ export class DiagramRevisionEditor implements DiagramRevisionOperations {
 
   private revision(contextId: ContextId, diagramId: string): DiagramRevision {
     const id = this.bindings(contextId)[diagramId], revision = id && this.revisions[id];
-    if (!revision || revision.diagramId !== diagramId) throw new Error(`Unknown diagram: ${diagramId}`);
+    if (!revision || revision.diagram.id !== diagramId) throw new Error(`Unknown diagram: ${diagramId}`);
     return revision;
   }
   resolve(contextId: ContextId, diagramId: string): DiagramView {
@@ -63,33 +64,33 @@ export class DiagramRevisionEditor implements DiagramRevisionOperations {
       }) });
   }
   prepareCreate(input: DiagramInput): PreparedDiagramEdit {
-    return { diagram: createDiagram(input), nodeIds: new Map() };
+    return { diagram: constructDiagram(input), nodeIds: new Map() };
   }
   prepareEdit(contextId: ContextId, diagramId: string, edit: DiagramEdit): PreparedDiagramEdit {
     const before = this.revision(contextId, diagramId).diagram;
     if (edit.kind === 'source-mappings') {
       if (edit.expectedContentHash !== before.content.asciiSha256) throw new Error('CONTENT_HASH_CONFLICT: read the diagram again');
-      const diagram = structuredClone(before);
-      diagram.sourceContext = { ...diagram.sourceContext, mappings: structuredClone(edit.mappings), evidence: structuredClone(edit.evidence),
-        ...(edit.source ? { binding: structuredClone(edit.source) } : {}) };
+      const diagram = { ...before, sourceContext: { ...before.sourceContext, mappings: structuredClone(edit.mappings), evidence: structuredClone(edit.evidence),
+        ...(edit.source ? { binding: structuredClone(edit.source) } : {}) } };
       validateDiagram(diagram);
       return { diagram, nodeIds: correspondingNodes(before, diagram) };
     }
     if (edit.kind === 'patch') {
       const prepared = patchDiagram(before, edit.start, edit.end, edit.patch);
       if (edit.mappings) {
-        const sourceContext = createDiagram({ id: diagramId, revision: prepared.diagram.revision,
+        const sourceContext = constructDiagram({ id: diagramId, revision: prepared.diagram.revision,
           ascii: prepared.diagram.content.ascii, structureKind: prepared.diagram.content.structure.kind,
           source: before.sourceContext.binding, evidence: before.sourceContext.evidence, mappings: edit.mappings }).sourceContext;
-        prepared.diagram = { ...prepared.diagram, sourceContext };
+        return { ...prepared, diagram: { ...prepared.diagram, sourceContext } };
       }
       return prepared;
     }
     const diagram = edit.kind === 'jumps'
       ? { ...structuredClone(before), jumps: validateDiagramJumps(before.content, edit.jumps, false) }
-      : createDiagram({ ...edit.input, id: diagramId, revision: before.revision + 1 });
-    validateDiagram(diagram);
-    return { diagram, nodeIds: correspondingNodes(before, diagram) };
+      : constructDiagram({ ...edit.input, id: diagramId, revision: before.revision + 1 });
+    const next = edit.kind === 'replace' && before.jumps ? { ...diagram, jumps: rebaseDiagramJumps(before.content, diagram.content, before.jumps) } : diagram;
+    validateDiagram(next);
+    return { diagram: next, nodeIds: correspondingNodes(before, next) };
   }
   /** Deliberately conservative until three-way merge is implemented. */
   merge(baseline: Readonly<Record<string, string>>, current: Readonly<Record<string, string>>, proposed: Readonly<Record<string, string>>) {

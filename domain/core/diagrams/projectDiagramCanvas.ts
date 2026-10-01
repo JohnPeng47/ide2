@@ -1,5 +1,6 @@
 import { documentFromHistory, type CanvasHistoryRecord } from './canvasHistory';
-import { createDiagram, validateDiagram, diagramSource, type DiagramSourceBinding } from "./diagram";
+import { validateDiagram, diagramSource, type Diagram, type DiagramSourceBinding } from './diagram';
+import { RevisionedDiagramService } from './diagramService';
 import {
   composeScene,
   flattenGrid,
@@ -9,9 +10,9 @@ import {
 } from "./lineGrid";
 import type { ProjectRepresentationEvidenceRecord, ProjectRepresentationMappingRecord, ProjectRepresentationRevisionRecord } from "../representations/projectCatalog";
 
-export type ProjectDiagramContent = { kind: "canvas-history"; history: CanvasHistoryRecord } | { kind: "diagram"; diagram: import("./diagram").Diagram } | { kind: "ascii"; ascii: string } | { kind: "mapping-canvas"; scene: LineGridScene; edges?: import('./diagramConnection').DiagramConnection[] };
+export type ProjectDiagramContent = { kind: "canvas-history"; history: CanvasHistoryRecord };
 export interface SaveProjectDiagramInput {
-  history?: CanvasHistoryRecord;
+  history: CanvasHistoryRecord;
   projectId?: string;
   representationId?: string;
   expectedRevisionId?: string;
@@ -23,8 +24,8 @@ export interface SaveProjectDiagramInput {
 
 export function singleDiagramScene(ascii: string, source?: DiagramSourceBinding): LineGridScene {
   return { contents: {
-    overview: createDiagram({ id: "overview", revision: 0, ascii, source }),
-    "overview-summary": createDiagram({ id: "overview-summary", revision: 0, ascii: "[Diagram]" })
+    overview: new RevisionedDiagramService().create({ id: "overview", revision: 0, ascii, source }).diagram,
+    "overview-summary": new RevisionedDiagramService().create({ id: "overview-summary", revision: 0, ascii: "[Diagram]" }).diagram
   }, root: { id: "root", kind: "container", position: { column: 0, row: 0 }, collapsed: false,
     layout: { collisionPolicy: "push-right", gap: 3 }, children: [
       { id: "overview", kind: "diagram", position: { column: 0, row: 0 }, collapsed: false,
@@ -33,22 +34,11 @@ export function singleDiagramScene(ascii: string, source?: DiagramSourceBinding)
 }
 
 export function sceneFromRevision(revision: ProjectRepresentationRevisionRecord): LineGridScene {
-  if (revision.content?.kind === "canvas-history") return documentFromHistory(revision.content.history).scene;
-  if (revision.content?.kind === "mapping-canvas") return revision.content.scene;
-  const scene = singleDiagramScene(revision.ascii);
-  if (revision.content?.kind === "diagram") return { ...scene, contents: { ...scene.contents, overview: revision.content.diagram } };
-  scene.contents = { ...scene.contents, overview: createDiagram({ id: "overview", revision: revision.revision,
-    ascii: revision.ascii, structureKind: revision.representationKind, source: revision.source,
-    evidence: revision.evidence, mappings: revision.mappings.map((mapping) => ({
-      id: mapping.id, entityId: mapping.evidenceId, sourceRangeId: mapping.sourceRangeId,
-      sourceRangeIndex: revision.evidence[mapping.evidenceId]?.sourceRanges.findIndex(range => range.id === mapping.sourceRangeId) ?? -1,
-      line: mapping.line, startColumn: mapping.startColumn, endColumn: mapping.endColumn
-    })) }) };
-  return scene;
+  return documentFromHistory(historyFromRevision(revision)).scene;
 }
 
-/** Validate all content (including collapsed content), then derive the visible export. */
-export function projectCanvasSnapshot(scene: LineGridScene) {
+/** Validate composition without generating an ASCII/source-evidence export. */
+export function validateCanvasScene(scene: LineGridScene, validatedDiagrams?: ReadonlySet<Diagram>) {
   if (!scene || !scene.contents || !scene.root || Object.keys(scene.contents).length > 500) throw new Error("Invalid Mapping canvas");
   let boxes = 0;
   const walk = (box: LineGridScene["root"], depth = 0) => {
@@ -66,17 +56,24 @@ export function projectCanvasSnapshot(scene: LineGridScene) {
   const expand = (box: LineGridScene["root"]): LineGridScene["root"] => box.kind === "container"
     ? { ...box, collapsed: false, children: box.children.map(expand) } : { ...box, collapsed: false };
   resolveScene({ ...scene, root: expand(scene.root) });
+  for (const [id, diagram] of Object.entries(scene.contents)) {
+    if (diagram.id !== id || !Number.isInteger(diagram.revision) || diagram.revision < 0 || !diagram.content) throw new Error("Invalid canvas diagram");
+    if (!validatedDiagrams?.has(diagram)) validateDiagram(diagram);
+    measureContent(diagram.content.ascii);
+  }
+}
+
+/** Validate all content (including collapsed content), then derive the visible export. */
+export function projectCanvasSnapshot(scene: LineGridScene) {
+  validateCanvasScene(scene);
   const evidence: Record<string, ProjectRepresentationEvidenceRecord> = {};
   const evidenceIds = new Map<string, string>();
   for (const [id, diagram] of Object.entries(scene.contents)) {
-    if (diagram.id !== id || !Number.isInteger(diagram.revision) || diagram.revision < 0 || !diagram.content) throw new Error("Invalid canvas diagram");
-    validateDiagram(diagram);
-    measureContent(diagram.content.ascii);
     for (const [key, entry] of Object.entries(diagram.sourceContext.evidence)) {
       // Export IDs are scoped by source and diagram. Local evidence IDs remain untouched.
       const exported = exportedEvidenceId(scene, id, key);
       evidenceIds.set(`${id}:${key}`, exported);
-      evidence[exported] = { ...structuredClone(entry), id: exported, sourceId: diagram.sourceContext.binding?.sourceId };
+      evidence[exported] = { ...structuredClone(entry), sourceRanges: entry.sourceRanges.map(range => ({ ...range, originalLines: [...range.originalLines] })), id: exported, sourceId: diagram.sourceContext.binding?.sourceId };
     }
   }
   const ascii = composeScene(scene);
@@ -101,14 +98,12 @@ export function exportedEvidenceId(scene: LineGridScene, diagramId: string, evid
 }
 
 export function edgesFromRevision(revision: ProjectRepresentationRevisionRecord) {
-  return revision.content?.kind === 'canvas-history' ? documentFromHistory(revision.content.history).edges
-    : revision.content?.kind === 'mapping-canvas' ? revision.content.edges ?? [] : [];
+  return documentFromHistory(historyFromRevision(revision)).edges;
 }
-export function historyFromRevision(revision: ProjectRepresentationRevisionRecord) {
-  return revision.content?.kind === 'canvas-history' ? structuredClone(revision.content.history) : undefined;
+export function historyFromRevision(revision: ProjectRepresentationRevisionRecord): CanvasHistoryRecord {
+  if (revision.content?.kind !== 'canvas-history') throw new Error('Unsupported legacy diagram content: canvas history is required');
+  return structuredClone(revision.content.history);
 }
-
 export function documentFromRevision(revision: ProjectRepresentationRevisionRecord) {
-  return revision.content?.kind === 'canvas-history' ? documentFromHistory(revision.content.history)
-    : { scene: sceneFromRevision(revision), edges: edgesFromRevision(revision), sections: {} };
+  return documentFromHistory(historyFromRevision(revision));
 }

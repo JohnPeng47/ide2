@@ -1,3 +1,4 @@
+import { canvasSaveFixture, revisionCanvasFixture } from '../../../../tests/support/mappingDiagram';
 import { createHash } from "node:crypto";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -5,7 +6,6 @@ import path from "node:path";
 import { afterEach, expect, it } from "vitest";
 import { projectSelection } from "../../../../domain/core/diagrams/diagramProjection";
 import { singleDiagramScene } from "../../../../domain/core/diagrams/projectDiagramCanvas";
-import { projectCompactions } from "../../../../domain/core/representations/compactionProjection";
 import { saveDiagramFixture } from '../../../../tests/support/mappingDiagram';
 import type { SaveProjectedTreeInput } from "../../persistence/projectCatalogStore";
 import { ProjectCatalogStore } from "../../persistence/projectCatalogStore";
@@ -63,20 +63,20 @@ it("rejects invalid links and stale imports without partially creating the targe
     await expect(db.saveProjectedTree("project-test", { ...input, links })).rejects.toThrow();
     expect(await readFile(catalogPath, "utf8")).toBe(before);
   }
-  await db.saveMappingDiagram("project-test", {
+  await db.saveMappingDiagram("project-test", canvasSaveFixture({
     representationId: source.representation.id, expectedRevisionId: input.sourceRevisionId,
     name: "Updated", scene: singleDiagramScene("Changed")
-  });
+  }));
   await expect(db.saveProjectedTree("project-test", input)).rejects.toThrow("Source diagram changed");
 });
 
 it("preserves projection history when either representation gains a revision", async () => {
   const { db, input } = await fixture();
   const result = await db.saveProjectedTree("project-test", input);
-  const changed = await db.saveMappingDiagram("project-test", {
+  const changed = await db.saveMappingDiagram("project-test", canvasSaveFixture({
     representationId: result.representation.id,
     expectedRevisionId: result.representation.currentRevisionId, name: "Edited target", scene: singleDiagramScene("Calls\n\\-- changed()")
-  });
+  }));
   expect(changed.catalog.projections![result.projection.id]).toEqual(result.projection);
   expect(changed.representation.currentRevisionId).not.toBe(result.projection.targetRevisionId);
   expect(changed.catalog.revisions[result.projection.targetRevisionId].ascii).toEqual(input.ascii);
@@ -86,6 +86,7 @@ it("persists the regenerated two-hop projection and retains all seven source-bac
   const { db } = await fixture();
   const input: SaveProjectedTreeInput = JSON.parse(await readFile("docs/projections/prompt-reference-call-tree.json", "utf8"));
   const catalog = JSON.parse(await readFile(".diagrams-parent-architecture/representations/catalog.json", "utf8"));
+  for (const revision of Object.values(catalog.revisions) as import('../../../../domain/core/representations/projectCatalog').ProjectRepresentationRevisionRecord[]) revision.content = revisionCanvasFixture(revision);
   await db.saveRepresentationCatalog(catalog);
   const { projection } = await db.saveProjectedTree(catalog.projectId, input);
   const loaded = await new ProjectCatalogStore(db.storeRoot).loadRepresentationCatalog(catalog.projectId);
@@ -97,17 +98,15 @@ it("persists the regenerated two-hop projection and retains all seven source-bac
   for (const evidence of Object.values(source.evidence)) {
     const result = projectSelection(saved, target, [evidence.id]);
     expect(result.targetNodeIds.length).toBeGreaterThan(0);
-    expect(projectCompactions(saved.compactionProjection!, result.projectedNodeIds).length).toBeGreaterThan(0);
+    expect(saved.compactionProjection!.links.some(link => result.projectedNodeIds.includes(link.callTreeNodeId))).toBe(true);
   }
   const ids = Object.values(source.evidence).filter((e) => ["createGenerationPromptConfig", "GenerationPromptReference"].includes(e.label.replace(/\(\)$/, ""))).map((e) => e.id);
   expect(ids).toHaveLength(2);
   const result = projectSelection(saved, target, ids);
   expect(result.ascii).toContain("User's reference choices");
   expect(result.ascii).not.toContain("PiDiagramAgentRuntime");
-  const files = projectCompactions(saved.compactionProjection!, result.projectedNodeIds);
-  expect(files.map((file) => file.sourceFile).sort()).toEqual(["src/domain.ts", "src/prompt.ts"]);
-  expect(files.find((file) => file.sourceFile === "src/prompt.ts")!.ascii).not.toContain("renderMappingPromptTemplate");
-  expect(files.find((file) => file.sourceFile === "src/domain.ts")!.ascii).not.toContain("WorkspaceSnapshot");
+  const linkedFiles = saved.compactionProjection!.links.filter(link => result.projectedNodeIds.includes(link.callTreeNodeId)).map(link => link.file);
+  expect([...new Set(linkedFiles)].sort()).toEqual(["src/domain.ts", "src/prompt.ts"]);
   const reimport = await db.saveProjectedTree(catalog.projectId, input);
   expect(reimport.catalog).toEqual(loaded);
 });

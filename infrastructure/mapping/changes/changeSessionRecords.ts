@@ -1,6 +1,7 @@
 import { open, readdir, readFile, stat } from 'node:fs/promises';
+import { assertDiagramStorageFormat } from '../../core/persistence/diagramStorageFormat';
 import path from 'node:path';
-import { RevisionedDiagramService, type DiagramService } from '../../../domain/core/diagrams/diagramService';
+import { DiagramPersistence } from '../../../domain/core/diagrams/diagramPersistence';
 import { DiagramRevisionStore } from '../../core/persistence/diagramRevisionStore';
 import { ImmutableRecords, publishJson } from '../../core/persistence/immutableRecords';
 import { changeId, validateChangeSession, validateChangeSessionSummary, type ChangeSessionDocument, type ChangePreviewDocument,
@@ -24,7 +25,7 @@ export class ChangeSessionRecords {
   private blobs: ImmutableRecords;
   private validated = new Map<string, ChangeSessionDocument>();
   private previews = new Map<string, ChangePreviewDocument>();
-  constructor(private readonly root: string, private readonly diagrams: DiagramService = new RevisionedDiagramService(new DiagramRevisionStore(root))) {
+  constructor(private readonly root: string, private readonly diagramPersistence: DiagramPersistence = new DiagramPersistence(new DiagramRevisionStore(root))) {
     this.blobs = new ImmutableRecords(path.join(root, 'change-session-records'));
   }
   private directory(projectId: string) { return path.join(this.root, 'mapping-change-sessions', changeId.parse(projectId)); }
@@ -36,6 +37,7 @@ export class ChangeSessionRecords {
   }
   private token(manifest: Manifest) { return JSON.stringify(manifest); }
   private async existing(projectId: string, id: string): Promise<Manifest | undefined> {
+    await assertDiagramStorageFormat(this.root);
     let raw: string;
     try { raw = await readFile(this.manifestFile(projectId, id), 'utf8'); }
     catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return; throw error; }
@@ -80,7 +82,7 @@ export class ChangeSessionRecords {
     if (!raw || !Object.hasOwn(raw, 'baseline') || !raw.proposed || !Array.isArray(raw.past) || !Array.isArray(raw.future)) throw Error('Invalid change-session document');
     // Already-externalized legacy references pass through unchanged. Embedded
     // legacy diagrams are normalized once into the shared immutable diagram store.
-    const { baseline, proposed, past, future, history, ...metadata } = await this.diagrams.persist(raw) as any;
+    const { baseline, proposed, past, future, history, ...metadata } = await this.diagramPersistence.persist(raw) as any;
     const historyRefs = history ? { header: await this.blobs.put(Object.fromEntries(Object.entries(history).filter(([key]) => key !== 'snapshots'))),
       checkpoints: Object.fromEntries(await Promise.all(Object.entries(history.snapshots).map(async ([id, snapshot]) => [id, await this.blobs.put(snapshot)]))) } : undefined;
     return this.blobs.put({ metadata, baseline: baseline ? await this.blobs.put(baseline) : null, proposed: await this.blobs.put(proposed),
@@ -115,7 +117,7 @@ export class ChangeSessionRecords {
     if (!ref) throw Error('Unknown change-session document');
     let document = this.previews.get(ref);
     if (!document) {
-      document = await this.diagrams.restore<ChangePreviewDocument>(await this.rawDocument(ref, false));
+      document = await this.diagramPersistence.restore<ChangePreviewDocument>(await this.rawDocument(ref, false));
       if (document.id !== documentId) throw Error('Change document identity mismatch');
       for (const state of [document.baseline, document.proposed]) if (state) deserializeWorkspace({ schemaVersion: 3, projectId,
         documents: [{ ...state, representationId: document.id, name: document.name, savedName: document.name,
@@ -130,7 +132,7 @@ export class ChangeSessionRecords {
     for (const metadata of manifest.summary.documents) {
       const ref = manifest.documents[metadata.id]; let doc = this.validated.get(ref);
       if (!doc) {
-        const restored = await this.diagrams.restore<ChangeSessionDocument>(await this.rawDocument(ref, true));
+        const restored = await this.diagramPersistence.restore<ChangeSessionDocument>(await this.rawDocument(ref, true));
         doc = validateChangeSession({ ...manifest.summary, documents: [restored], receipts: {} }).documents[0];
         if (doc.id !== metadata.id) throw Error('Change document identity mismatch');
         if (this.validated.size >= 16) this.validated.delete(this.validated.keys().next().value!);

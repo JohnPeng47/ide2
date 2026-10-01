@@ -1,8 +1,10 @@
+import { DefaultCanvasHistoryService } from '../../domain/core/diagrams/canvasHistoryService';
+import { RevisionedDiagramService } from '../../domain/core/diagrams/diagramService';
 import { cp, readFile, writeFile, readdir, rename } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { createDiagram, sourceBindingFromLocation, type DiagramSourceBinding } from '../../domain/core/diagrams/diagram';
-import { projectCanvasSnapshot, sceneFromRevision } from '../../domain/core/diagrams/projectDiagramCanvas';
+import { sourceBindingFromLocation, type DiagramSourceBinding } from '../../domain/core/diagrams/diagram';
+import { projectCanvasSnapshot, singleDiagramScene } from '../../domain/core/diagrams/projectDiagramCanvas';
 import { deserializeWorkspace } from '../../domain/mapping/workspace/mappingWorkspaceCodec';
 
 export const TARGET_REPRESENTATION = 'representation-b697fd11-5c8d-49e7-a6b5-b12030f2f79a';
@@ -11,12 +13,12 @@ export function migrateScene(scene: any, evidence: Record<string, any>, binding?
   const next = structuredClone(scene);
   next.contents = Object.fromEntries(Object.entries(next.contents).map(([id, value]) => {
     const old = value as any;
-    if (old.content && old.sourceContext) return [id, old];
+    if (old.content && old.sourceContext) return [id, new RevisionedDiagramService().create({ id, revision: old.revision, ascii: old.content.ascii, structureKind: old.content.structure.kind, source: old.sourceContext.binding, mappings: old.sourceContext.mappings, evidence: old.sourceContext.evidence, jumps: old.jumps }).diagram];
     const mappings = old.mappings ?? [];
     // Keep the complete captured evidence so subsequent edits can reuse the same source context.
-    return [id, createDiagram({ id, revision: old.revision, ascii: old.ascii,
+    return [id, new RevisionedDiagramService().create({ id, revision: old.revision, ascii: old.ascii,
       structureKind: old.structureKind ?? old.diagramContent?.structure?.kind ?? kind,
-      source: id.endsWith('-summary') ? undefined : binding, mappings, evidence: id.endsWith('-summary') ? {} : evidence })];
+      source: id.endsWith('-summary') ? undefined : binding, mappings, evidence: id.endsWith('-summary') ? {} : evidence }).diagram];
   }));
   projectCanvasSnapshot(next);
   return next;
@@ -47,15 +49,21 @@ export async function migrateDirectory(directory: string, representationId = TAR
   const binding = sourceBindingFromLocation({checkoutRoot:project.canonicalRepoRoot,repositoryIdentity:project.repositoryIdentity,domainProfileId:project.domainProfileId,corpus:project.corpus});
   const writes = new Map<string,unknown>();
   for (const revision of Object.values(catalog.revisions) as any[]) {
-    if (revision.content?.kind === 'mapping-canvas') {
-      revision.content.scene = migrateScene(revision.content.scene, revision.evidence ?? {}, binding, revision.representationKind);
-      const snapshot = projectCanvasSnapshot(revision.content.scene);
-      revision.mappings = snapshot.mappings; revision.evidence = snapshot.evidence;
-    } else {
-      revision.source = binding;
-      revision.content = {kind:"diagram",diagram:sceneFromRevision(revision).contents.overview};
-      delete revision.source;
+    let scene;
+    if (revision.content?.kind === 'mapping-canvas') scene = migrateScene(revision.content.scene, revision.evidence ?? {}, binding, revision.representationKind);
+    else {
+      scene = singleDiagramScene(revision.ascii);
+      scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({ id: 'overview', revision: revision.revision,
+        ascii: revision.ascii, structureKind: revision.representationKind, source: binding, evidence: revision.evidence,
+        mappings: revision.mappings.map((m: any) => ({ id: m.id, entityId: m.evidenceId, sourceRangeId: m.sourceRangeId,
+          sourceRangeIndex: revision.evidence[m.evidenceId].sourceRanges.findIndex((r: any) => r.id === m.sourceRangeId),
+          line: m.line, startColumn: m.startColumn, endColumn: m.endColumn })) }).diagram };
     }
+    const histories = new DefaultCanvasHistoryService();
+    revision.content = { kind: 'canvas-history', history: histories.exportContext(histories.openContext({ scene, edges: [], sections: {} }, {})) };
+    const snapshot = projectCanvasSnapshot(scene);
+    revision.mappings = snapshot.mappings; revision.evidence = snapshot.evidence;
+    delete revision.source;
   }
   for (const projection of Object.values(catalog.projections ?? {}) as any[]) for (const file of projection.compactionProjection?.files ?? []) file.sourceId = binding.sourceId;
   writes.set('representations/catalog.json', catalog);

@@ -1,3 +1,4 @@
+import { deepFreeze } from '../immutability';
 import type { DiagramContent, DiagramContentNode } from './diagramContent';
 import { parseDiagram } from './interpreter';
 
@@ -16,6 +17,7 @@ export function diagramContentNodes(content: DiagramContent): readonly DiagramCo
     parentId: node.parentId ? scoped(node.parentId) : undefined,
     childIds: node.childIds.map(scoped), foldRanges: []
   }));
+  deepFreeze(nodes);
   indexes.set(content, nodes);
   return nodes;
 }

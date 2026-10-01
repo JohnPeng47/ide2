@@ -8,13 +8,124 @@
       "name": "Source pane performance",
       "savedName": "Source pane performance",
       "revisionId": "revision-source",
-      "savedScene": "{\"contents\":{\"overview\":{\"id\":\"overview\",\"revision\":0,\"content\":{\"revisionId\":\"overview:0\",\"ascii\":\"Source pane performance fixture\",\"asciiSha256\":\"03f0af178485493b60049ecbe2d61c174f0fc85db7c67c7888d4335e2b89cf7b\",\"structure\":{\"kind\":\"diagram\"}},\"sourceContext\":{\"contentHash\":\"03f0af178485493b60049ecbe2d61c174f0fc85db7c67c7888d4335e2b89cf7b\",\"mappings\":[],\"evidence\":{}}},\"overview-summary\":{\"id\":\"overview-summary\",\"revision\":0,\"content\":{\"revisionId\":\"overview-summary:0\",\"ascii\":\"[Diagram]\",\"asciiSha256\":\"bd799efd6eec5ccb309984fe12304a557293a53c4cc6d52c4771aff09f842909\",\"structure\":{\"kind\":\"diagram\"}},\"sourceContext\":{\"contentHash\":\"bd799efd6eec5ccb309984fe12304a557293a53c4cc6d52c4771aff09f842909\",\"mappings\":[],\"evidence\":{}}}},\"root\":{\"id\":\"root\",\"kind\":\"container\",\"position\":{\"column\":0,\"row\":0},\"collapsed\":false,\"layout\":{\"collisionPolicy\":\"push-right\",\"gap\":3},\"children\":[{\"id\":\"overview\",\"kind\":\"diagram\",\"position\":{\"column\":0,\"row\":0},\"collapsed\":false,\"contentId\":\"overview\",\"collapsedContentId\":\"overview-summary\"}]}}",
+      "savedScene": "{\"contents\":{\"overview\":{\"id\":\"overview\",\"revision\":0,\"diagramId\":\"diagram-d586aa0c-a848-4431-97a8-ed2d0271fb78\",\"revisionId\":\"diagram-revision-d208bd97-41e7-4665-b2e6-67f49c77c144\",\"content\":{\"revisionId\":\"overview:0\",\"ascii\":\"Source pane performance fixture\",\"asciiSha256\":\"03f0af178485493b60049ecbe2d61c174f0fc85db7c67c7888d4335e2b89cf7b\",\"structure\":{\"kind\":\"diagram\"}},\"sourceContext\":{\"contentHash\":\"03f0af178485493b60049ecbe2d61c174f0fc85db7c67c7888d4335e2b89cf7b\",\"mappings\":[],\"evidence\":{}}},\"overview-summary\":{\"id\":\"overview-summary\",\"revision\":0,\"diagramId\":\"diagram-40e86b1d-9d39-46be-bca2-a7d271e2b254\",\"revisionId\":\"diagram-revision-b4d1cc7b-fe69-4035-b575-a2060a9a70c1\",\"content\":{\"revisionId\":\"overview-summary:0\",\"ascii\":\"[Diagram]\",\"asciiSha256\":\"bd799efd6eec5ccb309984fe12304a557293a53c4cc6d52c4771aff09f842909\",\"structure\":{\"kind\":\"diagram\"}},\"sourceContext\":{\"contentHash\":\"bd799efd6eec5ccb309984fe12304a557293a53c4cc6d52c4771aff09f842909\",\"mappings\":[],\"evidence\":{}}}},\"root\":{\"id\":\"root\",\"kind\":\"container\",\"position\":{\"column\":0,\"row\":0},\"collapsed\":false,\"layout\":{\"collisionPolicy\":\"push-right\",\"gap\":3},\"children\":[{\"id\":\"overview\",\"kind\":\"diagram\",\"position\":{\"column\":0,\"row\":0},\"collapsed\":false,\"contentId\":\"overview\",\"collapsedContentId\":\"overview-summary\"}]}}",
+      "history": {
+        "schemaVersion": 1,
+        "contextId": "context-1ef0c148-5aab-4a96-b80f-404e8e35cd17",
+        "baselineId": "canvas-revision-a9abd53c-4196-4716-a559-e617da153444",
+        "headId": "canvas-revision-a9abd53c-4196-4716-a559-e617da153444",
+        "past": [],
+        "future": [],
+        "snapshots": {
+          "canvas-revision-a9abd53c-4196-4716-a559-e617da153444": {
+            "id": "canvas-revision-a9abd53c-4196-4716-a559-e617da153444",
+            "document": {
+              "scene": {
+                "root": {
+                  "id": "root",
+                  "kind": "container",
+                  "position": {
+                    "column": 0,
+                    "row": 0
+                  },
+                  "collapsed": false,
+                  "layout": {
+                    "collisionPolicy": "push-right",
+                    "gap": 3
+                  },
+                  "children": [
+                    {
+                      "id": "overview",
+                      "kind": "diagram",
+                      "position": {
+                        "column": 0,
+                        "row": 0
+                      },
+                      "collapsed": false,
+                      "contentId": "overview",
+                      "collapsedContentId": "overview-summary"
+                    }
+                  ]
+                }
+              },
+              "edges": [],
+              "sections": {}
+            },
+            "diagramBindings": {
+              "overview": "diagram-revision-d208bd97-41e7-4665-b2e6-67f49c77c144",
+              "overview-summary": "diagram-revision-b4d1cc7b-fe69-4035-b575-a2060a9a70c1"
+            },
+            "unresolvedAnchors": {},
+            "view": {},
+            "nodeOrigins": {
+              "overview:0:03f0af178485493b60049ecbe2d61c174f0fc85db7c67c7888d4335e2b89cf7b:node-1-1": "overview:0:03f0af178485493b60049ecbe2d61c174f0fc85db7c67c7888d4335e2b89cf7b:node-1-1",
+              "overview-summary:0:bd799efd6eec5ccb309984fe12304a557293a53c4cc6d52c4771aff09f842909:node-1-1": "overview-summary:0:bd799efd6eec5ccb309984fe12304a557293a53c4cc6d52c4771aff09f842909:node-1-1"
+            }
+          }
+        },
+        "diagramRevisions": {
+          "diagram-revision-d208bd97-41e7-4665-b2e6-67f49c77c144": {
+            "id": "diagram-revision-d208bd97-41e7-4665-b2e6-67f49c77c144",
+            "diagramId": "diagram-d586aa0c-a848-4431-97a8-ed2d0271fb78",
+            "diagram": {
+              "id": "overview",
+              "revision": 0,
+              "diagramId": "diagram-d586aa0c-a848-4431-97a8-ed2d0271fb78",
+              "revisionId": "diagram-revision-d208bd97-41e7-4665-b2e6-67f49c77c144",
+              "content": {
+                "revisionId": "overview:0",
+                "ascii": "Source pane performance fixture",
+                "asciiSha256": "03f0af178485493b60049ecbe2d61c174f0fc85db7c67c7888d4335e2b89cf7b",
+                "structure": {
+                  "kind": "diagram"
+                }
+              },
+              "sourceContext": {
+                "contentHash": "03f0af178485493b60049ecbe2d61c174f0fc85db7c67c7888d4335e2b89cf7b",
+                "mappings": [],
+                "evidence": {}
+              }
+            },
+            "nodeRefs": {
+              "overview:0:03f0af178485493b60049ecbe2d61c174f0fc85db7c67c7888d4335e2b89cf7b:node-1-1": "node-de991024-c0d8-434c-813e-2343e1ee19bc"
+            }
+          },
+          "diagram-revision-b4d1cc7b-fe69-4035-b575-a2060a9a70c1": {
+            "id": "diagram-revision-b4d1cc7b-fe69-4035-b575-a2060a9a70c1",
+            "diagramId": "diagram-40e86b1d-9d39-46be-bca2-a7d271e2b254",
+            "diagram": {
+              "id": "overview-summary",
+              "revision": 0,
+              "diagramId": "diagram-40e86b1d-9d39-46be-bca2-a7d271e2b254",
+              "revisionId": "diagram-revision-b4d1cc7b-fe69-4035-b575-a2060a9a70c1",
+              "content": {
+                "revisionId": "overview-summary:0",
+                "ascii": "[Diagram]",
+                "asciiSha256": "bd799efd6eec5ccb309984fe12304a557293a53c4cc6d52c4771aff09f842909",
+                "structure": {
+                  "kind": "diagram"
+                }
+              },
+              "sourceContext": {
+                "contentHash": "bd799efd6eec5ccb309984fe12304a557293a53c4cc6d52c4771aff09f842909",
+                "mappings": [],
+                "evidence": {}
+              }
+            },
+            "nodeRefs": {
+              "overview-summary:0:bd799efd6eec5ccb309984fe12304a557293a53c4cc6d52c4771aff09f842909:node-1-1": "node-6749ebde-7a74-49aa-9eef-31fb07dee01c"
+            }
+          }
+        }
+      },
       "document": {
         "scene": {
           "contents": {
             "overview": {
               "id": "overview",
               "revision": 0,
+              "diagramId": "diagram-d586aa0c-a848-4431-97a8-ed2d0271fb78",
+              "revisionId": "diagram-revision-d208bd97-41e7-4665-b2e6-67f49c77c144",
               "content": {
                 "revisionId": "overview:0",
                 "ascii": "Source pane performance fixture",
@@ -32,6 +143,8 @@
             "overview-summary": {
               "id": "overview-summary",
               "revision": 0,
+              "diagramId": "diagram-40e86b1d-9d39-46be-bca2-a7d271e2b254",
+              "revisionId": "diagram-revision-b4d1cc7b-fe69-4035-b575-a2060a9a70c1",
               "content": {
                 "revisionId": "overview-summary:0",
                 "ascii": "[Diagram]",
@@ -74,9 +187,11 @@
             ]
           }
         },
+        "edges": [],
         "sections": {}
       },
       "canvas": {
+        "diagramViews": {},
         "display": {
           "rootIds": [
             "selection-1",
@@ -177,7 +292,48 @@
                           }
                         ]
                       }
-                    ]
+                    ],
+                    "ranges": [
+                      {
+                        "startLine": 12,
+                        "endLine": 15
+                      },
+                      {
+                        "startLine": 2962,
+                        "endLine": 2965
+                      }
+                    ],
+                    "compactedSource": {
+                      "level": "medium",
+                      "sections": [
+                        {
+                          "kind": "collapsed-comment",
+                          "startLine": 12,
+                          "endLine": 15,
+                          "comment": "+-- first operation",
+                          "nodes": [
+                            {
+                              "graphLine": 1,
+                              "startLine": 12,
+                              "endLine": 15
+                            }
+                          ]
+                        },
+                        {
+                          "kind": "collapsed-comment",
+                          "startLine": 2962,
+                          "endLine": 2965,
+                          "comment": "\\-- distant operation",
+                          "nodes": [
+                            {
+                              "graphLine": 1,
+                              "startLine": 2962,
+                              "endLine": 2965
+                            }
+                          ]
+                        }
+                      ]
+                    }
                   }
                 ],
                 "sourceFile": "src/large.ts",
@@ -280,7 +436,48 @@
                           }
                         ]
                       }
-                    ]
+                    ],
+                    "ranges": [
+                      {
+                        "startLine": 12,
+                        "endLine": 15
+                      },
+                      {
+                        "startLine": 2962,
+                        "endLine": 2965
+                      }
+                    ],
+                    "compactedSource": {
+                      "level": "medium",
+                      "sections": [
+                        {
+                          "kind": "collapsed-comment",
+                          "startLine": 12,
+                          "endLine": 15,
+                          "comment": "+-- first operation",
+                          "nodes": [
+                            {
+                              "graphLine": 1,
+                              "startLine": 12,
+                              "endLine": 15
+                            }
+                          ]
+                        },
+                        {
+                          "kind": "collapsed-comment",
+                          "startLine": 2962,
+                          "endLine": 2965,
+                          "comment": "\\-- distant operation",
+                          "nodes": [
+                            {
+                              "graphLine": 1,
+                              "startLine": 2962,
+                              "endLine": 2965
+                            }
+                          ]
+                        }
+                      ]
+                    }
                   }
                 ],
                 "sourceFile": "src/large.ts",
@@ -383,7 +580,48 @@
                           }
                         ]
                       }
-                    ]
+                    ],
+                    "ranges": [
+                      {
+                        "startLine": 12,
+                        "endLine": 15
+                      },
+                      {
+                        "startLine": 2962,
+                        "endLine": 2965
+                      }
+                    ],
+                    "compactedSource": {
+                      "level": "medium",
+                      "sections": [
+                        {
+                          "kind": "collapsed-comment",
+                          "startLine": 12,
+                          "endLine": 15,
+                          "comment": "+-- first operation",
+                          "nodes": [
+                            {
+                              "graphLine": 1,
+                              "startLine": 12,
+                              "endLine": 15
+                            }
+                          ]
+                        },
+                        {
+                          "kind": "collapsed-comment",
+                          "startLine": 2962,
+                          "endLine": 2965,
+                          "comment": "\\-- distant operation",
+                          "nodes": [
+                            {
+                              "graphLine": 1,
+                              "startLine": 2962,
+                              "endLine": 2965
+                            }
+                          ]
+                        }
+                      ]
+                    }
                   }
                 ],
                 "sourceFile": "src/large.ts",
@@ -486,7 +724,48 @@
                           }
                         ]
                       }
-                    ]
+                    ],
+                    "ranges": [
+                      {
+                        "startLine": 12,
+                        "endLine": 15
+                      },
+                      {
+                        "startLine": 2962,
+                        "endLine": 2965
+                      }
+                    ],
+                    "compactedSource": {
+                      "level": "medium",
+                      "sections": [
+                        {
+                          "kind": "collapsed-comment",
+                          "startLine": 12,
+                          "endLine": 15,
+                          "comment": "+-- first operation",
+                          "nodes": [
+                            {
+                              "graphLine": 1,
+                              "startLine": 12,
+                              "endLine": 15
+                            }
+                          ]
+                        },
+                        {
+                          "kind": "collapsed-comment",
+                          "startLine": 2962,
+                          "endLine": 2965,
+                          "comment": "\\-- distant operation",
+                          "nodes": [
+                            {
+                              "graphLine": 1,
+                              "startLine": 2962,
+                              "endLine": 2965
+                            }
+                          ]
+                        }
+                      ]
+                    }
                   }
                 ],
                 "sourceFile": "src/large.ts",
@@ -589,7 +868,48 @@
                           }
                         ]
                       }
-                    ]
+                    ],
+                    "ranges": [
+                      {
+                        "startLine": 12,
+                        "endLine": 15
+                      },
+                      {
+                        "startLine": 2962,
+                        "endLine": 2965
+                      }
+                    ],
+                    "compactedSource": {
+                      "level": "medium",
+                      "sections": [
+                        {
+                          "kind": "collapsed-comment",
+                          "startLine": 12,
+                          "endLine": 15,
+                          "comment": "+-- first operation",
+                          "nodes": [
+                            {
+                              "graphLine": 1,
+                              "startLine": 12,
+                              "endLine": 15
+                            }
+                          ]
+                        },
+                        {
+                          "kind": "collapsed-comment",
+                          "startLine": 2962,
+                          "endLine": 2965,
+                          "comment": "\\-- distant operation",
+                          "nodes": [
+                            {
+                              "graphLine": 1,
+                              "startLine": 2962,
+                              "endLine": 2965
+                            }
+                          ]
+                        }
+                      ]
+                    }
                   }
                 ],
                 "sourceFile": "src/large.ts",

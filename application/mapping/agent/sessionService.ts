@@ -1,7 +1,9 @@
+import { DefaultCanvasHistoryService } from '../../../domain/core/diagrams/canvasHistoryService';
 import { documentFromRevision } from '../../../domain/core/diagrams/projectDiagramCanvas';
 import type { ChangeSessionService } from '../changes/changeSessionService';
 import { rebaseDiagramJumps } from '../../../domain/core/diagrams/diagramJump';
-import { createDiagram, diagramSource, type Diagram, type DiagramSourceBinding } from '../../../domain/core/diagrams/diagram';
+import { diagramSource, type Diagram, type DiagramSourceBinding } from '../../../domain/core/diagrams/diagram';
+import { RevisionedDiagramService, type DiagramService } from '../../../domain/core/diagrams/diagramService';
 import { randomUUID } from 'node:crypto';
 import type { CanvasSessionPort, AgentExecRuntime } from './ports';
 import { agentToolSchemas, canvasApiSpec, canvasMethods, type AgentToolName, type LiveDocumentSnapshot } from '../../../domain/mapping/agent/contracts';
@@ -9,7 +11,7 @@ import { MappingDocumentController, type DiagramOperation } from '../../../domai
 import { sceneFromRevision, singleDiagramScene, type SaveProjectDiagramInput } from '../../../domain/core/diagrams/projectDiagramCanvas';
 import { mappingDocumentFromScene } from '../../../domain/mapping/workspace/mappingDocument';
 import { initialCanvasState } from '../../../domain/mapping/workspace/mappingWorkspace';
-import { findBox } from '../../../domain/mapping/workspace/canvasDisplayNode';
+import { canvasDisplayNodes, findBox } from '../../../domain/mapping/workspace/canvasDisplayNode';
 import type { MappingDiagramService } from '../diagrams/diagramService';
 import type { DiagramRepository } from '../../core/ports/diagramRepository';
 
@@ -142,10 +144,10 @@ export class AgentDiagrammingSessionService {
         if (docs.length !== 1) throw new Error('Specify representationId (or session document ID) for a session read');
         const doc = docs[0];
         return { origin: 'change-session', changeSessionId: session.id, documentId: doc.id, name: doc.name, version: doc.version,
-          nodes: new MappingDocumentController(doc.proposed.document, doc.proposed.canvas, doc.version).nodes(),
+          nodes: canvasDisplayNodes(doc.proposed.document, doc.proposed.canvas, doc.version),
           changeSession: { version: session.version, title: session.title, status: session.status, changes: session.changes } };
       }
-      const hits = docs.flatMap(doc => new MappingDocumentController(doc.proposed.document, doc.proposed.canvas).nodes().flatMap(node =>
+      const hits = docs.flatMap(doc => canvasDisplayNodes(doc.proposed.document, doc.proposed.canvas, doc.version).flatMap(node =>
         node.layout === 'grid' && node.diagram ? this.matches(node.diagram, input).map(match => ({ origin: 'change-session', documentId: doc.id,
           representationId: doc.representationId, name: doc.name, nodeId: node.id, version: doc.version, ...match })) : []));
       return { total: hits.length, hits: hits.slice(input.offset, input.offset + input.limit),
@@ -153,8 +155,7 @@ export class AgentDiagrammingSessionService {
     }
     if (input.sessionId) {
       const snapshot = await this.snapshot(input.sessionId, input.changeSessionId);
-      const controller = new MappingDocumentController(snapshot.document, snapshot.canvas, snapshot.version, snapshot.cell, snapshot.endpointBounds);
-      const nodes = controller.nodes().filter(node => node.layout === 'grid' && node.kind === 'diagram');
+      const nodes = canvasDisplayNodes(snapshot.document, snapshot.canvas, snapshot.version, snapshot.cell, snapshot.endpointBounds).filter(node => node.layout === 'grid' && node.kind === 'diagram');
       if (input.operation === 'read') {
         const node = nodes.find(node => node.id === input.nodeId);
         if (!node) throw new Error('A valid live nodeId is required');
@@ -174,13 +175,13 @@ export class AgentDiagrammingSessionService {
       if (!representation.revisionIds.includes(revisionId)) throw new Error('Revision does not belong to representation');
       const revision = catalog.revisions[revisionId];
       const document = documentFromRevision(revision);
-      return { origin: 'saved', representation, revision, nodes: new MappingDocumentController(document, initialCanvasState()).nodes() };
+      return { origin: 'saved', representation, revision, nodes: canvasDisplayNodes(document, initialCanvasState(), 0) };
     }
     const hits: unknown[] = [];
     for (const representation of representations) {
       const revision = catalog.revisions[representation.currentRevisionId];
       const document = documentFromRevision(revision);
-      const nodes = new MappingDocumentController(document, initialCanvasState()).nodes();
+      const nodes = canvasDisplayNodes(document, initialCanvasState(), 0);
       const query = (input.query ?? '').toLowerCase();
       for (const node of nodes) if (node.layout === 'grid' && node.content) {
         const matches = this.matches(node.diagram!, input);
@@ -214,19 +215,23 @@ export class AgentDiagrammingSessionService {
   private async saveNow(input: ReturnType<typeof agentToolSchemas.save_diagram.parse>) {
     const session = this.session(input.sessionId), snapshot = await this.snapshot(input.sessionId, input.changeSessionId);
     if (input.expectedVersion !== snapshot.version) throw new Error('VERSION_CONFLICT: read the canvas again');
-    let scene = snapshot.document.scene;
+    let scene = snapshot.document.scene, history = snapshot.history;
     if (input.nodeId) {
-      const node = new MappingDocumentController(snapshot.document, snapshot.canvas, snapshot.version, snapshot.cell, snapshot.endpointBounds).nodes().find(node => node.id === input.nodeId);
+      const node = canvasDisplayNodes(snapshot.document, snapshot.canvas, snapshot.version, snapshot.cell, snapshot.endpointBounds).find(node => node.id === input.nodeId);
       if (!node || node.layout !== 'grid' || node.kind !== 'diagram') throw new Error('Expected diagram GridBox');
       const box = findBox(scene.root, node.boxId)!;
       if (box.kind !== 'diagram') throw new Error('Expected diagram');
       const content = scene.contents[box.contentId];
       const isolated = singleDiagramScene(content.content.ascii);
-      scene = { ...isolated, contents: { ...isolated.contents, overview: createDiagram({id:'overview', revision:content.revision, ascii:content.content.ascii, structureKind:content.content.structure.kind, source:content.sourceContext.binding, evidence:content.sourceContext.evidence, mappings:content.sourceContext.mappings}) } };
-      if (content.jumps) scene.contents.overview.jumps = rebaseDiagramJumps(content.content, scene.contents.overview.content, content.jumps);
+      scene = { ...isolated, contents: { ...isolated.contents, overview: new RevisionedDiagramService().create({id:'overview', revision:content.revision, ascii:content.content.ascii, structureKind:content.content.structure.kind, source:content.sourceContext.binding, evidence:content.sourceContext.evidence, mappings:content.sourceContext.mappings}).diagram } };
+      if (content.jumps) scene = { ...scene, contents: { ...scene.contents, overview: new RevisionedDiagramService().revise(
+        scene.contents.overview.revisionId, { kind: 'jumps', jumps: rebaseDiagramJumps(content.content, scene.contents.overview.content, content.jumps) }).diagram } };
+      const histories = new DefaultCanvasHistoryService();
+      history = histories.exportContext(histories.openContext({ scene, edges: [], sections: {} }, snapshot.canvas));
     }
     const representationId = input.representationId ?? (!input.nodeId ? snapshot.representationId : undefined);
-    const save: SaveProjectDiagramInput = { name: input.name, history: input.nodeId ? undefined : snapshot.history, scene, edges: input.nodeId ? [] : snapshot.document.edges, representationId,
+    if (!history) throw new Error('Canvas history is required to save');
+    const save: SaveProjectDiagramInput = { name: input.name, history, scene, edges: input.nodeId ? [] : snapshot.document.edges, representationId,
       expectedRevisionId: input.expectedRevisionId ?? (representationId === snapshot.representationId ? snapshot.revisionId : undefined) };
     const result = await this.diagrams.save(save);
     let displayUpdated = true;

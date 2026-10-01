@@ -1,16 +1,18 @@
 import { createHash, randomUUID } from 'node:crypto';
+import { assertDiagramStorageFormat } from '../../../core/persistence/diagramStorageFormat';
 import { mkdir, readFile, rename, rm, open } from 'node:fs/promises';
 import path from 'node:path';
 import { ApplicationError } from '../../../../application/core/errors';
 import { recordsWorkspace, validateRecordUpdate, workspaceRecords, type WorkspaceBatch, type WorkspaceRecords, type WorkspaceRecordState } from '../../../../domain/mapping/workspace/workspaceRecords';
 import type { MappingWorkspaceSnapshot } from '../../../../domain/mapping/workspace/mappingWorkspace';
+import type { HistoryValidation } from '../../../../domain/core/diagrams/canvasHistory';
 
 interface Manifest { schemaVersion: 1; projectId: string; revision: number; records: Record<string, string>; receipts: Record<string, { hash: string; revision: number }> }
 const queues = new Map<string, Promise<unknown>>();
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 /** New records become reachable only through the final atomic manifest replacement. */
 export class WorkspaceRecordStore {
-  private cached?: { raw: string; manifest: Manifest; records: WorkspaceRecords };
+  private cached?: { raw: string; manifest: Manifest; records: WorkspaceRecords; historyValidation: HistoryValidation };
   constructor(private readonly root: string) {}
   private get file() { return path.join(this.root, 'workspace-records.json'); }
   private serial<T>(run: () => Promise<T>): Promise<T> {
@@ -19,11 +21,16 @@ export class WorkspaceRecordStore {
     void next.finally(() => { if (queues.get(this.root) === next) queues.delete(this.root); }).catch(() => {});
     return next;
   }
-  private async read(projectId: string) {
+  private async read(projectId: string, historyValidation: HistoryValidation = 'all') {
+    await assertDiagramStorageFormat(this.root);
     let raw: string;
     try { raw = await readFile(this.file, 'utf8'); } catch (e) { if ((e as NodeJS.ErrnoException).code === 'ENOENT') return undefined; throw e; }
     if (this.cached?.raw === raw) {
       if (this.cached.manifest.projectId !== projectId) throw Error('Workspace belongs to another project');
+      if (historyValidation === 'all' && this.cached.historyValidation !== 'all') {
+        if (Object.keys(this.cached.records).length) validateRecordUpdate(this.cached.records, Object.keys(this.cached.records), projectId);
+        this.cached.historyValidation = 'all';
+      }
       return this.cached;
     }
     const manifest = JSON.parse(raw) as Manifest;
@@ -34,15 +41,15 @@ export class WorkspaceRecordStore {
       if (hash(text) !== id) throw Error('Workspace record integrity failure');
       return [key, JSON.parse(text)];
     })));
-    if (Object.keys(records).length) validateRecordUpdate(records, Object.keys(records), projectId);
-    return this.cached = { raw, manifest, records };
+    if (Object.keys(records).length) validateRecordUpdate(records, Object.keys(records), projectId, historyValidation);
+    return this.cached = { raw, manifest, records, historyValidation };
   }
   async load(projectId: string): Promise<MappingWorkspaceSnapshot | undefined> {
     const state = await this.read(projectId); return state ? recordsWorkspace(state.records)! : undefined;
   }
-  async state(projectId: string, legacy: () => Promise<MappingWorkspaceSnapshot | null>): Promise<WorkspaceRecordState> {
+  async state(projectId: string, legacy: () => Promise<MappingWorkspaceSnapshot | null>, historyValidation: HistoryValidation = 'all'): Promise<WorkspaceRecordState> {
     return this.serial(async () => {
-      let state = await this.read(projectId);
+      let state = await this.read(projectId, historyValidation);
       if (!state) {
         const snapshot = await legacy();
         const records = snapshot ? workspaceRecords(snapshot) : {};
@@ -62,7 +69,7 @@ export class WorkspaceRecordStore {
     return this.serial(async () => {
       if (!input || typeof input.requestId !== 'string' || !/^[\w-]{1,150}$/.test(input.requestId) || !Number.isSafeInteger(input.expectedRevision)
         || !Array.isArray(input.changes) || input.changes.length > 100000) throw Error('Invalid workspace batch');
-      const state = await this.read(projectId); if (!state) throw Error('Initialize workspace storage first');
+      const state = await this.read(projectId, 'current'); if (!state) throw Error('Initialize workspace storage first');
       const digest = hash(JSON.stringify(input)), receipt = Object.hasOwn(state.manifest.receipts, input.requestId) ? state.manifest.receipts[input.requestId] : undefined;
       if (receipt) {
         if (receipt.hash !== digest) throw new ApplicationError('conflict', 'REQUEST_ID_CONFLICT: different batch');
@@ -124,6 +131,6 @@ export class WorkspaceRecordStore {
     }
     const raw = JSON.stringify(manifest);
     await this.atomic(this.file, raw);
-    return this.cached = { raw, manifest, records };
+    return this.cached = { raw, manifest, records, historyValidation: 'current' };
   }
 }

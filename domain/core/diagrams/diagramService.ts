@@ -1,106 +1,72 @@
-import { CanvasHistory, type CanvasHistoryRecord, type ResolvedCanvasDocument } from './canvasHistory';
-import { DiagramRevisionEditor, type DiagramEdit, type DiagramView, type PreparedDiagramEdit } from './diagramRevisionEditor';
-import type { DiagramInput } from './diagram';
-import { persistDiagramData, restoreDiagramData, type DiagramRecordStore } from './diagramPersistence';
-import { prepareCanvasTransfer, prepareTransferNavigation, transferBoundary, type CanvasTransfer, type TransferInput, type PreparedCanvasTransfer, type TransferState } from './canvasTransfer';
+import type { Diagram, DiagramInput } from './diagram';
+import { DiagramRevisionEditor, type DiagramEdit, type DiagramRevision, type PreparedDiagramEdit } from './diagramRevisionEditor';
+import { diagramContentNodes } from './diagramContentNodes';
+import { diagramRevisions } from './internal/revisionRegistry';
 
-export type { DiagramEdit, DiagramView, DiagramRevision, DiagramRevisionId, ContextId, PreparedDiagramEdit } from './diagramRevisionEditor';
-export type { DiagramRecordStore } from './diagramPersistence';
-
-/** Runtime handle. Neither it nor the service belongs in a saved canvas. */
-export interface DiagramEditingContext { readonly contextId: string }
-export interface DiagramContextState {
-  checkpointId: string;
-  document: import('./canvasHistory').CanvasDocument;
-  view: unknown;
-  canUndo: boolean;
-  canRedo: boolean;
+export type { DiagramEdit, DiagramRevision, DiagramRevisionId } from './diagramRevisionEditor';
+export interface DiagramRevisionResult extends PreparedDiagramEdit { readonly revision: DiagramRevision }
+export type DiagramRevisionSummary = Readonly<Pick<DiagramRevision, 'id' | 'diagramId' | 'parentId'>>;
+export interface DiagramGenerationRequest {
+  input: Omit<DiagramInput, 'revision' | 'ascii'>;
+  instruction: string;
+  baseRevisionId?: string;
+  context?: {
+    diagram: Diagram;
+    connections?: readonly import('./diagramConnection').DiagramConnection[];
+    selection: { startLine: number; endLine: number; startColumn: number; endColumn: number };
+    projectId?: string; representationId?: string; baseRevisionId?: string;
+  };
+}
+export interface GenerationOptions { signal?: AbortSignal; onProgress?: (message: string) => void }
+export interface DiagramGenerator {
+  generate(request: DiagramGenerationRequest, options: GenerationOptions): Promise<Omit<DiagramInput, 'id' | 'revision'>>;
 }
 
-/** Canvas controllers coordinate edits; this boundary owns history and its storage. */
+/** Sole content writer. Local revisions are synchronous; durable adapters flush issued records before publishing canvases. */
 export interface DiagramService {
-  prepareTransfer(context: DiagramEditingContext, input: TransferInput, destination?: DiagramEditingContext): PreparedCanvasTransfer;
-  transferBoundary(context: DiagramEditingContext, transaction: CanvasTransfer, canvasId: string, redo?: boolean): boolean;
-  prepareTransferNavigation(source: DiagramEditingContext, destination: DiagramEditingContext, transaction: CanvasTransfer, redo?: boolean): { source: TransferState; destination: TransferState; transaction: CanvasTransfer };
-  openContext(document: ResolvedCanvasDocument, view: unknown, history?: CanvasHistoryRecord): DiagramEditingContext;
-  state(context: DiagramEditingContext): DiagramContextState;
-  resolve(context: DiagramEditingContext, diagramId: string): DiagramView;
-  document(context: DiagramEditingContext): ResolvedCanvasDocument;
-  append(context: DiagramEditingContext, document: ResolvedCanvasDocument, view: unknown, correspondence?: ReadonlyMap<string, string>): void;
-  navigate(context: DiagramEditingContext, redo?: boolean): boolean;
-  reset(context: DiagramEditingContext): void;
-  /** Portable transport adapters; callers must not interpret diagram revision tables. */
-  exportContext(context: DiagramEditingContext): CanvasHistoryRecord;
-  persistenceChanges(context: DiagramEditingContext, since?: number): import("./canvasHistory").HistoryChanges;
-  retireTransactions(context: DiagramEditingContext, ids: ReadonlySet<string>): void;
-  forkContext(context: DiagramEditingContext, view: unknown): CanvasHistoryRecord;
-  adopt(context: DiagramEditingContext, proposed: CanvasHistoryRecord): void;
-  prepareCreate(input: DiagramInput): PreparedDiagramEdit;
-  prepareEdit(document: ResolvedCanvasDocument, diagramId: string, edit: DiagramEdit): PreparedDiagramEdit;
-  persist(value: unknown): Promise<unknown>;
-  restore<T>(value: unknown): Promise<T>;
+  create(input: DiagramInput): DiagramRevisionResult;
+  getRevision(revisionId: string): DiagramRevision;
+  listRevisions(diagramId: string): readonly DiagramRevisionSummary[];
+  revise(baseRevisionId: string, edit: DiagramEdit): DiagramRevisionResult;
+  generate(request: DiagramGenerationRequest, options?: GenerationOptions): Promise<DiagramRevisionResult>;
 }
 
 export class RevisionedDiagramService implements DiagramService {
-  // Object handles isolate two viewers of the same persisted context, and allow GC on close.
-  private readonly contexts = new WeakMap<DiagramEditingContext, CanvasHistory>();
-  constructor(private readonly store?: DiagramRecordStore) {}
-
-  openContext(document: ResolvedCanvasDocument, view: unknown, record?: CanvasHistoryRecord): DiagramEditingContext {
-    const history = new CanvasHistory(document, view, record);
-    const context = Object.freeze({ contextId: history.contextId });
-    this.contexts.set(context, history);
-    return context;
+  constructor(private readonly generator?: DiagramGenerator) {}
+  create(input: DiagramInput): DiagramRevisionResult {
+    const prepared = new DiagramRevisionEditor({}, () => ({})).prepareCreate(input);
+    return this.issue(prepared);
   }
-  private history(context: DiagramEditingContext) {
-    const history = this.contexts.get(context);
-    if (!history) throw new Error('Unknown diagram editing context');
-    return history;
+  getRevision(revisionId: string) { return diagramRevisions.get(revisionId); }
+  listRevisions(diagramId: string): readonly DiagramRevisionSummary[] {
+    return Object.freeze(diagramRevisions.list(diagramId).map(({id, diagramId, parentId}) => Object.freeze({id, diagramId, parentId})));
   }
-  state(context: DiagramEditingContext): DiagramContextState {
-    const history = this.history(context), head = history.head;
-    return { checkpointId: head.id, document: head.document, view: head.view, canUndo: history.canUndo, canRedo: history.canRedo };
+  revise(baseRevisionId: string, edit: DiagramEdit): DiagramRevisionResult {
+    const base = this.getRevision(baseRevisionId);
+    const prepared = new DiagramRevisionEditor({ [base.id]: base }, () => ({ [base.diagram.id]: base.id }))
+      .prepareEdit('edit', base.diagram.id, edit);
+    if (prepared.diagram === base.diagram) return { ...prepared, revision: base };
+    return this.issue({ ...prepared, diagram: { ...prepared.diagram, diagramId: base.diagramId, revisionId: `diagram-revision-${crypto.randomUUID()}` } }, base);
   }
-  resolve(context: DiagramEditingContext, diagramId: string) {
-    const history = this.history(context);
-    return history.diagrams.resolve(history.contextId, diagramId);
+  private issue(prepared: PreparedDiagramEdit, base?: DiagramRevision): DiagramRevisionResult {
+    const reverse = new Map([...prepared.nodeIds].map(([old, next]) => [next, old]));
+    const record = diagramRevisions.register({ id: prepared.diagram.revisionId, diagramId: prepared.diagram.diagramId,
+      ...(base ? { parentId: base.id } : {}), diagram: prepared.diagram,
+      nodeRefs: Object.fromEntries(diagramContentNodes(prepared.diagram.content).map(node => {
+        const old = reverse.get(node.id);
+        return [node.id, old && base?.nodeRefs[old] || `node-${crypto.randomUUID()}`];
+      })) });
+    return { ...prepared, diagram: record.diagram, revision: record };
   }
-  document(context: DiagramEditingContext) { return this.history(context).document(); }
-  append(context: DiagramEditingContext, document: ResolvedCanvasDocument, view: unknown, correspondence?: ReadonlyMap<string, string>) {
-    this.history(context).append(document, view, correspondence);
-  }
-  navigate(context: DiagramEditingContext, redo = false) {
-    const linked = this.history(context).navigationTransactionId(redo);
-    if (linked) throw Error('Use workspace undo/redo for a canvas transfer.');
-    return !!this.history(context).navigate(redo);
-  }
-  prepareTransfer(context: DiagramEditingContext, input: TransferInput, destination?: DiagramEditingContext) {
-    return prepareCanvasTransfer(this.history(context).export(), input, destination ? this.history(destination).export() : undefined);
-  }
-  transferBoundary(context: DiagramEditingContext, transaction: CanvasTransfer, canvasId: string, redo = false) {
-    return transferBoundary({ headId: this.history(context).headId }, transaction, canvasId, redo);
-  }
-  prepareTransferNavigation(source: DiagramEditingContext, destination: DiagramEditingContext, transaction: CanvasTransfer, redo = false) {
-    return prepareTransferNavigation(this.history(source).export(), this.history(destination).export(), transaction, redo);
-  }
-  reset(context: DiagramEditingContext) { this.history(context).reset(); }
-  persistenceChanges(context: DiagramEditingContext, since?: number) { return this.history(context).persistenceChanges(since); }
-  retireTransactions(context: DiagramEditingContext, ids: ReadonlySet<string>) { this.history(context).retireTransactions(ids); }
-  exportContext(context: DiagramEditingContext) { return this.history(context).export(); }
-  forkContext(context: DiagramEditingContext, view: unknown) { return this.history(context).fork(view); }
-  adopt(context: DiagramEditingContext, proposed: CanvasHistoryRecord) { this.history(context).adopt(proposed); }
-  prepareCreate(input: DiagramInput) { return new DiagramRevisionEditor({}, () => ({})).prepareCreate(input); }
-  prepareEdit(document: ResolvedCanvasDocument, diagramId: string, edit: DiagramEdit) {
-    // Staging observes earlier operations in the batch without changing a live context.
-    const staged = new CanvasHistory(document, {});
-    return staged.diagrams.prepareEdit(staged.contextId, diagramId, edit);
-  }
-  async persist(value: unknown) {
-    if (!this.store) throw new Error('Diagram persistence is unavailable in this runtime');
-    return persistDiagramData(value, this.store);
-  }
-  async restore<T>(value: unknown): Promise<T> {
-    if (!this.store) throw new Error('Diagram persistence is unavailable in this runtime');
-    return restoreDiagramData(value, this.store) as Promise<T>;
+  async generate(request: DiagramGenerationRequest, options: GenerationOptions = {}) {
+    if (!this.generator) throw Error('Diagram generation is unavailable in this runtime');
+    options.signal?.throwIfAborted();
+    if (request.baseRevisionId && this.getRevision(request.baseRevisionId).diagram.id !== request.input.id)
+      throw Error('Generation base belongs to another diagram');
+    const generated = await this.generator.generate(structuredClone(request), options);
+    options.signal?.throwIfAborted();
+    return request.baseRevisionId
+      ? this.revise(request.baseRevisionId, { kind: 'replace', input: generated })
+      : this.create({ ...request.input, ...generated, id: request.input.id, revision: 0 });
   }
 }

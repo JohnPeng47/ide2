@@ -1,9 +1,10 @@
+import { RevisionedDiagramService } from '../diagrams/diagramService';
+import { DefaultCanvasHistoryService } from '../diagrams/canvasHistoryService';
 import { DiagramRevisionEditor } from '../diagrams/diagramRevisionEditor';
-import { CanvasHistory, documentFromHistory, validateCanvasHistory, stateKey } from '../diagrams/canvasHistory';
-import { validateConnections } from '../diagrams/diagramConnection';
+import { documentFromHistory, validateCanvasHistory, stateKey } from '../diagrams/canvasHistory';
 import { buildProjectionTree, validateProjection, type ProjectProjectionRecord } from "../diagrams/diagramProjection";
 import { flattenGrid, resolveScene } from '../diagrams/lineGrid';
-import { projectCanvasSnapshot, sceneFromRevision, historyFromRevision, type SaveProjectDiagramInput } from "../diagrams/projectDiagramCanvas";
+import { singleDiagramScene, projectCanvasSnapshot, sceneFromRevision, historyFromRevision, type SaveProjectDiagramInput } from "../diagrams/projectDiagramCanvas";
 import {
   SCHEMA_VERSION,
   assertSafeId,
@@ -74,7 +75,7 @@ export function saveProjectedTree(catalog: ProjectRepresentationCatalogRecord, p
   const revision: ProjectRepresentationRevisionRecord = {
     schemaVersion: 1, id: revisionId, projectId, representationId: targetId,
     revision: existingTarget ? (catalog.revisions[existingTarget.currentRevisionId]?.revision ?? 0) + 1 : 1,
-    ascii: input.ascii, asciiSha256, representationKind: "tree", content: { kind: "ascii", ascii: input.ascii },
+    ascii: input.ascii, asciiSha256, representationKind: "tree",
     ...(diagramSource ? {source: diagramSource} : {}), evidence: structuredClone(Object.fromEntries(Object.entries(sourceRevision.evidence).filter(([id]) => linkedIds.has(id)))), mappings: [], createdAt: timestamp
   };
   const tree = buildProjectionTree(revision);
@@ -101,7 +102,14 @@ export function saveProjectedTree(catalog: ProjectRepresentationCatalogRecord, p
     });
     return { sourceEvidenceIds: [...new Set(link.sourceEvidenceIds)], targetNodeIds: [...new Set(targetNodeIds)] };
   });
-  revision.content = {kind:"diagram", diagram:sceneFromRevision(revision).contents.overview};
+  const diagrams = new RevisionedDiagramService(), histories = new DefaultCanvasHistoryService();
+  const scene = singleDiagramScene(revision.ascii);
+  scene.contents = { ...scene.contents, overview: diagrams.create({ id: 'overview', revision: 0,
+    ascii: revision.ascii, structureKind: 'tree', source: diagramSource, evidence: revision.evidence,
+    mappings: revision.mappings.map(mapping => ({ id: mapping.id, entityId: mapping.evidenceId,
+      sourceRangeId: mapping.sourceRangeId, sourceRangeIndex: revision.evidence[mapping.evidenceId].sourceRanges.findIndex(range => range.id === mapping.sourceRangeId),
+      line: mapping.line, startColumn: mapping.startColumn, endColumn: mapping.endColumn })) }).diagram };
+  revision.content = { kind: 'canvas-history', history: histories.exportContext(histories.openContext({ scene, edges: [], sections: {} }, {})) };
   delete revision.source;
   const representation: ProjectRepresentationRecord = {
     schemaVersion: 1, id: targetId, projectId, handle: targetId, name: input.name.trim(),
@@ -147,6 +155,7 @@ export function saveProjectedTree(catalog: ProjectRepresentationCatalogRecord, p
 }
 
 export function saveMappingDiagram(catalog: ProjectRepresentationCatalogRecord, projectId: string, input: SaveProjectDiagramInput, environment: CatalogEnvironment) {
+  if (!input.history) throw new Error('Canvas history is required to save');
   if (input.projectId && input.projectId !== projectId) throw new Error("Diagram belongs to another Project");
   if (typeof input.name !== "string" || !input.name.trim() || input.name.length > 120) throw new Error("Diagram name must contain 1–120 characters");
 
@@ -157,11 +166,9 @@ export function saveMappingDiagram(catalog: ProjectRepresentationCatalogRecord, 
     const baseline = input.expectedRevisionId && catalog.revisions[input.expectedRevisionId];
     const latest = catalog.revisions[current.currentRevisionId];
     if (!baseline || baseline.representationId !== current.id || !latest) throw new ProjectDiagramConflict('Unknown canvas baseline');
-    // Legacy revisions have no binding table: use their complete diagram payload as identity.
     const bindings = (revision: ProjectRepresentationRevisionRecord) => {
       const history = historyFromRevision(revision);
-      return history ? history.snapshots[history.headId].diagramBindings
-        : Object.fromEntries(Object.entries(sceneFromRevision(revision).contents).map(([id, diagram]) => [id, stateKey(diagram)]));
+      return history.snapshots[history.headId].diagramBindings;
     };
     try {
       new DiagramRevisionEditor({}, () => ({})).merge(bindings(baseline), bindings(latest),
@@ -194,16 +201,7 @@ export function saveMappingDiagram(catalog: ProjectRepresentationCatalogRecord, 
   const visibleDiagrams = flattenGrid(resolveScene(scene)).filter(node => node.box.kind === 'diagram');
   const inferredKind = visibleDiagrams.length === 1 && visibleDiagrams[0].contentId
     ? scene.contents[visibleDiagrams[0].contentId].content.structure.kind : 'diagram';
-  let history = input.history;
-  if (!history) {
-    const priorHistory = current && source ? historyFromRevision(source) : undefined;
-    const document = { scene, edges: validateConnections(scene, input.edges), sections: {} };
-    const working = priorHistory
-      ? new CanvasHistory(documentFromHistory(priorHistory), {}, priorHistory)
-      : new CanvasHistory(document, {});
-    if (priorHistory) working.append(document, {});
-    history = working.export();
-  }
+  const history = input.history;
   const revision: ProjectRepresentationRevisionRecord = {
     schemaVersion: 1, id: revisionId, projectId, representationId: id,
     revision: (current?.revisionIds.length ?? 0) + 1,

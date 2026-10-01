@@ -1,3 +1,4 @@
+import { canvasSaveFixture } from '../../../../../tests/support/mappingDiagram';
 import { createHash } from "node:crypto";
 import {
   mkdir,
@@ -158,10 +159,10 @@ describe("Project projection HTTP API", () => {
     const { project, source, diagramsEndpoint, post, snapshot, input, catalogPath } = await fixture();
     const updated = await fetch(diagramsEndpoint, {
       method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({
+      body: JSON.stringify(canvasSaveFixture({
         projectId: project.id, representationId: source.representation.id,
         expectedRevisionId: input.sourceRevisionId, name: "Updated source", scene: singleDiagramScene("Changed")
-      })
+      }))
     });
     expect(updated.status).toBe(200);
     await updated.json();

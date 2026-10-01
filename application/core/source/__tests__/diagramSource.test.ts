@@ -1,3 +1,4 @@
+import { canvasSaveFixture } from '../../../../tests/support/mappingDiagram';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -36,7 +37,7 @@ it('isolates same-path source reads, mapped evidence and compactions across repo
     evidence:{worker:{id:'worker',handle:'worker',label:`Worker ${i}`,category:'operation',summary:'',sourceRanges:[{id:'r',path:'same.ts',startLine:1,endLine:1,originalLines:[`snapshot ${i}`]}]}}
   }]);
   const scene = controller.getSnapshot().document.scene;
-  const saved = await store.projectCatalogs.saveMappingDiagram(project.id,{name:'Two repositories',scene});
+  const saved = await store.projectCatalogs.saveMappingDiagram(project.id,canvasSaveFixture({name:'Two repositories',scene}));
   const revision = saved.catalog.revisions[saved.representation.currentRevisionId];
   expect(Object.keys(revision.evidence)).toEqual(['repo-0:worker','repo-1:worker']);
   expect(revision.mappings.map(m=>m.evidenceId)).toEqual(['repo-0:worker','repo-1:worker']);
@@ -69,8 +70,8 @@ it('isolates same-path source reads, mapped evidence and compactions across repo
   const read=await agent.call('diagram-search',{operation:'read',sessionId:attached.value.sessionId,nodeId:'grid:repo-1'}) as any;
   expect(read.node.diagram.sourceContext.binding.sourceId).toBe(sources[1].sourceId);
   expect(read.evidence.worker.sourceRanges[0].originalLines).toEqual(['snapshot 1']);
-  const stale=structuredClone(scene.contents['repo-0']); stale.content.ascii='Changed';
+  const stale=structuredClone(scene.contents['repo-0']) as { content: { ascii: string } } & typeof scene.contents[string]; (stale.content as { ascii: string }).ascii='Changed';
   expect(()=>controller.commitDocument(mappingDocumentFromScene({...scene,contents:{...scene.contents,'repo-0':stale}}))).toThrow();
   // Domain validation rejects a mismatched source revision at the persistence boundary.
-  await expect(store.projectCatalogs.saveMappingDiagram(project.id,{name:'Stale',scene:{...scene,contents:{...scene.contents,'repo-0':stale}}})).rejects.toThrow();
+  await expect(async () => store.projectCatalogs.saveMappingDiagram(project.id,canvasSaveFixture({name:'Stale',scene:{...scene,contents:{...scene.contents,'repo-0':stale}}}))).rejects.toThrow();
 });

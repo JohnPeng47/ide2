@@ -1,3 +1,5 @@
+import { DiagramPersistence } from '../../../../domain/core/diagrams/diagramPersistence';
+import { canvasSaveFixture } from '../../../../tests/support/mappingDiagram';
 import { mkdtemp, readFile, writeFile, readdir, rm, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -18,9 +20,9 @@ const roots: string[] = [];
 afterEach(async () => { await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true }))); });
 async function setup() {
   const root = await mkdtemp(path.join(tmpdir(), 'diagram-records-')); roots.push(root);
-  const records = new DiagramRevisionStore(root), service = new RevisionedDiagramService(records);
+  const records = new DiagramRevisionStore(root), service = new DiagramPersistence(records);
   const canvas = initialCanvasState();
-  const controller = new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('Original')), canvas, 0, undefined, undefined, undefined, service);
+  const controller = new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('Original')), canvas, 0, undefined, undefined, undefined, new RevisionedDiagramService());
   controller.applyUpdate(0, [{ method: 'replace', nodeId: 'grid:overview', ascii: 'Changed' }]);
   return { root, records, service, controller, canvas };
 }
@@ -55,8 +57,8 @@ it('reads the legacy catalog without modifying it, then publishes to the canvas 
   await rm(path.join(root, 'canvases'), { recursive: true });
   await rm(path.join(root, 'diagrams'), { recursive: true });
   expect(await catalog.loadRepresentationCatalog('project')).toEqual(JSON.parse(original));
-  await catalog.saveMappingDiagram('project', { name: 'After', representationId: saved.representation.id,
-    expectedRevisionId: saved.representation.currentRevisionId, scene: controller.getSnapshot().document.scene });
+  await catalog.saveMappingDiagram('project', canvasSaveFixture({ name: 'After', representationId: saved.representation.id,
+    expectedRevisionId: saved.representation.currentRevisionId, scene: controller.getSnapshot().document.scene }));
   expect(await readFile(path.join(root, 'representations/catalog.json'), 'utf8')).toBe(original);
   expect((await catalog.loadRepresentationCatalog('project')).representations[saved.representation.id].name).toBe('After');
 });
@@ -64,11 +66,11 @@ it('reads the legacy catalog without modifying it, then publishes to the canvas 
 it('does not publish a canvas if diagram persistence fails', async () => {
   const { root, records, service, controller } = await setup();
   const catalog = new CanvasCatalogStore(root, service);
-  const first = await catalog.saveMappingDiagram('project', { name: 'Before', scene: controller.getSnapshot().document.scene });
+  const first = await catalog.saveMappingDiagram('project', canvasSaveFixture({ name: 'Before', scene: controller.getSnapshot().document.scene }));
   const before = await readFile(path.join(root, 'canvases/catalog.json'), 'utf8');
   vi.spyOn(records, 'put').mockRejectedValue(new Error('Disk full'));
-  await expect(catalog.saveMappingDiagram('project', { name: 'After', representationId: first.representation.id,
-    expectedRevisionId: first.representation.currentRevisionId, scene: singleDiagramScene('New') })).rejects.toThrow('Disk full');
+  await expect(async () => catalog.saveMappingDiagram('project', canvasSaveFixture({ name: 'After', representationId: first.representation.id,
+    expectedRevisionId: first.representation.currentRevisionId, scene: singleDiagramScene('New') }))).rejects.toThrow('Disk full');
   expect(await readFile(path.join(root, 'canvases/catalog.json'), 'utf8')).toBe(before);
 });
 
@@ -106,4 +108,13 @@ it('rejects corrupted and escaping diagram references', async () => {
   await writeFile(path.join(root, 'diagrams/diagram', `${ref.id}.json`), '{}');
   await expect(service.restore(stored)).rejects.toThrow('integrity');
   await expect(records.get('diagram', '../project')).rejects.toThrow('identity');
+});
+
+it('rejects saves without supplied history before publishing any catalog', async () => {
+  const { root, controller } = await setup();
+  const catalog = new CanvasCatalogStore(root);
+  // @ts-expect-error Simulate an untyped HTTP/MCP caller omitting required history.
+  await expect(catalog.saveMappingDiagram('project', { name: 'Missing history', scene: controller.getSnapshot().document.scene }))
+    .rejects.toThrow('Canvas history is required');
+  expect(await readdir(root)).not.toContain('canvases');
 });

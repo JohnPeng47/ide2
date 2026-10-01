@@ -4,12 +4,12 @@ import { CanvasHistory, documentFromHistory, validateCanvasHistory } from '../ca
 import { mappingDocumentFromScene } from '../mappingDocument';
 import { initialCanvasState } from '../mappingWorkspace';
 import { singleDiagramScene } from '../../../core/diagrams/projectDiagramCanvas';
-import { createDiagram } from '../../../core/diagrams/diagram';
+import { RevisionedDiagramService } from '../../../core/diagrams/diagramService';
 import { diagramContentNodes } from '../../../core/diagrams/diagramContentNodes';
 import { defaultArrowAppearance } from '../../../core/diagrams/diagramConnection';
 const setup = () => {
   const scene = singleDiagramScene('Root\n|-- Edit\n`-- Keep');
-  scene.contents = { ...scene.contents, overview: createDiagram({ id: 'overview', revision: 0, ascii: scene.contents.overview.content.ascii, structureKind: 'tree' }) };
+  scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii: scene.contents.overview.content.ascii, structureKind: 'tree' }).diagram };
   return new MappingDocumentController(mappingDocumentFromScene(scene), initialCanvasState());
 };
 const patch = (c: MappingDocumentController, text = '|-- Changed') => c.applyUpdate(c.getSnapshot().version,
@@ -43,13 +43,14 @@ it('retains abandoned branches and restores durable undo/redo without reusing di
 it('prepares isolated changes without advancing a context and detects metadata-only concurrent revisions', () => {
   const c = setup(), original = c.exportHistory();
   const history = new CanvasHistory(c.getSnapshot().document, c.getSnapshot().canvas, original);
-  const prepared = history.diagrams.prepareEdit(history.contextId, 'overview', { kind: 'patch', start: 2, end: 2, patch: '|-- Prepared' });
+  const prepared = new RevisionedDiagramService().revise(c.getSnapshot().document.scene.contents.overview.revisionId, { kind: 'patch', start: 2, end: 2, patch: '|-- Prepared' });
   expect(prepared.diagram.content.ascii).toContain('Prepared'); expect(history.export()).toEqual(original);
   const fork = c.forkHistory(); expect(fork.contextId).not.toBe(original.contextId);
   const copy = new MappingDocumentController(documentFromHistory(fork), initialCanvasState(), 0, undefined, undefined, fork);
   patch(copy); expect(c.exportHistory()).toEqual(original);
   const doc = structuredClone(c.getSnapshot().document);
-  doc.scene.contents.overview.sourceContext.evidence.extra = { id: 'extra', handle: 'extra', label: 'Extra', category: 'operation', summary: '', sourceRanges: [] };
+  const diagram = doc.scene.contents.overview;
+  doc.scene.contents = { ...doc.scene.contents, overview: new RevisionedDiagramService().revise(diagram.revisionId, { kind: 'source-mappings', expectedContentHash: diagram.content.asciiSha256, mappings: diagram.sourceContext.mappings, evidence: { ...diagram.sourceContext.evidence, extra: { id: 'extra', handle: 'extra', label: 'Extra', category: 'operation', summary: '', sourceRanges: [] } } }).diagram };
   c.commitDocument(doc);
   expect(() => history.diagrams.merge(original.snapshots[original.headId].diagramBindings, head(c).diagramBindings, {})).toThrow('MERGE_REQUIRED');
   expect(history.diagrams.merge(head(c).diagramBindings, head(c).diagramBindings, head(copy).diagramBindings)).toEqual(head(copy).diagramBindings);

@@ -1,3 +1,5 @@
+import { DefaultCanvasHistoryService } from '../../domain/core/diagrams/canvasHistoryService';
+import { httpDiagramGenerator } from '../features/mapping/services/diagramGenerator';
 import { WorkspaceStorage } from '../features/mapping/workspace/workspaceStorage';
 import { RevisionedDiagramService } from '../../domain/core/diagrams/diagramService';
 import type { CodeRepoService } from '../../domain/core/source/codeRepoService';
@@ -11,5 +13,5 @@ export const unconnectedCodeRepoService: CodeRepoService = {
   git: { resolveCommit: unavailable, listCommits: unavailable, changedFiles: unavailable, diff: unavailable, readFileAt: unavailable }
 };
 export function createMappingServices(): MappingServices {
-  return { diagrams: new RevisionedDiagramService(), workspaceStorage: new WorkspaceStorage(), codeRepo: unconnectedCodeRepoService };
+  return { canvasHistory: new DefaultCanvasHistoryService(), diagrams: new RevisionedDiagramService(httpDiagramGenerator), workspaceStorage: new WorkspaceStorage(), codeRepo: unconnectedCodeRepoService };
 }

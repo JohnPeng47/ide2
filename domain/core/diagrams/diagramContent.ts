@@ -1,14 +1,15 @@
+import type { DeepReadonly } from '../immutability';
 import { asciiSha256 } from './asciiSha256';
 import { parseAsciiTree } from './asciiTree';
 
-export interface DiagramContentNode {
+export type DiagramContentNode = DeepReadonly<{
   id: string; label: string; line: number; branchColumn: number; startColumn: number; endColumn: number;
   parentId?: string; childIds: string[]; foldRanges: { startLine: number; endLine: number }[];
-}
-export interface DiagramContent {
+}>;
+export type DiagramContent = DeepReadonly<{
   revisionId: string; ascii: string; asciiSha256: string;
   structure: { kind: 'diagram' } | { kind: 'tree'; parserVersion: 'ascii-tree-1' | 'ascii-tree-2'; rootIds: string[]; nodes: Record<string, DiagramContentNode> };
-}
+}>;
 export function buildDiagramContent(ascii: string, revisionId: string, kind: 'diagram' | 'tree' = 'diagram', parserVersion: 'ascii-tree-1' | 'ascii-tree-2' = 'ascii-tree-2'): DiagramContent {
   if (!['ascii-tree-1', 'ascii-tree-2'].includes(parserVersion)) throw new Error('Unknown tree parser version');
   if (!ascii.trim() || ascii.length > 20000 || /[^\x20-\x7e\n]/.test(ascii)) throw new Error('Diagram must contain 1–20000 printable ASCII characters with LF newlines');
@@ -26,8 +27,7 @@ export function buildDiagramContent(ascii: string, revisionId: string, kind: 'di
       childIds: parsed.filter(child => child.parentLine === node.line).map(child => ids.get(child.line)!),
       foldRanges: node.descendantLines.length ? [{ startLine: node.line + 1, endLine: peer ? peer.line - 1 : ascii.split('\n').length }] : [] };
   }
-  content.structure = { kind: 'tree', parserVersion, rootIds: Object.values(nodes).filter(node => !node.parentId).map(node => node.id), nodes };
-  return content;
+  return { ...content, structure: { kind: 'tree', parserVersion, rootIds: Object.values(nodes).filter(node => !node.parentId).map(node => node.id), nodes } };
 }
 export function visibleContentLines(content: DiagramContent, collapsedIds: readonly string[]): number[] {
   const hidden = new Set<number>();

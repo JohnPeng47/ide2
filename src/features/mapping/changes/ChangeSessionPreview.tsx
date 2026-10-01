@@ -1,6 +1,5 @@
-import { useMappingServices } from '../services/MappingServices';
+import { ChangePreviewState } from './changePreviewState';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { MappingDocumentController } from '../../../../domain/mapping/workspace/mappingDocumentController';
 import type { ChangePreviewDocument, ChangeSessionPreview as Preview, DiagramChangeSession } from '../../../../domain/mapping/changes/diagramChangeSession';
 import { diffChangeDocument } from '../../../../domain/mapping/changes/changeDocumentDiff';
 import { DraggableDiagramCanvas } from '../../../shared/diagrams/DraggableDiagramCanvas';
@@ -88,15 +87,14 @@ export function ChangeSessionPreview(props: { mode: DisplayModeChange; onSelect:
 function PreviewCanvas({ doc, focusId, serial, onJump, diff, modifiedDiagramIds, searchFocus }: { doc: ChangePreviewDocument; focusId?: string; serial: number; searchFocus?: DiagramFocus;
   diff: ReturnType<typeof diffChangeDocument>; modifiedDiagramIds: ReadonlySet<string>;
   onJump: NonNullable<Parameters<typeof DiagramText>[0]['onJump']> }) {
-  const { diagrams } = useMappingServices();
   const controller = useMemo(() => {
     const state = structuredClone(doc.proposed);
     // Preview folds are local to this viewer; opening a change starts with visible content.
     const expand = (box: typeof state.document.scene.root): typeof box => box.kind === 'container'
       ? { ...box, collapsed: false, children: box.children.map(expand) } : { ...box, collapsed: false };
     state.document.scene.root = expand(state.document.scene.root); state.canvas.diagramViews = {};
-    return new MappingDocumentController(state.document, state.canvas, doc.version, undefined, {}, undefined, diagrams);
-  }, [doc.id, doc.version, diagrams]);
+    return new ChangePreviewState(state, doc.version);
+  }, [doc.id, doc.version]);
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
   useEffect(() => {
     const result = searchFocus?.search;
@@ -178,7 +176,7 @@ function PreviewCanvas({ doc, focusId, serial, onJump, diff, modifiedDiagramIds,
         className={`change-preview-box${focusId === `grid:${box.id}` ? ' is-change-target' : ''}`}
         style={{ left: bounds.column * cell.width, top: bounds.row * cell.height, width: bounds.columns * cell.width, height: bounds.rows * cell.height }} />)}
       <DiagramSubtreeControls nodes={controlNodes} visibleBoxIds={new Set(boxes.map(b => b.box.id))} cell={cell} disabled={false}
-        onCollapse={(nodeId, contentNodeId, collapsed) => controller.transact(controller.getSnapshot().version, [{ method: 'collapse', nodeId, contentNodeId, collapsed }])} />
+        onCollapse={(nodeId, contentNodeId, collapsed) => controller.collapse(nodeId, contentNodeId, collapsed)} />
       <svg className="diagram-connections" ref={geometry.svgRef} aria-label="Preview connections">
         {nodes.flatMap(node => {
           if (node.layout !== 'floating' || node.value.kind !== 'arrow') return [];

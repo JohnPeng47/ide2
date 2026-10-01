@@ -1,3 +1,4 @@
+import { canvasSaveFixture } from '../../../../tests/support/mappingDiagram';
 import { singleDiagramScene } from '../../../../domain/core/diagrams/projectDiagramCanvas';
 import { mkdtemp, rm } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
@@ -60,7 +61,7 @@ describe("Mapping and Core HTTP API", () => {
     expect(await response.json()).toEqual({ project: null, catalog: null });
     const created = await fetch(`${origin}/api/mapping/diagrams`, {
       method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ name: 'First canvas', scene: singleDiagramScene('First') })
+      body: JSON.stringify(canvasSaveFixture({ name: 'First canvas', scene: singleDiagramScene('First') }))
     });
     expect(created.status).toBe(200);
     const saved = await created.json();

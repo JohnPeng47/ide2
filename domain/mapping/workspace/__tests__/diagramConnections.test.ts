@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createDiagram } from '../../../core/diagrams/diagram';
+import { RevisionedDiagramService } from '../../../core/diagrams/diagramService';
 import { connectionContentNodes, defaultArrowAppearance, type ContentNodeAnchor, type DiagramConnection } from '../../../core/diagrams/diagramConnection';
 import { singleDiagramScene } from '../../../core/diagrams/projectDiagramCanvas';
 import { MappingDocumentController, type DiagramOperation } from '../mappingDocumentController';
@@ -10,7 +10,7 @@ import { drawEdge } from '../connectionLayout';
 
 function setup() {
   const scene = singleDiagramScene('Root\n+-- Branch\n|   `-- Leaf\n`-- Leaf');
-  scene.contents = { ...scene.contents, overview: createDiagram({ id: 'overview', revision: 0, ascii: scene.contents.overview.content.ascii, structureKind: 'tree' }) };
+  scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii: scene.contents.overview.content.ascii, structureKind: 'tree' }).diagram };
   if (scene.root.kind === 'container') scene.root.children = [...scene.root.children, {
     id: 'second', kind: 'diagram', contentId: 'overview', position: { column: 40, row: 2 }, collapsed: false
   }];
@@ -110,7 +110,7 @@ describe('document connections', () => {
     controller.undo(); expect(controller.getSnapshot().document.edges).toEqual([edge]);
   });
   it('indexes graph labels without converting or editing the diagram', () => {
-    const content = createDiagram({ id: 'graph', revision: 0, ascii: '[Alpha] ---> [Beta]', structureKind: 'diagram' }).content;
+    const content = new RevisionedDiagramService().create({ id: 'graph', revision: 0, ascii: '[Alpha] ---> [Beta]', structureKind: 'diagram' }).diagram.content;
     const before = structuredClone(content);
     expect(connectionContentNodes(content).map(node => node.label)).toEqual(['[Alpha]', '[Beta]']);
     expect(content).toEqual(before);

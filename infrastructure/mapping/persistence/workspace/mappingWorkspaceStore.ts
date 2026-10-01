@@ -1,6 +1,6 @@
 import { WorkspaceRecordStore } from './workspaceRecordStore';
 import type { WorkspaceBatch } from '../../../../domain/mapping/workspace/workspaceRecords';
-import { RevisionedDiagramService, type DiagramService } from '../../../../domain/core/diagrams/diagramService';
+import { DiagramPersistence } from '../../../../domain/core/diagrams/diagramPersistence';
 import { DiagramRevisionStore } from '../../../core/persistence/diagramRevisionStore';
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
@@ -9,9 +9,9 @@ import type { MappingWorkspaceSnapshot } from '../../../../domain/mapping/worksp
 import { deserializeWorkspace } from '../../../../domain/mapping/workspace/mappingWorkspaceCodec';
 /** Separate from representation revisions: UI changes do not create diagram revisions. */
 export class MappingWorkspaceStore {
-  constructor(private readonly root: string, private readonly diagrams: DiagramService = new RevisionedDiagramService(new DiagramRevisionStore(root))) { this.records = new WorkspaceRecordStore(root); }
+  constructor(private readonly root: string, private readonly diagramPersistence: DiagramPersistence = new DiagramPersistence(new DiagramRevisionStore(root))) { this.records = new WorkspaceRecordStore(root); }
   private readonly records: WorkspaceRecordStore;
-  loadRecords(projectId: string) { return this.records.state(projectId, () => this.loadLegacy(projectId)); }
+  loadRecords(projectId: string, historyValidation: import('../../../../domain/core/diagrams/canvasHistory').HistoryValidation = 'all') { return this.records.state(projectId, () => this.loadLegacy(projectId), historyValidation); }
   applyBatch(projectId: string, batch: WorkspaceBatch) { return this.records.apply(projectId, batch); }
   async load(projectId: string): Promise<MappingWorkspaceSnapshot | null> {
     return await this.records.load(projectId) ?? this.loadLegacy(projectId);
@@ -24,7 +24,7 @@ export class MappingWorkspaceStore {
       throw error;
     }
     // A missing referenced diagram is corruption, not a missing workspace.
-    const snapshot = deserializeWorkspace(await this.diagrams.restore(JSON.parse(json)));
+    const snapshot = deserializeWorkspace(await this.diagramPersistence.restore(JSON.parse(json)));
     if (snapshot.projectId !== projectId) throw new Error('Workspace belongs to another project');
     return snapshot;
   }
@@ -33,7 +33,7 @@ export class MappingWorkspaceStore {
     const snapshot = deserializeWorkspace(input);
     if (snapshot.projectId !== projectId) throw new Error('Workspace belongs to another project');
     if (await this.records.replace(projectId, snapshot)) return;
-    const json = JSON.stringify(await this.diagrams.persist(snapshot));
+    const json = JSON.stringify(await this.diagramPersistence.persist(snapshot));
     await mkdir(this.root, { recursive: true });
     const temp = path.join(this.root, `.mapping-workspace-${randomUUID()}.tmp`);
     try { await writeFile(temp, json, 'utf8'); await rename(temp, path.join(this.root, 'mapping-workspace.json')); }

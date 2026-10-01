@@ -1,3 +1,4 @@
+import { DefaultCanvasHistoryService } from '../../../domain/core/diagrams/canvasHistoryService';
 import { useStore } from 'zustand';
 import { CanvasWorkspace, type CanvasDraft as Draft, type CanvasDraftSeed } from './workspace/canvasWorkspace';
 import { WorkspacePersistence } from './workspace/workspacePersistence';
@@ -64,7 +65,7 @@ export function MappingPocPage({ services }: { services: MappingServices }) {
 }
 
 function MappingWorkspacePage() {
-  const { diagrams: diagramService, workspaceStorage: injectedStorage } = useMappingServices();
+  const { diagrams: diagramService, canvasHistory, workspaceStorage: injectedStorage } = useMappingServices();
   const [storage] = useState(() => injectedStorage ?? new WorkspaceStorage());
   const persistence = useRef<WorkspacePersistence | undefined>(undefined);
   const [pendingTransfer, setPendingTransfer] = useState<{ sourceId: string; mode: 'copy' | 'move'; selectedIds: string[]; revisionId: string }>();
@@ -80,7 +81,7 @@ function MappingWorkspacePage() {
   const [workspaceLoaded, setWorkspaceLoaded] = useState(false);
   const importRef = useRef<HTMLInputElement>(null);
   const [snapshot, setSnapshot] = useState<ProjectRepresentationsSnapshot>();
-  const [workspace] = useState(() => new CanvasWorkspace(diagramService));
+  const [workspace] = useState(() => new CanvasWorkspace(diagramService, canvasHistory));
   const drafts = useStore(workspace.store, state => state.drafts);
   const dirtySceneIds = useStore(workspace.dirtyScenes, state => state.ids);
   const setDrafts = workspace.setDrafts;
@@ -376,7 +377,7 @@ function MappingWorkspacePage() {
       const name = destinationDoc?.name ?? ('name' in destinationChoice ? destinationChoice.name.trim() : '');
       if (!name || name.length > 120) throw Error('Enter a canvas name (up to 120 characters)');
       const destination = destinationDoc ? controllers.current.get(destinationId) ?? new MappingDocumentController(destinationDoc.document,
-        destinationDoc.canvas, 0, undefined, undefined, destinationDoc.history, diagramService) : undefined;
+        destinationDoc.canvas, 0, undefined, undefined, destinationDoc.history, diagramService, canvasHistory) : undefined;
       const sourceView = structuredClone(source.getSnapshot().canvas);
       for (const node of Object.values(sourceView.display.nodes)) if (node.kind === 'selection' && selectedIds.includes(`grid:${node.sourceBoxId}`))
         sourceView.display = removeDisplayNode(sourceView.display, node.id);
@@ -524,8 +525,13 @@ function MappingWorkspacePage() {
     if (savingId || deletingId || (copyCurrent && active?.busy)) return;
     setSavingId("new"); setError("");
     try {
+      const document = copyCurrent && active ? documentOf(active) : mappingDocumentFromScene(singleDiagramScene(newAscii));
+      const histories = new DefaultCanvasHistoryService();
+      const context = histories.openContext(document, initialCanvasState(), copyCurrent && active ? active.session.controller.exportHistory() : undefined);
+      const history = copyCurrent && active ? histories.forkContext(context, initialCanvasState()) : histories.exportContext(context);
       const result = await saveMappingProjectDiagram({ projectId: snapshot?.project?.id, name: newName,
-        ...(copyCurrent && active ? { sourceRevisionId: active.revisionId, scene: documentOf(active).scene, edges: documentOf(active).edges } : { scene: singleDiagramScene(newAscii) }) });
+        history, scene: document.scene, edges: document.edges,
+        ...(copyCurrent && active ? { sourceRevisionId: active.revisionId } : {}) });
       setSnapshot(result); setCreating(false); open(result.representation.id, result);
     } catch (error) { setError(error instanceof Error ? error.message : "Could not create diagram"); }
     finally { setSavingId(undefined); }

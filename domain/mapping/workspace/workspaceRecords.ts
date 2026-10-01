@@ -1,5 +1,5 @@
 import { canvasTransferSchema } from '../../core/diagrams/canvasTransfer';
-import { CanvasHistory, documentFromHistory, validateCanvasHistory, type CanvasHistoryRecord, type HistoryChanges } from '../../core/diagrams/canvasHistory';
+import { CanvasHistory, currentHistoryChanges, documentFromHistory, validateCanvasHistory, type CanvasHistoryRecord, type HistoryChanges, type HistoryValidation } from '../../core/diagrams/canvasHistory';
 import type { StorageChange } from '../../core/storage/storageService';
 import { deserializeWorkspace } from './mappingWorkspaceCodec';
 import type { MappingDocumentSnapshot, MappingWorkspaceSnapshot, MappingCanvasState } from './mappingWorkspace';
@@ -65,7 +65,7 @@ export function normalizeRecord(key: string, value: unknown): unknown {
   return value;
 }
 /** Validate changed records and their references; previously accepted history is not reparsed. */
-export function validateRecordUpdate(records: WorkspaceRecords, keys: string[], projectId: string): void {
+export function validateRecordUpdate(records: WorkspaceRecords, keys: string[], projectId: string, historyValidation: HistoryValidation = 'all'): void {
   const index = records.workspace as WorkspaceIndex;
   if (!index || index.projectId !== projectId || !Array.isArray(index.documentIds) || new Set(index.documentIds).size !== index.documentIds.length
     || index.documentIds.length > 100 || !Array.isArray(index.transfers)) throw Error('Invalid workspace index');
@@ -92,7 +92,7 @@ export function validateRecordUpdate(records: WorkspaceRecords, keys: string[], 
   for (const id of affected) {
     const prefix = documentPrefix(id), history = recordHistory(records, id);
     const removesHistory = keys.some(k => (k.startsWith(prefix + 'revision/') || k.startsWith(prefix + 'checkpoint/')) && !Object.hasOwn(records, k));
-    validateCanvasHistory(history, removesHistory ? undefined : {
+    validateCanvasHistory(history, historyValidation === 'current' ? currentHistoryChanges(history) : removesHistory ? undefined : {
       revisions: keys.filter(k => k.startsWith(prefix + 'revision/') && Object.hasOwn(records, k)).map(k => k.slice((prefix + 'revision/').length)),
       snapshots: keys.filter(k => k.startsWith(prefix + 'checkpoint/') && Object.hasOwn(records, k)).map(k => k.slice((prefix + 'checkpoint/').length))
     });

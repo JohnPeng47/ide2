@@ -1,4 +1,4 @@
-import { createDiagram } from '../../../core/diagrams/diagram';
+import { RevisionedDiagramService } from '../../../core/diagrams/diagramService';
 import { describe, expect, it } from 'vitest';
 import { singleDiagramScene } from '../../../core/diagrams/projectDiagramCanvas';
 import { composeScene, resolveScene, flattenGrid } from '../../../core/diagrams/lineGrid';
@@ -13,7 +13,7 @@ import { layoutFloatingSelections } from '../floatingBoxLayout';
 const ascii = 'Content\n+-- structure\n|   +-- tree\n|   |   `-- nodes\n|   `-- diagram\n`-- footer';
 const setup = () => {
   const scene = singleDiagramScene(ascii);
-  scene.contents = {...scene.contents, overview: createDiagram({id:'overview',revision:0,ascii:scene.contents.overview.content.ascii,structureKind:'tree'})};
+  scene.contents = {...scene.contents, overview: new RevisionedDiagramService().create({id:'overview',revision:0,ascii:scene.contents.overview.content.ascii,structureKind:'tree'}).diagram};
   return new MappingDocumentController(mappingDocumentFromScene(scene), initialCanvasState());
 };
 const target = (controller: MappingDocumentController, line: number) => controller.nodes().find(n => n.id === 'grid:overview')!.collapsible.subtrees.find(t => t.line === line)!;

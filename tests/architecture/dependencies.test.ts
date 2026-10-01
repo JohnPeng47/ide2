@@ -81,3 +81,23 @@ it("preserves feature ownership and HTTP/application/infrastructure/domain bound
   }
   expect(violations).toEqual([]);
 });
+
+it('keeps diagram construction and prepared content edits behind DiagramService', () => {
+  const violations: string[] = [];
+  for (const runtime of ['domain', 'application', 'infrastructure', 'src']) for (const file of files(path.join(root, runtime))) {
+    if (file.includes('/__tests__/')) continue;
+    const relative = path.relative(root, file).replaceAll(path.sep, '/');
+    const source = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true);
+    const walk = (node: ts.Node) => {
+      if (ts.isCallExpression(node)) {
+        const name = ts.isPropertyAccessExpression(node.expression) ? node.expression.name.text : node.expression.getText(source);
+        if (name === 'constructDiagram' && relative !== 'domain/core/diagrams/diagramRevisionEditor.ts'
+          || ['prepareCreate', 'prepareEdit'].includes(name) && relative !== 'domain/core/diagrams/diagramService.ts')
+          violations.push(`${relative}: ${name}`);
+      }
+      ts.forEachChild(node, walk);
+    };
+    walk(source);
+  }
+  expect(violations).toEqual([]);
+});

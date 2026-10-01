@@ -88,7 +88,10 @@ try {
     assert.ok(found.hits.some(hit => hit.representationId === saved.representationId));
     const persisted = await call('diagram-search', {operation:'read',representationId:saved.representationId});
     assert.equal(persisted.revision.ascii, args.ascii);
-    assert.ok(persisted.revision.content.scene.contents.overview.content);
+    assert.equal(persisted.revision.content.kind, 'canvas-history');
+    const history = persisted.revision.content.history;
+    const overviewRevision = history.snapshots[history.headId].diagramBindings.overview;
+    assert.equal(history.diagramRevisions[overviewRevision].diagram.content.ascii, args.ascii);
     const created = (await exec({code:`return canvas.createDocument(${JSON.stringify({canvasId:canvas.canvasId,name:'Unsaved proposal'})});`})).value;
     await waitFor(async () => (await exec({sessionId:created.sessionId,code:'return nodes.list();'})).value.nodes.length > 0);
     const replaced = await call('draw_diagram', {sessionId:created.sessionId,requestId:randomUUID(),expectedVersion:created.version,nodeId:'grid:overview',ascii:'[New document]'});

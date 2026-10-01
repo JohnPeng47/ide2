@@ -1,3 +1,5 @@
+import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService';
+import { canvasSaveFixture } from '../../../tests/support/mappingDiagram';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -16,9 +18,9 @@ it('persists connections in immutable document revisions while preserving diagra
     const content = scene.contents.overview.content;
     const edge: DiagramConnection = { id: 'edge-1', source: { kind: 'content-node', displayNodeId: 'grid:overview', revisionId: content.revisionId,
       contentNodeId: connectionContentNodes(content)[0].id, side: 'right' }, target: { kind: 'box', displayNodeId: 'grid:second', side: 'left' }, appearance: { ...defaultArrowAppearance, label: 'Uses' } };
-    scene.contents.overview.jumps = [{ id: 'jump', source: { revisionId: content.revisionId, contentHash: content.asciiSha256,
-      line: 1, startColumn: 1, endColumn: 7 }, target: { representationId: 'another-saved-canvas', displayNodeId: 'grid:overview' } }];
-    const created = await store.saveMappingDiagram('project-one', { name: 'Connections', scene, edges: [edge] });
+    scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().revise(scene.contents.overview.revisionId, { kind: 'jumps', jumps: [{ id: 'jump', source: { revisionId: content.revisionId, contentHash: content.asciiSha256,
+      line: 1, startColumn: 1, endColumn: 7 }, target: { representationId: 'another-saved-canvas', displayNodeId: 'grid:overview' } }] }).diagram };
+    const created = await store.saveMappingDiagram('project-one', canvasSaveFixture({ name: 'Connections', scene, edges: [edge] }));
     const reopened = await new ProjectCatalogStore(root).loadRepresentationCatalog('project-one');
     const revision = reopened.revisions[created.representation.currentRevisionId];
     expect(revision.content?.kind).toBe('canvas-history');
@@ -26,13 +28,13 @@ it('persists connections in immutable document revisions while preserving diagra
     const history = historyFromRevision(revision)!;
     expect(history.snapshots[history.headId].document.edges[0].source).not.toHaveProperty('revisionId');
     expect(sceneFromRevision(revision)).toEqual(scene);
-    const saved = await store.saveMappingDiagram('project-one', { name: 'Connections', scene, edges: [],
-      representationId: created.representation.id, expectedRevisionId: revision.id });
+    const saved = await store.saveMappingDiagram('project-one', canvasSaveFixture({ name: 'Connections', scene, edges: [],
+      representationId: created.representation.id, expectedRevisionId: revision.id }));
     expect(saved.catalog.revisions[revision.id].content).toEqual(revision.content);
     const next = saved.catalog.revisions[saved.representation.currentRevisionId];
     expect(documentFromRevision(next)).toEqual({ scene, edges: [], sections: {} });
     const nextHistory = historyFromRevision(next)!;
     expect(nextHistory.snapshots[nextHistory.headId].diagramBindings).toEqual(history.snapshots[history.headId].diagramBindings);
-    await expect(store.saveMappingDiagram('project-one', { name: 'Invalid', scene, edges: [{ ...edge, target: { ...edge.target, displayNodeId: 'grid:missing' } }] })).rejects.toThrow('GridBox');
+    await expect(async () => store.saveMappingDiagram('project-one', canvasSaveFixture({ name: 'Invalid', scene, edges: [{ ...edge, target: { ...edge.target, displayNodeId: 'grid:missing' } }] }))).rejects.toThrow('GridBox');
   } finally { await rm(root, { recursive: true, force: true }); }
 });

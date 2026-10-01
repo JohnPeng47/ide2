@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { DiagramChangeSessionStore } from '../diagramChangeSessionStore';
-import { RevisionedDiagramService } from '../../../../domain/core/diagrams/diagramService';
+import { DiagramPersistence } from '../../../../domain/core/diagrams/diagramPersistence';
 import { DiagramRevisionStore } from '../../../core/persistence/diagramRevisionStore';
 import { CanvasHistory } from '../../../../domain/core/diagrams/canvasHistory';
 import { singleDiagramScene } from '../../../../domain/core/diagrams/projectDiagramCanvas';
@@ -58,7 +58,7 @@ it('updates metadata/receipts without rewriting canvases and rejects a stale pub
 });
 it('serializes only the edited canvas and reuses its old checkpoints and the other canvas', async () => {
   const f=await fixture(), before=await f.manifest(), oldAlpha=await f.blob(before.documents.Alpha);
-  const diagrams=new RevisionedDiagramService(new DiagramRevisionStore(f.root));
+  const diagrams=new DiagramPersistence(new DiagramRevisionStore(f.root));
   const store=new DiagramChangeSessionStore(f.root,diagrams), session=await store.read('project','proposal');
   const persist=vi.spyOn(diagrams,'persist'), doc=session.documents[0];
   const history=new CanvasHistory(doc.proposed.document,doc.proposed.canvas,doc.history);

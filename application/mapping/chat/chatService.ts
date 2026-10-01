@@ -1,4 +1,4 @@
-import { createDiagram } from '../../../domain/core/diagrams/diagram';
+import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService';
 import { mappingsForSelection } from '../../../domain/core/diagrams/diagramSelection';
 import type { ProjectRepresentationEvidenceRecord } from '../../../domain/core/representations/projectCatalog';
 import { validateLocalChatRequest } from '../../../domain/mapping/chat/localChatPrompt';
@@ -24,12 +24,13 @@ export class LocalChatService {
       // Historical revisions remain valid: existing chats retain their original selection.
       if (!revision || revision.representationId !== context.representationId) throw new Error("Diagram revision does not belong to this representation");
       const captured = context.sourceContext;
-      const live = captured && createDiagram({id: context.contentId, revision: context.diagramRevision, ascii: context.diagramAscii,
-        source: captured.binding, mappings: captured.mappings, evidence: captured.evidence});
+      const live = captured && new RevisionedDiagramService().create({id: context.contentId, revision: context.diagramRevision, ascii: context.diagramAscii,
+        source: captured.binding, mappings: captured.mappings, evidence: captured.evidence}).diagram;
       if (live && captured!.contentHash !== live.content.asciiSha256) throw new Error('Diagram source context does not match content');
       const resolved = await resolveDiagramSource(this.projects, {projectId: project.id, representationId: context.representationId,
         revisionId: context.baseRevisionId, contentId: context.contentId}, this.corpus, live);
-      projectEvidence = resolved.context.evidence;
+      projectEvidence = Object.fromEntries(Object.entries(resolved.context.evidence).map(([id, evidence]) => [id, { ...evidence,
+        sourceRanges: evidence.sourceRanges.map(range => ({ ...range, originalLines: [...range.originalLines] })) }]));
       context.mappings = [...resolved.mappings()];
       sourceRoot = resolved.context.binding?.corpus.root ?? this.sourceRoot;
     }

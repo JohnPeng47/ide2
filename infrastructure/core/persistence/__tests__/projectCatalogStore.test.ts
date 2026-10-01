@@ -1,3 +1,4 @@
+import { canvasSaveFixture } from '../../../../tests/support/mappingDiagram';
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -172,7 +173,7 @@ it('persists coordinated histories and rejects publication after the saved diagr
   const restored = new MappingDocumentController(documentFromRevision(latest), initialCanvasState(), 0, undefined, undefined, historyFromRevision(latest));
   restored.undo(); expect(restored.resolveDiagram('overview').ascii).toBe('Original');
   const beforeBindings = historyFromRevision(latest)!;
-  const fallback = await store.saveMappingDiagram('project', { representationId: id, expectedRevisionId: latest.id, name: 'Renamed', scene: documentFromRevision(latest).scene });
+  const fallback = await store.saveMappingDiagram('project', canvasSaveFixture({ representationId: id, expectedRevisionId: latest.id, name: 'Renamed', scene: documentFromRevision(latest).scene }));
   const after = historyFromRevision(fallback.catalog.revisions[fallback.representation.currentRevisionId])!;
   expect(after.snapshots[after.headId].diagramBindings).toEqual(beforeBindings.snapshots[beforeBindings.headId].diagramBindings);
 });

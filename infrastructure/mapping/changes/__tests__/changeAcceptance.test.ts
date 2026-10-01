@@ -1,3 +1,4 @@
+import { canvasSaveFixture } from '../../../../tests/support/mappingDiagram';
 import { expect, it, vi } from 'vitest';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -9,7 +10,7 @@ import type { DiagramRepository } from '../../../../application/core/ports/diagr
 import type { CanvasSessionPort } from '../../../../application/mapping/agent/ports';
 import { singleDiagramScene, documentFromRevision, historyFromRevision } from '../../../../domain/core/diagrams/projectDiagramCanvas';
 import { documentFromHistory } from '../../../../domain/core/diagrams/canvasHistory';
-import { RevisionedDiagramService } from '../../../../domain/core/diagrams/diagramService';
+import { DefaultCanvasHistoryService } from '../../../../domain/core/diagrams/canvasHistoryService';
 import { diffChangeDocument } from '../../../../domain/mapping/changes/changeDocumentDiff';
 
 async function fixture(run: (f: Awaited<ReturnType<typeof setup>>) => Promise<void>) {
@@ -19,7 +20,7 @@ async function fixture(run: (f: Awaited<ReturnType<typeof setup>>) => Promise<vo
 async function setup() {
   const root = await mkdtemp(path.join(tmpdir(), 'change-acceptance-'));
   const catalog = new ProjectCatalogStore(root);
-  const saved = await catalog.saveMappingDiagram('project', { name: 'Original', scene: singleDiagramScene('Root\n|-- Old\n`-- Keep') });
+  const saved = await catalog.saveMappingDiagram('project', canvasSaveFixture({ name: 'Original', scene: singleDiagramScene('Root\n|-- Old\n`-- Keep') }));
   const source = { loadProject: async () => ({ id: 'project' }), projectCatalogs: catalog } as unknown as DiagramRepository;
   const bridge: CanvasSessionPort = { register() {}, list: () => [], poll: async () => [], reply() {}, unregister() {}, dispose() {}, dispatch: async () => { throw Error('Unexpected live call'); } };
   const repository = new DiagramChangeSessionStore(root), changes = new ChangeSessionService(repository, source, bridge);
@@ -54,7 +55,7 @@ it('publishes composition and exact diagram bindings, retains the diff and ident
   expect(documentFromRevision(published)).toEqual(before.documents[0].proposed.document);
   const proposed = before.documents[0].history!;
   expect(history.snapshots[history.headId].diagramBindings).toEqual(proposed.snapshots[proposed.headId].diagramBindings);
-  const diagrams = new RevisionedDiagramService(), context = diagrams.openContext(documentFromHistory(history), {}, history);
+  const diagrams = new DefaultCanvasHistoryService(), context = diagrams.openContext(documentFromHistory(history), {}, history);
   expect(diagrams.navigate(context)).toBe(true);
   expect(diagrams.document(context)).toEqual(documentFromHistory(history, entry.before!.checkpointId));
   const reopened = new ChangeSessionService(new DiagramChangeSessionStore(f.root), f.source, f.bridge);
@@ -81,12 +82,12 @@ it('publishes new canvases and existing canvases together with null before refer
 }));
 
 it('rejects a stale target without publishing any earlier documents from the batch', () => fixture(async f => {
-  const second = await f.catalog.saveMappingDiagram('project', { name: 'Second', scene: singleDiagramScene('Second') });
+  const second = await f.catalog.saveMappingDiagram('project', canvasSaveFixture({ name: 'Second', scene: singleDiagramScene('Second') }));
   const id = await f.create();
   await f.changes.apply(id, second.representation.id, 0, [{ method: 'replace', nodeId: 'grid:overview', ascii: 'Proposed second' }], 'second-edit');
   const input = await f.ready(id);
-  const changed = await f.catalog.saveMappingDiagram('project', { name: 'Second', representationId: second.representation.id,
-    expectedRevisionId: second.representation.currentRevisionId, scene: singleDiagramScene('Concurrent edit') });
+  const changed = await f.catalog.saveMappingDiagram('project', canvasSaveFixture({ name: 'Second', representationId: second.representation.id,
+    expectedRevisionId: second.representation.currentRevisionId, scene: singleDiagramScene('Concurrent edit') }));
   await expect(f.changes.accept(input)).rejects.toThrow('VERSION_CONFLICT');
   expect(await f.catalog.loadRepresentationCatalog('project')).toEqual(changed.catalog);
   expect((await f.changes.get(id)).status).toBe('ready');
