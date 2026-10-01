@@ -49,7 +49,7 @@ export function createCoreRoutes({ application, source, catalog }: {
 
     if (url.pathname === "/api/core/project/representations") {
       if (request.method !== "GET") return sendJson(response, 405, { error: "method not allowed" });
-      return sendJson(response, 200, await application.projectRepresentations());
+      return sendJson(response, 200, await application.projectRepresentations(url.searchParams.get('history') === 'current' ? 'current' : 'all'));
     }
 
     return sendJson(response, 404, { error: "API route not found" });

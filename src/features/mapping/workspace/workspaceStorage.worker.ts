@@ -7,7 +7,7 @@ const bodies = new Map<string, string>();
 const known = new Map<string, string>();
 let initialized = false;
 async function readState(): Promise<WorkspaceRecordState> {
-  const response = await fetch(endpoint, { cache: 'no-store' });
+  const response = await fetch(endpoint + '?history=current', { cache: 'no-store' });
   const value = await response.json(); if (!response.ok) throw Error(value.error ?? 'Could not load storage');
   const state = value as WorkspaceRecordState;
   known.clear(); for (const [key, record] of Object.entries(state.records)) known.set(key, JSON.stringify(record));
@@ -22,7 +22,7 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; type: string; endpo
       endpoint = data.endpoint!;
       const state = await readState();
       const workspace = recordsWorkspace(state.records);
-      result = { state, workspace: workspace ? deserializeWorkspace(workspace) : null };
+      result = { state, workspace: workspace ? deserializeWorkspace(workspace, 'current') : null };
     } else if (data.type === 'project') {
       // A restarted worker can retry in-flight writes immediately, but must know
       // the complete key set before diffing an explicit workspace replacement.

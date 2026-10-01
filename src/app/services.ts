@@ -6,5 +6,5 @@ import { createHttpCodeRepoService } from '../shared/http/codeRepoService';
 import type { MappingServices } from '../features/mapping/services/MappingServices';
 
 export function createMappingServices(): MappingServices {
-  return { canvasHistory: new DefaultCanvasHistoryService(), diagrams: new RevisionedDiagramService(httpDiagramGenerator), codeRepo: createHttpCodeRepoService(), workspaceStorage: new WorkspaceStorage() };
+  return { canvasHistory: new DefaultCanvasHistoryService('current'), diagrams: new RevisionedDiagramService(httpDiagramGenerator), codeRepo: createHttpCodeRepoService(), workspaceStorage: new WorkspaceStorage() };
 }

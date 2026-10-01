@@ -101,6 +101,9 @@ function MappingWorkspacePage() {
   }, [workspace, storage, injectedStorage]);
   useEffect(() => () => { viewState.flush(); viewState.dispose(); }, [viewState]);
   const [activeId, setActiveId] = useState<string>();
+  const mountedDocuments = useRef(new Set<string>());
+  if (activeId) mountedDocuments.current.add(activeId);
+  const startup = useRef<Promise<[ProjectRepresentationsSnapshot, { workspace: MappingWorkspaceSnapshot | null; restoreError: string }]> | undefined>(undefined);
   const [error, setError] = useState("");
   const [savingId, setSavingId] = useState<string>();
   const [deletingId, setDeletingId] = useState<string>();
@@ -502,12 +505,14 @@ function MappingWorkspacePage() {
     let cancelled = false;
     void (async () => {
       try {
-        const data = await loadProjectRepresentations(); if (cancelled) return; setSnapshot(data);
-        let workspace: MappingWorkspaceSnapshot | null = null;
-        let restoreError = '';
-        try { workspace = await storage.load(); }
-        catch (error) { restoreError = error instanceof Error ? error.message : 'Could not restore workspace'; }
+        // These reads are independent. Share them across StrictMode effect replays.
+        startup.current ??= Promise.all([loadProjectRepresentations('current'), storage.load().then(
+          workspace => ({ workspace, restoreError: '' }),
+          error => ({ workspace: null, restoreError: error instanceof Error ? error.message : 'Could not restore workspace' })
+        )]);
+        const [data, { workspace, restoreError }] = await startup.current;
         if (cancelled) return;
+        setSnapshot(data);
         if (workspace && workspace.documents.length) restore(workspace, data);
         else {
           const requestedId = new URL(location.href).searchParams.get('diagram');
@@ -654,7 +659,7 @@ function MappingWorkspacePage() {
       </header>
       <section className="mapping-poc-workspace">
         <div className="mapping-viewport">
-          {Object.entries(drafts).map(([id, draft]) => <SourcePaneDocumentContext.Provider key={`${workspaceEpoch}:${id}:${draft.reloadKey ?? ''}`} value={id}><SourcePaneDocumentActiveContext.Provider value={id === activeId && !changeMode}><div className="mapping-document-view" inert={!!pendingTransfer || workspaceBusy} hidden={draft.hidden || id !== activeId || !!changeMode}>
+          {Object.entries(drafts).filter(([id]) => mountedDocuments.current.has(id)).map(([id, draft]) => <SourcePaneDocumentContext.Provider key={`${workspaceEpoch}:${id}:${draft.reloadKey ?? ''}`} value={id}><SourcePaneDocumentActiveContext.Provider value={id === activeId && !changeMode}><div className="mapping-document-view" inert={!!pendingTransfer || workspaceBusy} hidden={draft.hidden || id !== activeId || !!changeMode}>
             <DraggableDiagramCanvas className="mapping-poc-canvas" enabled={id === activeId} resetKey={id} leftInset={340} focusBox={draft.focusBox}
               initialTransform={draft.viewport} onTransformChange={viewport => viewState.setCamera(id, viewport)}>
               <MappingPocSelectionCanvas onTransfer={(mode, selected) => beginTransfer(id, mode, selected)}

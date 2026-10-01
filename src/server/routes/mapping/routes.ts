@@ -29,7 +29,7 @@ export function createMappingRoutes({ selection, diagrams, workspace, chat, comp
       return handleFileCompaction(request, response, url, compactionService);
     }
     if (url.pathname === '/api/mapping/workspace/records') {
-      if (request.method === 'GET') return sendJson(response, 200, await workspace.loadRecords());
+      if (request.method === 'GET') return sendJson(response, 200, await workspace.loadRecords(url.searchParams.get('history') === 'current' ? 'current' : 'all'));
       if (request.method === 'POST') return sendJson(response, 200, await workspace.applyBatch(await readBody(request, 64 * 1024 * 1024) as WorkspaceBatch));
       return sendJson(response, 405, { error: 'method not allowed' });
     }

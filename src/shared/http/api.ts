@@ -24,8 +24,8 @@ export interface ProjectRepresentationsSnapshot {
   catalog: ProjectRepresentationCatalogRecord | null;
 }
 
-export async function loadProjectRepresentations(): Promise<ProjectRepresentationsSnapshot> {
-  const response = await apiFetch("/api/core/project/representations", { cache: "no-store" });
+export async function loadProjectRepresentations(historyValidation: 'all' | 'current' = 'all'): Promise<ProjectRepresentationsSnapshot> {
+  const response = await apiFetch("/api/core/project/representations" + (historyValidation === 'current' ? '?history=current' : ''), { cache: "no-store" });
   if (!response.ok) throw await errorFrom(response);
   return response.json() as Promise<ProjectRepresentationsSnapshot>;
 }

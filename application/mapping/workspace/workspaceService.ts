@@ -5,10 +5,10 @@ import type { MappingWorkspaceRepository } from './repository';
 
 export class MappingWorkspaceService {
   constructor(private readonly projects: Pick<DiagramRepository, 'loadProject'>, private readonly workspace: MappingWorkspaceRepository) { }
-  async loadRecords() {
+  async loadRecords(historyValidation: import('../../../domain/core/diagrams/canvasHistory').HistoryValidation = 'all') {
     const project = await this.projects.loadProject();
     if (!project) throw new ApplicationError('invalid-input', 'Project is not initialized');
-    return this.workspace.loadRecords(project.id);
+    return this.workspace.loadRecords(project.id, historyValidation);
   }
   async applyBatch(input: WorkspaceBatch) {
     const project = await this.projects.loadProject();

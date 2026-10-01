@@ -9,8 +9,8 @@ export class CoreApplication {
   private readonly context: CoreContext;
   constructor(readonly store: DiagramRepository, readonly corpus: CorpusAccess) { this.context = { store, corpus }; }
 
-  async projectRepresentations() {
-    return representationsOperations.projectRepresentations(this.context);
+  async projectRepresentations(historyValidation: import('../../domain/core/diagrams/canvasHistory').HistoryValidation = 'all') {
+    return representationsOperations.projectRepresentations(this.context, historyValidation);
   }
 
   async upsertProjectFileCompaction(input: ProjectFileCompactionInput) {

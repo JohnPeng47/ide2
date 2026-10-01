@@ -2,11 +2,11 @@ import type { ProjectFileCompactionInput } from "../../../domain/core/representa
 import type { CoreContext } from '../context';
 import { resolveDiagramSource } from '../source/diagramSource';
 
-export async function projectRepresentations(context: CoreContext) {
+export async function projectRepresentations(context: CoreContext, historyValidation: import('../../../domain/core/diagrams/canvasHistory').HistoryValidation = 'all') {
   const project = await context.store.loadProject();
   return {
     project, catalog: project
-      ? await context.store.projectCatalogs.loadRepresentationCatalog(project.id) : null
+      ? await context.store.projectCatalogs.loadRepresentationCatalog(project.id, historyValidation) : null
   };
 }
 

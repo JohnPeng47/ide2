@@ -50,7 +50,7 @@ function geometry(value: any) {
   check(['canvas', 'viewport'].includes(value.coordinateSpace), 'invalid coordinate space');
 }
 /** v3 permits repository navigation; v1/v2 workspaces migrate on read. */
-export function deserializeWorkspace(json: string | unknown): MappingWorkspaceSnapshot {
+export function deserializeWorkspace(json: string | unknown, historyValidation: import('../../core/diagrams/canvasHistory').HistoryValidation = 'all'): MappingWorkspaceSnapshot {
   const value = typeof json === 'string' ? JSON.parse(json) : structuredClone(json);
   object(value);
   check(value.schemaVersion === 1 || value.schemaVersion === 2 || value.schemaVersion === 3, 'unsupported schema version'); id(value.projectId);
@@ -71,7 +71,7 @@ export function deserializeWorkspace(json: string | unknown): MappingWorkspaceSn
     check(!Object.hasOwn(doc.document, 'nodes') && !Object.hasOwn(doc.document, 'evidence'), 'selection nodes and evidence belong to Diagram source contexts');
     scene(doc.document.scene);
     if (doc.document.jumps) doc.document.jumps = validateCanvasJumps(doc.document.scene as unknown as LineGridScene, doc.document.jumps);
-    if (doc.history) new CanvasHistory(doc.document as unknown as import('./mappingGrid').MappingGridDocument, doc.canvas, doc.history);
+    if (doc.history) new CanvasHistory(doc.document as unknown as import('./mappingGrid').MappingGridDocument, doc.canvas, doc.history, historyValidation);
     scene(JSON.parse(doc.savedScene));
     doc.document.edges = validateConnections(doc.document.scene as unknown as LineGridScene, doc.document.edges);
     if (doc.savedEdges !== undefined) {
