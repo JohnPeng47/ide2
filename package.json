@@ -35,7 +35,8 @@
     "check:diagram-edit-ui": "npm run build && node --import tsx tests/browser/mapping/browser-diagram-edit-ui-check.mjs",
     "check:diagram-edit": "npm run build && node tests/browser/mapping/browser-diagram-edit-check.mjs",
     "check:diagram-delete": "npm run build && node --import tsx tests/browser/mapping/browser-diagram-delete-check.mjs",
-    "check:diagram-transfer": "npm run build && node --import tsx tests/browser/mapping/browser-diagram-transfer-check.mjs"
+    "check:diagram-transfer": "npm run build && node --import tsx tests/browser/mapping/browser-diagram-transfer-check.mjs",
+    "check:tldraw": "npm run build && node --import tsx tests/browser/mapping/browser-tldraw-check.mjs"
   },
   "dependencies": {
     "@earendil-works/pi-ai": "^0.84.2",
@@ -47,6 +48,7 @@
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "shiki": "^4.4.3",
+    "tldraw": "5.4.2",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "typescript-language-server": "^5.3.0",

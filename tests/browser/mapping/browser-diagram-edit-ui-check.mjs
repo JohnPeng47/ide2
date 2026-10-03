@@ -54,7 +54,7 @@ try {
     };
     const diagramPoint = async id => evaluate(cdp, `(() => {const r=document.querySelector('[data-grid-box="${id}"]').getBoundingClientRect();return{x:r.x+8,y:r.y+8};})()`);
     const select = async id => { const p = await diagramPoint(id); await mouse('mousePressed', p, 2, 2); await mouse('mouseReleased', p, 2, 2); };
-    const text = async () => evaluate(cdp, "document.querySelector('.mapping-poc-ascii').textContent");
+    const text = async () => evaluate(cdp, "[...document.querySelectorAll('[data-native-node] .mapping-poc-ascii')].map(el => el.textContent).join('\\n')");
     const historyKey = async key => {
       await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key, code: `Key${key.toUpperCase()}`, modifiers: 2, windowsVirtualKeyCode: key.toUpperCase().charCodeAt(0) });
       await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key, code: `Key${key.toUpperCase()}`, modifiers: 2, windowsVirtualKeyCode: key.toUpperCase().charCodeAt(0) });

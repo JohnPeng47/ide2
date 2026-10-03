@@ -50,6 +50,9 @@ export interface CanvasHistoryRecord {
   snapshots: Record<string, StoredCanvasSnapshot>;
   diagramRevisions: Record<string, DiagramRevision>;
 }
+export type CanvasHistoryNavigation = Pick<CanvasHistoryRecord, 'headId' | 'past' | 'future'> & {
+  undoTransactionId?: string; redoTransactionId?: string;
+};
 export type HistoryValidation = 'all' | 'current';
 export function currentHistoryChanges(record: CanvasHistoryRecord, snapshotId = record.headId) {
   const snapshot = record.snapshots?.[snapshotId];
@@ -103,6 +106,10 @@ export class CanvasHistory {
     return { sequence: this.changes.length, header: { ...header, past: [...header.past], future: [...header.future] }, ...updates };
   }
   export(): CanvasHistoryRecord { return structuredClone(this.record); }
+  navigation(): CanvasHistoryNavigation {
+    return { headId: this.record.headId, past: [...this.record.past], future: [...this.record.future],
+      undoTransactionId: this.navigationTransactionId(), redoTransactionId: this.navigationTransactionId(true) };
+  }
   fork(view: unknown = this.head.view): CanvasHistoryRecord {
     const record = this.export(), head = this.head;
     const baseline = { ...head, view: structuredClone(view), id: id('canvas-revision'), parentId: head.id, nodeOrigins: Object.fromEntries(

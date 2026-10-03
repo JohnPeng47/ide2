@@ -1,3 +1,4 @@
+import { MappingShapeContent, ShapeSlotsContext } from '../tldraw/shapeSlots';
 import type { SelectionState } from '../../../../domain/mapping/selection/selectionState';
 import { SessionCodePanel } from '../code-panel/SessionCodePanel';
 import type { CanvasSession } from '../workspace/canvasSession';
@@ -6,7 +7,7 @@ import { diagramProjection, type DiagramViews } from '../../../../domain/mapping
 import { layoutFloatingSelections } from '../../../../domain/mapping/workspace/floatingBoxLayout';
 import { SourceCodePane } from "../source-pane/SourceCodePane";
 import { updateSourceCodePane, type SourceCodePaneView } from "../source-pane/sourceCodePane";
-import { useCallback, useLayoutEffect, type Dispatch, type SetStateAction } from 'react';
+import { useContext, useCallback, useLayoutEffect, type Dispatch, type SetStateAction } from 'react';
 import { measureDisplayNode, updateDisplayGeometry, setExpansion, type DisplayState, type ProjectedPane, type SelectionRegion } from '../../../../domain/mapping/workspace/displayModel';
 import { layoutProjectedPanes } from '../../../../domain/mapping/workspace/projectedPaneLayout';
 import type { ResolvedGridBox, LineGridScene, GridBox } from '../../../../domain/core/diagrams/lineGrid';
@@ -22,6 +23,7 @@ export function SelectionEffectsLayer(props: {
   busySelectionIds: string[];
   onActivate: (root: SelectionRegion) => void;
 }) {
+  const native = useContext(ShapeSlotsContext);
   const measure = useCallback((id: string, width: number, height: number) =>
     props.setLayoutState(current => measureDisplayNode(current, id, width, height)), [props.setLayoutState]);
   // Keep source content independent of the workspace renders caused by pan and selection gestures.
@@ -50,7 +52,9 @@ export function SelectionEffectsLayer(props: {
       const layout = layoutProjectedPanes(props.state, root);
       // Retain snapshots if their source changes, but never pretend the rectangle is still exact.
       return <div key={root.id} data-selection-root={root.id} data-source-stale={stale || missing} data-selection-active={selected}>
-        {!missing && !stale && selected && <div className="mapping-poc-selection-rect retained-selection" style={{ left: rect.x, top: rect.y, width: rect.width, height: rect.height }} />}
+        <MappingShapeContent id={`floating:${root.id}`}>
+        {!missing && !stale && selected && <div className="mapping-poc-selection-rect retained-selection" style={{ left: native ? 0 : rect.x, top: native ? 0 : rect.y, width: rect.width, height: rect.height }} />}
+        </MappingShapeContent>
         <div className="retained-selection-controls" data-mapping-static-ui data-diagram-canvas-static-ui
           style={{ left: rect.x, top: rect.y - 27 }}>
           {(stale || missing) && <span>Source changed · saved selection</span>}

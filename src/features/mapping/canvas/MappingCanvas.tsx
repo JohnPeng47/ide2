@@ -1,3 +1,5 @@
+import { MappingShapeContent, ShapeSlotsContext } from '../tldraw/shapeSlots';
+import { diagramTextRanges, textRow } from '../../../../domain/core/diagrams/diagramText';
 import { diagramSelectionItem, regionSelectionItem, selectedDiagramIds } from '../../../../domain/mapping/selection/selectionState';
 import { useMappingServices } from '../services/MappingServices';
 import { useStore } from 'zustand';
@@ -33,6 +35,7 @@ import { type MappingGridDocument } from "../../../../domain/mapping/workspace/m
 import { projectSelection, validateProjection } from "../../../../domain/core/diagrams/diagramProjection";
 import type { ProjectRepresentationCatalogRecord } from "../../../../domain/core/representations/projectCatalog";
 import {
+  useContext,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -115,6 +118,7 @@ export function MappingPocSelectionCanvas(props: {
   onLineCountChange?: (lineCount: number) => void;
   localChatVariant?: LocalChatVariant;
 }) {
+  const nativeSlots = useContext(ShapeSlotsContext);
   const session = props.session, controller = session.controller;
   const documentState = useStore(session.document, state => state.document);
   const presentation = useStore(session.presentation, state => state);
@@ -215,8 +219,8 @@ export function MappingPocSelectionCanvas(props: {
   // Selection controls do not change the display-node registry.
   const displayNodes = useMemo(() => controller.nodes(), [controller, gridDocument, display,
     canvasState.diagramViews, controllerState.version, controllerState.cell, controllerState.endpointBounds]);
-  const endpointGeometry = useEndpointGeometry(controller, props.active !== false);
-  const composedText = useMemo(() => diagramSceneText(scene, canvasState.diagramViews, gridDocument.jumps), [scene, canvasState.diagramViews, gridDocument.jumps]);
+  const endpointGeometry = useEndpointGeometry(controller, props.active !== false, nativeSlots);
+  const composedText = useMemo(() => nativeSlots ? { ascii: '', rows: [] } : diagramSceneText(scene, canvasState.diagramViews, gridDocument.jumps), [scene, canvasState.diagramViews, gridDocument.jumps]);
   const composedAscii = composedText.ascii;
   const commit = (next: MappingGridDocument) => controller.commitDocument(next);
   const [promptOperation, setPromptOperation] = useControl("promptOperation", canvasState, setCanvasState);
@@ -428,6 +432,10 @@ export function MappingPocSelectionCanvas(props: {
   }, [askOpen]);
 
   const scenePointAtClient = useCallback((clientX: number, clientY: number): ScenePoint | null => {
+    if (nativeSlots?.editor && cell.width > 0 && cell.height > 0) {
+      const point = nativeSlots.editor.screenToPage({ x: clientX, y: clientY });
+      return { column: Math.max(0, Math.floor(point.x / cell.width)), row: Math.max(0, Math.floor(point.y / cell.height)) };
+    }
     const pre = preRef.current;
     if (!pre || !(cell.width > 0) || !(cell.height > 0)) return null;
     const bounds = pre.getBoundingClientRect();
@@ -438,6 +446,12 @@ export function MappingPocSelectionCanvas(props: {
     };
   }, [cell]);
   const resolveMarquee = (bounds: SelectionBounds, promoted: string[]) => {
+    if (nativeSlots?.editor && cell.width && cell.height) {
+      const a = nativeSlots.editor.screenToPage({ x: bounds.left, y: bounds.top });
+      const b = nativeSlots.editor.screenToPage({ x: bounds.right, y: bounds.bottom });
+      return selectCanvasMarquee(scene, canvasState.diagramViews, { left: a.x / cell.width, right: b.x / cell.width,
+        top: a.y / cell.height, bottom: b.y / cell.height }, promoted, boxes);
+    }
     const pre = preRef.current;
     if (!pre || !cell.width || !cell.height) return { diagramIds: promoted, regions: [] };
     const screen = pre.getBoundingClientRect(), scale = screen.width / pre.offsetWidth;
@@ -515,11 +529,14 @@ export function MappingPocSelectionCanvas(props: {
 
   // Listen through canvas pointer capture: a click selects a node; a drag still pans.
   useEffect(() => {
-    const stage = stageRef.current;
+    const stage = nativeSlots ? stageRef.current?.closest<HTMLElement>('[data-diagram-canvas]') : stageRef.current;
     if (!stage || props.active === false || isGenerating || diagramPlacement || movingBoxId) return;
     let pressed: { x: number; y: number; pointerId: number; boxId: string; nodeId: string; revision: string } | undefined;
     const down = (event: globalThis.PointerEvent) => {
       pressed = undefined;
+      const paneId = (event.target as Element).closest<HTMLElement>('[data-pane-content="code-panel"]')?.dataset.displayNode;
+      const pane = paneId && controller.getSnapshot().canvas.display.nodes[paneId];
+      if (pane && pane.kind === 'projection' && pane.content.kind === 'code-panel') codePanelFocus.current = { panelId: pane.id, selectionId: pane.content.selectionId };
       if (event.button || event.ctrlKey || event.metaKey || event.shiftKey || (event.target as Element).closest('[data-mapping-static-ui], button, a')) return;
       const label = (event.target as Element).closest<HTMLElement>('[data-content-node-id]');
       if (!label?.dataset.displayNodeId?.startsWith('grid:')) return;
@@ -783,6 +800,41 @@ export function MappingPocSelectionCanvas(props: {
     } catch (error) { setStatusMessage(error instanceof Error ? error.message : 'Grouping failed'); }
   };
 
+  // Application placement is a tool layered over the Editor's coordinate system.
+  useEffect(() => {
+    const viewport = stageRef.current?.closest<HTMLElement>('[data-diagram-canvas]');
+    if (!nativeSlots || !viewport || (!diagramPlacement && !movingBoxId)) return;
+    const down = (event: PointerEvent) => {
+      if (event.button !== 0 || (event.target as Element).closest('button,input,textarea,select,[data-mapping-static-ui]')) return;
+      const point = scenePointAtClient(event.clientX, event.clientY); if (!point) return;
+      event.preventDefault(); event.stopPropagation();
+      if (movingBoxId) {
+        controller.applyUpdate(controller.getSnapshot().version, [{ method: 'move', nodeId: `grid:${movingBoxId}`, position: point }]);
+        setMovingBoxId(null); return;
+      }
+      placementDragRef.current = point; placementPointerRef.current = event.pointerId;
+      setPlacementPreview({ start: point, end: point }); viewport.setPointerCapture(event.pointerId);
+    };
+    const move = (event: PointerEvent) => {
+      if (!placementDragRef.current) return;
+      event.preventDefault(); event.stopPropagation();
+      const point = scenePointAtClient(event.clientX, event.clientY);
+      if (point) setPlacementPreview({ start: placementDragRef.current, end: point });
+    };
+    const cancel = () => { placementDragRef.current = null; placementPointerRef.current = null; setPlacementPreview(null); };
+    const up = (event: PointerEvent) => {
+      const start = placementDragRef.current; if (!start) return;
+      event.preventDefault(); event.stopPropagation();
+      const end = scenePointAtClient(event.clientX, event.clientY) ?? start;
+      if (viewport.hasPointerCapture(event.pointerId)) viewport.releasePointerCapture(event.pointerId);
+      cancel(); void generateAt(start, end);
+    };
+    viewport.addEventListener('pointerdown', down, true); viewport.addEventListener('pointermove', move, true);
+    viewport.addEventListener('pointerup', up, true); viewport.addEventListener('pointercancel', cancel, true);
+    return () => { viewport.removeEventListener('pointerdown', down, true); viewport.removeEventListener('pointermove', move, true);
+      viewport.removeEventListener('pointerup', up, true); viewport.removeEventListener('pointercancel', cancel, true); };
+  }, [nativeSlots, diagramPlacement, movingBoxId, scenePointAtClient]);
+
   const hotkeyHandler = useRef<(event: globalThis.KeyboardEvent) => void>(() => {});
   useEffect(() => {
     const handle = (event: globalThis.KeyboardEvent) => hotkeyHandler.current(event);
@@ -1033,7 +1085,22 @@ export function MappingPocSelectionCanvas(props: {
           setStatusMessage("Sub-diagram pasted; layout updated");
         }} />
       <span ref={probeRef} className="mapping-poc-cell-probe" aria-hidden="true">0000000000</span>
-      {diagramText}
+      {nativeSlots ? <>
+        <pre ref={preRef} className="mapping-poc-ascii" aria-hidden="true" style={{ width: resolved.bounds.columns * (cell.width || 8.4), height: 18, visibility: 'hidden' }}> </pre>
+        {boxes.filter(box => box.contentId).map(box => {
+          const diagram = scene.contents[box.contentId!], projection = contentProjections.get(box.box.id)!;
+          const ranges = diagramTextRanges({ ascii: diagram.content.ascii, content: diagram.content,
+            displayNodeId: `grid:${box.box.id}`, mappings: diagram.sourceContext.mappings,
+            jumps: [...(diagram.jumps ?? []), ...(gridDocument.jumps ?? []).filter(jump => jump.sourceDisplayNodeId === `grid:${box.box.id}`)] });
+          const rows = projection.ascii.split('\n').map((line, index) => textRow(line, ranges.get(projection.sourceLines[index]) ?? [], projection.sourceLines[index]));
+          return <MappingShapeContent key={box.box.id} id={`grid:${box.box.id}`}>
+            <DiagramText className="mapping-poc-ascii" rows={rows} data-graph="A" data-line-count={rows.length}
+              data-revision={diagram.revision} registerEndpoint={endpointGeometry.registerEndpoint}
+              nodeProps={owner => selectedContentKeys.has(JSON.stringify([owner.displayNodeId, owner.contentNodeId])) ? { className: 'is-selected' } : undefined}
+              onJump={props.onJump ? onDiagramJump : undefined} />
+          </MappingShapeContent>;
+        })}
+      </> : diagramText}
       {(props.searchMatches?.length ? props.searchMatches : props.focusBox?.search ? [props.focusBox.search] : []).map(result => {
         const id = result.displayNodeId.slice(5), box = boxes.find(box => box.box.id === id);
         const focused = props.focusBox?.search?.displayNodeId === result.displayNodeId && props.focusBox.search.line === result.line;
@@ -1055,17 +1122,17 @@ export function MappingPocSelectionCanvas(props: {
         <button type="button" aria-expanded={connectionsOpen} onClick={() => setConnectionsOpen(value => !value)}>Connections ({gridDocument.edges.length})</button>
         <span role="status">{diagramPlacement ? "Drag a region to place the sub-diagram · Esc cancels" : movingBoxId ? "Click to move the box · Esc cancels" : statusMessage}</span>
       </div>
-      <div ref={endpointGeometry.refForEndpoint({ displayNodeId: `grid:${scene.root.id}` })}
+      {!nativeSlots && <div ref={endpointGeometry.refForEndpoint({ displayNodeId: `grid:${scene.root.id}` })}
         data-grid-box={scene.root.id} data-diagram-selected={selectedDiagrams.includes(`grid:${scene.root.id}`)} aria-hidden="true"
         style={{ position: 'absolute', pointerEvents: 'none', left: resolved.bounds.column * cell.width,
-          top: resolved.bounds.row * cell.height, width: resolved.bounds.columns * cell.width, height: resolved.bounds.rows * cell.height }} />
-      {boxes.filter((node) => node.box.id !== scene.root.id).map((node) => (
-        <div key={node.box.id} ref={endpointGeometry.refForEndpoint({ displayNodeId: `grid:${node.box.id}` })} className={`mapping-grid-box${node.box.kind === "container" ? " is-container" : ""}`}
+          top: resolved.bounds.row * cell.height, width: resolved.bounds.columns * cell.width, height: resolved.bounds.rows * cell.height }} />}
+      {boxes.filter((node) => nativeSlots || node.box.id !== scene.root.id).map((node) => (
+        <MappingShapeContent key={node.box.id} id={`grid:${node.box.id}`}><div ref={endpointGeometry.refForEndpoint({ displayNodeId: `grid:${node.box.id}` })} className={`mapping-grid-box${node.box.kind === "container" ? " is-container" : ""}`}
           data-grid-box={node.box.id} data-diagram-selected={selectedDiagrams.includes(`grid:${node.box.id}`)} data-grid-column={node.bounds.column} data-grid-row={node.bounds.row}
           data-grid-columns={node.bounds.columns} data-grid-rows={node.bounds.rows} data-collapsed={node.box.collapsed}
-          style={{ left: node.bounds.column * cell.width, top: node.bounds.row * cell.height,
+          style={{ left: nativeSlots ? 0 : node.bounds.column * cell.width, top: nativeSlots ? 0 : node.bounds.row * cell.height,
             width: node.bounds.columns * cell.width, height: node.bounds.rows * cell.height }}>
-          <div className="mapping-grid-box-tools" data-mapping-static-ui data-diagram-canvas-static-ui>
+          {node.box.id !== scene.root.id && <div className="mapping-grid-box-tools" data-mapping-static-ui data-diagram-canvas-static-ui>
             <button type="button" disabled={isGenerating || !!diagramPlacement}
               aria-label={`${node.box.collapsed ? "Expand" : "Collapse"} ${node.box.id}`}
               onClick={() => {
@@ -1076,8 +1143,8 @@ export function MappingPocSelectionCanvas(props: {
             </button>
             <button type="button" disabled={isGenerating || !!diagramPlacement} onClick={() => { clearSelectionFocus(); setMovingBoxId(node.box.id); }}>Move</button>
             <button type="button" disabled={isGenerating || !!diagramPlacement} onClick={() => wrapInGroup(node.box.id)}>Group</button>
-          </div>
-        </div>
+          </div>}
+        </div></MappingShapeContent>
       ))}
       {placementPreview ? <div className="mapping-grid-placement" style={{
         left: Math.min(placementPreview.start.column, placementPreview.end.column) * cell.width,
@@ -1300,12 +1367,11 @@ export function MappingPocSelectionCanvas(props: {
         const pane = display.nodes[thread.id] as ConversationPane;
         const presentation = pane.presentation;
         return (
-          <div
-            key={thread.id}
+          <MappingShapeContent key={thread.id} id={`floating:${thread.id}`}><div
             className={`local-chat-anchor${isActive ? " is-active" : ""}`}
             data-mapping-static-ui
             data-diagram-canvas-static-ui
-            style={{ left: pane.canvasAnchor.x - activeBox.bounds.column * cell.width, top: pane.canvasAnchor.y - activeBox.bounds.row * cell.height }}
+            style={{ left: nativeSlots ? 0 : pane.canvasAnchor.x - activeBox.bounds.column * cell.width, top: nativeSlots ? 0 : pane.canvasAnchor.y - activeBox.bounds.row * cell.height }}
           >
             <button
               type="button"
@@ -1326,7 +1392,7 @@ export function MappingPocSelectionCanvas(props: {
                 thread={thread}
                 displayNodeId={pane.id}
                 onMeasure={measurePane}
-                style={{ left: pane.position.x - pane.canvasAnchor.x, top: pane.position.y - pane.canvasAnchor.y,
+                style={{ left: nativeSlots ? 0 : pane.position.x - pane.canvasAnchor.x, top: nativeSlots ? 0 : pane.position.y - pane.canvasAnchor.y,
                   ...(pane.geometryPolicy.sizing === 'fixed' ? { width: pane.bounds.width, height: pane.bounds.height, maxHeight: 'none' } : {}) }}
                 draft={(display.nodes[thread.id] as ConversationPane).draft}
                 onDraftChange={draft => setDisplay(state => ({ ...state, nodes: { ...state.nodes, [thread.id]: { ...(state.nodes[thread.id] as ConversationPane), draft } } }))}
@@ -1337,7 +1403,7 @@ export function MappingPocSelectionCanvas(props: {
                 onRetry={() => retryLocalReply(thread.id)}
               />
             ) : null}
-          </div>
+          </div></MappingShapeContent>
         );
       })}
 

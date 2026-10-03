@@ -13,8 +13,9 @@ export function CanvasSelectionLayer(props: { stageRef: RefObject<HTMLDivElement
   useEffect(() => {
     const stage = props.stageRef.current, viewport = stage?.closest<HTMLElement>('[data-diagram-canvas]');
     if (!viewport || !props.active) { setPreview(undefined); return; }
+    let shiftPointer: number | undefined;
     let drag: { x: number; y: number; pointerId: number; moved: boolean; promoted: string[] } | undefined;
-    const boxes = () => [...stage!.querySelectorAll<HTMLElement>('[data-grid-box]')]
+    const boxes = () => [...viewport.querySelectorAll<HTMLElement>('[data-grid-box]')]
       .filter(el => current.current.diagramIds.includes(`grid:${el.dataset.gridBox}`))
       .map(el => ({ id: `grid:${el.dataset.gridBox}`, bounds: el.getBoundingClientRect() }));
     const ui = (event: MouseEvent) => {
@@ -32,6 +33,7 @@ export function CanvasSelectionLayer(props: { stageRef: RefObject<HTMLDivElement
     };
     const down = (event: PointerEvent) => {
       if (event.button !== 0 || ui(event)) return;
+      if (event.shiftKey && !event.ctrlKey && !event.metaKey) { shiftPointer = event.pointerId; event.stopPropagation(); return; }
       if (!event.ctrlKey || event.metaKey) return;
       event.preventDefault(); event.stopPropagation(); window.getSelection()?.removeAllRanges();
       stage!.focus({ preventScroll: true });
@@ -39,6 +41,7 @@ export function CanvasSelectionLayer(props: { stageRef: RefObject<HTMLDivElement
       viewport.setPointerCapture(event.pointerId);
     };
     const sample = (event: PointerEvent) => {
+      if (event.pointerId === shiftPointer) { event.stopPropagation(); return; }
       if (!drag || drag.pointerId !== event.pointerId) return;
       event.preventDefault(); event.stopPropagation();
       drag.moved ||= Math.hypot(event.clientX - drag.x, event.clientY - drag.y) > 4;
@@ -50,10 +53,12 @@ export function CanvasSelectionLayer(props: { stageRef: RefObject<HTMLDivElement
       return selection;
     };
     const release = () => {
+      shiftPointer = undefined;
       const pointerId = drag?.pointerId; drag = undefined; setPreview(undefined);
       if (pointerId !== undefined && viewport.hasPointerCapture(pointerId)) viewport.releasePointerCapture(pointerId);
     };
     const up = (event: PointerEvent) => {
+      if (event.pointerId === shiftPointer) { shiftPointer = undefined; event.stopPropagation(); return; }
       if (!drag || drag.pointerId !== event.pointerId) return;
       const selection = sample(event), moved = drag.moved; release();
       if (moved && selection) current.current.onComplete(selection);

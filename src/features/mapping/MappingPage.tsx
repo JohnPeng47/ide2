@@ -31,7 +31,7 @@ import { type DiagramOperation, MappingDocumentController } from '../../../domai
 import type { MappingGridDocument } from "../../../domain/mapping/workspace/mappingGrid";
 import { initialCanvasState, type MappingCanvasState, type MappingWorkspaceSnapshot } from "../../../domain/mapping/workspace/mappingWorkspace";
 import { deserializeWorkspace, serializeWorkspace } from "../../../domain/mapping/workspace/mappingWorkspaceCodec";
-import { DraggableDiagramCanvas } from "../../shared/diagrams/DraggableDiagramCanvas";
+import { MappingEditorCanvas } from "./tldraw/MappingEditorCanvas";
 import { loadProjectRepresentations, type ProjectRepresentationsSnapshot } from "../../shared/http/api";
 import { useAgentCanvasBridge } from './agent/useAgentCanvasBridge';
 import { MappingPocSelectionCanvas } from "./canvas/MappingCanvas";
@@ -665,7 +665,7 @@ function MappingWorkspacePage() {
       <section className="mapping-poc-workspace">
         <div className="mapping-viewport">
           {Object.entries(drafts).filter(([id]) => mountedDocuments.current.has(id)).map(([id, draft]) => <SourcePaneDocumentContext.Provider key={`${workspaceEpoch}:${id}:${draft.reloadKey ?? ''}`} value={id}><SourcePaneDocumentActiveContext.Provider value={id === activeId && !changeMode}><div className="mapping-document-view" inert={!!pendingTransfer || workspaceBusy} hidden={draft.hidden || id !== activeId || !!changeMode}>
-            <DraggableDiagramCanvas className="mapping-poc-canvas" enabled={id === activeId} resetKey={id} leftInset={340} focusBox={draft.focusBox}
+            <MappingEditorCanvas session={draft.session} className="mapping-poc-canvas" enabled={id === activeId} focusBox={draft.focusBox}
               initialTransform={draft.viewport} onTransformChange={viewport => viewState.setCamera(id, viewport)}>
               <MappingPocSelectionCanvas onUpdateDiagram={nodeId => {
                   const node = draft.session.controller.nodes().find(node => node.id === nodeId);
@@ -679,7 +679,7 @@ function MappingWorkspacePage() {
                 dirtyRepresentationIds={dirtySceneIds}
                 onBusyChange={(busy) => setDrafts((current) => !current[id] || current[id].busy === busy ? current : { ...current, [id]: { ...current[id], busy } })}
                 localChatVariant={ui.variant as LocalChatVariant} />
-            </DraggableDiagramCanvas>
+            </MappingEditorCanvas>
           </div></SourcePaneDocumentActiveContext.Provider></SourcePaneDocumentContext.Provider>)}
           {!active && !changeMode && <div className="mapping-empty"><h1>{snapshot ? "Create a project diagram" : error ? "Could not load project diagrams" : "Loading project diagrams…"}</h1>
             {snapshot && <button type="button" onClick={() => setCreating(true)}>New diagram</button>}</div>}
@@ -704,7 +704,7 @@ function MappingWorkspacePage() {
           {error && !pendingTransfer && <div className="mapping-project-error" role="alert">{error}<button type="button" onClick={() => setError("")}>Dismiss</button></div>}
         </div>
         <footer className="mapping-poc-status"><span>{active?.name ?? "PROJECT DIAGRAMS"}</span>
-          <span>{active?.newerRevision ? 'A newer saved revision is available. Your local edits were preserved.' : workspaceStatus || 'Click a node or Ctrl-drag to select · Actions (A) opens selection actions · Double-click background selects diagrams'}</span></footer>
+          <span>{active?.newerRevision ? 'A newer saved revision is available. Your local edits were preserved.' : workspaceStatus || 'Drag boxes to move · Ctrl-drag selects regions · Space or middle-drag pans · Actions (A) opens selection actions'}</span></footer>
       </section>
       <DiagramEditComposer coordinator={diagramEdits} />
       {creating && <div className="mapping-dialog-backdrop"><form className="mapping-create-dialog" role="dialog" aria-modal="true" aria-label="New project diagram"

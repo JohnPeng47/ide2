@@ -16,8 +16,9 @@ export function readable<T>(store: StoreApi<T>): Pick<StoreApi<T>, 'getState' | 
 export interface SavedDocumentState { name: string; savedName: string; savedScene: string; savedEdges?: string }
 export interface DocumentStatus { isDirty: boolean; sceneDirty: boolean; canUndo: boolean; canRedo: boolean }
 
-/** Domain state remains owned by the controller. Stores publish immutable references,
- * never a second editable document. Pointer previews have no route to the controller. */
+/** Stores publish committed semantic checkpoints from the command facade. A mounted
+ * tldraw Editor owns live geometry and undo navigation; pointer/camera samples do
+ * not publish application state. Headless sessions use the same domain commands. */
 export class CanvasSession {
   readonly controller: MappingDocumentController;
   readonly document;

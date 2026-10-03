@@ -27,6 +27,7 @@ import { diagramConnectionSchema, reconcileConnections, validateConnectionAnchor
 
 export interface ControllerSnapshot { contextId: string; canvasRevisionId: string; endpointBounds?: EndpointBounds; document: MappingGridDocument; canvas: MappingCanvasState; version: number; canUndo: boolean; canRedo: boolean; cell?: { width: number; height: number } }
 export type DiagramOperation =
+  | { method: 'duplicate-instance'; sourceNodeId: string; id: string; position: GridPoint }
   | { method: 'delete-diagrams'; nodeIds: string[] }
   | { method: 'diagram-revision-apply'; nodeId: string; expectedRevisionId: string; revision: DiagramRevision }
   | { method: 'setSourceMappings'; nodeId: string; expectedContentHash: string; mappings: DiagramElementMapping[]; evidence: Record<string, ProjectRepresentationEvidenceRecord>; source?: DiagramSourceBinding }
@@ -46,6 +47,24 @@ type State = Pick<ControllerSnapshot, 'document' | 'canvas'>;
 const defaultHistoryService = new DefaultCanvasHistoryService();
 
 export class MappingDocumentController {
+  /** Installed only by a mounted live canvas. Headless proposals retain domain history. */
+  private editorDriver?: { settle(): void; undo(redo: boolean): void };
+  attachEditorDriver(driver: { settle(): void; undo(redo: boolean): void }) {
+    if (this.editorDriver) throw new Error('A canvas already has a live editor');
+    this.editorDriver = driver;
+    return () => { if (this.editorDriver === driver) this.editorDriver = undefined; };
+  }
+  /** Native history restores an archived semantic checkpoint, without creating an edit. */
+  restoreEditorCheckpoint(checkpointId: string) {
+    const history = this.editorHistory();
+    const redo = history.future.includes(checkpointId);
+    if (checkpointId !== history.headId && !(redo ? history.future : history.past).includes(checkpointId))
+      throw new Error('Unknown editor checkpoint');
+    while (this.historyService.state(this.context).checkpointId !== checkpointId) {
+      if (!this.historyService.navigate(this.context, redo)) throw new Error('Cannot restore editor checkpoint');
+    }
+    this.updateSnapshot({ document: this.historyService.document(this.context), canvas: this.historyService.state(this.context).view as MappingCanvasState }, false);
+  }
   private readonly context: CanvasEditingContext;
   private pendingNodeIds = new Map<string, string>();
   private listeners = new Set<() => void>();
@@ -97,6 +116,14 @@ export class MappingDocumentController {
   persistenceChanges(since?: number) { return this.historyService.persistenceChanges(this.context, since); }
   retireTransactions(ids: ReadonlySet<string>) { this.historyService.retireTransactions(this.context, ids); }
   exportHistory() { return this.historyService.exportContext(this.context); }
+  /** Navigation metadata only: mounting/undo must not clone the content archive. */
+  editorHistory(): import('../../core/diagrams/canvasHistory').CanvasHistoryNavigation {
+    if (this.historyService.navigation) return this.historyService.navigation(this.context);
+    const record = this.exportHistory();
+    return { headId: record.headId, past: record.past, future: record.future,
+      undoTransactionId: record.snapshots[record.headId]?.transactionId,
+      redoTransactionId: record.snapshots[record.future.at(-1)!]?.transactionId };
+  }
   forkHistory(view = this.snapshot.canvas) { return this.historyService.forkContext(this.context, view); }
   resolveDiagram(diagramId: string) { return this.historyService.resolve(this.context, diagramId); }
   getCanvasSnapshot() { return this.historyService.state(this.context).document; }
@@ -164,12 +191,14 @@ export class MappingDocumentController {
     this.listeners.forEach(listener => listener());
   }
   updateCanvas(value: MappingCanvasState | ((current: MappingCanvasState) => MappingCanvasState), record = false) {
+    if (record) this.editorDriver?.settle();
     const next = typeof value === 'function' ? value(this.snapshot.canvas) : value;
     this.updateSnapshot({ document: this.snapshot.document, canvas: next }, record, record);
   }
   select(command: SelectionCommand) { this.updateCanvas(state => updateSelection(state, command), true); }
-  commitDocument(document: MappingGridDocument) { projectCanvasSnapshot(document.scene); this.updateSnapshot({ document, canvas: this.snapshot.canvas }, true); }
+  commitDocument(document: MappingGridDocument) { this.editorDriver?.settle(); projectCanvasSnapshot(document.scene); this.updateSnapshot({ document, canvas: this.snapshot.canvas }, true); }
   undo(redo = false) {
+    if (this.editorDriver) { this.editorDriver.undo(redo); return; }
     if (!this.historyService.navigate(this.context, redo)) return;
     this.updateSnapshot({ document: this.historyService.document(this.context), canvas: this.historyService.state(this.context).view as MappingCanvasState }, false);
   }
@@ -179,15 +208,22 @@ export class MappingDocumentController {
   }
   /** One shared command path. transact is retained as the MCP batch adapter. */
   applyUpdate(expectedVersion: number, operations: DiagramOperation[]) {
+    this.editorDriver?.settle();
     this.pendingNodeIds.clear();
     try { return this.applyOperations(expectedVersion, operations); }
     finally { this.pendingNodeIds.clear(); }
   }
   transact(expectedVersion: number, operations: DiagramOperation[]) { return this.applyUpdate(expectedVersion, operations); }
-  private applyOperations(expectedVersion: number, operations: DiagramOperation[]) {
+  /** One native gesture, including selection/layout consequences, is one saved checkpoint. */
+  commitEditorGesture(operations: DiagramOperation[], canvas: MappingCanvasState) {
+    if (!operations.length) { this.updateSnapshot({ document: this.snapshot.document, canvas }, true); return; }
+    return this.applyOperations(this.snapshot.version, operations, canvas);
+  }
+  private applyOperations(expectedVersion: number, operations: DiagramOperation[], editorCanvas?: MappingCanvasState) {
     if (expectedVersion !== this.snapshot.version) throw new Error('VERSION_CONFLICT: read the canvas again');
-    if (!Array.isArray(operations) || !operations.length || operations.length > 100) throw new Error('Expected 1–100 operations');
+    if (!Array.isArray(operations) || !operations.length || operations.length > (editorCanvas ? 10000 : 100)) throw new Error('Expected 1–100 operations');
     let { document, canvas } = structuredClone(this.snapshot);
+    if (editorCanvas) canvas = structuredClone(editorCanvas);
     const safeId = (id: string) => { if (typeof id !== 'string' || !/^[a-zA-Z0-9_.:-]{1,180}$/.test(id) || ['__proto__','constructor','prototype'].includes(id)) throw new Error('Invalid node ID'); };
     for (const op of operations) {
       if (op.method === 'delete-diagrams') {
@@ -294,6 +330,17 @@ export class MappingDocumentController {
         this.trackNodes(prepared.nodeIds);
         const scene = layoutScene({ ...document.scene, contents: { ...document.scene.contents, [before.id]: prepared.diagram } }, box.id);
         document = { ...document, scene, edges: reconcileConnections(document.scene, scene, document.edges) };
+      } else if (op.method === 'duplicate-instance') {
+        safeId(op.id);
+        const source = findBox(document.scene.root, this.gridId(op.sourceNodeId));
+        const boxes = flattenGrid(resolveScene(document.scene));
+        const parent = boxes.find(box => box.children.some(child => child.box.id === source?.id));
+        if (source?.kind !== 'diagram' || !parent || findBox(document.scene.root, op.id)) throw new Error('Cannot duplicate this diagram instance');
+        const copy = { ...source, id: op.id, position: { column: op.position.column - parent.bounds.column, row: op.position.row - parent.bounds.row } };
+        document = { ...document, scene: layoutScene(updateGridBox(document.scene, parent.box.id,
+          box => box.kind === 'container' ? { ...box, children: [...box.children, copy] } : box), op.id) };
+        const view = canvas.diagramViews?.[op.sourceNodeId];
+        if (view) canvas.diagramViews = { ...canvas.diagramViews, [`grid:${op.id}`]: view };
       } else if (op.method === 'diagram-insert') {
         safeId(op.id);
         if (findBox(document.scene.root, op.id) || Object.hasOwn(document.scene.contents, op.id) || Object.hasOwn(document.scene.contents, `${op.id}-summary`)) throw new Error('Node ID already exists');
@@ -330,13 +377,14 @@ export class MappingDocumentController {
         document = { ...document, edges: document.edges.filter(edge => edge.id !== edgeId) };
       } else if (op.nodeId?.startsWith('grid:')) {
         const id = this.gridId(op.nodeId), box = findBox(document.scene.root, id);
-        if (!box || id === document.scene.root.id) throw new Error('Unknown or protected GridBox');
+        if (!box || id === document.scene.root.id && !(editorCanvas && op.method === 'move' && box.kind === 'diagram')) throw new Error('Unknown or protected GridBox');
         if (op.method === 'move') {
           if (!('column' in op.position) || !('row' in op.position)) throw new Error('GridBoxes require cell coordinates');
           const absolute = canvasDisplayNodes(document, canvas, 0).find(node => node.id === op.nodeId)!;
           if (absolute.layout !== 'grid') throw new Error('Expected GridBox');
           const position = { column: op.position.column - (absolute.geometry.bounds.column - box.position.column), row: op.position.row - (absolute.geometry.bounds.row - box.position.row) };
-          document = { ...document, scene: layoutScene(updateGridBox(document.scene, id, item => ({ ...item, position })), id) };
+          const scene = updateGridBox(document.scene, id, item => ({ ...item, position }));
+          document = { ...document, scene: editorCanvas ? scene : layoutScene(scene, id) };
         } else if (op.method === 'collapse') {
           if (typeof op.collapsed !== 'boolean') throw new Error('collapsed must be boolean');
           document = { ...document, scene: layoutScene(updateGridBox(document.scene, id, item => ({ ...item, collapsed: op.collapsed })), id) };
@@ -376,6 +424,8 @@ export class MappingDocumentController {
         } else throw new Error('Unsupported FloatingBox operation');
       }
     }
+    if (editorCanvas && operations.some(op => op.method === 'move' && op.nodeId.startsWith('grid:')))
+      document = { ...document, scene: layoutScene(document.scene, document.scene.root.id) };
     projectCanvasSnapshot(document.scene);
     if (operations.some(op => op.method === 'remove') && !flattenGrid(resolveScene(document.scene)).some(node => node.contentId))
       throw Error('Canvas must contain a visible diagram; use a transfer to move the last diagram');

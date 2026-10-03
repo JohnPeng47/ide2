@@ -1,7 +1,8 @@
+import { ShapeSlotsContext } from '../tldraw/shapeSlots';
 import { endpointKey } from '../../../../domain/mapping/workspace/endpointGeometry';
 import type { CanvasDisplayNode } from '../../../../domain/mapping/workspace/canvasDisplayNode';
 import { PanelConnector } from '../../../shared/diagrams/PanelConnector';
-import { useEffect, useMemo, useState, type RefObject } from 'react';
+import { useContext, useEffect, useMemo, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { connectionContentNodes, defaultArrowAppearance, getArrowLabel, type DiagramAnchor, type DiagramConnection } from '../../../../domain/core/diagrams/diagramConnection';
 import { drawEdge, type FloatingBoxArrow } from '../../../../domain/mapping/workspace/connectionLayout';
@@ -17,6 +18,7 @@ export function DiagramConnections({ controller, state, cell, displayNodes, svgR
   controller: MappingDocumentController; state: ControllerSnapshot; cell: { width: number; height: number };
   open: boolean; onOpen: () => void; onClose: () => void; disabled: boolean;
 }) {
+  const native = useContext(ShapeSlotsContext);
   const [selectedId, setSelectedId] = useState<string>();
   const [draft, setDraft] = useState<Partial<DiagramConnection>>({ appearance: { ...defaultArrowAppearance } });
   const [picking, setPicking] = useState<'source' | 'target'>();
@@ -60,6 +62,15 @@ export function DiagramConnections({ controller, state, cell, displayNodes, svgR
   }, [open, onClose]);
 
   const edit = (edge: DiagramConnection) => { setSelectedId(edge.id); setDraft(structuredClone(edge)); setPicking(undefined); setError(''); onOpen(); };
+  useEffect(() => {
+    const open = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      const edge = doc.edges.find(edge => edge.id === detail.edgeId);
+      if (detail.controller === controller && edge) edit(edge);
+    };
+    window.addEventListener('mapping-edit-connection', open);
+    return () => window.removeEventListener('mapping-edit-connection', open);
+  }, [controller, doc.edges]);
   const create = () => { setSelectedId(undefined); setDraft({ appearance: { ...defaultArrowAppearance } }); setError(''); setPicking('source'); };
   const save = () => {
     try {
@@ -98,7 +109,7 @@ export function DiagramConnections({ controller, state, cell, displayNodes, svgR
   };
   return <>
     <svg ref={svgRef} className="diagram-connections" aria-label="Diagram connections">
-      {arrows.map(({ edge, arrow }) => renderArrow(edge, arrow))}
+      {!native && arrows.map(({ edge, arrow }) => renderArrow(edge, arrow))}
       {open && preview && previewArrow && renderArrow(preview, previewArrow, true)}
     </svg>
     {open && picking && !disabled && choices.filter(choice => choice.rect && (picking === 'target' || choice.anchor.kind === 'content-node')).map(choice => (

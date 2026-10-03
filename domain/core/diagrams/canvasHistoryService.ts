@@ -15,6 +15,7 @@ export interface CanvasContextState {
 
 /** Canvas controllers coordinate edits; this boundary owns history and its storage. */
 export interface CanvasHistoryService {
+  navigation?(context: CanvasEditingContext): import('./canvasHistory').CanvasHistoryNavigation;
   prepareTransfer(context: CanvasEditingContext, input: TransferInput, destination?: CanvasEditingContext): PreparedCanvasTransfer;
   transferBoundary(context: CanvasEditingContext, transaction: CanvasTransfer, canvasId: string, redo?: boolean): boolean;
   prepareTransferNavigation(source: CanvasEditingContext, destination: CanvasEditingContext, transaction: CanvasTransfer, redo?: boolean): { source: TransferState; destination: TransferState; transaction: CanvasTransfer };
@@ -79,6 +80,7 @@ export class DefaultCanvasHistoryService implements CanvasHistoryService {
   persistenceChanges(context: CanvasEditingContext, since?: number) { return this.history(context).persistenceChanges(since); }
   retireTransactions(context: CanvasEditingContext, ids: ReadonlySet<string>) { this.history(context).retireTransactions(ids); }
   exportContext(context: CanvasEditingContext) { return this.history(context).export(); }
+  navigation(context: CanvasEditingContext) { return this.history(context).navigation(); }
   forkContext(context: CanvasEditingContext, view: unknown) { return this.history(context).fork(view); }
   adopt(context: CanvasEditingContext, proposed: CanvasHistoryRecord) { this.history(context).adopt(proposed); }
 }

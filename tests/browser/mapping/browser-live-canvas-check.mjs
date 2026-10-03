@@ -86,7 +86,7 @@ try {
       consumed = messages.length; return [...regions.values()];
     };
     const points = await evaluate(cdp, `(() => {
-      const pre=document.querySelector('.mapping-document-view:not([hidden]) .mapping-poc-ascii');
+      const pre=document.querySelector('.mapping-document-view:not([hidden]) [data-native-node="grid:overview"] .mapping-poc-ascii');
       const r=pre.getBoundingClientRect(), scale=r.width/pre.offsetWidth;
       const probe=document.querySelector('.mapping-poc-cell-probe');
       const w=probe.offsetWidth/10, h=parseFloat(getComputedStyle(pre).lineHeight);

@@ -1,6 +1,7 @@
 import { useCallback, useLayoutEffect, useRef } from 'react';
 import { endpointKey, type EndpointBounds, type EndpointIdentity, type EndpointRect } from '../../../../domain/mapping/workspace/endpointGeometry';
 import type { MappingDocumentController } from '../../../../domain/mapping/workspace/mappingDocumentController';
+import type { Editor } from 'tldraw';
 
 /** DOM measurements and SVG use the same origin/transform, retaining subpixel precision. */
 export function measureEndpoint(element: Element, inverse: DOMMatrix): EndpointRect | undefined {
@@ -12,7 +13,7 @@ export function measureEndpoint(element: Element, inverse: DOMMatrix): EndpointR
   return { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), width: Math.abs(b.x - a.x), height: Math.abs(b.y - a.y) };
 }
 
-export function useEndpointGeometry(controller: { getSnapshot(): Pick<ReturnType<MappingDocumentController['getSnapshot']>, 'document' | 'canvas' | 'cell'>; configureEndpointBounds(bounds: EndpointBounds): void }, active: boolean) {
+export function useEndpointGeometry(controller: { getSnapshot(): Pick<ReturnType<MappingDocumentController['getSnapshot']>, 'document' | 'canvas' | 'cell'>; configureEndpointBounds(bounds: EndpointBounds): void }, active: boolean, native?: { editor?: Editor } | null) {
   const svgRef = useRef<SVGSVGElement>(null);
   const elements = useRef(new Map<string, Element>());
   const observer = useRef<ResizeObserver | null>(null);
@@ -21,17 +22,30 @@ export function useEndpointGeometry(controller: { getSnapshot(): Pick<ReturnType
   const measure = useCallback(() => {
     frame.current = undefined;
     const svg = svgRef.current;
-    if (!activeRef.current || !svg?.getClientRects().length) { controller.configureEndpointBounds({}); return; }
+    if (!activeRef.current || !svg) { controller.configureEndpointBounds({}); return; }
+    // Native shapes and the legacy SVG origin update in separate render phases.
+    // Sampling between them turns camera motion into false endpoint changes and
+    // repeatedly rebuilds every diagram body. NativeConnection follows live
+    // shapes directly; only sample DOM geometry after the gesture/camera settles.
+    const editor = native?.editor;
+    if (editor && (editor.getCameraState() !== 'idle' || editor.inputs.getIsPointing())) {
+      frame.current = requestAnimationFrame(measure);
+      return;
+    }
+    if (!svg.getClientRects().length) { controller.configureEndpointBounds({}); return; }
     const matrix = svg.getScreenCTM();
     if (!matrix || !matrix.a || !matrix.d) return;
     const inverse = matrix.inverse();
     const bounds: Record<string, EndpointRect> = {};
     for (const [key, element] of elements.current) {
       const rect = measureEndpoint(element, inverse);
-      if (rect) bounds[key] = rect;
+      if (rect) bounds[key] = editor ? {
+        x: Math.round(rect.x * 100) / 100, y: Math.round(rect.y * 100) / 100,
+        width: Math.round(rect.width * 100) / 100, height: Math.round(rect.height * 100) / 100,
+      } : rect;
     }
     controller.configureEndpointBounds(bounds as EndpointBounds);
-  }, [controller]);
+  }, [controller, native]);
   const schedule = useCallback(() => {
     if (frame.current === undefined) frame.current = requestAnimationFrame(measure);
   }, [measure]);
