@@ -12,7 +12,8 @@ import { activeDiagramJumps, rebaseDiagramJumps, type DiagramJump } from '../../
 import { normalizeDiagramViews, resolveDiagramContent, projectDiagramContent } from './diagramViewState';
 import { layoutFloatingSelections } from './floatingBoxLayout';
 import { layoutConversationPane } from '../chat/conversationPaneLayout';
-import { flattenGrid, resolveScene } from '../../core/diagrams/lineGrid';
+import { emptyCanvasDocument } from '../../core/diagrams/canvasTransfer';
+import { flattenGrid, resolveScene, type GridBox } from '../../core/diagrams/lineGrid';
 import { projectCanvasSnapshot } from '../../core/diagrams/projectDiagramCanvas';
 import { layoutScene, updateGridBox, type GridPoint } from '../../core/diagrams/lineGrid';
 import type { DiagramElementMapping } from '../../core/records/domain';
@@ -26,6 +27,7 @@ import { diagramConnectionSchema, reconcileConnections, validateConnectionAnchor
 
 export interface ControllerSnapshot { contextId: string; canvasRevisionId: string; endpointBounds?: EndpointBounds; document: MappingGridDocument; canvas: MappingCanvasState; version: number; canUndo: boolean; canRedo: boolean; cell?: { width: number; height: number } }
 export type DiagramOperation =
+  | { method: 'delete-diagrams'; nodeIds: string[] }
   | { method: 'diagram-revision-apply'; nodeId: string; expectedRevisionId: string; revision: DiagramRevision }
   | { method: 'setSourceMappings'; nodeId: string; expectedContentHash: string; mappings: DiagramElementMapping[]; evidence: Record<string, ProjectRepresentationEvidenceRecord>; source?: DiagramSourceBinding }
   | { method: 'patchDiagram'; nodeId: string; start: number; end: number; patch: string; mappings?: DiagramElementMapping[] }
@@ -188,7 +190,32 @@ export class MappingDocumentController {
     let { document, canvas } = structuredClone(this.snapshot);
     const safeId = (id: string) => { if (typeof id !== 'string' || !/^[a-zA-Z0-9_.:-]{1,180}$/.test(id) || ['__proto__','constructor','prototype'].includes(id)) throw new Error('Invalid node ID'); };
     for (const op of operations) {
-      if (op.method === 'patchDiagram') {
+      if (op.method === 'delete-diagrams') {
+        if (!op.nodeIds.length) throw new Error('Select one or more diagrams to delete');
+        const selected = new Set(op.nodeIds);
+        for (const id of selected) {
+          if (findBox(document.scene.root, this.gridId(id))?.kind !== 'diagram') throw new Error('Deletion requires whole diagrams');
+        }
+        const prune = (box: GridBox): GridBox => box.kind === 'container'
+          ? { ...box, children: box.children.filter(child => !selected.has(`grid:${child.id}`)).map(prune) } : box;
+        const root = selected.has(`grid:${document.scene.root.id}`) ? emptyCanvasDocument().scene.root : prune(document.scene.root);
+        const used = new Set<string>();
+        const visit = (box: GridBox) => {
+          if (box.collapsedContentId) used.add(box.collapsedContentId);
+          if (box.kind === 'diagram') used.add(box.contentId); else box.children.forEach(visit);
+        };
+        visit(root);
+        document = { ...document, scene: { root,
+          contents: Object.fromEntries(Object.entries(document.scene.contents).filter(([id]) => used.has(id))) },
+          sections: Object.fromEntries(Object.entries(document.sections).filter(([id]) => used.has(id))) };
+        for (const node of Object.values(canvas.display.nodes)) {
+          if (node.kind === 'selection' && selected.has(`grid:${node.sourceBoxId}`)) canvas.display = removeDisplayNode(canvas.display, node.id);
+        }
+        canvas = updateSelection(canvas, { type: 'replace', items: canvas.selection.items.filter(item => !selected.has(item.displayNodeId)) });
+        canvas.controls = { ...canvas.controls,
+          surfaces: Object.fromEntries(Object.entries(canvas.controls.surfaces).filter(([id]) => id === 'draft' || canvas.display.nodes[id] || canvas.selection.items.some(item => item.id === id))),
+          activeThreadId: canvas.controls.activeThreadId && canvas.display.nodes[canvas.controls.activeThreadId] ? canvas.controls.activeThreadId : null };
+      } else if (op.method === 'patchDiagram') {
         const box = findBox(document.scene.root, this.gridId(op.nodeId));
         if (box?.kind !== 'diagram') throw new Error('Expected diagram GridBox');
         const before = document.scene.contents[box.contentId];
@@ -355,7 +382,7 @@ export class MappingDocumentController {
     const active = findBox(document.scene.root, canvas.controls.activeBoxId);
     if (!active) {
       const first = canvasDisplayNodes(document, canvas, 0).find(node => node.layout === 'grid' && node.kind === 'diagram');
-      if (first?.layout === 'grid') canvas.controls.activeBoxId = first.boxId;
+      canvas.controls.activeBoxId = first?.layout === 'grid' ? first.boxId : document.scene.root.id;
     }
     this.updateSnapshot({ document, canvas }, true);
     return { version: this.snapshot.version, nodes: this.nodes() };

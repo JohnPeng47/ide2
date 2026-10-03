@@ -1,3 +1,4 @@
+import { AgentContextService } from './agentContextService';
 import { randomUUID } from 'node:crypto';
 import { selectionDelta } from '../../../domain/mapping/agent/liveCanvasStatus';
 import type { CanvasDescriptor } from '../../../domain/mapping/agent/contracts';
@@ -15,7 +16,12 @@ export class LiveCanvasService {
   private publishers = new Map<string, { owner: object; selections: Map<string, Snapshot>; notify: (event: LiveCanvasEvent) => void }>();
   private bindings = new Map<string, Binding>();
   constructor(private readonly listCanvases: () => CanvasDescriptor[],
-    private readonly loadContext?: (workspaceInstanceId: string, documentId: string) => Promise<LiveCanvasContext>) {}
+    private readonly loadContext?: (workspaceInstanceId: string, documentId: string) => Promise<LiveCanvasContext>,
+    private readonly agentContexts = new AgentContextService()) {}
+  uploadAgentContext(connectionId: string, requestId: string, trajectory: unknown) {
+    const binding = this.read(connectionId);
+    return this.agentContexts.upload(binding, requestId, trajectory);
+  }
   async contextForCanvas(workspaceInstanceId: string, documentId: string) {
     const publisher = this.publishers.get(workspaceInstanceId);
     const canvases = this.listCanvases();

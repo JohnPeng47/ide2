@@ -1,0 +1,2881 @@
+[
+  {
+    "file": "catalog-cold.cpuprofile",
+    "totalMs": 14656,
+    "self": [
+      {
+        "location": "recognize",
+        "ms": 3684,
+        "percent": 25.1
+      },
+      {
+        "location": "sha256",
+        "ms": 1966,
+        "percent": 13.4
+      },
+      {
+        "location": "(anonymous)",
+        "ms": 1385,
+        "percent": 9.4
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 1249,
+        "percent": 8.5
+      },
+      {
+        "location": "structuredClone",
+        "ms": 1039,
+        "percent": 7.1
+      },
+      {
+        "location": "interpretLayout",
+        "ms": 664,
+        "percent": 4.5
+      },
+      {
+        "location": "validateDiagram",
+        "ms": 663,
+        "percent": 4.5
+      },
+      {
+        "location": "parseDiagram",
+        "ms": 549,
+        "percent": 3.7
+      },
+      {
+        "location": "normalizeSource",
+        "ms": 454,
+        "percent": 3.1
+      },
+      {
+        "location": "buildDiagramContent",
+        "ms": 290,
+        "percent": 2
+      },
+      {
+        "location": "treeDocument",
+        "ms": 165,
+        "percent": 1.1
+      },
+      {
+        "location": "deepFreeze",
+        "ms": 150,
+        "percent": 1
+      },
+      {
+        "location": "__name",
+        "ms": 136,
+        "percent": 0.9
+      },
+      {
+        "location": "addNode",
+        "ms": 112,
+        "percent": 0.8
+      },
+      {
+        "location": "mergeDefs",
+        "ms": 111,
+        "percent": 0.8
+      },
+      {
+        "location": "projectCanvasSnapshot",
+        "ms": 109,
+        "percent": 0.7
+      },
+      {
+        "location": "set filename",
+        "ms": 105,
+        "percent": 0.7
+      },
+      {
+        "location": "init",
+        "ms": 100,
+        "percent": 0.7
+      },
+      {
+        "location": "parseAsciiTree",
+        "ms": 90,
+        "percent": 0.6
+      },
+      {
+        "location": "readJsonIfExists",
+        "ms": 79,
+        "percent": 0.5
+      },
+      {
+        "location": "RegExp: \\d",
+        "ms": 77,
+        "percent": 0.5
+      },
+      {
+        "location": "validateCanvasHistory",
+        "ms": 73,
+        "percent": 0.5
+      },
+      {
+        "location": "RegExp: [\\u00a0\\u202f\\u2007]",
+        "ms": 70,
+        "percent": 0.5
+      },
+      {
+        "location": "post",
+        "ms": 65,
+        "percent": 0.4
+      },
+      {
+        "location": "asciiSha256",
+        "ms": 64,
+        "percent": 0.4
+      },
+      {
+        "location": "exportedEvidenceId",
+        "ms": 60,
+        "percent": 0.4
+      },
+      {
+        "location": "RegExp: [\\ufeff\\u200b\\u200c\\u200d]",
+        "ms": 59,
+        "percent": 0.4
+      },
+      {
+        "location": "composeScene",
+        "ms": 54,
+        "percent": 0.4
+      },
+      {
+        "location": "encode",
+        "ms": 53,
+        "percent": 0.4
+      },
+      {
+        "location": "RegExp: [^\\x20-\\x7e\\n]",
+        "ms": 42,
+        "percent": 0.3
+      },
+      {
+        "location": "get",
+        "ms": 42,
+        "percent": 0.3
+      },
+      {
+        "location": "policyFor",
+        "ms": 40,
+        "percent": 0.3
+      },
+      {
+        "location": "measureContent",
+        "ms": 39,
+        "percent": 0.3
+      },
+      {
+        "location": "settle",
+        "ms": 36,
+        "percent": 0.2
+      },
+      {
+        "location": "(idle)",
+        "ms": 36,
+        "percent": 0.2
+      },
+      {
+        "location": "interpretTrees",
+        "ms": 34,
+        "percent": 0.2
+      },
+      {
+        "location": "inst._zod.run",
+        "ms": 32,
+        "percent": 0.2
+      },
+      {
+        "location": "register",
+        "ms": 31,
+        "percent": 0.2
+      },
+      {
+        "location": "inst._zod.parse",
+        "ms": 31,
+        "percent": 0.2
+      },
+      {
+        "location": "validateDiagramJumps",
+        "ms": 30,
+        "percent": 0.2
+      },
+      {
+        "location": "own",
+        "ms": 26,
+        "percent": 0.2
+      },
+      {
+        "location": "encodeUtf8String",
+        "ms": 22,
+        "percent": 0.1
+      },
+      {
+        "location": "isRecursive",
+        "ms": 22,
+        "percent": 0.1
+      },
+      {
+        "location": "documentFromHistory",
+        "ms": 21,
+        "percent": 0.1
+      },
+      {
+        "location": "(program)",
+        "ms": 19,
+        "percent": 0.1
+      }
+    ],
+    "inclusive": [
+      {
+        "location": "(root)",
+        "ms": 14656,
+        "percent": 100
+      },
+      {
+        "location": "(anonymous)",
+        "ms": 13176,
+        "percent": 89.9
+      },
+      {
+        "location": "validateCanvasHistory",
+        "ms": 11222,
+        "percent": 76.6
+      },
+      {
+        "location": "validateDiagram",
+        "ms": 10943,
+        "percent": 74.7
+      },
+      {
+        "location": "projectCanvasSnapshot",
+        "ms": 9151,
+        "percent": 62.4
+      },
+      {
+        "location": "buildDiagramContent",
+        "ms": 8624,
+        "percent": 58.8
+      },
+      {
+        "location": "parseAsciiTree",
+        "ms": 7158,
+        "percent": 48.8
+      },
+      {
+        "location": "parseDiagram",
+        "ms": 7074,
+        "percent": 48.3
+      },
+      {
+        "location": "recognize",
+        "ms": 4310,
+        "percent": 29.4
+      },
+      {
+        "location": "asciiSha256",
+        "ms": 2257,
+        "percent": 15.4
+      },
+      {
+        "location": "sha256",
+        "ms": 2182,
+        "percent": 14.9
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 1249,
+        "percent": 8.5
+      },
+      {
+        "location": "structuredClone",
+        "ms": 1042,
+        "percent": 7.1
+      },
+      {
+        "location": "normalizeSource",
+        "ms": 940,
+        "percent": 6.4
+      },
+      {
+        "location": "documentFromHistory",
+        "ms": 906,
+        "percent": 6.2
+      },
+      {
+        "location": "interpretLayout",
+        "ms": 894,
+        "percent": 6.1
+      },
+      {
+        "location": "register",
+        "ms": 576,
+        "percent": 3.9
+      },
+      {
+        "location": "validateDiagramJumps",
+        "ms": 522,
+        "percent": 3.6
+      },
+      {
+        "location": "interpretTrees",
+        "ms": 328,
+        "percent": 2.2
+      },
+      {
+        "location": "treeDocument",
+        "ms": 289,
+        "percent": 2
+      },
+      {
+        "location": "fn",
+        "ms": 241,
+        "percent": 1.6
+      },
+      {
+        "location": "__name",
+        "ms": 241,
+        "percent": 1.6
+      },
+      {
+        "location": "max",
+        "ms": 238,
+        "percent": 1.6
+      },
+      {
+        "location": "_parse",
+        "ms": 183,
+        "percent": 1.2
+      },
+      {
+        "location": "_",
+        "ms": 180,
+        "percent": 1.2
+      },
+      {
+        "location": "check",
+        "ms": 176,
+        "percent": 1.2
+      },
+      {
+        "location": "inst._zod.run",
+        "ms": 170,
+        "percent": 1.2
+      },
+      {
+        "location": "exportedEvidenceId",
+        "ms": 169,
+        "percent": 1.2
+      },
+      {
+        "location": "init",
+        "ms": 164,
+        "percent": 1.1
+      },
+      {
+        "location": "validateConnections",
+        "ms": 161,
+        "percent": 1.1
+      },
+      {
+        "location": "deepFreeze",
+        "ms": 150,
+        "percent": 1
+      },
+      {
+        "location": "wrapped",
+        "ms": 142,
+        "percent": 1
+      },
+      {
+        "location": "array",
+        "ms": 136,
+        "percent": 0.9
+      },
+      {
+        "location": "_array",
+        "ms": 125,
+        "percent": 0.8
+      },
+      {
+        "location": "composeScene",
+        "ms": 118,
+        "percent": 0.8
+      },
+      {
+        "location": "addNode",
+        "ms": 112,
+        "percent": 0.8
+      },
+      {
+        "location": "mergeDefs",
+        "ms": 111,
+        "percent": 0.8
+      },
+      {
+        "location": "set filename",
+        "ms": 105,
+        "percent": 0.7
+      },
+      {
+        "location": "get",
+        "ms": 86,
+        "percent": 0.6
+      },
+      {
+        "location": "resolveScene",
+        "ms": 83,
+        "percent": 0.6
+      },
+      {
+        "location": "core.$constructor.min",
+        "ms": 80,
+        "percent": 0.5
+      },
+      {
+        "location": "readJsonIfExists",
+        "ms": 79,
+        "percent": 0.5
+      },
+      {
+        "location": "RegExp: \\d",
+        "ms": 77,
+        "percent": 0.5
+      },
+      {
+        "location": "encode",
+        "ms": 75,
+        "percent": 0.5
+      },
+      {
+        "location": "visit",
+        "ms": 72,
+        "percent": 0.5
+      }
+    ]
+  },
+  {
+    "file": "catalog-serialize.cpuprofile",
+    "totalMs": 228,
+    "self": [
+      {
+        "location": "(anonymous)",
+        "ms": 122,
+        "percent": 53.7
+      },
+      {
+        "location": "post",
+        "ms": 104,
+        "percent": 45.7
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 1,
+        "percent": 0.5
+      },
+      {
+        "location": "dispatch",
+        "ms": 0,
+        "percent": 0.2
+      }
+    ],
+    "inclusive": [
+      {
+        "location": "(root)",
+        "ms": 228,
+        "percent": 100
+      },
+      {
+        "location": "(anonymous)",
+        "ms": 227,
+        "percent": 99.5
+      },
+      {
+        "location": "phase",
+        "ms": 227,
+        "percent": 99.5
+      },
+      {
+        "location": "post",
+        "ms": 104,
+        "percent": 45.8
+      },
+      {
+        "location": "fn",
+        "ms": 104,
+        "percent": 45.8
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 1,
+        "percent": 0.5
+      },
+      {
+        "location": "dispatch",
+        "ms": 0,
+        "percent": 0.2
+      }
+    ]
+  },
+  {
+    "file": "catalog-warm.cpuprofile",
+    "totalMs": 12956,
+    "self": [
+      {
+        "location": "recognize",
+        "ms": 3297,
+        "percent": 25.5
+      },
+      {
+        "location": "sha256",
+        "ms": 1784,
+        "percent": 13.8
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 1214,
+        "percent": 9.4
+      },
+      {
+        "location": "(anonymous)",
+        "ms": 1117,
+        "percent": 8.6
+      },
+      {
+        "location": "structuredClone",
+        "ms": 956,
+        "percent": 7.4
+      },
+      {
+        "location": "normalizeSource",
+        "ms": 603,
+        "percent": 4.7
+      },
+      {
+        "location": "interpretLayout",
+        "ms": 597,
+        "percent": 4.6
+      },
+      {
+        "location": "validateDiagram",
+        "ms": 547,
+        "percent": 4.2
+      },
+      {
+        "location": "parseDiagram",
+        "ms": 464,
+        "percent": 3.6
+      },
+      {
+        "location": "buildDiagramContent",
+        "ms": 291,
+        "percent": 2.2
+      },
+      {
+        "location": "treeDocument",
+        "ms": 166,
+        "percent": 1.3
+      },
+      {
+        "location": "deepFreeze",
+        "ms": 125,
+        "percent": 1
+      },
+      {
+        "location": "__name",
+        "ms": 105,
+        "percent": 0.8
+      },
+      {
+        "location": "post",
+        "ms": 101,
+        "percent": 0.8
+      },
+      {
+        "location": "projectCanvasSnapshot",
+        "ms": 100,
+        "percent": 0.8
+      },
+      {
+        "location": "mergeDefs",
+        "ms": 92,
+        "percent": 0.7
+      },
+      {
+        "location": "validateCanvasHistory",
+        "ms": 90,
+        "percent": 0.7
+      },
+      {
+        "location": "set filename",
+        "ms": 88,
+        "percent": 0.7
+      },
+      {
+        "location": "parseAsciiTree",
+        "ms": 78,
+        "percent": 0.6
+      },
+      {
+        "location": "addNode",
+        "ms": 74,
+        "percent": 0.6
+      },
+      {
+        "location": "readJsonIfExists",
+        "ms": 64,
+        "percent": 0.5
+      },
+      {
+        "location": "encode",
+        "ms": 63,
+        "percent": 0.5
+      },
+      {
+        "location": "init",
+        "ms": 63,
+        "percent": 0.5
+      },
+      {
+        "location": "composeScene",
+        "ms": 49,
+        "percent": 0.4
+      },
+      {
+        "location": "get",
+        "ms": 44,
+        "percent": 0.3
+      },
+      {
+        "location": "measureContent",
+        "ms": 44,
+        "percent": 0.3
+      },
+      {
+        "location": "exportedEvidenceId",
+        "ms": 43,
+        "percent": 0.3
+      },
+      {
+        "location": "asciiSha256",
+        "ms": 41,
+        "percent": 0.3
+      },
+      {
+        "location": "policyFor",
+        "ms": 36,
+        "percent": 0.3
+      },
+      {
+        "location": "validateDiagramJumps",
+        "ms": 32,
+        "percent": 0.2
+      },
+      {
+        "location": "interpretTrees",
+        "ms": 31,
+        "percent": 0.2
+      },
+      {
+        "location": "sourceSpan",
+        "ms": 25,
+        "percent": 0.2
+      },
+      {
+        "location": "visit",
+        "ms": 25,
+        "percent": 0.2
+      },
+      {
+        "location": "inst._zod.run",
+        "ms": 24,
+        "percent": 0.2
+      },
+      {
+        "location": "settle",
+        "ms": 24,
+        "percent": 0.2
+      },
+      {
+        "location": "encodeUtf8String",
+        "ms": 22,
+        "percent": 0.2
+      },
+      {
+        "location": "openFileHandle",
+        "ms": 22,
+        "percent": 0.2
+      },
+      {
+        "location": "read",
+        "ms": 21,
+        "percent": 0.2
+      },
+      {
+        "location": "(program)",
+        "ms": 20,
+        "percent": 0.2
+      },
+      {
+        "location": "register",
+        "ms": 19,
+        "percent": 0.2
+      },
+      {
+        "location": "core.$constructor.min",
+        "ms": 19,
+        "percent": 0.1
+      },
+      {
+        "location": "inst._zod.parse",
+        "ms": 18,
+        "percent": 0.1
+      },
+      {
+        "location": "own",
+        "ms": 18,
+        "percent": 0.1
+      },
+      {
+        "location": "decision",
+        "ms": 18,
+        "percent": 0.1
+      },
+      {
+        "location": "close",
+        "ms": 15,
+        "percent": 0.1
+      }
+    ],
+    "inclusive": [
+      {
+        "location": "(root)",
+        "ms": 12956,
+        "percent": 100
+      },
+      {
+        "location": "(anonymous)",
+        "ms": 11552,
+        "percent": 89.2
+      },
+      {
+        "location": "validateCanvasHistory",
+        "ms": 10311,
+        "percent": 79.6
+      },
+      {
+        "location": "validateDiagram",
+        "ms": 9562,
+        "percent": 73.8
+      },
+      {
+        "location": "projectCanvasSnapshot",
+        "ms": 8346,
+        "percent": 64.4
+      },
+      {
+        "location": "buildDiagramContent",
+        "ms": 7574,
+        "percent": 58.5
+      },
+      {
+        "location": "parseAsciiTree",
+        "ms": 6288,
+        "percent": 48.5
+      },
+      {
+        "location": "parseDiagram",
+        "ms": 6233,
+        "percent": 48.1
+      },
+      {
+        "location": "recognize",
+        "ms": 3748,
+        "percent": 28.9
+      },
+      {
+        "location": "asciiSha256",
+        "ms": 2027,
+        "percent": 15.6
+      },
+      {
+        "location": "sha256",
+        "ms": 1986,
+        "percent": 15.3
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 1214,
+        "percent": 9.4
+      },
+      {
+        "location": "structuredClone",
+        "ms": 956,
+        "percent": 7.4
+      },
+      {
+        "location": "normalizeSource",
+        "ms": 888,
+        "percent": 6.9
+      },
+      {
+        "location": "documentFromHistory",
+        "ms": 852,
+        "percent": 6.6
+      },
+      {
+        "location": "interpretLayout",
+        "ms": 795,
+        "percent": 6.1
+      },
+      {
+        "location": "validateDiagramJumps",
+        "ms": 383,
+        "percent": 3
+      },
+      {
+        "location": "interpretTrees",
+        "ms": 295,
+        "percent": 2.3
+      },
+      {
+        "location": "treeDocument",
+        "ms": 262,
+        "percent": 2
+      },
+      {
+        "location": "fn",
+        "ms": 210,
+        "percent": 1.6
+      },
+      {
+        "location": "__name",
+        "ms": 193,
+        "percent": 1.5
+      },
+      {
+        "location": "max",
+        "ms": 185,
+        "percent": 1.4
+      },
+      {
+        "location": "check",
+        "ms": 139,
+        "percent": 1.1
+      },
+      {
+        "location": "deepFreeze",
+        "ms": 125,
+        "percent": 1
+      },
+      {
+        "location": "_",
+        "ms": 112,
+        "percent": 0.9
+      },
+      {
+        "location": "init",
+        "ms": 112,
+        "percent": 0.9
+      },
+      {
+        "location": "_parse",
+        "ms": 111,
+        "percent": 0.9
+      },
+      {
+        "location": "inst._zod.run",
+        "ms": 109,
+        "percent": 0.8
+      },
+      {
+        "location": "validateConnections",
+        "ms": 107,
+        "percent": 0.8
+      },
+      {
+        "location": "get",
+        "ms": 101,
+        "percent": 0.8
+      },
+      {
+        "location": "post",
+        "ms": 101,
+        "percent": 0.8
+      },
+      {
+        "location": "phase",
+        "ms": 101,
+        "percent": 0.8
+      },
+      {
+        "location": "composeScene",
+        "ms": 99,
+        "percent": 0.8
+      },
+      {
+        "location": "exportedEvidenceId",
+        "ms": 94,
+        "percent": 0.7
+      },
+      {
+        "location": "mergeDefs",
+        "ms": 92,
+        "percent": 0.7
+      },
+      {
+        "location": "wrapped",
+        "ms": 92,
+        "percent": 0.7
+      },
+      {
+        "location": "array",
+        "ms": 91,
+        "percent": 0.7
+      },
+      {
+        "location": "set filename",
+        "ms": 88,
+        "percent": 0.7
+      },
+      {
+        "location": "encode",
+        "ms": 86,
+        "percent": 0.7
+      },
+      {
+        "location": "_array",
+        "ms": 77,
+        "percent": 0.6
+      },
+      {
+        "location": "addNode",
+        "ms": 74,
+        "percent": 0.6
+      },
+      {
+        "location": "resolveScene",
+        "ms": 65,
+        "percent": 0.5
+      },
+      {
+        "location": "readJsonIfExists",
+        "ms": 64,
+        "percent": 0.5
+      },
+      {
+        "location": "core.$constructor.min",
+        "ms": 63,
+        "percent": 0.5
+      },
+      {
+        "location": "visit",
+        "ms": 59,
+        "percent": 0.5
+      }
+    ]
+  },
+  {
+    "file": "page-create-sessions.cpuprofile",
+    "totalMs": 12760,
+    "self": [
+      {
+        "location": "recognize",
+        "ms": 3396,
+        "percent": 26.6
+      },
+      {
+        "location": "sha256",
+        "ms": 1564,
+        "percent": 12.3
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 1552,
+        "percent": 12.2
+      },
+      {
+        "location": "structuredClone",
+        "ms": 1281,
+        "percent": 10
+      },
+      {
+        "location": "(anonymous)",
+        "ms": 643,
+        "percent": 5
+      },
+      {
+        "location": "interpretLayout",
+        "ms": 539,
+        "percent": 4.2
+      },
+      {
+        "location": "validateDiagram",
+        "ms": 533,
+        "percent": 4.2
+      },
+      {
+        "location": "normalizeSource",
+        "ms": 531,
+        "percent": 4.2
+      },
+      {
+        "location": "parseDiagram",
+        "ms": 410,
+        "percent": 3.2
+      },
+      {
+        "location": "buildDiagramContent",
+        "ms": 254,
+        "percent": 2
+      },
+      {
+        "location": "post",
+        "ms": 236,
+        "percent": 1.8
+      },
+      {
+        "location": "treeDocument",
+        "ms": 159,
+        "percent": 1.2
+      },
+      {
+        "location": "mergeDefs",
+        "ms": 102,
+        "percent": 0.8
+      },
+      {
+        "location": "init",
+        "ms": 102,
+        "percent": 0.8
+      },
+      {
+        "location": "deepFreeze",
+        "ms": 100,
+        "percent": 0.8
+      },
+      {
+        "location": "validateCanvasHistory",
+        "ms": 83,
+        "percent": 0.7
+      },
+      {
+        "location": "projectCanvasSnapshot",
+        "ms": 83,
+        "percent": 0.6
+      },
+      {
+        "location": "exportedEvidenceId",
+        "ms": 82,
+        "percent": 0.6
+      },
+      {
+        "location": "__name",
+        "ms": 81,
+        "percent": 0.6
+      },
+      {
+        "location": "set SubtleCrypto",
+        "ms": 78,
+        "percent": 0.6
+      },
+      {
+        "location": "stateKey",
+        "ms": 74,
+        "percent": 0.6
+      },
+      {
+        "location": "composeScene",
+        "ms": 71,
+        "percent": 0.6
+      },
+      {
+        "location": "resolveScene",
+        "ms": 69,
+        "percent": 0.5
+      },
+      {
+        "location": "parseAsciiTree",
+        "ms": 60,
+        "percent": 0.5
+      },
+      {
+        "location": "addNode",
+        "ms": 59,
+        "percent": 0.5
+      },
+      {
+        "location": "get",
+        "ms": 48,
+        "percent": 0.4
+      },
+      {
+        "location": "inst._zod.run",
+        "ms": 43,
+        "percent": 0.3
+      },
+      {
+        "location": "validateDiagramJumps",
+        "ms": 43,
+        "percent": 0.3
+      },
+      {
+        "location": "encode",
+        "ms": 41,
+        "percent": 0.3
+      },
+      {
+        "location": "inst._zod.parse",
+        "ms": 29,
+        "percent": 0.2
+      },
+      {
+        "location": "interpretTrees",
+        "ms": 27,
+        "percent": 0.2
+      },
+      {
+        "location": "policyFor",
+        "ms": 27,
+        "percent": 0.2
+      },
+      {
+        "location": "encodeUtf8String",
+        "ms": 25,
+        "percent": 0.2
+      },
+      {
+        "location": "settle",
+        "ms": 21,
+        "percent": 0.2
+      },
+      {
+        "location": "_maxLength",
+        "ms": 21,
+        "percent": 0.2
+      },
+      {
+        "location": "asciiSha256",
+        "ms": 21,
+        "percent": 0.2
+      },
+      {
+        "location": "max",
+        "ms": 18,
+        "percent": 0.1
+      },
+      {
+        "location": "core.$constructor.min",
+        "ms": 18,
+        "percent": 0.1
+      },
+      {
+        "location": "sourceSpan",
+        "ms": 17,
+        "percent": 0.1
+      },
+      {
+        "location": "check",
+        "ms": 16,
+        "percent": 0.1
+      },
+      {
+        "location": "activeDiagramJumps",
+        "ms": 15,
+        "percent": 0.1
+      },
+      {
+        "location": "array",
+        "ms": 15,
+        "percent": 0.1
+      },
+      {
+        "location": "isRecursive",
+        "ms": 14,
+        "percent": 0.1
+      },
+      {
+        "location": "decision",
+        "ms": 12,
+        "percent": 0.1
+      },
+      {
+        "location": "documentFromHistory",
+        "ms": 12,
+        "percent": 0.1
+      }
+    ],
+    "inclusive": [
+      {
+        "location": "(root)",
+        "ms": 12760,
+        "percent": 100
+      },
+      {
+        "location": "(anonymous)",
+        "ms": 11209,
+        "percent": 87.8
+      },
+      {
+        "location": "phase",
+        "ms": 11209,
+        "percent": 87.8
+      },
+      {
+        "location": "CanvasSession",
+        "ms": 10970,
+        "percent": 86
+      },
+      {
+        "location": "MappingDocumentController",
+        "ms": 10922,
+        "percent": 85.6
+      },
+      {
+        "location": "openContext",
+        "ms": 10805,
+        "percent": 84.7
+      },
+      {
+        "location": "CanvasHistory",
+        "ms": 10804,
+        "percent": 84.7
+      },
+      {
+        "location": "validateCanvasHistory",
+        "ms": 10651,
+        "percent": 83.5
+      },
+      {
+        "location": "projectCanvasSnapshot",
+        "ms": 9034,
+        "percent": 70.8
+      },
+      {
+        "location": "validateDiagram",
+        "ms": 8728,
+        "percent": 68.4
+      },
+      {
+        "location": "buildDiagramContent",
+        "ms": 6782,
+        "percent": 53.1
+      },
+      {
+        "location": "parseAsciiTree",
+        "ms": 5634,
+        "percent": 44.2
+      },
+      {
+        "location": "parseDiagram",
+        "ms": 5568,
+        "percent": 43.6
+      },
+      {
+        "location": "recognize",
+        "ms": 3407,
+        "percent": 26.7
+      },
+      {
+        "location": "asciiSha256",
+        "ms": 1755,
+        "percent": 13.8
+      },
+      {
+        "location": "sha256",
+        "ms": 1735,
+        "percent": 13.6
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 1552,
+        "percent": 12.2
+      },
+      {
+        "location": "structuredClone",
+        "ms": 1282,
+        "percent": 10
+      },
+      {
+        "location": "documentFromHistory",
+        "ms": 950,
+        "percent": 7.4
+      },
+      {
+        "location": "normalizeSource",
+        "ms": 775,
+        "percent": 6.1
+      },
+      {
+        "location": "interpretLayout",
+        "ms": 691,
+        "percent": 5.4
+      },
+      {
+        "location": "validateDiagramJumps",
+        "ms": 524,
+        "percent": 4.1
+      },
+      {
+        "location": "fn",
+        "ms": 359,
+        "percent": 2.8
+      },
+      {
+        "location": "interpretTrees",
+        "ms": 263,
+        "percent": 2.1
+      },
+      {
+        "location": "max",
+        "ms": 253,
+        "percent": 2
+      },
+      {
+        "location": "exportedEvidenceId",
+        "ms": 240,
+        "percent": 1.9
+      },
+      {
+        "location": "post",
+        "ms": 236,
+        "percent": 1.9
+      },
+      {
+        "location": "treeDocument",
+        "ms": 231,
+        "percent": 1.8
+      },
+      {
+        "location": "check",
+        "ms": 202,
+        "percent": 1.6
+      },
+      {
+        "location": "__name",
+        "ms": 159,
+        "percent": 1.2
+      },
+      {
+        "location": "_",
+        "ms": 152,
+        "percent": 1.2
+      },
+      {
+        "location": "init",
+        "ms": 147,
+        "percent": 1.2
+      },
+      {
+        "location": "array",
+        "ms": 131,
+        "percent": 1
+      },
+      {
+        "location": "inst._zod.run",
+        "ms": 123,
+        "percent": 1
+      },
+      {
+        "location": "_parse",
+        "ms": 123,
+        "percent": 1
+      },
+      {
+        "location": "_array",
+        "ms": 117,
+        "percent": 0.9
+      },
+      {
+        "location": "mergeDefs",
+        "ms": 102,
+        "percent": 0.8
+      },
+      {
+        "location": "deepFreeze",
+        "ms": 100,
+        "percent": 0.8
+      },
+      {
+        "location": "validateConnections",
+        "ms": 95,
+        "percent": 0.7
+      },
+      {
+        "location": "composeScene",
+        "ms": 92,
+        "percent": 0.7
+      },
+      {
+        "location": "set SubtleCrypto",
+        "ms": 78,
+        "percent": 0.6
+      },
+      {
+        "location": "core.$constructor.min",
+        "ms": 76,
+        "percent": 0.6
+      },
+      {
+        "location": "stateKey",
+        "ms": 74,
+        "percent": 0.6
+      },
+      {
+        "location": "resolveScene",
+        "ms": 71,
+        "percent": 0.6
+      },
+      {
+        "location": "encode",
+        "ms": 66,
+        "percent": 0.5
+      }
+    ]
+  },
+  {
+    "file": "page-reconcile.cpuprofile",
+    "totalMs": 391,
+    "self": [
+      {
+        "location": "post",
+        "ms": 213,
+        "percent": 54.5
+      },
+      {
+        "location": "structuredClone",
+        "ms": 143,
+        "percent": 36.6
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 18,
+        "percent": 4.5
+      },
+      {
+        "location": "stateKey",
+        "ms": 9,
+        "percent": 2.2
+      },
+      {
+        "location": "reconcileWorkspaceDocument",
+        "ms": 5,
+        "percent": 1.4
+      },
+      {
+        "location": "documentFromHistory",
+        "ms": 2,
+        "percent": 0.6
+      },
+      {
+        "location": "deepFreeze",
+        "ms": 1,
+        "percent": 0.3
+      }
+    ],
+    "inclusive": [
+      {
+        "location": "(root)",
+        "ms": 391,
+        "percent": 100
+      },
+      {
+        "location": "(anonymous)",
+        "ms": 373,
+        "percent": 95.5
+      },
+      {
+        "location": "phase",
+        "ms": 373,
+        "percent": 95.5
+      },
+      {
+        "location": "post",
+        "ms": 213,
+        "percent": 54.5
+      },
+      {
+        "location": "fn",
+        "ms": 213,
+        "percent": 54.5
+      },
+      {
+        "location": "reconcileWorkspaceDocument",
+        "ms": 160,
+        "percent": 41
+      },
+      {
+        "location": "structuredClone",
+        "ms": 143,
+        "percent": 36.6
+      },
+      {
+        "location": "historyFromRevision",
+        "ms": 137,
+        "percent": 35.2
+      },
+      {
+        "location": "documentFromRevision",
+        "ms": 90,
+        "percent": 22.9
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 18,
+        "percent": 4.5
+      },
+      {
+        "location": "documentFromHistory",
+        "ms": 9,
+        "percent": 2.2
+      },
+      {
+        "location": "stateKey",
+        "ms": 9,
+        "percent": 2.2
+      },
+      {
+        "location": "deepFreeze",
+        "ms": 1,
+        "percent": 0.3
+      }
+    ]
+  },
+  {
+    "file": "records-cold.cpuprofile",
+    "totalMs": 6975,
+    "self": [
+      {
+        "location": "recognize",
+        "ms": 1756,
+        "percent": 25.2
+      },
+      {
+        "location": "sha256",
+        "ms": 893,
+        "percent": 12.8
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 694,
+        "percent": 9.9
+      },
+      {
+        "location": "(anonymous)",
+        "ms": 652,
+        "percent": 9.4
+      },
+      {
+        "location": "structuredClone",
+        "ms": 499,
+        "percent": 7.2
+      },
+      {
+        "location": "interpretLayout",
+        "ms": 323,
+        "percent": 4.6
+      },
+      {
+        "location": "normalizeSource",
+        "ms": 286,
+        "percent": 4.1
+      },
+      {
+        "location": "validateDiagram",
+        "ms": 277,
+        "percent": 4
+      },
+      {
+        "location": "parseDiagram",
+        "ms": 211,
+        "percent": 3
+      },
+      {
+        "location": "buildDiagramContent",
+        "ms": 140,
+        "percent": 2
+      },
+      {
+        "location": "post",
+        "ms": 105,
+        "percent": 1.5
+      },
+      {
+        "location": "deepFreeze",
+        "ms": 103,
+        "percent": 1.5
+      },
+      {
+        "location": "treeDocument",
+        "ms": 86,
+        "percent": 1.2
+      },
+      {
+        "location": "projectCanvasSnapshot",
+        "ms": 83,
+        "percent": 1.2
+      },
+      {
+        "location": "exportedEvidenceId",
+        "ms": 71,
+        "percent": 1
+      },
+      {
+        "location": "mergeDefs",
+        "ms": 54,
+        "percent": 0.8
+      },
+      {
+        "location": "addNode",
+        "ms": 53,
+        "percent": 0.8
+      },
+      {
+        "location": "set SubtleCrypto",
+        "ms": 50,
+        "percent": 0.7
+      },
+      {
+        "location": "__name",
+        "ms": 49,
+        "percent": 0.7
+      },
+      {
+        "location": "init",
+        "ms": 38,
+        "percent": 0.5
+      },
+      {
+        "location": "parseAsciiTree",
+        "ms": 34,
+        "percent": 0.5
+      },
+      {
+        "location": "validateCanvasHistory",
+        "ms": 31,
+        "percent": 0.4
+      },
+      {
+        "location": "asciiSha256",
+        "ms": 30,
+        "percent": 0.4
+      },
+      {
+        "location": "composeScene",
+        "ms": 26,
+        "percent": 0.4
+      },
+      {
+        "location": "validateDiagramJumps",
+        "ms": 24,
+        "percent": 0.3
+      },
+      {
+        "location": "measureContent",
+        "ms": 23,
+        "percent": 0.3
+      },
+      {
+        "location": "close",
+        "ms": 22,
+        "percent": 0.3
+      },
+      {
+        "location": "read",
+        "ms": 20,
+        "percent": 0.3
+      },
+      {
+        "location": "update",
+        "ms": 17,
+        "percent": 0.2
+      },
+      {
+        "location": "encode",
+        "ms": 17,
+        "percent": 0.2
+      },
+      {
+        "location": "sourceSpan",
+        "ms": 16,
+        "percent": 0.2
+      },
+      {
+        "location": "interpretTrees",
+        "ms": 14,
+        "percent": 0.2
+      },
+      {
+        "location": "policyFor",
+        "ms": 13,
+        "percent": 0.2
+      },
+      {
+        "location": "inst._zod.parse",
+        "ms": 12,
+        "percent": 0.2
+      },
+      {
+        "location": "openFileHandle",
+        "ms": 12,
+        "percent": 0.2
+      },
+      {
+        "location": "visit",
+        "ms": 11,
+        "percent": 0.2
+      },
+      {
+        "location": "deserializeWorkspace",
+        "ms": 11,
+        "percent": 0.2
+      },
+      {
+        "location": "(idle)",
+        "ms": 11,
+        "percent": 0.2
+      },
+      {
+        "location": "inst._zod.run",
+        "ms": 10,
+        "percent": 0.1
+      },
+      {
+        "location": "paint",
+        "ms": 10,
+        "percent": 0.1
+      },
+      {
+        "location": "encodeUtf8String",
+        "ms": 10,
+        "percent": 0.1
+      },
+      {
+        "location": "core.$constructor.~standard",
+        "ms": 10,
+        "percent": 0.1
+      },
+      {
+        "location": "settle",
+        "ms": 10,
+        "percent": 0.1
+      },
+      {
+        "location": "max",
+        "ms": 10,
+        "percent": 0.1
+      },
+      {
+        "location": "activeDiagramJumps",
+        "ms": 9,
+        "percent": 0.1
+      }
+    ],
+    "inclusive": [
+      {
+        "location": "(root)",
+        "ms": 6975,
+        "percent": 100
+      },
+      {
+        "location": "read",
+        "ms": 6054,
+        "percent": 86.8
+      },
+      {
+        "location": "validateRecordUpdate",
+        "ms": 6021,
+        "percent": 86.3
+      },
+      {
+        "location": "validateCanvasHistory",
+        "ms": 5804,
+        "percent": 83.2
+      },
+      {
+        "location": "validateDiagram",
+        "ms": 4880,
+        "percent": 70
+      },
+      {
+        "location": "projectCanvasSnapshot",
+        "ms": 4759,
+        "percent": 68.2
+      },
+      {
+        "location": "buildDiagramContent",
+        "ms": 3866,
+        "percent": 55.4
+      },
+      {
+        "location": "parseAsciiTree",
+        "ms": 3236,
+        "percent": 46.4
+      },
+      {
+        "location": "parseDiagram",
+        "ms": 3208,
+        "percent": 46
+      },
+      {
+        "location": "recognize",
+        "ms": 1976,
+        "percent": 28.3
+      },
+      {
+        "location": "asciiSha256",
+        "ms": 1001,
+        "percent": 14.4
+      },
+      {
+        "location": "sha256",
+        "ms": 973,
+        "percent": 13.9
+      },
+      {
+        "location": "(anonymous)",
+        "ms": 881,
+        "percent": 12.6
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 694,
+        "percent": 9.9
+      },
+      {
+        "location": "structuredClone",
+        "ms": 499,
+        "percent": 7.2
+      },
+      {
+        "location": "documentFromHistory",
+        "ms": 498,
+        "percent": 7.1
+      },
+      {
+        "location": "normalizeSource",
+        "ms": 434,
+        "percent": 6.2
+      },
+      {
+        "location": "interpretLayout",
+        "ms": 409,
+        "percent": 5.9
+      },
+      {
+        "location": "validateDiagramJumps",
+        "ms": 211,
+        "percent": 3
+      },
+      {
+        "location": "deserializeWorkspace",
+        "ms": 197,
+        "percent": 2.8
+      },
+      {
+        "location": "scene",
+        "ms": 172,
+        "percent": 2.5
+      },
+      {
+        "location": "fn",
+        "ms": 169,
+        "percent": 2.4
+      },
+      {
+        "location": "exportedEvidenceId",
+        "ms": 166,
+        "percent": 2.4
+      },
+      {
+        "location": "interpretTrees",
+        "ms": 161,
+        "percent": 2.3
+      },
+      {
+        "location": "treeDocument",
+        "ms": 147,
+        "percent": 2.1
+      },
+      {
+        "location": "max",
+        "ms": 106,
+        "percent": 1.5
+      },
+      {
+        "location": "post",
+        "ms": 106,
+        "percent": 1.5
+      },
+      {
+        "location": "phase",
+        "ms": 106,
+        "percent": 1.5
+      },
+      {
+        "location": "deepFreeze",
+        "ms": 103,
+        "percent": 1.5
+      },
+      {
+        "location": "__name",
+        "ms": 98,
+        "percent": 1.4
+      },
+      {
+        "location": "check",
+        "ms": 86,
+        "percent": 1.2
+      },
+      {
+        "location": "validateConnections",
+        "ms": 77,
+        "percent": 1.1
+      },
+      {
+        "location": "_",
+        "ms": 69,
+        "percent": 1
+      },
+      {
+        "location": "init",
+        "ms": 67,
+        "percent": 1
+      },
+      {
+        "location": "_parse",
+        "ms": 66,
+        "percent": 0.9
+      },
+      {
+        "location": "inst._zod.run",
+        "ms": 63,
+        "percent": 0.9
+      },
+      {
+        "location": "composeScene",
+        "ms": 58,
+        "percent": 0.8
+      },
+      {
+        "location": "mergeDefs",
+        "ms": 54,
+        "percent": 0.8
+      },
+      {
+        "location": "wrapped",
+        "ms": 54,
+        "percent": 0.8
+      },
+      {
+        "location": "addNode",
+        "ms": 53,
+        "percent": 0.8
+      },
+      {
+        "location": "set SubtleCrypto",
+        "ms": 50,
+        "percent": 0.7
+      },
+      {
+        "location": "array",
+        "ms": 45,
+        "percent": 0.6
+      },
+      {
+        "location": "_array",
+        "ms": 41,
+        "percent": 0.6
+      },
+      {
+        "location": "resolveScene",
+        "ms": 40,
+        "percent": 0.6
+      },
+      {
+        "location": "inst._zod.parse",
+        "ms": 39,
+        "percent": 0.6
+      }
+    ]
+  },
+  {
+    "file": "records-serialize.cpuprofile",
+    "totalMs": 233,
+    "self": [
+      {
+        "location": "post",
+        "ms": 149,
+        "percent": 63.8
+      },
+      {
+        "location": "(anonymous)",
+        "ms": 84,
+        "percent": 36.2
+      }
+    ],
+    "inclusive": [
+      {
+        "location": "(anonymous)",
+        "ms": 233,
+        "percent": 100
+      },
+      {
+        "location": "phase",
+        "ms": 233,
+        "percent": 100
+      },
+      {
+        "location": "(root)",
+        "ms": 233,
+        "percent": 100
+      },
+      {
+        "location": "post",
+        "ms": 149,
+        "percent": 63.8
+      },
+      {
+        "location": "fn",
+        "ms": 149,
+        "percent": 63.8
+      }
+    ]
+  },
+  {
+    "file": "records-warm.cpuprofile",
+    "totalMs": 133,
+    "self": [
+      {
+        "location": "post",
+        "ms": 132,
+        "percent": 99.1
+      },
+      {
+        "location": "(idle)",
+        "ms": 1,
+        "percent": 0.9
+      }
+    ],
+    "inclusive": [
+      {
+        "location": "(root)",
+        "ms": 133,
+        "percent": 100
+      },
+      {
+        "location": "post",
+        "ms": 132,
+        "percent": 99.1
+      },
+      {
+        "location": "(anonymous)",
+        "ms": 132,
+        "percent": 99.1
+      },
+      {
+        "location": "fn",
+        "ms": 132,
+        "percent": 99.1
+      },
+      {
+        "location": "phase",
+        "ms": 132,
+        "percent": 99.1
+      },
+      {
+        "location": "(idle)",
+        "ms": 1,
+        "percent": 0.9
+      }
+    ]
+  },
+  {
+    "file": "worker-deserialize.cpuprofile",
+    "totalMs": 6815,
+    "self": [
+      {
+        "location": "recognize",
+        "ms": 1824,
+        "percent": 26.8
+      },
+      {
+        "location": "sha256",
+        "ms": 843,
+        "percent": 12.4
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 796,
+        "percent": 11.7
+      },
+      {
+        "location": "structuredClone",
+        "ms": 775,
+        "percent": 11.4
+      },
+      {
+        "location": "(anonymous)",
+        "ms": 410,
+        "percent": 6
+      },
+      {
+        "location": "interpretLayout",
+        "ms": 287,
+        "percent": 4.2
+      },
+      {
+        "location": "normalizeSource",
+        "ms": 255,
+        "percent": 3.7
+      },
+      {
+        "location": "validateDiagram",
+        "ms": 253,
+        "percent": 3.7
+      },
+      {
+        "location": "parseDiagram",
+        "ms": 201,
+        "percent": 2.9
+      },
+      {
+        "location": "post",
+        "ms": 145,
+        "percent": 2.1
+      },
+      {
+        "location": "buildDiagramContent",
+        "ms": 126,
+        "percent": 1.8
+      },
+      {
+        "location": "treeDocument",
+        "ms": 75,
+        "percent": 1.1
+      },
+      {
+        "location": "exportedEvidenceId",
+        "ms": 65,
+        "percent": 0.9
+      },
+      {
+        "location": "deepFreeze",
+        "ms": 62,
+        "percent": 0.9
+      },
+      {
+        "location": "validateCanvasHistory",
+        "ms": 55,
+        "percent": 0.8
+      },
+      {
+        "location": "set SubtleCrypto",
+        "ms": 47,
+        "percent": 0.7
+      },
+      {
+        "location": "projectCanvasSnapshot",
+        "ms": 42,
+        "percent": 0.6
+      },
+      {
+        "location": "composeScene",
+        "ms": 41,
+        "percent": 0.6
+      },
+      {
+        "location": "__name",
+        "ms": 41,
+        "percent": 0.6
+      },
+      {
+        "location": "init",
+        "ms": 40,
+        "percent": 0.6
+      },
+      {
+        "location": "resolveScene",
+        "ms": 35,
+        "percent": 0.5
+      },
+      {
+        "location": "mergeDefs",
+        "ms": 34,
+        "percent": 0.5
+      },
+      {
+        "location": "parseAsciiTree",
+        "ms": 33,
+        "percent": 0.5
+      },
+      {
+        "location": "addNode",
+        "ms": 31,
+        "percent": 0.5
+      },
+      {
+        "location": "asciiSha256",
+        "ms": 28,
+        "percent": 0.4
+      },
+      {
+        "location": "encode",
+        "ms": 19,
+        "percent": 0.3
+      },
+      {
+        "location": "policyFor",
+        "ms": 14,
+        "percent": 0.2
+      },
+      {
+        "location": "stateKey",
+        "ms": 14,
+        "percent": 0.2
+      },
+      {
+        "location": "inst._zod.run",
+        "ms": 14,
+        "percent": 0.2
+      },
+      {
+        "location": "validateDiagramJumps",
+        "ms": 13,
+        "percent": 0.2
+      },
+      {
+        "location": "interpretTrees",
+        "ms": 12,
+        "percent": 0.2
+      },
+      {
+        "location": "settle",
+        "ms": 12,
+        "percent": 0.2
+      },
+      {
+        "location": "inst._zod.parse",
+        "ms": 11,
+        "percent": 0.2
+      },
+      {
+        "location": "register",
+        "ms": 11,
+        "percent": 0.2
+      },
+      {
+        "location": "deserializeWorkspace",
+        "ms": 9,
+        "percent": 0.1
+      },
+      {
+        "location": "documentFromHistory",
+        "ms": 9,
+        "percent": 0.1
+      },
+      {
+        "location": "own",
+        "ms": 8,
+        "percent": 0.1
+      },
+      {
+        "location": "decision",
+        "ms": 8,
+        "percent": 0.1
+      },
+      {
+        "location": "max",
+        "ms": 8,
+        "percent": 0.1
+      },
+      {
+        "location": "measureContent",
+        "ms": 7,
+        "percent": 0.1
+      },
+      {
+        "location": "validateDiagramLocalMappings",
+        "ms": 7,
+        "percent": 0.1
+      },
+      {
+        "location": "activeDiagramJumps",
+        "ms": 7,
+        "percent": 0.1
+      },
+      {
+        "location": "encodeUtf8String",
+        "ms": 7,
+        "percent": 0.1
+      },
+      {
+        "location": "clone",
+        "ms": 7,
+        "percent": 0.1
+      },
+      {
+        "location": "sourceSpan",
+        "ms": 6,
+        "percent": 0.1
+      }
+    ],
+    "inclusive": [
+      {
+        "location": "(root)",
+        "ms": 6815,
+        "percent": 100
+      },
+      {
+        "location": "(anonymous)",
+        "ms": 6019,
+        "percent": 88.3
+      },
+      {
+        "location": "phase",
+        "ms": 6019,
+        "percent": 88.3
+      },
+      {
+        "location": "deserializeWorkspace",
+        "ms": 5873,
+        "percent": 86.2
+      },
+      {
+        "location": "CanvasHistory",
+        "ms": 5635,
+        "percent": 82.7
+      },
+      {
+        "location": "validateCanvasHistory",
+        "ms": 5475,
+        "percent": 80.3
+      },
+      {
+        "location": "validateDiagram",
+        "ms": 4491,
+        "percent": 65.9
+      },
+      {
+        "location": "projectCanvasSnapshot",
+        "ms": 4474,
+        "percent": 65.7
+      },
+      {
+        "location": "buildDiagramContent",
+        "ms": 3596,
+        "percent": 52.8
+      },
+      {
+        "location": "parseAsciiTree",
+        "ms": 2971,
+        "percent": 43.6
+      },
+      {
+        "location": "parseDiagram",
+        "ms": 2942,
+        "percent": 43.2
+      },
+      {
+        "location": "recognize",
+        "ms": 1826,
+        "percent": 26.8
+      },
+      {
+        "location": "asciiSha256",
+        "ms": 956,
+        "percent": 14
+      },
+      {
+        "location": "sha256",
+        "ms": 928,
+        "percent": 13.6
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 796,
+        "percent": 11.7
+      },
+      {
+        "location": "structuredClone",
+        "ms": 776,
+        "percent": 11.4
+      },
+      {
+        "location": "documentFromHistory",
+        "ms": 506,
+        "percent": 7.4
+      },
+      {
+        "location": "normalizeSource",
+        "ms": 392,
+        "percent": 5.7
+      },
+      {
+        "location": "interpretLayout",
+        "ms": 376,
+        "percent": 5.5
+      },
+      {
+        "location": "fn",
+        "ms": 199,
+        "percent": 2.9
+      },
+      {
+        "location": "exportedEvidenceId",
+        "ms": 177,
+        "percent": 2.6
+      },
+      {
+        "location": "validateDiagramJumps",
+        "ms": 172,
+        "percent": 2.5
+      },
+      {
+        "location": "scene",
+        "ms": 164,
+        "percent": 2.4
+      },
+      {
+        "location": "post",
+        "ms": 145,
+        "percent": 2.1
+      },
+      {
+        "location": "interpretTrees",
+        "ms": 129,
+        "percent": 1.9
+      },
+      {
+        "location": "treeDocument",
+        "ms": 114,
+        "percent": 1.7
+      },
+      {
+        "location": "__name",
+        "ms": 88,
+        "percent": 1.3
+      },
+      {
+        "location": "max",
+        "ms": 81,
+        "percent": 1.2
+      },
+      {
+        "location": "check",
+        "ms": 63,
+        "percent": 0.9
+      },
+      {
+        "location": "deepFreeze",
+        "ms": 62,
+        "percent": 0.9
+      },
+      {
+        "location": "_",
+        "ms": 58,
+        "percent": 0.9
+      },
+      {
+        "location": "init",
+        "ms": 57,
+        "percent": 0.8
+      },
+      {
+        "location": "validateConnections",
+        "ms": 54,
+        "percent": 0.8
+      },
+      {
+        "location": "inst._zod.run",
+        "ms": 54,
+        "percent": 0.8
+      },
+      {
+        "location": "_parse",
+        "ms": 54,
+        "percent": 0.8
+      },
+      {
+        "location": "composeScene",
+        "ms": 52,
+        "percent": 0.8
+      },
+      {
+        "location": "array",
+        "ms": 48,
+        "percent": 0.7
+      },
+      {
+        "location": "set SubtleCrypto",
+        "ms": 47,
+        "percent": 0.7
+      },
+      {
+        "location": "_array",
+        "ms": 43,
+        "percent": 0.6
+      },
+      {
+        "location": "resolveScene",
+        "ms": 37,
+        "percent": 0.5
+      },
+      {
+        "location": "mergeDefs",
+        "ms": 34,
+        "percent": 0.5
+      },
+      {
+        "location": "addNode",
+        "ms": 31,
+        "percent": 0.5
+      },
+      {
+        "location": "core.$constructor.min",
+        "ms": 30,
+        "percent": 0.4
+      },
+      {
+        "location": "stateKey",
+        "ms": 29,
+        "percent": 0.4
+      },
+      {
+        "location": "encode",
+        "ms": 27,
+        "percent": 0.4
+      }
+    ]
+  },
+  {
+    "file": "worker-known-records.cpuprofile",
+    "totalMs": 193,
+    "self": [
+      {
+        "location": "post",
+        "ms": 147,
+        "percent": 76.3
+      },
+      {
+        "location": "(anonymous)",
+        "ms": 36,
+        "percent": 18.5
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 9,
+        "percent": 4.6
+      },
+      {
+        "location": "writeOrBuffer",
+        "ms": 1,
+        "percent": 0.6
+      }
+    ],
+    "inclusive": [
+      {
+        "location": "(root)",
+        "ms": 193,
+        "percent": 100
+      },
+      {
+        "location": "phase",
+        "ms": 184,
+        "percent": 95.4
+      },
+      {
+        "location": "(anonymous)",
+        "ms": 183,
+        "percent": 94.8
+      },
+      {
+        "location": "post",
+        "ms": 147,
+        "percent": 76.3
+      },
+      {
+        "location": "fn",
+        "ms": 147,
+        "percent": 76.3
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 9,
+        "percent": 4.6
+      },
+      {
+        "location": "writeOrBuffer",
+        "ms": 1,
+        "percent": 0.6
+      },
+      {
+        "location": "_write",
+        "ms": 1,
+        "percent": 0.6
+      },
+      {
+        "location": "Writable.write",
+        "ms": 1,
+        "percent": 0.6
+      },
+      {
+        "location": "value",
+        "ms": 1,
+        "percent": 0.6
+      },
+      {
+        "location": "log",
+        "ms": 1,
+        "percent": 0.6
+      },
+      {
+        "location": "consoleCall",
+        "ms": 1,
+        "percent": 0.6
+      }
+    ]
+  },
+  {
+    "file": "worker-parse.cpuprofile",
+    "totalMs": 180,
+    "self": [
+      {
+        "location": "post",
+        "ms": 129,
+        "percent": 72
+      },
+      {
+        "location": "(anonymous)",
+        "ms": 49,
+        "percent": 27.3
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 1,
+        "percent": 0.6
+      }
+    ],
+    "inclusive": [
+      {
+        "location": "(root)",
+        "ms": 180,
+        "percent": 100
+      },
+      {
+        "location": "(anonymous)",
+        "ms": 178,
+        "percent": 99.4
+      },
+      {
+        "location": "phase",
+        "ms": 178,
+        "percent": 99.4
+      },
+      {
+        "location": "post",
+        "ms": 129,
+        "percent": 72
+      },
+      {
+        "location": "fn",
+        "ms": 129,
+        "percent": 72
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 1,
+        "percent": 0.6
+      }
+    ]
+  },
+  {
+    "file": "worker-records-workspace.cpuprofile",
+    "totalMs": 163,
+    "self": [
+      {
+        "location": "post",
+        "ms": 146,
+        "percent": 90
+      },
+      {
+        "location": "structuredClone",
+        "ms": 5,
+        "percent": 3.3
+      },
+      {
+        "location": "recordHistory",
+        "ms": 4,
+        "percent": 2.6
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 3,
+        "percent": 2
+      },
+      {
+        "location": "deepFreeze",
+        "ms": 2,
+        "percent": 1.3
+      },
+      {
+        "location": "(anonymous)",
+        "ms": 1,
+        "percent": 0.8
+      }
+    ],
+    "inclusive": [
+      {
+        "location": "(root)",
+        "ms": 163,
+        "percent": 100
+      },
+      {
+        "location": "(anonymous)",
+        "ms": 159,
+        "percent": 98
+      },
+      {
+        "location": "phase",
+        "ms": 159,
+        "percent": 98
+      },
+      {
+        "location": "post",
+        "ms": 146,
+        "percent": 90
+      },
+      {
+        "location": "fn",
+        "ms": 146,
+        "percent": 90
+      },
+      {
+        "location": "recordDocument",
+        "ms": 13,
+        "percent": 8
+      },
+      {
+        "location": "recordsWorkspace",
+        "ms": 13,
+        "percent": 8
+      },
+      {
+        "location": "documentFromHistory",
+        "ms": 9,
+        "percent": 5.4
+      },
+      {
+        "location": "structuredClone",
+        "ms": 5,
+        "percent": 3.3
+      },
+      {
+        "location": "recordHistory",
+        "ms": 4,
+        "percent": 2.6
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 3,
+        "percent": 2
+      },
+      {
+        "location": "deepFreeze",
+        "ms": 2,
+        "percent": 1.3
+      }
+    ]
+  },
+  {
+    "file": "worker-result-clone.cpuprofile",
+    "totalMs": 378,
+    "self": [
+      {
+        "location": "post",
+        "ms": 201,
+        "percent": 53.3
+      },
+      {
+        "location": "structuredClone",
+        "ms": 153,
+        "percent": 40.5
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 23,
+        "percent": 6.2
+      },
+      {
+        "location": "_write",
+        "ms": 0,
+        "percent": 0
+      }
+    ],
+    "inclusive": [
+      {
+        "location": "(root)",
+        "ms": 378,
+        "percent": 100
+      },
+      {
+        "location": "phase",
+        "ms": 354,
+        "percent": 93.8
+      },
+      {
+        "location": "(anonymous)",
+        "ms": 354,
+        "percent": 93.8
+      },
+      {
+        "location": "post",
+        "ms": 201,
+        "percent": 53.3
+      },
+      {
+        "location": "fn",
+        "ms": 201,
+        "percent": 53.3
+      },
+      {
+        "location": "structuredClone",
+        "ms": 153,
+        "percent": 40.5
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 23,
+        "percent": 6.2
+      },
+      {
+        "location": "_write",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "Writable.write",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "value",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "log",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "consoleCall",
+        "ms": 0,
+        "percent": 0
+      }
+    ]
+  }
+]

@@ -1,0 +1,274 @@
+[
+  {
+    "file": "0-drag-1.trace.json",
+    "events": [
+      {
+        "name": "Paint",
+        "ms": 50.833000000000006,
+        "count": 124,
+        "maxMs": 3.756
+      },
+      {
+        "name": "EventDispatch",
+        "ms": 25.095000000000002,
+        "count": 56,
+        "maxMs": 2.6
+      },
+      {
+        "name": "FunctionCall",
+        "ms": 23.759999999999977,
+        "count": 321,
+        "maxMs": 0.966
+      },
+      {
+        "name": "UpdateLayoutTree",
+        "ms": 20.590000000000003,
+        "count": 42,
+        "maxMs": 8.626
+      },
+      {
+        "name": "Layout",
+        "ms": 13.658000000000003,
+        "count": 41,
+        "maxMs": 1.262
+      },
+      {
+        "name": "PrePaint",
+        "ms": 10.227999999999996,
+        "count": 62,
+        "maxMs": 0.92
+      },
+      {
+        "name": "Layerize",
+        "ms": 9.494000000000003,
+        "count": 57,
+        "maxMs": 0.702
+      },
+      {
+        "name": "FireAnimationFrame",
+        "ms": 5.317000000000001,
+        "count": 63,
+        "maxMs": 1.208
+      },
+      {
+        "name": "HitTest",
+        "ms": 1.427,
+        "count": 6,
+        "maxMs": 0.342
+      },
+      {
+        "name": "Responsiveness.Renderer.UserInteraction",
+        "ms": 0.082,
+        "count": 2,
+        "maxMs": 0.076
+      }
+    ]
+  },
+  {
+    "file": "0-node-drag-1.trace.json",
+    "events": [
+      {
+        "name": "Paint",
+        "ms": 45.28200000000002,
+        "count": 124,
+        "maxMs": 3.43
+      },
+      {
+        "name": "EventDispatch",
+        "ms": 17.602000000000007,
+        "count": 58,
+        "maxMs": 1.664
+      },
+      {
+        "name": "FunctionCall",
+        "ms": 17.47000000000001,
+        "count": 325,
+        "maxMs": 1.654
+      },
+      {
+        "name": "UpdateLayoutTree",
+        "ms": 17.172000000000008,
+        "count": 45,
+        "maxMs": 7.481
+      },
+      {
+        "name": "Layout",
+        "ms": 12.165000000000004,
+        "count": 41,
+        "maxMs": 1.374
+      },
+      {
+        "name": "PrePaint",
+        "ms": 10.715999999999994,
+        "count": 58,
+        "maxMs": 1.508
+      },
+      {
+        "name": "Layerize",
+        "ms": 9.731000000000003,
+        "count": 53,
+        "maxMs": 0.929
+      },
+      {
+        "name": "FireAnimationFrame",
+        "ms": 3.89,
+        "count": 59,
+        "maxMs": 0.2
+      },
+      {
+        "name": "HitTest",
+        "ms": 1.742,
+        "count": 6,
+        "maxMs": 0.389
+      },
+      {
+        "name": "Responsiveness.Renderer.UserInteraction",
+        "ms": 0.006,
+        "count": 2,
+        "maxMs": 0.005
+      }
+    ]
+  },
+  {
+    "file": "5-drag-1.trace.json",
+    "events": [
+      {
+        "name": "Layerize",
+        "ms": 495.241,
+        "count": 54,
+        "maxMs": 14.574
+      },
+      {
+        "name": "Paint",
+        "ms": 128.05399999999997,
+        "count": 130,
+        "maxMs": 11.39
+      },
+      {
+        "name": "UpdateLayoutTree",
+        "ms": 68.44399999999997,
+        "count": 42,
+        "maxMs": 34.671
+      },
+      {
+        "name": "Layout",
+        "ms": 34.36000000000001,
+        "count": 41,
+        "maxMs": 2.155
+      },
+      {
+        "name": "EventDispatch",
+        "ms": 22.778999999999996,
+        "count": 56,
+        "maxMs": 1.604
+      },
+      {
+        "name": "FunctionCall",
+        "ms": 20.99999999999999,
+        "count": 328,
+        "maxMs": 1
+      },
+      {
+        "name": "PrePaint",
+        "ms": 13.191999999999995,
+        "count": 59,
+        "maxMs": 3.764
+      },
+      {
+        "name": "HitTest",
+        "ms": 5.638999999999999,
+        "count": 6,
+        "maxMs": 1.212
+      },
+      {
+        "name": "FireAnimationFrame",
+        "ms": 3.535,
+        "count": 60,
+        "maxMs": 0.19
+      },
+      {
+        "name": "IntersectionObserverController::computeIntersections",
+        "ms": 2.361999999999999,
+        "count": 108,
+        "maxMs": 0.076
+      },
+      {
+        "name": "Responsiveness.Renderer.UserInteraction",
+        "ms": 0.012,
+        "count": 2,
+        "maxMs": 0.007
+      }
+    ]
+  },
+  {
+    "file": "5-node-drag-1.trace.json",
+    "events": [
+      {
+        "name": "Layerize",
+        "ms": 534.5799999999998,
+        "count": 54,
+        "maxMs": 19.656
+      },
+      {
+        "name": "Paint",
+        "ms": 142.849,
+        "count": 288,
+        "maxMs": 14.328
+      },
+      {
+        "name": "UpdateLayoutTree",
+        "ms": 74.74599999999998,
+        "count": 48,
+        "maxMs": 37.861
+      },
+      {
+        "name": "FunctionCall",
+        "ms": 53.18900000000004,
+        "count": 351,
+        "maxMs": 33.661
+      },
+      {
+        "name": "Layout",
+        "ms": 38.665000000000006,
+        "count": 44,
+        "maxMs": 2.027
+      },
+      {
+        "name": "EventDispatch",
+        "ms": 19.728999999999996,
+        "count": 58,
+        "maxMs": 2.35
+      },
+      {
+        "name": "PrePaint",
+        "ms": 18.714999999999996,
+        "count": 61,
+        "maxMs": 4.704
+      },
+      {
+        "name": "HitTest",
+        "ms": 6.303999999999999,
+        "count": 8,
+        "maxMs": 1.204
+      },
+      {
+        "name": "FireAnimationFrame",
+        "ms": 3.2049999999999996,
+        "count": 59,
+        "maxMs": 0.173
+      },
+      {
+        "name": "IntersectionObserverController::computeIntersections",
+        "ms": 2.2909999999999986,
+        "count": 110,
+        "maxMs": 0.087
+      },
+      {
+        "name": "Responsiveness.Renderer.UserInteraction",
+        "ms": 0.007,
+        "count": 2,
+        "maxMs": 0.005
+      }
+    ]
+  }
+]

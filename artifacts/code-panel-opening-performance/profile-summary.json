@@ -1,0 +1,918 @@
+[
+  {
+    "file": "1-opening.cpuprofile",
+    "totalMs": 2610,
+    "self": [
+      {
+        "location": "(idle)",
+        "ms": 441,
+        "percent": 16.9
+      },
+      {
+        "location": "(program)",
+        "ms": 393,
+        "percent": 15.1
+      },
+      {
+        "location": "../domain/core/diagrams/interpreter/recognizers.ts:72 recognize",
+        "ms": 373,
+        "percent": 14.3
+      },
+      {
+        "location": "../domain/core/sha256.ts:2 sha256",
+        "ms": 207,
+        "percent": 7.9
+      },
+      {
+        "location": "../domain/core/diagrams/canvasHistory.ts:198 documentFromHistory",
+        "ms": 104,
+        "percent": 4
+      },
+      {
+        "location": "../domain/core/diagrams/interpreter/source.ts:16 normalizeSource",
+        "ms": 103,
+        "percent": 4
+      },
+      {
+        "location": "../domain/core/diagrams/projectDiagramCanvas.ts:51 projectCanvasSnapshot",
+        "ms": 94,
+        "percent": 3.6
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 67,
+        "percent": 2.5
+      },
+      {
+        "location": "fetch",
+        "ms": 64,
+        "percent": 2.5
+      },
+      {
+        "location": "../domain/core/diagrams/interpreter/layout.ts:18 interpretLayout",
+        "ms": 58,
+        "percent": 2.2
+      },
+      {
+        "location": "../domain/mapping/workspace/mappingWorkspaceCodec.ts:280 serializeWorkspace",
+        "ms": 48,
+        "percent": 1.8
+      },
+      {
+        "location": "../domain/core/diagrams/diagram.ts:54 validateDiagram",
+        "ms": 45,
+        "percent": 1.7
+      },
+      {
+        "location": "../domain/core/diagrams/interpreter/index.ts:33 parseDiagram",
+        "ms": 41,
+        "percent": 1.6
+      },
+      {
+        "location": "../src/shared/source/SourceCodeView.tsx:202 f",
+        "ms": 38,
+        "percent": 1.5
+      },
+      {
+        "location": "../domain/core/diagrams/interpreter/recognizers.ts:92 feature",
+        "ms": 34,
+        "percent": 1.3
+      },
+      {
+        "location": "../domain/mapping/workspace/mappingWorkspaceCodec.ts:52 deserializeWorkspace",
+        "ms": 29,
+        "percent": 1.1
+      },
+      {
+        "location": "../domain/core/diagrams/canvasHistory.ts:77 export",
+        "ms": 27,
+        "percent": 1
+      },
+      {
+        "location": "structuredClone",
+        "ms": 27,
+        "percent": 1
+      },
+      {
+        "location": "../domain/core/diagrams/diagramContent.ts:12 buildDiagramContent",
+        "ms": 23,
+        "percent": 0.9
+      },
+      {
+        "location": "../domain/core/diagrams/canvasHistory.ts:56 Fs",
+        "ms": 22,
+        "percent": 0.9
+      },
+      {
+        "location": "../domain/core/diagrams/projectDiagramCanvas.ts:99 d",
+        "ms": 22,
+        "percent": 0.8
+      },
+      {
+        "location": "../domain/core/diagrams/projectDiagramCanvas.ts:97 exportedEvidenceId",
+        "ms": 22,
+        "percent": 0.8
+      },
+      {
+        "location": "../domain/mapping/workspace/canvasHistory.ts:8 s_",
+        "ms": 20,
+        "percent": 0.8
+      },
+      {
+        "location": "../domain/core/diagrams/canvasHistory.ts:46 stateKey",
+        "ms": 18,
+        "percent": 0.7
+      },
+      {
+        "location": "../domain/core/diagrams/interpreter/trees.ts:38 treeDocument",
+        "ms": 17,
+        "percent": 0.7
+      },
+      {
+        "location": "../domain/core/diagrams/lineGrid.ts:45 measureContent",
+        "ms": 16,
+        "percent": 0.6
+      },
+      {
+        "location": "getClientRects",
+        "ms": 15,
+        "percent": 0.6
+      },
+      {
+        "location": "../domain/core/diagrams/projectDiagramCanvas.ts:98 d",
+        "ms": 10,
+        "percent": 0.4
+      },
+      {
+        "location": "encode",
+        "ms": 10,
+        "percent": 0.4
+      },
+      {
+        "location": "../domain/core/diagrams/asciiTree.ts:13 parseAsciiTree",
+        "ms": 9,
+        "percent": 0.4
+      },
+      {
+        "location": "../src/features/mapping/workspace/mappingWorkspaceRepository.ts:19 (anonymous)",
+        "ms": 9,
+        "percent": 0.3
+      },
+      {
+        "location": "../node_modules/zod/v4/core/util.js:168 mergeDefs",
+        "ms": 7,
+        "percent": 0.3
+      },
+      {
+        "location": "../domain/core/diagrams/asciiSha256.ts:4 asciiSha256",
+        "ms": 7,
+        "percent": 0.3
+      },
+      {
+        "location": "../domain/core/diagrams/interpreter/recognizers.ts:11 recognize",
+        "ms": 7,
+        "percent": 0.3
+      },
+      {
+        "location": "../domain/core/sha256.ts:53 word",
+        "ms": 7,
+        "percent": 0.3
+      },
+      {
+        "location": "../domain/core/diagrams/diagramContent.ts:26 child",
+        "ms": 7,
+        "percent": 0.2
+      },
+      {
+        "location": "../src/shared/source/SourceCodeView.tsx:205 chunk",
+        "ms": 6,
+        "percent": 0.2
+      },
+      {
+        "location": "../domain/core/sha256.ts:24 c",
+        "ms": 6,
+        "percent": 0.2
+      },
+      {
+        "location": "../domain/core/diagrams/canvasHistory.ts:47 (anonymous)",
+        "ms": 5,
+        "percent": 0.2
+      },
+      {
+        "location": "../domain/core/diagrams/interpreter/recognizers.ts:43 recognize",
+        "ms": 5,
+        "percent": 0.2
+      },
+      {
+        "location": "(anonymous)",
+        "ms": 5,
+        "percent": 0.2
+      },
+      {
+        "location": "../src/features/mapping/code-panel/CodePanel.tsx:15 SourceRangeSections",
+        "ms": 5,
+        "percent": 0.2
+      },
+      {
+        "location": "../domain/core/diagrams/canvasHistory.ts:165 validateCanvasHistory",
+        "ms": 4,
+        "percent": 0.2
+      },
+      {
+        "location": "../domain/core/diagrams/diagramMappings.ts:2 validateDiagramLocalMappings",
+        "ms": 4,
+        "percent": 0.2
+      },
+      {
+        "location": "../domain/core/diagrams/interpreter/recognizers.ts:62 recognize",
+        "ms": 4,
+        "percent": 0.2
+      }
+    ],
+    "inclusive": [
+      {
+        "location": "(root)",
+        "ms": 2610,
+        "percent": 100
+      },
+      {
+        "location": "../src/features/mapping/workspace/workspacePersistence.ts:16 flush",
+        "ms": 1342,
+        "percent": 51.4
+      },
+      {
+        "location": "../src/features/mapping/workspace/workspacePersistence.ts:14 (anonymous)",
+        "ms": 1342,
+        "percent": 51.4
+      },
+      {
+        "location": "../domain/mapping/workspace/mappingWorkspaceCodec.ts:280 serializeWorkspace",
+        "ms": 1314,
+        "percent": 50.3
+      },
+      {
+        "location": "../src/features/mapping/workspace/mappingWorkspaceRepository.ts:17 save",
+        "ms": 1314,
+        "percent": 50.3
+      },
+      {
+        "location": "../src/features/mapping/MappingPage.tsx:455 value",
+        "ms": 1314,
+        "percent": 50.3
+      },
+      {
+        "location": "../domain/mapping/workspace/mappingWorkspaceCodec.ts:52 deserializeWorkspace",
+        "ms": 1266,
+        "percent": 48.5
+      },
+      {
+        "location": "../domain/mapping/workspace/canvasHistory.ts:8 s_",
+        "ms": 1185,
+        "percent": 45.4
+      },
+      {
+        "location": "../domain/core/diagrams/canvasHistory.ts:56 Fs",
+        "ms": 1164,
+        "percent": 44.6
+      },
+      {
+        "location": "../domain/core/diagrams/canvasHistory.ts:165 validateCanvasHistory",
+        "ms": 1118,
+        "percent": 42.9
+      },
+      {
+        "location": "../domain/core/diagrams/diagram.ts:54 validateDiagram",
+        "ms": 910,
+        "percent": 34.9
+      },
+      {
+        "location": "../domain/core/diagrams/projectDiagramCanvas.ts:51 projectCanvasSnapshot",
+        "ms": 853,
+        "percent": 32.7
+      },
+      {
+        "location": "../domain/core/diagrams/diagramContent.ts:12 buildDiagramContent",
+        "ms": 771,
+        "percent": 29.5
+      },
+      {
+        "location": "../domain/core/diagrams/asciiTree.ts:13 parseAsciiTree",
+        "ms": 664,
+        "percent": 25.4
+      },
+      {
+        "location": "../domain/core/diagrams/interpreter/index.ts:33 parseDiagram",
+        "ms": 652,
+        "percent": 25
+      },
+      {
+        "location": "(idle)",
+        "ms": 441,
+        "percent": 16.9
+      },
+      {
+        "location": "../domain/core/diagrams/interpreter/recognizers.ts:72 recognize",
+        "ms": 425,
+        "percent": 16.3
+      },
+      {
+        "location": "(program)",
+        "ms": 393,
+        "percent": 15.1
+      },
+      {
+        "location": "../domain/core/sha256.ts:2 sha256",
+        "ms": 231,
+        "percent": 8.9
+      },
+      {
+        "location": "../src/features/mapping/canvas/MappingCanvas.tsx:491 (anonymous)",
+        "ms": 155,
+        "percent": 5.9
+      },
+      {
+        "location": "../src/features/mapping/canvas/MappingCanvas.tsx:529 event",
+        "ms": 155,
+        "percent": 5.9
+      },
+      {
+        "location": "../domain/core/diagrams/asciiSha256.ts:4 asciiSha256",
+        "ms": 131,
+        "percent": 5
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:10681 performWorkOnRoot",
+        "ms": 120,
+        "percent": 4.6
+      },
+      {
+        "location": "../domain/core/diagrams/canvasHistory.ts:198 documentFromHistory",
+        "ms": 107,
+        "percent": 4.1
+      },
+      {
+        "location": "../domain/core/diagrams/interpreter/source.ts:16 normalizeSource",
+        "ms": 103,
+        "percent": 4
+      },
+      {
+        "location": "../domain/mapping/code-panel/codePanel.ts:83 resolveSelectedNodes",
+        "ms": 92,
+        "percent": 3.5
+      },
+      {
+        "location": "../domain/mapping/code-panel/codePanel.ts:108 handleNodeSelect",
+        "ms": 92,
+        "percent": 3.5
+      },
+      {
+        "location": "../domain/mapping/code-panel/codePanel.ts:36 sourceRangeIndex",
+        "ms": 91,
+        "percent": 3.5
+      },
+      {
+        "location": "../domain/core/diagrams/diagramText.ts:71 mappingContentNodeId",
+        "ms": 87,
+        "percent": 3.3
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12065 performWorkOnRootViaSchedulerTask",
+        "ms": 82,
+        "percent": 3.1
+      },
+      {
+        "location": "../node_modules/scheduler/cjs/scheduler.production.js:121 performWorkUntilDeadline",
+        "ms": 82,
+        "percent": 3.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11457 commitRoot",
+        "ms": 75,
+        "percent": 2.9
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:10848 commitRootWhenReady",
+        "ms": 75,
+        "percent": 2.9
+      },
+      {
+        "location": "../src/features/mapping/workspace/mappingWorkspaceRepository.ts:19 (anonymous)",
+        "ms": 73,
+        "percent": 2.8
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:8571 commitHookEffectListMount",
+        "ms": 68,
+        "percent": 2.6
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:9008 commitLayoutEffectOnFiber",
+        "ms": 68,
+        "percent": 2.6
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:9901 recursivelyTraverseLayoutEffects",
+        "ms": 68,
+        "percent": 2.6
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11646 flushLayoutEffects",
+        "ms": 68,
+        "percent": 2.6
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 67,
+        "percent": 2.5
+      },
+      {
+        "location": "fetch",
+        "ms": 64,
+        "percent": 2.5
+      },
+      {
+        "location": "../domain/mapping/workspace/mappingDocumentController.ts:130 updateCanvas",
+        "ms": 62,
+        "percent": 2.4
+      },
+      {
+        "location": "../domain/core/diagrams/canvasHistory.ts:90 append",
+        "ms": 61,
+        "percent": 2.3
+      },
+      {
+        "location": "../domain/core/diagrams/diagramService.ts:67 append",
+        "ms": 61,
+        "percent": 2.3
+      },
+      {
+        "location": "../domain/mapping/workspace/mappingDocumentController.ts:102 updateSnapshot",
+        "ms": 61,
+        "percent": 2.3
+      },
+      {
+        "location": "../domain/core/diagrams/interpreter/layout.ts:18 interpretLayout",
+        "ms": 58,
+        "percent": 2.2
+      }
+    ]
+  },
+  {
+    "file": "1-reopening.cpuprofile",
+    "totalMs": 2736,
+    "self": [
+      {
+        "location": "(program)",
+        "ms": 488,
+        "percent": 17.8
+      },
+      {
+        "location": "(idle)",
+        "ms": 465,
+        "percent": 17
+      },
+      {
+        "location": "../domain/core/diagrams/interpreter/recognizers.ts:72 recognize",
+        "ms": 379,
+        "percent": 13.9
+      },
+      {
+        "location": "../domain/core/sha256.ts:2 sha256",
+        "ms": 175,
+        "percent": 6.4
+      },
+      {
+        "location": "../domain/core/diagrams/canvasHistory.ts:198 documentFromHistory",
+        "ms": 106,
+        "percent": 3.9
+      },
+      {
+        "location": "../src/shared/source/SourceCodeView.tsx:205 chunk",
+        "ms": 106,
+        "percent": 3.9
+      },
+      {
+        "location": "../domain/core/diagrams/interpreter/source.ts:16 normalizeSource",
+        "ms": 101,
+        "percent": 3.7
+      },
+      {
+        "location": "../domain/core/diagrams/projectDiagramCanvas.ts:51 projectCanvasSnapshot",
+        "ms": 80,
+        "percent": 2.9
+      },
+      {
+        "location": "fetch",
+        "ms": 77,
+        "percent": 2.8
+      },
+      {
+        "location": "../domain/core/diagrams/interpreter/layout.ts:18 interpretLayout",
+        "ms": 62,
+        "percent": 2.3
+      },
+      {
+        "location": "../src/shared/source/SourceCodeView.tsx:202 f",
+        "ms": 54,
+        "percent": 2
+      },
+      {
+        "location": "../domain/mapping/workspace/mappingWorkspaceCodec.ts:280 serializeWorkspace",
+        "ms": 48,
+        "percent": 1.7
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 47,
+        "percent": 1.7
+      },
+      {
+        "location": "../domain/core/diagrams/diagram.ts:54 validateDiagram",
+        "ms": 45,
+        "percent": 1.6
+      },
+      {
+        "location": "../domain/core/diagrams/interpreter/index.ts:33 parseDiagram",
+        "ms": 41,
+        "percent": 1.5
+      },
+      {
+        "location": "../domain/mapping/workspace/mappingWorkspaceCodec.ts:52 deserializeWorkspace",
+        "ms": 29,
+        "percent": 1.1
+      },
+      {
+        "location": "../domain/core/diagrams/projectDiagramCanvas.ts:99 d",
+        "ms": 27,
+        "percent": 1
+      },
+      {
+        "location": "../domain/core/diagrams/canvasHistory.ts:77 export",
+        "ms": 25,
+        "percent": 0.9
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1273 setValueForStyle",
+        "ms": 21,
+        "percent": 0.8
+      },
+      {
+        "location": "../domain/mapping/workspace/canvasHistory.ts:8 s_",
+        "ms": 20,
+        "percent": 0.7
+      },
+      {
+        "location": "structuredClone",
+        "ms": 18,
+        "percent": 0.7
+      },
+      {
+        "location": "../domain/core/diagrams/canvasHistory.ts:46 stateKey",
+        "ms": 18,
+        "percent": 0.6
+      },
+      {
+        "location": "../domain/core/diagrams/canvasHistory.ts:56 Fs",
+        "ms": 17,
+        "percent": 0.6
+      },
+      {
+        "location": "../domain/core/diagrams/diagramContent.ts:12 buildDiagramContent",
+        "ms": 17,
+        "percent": 0.6
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1254 setTextContent",
+        "ms": 16,
+        "percent": 0.6
+      },
+      {
+        "location": "appendChild",
+        "ms": 16,
+        "percent": 0.6
+      },
+      {
+        "location": "../domain/core/sha256.ts:53 word",
+        "ms": 15,
+        "percent": 0.5
+      },
+      {
+        "location": "../domain/core/diagrams/lineGrid.ts:45 measureContent",
+        "ms": 11,
+        "percent": 0.4
+      },
+      {
+        "location": "../domain/core/diagrams/projectDiagramCanvas.ts:98 d",
+        "ms": 10,
+        "percent": 0.4
+      },
+      {
+        "location": "../node_modules/zod/v4/core/util.js:168 mergeDefs",
+        "ms": 9,
+        "percent": 0.3
+      },
+      {
+        "location": "../src/features/mapping/workspace/mappingWorkspaceRepository.ts:19 (anonymous)",
+        "ms": 8,
+        "percent": 0.3
+      },
+      {
+        "location": "getClientRects",
+        "ms": 8,
+        "percent": 0.3
+      },
+      {
+        "location": "../domain/core/diagrams/interpreter/recognizers.ts:43 recognize",
+        "ms": 7,
+        "percent": 0.3
+      },
+      {
+        "location": "../node_modules/zod/v4/core/core.js:50 init",
+        "ms": 7,
+        "percent": 0.2
+      },
+      {
+        "location": "../domain/core/diagrams/projectDiagramCanvas.ts:97 exportedEvidenceId",
+        "ms": 7,
+        "percent": 0.2
+      },
+      {
+        "location": "encode",
+        "ms": 7,
+        "percent": 0.2
+      },
+      {
+        "location": "../domain/core/diagrams/interpreter/recognizers.ts:11 recognize",
+        "ms": 7,
+        "percent": 0.2
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:3551 updateFromMap",
+        "ms": 7,
+        "percent": 0.2
+      },
+      {
+        "location": "../domain/core/diagrams/asciiTree.ts:13 parseAsciiTree",
+        "ms": 6,
+        "percent": 0.2
+      },
+      {
+        "location": "../domain/core/sha256.ts:24 c",
+        "ms": 6,
+        "percent": 0.2
+      },
+      {
+        "location": "../domain/core/diagrams/canvasHistory.ts:165 validateCanvasHistory",
+        "ms": 5,
+        "percent": 0.2
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1291 setValueForStyles",
+        "ms": 5,
+        "percent": 0.2
+      },
+      {
+        "location": "../domain/mapping/workspace/canvasDisplayNode.ts:37 canvasDisplayNodes",
+        "ms": 4,
+        "percent": 0.2
+      },
+      {
+        "location": "../node_modules/zod/v4/classic/schemas.js:818 ue.min",
+        "ms": 4,
+        "percent": 0.2
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:13346 setInitialProperties",
+        "ms": 4,
+        "percent": 0.2
+      }
+    ],
+    "inclusive": [
+      {
+        "location": "(root)",
+        "ms": 2736,
+        "percent": 100
+      },
+      {
+        "location": "../src/features/mapping/workspace/workspacePersistence.ts:16 flush",
+        "ms": 1260,
+        "percent": 46
+      },
+      {
+        "location": "../src/features/mapping/workspace/workspacePersistence.ts:14 (anonymous)",
+        "ms": 1260,
+        "percent": 46
+      },
+      {
+        "location": "../domain/mapping/workspace/mappingWorkspaceCodec.ts:280 serializeWorkspace",
+        "ms": 1235,
+        "percent": 45.1
+      },
+      {
+        "location": "../src/features/mapping/workspace/mappingWorkspaceRepository.ts:17 save",
+        "ms": 1235,
+        "percent": 45.1
+      },
+      {
+        "location": "../src/features/mapping/MappingPage.tsx:455 value",
+        "ms": 1235,
+        "percent": 45.1
+      },
+      {
+        "location": "../domain/mapping/workspace/mappingWorkspaceCodec.ts:52 deserializeWorkspace",
+        "ms": 1187,
+        "percent": 43.4
+      },
+      {
+        "location": "../domain/mapping/workspace/canvasHistory.ts:8 s_",
+        "ms": 1119,
+        "percent": 40.9
+      },
+      {
+        "location": "../domain/core/diagrams/canvasHistory.ts:56 Fs",
+        "ms": 1099,
+        "percent": 40.2
+      },
+      {
+        "location": "../domain/core/diagrams/canvasHistory.ts:165 validateCanvasHistory",
+        "ms": 1068,
+        "percent": 39
+      },
+      {
+        "location": "../domain/core/diagrams/diagram.ts:54 validateDiagram",
+        "ms": 864,
+        "percent": 31.6
+      },
+      {
+        "location": "../domain/core/diagrams/projectDiagramCanvas.ts:51 projectCanvasSnapshot",
+        "ms": 811,
+        "percent": 29.7
+      },
+      {
+        "location": "../domain/core/diagrams/diagramContent.ts:12 buildDiagramContent",
+        "ms": 711,
+        "percent": 26
+      },
+      {
+        "location": "../domain/core/diagrams/asciiTree.ts:13 parseAsciiTree",
+        "ms": 610,
+        "percent": 22.3
+      },
+      {
+        "location": "../domain/core/diagrams/interpreter/index.ts:33 parseDiagram",
+        "ms": 605,
+        "percent": 22.1
+      },
+      {
+        "location": "(program)",
+        "ms": 488,
+        "percent": 17.8
+      },
+      {
+        "location": "(idle)",
+        "ms": 465,
+        "percent": 17
+      },
+      {
+        "location": "../domain/core/diagrams/interpreter/recognizers.ts:72 recognize",
+        "ms": 393,
+        "percent": 14.4
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:10681 performWorkOnRoot",
+        "ms": 286,
+        "percent": 10.5
+      },
+      {
+        "location": "../node_modules/scheduler/cjs/scheduler.production.js:121 performWorkUntilDeadline",
+        "ms": 262,
+        "percent": 9.6
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12065 performWorkOnRootViaSchedulerTask",
+        "ms": 261,
+        "percent": 9.6
+      },
+      {
+        "location": "../domain/core/sha256.ts:2 sha256",
+        "ms": 204,
+        "percent": 7.5
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11457 commitRoot",
+        "ms": 194,
+        "percent": 7.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:10848 commitRootWhenReady",
+        "ms": 194,
+        "percent": 7.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:8571 commitHookEffectListMount",
+        "ms": 175,
+        "percent": 6.4
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:9008 commitLayoutEffectOnFiber",
+        "ms": 175,
+        "percent": 6.4
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:9901 recursivelyTraverseLayoutEffects",
+        "ms": 175,
+        "percent": 6.4
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11646 flushLayoutEffects",
+        "ms": 175,
+        "percent": 6.4
+      },
+      {
+        "location": "../domain/core/diagrams/asciiSha256.ts:4 asciiSha256",
+        "ms": 175,
+        "percent": 6.4
+      },
+      {
+        "location": "../src/shared/source/SourceCodeView.tsx:195 (anonymous)",
+        "ms": 164,
+        "percent": 6
+      },
+      {
+        "location": "../src/shared/source/SourceCodeView.tsx:202 f",
+        "ms": 159,
+        "percent": 5.8
+      },
+      {
+        "location": "../domain/core/diagrams/canvasHistory.ts:198 documentFromHistory",
+        "ms": 111,
+        "percent": 4
+      },
+      {
+        "location": "../src/shared/source/SourceCodeView.tsx:205 chunk",
+        "ms": 106,
+        "percent": 3.9
+      },
+      {
+        "location": "../domain/core/diagrams/interpreter/source.ts:16 normalizeSource",
+        "ms": 101,
+        "percent": 3.7
+      },
+      {
+        "location": "../src/features/mapping/canvas/MappingCanvas.tsx:491 (anonymous)",
+        "ms": 93,
+        "percent": 3.4
+      },
+      {
+        "location": "../src/features/mapping/canvas/MappingCanvas.tsx:529 event",
+        "ms": 93,
+        "percent": 3.4
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11120 renderRootSync",
+        "ms": 92,
+        "percent": 3.4
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11181 workLoopSync",
+        "ms": 91,
+        "percent": 3.3
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11304 performUnitOfWork",
+        "ms": 90,
+        "percent": 3.3
+      },
+      {
+        "location": "../src/features/mapping/workspace/mappingWorkspaceRepository.ts:19 (anonymous)",
+        "ms": 84,
+        "percent": 3.1
+      },
+      {
+        "location": "fetch",
+        "ms": 77,
+        "percent": 2.8
+      },
+      {
+        "location": "../domain/core/diagrams/interpreter/layout.ts:18 interpretLayout",
+        "ms": 62,
+        "percent": 2.3
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11405 completeUnitOfWork",
+        "ms": 60,
+        "percent": 2.2
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:7955 completeWork",
+        "ms": 59,
+        "percent": 2.2
+      },
+      {
+        "location": "../domain/mapping/code-panel/codePanel.ts:83 resolveSelectedNodes",
+        "ms": 52,
+        "percent": 1.9
+      }
+    ]
+  }
+]

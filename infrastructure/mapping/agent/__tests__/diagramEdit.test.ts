@@ -1,3 +1,4 @@
+import { AgentContext } from '../../../../domain/core/agents/agentContext';
 import { expect, it, vi } from 'vitest';
 import { DiagramEditService } from '../../../../application/mapping/agent/diagramEditService';
 import { RevisionedDiagramService, type DiagramGenerator } from '../../../../domain/core/diagrams/diagramService';
@@ -146,5 +147,24 @@ it('does not report cancellation once application has started and keeps persiste
   expect(f.service.cancel(run.runId).status).toBe('applying');
   reject(Error('VERSION_CONFLICT: storage conflict'));
   await settled(f.service, run.runId, 'awaiting-acknowledgement');
+  expect(f.controller.getSnapshot().version).toBe(1);
+});
+
+it('captures context for generation and binds its hash to retries without regenerating', async () => {
+  const context = AgentContext.fromTrajectory({ agentType: 'codex', sourceSessionId: 'source', format: 'messages-v1',
+    fromEntryId: '1', throughEntryId: '1', entries: [{ id: '1', parentId: null,
+      message: { role: 'user', content: [{ type: 'text', text: 'Cache now belongs to workspace' }] } }] });
+  const generate = vi.fn(async () => ({ ascii: 'Workspace owns cache' })), f = fixture({ generate });
+  const snapshot = context.toSnapshot(), input = { ...f.input, agentContextId: 'uploaded' };
+  expect(() => f.service.start(input)).toThrow('AGENT_CONTEXT_NOT_FOUND');
+  f.persist.mockRejectedValueOnce(Error('Disk unavailable'));
+  const run = f.service.start(input, snapshot);
+  snapshot.messages.length = 0;
+  await settled(f.service, run.runId, 'awaiting-acknowledgement');
+  expect(generate.mock.calls[0]).toMatchObject([{ agentContext: context.toSnapshot() }, expect.anything()]);
+  expect(() => f.service.start({ ...input, agentContextId: 'different' }, context.toSnapshot())).toThrow('REQUEST_ID_CONFLICT');
+  f.service.start(input, context.toSnapshot());
+  await settled(f.service, run.runId, 'completed');
+  expect(generate).toHaveBeenCalledOnce();
   expect(f.controller.getSnapshot().version).toBe(1);
 });

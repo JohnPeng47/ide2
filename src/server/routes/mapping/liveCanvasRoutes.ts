@@ -1,3 +1,4 @@
+import { AgentContextError } from '../../../../application/mapping/agent/agentContextService';
 import type { IncomingMessage } from 'node:http';
 import type { Duplex } from 'node:stream';
 import { WebSocket, WebSocketServer } from 'ws';
@@ -62,7 +63,10 @@ export function attachLiveCanvasSockets(server: UpgradeServer, service: LiveCanv
       let requestId: string | undefined;
       try {
         if (binary) throw new LiveCanvasError('INVALID_MESSAGE', 400, 'Expected a JSON text frame');
-        const message = liveCanvasMessageSchema.parse(JSON.parse(raw.toString()));
+        const decoded: unknown = JSON.parse(raw.toString());
+        if (decoded && typeof decoded === 'object' && 'requestId' in decoded
+          && typeof decoded.requestId === 'string' && decoded.requestId.length <= 200) requestId = decoded.requestId;
+        const message = liveCanvasMessageSchema.parse(decoded);
         if (message.type === 'attach' || message.type === 'publish') {
           if (connectionId || workspaceInstanceId || attaching) throw new LiveCanvasError('ALREADY_ATTACHED', 409, 'Open another socket to bind another canvas');
           if (message.type === 'attach') {
@@ -85,6 +89,11 @@ export function attachLiveCanvasSockets(server: UpgradeServer, service: LiveCanv
             send({ type: 'publisher.ready', protocolVersion: 2 });
           }
           clearTimeout(handshake);
+        } else if (message.type === 'agent-context.upload') {
+          if (!connectionId) throw new LiveCanvasError('READER_REQUIRED', 403);
+          const { type: _, requestId: uploadRequestId, ...trajectory } = message;
+          send({ type: 'agent-context.uploaded', requestId: uploadRequestId, connectionId,
+            ...service.uploadAgentContext(connectionId, uploadRequestId, trajectory) });
         } else if (message.type === 'context.get') {
           requestId = message.requestId;
           if (!connectionId) throw new LiveCanvasError('READER_REQUIRED', 403);
@@ -101,7 +110,7 @@ export function attachLiveCanvasSockets(server: UpgradeServer, service: LiveCanv
           }
         }
       } catch (error) {
-        send({ type: 'error', ...(requestId ? { requestId } : {}), code: error instanceof LiveCanvasError ? error.code : 'INVALID_MESSAGE',
+        send({ type: 'error', ...(requestId ? { requestId } : {}), code: error instanceof LiveCanvasError || error instanceof AgentContextError ? error.code : 'INVALID_MESSAGE',
           error: error instanceof Error ? error.message : String(error) });
       }
     });

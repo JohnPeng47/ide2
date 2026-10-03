@@ -1,0 +1,135 @@
+{
+  "date": "2026-09-29T20:36:11.330Z",
+  "profiling": true,
+  "phases": [
+    {
+      "name": "catalog-cold",
+      "ms": 14588.171559,
+      "cpuMs": 18566.8
+    },
+    {
+      "name": "catalog-serialize",
+      "ms": 123.30051000000094,
+      "cpuMs": 140.855
+    },
+    {
+      "name": "catalog-warm",
+      "ms": 12855.698351000003,
+      "cpuMs": 15400.394
+    },
+    {
+      "name": "records-cold",
+      "ms": 6869.360081999999,
+      "cpuMs": 8242.921
+    },
+    {
+      "name": "records-warm",
+      "ms": 1.5075859999997192,
+      "cpuMs": 1.385
+    },
+    {
+      "name": "records-serialize",
+      "ms": 84.17204099999799,
+      "cpuMs": 95.343
+    },
+    {
+      "name": "worker-parse",
+      "ms": 50.15464100000099,
+      "cpuMs": 62.778
+    },
+    {
+      "name": "worker-known-records",
+      "ms": 45.53897699999652,
+      "cpuMs": 61.239
+    },
+    {
+      "name": "worker-records-workspace",
+      "ms": 16.16867999999522,
+      "cpuMs": 23.213
+    },
+    {
+      "name": "worker-deserialize",
+      "ms": 6670.126406000003,
+      "cpuMs": 7942.851
+    },
+    {
+      "name": "worker-result-clone",
+      "ms": 176.16014200000063,
+      "cpuMs": 258.446
+    },
+    {
+      "name": "page-reconcile",
+      "ms": 177.79373599999963,
+      "cpuMs": 243.885
+    },
+    {
+      "name": "page-create-sessions",
+      "ms": 12524.173625000003,
+      "cpuMs": 14540.681
+    }
+  ],
+  "catalog": {
+    "bytes": 25722607,
+    "representations": 8,
+    "revisions": 23
+  },
+  "records": {
+    "bytes": 17790718,
+    "count": 595
+  },
+  "workspace": {
+    "documents": 7,
+    "active": "representation-a98575f9-4a16-42e2-b5d3-293f26e95bbb",
+    "docs": [
+      {
+        "name": "Canvas domain model - implemented at 4f2ba39",
+        "id": "representation-b697fd11-5c8d-49e7-a6b5-b12030f2f79a",
+        "historyBytes": 6088480,
+        "snapshots": 46,
+        "revisions": 64
+      },
+      {
+        "name": "PersistentLayer",
+        "id": "representation-c7177725-a7dd-4caa-9ac5-a1c702f3350d",
+        "historyBytes": 577371,
+        "snapshots": 2,
+        "revisions": 7
+      },
+      {
+        "name": "Workspace persistence flow",
+        "id": "representation-8d528230-94b4-4e16-97d4-eab812b1ad7e",
+        "historyBytes": 224913,
+        "snapshots": 6,
+        "revisions": 6
+      },
+      {
+        "name": "ChangeSession - domain model and call tree",
+        "id": "representation-ed88e035-9f51-4e09-9174-15605cfe63d6",
+        "historyBytes": 1571406,
+        "snapshots": 41,
+        "revisions": 13
+      },
+      {
+        "name": "Mapping page - MCP and HTTP API",
+        "id": "representation-74feeeae-7381-43ca-a707-9c90cfe01ee1",
+        "historyBytes": 862149,
+        "snapshots": 63,
+        "revisions": 28
+      },
+      {
+        "name": "tldraw - React composition, Editor runtime and canvas",
+        "id": "draft-0913f378-90da-4a2f-8478-d0c027a20d31",
+        "historyBytes": 1155858,
+        "snapshots": 53,
+        "revisions": 28
+      },
+      {
+        "name": "tldraw - radial architecture atlas",
+        "id": "representation-a98575f9-4a16-42e2-b5d3-293f26e95bbb",
+        "historyBytes": 5264168,
+        "snapshots": 125,
+        "revisions": 77
+      }
+    ]
+  }
+}

@@ -1,3 +1,4 @@
+import type { AgentContextService } from './agentContextService';
 import { DiagramEditService } from './diagramEditService';
 import { DefaultCanvasHistoryService } from '../../../domain/core/diagrams/canvasHistoryService';
 import { documentFromRevision } from '../../../domain/core/diagrams/projectDiagramCanvas';
@@ -42,7 +43,7 @@ export class AgentDiagrammingSessionService {
   private requests = new Map<string, { signature: string; promise: Promise<unknown> }>();
   constructor(readonly bridge: CanvasSessionPort, private readonly diagrams: MappingDiagramService,
     private readonly store: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs'>, private readonly runtime: AgentExecRuntime, readonly changes?: ChangeSessionService,
-    editDiagrams?: DiagramService) {
+    editDiagrams?: DiagramService, private readonly agentContexts?: AgentContextService) {
     if (editDiagrams) this.edits = new DiagramEditService(editDiagrams, {
       snapshot: sessionId => this.snapshot(sessionId),
       apply: async (sessionId, input) => {
@@ -60,8 +61,11 @@ export class AgentDiagrammingSessionService {
       if (!this.edits) throw Error('Diagram editing UNAVAILABLE in this runtime');
       if (name === 'edit-diagram') {
         const edit = agentToolSchemas['edit-diagram'].parse(input);
-        this.session(edit.sessionId); // Live attachment only; never creates a proposal.
-        return this.edits.start(edit);
+        const session = this.session(edit.sessionId); // Live attachment only; never creates a proposal.
+        if (edit.agentContextId && !this.agentContexts) throw Error('AGENT_CONTEXT_UNAVAILABLE');
+        const context = edit.agentContextId ? this.agentContexts!.get({ workspaceInstanceId: session.canvasId,
+          documentId: session.documentId }, edit.agentContextId) : undefined;
+        return this.edits.start(edit, context);
       }
       const { runId } = agentToolSchemas['edit-diagram-status'].parse(input);
       return name === 'edit-diagram-status' ? this.edits.get(runId) : this.edits.cancel(runId);

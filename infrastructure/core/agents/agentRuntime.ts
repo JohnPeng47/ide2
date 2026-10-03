@@ -1,5 +1,6 @@
+import type { AgentContext } from '../../../domain/core/agents/agentContext';
 import { type Model } from "@earendil-works/pi-ai";
-import { ModelRuntime, type AgentSessionEvent } from "@earendil-works/pi-coding-agent";
+import { createAgentSession, SessionManager, type CreateAgentSessionOptions, ModelRuntime, type AgentSessionEvent } from "@earendil-works/pi-coding-agent";
 import { DEFAULT_DIAGRAM_MODEL_ID, type AgentProgress } from "../../../domain/core/records/domain";
 export function progressFor(event: AgentSessionEvent, model: string, sessionId: string): AgentProgress | undefined {
   const shared = { model, sessionId };
@@ -21,6 +22,14 @@ export class PiAgentRuntime {
   protected modelRuntime?: Promise<ModelRuntime>;
 
   protected readonly sessions = new Set<{ abort(): Promise<void>; dispose(): void }>();
+
+  protected async createSession(configuration: Omit<CreateAgentSessionOptions, 'sessionManager'>, context?: AgentContext) {
+    const sessionManager = SessionManager.inMemory(configuration.cwd);
+    for (const message of context?.toPiMessages() ?? []) sessionManager.appendMessage(message);
+    const result = await createAgentSession({ ...configuration, sessionManager });
+    this.sessions.add(result.session);
+    return result;
+  }
 
   protected runtime(): Promise<ModelRuntime> {
     this.modelRuntime ??= ModelRuntime.create({ allowModelNetwork: false });

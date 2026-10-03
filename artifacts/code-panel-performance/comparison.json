@@ -1,0 +1,53 @@
+{
+  "method": "Median of 3 unprofiled trials; panel files and syntax highlighting loaded before measurement. Zero-panel baseline from zero-panel-results.json.",
+  "rows": [
+    {
+      "panels": 0,
+      "sourceRows": 0,
+      "domNodes": 2133,
+      "staleFiles": 0,
+      "dragP95Ms": 16.799999999999272,
+      "dragMainThreadMs": 126.30199999999991,
+      "selectionDurationMs": 3862.2946470000024,
+      "selectionP95Ms": 116.70000000000073,
+      "selectionMinMs": 3527.4890779999987,
+      "selectionMaxMs": 4426.445328000002
+    },
+    {
+      "panels": 1,
+      "sourceRows": 14,
+      "domNodes": 2336,
+      "staleFiles": 0,
+      "dragP95Ms": 16.799999999999272,
+      "dragMainThreadMs": 114.4400000000001,
+      "selectionDurationMs": 3093.5221219999985,
+      "selectionP95Ms": 83.39999999999964,
+      "selectionMinMs": 2780.3587509999998,
+      "selectionMaxMs": 4055.9288119999983
+    },
+    {
+      "panels": 3,
+      "sourceRows": 169,
+      "domNodes": 4708,
+      "staleFiles": 1,
+      "dragP95Ms": 33.30000000000109,
+      "dragMainThreadMs": 268.8049999999995,
+      "selectionDurationMs": 3119.451006000003,
+      "selectionP95Ms": 100,
+      "selectionMinMs": 3115.888070000001,
+      "selectionMaxMs": 3394.116009999998
+    },
+    {
+      "panels": 5,
+      "sourceRows": 668,
+      "domNodes": 14588,
+      "staleFiles": 2,
+      "dragP95Ms": 50,
+      "dragMainThreadMs": 750.7969999999995,
+      "selectionDurationMs": 3781.900228000013,
+      "selectionP95Ms": 116.60000000000218,
+      "selectionMinMs": 3681.222876999993,
+      "selectionMaxMs": 4110.7734920000075
+    }
+  ]
+}

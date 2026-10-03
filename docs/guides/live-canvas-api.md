@@ -223,3 +223,119 @@ The browser bridge and outgoing context have an explicit 64 MiB transport bound;
 larger contexts fail visibly instead of returning partial contents. Initial
 context traffic gets a temporary bounded backpressure allowance so its own large
 frame does not cause otherwise healthy selection updates to be dropped.
+
+## Upload coding-agent context
+
+An attached reader can upload an immutable slice of its coding trajectory for
+prompt-driven diagram editing. Uploads do not change the canvas or start an LLM
+run. Browser publisher sockets and unattached sockets cannot upload.
+
+Send `agent-context.upload` on the reader socket after `attached`:
+
+```json
+{
+  "type": "agent-context.upload",
+  "requestId": "context-upload-1",
+  "agentType": "codex",
+  "sourceSessionId": "original-coding-session",
+  "format": "messages-v1",
+  "fromEntryId": "user-1",
+  "throughEntryId": "assistant-1",
+  "entries": [
+    {
+      "id": "user-1",
+      "parentId": null,
+      "message": {
+        "role": "user",
+        "content": [{ "type": "text", "text": "Move cache ownership to Workspace." }]
+      }
+    },
+    {
+      "id": "assistant-1",
+      "parentId": "user-1",
+      "message": {
+        "role": "assistant",
+        "content": [{ "type": "text", "text": "Workspace now owns and initializes the cache." }]
+      }
+    }
+  ]
+}
+```
+
+`agentType` is required provenance, for example `codex`, `claude`, or `pi`.
+It accepts a lowercase identifier matching `[a-z][a-z0-9_-]{0,63}` and does not
+select the diagram model or grant tools. `sourceSessionId` identifies the original
+coding session, independently of the reader connection and canvas attachment.
+
+`messages-v1` is a shared upload format, **not native Codex/Claude/Pi JSONL**.
+The uploading agent converts its chosen transcript to these explicit records.
+Unknown fields, native compaction records, unsupported roles and content blocks
+are rejected instead of silently discarded. This version supports text and
+structured tool interactions:
+
+- Every entry has a unique `id`, a `parentId` (or `null`), and a `message`.
+- User messages contain text blocks.
+- Assistant messages contain text and/or
+  `{ "type": "toolCall", "id": "call-1", "name": "read", "arguments": { "path": "file.ts" } }` blocks.
+- A tool-result message has `role: "toolResult"`, `toolCallId`, `toolName`, text
+  `content`, and optional `isError` (default `false`).
+- Messages may include a nonnegative integer `timestamp` in milliseconds;
+  omitted timestamps are recorded as `0`, not the upload time.
+
+The range is inclusive. `throughEntryId` selects the branch endpoint;
+`fromEntryId` must be its ancestor or the same entry. Entries before the range
+need not be uploaded. Sibling branches are excluded. Tool calls and results must
+be complete within the selected slice, with unique call IDs and matching names;
+a slice starting at an orphan result or ending at an unanswered call is rejected.
+Summaries must be supplied explicitly as text by the uploader; the API does not
+implicitly widen a range to import compaction history.
+
+The acknowledgement identifies the captured context without echoing its contents:
+
+```json
+{
+  "type": "agent-context.uploaded",
+  "requestId": "context-upload-1",
+  "connectionId": "<reader-connection-id>",
+  "agentContextId": "agent-context-<uuid>",
+  "contentHash": "<sha256>",
+  "agentType": "codex",
+  "sourceSessionId": "original-coding-session",
+  "messageCount": 2
+}
+```
+
+Reuse the upload request ID to recover a lost acknowledgement. The same selected
+context returns the same receipt; different captured context returns
+`REQUEST_ID_CONFLICT`. This also works after reconnecting to the same live
+workspace instance and document. Validation errors carry the request ID when it
+is a valid string. Closed, replaced and disconnected bindings cannot upload.
+
+Use the resulting ID in the existing HTTP/MCP `edit-diagram` tool:
+
+```json
+{
+  "sessionId": "<canvas.attach sessionId>",
+  "nodeId": "grid:overview",
+  "expectedVersion": 12,
+  "baseRevisionId": "<current diagram.revisionId>",
+  "prompt": "Update this diagram to reflect the ownership change.",
+  "agentContextId": "agent-context-<uuid>",
+  "requestId": "diagram-edit-1"
+}
+```
+
+The canvas attachment must target the upload's workspace instance and document.
+Read fresh document/base versions before editing; selection event versions can
+lag. The edit captures the context and includes its hash in retry identity. Pi
+starts a fresh in-memory session containing the imported messages, then receives
+the current diagram-edit prompt with the workflow's configured model and tools.
+Historical tool calls are not re-executed. Omitting `agentContextId` preserves the
+existing empty-history behavior.
+
+Contexts and upload receipts are held in backend memory, survive reader socket
+closure, and are lost on backend restart. They are scoped to the live workspace
+instance/document, so a replacement workspace instance requires a new upload.
+Each upload is limited to 2 MiB and 2,000 entries; the backend retains at most 100
+contexts and 32 MiB of snapshots. Capacity exhaustion returns
+`AGENT_CONTEXT_CAPACITY`; existing contexts and retry receipts remain available.

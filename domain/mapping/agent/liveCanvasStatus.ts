@@ -1,3 +1,4 @@
+import { agentTrajectorySchema } from '../../core/agents/agentContext';
 import { z } from 'zod';
 
 const id = z.string().min(1).max(200);
@@ -19,6 +20,7 @@ export type LiveSelectionDelta = z.infer<typeof liveSelectionDeltaSchema>;
 export const liveCanvasMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('attach'), protocolVersion: z.literal(2), workspaceInstanceId: id, documentId: id, includeContext: z.boolean().optional() }).strict(),
   z.object({ type: z.literal('context.get'), requestId: id }).strict(),
+  agentTrajectorySchema.extend({ type: z.literal('agent-context.upload'), requestId: id }),
   z.object({ type: z.literal('publish'), protocolVersion: z.literal(2), workspaceInstanceId: id }).strict(),
   liveSelectionSchema.extend({ type: z.literal('selection.snapshot') }),
   liveSelectionDeltaSchema.extend({ type: z.literal('selection.delta') }),
@@ -37,6 +39,8 @@ export type LiveCanvasEvent = ({ type: 'attached'; context?: LiveCanvasContext }
   | ({ type: 'selection.delta' } & LiveSelectionDelta & Pick<BoundSelection, 'connectionId' | 'workspaceInstanceId' | 'receivedAt'>)
   | { type: 'canvas.disconnected' | 'canvas.closed' | 'canvas.replaced'; connectionId: string; canvasEpoch: string }
   | { type: 'error'; code: string; error: string; requestId?: string }
+  | { type: 'agent-context.uploaded'; requestId: string; connectionId: string; agentContextId: string;
+      contentHash: string; agentType: string; sourceSessionId: string; messageCount: number }
   | { type: 'publisher.ready'; protocolVersion: 2 }
   | { type: 'agents.changed'; count: number };
 

@@ -1,0 +1,19 @@
+.diagram-edit-composer, .diagram-edit-launcher {
+  position: fixed; z-index: 40; right: 24px; top: 88px;
+  width: min(440px, calc(100vw - 32px)); box-sizing: border-box;
+  padding: 18px; color: #e8edf5; background: #17202c;
+  border: 1px solid #596d86; border-radius: 10px; box-shadow: 0 12px 42px #0008;
+  max-height: calc(100vh - 190px); overflow: auto;
+}
+.diagram-edit-composer header, .diagram-edit-composer footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.diagram-edit-composer h2 { font-size: 17px; margin: 0; }
+.diagram-edit-target { font-size: 13px; line-height: 1.6; color: #bbc9dc; overflow-wrap: anywhere; }
+.diagram-edit-composer label { display: block; margin-bottom: 8px; }
+.diagram-edit-composer textarea { box-sizing: border-box; width: 100%; resize: vertical; min-height: 100px; padding: 10px; background: #0e1621; color: #f1f5fa; border: 1px solid #7286a0; border-radius: 5px; font: inherit; }
+.diagram-edit-composer button, .diagram-edit-launcher button { background: #27394f; color: #edf4ff; border: 1px solid #7892af; border-radius: 5px; padding: 7px 11px; cursor: pointer; }
+.diagram-edit-composer button:disabled { opacity: .5; cursor: default; }
+.diagram-edit-composer button[type=submit] { margin-left: auto; background: #285d83; }
+.diagram-edit-composer [role=status], .diagram-edit-composer [role=alert] { font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.diagram-edit-composer [role=alert] { color: #ffc4b7; }
+.diagram-edit-composer nav, .diagram-edit-launcher { display: flex; flex-direction: column; gap: 8px; }
+.diagram-edit-composer nav { margin-top: 14px; }

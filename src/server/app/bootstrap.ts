@@ -1,3 +1,4 @@
+import { AgentContextService } from '../../../application/mapping/agent/agentContextService';
 import { LiveCanvasService } from '../../../application/mapping/agent/liveCanvasService';
 import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService';
 import { FakeDiagramEditRuntime, PiDiagramEditRuntime } from '../../../infrastructure/mapping/agents/diagram-edit/diagramEditRuntime';
@@ -60,10 +61,11 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
   const languageService = options.lspEnabled === true ? new ProjectLanguageService() : undefined;
   const diagrams = new MappingDiagramService(store, corpusAccess, projectRoot, configuredDomainProfileId);
   const canvasBridge = new CanvasSessionBridge();
+  const agentContexts = new AgentContextService();
   const liveCanvas = new LiveCanvasService(() => canvasBridge.list(), async (workspaceInstanceId, documentId) =>
-    await canvasBridge.dispatch(workspaceInstanceId, { method: 'context', documentId }) as import('../../../domain/mapping/agent/liveCanvasStatus').LiveCanvasContext);
+    await canvasBridge.dispatch(workspaceInstanceId, { method: 'context', documentId }) as import('../../../domain/mapping/agent/liveCanvasStatus').LiveCanvasContext, agentContexts);
   const agent = new AgentDiagrammingSessionService(canvasBridge, diagrams, store, new QuickJsAgentRuntime(),
-    new ChangeSessionService(new DiagramChangeSessionStore(store.storeRoot, undefined, true), store, canvasBridge), new RevisionedDiagramService(diagramEditRuntime));
+    new ChangeSessionService(new DiagramChangeSessionStore(store.storeRoot, undefined, true), store, canvasBridge), new RevisionedDiagramService(diagramEditRuntime), agentContexts);
   const routes = {
     core: createCoreRoutes({
       application: core,

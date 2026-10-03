@@ -1,0 +1,1770 @@
+[
+  {
+    "file": "0-drag-1.cpuprofile",
+    "totalMs": 1121,
+    "self": [
+      {
+        "location": "(idle)",
+        "ms": 746,
+        "percent": 66.5
+      },
+      {
+        "location": "(program)",
+        "ms": 367,
+        "percent": 32.7
+      },
+      {
+        "location": "requestAnimationFrame",
+        "ms": 5,
+        "percent": 0.5
+      },
+      {
+        "location": "tick",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1615 SyntheticBaseEvent",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1517 getListener",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:15297 dispatchEvent",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1494 batchedUpdates$1",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:15387 findInstanceBlockingTarget",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "../src/features/mapping/canvas/DiagramSelectionLayer.tsx:34 event",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "getBoundingClientRect",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "../src/shared/diagrams/DraggableDiagramCanvas.tsx:68 (anonymous)",
+        "ms": -1,
+        "percent": -0.1
+      }
+    ],
+    "inclusive": [
+      {
+        "location": "(root)",
+        "ms": 1121,
+        "percent": 100
+      },
+      {
+        "location": "(idle)",
+        "ms": 746,
+        "percent": 66.5
+      },
+      {
+        "location": "(program)",
+        "ms": 367,
+        "percent": 32.7
+      },
+      {
+        "location": "tick",
+        "ms": 6,
+        "percent": 0.6
+      },
+      {
+        "location": "requestAnimationFrame",
+        "ms": 5,
+        "percent": 0.5
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:15297 dispatchEvent",
+        "ms": 2,
+        "percent": 0.2
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:15280 dispatchContinuousEvent",
+        "ms": 2,
+        "percent": 0.2
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1494 batchedUpdates$1",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12408 dispatchEventForPluginEventSystem",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12455 (anonymous)",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1615 SyntheticBaseEvent",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1517 getListener",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:15387 findInstanceBlockingTarget",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:15382 findInstanceBlockingEvent",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "../src/features/mapping/canvas/DiagramSelectionLayer.tsx:34 event",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "getBoundingClientRect",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "../src/shared/diagrams/DraggableDiagramCanvas.tsx:34 localPoint",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "../src/shared/diagrams/DraggableDiagramCanvas.tsx:68 (anonymous)",
+        "ms": -1,
+        "percent": -0.1
+      },
+      {
+        "location": "../src/shared/diagrams/DraggableDiagramCanvas.tsx:281 event",
+        "ms": -1,
+        "percent": -0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12272 processDispatchQueue",
+        "ms": -1,
+        "percent": -0.1
+      }
+    ]
+  },
+  {
+    "file": "0-node-drag-1.cpuprofile",
+    "totalMs": 967,
+    "self": [
+      {
+        "location": "(idle)",
+        "ms": 665,
+        "percent": 68.8
+      },
+      {
+        "location": "(program)",
+        "ms": 293,
+        "percent": 30.3
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1615 SyntheticBaseEvent",
+        "ms": 2,
+        "percent": 0.2
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:15280 dispatchContinuousEvent",
+        "ms": 2,
+        "percent": 0.2
+      },
+      {
+        "location": "getBoundingClientRect",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12455 (anonymous)",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "../src/shared/diagrams/DraggableDiagramCanvas.tsx:281 event",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "requestAnimationFrame",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "(anonymous)",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "../src/shared/diagrams/DraggableDiagramCanvas.tsx:68 (anonymous)",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "tick",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1419 getEventTarget",
+        "ms": 0,
+        "percent": 0
+      }
+    ],
+    "inclusive": [
+      {
+        "location": "(root)",
+        "ms": 967,
+        "percent": 100
+      },
+      {
+        "location": "(idle)",
+        "ms": 665,
+        "percent": 68.8
+      },
+      {
+        "location": "(program)",
+        "ms": 293,
+        "percent": 30.3
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:15280 dispatchContinuousEvent",
+        "ms": 6,
+        "percent": 0.6
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12455 (anonymous)",
+        "ms": 5,
+        "percent": 0.5
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1494 batchedUpdates$1",
+        "ms": 5,
+        "percent": 0.5
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12408 dispatchEventForPluginEventSystem",
+        "ms": 5,
+        "percent": 0.5
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:15297 dispatchEvent",
+        "ms": 4,
+        "percent": 0.4
+      },
+      {
+        "location": "(anonymous)",
+        "ms": 2,
+        "percent": 0.2
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1615 SyntheticBaseEvent",
+        "ms": 2,
+        "percent": 0.2
+      },
+      {
+        "location": "../src/shared/diagrams/DraggableDiagramCanvas.tsx:281 event",
+        "ms": 2,
+        "percent": 0.2
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12272 processDispatchQueue",
+        "ms": 2,
+        "percent": 0.2
+      },
+      {
+        "location": "getBoundingClientRect",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "../src/shared/diagrams/DraggableDiagramCanvas.tsx:171 event",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "requestAnimationFrame",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "../src/shared/diagrams/DraggableDiagramCanvas.tsx:68 (anonymous)",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "tick",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1419 getEventTarget",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:15382 findInstanceBlockingEvent",
+        "ms": 0,
+        "percent": 0
+      }
+    ]
+  },
+  {
+    "file": "0-selection-1.cpuprofile",
+    "totalMs": 4223,
+    "self": [
+      {
+        "location": "../domain/core/diagrams/canvasHistory.ts:46 stateKey",
+        "ms": 2032,
+        "percent": 48.1
+      },
+      {
+        "location": "../domain/core/diagrams/canvasHistory.ts:47 (anonymous)",
+        "ms": 779,
+        "percent": 18.5
+      },
+      {
+        "location": "(idle)",
+        "ms": 480,
+        "percent": 11.4
+      },
+      {
+        "location": "../src/features/mapping/MappingPage.tsx:72 draft",
+        "ms": 286,
+        "percent": 6.8
+      },
+      {
+        "location": "../src/features/mapping/MappingPage.tsx:580 key",
+        "ms": 212,
+        "percent": 5
+      },
+      {
+        "location": "(program)",
+        "ms": 197,
+        "percent": 4.7
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 33,
+        "percent": 0.8
+      },
+      {
+        "location": "../domain/core/diagrams/projectDiagramCanvas.ts:99 d",
+        "ms": 17,
+        "percent": 0.4
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:4333 renderWithHooks",
+        "ms": 13,
+        "percent": 0.3
+      },
+      {
+        "location": "../src/features/mapping/canvas/MappingCanvas.tsx:124 MappingPocSelectionCanvas",
+        "ms": 10,
+        "percent": 0.2
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:13577 updateProperties",
+        "ms": 10,
+        "percent": 0.2
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12957 setProp",
+        "ms": 10,
+        "percent": 0.2
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:2452 createWorkInProgress",
+        "ms": 7,
+        "percent": 0.2
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1291 setValueForStyles",
+        "ms": 7,
+        "percent": 0.2
+      },
+      {
+        "location": "../domain/core/diagrams/asciiSha256.ts:2 asciiSha256",
+        "ms": 6,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:7392 beginWork",
+        "ms": 6,
+        "percent": 0.1
+      },
+      {
+        "location": "../domain/mapping/selection/mappingPoc.ts:1244 projectASelectionToB",
+        "ms": 6,
+        "percent": 0.1
+      },
+      {
+        "location": "../domain/core/diagrams/lineGrid.ts:45 measureContent",
+        "ms": 4,
+        "percent": 0.1
+      },
+      {
+        "location": "../domain/mapping/workspace/diagramViewState.ts:12 projectDiagramContent",
+        "ms": 4,
+        "percent": 0.1
+      },
+      {
+        "location": "requestAnimationFrame",
+        "ms": 4,
+        "percent": 0.1
+      },
+      {
+        "location": "../src/features/mapping/MappingPage.tsx:569 (anonymous)",
+        "ms": 3,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:8725 commitHostUpdate",
+        "ms": 3,
+        "percent": 0.1
+      },
+      {
+        "location": "(anonymous)",
+        "ms": 3,
+        "percent": 0.1
+      },
+      {
+        "location": "../domain/core/diagrams/lineGrid.ts:59 visit",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:265 pushHostContainer",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "../src/features/mapping/canvas/DiagramSubtreeControls.tsx:13 target",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:313 popHostContext",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react/cjs/react-jsx-runtime.production.js:14 jsxProd",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "../domain/mapping/workspace/floatingBoxLayout.ts:7 layoutFloatingSelections",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "../src/features/mapping/MappingPage.tsx:546 ui",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "../src/features/mapping/canvas/DiagramConnections.tsx:15 DiagramConnections",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:9384 recursivelyTraverseMutationEffects",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11181 workLoopSync",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "../src/features/mapping/MappingPage.tsx:599 id",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:3622 reconcileChildrenArray",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "../src/shared/diagrams/DraggableDiagramCanvas.tsx:45 DraggableDiagramCanvas",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:8842 commitBeforeMutationEffects",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:9427 commitMutationEffectsOnFiber",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:3365 updateElement",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:7955 completeWork",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12272 processDispatchQueue",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1494 batchedUpdates$1",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "../domain/core/diagrams/projectDiagramCanvas.ts:98 d",
+        "ms": 2,
+        "percent": 0
+      },
+      {
+        "location": "../node_modules/scheduler/cjs/scheduler.production.js:121 performWorkUntilDeadline",
+        "ms": 1,
+        "percent": 0
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11993 scheduleTaskForRootDuringMicrotask",
+        "ms": 1,
+        "percent": 0
+      }
+    ],
+    "inclusive": [
+      {
+        "location": "(root)",
+        "ms": 4223,
+        "percent": 100
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:10681 performWorkOnRoot",
+        "ms": 3463,
+        "percent": 82
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11181 workLoopSync",
+        "ms": 3426,
+        "percent": 81.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11120 renderRootSync",
+        "ms": 3426,
+        "percent": 81.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:7392 beginWork",
+        "ms": 3418,
+        "percent": 80.9
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:6489 updateFunctionComponent",
+        "ms": 3397,
+        "percent": 80.5
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:4333 renderWithHooks",
+        "ms": 3394,
+        "percent": 80.4
+      },
+      {
+        "location": "../packages/ui-test-framework/src/UiTestFramework.tsx:107 UiTestFramework",
+        "ms": 3316,
+        "percent": 78.5
+      },
+      {
+        "location": "../src/features/mapping/MappingPage.tsx:546 ui",
+        "ms": 3315,
+        "percent": 78.5
+      },
+      {
+        "location": "../domain/core/diagrams/canvasHistory.ts:46 stateKey",
+        "ms": 2808,
+        "percent": 66.5
+      },
+      {
+        "location": "../src/features/mapping/MappingPage.tsx:72 draft",
+        "ms": 1920,
+        "percent": 45.5
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11966 processRootScheduleInMicrotask",
+        "ms": 1803,
+        "percent": 42.7
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12089 (anonymous)",
+        "ms": 1803,
+        "percent": 42.7
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12084 performSyncWorkOnRoot",
+        "ms": 1802,
+        "percent": 42.7
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11918 flushSyncWorkAcrossRoots_impl",
+        "ms": 1802,
+        "percent": 42.7
+      },
+      {
+        "location": "../node_modules/scheduler/cjs/scheduler.production.js:121 performWorkUntilDeadline",
+        "ms": 1665,
+        "percent": 39.4
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12065 performWorkOnRootViaSchedulerTask",
+        "ms": 1661,
+        "percent": 39.3
+      },
+      {
+        "location": "../src/features/mapping/MappingPage.tsx:569 (anonymous)",
+        "ms": 1388,
+        "percent": 32.9
+      },
+      {
+        "location": "../src/features/mapping/MappingPage.tsx:580 key",
+        "ms": 1385,
+        "percent": 32.8
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11304 performUnitOfWork",
+        "ms": 1126,
+        "percent": 26.7
+      },
+      {
+        "location": "../domain/core/diagrams/canvasHistory.ts:47 (anonymous)",
+        "ms": 779,
+        "percent": 18.5
+      },
+      {
+        "location": "../src/features/mapping/MappingPage.tsx:599 id",
+        "ms": 648,
+        "percent": 15.3
+      },
+      {
+        "location": "(idle)",
+        "ms": 480,
+        "percent": 11.4
+      },
+      {
+        "location": "(program)",
+        "ms": 197,
+        "percent": 4.7
+      },
+      {
+        "location": "../src/features/mapping/canvas/MappingCanvas.tsx:124 MappingPocSelectionCanvas",
+        "ms": 48,
+        "percent": 1.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11457 commitRoot",
+        "ms": 38,
+        "percent": 0.9
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:10848 commitRootWhenReady",
+        "ms": 38,
+        "percent": 0.9
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:9427 commitMutationEffectsOnFiber",
+        "ms": 34,
+        "percent": 0.8
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11524 flushMutationEffects",
+        "ms": 34,
+        "percent": 0.8
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:9384 recursivelyTraverseMutationEffects",
+        "ms": 33,
+        "percent": 0.8
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:15297 dispatchEvent",
+        "ms": 33,
+        "percent": 0.8
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 33,
+        "percent": 0.8
+      },
+      {
+        "location": "../node_modules/react/cjs/react.production.js:513 Qw.Ze.useMemo",
+        "ms": 31,
+        "percent": 0.7
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1494 batchedUpdates$1",
+        "ms": 31,
+        "percent": 0.7
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12408 dispatchEventForPluginEventSystem",
+        "ms": 31,
+        "percent": 0.7
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:5162 updateMemo",
+        "ms": 30,
+        "percent": 0.7
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:8725 commitHostUpdate",
+        "ms": 30,
+        "percent": 0.7
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12455 (anonymous)",
+        "ms": 29,
+        "percent": 0.7
+      },
+      {
+        "location": "../src/features/mapping/canvas/MappingCanvas.tsx:379 (anonymous)",
+        "ms": 28,
+        "percent": 0.7
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12272 processDispatchQueue",
+        "ms": 28,
+        "percent": 0.7
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:13577 updateProperties",
+        "ms": 27,
+        "percent": 0.6
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:15280 dispatchContinuousEvent",
+        "ms": 22,
+        "percent": 0.5
+      },
+      {
+        "location": "../src/features/mapping/canvas/MappingCanvas.tsx:385 mapping",
+        "ms": 21,
+        "percent": 0.5
+      },
+      {
+        "location": "../domain/core/diagrams/projectDiagramCanvas.ts:97 exportedEvidenceId",
+        "ms": 20,
+        "percent": 0.5
+      },
+      {
+        "location": "../domain/core/diagrams/projectDiagramCanvas.ts:99 d",
+        "ms": 17,
+        "percent": 0.4
+      }
+    ]
+  },
+  {
+    "file": "5-drag-1.cpuprofile",
+    "totalMs": 1448,
+    "self": [
+      {
+        "location": "(program)",
+        "ms": 1049,
+        "percent": 72.5
+      },
+      {
+        "location": "(idle)",
+        "ms": 386,
+        "percent": 26.7
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:15280 dispatchContinuousEvent",
+        "ms": 3,
+        "percent": 0.2
+      },
+      {
+        "location": "../src/shared/diagrams/DraggableDiagramCanvas.tsx:281 event",
+        "ms": 2,
+        "percent": 0.2
+      },
+      {
+        "location": "../src/shared/diagrams/DraggableDiagramCanvas.tsx:68 (anonymous)",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12455 (anonymous)",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "requestAnimationFrame",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "tick",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1615 SyntheticBaseEvent",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "../src/shared/diagrams/DraggableDiagramCanvas.tsx:171 event",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1517 getListener",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "../src/features/mapping/canvas/DiagramSelectionLayer.tsx:34 event",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12408 dispatchEventForPluginEventSystem",
+        "ms": 0,
+        "percent": 0
+      }
+    ],
+    "inclusive": [
+      {
+        "location": "(root)",
+        "ms": 1448,
+        "percent": 100
+      },
+      {
+        "location": "(program)",
+        "ms": 1049,
+        "percent": 72.5
+      },
+      {
+        "location": "(idle)",
+        "ms": 386,
+        "percent": 26.7
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:15280 dispatchContinuousEvent",
+        "ms": 9,
+        "percent": 0.6
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12408 dispatchEventForPluginEventSystem",
+        "ms": 6,
+        "percent": 0.4
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:15297 dispatchEvent",
+        "ms": 6,
+        "percent": 0.4
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12455 (anonymous)",
+        "ms": 6,
+        "percent": 0.4
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1494 batchedUpdates$1",
+        "ms": 6,
+        "percent": 0.4
+      },
+      {
+        "location": "../src/shared/diagrams/DraggableDiagramCanvas.tsx:281 event",
+        "ms": 4,
+        "percent": 0.3
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12272 processDispatchQueue",
+        "ms": 4,
+        "percent": 0.3
+      },
+      {
+        "location": "tick",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "../src/shared/diagrams/DraggableDiagramCanvas.tsx:68 (anonymous)",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "requestAnimationFrame",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1615 SyntheticBaseEvent",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "../src/shared/diagrams/DraggableDiagramCanvas.tsx:171 event",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1517 getListener",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "../src/features/mapping/canvas/DiagramSelectionLayer.tsx:34 event",
+        "ms": 0,
+        "percent": 0
+      }
+    ]
+  },
+  {
+    "file": "5-node-drag-1.cpuprofile",
+    "totalMs": 1565,
+    "self": [
+      {
+        "location": "(program)",
+        "ms": 994,
+        "percent": 63.5
+      },
+      {
+        "location": "(idle)",
+        "ms": 531,
+        "percent": 34
+      },
+      {
+        "location": "../src/shared/source/SourceCodeView.tsx:205 chunk",
+        "ms": 10,
+        "percent": 0.6
+      },
+      {
+        "location": "../src/shared/source/SourceCodeView.tsx:157 SourceTokens",
+        "ms": 6,
+        "percent": 0.4
+      },
+      {
+        "location": "../domain/core/diagrams/asciiSha256.ts:2 asciiSha256",
+        "ms": 4,
+        "percent": 0.3
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:13577 updateProperties",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1291 setValueForStyles",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:9427 commitMutationEffectsOnFiber",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "getBoundingClientRect",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12957 setProp",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "fetch",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "requestAnimationFrame",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "../src/features/mapping/code-panel/CodePanel.tsx:32 (anonymous)",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "querySelectorAll",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "(anonymous)",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1419 getEventTarget",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11405 completeUnitOfWork",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:8842 commitBeforeMutationEffects",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "../src/shared/source/SourceCodeView.tsx:195 (anonymous)",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1615 SyntheticBaseEvent",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:4363 finishRenderingHooks",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:6489 updateFunctionComponent",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:859 getClosestInstanceFromNode",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "remove",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "../src/shared/diagrams/DraggableDiagramCanvas.tsx:68 (anonymous)",
+        "ms": 0,
+        "percent": 0
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12455 (anonymous)",
+        "ms": 0,
+        "percent": 0
+      }
+    ],
+    "inclusive": [
+      {
+        "location": "(root)",
+        "ms": 1565,
+        "percent": 100
+      },
+      {
+        "location": "(program)",
+        "ms": 994,
+        "percent": 63.5
+      },
+      {
+        "location": "(idle)",
+        "ms": 531,
+        "percent": 34
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:10681 performWorkOnRoot",
+        "ms": 33,
+        "percent": 2.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12065 performWorkOnRootViaSchedulerTask",
+        "ms": 33,
+        "percent": 2.1
+      },
+      {
+        "location": "../node_modules/scheduler/cjs/scheduler.production.js:121 performWorkUntilDeadline",
+        "ms": 33,
+        "percent": 2.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11457 commitRoot",
+        "ms": 19,
+        "percent": 1.2
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:10848 commitRootWhenReady",
+        "ms": 19,
+        "percent": 1.2
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11181 workLoopSync",
+        "ms": 13,
+        "percent": 0.9
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11120 renderRootSync",
+        "ms": 13,
+        "percent": 0.9
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:6489 updateFunctionComponent",
+        "ms": 12,
+        "percent": 0.8
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:7392 beginWork",
+        "ms": 12,
+        "percent": 0.8
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:4333 renderWithHooks",
+        "ms": 12,
+        "percent": 0.8
+      },
+      {
+        "location": "../src/shared/source/SourceCodeView.tsx:195 (anonymous)",
+        "ms": 11,
+        "percent": 0.7
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:8571 commitHookEffectListMount",
+        "ms": 11,
+        "percent": 0.7
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:9008 commitLayoutEffectOnFiber",
+        "ms": 11,
+        "percent": 0.7
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:9901 recursivelyTraverseLayoutEffects",
+        "ms": 11,
+        "percent": 0.7
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11646 flushLayoutEffects",
+        "ms": 11,
+        "percent": 0.7
+      },
+      {
+        "location": "../src/shared/source/SourceCodeView.tsx:205 chunk",
+        "ms": 10,
+        "percent": 0.6
+      },
+      {
+        "location": "../src/shared/source/SourceCodeView.tsx:202 f",
+        "ms": 10,
+        "percent": 0.6
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:9427 commitMutationEffectsOnFiber",
+        "ms": 8,
+        "percent": 0.5
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:9384 recursivelyTraverseMutationEffects",
+        "ms": 8,
+        "percent": 0.5
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11524 flushMutationEffects",
+        "ms": 8,
+        "percent": 0.5
+      },
+      {
+        "location": "../src/shared/source/SourceCodeView.tsx:157 SourceTokens",
+        "ms": 6,
+        "percent": 0.4
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:13577 updateProperties",
+        "ms": 6,
+        "percent": 0.4
+      },
+      {
+        "location": "../src/features/mapping/code-panel/CodePanel.tsx:32 (anonymous)",
+        "ms": 6,
+        "percent": 0.4
+      },
+      {
+        "location": "../src/features/mapping/code-panel/CodePanel.tsx:32 range",
+        "ms": 6,
+        "percent": 0.4
+      },
+      {
+        "location": "../src/features/mapping/code-panel/CodePanel.tsx:15 SourceRangeSections",
+        "ms": 6,
+        "percent": 0.4
+      },
+      {
+        "location": "../domain/core/diagrams/asciiSha256.ts:2 asciiSha256",
+        "ms": 4,
+        "percent": 0.3
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12957 setProp",
+        "ms": 3,
+        "percent": 0.2
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1291 setValueForStyles",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "(anonymous)",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "getBoundingClientRect",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "../src/shared/diagrams/DraggableDiagramCanvas.tsx:171 event",
+        "ms": 2,
+        "percent": 0.1
+      },
+      {
+        "location": "fetch",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "../src/shared/http/http.ts:2 apiFetch",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "../src/features/mapping/agent/useAgentCanvasBridge.ts:16 f",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "../src/features/mapping/agent/useAgentCanvasBridge.ts:22 m",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "../src/features/mapping/agent/useAgentCanvasBridge.ts:23 A",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "requestAnimationFrame",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "tick",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "querySelectorAll",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1419 getEventTarget",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:15382 findInstanceBlockingEvent",
+        "ms": 1,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11405 completeUnitOfWork",
+        "ms": 1,
+        "percent": 0.1
+      }
+    ]
+  },
+  {
+    "file": "5-selection-1.cpuprofile",
+    "totalMs": 4670,
+    "self": [
+      {
+        "location": "../domain/core/diagrams/canvasHistory.ts:46 stateKey",
+        "ms": 2317,
+        "percent": 49.6
+      },
+      {
+        "location": "(program)",
+        "ms": 573,
+        "percent": 12.3
+      },
+      {
+        "location": "(idle)",
+        "ms": 455,
+        "percent": 9.7
+      },
+      {
+        "location": "../src/features/mapping/MappingPage.tsx:72 draft",
+        "ms": 236,
+        "percent": 5
+      },
+      {
+        "location": "../src/features/mapping/MappingPage.tsx:580 key",
+        "ms": 160,
+        "percent": 3.4
+      },
+      {
+        "location": "../domain/core/diagrams/asciiSha256.ts:2 asciiSha256",
+        "ms": 114,
+        "percent": 2.4
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:9427 commitMutationEffectsOnFiber",
+        "ms": 90,
+        "percent": 1.9
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1291 setValueForStyles",
+        "ms": 76,
+        "percent": 1.6
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:13577 updateProperties",
+        "ms": 72,
+        "percent": 1.5
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 70,
+        "percent": 1.5
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12957 setProp",
+        "ms": 49,
+        "percent": 1.1
+      },
+      {
+        "location": "../node_modules/react/cjs/react-jsx-runtime.production.js:14 jsxProd",
+        "ms": 30,
+        "percent": 0.6
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:3622 reconcileChildrenArray",
+        "ms": 28,
+        "percent": 0.6
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:3365 updateElement",
+        "ms": 25,
+        "percent": 0.5
+      },
+      {
+        "location": "../src/shared/source/SourceCodeView.tsx:161 (anonymous)",
+        "ms": 21,
+        "percent": 0.4
+      },
+      {
+        "location": "../domain/core/diagrams/projectDiagramCanvas.ts:99 d",
+        "ms": 19,
+        "percent": 0.4
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:4333 renderWithHooks",
+        "ms": 18,
+        "percent": 0.4
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:3503 updateSlot",
+        "ms": 15,
+        "percent": 0.3
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:8842 commitBeforeMutationEffects",
+        "ms": 15,
+        "percent": 0.3
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11304 performUnitOfWork",
+        "ms": 14,
+        "percent": 0.3
+      },
+      {
+        "location": "../src/shared/source/SourceCodeView.tsx:157 SourceTokens",
+        "ms": 13,
+        "percent": 0.3
+      },
+      {
+        "location": "../src/shared/source/SourceCodeView.tsx:339 (anonymous)",
+        "ms": 13,
+        "percent": 0.3
+      },
+      {
+        "location": "../src/shared/source/SourceCodeView.tsx:205 chunk",
+        "ms": 11,
+        "percent": 0.2
+      },
+      {
+        "location": "../src/features/mapping/code-panel/CodePanel.tsx:32 (anonymous)",
+        "ms": 10,
+        "percent": 0.2
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:3793 reconcileChildFibersImpl",
+        "ms": 10,
+        "percent": 0.2
+      },
+      {
+        "location": "../domain/core/diagrams/projectDiagramCanvas.ts:97 exportedEvidenceId",
+        "ms": 10,
+        "percent": 0.2
+      },
+      {
+        "location": "../src/features/mapping/canvas/MappingCanvas.tsx:124 MappingPocSelectionCanvas",
+        "ms": 9,
+        "percent": 0.2
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:13997 shouldSetTextContent",
+        "ms": 9,
+        "percent": 0.2
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:9901 recursivelyTraverseLayoutEffects",
+        "ms": 9,
+        "percent": 0.2
+      },
+      {
+        "location": "../domain/core/diagrams/asciiSha256.ts:25 c",
+        "ms": 8,
+        "percent": 0.2
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:5162 updateMemo",
+        "ms": 6,
+        "percent": 0.1
+      },
+      {
+        "location": "../domain/mapping/workspace/diagramViewState.ts:12 projectDiagramContent",
+        "ms": 6,
+        "percent": 0.1
+      },
+      {
+        "location": "../src/features/mapping/MappingPage.tsx:546 ui",
+        "ms": 6,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:7955 completeWork",
+        "ms": 5,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:7392 beginWork",
+        "ms": 5,
+        "percent": 0.1
+      },
+      {
+        "location": "../domain/core/diagrams/diagramContent.ts:32 visibleContentLines",
+        "ms": 4,
+        "percent": 0.1
+      },
+      {
+        "location": "../src/shared/source/SourceCodeView.tsx:146 tokenStyle",
+        "ms": 4,
+        "percent": 0.1
+      },
+      {
+        "location": "../src/shared/source/SourceCodeView.tsx:72 languageKey",
+        "ms": 4,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:3961 (anonymous)",
+        "ms": 3,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:7931 bubbleProperties",
+        "ms": 3,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12455 (anonymous)",
+        "ms": 3,
+        "percent": 0.1
+      },
+      {
+        "location": "../src/features/mapping/MappingPage.tsx:78 MappingWorkspacePage",
+        "ms": 3,
+        "percent": 0.1
+      },
+      {
+        "location": "../domain/mapping/selection/mappingPoc.ts:1244 projectASelectionToB",
+        "ms": 3,
+        "percent": 0.1
+      },
+      {
+        "location": "removeEventListener",
+        "ms": 3,
+        "percent": 0.1
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:5081 updateEffectImpl",
+        "ms": 3,
+        "percent": 0.1
+      }
+    ],
+    "inclusive": [
+      {
+        "location": "(root)",
+        "ms": 4670,
+        "percent": 100
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:10681 performWorkOnRoot",
+        "ms": 3530,
+        "percent": 75.6
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11181 workLoopSync",
+        "ms": 3193,
+        "percent": 68.4
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11120 renderRootSync",
+        "ms": 3193,
+        "percent": 68.4
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11304 performUnitOfWork",
+        "ms": 3190,
+        "percent": 68.3
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:7392 beginWork",
+        "ms": 3162,
+        "percent": 67.7
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:6489 updateFunctionComponent",
+        "ms": 3106,
+        "percent": 66.5
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:4333 renderWithHooks",
+        "ms": 3056,
+        "percent": 65.4
+      },
+      {
+        "location": "../node_modules/scheduler/cjs/scheduler.production.js:121 performWorkUntilDeadline",
+        "ms": 2792,
+        "percent": 59.8
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12065 performWorkOnRootViaSchedulerTask",
+        "ms": 2790,
+        "percent": 59.7
+      },
+      {
+        "location": "../src/features/mapping/MappingPage.tsx:546 ui",
+        "ms": 2723,
+        "percent": 58.3
+      },
+      {
+        "location": "../packages/ui-test-framework/src/UiTestFramework.tsx:107 UiTestFramework",
+        "ms": 2723,
+        "percent": 58.3
+      },
+      {
+        "location": "../domain/core/diagrams/canvasHistory.ts:46 stateKey",
+        "ms": 2317,
+        "percent": 49.6
+      },
+      {
+        "location": "../src/features/mapping/MappingPage.tsx:72 draft",
+        "ms": 1612,
+        "percent": 34.5
+      },
+      {
+        "location": "../src/features/mapping/MappingPage.tsx:569 (anonymous)",
+        "ms": 1103,
+        "percent": 23.6
+      },
+      {
+        "location": "../src/features/mapping/MappingPage.tsx:580 key",
+        "ms": 1101,
+        "percent": 23.6
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12084 performSyncWorkOnRoot",
+        "ms": 742,
+        "percent": 15.9
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11918 flushSyncWorkAcrossRoots_impl",
+        "ms": 742,
+        "percent": 15.9
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11966 processRootScheduleInMicrotask",
+        "ms": 742,
+        "percent": 15.9
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12089 (anonymous)",
+        "ms": 742,
+        "percent": 15.9
+      },
+      {
+        "location": "(program)",
+        "ms": 573,
+        "percent": 12.3
+      },
+      {
+        "location": "../src/features/mapping/MappingPage.tsx:599 id",
+        "ms": 567,
+        "percent": 12.1
+      },
+      {
+        "location": "(idle)",
+        "ms": 455,
+        "percent": 9.7
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11457 commitRoot",
+        "ms": 337,
+        "percent": 7.2
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:10848 commitRootWhenReady",
+        "ms": 337,
+        "percent": 7.2
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:11524 flushMutationEffects",
+        "ms": 294,
+        "percent": 6.3
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:9427 commitMutationEffectsOnFiber",
+        "ms": 293,
+        "percent": 6.3
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:9384 recursivelyTraverseMutationEffects",
+        "ms": 293,
+        "percent": 6.3
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:13577 updateProperties",
+        "ms": 200,
+        "percent": 4.3
+      },
+      {
+        "location": "../src/features/mapping/code-panel/CodePanel.tsx:15 SourceRangeSections",
+        "ms": 136,
+        "percent": 2.9
+      },
+      {
+        "location": "../src/features/mapping/code-panel/CodePanel.tsx:32 range",
+        "ms": 131,
+        "percent": 2.8
+      },
+      {
+        "location": "../src/features/mapping/code-panel/CodePanel.tsx:32 (anonymous)",
+        "ms": 128,
+        "percent": 2.7
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:12957 setProp",
+        "ms": 127,
+        "percent": 2.7
+      },
+      {
+        "location": "../domain/core/diagrams/asciiSha256.ts:2 asciiSha256",
+        "ms": 124,
+        "percent": 2.7
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:6115 reconcileChildren",
+        "ms": 84,
+        "percent": 1.8
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:3793 reconcileChildFibersImpl",
+        "ms": 80,
+        "percent": 1.7
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:1291 setValueForStyles",
+        "ms": 76,
+        "percent": 1.6
+      },
+      {
+        "location": "(garbage collector)",
+        "ms": 70,
+        "percent": 1.5
+      },
+      {
+        "location": "../node_modules/react/cjs/react.production.js:513 Qw.Ze.useMemo",
+        "ms": 68,
+        "percent": 1.5
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:3622 reconcileChildrenArray",
+        "ms": 68,
+        "percent": 1.4
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:5162 updateMemo",
+        "ms": 67,
+        "percent": 1.4
+      },
+      {
+        "location": "../node_modules/react-dom/cjs/react-dom-client.production.js:3961 (anonymous)",
+        "ms": 57,
+        "percent": 1.2
+      },
+      {
+        "location": "../src/shared/source/SourceCodeView.tsx:157 SourceTokens",
+        "ms": 56,
+        "percent": 1.2
+      },
+      {
+        "location": "../src/features/mapping/canvas/MappingCanvas.tsx:124 MappingPocSelectionCanvas",
+        "ms": 56,
+        "percent": 1.2
+      },
+      {
+        "location": "../src/shared/source/SourceCodeView.tsx:161 (anonymous)",
+        "ms": 44,
+        "percent": 0.9
+      }
+    ]
+  }
+]

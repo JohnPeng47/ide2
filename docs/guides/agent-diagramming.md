@@ -70,6 +70,30 @@ Retries with the same request ID and arguments return the same backend result. A
 
 ## Prompt-driven diagram edits
 
+The Mapping UI exposes this flow in two places:
+
+- Select exactly one whole diagram, then choose **Update diagram with AI…** in
+  the selection toolbar. Mixed or multiple selections disable the action.
+- Ctrl-drag a region, open its retained **Actions** menu, then choose
+  **Update containing diagram with AI…**. This updates the whole owning diagram.
+
+Both actions open the same composer with a pinned target and explicit whole-diagram
+scope. Source mappings are optional. The current document/base versions are read
+on submission. Changing selection does not redirect the request; canvas version
+changes during generation are still checked by the backend and can cause a conflict.
+Cancel, Close, or Escape dismiss an unsubmitted prompt completely. Completed or
+cancelled updates can also be closed or dismissed. While an update is in progress,
+Hide keeps its status accessible through a reopen button; progress continues. Cancellation is available during generation;
+a retry after an ambiguous response reuses the original request. Conflict recovery
+requires explicitly submitting against the latest diagram. Successful updates are
+one undoable change and acknowledge workspace persistence.
+
+`DiagramEditCoordinator` owns transient UI run state outside canvas history and
+selection state. It does not set the document's legacy generation busy flag, so the
+existing browser bridge can apply the issued revision. Runs are tracked in the UI
+until page reload; installed revisions and undo history survive reload.
+
+
 `edit-diagram` is a top-level MCP tool, also available as
 `POST /api/mapping/agent/tools/edit-diagram`. It edits one diagram in an open live
 canvas; it does not create a ChangeSession or publish a saved representation.
@@ -129,8 +153,7 @@ edge APIs. Box anchors and provably unchanged endpoints follow normal reconcilia
 Runs, unapplied/conflicted candidates, and retry receipts are in memory. Backend
 restart ends these runs; browser reload ends its application receipts. After either,
 reread the diagram before starting new work. Installed revisions are durable in
-workspace history. This first API requires an open browser canvas and adds no UI
-or multi-diagram generation.
+workspace history. This API requires an open browser canvas and updates one diagram per run.
 
 ## Object and layout contract
 
@@ -184,3 +207,22 @@ npx vitest run domain/mapping/workspace/__tests__/mappingDocumentController.test
 ```
 
 The browser test uses a disposable project and actual stdio MCP calls. It checks discovery, live reads, drawing/layout, duplicate requests, conflicts, partial failures, per-edit pointer-driven undo/redo, standalone and whole-document saves, explorer/search visibility, and reload.
+
+### AgentContext for prompt-driven edits
+
+`edit-diagram` accepts optional `agentContextId`, returned by an
+`agent-context.upload` frame on an attached `/api/mapping/live` reader socket.
+The upload identifies the originating agent with required `agentType` (such as
+`codex` or `claude`) and `sourceSessionId`. See [the connected-agent upload
+contract](live-canvas-api.md#upload-coding-agent-context) for the message format,
+slicing, limits and retry behavior.
+
+`AgentContext` owns parsing, branch selection, tool-pair validation, immutable
+snapshots and `toPiMessages()` conversion. `AgentContextService` retains uploads
+under the live workspace/document scope. `DiagramEditService` captures a snapshot
+before launching the run and passes it through `DiagramGenerationRequest` as
+`agentContext`; this plain-data boundary survives `structuredClone()`.
+`PiDiagramEditRuntime` restores the object and uses the shared
+`PiAgentRuntime.createSession()` helper to seed Pi's `SessionManager` before
+session creation and the current edit prompt. Revision issuance, application,
+undo and persistence continue through the existing flow.

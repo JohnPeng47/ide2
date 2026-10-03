@@ -98,6 +98,7 @@ const emptySelectionScene = singleDiagramScene('[Empty canvas]');
 const emptySelectionBox = flattenGrid(resolveScene(emptySelectionScene)).find(box => box.contentId)!;
 
 export function MappingPocSelectionCanvas(props: {
+  onUpdateDiagram?: (nodeId: string) => void;
   onTransfer?: (mode: 'copy' | 'move', selectedIds: string[]) => void;
   onUndo?: (redo: boolean) => void;
   canWorkspaceUndo?: boolean;
@@ -791,6 +792,14 @@ export function MappingPocSelectionCanvas(props: {
   useLayoutEffect(() => {
     hotkeyHandler.current = (event: globalThis.KeyboardEvent) => {
       if (props.active === false || event.defaultPrevented) return;
+      const key = event.key.toLowerCase();
+      if (event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && !event.isComposing
+        && (key === 'z' || key === 'y') && !typingTarget(event.target)) {
+        event.preventDefault();
+        const redo = key === 'y', snapshot = controller.getSnapshot();
+        if (!isGenerating && (redo ? snapshot.canRedo || props.canWorkspaceRedo : snapshot.canUndo || props.canWorkspaceUndo)) undo(redo);
+        return;
+      }
       if (!typingTarget(event.target) && event.key === 'Escape' && diagramSelection?.length) {
         event.preventDefault(); clearSelectionFocus(); controller.updateCanvas(deselectCanvas, true); return;
       }
@@ -859,6 +868,10 @@ export function MappingPocSelectionCanvas(props: {
     };
   }, [
     props.active,
+    props.onUndo,
+    props.canWorkspaceUndo,
+    props.canWorkspaceRedo,
+    isGenerating,
     controller,
     removeEffect,
     diagramSelection,
@@ -991,11 +1004,21 @@ export function MappingPocSelectionCanvas(props: {
         resolve={resolveMarquee} onComplete={completeMarquee}
         onSelectDiagram={(id, toggle) => { clearSelectionFocus(); controller.select(toggle
           ? { type: 'toggleDiagram', displayNodeId: id } : { type: 'replace', items: [diagramSelectionItem(id)] }); }} />
-      {props.active !== false && props.onTransfer && selectedDiagrams.length > 0 && !selectionRect && createPortal(
+      {props.active !== false && selectedDiagrams.length > 0 && createPortal(
         <div className="mapping-diagram-selection-actions" role="toolbar" aria-label="Selected diagrams" data-diagram-canvas-static-ui data-mapping-static-ui>
           <strong role="status">{selectedDiagrams.length} {selectedDiagrams.length === 1 ? 'diagram' : 'diagrams'} selected</strong>
-          <button type="button" disabled={isGenerating || !!diagramPlacement || !!movingBoxId} onClick={() => props.onTransfer?.('copy', selectedDiagrams)}>Copy to canvas…</button>
-          <button type="button" disabled={isGenerating || !!diagramPlacement || !!movingBoxId} onClick={() => props.onTransfer?.('move', selectedDiagrams)}>Move to canvas…</button>
+          {props.onTransfer && <button type="button" disabled={isGenerating || !!diagramPlacement || !!movingBoxId} onClick={() => props.onTransfer?.('copy', selectedDiagrams)}>Copy to canvas…</button>}
+          {props.onTransfer && <button type="button" disabled={isGenerating || !!diagramPlacement || !!movingBoxId} onClick={() => props.onTransfer?.('move', selectedDiagrams)}>Move to canvas…</button>}
+          {props.onUpdateDiagram && <button type="button" disabled={isGenerating || selectedDiagrams.length !== 1 || selection.items.length !== 1 || !!diagramPlacement || !!movingBoxId}
+            title={selection.items.length !== 1 ? 'Select exactly one whole diagram to update' : 'Update this diagram from a prompt'}
+            onClick={() => props.onUpdateDiagram?.(selectedDiagrams[0])}>Update diagram with AI…</button>}
+          <button type="button" disabled={isGenerating || !!diagramPlacement || !!movingBoxId}
+            onClick={() => {
+              try {
+                controller.applyUpdate(controller.getSnapshot().version, [{ method: 'delete-diagrams', nodeIds: selectedDiagrams }]);
+                setStatusMessage(`${selectedDiagrams.length === 1 ? 'Diagram' : 'Diagrams'} deleted · Undo to restore`);
+              } catch (error) { setStatusMessage(error instanceof Error ? error.message : String(error)); }
+            }}>Delete {selectedDiagrams.length === 1 ? 'diagram' : 'diagrams'}</button>
           <button type="button" onClick={() => { clearSelectionFocus(); controller.updateCanvas(deselectCanvas, true); }}>Deselect (Esc)</button>
         </div>, document.body)}
       {!boxes.some(box => box.contentId) && <p className="mapping-empty-canvas">Empty canvas — right-click to paste a diagram, or Undo to restore.</p>}
@@ -1027,8 +1050,8 @@ export function MappingPocSelectionCanvas(props: {
           } catch (error) { setStatusMessage(error instanceof Error ? error.message : String(error)); }
         }} />
       <div className="mapping-grid-tools" data-mapping-static-ui data-diagram-canvas-static-ui>
-        <button type="button" disabled={!(controllerState.canUndo || props.canWorkspaceUndo) || isGenerating} onClick={() => undo()}>Undo</button>
-        <button type="button" disabled={!(controllerState.canRedo || props.canWorkspaceRedo) || isGenerating} onClick={() => undo(true)}>Redo</button>
+        <button type="button" disabled={!(controllerState.canUndo || props.canWorkspaceUndo) || isGenerating} onClick={() => undo()} title="Undo (Ctrl+Z)" aria-keyshortcuts="Control+Z">Undo</button>
+        <button type="button" disabled={!(controllerState.canRedo || props.canWorkspaceRedo) || isGenerating} onClick={() => undo(true)} title="Redo (Ctrl+Y)" aria-keyshortcuts="Control+Y">Redo</button>
         <button type="button" aria-expanded={connectionsOpen} onClick={() => setConnectionsOpen(value => !value)}>Connections ({gridDocument.edges.length})</button>
         <span role="status">{diagramPlacement ? "Drag a region to place the sub-diagram · Esc cancels" : movingBoxId ? "Click to move the box · Esc cancels" : statusMessage}</span>
       </div>
@@ -1149,6 +1172,8 @@ export function MappingPocSelectionCanvas(props: {
           </header>
           {!promptOpen && !askOpen ? (
             <div className="mapping-poc-selection-actions">
+              {props.onUpdateDiagram && <button type="button" disabled={isGenerating || !!diagramPlacement || !!movingBoxId}
+                onClick={() => { if (focusedItem) props.onUpdateDiagram?.(focusedItem.displayNodeId); }}>Update containing diagram with AI…</button>}
               <button type="button" aria-label="Copy ASCII + code refs" aria-keyshortcuts="C Control+C Meta+C" onClick={() => void copySelection()}>
                 Copy ASCII + code refs
               </button>

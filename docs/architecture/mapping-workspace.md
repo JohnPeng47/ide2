@@ -309,3 +309,17 @@ Run `npm run check:canvas-paste` for the disposable production-browser regressio
 - `liveCanvasPublisher` observes completed selection state and serializes it; it
   does not own selection. Source-editor text selections and call-tree/source-pane
   navigation are local to their panes.
+
+## Deleting selected diagrams
+
+Selecting a whole diagram reveals **Delete diagram** in the selected-diagram toolbar;
+multiple selected diagrams show **Delete diagrams**. Only the selected whole diagrams
+are deleted, even when the selection also contains regions from other diagrams.
+Deletion removes incident edges and owned selection panels, and preserves unrelated
+regions. Undo restores all deleted diagrams, connections and panel context together;
+Redo reapplies the deletion. Deleting every diagram leaves an empty canvas that still
+supports paste and Undo. This removes placements from the current canvas, not saved
+canvases in the explorer. The existing agent `nodes.remove` protections are unchanged.
+
+Run `npm run check:diagram-delete` for the disposable browser regression, including
+save/reload of an empty canvas and persisted Undo/Redo.

@@ -1,3 +1,4 @@
+import type { AgentContextSnapshot } from '../agents/agentContext';
 import type { Diagram, DiagramInput } from './diagram';
 import { DiagramRevisionEditor, type DiagramEdit, type DiagramRevision, type PreparedDiagramEdit } from './diagramRevisionEditor';
 import { diagramContentNodes } from './diagramContentNodes';
@@ -7,6 +8,7 @@ export type { DiagramEdit, DiagramRevision, DiagramRevisionId } from './diagramR
 export interface DiagramRevisionResult extends PreparedDiagramEdit { readonly revision: DiagramRevision }
 export type DiagramRevisionSummary = Readonly<Pick<DiagramRevision, 'id' | 'diagramId' | 'parentId'>>;
 export interface DiagramGenerationRequest {
+  agentContext?: AgentContextSnapshot;
   input: Omit<DiagramInput, 'revision' | 'ascii'>;
   instruction: string;
   baseRevisionId?: string;

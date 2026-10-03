@@ -1,3 +1,4 @@
+import { AgentContext, type AgentContextSnapshot } from '../../../domain/core/agents/agentContext';
 import { randomUUID } from 'node:crypto';
 import { CanvasHistory } from '../../../domain/core/diagrams/canvasHistory';
 import type { DiagramService, DiagramRevisionResult } from '../../../domain/core/diagrams/diagramService';
@@ -10,6 +11,7 @@ export interface DiagramEditCanvasPort {
   apply(sessionId: string, input: DiagramRevisionApplication): Promise<{ version: number; unresolvedEdgeIds: string[] }>;
 }
 interface Run {
+  agentContext?: AgentContextSnapshot;
   input: EditDiagramInput;
   signature: string;
   state: DiagramEditRun;
@@ -24,8 +26,11 @@ export class DiagramEditService {
   private requests = new Map<string, string>();
   constructor(private readonly diagrams: DiagramService, private readonly canvas: DiagramEditCanvasPort) {}
 
-  start(input: EditDiagramInput): DiagramEditRun {
-    const key = JSON.stringify([input.sessionId, input.requestId]), signature = JSON.stringify(input);
+  start(input: EditDiagramInput, suppliedContext?: AgentContextSnapshot): DiagramEditRun {
+    const agentContext = suppliedContext ? AgentContext.fromSnapshot(suppliedContext).toSnapshot() : undefined;
+    if (input.agentContextId && !agentContext) throw Error('AGENT_CONTEXT_NOT_FOUND: resolve context before starting the edit');
+    const key = JSON.stringify([input.sessionId, input.requestId]);
+    const signature = JSON.stringify({ input, agentContextHash: agentContext?.contentHash });
     const existing = this.requests.get(key);
     if (existing) {
       const run = this.runs.get(existing)!;
@@ -34,7 +39,7 @@ export class DiagramEditService {
       return structuredClone(run.state);
     }
     if (this.runs.size >= 500) throw Error('Diagram edit run capacity reached; restart the backend');
-    const run: Run = { input: structuredClone(input), signature, abort: new AbortController(), state: {
+    const run: Run = { agentContext, input: structuredClone(input), signature, abort: new AbortController(), state: {
       runId: `diagram-edit-${randomUUID()}`, status: 'generating', nodeId: input.nodeId, baseRevisionId: input.baseRevisionId
     } };
     this.runs.set(run.state.runId, run); this.requests.set(key, run.state.runId);
@@ -77,7 +82,7 @@ export class DiagramEditService {
     const lines = base.content.ascii.split('\n');
     run.revision = await this.diagrams.generate({ input: { id: base.id, structureKind: base.content.structure.kind,
       source: base.sourceContext.binding, evidence: base.sourceContext.evidence },
-      instruction: input.prompt, baseRevisionId: base.revisionId,
+      instruction: input.prompt, agentContext: run.agentContext, baseRevisionId: base.revisionId,
       context: { diagram: base, selection: { startLine: 1, endLine: lines.length, startColumn: 1,
         endColumn: Math.max(1, ...lines.map(line => line.length)) }, connections: snapshot.document.edges }
     }, { signal: abort.signal, onProgress: message => { if (run.state.status === 'generating') run.state.message = message; } });

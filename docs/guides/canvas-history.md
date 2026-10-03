@@ -1,5 +1,9 @@
 # Diagram content and canvas histories
 
+Use **Ctrl+Z** to undo and **Ctrl+Y** to redo on the active canvas. These use the
+same canvas-wide history as the toolbar buttons, including workspace transfers.
+Inside inputs, textareas, and editable text, the shortcuts keep native text undo/redo.
+
 An editing `contextId` identifies a working history. It is independent of the
 MCP workspace `canvasId`, attachment `sessionId`, catalog representation ID, and
 ChangeSession ID. A proposal forks each captured document into its own context;

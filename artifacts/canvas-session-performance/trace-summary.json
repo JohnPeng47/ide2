@@ -1,0 +1,67 @@
+[
+  {
+    "file": "0-drag-1.trace.json",
+    "events": [
+      {
+        "name": "FunctionCall",
+        "ms": 22.53399999999998,
+        "count": 321,
+        "maxMs": 1.815
+      },
+      {
+        "name": "UpdateLayoutTree",
+        "ms": 21.138000000000005,
+        "count": 42,
+        "maxMs": 8.785
+      },
+      {
+        "name": "EventDispatch",
+        "ms": 20.912999999999993,
+        "count": 56,
+        "maxMs": 1.656
+      },
+      {
+        "name": "Paint",
+        "ms": 18.356999999999992,
+        "count": 84,
+        "maxMs": 3.168
+      },
+      {
+        "name": "Layerize",
+        "ms": 8.811,
+        "count": 57,
+        "maxMs": 0.69
+      },
+      {
+        "name": "PrePaint",
+        "ms": 7.946999999999999,
+        "count": 63,
+        "maxMs": 0.991
+      },
+      {
+        "name": "FireAnimationFrame",
+        "ms": 6.1129999999999995,
+        "count": 63,
+        "maxMs": 1.872
+      },
+      {
+        "name": "HitTest",
+        "ms": 2.0300000000000002,
+        "count": 6,
+        "maxMs": 0.612
+      },
+      {
+        "name": "Layout",
+        "ms": 1.98,
+        "count": 1,
+        "maxMs": 1.98
+      },
+      {
+        "name": "Responsiveness.Renderer.UserInteraction",
+        "ms": 0.041999999999999996,
+        "count": 2,
+        "maxMs": 0.031
+      }
+    ]
+  }
+]

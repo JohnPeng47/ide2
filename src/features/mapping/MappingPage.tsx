@@ -1,3 +1,6 @@
+import { DiagramEditComposer } from './diagram-edit/DiagramEditComposer';
+import { DiagramEditCoordinator } from './diagram-edit/diagramEditCoordinator';
+import { createDiagramEditClient } from './diagram-edit/diagramEditClient';
 import { deselectCanvas } from '../../../domain/mapping/selection/canvasSelection';
 import { DiagramRevisionReceiver } from './agent/diagramRevisionReceiver';
 import type { DiagramRevisionApplication } from '../../../domain/mapping/agent/diagramEdit';
@@ -85,6 +88,7 @@ function MappingWorkspacePage() {
   const importRef = useRef<HTMLInputElement>(null);
   const [snapshot, setSnapshot] = useState<ProjectRepresentationsSnapshot>();
   const [workspace] = useState(() => new CanvasWorkspace(diagramService, canvasHistory));
+  const [diagramEdits] = useState(() => new DiagramEditCoordinator(createDiagramEditClient()));
   const drafts = useStore(workspace.store, state => state.drafts);
   const dirtySceneIds = useStore(workspace.dirtyScenes, state => state.ids);
   const setDrafts = workspace.setDrafts;
@@ -92,6 +96,7 @@ function MappingWorkspacePage() {
   useEffect(() => {
     clearTimeout(disposal.current);
     return () => { disposal.current = setTimeout(() => {
+      diagramEdits.dispose();
       workspace.dispose();
       if (!injectedStorage) {
         if (storage.records) void storage.flush().catch(() => {}).finally(() => storage.dispose());
@@ -250,7 +255,7 @@ function MappingWorkspacePage() {
       revisionId: result.representation.currentRevisionId, savedScene, savedEdges, savedName: name, name: current[id].name === draft.name ? name : current[id].name } }));
     return { updated: true };
   };
-  const { agentStatus } = useAgentCanvasBridge({ projectId: snapshot?.project?.id, documents: Object.entries(drafts).filter(([, draft]) => !draft.hidden).map(([documentId, draft]) => ({ documentId, name: draft.name,
+  const { canvasId, agentStatus } = useAgentCanvasBridge({ projectId: snapshot?.project?.id, documents: Object.entries(drafts).filter(([, draft]) => !draft.hidden).map(([documentId, draft]) => ({ documentId, name: draft.name,
     representationId: draft.representationId ?? (documentId.startsWith('draft-') ? undefined : documentId) })) }, handleAgentCommand, workspace);
   const draftAliases = new Set(Object.entries(drafts).map(([id, draft]) => draft.representationId ?? id));
   const diagrams = [...Object.values(snapshot?.catalog?.representations ?? {}).filter(diagram => diagram.status === 'settled' && !draftAliases.has(diagram.id)),
@@ -662,7 +667,12 @@ function MappingWorkspacePage() {
           {Object.entries(drafts).filter(([id]) => mountedDocuments.current.has(id)).map(([id, draft]) => <SourcePaneDocumentContext.Provider key={`${workspaceEpoch}:${id}:${draft.reloadKey ?? ''}`} value={id}><SourcePaneDocumentActiveContext.Provider value={id === activeId && !changeMode}><div className="mapping-document-view" inert={!!pendingTransfer || workspaceBusy} hidden={draft.hidden || id !== activeId || !!changeMode}>
             <DraggableDiagramCanvas className="mapping-poc-canvas" enabled={id === activeId} resetKey={id} leftInset={340} focusBox={draft.focusBox}
               initialTransform={draft.viewport} onTransformChange={viewport => viewState.setCamera(id, viewport)}>
-              <MappingPocSelectionCanvas onTransfer={(mode, selected) => beginTransfer(id, mode, selected)}
+              <MappingPocSelectionCanvas onUpdateDiagram={nodeId => {
+                  const node = draft.session.controller.nodes().find(node => node.id === nodeId);
+                  if (node?.layout !== 'grid' || node.kind !== 'diagram') { setError('The selected diagram is no longer available.'); return; }
+                  const title = node.content?.ascii.split('\n').find(line => line.trim())?.trim().slice(0, 80) ?? nodeId;
+                  diagramEdits.open({ canvasId, documentId: id, nodeId, label: `${draft.name} / ${title}` });
+                }} onTransfer={(mode, selected) => beginTransfer(id, mode, selected)}
                 onUndo={redo => void undo(id, redo)} canWorkspaceUndo={!!boundary(id)} canWorkspaceRedo={!!boundary(id, true)} onJump={target => void jumpTo(target)} session={draft.session} active={id === activeId && !draft.hidden && !workspaceBusy && !pendingTransfer && !creating && !changeMode} focusBox={draft.focusBox} searchMatches={searchMatchesByDocument.get(id)}
                 projectContext={draft.revisionId ? { projectId: snapshot!.project!.id, representationId: draft.representationId ?? id, baseRevisionId: draft.revisionId } : undefined}
                 projectionCatalog={snapshot?.catalog ?? undefined}
@@ -696,6 +706,7 @@ function MappingWorkspacePage() {
         <footer className="mapping-poc-status"><span>{active?.name ?? "PROJECT DIAGRAMS"}</span>
           <span>{active?.newerRevision ? 'A newer saved revision is available. Your local edits were preserved.' : workspaceStatus || 'Click a node or Ctrl-drag to select · Actions (A) opens selection actions · Double-click background selects diagrams'}</span></footer>
       </section>
+      <DiagramEditComposer coordinator={diagramEdits} />
       {creating && <div className="mapping-dialog-backdrop"><form className="mapping-create-dialog" role="dialog" aria-modal="true" aria-label="New project diagram"
         onKeyDown={(event) => {
           if (event.key === "Escape" && !savingId) { event.preventDefault(); setCreating(false); setError(""); }

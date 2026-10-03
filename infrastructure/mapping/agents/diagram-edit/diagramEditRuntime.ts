@@ -1,6 +1,7 @@
+import { AgentContext } from '../../../../domain/core/agents/agentContext';
 import { readFile } from 'node:fs/promises';
 import { Type } from '@earendil-works/pi-ai';
-import { createAgentSession, DefaultResourceLoader, defineTool, getAgentDir, SessionManager, SettingsManager } from '@earendil-works/pi-coding-agent';
+import { DefaultResourceLoader, defineTool, getAgentDir, SettingsManager } from '@earendil-works/pi-coding-agent';
 import type { DiagramGenerationRequest, DiagramGenerator, GenerationOptions } from '../../../../domain/core/diagrams/diagramService';
 import { validateGeneratedDiagramEdit, type GeneratedDiagramEdit } from '../../../../domain/core/diagrams/generatedDiagramEdit';
 import { PiAgentRuntime, progressFor } from '../../../core/agents/agentRuntime';
@@ -45,15 +46,15 @@ export class PiDiagramEditRuntime extends PiAgentRuntime implements DiagramGener
       noExtensions: true, noSkills: true, noPromptTemplates: true, noThemes: true, noContextFiles: true,
       systemPrompt: 'You edit ASCII diagrams using captured context. Follow the editing specification and finish with a validated submit_diagram_edit tool call.' });
     await resourceLoader.reload(); options.signal?.throwIfAborted();
-    const { session } = await createAgentSession({ cwd: this.sourceRoot, modelRuntime: configured.runtime, model: configured.model,
-      thinkingLevel: 'medium', tools: ['submit_diagram_edit'], customTools: [submit], resourceLoader, settingsManager,
-      sessionManager: SessionManager.inMemory(this.sourceRoot) });
+    const agentContext = request.agentContext ? AgentContext.fromSnapshot(request.agentContext) : undefined;
+    const { session } = await this.createSession({ cwd: this.sourceRoot, modelRuntime: configured.runtime, model: configured.model,
+      thinkingLevel: 'medium', tools: ['submit_diagram_edit'], customTools: [submit], resourceLoader, settingsManager }, agentContext);
     const unsubscribe = session.subscribe(event => {
       const progress = progressFor(event, `${configured.provider}/${configured.modelId}`, session.sessionId);
       if (progress) options.onProgress?.(progress.message);
     });
     const abort = () => { void session.abort().catch(() => {}); };
-    this.sessions.add(session); options.signal?.addEventListener('abort', abort, { once: true });
+    options.signal?.addEventListener('abort', abort, { once: true });
     try {
       options.signal?.throwIfAborted();
       await session.prompt(prompt);
