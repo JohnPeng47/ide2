@@ -5,7 +5,7 @@ import type { CanvasSession } from '../workspace/canvasSession';
 import { restoreMappingCamera, saveMappingCamera } from './cameraCompatibility';
 import { MappingShapeUtil } from './MappingShapeUtil';
 import { MappingEditorRuntime } from './MappingEditorRuntime';
-import { ShapeSlots, ShapeSlotsContext } from './shapeSlots';
+import { CanvasRuntime, CanvasRuntimeContext } from './CanvasRuntimeContext';
 import { mappingShapeId } from './shapeProjection';
 import 'tldraw/tldraw.css';
 import './mappingEditor.css';
@@ -28,14 +28,17 @@ export function MappingEditorCanvas(props: {
   session: CanvasSession; children: ReactNode; enabled: boolean; className?: string;
   focusBox?: DiagramFocus; initialTransform?: CanvasTransform; onTransformChange?: (value: CanvasTransform) => void;
 }) {
-  const slots = useMemo(() => { const slots = new ShapeSlots(); slots.controller = props.session.controller; return slots; }, [props.session]);
+  const canvasRuntime = useMemo(() => new CanvasRuntime(props.session), [props.session]);
+  useLayoutEffect(() => canvasRuntime.connect(), [canvasRuntime]);
   const [editor, setEditor] = useState<Editor>();
   const transformCallback = useRef(props.onTransformChange); transformCallback.current = props.onTransformChange;
   const initial = useRef(props.initialTransform);
   const root = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     if (!editor) return;
-    slots.editor = editor;
+    canvasRuntime.editor = editor;
+    const fontsChanged = () => canvasRuntime.anchors.invalidate();
+    document.fonts.addEventListener('loadingdone', fontsChanged);
     editor.setCameraOptions({ zoomSteps: [.25, .5, 1, 2, 4] });
     const runtime = new MappingEditorRuntime(editor, props.session.controller);
     // Existing application interactions own buttons, text inputs and pane bodies.
@@ -57,8 +60,8 @@ export function MappingEditorCanvas(props: {
       last = key; transformCallback.current?.(saveMappingCamera({ x, y, z }));
     };
     editor.on('tick', publishCamera);
-    return () => { element.removeEventListener('pointerdown', stopUiPointer, true); runtime.dispose(); editor.off('tick', publishCamera); slots.editor = undefined; };
-  }, [editor, props.session, slots]);
+    return () => { document.fonts.removeEventListener('loadingdone', fontsChanged); element.removeEventListener('pointerdown', stopUiPointer, true); runtime.dispose(); editor.off('tick', publishCamera); canvasRuntime.editor = undefined; };
+  }, [editor, props.session, canvasRuntime]);
   useEffect(() => {
     if (editor && !props.enabled) editor.blur({ blurContainer: false });
   }, [editor, props.enabled]);
@@ -103,10 +106,10 @@ export function MappingEditorCanvas(props: {
         }
       }
     }}>
-    <ShapeSlotsContext.Provider value={slots}><ContentContext.Provider value={props.children}>
+    <CanvasRuntimeContext.Provider value={canvasRuntime}><ContentContext.Provider value={props.children}>
       <Tldraw licenseKey={import.meta.env.VITE_TLDRAW_LICENSE_KEY} shapeUtils={shapeUtils} components={components} hideUi onMount={setEditor} overrides={{ tools: (_editor, tools) => ({ select: tools.select, hand: tools.hand }), actions: () => ({}) }}
         options={{ maxShapesPerPage: 10000, createTextOnCanvasDoubleClick: false }} autoFocus={false} />
-    </ContentContext.Provider></ShapeSlotsContext.Provider>
+    </ContentContext.Provider></CanvasRuntimeContext.Provider>
     <div className="diagram-canvas__controls" data-diagram-canvas-static-ui>
       <button type="button" onClick={() => editor?.setCurrentTool('select')}>Select</button>
       <button type="button" onClick={() => editor?.setCurrentTool('hand')}>Pan</button>

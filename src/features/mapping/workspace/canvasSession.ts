@@ -45,7 +45,9 @@ export class CanvasSession {
 
   constructor(input: SavedDocumentState & { document: MappingGridDocument; canvas: MappingCanvasState; history?: CanvasHistoryRecord }, diagrams?: DiagramService, history?: CanvasHistoryService) {
     this.baseline = { name: input.name, savedName: input.savedName, savedScene: input.savedScene, savedEdges: input.savedEdges };
-    this.controller = new MappingDocumentController(input.document, input.canvas, 0, undefined, {}, input.history, diagrams, history);
+    // Native anchors are renderer-local. Headless registry reads use estimated
+    // layout until a legacy renderer explicitly supplies measured endpoints.
+    this.controller = new MappingDocumentController(input.document, input.canvas, 0, undefined, undefined, input.history, diagrams, history);
     const snapshot = this.controller.getSnapshot();
     this.scene = snapshot.document.scene; this.edges = snapshot.document.edges;
     this.sceneKey = stateKey(this.scene); this.edgesKey = stateKey(this.edges);

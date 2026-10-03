@@ -65,7 +65,7 @@ function SourceRangeSections({ file, onOpen, hoveredNode }: { file: SourceDispla
   useEffect(() => clearHighlights, []);
   const highlightNodes = (ids: string[]) => {
     clearHighlights();
-    const stage = root.current?.closest('.mapping-poc-graph-stage');
+    const stage = root.current?.closest('[data-diagram-canvas]') ?? root.current?.closest('.mapping-poc-graph-stage');
     stage?.querySelectorAll<HTMLElement>('[data-content-node-id]').forEach(el => {
       if (ids.includes(el.dataset.contentNodeId!)) {
         el.dataset.codePanelHighlight = 'true';
@@ -135,7 +135,7 @@ export function CodePanel({ id, content }: { id: string; content: CodePanelPaneC
   }, [scroll, active, navigation !== undefined]);
   useEffect(() => { setNavigation(undefined); }, [content.panel]);
   useEffect(() => {
-    const stage = root.current?.closest('.mapping-poc-graph-stage');
+    const stage = root.current?.closest('[data-diagram-canvas]') ?? root.current?.closest('.mapping-poc-graph-stage');
     const hover = (event: Event) => setHoveredNode((event.target as Element).closest<HTMLElement>('[data-content-node-id]')?.dataset.contentNodeId);
     stage?.addEventListener('pointerover', hover); return () => stage?.removeEventListener('pointerover', hover);
   }, []);

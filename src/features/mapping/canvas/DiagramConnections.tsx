@@ -1,8 +1,10 @@
-import { ShapeSlotsContext } from '../tldraw/shapeSlots';
+import { useValue } from 'tldraw';
+import { nativeEndpointRect, nativeEdgeGeometry } from '../tldraw/nativeEdgeGeometry';
+import { CanvasRuntimeContext } from '../tldraw/CanvasRuntimeContext';
 import { endpointKey } from '../../../../domain/mapping/workspace/endpointGeometry';
 import type { CanvasDisplayNode } from '../../../../domain/mapping/workspace/canvasDisplayNode';
 import { PanelConnector } from '../../../shared/diagrams/PanelConnector';
-import { useContext, useEffect, useMemo, useState, type RefObject } from 'react';
+import { useContext, useEffect, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { connectionContentNodes, defaultArrowAppearance, getArrowLabel, type DiagramAnchor, type DiagramConnection } from '../../../../domain/core/diagrams/diagramConnection';
 import { drawEdge, type FloatingBoxArrow } from '../../../../domain/mapping/workspace/connectionLayout';
@@ -18,7 +20,7 @@ export function DiagramConnections({ controller, state, cell, displayNodes, svgR
   controller: MappingDocumentController; state: ControllerSnapshot; cell: { width: number; height: number };
   open: boolean; onOpen: () => void; onClose: () => void; disabled: boolean;
 }) {
-  const native = useContext(ShapeSlotsContext);
+  const native = useContext(CanvasRuntimeContext);
   const [selectedId, setSelectedId] = useState<string>();
   const [draft, setDraft] = useState<Partial<DiagramConnection>>({ appearance: { ...defaultArrowAppearance } });
   const [picking, setPicking] = useState<'source' | 'target'>();
@@ -26,9 +28,9 @@ export function DiagramConnections({ controller, state, cell, displayNodes, svgR
   const [error, setError] = useState('');
   const { document: doc, canvas } = state;
   const selected = doc.edges.find(edge => edge.id === selectedId);
-  const choices = useMemo(() => {
+  const choices = useValue('connection choices', () => {
     const measuredRect = (anchor: DiagramAnchor) => {
-      const rect = state.endpointBounds?.[endpointKey(anchor)];
+      const rect = native ? (open ? nativeEndpointRect(native, native.resolveAnchor(anchor)) : undefined) : state.endpointBounds?.[endpointKey(anchor)];
       return rect ? { left: rect.x, top: rect.y, width: rect.width, height: rect.height } : undefined;
     };
     const result: Choice[] = [];
@@ -49,7 +51,7 @@ export function DiagramConnections({ controller, state, cell, displayNodes, svgR
     };
     visit(doc.scene.root);
     return result;
-  }, [doc.scene, state.endpointBounds]);
+  }, [doc.scene, state.endpointBounds, native, open]);
   useEffect(() => { if (!open || disabled) { setPicking(undefined); setHover(undefined); } }, [open, disabled]);
   useEffect(() => {
     if (!open) return;
@@ -86,10 +88,12 @@ export function DiagramConnections({ controller, state, cell, displayNodes, svgR
   const arrowById = new Map(displayNodes.flatMap(node => node.layout === 'floating' && node.kind === 'arrow'
     && node.value.kind === 'arrow' ? [[node.value.edgeId, node.value] as const] : []));
   const arrows = doc.edges.flatMap(edge => {
-    const arrow = arrowById.get(edge.id);
+    const arrow = native ? nativeEdgeGeometry(native, edge, native.resolveAnchor(edge.source), native.resolveAnchor(edge.target)) : arrowById.get(edge.id);
     return arrow ? [{ edge, arrow }] : [];
   });
-  const previewArrow = preview && drawEdge(preview, doc.scene, canvas.diagramViews, cell, state.endpointBounds ?? {});
+  const previewArrow = useValue('connection preview', () => preview && (native
+    ? nativeEdgeGeometry(native, preview, native.resolveAnchor(preview.source), native.resolveAnchor(preview.target))
+    : drawEdge(preview, doc.scene, canvas.diagramViews, cell, state.endpointBounds ?? {})), [native, preview, doc.scene, canvas.diagramViews, cell, state.endpointBounds]);
   const renderArrow = (edge: DiagramConnection, arrow: FloatingBoxArrow, preview = false) => {
     if (!arrow.path || !arrow.source || !arrow.target) return null;
     const label = getArrowLabel(edge.appearance).text || 'Connection';

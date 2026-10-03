@@ -16,19 +16,22 @@ const { evaluate, waitFor, waitForSelector, withHeadlessBrowser, captureScreensh
 const root = await mkdtemp(path.join(tmpdir(), 'mapping-tldraw-browser-'));
 let server;
 try {
-  const ascii = 'Alpha\n\n|-- A branch\n`-- A tail\n';
+  const ascii = 'Alpha\n\n|-- A branch\n|   `-- A leaf\n`-- A tail\n';
   await seedMappingFixture(root, { ascii, nodes: [] });
   const catalogPath = path.join(root, '.diagrams/representations/catalog.json');
   const catalog = JSON.parse(await readFile(catalogPath, 'utf8'));
   const scene = singleDiagramScene(ascii);
   scene.contents = Object.fromEntries(['a','b','c'].map((id, i) => [id, new RevisionedDiagramService().create({ id, revision: 0,
-    ascii: `${['Alpha','Beta','Gamma'][i]}\n\n|-- ${id.toUpperCase()} branch\n\x60-- ${id.toUpperCase()} tail\n`, structureKind: 'tree' }).diagram]));
+    ascii: `${['Alpha','Beta','Gamma'][i]}\n\n|-- ${id.toUpperCase()} branch\n|   \x60-- ${id.toUpperCase()} leaf\n\x60-- ${id.toUpperCase()} tail\n`, structureKind: 'tree' }).diagram]));
   scene.root.children = ['a','b','c'].map((id, i) => ({ id, kind: 'diagram', contentId: id, collapsed: false, position: { column: i * 25, row: 5 } }));
   const edges = [['a','b'],['b','a'],['a','a'],['b','c']].map(([a,b], i) => ({ id: `edge${i}`,
-    source: { kind: 'content-node', displayNodeId: `grid:${a}`, contentNodeId: diagramContentNodes(scene.contents[a].content).find(n => n.line === 3).id,
+    source: { kind: 'content-node', displayNodeId: `grid:${a}`, contentNodeId: diagramContentNodes(scene.contents[a].content).find(n => n.line === 4).id,
       revisionId: scene.contents[a].content.revisionId, side: 'auto' },
     target: { kind: 'box', displayNodeId: `grid:${b}`, side: 'auto' }, appearance: { ...defaultArrowAppearance, label: `${a} to ${b}` } }));
   catalog.revisions['revision-overview'].content = { kind: 'canvas-history', history: canvasSaveFixture({ name: 'Fixture', scene, edges }).history };
+  catalog.representations['representation-other'] = { ...catalog.representations['representation-overview'], id: 'representation-other', handle: 'other', name: 'Other canvas', currentRevisionId: 'revision-other', revisionIds: ['revision-other'] };
+  catalog.revisions['revision-other'] = { ...catalog.revisions['revision-overview'], id: 'revision-other', representationId: 'representation-other',
+    content: { kind: 'canvas-history', history: canvasSaveFixture({ name: 'Other canvas', scene: singleDiagramScene('Other') }).history } };
   await writeFile(catalogPath, JSON.stringify(catalog));
   const store = new DiagramStore(root);
   const port = await new Promise(resolve => { const socket = createServer(); socket.listen(0, '127.0.0.1', () => { const port = socket.address().port; socket.close(() => resolve(port)); }); });
@@ -56,13 +59,15 @@ try {
     await waitFor(async () => (await bounds()).w > 20);
     const edgeAligned = () => evaluate(cdp, `(() => {
       const path=document.querySelector('[data-connection-id="edge0"] .diagram-connection-hit');
-      const label=document.querySelector('[data-native-node="grid:a"] [data-content-node-id][data-source-line="3"]');
+      const label=document.querySelector('[data-native-node="grid:a"] [data-content-node-id][data-source-line="4"]');
       if(!path||!label)return false;
       const point=path.getPointAtLength(0).matrixTransform(path.getScreenCTM()),rect=label.getBoundingClientRect();
       return Math.min(Math.abs(point.x-rect.left),Math.abs(point.x-rect.right),Math.abs(point.y-rect.top),Math.abs(point.y-rect.bottom))<.2
         && point.x>=rect.left-.2 && point.x<=rect.right+.2 && point.y>=rect.top-.2 && point.y<=rect.bottom+.2;
     })()`);
-    await waitFor(edgeAligned, {message:'Edge attaches to its source label'});
+    await waitFor(edgeAligned, {message:'Edge attaches to its source label'}).catch(async error => {
+      console.log(await evaluate(cdp, `(() => {const path=document.querySelector('[data-connection-id="edge0"] .diagram-connection-hit');const label=document.querySelector('[data-native-node="grid:a"] [data-content-node-id][data-source-line="4"]');const body=label?.closest('.mapping-native-body');return {path:path?.getAttribute('d'),point:path?.getPointAtLength(0).matrixTransform(path.getScreenCTM()),label:label?.getBoundingClientRect().toJSON(),body:body?.getBoundingClientRect().toJSON(),offset:body?.offsetWidth,css:body&&getComputedStyle(body).width}})()`)); throw error;
+    });
     const first = await bounds();
     const from = {x:first.x+first.w-3,y:first.y+first.h-4};
     const to = {x:from.x+130,y:from.y+90};
@@ -107,6 +112,25 @@ try {
     await clickText('Fit canvas');
     await waitFor(async () => (await bounds()).w > 20);
     await waitFor(async () => { const a = await bounds(); await evaluate(cdp, 'new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(true))))'); return Math.abs((await bounds()).w-a.w)<.1; });
+    // Culling must retain edge geometry and must not rebuild diagram text.
+    const pathsBefore = await evaluate(cdp, `Object.fromEntries([...document.querySelectorAll('[data-connection-id] .diagram-connection-hit')].map(el=>[el.closest('[data-connection-id]').dataset.connectionId,el.getAttribute('d')]))`);
+    await evaluate(cdp, `(() => {window.__textChanges=0;window.__textObserver=new MutationObserver(changes=>{window.__textChanges+=changes.filter(c=>c.type==='characterData'||c.type==='childList').length});document.querySelectorAll('[data-native-node^="grid:"] pre').forEach(el=>window.__textObserver.observe(el,{childList:true,subtree:true,characterData:true}));})()`);
+    const cullStart={x:1100,y:750},cullEnd={x:-2900,y:750};
+    await cdp.send('Input.dispatchMouseEvent',{type:'mouseMoved',...cullStart});
+    await cdp.send('Input.dispatchMouseEvent',{type:'mousePressed',...cullStart,button:'middle',buttons:4,clickCount:1});
+    for(let i=1;i<=20;i++) await cdp.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:cullStart.x-200*i,y:750,button:'middle',buttons:4});
+    await waitFor(async()=>(await bounds()).w===0,{message:'Source shape is culled offscreen'});
+    // Wait through layout/ResizeObserver delivery, rather than asserting the first frame.
+    await evaluate(cdp,'new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(true)))))');
+    assert.deepEqual(await evaluate(cdp, `Object.fromEntries([...document.querySelectorAll('[data-connection-id] .diagram-connection-hit')].map(el=>[el.closest('[data-connection-id]').dataset.connectionId,el.getAttribute('d')]))`),pathsBefore,'Culling keeps all edge paths unchanged');
+    for(let i=1;i<=20;i++) await cdp.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:cullEnd.x+200*i,y:750,button:'middle',buttons:4});
+    await waitFor(async()=>(await bounds()).w>20);
+    await waitFor(edgeAligned,{message:'Returning from culling retains exact endpoint attachment'});
+    await evaluate(cdp,'new Promise(resolve=>setTimeout(resolve,100))');
+    await cdp.send('Input.dispatchMouseEvent',{type:'mouseReleased',...cullStart,button:'middle',buttons:0,clickCount:1});
+    assert.equal(await evaluate(cdp,'window.__textObserver.disconnect();window.__textChanges'),0,'Panning and culling do not rebuild diagram text');
+    await clickText('Fit canvas');
+    await waitFor(async () => { const a=await bounds(); await evaluate(cdp,'new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(true))))'); return Math.abs((await bounds()).w-a.w)<.1; });
     const panAfter = await bounds();
     await cdp.send('Input.dispatchMouseEvent', {type:'mouseWheel',x:900,y:450,deltaX:0,deltaY:-120,modifiers:2});
     await waitFor(async () => (await bounds()).w > panAfter.w*1.05);
@@ -126,8 +150,30 @@ try {
     assert.equal(await evaluate(cdp, `document.querySelectorAll('[data-native-node^="grid:copy-"]').length`), 1);
     await clickText('Undo');
     await waitFor(async () => !await evaluate(cdp, `document.querySelector('[data-native-node^="grid:copy-"]') !== null`));
+    const clickSelector = async selector => {
+      const p=await evaluate(cdp,`(() => {const el=document.querySelector(${JSON.stringify(selector)});const r=el?.getBoundingClientRect();return r&&{x:r.x+r.width/2,y:r.y+r.height/2}})()`);
+      assert.ok(p,selector);
+      await cdp.send('Input.dispatchMouseEvent',{type:'mouseMoved',...p});
+      await cdp.send('Input.dispatchMouseEvent',{type:'mousePressed',...p,button:'left',buttons:1,clickCount:1});
+      await cdp.send('Input.dispatchMouseEvent',{type:'mouseReleased',...p,button:'left',buttons:0,clickCount:1});
+    };
+    await clickSelector('[aria-label="Collapse subtree A branch"]');
+    await waitForSelector(cdp,'[data-connection-id="edge0"][data-connection-status="proxy"]');
+    assert.equal(await evaluate(cdp,`!!document.querySelector('[data-native-node="grid:a"] [data-source-line="4"]')`),false);
+    await clickSelector('[aria-label="Expand subtree A branch"]');
+    await waitFor(edgeAligned,{message:'Unfolding remeasures only the changed shape and restores the label anchor'});
+    const switchCanvas=async name=>{
+      const p=await evaluate(cdp,`(() => {const el=[...document.querySelectorAll('nav[aria-label="Project diagrams"] button')].find(el=>el.textContent.includes(${JSON.stringify(name)}));const r=el?.getBoundingClientRect();return r&&{x:r.x+r.width/2,y:r.y+r.height/2}})()`);
+      assert.ok(p,name);
+      await cdp.send('Input.dispatchMouseEvent',{type:'mousePressed',...p,button:'left',buttons:1,clickCount:1});
+      await cdp.send('Input.dispatchMouseEvent',{type:'mouseReleased',...p,button:'left',buttons:0,clickCount:1});
+    };
+    await switchCanvas('Other canvas');
+    await waitForSelector(cdp,'.mapping-document-view:not([hidden]) [data-native-node="grid:overview"]');
+    await switchCanvas('Current LLM prompt stack');
+    await waitFor(edgeAligned,{message:'Switching canvases preserves the original local anchor cache'});
     assert.deepEqual(exceptions, []);
-    console.log('PASS: native dragging, undo/redo, restored history, blank rows, middle-button pan, zoom, Escape cancellation, and Alt-drag duplication');
+    console.log('PASS: native dragging, undo/redo, restored history, blank rows, middle-button pan, culling without missing edges or text rebuilds, zoom, Escape cancellation, Alt-drag duplication, folding anchors, and canvas switching');
   });
 } finally {
   if(server) {server.kill('SIGTERM');await new Promise(resolve=>server.once('exit',resolve));}

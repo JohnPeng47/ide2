@@ -1,44 +1,15 @@
-import { useContext, useMemo, useSyncExternalStore } from 'react';
-import { useEditor, useValue } from 'tldraw';
-import { ShapeSlotsContext } from './shapeSlots';
-import { mappingShapeId } from './shapeProjection';
-import { flattenGrid, resolveScene } from '../../../../domain/core/diagrams/lineGrid';
-import { drawEdge } from '../../../../domain/mapping/workspace/connectionLayout';
+import { useContext } from 'react';
+import { useValue } from 'tldraw';
+import { CanvasRuntimeContext } from './CanvasRuntimeContext';
+import { nativeEdgeGeometry } from './nativeEdgeGeometry';
 import { PanelConnector } from '../../../shared/diagrams/PanelConnector';
 
-/** Endpoint geometry follows native records during a drag, without publishing a
- * new application document for each pointer sample. Semantic anchors stay intact. */
+/** Each edge subscribes to its definition, its anchors and native transforms. */
 export function NativeConnection({ edgeId }: { edgeId: string }) {
-  const slots = useContext(ShapeSlotsContext)!, editor = useEditor(), controller = slots.controller!;
-  const snapshot = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
-  const edge = snapshot.document.edges.find(edge => edge.id === edgeId);
-  const endpoints = useMemo(() => {
-    if (!edge || !snapshot.cell) return [];
-    const needed = new Set([edge.source.displayNodeId, edge.target.displayNodeId]);
-    const visit = (box: typeof snapshot.document.scene.root): boolean => {
-      const contains = (box.kind === 'container' && box.children.map(visit).some(Boolean)) || needed.has(`grid:${box.id}`);
-      if (contains) needed.add(`grid:${box.id}`);
-      return contains;
-    };
-    visit(snapshot.document.scene.root);
-    const boxes = new Map(flattenGrid(resolveScene(snapshot.document.scene)).map(box => [`grid:${box.box.id}`, box]));
-    return Object.entries(snapshot.endpointBounds ?? {}).flatMap(([key, rect]) => {
-      const [id] = JSON.parse(key) as [string], box = boxes.get(id);
-      return needed.has(id) && box ? [{ key, rect, id,
-        x: box.bounds.column * snapshot.cell!.width, y: box.bounds.row * snapshot.cell!.height }] : [];
-    });
-  }, [edge, snapshot.document.scene, snapshot.endpointBounds, snapshot.cell]);
-  const arrow = useValue('mapping connection endpoints', () => {
-    if (!edge || !snapshot.cell) return;
-    const cell = snapshot.cell;
-    const current = new Map<string, ReturnType<typeof editor.getShapePageBounds>>();
-    const bounds = Object.fromEntries(endpoints.map(({ key, rect, id, x, y }) => {
-      if (!current.has(id)) current.set(id, editor.getShapePageBounds(mappingShapeId(id)));
-      const shape = current.get(id);
-      return [key, shape ? { ...rect, x: rect.x + shape.x - x, y: rect.y + shape.y - y } : rect];
-    }));
-    return drawEdge(edge, snapshot.document.scene, snapshot.canvas.diagramViews, cell, bounds);
-  }, [editor, edge, snapshot, endpoints]);
+  const runtime = useContext(CanvasRuntimeContext)!, controller = runtime.controller;
+  const model = useValue(`connection ${edgeId}`, () => runtime.edges.get(edgeId).get(), [runtime, edgeId]);
+  const edge = model?.edge;
+  const arrow = useValue(`connection geometry ${edgeId}`, () => model && nativeEdgeGeometry(runtime, model.edge, model.source, model.target), [runtime, model]);
   if (!edge || !arrow?.path || !arrow.target) return null;
   return <svg className="diagram-connections mapping-native-connection" style={{ width: 1, height: 1, color: edge.appearance.color, overflow: 'visible' }}>
     <g data-connection-id={edge.id} data-connection-status={arrow.status}>

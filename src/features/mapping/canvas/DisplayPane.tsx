@@ -1,4 +1,4 @@
-import { MappingShapeContent, ShapeSlotsContext } from '../tldraw/shapeSlots';
+import { CanvasRuntimeContext } from '../tldraw/CanvasRuntimeContext';
 import { useContext, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { DetailPane, ProjectedPane } from '../../../../domain/mapping/workspace/displayModel';
 export function EffectPaneHeader(props: { title: string; eyebrow?: string; metadata?: string; actions?: ReactNode; className?: string }) {
@@ -13,7 +13,7 @@ export function DisplayPane(props: {
   onMeasure: (id: string, width: number, height: number) => void;
 }) {
   const { node } = props;
-  const native = useContext(ShapeSlotsContext);
+  const native = useContext(CanvasRuntimeContext);
   const expanded = node.expansion === 'expanded';
   const fixed = node.geometryPolicy.sizing === 'fixed';
   const [element, setElement] = useState<HTMLElement | null>(null);
@@ -24,7 +24,7 @@ export function DisplayPane(props: {
     report(); const observer = new ResizeObserver(report); observer.observe(el);
     return () => observer.disconnect();
   }, [element, node.id]);
-  return <MappingShapeContent id={`floating:${node.id}`}><aside ref={setElement} className="selection-effect-frame mapping-poc-companion" data-display-node={node.id}
+  return <aside ref={setElement} className="selection-effect-frame mapping-poc-companion" data-display-node={node.id}
     data-pane-content={node.kind === 'projection' ? node.content.kind : 'detail'}
     data-projection-id={node.kind === 'projection' ? node.projectionId : undefined} data-mapping-static-ui data-diagram-canvas-static-ui
     onPointerDown={event => { if (!(event.target as Element).closest('.selection-effect-header') || (event.target as Element).closest('button,input,select')) event.stopPropagation(); }}
@@ -36,5 +36,5 @@ export function DisplayPane(props: {
       <button type="button" onClick={props.onRemove} aria-label="Close pane">×</button>
     </>} />
     {expanded && <div className="selection-effect-body">{props.children}</div>}
-  </aside></MappingShapeContent>;
+  </aside>;
 }

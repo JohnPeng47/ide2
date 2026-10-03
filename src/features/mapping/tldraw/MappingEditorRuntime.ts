@@ -16,6 +16,7 @@ export class MappingEditorRuntime {
   private settling = false;
   private navigating = false;
   private dirty = false;
+  private pendingProjection = false;
   private checkpoint = '';
   private unsubscribes: (() => void)[] = [];
   private publishedSelection?: ReturnType<MappingDocumentController['getSnapshot']>['canvas']['selection'];
@@ -23,7 +24,15 @@ export class MappingEditorRuntime {
   constructor(readonly editor: Editor, readonly controller: MappingDocumentController) {
     this.hydrate();
     this.unsubscribes.push(controller.attachEditorDriver({ settle: () => { if (!this.settling) { this.editor.complete(); this.settle(true, false); } }, undo: redo => this.undo(redo) }));
-    this.unsubscribes.push(controller.subscribe(() => this.publish()));
+    let previous = controller.getSnapshot();
+    this.unsubscribes.push(controller.subscribe(() => {
+      const next = controller.getSnapshot();
+      const relevant = next.canvasRevisionId !== previous.canvasRevisionId || next.document !== previous.document
+        || next.canvas.display !== previous.canvas.display || next.canvas.diagramViews !== previous.canvas.diagramViews
+        || next.canvas.selection !== previous.canvas.selection || next.cell !== previous.cell;
+      previous = next;
+      if (relevant) this.publish();
+    }));
     // This synchronous observer distinguishes history navigation from an ordinary
     // shape edit before another API request can observe the old checkpoint.
     this.unsubscribes.push(editor.sideEffects.registerAfterChangeHandler('document', (_before, after) => {
@@ -40,7 +49,11 @@ export class MappingEditorRuntime {
           || after.typeName === 'instance_page_state' && before.typeName === 'instance_page_state'
             && after.selectedShapeIds.join() !== before.selectedShapeIds.join())) this.dirty = true;
     }, { scope: 'all' }));
-    const tick = () => { if (this.dirty && !editor.inputs.getIsPointing() && !editor.inputs.getIsDragging()) this.settle(); };
+    const tick = () => {
+      if (editor.inputs.getIsPointing() || editor.inputs.getIsDragging()) return;
+      if (this.dirty) this.settle();
+      if (this.pendingProjection) this.publish();
+    };
     editor.on('tick', tick);
     this.unsubscribes.push(() => { editor.off('tick', tick); });
   }
@@ -95,7 +108,8 @@ export class MappingEditorRuntime {
     try {
       const id = this.controller.getSnapshot().canvasRevisionId;
       const changed = id !== this.checkpoint;
-      if (!changed && this.editor.inputs.getIsPointing()) return;
+      if (!changed && this.editor.inputs.getIsPointing()) { this.pendingProjection = true; return; }
+      this.pendingProjection = false;
       if (changed && record && !this.settling && !this.navigating) this.editor.markHistoryStoppingPoint('mapping command');
       this.editor.run(() => {
         this.writeShapes(changed && record && !this.navigating);

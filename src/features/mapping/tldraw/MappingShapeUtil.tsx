@@ -1,22 +1,32 @@
-import { useCallback, useContext, useSyncExternalStore } from 'react';
+import { useContext, useLayoutEffect, useRef } from 'react';
 import { BaseBoxShapeUtil, Rectangle2d, HTMLContainer, T, resizeBox, type TLBaseShape, type TLResizeInfo } from 'tldraw';
 import { connectionBox } from '../../../../domain/core/diagrams/diagramConnection';
 import { mappingShapeId } from './shapeProjection';
 import { NativeConnection } from './NativeConnection';
-import { ShapeSlotsContext } from './shapeSlots';
+import { CanvasRuntimeContext } from './CanvasRuntimeContext';
+import { DiagramShapeContent } from './DiagramShapeContent';
+import { FloatingShapeContent } from './FloatingShapeContent';
 
 export type MappingShape = TLBaseShape<'mapping-box', {
   w: number; h: number; nodeId: string; kind: string; revisionId: string;
 }>;
 declare module 'tldraw' { interface TLGlobalShapePropsMap { 'mapping-box': MappingShape['props'] } }
 function Body({ shape }: { shape: MappingShape }) {
-  const slots = useContext(ShapeSlotsContext);
-  const subscribe = useCallback((listener: () => void) => slots!.subscribe(shape.props.nodeId, listener), [slots, shape.props.nodeId]);
-  const body = useSyncExternalStore(subscribe, () => slots!.get(shape.props.nodeId));
+  const runtime = useContext(CanvasRuntimeContext)!;
+  const bodyRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const body = bodyRef.current;
+    if (!body || !['projection', 'conversation', 'detail'].includes(shape.props.kind)) return;
+    // These panes are interactive without entering the SDK's shape-editing mode.
+    // Let the browser scroll their content before tldraw's canvas wheel handler.
+    const wheel = (event: WheelEvent) => { if (!event.ctrlKey && !event.metaKey) event.stopPropagation(); };
+    body.addEventListener('wheel', wheel, { passive: true });
+    return () => body.removeEventListener('wheel', wheel);
+  }, [shape.props.kind]);
   if (shape.id !== mappingShapeId(shape.props.nodeId)) {
     // Native Alt-drag previews must not register the source instance's DOM anchors
     // a second time. The semantic duplicate receives fresh anchors on completion.
-    const scene = slots!.controller!.getSnapshot().document.scene;
+    const scene = runtime.controller.getSnapshot().document.scene;
     const source = connectionBox(scene, shape.props.nodeId);
     return <HTMLContainer className="mapping-native-shape"><pre className="mapping-poc-ascii">{
       source?.kind === 'diagram' ? scene.contents[source.contentId].content.ascii : 'Copy'
@@ -24,7 +34,8 @@ function Body({ shape }: { shape: MappingShape }) {
   }
   return <HTMLContainer className={`mapping-native-shape mapping-native-${shape.props.kind}`}>
     {shape.props.kind === 'arrow' && <NativeConnection edgeId={shape.props.nodeId.slice('floating:edge:'.length)} />}
-    <div className="mapping-native-body" data-native-node={shape.props.nodeId}>{body}</div>
+    <div ref={bodyRef} className="mapping-native-body" data-native-node={shape.props.nodeId}>{shape.props.kind !== 'arrow' && (shape.props.nodeId.startsWith('grid:')
+      ? <DiagramShapeContent nodeId={shape.props.nodeId} /> : <FloatingShapeContent nodeId={shape.props.nodeId} />)}</div>
   </HTMLContainer>;
 }
 export class MappingShapeUtil extends BaseBoxShapeUtil<MappingShape> {

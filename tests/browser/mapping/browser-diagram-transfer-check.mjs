@@ -64,11 +64,22 @@ try {
       })]); } finally { clearTimeout(timer); }
     };
     const exceptions = []; cdp.on('Page.javascriptDialogOpening', () => void cdp.send('Page.handleJavaScriptDialog', { accept: true }).catch(error => { if (!/navigated or closed/.test(String(error))) exceptions.push(String(error)); })); await cdp.send('Page.enable'); await cdp.send('Runtime.enable'); cdp.on('Runtime.exceptionThrown', event => exceptions.push(event.exceptionDetails.text));
+    const reload = async () => {
+      const previous = await evaluate(cdp, 'performance.timeOrigin');
+      await cdp.send('Page.reload', { ignoreCache: true });
+      await waitFor(async () => {
+        try { return await evaluate(cdp, `performance.timeOrigin !== ${previous} && document.readyState === 'complete'`); }
+        catch (error) { if (/context|navigated|closed/i.test(String(error))) return false; throw error; }
+      }, { timeoutMs: 20000, message: 'New document finished loading' });
+    };
     const click = async (selector, text) => {
-      // Following a jump can pan the toolbar outside the viewport. Recenter through
-      // the public control before interacting with history, just as a user would.
-      if (selector.includes('.mapping-grid-tools')) {
+      // The legacy world-space toolbar can remain offscreen even after Fit.
+      // Exercise public history shortcuts independently of camera placement.
+      if (selector.includes('.mapping-grid-tools') && ['Undo', 'Redo'].includes(text)) {
         await click('.mapping-document-view:not([hidden]) [title="Reset zoom and center diagram"]');
+        const redo = text === 'Redo';
+        await key(redo ? 'y' : 'z', redo ? 'KeyY' : 'KeyZ', redo ? 89 : 90, 2);
+        return;
       }
       let point;
       await waitFor(async () => {
@@ -77,9 +88,11 @@ try {
           if(!el || el.closest('[inert]'))return null;
           const before=el.getBoundingClientRect();
           await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-          const r=el.getBoundingClientRect(), x=r.x+r.width/2, y=r.y+r.height/2;
-          const hit=document.elementFromPoint(x,y);
-          return r.width&&r.height&&Math.abs(r.x-before.x)<.1&&Math.abs(r.y-before.y)<.1&&hit&&el.contains(hit)?{x,y}:null;
+          const r=el.getBoundingClientRect();
+          if(!r.width||!r.height||Math.abs(r.x-before.x)>=.1||Math.abs(r.y-before.y)>=.1)return null;
+          // A canvas popup may be partly covered by the explorer; click a visible part.
+          return [[.5,.5],[.95,.5],[.05,.5],[.5,.95],[.5,.05]].map(([x,y])=>({x:r.x+r.width*x,y:r.y+r.height*y}))
+            .find(p=>{const hit=document.elementFromPoint(p.x,p.y);return hit&&el.contains(hit)})??null;
         })()`);
         return !!point;
       });
@@ -96,7 +109,7 @@ try {
     const box = async id => { let value; await waitFor(async () => { value = await readBox(id); return value.right - value.left > 2 && value.bottom - value.top > 2 && !await evaluate(cdp, `!!document.querySelector('.mapping-transfer-busy') || document.querySelector('${visible}').inert`); }); return value; };
     const selected = async ids => waitFor(async () => JSON.stringify(await evaluate(cdp, `[...document.querySelectorAll('${visible} [data-diagram-selected="true"]')].map(el=>el.dataset.gridBox).sort()`)) === JSON.stringify([...ids].sort()));
     const mouse = (type, point, modifiers = 0, clickCount = 1, button = 'left') => cdp.send('Input.dispatchMouseEvent', { type, x: point.x, y: point.y, modifiers,
-      button, buttons: type === 'mouseReleased' ? 0 : button === 'right' ? 2 : 1, clickCount });
+      button, buttons: type === 'mouseReleased' ? 0 : button === 'right' ? 2 : button === 'middle' ? 4 : 1, clickCount });
     const double = async (id, modifiers = 0) => {
       // Use the diagram's left gutter so the node's single-click CodePanel action is not invoked.
       await box(id);
@@ -107,6 +120,17 @@ try {
         const b=await readBox(id); p={x:b.left+2,y:b.bottom-4};
         return Math.abs(b.left-before.left)<.5 && Math.abs(b.bottom-before.bottom)<.5;
       });
+      const exposed = await evaluate(cdp, `(() => {const el=document.elementFromPoint(${p.x},${p.y});return !!el?.closest('[data-canvas-engine="tldraw"]')&&!el.closest('button,input,[data-mapping-static-ui],[data-diagram-canvas-static-ui]')})()`);
+      if (!exposed) {
+        // Saved camera positions can put the gutter under the explorer or offscreen.
+        // Pan it into view through a real native gesture before double-clicking.
+        const from={x:1100,y:700},delta={x:650-p.x,y:500-p.y},to={x:1100+delta.x,y:700+delta.y};
+        await mouse('mousePressed',from,0,1,'middle');
+        for(let i=1;i<=10;i++) await mouse('mouseMoved',{x:from.x+delta.x*i/10,y:from.y+delta.y*i/10},0,1,'middle');
+        await evaluate(cdp,'new Promise(resolve=>setTimeout(resolve,100))');
+        await mouse('mouseReleased',to,0,1,'middle');
+        await waitFor(async()=>{const b=await readBox(id);p={x:b.left+2,y:b.bottom-4};return Math.abs(p.x-650)<3&&Math.abs(p.y-500)<3;});
+      }
       await mouse('mousePressed',p,modifiers); await mouse('mouseReleased',p,modifiers);
       await mouse('mousePressed',p,modifiers,2); await mouse('mouseReleased',p,modifiers,2);
     };
@@ -151,7 +175,7 @@ try {
       assert.equal(Object.values(copied.document.scene.contents)[0].sourceContext.evidence.large.sourceRanges[0].originalLines[0].length,2*1024*1024);
       console.log('Large request checked');
       await captureScreenshot(cdp,{output:process.env.TRANSFER_DESTINATION_SCREENSHOT || path.join(root,'large-copy.png')});
-      await cdp.send('Page.reload',{ignoreCache:true});
+      await reload();
       await waitFor(async()=>await evaluate(cdp, `document.querySelector('[aria-label="Diagram name"]')?.value==='Large copy'`).catch(error => {
         if (/navigated or closed|context.*destroyed|Cannot find context/i.test(String(error))) return false;
         throw error;
@@ -251,17 +275,17 @@ try {
     assert.equal(source.history.snapshots[source.history.headId].transactionId,move.id);
     assert.equal(dest.history.snapshots[dest.history.headId].transactionId,move.id);
     console.log('Following jump');
-    await click(`${visible} .diagram-jump`);
+    await click(`${visible} [data-native-node="grid:a"] .diagram-jump`);
     await waitForSelector(cdp, '[aria-label="Linked diagrams"]');
     await click('[aria-label="Linked diagrams"] button','a to b');
     await waitForSelector(cdp,`${visible} [data-grid-box="b"]`);
     assert.equal(await evaluate(cdp,`document.querySelector('${visible} [data-grid-box="a"]')`),null);
     console.log('Following jump');
-    await click(`${visible} .diagram-jump`);
+    await click(`${visible} [data-native-node="grid:b"] .diagram-jump`);
     await click('[aria-label="Linked diagrams"] button','b to a');
     await waitForSelector(cdp,`${visible} [data-grid-box="a"]`);
     console.log('Reloading');
-    await cdp.send('Page.reload',{ignoreCache:true});
+    await reload();
     await waitForSelector(cdp,`${visible} [data-grid-box="a"]`);
     await click(`${visible} .mapping-grid-tools button`,'Undo');
     await waitForSelector(cdp,`${visible} [data-grid-box="c"]`);
@@ -269,7 +293,7 @@ try {
     assert.equal(ws.documents.find(d=>d.representationId===move.sourceId).document.edges.length,4);
     assert.equal(ws.documents.find(d=>d.representationId===move.destinationId).hidden,true);
     console.log('Reloading');
-    await cdp.send('Page.reload',{ignoreCache:true});
+    await reload();
     await waitForSelector(cdp,`${visible} [data-grid-box="c"]`);
     await click(`${visible} .mapping-grid-tools button`,'Redo');
     await waitFor(async () => await evaluate(cdp, `document.querySelector('[aria-label="Diagram name"]').value === 'Moved canvas'`));
@@ -295,7 +319,7 @@ try {
     await click('[aria-label="Delete diagram Moved canvas"]');
     await waitFor(async () => await evaluate(cdp, `!document.querySelector('[aria-label="Delete diagram Moved canvas"]') && !document.querySelector('.mapping-transfer-busy')`));
     await persisted(w => !w?.documents?.some(d => d.representationId === move.destinationId));
-    await cdp.send('Page.reload', { ignoreCache: true });
+    await reload();
     await waitForSelector(cdp, `${visible} [data-grid-box="b"]`);
     assert.equal(await evaluate(cdp, `document.querySelector('.mapping-project-error')?.textContent ?? ''`), '');
     await click(`${visible} .mapping-grid-tools button`, 'Undo');
@@ -330,7 +354,7 @@ try {
     assert.equal(existing.document.scene.root.children.length,4);
     assert.equal(existingWorkspace.documents.find(d=>d.representationId===movedExisting.sourceId).document.scene.root.children.length,1);
     await captureScreenshot(cdp,{output:process.env.TRANSFER_DESTINATION_SCREENSHOT || path.join(root,'existing-destination.png')});
-    await cdp.send('Page.reload',{ignoreCache:true});
+    await reload();
     await waitForSelector(cdp, `${visible} [data-grid-box="a"]`);
     await click(`${visible} .mapping-grid-tools button`,'Undo');
     await waitForSelector(cdp, `${visible} [data-grid-box="c"]`);

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState, type ComponentPropsWithRef, type ReactNode, type HTMLAttributes } from 'react';
+import { Fragment, useMemo, useEffect, useRef, useState, type ComponentPropsWithRef, type ReactNode, type HTMLAttributes } from 'react';
 import type { DiagramTextRow, DiagramTextRun, DiagramTextOwner } from '../../../domain/core/diagrams/diagramText';
 import type { DiagramJumpTarget } from '../../../domain/core/diagrams/diagramJump';
 import './diagramText.css';
@@ -15,6 +15,13 @@ type Props = Omit<ComponentPropsWithRef<'pre'>, 'children'> & {
 
 /** Shared JSX for both viewers. Controllers retain gestures, folding, and source actions. */
 export function DiagramText({ rows, onJump, renderRun, rowProps, nodeProps, registerEndpoint, ...pre }: Props) {
+  const endpointRefs = useMemo(() => new Map<string, (element: Element | null) => void>(), [registerEndpoint]);
+  const refFor = (owner: DiagramTextOwner) => {
+    const key = JSON.stringify([owner.displayNodeId, owner.contentNodeId, owner.revisionId]);
+    let ref = endpointRefs.get(key);
+    if (!ref) { ref = element => registerEndpoint?.({ displayNodeId: owner.displayNodeId, contentNodeId: owner.contentNodeId, revisionId: owner.revisionId }, element); endpointRefs.set(key, ref); }
+    return ref;
+  };
   return <pre {...pre}>{rows.map((row, index) => {
     // Keep one outline around a label even when source mappings split its text.
     const groups: DiagramTextRun[][] = [];
@@ -40,8 +47,7 @@ export function DiagramText({ rows, onJump, renderRun, rowProps, nodeProps, regi
       });
       return <span key={first.start}
         {...decoration}
-        ref={owner?.contentNodeId && registerEndpoint ? element => registerEndpoint({ displayNodeId: owner.displayNodeId,
-          contentNodeId: owner.contentNodeId, revisionId: owner.revisionId }, element) : undefined}
+        ref={owner?.contentNodeId && registerEndpoint ? refFor(owner) : undefined}
         className={[owner?.contentNodeId ? 'diagram-content-node' : '', decoration?.className].filter(Boolean).join(' ') || undefined}
         data-display-node-id={owner?.displayNodeId} data-content-node-id={owner?.contentNodeId}
         data-content-revision={owner?.revisionId} data-source-line={owner?.sourceLine}

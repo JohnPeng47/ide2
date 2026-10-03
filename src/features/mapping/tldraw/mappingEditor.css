@@ -8,7 +8,8 @@
 .mapping-native-body { position: relative; width: 100%; height: 100%; }
 .mapping-native-body > .mapping-grid-box { inset: 0; width: 100%; height: 100%; }
 .mapping-native-body .mapping-poc-ascii { margin: 0; padding: 0; }
-.mapping-native-container { pointer-events: none; }
+/* Retained regions are highlights; their native DOM must leave labels clickable. */
+.mapping-native-container, .mapping-native-selection { pointer-events: none; }
 .mapping-native-body > .selection-effect-frame { position: relative; left: 0 !important; top: 0 !important; }
 .mapping-native-body > .local-chat-convo { left: 0 !important; top: 0 !important; }
 .mapping-editor-canvas .mapping-poc-cell-probe { pointer-events: none; }

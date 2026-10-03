@@ -15,7 +15,7 @@ export interface FloatingBoxArrow {
 }
 type Rect = { x: number; y: number; width: number; height: number; proxy: boolean };
 
-function resolveEndpoint(scene: LineGridScene, views: DiagramViews | undefined, anchor: DiagramAnchor,
+export function resolveEndpoint(scene: LineGridScene, views: DiagramViews | undefined, anchor: DiagramAnchor,
   cell: { width: number; height: number }): { identity: EndpointIdentity; rect: Rect } | undefined {
   const box = connectionBox(scene, anchor.displayNodeId);
   if (!box) return;
@@ -62,20 +62,27 @@ export function arrowPath(source: AnchorPoint, target: AnchorPoint, obstacles: r
 export function drawEdge(edge: DiagramConnection, scene: LineGridScene, views: DiagramViews | undefined,
   cell: { width: number; height: number }, bounds?: EndpointBounds): FloatingBoxArrow {
   const a = resolveEndpoint(scene, views, edge.source, cell), b = resolveEndpoint(scene, views, edge.target, cell);
+  return drawResolvedEdge(edge, a && { ...a.rect, ...(bounds ? bounds[endpointKey(a.identity)] : a.rect) },
+    b && { ...b.rect, ...(bounds ? bounds[endpointKey(b.identity)] : b.rect) },
+    bounds ? 'measured' : 'estimated', !a || !b ? 'stale'
+      : bounds && (!bounds[endpointKey(a.identity)] || !bounds[endpointKey(b.identity)]) ? 'pending' : undefined);
+}
+
+/** Shared routing, after the renderer has resolved semantic anchors into page rectangles. */
+export function drawResolvedEdge(edge: DiagramConnection, ar: Rect | undefined, br: Rect | undefined,
+  geometrySource: FloatingBoxArrow['geometrySource'] = 'measured', unavailable?: 'stale' | 'pending'): FloatingBoxArrow {
   const base = { kind: 'arrow' as const, id: `edge:${edge.id}`, edgeId: edge.id, coordinateSpace: 'canvas' as const,
-    geometrySource: bounds ? 'measured' as const : 'estimated' as const,
+    geometrySource,
     position: { x: 0, y: 0 }, bounds: { width: 1, height: 1 } };
-  if (!a || !b) return { ...base, status: 'stale' };
-  const ar = bounds ? bounds[endpointKey(a.identity)] : a.rect, br = bounds ? bounds[endpointKey(b.identity)] : b.rect;
-  if (!ar || !br) return { ...base, status: 'pending' };
-  const sourceRect = { ...ar, proxy: a.rect.proxy }, targetRect = { ...br, proxy: b.rect.proxy };
+  if (unavailable || !ar || !br) return { ...base, status: unavailable ?? 'stale' };
+  const sourceRect = ar, targetRect = br;
   const source = point(sourceRect, targetRect, edge.source.side, edge.source.offset);
   const target = point(targetRect, sourceRect, edge.target.side, edge.target.offset);
   const points = routeEdge(source, target, [ar, br]);
   if (!points) return { ...base, source, target, status: 'blocked' };
   const xs = points.map(p => p.x), ys = points.map(p => p.y);
   const label = getArrowLabel(edge.appearance);
-  return { ...base, source, target, path: routePath(points), status: a.rect.proxy || b.rect.proxy ? 'proxy' : 'resolved',
+  return { ...base, source, target, path: routePath(points), status: ar.proxy || br.proxy ? 'proxy' : 'resolved',
     label: { text: label.text, position: label.position ?? { x: (source.x + target.x) / 2, y: (source.y + target.y) / 2 - 8 } },
     position: { x: Math.min(...xs) - 6, y: Math.min(...ys) - 6 },
     bounds: { width: Math.max(...xs) - Math.min(...xs) + 12, height: Math.max(...ys) - Math.min(...ys) + 12 } };

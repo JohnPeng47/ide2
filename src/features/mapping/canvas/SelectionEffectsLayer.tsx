@@ -1,4 +1,4 @@
-import { MappingShapeContent, ShapeSlotsContext } from '../tldraw/shapeSlots';
+import { CanvasRuntimeContext } from '../tldraw/CanvasRuntimeContext';
 import type { SelectionState } from '../../../../domain/mapping/selection/selectionState';
 import { SessionCodePanel } from '../code-panel/SessionCodePanel';
 import type { CanvasSession } from '../workspace/canvasSession';
@@ -23,7 +23,7 @@ export function SelectionEffectsLayer(props: {
   busySelectionIds: string[];
   onActivate: (root: SelectionRegion) => void;
 }) {
-  const native = useContext(ShapeSlotsContext);
+  const native = useContext(CanvasRuntimeContext);
   const measure = useCallback((id: string, width: number, height: number) =>
     props.setLayoutState(current => measureDisplayNode(current, id, width, height)), [props.setLayoutState]);
   // Keep source content independent of the workspace renders caused by pan and selection gestures.
@@ -35,7 +35,7 @@ export function SelectionEffectsLayer(props: {
   }, [props.state, props.setLayoutState, props.boxes, props.scene, props.cell, props.diagramViews]);
   const toggle = (id: string) => props.setState(state => setExpansion(state, id, state.nodes[id].expansion === 'expanded' ? 'collapsed' : 'expanded'));
   return <div className="selection-effects-layer">
-    {Object.values(props.state.nodes).filter(node => node.kind === 'detail').map(node => node.kind === 'detail' &&
+    {!native && Object.values(props.state.nodes).filter(node => node.kind === 'detail').map(node => node.kind === 'detail' &&
       <DisplayPane key={node.id} node={node} onMeasure={measure}
         onToggle={() => toggle(node.id)} onRemove={() => props.onRemove(node.id)}><pre>{node.ascii}</pre></DisplayPane>)}
     {props.state.rootIds.map(id => props.state.nodes[id]).filter((node): node is SelectionRegion => node?.kind === 'selection').map(root => {
@@ -52,9 +52,9 @@ export function SelectionEffectsLayer(props: {
       const layout = layoutProjectedPanes(props.state, root);
       // Retain snapshots if their source changes, but never pretend the rectangle is still exact.
       return <div key={root.id} data-selection-root={root.id} data-source-stale={stale || missing} data-selection-active={selected}>
-        <MappingShapeContent id={`floating:${root.id}`}>
-        {!missing && !stale && selected && <div className="mapping-poc-selection-rect retained-selection" style={{ left: native ? 0 : rect.x, top: native ? 0 : rect.y, width: rect.width, height: rect.height }} />}
-        </MappingShapeContent>
+
+        {!native && !missing && !stale && selected && <div className="mapping-poc-selection-rect retained-selection" style={{ left: native ? 0 : rect.x, top: native ? 0 : rect.y, width: rect.width, height: rect.height }} />}
+
         <div className="retained-selection-controls" data-mapping-static-ui data-diagram-canvas-static-ui
           style={{ left: rect.x, top: rect.y - 27 }}>
           {(stale || missing) && <span>Source changed · saved selection</span>}
@@ -78,7 +78,7 @@ export function SelectionEffectsLayer(props: {
           return <svg key={link.id} className="projection-connector" style={{ left, top, width: Math.max(1, Math.abs(x2 - x1)), height: Math.abs(y2 - y1) + 8 }} aria-hidden="true">
             <PanelConnector path={`M${x1} ${y1} H${(x1 + x2) / 2} V${y2} H${x2}`} target={{ x: x2, y: y2, side: 'left' }} /></svg>;
         })}
-        {Object.keys(layout.placements).map(id => {
+        {!native && Object.keys(layout.placements).map(id => {
           const pane = props.state.nodes[id] as ProjectedPane;
           const parent = Object.values(props.state.nodes).find(node => node.childIds.includes(id));
           const projection = props.catalog?.projections?.[pane.projectionId ?? ''];
