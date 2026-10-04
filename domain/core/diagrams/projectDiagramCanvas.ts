@@ -12,6 +12,7 @@ import type { ProjectRepresentationEvidenceRecord, ProjectRepresentationMappingR
 
 export type ProjectDiagramContent = { kind: "canvas-history"; history: CanvasHistoryRecord };
 export interface SaveProjectDiagramInput {
+  repositoryId?: string;
   history: CanvasHistoryRecord;
   projectId?: string;
   representationId?: string;

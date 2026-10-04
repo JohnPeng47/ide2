@@ -29,7 +29,7 @@ export async function discoverRepository(inputPath: string): Promise<RepositoryL
   };
   const checkoutRoot = path.resolve(await git("rev-parse", "--show-toplevel"));
   const commonDirRaw = await git("rev-parse", "--git-common-dir");
-  const repositoryIdentity = path.resolve(checkoutRoot, commonDirRaw);
+  const repositoryIdentity = await realpath(path.resolve(resolved, commonDirRaw));
   const gitRevision = await git("rev-parse", "HEAD").catch(() => undefined);
   return {
     checkoutRoot,

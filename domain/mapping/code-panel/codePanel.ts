@@ -1,3 +1,4 @@
+import { resolveNodeResources } from '../../core/diagrams/diagramResourceMappings';
 import { diagramSource, type Diagram } from '../../core/diagrams/diagram';
 import type { DiagramContentNode } from '../../core/diagrams/diagramContent';
 import { diagramContentNodes } from '../../core/diagrams/diagramContentNodes';
@@ -82,27 +83,12 @@ export const mappedResourceHandlers = {
 
 export function resolveSelectedNodes(context: DiagramContext, selected: readonly DiagramContentNode[],
   mappedResourceType: MappedResourceType = DEFAULT_MAPPED_RESOURCE_TYPE) {
-  const nodes = new Map(diagramContentNodes(context.diagram.content).map(node => [node.id, node]));
   const direct = mappedResourceHandlers[mappedResourceType].index(context);
-  const results: ResolvedMapping[] = [], unmappedNodeIds: string[] = [];
-  for (const requested of new Map(selected.map(node => [node.id, node])).values()) {
-    const selectedNode = nodes.get(requested.id);
-    if (!selectedNode) throw new Error('Selected node belongs to another diagram revision');
-    let node: DiagramContentNode | undefined = selectedNode;
-    const visited = new Set<string>();
-    let found = false;
-    while (node && !visited.has(node.id)) {
-      visited.add(node.id);
-      const mappings = direct.get(node.id);
-      if (mappings?.length) {
-        for (const item of mappings) results.push({ ...item, origins: item.origins.map(origin => ({ ...origin,
-          selectedNodeId: selectedNode.id, selectedLabel: selectedNode.label, mappedLabel: node!.label })) });
-        found = true; break;
-      }
-      node = node.parentId ? nodes.get(node.parentId) : undefined;
-    }
-    if (!found) unmappedNodeIds.push(selectedNode.id);
-  }
+  const { matches, unmappedNodeIds } = resolveNodeResources(diagramContentNodes(context.diagram.content), selected.map(node => node.id), direct);
+  const results: ResolvedMapping[] = matches.flatMap(({ selectedNode, mappedNode, resources }) => resources.map(item => ({
+    ...item, origins: item.origins.map(origin => ({ ...origin, selectedNodeId: selectedNode.id,
+      selectedLabel: selectedNode.label, mappedNodeId: mappedNode.id, mappedLabel: mappedNode.label }))
+  })));
   return { results, unmappedNodeIds };
 }
 export function handleNodeSelect(context: DiagramContext, nodes: readonly DiagramContentNode[],

@@ -1,3 +1,4 @@
+import { diffTreeSummary, validateDiffTree, type ChangeSessionDiffTree } from '../../../domain/mapping/changes/diffTree';
 import { open, readdir, readFile, stat } from 'node:fs/promises';
 import { assertDiagramStorageFormat } from '../../core/persistence/diagramStorageFormat';
 import path from 'node:path';
@@ -8,7 +9,7 @@ import { changeId, validateChangeSession, validateChangeSessionSummary, type Cha
   type ChangeSessionSummary, type ChangeSessionPreview, type DiagramChangeSession } from '../../../domain/mapping/changes/diagramChangeSession';
 import { deserializeWorkspace } from '../../../domain/mapping/workspace/mappingWorkspaceCodec';
 
-interface Manifest { format: 2; summary: ChangeSessionSummary; documents: Record<string, string>; receipts: string }
+interface Manifest { format: 2; summary: ChangeSessionSummary; documents: Record<string, string>; receipts: string; diffTree?: string }
 interface StoredDocument {
   metadata: Omit<ChangeSessionDocument, 'baseline'|'proposed'|'past'|'future'|'history'>;
   baseline: string | null; proposed: string; past: string[]; future: string[];
@@ -19,6 +20,7 @@ export interface SessionWrite {
   documents: ChangeSessionDocument[];
   receipts: DiagramChangeSession['receipts'];
   expected?: string;
+  diffTree?: ChangeSessionDiffTree;
 }
 const queues = new Map<string, Promise<unknown>>();
 export class ChangeSessionRecords {
@@ -45,6 +47,7 @@ export class ChangeSessionRecords {
     if (manifest.format !== 2 || manifest.summary.id !== id || manifest.summary.projectId !== projectId) throw Error('Change session identity mismatch');
     validateChangeSessionSummary(manifest.summary);
     if (!manifest.documents || manifest.summary.documents.some(doc => !Object.hasOwn(manifest.documents, doc.id))) throw Error('Incomplete change session');
+    if (!!manifest.diffTree !== !!manifest.summary.diffTree) throw Error('Incomplete DiffTree');
     return manifest;
   }
   async listSummaries(projectId: string, load = (id: string) => this.readSummary(projectId, id)): Promise<ChangeSessionSummary[]> {
@@ -127,13 +130,25 @@ export class ChangeSessionRecords {
     }
     return { ...manifest.summary, document: structuredClone(document) };
   }
+  async readDiffTree(projectId: string, id: string) {
+    const manifest = await this.manifest(projectId, id);
+    return { summary: manifest.summary, diffTree: await this.restoreDiffTree(manifest) };
+  }
+  private async restoreDiffTree(manifest: Manifest): Promise<ChangeSessionDiffTree | undefined> {
+    if (!manifest.diffTree) return undefined;
+    const tree = await this.diagramPersistence.restore<ChangeSessionDiffTree>(await this.blobs.get(manifest.diffTree));
+    validateDiffTree(tree);
+    if (JSON.stringify(diffTreeSummary(tree)) !== JSON.stringify(manifest.summary.diffTree)) throw Error('DiffTree summary mismatch');
+    validateChangeSession({ ...manifest.summary, documents: [], receipts: {}, diffTree: tree });
+    return tree;
+  }
   async read(projectId: string, id: string): Promise<{ session: DiagramChangeSession; token: string }> {
     const manifest = await this.manifest(projectId, id), documents = [];
     for (const metadata of manifest.summary.documents) {
       const ref = manifest.documents[metadata.id]; let doc = this.validated.get(ref);
       if (!doc) {
         const restored = await this.diagramPersistence.restore<ChangeSessionDocument>(await this.rawDocument(ref, true));
-        doc = validateChangeSession({ ...manifest.summary, documents: [restored], receipts: {} }).documents[0];
+        doc = validateChangeSession({ ...manifest.summary, diffTree: undefined, documents: [restored], receipts: {} }).documents[0];
         if (doc.id !== metadata.id) throw Error('Change document identity mismatch');
         if (this.validated.size >= 16) this.validated.delete(this.validated.keys().next().value!);
         this.validated.set(ref, doc);
@@ -142,11 +157,13 @@ export class ChangeSessionRecords {
     }
     const refs = await this.blobs.get<Record<string, string>>(manifest.receipts), receipts: DiagramChangeSession['receipts'] = {};
     for (const [key, ref] of Object.entries(refs)) receipts[key] = structuredClone(await this.blobs.get<DiagramChangeSession['receipts'][string]>(ref));
-    return { session: { ...manifest.summary, documents, receipts }, token: this.token(manifest) };
+    const { diffTree: _summary, ...summary } = manifest.summary;
+    const diffTree = await this.restoreDiffTree(manifest);
+    return { session: { ...summary, ...(diffTree ? { diffTree } : {}), documents, receipts }, token: this.token(manifest) };
   }
   async write(input: SessionWrite): Promise<string> {
     const summary = validateChangeSessionSummary(input.summary), { projectId, id } = summary;
-    validateChangeSession({ ...summary, documents: [], receipts: input.receipts });
+    validateChangeSession({ ...summary, diffTree: input.diffTree, documents: [], receipts: input.receipts });
     // A legacy record must be captured before entering the publication queue.
     let prior = await this.existing(projectId, id);
     if (!prior) {
@@ -158,13 +175,17 @@ export class ChangeSessionRecords {
       if (input.expected !== undefined && (!previous || this.token(previous) !== input.expected)) throw Error('VERSION_CONFLICT: change session was updated');
       const documents = { ...previous?.documents }, receipts = previous ? { ...await this.blobs.get<Record<string, string>>(previous.receipts) } : {};
       for (const doc of input.documents) {
-        validateChangeSession({ ...summary, documents: [doc], receipts: {} });
+        validateChangeSession({ ...summary, diffTree: undefined, documents: [doc], receipts: {} });
         documents[doc.id] = await this.splitDocument(doc);
       }
       for (const metadata of summary.documents) if (!documents[metadata.id]) throw Error('Incomplete change session');
       for (const key of Object.keys(documents)) if (!summary.documents.some(doc => doc.id === key)) delete documents[key];
       for (const [key, receipt] of Object.entries(input.receipts)) receipts[key] = await this.blobs.put(receipt);
-      const manifest: Manifest = { format: 2, summary, documents, receipts: await this.blobs.put(receipts) };
+      const diffTree = input.diffTree ? await this.blobs.put(await this.diagramPersistence.persist(input.diffTree)) : previous?.diffTree;
+      if (!!summary.diffTree !== !!diffTree) throw Error('Incomplete DiffTree');
+      if (input.diffTree && JSON.stringify(diffTreeSummary(input.diffTree)) !== JSON.stringify(summary.diffTree)) throw Error('DiffTree summary mismatch');
+      if (!input.diffTree && JSON.stringify(previous?.summary.diffTree) !== JSON.stringify(summary.diffTree)) throw Error('DiffTree data is required');
+      const manifest: Manifest = { format: 2, summary, documents, receipts: await this.blobs.put(receipts), ...(diffTree ? { diffTree } : {}) };
       await publishJson(this.manifestFile(projectId, id), manifest);
       return this.token(manifest);
     });

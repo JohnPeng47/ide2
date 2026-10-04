@@ -87,7 +87,7 @@ it('externalizes workspace and change-session diagrams while keeping their publi
   expect(await new MappingWorkspaceStore(root).load('project')).toEqual(JSON.parse(JSON.stringify(workspace)));
   const time = new Date().toISOString();
   const session: DiagramChangeSession = { schemaVersion: 1, id: 'change-test', projectId: 'project', title: 'Proposal', description: '',
-    status: 'draft', version: 0, createdAt: time, updatedAt: time, changes: [], receipts: {}, documents: [{ id: 'doc', name: 'Canvas',
+    status: 'draft', version: 0, createdAt: time, updatedAt: time, changes: [], migrations: [], receipts: {}, documents: [{ id: 'doc', name: 'Canvas',
       history, baseline: { document, canvas }, proposed: { document, canvas }, version: 0, past: [], future: [] }] };
   await new DiagramChangeSessionStore(root, service).write(session);
   const sessionDisk = JSON.parse(await readFile(path.join(root, 'mapping-change-sessions/project/change-test.manifest.json'), 'utf8'));

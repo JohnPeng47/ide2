@@ -1,3 +1,5 @@
+import { inferRepositoryId } from '../../../domain/core/repositories/repository';
+import type { ProjectRecord } from '../../../domain/core/records/domain';
 import { DefaultCanvasHistoryService } from '../../../domain/core/diagrams/canvasHistoryService';
 import { assertDiagramStorageFormat } from './diagramStorageFormat';
 import path from 'node:path';
@@ -27,7 +29,7 @@ export class CanvasCatalogStore {
 
   saveProjection(projectId: string, projection: ProjectProjectionRecord) {
     return this.serialize(async () => {
-      const catalog = await this.loadRepresentationCatalog(projectId);
+      const catalog = await this.readRepresentationCatalog(projectId);
       const result = rules.saveProjection(catalog, projectId, projection, catalogEnvironment());
       if (result.catalog !== catalog) await this.saveRepresentationCatalog(result.catalog);
       return result;
@@ -37,7 +39,7 @@ export class CanvasCatalogStore {
   /** Persist the generated tree and its relationship in one catalog write. */
   saveProjectedTree(projectId: string, input: SaveProjectedTreeInput) {
     return this.serialize(async () => {
-      const catalog = await this.loadRepresentationCatalog(projectId);
+      const catalog = await this.readRepresentationCatalog(projectId);
       const result = rules.saveProjectedTree(catalog, projectId, input, catalogEnvironment());
       if (result.catalog !== catalog) await this.saveRepresentationCatalog(result.catalog);
       return result;
@@ -46,8 +48,14 @@ export class CanvasCatalogStore {
 
   saveMappingDiagram(projectId: string, input: SaveProjectDiagramInput) {
     return this.serialize(async () => {
-      const catalog = await this.loadRepresentationCatalog(projectId);
-      const result = rules.saveMappingDiagram(catalog, projectId, input, catalogEnvironment());
+      const catalog = await this.readRepresentationCatalog(projectId);
+      const project = await readJsonIfExists<ProjectRecord>(path.join(this.storeRoot, 'project.json'));
+      const current = input.representationId ? catalog.representations[input.representationId] : undefined;
+      const copied = input.sourceRevisionId ? catalog.representations[catalog.revisions[input.sourceRevisionId]?.representationId]?.repositoryId : undefined;
+      const repositoryId = input.repositoryId ?? current?.repositoryId ?? copied ?? (!current ? inferRepositoryId(input.scene, project?.repositories ?? []) : undefined);
+      if (repositoryId && !project?.repositories?.some(repo => repo.id === repositoryId)) throw Error('Unknown repositoryId');
+      if (!current && project?.repositories?.length && !repositoryId) throw Error('Specify repositoryId for the new canvas');
+      const result = rules.saveMappingDiagram(catalog, projectId, { ...input, repositoryId }, catalogEnvironment());
       if (result.catalog !== catalog) await this.saveRepresentationCatalog(result.catalog);
       return result;
     });
@@ -55,7 +63,7 @@ export class CanvasCatalogStore {
 
   acceptCanvasChanges(projectId: string, input: AcceptCanvasChangesInput): Promise<ChangeSessionAcceptance> {
     return this.serialize(async () => {
-      let catalog = await this.loadRepresentationCatalog(projectId);
+      let catalog = await this.readRepresentationCatalog(projectId);
       const prior = catalog.changeSessionAcceptances?.[input.changeSessionId];
       if (prior) {
         if (prior.requestId !== input.requestId || prior.sessionVersion !== input.sessionVersion)
@@ -69,6 +77,8 @@ export class CanvasCatalogStore {
       const acceptance: ChangeSessionAcceptance = { changeSessionId: input.changeSessionId, sessionVersion: input.sessionVersion,
         requestId: input.requestId, acceptedAt: new Date().toISOString(), changeIds: [...input.changeIds], documents: [] };
       for (const doc of input.documents) {
+        const project = await readJsonIfExists<ProjectRecord>(path.join(this.storeRoot, 'project.json'));
+        if (doc.repositoryId && !project?.repositories?.some(repo => repo.id === doc.repositoryId)) throw Error('Unknown repositoryId');
         const current = doc.representationId ? catalog.representations[doc.representationId] : undefined;
         if (doc.representationId && (!current || current.status !== 'settled' || current.currentRevisionId !== doc.expectedRevisionId))
           throw new Error('VERSION_CONFLICT: original canvas changed; create a new proposal');
@@ -82,7 +92,7 @@ export class CanvasCatalogStore {
           this.historyService.adopt(context, doc.history);
           history = this.historyService.exportContext(context);
         }
-        const result = rules.saveMappingDiagram(catalog, projectId, { name: doc.name, representationId: doc.representationId,
+        const result = rules.saveMappingDiagram(catalog, projectId, { name: doc.name, repositoryId: doc.repositoryId, representationId: doc.representationId,
           expectedRevisionId: doc.expectedRevisionId, scene: doc.document.scene, edges: doc.document.edges, history }, catalogEnvironment());
         catalog = result.catalog;
         acceptance.documents.push({ documentId: doc.documentId, representationId: result.representation.id, before,
@@ -112,7 +122,11 @@ export class CanvasCatalogStore {
     return (await this.readStoredCatalog(projectId))?.changeSessionAcceptances ?? {};
   }
 
-  async loadRepresentationCatalog(projectId: string, historyValidation: import('../../../domain/core/diagrams/canvasHistory').HistoryValidation = 'all'): Promise<ProjectRepresentationCatalogRecord> {
+  loadRepresentationCatalog(projectId: string, historyValidation: import('../../../domain/core/diagrams/canvasHistory').HistoryValidation = 'all'): Promise<ProjectRepresentationCatalogRecord> {
+    return this.serialize(() => this.readRepresentationCatalog(projectId, historyValidation));
+  }
+
+  private async readRepresentationCatalog(projectId: string, historyValidation: import('../../../domain/core/diagrams/canvasHistory').HistoryValidation = 'all'): Promise<ProjectRepresentationCatalogRecord> {
     await assertDiagramStorageFormat(this.storeRoot);
     const raw = await this.readStoredCatalog(projectId);
     const stored = raw == null ? null : await this.diagramPersistence.restore<ProjectRepresentationCatalogRecord>(raw, historyValidation);
@@ -122,6 +136,17 @@ export class CanvasCatalogStore {
     }
     for (const revision of Object.values(stored.revisions)) if (revision.content?.kind !== 'canvas-history')
       throw new Error('Unsupported legacy diagram content: canvas history is required');
+    if (!stored.repositoryOwnershipVersion && Object.keys(stored.representations).length) {
+      const project = await readJsonIfExists<ProjectRecord>(path.join(this.storeRoot, 'project.json'));
+      if (project?.repositories?.length) {
+        for (const representation of Object.values(stored.representations)) {
+          const revision = stored.revisions[representation.currentRevisionId];
+          if (!representation.repositoryId && revision) representation.repositoryId = inferRepositoryId(documentFromRevision(revision).scene, project.repositories);
+        }
+        stored.repositoryOwnershipVersion = 1;
+        await this.saveRepresentationCatalog(stored);
+      }
+    }
     return stored;
   }
 
@@ -137,7 +162,7 @@ export class CanvasCatalogStore {
     projectId: string,
     representationId: string
   ): Promise<ProjectRepresentationCatalogRecord> {
-    const catalog = await this.loadRepresentationCatalog(projectId);
+    const catalog = await this.readRepresentationCatalog(projectId);
     const result = rules.archiveRepresentation(catalog, projectId, representationId, catalogEnvironment());
     if (result !== catalog) await this.saveRepresentationCatalog(result);
     return result;

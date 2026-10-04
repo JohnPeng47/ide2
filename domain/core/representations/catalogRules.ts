@@ -112,7 +112,7 @@ export function saveProjectedTree(catalog: ProjectRepresentationCatalogRecord, p
   revision.content = { kind: 'canvas-history', history: histories.exportContext(histories.openContext({ scene, edges: [], sections: {} }, {})) };
   delete revision.source;
   const representation: ProjectRepresentationRecord = {
-    schemaVersion: 1, id: targetId, projectId, handle: targetId, name: input.name.trim(),
+    schemaVersion: 1, id: targetId, projectId, repositoryId: source.repositoryId, handle: targetId, name: input.name.trim(),
     viewKind: "call-graph", representationKind: "tree", status: "settled", currentRevisionId: revisionId,
     revisionIds: [...new Set([...(existingTarget?.revisionIds ?? []), revisionId])],
     createdAt: existingTarget?.createdAt ?? timestamp, updatedAt: timestamp
@@ -161,6 +161,7 @@ export function saveMappingDiagram(catalog: ProjectRepresentationCatalogRecord, 
 
   const current = input.representationId ? catalog.representations[input.representationId] : undefined;
   if (input.representationId && !current) throw new Error("Project diagram was not found");
+  if (current?.repositoryId && input.repositoryId && current.repositoryId !== input.repositoryId) throw Error('Canvas repository ownership cannot change on save');
   if (current?.status === 'archived') throw new ProjectDiagramConflict('Canvas is archived');
   if (current && current.currentRevisionId !== input.expectedRevisionId) {
     const baseline = input.expectedRevisionId && catalog.revisions[input.expectedRevisionId];
@@ -211,7 +212,7 @@ export function saveMappingDiagram(catalog: ProjectRepresentationCatalogRecord, 
     evidence, mappings, ...(source?.provenance ? { provenance: source.provenance } : {}), createdAt: timestamp
   };
   const representation: ProjectRepresentationRecord = {
-    schemaVersion: 1, id, projectId, handle: current?.handle ?? id, name: input.name.trim(),
+    schemaVersion: 1, id, projectId, repositoryId: input.repositoryId ?? current?.repositoryId ?? (source ? catalog.representations[source.representationId]?.repositoryId : undefined), handle: current?.handle ?? id, name: input.name.trim(),
     viewKind: current?.viewKind ?? "diagram", representationKind: revision.representationKind,
     status: "settled", currentRevisionId: revisionId, revisionIds: [...(current?.revisionIds ?? []), revisionId],
     createdAt: current?.createdAt ?? timestamp, updatedAt: timestamp

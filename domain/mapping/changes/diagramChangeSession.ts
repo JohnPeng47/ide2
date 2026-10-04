@@ -1,5 +1,8 @@
+import { diffTreeSummary, diffTreeSummarySchema, validateDiffTree, type ChangeSessionDiffTree, type DiffTreeSummary } from './diffTree';
+import { repositoryContextSchema } from '../../core/repositories/repository';
 import { CanvasHistory, validateCanvasHistory, type CanvasHistoryRecord } from '../workspace/canvasHistory';
 import { z } from 'zod';
+import { diagramMigrationSchema, type DiagramMigration } from './diagramMigration';
 import type { MappingGridDocument } from '../workspace/mappingGrid';
 import type { MappingCanvasState } from '../workspace/mappingWorkspace';
 import { deserializeWorkspace } from '../workspace/mappingWorkspaceCodec';
@@ -14,6 +17,7 @@ export const diagramChangeSchema = z.object({
 export type DiagramChange = z.infer<typeof diagramChangeSchema>;
 export interface ChangeDocumentState { nodeOrigins?: Record<string, string>; document: MappingGridDocument; canvas: MappingCanvasState }
 export interface ChangeSessionDocument {
+  repositoryId?: string;
   history?: CanvasHistoryRecord;
   id: string; name: string; representationId?: string; savedRevisionId?: string; capturedVersion?: number;
   baseline: ChangeDocumentState | null;
@@ -23,14 +27,18 @@ export interface ChangeSessionDocument {
   future: ChangeDocumentState[];
 }
 export interface DiagramChangeSession {
+  /** Absent on legacy sessions whose historical Git context is unknown. */
+  repositoryId?: string; commits?: string[]; head?: string;
+  diffTree?: ChangeSessionDiffTree;
   schemaVersion: 1; id: string; projectId: string; title: string; description: string;
   status: 'draft' | 'ready' | 'accepted' | 'archived'; version: number; createdAt: string; updatedAt: string;
   acceptance?: ChangeSessionAcceptance;
-  documents: ChangeSessionDocument[]; changes: DiagramChange[];
+  documents: ChangeSessionDocument[]; changes: DiagramChange[]; migrations?: DiagramMigration[];
   receipts: Record<string, { signature: string; result: unknown }>;
 }
-export type ChangeSessionSummary = Omit<DiagramChangeSession, 'documents' | 'receipts'> & {
-  documents: Pick<ChangeSessionDocument, 'id' | 'name' | 'representationId' | 'version'>[];
+export type ChangeSessionSummary = Omit<DiagramChangeSession, 'documents' | 'receipts' | 'diffTree'> & {
+  diffTree?: DiffTreeSummary;
+  documents: Pick<ChangeSessionDocument, 'id' | 'name' | 'representationId' | 'repositoryId' | 'version'>[];
 };
 export type ChangePreviewDocument = Omit<ChangeSessionDocument, 'history' | 'past' | 'future'>;
 export type ChangeSessionPreview = ChangeSessionSummary & { document: ChangePreviewDocument };
@@ -41,33 +49,44 @@ const acceptance = z.object({ changeSessionId: changeId, sessionVersion: z.numbe
 /** Read list metadata without restoring document references, histories, or replay receipts. */
 export function validateChangeSessionSummary(input: unknown): ChangeSessionSummary {
   const summary = z.object({
+    diffTree: diffTreeSummarySchema.optional(),
+    repositoryId: changeId.optional(), commits: repositoryContextSchema.shape.commits.optional(), head: repositoryContextSchema.shape.head.optional(),
     schemaVersion: z.literal(1), id: changeId, projectId: changeId, title: z.string().min(1).max(200), description: z.string().max(100000),
     status: z.enum(['draft', 'ready', 'accepted', 'archived']), acceptance: acceptance.optional(),
     version: z.number().int().nonnegative(), createdAt: z.string(), updatedAt: z.string(),
-    changes: z.array(diagramChangeSchema).max(2000),
-    documents: z.array(z.object({ id: changeId, name: z.string().min(1).max(200), representationId: changeId.optional(),
+    changes: z.array(diagramChangeSchema).max(2000), migrations: z.array(diagramMigrationSchema).max(1000).default([]),
+    documents: z.array(z.object({ id: changeId, name: z.string().min(1).max(200), repositoryId: changeId.optional(), representationId: changeId.optional(),
       version: z.number().int().nonnegative() })).max(100)
   }).parse(input);
+  validateRepositoryContext(summary);
   if ((summary.status === 'accepted') !== !!summary.acceptance || summary.acceptance && summary.acceptance.changeSessionId !== summary.id)
     throw new Error('Invalid change-session acceptance');
   if (new Set(summary.documents.map(doc => doc.id)).size !== summary.documents.length) throw new Error('Duplicate change-session document');
   return summary;
 }
 export function summarizeChangeSession(session: DiagramChangeSession): ChangeSessionSummary {
-  const { receipts: _, documents, ...summary } = session;
-  return { ...summary, documents: documents.map(({ id, name, representationId, version }) => ({ id, name, representationId, version })) };
+  const { receipts: _, documents, diffTree, ...summary } = session;
+  return { ...summary, ...(diffTree ? { diffTree: diffTreeSummary(diffTree) } : {}), documents: documents.map(({ id, name, representationId, repositoryId, version }) => ({ id, name, representationId, repositoryId, version })) };
 }
 export function validateChangeSession(input: unknown): DiagramChangeSession {
   const state = z.custom<ChangeDocumentState>(value => !!value && typeof value === 'object' && 'document' in value && 'canvas' in value);
   const parsed = z.object({
+    diffTree: z.custom<ChangeSessionDiffTree>().optional(),
+    repositoryId: changeId.optional(), commits: repositoryContextSchema.shape.commits.optional(), head: repositoryContextSchema.shape.head.optional(),
     schemaVersion: z.literal(1), id: changeId, projectId: changeId, title: z.string().min(1).max(200), description: z.string().max(100000),
     status: z.enum(['draft','ready','accepted','archived']), acceptance: acceptance.optional(), version: z.number().int().nonnegative(), createdAt: z.string(), updatedAt: z.string(),
-    documents: z.array(z.object({ history: z.custom<CanvasHistoryRecord>().optional(), id: changeId, name: z.string().min(1).max(200), representationId: changeId.optional(), savedRevisionId: changeId.optional(),
+    documents: z.array(z.object({ history: z.custom<CanvasHistoryRecord>().optional(), id: changeId, name: z.string().min(1).max(200), repositoryId: changeId.optional(), representationId: changeId.optional(), savedRevisionId: changeId.optional(),
       capturedVersion: z.number().int().nonnegative().optional(), baseline: state.nullable(), proposed: state, version: z.number().int().nonnegative(),
       past: z.array(state).max(50), future: z.array(state).max(50) }).strict()).max(100),
-    changes: z.array(diagramChangeSchema).max(2000),
+    changes: z.array(diagramChangeSchema).max(2000), migrations: z.array(diagramMigrationSchema).max(1000).default([]),
     receipts: z.record(z.string(), z.object({ signature: z.string(), result: z.unknown() }))
   }).strict().parse(input);
+  validateRepositoryContext(parsed);
+  if (parsed.diffTree) {
+    validateDiffTree(parsed.diffTree);
+    if (!parsed.repositoryId || parsed.diffTree.hunks.some(hunk => hunk.repositoryId !== parsed.repositoryId || !parsed.commits?.includes(hunk.commit)))
+      throw Error('DiffTree hunks belong to another repository or commit selection');
+  }
   if ((parsed.status === 'accepted') !== !!parsed.acceptance || parsed.acceptance && parsed.acceptance.changeSessionId !== parsed.id)
     throw new Error('Invalid change-session acceptance');
   const ids = new Set<string>();
@@ -82,4 +101,9 @@ export function validateChangeSession(input: unknown): DiagramChangeSession {
     }
   }
   return parsed;
+}
+
+function validateRepositoryContext(session: { repositoryId?: string; commits?: string[]; head?: string }) {
+  if (session.repositoryId !== undefined || session.commits !== undefined || session.head !== undefined)
+    repositoryContextSchema.parse({ repositoryId: session.repositoryId, commits: session.commits, head: session.head });
 }

@@ -16,6 +16,6 @@ export function reconcileWorkspaceDocument(doc: MappingDocumentSnapshot, catalog
   if (dirty) return { document: doc, newerRevision: true };
   const document = documentFromRevision(latest);
   return { newerRevision: false, document: { ...doc, document, history: historyFromRevision(latest),
-    name: representation.name, savedName: representation.name, revisionId: latest.id,
+    repositoryId: representation.repositoryId, name: representation.name, savedName: representation.name, revisionId: latest.id,
     savedScene: JSON.stringify(document.scene), savedEdges: JSON.stringify(document.edges) } };
 }

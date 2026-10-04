@@ -65,6 +65,7 @@ export function deserializeWorkspace(json: string | unknown, historyValidation: 
   for (const doc of value.documents) {
     object(doc); id(doc.representationId); check(!docs.has(doc.representationId), 'duplicate document'); docs.add(doc.representationId);
     if (doc.hidden !== undefined) check(typeof doc.hidden === 'boolean', 'invalid canvas visibility');
+    if (doc.repositoryId !== undefined) id(doc.repositoryId);
     if (doc.savedRepresentationId !== undefined) id(doc.savedRepresentationId);
     if (doc.representationId.startsWith('draft-') && doc.revisionId === '') {} else id(doc.revisionId); string(doc.name); string(doc.savedName); string(doc.savedScene);
     object(doc.document); object(doc.document.scene); object(doc.document.sections);

@@ -72,6 +72,7 @@ export interface CodeEntityRecord {
 }
 
 export interface ProjectRecord {
+  repositories?: import("../repositories/repository").Repository[];
   schemaVersion: typeof SCHEMA_VERSION;
   id: string;
   name: string;

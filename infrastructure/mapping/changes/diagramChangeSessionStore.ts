@@ -18,12 +18,15 @@ export class DiagramChangeSessionStore implements DiagramChangeSessionRepository
   readPreview(projectId: string, id: string, documentId: string): Promise<ChangeSessionPreview> {
     return this.background ? changeSessionWorker(this.root).request('readPreview', [projectId, id, documentId]) : this.records.readPreview(projectId, id, documentId);
   }
+  async readDiffTree(projectId: string, id: string) {
+    return this.background ? changeSessionWorker(this.root).request<Awaited<ReturnType<ChangeSessionRecords['readDiffTree']>>>('readDiffTree', [projectId, id]) : this.records.readDiffTree(projectId, id);
+  }
   async read(projectId: string, id: string) {
     const result = this.background ? await changeSessionWorker(this.root).request<{ session: DiagramChangeSession; token: string }>('read', [projectId, id]) : await this.records.read(projectId, id);
     this.tokens.set(result.session, result.token); return result.session;
   }
   async write(session: DiagramChangeSession, scope?: ChangeSessionWriteScope) {
-    const input: SessionWrite = { summary: summarizeChangeSession(session), expected: this.tokens.get(session),
+    const input: SessionWrite = { ...(!scope || scope.diffTree ? { diffTree: session.diffTree } : {}), summary: summarizeChangeSession(session), expected: this.tokens.get(session),
       documents: scope ? session.documents.filter(doc => scope.documents.includes(doc.id)) : session.documents,
       receipts: scope ? Object.fromEntries(scope.receipts.map(key => [key, session.receipts[key]])) : session.receipts };
     const token = this.background ? await changeSessionWorker(this.root).request<string>('write', [input]) : await this.records.write(input);

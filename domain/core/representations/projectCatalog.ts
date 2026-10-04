@@ -112,6 +112,7 @@ export interface ProjectRepresentationRevisionRecord {
 }
 
 export interface ProjectRepresentationRecord {
+  repositoryId?: string;
   schemaVersion: 1;
   id: string;
   projectId: string;
@@ -127,6 +128,7 @@ export interface ProjectRepresentationRecord {
 }
 
 export interface ProjectRepresentationCatalogRecord {
+  repositoryOwnershipVersion?: 1;
   schemaVersion: 1;
   projectId: string;
   activeByKind: Partial<Record<DiagramViewKind, string>>;

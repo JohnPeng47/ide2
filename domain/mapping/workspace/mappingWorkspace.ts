@@ -38,6 +38,7 @@ export function initialCanvasState(): MappingCanvasState {
 export interface MappingDocumentSnapshot {
   hidden?: boolean;
   history?: import('./canvasHistory').CanvasHistoryRecord;
+  repositoryId?: string;
   savedRepresentationId?: string;
   representationId: string; name: string; revisionId: string; savedName: string; savedScene: string; savedEdges?: string;
   document: MappingGridDocument; canvas: MappingCanvasState; viewport?: CanvasTransform;

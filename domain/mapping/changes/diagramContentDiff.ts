@@ -14,7 +14,7 @@ export interface DiagramContentDiff {
   original: DiagramDiffSide; proposed: DiagramDiffSide;
   modifications: { original: ModifiedText; proposed: ModifiedText }[];
   /** Baseline-only text inserted before a proposed source line, without live anchors. */
-  removals: { text: string; beforeLine: number; ancestorIds: string[]; spans: { start: number; end: number }[] }[];
+  removals: { text: string; beforeLine: number; ancestorIds: string[]; spans: { start: number; end: number; contentNodeId?: string }[] }[];
   counts: { added: number; removed: number; modified: number; moved: number };
 }
 export interface ModifiedText { contentNodeId?: string; sourceLine: number; text: string }
@@ -140,7 +140,7 @@ export function diffDiagramContent(before: DiagramContent | undefined, after: Di
       ? Math.max(proposedParent.line, ...proposedParent.foldRanges.map(range => range.endLine)) + 1
       : previous ? previous[1] + 1 : b.lines.length + 1);
     const text = chars.join('').trimEnd();
-    const spans = removed.length ? removed.map(node => ({ start: node.startColumn - 1, end: node.endColumn }))
+    const spans = removed.length ? removed.map(node => ({ start: node.startColumn - 1, end: node.endColumn, contentNodeId: node.id }))
       : [{ start: text.length - text.trimStart().length, end: text.length }];
     result.removals.push({ text, beforeLine, ancestorIds, spans });
   }

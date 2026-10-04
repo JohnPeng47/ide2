@@ -27,6 +27,8 @@ export interface DiagramGenerator {
 /** Sole content writer. Local revisions are synchronous; durable adapters flush issued records before publishing canvases. */
 export interface DiagramService {
   create(input: DiagramInput): DiagramRevisionResult;
+  /** Hydrate a validated standalone revision before editing after a restart/worker read. */
+  importRevision(revision: DiagramRevision): void;
   getRevision(revisionId: string): DiagramRevision;
   listRevisions(diagramId: string): readonly DiagramRevisionSummary[];
   revise(baseRevisionId: string, edit: DiagramEdit): DiagramRevisionResult;
@@ -35,6 +37,12 @@ export interface DiagramService {
 
 export class RevisionedDiagramService implements DiagramService {
   constructor(private readonly generator?: DiagramGenerator) {}
+  importRevision(revision: DiagramRevision): void {
+    const nodes = diagramContentNodes(revision.diagram.content);
+    const refs = nodes.map(node => revision.nodeRefs?.[node.id]);
+    if (refs.some(ref => typeof ref !== 'string' || !ref) || new Set(refs).size !== refs.length) throw Error('Invalid logical node identities');
+    diagramRevisions.register(revision);
+  }
   create(input: DiagramInput): DiagramRevisionResult {
     const prepared = new DiagramRevisionEditor({}, () => ({})).prepareCreate(input);
     return this.issue(prepared);

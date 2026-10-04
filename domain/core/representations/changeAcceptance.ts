@@ -26,6 +26,7 @@ export interface AcceptCanvasChangesInput {
   requestId: string;
   changeIds: string[];
   documents: {
+    repositoryId?: string;
     documentId: string;
     representationId?: string;
     expectedRevisionId?: string;
