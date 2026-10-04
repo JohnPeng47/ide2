@@ -186,6 +186,63 @@ polling or resending selection content. If its publisher socket disconnects, the
 indicator reports that agent status is unavailable until it reconnects.
 
 
+## Short canvas context over HTTP
+
+For a diagram overview with source file references, discover `canvasId` and
+`documentId` using `GET /api/mapping/agent/canvases`, then read:
+
+```sh
+curl --get http://localhost:41431/api/mapping/live/context/short \
+  --data-urlencode 'workspaceInstanceId=CANVAS_ID' \
+  --data-urlencode 'documentId=DOCUMENT_ID'
+```
+
+This stateless GET requires a running browser publisher, but no reader WebSocket,
+agent session, or request ID. It does not change the connected-agent count.
+The response has `view: "short"`, `shortFormatVersion: 1`, `apiFormatVersion: 1`,
+`workspaceInstanceId`, `documentId`, `canvasEpoch`, the current context `version`,
+and `name`. `X-Canvas-Epoch` and `X-Document-Version` mirror that snapshot's identity.
+Reads are `Cache-Control: no-store`; each request loads fresh browser context.
+
+- `diagrams`: complete raw ASCII (including newlines and spacing), content revision
+  and hash, structure kind, exact geometry, hierarchy, and collapsed anchor IDs.
+  Cross-canvas `jumps` remain present, with `sourceStatus: "current" | "stale"`.
+- `sourceReferences` on each diagram: repository/corpus `binding`, diagram
+  `mappings`, and `entities` with IDs, labels, handles, source IDs, and
+  `sourceRanges` containing range IDs, file paths, line numbers, and optional symbols.
+  Mappings identify these entities/ranges exactly as in detailed reads. They are
+  anchored to the diagram's `asciiSha256`; paths/ranges describe captured references,
+  not a claim that today's files still contain the same text. Captured `originalLines`
+  and compaction content are deferred. No source files are read by this endpoint.
+- `edges`: all connections, preserving appearance, labels, endpoints, and revision
+  guards. Each endpoint has `status: "resolved" | "stale" | "missing"`.
+  Resolved content endpoints include 1-based inclusive `line`, `startColumn`, and
+  `endColumn`. Stale endpoints retain their original IDs without borrowing current
+  locations. `renderStatus`, when available, retains the renderer's separate
+  resolved/proxy/stale/pending/blocked status; routing paths are omitted.
+- `groups`: IDs, children, geometry, and expansion state.
+- `selections`: references for all floating selection panes (not the active selection
+  set), including source diagram/content IDs, captured revision when available,
+  captured ASCII hash, rectangle, selected entity IDs, hierarchy, and display state.
+  `matchesCurrentSource: false` includes historical snapshots and missing sources.
+  Their text must be read from the detailed node's `value.sourceAscii`, never
+  reconstructed from the current diagram. Revision IDs may be absent on legacy panes.
+- `otherNodes`: IDs, kinds, optional titles, hierarchy, expansion, and geometry for
+  other floating panes. Their content is deferred, not silently treated as absent.
+- `detailsDeferred`: identifies omitted detail categories.
+
+The short view does not include the complete anchor index, captured source text,
+selection source ASCII, rendered arrow nodes, or other pane contents. For those,
+use the existing agent `canvas.attach(...)` and `nodes.get({nodeId})`, or request
+the full WebSocket context below. Short anchor handles match those detailed reads
+on the same backend. Fetch a detailed node to choose a new anchor; do not infer an
+anchor ID from a line number. Use this response's `version` for subsequent edits.
+
+Missing/duplicate identity parameters return `400`; unsupported methods return
+`405`. An unavailable publisher/document returns `503`, a vanished workspace
+instance returns `410`, and replacement while loading returns `409`. Rediscover
+and reread after replacement. Existing detailed API and WebSocket formats are unchanged.
+
 ## Canvas context on connection
 
 Selection-only v2 readers remain compatible. Agents that need the complete current
@@ -195,10 +252,19 @@ canvas can opt in when attaching:
 {"type":"attach","protocolVersion":2,"workspaceInstanceId":"…","documentId":"…","includeContext":true}
 ```
 
-The `attached` response includes `context: {version, name, nodes, edges}`. `nodes`
+The `attached` response includes `context: {apiFormatVersion: 1, version, name, nodes, edges}`. `nodes`
 is the complete DisplayNode registry returned by `nodes.list()`, including diagram
 ASCII, structural node IDs, source mappings, layout hierarchy, and floating nodes.
-`edges` is the document connection list. All three values come from one synchronous
+Diagram content appears once at `node.content`; `node.diagram.content` and the
+top-level `contentNodes` array are omitted. Read anchors from
+`Object.values(node.content.structure.nodes)`, including for non-tree diagrams.
+Nodes carry `apiFormatVersion: 1`. Short content-node handles are identical to
+those returned by the agent API on this backend, and can be used directly in
+edge, collapse, and jump operations. They preserve revision identity and expire
+on backend restart; reread before making new edits. Connection/selection IDs and
+protocol version 2 are unchanged.
+
+`edges` is the document connection list with the same short anchor handles. All three values come from one synchronous
 controller read. Undo history is neither exported nor cached. The canvas context
 version is independent of the selection's `documentVersion`, which can lag when
 an edit leaves the selection unchanged.

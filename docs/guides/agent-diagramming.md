@@ -68,6 +68,32 @@ Each node or edge mutation commits immediately, advances the document version, a
 
 Retries with the same request ID and arguments return the same backend result. After a canvas transport timeout, the backend replays completed API-call results and resends the unacknowledged operation with its original ID and version, avoiding duplicate edits. Retry scripts must reproduce the same API-call sequence; changed calls are rejected. A normal script error is retained for that request ID; read the current canvas and use a new ID for revised work. Reusing an ID with different arguments is rejected; on a version conflict, read again and submit revised work with a new request ID. Backend restart ends sessions and clears request history. The backend currently bounds session/request history; a capacity error explicitly requires a restart rather than silently forgetting duplicate protection.
 
+## Compact node responses
+
+Agent API nodes use `apiFormatVersion: 1`. `node.content` is the canonical diagram
+content; `node.diagram` retains service identity, source context, and jumps, but
+omits its duplicate `content`. The top-level `contentNodes` array is removed.
+Use `Object.values(node.content.structure.nodes)` for anchors in both trees and
+unstructured diagrams. Unstructured nodes come from the same derived interpreter
+index as before. ASCII, whitespace, labels, spans, hierarchy, fold ranges, source
+evidence, revision IDs, hashes, and geometry are preserved.
+
+Content-node IDs are opaque short handles. The backend shares their registry
+between MCP/HTTP operations and live WebSocket context, including attach and
+refresh. Pass them unchanged into edges, subtree collapse, and diagram jumps.
+Their scope includes the original full revision/hash identity; handles are never
+reassigned. Existing full IDs remain valid inputs. Backend restart invalidates
+short handles: reread before submitting new edits. Unknown handles fail with
+`STALE_CONTENT_NODE`, and normal document-version and anchor validation still apply.
+The bounded registry reports `ANCHOR_CAPACITY` rather than evicting/reusing IDs.
+
+Projection happens before each `exec` method result enters the script, so reads,
+mutations, and subsequent reads use the same format within one script. Mutation
+`transaction.nodes`, top-level draw/mapping responses, and search DisplayNodes use
+the same projection. Stored documents and controller APIs retain their canonical
+full IDs. A previously completed proposal request can replay its persisted receipt
+after restart; its old handles are still expired and require a fresh read for edits.
+
 ## Prompt-driven diagram edits
 
 The Mapping UI exposes this flow in two places:

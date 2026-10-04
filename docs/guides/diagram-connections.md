@@ -23,7 +23,7 @@ or a `GridBoxAnchor`. Both identify the displayed instance with `displayNodeId`.
 A content-node anchor also includes `contentNodeId` and `revisionId`. This
 distinguishes repeated labels and multiple GridBoxes displaying the same content.
 
-The public DisplayNode registry exposes `contentNodes` on diagram nodes. Trees use
+The agent API exposes `content.structure.nodes` on diagram nodes. Trees use
 their existing node index; unstructured diagrams use a derived interpreter index.
 Building that index does not modify ASCII, stored structure, or source mappings.
 
@@ -81,7 +81,7 @@ return edges.create({
   source: {
     kind: 'content-node',
     displayNodeId: a.id,
-    contentNodeId: a.contentNodes[0].id,
+    contentNodeId: Object.values(a.content.structure.nodes)[0].id,
     revisionId: a.content.revisionId,
     side: 'right'
   },
