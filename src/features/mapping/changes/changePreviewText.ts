@@ -1,16 +1,17 @@
+import { migrationMarkKey, type MigrationMark } from './changeMigrationPreview';
 import type { CanvasJump } from '../../../../domain/core/diagrams/canvasJump';
 import { composeScene, flattenGrid, layoutScene, measureContent, resolveScene, type GridBox, type LineGridScene } from '../../../../domain/core/diagrams/lineGrid';
 import { diagramTextRanges, textRow, type DiagramTextRow, type DiagramTextRun } from '../../../../domain/core/diagrams/diagramText';
 import { projectDiagramContent, type DiagramViews } from '../../../../domain/mapping/workspace/diagramViewState';
 import type { DiagramContentDiff } from '../../../../domain/mapping/changes/diagramContentDiff';
 
-export interface PreviewTextRun extends DiagramTextRun { diffVersion?: 'previous' | 'current'; diffStatus?: 'removed' }
+export interface PreviewTextRun extends DiagramTextRun { diffVersion?: 'previous' | 'current'; diffStatus?: 'removed'; migrations?: MigrationMark[] }
 export interface PreviewTextRow extends DiagramTextRow { runs: PreviewTextRun[] }
-type Edit = { start: number; end: number; previous: string; current: string; contentNodeId?: string };
+type Edit = { start: number; end: number; previous: string; current: string; contentNodeId?: string; originalContentNodeId?: string };
 
 /** Display-only rows. Source content, IDs, jumps, mappings and provenance stay intact. */
 export function changePreviewText(scene: LineGridScene, views: DiagramViews | undefined,
-  diffs: ReadonlyMap<string, DiagramContentDiff>, modifiedDiagramIds: ReadonlySet<string>, jumps: readonly CanvasJump[] = []) {
+  diffs: ReadonlyMap<string, DiagramContentDiff>, modifiedDiagramIds: ReadonlySet<string>, jumps: readonly CanvasJump[] = [], baselineMigrations: ReadonlyMap<string, MigrationMark[]> = new Map()) {
   const projections = new Map<string, {
     rows: PreviewTextRow[]; ascii: string; rowForLine: Map<number, number>; prefixRowForNode: Map<string, number>;
     columnForLine: (line: number, column: number) => number;
@@ -27,7 +28,7 @@ export function changePreviewText(scene: LineGridScene, views: DiagramViews | un
         ? ranges.get(selected.sourceLine)?.find(range => range.owner?.contentNodeId === selected.contentNodeId)
         : { start: 0, end: source[selected.sourceLine - 1]?.length ?? 0 };
       if (!span) continue;
-      const edit = { start: span.start, end: span.end, previous: modification.original.text, current: modification.proposed.text, contentNodeId: selected.contentNodeId };
+      const edit = { start: span.start, end: span.end, previous: modification.original.text, current: modification.proposed.text, contentNodeId: selected.contentNodeId, originalContentNodeId: modification.original.contentNodeId };
       const bucket = edits.get(selected.sourceLine);
       if (bucket) bucket.push(edit); else edits.set(selected.sourceLine, [edit]);
     }
@@ -44,9 +45,10 @@ export function changePreviewText(scene: LineGridScene, views: DiagramViews | un
         const { text, spans } = pending.shift()!;
         const runs: PreviewTextRun[] = [];
         let cursor = 0;
-        for (const { start, end } of [...spans].sort((a, b) => a.start - b.start)) {
+        for (const { start, end, contentNodeId } of [...spans].sort((a, b) => a.start - b.start)) {
           if (start > cursor) runs.push({ start: cursor, end: start, text: text.slice(cursor, start), mappings: [] });
-          runs.push({ start, end, text: text.slice(start, end), mappings: [], diffStatus: 'removed' });
+          runs.push({ start, end, text: text.slice(start, end), mappings: [], diffStatus: 'removed',
+            migrations: contentNodeId ? baselineMigrations.get(migrationMarkKey(displayNodeId, contentNodeId)) : undefined });
           cursor = end;
         }
         if (cursor < text.length) runs.push({ start: cursor, end: text.length, text: text.slice(cursor), mappings: [] });
@@ -67,8 +69,8 @@ export function changePreviewText(scene: LineGridScene, views: DiagramViews | un
             owner: run.owner ? { ...run.owner, columnOffset: run.owner.columnOffset + offset } : undefined });
         }
       };
-      const literal = (runs: PreviewTextRun[], start: number, text: string, diffVersion?: PreviewTextRun['diffVersion']) => {
-        if (text) runs.push({ start, end: start + text.length, text, mappings: [], diffVersion });
+      const literal = (runs: PreviewTextRun[], start: number, text: string, diffVersion?: PreviewTextRun['diffVersion'], migrations?: MigrationMark[]) => {
+        if (text) runs.push({ start, end: start + text.length, text, mappings: [], diffVersion, migrations });
       };
       for (const edit of changes) {
         const start = edit.start + offset;
@@ -89,7 +91,9 @@ export function changePreviewText(scene: LineGridScene, views: DiagramViews | un
         literal(primary, start, '[+] ', 'current');
         const peerStart = peer.at(-1)?.end ?? 0;
         literal(peer, peerStart, ' '.repeat(start - peerStart));
-        literal(peer, start, `[-] ${edit.previous}`, 'previous');
+        literal(peer, start, '[-] ', 'previous');
+        literal(peer, start + 4, edit.previous, 'previous', edit.originalContentNodeId
+          ? baselineMigrations.get(migrationMarkKey(displayNodeId, edit.originalContentNodeId)) : undefined);
         offset += 4;
         copy(edit.start, edit.end);
         const padding = extraWidth(edit) - 4;

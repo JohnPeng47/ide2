@@ -9,6 +9,7 @@ import type { DiagramFocus } from '../search/SearchHighlight';
 import { CanvasSession, readable, type SavedDocumentState } from './canvasSession';
 
 export interface DraftMetadata extends SavedDocumentState {
+  repositoryId?: string;
   hidden?: boolean; newerRevision?: boolean; reloadKey?: string; representationId?: string;
   revisionId: string; busy: boolean; viewport?: CanvasTransform; focusBox?: DiagramFocus;
 }
@@ -37,7 +38,7 @@ export class CanvasWorkspace {
     const prior = this.dirtyScenes.getState().ids;
     if (ids.length !== prior.length || ids.some((id, i) => id !== prior[i])) this.dirtyScenesState.setState({ ids });
   };
-  copyDocument(input: { documentId: string; name: string; expectedVersion?: number; display?: DisplayState; viewport?: CanvasTransform }) {
+  copyDocument(input: { repositoryId?: string; documentId: string; name: string; expectedVersion?: number; display?: DisplayState; viewport?: CanvasTransform }) {
     const source = this.store.getState().drafts[input.documentId];
     if (!source || source.hidden) throw new Error('DOCUMENT_UNAVAILABLE');
     if (source.busy) throw new Error('DOCUMENT_BUSY');
@@ -50,7 +51,7 @@ export class CanvasWorkspace {
     for (const node of Object.values(canvas.display.nodes)) if (node.kind === 'conversation') node.thread.pending = false;
     const documentId = `draft-${crypto.randomUUID()}`;
     this.setDrafts(current => ({ ...current, [documentId]: {
-      name, savedName: '', revisionId: '', busy: false, document: snapshot.document, canvas,
+      name, repositoryId: input.repositoryId ?? source.repositoryId, savedName: '', revisionId: '', busy: false, document: snapshot.document, canvas,
       history: controller.forkHistory(canvas), viewport: structuredClone(input.viewport ?? source.viewport),
       savedScene: JSON.stringify(snapshot.document.scene), savedEdges: JSON.stringify(snapshot.document.edges)
     } }));
@@ -71,7 +72,7 @@ export class CanvasWorkspace {
       } else next[id] = item;
       next[id].session.updateBaseline(next[id]);
       const old = prior[id];
-      if (!old || next[id].session !== old.session || ['name', 'savedName', 'savedScene', 'savedEdges', 'revisionId', 'representationId', 'hidden'].some(key =>
+      if (!old || next[id].session !== old.session || ['name', 'savedName', 'savedScene', 'savedEdges', 'revisionId', 'representationId', 'repositoryId', 'hidden'].some(key =>
         old[key as keyof DraftMetadata] !== next[id][key as keyof DraftMetadata])) { persist = true; changedIds.add(id); }
     }
     for (const [id, old] of Object.entries(prior)) if (next[id]?.session !== old.session) {

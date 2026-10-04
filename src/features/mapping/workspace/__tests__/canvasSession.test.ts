@@ -9,7 +9,7 @@ import * as history from '../../../../../domain/core/diagrams/canvasHistory';
 function setup() {
   const document = mappingDocumentFromScene(singleDiagramScene('Root\n`-- Child'));
   const seed = { name: 'Canvas', savedName: 'Canvas', savedScene: JSON.stringify(document.scene), savedEdges: JSON.stringify(document.edges),
-    revisionId: 'saved', busy: false, document, canvas: initialCanvasState() };
+    revisionId: 'saved', repositoryId: 'repo-alpha', busy: false, document, canvas: initialCanvasState() };
   const workspace = new CanvasWorkspace();
   workspace.setDrafts({ a: seed, b: { ...seed, name: 'Second', savedName: 'Second' } });
   const session = workspace.store.getState().drafts.a.session;
@@ -115,6 +115,7 @@ it('copies the current workspace document with independent history and preserved
   const draft = workspace.store.getState().drafts[documentId], copied = draft.session.controller;
   expect(documentId).toMatch(/^draft-/);
   expect(draft.representationId).toBeUndefined(); expect(draft.revisionId).toBe('');
+  expect(draft.repositoryId).toBe('repo-alpha');
   expect(draft.viewport).toEqual(viewport); expect(draft.viewport).not.toBe(viewport);
   expect(copied.getSnapshot().document).toEqual(before.document);
   expect(copied.resolveDiagram('overview').sourceContext.mappings).toHaveLength(1);
@@ -129,6 +130,14 @@ it('copies the current workspace document with independent history and preserved
   expect(controller.getSnapshot()).toBe(before); expect(controller.exportHistory()).toEqual(historyBefore);
   edit(session, 'Changed only in original');
   expect(copied.getSnapshot().document).toEqual(before.document);
+  workspace.dispose();
+});
+
+it('allows a copy in another repository without changing the source owner', () => {
+  const { workspace } = setup();
+  const result = workspace.copyDocument({ documentId: 'a', name: 'Beta copy', repositoryId: 'repo-beta', expectedVersion: 0 });
+  expect(workspace.store.getState().drafts[result.documentId].repositoryId).toBe('repo-beta');
+  expect(workspace.store.getState().drafts.a.repositoryId).toBe('repo-alpha');
   workspace.dispose();
 });
 

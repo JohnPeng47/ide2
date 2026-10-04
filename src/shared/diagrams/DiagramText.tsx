@@ -10,11 +10,12 @@ type Props = Omit<ComponentPropsWithRef<'pre'>, 'children'> & {
   renderRun?: (run: DiagramTextRun) => ReactNode;
   rowProps?: (row: DiagramTextRow) => HTMLAttributes<HTMLSpanElement>;
   /** Optional display-only decoration; never changes source text or endpoint identity. */
+  nodeSuffix?: (owner: DiagramTextOwner) => ReactNode;
   nodeProps?: (owner: DiagramTextOwner) => HTMLAttributes<HTMLSpanElement> | undefined;
 };
 
 /** Shared JSX for both viewers. Controllers retain gestures, folding, and source actions. */
-export function DiagramText({ rows, onJump, renderRun, rowProps, nodeProps, registerEndpoint, ...pre }: Props) {
+export function DiagramText({ rows, onJump, renderRun, rowProps, nodeProps, nodeSuffix, registerEndpoint, ...pre }: Props) {
   const endpointRefs = useMemo(() => new Map<string, (element: Element | null) => void>(), [registerEndpoint]);
   const refFor = (owner: DiagramTextOwner) => {
     const key = JSON.stringify([owner.displayNodeId, owner.contentNodeId, owner.revisionId]);
@@ -45,7 +46,7 @@ export function DiagramText({ rows, onJump, renderRun, rowProps, nodeProps, regi
           ? <JumpChoices run={run} onJump={onJump} text={piece.map(item => item.text).join('')} />
           : piece.map(item => <Fragment key={item.start}>{renderRun ? renderRun(item) : item.text}</Fragment>)}</Fragment>;
       });
-      return <span key={first.start}
+      return <Fragment key={first.start}><span
         {...decoration}
         ref={owner?.contentNodeId && registerEndpoint ? refFor(owner) : undefined}
         className={[owner?.contentNodeId ? 'diagram-content-node' : '', decoration?.className].filter(Boolean).join(' ') || undefined}
@@ -57,12 +58,12 @@ export function DiagramText({ rows, onJump, renderRun, rowProps, nodeProps, regi
           .filter(mapping => mapping.line === owner.sourceLine && mapping.startColumn >= first.start - owner.columnOffset + 1
             && mapping.endColumn <= group.at(-1)!.end - owner.columnOffset).map(mapping => mapping.id))].join(' ') || undefined : undefined}
         data-mapping-ids={group.flatMap(run => run.mappings.map(mapping => mapping.id)).filter((id, i, ids) => ids.indexOf(id) === i).join(' ') || undefined}
-      >{contents}</span>;
+      >{contents}</span>{owner?.contentNodeId && nodeSuffix?.(owner)}</Fragment>;
     })}{index < rows.length - 1 ? '\n' : null}</span>;
   })}</pre>;
 }
 
-function JumpChoices({ run, onJump, text }: { run: DiagramTextRun; text: string; onJump: (target: DiagramJumpTarget) => void }) {
+export function JumpChoices({ run, onJump, text }: { run: DiagramTextRun; text: string; onJump: (target: DiagramJumpTarget) => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
   useEffect(() => {

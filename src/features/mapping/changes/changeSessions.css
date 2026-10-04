@@ -14,6 +14,8 @@ nav[aria-label="Diagram changes"] small { color: var(--muted); }
 .change-session-actions button:disabled { opacity: .6; cursor: wait; }
 .change-preview-box { position: absolute; pointer-events: none; border: 1px dotted #456070; }
 .change-preview-box.is-change-target { outline: 1px solid #f2ca75; }
+.change-preview-box.is-added-diagram { border: 2px solid #a3d997; }
+.change-preview-box.is-added-diagram.is-change-target { outline-color: #a3d997; }
 .change-preview-stage .mapping-poc-ascii { margin: 0; }
 .change-diff-added { background: #244832; color: #c1f0bb; }
 .change-diff-modified { background: #51401e; color: #ffe2a0; }
@@ -23,3 +25,27 @@ nav[aria-label="Diagram changes"] small { color: var(--muted); }
 .change-preview-stage .change-diff-added .diagram-jump,
 .change-preview-stage .change-diff-modified .diagram-jump,
 .change-preview-stage .change-diff-removed .diagram-jump { color: inherit; }
+.migration-source { --migration-accent: #7da7d9; --migration-fill: #20364d; background: var(--migration-fill); color: #d5e6fa; outline: 1px dashed var(--migration-accent); }
+.migration-destination { --migration-accent: #66b3ff; --migration-fill: #173f70; background: var(--migration-fill); color: #e1f0ff; outline: 1px solid var(--migration-accent); }
+.migration-with-edit { background: revert; color: inherit; box-shadow: inset 0 -2px var(--migration-accent); }
+.migration-with-edit.change-diff-added { background: #244832; color: #c1f0bb; }
+.migration-with-edit.change-diff-modified { background: #51401e; color: #ffe2a0; }
+.migration-with-edit.migration-source.migration-destination { border-bottom: 2px dashed #7da7d9; }
+.migration-source .diagram-jump, .migration-destination .diagram-jump { color: inherit; }
+.migration-links { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 14px; }
+.migration-links button { border: 0; padding: 5px; cursor: pointer; }
+.mapping-floating-pane nav .migration-links button { background: var(--migration-fill); color: #e1f0ff; padding: 7px; }
+.migration-links button[aria-pressed=true] { outline-width: 2px; }
+.migration-review { position: absolute; right: 20px; top: 64px; width: min(330px, 35%); max-height: calc(100% - 100px); overflow: auto; z-index: 11; padding: 8px; background: var(--bg, #0d1117); border: 1px solid var(--gutter); border-radius: 6px; }
+.migration-legend { display: flex; gap: 10px; padding: 4px; }
+.migration-legend span { padding: 3px 6px; }
+.migration-endpoint { margin: 10px 2px; padding: 10px; }
+.migration-endpoint.is-current { outline-width: 2px; }
+.migration-endpoint small { display: block; margin: 6px 0; }
+.migration-endpoint p { margin: 8px 0; }
+.migration-endpoint button { display: block; margin-top: 8px; padding: 4px 6px; color: inherit; border: 1px solid var(--migration-accent); background: transparent; cursor: pointer; }
+.migration-endpoint :focus-visible { outline: 2px solid white; outline-offset: 2px; }
+.migration-baseline { background: var(--bg, #0d1117); color: var(--fg); overflow: auto; padding: 6px; font-size: 12px; }
+.repository-heading { padding: 8px 0; color: var(--accent-cyan, #88c0d0); font-weight: 600; cursor: pointer; }
+.change-repository-context { color: var(--muted); font-size: 11px; margin: 4px 0; }
+.change-commit-list { font-size: 11px; overflow-wrap: anywhere; }

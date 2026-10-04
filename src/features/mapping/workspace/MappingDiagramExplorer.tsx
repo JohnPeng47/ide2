@@ -1,3 +1,5 @@
+import { repositoryGroups, type Repository } from '../../../../domain/core/repositories/repository';
+import { RepositoryTreeGroup } from './RepositoryTreeGroup';
 import { ChangeSessionExplorer } from '../changes/ChangeSessionExplorer';
 import type { DisplayModeChange } from '../changes/changeSessionApi';
 import { useEffect, useRef, useState } from "react";
@@ -7,7 +9,7 @@ export function MappingDiagramExplorer(props: {
   transfer?: { mode: 'copy' | 'move'; count: number; sourceId: string; busy: boolean; error?: string; progress?: string; onCancel: () => void; onNew: (name: string) => void };
   explorerTab: 'diagrams'|'changes'; onTabChange: (tab: 'diagrams'|'changes') => void;
   changeMode?: DisplayModeChange; onChangeSelect: (mode: DisplayModeChange) => void;
-  projectName: string; diagrams: Pick<ProjectRepresentationRecord, 'id' | 'name'>[]; activeId?: string;
+  repositories?: Repository[]; projectName: string; diagrams: Pick<ProjectRepresentationRecord, 'id' | 'name' | 'repositoryId'>[]; activeId?: string;
   scene?: LineGridScene; dirtyIds: string[]; onOpen: (id: string) => void; onFocus: (boxId: string) => void;
   onDelete: (id: string) => void; deletingId?: string; deleteDisabled: boolean; busyIds: string[];
 }) {
@@ -31,7 +33,7 @@ export function MappingDiagramExplorer(props: {
     <div className="mapping-explorer-tabs" role="tablist" aria-label="Explorer mode">
       {(['diagrams','changes'] as const).map(tab => <button disabled={!!props.transfer} key={tab} role="tab" aria-selected={props.explorerTab === tab} onClick={() => props.onTabChange(tab)}>{tab === 'diagrams' ? 'Diagrams' : 'Changes'}</button>)}
     </div>
-    {props.explorerTab === 'changes' ? <ChangeSessionExplorer mode={props.changeMode} onSelect={props.onChangeSelect} /> : <>
+    {props.explorerTab === 'changes' ? <ChangeSessionExplorer repositories={props.repositories ?? []} mode={props.changeMode} onSelect={props.onChangeSelect} /> : <>
     {props.transfer && <div ref={picker} tabIndex={-1} className="mapping-transfer-picker" aria-label="Choose destination canvas" aria-busy={props.transfer.busy}>
       <h2>{props.transfer.mode === 'copy' ? 'Copy' : 'Move'} {props.transfer.count} {props.transfer.count === 1 ? 'diagram' : 'diagrams'}</h2>
       <p role="status">{props.transfer.busy ? props.transfer.progress : newCanvas ? 'Name the new canvas, then confirm below.' : 'Choose an existing canvas below, or create a new one.'}</p>
@@ -44,7 +46,10 @@ export function MappingDiagramExplorer(props: {
       {!props.transfer.busy && <p className="mapping-transfer-hint">Esc cancels and clears the selection.</p>}
     </div>}
     <input type="search" aria-label="Filter diagrams" placeholder="Find a diagram…" value={query} onChange={(event) => setQuery(event.target.value)} />
-    <nav aria-label="Project diagrams"><ul>{props.diagrams.filter((diagram) => diagram.name.toLowerCase().includes(query.toLowerCase())).map((diagram) =>
+    <nav aria-label="Project diagrams"><ul>{repositoryGroups(props.repositories ?? [], props.diagrams)
+      .map(group => ({ ...group, items: group.items.filter(diagram => `${group.name} ${diagram.name}`.toLowerCase().includes(query.toLowerCase())) }))
+      .filter(group => group.items.length).map(group => <RepositoryTreeGroup key={group.id} id={group.id} name={group.name}
+        reveal={!!query || group.items.some(diagram => diagram.id === props.activeId)}>{group.items.map((diagram) =>
       <li key={diagram.id}>
         <div className="mapping-explorer-row">
           <button type="button" className={diagram.id === props.activeId ? "is-active" : ""}
@@ -59,7 +64,7 @@ export function MappingDiagramExplorer(props: {
         {!props.transfer && diagram.id === props.activeId && props.scene && <ul>{props.scene.root.kind === "container"
           ? props.scene.root.children.map(boxTree) : boxTree(props.scene.root)}</ul>}
       </li>
-    )}</ul></nav>
+    )}</RepositoryTreeGroup>)}</ul></nav>
     {!props.diagrams.length && <p>No project diagrams yet. Create one with New.</p>}
     </>}
   </>;

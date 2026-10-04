@@ -49,7 +49,7 @@ it('replaces an imported history graph without retaining the previous graph', as
   vi.useFakeTimers(); let revision = 0;
   const storage = new RecordStorage({ revision: 0, records: {} }, { write: async () => ({ revision: ++revision }) });
   const workspace = new CanvasWorkspace();
-  const seed = (name: string) => { const document = { scene: singleDiagramScene(name), edges: [], sections: {} }; return { name, savedName: name, savedScene: JSON.stringify(document.scene), revisionId: '', busy: false, document, canvas: initialCanvasState() }; };
+  const seed = (name: string) => { const document = { scene: singleDiagramScene(name), edges: [], sections: {} }; return { name, repositoryId: `repo-${name}`, savedName: name, savedScene: JSON.stringify(document.scene), revisionId: '', busy: false, document, canvas: initialCanvasState() }; };
   workspace.setDrafts({ 'draft-a': seed('Alpha') });
   const persistence = new WorkspacePersistence(workspace, storage, 'project', new SourcePaneViewState()); await storage.flush();
   const oldGraph = storage.keys().filter(key => key.includes('/checkpoint/') || key.includes('/revision/'));
@@ -64,7 +64,7 @@ it('persists only the edited canvas and new history records, with no history exp
   vi.useFakeTimers(); const batches: WorkspaceBatch[] = [];
   const storage = new RecordStorage({ revision: 0, records: {} }, { write: async batch => { batches.push(batch); return { revision: batches.length }; } });
   const workspace = new CanvasWorkspace();
-  const seed = (name: string) => { const document = { scene: singleDiagramScene(name), edges: [], sections: {} }; return { name, savedName: name, savedScene: JSON.stringify(document.scene), revisionId: '', busy: false, document, canvas: initialCanvasState() }; };
+  const seed = (name: string) => { const document = { scene: singleDiagramScene(name), edges: [], sections: {} }; return { name, repositoryId: `repo-${name}`, savedName: name, savedScene: JSON.stringify(document.scene), revisionId: '', busy: false, document, canvas: initialCanvasState() }; };
   workspace.setDrafts({ 'draft-a': seed('Alpha'), 'draft-b': seed('Beta') });
   const persistence = new WorkspacePersistence(workspace, storage, 'project', new SourcePaneViewState()); await storage.flush(); batches.length = 0;
   for (const controller of workspace.controllers.values()) vi.spyOn(controller, 'exportHistory').mockImplementation(() => { throw Error('Full export must not run'); });
@@ -77,6 +77,7 @@ it('persists only the edited canvas and new history records, with no history exp
   expect(keys.filter(k => k.includes('/checkpoint/'))).toHaveLength(1);
   const records = Object.fromEntries(storage.keys().map(key => [key, storage.get(key)]));
   expect(recordsWorkspace(records)?.documents[0].document.scene.contents.overview.content.ascii).toBe('Changed Alpha');
+  expect(recordsWorkspace(records)?.documents.map(doc => doc.repositoryId)).toEqual(['repo-Alpha', 'repo-Beta']);
   controller.undo(); await storage.flush();
   expect(batches.at(-1)!.changes.some(c => c.key.includes('/revision/'))).toBe(false);
   persistence.dispose(); workspace.dispose(); storage.dispose();
