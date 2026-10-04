@@ -74,6 +74,11 @@ it('isolates shared MCP operations, persists sessions and history, rejects bad r
     const changes = new ChangeSessionService(repository,store,bridge);
     const agent = new AgentDiagrammingSessionService(bridge,{} as MappingDiagramService,store,new QuickJsAgentRuntime(),changes);
     const call = (name: Parameters<typeof agent.call>[0], input: unknown) => agent.call(name,input) as Promise<any>;
+    const savedRead = await call('diagram-search', {operation:'read',representationId:saved.representation.id});
+    const savedNode = savedRead.nodes.find((node: any) => node.id === 'grid:overview');
+    expect(savedNode).not.toHaveProperty('contentNodes');
+    expect(savedNode.diagram).not.toHaveProperty('content');
+    expect(savedNode.content.ascii).toBe(scene.contents.overview.content.ascii);
     const create = {title:'Feature',requestId:'create'};
     const created = await call('create_diagram_change_session',create);
     expect(await call('create_diagram_change_session',create)).toEqual(created);
@@ -83,6 +88,12 @@ it('isolates shared MCP operations, persists sessions and history, rejects bad r
     expect((await exec('return canvas.list();')).value[0].canvasId).toBe(changeSessionId);
     const attached=await exec(`return canvas.attach({canvasId:${JSON.stringify(changeSessionId)},documentId:${JSON.stringify(documentId)}});`);
     const sessionId=attached.value.sessionId;
+    const proposalRead = await call('diagram-search', {operation:'read',changeSessionId,representationId:documentId});
+    const proposedNode = proposalRead.nodes.find((node: any) => node.id === 'grid:overview');
+    expect(proposedNode).not.toHaveProperty('contentNodes');
+    expect(proposedNode.diagram).not.toHaveProperty('content');
+    expect(proposedNode.content).toEqual(savedNode.content);
+
     await expect(call('exec',{sessionId,requestId:'bad',code:'return nodes.list();'})).rejects.toThrow('MISMATCH');
     await expect(call('exec',{sessionId,changeSessionId:'another',requestId:'bad',code:'return nodes.list();'})).rejects.toThrow();
     const patch={sessionId,changeSessionId,requestId:'patch',expectedVersion:0,code:'return nodes.patchDiagram({nodeId:"grid:overview",start:2,end:2,patch:"|-- Changed"});'};
@@ -100,7 +111,7 @@ it('isolates shared MCP operations, persists sessions and history, rejects bad r
     const newNode=await exec('return nodes.draw({ascii:"Detail\\n`-- Child",structureKind:"tree",position:{column:40,row:0}});',{sessionId,expectedVersion:2});
     let session=await changes.get(changeSessionId);
     await expect(call('update_diagram_change_session',{changeSessionId,requestId:'readybad',expectedVersion:session.version,status:'ready'})).rejects.toThrow('needs an edge');
-    await exec(`const source=nodes.get({nodeId:'grid:overview'}); return edges.create({source:{kind:'content-node',displayNodeId:source.id,contentNodeId:source.contentNodes[0].id,revisionId:source.content.revisionId},target:{kind:'box',displayNodeId:${JSON.stringify(newNode.value.id)}},appearance:{}});`,{sessionId,expectedVersion:3});
+    await exec(`const source=nodes.get({nodeId:'grid:overview'}); return edges.create({source:{kind:'content-node',displayNodeId:source.id,contentNodeId:Object.values(source.content.structure.nodes)[0].id,revisionId:source.content.revisionId},target:{kind:'box',displayNodeId:${JSON.stringify(newNode.value.id)}},appearance:{}});`,{sessionId,expectedVersion:3});
     session=await changes.get(changeSessionId);
     await call('update_diagram_change_session',{changeSessionId,requestId:'ready',expectedVersion:session.version,status:'ready',changes:session.changes.map(c=>({...c,title:`Review ${c.title}`,type:c.type===1?4:c.type}))});
     expect((await changes.get(changeSessionId)).status).toBe('ready');

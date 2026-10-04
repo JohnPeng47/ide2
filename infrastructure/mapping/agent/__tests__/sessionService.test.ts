@@ -45,7 +45,7 @@ it('routes document copies through the live bridge and retries a lost reply with
   expect(attempts).toHaveLength(2); expect(attempts[0]).toEqual(attempts[1]);
   expect(receipts.size).toBe(1);
   const read = await service.call('exec', {sessionId:result.value.sessionId,requestId:'read-copy',code:'return nodes.list();'}) as {value:{nodes:unknown[]}};
-  expect(read.value.nodes).toEqual(copied!.nodes());
+  expect(read.value.nodes).toEqual(service.projection.nodes(copied!.nodes()));
   expect(source.getSnapshot()).toBe(before);
   await expect(service.call('exec', {...input,requestId:'bound-copy',sessionId:result.value.sessionId})).rejects.toThrow('unbound exec');
   await expect(service.call('exec', {...input,requestId:'proposal-copy',changeSessionId:'proposal'})).rejects.toThrow('live canvases only');

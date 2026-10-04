@@ -8,6 +8,7 @@ const packageRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname)
 /** Seed current canvas records with deterministic evidence, independent of deleted source files. */
 export async function seedMappingFixture(root, diagram) {
   execFileSync("git", ["init", "-q", root]);
+  execFileSync("git", ["-C", root, "-c", "user.name=Fixture", "-c", "user.email=fixture@example.test", "commit", "--allow-empty", "-qm", "Fixture baseline"]);
   const { ascii, nodes } = diagram ?? JSON.parse(execFileSync(process.execPath, [path.join(packageRoot, "node_modules/tsx/dist/cli.mjs"), "-e",
     'import {MAPPING_POC_GRAPH_A as ascii,MAPPING_POC_A_NODES as nodes} from "./domain/mapping/selection/mappingPoc.ts"; console.log(JSON.stringify({ascii,nodes}));'
   ], { cwd: packageRoot, encoding: "utf8" }));

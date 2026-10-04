@@ -8,6 +8,25 @@ import { sendJson } from '../../http/http';
 import type { Connect } from 'vite';
 import type { ServerResponse } from 'node:http';
 
+export async function readShortContext(request: Connect.IncomingMessage, response: ServerResponse, url: URL, service: LiveCanvasService) {
+  response.setHeader('cache-control', 'no-store');
+  if (request.method !== 'GET') return sendJson(response, 405, { error: 'method not allowed' });
+  const workspaceInstanceId = url.searchParams.get('workspaceInstanceId'), documentId = url.searchParams.get('documentId');
+  if (!workspaceInstanceId || workspaceInstanceId.length > 200 || !documentId || documentId.length > 200
+    || url.searchParams.getAll('workspaceInstanceId').length !== 1 || url.searchParams.getAll('documentId').length !== 1)
+    return sendJson(response, 400, { code: 'INVALID_REQUEST', error: 'Provide one workspaceInstanceId and one documentId (1–200 characters each)' });
+  try {
+    const context = await service.shortContextForCanvas(workspaceInstanceId, documentId);
+    response.setHeader('X-Canvas-Epoch', context.canvasEpoch);
+    response.setHeader('X-Document-Version', String(context.version));
+    return sendJson(response, 200, context);
+  } catch (error) {
+    if (error instanceof LiveCanvasError) return sendJson(response, error.status, { code: error.code, error: error.message });
+    const message = error instanceof Error ? error.message : String(error);
+    return sendJson(response, 503, { code: 'CONTEXT_UNAVAILABLE', error: message });
+  }
+}
+
 export function readLiveSelection(request: Connect.IncomingMessage, response: ServerResponse, connectionId: string, service: LiveCanvasService) {
   response.setHeader('cache-control', 'private, no-cache');
   if (request.method !== 'GET') return sendJson(response, 405, { error: 'method not allowed' });

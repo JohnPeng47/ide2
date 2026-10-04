@@ -4,7 +4,7 @@ import { z } from 'zod';
 import type { AgentDiagrammingSessionService } from '../../../../application/mapping/agent/sessionService';
 import { agentToolSchemas, type AgentToolName } from '../../../../domain/mapping/agent/contracts';
 import { readBody, sendJson } from '../../http/http';
-const registration = z.object({ canvasId: z.string().uuid(), stableWorkspaceId: z.string().uuid().optional(), projectId: z.string().optional(), documents: z.array(z.object({ documentId: z.string().min(1), name: z.string(), representationId: z.string().optional() })).max(100) }).strict();
+const registration = z.object({ canvasId: z.string().uuid(), stableWorkspaceId: z.string().uuid().optional(), projectId: z.string().optional(), documents: z.array(z.object({ documentId: z.string().min(1), name: z.string(), repositoryId: z.string().min(1).max(200).optional(), representationId: z.string().optional() })).max(100) }).strict();
 export async function handleAgentRoutes(request: Connect.IncomingMessage, response: ServerResponse, url: URL, service: AgentDiagrammingSessionService) {
   const path = url.pathname.slice('/api/mapping/agent'.length);
   try {

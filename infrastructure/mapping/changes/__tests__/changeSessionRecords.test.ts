@@ -110,7 +110,30 @@ it('migrates embedded legacy data without altering its original file or losing h
   const preview=await fresh.readPreview('project','proposal','Alpha');
   expect(preview.document.proposed).toEqual(f.session.documents[0].proposed);
   expect(await readFile(path.join(directory,'proposal.json'),'utf8')).toBe(original);
-  expect(await new DiagramChangeSessionStore(f.root).read('project','proposal')).toEqual(f.session);
+  expect(await new DiagramChangeSessionStore(f.root).read('project','proposal')).toEqual({ ...f.session, migrations: [] });
   const manifest=await f.manifest(), doc=await f.blob(manifest.documents.Alpha), state=await f.blob(doc.proposed);
   expect(state.document.scene.contents.overview).toHaveProperty('$diagramRecord','diagram');
+});
+
+it('publishes DiffTree data and summary together, preserving the prior review after a failed write', async () => {
+  const { defaultDiffTree } = await import('../../../../domain/mapping/changes/diffTree');
+  const { RevisionedDiagramService } = await import('../../../../domain/core/diagrams/diagramService');
+  const f = await fixture(), before = await f.manifest();
+  const session = await f.store.read('project', 'proposal');
+  session.repositoryId = 'repo-test'; session.commits = []; session.head = 'a'.repeat(40);
+  session.diffTree = defaultDiffTree(new RevisionedDiagramService(), []); session.version++;
+  vi.mocked(rename).mockRejectedValueOnce(Error('disk failure'));
+  await expect(f.store.write(session, { documents: [], receipts: [], diffTree: true })).rejects.toThrow('disk failure');
+  expect(await f.manifest()).toEqual(before);
+  expect((await new DiagramChangeSessionStore(f.root).readDiffTree('project', 'proposal')).diffTree).toBeUndefined();
+  await f.store.write(session, { documents: [], receipts: [], diffTree: true });
+  const after = await f.manifest();
+  expect(after.diffTree).toBeTruthy(); expect(after.documents).toEqual(before.documents);
+  expect((await new DiagramChangeSessionStore(f.root).readDiffTree('project', 'proposal')).diffTree).toEqual(session.diffTree);
+  // A missing tree blob must not break summary or canvas-preview reads.
+  await rm(path.join(f.root, 'change-session-records', after.diffTree + '.json'));
+  const fresh = new DiagramChangeSessionStore(f.root);
+  expect((await fresh.readSummary('project', 'proposal')).diffTree?.hunkCount).toBe(0);
+  expect((await fresh.readPreview('project', 'proposal', 'Alpha')).document.name).toBe('Alpha');
+  await expect(fresh.readDiffTree('project', 'proposal')).rejects.toThrow();
 });

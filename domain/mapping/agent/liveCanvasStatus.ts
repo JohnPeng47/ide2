@@ -34,8 +34,12 @@ export interface LiveCanvasContext {
   nodes: import('../workspace/canvasDisplayNode').CanvasDisplayNode[];
   edges: import('../../core/diagrams/diagramConnection').DiagramConnection[];
 }
-export type LiveCanvasEvent = ({ type: 'attached'; context?: LiveCanvasContext } & BoundSelection)
-  | { type: 'context.snapshot'; requestId: string; connectionId: string; workspaceInstanceId: string; documentId: string; canvasEpoch: string; context: LiveCanvasContext }
+export type ApiLiveCanvasContext = Omit<LiveCanvasContext, 'nodes'> & {
+  apiFormatVersion: typeof import('./apiRepresentation').canvasApiFormatVersion;
+  nodes: import('./apiRepresentation').ApiDisplayNode[];
+};
+export type LiveCanvasEvent = ({ type: 'attached'; context?: ApiLiveCanvasContext } & BoundSelection)
+  | { type: 'context.snapshot'; requestId: string; connectionId: string; workspaceInstanceId: string; documentId: string; canvasEpoch: string; context: ApiLiveCanvasContext }
   | ({ type: 'selection.delta' } & LiveSelectionDelta & Pick<BoundSelection, 'connectionId' | 'workspaceInstanceId' | 'receivedAt'>)
   | { type: 'canvas.disconnected' | 'canvas.closed' | 'canvas.replaced'; connectionId: string; canvasEpoch: string }
   | { type: 'error'; code: string; error: string; requestId?: string }

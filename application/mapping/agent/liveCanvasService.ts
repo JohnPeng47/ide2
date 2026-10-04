@@ -1,3 +1,5 @@
+import { CanvasApiProjection } from './apiProjection';
+import { shortCanvasContext } from '../../../domain/mapping/agent/shortContext';
 import { AgentContextService } from './agentContextService';
 import { randomUUID } from 'node:crypto';
 import { selectionDelta } from '../../../domain/mapping/agent/liveCanvasStatus';
@@ -17,12 +19,19 @@ export class LiveCanvasService {
   private bindings = new Map<string, Binding>();
   constructor(private readonly listCanvases: () => CanvasDescriptor[],
     private readonly loadContext?: (workspaceInstanceId: string, documentId: string) => Promise<LiveCanvasContext>,
-    private readonly agentContexts = new AgentContextService()) {}
+    private readonly agentContexts = new AgentContextService(), private readonly projection = new CanvasApiProjection()) {}
   uploadAgentContext(connectionId: string, requestId: string, trajectory: unknown) {
     const binding = this.read(connectionId);
     return this.agentContexts.upload(binding, requestId, trajectory);
   }
   async contextForCanvas(workspaceInstanceId: string, documentId: string) {
+    return (await this.loadCanvasContext(workspaceInstanceId, documentId)).context;
+  }
+  async shortContextForCanvas(workspaceInstanceId: string, documentId: string) {
+    const { context, canvasEpoch } = await this.loadCanvasContext(workspaceInstanceId, documentId);
+    return { workspaceInstanceId, documentId, canvasEpoch, ...shortCanvasContext(context) };
+  }
+  private async loadCanvasContext(workspaceInstanceId: string, documentId: string) {
     const publisher = this.publishers.get(workspaceInstanceId);
     const canvases = this.listCanvases();
     if (!publisher && canvases.length && !canvases.some(canvas => canvas.canvasId === workspaceInstanceId))
@@ -34,7 +43,8 @@ export class LiveCanvasService {
     if (this.publishers.get(workspaceInstanceId) !== publisher
       || publisher?.selections.get(documentId)?.canvasEpoch !== selection.canvasEpoch)
       throw new LiveCanvasError('CANVAS_REPLACED', 409, 'Canvas changed identity while reading context; reconnect');
-    return context;
+    return { canvasEpoch: selection.canvasEpoch,
+      context: { ...this.projection.result(context), edges: context.edges.map(edge => this.projection.edge(edge)) } };
   }
   async context(connectionId: string) {
     const before = this.read(connectionId);

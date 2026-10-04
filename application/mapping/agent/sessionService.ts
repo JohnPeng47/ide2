@@ -1,3 +1,7 @@
+import { summarizeChangeSession } from '../../../domain/mapping/changes/diagramChangeSession';
+import { CanvasApiProjection } from './apiProjection';
+import { diagramContentNodes } from '../../../domain/core/diagrams/diagramContentNodes';
+import type { DiagramJump } from '../../../domain/core/diagrams/diagramJump';
 import type { AgentContextService } from './agentContextService';
 import { DiagramEditService } from './diagramEditService';
 import { DefaultCanvasHistoryService } from '../../../domain/core/diagrams/canvasHistoryService';
@@ -42,8 +46,8 @@ export class AgentDiagrammingSessionService {
   private execRuns = new Map<string, ExecRun>();
   private requests = new Map<string, { signature: string; promise: Promise<unknown> }>();
   constructor(readonly bridge: CanvasSessionPort, private readonly diagrams: MappingDiagramService,
-    private readonly store: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs'>, private readonly runtime: AgentExecRuntime, readonly changes?: ChangeSessionService,
-    editDiagrams?: DiagramService, private readonly agentContexts?: AgentContextService) {
+    private readonly store: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs' | 'repositories'>, private readonly runtime: AgentExecRuntime, readonly changes?: ChangeSessionService,
+    editDiagrams?: DiagramService, private readonly agentContexts?: AgentContextService, readonly projection = new CanvasApiProjection()) {
     if (editDiagrams) this.edits = new DiagramEditService(editDiagrams, {
       snapshot: sessionId => this.snapshot(sessionId),
       apply: async (sessionId, input) => {
@@ -93,21 +97,44 @@ export class AgentDiagrammingSessionService {
     return this.execute(name, input);
   }
   private async execute(name: AgentToolName, raw: unknown): Promise<unknown> {
+    if (name === 'list_repositories' || name === 'register_repository') {
+      if (!this.store.repositories) throw Error('Repository registry unavailable');
+      await this.diagrams.initialize();
+      return name === 'list_repositories' ? this.store.repositories.list()
+        : this.store.repositories.register(agentToolSchemas.register_repository.parse(raw));
+    }
+    if (name === 'get_repository_diff_hunks') return this.changeService().discoverHunks(agentToolSchemas[name].parse(raw));
+    if (name === 'read_change_session_diff_tree') return this.changeService().readDiffTree(agentToolSchemas[name].parse(raw));
     if (name === 'create_diagram_change_session') return this.changeService().create(agentToolSchemas[name].parse(raw));
-    if (name === 'update_diagram_change_session') return this.changeService().update(agentToolSchemas[name].parse(raw));
-    if (name === 'accept_diagram_change_session') return this.changeService().accept(agentToolSchemas[name].parse(raw));
+    if (name === 'update_diagram_change_session') {
+      const input = agentToolSchemas[name].parse(raw);
+      const result = await this.changeService().update({ ...input,
+        ...(input.migrations ? { migrations: this.projection.migrations(input.migrations, true) } : {}) });
+      return { ...result, migrations: this.projection.migrations(result.migrations) };
+    }
+    if (name === 'accept_diagram_change_session') {
+      const result = await this.changeService().accept(agentToolSchemas[name].parse(raw));
+      return { ...result, migrations: this.projection.migrations(result.migrations) };
+    }
     if (name === 'canvas-api-search') return canvasApiSpec(agentToolSchemas[name].parse(raw).query);
     if (name === 'diagram-search') return this.search(agentToolSchemas[name].parse(raw));
     if (name === 'exec') return this.exec(agentToolSchemas[name].parse(raw));
     if (name === 'save_diagram') return this.save(agentToolSchemas[name].parse(raw));
     if (name === 'set_diagram_source_mappings') {
       const { sessionId, changeSessionId, expectedVersion, requestId, ...fields } = agentToolSchemas[name].parse(raw);
-      return this.apply(sessionId, expectedVersion, [{ method: 'setSourceMappings', ...fields }], requestId, changeSessionId);
+      return this.projection.result(await this.apply(sessionId, expectedVersion, [{ method: 'setSourceMappings', ...fields }], requestId, changeSessionId) as EditResult);
     }
     const input = agentToolSchemas.draw_diagram.parse(raw);
     const operation = input.nodeId ? { method: 'replace', nodeId: input.nodeId, ...this.content(input) }
       : { method: 'diagram-create', id: `diagram-${randomUUID()}`, parentId: input.parentId, position: input.position, ...this.content(input) };
-    return this.apply(input.sessionId, input.expectedVersion, [operation as DiagramOperation], input.requestId, input.changeSessionId);
+    return this.projection.result(await this.apply(input.sessionId, input.expectedVersion, [operation as DiagramOperation], input.requestId, input.changeSessionId) as EditResult);
+  }
+  private async requireRepository(id?: string) {
+    if (!this.store.repositories) { if (id) throw Error('Repository registry unavailable'); return undefined; }
+    const repositories = await this.store.repositories.list();
+    const selected = id ? repositories.find(repo => repo.id === id) : repositories.length === 1 ? repositories[0] : undefined;
+    if (!selected && (id || repositories.length)) throw Error('Specify a registered repositoryId');
+    return selected?.id;
   }
   private changeService() { if (!this.changes) throw new Error('Change sessions unavailable'); return this.changes; }
   private content(input: { ascii: string; structureKind?: 'diagram'|'tree'; mappings?: unknown; evidence?: unknown; source?: DiagramSourceBinding }) {
@@ -134,7 +161,7 @@ export class AgentDiagrammingSessionService {
     const sessionId = randomUUID(); this.sessions.set(sessionId, { canvasId, documentId, changeSessionId });
     try {
       const snapshot = await this.snapshot(sessionId, changeSessionId);
-      return { sessionId, canvasId, documentId, changeSessionId, version: snapshot.version };
+      return { sessionId, canvasId, documentId, changeSessionId, repositoryId: snapshot.repositoryId, version: snapshot.version };
     } catch (error) { this.sessions.delete(sessionId); throw error; }
   }
   private async apply(sessionId: string, expectedVersion: number, operations: DiagramOperation[], requestId: string, changeSessionId?: string) {
@@ -180,8 +207,9 @@ export class AgentDiagrammingSessionService {
                 throw new Error('Unknown live document');
               state.createdDocument = true;
               execute = async () => {
+                if (parsed.repositoryId) await this.requireRepository(parsed.repositoryId);
                 const result = await this.bridge.dispatch(parsed.canvasId, { method: 'copy-document', documentId: parsed.documentId,
-                  payload: { name: parsed.name, expectedVersion: parsed.expectedVersion, requestId: `${requestPrefix}:${stepIndex}` } }) as { documentId: string };
+                  payload: { name: parsed.name, repositoryId: parsed.repositoryId, expectedVersion: parsed.expectedVersion, requestId: `${requestPrefix}:${stepIndex}` } }) as { documentId: string };
                 // The browser has created the document; its descriptor refresh may still be in flight.
                 return this.attachDocument(parsed.canvasId, result.documentId);
               };
@@ -191,9 +219,12 @@ export class AgentDiagrammingSessionService {
               state.createdDocument = true;
               if (input.changeSessionId && parsed.canvasId !== input.changeSessionId) throw new Error('CHANGE_SESSION_MISMATCH');
               execute = async () => {
+                if (input.changeSessionId && parsed.repositoryId && (await this.changeService().get(input.changeSessionId)).repositoryId !== parsed.repositoryId)
+                  throw Error('Proposal canvases inherit the ChangeSession repository');
+                const repositoryId = input.changeSessionId ? undefined : await this.requireRepository(parsed.repositoryId);
                 const result = input.changeSessionId
                   ? await this.changeService().createDocument(input.changeSessionId, parsed.name, input.requestId)
-                  : await this.bridge.dispatch(parsed.canvasId, { method: 'create-document', payload: { name: parsed.name,
+                  : await this.bridge.dispatch(parsed.canvasId, { method: 'create-document', payload: { name: parsed.name, repositoryId,
                       requestId: input.requestId, snapshot: await this.diagrams.initialize() } }) as { documentId: string };
                 return this.attach(parsed.canvasId, result.documentId, input.changeSessionId);
               };
@@ -206,16 +237,23 @@ export class AgentDiagrammingSessionService {
                   if (snapshot.version !== state.version) throw new Error('VERSION_CONFLICT: canvas changed during execution');
                   state.edges = snapshot.document.edges;
                 }
-                return { version: state.version, edges: state.edges };
+                return { version: state.version, edges: state.edges.map(edge => this.projection.edge(edge)) };
               };
-              else if (method === 'nodes.list') execute = async () => ({ version: state.version, nodes: state.nodes });
+              else if (method === 'nodes.list') execute = async () => ({ version: state.version, nodes: this.projection.nodes(state.nodes!) });
               else if (method === 'nodes.get') execute = async () => {
                 const node = state.nodes!.find(node => node.id === parsed.nodeId);
                 if (!node) throw new Error('Unknown DisplayNode');
-                return node;
+                return this.projection.node(node);
               };
               else {
                 if (input.expectedVersion !== state.initialVersion) throw new Error('VERSION_CONFLICT: mutations require current expectedVersion');
+                // Decode before freezing the retry step. Domain state always retains full IDs.
+                if (method === 'edges.create' || method === 'edges.update') Object.assign(parsed, this.projection.resolveEdge(parsed as Omit<import('../../../domain/core/diagrams/diagramConnection').DiagramConnection, 'id'>));
+                if (method === 'nodes.collapse' && parsed.contentNodeId) parsed.contentNodeId = this.projection.resolveAnchorId(parsed.contentNodeId);
+                if (method === 'nodes.setJumps') {
+                  const node = state.nodes!.find(node => node.id === parsed.nodeId);
+                  parsed.jumps = await this.resolveJumps(parsed.jumps, node?.layout === 'grid' ? node.diagram?.jumps : undefined);
+                }
                 const expectedVersion = state.version;
                 const operation = (method.startsWith('edges.')
                   ? method === 'edges.remove' ? { method: 'edge-remove', edgeId: parsed.edgeId }
@@ -226,9 +264,10 @@ export class AgentDiagrammingSessionService {
                 execute = async () => {
                   const result = await this.apply(sessionId, expectedVersion, [operation], `${requestPrefix}:${stepIndex}`, input.changeSessionId) as EditResult;
                   state.version = result.version; state.nodes = result.nodes; state.edges = undefined; state.lastEdit = result;
-                  if (method.startsWith('edges.')) return 'edge' in operation ? operation.edge : null;
+                  if (method.startsWith('edges.')) return 'edge' in operation ? this.projection.edge(operation.edge) : null;
                   const nodeId = operation.method === 'diagram-create' ? `grid:${operation.id}` : parsed.nodeId;
-                  return result.nodes.find(node => node.id === nodeId) ?? null;
+                  const node = result.nodes.find(node => node.id === nodeId);
+                  return node ? this.projection.node(node) : null;
                 };
               }
             }
@@ -251,29 +290,59 @@ export class AgentDiagrammingSessionService {
       if (state.steps.some(step => !step.outcome)) throw new Error('CANVAS_TIMEOUT: retry execution with the same requestId');
       this.execRuns.delete(key);
       // Retain the response shape; transaction describes the last individual edit.
-      return state.lastEdit ? { value, transaction: state.lastEdit } : { value, ...(state.version === undefined ? {} : { version: state.version }) };
+      return state.lastEdit ? { value, transaction: this.projection.result(state.lastEdit) } : { value, ...(state.version === undefined ? {} : { version: state.version }) };
     } catch (error) {
       if (!canvasTimeout(error)) this.execRuns.delete(key);
       throw error;
     }
   }
+  private async resolveJumps(input: DiagramJump[], previous: readonly DiagramJump[] = []) {
+    const resolved = input.map(jump => this.projection.resolveJump(jump));
+    let catalog: Awaited<ReturnType<DiagramRepository['projectCatalogs']['loadRepresentationCatalog']>> | undefined;
+    for (let i = 0; i < input.length; i++) {
+      const handle = input[i].target.contentNodeId;
+      if (!handle || !this.projection.isAnchorHandle(handle)) continue;
+      const target = resolved[i].target;
+      // Existing stale jumps must survive a metadata-only update, just like edges.
+      if (previous.some(jump => jump.id === input[i].id && jump.target.representationId === target.representationId
+        && jump.target.displayNodeId === target.displayNodeId && jump.target.contentNodeId === target.contentNodeId)) continue;
+      if (!catalog) {
+        const project = await this.store.loadProject();
+        if (!project) throw Error('STALE_CONTENT_NODE: jump target project is unavailable');
+        catalog = await this.store.projectCatalogs.loadRepresentationCatalog(project.id);
+      }
+      const representation = catalog.representations[target.representationId];
+      const revision = representation && catalog.revisions[representation.currentRevisionId];
+      const document = revision && documentFromRevision(revision);
+      const box = document && target.displayNodeId?.startsWith('grid:') && findBox(document.scene.root, target.displayNodeId.slice(5));
+      if (!box || box.kind !== 'diagram' || !diagramContentNodes(document!.scene.contents[box.contentId].content).some(node => node.id === target.contentNodeId))
+        throw Error('STALE_CONTENT_NODE: jump handle does not belong to the target diagram revision');
+    }
+    return resolved;
+  }
   private async search(input: ReturnType<(typeof agentToolSchemas)['diagram-search']['parse']>) {
+    if (input.snapshot && (!input.changeSessionId || input.sessionId)) throw Error('snapshot requires changeSessionId without sessionId');
     if (input.changeSessionId && !input.sessionId) {
       const session = await this.changeService().get(input.changeSessionId);
       if (input.revisionId) throw new Error('Session reads use pinned proposal documents, not catalog revisions');
       const docs = session.documents.filter(d => !input.representationId || d.id === input.representationId || d.representationId === input.representationId);
       if (input.operation === 'read') {
         if (docs.length !== 1) throw new Error('Specify representationId (or session document ID) for a session read');
-        const doc = docs[0];
+        const doc = docs[0], state = doc[input.snapshot ?? 'proposed'];
+        if (!state) throw Error('New canvas has no baseline');
         return { origin: 'change-session', changeSessionId: session.id, documentId: doc.id, name: doc.name, version: doc.version,
-          nodes: canvasDisplayNodes(doc.proposed.document, doc.proposed.canvas, doc.version),
-          changeSession: { version: session.version, title: session.title, status: session.status, changes: session.changes } };
+          snapshot: input.snapshot ?? 'proposed',
+          nodes: this.projection.nodes(canvasDisplayNodes(state.document, state.canvas, doc.version)),
+          changeSession: { version: session.version, title: session.title, status: session.status, repositoryId: session.repositoryId, commits: session.commits, head: session.head, diffTree: summarizeChangeSession(session).diffTree, changes: session.changes, migrations: this.projection.migrations(session.migrations) } };
       }
-      const hits = docs.flatMap(doc => canvasDisplayNodes(doc.proposed.document, doc.proposed.canvas, doc.version).flatMap(node =>
+      const hits = docs.flatMap(doc => {
+        const state = doc[input.snapshot ?? 'proposed'];
+        return state ? canvasDisplayNodes(state.document, state.canvas, doc.version).flatMap(node =>
         node.layout === 'grid' && node.diagram ? this.matches(node.diagram, input).map(match => ({ origin: 'change-session', documentId: doc.id,
-          representationId: doc.representationId, name: doc.name, nodeId: node.id, version: doc.version, ...match })) : []));
+          representationId: doc.representationId, name: doc.name, nodeId: node.id, version: doc.version, ...match })) : []) : [];
+      });
       return { total: hits.length, hits: hits.slice(input.offset, input.offset + input.limit),
-        changeSession: { version: session.version, title: session.title, status: session.status, changes: session.changes } };
+        changeSession: { version: session.version, title: session.title, status: session.status, repositoryId: session.repositoryId, commits: session.commits, head: session.head, diffTree: summarizeChangeSession(session).diffTree, changes: session.changes, migrations: this.projection.migrations(session.migrations) } };
     }
     if (input.sessionId) {
       const snapshot = await this.snapshot(input.sessionId, input.changeSessionId);
@@ -281,7 +350,7 @@ export class AgentDiagrammingSessionService {
       if (input.operation === 'read') {
         const node = nodes.find(node => node.id === input.nodeId);
         if (!node) throw new Error('A valid live nodeId is required');
-        return { origin: 'live', version: snapshot.version, node, evidence: node.layout === 'grid' ? node.diagram?.sourceContext.evidence ?? {} : {} };
+        return { origin: 'live', version: snapshot.version, node: this.projection.node(node), evidence: node.layout === 'grid' ? node.diagram?.sourceContext.evidence ?? {} : {} };
       }
       const hits = nodes.flatMap(node => node.layout === 'grid' && node.content ? this.matches(node.diagram!, input).map(match => ({ origin: 'live', nodeId: node.id, version: snapshot.version, ...match })) : []);
       return { total: hits.length, hits: hits.slice(input.offset, input.offset + input.limit) };
@@ -297,7 +366,7 @@ export class AgentDiagrammingSessionService {
       if (!representation.revisionIds.includes(revisionId)) throw new Error('Revision does not belong to representation');
       const revision = catalog.revisions[revisionId];
       const document = documentFromRevision(revision);
-      return { origin: 'saved', representation, revision, nodes: canvasDisplayNodes(document, initialCanvasState(), 0) };
+      return { origin: 'saved', representation, revision, nodes: this.projection.nodes(canvasDisplayNodes(document, initialCanvasState(), 0)) };
     }
     const hits: unknown[] = [];
     for (const representation of representations) {
@@ -315,11 +384,11 @@ export class AgentDiagrammingSessionService {
   }
   private matches(diagram: Diagram, input: ReturnType<(typeof agentToolSchemas)['diagram-search']['parse']>): { snippet: string; contentNodeId?: string; evidenceId?: string; line?: number }[] {
     const content = diagram.content, source = diagramSource(diagram);
-    const q = (input.query ?? '').toLowerCase();
+    const q = (input.mode === 'node' && input.query && this.projection.isAnchorHandle(input.query) ? this.projection.resolveAnchorId(input.query) : input.query ?? '').toLowerCase();
     if (input.mode === 'code-reference') return source.search(q).map(({mapping,entity}) => ({ snippet: entity.label, evidenceId: mapping.entityId, line: mapping.line }));
     if (input.mode === 'node') {
       const nodes = content.structure.kind === 'tree' ? Object.values(content.structure.nodes) : [];
-      return [...nodes.filter(node => `${node.id} ${node.label}`.toLowerCase().includes(q)).map(node => ({ snippet: node.label, contentNodeId: node.id, line: node.line })),
+      return [...nodes.filter(node => `${node.id} ${node.label}`.toLowerCase().includes(q)).map(node => ({ snippet: node.label, contentNodeId: this.projection.anchorId(node.id), line: node.line })),
         ...source.entries().filter(({mapping,entity}) => `${mapping.id} ${entity.label}`.toLowerCase().includes(q)).map(({mapping,entity}) => ({ snippet: entity.label, contentNodeId: mapping.id, line: mapping.line }))];
     }
     return content.ascii.split('\n').flatMap((line, i) => line.toLowerCase().includes(q) ? [{ snippet: line, line: i + 1 }] : []);
@@ -353,7 +422,7 @@ export class AgentDiagrammingSessionService {
     }
     const representationId = input.representationId ?? (!input.nodeId ? snapshot.representationId : undefined);
     if (!history) throw new Error('Canvas history is required to save');
-    const save: SaveProjectDiagramInput = { name: input.name, history, scene, edges: input.nodeId ? [] : snapshot.document.edges, representationId,
+    const save: SaveProjectDiagramInput = { repositoryId: input.repositoryId ?? snapshot.repositoryId, name: input.name, history, scene, edges: input.nodeId ? [] : snapshot.document.edges, representationId,
       expectedRevisionId: input.expectedRevisionId ?? (representationId === snapshot.representationId ? snapshot.revisionId : undefined) };
     const result = await this.diagrams.save(save);
     let displayUpdated = true;

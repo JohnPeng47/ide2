@@ -1,3 +1,7 @@
+import { defaultDiffTree, diffTreeSummary, diffTreeNodes, resolveDiffTreeHunks, validateDiffTree, writeDiffTree, type DiffTreeInput } from '../../../domain/mapping/changes/diffTree';
+import type { RepositoryContext } from '../../../domain/core/repositories/repository';
+import type { GitDiffHunk } from '../../../domain/core/diffs/gitDiffHunk';
+import { migrationIssues, type DiagramMigration } from '../../../domain/mapping/changes/diagramMigration';
 import { canvasDisplayNodes } from '../../../domain/mapping/workspace/canvasDisplayNode';
 import { DefaultCanvasHistoryService } from '../../../domain/core/diagrams/canvasHistoryService';
 import { RevisionedDiagramService, type DiagramService } from '../../../domain/core/diagrams/diagramService';
@@ -21,7 +25,7 @@ export class ChangeSessionService {
   private readonly historyService = new DefaultCanvasHistoryService();
   private queues = new Map<string, Promise<unknown>>();
   constructor(private readonly repository: DiagramChangeSessionRepository,
-    private readonly source: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs'>, private readonly bridge: CanvasSessionPort, private readonly diagrams: DiagramService = new RevisionedDiagramService()) {}
+    private readonly source: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs' | 'repositories'>, private readonly bridge: CanvasSessionPort, private readonly diagrams: DiagramService = new RevisionedDiagramService()) {}
   private async projectId() { const p = await this.source.loadProject(); if (!p) throw new Error('Project is not initialized'); return p.id; }
   private serialize<T>(id: string, fn: () => Promise<T>): Promise<T> {
     const next = (this.queues.get(id) ?? Promise.resolve()).catch(() => {}).then(fn);
@@ -70,6 +74,40 @@ export class ChangeSessionService {
     // Resolve acceptance against the exact generation returned by the scoped read.
     return { ...preview, ...await this.effectiveSummary(preview), document: preview.document };
   }
+  async discoverHunks(input: { repositoryId?: string; commits?: string[]; head?: string; offset: number; limit: number; includePatches: boolean }) {
+    await this.projectId();
+    if (!this.source.repositories) throw Error('Repository registry unavailable');
+    const context = await this.source.repositories.resolveContext(input);
+    const hunks = await this.captureHunks(context);
+    return { ...context, ...this.hunkPage(hunks, input) };
+  }
+  private async captureHunks(context: RepositoryContext): Promise<GitDiffHunk[]> {
+    if (!context.commits.length) return [];
+    if (!this.source.repositories?.captureHunks) throw Error('Git hunk capture unavailable');
+    return this.source.repositories.captureHunks(context);
+  }
+  private hunkPage(hunks: GitDiffHunk[], input: { offset: number; limit: number; includePatches: boolean }) {
+    return { total: hunks.length, offset: input.offset, nextOffset: input.offset + input.limit < hunks.length ? input.offset + input.limit : null,
+      hunks: hunks.slice(input.offset, input.offset + input.limit).map(hunk => {
+        if (input.includePatches) return hunk;
+        const { patch: _, ...metadata } = hunk; return metadata;
+      }) };
+  }
+  async readDiffTree(input: { changeSessionId: string; nodeIds?: string[]; hunkIds?: string[]; offset: number; limit: number; includePatches: boolean }) {
+    const stored = this.repository.readDiffTree
+      ? await this.repository.readDiffTree(await this.projectId(), input.changeSessionId)
+      : await this.get(input.changeSessionId).then(session => ({ summary: summarizeChangeSession(session), diffTree: session.diffTree }));
+    const summary = await this.effectiveSummary(stored.summary), tree = stored.diffTree;
+    const context = { changeSessionId: summary.id, title: summary.title, version: summary.version, status: summary.status,
+      repositoryId: summary.repositoryId, commits: summary.commits, head: summary.head, documents: summary.documents, changes: summary.changes };
+    if (!tree) return { ...context, diffTree: null, ...this.hunkPage([], input), unmappedNodeIds: [] };
+    const selection = input.nodeIds ? resolveDiffTreeHunks(tree, input.nodeIds) : undefined;
+    const ids = input.hunkIds ?? selection?.hunkIds;
+    if (ids?.some(id => !tree.hunks.some(hunk => hunk.id === id))) throw Error('Unknown DiffTree hunk');
+    const hunks = ids ? tree.hunks.filter(hunk => ids.includes(hunk.id)) : tree.hunks;
+    return { ...context, diffTree: { ...diffTreeSummary(tree), diagram: tree.revision.diagram,
+      nodes: diffTreeNodes(tree), mappings: tree.mappings }, ...this.hunkPage(hunks, input), unmappedNodeIds: selection?.unmappedNodeIds ?? [] };
+  }
   private async finishAcceptance(session: DiagramChangeSession, acceptance: ChangeSessionAcceptance) {
     if (session.version !== acceptance.sessionVersion) throw new Error('Acceptance does not match saved proposal version');
     session.status = 'accepted'; session.acceptance = acceptance;
@@ -99,14 +137,14 @@ export class ChangeSessionService {
       const acceptance = await this.source.projectCatalogs.acceptCanvasChanges(session.projectId, {
         changeSessionId: session.id, sessionVersion: session.version, requestId: input.requestId, changeIds: session.changes.map(c => c.id),
         documents: affected.map(doc => ({ documentId: doc.id, representationId: doc.representationId, expectedRevisionId: doc.savedRevisionId,
-          name: doc.name, document: doc.proposed.document, history: this.controller(doc).exportHistory() }))
+          name: doc.name, repositoryId: doc.repositoryId ?? session.repositoryId, document: doc.proposed.document, history: this.controller(doc).exportHistory() }))
       });
       // The catalog receipt recovers this step after a crash or a failed session write.
       await this.finishAcceptance(session, acceptance);
       return summarizeChangeSession(session);
     });
   }
-  async create(input: { title: string; description?: string; canvasId?: string; requestId: string }) {
+  async create(input: { title: string; description?: string; canvasId?: string; requestId: string; repositoryId?: string; commits?: string[]; head?: string; diffTree?: DiffTreeInput }) {
     const projectId = await this.projectId();
     const id = `change-${createHash('sha256').update(`${projectId}:${input.requestId}`).digest('hex').slice(0,32)}`;
     return this.serialize(id, async () => {
@@ -116,28 +154,36 @@ export class ChangeSessionService {
         if (prior.receipts.create?.signature !== signature) throw new Error('REQUEST_ID_CONFLICT');
         return prior.receipts.create.result;
       }
+      if (!this.source.repositories && (input.repositoryId || input.commits?.length || input.head)) throw Error('Repository registry unavailable');
+      const context = await this.source.repositories?.resolveContext(input);
+      if (input.diffTree && !context) throw Error('DiffTree requires pinned repository context');
+      const hunks = context ? await this.captureHunks(context) : [];
+      const diffTree = context ? input.diffTree ? writeDiffTree(this.diagrams, input.diffTree, hunks) : defaultDiffTree(this.diagrams, hunks) : undefined;
       const documents = new Map<string, ChangeSessionDocument>();
       const catalog = await this.source.projectCatalogs.loadRepresentationCatalog(projectId);
-      for (const rep of Object.values(catalog.representations).filter(r => r.status === 'settled')) {
+      for (const rep of Object.values(catalog.representations).filter(r => r.status === 'settled' && (!context || r.repositoryId === context.repositoryId))) {
         const revision = catalog.revisions[rep.currentRevisionId];
         const baseline = { document: documentFromRevision(revision), canvas: initialCanvasState() };
-        documents.set(rep.id, { id: rep.id, name: rep.name, representationId: rep.id, savedRevisionId: revision.id, history: this.forkHistory(baseline, historyFromRevision(revision)),
+        documents.set(rep.id, { id: rep.id, name: rep.name, repositoryId: rep.repositoryId, representationId: rep.id, savedRevisionId: revision.id, history: this.forkHistory(baseline, historyFromRevision(revision)),
           baseline, proposed: structuredClone(baseline), version: 0, past: [], future: [] });
       }
       const live = this.bridge.list().filter(c => c.projectId === projectId && (!input.canvasId || c.canvasId === input.canvasId));
       if (input.canvasId && !live.length) throw new Error('Unknown project canvas');
       if (!input.canvasId && live.length > 1) throw new Error('Multiple live workspaces: specify canvasId to capture drafts');
       for (const canvas of live) for (const doc of canvas.documents) {
+        const saved = catalog.representations[doc.representationId ?? doc.documentId];
+        if (context && (saved?.repositoryId ?? doc.repositoryId) !== context.repositoryId) continue;
         const snapshot = await this.bridge.dispatch(canvas.canvasId, { method: 'snapshot', documentId: doc.documentId }) as LiveDocumentSnapshot;
+        if (context && (saved?.repositoryId ?? snapshot.repositoryId ?? doc.repositoryId) !== context.repositoryId) throw Error('Canvas repository changed during capture');
         const baseline = structuredClone({ document: snapshot.document, canvas: snapshot.canvas });
         const key = snapshot.representationId ?? doc.representationId ?? doc.documentId;
-        documents.set(key, { id: key, name: snapshot.name, representationId: snapshot.representationId ?? doc.representationId,
+        documents.set(key, { id: key, name: snapshot.name, repositoryId: saved?.repositoryId ?? snapshot.repositoryId ?? doc.repositoryId, representationId: snapshot.representationId ?? doc.representationId,
           history: this.forkHistory(baseline, snapshot.history),
           savedRevisionId: snapshot.revisionId, capturedVersion: snapshot.version, baseline, proposed: structuredClone(baseline), version: 0, past: [], future: [] });
       }
-      const result = { changeSessionId: id, canvasId: id, version: 0, documents: [...documents.values()].map(d => ({ documentId: d.id, name: d.name })) };
+      const result = { ...context, ...(diffTree ? { diffTree: diffTreeSummary(diffTree) } : {}), changeSessionId: id, canvasId: id, version: 0, documents: [...documents.values()].map(d => ({ documentId: d.id, name: d.name })) };
       const now = new Date().toISOString();
-      await this.repository.write({ schemaVersion: 1, id, projectId, title: input.title, description: input.description ?? '', status: 'draft', version: 0,
+      await this.repository.write({ ...context, ...(diffTree ? { diffTree } : {}), schemaVersion: 1, id, projectId, title: input.title, description: input.description ?? '', status: 'draft', version: 0,
         createdAt: now, updatedAt: now, documents: [...documents.values()], changes: [], receipts: { create: { signature, result } } });
       return result;
     });
@@ -161,11 +207,11 @@ export class ChangeSessionService {
     });
   }
   async descriptor(id: string) { const s = await this.get(id); return [{ canvasId: s.id, projectId: s.projectId,
-    documents: s.documents.map(d => ({ documentId: d.id, name: d.name, representationId: d.representationId })) }]; }
+    documents: s.documents.map(d => ({ documentId: d.id, name: d.name, repositoryId: d.repositoryId, representationId: d.representationId })) }]; }
   private document(session: DiagramChangeSession, id: string) { const doc = session.documents.find(d => d.id === id); if (!doc) throw new Error('Unknown change-session document'); return doc; }
   async snapshot(id: string, documentId: string): Promise<LiveDocumentSnapshot> {
     const s = await this.get(id), doc = this.document(s, documentId);
-    return { ...structuredClone(doc.proposed), name: doc.name, representationId: doc.representationId, revisionId: doc.savedRevisionId,
+    return { ...structuredClone(doc.proposed), name: doc.name, repositoryId: doc.repositoryId, representationId: doc.representationId, revisionId: doc.savedRevisionId,
       version: doc.version, history: doc.history, contextId: doc.history?.contextId, canUndo: !!(doc.history?.past.length || doc.past.length), canRedo: !!(doc.history?.future.length || doc.future.length) } as LiveDocumentSnapshot;
   }
   private async mutate<T>(id: string, requestId: string, signature: string, fn: (s: DiagramChangeSession) => T) {
@@ -176,9 +222,10 @@ export class ChangeSessionService {
       if (s.status === 'accepted') throw new Error('Change session is accepted and cannot be edited');
       if (Object.keys(s.receipts).length >= 2000) throw new Error('Change session request capacity reached');
       const before = new Map(s.documents.map(doc => [doc.id, doc.version]));
+      const previousDiffTree = s.diffTree;
       const result = fn(s);
       s.version++; s.updatedAt = new Date().toISOString(); s.receipts[key] = { signature, result };
-      await this.repository.write(s, { documents: s.documents.filter(doc => before.get(doc.id) !== doc.version).map(doc => doc.id), receipts: [key] });
+      await this.repository.write(s, { documents: s.documents.filter(doc => before.get(doc.id) !== doc.version).map(doc => doc.id), receipts: [key], diffTree: s.diffTree !== previousDiffTree });
       return result;
     });
   }
@@ -228,7 +275,7 @@ export class ChangeSessionService {
   async createDocument(id: string, name: string, requestId: string) {
     return this.mutate(id, requestId, JSON.stringify({ name }), s => {
       const documentId = `draft-${randomUUID()}`;
-      s.documents.push({ id: documentId, name, baseline: null, proposed: { document: mappingDocumentFromScene(singleDiagramScene('[New diagram]')),
+      s.documents.push({ id: documentId, name, repositoryId: s.repositoryId, baseline: null, proposed: { document: mappingDocumentFromScene(singleDiagramScene('[New diagram]')),
         canvas: initialCanvasState() }, version: 0, past: [], future: [] });
       this.controller(s.documents[s.documents.length - 1]);
       this.refreshChanges(s, new Set([documentId])); s.status = 'draft'; return { documentId };
@@ -259,7 +306,13 @@ export class ChangeSessionService {
     });
   }
   async update(input: { changeSessionId: string; requestId: string; expectedVersion: number; title?: string; status?: 'draft'|'ready'|'archived';
-    changes?: DiagramChange[]; action?: 'undo'|'redo'|'reset'; documentId?: string }) {
+    changes?: DiagramChange[]; migrations?: DiagramMigration[]; diffTree?: DiffTreeInput; action?: 'undo'|'redo'|'reset'; documentId?: string }) {
+    let captured: GitDiffHunk[] | undefined;
+    if (input.diffTree) {
+      const session = await this.get(input.changeSessionId);
+      if (!session.repositoryId || !session.head || !session.commits) throw Error('DiffTree requires pinned repository context');
+      if (!session.diffTree) captured = await this.captureHunks({ repositoryId: session.repositoryId, head: session.head, commits: session.commits });
+    }
     return this.mutate(input.changeSessionId, input.requestId, JSON.stringify(input), s => {
       if (s.version !== input.expectedVersion) throw new Error('VERSION_CONFLICT: reread change session');
       if (input.action) {
@@ -277,6 +330,10 @@ export class ChangeSessionService {
         this.record(doc, controller);
         this.refreshChanges(s, new Set([doc.id])); s.status = 'draft';
       }
+      if (input.diffTree) {
+        s.diffTree = writeDiffTree(this.diagrams, input.diffTree, s.diffTree?.hunks ?? captured!, s.diffTree);
+        s.status = 'draft';
+      }
       if (input.title) s.title = input.title;
       if (input.changes) {
         if (input.changes.length !== s.changes.length || new Set(input.changes.map(c => c.id)).size !== s.changes.length) throw new Error('Annotate every generated change exactly once');
@@ -287,12 +344,22 @@ export class ChangeSessionService {
         }
         s.changes = input.changes;
       }
+      if (input.migrations) {
+        const issues = migrationIssues(s.documents, input.migrations);
+        if (issues.length) throw Error(issues.map(i => `${i.migrationId} ${i.role}: ${i.message}`).join('; '));
+        s.migrations = input.migrations;
+        s.status = 'draft';
+      }
       if (input.status === 'ready') this.validateReady(s);
       if (input.status) s.status = input.status;
       return { ...summarizeChangeSession(s), version: s.version + 1 };
     });
   }
   private validateReady(s: DiagramChangeSession) {
+    if (s.diffTree) validateDiffTree(s.diffTree);
+    if (s.repositoryId && s.documents.some(doc => doc.repositoryId !== s.repositoryId)) throw Error('ChangeSession contains a canvas owned by another repository');
+    const issues = migrationIssues(s.documents, s.migrations ?? []);
+    if (issues.length) throw Error(issues.map(i => `${i.migrationId} ${i.role}: ${i.message}`).join('; '));
     if (!s.changes.length) throw new Error('Session has no changes');
     const visited = new Set<string>(), visiting = new Set<string>();
     const visit = (id: string) => {

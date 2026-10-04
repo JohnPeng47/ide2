@@ -55,6 +55,13 @@ try {
       if (!attached) socket.send(JSON.stringify({ type: 'attach', protocolVersion: 2, workspaceInstanceId: canvas.canvasId, documentId: canvas.documents[0].documentId, includeContext: true }));
       return attached;
     });
+    assert.equal(attached.context.apiFormatVersion, 1);
+    for (const node of attached.context.nodes) {
+      assert.equal(node.apiFormatVersion, 1);
+      assert.ok(!('contentNodes' in node));
+      assert.ok(!node.diagram || !('content' in node.diagram));
+      if (node.content) assert.ok(node.content.structure.nodes);
+    }
     await waitFor(async () => await statusText() === '1 agent connected');
     secondSocket = new WebSocket(`${url.replace('http:', 'ws:')}/api/mapping/live`);
     await once(secondSocket, 'open');

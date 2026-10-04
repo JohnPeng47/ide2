@@ -1,3 +1,4 @@
+import { CanvasApiProjection } from '../../../application/mapping/agent/apiProjection';
 import { AgentContextService } from '../../../application/mapping/agent/agentContextService';
 import { LiveCanvasService } from '../../../application/mapping/agent/liveCanvasService';
 import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService';
@@ -62,10 +63,11 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
   const diagrams = new MappingDiagramService(store, corpusAccess, projectRoot, configuredDomainProfileId);
   const canvasBridge = new CanvasSessionBridge();
   const agentContexts = new AgentContextService();
+  const apiProjection = new CanvasApiProjection();
   const liveCanvas = new LiveCanvasService(() => canvasBridge.list(), async (workspaceInstanceId, documentId) =>
-    await canvasBridge.dispatch(workspaceInstanceId, { method: 'context', documentId }) as import('../../../domain/mapping/agent/liveCanvasStatus').LiveCanvasContext, agentContexts);
+    await canvasBridge.dispatch(workspaceInstanceId, { method: 'context', documentId }) as import('../../../domain/mapping/agent/liveCanvasStatus').LiveCanvasContext, agentContexts, apiProjection);
   const agent = new AgentDiagrammingSessionService(canvasBridge, diagrams, store, new QuickJsAgentRuntime(),
-    new ChangeSessionService(new DiagramChangeSessionStore(store.storeRoot, undefined, true), store, canvasBridge), new RevisionedDiagramService(diagramEditRuntime), agentContexts);
+    new ChangeSessionService(new DiagramChangeSessionStore(store.storeRoot, undefined, true), store, canvasBridge), new RevisionedDiagramService(diagramEditRuntime), agentContexts, apiProjection);
   const routes = {
     core: createCoreRoutes({
       application: core,

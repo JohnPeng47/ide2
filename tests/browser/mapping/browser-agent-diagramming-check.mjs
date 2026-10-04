@@ -53,6 +53,10 @@ try {
     const drawn = await call('draw_diagram', args);
     const node = drawn.nodes.find(node => node.kind === 'diagram' && node.content.ascii.startsWith('Agent service'));
     assert.ok(node);
+    assert.equal(node.apiFormatVersion, 1);
+    assert.ok(!('contentNodes' in node));
+    assert.ok(!('content' in node.diagram));
+    assert.ok(Object.keys(node.content.structure.nodes).every(id => id.startsWith('@')));
     const boxId = node.boxId;
     await waitForSelector(cdp, `[data-grid-box="${boxId}"]`);
     assert.ok(await evaluate(cdp, 'Number(document.querySelector("[data-grid-box=overview]").dataset.gridColumn) > 0'));
@@ -109,14 +113,14 @@ try {
       nodes.replace({nodeId:'grid:overview',ascii:${JSON.stringify(copyAscii)},structureKind:'tree'});
       const other=nodes.draw({ascii:'Related diagram',position:{column:40,row:8}});
       const source=nodes.get({nodeId:'grid:overview'});
-      edges.create({source:{kind:'content-node',displayNodeId:source.id,contentNodeId:source.contentNodes[0].id,revisionId:source.content.revisionId},
+      edges.create({source:{kind:'content-node',displayNodeId:source.id,contentNodeId:Object.values(source.content.structure.nodes)[0].id,revisionId:source.content.revisionId},
         target:{kind:'box',displayNodeId:other.id},appearance:{color:'#88c0d0',lineStyle:'solid',label:{text:'Related',position:{x:250,y:80}}}});
       return {nodes:nodes.list(),edges:edges.list()};`});
     const copyRequest = {requestId:randomUUID(),code:`return canvas.copyDocument(${JSON.stringify({canvasId:canvas.canvasId,documentId:created.documentId,name:'Independent copy',expectedVersion:prepared.transaction.version})});`};
     const copyResult = await exec(copyRequest), copy = copyResult.value;
     assert.deepEqual(await exec(copyRequest), copyResult);
     assert.notEqual(copy.documentId, created.documentId); assert.equal(copy.version, 0);
-    await waitFor(async () => await evaluate(cdp, 'document.querySelector(".mapping-document-view:not([hidden]) .mapping-poc-ascii")?.textContent.includes("Unsaved source")'));
+    await waitFor(async () => await evaluate(cdp, `document.querySelector('.mapping-document-view:not([hidden]) [data-native-node="grid:overview"] .mapping-poc-ascii')?.textContent.includes("Unsaved source")`));
     await waitFor(async () => await evaluate(cdp, 'document.querySelector(".mapping-document-view:not([hidden]) .mapping-grid-tools button:first-child")?.disabled'));
     const copiedState = (await exec({sessionId:copy.sessionId,code:'return {nodes:nodes.list(),edges:edges.list()};'})).value;
     const contents = state => state.nodes.nodes.filter(n=>n.kind==='diagram').map(n=>({id:n.id,content:n.content}));
@@ -124,11 +128,11 @@ try {
     assert.deepEqual(copiedState.edges.edges, prepared.value.edges.edges);
     assert.equal(copiedState.nodes.nodes.find(n=>n.id==='grid:overview').content.ascii, copyAscii);
     await exec({sessionId:copy.sessionId,expectedVersion:0,code:'return nodes.replace({nodeId:"grid:overview",ascii:"Changed only in copy"});'});
-    await waitFor(async () => await evaluate(cdp, 'document.querySelector(".mapping-document-view:not([hidden]) .mapping-poc-ascii")?.textContent.includes("Changed only in copy")'));
+    await waitFor(async () => await evaluate(cdp, `document.querySelector('.mapping-document-view:not([hidden]) [data-native-node="grid:overview"] .mapping-poc-ascii')?.textContent.includes("Changed only in copy")`));
     await click('.mapping-document-view:not([hidden]) .mapping-grid-tools button:first-child');
-    await waitFor(async () => await evaluate(cdp, 'document.querySelector(".mapping-document-view:not([hidden]) .mapping-poc-ascii")?.textContent.includes("Unsaved source")'));
+    await waitFor(async () => await evaluate(cdp, `document.querySelector('.mapping-document-view:not([hidden]) [data-native-node="grid:overview"] .mapping-poc-ascii')?.textContent.includes("Unsaved source")`));
     await click('.mapping-document-view:not([hidden]) .mapping-grid-tools button:nth-child(2)');
-    await waitFor(async () => await evaluate(cdp, 'document.querySelector(".mapping-document-view:not([hidden]) .mapping-poc-ascii")?.textContent.includes("Changed only in copy")'));
+    await waitFor(async () => await evaluate(cdp, `document.querySelector('.mapping-document-view:not([hidden]) [data-native-node="grid:overview"] .mapping-poc-ascii')?.textContent.includes("Changed only in copy")`));
     const sourceAfter = (await exec({sessionId:created.sessionId,code:'return {nodes:nodes.list(),edges:edges.list()};'})).value;
     assert.deepEqual(sourceAfter, prepared.value);
     const copyVersion = (await exec({sessionId:copy.sessionId,code:'return nodes.list();'})).version;
@@ -142,12 +146,12 @@ try {
     cdp.on('Page.loadEventFired', () => { reloaded = true; });
     await cdp.send('Page.reload');
     await waitFor(() => reloaded);
-    await waitFor(async () => await evaluate(cdp, 'document.querySelector(".mapping-document-view:not([hidden]) .mapping-poc-ascii")?.textContent.includes("Changed only in copy")'));
+    await waitFor(async () => await evaluate(cdp, `document.querySelector('.mapping-document-view:not([hidden]) [data-native-node="grid:overview"] .mapping-poc-ascii')?.textContent.includes("Changed only in copy")`));
     // Workspace restore selects its saved active document. Use the explorer to switch to the source.
     await click(`[data-project-diagram="${savedDoc.representationId}"]`);
-    await waitFor(async () => await evaluate(cdp, 'document.querySelector(".mapping-document-view:not([hidden]) .mapping-poc-ascii")?.textContent.includes("Unsaved source")'));
+    await waitFor(async () => await evaluate(cdp, `document.querySelector('.mapping-document-view:not([hidden]) [data-native-node="grid:overview"] .mapping-poc-ascii')?.textContent.includes("Unsaved source")`));
     await click(`[data-project-diagram="${savedCopy.representationId}"]`);
-    await waitFor(async () => await evaluate(cdp, 'document.querySelector(".mapping-document-view:not([hidden]) .mapping-poc-ascii")?.textContent.includes("Changed only in copy")'));
+    await waitFor(async () => await evaluate(cdp, `document.querySelector('.mapping-document-view:not([hidden]) [data-native-node="grid:overview"] .mapping-poc-ascii')?.textContent.includes("Changed only in copy")`));
     const catalog = JSON.parse(await readFile(path.join(root,'.diagrams/canvases/catalog.json'),'utf8'));
     assert.equal(catalog.representations[savedDoc.representationId].status, 'settled');
     console.log('MCP search/read, draw, layout, retry, conflict, partial failures, per-edit undo/redo, standalone save, document copy with unsaved content/blank lines/edges, independent undo/save, explorer, and reload passed');
