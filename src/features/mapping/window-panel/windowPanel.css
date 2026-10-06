@@ -19,7 +19,6 @@
 .window-panel-canvas { position: relative; flex: 0 0 44%; min-width: 0; overflow: hidden; border-right: 1px solid var(--gutter); }
 .window-panel-canvas .change-session-actions { left: 10px; right: 10px; flex-wrap: wrap; gap: 6px; }
 .window-panel-canvas .change-preview-message { left: 12px; }
-.window-panel-canvas .migration-review { display: none; }
 .window-panel-message { padding: 18px; color: var(--muted); font-size: 13px; }
 .window-panel-message[role=alert] { color: #f0a3a9; }
 .diff-pane-toolbar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; padding: 8px 10px; min-height: 40px; border-bottom: 1px solid #27303a; }

@@ -73,21 +73,19 @@ try {
     await click('nav[aria-label="Diagram changes"] summary[data-change-session-summary]');
     console.log('Opening migration source');
     await click(sourceLink);
-    await waitForSelector(cdp, '.migration-baseline [data-migration-id="U"]');
-    assert.equal(await evaluate(cdp, 'getComputedStyle(document.querySelector(".migration-baseline [data-migration-id=U]")).backgroundColor'), 'rgb(32, 54, 77)');
-    assert.equal(await evaluate(cdp, 'document.querySelector(".migration-baseline [data-migration-id=U]").textContent'), 'undo / redo');
     await waitForSelector(cdp, '.change-preview-stage .migration-source');
+    assert.equal(await evaluate(cdp, 'document.querySelector(".migration-review")'), null);
     assert.equal(await evaluate(cdp, 'document.querySelector(".change-preview-stage .migration-source").textContent'), 'undo / redo');
     if (process.env.MIGRATION_SCREENSHOT) await captureScreenshot(cdp, { output: process.env.MIGRATION_SCREENSHOT + '.source.png' });
     console.log('Navigating to unchanged destination');
-    await click('.migration-endpoint button', 'Go to destination ↗');
+    await click(destinationLink);
     await waitForSelector(cdp, destinationNode);
     assert.deepEqual(await evaluate(cdp, `[...document.querySelectorAll(${JSON.stringify(destinationNode)})].map(n=>({text:n.textContent,color:getComputedStyle(n).backgroundColor,status:n.dataset.diffStatus??null}))`), [
       { text: 'HistoryManager', color: 'rgb(23, 63, 112)', status: null }, { text: 'undo / redo', color: 'rgb(23, 63, 112)', status: null }]);
     // Navigation reveals a collapsed destination and focuses the exact node.
     await click('[aria-label="Collapse subtree Editor"]');
     await waitFor(async () => !await evaluate(cdp, `document.querySelector(${JSON.stringify(destinationNode)})`));
-    await click('.migration-endpoint button', 'Locate HistoryManager');
+    await click(destinationLink);
     await waitForSelector(cdp, destinationNode);
     await waitFor(async () => await evaluate(cdp, `(()=>{const e=document.querySelector(${JSON.stringify(destinationNode)});const r=e.getBoundingClientRect();const hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return !!hit&&(hit===e||e.contains(hit));})()`));
     if (process.env.MIGRATION_SCREENSHOT) await captureScreenshot(cdp, { output: process.env.MIGRATION_SCREENSHOT });
@@ -106,9 +104,9 @@ try {
     await click(sourceLink);
     await waitForSelector(cdp, '.change-preview-stage [data-migration-id="S"]');
     assert.equal(await evaluate(cdp, 'getComputedStyle(document.querySelector(".change-preview-stage [data-migration-id=S]")).backgroundColor'), 'rgb(32, 54, 77)');
-    // A later edit flags the stale proposed endpoint rather than decorating unrelated text.
+    // A later edit stops decorating the stale proposed endpoint.
     await exec('return nodes.patchDiagram({nodeId:"grid:overview",start:2,end:2,patch:"`-- domain checkpoints"});', { ...scope, expectedVersion: 1 });
-    await waitFor(async () => await evaluate(cdp, '[...document.querySelectorAll(".migration-review [role=alert]")].some(e=>e.textContent.includes("revision is stale"))'));
+    await waitFor(async () => await evaluate(cdp, 'document.querySelectorAll(".change-preview-stage [data-migration-id=S]").length === 0'));
     assert.equal(await evaluate(cdp, 'document.querySelectorAll(".change-preview-stage [data-migration-id=S]").length'), 0);
     assert.equal(await readFile(catalogPath, 'utf8'), originalCatalog, 'Preview changed saved canvases');
     await update({ migrations: [migration], status: 'ready' });
@@ -122,7 +120,8 @@ try {
     await click('[role=tab]', 'Changes');
     await click('nav[aria-label="Diagram changes"] summary[data-change-session-summary]');
     await click(sourceLink);
-    await waitForSelector(cdp, '.migration-baseline [data-migration-id="U"]');
+    await waitForSelector(cdp, '.change-preview-stage .migration-source');
+    assert.equal(await evaluate(cdp, 'document.querySelector(".migration-review")'), null);
     assert.ok(await evaluate(cdp, 'document.querySelector(".change-session-actions").textContent.includes("Accepted")'));
     assert.deepEqual(errors, []);
   });

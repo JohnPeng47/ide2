@@ -2,8 +2,6 @@ import { changeMigrationPreview, migrationMarkKey, type MigrationPreview } from 
 import { useDiffTreeData } from './diffTreeData';
 import { diffTreeCoverage, diagramCoverage, coverageLabel, coverageTitle, type DiffCoverage } from './diffTreeCoverage';
 import { diagramContentNodes } from '../../../../domain/core/diagrams/diagramContentNodes';
-import { MigrationReview } from './MigrationReview';
-import type { DiagramMigration, MigrationRole } from '../../../../domain/mapping/changes/diagramMigration';
 import { ChangePreviewState } from './changePreviewState';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { ChangePreviewDocument, ChangeSessionPreview as Preview, DiagramChangeSession } from '../../../../domain/mapping/changes/diagramChangeSession';
@@ -54,9 +52,6 @@ export function ChangeSessionPreview(props: { compact?: boolean; mode: DisplayMo
   const coverage = useMemo(() => treeData ? diffTreeCoverage(treeData) : undefined, [treeData]);
   const migrations = useMemo(() => doc ? changeMigrationPreview(doc, session?.migrations ?? []) : undefined, [doc, session?.migrations]);
   const selectedEndpoint = migrations?.endpoints.find(e => e.migration.id === props.mode.migrationId && e.role === props.mode.migrationRole);
-  const selectMigration = (migration: DiagramMigration, role: MigrationRole) => props.onSelect({
-    kind: 'change-session', sessionId: props.mode.sessionId, documentId: migration[role].documentId,
-    migrationId: migration.id, migrationRole: role, serial: props.mode.serial + 1 });
   useEffect(() => {
     if (doc && session?.id === props.mode.sessionId) props.onSearchDocument?.({
       id: `proposal:${session.id}:${doc.id}`, name: `${doc.name} (proposal)`, scope: 'proposal', document: doc.proposed.document
@@ -89,7 +84,6 @@ export function ChangeSessionPreview(props: { compact?: boolean; mode: DisplayMo
       {session.status === 'accepted' && <button onClick={() => void readChangeSession(session.id).then(full => props.onOpenAccepted(full, props.mode.documentId))
         .catch(e => setError(e instanceof Error ? e.message : String(e)))}>Open canvas</button>}
     </div>}
-    {migrations && <MigrationReview preview={migrations} selectedId={props.mode.migrationId} selectedRole={props.mode.migrationRole} onSelect={selectMigration} />}
     {error && <p className="change-preview-message" role="alert">{error}</p>}
     {doc
       ? <PreviewCanvas key={`${session!.id}:${doc.id}:${doc.version}:${props.mode.migrationId ? props.mode.serial : ''}`} doc={doc}
