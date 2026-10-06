@@ -21,7 +21,7 @@ export function DiffHunkView({ hunk, wrap, onOpen }: { hunk: GitDiffHunk; wrap: 
     return () => { cancelled = true; };
   }, [visible, hunk.path, hunk.kind, content]);
   const added = content.rows.filter(row => row.kind === 'add').length, removed = content.rows.filter(row => row.kind === 'delete').length;
-  return <article ref={ref} tabIndex={0} onClick={event => { if (!(event.target as HTMLElement).closest('button')) onOpen?.(); }} onKeyDown={event => { if (event.target === event.currentTarget && event.key === 'Enter') onOpen?.(); }} className="diff-hunk" data-hunk-id={hunk.id} aria-label={`${hunk.path} at ${hunk.commit.slice(0, 12)}`}>
+  return <article ref={ref} tabIndex={0} className="diff-hunk" data-hunk-id={hunk.id} aria-label={`${hunk.path} at ${hunk.commit.slice(0, 12)}`}>
     <header className="diff-hunk-header"><strong>{hunk.path}</strong><small title={hunk.commit}>{hunk.commit.slice(0, 8)}</small>
       <small className="diff-count-added">+{added}</small><small className="diff-count-removed">−{removed}</small>
       <button onClick={onOpen} title="Open mapped diagram change">Diagram ↗</button>
