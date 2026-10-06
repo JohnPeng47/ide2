@@ -1,0 +1,10 @@
+# Track the canvas export and its required project files.
+**
+!.gitignore
+!canvas-domain-model/
+!canvas-domain-model/project.json
+!canvas-domain-model/diagram-storage-format.json
+!canvas-domain-model/canvases/
+!canvas-domain-model/canvases/**
+!canvas-domain-model/diagrams/
+!canvas-domain-model/diagrams/**

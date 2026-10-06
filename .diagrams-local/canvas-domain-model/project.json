@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "project-4971c06b-83d5-49eb-998d-043d5fc2dca4",
+  "name": "canvas-domain-model",
+  "diagramSetIds": [],
+  "createdAt": "2026-09-16T18:56:45.485425+00:00",
+  "updatedAt": "2026-09-16T18:56:45.485425+00:00",
+  "defaultDomainProfileId": "source-code",
+  "repositories": [
+    {
+      "id": "repo-ce67f2af4410036fce1ce12f",
+      "name": "worktree-perf-debug",
+      "identity": "/home/john/drone-interception/scripts/new-diagram/.git",
+      "checkoutRoots": [
+        "/home/john/.herdr/worktrees/new-diagram/worktree-perf-debug"
+      ]
+    }
+  ]
+}

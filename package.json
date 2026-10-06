@@ -12,6 +12,7 @@
     "benchmark": "node benchmarks/runner.mjs",
     "test:benchmarks": "node --test benchmarks/tests/*.test.mjs",
     "build": "tsc --noEmit && vite build",
+    "build:local": "npm run build && NEW_DIAGRAM_PROJECT_ROOT=. NEW_DIAGRAMS_DIR=.diagrams-local/canvas-domain-model npm run preview -- --port 5191 --strictPort",
     "check:browser": "npm run check:mapping",
     "check:canvas": "node tests/browser/core/browser-diagram-canvas-check.mjs",
     "check:source-performance": "npm run build && node tests/performance/browser-source-pane-performance.mjs",
