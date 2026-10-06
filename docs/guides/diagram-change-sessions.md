@@ -183,7 +183,11 @@ WindowPanel stays open over live and proposal canvases, independently of explore
 navigation. Layout, selection, folds, wrapping and scroll positions are remembered
 per review in the current browser tab. Click or scroll focuses a pane (including
 clicks handled by child controls); its border is highlighted. **Minimize** keeps
-that pane in a 40%-width window on the right; **Restore** restores the prior layout.
+that pane in a window on the right, initially 40% wide; **Restore** restores the prior layout.
+Drag the left edge, bottom edge or bottom-left corner to resize either view; the
+compact width is remembered separately from the expanded width. Focus an edge
+and use arrow keys to resize with the keyboard. Panel size and minimize/restore
+never resize the underlying canvas viewport or change its camera.
 
 The client prefetches all hunk pages, reading independent pages concurrently, and
 shares the immutable patches across panes and canvas switches. Selecting a tree

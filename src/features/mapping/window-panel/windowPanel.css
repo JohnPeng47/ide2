@@ -66,6 +66,9 @@
 .diff-hunk:focus-visible { outline: 2px solid #88c0d0; outline-offset: -2px; }
 .change-inline-coverage { position: absolute; width: 145px; text-align: right; margin: 0; pointer-events: auto; font-size: 10px; z-index: 2; }
 @media (max-width: 800px) { .window-panel-minimized { width: 40%; left: auto; } }
-/* Keep a revealed proposal target in the exposed area beside the minimized review. */
-.mapping-viewport:has(> .window-panel-minimized) > .change-session-preview { right: calc(40% + 24px); }
-.mapping-viewport:has(> .window-panel-minimized) > .change-session-preview .change-session-actions { flex-wrap: wrap; }
+/* Panel resizing affects only the overlay, never the canvas viewport. */
+.window-panel-resize { position: absolute; z-index: 5; touch-action: none; }
+.window-panel-resize-left { left: 0; top: 0; bottom: 12px; width: 6px; cursor: ew-resize; }
+.window-panel-resize-bottom { bottom: 0; left: 12px; right: 0; height: 6px; cursor: ns-resize; }
+.window-panel-resize-corner { bottom: 0; left: 0; width: 14px; height: 14px; cursor: nesw-resize; }
+.window-panel-resize:hover, .window-panel-resize:focus-visible { background: #88c0d080; }

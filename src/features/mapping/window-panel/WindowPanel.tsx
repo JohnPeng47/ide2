@@ -2,7 +2,8 @@ import { useId, useRef, type CSSProperties, type ReactNode } from 'react';
 import type { WindowPanelMode } from './windowPanelState';
 import './windowPanel.css';
 
-export interface WindowPanelLayout<Pane extends string> { mode: WindowPanelMode; pane: Pane; focusedPane: Pane; minimized: boolean; ratio: number }
+export interface WindowPanelLayout<Pane extends string> { mode: WindowPanelMode; pane: Pane; focusedPane: Pane; minimized: boolean; ratio: number;
+  minimizedWidth: number; expandedWidth?: number; height?: number }
 type PaneContent<Pane extends string> = { id: Pane; title: string; content: ReactNode };
 
 /** A workspace overlay with independent pane focus and a compact right-hand view. */
@@ -10,12 +11,47 @@ export function WindowPanel<Pane extends string>(props: { title: string; subtitl
   onChange: (patch: Partial<WindowPanelLayout<Pane>>) => void; onClose: () => void; panes: readonly [PaneContent<Pane>, PaneContent<Pane>]; canvas: ReactNode }) {
   const tabId = useId();
   const body = useRef<HTMLDivElement>(null), drag = useRef(false);
+  const panel = useRef<HTMLElement>(null);
+  const resize = useRef<{ x: number; y: number; width: number; height: number; areaWidth: number; areaHeight: number; right: number; top: number } | undefined>(undefined);
+  const width = props.state.minimized ? props.state.minimizedWidth : props.state.expandedWidth;
+  const style: CSSProperties = { ...(width !== undefined ? { left: 'auto', width: `${width * 100}%` } : {}),
+    ...(props.state.height !== undefined ? { bottom: 'auto', height: `${props.state.height * 100}%` } : {}) };
   const split = !props.state.minimized && props.state.mode === 'full-split';
   const activePane = props.state.minimized ? props.state.focusedPane : props.state.pane;
   const focus = (pane: Pane) => { if (props.state.focusedPane !== pane) props.onChange({ focusedPane: pane }); };
   const paneEvents = (pane: Pane) => ({ onClickCapture: () => focus(pane), onWheelCapture: () => focus(pane), onPointerDownCapture: () => focus(pane),
     onKeyDownCapture: () => focus(pane), onScrollCapture: (event: React.UIEvent) => { if ((event.target as HTMLElement).dataset.programmaticScroll !== 'true') focus(pane); } });
-  return <section className={`window-panel window-panel-${props.state.mode}${props.state.minimized ? ' window-panel-minimized' : ''}`} data-window-panel-canvas={props.canvasId} aria-label={props.title}>
+  return <section ref={panel} style={style} className={`window-panel window-panel-${props.state.mode}${props.state.minimized ? ' window-panel-minimized' : ''}`} data-window-panel-canvas={props.canvasId} aria-label={props.title}>
+    {(['left', 'bottom', 'corner'] as const).map(edge => <div key={edge} className={`window-panel-resize window-panel-resize-${edge}`}
+      role="separator" aria-label={edge === 'left' ? 'Resize window width' : edge === 'bottom' ? 'Resize window height' : 'Resize window'}
+      aria-orientation={edge === 'bottom' ? 'horizontal' : 'vertical'} tabIndex={0}
+      onKeyDown={event => {
+        const horizontal = edge !== 'bottom' && ['ArrowLeft', 'ArrowRight'].includes(event.key);
+        const vertical = edge !== 'left' && ['ArrowUp', 'ArrowDown'].includes(event.key);
+        if (!horizontal && !vertical) return;
+        event.preventDefault(); event.stopPropagation();
+        const rect = panel.current!.getBoundingClientRect(), area = panel.current!.parentElement!.getBoundingClientRect();
+        if (horizontal) props.onChange({ [props.state.minimized ? 'minimizedWidth' : 'expandedWidth']:
+          Math.max(.2, Math.min(.95, (rect.width + (event.key === 'ArrowLeft' ? 24 : -24)) / area.width)) });
+        else props.onChange({ height: Math.max(.2, Math.min(.95, (rect.height + (event.key === 'ArrowDown' ? 24 : -24)) / area.height)) });
+      }}
+      onPointerDown={event => {
+        if (event.button !== 0) return;
+        event.preventDefault(); event.stopPropagation(); event.currentTarget.focus(); event.currentTarget.setPointerCapture(event.pointerId);
+        const rect = panel.current!.getBoundingClientRect(), area = panel.current!.parentElement!.getBoundingClientRect();
+        resize.current = { x: event.clientX, y: event.clientY, width: rect.width, height: rect.height,
+          areaWidth: area.width, areaHeight: area.height, right: rect.right - area.left, top: rect.top - area.top };
+      }}
+      onPointerMove={event => {
+        const start = resize.current; if (!start) return;
+        event.preventDefault(); event.stopPropagation();
+        props.onChange({ ...(edge !== 'bottom' ? { [props.state.minimized ? 'minimizedWidth' : 'expandedWidth']:
+          Math.max(.2, Math.min(.95, (start.right - 8) / start.areaWidth, (start.width + start.x - event.clientX) / start.areaWidth)) } : {}),
+          ...(edge !== 'left' ? { height: Math.max(.2, Math.min(.95, (start.areaHeight - start.top - 8) / start.areaHeight,
+            (start.height + event.clientY - start.y) / start.areaHeight)) } : {}) });
+      }}
+      onPointerUp={() => { resize.current = undefined; }} onPointerCancel={() => { resize.current = undefined; }}
+      onLostPointerCapture={() => { resize.current = undefined; }} />)}
     <header className="window-panel-header">
       <div><strong>{props.title}</strong>{props.subtitle && <small>{props.subtitle}</small>}</div>
       <button type="button" aria-label={props.state.minimized ? 'Restore split view' : 'Minimize to focused pane'} onClick={() => props.onChange({ minimized: !props.state.minimized })}>{props.state.minimized ? 'Restore' : 'Minimize'}</button>
@@ -29,7 +65,7 @@ export function WindowPanel<Pane extends string>(props: { title: string; subtitl
     </header>
     {props.notice}
     <div className="window-panel-workspace">
-      {!props.state.minimized && props.state.mode === 'split-single' && <div className="window-panel-canvas" aria-label="Canvas beside panel">{props.canvas}</div>}
+      {props.state.mode === 'split-single' && <div hidden={props.state.minimized} className="window-panel-canvas" aria-label="Canvas beside panel">{props.canvas}</div>}
       <div className="window-panel-content">
         {!split && <div className="window-panel-tabs" role="tablist" aria-label="Panel panes">
           {props.panes.map(pane => <button key={pane.id} role="tab" id={`${tabId}-${pane.id}`} aria-controls={`${tabId}-${pane.id}-panel`}
