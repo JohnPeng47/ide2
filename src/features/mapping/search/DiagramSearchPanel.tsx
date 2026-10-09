@@ -5,8 +5,9 @@ import { SearchQueryHistory } from './searchQueryHistory';
 import './diagramSearch.css';
 
 const preferenceKey = 'diagram-search-auto-select';
-export function DiagramSearchPanel({ service, activeDocumentId, activeName, onReveal, onClear, onMatches }: {
+export function DiagramSearchPanel({ service, activeDocumentId, activeName, hideOpenButton, openRequest, onReveal, onClear, onMatches }: {
   service: DiagramSearchService; activeDocumentId?: string; activeName?: string;
+  hideOpenButton?: boolean; openRequest?: number;
   onReveal: (result: DiagramLineSearchResult) => Promise<void>;
   onClear: () => void;
   onMatches: (results: readonly DiagramLineSearchResult[]) => void;
@@ -31,6 +32,7 @@ export function DiagramSearchPanel({ service, activeDocumentId, activeName, onRe
     setGlobal(all); setOpened(true); setFocusSerial(value => value + 1);
   };
   const close = () => { setOpened(false); previousFocus.current?.focus(); };
+  useEffect(() => { if (openRequest) open(false); }, [openRequest]);
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === 'f') {
@@ -73,7 +75,7 @@ export function DiagramSearchPanel({ service, activeDocumentId, activeName, onRe
     input.current?.focus();
   };
   return <>
-    {!opened && <button className="diagram-search-open" aria-label="Search diagrams" title="Find in canvas (Ctrl+F); find in project (Ctrl+Shift+F)" onClick={() => open(global)}>Search</button>}
+    {!opened && !hideOpenButton && <button className="diagram-search-open" aria-label="Search diagrams" title="Find in canvas (Ctrl+F); find in project (Ctrl+Shift+F)" onClick={() => open(global)}>Search</button>}
     {opened && <section className="diagram-search-panel" role="search" aria-label="Diagram search" onKeyDown={event => {
       if (event.nativeEvent.isComposing) return;
       const inInput = event.target === input.current;

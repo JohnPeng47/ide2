@@ -22,6 +22,8 @@ nav[aria-label="Diagram changes"] small { color: var(--muted); }
 .change-diff-removed { background: #532c35; color: #ffc1c6; }
 .change-diff-moved { outline: 1px solid #8bc8ff; outline-offset: 0; }
 .change-diff-descendants { text-decoration: underline dotted #d6acff; text-underline-offset: 3px; }
+.change-preview-stage .change-diff-mapped { text-decoration: underline dotted #88c0d0 2px; text-underline-offset: 3px; cursor: pointer; }
+.change-preview-stage .change-diff-mapped:focus-visible { outline: 2px solid #88c0d0; }
 .change-preview-stage .change-diff-added .diagram-jump,
 .change-preview-stage .change-diff-modified .diagram-jump,
 .change-preview-stage .change-diff-removed .diagram-jump { color: inherit; }

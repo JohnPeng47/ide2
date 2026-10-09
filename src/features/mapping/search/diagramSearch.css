@@ -18,3 +18,4 @@
 .diagram-search-results mark { background: #ebcb8b; color: #141920; }
 .diagram-search-highlight { position: absolute; z-index: 7; pointer-events: none; background: rgb(235 203 139 / 30%); outline: 1px solid #ebcb8b; }
 .diagram-search-highlight.is-current { background: rgb(235 203 139 / 55%); outline-width: 2px; }
+.window-panel ~ .diagram-search-panel { z-index: 40; }

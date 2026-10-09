@@ -48,6 +48,7 @@ export function DraggableDiagramCanvas(props: {
   resetKey: string;
   className?: string;
   leftInset?: number;
+  getFocusBounds?: (viewport: HTMLElement) => { left: number; top: number; width: number; height: number };
   focusBox?: DiagramFocus;
   initialTransform?: CanvasTransform;
   onTransformChange?: (transform: CanvasTransform) => void;
@@ -243,13 +244,17 @@ export function DraggableDiagramCanvas(props: {
       const bounds = viewport.getBoundingClientRect();
       const box = target.getBoundingClientRect();
       const inset = Math.min(props.leftInset ?? 0, bounds.width / 2);
+      const visible = props.getFocusBounds?.(viewport) ?? {
+        left: bounds.left + inset, top: bounds.top, width: bounds.width - inset, height: bounds.height
+      };
       const current = transformRef.current;
-      applyTransform({ ...current, offset: { x: current.offset.x + (bounds.width + inset) / 2 - (box.left - bounds.left + box.width / 2),
-        y: current.offset.y + Math.min(bounds.height / 2, box.height / 2 + 80) - (box.top - bounds.top + box.height / 2) } }, !initial);
+      const centerY = label || searchLine ? visible.height / 2 : Math.min(visible.height / 2, box.height / 2 + 80);
+      applyTransform({ ...current, offset: { x: current.offset.x + visible.left + visible.width / 2 - (box.left + box.width / 2),
+        y: current.offset.y + visible.top + centerY - (box.top + box.height / 2) } }, !initial);
       if (surface) surface.style.visibility = "";
     }); });
     return () => { cancelAnimationFrame(frame); cancelAnimationFrame(innerFrame); };
-  }, [props.enabled, props.resetKey, props.focusBox, props.leftInset, applyTransform, resetCanvas]);
+  }, [props.enabled, props.resetKey, props.focusBox, props.leftInset, props.getFocusBounds, applyTransform, resetCanvas]);
 
   const beginPinch = (points: Map<number, CanvasPoint>) => {
     const [first, second] = [...points.values()];

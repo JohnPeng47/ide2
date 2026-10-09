@@ -7,7 +7,7 @@ export interface WindowPanelLayout<Pane extends string> { mode: WindowPanelMode;
 type PaneContent<Pane extends string> = { id: Pane; title: string; content: ReactNode };
 
 /** A workspace overlay with independent pane focus and a compact right-hand view. */
-export function WindowPanel<Pane extends string>(props: { title: string; subtitle?: string; notice?: ReactNode; canvasId: string; state: WindowPanelLayout<Pane>;
+export function WindowPanel<Pane extends string>(props: { title: string; subtitle?: string; notice?: ReactNode; actions?: ReactNode; canvasId: string; state: WindowPanelLayout<Pane>;
   onChange: (patch: Partial<WindowPanelLayout<Pane>>) => void; onClose: () => void; panes: readonly [PaneContent<Pane>] | readonly [PaneContent<Pane>, PaneContent<Pane>]; canvas: ReactNode }) {
   const tabId = useId();
   const body = useRef<HTMLDivElement>(null), drag = useRef(false);
@@ -63,6 +63,7 @@ export function WindowPanel<Pane extends string>(props: { title: string; subtitl
       onLostPointerCapture={() => { resize.current = undefined; }} />)}
     <header className="window-panel-header">
       <div><strong>{props.title}</strong>{props.subtitle && <small>{props.subtitle}</small>}</div>
+      {props.actions}
       {!single && <><button type="button" aria-label={props.state.minimized ? 'Restore split view' : 'Minimize to focused pane'} onClick={() => props.onChange({ minimized: !props.state.minimized })}>{props.state.minimized ? 'Restore' : 'Minimize'}</button>
       <label>Layout <select aria-label="Window panel layout" value={props.state.mode}
         onChange={event => props.onChange({ mode: event.target.value as WindowPanelMode, minimized: false })}>

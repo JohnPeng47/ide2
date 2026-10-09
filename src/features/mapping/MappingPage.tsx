@@ -81,8 +81,14 @@ function MappingWorkspacePage() {
   const [explorerTab, setExplorerTab] = useState<'diagrams'|'changes'>('diagrams');
   const [changeMode, setChangeMode] = useState<DisplayModeChange>();
   const [diffTreeMode, setDiffTreeMode] = useState<DisplayModeChange>();
+  const [diffTreeReveal, setDiffTreeReveal] = useState<{ sessionId: string; nodeId: string; serial: number }>();
+  const revealDiffTreeNode = (nodeId: string) => {
+    if (!changeMode) return;
+    setDiffTreeMode(changeMode);
+    setDiffTreeReveal(previous => ({ sessionId: changeMode.sessionId, nodeId, serial: (previous?.serial ?? 0) + 1 }));
+  };
   const selectChangeMode = (mode: DisplayModeChange) => {
-    if (mode.view === 'diff-tree') setDiffTreeMode(mode);
+    if (mode.view === 'diff-tree') { setDiffTreeReveal(undefined); setDiffTreeMode(mode); }
     setChangeMode({ ...mode, view: undefined });
   };
   const [workspaceEpoch, setWorkspaceEpoch] = useState(0);
@@ -152,6 +158,7 @@ function MappingWorkspacePage() {
   const savedSearchDocuments = useRef(new WeakMap<object, MappingGridDocument>());
   const [proposalSearchDocument, setProposalSearchDocument] = useState<SearchDocument>();
   const [proposalSearchFocus, setProposalSearchFocus] = useState<{ documentId: string; focus: DiagramFocus }>();
+  const [searchOpenRequest, setSearchOpenRequest] = useState(0);
   const [searchMatches, setSearchMatches] = useState<readonly DiagramLineSearchResult[]>([]);
   const searchMatchesByDocument = useMemo(() => {
     const grouped = new Map<string, DiagramLineSearchResult[]>();
@@ -718,13 +725,21 @@ function MappingWorkspacePage() {
           {!active && !changeMode && <div className="mapping-empty"><h1>{snapshot ? "Create a project diagram" : error ? "Could not load project diagrams" : "Loading project diagrams…"}</h1>
             {snapshot && <button type="button" onClick={() => setCreating(true)}>New diagram</button>}</div>}
           {changeMode && <ChangeSessionPreview mode={changeMode} onSelect={selectChangeMode} onOpenAccepted={openAccepted}
+              onDiffTreeJump={revealDiffTreeNode}
               onSearchDocument={onProposalSearchDocument} searchFocus={proposalSearchFocus && proposalSearchFocus.documentId === proposalSearchId ? proposalSearchFocus.focus : undefined}
               searchMatches={proposalSearchId ? searchMatchesByDocument.get(proposalSearchId) : undefined} />}
           {diffTreeMode && <DiffTreePanel key={diffTreeMode.sessionId} mode={diffTreeMode}
-              onClose={() => setDiffTreeMode(undefined)} onNavigate={setChangeMode}
-              canvas={changeMode?.documentId ? <ChangeSessionPreview compact mode={changeMode} onSelect={selectChangeMode} onOpenAccepted={openAccepted} />
+              revealNode={diffTreeReveal?.sessionId === diffTreeMode.sessionId ? diffTreeReveal : undefined}
+              onSearch={() => setSearchOpenRequest(value => value + 1)}
+              revealCanvasSerial={proposalSearchFocus?.documentId === proposalSearchId ? proposalSearchFocus?.focus.serial : undefined}
+              onClose={() => { setDiffTreeMode(undefined); setDiffTreeReveal(undefined); }} onNavigate={setChangeMode}
+              canvas={changeMode?.documentId ? <ChangeSessionPreview compact mode={changeMode} onSelect={selectChangeMode} onOpenAccepted={openAccepted}
+                onDiffTreeJump={revealDiffTreeNode}
+                searchFocus={proposalSearchFocus?.documentId === proposalSearchId ? proposalSearchFocus?.focus : undefined}
+                searchMatches={proposalSearchId ? searchMatchesByDocument.get(proposalSearchId) : undefined} />
                 : <p className="window-panel-message">Select a canvas in the explorer.</p>} />}
-          {!pendingTransfer && !diffTreeMode && <DiagramSearchPanel service={search} activeDocumentId={proposalSearchId ?? activeId}
+          {!pendingTransfer && <DiagramSearchPanel service={search} activeDocumentId={proposalSearchId ?? activeId}
+            hideOpenButton={!!diffTreeMode} openRequest={searchOpenRequest}
             activeName={changeMode ? proposalSearchDocument && proposalSearchDocument.id === proposalSearchId ? proposalSearchDocument.name : 'Loading proposal…' : active?.name}
             onReveal={revealSearchResult} onClear={clearSearchFocus} onMatches={setSearchMatches} />}
           <FloatingPane highlighted={!!pendingTransfer}><MappingDiagramExplorer explorerTab={explorerTab}

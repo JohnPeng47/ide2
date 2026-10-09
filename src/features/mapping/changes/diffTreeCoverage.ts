@@ -1,5 +1,6 @@
 import type { DiagramJumpTarget } from '../../../../domain/core/diagrams/diagramJump';
 import { diagramContentNodes } from '../../../../domain/core/diagrams/diagramContentNodes';
+import type { DiagramContentNode } from '../../../../domain/core/diagrams/diagramContent';
 import { flattenGrid, resolveScene } from '../../../../domain/core/diagrams/lineGrid';
 import type { ChangePreviewDocument } from '../../../../domain/mapping/changes/diagramChangeSession';
 import type { GitDiffHunk } from '../../../../domain/core/diffs/gitDiffHunk';
@@ -37,8 +38,25 @@ export function diffTreeCoverage(data: DiffTreeRead) {
   const targetsFor = (id: string): DiagramJumpTarget[] => {
     let node = nodes.get(id);
     while (node) { const targets = destinations.get(node.id); if (targets?.length) return targets; node = node.parentId ? nodes.get(node.parentId) : undefined; }
-    return [];
+    // Group headings can navigate to the explicitly linked diagrams below them.
+    const targets = new Map<string, DiagramJumpTarget>();
+    const collect = (id: string) => {
+      for (const target of destinations.get(id) ?? []) targets.set(JSON.stringify(target), target);
+      nodes.get(id)?.childIds.forEach(collect);
+    };
+    collect(id);
+    return [...targets.values()];
   };
+  // Stop at mapped sections, retaining nested diagram destinations in the outline.
+  const hasDiagramBelow = (id: string): boolean => (nodes.get(id)?.childIds ?? [])
+    .some(child => destinations.has(child) || hasDiagramBelow(child));
+  const outlineCollapsed: string[] = [];
+  const outline = (id: string) => {
+    const node = nodes.get(id); if (!node?.childIds.length) return;
+    if ((direct.has(id) || destinations.has(id)) && !hasDiagramBelow(id)) outlineCollapsed.push(id);
+    else node.childIds.forEach(outline);
+  };
+  tree?.nodes.filter(node => !node.parentId).forEach(node => outline(node.id));
   const source = new Map(data.hunks.filter(isApplicationHunk).map(hunk => [hunk.id, changedLines(hunk)]));
   const total = [...source.values()].reduce((a, b) => a + b, 0);
   const stats = (ids: Iterable<string>) => {
@@ -49,11 +67,42 @@ export function diffTreeCoverage(data: DiffTreeRead) {
   const depth = (id: string) => { let value = 0, node = nodes.get(id); while (node?.parentId) { value++; node = nodes.get(node.parentId); } return value; };
   const nodesForHunk = (id: string) => [...direct].filter(([, ids]) => ids.has(id)).map(([node]) => node)
     .sort((a, b) => depth(b) - depth(a) || direct.get(a)!.size - direct.get(b)!.size);
-  return { hunksFor, targetsFor, nodesForHunk, stats, subtrees, destinations };
+  return { hunksFor, targetsFor, nodesForHunk, stats, subtrees, destinations, outlineCollapsed,
+    labelFor: (id: string) => nodes.get(id)?.label ?? id };
 }
 export type DiffCoverage = ReturnType<typeof diffTreeCoverage>;
 export const coverageLabel = (stats: ReturnType<DiffCoverage['stats']>) => `${stats.lines.toLocaleString()} LOC · ${stats.percent.toFixed(1)}%`;
 export const coverageTitle = (stats: ReturnType<DiffCoverage['stats']>) => `${stats.hunks} unique application-code hunks; ${stats.lines} added + deleted lines / ${stats.total} total. Includes descendants and linked detail; excludes tests, tooling, dependencies and context lines.`;
+
+/** Reverse explicit diagram destinations; prefer exact sections over broader mappings. */
+export function diagramDiffTreeNodes(doc: ChangePreviewDocument, coverage: DiffCoverage) {
+  const key = (display?: string, content?: string) => JSON.stringify([display ?? '', content ?? '']);
+  const direct = new Map<string, Set<string>>();
+  const contentNodes = new Map<string, Map<string, DiagramContentNode>>(flattenGrid(resolveScene(doc.proposed.document.scene)).flatMap(({ box }) => box.kind === 'diagram'
+    ? [[`grid:${box.id}`, new Map(diagramContentNodes(doc.proposed.document.scene.contents[box.contentId].content).map(node => [node.id, node]))] as const] : []));
+  for (const [nodeId, targets] of coverage.destinations) for (const target of targets) {
+    if (target.representationId !== doc.id && target.representationId !== doc.representationId) continue;
+    const nodes = target.displayNodeId ? contentNodes.get(target.displayNodeId) : undefined;
+    if (target.displayNodeId && !nodes || target.contentNodeId && !nodes?.has(target.contentNodeId)) continue;
+    const k = key(target.displayNodeId, target.contentNodeId), ids = direct.get(k) ?? new Set<string>();
+    ids.add(nodeId); direct.set(k, ids);
+  }
+  return (display: string, content?: string): string[] => {
+    const nodes = contentNodes.get(display);
+    if (!nodes || content && !nodes.has(content)) return [];
+    let node = content ? nodes.get(content) : undefined;
+    while (node) {
+      const ids = direct.get(key(display, node.id)); if (ids?.size) return [...ids];
+      node = node.parentId ? nodes.get(node.parentId) : undefined;
+    }
+    const broader = direct.get(key(display)) ?? direct.get(key());
+    if (broader?.size) return [...broader];
+    const ids = new Set<string>();
+    const collect = (id: string) => { direct.get(key(display, id))?.forEach(value => ids.add(value)); nodes.get(id)?.childIds.forEach(collect); };
+    if (content) collect(content); else nodes.forEach(node => { if (!node.parentId) collect(node.id); });
+    return [...ids];
+  };
+}
 
 /** Propagate explicitly mapped regions through content hierarchy and outgoing detail links. */
 export function diagramCoverage(doc: ChangePreviewDocument, coverage: DiffCoverage) {

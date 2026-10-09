@@ -1,6 +1,7 @@
 import { changeMigrationPreview, migrationMarkKey, type MigrationPreview } from './changeMigrationPreview';
 import { useDiffTreeData } from './diffTreeData';
-import { diffTreeCoverage, diagramCoverage, coverageLabel, coverageTitle, type DiffCoverage } from './diffTreeCoverage';
+import { diffTreeCoverage, diagramCoverage, diagramDiffTreeNodes, coverageLabel, coverageTitle, type DiffCoverage } from './diffTreeCoverage';
+import { createPortal } from 'react-dom';
 import { diagramContentNodes } from '../../../../domain/core/diagrams/diagramContentNodes';
 import { ChangePreviewState } from './changePreviewState';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
@@ -23,6 +24,7 @@ import './changeSessions.css';
 export function ChangeSessionPreview(props: { compact?: boolean; mode: DisplayModeChange; onSelect: (mode: DisplayModeChange) => void;
   onSearchDocument?: (document: SearchDocument) => void; searchFocus?: DiagramFocus;
   searchMatches?: readonly DiagramLineSearchResult[];
+  onDiffTreeJump?: (nodeId: string) => void;
   onOpenAccepted: (session: Omit<DiagramChangeSession, 'receipts'>, documentId: string) => Promise<void> }) {
   const [loaded, setLoaded] = useState<{ session: Preview; diff: ReturnType<typeof diffChangeDocument> }>();
   const session = loaded?.session;
@@ -88,7 +90,7 @@ export function ChangeSessionPreview(props: { compact?: boolean; mode: DisplayMo
     {doc
       ? <PreviewCanvas key={`${session!.id}:${doc.id}:${doc.version}:${props.mode.migrationId ? props.mode.serial : ''}`} doc={doc}
           compact={props.compact} coverage={coverage} searchFocus={props.searchFocus}
-          searchMatches={props.searchMatches}
+          searchMatches={props.searchMatches} onDiffTreeJump={props.onDiffTreeJump}
           diff={diff!} modifiedDiagramIds={modifiedDiagramIds} migrations={migrations!} focusContentNodeId={props.mode.contentNodeId ?? selectedEndpoint?.focusContentNodeId}
           focusId={props.mode.displayNodeId ?? (selectedEndpoint?.focusContentNodeId ? selectedEndpoint.endpoint.displayNodeId : change?.nodeId)} serial={props.mode.serial} onJump={target => {
             const destination = session!.documents.find(d => d.representationId === target.representationId || d.id === target.representationId);
@@ -98,8 +100,26 @@ export function ChangeSessionPreview(props: { compact?: boolean; mode: DisplayMo
       : <p className="change-preview-message">{session ? 'Select a canvas in Changes.' : 'Loading preview…'}</p>}
   </div>;
 }
-function PreviewCanvas({ coverage, compact, doc, focusId, focusContentNodeId, serial, onJump, diff, modifiedDiagramIds, migrations, searchFocus, searchMatches }: { coverage?: DiffCoverage; compact?: boolean; doc: ChangePreviewDocument; focusId?: string; focusContentNodeId?: string; migrations: MigrationPreview; serial: number; searchFocus?: DiagramFocus;
+// Measure only when jumping: resizing an overlay must not move a panned canvas.
+function previewFocusBounds(viewport: HTMLElement) {
+  const bounds = viewport.getBoundingClientRect();
+  let left = bounds.left, right = bounds.right, top = bounds.top;
+  const workspace = viewport.closest('.mapping-viewport');
+  for (const element of workspace?.querySelectorAll<HTMLElement>('.mapping-floating-pane, .window-panel, .diagram-search-panel') ?? []) {
+    if (element.contains(viewport)) continue;
+    const rect = element.getBoundingClientRect();
+    if (!rect.width || !rect.height || rect.bottom <= bounds.top || rect.top >= bounds.bottom) continue;
+    if (element.matches('.mapping-floating-pane')) left = Math.max(left, Math.min(bounds.right, rect.right + 12));
+    else right = Math.min(right, Math.max(bounds.left, rect.left - 12));
+  }
+  const header = viewport.closest('.change-session-preview')?.querySelector('.change-session-actions')?.getBoundingClientRect();
+  if (header?.height) top = Math.max(top, Math.min(bounds.bottom, header.bottom + 12));
+  return { left, top, width: Math.max(0, right - left), height: Math.max(0, bounds.bottom - top) };
+}
+
+function PreviewCanvas({ coverage, compact, doc, focusId, focusContentNodeId, serial, onJump, onDiffTreeJump, diff, modifiedDiagramIds, migrations, searchFocus, searchMatches }: { coverage?: DiffCoverage; compact?: boolean; doc: ChangePreviewDocument; focusId?: string; focusContentNodeId?: string; migrations: MigrationPreview; serial: number; searchFocus?: DiagramFocus;
   searchMatches?: readonly DiagramLineSearchResult[];
+  onDiffTreeJump?: (nodeId: string) => void;
   diff: ReturnType<typeof diffChangeDocument>; modifiedDiagramIds: ReadonlySet<string>;
   onJump: NonNullable<Parameters<typeof DiagramText>[0]['onJump']> }) {
   const controller = useMemo(() => {
@@ -159,6 +179,21 @@ function PreviewCanvas({ coverage, compact, doc, focusId, focusContentNodeId, se
     [scene, state.canvas.diagramViews, diff, modifiedDiagramIds, state.document.jumps, migrations]);
   const { resolved, boxes } = text;
   const coverageFor = useMemo(() => coverage ? diagramCoverage(doc, coverage) : undefined, [doc, coverage]);
+  const mappedNodesFor = useMemo(() => coverage ? diagramDiffTreeNodes(doc, coverage) : undefined, [doc, coverage]);
+  const [mappingMenu, setMappingMenu] = useState<{ ids: string[]; left: number; top: number }>();
+  const mappingMenuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!mappingMenu) return;
+    mappingMenuRef.current?.querySelector('button')?.focus();
+    const outside = (event: PointerEvent) => { if (!mappingMenuRef.current?.contains(event.target as Node)) setMappingMenu(undefined); };
+    window.addEventListener('pointerdown', outside, true);
+    return () => window.removeEventListener('pointerdown', outside, true);
+  }, [mappingMenu]);
+  const openMapped = (ids: string[], element: HTMLElement) => {
+    if (ids.length === 1) { setMappingMenu(undefined); onDiffTreeJump?.(ids[0]); return; }
+    const rect = element.getBoundingClientRect();
+    setMappingMenu({ ids, left: Math.max(8, Math.min(rect.left, window.innerWidth - 288)), top: Math.max(8, Math.min(rect.bottom + 4, window.innerHeight - 178)) });
+  };
   const nodes = controller.nodes();
   const controlNodes = nodes.map(node => {
     if (node.layout !== 'grid' || node.kind !== 'diagram') return node;
@@ -171,7 +206,7 @@ function PreviewCanvas({ coverage, compact, doc, focusId, focusContentNodeId, se
   });
   const focusBox = useMemo(() => searchFocus ?? (focusId?.startsWith('grid:') ? { id: focusId.slice(5), contentNodeId: focusContentNodeId, serial } : undefined), [focusId, focusContentNodeId, serial, searchFocus]);
   return <DraggableDiagramCanvas enabled resetKey={doc.id} className="mapping-poc-canvas" leftInset={compact ? 0 : 340}
-    focusBox={focusBox}>
+    focusBox={focusBox} getFocusBounds={previewFocusBounds}>
     <div className="change-preview-stage" style={{ position: 'relative', marginLeft: coverageFor ? 175 : 0, width: resolved.bounds.columns * cell.width, height: resolved.bounds.rows * cell.height }}>
       {(searchMatches?.length ? searchMatches : searchFocus?.search ? [searchFocus.search] : []).map(result => {
         const projection = text.projections.get(result.displayNodeId);
@@ -211,15 +246,27 @@ function PreviewCanvas({ coverage, compact, doc, focusId, focusContentNodeId, se
           const migrationClass = [...new Set(marks?.map(mark => `migration-${mark.role}`))].join(' ');
           const side = modifiedDiagramIds.has(owner.displayNodeId) ? diff.diagrams.get(owner.displayNodeId)?.proposed : undefined;
           const change = owner.contentNodeId ? side?.nodes.get(owner.contentNodeId) : undefined;
-          const status = owner.contentNodeId ? change?.status : side?.lines.get(owner.sourceLine);
+          const status = !baselineDiagramIds.has(owner.displayNodeId.slice(5)) ? 'added' : owner.contentNodeId ? change?.status : side?.lines.get(owner.sourceLine);
           if (!status && !change?.moved && !change?.containsChanges && !marks?.length) return;
-          return { className: [migrationClass, marks?.length && status && 'migration-with-edit', status && `change-diff-${status}`, change?.moved && 'change-diff-moved',
+          const mapped = onDiffTreeJump ? mappedNodesFor?.(owner.displayNodeId, owner.contentNodeId) ?? [] : [];
+          return { className: [migrationClass, mapped.length && 'change-diff-mapped', marks?.length && status && 'migration-with-edit', status && `change-diff-${status}`, change?.moved && 'change-diff-moved',
             change?.containsChanges && !status && !change.moved && 'change-diff-descendants'].filter(Boolean).join(' '),
+            'data-difftree-mapped': mapped.length ? true : undefined,
+            'data-diagram-canvas-static-ui': mapped.length ? true : undefined,
+            role: mapped.length ? 'button' : undefined, tabIndex: mapped.length ? 0 : undefined,
+            onClick: mapped.length ? event => {
+              if ((event.target as Element).closest('button, a')) return;
+              event.stopPropagation(); openMapped(mapped, event.currentTarget);
+            } : undefined,
+            onKeyDown: mapped.length ? event => {
+              if (event.target !== event.currentTarget || !['Enter', ' '].includes(event.key)) return;
+              event.preventDefault(); event.stopPropagation(); openMapped(mapped, event.currentTarget);
+            } : undefined,
             'data-migration-id': marks?.map(mark => mark.id).join(' '), 'data-migration-role': marks?.map(mark => mark.role).join(' '),
             'data-diff-status': status, 'data-diff-moved': change?.moved || undefined, 'data-diff-descendants': change?.containsChanges || undefined,
             'data-diff-version': status === 'modified' ? 'current' : undefined,
             title: [...(marks?.map(mark => `${mark.id} · ${mark.role}: ${mark.title}`) ?? []), status && `${status[0].toUpperCase()}${status.slice(1)}`, change?.moved && 'Moved or reparented',
-              change?.containsChanges && 'Changes inside subtree'].filter(Boolean).join(' · ') };
+              change?.containsChanges && 'Changes inside subtree', mapped.length && `Open mapped DiffTree: ${mapped.map(id => coverage!.labelFor(id)).join(' / ')}`].filter(Boolean).join(' · ') };
         }} />
       {boxes.map(({ box, bounds }) => <div key={box.id} data-grid-box={box.id}
         ref={element => geometry.registerEndpoint({ displayNodeId: `grid:${box.id}` }, element)}
@@ -240,5 +287,9 @@ function PreviewCanvas({ coverage, compact, doc, focusId, focusContentNodeId, se
         })}
       </svg>
     </div>
+    {mappingMenu && createPortal(<div ref={mappingMenuRef} className="diagram-mapping-choices" role="menu" aria-label="Mapped DiffTree nodes"
+      style={{ left: mappingMenu.left, top: mappingMenu.top }} onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); setMappingMenu(undefined); } }}>
+      {mappingMenu.ids.map(id => <button key={id} type="button" role="menuitem" onClick={() => { setMappingMenu(undefined); onDiffTreeJump?.(id); }}>{coverage?.labelFor(id)}</button>)}
+    </div>, document.body)}
   </DraggableDiagramCanvas>;
 }

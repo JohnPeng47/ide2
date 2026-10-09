@@ -2,6 +2,8 @@ import { useEffect, useLayoutEffect, useState, type RefObject } from 'react';
 export type WindowPanelMode = 'full-single' | 'full-split' | 'split-single';
 export interface WindowPanelState {
   minimizedWidth: number; expandedWidth?: number; height?: number;
+  trackedNode?: string;
+  hunkFilterNode?: string;
   focusedPane: 'tree' | 'hunks'; minimized: boolean; mode: WindowPanelMode; pane: 'tree' | 'hunks'; ratio: number; selectedNode: string; collapsed: string[]; wrap: boolean;
 }
 const initial: WindowPanelState = { minimizedWidth: .4, focusedPane: 'tree', minimized: false, mode: 'full-split', pane: 'tree', ratio: .34, selectedNode: '*', collapsed: [], wrap: false };
@@ -15,6 +17,8 @@ export function useWindowPanelState(key: string) {
         height: Number.isFinite(value.height) ? Math.max(.2, Math.min(.95, value.height)) : undefined,
         pane: value.pane === 'hunks' ? 'hunks' : 'tree', ratio: typeof value.ratio === 'number' ? Math.max(.2, Math.min(.65, value.ratio)) : .34,
         selectedNode: typeof value.selectedNode === 'string' ? value.selectedNode : '*',
+        trackedNode: typeof value.trackedNode === 'string' ? value.trackedNode : undefined,
+        hunkFilterNode: typeof value.hunkFilterNode === 'string' ? value.hunkFilterNode : undefined,
         collapsed: Array.isArray(value.collapsed) ? value.collapsed.filter((id: unknown) => typeof id === 'string') : [], wrap: value.wrap === true } : initial;
     } catch { return initial; }
   });
