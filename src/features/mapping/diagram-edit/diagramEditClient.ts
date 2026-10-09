@@ -8,7 +8,10 @@ export interface DiagramEditClient {
   cancel(runId: string): Promise<DiagramEditRun>;
 }
 async function call<T>(name: string, input: unknown): Promise<T> {
-  const response = await apiFetch(`/api/mapping/agent/tools/${name}`, { method: 'POST',
+  const route = name === 'attach' ? '/attachments' : name === 'edit-diagram' ? '/diagram-edits'
+    : name === 'cancel-diagram-edit' ? `/diagram-edits/${encodeURIComponent((input as { runId: string }).runId)}/cancel`
+    : `/tools/${name}`;
+  const response = await apiFetch(`/api/mapping/agent${route}`, { method: 'POST',
     headers: { 'content-type': 'application/json' }, body: JSON.stringify(input), signal: AbortSignal.timeout(65000) });
   if (!response.ok) throw await errorFrom(response);
   return response.json();
@@ -20,8 +23,7 @@ export function createDiagramEditClient(): DiagramEditClient {
       const key = JSON.stringify([canvasId, documentId]);
       let attachment = attachments.get(key);
       if (!attachment) {
-        attachment = call<{ value: { sessionId: string } }>('exec', { requestId: crypto.randomUUID(),
-          code: `return canvas.attach(${JSON.stringify({ canvasId, documentId })});` })
+        attachment = call<{ value: { sessionId: string } }>('attach', { canvasId, documentId })
           .then(result => result.value.sessionId).catch(error => { attachments.delete(key); throw error; });
         attachments.set(key, attachment);
       }

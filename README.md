@@ -20,36 +20,35 @@ The eight current canvases are included in the repository; generated workspace
 records stay local.
 
 
-API **writes** and real AI execution are **disabled by default**. Diagram loading,
-workspace reads, source browsing, and Vite development HMR work without flags.
-These are server startup flags, not frontend build flags:
+The app works without flags: loading, editing, saving, autosave/history snapshots,
+deleting diagrams, accepting changes, and live canvas synchronization remain available.
+These server startup flags control agent access and real AI execution independently:
 
-| Flags | Reads | Writes | Real AI execution |
+| Flags | Browser app and persistence | Agent API mutations/context uploads | Real AI execution |
 | --- | --- | --- | --- |
 | none | Enabled | Disabled (403) | Disabled |
 | `--http` | Enabled | Enabled | Disabled |
-| `--pi` | Enabled | Disabled (403) | Enabled internally; AI submission routes blocked |
+| `--pi` | Enabled | Disabled (403) | Enabled for browser AI actions |
 | `--http --pi` | Enabled | Enabled | Enabled |
 
-`--http` enables saves, deletes, agent submissions, and other mutations. Read-only
-POST endpoints (source definitions and agent search/status/diff queries) remain
-available. Mixed read/write `exec` requests require `--http`. WebSocket readers
-can connect; publishing selections and uploading agent context require `--http`.
+`--http` gates mutating `/api/mapping/agent/tools/*` requests (including programmable
+`exec`) and WebSocket `agent-context.upload`. Read-only tool queries remain available.
+Browser persistence, canvas registration/replies, and selection publishing are outside
+this flag. Browser attachment, diagram-edit and change-acceptance routes use fixed
+operation contracts instead of the programmable tool endpoint.
 
-`--pi` independently covers selection prompts, diagram edits, file compaction,
-and Codex-backed selection chat. Disabled AI operations return an error before
-any agent session or child process starts. Explicit `NEW_DIAGRAM_AGENT=fake` test
-runtimes remain usable without `--pi` and do not call an AI provider.
+This is a capability switch, not client authentication: ordinary app endpoints remain
+HTTP-accessible. `--pi` is the independent guard against paid AI execution through any
+route, including diagram edits, selection prompts, compaction, and Codex-backed chat.
+Fake test agents do not call an AI provider and do not need `--pi`.
 
-For local canvas editing and saving without paid agents, build once and start:
+For normal local use without paid AI:
 
 ```sh
-npm run build
-NEW_DIAGRAM_PROJECT_ROOT=. NEW_DIAGRAMS_DIR=.diagrams-local/canvas-domain-model npm run preview -- --port 5191 --strictPort --http
+npm run build:local
 ```
 
-Add `--pi` to enable AI as well. Development uses the same switches:
-`npm run dev -- --http --pi`. The independent `--lsp` switch enables source
-navigation. Restart the server to change these capabilities; browser requests,
-saved workspace data, and inherited environment variables cannot enable them.
-`npm run build:local` allows viewing diagrams while keeping API writes and AI disabled.
+For browser AI, add `--pi` to the server command; for external agent mutation tools,
+add `--http`. Development examples: `npm run dev -- --pi` or
+`npm run dev -- --http --pi`. The independent `--lsp` switch enables source navigation.
+Restart the server to change capabilities.

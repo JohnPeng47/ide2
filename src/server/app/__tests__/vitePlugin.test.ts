@@ -77,7 +77,7 @@ describe("Mapping and Core HTTP API", () => {
 // Exercise both Vite serving modes and every flag combination over real transports.
 for (const hook of ['configureServer', 'configurePreviewServer'] as const) {
   for (const httpEnabled of [false, true]) for (const piEnabled of [false, true]) {
-    it(`${hook}: HTTP=${httpEnabled}, Pi=${piEnabled} allows reads and gates writes`, async () => {
+    it(`${hook}: HTTP=${httpEnabled}, Pi=${piEnabled} allows app persistence and gates agent mutations`, async () => {
       const root = await mkdtemp(path.join(tmpdir(), 'new-diagram-capabilities-'));
       roots.push(root);
       const store = new DiagramStore(root);
@@ -108,10 +108,9 @@ for (const hook of ['configureServer', 'configurePreviewServer'] as const) {
       // Definitions is a read despite POST; its independent LSP flag still applies.
       expect((await fetch(origin + '/api/core/project/definitions', { method: 'POST' })).status).toBe(503);
       if (!httpEnabled) {
-        for (const endpoint of ['/api', '/api/mapping/diagrams', '/api/mapping/chat', '/api/mapping/prompt',
-          '/api/mapping/compactions', '/api/mapping/agent/tools/edit-diagram', '/api/mapping/agent/tools/exec',
-          '/api/mapping/workspace', '/api/mapping/workspace/records', '/api/core/project/projections',
-          '/api/core/project/corpus-compactions', '/api/mapping/agent/tools/register_repository', '/internal/mapping/context']) {
+        for (const endpoint of ['/api/mapping/agent/tools/edit-diagram', '/api/mapping/agent/tools/exec',
+          '/api/mapping/agent/tools/register_repository', '/api/mapping/agent/tools/draw_diagram',
+          '/api/mapping/agent/tools/accept_diagram_change_session']) {
           for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) {
             const response = await fetch(origin + endpoint, { method });
             expect(response.status, `${method} ${endpoint}`).toBe(403);
@@ -119,6 +118,25 @@ for (const hook of ['configureServer', 'configurePreviewServer'] as const) {
           }
         }
       }
+      const post = (endpoint: string, body: unknown, method = 'POST') => fetch(origin + endpoint, {
+        method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body)
+      });
+      // Browser persistence must work in every flag combination, including defaults.
+      expect((await post('/api/mapping/workspace', { schemaVersion: 3, projectId: project.id, documents: [] }, 'PUT')).status).toBe(200);
+      const records = await (await fetch(origin + '/api/mapping/workspace/records')).json();
+      expect((await post('/api/mapping/workspace/records', { requestId: crypto.randomUUID(), expectedRevision: records.revision,
+        changes: [{ key: 'workspace', value: { projectId: project.id, documentIds: [], transfers: [] } }] })).status).toBe(200);
+      const created = await post('/api/mapping/diagrams', canvasSaveFixture({ name: 'Browser save', scene: singleDiagramScene('Saved without flags') }));
+      expect(created.status).toBe(200);
+      const createdBody = await created.json();
+      expect((await fetch(origin + `/api/mapping/diagrams/${createdBody.representation.id}`, { method: 'DELETE' })).status).toBe(200);
+      const canvasId = crypto.randomUUID();
+      // App attachment is a fixed operation, never an alternate arbitrary-exec endpoint.
+      expect((await post('/api/mapping/agent/attachments', { canvasId, documentId: 'doc', code: 'return nodes.remove({nodeId:"grid:overview"});' })).status).toBe(400);
+      expect((await post('/api/mapping/agent/change-sessions/session/accept', { expectedVersion: 0, requestId: 'accept', changeSessionId: 'override' })).status).toBe(400);
+      expect((await post('/api/mapping/agent/canvases', { canvasId, documents: [] })).status).toBe(200);
+      expect((await (await fetch(origin + '/api/mapping/agent/canvases')).json()).some((canvas: { canvasId: string }) => canvas.canvasId === canvasId)).toBe(true);
+      expect((await fetch(origin + `/api/mapping/agent/canvases/${canvasId}`, { method: 'DELETE' })).status).toBe(200);
       const { WebSocket } = await import('ws');
       const connect = (endpoint: string, protocol?: string) => new Promise<number>((resolve, reject) => {
         const ws = new WebSocket(origin.replace('http:', 'ws:') + endpoint, protocol);

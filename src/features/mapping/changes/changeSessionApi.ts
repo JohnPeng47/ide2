@@ -9,8 +9,8 @@ async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
 export const listChangeSessions = (signal?: AbortSignal) => get<ChangeSessionSummary[]>('', signal);
 export const readChangeSession = (id: string, signal?: AbortSignal) => get<Omit<DiagramChangeSession, 'receipts'>>(`/${encodeURIComponent(id)}`, signal);
 export async function acceptChangeSession(id: string, expectedVersion: number, requestId: string): Promise<ChangeSessionSummary> {
-  const response = await apiFetch('/api/mapping/agent/tools/accept_diagram_change_session', {
-    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ changeSessionId: id, expectedVersion, requestId })
+  const response = await apiFetch(`/api/mapping/agent/change-sessions/${encodeURIComponent(id)}/accept`, {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ expectedVersion, requestId })
   });
   const body = await response.json();
   if (!response.ok) throw new Error(body.error ?? 'Could not accept change session');

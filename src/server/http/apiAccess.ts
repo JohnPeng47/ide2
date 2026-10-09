@@ -1,15 +1,11 @@
-/** POST is also used for these strictly read-only queries. Keep mixed exec gated. */
-const readPostPaths = new Set([
-  '/api/core/project/definitions',
-  '/api/mapping/agent/tools/list_repositories',
-  '/api/mapping/agent/tools/get_repository_diff_hunks',
-  '/api/mapping/agent/tools/read_change_session_diff_tree',
-  '/api/mapping/agent/tools/edit-diagram-status',
-  '/api/mapping/agent/tools/diagram-search',
-  '/api/mapping/agent/tools/canvas-api-search'
+/** Only the programmable agent tool API is gated; app persistence/sync stays available. */
+const readTools = new Set([
+  'list_repositories', 'get_repository_diff_hunks', 'read_change_session_diff_tree',
+  'edit-diagram-status', 'diagram-search', 'canvas-api-search'
 ]);
 
-export function isReadApiRequest(method: string | undefined, pathname: string): boolean {
-  return method === 'GET' || method === 'HEAD' || method === 'OPTIONS'
-    || method === 'POST' && readPostPaths.has(pathname);
+export function isAgentMutationRequest(method: string | undefined, pathname: string): boolean {
+  const prefix = '/api/mapping/agent/tools/';
+  return pathname.startsWith(prefix) && !['GET', 'HEAD', 'OPTIONS'].includes(method ?? '')
+    && !(method === 'POST' && readTools.has(pathname.slice(prefix.length)));
 }

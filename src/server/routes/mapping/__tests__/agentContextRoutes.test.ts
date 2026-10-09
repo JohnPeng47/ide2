@@ -41,7 +41,7 @@ it('uploads over a bound WebSocket and uses that immutable context in an HTTP di
   live.publish(owner, 'workspace');
   live.update(owner, 'workspace', { documentId: 'doc', canvasEpoch: 'epoch', documentVersion: 0, sequence: 0, regions: [] });
   const server = createServer((req, res) => { void handleAgentRoutes(req, res, new URL(req.url!, 'http://localhost'), agent); });
-  const dispose = attachLiveCanvasSockets(server, live, { writesEnabled: true }), clients: WebSocket[] = [];
+  const dispose = attachLiveCanvasSockets(server, live, { agentContextUploadsEnabled: true }), clients: WebSocket[] = [];
   server.listen(0, '127.0.0.1'); await once(server, 'listening');
   const root = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
   const connect = async () => {

@@ -1,4 +1,4 @@
-import { isReadApiRequest } from '../http/apiAccess';
+import { isAgentMutationRequest } from '../http/apiAccess';
 import { attachLiveCanvasSockets } from '../routes/mapping/liveCanvasRoutes';
 import type { Connect, Plugin, ViteDevServer, PreviewServer } from "vite";
 import { ApplicationError } from '../../../application/core/errors';
@@ -27,8 +27,8 @@ export function diagramApi(
       next();
       return;
     }
-    if (options.httpEnabled !== true && !isReadApiRequest(request.method, url.pathname)) return sendJson(response, 403, {
-      code: "HTTP_WRITES_DISABLED", error: "API writes are disabled; start the server with --http to enable them."
+    if (options.httpEnabled !== true && isAgentMutationRequest(request.method, url.pathname)) return sendJson(response, 403, {
+      code: "HTTP_WRITES_DISABLED", error: "Agent API writes are disabled; start the server with --http to enable them."
     });
     const { routes } = backend;
     const namespace = url.pathname.split("/")[2];
@@ -52,7 +52,7 @@ export function diagramApi(
   const attach = (server: ViteDevServer | PreviewServer) => {
     server.middlewares.use(middleware);
     const disposeSockets = server.httpServer
-      ? attachLiveCanvasSockets(server.httpServer, backend.liveCanvas, { writesEnabled: options.httpEnabled === true }) : undefined;
+      ? attachLiveCanvasSockets(server.httpServer, backend.liveCanvas, { agentContextUploadsEnabled: options.httpEnabled === true }) : undefined;
     server.httpServer?.once("close", () => {
       disposeSockets?.();
       backend.dispose();

@@ -54,7 +54,7 @@ interface UpgradeServer {
   off(event: 'upgrade', listener: UpgradeListener): unknown;
 }
 
-export function attachLiveCanvasSockets(server: UpgradeServer, service: LiveCanvasService, options: { writesEnabled?: boolean } = {}) {
+export function attachLiveCanvasSockets(server: UpgradeServer, service: LiveCanvasService, options: { agentContextUploadsEnabled?: boolean } = {}) {
   const sockets = new WebSocketServer({ noServer: true, maxPayload: 8 * 1024 * 1024, perMessageDeflate: false });
   const alive = new Set<WebSocket>();
   sockets.on('connection', ws => {
@@ -86,8 +86,8 @@ export function attachLiveCanvasSockets(server: UpgradeServer, service: LiveCanv
         if (decoded && typeof decoded === 'object' && 'requestId' in decoded
           && typeof decoded.requestId === 'string' && decoded.requestId.length <= 200) requestId = decoded.requestId;
         const message = liveCanvasMessageSchema.parse(decoded);
-        if (options.writesEnabled !== true && message.type !== 'attach' && message.type !== 'context.get') {
-          throw new LiveCanvasError('HTTP_WRITES_DISABLED', 403, 'API writes are disabled; start the server with --http to enable them.');
+        if (options.agentContextUploadsEnabled !== true && message.type === 'agent-context.upload') {
+          throw new LiveCanvasError('HTTP_WRITES_DISABLED', 403, 'Agent context uploads are disabled; start the server with --http to enable them.');
         }
         if (message.type === 'attach' || message.type === 'publish') {
           if (connectionId || workspaceInstanceId || attaching) throw new LiveCanvasError('ALREADY_ATTACHED', 409, 'Open another socket to bind another canvas');

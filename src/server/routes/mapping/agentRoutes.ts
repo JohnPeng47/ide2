@@ -4,10 +4,30 @@ import { z } from 'zod';
 import type { AgentDiagrammingSessionService } from '../../../../application/mapping/agent/sessionService';
 import { agentToolSchemas, type AgentToolName } from '../../../../domain/mapping/agent/contracts';
 import { readBody, sendJson } from '../../http/http';
+const attachment = z.object({ canvasId: z.string().uuid(), documentId: z.string().min(1) }).strict();
 const registration = z.object({ canvasId: z.string().uuid(), stableWorkspaceId: z.string().uuid().optional(), projectId: z.string().optional(), documents: z.array(z.object({ documentId: z.string().min(1), name: z.string(), repositoryId: z.string().min(1).max(200).optional(), representationId: z.string().optional() })).max(100) }).strict();
 export async function handleAgentRoutes(request: Connect.IncomingMessage, response: ServerResponse, url: URL, service: AgentDiagrammingSessionService) {
   const path = url.pathname.slice('/api/mapping/agent'.length);
   try {
+    // Browser operations have fixed contracts; they never accept arbitrary exec code.
+    if (path === '/attachments' && request.method === 'POST') {
+      const input = attachment.parse(await readBody(request));
+      const result = await service.call('exec', { requestId: crypto.randomUUID(),
+        code: `return canvas.attach(${JSON.stringify(input)});` });
+      return sendJson(response, 200, result);
+    }
+    if (path === '/diagram-edits' && request.method === 'POST') {
+      return sendJson(response, 200, await service.call('edit-diagram', await readBody(request)));
+    }
+    const cancelEdit = path.match(/^\/diagram-edits\/([^/]+)\/cancel$/);
+    if (cancelEdit && request.method === 'POST') {
+      return sendJson(response, 200, await service.call('cancel-diagram-edit', { runId: decodeURIComponent(cancelEdit[1]) }));
+    }
+    const accept = path.match(/^\/change-sessions\/([^/]+)\/accept$/);
+    if (accept && request.method === 'POST') {
+      const body = z.object({ expectedVersion: z.number().int().nonnegative(), requestId: z.string().min(1) }).strict().parse(await readBody(request));
+      return sendJson(response, 200, await service.call('accept_diagram_change_session', { ...body, changeSessionId: decodeURIComponent(accept[1]) }));
+    }
     if (path === '/change-sessions' && request.method === 'GET') return sendJson(response, 200, await service.changes?.list() ?? []);
     const preview = path.match(/^\/change-sessions\/([^/]+)\/preview$/);
     if (preview && request.method === 'GET' && service.changes) {
