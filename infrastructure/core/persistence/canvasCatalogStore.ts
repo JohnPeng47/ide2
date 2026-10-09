@@ -3,6 +3,8 @@ import type { ProjectRecord } from '../../../domain/core/records/domain';
 import { DefaultCanvasHistoryService } from '../../../domain/core/diagrams/canvasHistoryService';
 import { assertDiagramStorageFormat } from './diagramStorageFormat';
 import path from 'node:path';
+import { stat } from 'node:fs/promises';
+import type { DiagramSourceBinding } from '../../../domain/core/diagrams/diagram';
 import type { AcceptCanvasChangesInput, ChangeSessionAcceptance } from '../../../domain/core/representations/changeAcceptance';
 import { documentFromRevision, historyFromRevision } from '../../../domain/core/diagrams/projectDiagramCanvas';
 import type { ProjectProjectionRecord } from '../../../domain/core/diagrams/diagramProjection';
@@ -21,6 +23,7 @@ export class CanvasCatalogStore {
     protected readonly diagramPersistence: DiagramPersistence = new DiagramPersistence(new DiagramRevisionStore(storeRoot))) {}
 
   private representationWrite: Promise<unknown> = Promise.resolve();
+  private sourceBindingsCache?: { key: string; value: Promise<DiagramSourceBinding[]> };
   private serialize<T>(write: () => Promise<T>): Promise<T> {
     const result = this.representationWrite.then(write);
     this.representationWrite = result.catch(() => undefined);
@@ -120,6 +123,30 @@ export class CanvasCatalogStore {
   /** Publication receipts contain no diagram references; listing proposals needs no restored catalog. */
   async loadChangeSessionAcceptances(projectId: string) {
     return (await this.readStoredCatalog(projectId))?.changeSessionAcceptances ?? {};
+  }
+
+  /** Coalesce file reads and invalidate on atomic catalog replacement, including external saves. */
+  async loadDiagramSourceBindings(projectId: string): Promise<DiagramSourceBinding[]> {
+    const metadata = async (file: string) => {
+      try { const info = await stat(file); return `${file}:${info.ino}:${info.size}:${info.mtimeMs}:${info.ctimeMs}`; }
+      catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined; throw error; }
+    };
+    const key = `${projectId}:${await metadata(this.representationCatalogPath())
+      ?? await metadata(path.join(this.storeRoot, 'representations', 'catalog.json')) ?? 'empty'}`;
+    if (this.sourceBindingsCache?.key !== key) {
+      const value = (async () => {
+        await assertDiagramStorageFormat(this.storeRoot);
+        const catalog = await this.readStoredCatalog(projectId);
+        return this.diagramPersistence.sourceBindings(Object.values(catalog?.revisions ?? {}).map(revision => {
+          if (revision.content?.kind !== 'canvas-history') throw new Error('Unsupported legacy diagram content: canvas history is required');
+          return revision.content.history;
+        }));
+      })();
+      const entry = { key, value };
+      this.sourceBindingsCache = entry;
+      void value.catch(() => { if (this.sourceBindingsCache === entry) this.sourceBindingsCache = undefined; });
+    }
+    return structuredClone(await this.sourceBindingsCache.value);
   }
 
   loadRepresentationCatalog(projectId: string, historyValidation: import('../../../domain/core/diagrams/canvasHistory').HistoryValidation = 'all'): Promise<ProjectRepresentationCatalogRecord> {

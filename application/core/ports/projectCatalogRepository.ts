@@ -25,6 +25,7 @@ export interface ProjectCatalogRepository {
     compaction: ProjectFileCompactionRecord;
   }>;
   loadRepresentationCatalog(projectId: string, historyValidation?: import('../../../domain/core/diagrams/canvasHistory').HistoryValidation): Promise<ProjectRepresentationCatalogRecord>;
+  loadDiagramSourceBindings(projectId: string): Promise<import('../../../domain/core/diagrams/diagram').DiagramSourceBinding[]>;
   loadChangeSessionAcceptances(projectId: string): Promise<NonNullable<ProjectRepresentationCatalogRecord['changeSessionAcceptances']>>;
   saveRepresentationCatalog(catalog: ProjectRepresentationCatalogRecord): Promise<void>;
   archiveRepresentation(projectId: string, representationId: string): Promise<ProjectRepresentationCatalogRecord>;

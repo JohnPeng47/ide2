@@ -9,9 +9,9 @@ export interface DiagramSourceReference { projectId: string; representationId?: 
 export async function resolveDiagramSource(store: Pick<DiagramRepository,'loadProject'|'projectCatalogs'>, ref: DiagramSourceReference, corpus?: CorpusAccess, liveDiagram?: Diagram) {
   const project = await store.loadProject();
   if (!project || project.id !== ref.projectId) throw new ApplicationError('conflict','Diagram belongs to another project');
-  const catalog = await store.projectCatalogs.loadRepresentationCatalog(project.id);
+  const catalog = ref.representationId ? await store.projectCatalogs.loadRepresentationCatalog(project.id) : undefined;
   let diagram: Diagram | undefined;
-  const representation = ref.representationId ? catalog.representations[ref.representationId] : undefined;
+  const representation = ref.representationId ? catalog!.representations[ref.representationId] : undefined;
   const revisionId = ref.revisionId ?? representation?.currentRevisionId;
   if (ref.representationId && (!representation || !revisionId || !representation.revisionIds.includes(revisionId))) throw new Error('Unknown diagram revision');
   if (liveDiagram) {
@@ -19,7 +19,7 @@ export async function resolveDiagramSource(store: Pick<DiagramRepository,'loadPr
     if (ref.contentId && liveDiagram.id !== ref.contentId) throw new Error('Live diagram identity does not match selection');
     diagram = liveDiagram;
   } else if (ref.representationId) {
-    const scene = sceneFromRevision(catalog.revisions[revisionId!]);
+    const scene = sceneFromRevision(catalog!.revisions[revisionId!]);
     const candidates = Object.values(scene.contents).filter(d => ref.contentId ? d.id === ref.contentId : !!d.sourceContext.binding);
     if (candidates.length !== 1) throw new Error('Select an individual diagram with contentId');
     diagram = candidates[0];
@@ -30,8 +30,7 @@ export async function resolveDiagramSource(store: Pick<DiagramRepository,'loadPr
       if (old && (old.corpus.root !== binding.corpus.root || old.corpus.kind !== binding.corpus.kind || old.repositoryIdentity !== binding.repositoryIdentity)) throw new Error('Conflicting diagram source identity');
       bindings.set(binding.sourceId,binding);
     };
-    for (const revision of Object.values(catalog.revisions)) for (const d of Object.values(sceneFromRevision(revision).contents)) {
-      const binding = d.sourceContext.binding;
+    for (const binding of await store.projectCatalogs.loadDiagramSourceBindings(project.id)) {
       if (binding && (!ref.sourceId || binding.sourceId === ref.sourceId)) register(binding);
     }
     for (const binding of project.sources ?? []) {

@@ -7,6 +7,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { CanvasCatalogStore } from '../canvasCatalogStore';
 import { DiagramRevisionStore } from '../diagramRevisionStore';
 import { RevisionedDiagramService } from '../../../../domain/core/diagrams/diagramService';
+import { sourceBindingFromLocation } from '../../../../domain/core/diagrams/diagram';
 import { singleDiagramScene } from '../../../../domain/core/diagrams/projectDiagramCanvas';
 import { documentFromHistory } from '../../../../domain/core/diagrams/canvasHistory';
 import { MappingDocumentController } from '../../../../domain/mapping/workspace/mappingDocumentController';
@@ -117,4 +118,33 @@ it('rejects saves without supplied history before publishing any catalog', async
   await expect(catalog.saveMappingDiagram('project', { name: 'Missing history', scene: controller.getSnapshot().document.scene }))
     .rejects.toThrow('Canvas history is required');
   expect(await readdir(root)).not.toContain('canvases');
+});
+
+it('reads source bindings from canvas heads without loading past diagram revisions', async () => {
+  const { root, records, service } = await setup();
+  const source = sourceBindingFromLocation({ checkoutRoot: root, repositoryIdentity: 'repo' });
+  const controller = new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('Original', source)), initialCanvasState());
+  controller.applyUpdate(0, [{ method: 'replace', nodeId: 'grid:overview', ascii: 'Changed' }]);
+  const history = controller.exportHistory();
+  const stored = await service.persist(history) as any;
+  const get = vi.spyOn(records, 'get');
+  expect(await service.sourceBindings([stored, stored])).toEqual([source]);
+  expect(get.mock.calls.filter(([kind]) => kind === 'revision')).toHaveLength(Object.keys(history.snapshots[history.headId].diagramBindings).length);
+  expect(await service.sourceBindings([history])).toEqual([source]);
+});
+
+it('shares source metadata reads and refreshes after another store publishes a canvas', async () => {
+  const { root, service } = await setup();
+  const first = sourceBindingFromLocation({ checkoutRoot: root, repositoryIdentity: 'first' });
+  const second = sourceBindingFromLocation({ checkoutRoot: path.join(root, 'second'), repositoryIdentity: 'second' });
+  const store = new CanvasCatalogStore(root, service);
+  await store.saveMappingDiagram('project', canvasSaveFixture({ name: 'First', scene: singleDiagramScene('First', first) }));
+  const read = vi.spyOn(service, 'sourceBindings');
+  expect(await Promise.all([store.loadDiagramSourceBindings('project'), store.loadDiagramSourceBindings('project')])).toEqual([[first], [first]]);
+  expect(read).toHaveBeenCalledTimes(1);
+  await new CanvasCatalogStore(root).saveMappingDiagram('project', canvasSaveFixture({ name: 'Second', scene: singleDiagramScene('Second', second) }));
+  expect(await store.loadDiagramSourceBindings('project')).toEqual([first, second]);
+  expect(read).toHaveBeenCalledTimes(2);
+  await expect(store.loadDiagramSourceBindings('another-project')).rejects.toThrow('another Project');
+  expect(await store.loadDiagramSourceBindings('project')).toEqual([first, second]);
 });

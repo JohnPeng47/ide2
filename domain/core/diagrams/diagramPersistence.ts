@@ -1,5 +1,5 @@
 import { diagramRevisions as revisionRegistry } from './internal/revisionRegistry';
-import { validateDiagram, type Diagram } from './diagram';
+import { validateDiagram, validateSourceBinding, type Diagram, type DiagramSourceBinding } from './diagram';
 import { currentHistoryChanges, validateCanvasHistory, type CanvasHistoryRecord, type HistoryValidation } from './canvasHistory';
 import type { DiagramRevision } from './diagramRevisionEditor';
 
@@ -123,5 +123,39 @@ export async function restoreDiagramData(value: unknown, store: DiagramRecordSto
 export class DiagramPersistence {
   constructor(private readonly store: DiagramRecordStore) {}
   persist(value: unknown) { return persistDiagramData(value, this.store); }
+  /** Read only each published canvas head's source metadata, without restoring its undo history. */
+  async sourceBindings(histories: readonly unknown[]): Promise<DiagramSourceBinding[]> {
+    const records = new Map<string, Promise<Record<string, any>>>();
+    const read = async (value: unknown, kind: DiagramRecordKind): Promise<Record<string, any>> => {
+      if (!object(value)) throw new Error('Missing diagram source record');
+      if (!value.$diagramRecord) return value;
+      if (value.$diagramRecord !== kind || typeof value.id !== 'string' || !/^[a-f0-9]{64}$/.test(value.id)) throw new Error('Invalid diagram record reference');
+      const key = `${kind}:${value.id}`;
+      if (!records.has(key)) records.set(key, this.store.get(kind, value.id).then(record => {
+        if (!object(record)) throw new Error('Invalid diagram source record');
+        return record;
+      }));
+      return records.get(key)!;
+    };
+    const bindings = new Map<string, DiagramSourceBinding>();
+    for (const raw of histories) {
+      if (!object(raw) || !raw.snapshots?.[raw.headId]) throw new Error('Unknown diagram checkpoint');
+      const stored = raw.diagramHistory ? await read(raw.diagramHistory, 'history') : undefined;
+      const headBindings = stored ? stored.bindings?.[raw.headId] : raw.snapshots[raw.headId].diagramBindings;
+      if (!object(headBindings)) throw new Error('Unknown diagram checkpoint');
+      for (const revisionId of Object.values(headBindings)) {
+        const revision = await read((stored?.revisions ?? raw.diagramRevisions)?.[revisionId], 'revision');
+        const diagram = await read(revision.diagram, 'diagram');
+        const binding = diagram.sourceContext?.binding as DiagramSourceBinding | undefined;
+        if (binding) {
+          validateSourceBinding(binding);
+          const key = JSON.stringify(binding);
+          // Preserve last occurrence order when a source's optional metadata changes across revisions.
+          bindings.delete(key); bindings.set(key, binding);
+        }
+      }
+    }
+    return [...bindings.values()];
+  }
   async restore<T>(value: unknown, historyValidation: HistoryValidation = 'all'): Promise<T> { return restoreDiagramData(value, this.store, historyValidation) as Promise<T>; }
 }
