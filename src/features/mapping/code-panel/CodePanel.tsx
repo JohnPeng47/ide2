@@ -18,12 +18,14 @@ function SourceRangeSections({ file, onOpen, hoveredNode }: { file: SourceDispla
   const [loaded, setLoaded] = useState<CodeRepoFile>();
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
+  const loadedAttempt = useRef(0);
   const [definitions, setDefinitions] = useState<SourceLocation[]>([]);
   const [message, setMessage] = useState('');
   const definitionRequest = useRef<AbortController | undefined>(undefined);
   useEffect(() => {
     const controller = new AbortController(); setLoaded(undefined); setError('');
-    void codeRepo.readFile(file.repo, file.path, { signal: controller.signal }).then(result => {
+    const reload = loadedAttempt.current !== attempt; loadedAttempt.current = attempt;
+    void codeRepo.readFile(file.repo, file.path, { signal: controller.signal, reload }).then(result => {
       if (!controller.signal.aborted) setLoaded(result);
     }, error => { if (!controller.signal.aborted) setError(String(error.message ?? error)); });
     return () => { controller.abort(); definitionRequest.current?.abort(); };

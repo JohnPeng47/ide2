@@ -30,6 +30,7 @@ export const SourceCodePane = memo(function SourceCodePane(props: {
   const [preview, setPreview] = useState<ProjectSourceFile | null>(null);
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
+  const loadedAttempt = useRef(0);
   const [revealRequestId, setRevealRequestId] = useState(0);
   const [navigation, setNavigation] = useState<{ visit: Visit; id: number } | undefined>(() => props.initialLocation ? { visit: props.initialLocation, id: 1 } : undefined);
   const [explorerOpen, setExplorerOpen] = useState(false);
@@ -42,8 +43,9 @@ export const SourceCodePane = memo(function SourceCodePane(props: {
 
   useEffect(() => {
     const controller = new AbortController();
+    const reload = loadedAttempt.current !== attempt; loadedAttempt.current = attempt;
     setPreview(null); setError('');
-    void codeRepo.readFile({ projectId: content.projectId, sourceId: content.sourceId ?? '' }, content.sourceFile, { signal: controller.signal })
+    void codeRepo.readFile({ projectId: content.projectId, sourceId: content.sourceId ?? '' }, content.sourceFile, { signal: controller.signal, reload })
       .then(result => { if (!controller.signal.aborted) setPreview({ path: result.path, startLine: 1, lines: result.text.split('\n'), sourceSha256: result.sha256, lspEnabled: Boolean(result.lspEnabled) }); })
       .catch((error: unknown) => { if (!controller.signal.aborted) setError(error instanceof Error ? error.message : 'Could not load source file'); });
     return () => controller.abort();

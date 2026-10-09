@@ -27,7 +27,9 @@ export interface CodeRepoGitService {
  */
 export interface CodeRepoService {
   readonly available: boolean;
-  readFile(repo: CodeRepoReference, path: string, options?: CodeRepoRequest): Promise<CodeRepoFile>;
+  readFile(repo: CodeRepoReference, path: string, options?: CodeRepoRequest & { reload?: boolean }): Promise<CodeRepoFile>;
+  /** Warm mapped files without waiting for a source pane to open. */
+  preloadFiles?(files: readonly { repo: CodeRepoReference; path: string; version: string }[]): void;
   listDirectory(repo: CodeRepoReference, path: string, options?: CodeRepoRequest): Promise<CodeRepoEntry[]>;
   search(repo: CodeRepoReference, query: CodeRepoSearchQuery, options?: CodeRepoRequest): Promise<{ matches: CodeRepoSearchMatch[]; truncated: boolean }>;
   definitions(repo: CodeRepoReference, anchor: { path: string; position: SourcePosition; sourceSha256: string }, options?: CodeRepoRequest): Promise<SourceDefinitions>;
