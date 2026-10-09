@@ -7,6 +7,7 @@ import { MappingShapeUtil } from './MappingShapeUtil';
 import { MappingEditorRuntime } from './MappingEditorRuntime';
 import { CanvasRuntime, CanvasRuntimeContext } from './CanvasRuntimeContext';
 import { mappingShapeId } from './shapeProjection';
+import { ConnectionFocus } from './ConnectionFocus';
 import 'tldraw/tldraw.css';
 import './mappingEditor.css';
 
@@ -110,6 +111,7 @@ export function MappingEditorCanvas(props: {
       <Tldraw licenseKey={import.meta.env.VITE_TLDRAW_LICENSE_KEY} shapeUtils={shapeUtils} components={components} hideUi onMount={setEditor} overrides={{ tools: (_editor, tools) => ({ select: tools.select, hand: tools.hand }), actions: () => ({}) }}
         options={{ maxShapesPerPage: 10000, createTextOnCanvasDoubleClick: false }} autoFocus={false} />
     </ContentContext.Provider></CanvasRuntimeContext.Provider>
+    <ConnectionFocus runtime={canvasRuntime} editor={editor} enabled={props.enabled} root={root} />
     <div className="diagram-canvas__controls" data-diagram-canvas-static-ui>
       <button type="button" onClick={() => editor?.setCurrentTool('select')}>Select</button>
       <button type="button" onClick={() => editor?.setCurrentTool('hand')}>Pan</button>

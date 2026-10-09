@@ -96,9 +96,9 @@ export class MappingEditorRuntime {
       }
       if (create.length) this.editor.createShapes(create);
       if (update.length) this.editor.updateShapes(update);
-      // Edges stay behind diagram shapes, including after creation and history replay.
+      // Edges stay above diagram shapes, including after creation and history replay.
       const edgeIds = shapes.filter(shape => shape.props?.kind === 'arrow').map(shape => shape.id);
-      this.editor.run(() => this.editor.sendToBack(edgeIds), { ignoreShapeLock: true });
+      this.editor.run(() => this.editor.bringToFront(edgeIds), { ignoreShapeLock: true });
       this.projected = new Map(shapes.map(shape => [shape.props!.nodeId!, shape]));
       const selected = selectedDiagramIds(this.controller.getSnapshot().canvas.selection).map(mappingShapeId).filter(id => this.editor.getShape(id));
       const selection = this.controller.getSnapshot().canvas.selection;

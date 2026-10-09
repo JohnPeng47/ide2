@@ -24,6 +24,15 @@ function setup() {
   return { session, controller, runtime, source, dispose: () => { disconnect(); session.dispose(); } };
 }
 describe('native canvas read models and local anchors', () => {
+  it('keeps edge focus out of history and clears it when the edge is removed', () => {
+    const { runtime, controller, dispose } = setup();
+    const before = controller.getSnapshot();
+    runtime.focusedEdge.set({ id: 'edge', point: { x: 20, y: 30 } });
+    expect(controller.getSnapshot()).toBe(before);
+    controller.applyUpdate(before.version, [{ method: 'edge-remove', edgeId: 'edge' }]);
+    expect(runtime.focusedEdge.get()).toBeUndefined();
+    dispose();
+  });
   it('isolates anchor updates from the document, shape content, other anchors, and history', () => {
     const { controller, runtime, dispose } = setup();
     const model = runtime.grids.get('grid:overview').get(), edge = runtime.edges.get('edge').get()!;

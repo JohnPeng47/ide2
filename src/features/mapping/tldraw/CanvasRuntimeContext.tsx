@@ -65,6 +65,7 @@ export class CanvasRuntime {
   readonly grids = new Models<GridModel>();
   readonly floats = new Models<FloatModel>();
   readonly edges = new Models<EdgeModel>();
+  readonly focusedEdge = atom<{ id: string; point: { x: number; y: number } } | undefined>('focused mapping edge', undefined);
   readonly interaction = atom('mapping shape controls', { disabled: false, subtreeDisabled: false, jumps: false });
   readonly catalog = atom<{ catalog?: ProjectRepresentationCatalogRecord; dirtyIds?: string[] }>('mapping projection catalog', {});
   // Stable service object; callbacks are installed by the application command UI.
@@ -114,6 +115,8 @@ export class CanvasRuntime {
       this.grids.publish(grids); this.floats.publish(floats);
       this.anchors.retain(new Map([...grids].map(([id, model]) => [id, model.layoutKey])));
       this.edges.publish(new Map(s.document.edges.map(edge => [edge.id, { edge, source: this.resolveAnchor(edge.source), target: this.resolveAnchor(edge.target) }])));
+      const focused = this.focusedEdge.get();
+      if (focused && !s.document.edges.some(edge => edge.id === focused.id)) this.focusedEdge.set(undefined);
     });
   }
   resolveAnchor(anchor: DiagramAnchor): LocalEndpoint | undefined {

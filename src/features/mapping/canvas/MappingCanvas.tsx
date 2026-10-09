@@ -194,7 +194,6 @@ export function MappingPocSelectionCanvas(props: {
   }, []);
   const [clientSessionId] = useState(() => `mapping-${crypto.randomUUID()}`);
   const [cell, setCell] = useState<CellMetrics>({ width: 0, height: 0 });
-  const [connectionsOpen, setConnectionsOpen] = useState(false);
   useLayoutEffect(() => {
     const configure = () => controller.configureLayout(cell, { width: window.innerWidth, height: window.innerHeight });
     configure(); window.addEventListener('resize', configure);
@@ -1127,7 +1126,6 @@ export function MappingPocSelectionCanvas(props: {
       <div className="mapping-grid-tools" data-mapping-static-ui data-diagram-canvas-static-ui>
         <button type="button" disabled={!(controllerState.canUndo || props.canWorkspaceUndo) || isGenerating} onClick={() => undo()} title="Undo (Ctrl+Z)" aria-keyshortcuts="Control+Z">Undo</button>
         <button type="button" disabled={!(controllerState.canRedo || props.canWorkspaceRedo) || isGenerating} onClick={() => undo(true)} title="Redo (Ctrl+Y)" aria-keyshortcuts="Control+Y">Redo</button>
-        <button type="button" aria-expanded={connectionsOpen} onClick={() => setConnectionsOpen(value => !value)}>Connections ({gridDocument.edges.length})</button>
         <span role="status">{diagramPlacement ? "Drag a region to place the sub-diagram · Esc cancels" : movingBoxId ? "Click to move the box · Esc cancels" : statusMessage}</span>
       </div>
       {!nativeRuntime && <div ref={endpointGeometry.refForEndpoint({ displayNodeId: `grid:${scene.root.id}` })}
@@ -1467,9 +1465,7 @@ export function MappingPocSelectionCanvas(props: {
           setActionsOpen(true);
           stageRef.current?.focus({ preventScroll: true });
         }} />
-      <DiagramConnections controller={controller} state={controllerState} cell={cell} displayNodes={displayNodes} svgRef={endpointGeometry.svgRef}
-        open={connectionsOpen && props.active !== false} onOpen={() => setConnectionsOpen(true)} onClose={() => setConnectionsOpen(false)}
-        disabled={isGenerating || !!diagramPlacement || !!movingBoxId} />
+      <DiagramConnections edges={nativeRuntime ? [] : gridDocument.edges} displayNodes={displayNodes} svgRef={endpointGeometry.svgRef} />
     </div>
   );
 }

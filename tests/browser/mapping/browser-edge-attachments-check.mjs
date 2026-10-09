@@ -8,10 +8,9 @@ import { createServer } from 'node:net';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { seedMappingFixture } from '../support/browser-mapping-fixture.mjs';
-import { CanvasCatalogStore } from '../../../infrastructure/core/persistence/canvasCatalogStore.ts';
 import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService.ts';
 import { connectionContentNodes, defaultArrowAppearance } from '../../../domain/core/diagrams/diagramConnection.ts';
-import { documentFromRevision, projectCanvasSnapshot, singleDiagramScene } from '../../../domain/core/diagrams/projectDiagramCanvas.ts';
+import { projectCanvasSnapshot, singleDiagramScene } from '../../../domain/core/diagrams/projectDiagramCanvas.ts';
 const { evaluate, waitFor, waitForSelector, withHeadlessBrowser, captureScreenshot } = await import(pathToFileURL(path.join(homedir(), '.codex/skills/front-end/browser-test.mjs')).href);
 const root = await mkdtemp(path.join(tmpdir(), 'edge-attachments-'));
 const ascii = 'Root\n|-- Parent\n|   `-- Long source label\n`-- Footer';
@@ -120,30 +119,6 @@ try {
     await checkAll();
     await captureScreenshot(cdp, { output: process.env.EDGE_SCREENSHOT ?? path.join(root, 'attachments.png') });
     assert.equal(await readFile(catalogPath, 'utf8'), savedCatalog);
-    // Editing text must preserve explicit positioning through undo, save and reload.
-    await click('.mapping-grid-tools button', 'Connections (2)');
-    await click('.diagram-connections-panel li button', 'Box edge');
-    await click('[aria-label="Connection label"]');
-    await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'a', code: 'KeyA', windowsVirtualKeyCode: 65, modifiers: 2 });
-    await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'a', code: 'KeyA', windowsVirtualKeyCode: 65, modifiers: 2 });
-    await cdp.send('Input.insertText', { text: 'Positioned label' });
-    await click('.diagram-connections-panel button', 'Update connection');
-    await click('[aria-label="Close connections"]');
-    const labelText = () => evaluate(cdp, 'document.querySelector("[data-connection-id=box-edge] text")?.textContent');
-    await waitFor(async () => await labelText() === 'Positioned label');
-    await checkAll();
-    await click('.mapping-grid-tools button', 'Undo');
-    await waitFor(async () => await labelText() === 'Box edge');
-    await checkLabels();
-    await click('.mapping-grid-tools button', 'Redo');
-    await waitFor(async () => await labelText() === 'Positioned label');
-    await checkLabels();
-    await click('.mapping-submenu button', 'Save');
-    await waitFor(async () => await evaluate(cdp, 'document.querySelector(".mapping-submenu [role=status]").textContent') === 'Saved');
-    const saved = await new CanvasCatalogStore(path.join(root, '.diagrams')).loadRepresentationCatalog(catalog.projectId);
-    const document = documentFromRevision(saved.revisions[saved.representations['representation-overview'].currentRevisionId]);
-    assert.deepEqual(document.edges.find(edge => edge.id === 'box-edge').appearance.label,
-      { text: 'Positioned label', position: { x: 980.25, y: 205.5 } });
     let reloaded = false;
     const stopWatchingReload = cdp.on('Page.loadEventFired', () => { reloaded = true; });
     await cdp.send('Page.reload');
@@ -153,11 +128,10 @@ try {
       const edge = document.querySelector('[data-connection-id="' + id + '"]');
       return edge?.dataset.geometrySource === 'measured' && edge.querySelector('text');
     })`));
-    assert.equal(await labelText(), 'Positioned label');
     await checkAll();
     await captureScreenshot(cdp, { output: process.env.EDGE_SCREENSHOT ?? path.join(root, 'attachments.png') });
     assert.deepEqual(browserErrors, []);
-    console.log('Measured arrow borders and explicit/legacy labels: zoom, pan, folds, text editing, undo/redo, save and reload passed.');
+    console.log('Measured arrow borders and explicit/legacy labels: zoom, pan, folds, undo and reload passed.');
     } catch (error) {
       if (process.env.EDGE_SCREENSHOT) await captureScreenshot(cdp, { output: process.env.EDGE_SCREENSHOT });
       throw error;
