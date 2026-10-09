@@ -33,6 +33,7 @@ export function projectMappingShapes(snapshot: ControllerSnapshot): TLShapeParti
   }
   for (const node of Object.values(canvas.display.nodes)) {
     if (!visible.has(node.id) || node.coordinateSpace === 'viewport' && node.kind !== 'conversation') continue;
+    if (node.kind === 'projection' && (node.content.kind === 'code-panel' || node.content.kind === 'source-code')) continue;
     const bubble = node.kind === 'conversation' && (node.expansion === 'collapsed' || node.presentation === 'docked');
     shapes.push({ id: mappingShapeId(`floating:${node.id}`), type: 'mapping-box', isLocked: node.kind === 'selection', x: bubble ? node.canvasAnchor.x : node.position.x,
       y: bubble ? node.canvasAnchor.y : node.position.y,

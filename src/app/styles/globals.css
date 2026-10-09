@@ -452,7 +452,7 @@ select:focus-visible,
 .canvas-paste-menu textarea { display: block; box-sizing: border-box; width: 100%; margin: 8px 0; background: #0c1016; color: inherit; font: inherit; border: 1px solid var(--border); }
 .canvas-paste-menu p { margin: 8px; color: #ffb4a9; }
 
-[data-diagram-selected="true"] { outline: 2px solid #88c0d0; outline-offset: 3px; background: rgb(136 192 208 / 9%); }
+[data-diagram-selected="true"] { outline: 2px solid #88c0d0; outline-offset: 3px; }
 .diagram-selection-marquee { position: fixed; border: 1px solid #88c0d0; background: rgb(136 192 208 / 15%); pointer-events: none; z-index: 1000; }
 .mapping-empty-canvas { position: absolute; top: 48px; left: 0; white-space: nowrap; color: var(--muted); }
 .mapping-transfer-busy { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; background: rgb(0 0 0 / 25%); cursor: progress; }

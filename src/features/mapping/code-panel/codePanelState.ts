@@ -3,6 +3,8 @@ import { addDisplayNode, displayGeometry, setExpansion, type DisplayState, type 
 
 /** Open sources for this retained selection; reopening preserves pane geometry and scroll. */
 export function upsertCodePanel(state: DisplayState, selection: SelectionRegion, panel: PanelContent): DisplayState {
+  for (const node of Object.values(state.nodes)) if (node.kind === 'projection' && node.content.kind === 'code-panel'
+    && node.content.selectionId !== selection.id) state = setExpansion(state, node.id, 'collapsed');
   const existing = Object.values(state.nodes).find((node): node is ProjectedPane => node.kind === 'projection'
     && node.content.kind === 'code-panel' && node.content.selectionId === selection.id);
   if (existing && existing.content.kind === 'code-panel') {

@@ -35,7 +35,7 @@ it('persists CodePanel and rejects unsupported resource types',()=>{
   (pane.content.panel as any).mappedResourceType='unknown';expect(()=>deserializeWorkspace(bad)).toThrow(/mapped resource type/);
 });
 
-it('opens each retained selection independently and does not duplicate an existing owner or pane', () => {
+it('retains each selection while showing only the most recently opened source pane', () => {
   const next: SelectionRegion = { ...root, id: 'next',
     rect: { startLine: 1, endLine: 1, startColumn: 1, endColumn: 4 } };
   let state: DisplayState = { rootIds: [root.id, next.id], nodes: { [root.id]: root, [next.id]: next } };
@@ -43,6 +43,8 @@ it('opens each retained selection independently and does not duplicate an existi
   state = upsertCodePanel(state, next, content);
   expect(state.rootIds).toEqual([root.id, next.id]);
   expect(Object.values(state.nodes).filter(node => node.kind === 'projection')).toHaveLength(2);
+  expect(state.nodes[state.nodes[root.id].childIds[0]].expansion).toBe('collapsed');
+  expect(state.nodes[state.nodes[next.id].childIds[0]].expansion).toBe('expanded');
   expect((state.nodes[root.id] as SelectionRegion).rect).toEqual(root.rect);
   const paneId = state.nodes[next.id].childIds[0];
   state = upsertCodePanel(state, next, content);

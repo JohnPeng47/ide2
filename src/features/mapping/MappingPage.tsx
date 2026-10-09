@@ -43,6 +43,7 @@ import type { DiagramChangeSession } from '../../../domain/mapping/changes/diagr
 import { stateKey } from '../../../domain/core/diagrams/canvasHistory';
 import { SourcePaneViewState } from "./source-pane/sourcePaneViewState";
 import { SourcePaneDocumentActiveContext, SourcePaneDocumentContext, SourcePaneViewStateContext } from "./source-pane/SourcePaneViewStateContext";
+import { SourceWindowPanel } from './source-pane/SourceWindowPanel';
 import { FloatingPane } from "./workspace/FloatingPane";
 import { MappingDiagramExplorer } from "./workspace/MappingDiagramExplorer";
 import { deleteMappingProjectDiagram, saveMappingProjectDiagram } from "./workspace/mappingProjectApi";
@@ -696,7 +697,7 @@ function MappingWorkspacePage() {
       <section className="mapping-poc-workspace">
         <div className="mapping-viewport">
           {Object.entries(drafts).filter(([id]) => mountedDocuments.current.has(id)).map(([id, draft]) => <SourcePaneDocumentContext.Provider key={`${workspaceEpoch}:${id}:${draft.reloadKey ?? ''}`} value={id}><SourcePaneDocumentActiveContext.Provider value={id === activeId && !changeMode}><div className="mapping-document-view" inert={!!pendingTransfer || workspaceBusy} hidden={draft.hidden || id !== activeId || !!changeMode}>
-            <MappingEditorCanvas session={draft.session} className="mapping-poc-canvas" enabled={id === activeId} focusBox={draft.focusBox}
+            <MappingEditorCanvas session={draft.session} className="mapping-poc-canvas" enabled={id === activeId && !draft.hidden && !changeMode} focusBox={draft.focusBox}
               initialTransform={draft.viewport} onTransformChange={viewport => viewState.setCamera(id, viewport)}>
               <MappingPocSelectionCanvas onUpdateDiagram={nodeId => {
                   const node = draft.session.controller.nodes().find(node => node.id === nodeId);
@@ -711,6 +712,8 @@ function MappingWorkspacePage() {
                 onBusyChange={(busy) => setDrafts((current) => !current[id] || current[id].busy === busy ? current : { ...current, [id]: { ...current[id], busy } })}
                 localChatVariant={ui.variant as LocalChatVariant} />
             </MappingEditorCanvas>
+            <SourceWindowPanel session={draft.session} projectId={snapshot?.project?.id}
+              active={id === activeId && !draft.hidden && !changeMode} />
           </div></SourcePaneDocumentActiveContext.Provider></SourcePaneDocumentContext.Provider>)}
           {!active && !changeMode && <div className="mapping-empty"><h1>{snapshot ? "Create a project diagram" : error ? "Could not load project diagrams" : "Loading project diagrams…"}</h1>
             {snapshot && <button type="button" onClick={() => setCreating(true)}>New diagram</button>}</div>}

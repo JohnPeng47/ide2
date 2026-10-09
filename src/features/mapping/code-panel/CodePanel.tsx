@@ -67,7 +67,7 @@ function SourceRangeSections({ file, onOpen, hoveredNode }: { file: SourceDispla
   useEffect(() => clearHighlights, []);
   const highlightNodes = (ids: string[]) => {
     clearHighlights();
-    const stage = root.current?.closest('[data-diagram-canvas]') ?? root.current?.closest('.mapping-poc-graph-stage');
+    const stage = root.current?.closest('.mapping-document-view') ?? root.current?.closest('[data-diagram-canvas]') ?? root.current?.closest('.mapping-poc-graph-stage');
     stage?.querySelectorAll<HTMLElement>('[data-content-node-id]').forEach(el => {
       if (ids.includes(el.dataset.contentNodeId!)) {
         el.dataset.codePanelHighlight = 'true';
@@ -82,7 +82,7 @@ function SourceRangeSections({ file, onOpen, hoveredNode }: { file: SourceDispla
         <span key={origin.selectedNodeId}>{origin.selectedLabel}{origin.selectedNodeId !== origin.mappedNodeId ? ` — via ${origin.mappedLabel}` : ''}</span>)}
     </span> })), [file.ranges, hoveredNode]);
   return <section ref={root} className="code-panel-file" data-code-panel-file={file.path} data-resource-loading={!loaded && !error}>
-    <header><strong>{file.path}</strong><small>{file.repo.sourceId || 'Default repository'}</small>
+    <header><strong>{file.path}</strong><small title={file.repo.sourceId || 'Default repository'}>{file.repo.sourceId || 'Default repository'}</small>
       <button type="button" onClick={() => onOpen(file)}>Browse source</button>
       <button type="button" onClick={() => setAttempt(n => n + 1)} aria-label={`Reload ${file.path}`}>↻</button></header>
     {error ? <p role="alert">{error} <button onClick={() => setAttempt(n => n + 1)}>Retry</button></p>
@@ -133,7 +133,7 @@ export function CodePanel({ id, content }: { id: string; content: CodePanelPaneC
   }, [scroll, active, navigation !== undefined]);
   useEffect(() => { setNavigation(undefined); }, [content.panel]);
   useEffect(() => {
-    const stage = root.current?.closest('[data-diagram-canvas]') ?? root.current?.closest('.mapping-poc-graph-stage');
+    const stage = root.current?.closest('.mapping-document-view') ?? root.current?.closest('[data-diagram-canvas]') ?? root.current?.closest('.mapping-poc-graph-stage');
     const hover = (event: Event) => setHoveredNode((event.target as Element).closest<HTMLElement>('[data-content-node-id]')?.dataset.contentNodeId);
     stage?.addEventListener('pointerover', hover); return () => stage?.removeEventListener('pointerover', hover);
   }, []);

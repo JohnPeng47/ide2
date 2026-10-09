@@ -49,7 +49,13 @@ export function SelectionEffectsLayer(props: {
       const stale = props.scene.contents[root.sourceContentId]?.content.ascii !== root.sourceAscii;
       if (!missing && !stale && !diagramProjection(props.scene, root.sourceBoxId, root.sourceContentId, props.diagramViews).rect(root.rect)) return null;
       const rect = { ...root.position, ...root.bounds };
-      const layout = layoutProjectedPanes(props.state, root);
+      const projected = layoutProjectedPanes(props.state, root);
+      const inCanvas = (id: string) => {
+        const node = props.state.nodes[id];
+        return node?.kind !== 'projection' || !['code-panel', 'source-code'].includes(node.content.kind);
+      };
+      const layout = { ...projected, links: projected.links.filter(link => inCanvas(link.id)),
+        placements: Object.fromEntries(Object.entries(projected.placements).filter(([id]) => inCanvas(id))) };
       // Retain snapshots if their source changes, but never pretend the rectangle is still exact.
       return <div key={root.id} data-selection-root={root.id} data-source-stale={stale || missing} data-selection-active={selected}>
 

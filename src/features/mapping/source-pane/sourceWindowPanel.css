@@ -1,0 +1,10 @@
+.mapping-document-view { position: relative; }
+.source-window-host { position: absolute; inset: 0; pointer-events: none; }
+.source-window-host > .window-panel { pointer-events: auto; font: 12px/1.5 var(--font-sans); }
+.source-window-host .code-panel, .source-window-host .mapping-source-pane { flex: 1; min-width: 0; }
+.source-window-host .code-panel-content { overflow-x: hidden; overscroll-behavior: contain; scrollbar-gutter: stable; }
+.source-window-host .code-panel-file .source-code-viewer { overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; }
+.source-window-host .code-panel-file > header { left: 0; gap: 6px; padding: 6px 10px; }
+.source-window-host .code-panel-file > header strong { min-width: 0; font: 600 12px/1.5 var(--font-mono); }
+.source-window-host .code-panel-file > header small { max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
+.source-window-host .code-panel-summary { padding: 6px 10px; }
