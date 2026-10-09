@@ -48,12 +48,39 @@ it('merges overlapping presentation ranges without merging disjoint ranges or lo
   expect(files[0].ranges.map(({startLine, endLine}) => [startLine, endLine])).toEqual([[10, 30], [40, 42]]);
   expect(files[0].ranges[0].items).toHaveLength(2); expect(panel.items).toHaveLength(3);
 });
-it('keeps repositories and snapshot hashes distinct and retains previous file ordering', () => {
+it('keeps repositories and snapshot hashes distinct without sorting file sections', () => {
   const { context, nodes, mapped } = fixture(); mapped(2, 10);
   const item = handleNodeSelect(context, [nodes[1]]).items[0];
   const other: ResolvedMapping = structuredClone(item); other.resource.target.repo.sourceId = 'other';
-  const files = buildSourceRangeDisplayModel([item, other]); expect(files).toHaveLength(2);
-  expect(buildSourceRangeDisplayModel([item, other], [files[1].id]).map(file => file.id)).toEqual([files[1].id, files[0].id]);
+  const files = buildSourceRangeDisplayModel([other, item]); expect(files).toHaveLength(2);
+  expect(files.map(file => file.repo.sourceId)).toEqual(['other', '']);
+  const changed: ResolvedMapping = structuredClone(item); changed.resource.target.rangeSha256 = sha256('changed');
+  expect(buildSourceRangeDisplayModel([item])[0].id).not.toBe(buildSourceRangeDisplayModel([changed])[0].id);
+});
+it('uses diagram order even when selection arrives backwards and source lines descend', () => {
+  const { context, nodes, mapped } = fixture(); mapped(2, 40, 45); mapped(3, 10, 15); mapped(4, 1, 3);
+  const panel = handleNodeSelect(context, [nodes[3], nodes[2], nodes[1]]);
+  expect(panel.selectedNodeIds).toEqual([nodes[1].id, nodes[2].id, nodes[3].id]);
+  expect(buildSourceRangeDisplayModel(panel.items).map(file => file.ranges.map(range => range.startLine)))
+    .toEqual([[40], [10], [1]]);
+});
+it('returns to the same file in a separate section when diagram order crosses files', () => {
+  const { context, nodes, mapped } = fixture(); mapped(2, 30); mapped(3, 10); mapped(4, 50);
+  const panel = handleNodeSelect(context, [nodes[1], nodes[2], nodes[3]]);
+  panel.items[0].resource.target.path = 'z.ts';
+  panel.items[1].resource.target.path = 'a.ts';
+  panel.items[2].resource.target.path = 'z.ts';
+  const files = buildSourceRangeDisplayModel(panel.items);
+  expect(files.map(file => [file.path, file.ranges[0].startLine])).toEqual([['z.ts', 30], ['a.ts', 10], ['z.ts', 50]]);
+  expect(new Set(files.map(file => file.id)).size).toBe(3);
+});
+it('does not merge backwards overlapping ranges or reorder shared mappings', () => {
+  const { context, nodes, mapped } = fixture(); mapped(2, 20, 30); mapped(3, 10, 25);
+  const panel = handleNodeSelect(context, [nodes[3], nodes[2], nodes[1]]);
+  const files = buildSourceRangeDisplayModel(panel.items);
+  expect(files.map(file => file.ranges.map(({ startLine, endLine }) => [startLine, endLine])))
+    .toEqual([[[20, 30]], [[10, 25]]]);
+  expect(files[0].ranges[0].items[0].origins.map(origin => origin.selectedNodeId)).toEqual([nodes[1].id, nodes[3].id]);
 });
 it('hashes Unicode evidence as UTF-8 without changing ASCII artifact identities', () => {
   for (const text of ['', 'source', 'café → 🧭', '中文\n'.repeat(100), '\ud800'])

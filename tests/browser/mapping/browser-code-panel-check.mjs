@@ -189,7 +189,8 @@ try {
     // A stale range affects its file, while the other file remains usable.
     await writeFile(path.join(root,'src/b.ts'),'// changed\n'.repeat(35));
     await click('[aria-label="Reload src/b.ts"]');
-    await waitFor(async()=>await evaluate(cdp,'document.querySelector("[data-code-panel-file=\\"src/b.ts\\"]")?.textContent.includes("Mapped source has changed")'));
+    await waitFor(async()=>await evaluate(cdp,'document.querySelector("[data-code-panel-file=\\"src/b.ts\\"]")?.textContent.includes("Stale mapping:")'));
+    assert.equal(await evaluate(cdp,'document.querySelectorAll("[data-code-panel-file=\\"src/b.ts\\"] .source-code-viewer").length'),0, 'Stale block should show only a warning, not the whole file');
     assert.equal(await evaluate(cdp,'document.querySelectorAll("[data-code-panel-file=\\"src/b.ts\\"] [data-selected=true]").length'),0);
     assert.ok(await evaluate(cdp,'document.querySelector("[data-code-panel-file=\\"src/a.ts\\"] [data-selected=true]")!==null'));
     await escape(); await escape();

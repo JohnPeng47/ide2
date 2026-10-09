@@ -54,27 +54,23 @@ export function sourceResourceIdentity(resource: MappedResource): string {
   const t = resource.target;
   return JSON.stringify([resource.type, t.repo.projectId, t.repo.sourceId, t.path, t.startLine, t.endLine, t.rangeSha256]);
 }
-export function buildSourceRangeDisplayModel(items: readonly ResolvedMapping[], previousOrder: readonly string[] = []): SourceDisplayFile[] {
-  const files = new Map<string, SourceDisplayFile>();
+/** Preserve diagram order, starting another section when files change or source lines go backwards. */
+export function buildSourceRangeDisplayModel(items: readonly ResolvedMapping[]): SourceDisplayFile[] {
+  const files: SourceDisplayFile[] = [];
   for (const item of items) {
     const t = item.resource.target;
-    const id = JSON.stringify([t.repo.projectId, t.repo.sourceId, t.path]);
-    const file = files.get(id) ?? { id, repo: t.repo, path: t.path, ranges: [] };
-    file.ranges.push({ startLine: t.startLine, endLine: t.endLine, items: [item] });
-    files.set(id, file);
-  }
-  for (const file of files.values()) {
-    const merged: SourceDisplayRange[] = [];
-    for (const range of file.ranges.sort((a, b) => a.startLine - b.startLine || a.endLine - b.endLine)) {
-      const previous = merged.at(-1);
-      if (previous && range.startLine <= previous.endLine) {
-        previous.endLine = Math.max(previous.endLine, range.endLine); previous.items.push(...range.items);
-      } else merged.push({ ...range });
+    let file = files.at(-1);
+    if (!file || file.path !== t.path || file.repo.projectId !== t.repo.projectId || file.repo.sourceId !== t.repo.sourceId
+      || t.startLine < file.ranges.at(-1)!.startLine) {
+      file = { id: sourceResourceIdentity(item.resource), repo: t.repo, path: t.path, ranges: [] };
+      files.push(file);
     }
-    file.ranges = merged;
+    const previous = file.ranges.at(-1);
+    if (previous && t.startLine <= previous.endLine) {
+      previous.endLine = Math.max(previous.endLine, t.endLine); previous.items.push(item);
+    } else file.ranges.push({ startLine: t.startLine, endLine: t.endLine, items: [item] });
   }
-  const rank = (id: string) => previousOrder.includes(id) ? previousOrder.indexOf(id) : previousOrder.length;
-  return [...files.values()].sort((a, b) => rank(a.id) - rank(b.id) || a.id.localeCompare(b.id));
+  return files;
 }
 /** Domain handlers contain no React or file I/O. Renderers are registered in the UI. */
 export const mappedResourceHandlers = {
@@ -93,6 +89,7 @@ export function resolveSelectedNodes(context: DiagramContext, selected: readonly
 }
 export function handleNodeSelect(context: DiagramContext, nodes: readonly DiagramContentNode[],
   mappedResourceType: MappedResourceType = DEFAULT_MAPPED_RESOURCE_TYPE): PanelContent {
+  nodes = [...nodes].sort((a, b) => a.line - b.line || a.startColumn - b.startColumn);
   const { results, unmappedNodeIds } = resolveSelectedNodes(context, nodes, mappedResourceType);
   const combined = new Map<string, ResolvedMapping>();
   for (const result of results) {

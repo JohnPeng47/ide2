@@ -86,11 +86,11 @@ function SourceRangeSections({ file, onOpen, hoveredNode }: { file: SourceDispla
       <button type="button" onClick={() => onOpen(file)}>Browse source</button>
       <button type="button" onClick={() => setAttempt(n => n + 1)} aria-label={`Reload ${file.path}`}>↻</button></header>
     {error ? <p role="alert">{error} <button onClick={() => setAttempt(n => n + 1)}>Retry</button></p>
-      : !loaded ? <p role="status">Loading source…</p> : <>
-        {stale && <p role="status">Mapped source has changed. Showing current file without range highlights or folds.</p>}
+      : !loaded ? <p role="status">Loading source…</p>
+      : stale ? <p role="status">Stale mapping: the source no longer matches this mapped block. Update the mapping to view its code.</p> : <>
         {message && <p role="status">{message}{definitions.map((location, i) => <button key={i} onClick={() => onOpen(file, location)}>{location.path}:{(location.range?.start.line ?? 0) + 1}</button>)}</p>}
         <SourceCodeView preview={preview} range={sourceRange}
-          compacted={!stale} foldPresentation="gap" highlightedRanges={stale ? [] : file.ranges} lineAnnotations={stale ? [] : annotations}
+          compacted foldPresentation="gap" highlightedRanges={file.ranges} lineAnnotations={annotations}
           presentation={presentation} onGoToDefinition={loaded.lspEnabled && supportsDefinitions(file.path) ? lookup : undefined} deferOffscreen />
       </>}
   </section>;
@@ -102,11 +102,7 @@ interface ResourceRendererProps {
 }
 /** Each renderer owns its resource-specific display model; the panel only dispatches by type. */
 function SourceResources({ items, hoveredNode, onOpenSource }: ResourceRendererProps) {
-  const order = useRef<string[]>([]);
-  const files = useMemo(() => {
-    const next = mappedResourceHandlers['source-range'].buildDisplayModel(items, order.current);
-    order.current = next.map(file => file.id); return next;
-  }, [items]);
+  const files = useMemo(() => mappedResourceHandlers['source-range'].buildDisplayModel(items), [items]);
   return files.map(file => <SourceRangeSections key={file.id} file={file} hoveredNode={hoveredNode} onOpen={onOpenSource} />);
 }
 const resourceRenderers = { 'source-range': SourceResources } satisfies Record<MappedResourceType, ComponentType<ResourceRendererProps>>;
