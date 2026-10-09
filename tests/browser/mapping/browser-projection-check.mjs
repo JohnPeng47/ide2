@@ -241,7 +241,7 @@ try {
     activeByKind: { diagram: source.id }, representations: { [source.id]: source, [target.id]: target },
     revisions: { [sourceRevision.id]: sourceRevision, [targetRevision.id]: targetRevision },
     projections: { [projection.id]: projection }, createdAt: timestamp, updatedAt: timestamp }));
-  server = spawn(process.execPath, ["node_modules/vite/bin/vite.js", "preview", "--host", "127.0.0.1", "--port", String(port), "--strictPort"],
+  server = spawn(process.execPath, ["scripts/dev/start-server.mjs", "--http", "preview", "--host", "127.0.0.1", "--port", String(port), "--strictPort"],
     { cwd: root, env: { ...process.env, NEW_DIAGRAM_PROJECT_ROOT: temp, NEW_DIAGRAM_AGENT: "fake" }, stdio: "ignore" });
   await waitFor(async () => Boolean((await fetch(url).catch(() => null))?.ok), { timeoutMs: 15000 });
   await withHeadlessBrowser({ url: `${url}/mapping`, width: 2400, height: 1400, chromePath: process.env.CHROME_PATH, arguments: process.platform === 'linux' ? ['--no-sandbox'] : [] }, async ({ cdp, profilePath }) => {

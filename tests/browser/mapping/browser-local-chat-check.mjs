@@ -103,7 +103,7 @@ let serverError = "";
 
 try {
   await seedMappingFixture(tempRoot);
-  serverProcess = spawn(process.execPath, [path.join(PACKAGE_ROOT, "node_modules/vite/bin/vite.js"), "preview", "--host", "127.0.0.1", "--port", String(port), "--strictPort"], {
+  serverProcess = spawn(process.execPath, [path.join(PACKAGE_ROOT, "scripts/dev/start-server.mjs"), "--http", "preview", "--host", "127.0.0.1", "--port", String(port), "--strictPort"], {
     cwd: PACKAGE_ROOT,
     env: { ...process.env, NEW_DIAGRAM_PROJECT_ROOT: tempRoot, NEW_DIAGRAM_AGENT: "fake" },
     stdio: ["ignore", "ignore", "pipe"]

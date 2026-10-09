@@ -36,7 +36,7 @@ async function start(enabled: boolean) {
   const source = 'function answer() { return 42; }\nanswer();\n';
   await writeFile(path.join(root, 'main.ts'), source);
   const port = await new Promise<number>(resolve => { const s = createServer(); s.listen(0, '127.0.0.1', () => { const port = (s.address() as { port: number }).port; s.close(() => resolve(port)); }); });
-  const child = spawn(process.execPath, ['scripts/dev/start-server.mjs', ...(enabled ? ['--lsp'] : []), '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
+  const child = spawn(process.execPath, ['scripts/dev/start-server.mjs', '--http', ...(enabled ? ['--lsp'] : []), '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
     cwd: process.cwd(), env: { ...process.env, NEW_DIAGRAM_PROJECT_ROOT: root, NEW_DIAGRAM_AGENT: 'fake', NEW_DIAGRAM_LSP: '1', VITE_LSP_ENABLED: 'true' }, stdio: ['ignore', 'pipe', 'pipe']
   });
   let output = ''; child.stdout.on('data', chunk => output += chunk); child.stderr.on('data', chunk => output += chunk);

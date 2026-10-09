@@ -198,7 +198,7 @@ it("resolves project source snapshots, accepts historical revisions and freezes 
 it("runs Astra without shell interpolation and returns the final agent message", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "chat-runtime-"));
   const bin = path.join(root, "codex-test");
-  const runtime = new CodexLocalChatRuntime();
+  const runtime = new CodexLocalChatRuntime(true);
   try {
     await writeFile(bin, `#!/usr/bin/env node
 const fs = require('node:fs');

@@ -65,7 +65,7 @@ async function fixture() {
     middleware(request, response, () => { response.statusCode = 404; response.end(); });
   });
   servers.push(server);
-  const configure = diagramApi(root).configureServer;
+  const configure = diagramApi(root, undefined, undefined, undefined, { httpEnabled: true }).configureServer;
   if (typeof configure !== "function") throw new Error("diagram API has no configure hook");
   (configure as unknown as (server: unknown) => void)({
     middlewares: { use: (handler: Connect.NextHandleFunction) => { middleware = handler; } }, httpServer: server

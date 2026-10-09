@@ -38,7 +38,7 @@ describe("Mapping and Core HTTP API", () => {
       });
     });
     servers.push(server);
-    const plugin = diagramApi(root);
+    const plugin = diagramApi(root, undefined, undefined, undefined, { httpEnabled: true });
     const configure = plugin.configureServer;
     if (typeof configure !== "function") throw new Error("diagram API has no configure hook");
     (configure as unknown as (server: unknown) => void)({
@@ -72,3 +72,47 @@ describe("Mapping and Core HTTP API", () => {
     expect(reopened.project.id).toBe(saved.project.id);
   });
 });
+
+// Exercise both Vite serving modes and every flag combination over real transports.
+for (const hook of ['configureServer', 'configurePreviewServer'] as const) {
+  for (const httpEnabled of [false, true]) for (const piEnabled of [false, true]) {
+    it(`${hook}: HTTP=${httpEnabled}, Pi=${piEnabled} gates all API access and WebSocket upgrades`, async () => {
+      const root = await mkdtemp(path.join(tmpdir(), 'new-diagram-capabilities-'));
+      roots.push(root);
+      let middleware: Connect.NextHandleFunction;
+      const server = createServer((request, response) => middleware(request, response, () => response.end('static frontend')));
+      servers.push(server);
+      const configure = diagramApi(root, undefined, undefined, undefined, httpEnabled || piEnabled ? { httpEnabled, piEnabled } : undefined)[hook];
+      if (typeof configure !== 'function') throw new Error('missing Vite hook');
+      (configure as unknown as (server: unknown) => void)({
+        middlewares: { use: (handler: Connect.NextHandleFunction) => { middleware = handler; } }, httpServer: server
+      });
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+      const origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+      expect(await (await fetch(origin + '/')).text()).toBe('static frontend');
+      expect((await fetch(origin + '/api/core/project/representations')).status).toBe(httpEnabled ? 200 : 403);
+      if (!httpEnabled) {
+        for (const endpoint of ['/api', '/api/mapping/diagrams', '/api/mapping/chat', '/api/mapping/prompt',
+          '/api/mapping/compactions', '/api/mapping/agent/tools/edit-diagram', '/internal/mapping', '/internal/mapping/context']) {
+          for (const method of ['GET', 'POST', 'OPTIONS']) {
+            const response = await fetch(origin + endpoint, { method });
+            expect(response.status, `${method} ${endpoint}`).toBe(403);
+            expect(await response.json()).toMatchObject({ code: 'HTTP_API_DISABLED' });
+          }
+        }
+      }
+      const { WebSocket } = await import('ws');
+      const connect = (endpoint: string, protocol?: string) => new Promise<number>((resolve, reject) => {
+        const ws = new WebSocket(origin.replace('http:', 'ws:') + endpoint, protocol);
+        ws.on('open', () => { ws.close(); resolve(101); });
+        ws.on('unexpected-response', (_request, response) => { response.resume(); resolve(response.statusCode!); });
+        ws.on('error', reject);
+      });
+      expect(await connect('/api/mapping/live')).toBe(httpEnabled ? 101 : 403);
+      if (!httpEnabled) {
+        expect(await connect('/')).toBe(403);
+        expect(await connect('/', 'vite-hmr')).toBe(403);
+      }
+    });
+  }
+}

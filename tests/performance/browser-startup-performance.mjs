@@ -24,7 +24,7 @@ let server;
 try {
   await cp(source, store, { recursive: true });
   const start = performance.now();
-  server = spawn(process.execPath, ['scripts/dev/start-server.mjs', ...(mode === 'preview' ? ['preview'] : []), '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
+  server = spawn(process.execPath, ['scripts/dev/start-server.mjs', '--http', ...(mode === 'preview' ? ['preview'] : []), '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
     env: { ...process.env, NEW_DIAGRAM_PROJECT_ROOT: process.cwd(), NEW_DIAGRAMS_DIR: store }, stdio: ['ignore', 'pipe', 'pipe']
   });
   let log = '';

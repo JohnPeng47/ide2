@@ -63,7 +63,7 @@ export async function resetFixture(size: 'normal') {
     });
     const url = `http://127.0.0.1:${port}`;
     let errors = '';
-    server = spawn(process.execPath, ['scripts/dev/start-server.mjs', 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
+    server = spawn(process.execPath, ['scripts/dev/start-server.mjs', '--http', 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
       cwd: repo, env: { ...process.env, NEW_DIAGRAM_PROJECT_ROOT: root,
         NEW_DIAGRAMS_DIR: path.join(root, '.diagrams'), NEW_DIAGRAM_AGENT: 'fake' },
       stdio: ['ignore', 'ignore', 'pipe'],

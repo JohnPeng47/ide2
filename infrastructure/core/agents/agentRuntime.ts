@@ -1,3 +1,4 @@
+import { requireAiEnabled } from '../../../application/core/errors';
 import type { AgentContext } from '../../../domain/core/agents/agentContext';
 import { type Model } from "@earendil-works/pi-ai";
 import { createAgentSession, SessionManager, type CreateAgentSessionOptions, ModelRuntime, type AgentSessionEvent } from "@earendil-works/pi-coding-agent";
@@ -18,12 +19,16 @@ export function progressFor(event: AgentSessionEvent, model: string, sessionId: 
   return undefined;
 }
 export class PiAgentRuntime {
+  constructor(private readonly enabled = false) {}
+
+  protected requireEnabled(): void { requireAiEnabled(this.enabled); }
 
   protected modelRuntime?: Promise<ModelRuntime>;
 
   protected readonly sessions = new Set<{ abort(): Promise<void>; dispose(): void }>();
 
   protected async createSession(configuration: Omit<CreateAgentSessionOptions, 'sessionManager'>, context?: AgentContext) {
+    this.requireEnabled();
     const sessionManager = SessionManager.inMemory(configuration.cwd);
     for (const message of context?.toPiMessages() ?? []) sessionManager.appendMessage(message);
     const result = await createAgentSession({ ...configuration, sessionManager });
@@ -32,6 +37,7 @@ export class PiAgentRuntime {
   }
 
   protected runtime(): Promise<ModelRuntime> {
+    this.requireEnabled();
     this.modelRuntime ??= ModelRuntime.create({ allowModelNetwork: false });
     return this.modelRuntime;
   }

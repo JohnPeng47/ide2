@@ -28,7 +28,7 @@ try {
   await writeFile(path.join(root, '.diagrams/representations/catalog.json'), JSON.stringify({ schemaVersion: 1, projectId, activeByKind: {}, representations, revisions, createdAt: timestamp, updatedAt: timestamp }));
   const port = await new Promise(resolve => { const s = createServer(); s.listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => resolve(p)); }); });
   const url = `http://127.0.0.1:${port}`;
-  server = spawn(process.execPath, ['scripts/dev/start-server.mjs', 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort'], { env: { ...process.env, NEW_DIAGRAM_PROJECT_ROOT: root, NEW_DIAGRAM_AGENT: 'fake' }, stdio: ['ignore', 'ignore', 'pipe'] });
+  server = spawn(process.execPath, ['scripts/dev/start-server.mjs', '--http', 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort'], { env: { ...process.env, NEW_DIAGRAM_PROJECT_ROOT: root, NEW_DIAGRAM_AGENT: 'fake' }, stdio: ['ignore', 'ignore', 'pipe'] });
   let log = ''; server.stderr.on('data', b => log += b);
   await waitFor(async () => (await fetch(url).catch(() => null))?.ok, { timeoutMs: 20000 }).catch(e => { throw new Error(`${e}\n${log}`); });
   for (const [profile, file, text] of [['source-code', 'main.ts', 'export const answer = 42;'], ['document', 'notes.md', '# Mapping document corpus']]) {

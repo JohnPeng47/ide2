@@ -71,7 +71,7 @@ try {
   await mkdir(path.join(temp,".diagrams/representations"),{recursive:true});
   await writeFile(path.join(temp,".diagrams/project.json"),JSON.stringify({schemaVersion:1,id:projectId,name:"Mapping fixture",repositoryIdentity:path.join(temp,".git"),canonicalRepoRoot:temp,domainProfileId:"source-code",corpus:{kind:"git-worktree",root:temp},diagramSetIds:[],createdAt:timestamp,updatedAt:timestamp}));
   await writeFile(path.join(temp,".diagrams/representations/catalog.json"),JSON.stringify({schemaVersion:1,projectId,activeByKind:{diagram:representation.id},representations:{[representation.id]:representation},revisions:{[revision.id]:revision},createdAt:timestamp,updatedAt:timestamp}));
-  server=spawn(process.execPath,["node_modules/vite/bin/vite.js","preview","--host","127.0.0.1","--port",String(port),"--strictPort"],{cwd:root,env:{...process.env,NEW_DIAGRAM_PROJECT_ROOT:temp,NEW_DIAGRAM_AGENT:"fake",NEW_DIAGRAM_FAKE_PROMPT_DELAY_MS:"1200"},stdio:"ignore"});
+  server=spawn(process.execPath,["scripts/dev/start-server.mjs", "--http","preview","--host","127.0.0.1","--port",String(port),"--strictPort"],{cwd:root,env:{...process.env,NEW_DIAGRAM_PROJECT_ROOT:temp,NEW_DIAGRAM_AGENT:"fake",NEW_DIAGRAM_FAKE_PROMPT_DELAY_MS:"1200"},stdio:"ignore"});
   await waitFor(async()=>Boolean((await fetch(url).catch(()=>null))?.ok),{timeoutMs:15000});
   await withHeadlessBrowser({ chromePath: process.env.CHROME_PATH, arguments: process.env.CHROME_PATH ? ['--no-sandbox'] : [],url:`${url}/mapping`,width:1600,height:1000},async({cdp})=>{
     await cdp.send("Page.enable"); await cdp.send("Runtime.enable");

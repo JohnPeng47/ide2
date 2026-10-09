@@ -233,7 +233,7 @@ describe("Mapping compaction HTTP API", () => {
     let middleware: Connect.NextHandleFunction;
     const server = createServer((request, response) => middleware(request, response, () => { response.statusCode = 404; response.end(); }));
     servers.push(server);
-    const configure = diagramApi(root).configureServer;
+    const configure = diagramApi(root, undefined, undefined, undefined, { httpEnabled: true }).configureServer;
     (configure as (server: unknown) => void)({ middlewares: { use: (handler: Connect.NextHandleFunction) => { middleware = handler; } }, httpServer: server });
     await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
     const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api/mapping/compactions`;

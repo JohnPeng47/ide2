@@ -63,7 +63,7 @@ afterEach(() => { harness.actions.length = 0; harness.chats.length = 0; vi.clear
 
 describe("compaction agent session", () => {
   it("uses one chat for both turns and keeps a rejected-submission correction in that chat", async () => {
-    const runtime = new PiFileCompactionRuntime();
+    const runtime = new PiFileCompactionRuntime(true);
     const session = await runtime.openSession(context);
     expect(harness.model).toHaveBeenCalledWith("openai-codex", "gpt-6-astra");
     expect(harness.create).toHaveBeenCalledWith(expect.objectContaining({ thinkingLevel: "high" }));
@@ -82,7 +82,7 @@ describe("compaction agent session", () => {
   });
 
   it("requires a new submission in the second turn", async () => {
-    const runtime = new PiFileCompactionRuntime();
+    const runtime = new PiFileCompactionRuntime(true);
     const session = await runtime.openSession(context);
     harness.actions.push(async (tool) => { await tool.execute("first", draft()); });
     try {
@@ -93,7 +93,7 @@ describe("compaction agent session", () => {
   });
 
   it("aborts the active chat and disposes it on cancellation", async () => {
-    const runtime = new PiFileCompactionRuntime();
+    const runtime = new PiFileCompactionRuntime(true);
     const controller = new AbortController();
     const session = await runtime.openSession({ ...context, signal: controller.signal });
     harness.actions.push(async () => { controller.abort(new Error("cancelled")); });
@@ -105,7 +105,7 @@ describe("compaction agent session", () => {
   });
 
   it("creates independent chats for separate workflow runs", async () => {
-    const runtime = new PiFileCompactionRuntime();
+    const runtime = new PiFileCompactionRuntime(true);
     const first = await runtime.openSession(context);
     const second = await runtime.openSession(context);
     harness.actions.push(async (tool) => { await tool.execute("first", draft("A")); },

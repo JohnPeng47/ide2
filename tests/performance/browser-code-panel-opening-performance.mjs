@@ -26,7 +26,7 @@ await writeFile(path.join(temp,'representations/catalog.json'),JSON.stringify(ca
 const seed=()=>writeFile(path.join(temp,'mapping-workspace.json'),JSON.stringify(workspace));await seed();
 const port=await new Promise(r=>{const s=createServer();s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(()=>r(p))})});
 const url=`http://127.0.0.1:${port}`;
-const server=spawn(process.execPath,['scripts/dev/start-server.mjs','preview','--host','127.0.0.1','--port',String(port),'--strictPort'],{cwd:process.cwd(),env:{...process.env,NEW_DIAGRAM_PROJECT_ROOT:process.cwd(),NEW_DIAGRAMS_DIR:temp,NEW_DIAGRAM_AGENT:'fake'},stdio:['ignore','ignore','pipe']});
+const server=spawn(process.execPath,['scripts/dev/start-server.mjs', '--http','preview','--host','127.0.0.1','--port',String(port),'--strictPort'],{cwd:process.cwd(),env:{...process.env,NEW_DIAGRAM_PROJECT_ROOT:process.cwd(),NEW_DIAGRAMS_DIR:temp,NEW_DIAGRAM_AGENT:'fake'},stdio:['ignore','ignore','pipe']});
 let serverErrors='';server.stderr.on('data',d=>serverErrors+=d);
 const results={date:new Date().toISOString(),workspaceBytes:JSON.stringify(workspace).length,historyBytes:JSON.stringify(doc.history).length,trials,profile,measurements:[],network:[],exceptions:[]};
 const pct=(a,p)=>[...a].sort((a,b)=>a-b)[Math.max(0,Math.ceil(a.length*p)-1)]??0;

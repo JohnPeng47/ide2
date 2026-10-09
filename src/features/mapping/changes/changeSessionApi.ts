@@ -1,6 +1,7 @@
 import type { DiagramChangeSession, ChangeSessionSummary } from '../../../../domain/mapping/changes/diagramChangeSession';
+import { apiFetch } from '../../../shared/http/http';
 async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const response = await fetch(`/api/mapping/agent/change-sessions${path}`, { signal });
+  const response = await apiFetch(`/api/mapping/agent/change-sessions${path}`, { signal });
   const body = await response.json();
   if (!response.ok) throw new Error(body.error ?? 'Could not read change sessions');
   return body;
@@ -8,7 +9,7 @@ async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
 export const listChangeSessions = (signal?: AbortSignal) => get<ChangeSessionSummary[]>('', signal);
 export const readChangeSession = (id: string, signal?: AbortSignal) => get<Omit<DiagramChangeSession, 'receipts'>>(`/${encodeURIComponent(id)}`, signal);
 export async function acceptChangeSession(id: string, expectedVersion: number, requestId: string): Promise<ChangeSessionSummary> {
-  const response = await fetch('/api/mapping/agent/tools/accept_diagram_change_session', {
+  const response = await apiFetch('/api/mapping/agent/tools/accept_diagram_change_session', {
     method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ changeSessionId: id, expectedVersion, requestId })
   });
   const body = await response.json();
@@ -29,7 +30,7 @@ export interface DiffTreeRead {
   total: number; nextOffset: number | null; unmappedNodeIds: string[];
 }
 export async function readDiffTree(id: string, input: { nodeIds?: string[]; offset?: number; limit?: number; includePatches?: boolean }, signal: AbortSignal): Promise<DiffTreeRead> {
-  const response = await fetch('/api/mapping/agent/tools/read_change_session_diff_tree', {
+  const response = await apiFetch('/api/mapping/agent/tools/read_change_session_diff_tree', {
     method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ changeSessionId: id, ...input }), signal
   });
   const result = await response.json(); if (!response.ok) throw Error(result.error ?? 'Could not read DiffTree'); return result;

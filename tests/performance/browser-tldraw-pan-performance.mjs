@@ -16,7 +16,7 @@ try {
   await mkdir(output, {recursive:true});
   const port = await new Promise(resolve => { const socket=createServer(); socket.listen(0,'127.0.0.1',()=>{const port=socket.address().port;socket.close(()=>resolve(port));}); });
   const url=`http://127.0.0.1:${port}`;
-  server=spawn(process.execPath,['scripts/dev/start-server.mjs',...(process.env.PAN_MODE==='dev'?[]:['preview']),'--host','127.0.0.1','--port',String(port),'--strictPort'],
+  server=spawn(process.execPath,['scripts/dev/start-server.mjs', '--http',...(process.env.PAN_MODE==='dev'?[]:['preview']),'--host','127.0.0.1','--port',String(port),'--strictPort'],
     {env:{...process.env,NEW_DIAGRAM_PROJECT_ROOT:root,NEW_DIAGRAMS_DIR:path.join(root,'store')},stdio:['ignore','ignore','pipe']});
   let errors='';server.stderr.on('data',chunk=>errors+=chunk);
   await waitFor(async()=>(await fetch(url).catch(()=>null))?.ok,{timeoutMs:30000}).catch(error=>{throw Error(`${error}\n${errors}`)});

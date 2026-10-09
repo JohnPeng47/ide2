@@ -30,7 +30,7 @@ try {
   const original = JSON.stringify(catalog); await writeFile(catalogPath, original);
   const port = await new Promise(resolve=>{const s=createServer();s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(()=>resolve(p));});});
   const url=`http://127.0.0.1:${port}`;
-  server=spawn(process.execPath,['scripts/dev/start-server.mjs','preview','--host','127.0.0.1','--port',String(port),'--strictPort'],{env:{...process.env,NEW_DIAGRAM_PROJECT_ROOT:root,NEW_DIAGRAMS_DIR:path.join(root,'.diagrams'),NEW_DIAGRAM_AGENT:'fake'},stdio:['ignore','ignore','pipe']});
+  server=spawn(process.execPath,['scripts/dev/start-server.mjs', '--http','preview','--host','127.0.0.1','--port',String(port),'--strictPort'],{env:{...process.env,NEW_DIAGRAM_PROJECT_ROOT:root,NEW_DIAGRAMS_DIR:path.join(root,'.diagrams'),NEW_DIAGRAM_AGENT:'fake'},stdio:['ignore','ignore','pipe']});
   let logs='';server.stderr.on('data',chunk=>logs+=chunk);
   await waitFor(async()=>(await fetch(url).catch(()=>null))?.ok,{timeoutMs:20000}).catch(e=>{throw Error(`${e}\n${logs}`)});
   await withHeadlessBrowser({url:`${url}/mapping`,width:1800,height:1100,chromePath:process.env.CHROME_PATH,arguments:['--disable-gpu','--no-sandbox']},async({cdp})=>{

@@ -51,14 +51,14 @@ export function createFileCompactionService(core: CoreApplication, runtime: File
 
 /** The only production module that chooses and connects concrete integrations. */
 export function createBackend(projectRoot: string, diagramsDirectory: string, configuredDomainProfileId: BuiltInDomainProfileId | undefined,
-  mappingPocSourceRoot: string, options: { lspEnabled?: boolean }) {
+  mappingPocSourceRoot: string, options: { lspEnabled?: boolean; piEnabled?: boolean }) {
   const fake = process.env.NEW_DIAGRAM_AGENT === "fake";
-  const chatRuntime = fake ? new FakeLocalChatRuntime() : new CodexLocalChatRuntime();
-  const mappingRuntime = fake ? new FakeMappingAgentRuntime() : new PiMappingAgentRuntime();
-  const diagramEditRuntime = fake ? new FakeDiagramEditRuntime() : new PiDiagramEditRuntime(mappingPocSourceRoot);
+  const chatRuntime = fake ? new FakeLocalChatRuntime() : new CodexLocalChatRuntime(options.piEnabled === true);
+  const mappingRuntime = fake ? new FakeMappingAgentRuntime() : new PiMappingAgentRuntime(options.piEnabled === true);
+  const diagramEditRuntime = fake ? new FakeDiagramEditRuntime() : new PiDiagramEditRuntime(mappingPocSourceRoot, options.piEnabled === true);
   const store = new DiagramStore(projectRoot, diagramsDirectory);
   const core = createCoreApplication(store);
-  const compactionService = createFileCompactionService(core, fake ? new FakeFileCompactionRuntime() : new PiFileCompactionRuntime());
+  const compactionService = createFileCompactionService(core, fake ? new FakeFileCompactionRuntime() : new PiFileCompactionRuntime(options.piEnabled === true));
   const languageService = options.lspEnabled === true ? new ProjectLanguageService() : undefined;
   const diagrams = new MappingDiagramService(store, corpusAccess, projectRoot, configuredDomainProfileId);
   const canvasBridge = new CanvasSessionBridge();

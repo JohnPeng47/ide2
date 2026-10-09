@@ -33,7 +33,7 @@ try {
   await writeFile(path.join(base, 'mapping-workspace.json'), JSON.stringify(workspace));
   const port = await new Promise(resolve => { const s = createServer(); s.listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => resolve(p)); }); });
   const url = `http://127.0.0.1:${port}`;
-  server = spawn(process.execPath, ['scripts/dev/start-server.mjs', 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort'], { env: { ...process.env, NEW_DIAGRAM_PROJECT_ROOT: root, NEW_DIAGRAMS_DIR: base, NEW_DIAGRAM_AGENT: 'fake' }, stdio: ['ignore', 'ignore', 'pipe'] });
+  server = spawn(process.execPath, ['scripts/dev/start-server.mjs', '--http', 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort'], { env: { ...process.env, NEW_DIAGRAM_PROJECT_ROOT: root, NEW_DIAGRAMS_DIR: base, NEW_DIAGRAM_AGENT: 'fake' }, stdio: ['ignore', 'ignore', 'pipe'] });
   let errors = ''; server.stderr.on('data', d => errors += d);
   await waitFor(async () => (await fetch(url).catch(() => null))?.ok, { timeoutMs: 30000, message: errors });
   const results = { date: new Date().toISOString(), fixtureBytes: Buffer.byteLength(JSON.stringify(workspace)), measurements: [], exceptions: [] };

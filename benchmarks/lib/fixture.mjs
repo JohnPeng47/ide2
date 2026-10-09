@@ -32,7 +32,7 @@ export async function withFixture({app,output,workspaceFile,sourceText},run) {
     const port=await new Promise(resolve=>{const s=createServer();s.listen(0,'127.0.0.1',()=>{const port=s.address().port;s.close(()=>resolve(port));});});
     const url=`http://127.0.0.1:${port}`;
     log=createWriteStream(path.join(output,'server.log'));
-    server=spawn(process.execPath,['scripts/dev/start-server.mjs','preview','--host','127.0.0.1','--port',String(port),'--strictPort'],{cwd:app,env:{...process.env,NEW_DIAGRAM_PROJECT_ROOT:root,NEW_DIAGRAMS_DIR:path.join(root,'.diagrams'),NEW_DIAGRAM_AGENT:'fake'},stdio:['ignore','pipe','pipe']});
+    server=spawn(process.execPath,['scripts/dev/start-server.mjs', '--http','preview','--host','127.0.0.1','--port',String(port),'--strictPort'],{cwd:app,env:{...process.env,NEW_DIAGRAM_PROJECT_ROOT:root,NEW_DIAGRAMS_DIR:path.join(root,'.diagrams'),NEW_DIAGRAM_AGENT:'fake'},stdio:['ignore','pipe','pipe']});
     server.stdout.pipe(log,{end:false});server.stderr.pipe(log,{end:false});
     await waitFor(async()=>{if(server.exitCode!==null)throw Error('Preview server exited; see server.log');return(await fetch(url).catch(()=>null))?.ok;},{timeoutMs:30000,message:'Preview startup failed; see server.log'});
     await run({url,root,fixtureSha256:hash(raw+'\0'+sourceText)});

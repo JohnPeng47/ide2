@@ -1,3 +1,4 @@
+import { requireAiEnabled } from '../../../../application/core/errors';
 import { spawn, type ChildProcess } from "node:child_process";
 import type { LocalChatRuntime } from "../../../../application/mapping/chat/agent";
 import type { LocalChatReplyRequest } from "../../../../domain/mapping/chat/localChat";
@@ -8,9 +9,11 @@ export const LOCAL_CHAT_MODEL = "gpt-6-astra";
 
 /** Each turn is an ephemeral agent with the original context plus raw chat history. */
 export class CodexLocalChatRuntime implements LocalChatRuntime {
+  constructor(private readonly enabled = false) {}
   private readonly cancellations = new Map<ChildProcess, () => void>();
 
   async reply(request: LocalChatReplyRequest, context: Parameters<LocalChatRuntime["reply"]>[1]): Promise<string> {
+    requireAiEnabled(this.enabled);
     context.signal.throwIfAborted();
     return new Promise<string>((resolve, reject) => {
       const child = spawn(process.env.NEW_DIAGRAM_CODEX_BIN || "codex", [

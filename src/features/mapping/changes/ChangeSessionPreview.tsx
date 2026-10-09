@@ -36,7 +36,7 @@ export function ChangeSessionPreview(props: { compact?: boolean; mode: DisplayMo
     setLoaded(undefined); setError('');
     const worker = new Worker(new URL('./changePreview.worker.ts', import.meta.url), { type: 'module' });
     const refresh = () => {
-      const endpoint = new URL(`/api/mapping/agent/change-sessions/${encodeURIComponent(props.mode.sessionId)}/preview`, location.href);
+      const endpoint = new URL(`${import.meta.env.BASE_URL}api/mapping/agent/change-sessions/${encodeURIComponent(props.mode.sessionId)}/preview`, location.href);
       endpoint.searchParams.set('documentId', props.mode.documentId);
       if (version !== undefined) endpoint.searchParams.set('version', String(version));
       worker.postMessage({ endpoint: endpoint.href });

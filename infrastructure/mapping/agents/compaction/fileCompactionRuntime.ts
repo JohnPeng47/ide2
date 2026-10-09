@@ -11,6 +11,7 @@ export type { FileCompactionContext, FileCompactionRuntime, FileCompactionSessio
 /** One chat per workflow run; each turn gets a new submission collector. */
 export class PiFileCompactionRuntime extends PiAgentRuntime implements FileCompactionRuntime {
   async openSession(context: FileCompactionContext): Promise<FileCompactionSession> {
+    this.requireEnabled();
     context.signal?.throwIfAborted();
     const configured = await this.model(context.agent.modelId);
     context.signal?.throwIfAborted();

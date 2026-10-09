@@ -217,6 +217,7 @@ export class PiMappingAgentRuntime extends PiAgentRuntime implements MappingAgen
     request: MappingPocPromptRequest & { sourceRoot: string; projectEvidence?: Record<string, import("../../../../domain/core/representations/projectCatalog").ProjectRepresentationEvidenceRecord> },
     onProgress?: (progress: AgentProgress) => void
   ): Promise<MappingPocPromptResult> {
+    this.requireEnabled();
     if (this.mappingPocPromptBusy) throw new Error("another diagram prompt is already running");
     const instruction = request.instruction.trim();
     if (!instruction) throw new Error("diagram prompt instruction is required");

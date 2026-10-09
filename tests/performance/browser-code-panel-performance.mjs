@@ -110,7 +110,7 @@ try {
     await writeFile(path.join(store,'mapping-workspace.json'),JSON.stringify(workspace));
     const port=await new Promise(r=>{const s=createServer();s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(()=>r(p))})});
     const url=`http://127.0.0.1:${port}`;
-    server=spawn(process.execPath,['scripts/dev/start-server.mjs','preview','--host','127.0.0.1','--port',String(port),'--strictPort'],{cwd:process.cwd(),env:{...process.env,NEW_DIAGRAM_PROJECT_ROOT:process.cwd(),NEW_DIAGRAMS_DIR:store,NEW_DIAGRAM_AGENT:'fake'},stdio:['ignore','ignore','pipe']});
+    server=spawn(process.execPath,['scripts/dev/start-server.mjs', '--http','preview','--host','127.0.0.1','--port',String(port),'--strictPort'],{cwd:process.cwd(),env:{...process.env,NEW_DIAGRAM_PROJECT_ROOT:process.cwd(),NEW_DIAGRAMS_DIR:store,NEW_DIAGRAM_AGENT:'fake'},stdio:['ignore','ignore','pipe']});
     let errors='';server.stderr.on('data',d=>errors+=d);
     await waitFor(async()=>(await fetch(url).catch(()=>null))?.ok,{timeoutMs:30000,message:'Preview start failed'});
     await withHeadlessBrowser({url:`${url}/?diagram=${workspace.activeDocumentId}`,width:2300,height:1400,

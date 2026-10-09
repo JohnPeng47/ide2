@@ -19,8 +19,9 @@ export function renderDiagramEditPrompt(template: string, request: DiagramGenera
 }
 
 export class PiDiagramEditRuntime extends PiAgentRuntime implements DiagramGenerator {
-  constructor(private readonly sourceRoot: string) { super(); }
+  constructor(private readonly sourceRoot: string, enabled = false) { super(enabled); }
   async generate(request: DiagramGenerationRequest, options: GenerationOptions) {
+    this.requireEnabled();
     const base = request.context?.diagram;
     if (!base) throw Error('Diagram edit context is required');
     options.signal?.throwIfAborted();
