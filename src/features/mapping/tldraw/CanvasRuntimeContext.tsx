@@ -1,3 +1,4 @@
+import { SelectionToolBridge } from './SelectionTools';
 import { createContext } from 'react';
 import { atom, transact, type Atom, type Editor } from 'tldraw';
 import type { CanvasSession } from '../workspace/canvasSession';
@@ -59,7 +60,10 @@ export interface CanvasActions {
   submit(id: string, message: string): void; verbosity(id: string, value: LocalChatVerbosity): void; retry(id: string): void;
 }
 export class CanvasRuntime {
-  editor?: Editor;
+  private readonly editorState = atom<Editor | undefined>('mapping editor', undefined);
+  get editor() { return this.editorState.get(); }
+  set editor(value: Editor | undefined) { this.editorState.set(value); }
+  readonly gestures = new SelectionToolBridge();
   readonly controller;
   readonly anchors = new LocalAnchorStore();
   readonly grids = new Models<GridModel>();

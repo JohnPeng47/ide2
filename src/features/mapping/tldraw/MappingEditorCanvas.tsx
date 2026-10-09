@@ -1,3 +1,4 @@
+import { mappingTools, selectionTools } from './SelectionTools';
 import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Tldraw, useEditor, useQuickReactor, type Editor, type TLComponents } from 'tldraw';
 import type { CanvasTransform, DiagramFocus } from '../../../../domain/core/diagrams/diagramCanvas';
@@ -32,6 +33,8 @@ export function MappingEditorCanvas(props: {
   const canvasRuntime = useMemo(() => new CanvasRuntime(props.session), [props.session]);
   useLayoutEffect(() => canvasRuntime.connect(), [canvasRuntime]);
   const [editor, setEditor] = useState<Editor>();
+  const [tool, setTool] = useState('select');
+  const [add, setAdd] = useState(false);
   const transformCallback = useRef(props.onTransformChange); transformCallback.current = props.onTransformChange;
   const initial = useRef(props.initialTransform);
   const root = useRef<HTMLDivElement>(null);
@@ -41,10 +44,13 @@ export function MappingEditorCanvas(props: {
     const fontsChanged = () => canvasRuntime.anchors.invalidate();
     document.fonts.addEventListener('loadingdone', fontsChanged);
     editor.setCameraOptions({ zoomSteps: [.25, .5, 1, 2, 4] });
-    const runtime = new MappingEditorRuntime(editor, props.session.controller);
+    selectionTools.set(editor, canvasRuntime.gestures);
+    const runtime = new MappingEditorRuntime(editor, props.session.controller, canvasRuntime.gestures.ownership);
     // Existing application interactions own buttons, text inputs and pane bodies.
     const stopUiPointer = (event: PointerEvent) => {
-      if ((event.target as Element).closest('button,input,textarea,select,a,[contenteditable=true]')) editor.markEventAsHandled(event);
+      const target = event.target as Element;
+      const directLabel = event.pointerType !== 'mouse' && target.closest('[data-diagram-jump-id]');
+      if (!directLabel && !target.closest('[data-diagram-move-handle]') && target.closest('button,input,textarea,select,a,[contenteditable=true],[data-display-node],.window-panel')) editor.markEventAsHandled(event);
       else editor.focus();
     };
     const element = root.current!;
@@ -56,12 +62,13 @@ export function MappingEditorCanvas(props: {
     }
     let last = '';
     const publishCamera = () => {
+      setTool(editor.getCurrentToolId());
       const { x, y, z } = editor.getCamera(), key = `${x}:${y}:${z}`;
       if (last === key) return;
       last = key; transformCallback.current?.(saveMappingCamera({ x, y, z }));
     };
     editor.on('tick', publishCamera);
-    return () => { document.fonts.removeEventListener('loadingdone', fontsChanged); element.removeEventListener('pointerdown', stopUiPointer, true); runtime.dispose(); editor.off('tick', publishCamera); canvasRuntime.editor = undefined; };
+    return () => { document.fonts.removeEventListener('loadingdone', fontsChanged); element.removeEventListener('pointerdown', stopUiPointer, true); runtime.dispose(); selectionTools.delete(editor); editor.off('tick', publishCamera); canvasRuntime.editor = undefined; };
   }, [editor, props.session, canvasRuntime]);
   useEffect(() => {
     if (editor && !props.enabled) editor.blur({ blurContainer: false });
@@ -108,13 +115,14 @@ export function MappingEditorCanvas(props: {
       }
     }}>
     <CanvasRuntimeContext.Provider value={canvasRuntime}><ContentContext.Provider value={props.children}>
-      <Tldraw licenseKey={import.meta.env.VITE_TLDRAW_LICENSE_KEY} shapeUtils={shapeUtils} components={components} hideUi onMount={setEditor} overrides={{ tools: (_editor, tools) => ({ select: tools.select, hand: tools.hand }), actions: () => ({}) }}
+      <Tldraw licenseKey={import.meta.env.VITE_TLDRAW_LICENSE_KEY} shapeUtils={shapeUtils} tools={mappingTools} components={components} hideUi onMount={setEditor} overrides={{ tools: (_editor, tools) => ({ select: tools.select, hand: tools.hand }), actions: () => ({}) }}
         options={{ maxShapesPerPage: 10000, createTextOnCanvasDoubleClick: false }} autoFocus={false} />
     </ContentContext.Provider></CanvasRuntimeContext.Provider>
     <ConnectionFocus runtime={canvasRuntime} editor={editor} enabled={props.enabled} root={root} />
     <div className="diagram-canvas__controls" data-diagram-canvas-static-ui>
-      <button type="button" onClick={() => editor?.setCurrentTool('select')}>Select</button>
-      <button type="button" onClick={() => editor?.setCurrentTool('hand')}>Pan</button>
+      <button type="button" aria-pressed={tool === 'select'} onClick={() => { canvasRuntime.gestures.cancel?.(); editor?.setCurrentTool('select'); setTool('select'); }}>Select</button>
+      <button type="button" aria-pressed={tool === 'hand'} onClick={() => { canvasRuntime.gestures.cancel?.(); editor?.setCurrentTool('hand'); setTool('hand'); }}>Pan</button>
+      <button type="button" aria-label="Add to selection" aria-pressed={add} onClick={() => { canvasRuntime.gestures.add = !add; setAdd(!add); }}>Add to selection</button>
       <button type="button" title="Reset zoom and center diagram" onClick={() => { const bounds = editor?.getCurrentPageBounds(); if (bounds) editor?.zoomToBounds(bounds.clone().expandBy(100), { animation: { duration: 150 } }); }}>Fit canvas</button>
     </div>
   </div>;

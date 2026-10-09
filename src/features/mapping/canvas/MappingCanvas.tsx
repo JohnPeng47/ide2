@@ -1,5 +1,7 @@
+import { completeMarquee } from '../../../../domain/mapping/selection/completeMarquee';
+import type { SelectionHit, SelectionPolicy } from '../../../../domain/mapping/selection/selectionGesture';
 import { shareEqual, CanvasRuntimeContext } from '../tldraw/CanvasRuntimeContext';
-import { diagramSelectionItem, regionSelectionItem, selectedDiagramIds } from '../../../../domain/mapping/selection/selectionState';
+import { diagramSelectionItem, regionSelectionItem, selectedDiagramIds, type SelectionState } from '../../../../domain/mapping/selection/selectionState';
 import { useMappingServices } from '../services/MappingServices';
 import { useStore } from 'zustand';
 import type { CanvasSession } from '../workspace/canvasSession';
@@ -490,74 +492,39 @@ export function MappingPocSelectionCanvas(props: {
     }).finally(() => replyControllers.current.delete(thread.id));
   }, [setChatThreads]);
 
-  const completeMarquee = (marquee: CanvasMarqueeSelection) => {
-    controller.updateCanvas(current => {
-      const items = marquee.diagramIds.map(diagramSelectionItem);
-      for (const { boxId, rect } of marquee.regions) {
-        if (marquee.diagramIds.includes(`grid:${boxId}`)) continue;
-        const box = boxes.find(box => box.box.id === boxId), diagram = box?.contentId && scene.contents[box.contentId];
-        if (!diagram) continue;
-        const existing = Object.values(current.display.nodes).find((node): node is SelectionRegion => node.kind === 'selection'
-          && node.sourceBoxId === boxId && node.sourceAscii === diagram.content.ascii
-          && JSON.stringify(node.rect) === JSON.stringify(rect));
-        items.push(regionSelectionItem(diagram, boxId, rect, existing?.id));
-      }
-      let next = updateSelection(current, { type: 'add', items });
-      const surfaces = { ...next.controls.surfaces };
-      let last: SelectionRegion | undefined;
-      for (const requested of items.filter(item => item.region)) {
-        // The reducer may reuse an existing identity for a repeated gesture.
-        const item = next.selection.items.find(item => item.region && item.displayNodeId === requested.displayNodeId
-          && JSON.stringify(item.region.rect) === JSON.stringify(requested.region!.rect))!;
-        const region = item.region!, existing = next.display.nodes[item.id];
-        last = { ...displayGeometry(), id: item.id, kind: 'selection', childIds: [], expansion: 'expanded', displayMode: 'stacked',
-          ...(existing?.kind === 'selection' ? existing : {}), sourceBoxId: item.displayNodeId.slice(5),
-          sourceContentId: region.sourceContentId, sourceAscii: region.sourceAscii, sourceRevisionId: region.sourceRevisionId,
-          rect: region.rect, selectedIds: [...region.selectedIds] };
-        next = { ...next, display: existing ? { ...next.display, nodes: { ...next.display.nodes, [last.id]: last } }
-          : addDisplayNode(next.display, last) };
-        surfaces[last.id] = { ...surfaces[last.id] ?? initialSelectionSurface(), actionsOpen: false };
-      }
-      return { ...next, controls: { ...next.controls, surfaces, selectionFocusId: last?.id ?? null,
-        ...(last ? { activeBoxId: last.sourceBoxId } : {}) } };
-    }, true);
+  const finishMarquee = (marquee: CanvasMarqueeSelection, policy: SelectionPolicy, baseline?: SelectionState) => {
+    controller.updateCanvas(current => completeMarquee(baseline ? { ...current, selection: baseline } : current, marquee, scene, boxes, policy), true);
+  };
+  const selectHit = (hit: SelectionHit, policy: SelectionPolicy, whole: boolean, baseline?: SelectionState) => {
+    const box = boxes.find(box => `grid:${box.box.id}` === hit.diagramId);
+    const diagram = box?.contentId ? scene.contents[box.contentId] : undefined;
+    if (!diagram) return;
+    if (whole || !hit.nodeId) {
+      clearSelectionFocus();
+      controller.updateCanvas(current => updateSelection(baseline ? { ...current, selection: baseline } : current,
+        { type: policy, items: [diagramSelectionItem(hit.diagramId)] }), true);
+      return;
+    }
+    if (diagram.content.revisionId !== hit.revision) return;
+    const node = diagramContentNodes(diagram.content).find(node => node.id === hit.nodeId);
+    if (node) finishMarquee({ diagramIds: [], regions: [{ boxId: box!.box.id,
+      rect: { startLine: node.line, endLine: node.line, startColumn: node.startColumn, endColumn: node.endColumn } }] }, policy, baseline);
   };
 
-  const nodeSelectionInteraction = useRef({ boxes, scene, select: (selection: CanvasMarqueeSelection) => completeMarquee(selection) });
-  nodeSelectionInteraction.current = { boxes, scene, select: completeMarquee };
-
-  // Listen through canvas pointer capture: a click selects a node; a drag still pans.
+  // Source panels live in native shapes, outside the application overlay. Keep
+  // keyboard source navigation tied to the last panel the user actually touched.
   useEffect(() => {
-    const stage = nativeRuntime ? stageRef.current?.closest<HTMLElement>('[data-diagram-canvas]') : stageRef.current;
-    if (!stage || props.active === false || isGenerating || diagramPlacement || movingBoxId) return;
-    let pressed: { x: number; y: number; pointerId: number; boxId: string; nodeId: string; revision: string } | undefined;
-    const down = (event: globalThis.PointerEvent) => {
-      pressed = undefined;
-      const paneId = (event.target as Element).closest<HTMLElement>('[data-pane-content="code-panel"]')?.dataset.displayNode;
-      const pane = paneId && controller.getSnapshot().canvas.display.nodes[paneId];
-      if (pane && pane.kind === 'projection' && pane.content.kind === 'code-panel') codePanelFocus.current = { panelId: pane.id, selectionId: pane.content.selectionId };
-      if (event.button || event.ctrlKey || event.metaKey || event.shiftKey || (event.target as Element).closest('[data-mapping-static-ui], button, a')) return;
-      const label = (event.target as Element).closest<HTMLElement>('[data-content-node-id]');
-      if (!label?.dataset.displayNodeId?.startsWith('grid:')) return;
-      pressed = { x: event.clientX, y: event.clientY, pointerId: event.pointerId,
-        boxId: label.dataset.displayNodeId.slice(5), nodeId: label.dataset.contentNodeId!, revision: label.dataset.contentRevision! };
+    const viewport = stageRef.current?.closest<HTMLElement>('[data-diagram-canvas]') ?? stageRef.current;
+    if (!viewport || props.active === false) return;
+    const focusPanel = (event: globalThis.PointerEvent) => {
+      const id = (event.target as Element).closest<HTMLElement>('[data-pane-content="code-panel"]')?.dataset.displayNode;
+      const pane = id && controller.getSnapshot().canvas.display.nodes[id];
+      if (pane && pane.kind === 'projection' && pane.content.kind === 'code-panel')
+        codePanelFocus.current = { panelId: pane.id, selectionId: pane.content.selectionId };
     };
-    const up = (event: globalThis.PointerEvent) => {
-      const prior = pressed; pressed = undefined;
-      if (!prior || prior.pointerId !== event.pointerId || Math.hypot(event.clientX - prior.x, event.clientY - prior.y) > 4) return;
-      const { boxes, scene, select } = nodeSelectionInteraction.current;
-      const box = boxes.find(box => box.box.id === prior.boxId);
-      const diagram = box?.contentId ? scene.contents[box.contentId] : undefined;
-      if (!diagram || diagram.content.revisionId !== prior.revision) return;
-      const node = diagramContentNodes(diagram.content).find(node => node.id === prior.nodeId);
-      if (node) select({ diagramIds: selectedDiagramIds(controller.getSnapshot().canvas.selection).filter(id => id !== `grid:${prior.boxId}`),
-        regions: [{ boxId: prior.boxId, rect: { startLine: node.line, endLine: node.line, startColumn: node.startColumn, endColumn: node.endColumn } }] });
-    };
-    const cancel = () => { pressed = undefined; };
-    stage.addEventListener('pointerdown', down, true); window.addEventListener('pointerup', up);
-    window.addEventListener('pointercancel', cancel);
-    return () => { stage.removeEventListener('pointerdown', down, true); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', cancel); };
-  }, [props.active, isGenerating, diagramPlacement, movingBoxId]);
+    viewport.addEventListener('pointerdown', focusPanel, true);
+    return () => viewport.removeEventListener('pointerdown', focusPanel, true);
+  }, [controller, props.active]);
 
   const retainSelection = useCallback(() => {
     if (retainedSelectionId && display.nodes[retainedSelectionId]) return retainedSelectionId;
@@ -1073,7 +1040,8 @@ export function MappingPocSelectionCanvas(props: {
     >
       <CanvasSelectionLayer stageRef={stageRef} active={props.active !== false && !isGenerating && !diagramPlacement && !movingBoxId}
         diagramIds={boxes.filter(box => box.box.kind === 'diagram').map(box => `grid:${box.box.id}`)} selected={selectedDiagrams}
-        resolve={resolveMarquee} onComplete={completeMarquee}
+        onClear={() => { clearSelectionFocus(); controller.updateCanvas(deselectCanvas, true); }}
+        runtime={nativeRuntime ?? undefined} resolve={resolveMarquee} onComplete={finishMarquee} onTap={selectHit}
         onSelectDiagram={(id, toggle) => { clearSelectionFocus(); controller.select(toggle
           ? { type: 'toggleDiagram', displayNodeId: id } : { type: 'replace', items: [diagramSelectionItem(id)] }); }} />
       {props.active !== false && selectedDiagrams.length > 0 && createPortal(
