@@ -20,24 +20,28 @@ The eight current canvases are included in the repository; generated workspace
 records stay local.
 
 
-The API and real AI execution are **disabled by default**. These are server startup
-flags, not frontend build flags; the same build supports each mode:
+API **writes** and real AI execution are **disabled by default**. Diagram loading,
+workspace reads, source browsing, and Vite development HMR work without flags.
+These are server startup flags, not frontend build flags:
 
-| Flags | HTTP API / WebSocket / MCP access | Real AI execution |
-| --- | --- | --- |
-| none | Disabled (403) | Disabled |
-| `--http` | Enabled | Disabled |
-| `--pi` | Disabled (403) | Enabled internally, inaccessible through HTTP |
-| `--http --pi` | Enabled | Enabled |
+| Flags | Reads | Writes | Real AI execution |
+| --- | --- | --- | --- |
+| none | Enabled | Disabled (403) | Disabled |
+| `--http` | Enabled | Enabled | Disabled |
+| `--pi` | Enabled | Disabled (403) | Enabled internally; AI submission routes blocked |
+| `--http --pi` | Enabled | Enabled | Enabled |
 
-Static frontend assets are served in every mode. Loading and saving server-backed
-canvases requires `--http`. WebSocket access, including Vite's development HMR
-socket, is disabled without it. `--pi` covers selection prompts, diagram edits, file compaction, and
-Codex-backed selection chat. Disabled AI operations return an error before any
-agent session or child process starts. Explicit `NEW_DIAGRAM_AGENT=fake` test
+`--http` enables saves, deletes, agent submissions, and other mutations. Read-only
+POST endpoints (source definitions and agent search/status/diff queries) remain
+available. Mixed read/write `exec` requests require `--http`. WebSocket readers
+can connect; publishing selections and uploading agent context require `--http`.
+
+`--pi` independently covers selection prompts, diagram edits, file compaction,
+and Codex-backed selection chat. Disabled AI operations return an error before
+any agent session or child process starts. Explicit `NEW_DIAGRAM_AGENT=fake` test
 runtimes remain usable without `--pi` and do not call an AI provider.
 
-For normal local canvas use without paid agents, build once and start:
+For local canvas editing and saving without paid agents, build once and start:
 
 ```sh
 npm run build
@@ -48,4 +52,4 @@ Add `--pi` to enable AI as well. Development uses the same switches:
 `npm run dev -- --http --pi`. The independent `--lsp` switch enables source
 navigation. Restart the server to change these capabilities; browser requests,
 saved workspace data, and inherited environment variables cannot enable them.
-`npm run build:local` keeps both HTTP and AI disabled by default.
+`npm run build:local` allows viewing diagrams while keeping API writes and AI disabled.

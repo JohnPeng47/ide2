@@ -1,4 +1,5 @@
-import { canvasSaveFixture } from '../../../../tests/support/mappingDiagram';
+import { DiagramStore } from '../../../../infrastructure/core/persistence/store';
+import { canvasSaveFixture, saveDiagramFixture } from '../../../../tests/support/mappingDiagram';
 import { singleDiagramScene } from '../../../../domain/core/diagrams/projectDiagramCanvas';
 import { mkdtemp, rm } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
@@ -76,9 +77,12 @@ describe("Mapping and Core HTTP API", () => {
 // Exercise both Vite serving modes and every flag combination over real transports.
 for (const hook of ['configureServer', 'configurePreviewServer'] as const) {
   for (const httpEnabled of [false, true]) for (const piEnabled of [false, true]) {
-    it(`${hook}: HTTP=${httpEnabled}, Pi=${piEnabled} gates all API access and WebSocket upgrades`, async () => {
+    it(`${hook}: HTTP=${httpEnabled}, Pi=${piEnabled} allows reads and gates writes`, async () => {
       const root = await mkdtemp(path.join(tmpdir(), 'new-diagram-capabilities-'));
       roots.push(root);
+      const store = new DiagramStore(root);
+      const project = await store.ensureProject({ checkoutRoot: root, repositoryIdentity: path.join(root, '.git') });
+      const saved = await saveDiagramFixture(store.projectCatalogs, { projectId: project.id, name: 'Existing diagram', ascii: 'Root\n`-- Child' });
       let middleware: Connect.NextHandleFunction;
       const server = createServer((request, response) => middleware(request, response, () => response.end('static frontend')));
       servers.push(server);
@@ -90,14 +94,28 @@ for (const hook of ['configureServer', 'configurePreviewServer'] as const) {
       await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
       const origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
       expect(await (await fetch(origin + '/')).text()).toBe('static frontend');
-      expect((await fetch(origin + '/api/core/project/representations')).status).toBe(httpEnabled ? 200 : 403);
+      const catalog = await fetch(origin + '/api/core/project/representations');
+      expect(catalog.status).toBe(200);
+      expect((await catalog.json()).catalog.revisions[saved.representation.currentRevisionId].ascii).toBe('Root\n`-- Child');
+      for (const endpoint of ['/api/mapping/workspace', '/api/mapping/workspace/records']) {
+        expect((await fetch(origin + endpoint)).status).toBe(200);
+      }
+      const readQuery = await fetch(origin + '/api/mapping/agent/tools/canvas-api-search', {
+        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ query: 'nodes.get' })
+      });
+      expect(readQuery.status).toBe(200);
+      expect(JSON.stringify(await readQuery.json())).toContain('nodes.get');
+      // Definitions is a read despite POST; its independent LSP flag still applies.
+      expect((await fetch(origin + '/api/core/project/definitions', { method: 'POST' })).status).toBe(503);
       if (!httpEnabled) {
         for (const endpoint of ['/api', '/api/mapping/diagrams', '/api/mapping/chat', '/api/mapping/prompt',
-          '/api/mapping/compactions', '/api/mapping/agent/tools/edit-diagram', '/internal/mapping', '/internal/mapping/context']) {
-          for (const method of ['GET', 'POST', 'OPTIONS']) {
+          '/api/mapping/compactions', '/api/mapping/agent/tools/edit-diagram', '/api/mapping/agent/tools/exec',
+          '/api/mapping/workspace', '/api/mapping/workspace/records', '/api/core/project/projections',
+          '/api/core/project/corpus-compactions', '/api/mapping/agent/tools/register_repository', '/internal/mapping/context']) {
+          for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) {
             const response = await fetch(origin + endpoint, { method });
             expect(response.status, `${method} ${endpoint}`).toBe(403);
-            expect(await response.json()).toMatchObject({ code: 'HTTP_API_DISABLED' });
+            expect(await response.json()).toMatchObject({ code: 'HTTP_WRITES_DISABLED' });
           }
         }
       }
@@ -108,11 +126,7 @@ for (const hook of ['configureServer', 'configurePreviewServer'] as const) {
         ws.on('unexpected-response', (_request, response) => { response.resume(); resolve(response.statusCode!); });
         ws.on('error', reject);
       });
-      expect(await connect('/api/mapping/live')).toBe(httpEnabled ? 101 : 403);
-      if (!httpEnabled) {
-        expect(await connect('/')).toBe(403);
-        expect(await connect('/', 'vite-hmr')).toBe(403);
-      }
+      expect(await connect('/api/mapping/live')).toBe(101);
     });
   }
 }

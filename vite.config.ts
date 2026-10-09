@@ -16,7 +16,6 @@ const PREVIEW_ALLOWED_HOSTS = (process.env.NEW_DIAGRAM_ALLOWED_HOSTS || "")
 
 export default defineConfig({
   root: ROOT,
-  server: { hmr: HTTP_ENABLED ? undefined : false },
   optimizeDeps: {
     entries: ["index.html"]
   },

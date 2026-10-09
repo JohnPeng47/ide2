@@ -1,5 +1,4 @@
-import type { IncomingMessage } from 'node:http';
-import type { Duplex } from 'node:stream';
+import { isReadApiRequest } from '../http/apiAccess';
 import { attachLiveCanvasSockets } from '../routes/mapping/liveCanvasRoutes';
 import type { Connect, Plugin, ViteDevServer, PreviewServer } from "vite";
 import { ApplicationError } from '../../../application/core/errors';
@@ -20,16 +19,16 @@ export function diagramApi(
   mappingPocSourceRoot = projectRoot,
   options: { httpEnabled?: boolean; piEnabled?: boolean; lspEnabled?: boolean } = {}
 ): Plugin {
-  const backend = options.httpEnabled === true ? createBackend(projectRoot, diagramsDirectory,
-    configuredDomainProfileId, mappingPocSourceRoot, options) : undefined;
+  const backend = createBackend(projectRoot, diagramsDirectory,
+    configuredDomainProfileId, mappingPocSourceRoot, options);
   const middleware: Connect.NextHandleFunction = async (request, response, next) => {
     const url = new URL(request.url ?? "/", "http://localhost");
     if (!["/api", "/internal"].some(prefix => url.pathname === prefix || url.pathname.startsWith(`${prefix}/`))) {
       next();
       return;
     }
-    if (!backend) return sendJson(response, 403, {
-      code: "HTTP_API_DISABLED", error: "HTTP API access is disabled; start the server with --http to enable it."
+    if (options.httpEnabled !== true && !isReadApiRequest(request.method, url.pathname)) return sendJson(response, 403, {
+      code: "HTTP_WRITES_DISABLED", error: "API writes are disabled; start the server with --http to enable them."
     });
     const { routes } = backend;
     const namespace = url.pathname.split("/")[2];
@@ -52,16 +51,11 @@ export function diagramApi(
   };
   const attach = (server: ViteDevServer | PreviewServer) => {
     server.middlewares.use(middleware);
-    const rejectUpgrade = (_request: IncomingMessage, socket: Duplex) => {
-      socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\nContent-Length: 0\r\n\r\n');
-    };
-    const disposeSockets = backend && server.httpServer
-      ? attachLiveCanvasSockets(server.httpServer, backend.liveCanvas) : undefined;
-    if (!backend) server.httpServer?.on('upgrade', rejectUpgrade);
+    const disposeSockets = server.httpServer
+      ? attachLiveCanvasSockets(server.httpServer, backend.liveCanvas, { writesEnabled: options.httpEnabled === true }) : undefined;
     server.httpServer?.once("close", () => {
       disposeSockets?.();
-      server.httpServer?.off('upgrade', rejectUpgrade);
-      backend?.dispose();
+      backend.dispose();
     });
   };
   return { name: "new-diagram-api", configureServer: attach, configurePreviewServer: attach };

@@ -8,7 +8,7 @@ import { attachLiveCanvasSockets, readLiveSelection } from '../liveCanvasRoutes'
 it('serves attach, push, JSON snapshots, deltas, conditional GET, clears, disconnects and reconnects over real sockets', async () => {
   const service = new LiveCanvasService(() => [{ canvasId: 'workspace', documents: [{ documentId: 'doc', name: 'Test' }] }]);
   const server = createServer((req, res) => readLiveSelection(req, res, req.url!.split('/').at(-1)!, service));
-  const dispose = attachLiveCanvasSockets(server, service), clients: WebSocket[] = [];
+  const dispose = attachLiveCanvasSockets(server, service, { writesEnabled: true }), clients: WebSocket[] = [];
   server.listen(0, '127.0.0.1'); await once(server, 'listening');
   const root = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
   const connect = async () => {
@@ -64,7 +64,7 @@ it('serves attach, push, JSON snapshots, deltas, conditional GET, clears, discon
 
 it('closes slow readers instead of dropping removal deltas and reattaches with current state', async () => {
   const service = new LiveCanvasService(() => [{ canvasId: 'workspace', documents: [] }]);
-  const server = createServer(), dispose = attachLiveCanvasSockets(server, service), clients: WebSocket[] = [];
+  const server = createServer(), dispose = attachLiveCanvasSockets(server, service, { writesEnabled: true }), clients: WebSocket[] = [];
   server.listen(0, '127.0.0.1'); await once(server, 'listening');
   const url = `ws://127.0.0.1:${(server.address() as { port: number }).port}/api/mapping/live`;
   const owner = {};
@@ -101,7 +101,7 @@ it('optionally attaches context before deltas, refreshes on demand, and correlat
   service.publish(owner, 'workspace');
   const selection = { documentId: 'doc', canvasEpoch: 'epoch', sequence: 0, documentVersion: 1, regions: [] };
   service.update(owner, 'workspace', selection);
-  const server = createServer(), dispose = attachLiveCanvasSockets(server, service);
+  const server = createServer(), dispose = attachLiveCanvasSockets(server, service, { writesEnabled: true });
   server.listen(0, '127.0.0.1'); await once(server, 'listening');
   const reader = new WebSocket(`ws://127.0.0.1:${(server.address() as { port: number }).port}/api/mapping/live`);
   await once(reader, 'open');
@@ -144,7 +144,7 @@ it('does not leak a binding when the reader closes during initial context loadin
   const attach = vi.spyOn(service, 'attach'), owner = {};
   service.publish(owner, 'workspace');
   service.update(owner, 'workspace', { documentId: 'doc', canvasEpoch: 'epoch', sequence: 0, documentVersion: 1, regions: [] });
-  const server = createServer(), dispose = attachLiveCanvasSockets(server, service);
+  const server = createServer(), dispose = attachLiveCanvasSockets(server, service, { writesEnabled: true });
   server.listen(0, '127.0.0.1'); await once(server, 'listening');
   const reader = new WebSocket(`ws://127.0.0.1:${(server.address() as { port: number }).port}/api/mapping/live`);
   await once(reader, 'open');
@@ -158,5 +158,34 @@ it('does not leak a binding when the reader closes during initial context loadin
   } finally {
     reader.terminate(); dispose();
     await new Promise<void>(done => server.close(() => done()));
+  }
+});
+
+it('allows WebSocket reads by default while rejecting every publishing and context-upload operation', async () => {
+  const service = new LiveCanvasService(() => [{ canvasId: 'workspace', documents: [{ documentId: 'doc', name: 'Test' }] }],
+    async () => ({ version: 1, name: 'Test', nodes: [], edges: [] }));
+  const owner = {};
+  service.publish(owner, 'workspace');
+  service.update(owner, 'workspace', { documentId: 'doc', canvasEpoch: 'epoch', documentVersion: 1, sequence: 0, regions: [] });
+  const server = createServer(), dispose = attachLiveCanvasSockets(server, service);
+  server.listen(0, '127.0.0.1'); await once(server, 'listening');
+  const ws = new WebSocket(`ws://127.0.0.1:${(server.address() as { port: number }).port}/api/mapping/live`);
+  const send = async (body: unknown) => { const next = once(ws, 'message'); ws.send(JSON.stringify(body)); return JSON.parse(String((await next)[0])); };
+  try {
+    await once(ws, 'open');
+    expect(await send({ type: 'attach', protocolVersion: 2, workspaceInstanceId: 'workspace', documentId: 'doc', includeContext: true }))
+      .toMatchObject({ type: 'attached', context: { name: 'Test' }, sequence: 0 });
+    expect(await send({ type: 'context.get', requestId: 'read' })).toMatchObject({ type: 'context.snapshot', requestId: 'read' });
+    for (const message of [
+      { type: 'publish', protocolVersion: 2, workspaceInstanceId: 'workspace' },
+      { type: 'selection.snapshot', documentId: 'doc', canvasEpoch: 'epoch', documentVersion: 2, sequence: 1, regions: [] },
+      { type: 'selection.delta', documentId: 'doc', canvasEpoch: 'epoch', documentVersion: 2, sequence: 1, baseSequence: 0, upserted: [], removed: [] },
+      { type: 'remove', documentId: 'doc', canvasEpoch: 'epoch' },
+      { type: 'agent-context.upload', requestId: 'upload', agentType: 'codex', sourceSessionId: 'source', format: 'messages-v1',
+        fromEntryId: 'one', throughEntryId: 'one', entries: [{ id: 'one', parentId: null, message: { role: 'user', content: [{ type: 'text', text: 'Injected context' }] } }] }
+    ]) expect(await send(message)).toMatchObject({ type: 'error', code: 'HTTP_WRITES_DISABLED' });
+    expect(await send({ type: 'context.get', requestId: 'after' })).toMatchObject({ type: 'context.snapshot', requestId: 'after', context: { version: 1 } });
+  } finally {
+    ws.terminate(); dispose(); await new Promise<void>(resolve => server.close(() => resolve()));
   }
 });

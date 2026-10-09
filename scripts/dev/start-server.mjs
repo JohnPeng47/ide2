@@ -9,7 +9,7 @@ const flags = ['http', 'pi', 'lsp'];
 for (const flag of flags) {
   const enabled = args.includes(`--${flag}`);
   globalThis[Symbol.for(`new-diagram.${flag}-enabled`)] = enabled;
-  console.log(`[new-diagram] ${flag.toUpperCase()} ${enabled ? 'enabled' : `disabled (use --${flag} to enable)`}`);
+  console.log(`[new-diagram] ${flag === 'http' ? 'HTTP writes' : flag.toUpperCase()} ${enabled ? 'enabled' : `disabled (use --${flag} to enable)`}`);
 }
 const require = createRequire(import.meta.url);
 const cli = path.join(path.dirname(require.resolve('vite/package.json')), 'bin/vite.js');
