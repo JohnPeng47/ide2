@@ -1,3 +1,4 @@
+import { SelectionToolBridge } from './SelectionTools';
 import { createContext } from 'react';
 import { atom, transact, type Atom, type Editor } from 'tldraw';
 import type { CanvasSession } from '../workspace/canvasSession';
@@ -52,6 +53,8 @@ export interface FloatModel {
 export interface LocalEndpoint extends NonNullable<ReturnType<typeof resolveEndpoint>> { layoutKey: string }
 export interface EdgeModel { edge: DiagramConnection; source?: LocalEndpoint; target?: LocalEndpoint }
 export interface CanvasActions {
+  undo(): void;
+  escape(): void;
   jump(target: DiagramJumpTarget): void;
   collapse(nodeId: string, collapsed: boolean, contentNodeId?: string): void;
   move(id: string): void; group(id: string): void; remove(id: string): void;
@@ -59,7 +62,12 @@ export interface CanvasActions {
   submit(id: string, message: string): void; verbosity(id: string, value: LocalChatVerbosity): void; retry(id: string): void;
 }
 export class CanvasRuntime {
-  editor?: Editor;
+  private readonly editorState = atom<Editor | undefined>('mapping editor', undefined);
+  get editor() { return this.editorState.get(); }
+  set editor(value: Editor | undefined) { this.editorState.set(value); }
+  readonly gestures = new SelectionToolBridge();
+  readonly canUndo = atom('mapping undo available', false);
+  readonly canEscape = atom('mapping escape available', true);
   readonly controller;
   readonly anchors = new LocalAnchorStore();
   readonly grids = new Models<GridModel>();

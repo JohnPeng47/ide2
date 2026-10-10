@@ -29,6 +29,7 @@ export function DiagramShapeContent({ nodeId }: { nodeId: string }) {
   const runtime = useContext(CanvasRuntimeContext)!;
   const model = useValue(`diagram ${nodeId}`, () => runtime.grids.get(nodeId).get(), [runtime, nodeId]);
   const interaction = useValue('diagram controls', () => runtime.interaction.get(), [runtime]);
+  const zoom = useValue('move handle screen size', () => runtime.editor?.getZoomLevel() ?? 1, [runtime]);
   if (!model) return null;
   const { frame, cell } = model;
   return <>
@@ -39,6 +40,10 @@ export function DiagramShapeContent({ nodeId }: { nodeId: string }) {
       data-grid-box={frame.boxId} data-diagram-selected={frame.selected} data-grid-column={frame.bounds.column} data-grid-row={frame.bounds.row}
       data-grid-columns={frame.bounds.columns} data-grid-rows={frame.bounds.rows} data-collapsed={frame.collapsed}
       style={{ left: 0, top: 0, width: frame.bounds.columns * cell.width, height: frame.bounds.rows * cell.height }}>
+      {frame.kind === 'diagram' && frame.selected && <button type="button" className="mapping-diagram-move-handle"
+        data-diagram-move-handle={nodeId} aria-label="Move selected diagram" disabled={interaction.disabled}
+        style={{ transform: `scale(${1 / zoom}) translate(calc(-100% - 6px), calc(-100% - 6px))` }}
+        onClick={event => { if (event.detail === 0) runtime.actions?.move(frame.boxId); }}>↔</button>}
       {!frame.root && <div className="mapping-grid-box-tools" data-mapping-static-ui data-diagram-canvas-static-ui>
         <button type="button" disabled={interaction.disabled} aria-label={`${frame.collapsed ? 'Expand' : 'Collapse'} ${frame.boxId}`}
           onClick={() => runtime.actions?.collapse(nodeId, !frame.collapsed)}>{frame.collapsed ? 'Expand' : 'Collapse'}</button>

@@ -1,3 +1,4 @@
+import { NativeSelectionOwnership } from '../../../../domain/mapping/selection/selectionGesture';
 import { type Editor, type TLShapePartial } from 'tldraw';
 import { flattenGrid, resolveScene } from '../../../../domain/core/diagrams/lineGrid';
 import { updateSelection } from '../../../../domain/mapping/selection/canvasSelection';
@@ -21,12 +22,14 @@ export class MappingEditorRuntime {
   private unsubscribes: (() => void)[] = [];
   private publishedSelection?: ReturnType<MappingDocumentController['getSnapshot']>['canvas']['selection'];
   private projected = new Map<string, TLShapePartial<MappingShape>>();
-  constructor(readonly editor: Editor, readonly controller: MappingDocumentController) {
+  constructor(readonly editor: Editor, readonly controller: MappingDocumentController, readonly selectionOwnership = new NativeSelectionOwnership()) {
     this.hydrate();
     this.unsubscribes.push(controller.attachEditorDriver({ settle: () => { if (!this.settling) { this.editor.complete(); this.settle(true, false); } }, undo: redo => this.undo(redo) }));
     let previous = controller.getSnapshot();
     this.unsubscribes.push(controller.subscribe(() => {
       const next = controller.getSnapshot();
+      if (next.canvas.selection !== previous.canvas.selection && !this.settling && !this.navigating)
+        this.selectionOwnership.claim('application');
       const relevant = next.canvasRevisionId !== previous.canvasRevisionId || next.document !== previous.document
         || next.canvas.display !== previous.canvas.display || next.canvas.diagramViews !== previous.canvas.diagramViews
         || next.canvas.selection !== previous.canvas.selection || next.cell !== previous.cell;
@@ -50,7 +53,7 @@ export class MappingEditorRuntime {
             && after.selectedShapeIds.join() !== before.selectedShapeIds.join())) this.dirty = true;
     }, { scope: 'all' }));
     const tick = () => {
-      if (editor.inputs.getIsPointing() || editor.inputs.getIsDragging()) return;
+      if (editor.inputs.getIsPointing() || editor.inputs.getIsDragging() || editor.inputs.getIsPinching()) return;
       if (this.dirty) this.settle();
       if (this.pendingProjection) this.publish();
     };
@@ -121,7 +124,7 @@ export class MappingEditorRuntime {
       this.checkpoint = id;
     } finally { this.syncing = false; }
   }
-  settle(force = false, captureSelection = true) {
+  settle(force = false, captureSelection = this.selectionOwnership.captureSelection) {
     if (this.syncing || this.settling || this.navigating || this.disposed) return;
     if (!force && this.editor.inputs.getIsPointing()) return;
     this.dirty = false;
@@ -178,6 +181,10 @@ export class MappingEditorRuntime {
       const existing = selectedDiagramIds(canvas.selection);
       if (captureSelection && selected.join() !== existing.join()) canvas = updateSelection(canvas, { type: 'replace', items: selected.map(diagramSelectionItem) });
       if (moves.length || canvas !== snapshot.canvas) this.controller.commitEditorGesture(moves, canvas);
+      if (!captureSelection) {
+        const ids = selectedDiagramIds(this.controller.getSnapshot().canvas.selection).map(mappingShapeId).filter(id => this.editor.getShape(id));
+        this.editor.run(() => this.editor.setSelectedShapes(ids), { history: 'ignore' });
+      }
     } finally { this.settling = false; }
   }
   undo(redo = false) {

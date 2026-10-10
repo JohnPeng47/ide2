@@ -39,7 +39,8 @@
     "check:diagram-edit": "npm run build && node tests/browser/mapping/browser-diagram-edit-check.mjs",
     "check:diagram-delete": "npm run build && node --import tsx tests/browser/mapping/browser-diagram-delete-check.mjs",
     "check:diagram-transfer": "npm run build && node --import tsx tests/browser/mapping/browser-diagram-transfer-check.mjs",
-    "check:tldraw": "npm run build && node --import tsx tests/browser/mapping/browser-tldraw-check.mjs"
+    "check:tldraw": "npm run build && node --import tsx tests/browser/mapping/browser-tldraw-check.mjs",
+    "check:ipad-gestures": "npm run build && node --import tsx tests/browser/mapping/browser-ipad-gestures-check.mjs"
   },
   "dependencies": {
     "@earendil-works/pi-ai": "^0.84.2",

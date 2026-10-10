@@ -20,6 +20,7 @@ export function SelectionEffectsLayer(props: {
   diagramViews?: DiagramViews; boxes: ResolvedGridBox[]; scene: LineGridScene; cell: { width: number; height: number };
   catalog?: ProjectRepresentationCatalogRecord; dirtyRepresentationIds?: string[];
   onRemove: (id: string) => void;
+  onEscape: () => void;
   busySelectionIds: string[];
   onActivate: (root: SelectionRegion) => void;
 }) {
@@ -65,6 +66,7 @@ export function SelectionEffectsLayer(props: {
           style={{ left: rect.x, top: rect.y - 27 }}>
           {(stale || missing) && <span>Source changed · saved selection</span>}
           <button type="button" disabled={stale || missing} aria-keyshortcuts="A" onClick={() => props.onActivate(root)}>Actions (A)</button>
+          <button type="button" disabled={props.busySelectionIds.includes(root.id)} aria-keyshortcuts="Escape" onClick={props.onEscape}>Esc</button>
           <select aria-label="Projection display mode" value={root.displayMode} onChange={event => {
             const displayMode = event.target.value as SelectionRegion['displayMode'];
             props.setState(state => ({ ...state, nodes: { ...state.nodes, [root.id]: { ...root, displayMode } } }));

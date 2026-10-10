@@ -18,4 +18,17 @@
 .mapping-editor-overlay .mapping-poc-graph-stage { margin: 0; }
 .mapping-editor-overlay pre.mapping-poc-ascii { margin: 0; }
 /* Leave the SDK's own production-license notice unobstructed. */
-.mapping-editor-canvas > .diagram-canvas__controls { right: 210px; }
+.mapping-editor-canvas > .diagram-canvas__controls { right: 12px; top: 12px; bottom: auto;
+  max-width: calc(100% - 24px); flex-wrap: wrap; }
+.mapping-editor-canvas > .diagram-canvas__controls button[aria-pressed="true"] { background: #88c0d02b; color: var(--fg); }
+@media (any-pointer: coarse) {
+  .mapping-editor-canvas > .diagram-canvas__controls { font-size: 12px; }
+  .mapping-editor-canvas > .diagram-canvas__controls button { min-width: 44px; min-height: 44px; padding: 8px 12px; }
+}
+
+/* Apply touch policy at the canvas itself; sibling source panels retain scrolling. */
+.mapping-editor-canvas .tl-canvas { touch-action: none; }
+/* The inverse-scaled handle sits above/left of the frame, clear of labels and frame buttons. */
+.mapping-diagram-move-handle { position: absolute; left: 0; top: 0; transform-origin: left top;
+  width: 44px; height: 44px; min-width: 44px; min-height: 44px; pointer-events: auto;
+  z-index: 5; cursor: move; touch-action: none; font-size: 24px; }
