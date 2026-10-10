@@ -8,7 +8,7 @@ export class SelectionToolBridge {
   pointerType = 'mouse';
   moveDiagram?: string;
   cancel?: () => void;
-  add = false;
+  escape?: () => boolean;
 }
 export const selectionTools = new WeakMap<Editor, SelectionToolBridge>();
 type ToolEvent = Parameters<StateNode['handleEvent']>[0];

@@ -84,7 +84,7 @@ export function CanvasPasteMenu(props: {
   return createPortal(
     <div ref={menuRef} className="canvas-paste-menu" role={menu.manual ? 'dialog' : 'menu'} aria-label="Canvas actions"
       data-diagram-canvas-static-ui data-mapping-static-ui
-      style={{ left: Math.max(8, Math.min(menu.x, window.innerWidth - 328)), top: Math.max(8, Math.min(menu.y, window.innerHeight - (menu.manual ? 310 : props.selectionCount ? 135 : 60))) }}
+      style={{ left: Math.max(8, Math.min(menu.x, window.innerWidth - 328)), top: Math.max(8, Math.min(menu.y, window.innerHeight - (menu.manual ? 350 : props.selectionCount ? 175 : 100))) }}
       onContextMenu={event => {
         if (!(event.target as Element).closest('input, textarea, [contenteditable="true"]')) event.preventDefault();
       }}>
@@ -99,6 +99,8 @@ export function CanvasPasteMenu(props: {
       </form> : <button role="menuitem" disabled={menu.pending} onClick={() => void paste()}>
         {menu.pending ? 'Reading clipboard…' : 'Paste sub-diagram here'}
       </button>}
+      <button type="button" role={menu.manual ? undefined : 'menuitem'} aria-keyshortcuts="Escape"
+        onClick={() => { dismiss(); props.onCancelSelection?.(); }}>Esc</button>
       {menu.error && <p role="alert">{menu.error}</p>}
     </div>, document.body
   );

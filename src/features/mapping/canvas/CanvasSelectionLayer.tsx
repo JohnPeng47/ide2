@@ -1,4 +1,3 @@
-import { selectedDiagramIds, type SelectionState } from '../../../../domain/mapping/selection/selectionState';
 import { useValue } from 'tldraw';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
@@ -11,8 +10,8 @@ import type { CanvasRuntime } from '../tldraw/CanvasRuntimeContext';
 export function CanvasSelectionLayer(props: { stageRef: RefObject<HTMLDivElement | null>; active: boolean;
   runtime?: CanvasRuntime; diagramIds: string[]; selected: string[];
   resolve: (bounds: SelectionBounds, promoted: string[]) => CanvasMarqueeSelection;
-  onComplete: (selection: CanvasMarqueeSelection, policy: SelectionPolicy, baseline?: SelectionState) => void;
-  onTap: (hit: SelectionHit, policy: SelectionPolicy, whole: boolean, baseline?: SelectionState) => void;
+  onComplete: (selection: CanvasMarqueeSelection, policy: SelectionPolicy) => void;
+  onTap: (hit: SelectionHit, policy: SelectionPolicy, whole: boolean) => void;
   onClear: () => void;
   onSelectDiagram: (id: string, toggle: boolean) => void }) {
   const nativeEditor = useValue('selection editor', () => props.runtime?.editor, [props.runtime]);
@@ -24,7 +23,6 @@ export function CanvasSelectionLayer(props: { stageRef: RefObject<HTMLDivElement
     const recognizer = new SelectionGestureController();
     const bridge = props.runtime?.gestures, editor = nativeEditor;
     let promoted: string[] = [], restoreTool: string | undefined;
-    let firstTapBaseline: SelectionState | undefined, baseline: SelectionState | undefined;
     let previewFrame = 0, pendingPreview: { bounds: SelectionBounds; diagrams: SelectionBounds[] } | undefined;
     const clearPreview = () => { cancelAnimationFrame(previewFrame); previewFrame = 0; pendingPreview = undefined; setPreview(undefined); };
     const queuePreview = (value: NonNullable<typeof pendingPreview>) => {
@@ -51,10 +49,19 @@ export function CanvasSelectionLayer(props: { stageRef: RefObject<HTMLDivElement
       return box && { diagramId: box.id };
     };
     const point = (e: PointerEvent) => ({ pointerId: e.pointerId, pointerType: e.pointerType || 'mouse', x: e.clientX, y: e.clientY, time: e.timeStamp });
-    const cancel = () => { recognizer.cancel(); promoted = []; firstTapBaseline = undefined; baseline = undefined; clearPreview(); };
+    const cancel = () => { recognizer.cancel(); promoted = []; clearPreview(); };
+    const cancelNativeGesture = () => {
+      // HandTool's idle cancel switches to Select. An interruption ends its pan
+      // without changing tools; native shape moves still need cancel to roll back.
+      if (editor?.getCurrentToolId() === 'hand') editor.interrupt();
+      else editor?.cancel();
+    };
     if (bridge) bridge.cancel = cancel;
     const down = (event: PointerEvent) => {
       if (ui(event)) return;
+      // A toolbar change may precede this contact without an intervening SDK tick.
+      // Synchronize before starting recognition so that tick cannot cancel it.
+      if (editor?.getCurrentToolId() !== tool) { cancel(); tool = editor?.getCurrentToolId(); }
       if (bridge) {
         bridge.pointerType = event.pointerType || 'mouse';
         bridge.suppress = false;
@@ -65,12 +72,22 @@ export function CanvasSelectionLayer(props: { stageRef: RefObject<HTMLDivElement
       // off again so a prior pen contact cannot disable other input devices.
       editor?.updateInstanceState({ isPenMode: event.pointerType === 'pen' });
       if (event.button !== 0) { cancel(); bridge?.ownership.claim('application'); return; }
-      const moveHandle = (event.target as Element).closest<HTMLElement>('[data-diagram-move-handle]');
-      if (moveHandle && editor?.getCurrentToolId() !== 'select') {
+      // Fingers temporarily use Hand regardless of the selected editing tool.
+      // Restore before an immediate pen/mouse handoff, without waiting for a tick.
+      if (restoreTool && !recognizer.contacts.size && event.pointerType !== 'touch') {
+        editor?.setCurrentTool(restoreTool); tool = restoreTool; restoreTool = undefined;
+      }
+      const moveHandle = event.pointerType === 'touch' ? undefined
+        : (event.target as Element).closest<HTMLElement>('[data-diagram-move-handle]');
+      if (event.pointerType === 'touch' && editor && editor.getCurrentToolId() !== 'hand') {
+        if (recognizer.contacts.size) cancelNativeGesture();
+        restoreTool ??= editor.getCurrentToolId();
+        editor.setCurrentTool('hand'); tool = 'hand';
+      } else if (moveHandle && editor?.getCurrentToolId() !== 'select') {
         restoreTool = editor?.getCurrentToolId(); editor?.setCurrentTool('select'); tool = 'select';
       }
       const gesture = recognizer.down({ ...point(event), hit: hit(event),
-        tool: editor?.getCurrentToolId() === 'hand' ? 'hand' : 'select', add: bridge?.add ?? false,
+        tool: editor?.getCurrentToolId() === 'hand' ? 'hand' : 'select', add: false,
         ctrl: event.ctrlKey, meta: event.metaKey, shift: event.shiftKey, alt: event.altKey,
         pan: editor?.inputs.getIsPanning(), moveHandle: !!moveHandle });
       if (bridge) {
@@ -84,12 +101,10 @@ export function CanvasSelectionLayer(props: { stageRef: RefObject<HTMLDivElement
         clearPreview();
         // Roll back an in-flight native move before the second contact reaches
         // the SDK. Both contacts still reach its pan/pinch recognizer.
-        editor?.cancel();
+        cancelNativeGesture();
         return;
       }
-      baseline = gesture.secondTap ? firstTapBaseline : undefined;
-      firstTapBaseline = props.runtime?.controller.getSnapshot().canvas.selection;
-      promoted = gesture.policy === 'add' ? (baseline ? selectedDiagramIds(baseline) : [...current.current.selected]) : [];
+      promoted = gesture.policy === 'add' ? [...current.current.selected] : [];
       if (gesture.kind === 'marquee') { window.getSelection()?.removeAllRanges(); stage!.focus({ preventScroll: true }); }
       // Legacy non-native canvas still uses the same recognition core.
       if (!editor && (gesture.kind === 'marquee' || gesture.kind === 'blocked')) {
@@ -112,8 +127,8 @@ export function CanvasSelectionLayer(props: { stageRef: RefObject<HTMLDivElement
       if (!owned) return;
       const result = recognizer.up(point(event));
       clearPreview();
-      if (result?.kind === 'marquee') current.current.onComplete(current.current.resolve(result.bounds, promoted), result.policy, baseline);
-      else if (result) current.current.onTap(result.hit, result.policy, result.kind === 'doubletap', baseline);
+      if (result?.kind === 'marquee') current.current.onComplete(current.current.resolve(result.bounds, promoted), result.policy);
+      else if (result) current.current.onTap(result.hit, result.policy, !result.hit.nodeId);
       if (!editor && viewport.hasPointerCapture(event.pointerId)) viewport.releasePointerCapture(event.pointerId);
       // Native pointer-up still needs its tool. Restore on the next tick, after
       // geometry has settled, rather than ending translation in DOM capture.
@@ -121,7 +136,7 @@ export function CanvasSelectionLayer(props: { stageRef: RefObject<HTMLDivElement
     const cancelContact = () => {
       // The SDK has no DOM pointercancel handler. Cancel native translation too,
       // so a canceled contact cannot become a delayed geometry commit.
-      if (recognizer.gesture && !['marquee', 'blocked'].includes(recognizer.gesture.kind)) editor?.cancel();
+      if (recognizer.gesture && !['marquee', 'blocked'].includes(recognizer.gesture.kind)) cancelNativeGesture();
       cancel();
     };
     const pointerCancel = (event: PointerEvent) => {
@@ -132,15 +147,19 @@ export function CanvasSelectionLayer(props: { stageRef: RefObject<HTMLDivElement
     const lostCapture = (event: PointerEvent) => { if (recognizer.contacts.has(event.pointerId)) cancelContact(); };
     const reset = () => { cancelContact(); recognizer.reset(); };
     const visibility = () => { if (document.hidden) reset(); };
+    const escapeGesture = () => {
+      const gesture = recognizer.gesture;
+      if (!gesture) return false;
+      if (gesture.kind !== 'marquee' && gesture.kind !== 'blocked') cancelNativeGesture();
+      cancel();
+      if (bridge) bridge.suppress = true; // Ignore the canceled contact's final up.
+      return true;
+    };
+    if (bridge) bridge.escape = escapeGesture;
     const key = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || (event.target instanceof Element && event.target.closest('input,textarea,select,[contenteditable=true],[data-display-node],.window-panel'))) return;
-      const gesture = recognizer.gesture;
-      if (gesture) {
+      if (escapeGesture()) {
         event.preventDefault(); event.stopImmediatePropagation();
-        // interrupt completes a native translation; cancel rolls it back.
-        if (gesture.kind !== 'marquee' && gesture.kind !== 'blocked') editor?.cancel();
-        cancel();
-        if (bridge) bridge.suppress = true; // Ignore the canceled contact's final up.
       } else if (current.current.selected.length) {
         event.preventDefault(); event.stopImmediatePropagation();
         bridge?.ownership.claim('application');
@@ -150,7 +169,11 @@ export function CanvasSelectionLayer(props: { stageRef: RefObject<HTMLDivElement
     };
     const tick = () => {
       if (editor?.getCurrentToolId() !== tool) { cancel(); tool = editor?.getCurrentToolId(); }
-      if (restoreTool && !recognizer.contacts.size && !editor?.inputs.getIsPointing() && !editor?.inputs.getIsDragging()) {
+      // Pinch consumes native pointer-up events, so native pointing/dragging can
+      // remain set after every DOM contact is gone. Hand restoration uses our
+      // contacts plus pinch completion; shape moves still await native settle.
+      if (restoreTool && !recognizer.contacts.size && !editor?.inputs.getIsPinching()
+        && (editor?.getCurrentToolId() === 'hand' || !editor?.inputs.getIsPointing() && !editor?.inputs.getIsDragging())) {
         editor?.setCurrentTool(restoreTool); tool = restoreTool; restoreTool = undefined;
       }
     };
@@ -178,7 +201,7 @@ export function CanvasSelectionLayer(props: { stageRef: RefObject<HTMLDivElement
     document.addEventListener('visibilitychange', visibility);
     editor?.on('tick', tick);
     return () => {
-      reset(); if (bridge) bridge.cancel = undefined;
+      reset(); if (bridge) { bridge.cancel = undefined; bridge.escape = undefined; }
       viewport.removeEventListener('dblclick', doubleClick, true); viewport.removeEventListener('click', click, true);
       viewport.removeEventListener('pointerdown', down, true); window.removeEventListener('pointermove', sample, true);
       window.removeEventListener('pointerup', up, true); window.removeEventListener('pointercancel', pointerCancel, true);

@@ -680,6 +680,12 @@ export function MappingPocSelectionCanvas(props: {
     clearSelectionFocus();
     if (props.onUndo) props.onUndo(redo); else controller.undo(redo);
   };
+  const escapeSelection = () => {
+    if (isGenerating || nativeRuntime?.gestures.escape?.()) return;
+    clearSelectionFocus();
+    controller.updateCanvas(deselectCanvas, true);
+    stageRef.current?.focus({ preventScroll: true });
+  };
 
   const submitPrompt = async (event: FormEvent) => {
     event.preventDefault();
@@ -961,6 +967,8 @@ export function MappingPocSelectionCanvas(props: {
   useLayoutEffect(() => {
     if (!nativeRuntime) return;
     nativeRuntime.actions = {
+      undo: () => undo(),
+      escape: escapeSelection,
       jump: onDiagramJump,
       collapse: (nodeId, collapsed, contentNodeId) => {
         try { controller.transact(controller.getSnapshot().version, [{ method: 'collapse', nodeId, collapsed, ...(contentNodeId ? { contentNodeId } : {}) }]); if (!contentNodeId) clearSelectionFocus(); }
@@ -973,6 +981,8 @@ export function MappingPocSelectionCanvas(props: {
       },
       submit: (id, message) => { void submitLocalFollowUp(id, message); }, verbosity: changeThreadVerbosity, retry: id => { void retryLocalReply(id); }
     };
+    nativeRuntime.canUndo.set(!!(controllerState.canUndo || props.canWorkspaceUndo) && !isGenerating);
+    nativeRuntime.canEscape.set(!isGenerating);
     nativeRuntime.interaction.set(shareEqual(nativeRuntime.interaction.get(), {
       disabled: isGenerating || !!diagramPlacement, subtreeDisabled: isGenerating || !!diagramPlacement || !!movingBoxId || !!promptOpen || !!askOpen, jumps: !!props.onJump
     }));
@@ -1059,7 +1069,7 @@ export function MappingPocSelectionCanvas(props: {
                 setStatusMessage(`${selectedDiagrams.length === 1 ? 'Diagram' : 'Diagrams'} deleted · Undo to restore`);
               } catch (error) { setStatusMessage(error instanceof Error ? error.message : String(error)); }
             }}>Delete {selectedDiagrams.length === 1 ? 'diagram' : 'diagrams'}</button>
-          <button type="button" onClick={() => { clearSelectionFocus(); controller.updateCanvas(deselectCanvas, true); }}>Deselect (Esc)</button>
+          <button type="button" disabled={isGenerating} aria-keyshortcuts="Escape" onClick={escapeSelection}>Deselect (Esc)</button>
         </div>, document.body)}
       {!boxes.some(box => box.contentId) && <p className="mapping-empty-canvas">Empty canvas — right-click to paste a diagram, or Undo to restore.</p>}
       <CanvasPasteMenu selectionCount={!selectionRect ? selectedDiagrams.length : 0}
@@ -1094,6 +1104,7 @@ export function MappingPocSelectionCanvas(props: {
       <div className="mapping-grid-tools" data-mapping-static-ui data-diagram-canvas-static-ui>
         <button type="button" disabled={!(controllerState.canUndo || props.canWorkspaceUndo) || isGenerating} onClick={() => undo()} title="Undo (Ctrl+Z)" aria-keyshortcuts="Control+Z">Undo</button>
         <button type="button" disabled={!(controllerState.canRedo || props.canWorkspaceRedo) || isGenerating} onClick={() => undo(true)} title="Redo (Ctrl+Y)" aria-keyshortcuts="Control+Y">Redo</button>
+        <button type="button" disabled={isGenerating} onClick={escapeSelection} title="Cancel or deselect (Esc)" aria-keyshortcuts="Escape">Esc</button>
         <span role="status">{diagramPlacement ? "Drag a region to place the sub-diagram · Esc cancels" : movingBoxId ? "Click to move the box · Esc cancels" : statusMessage}</span>
       </div>
       {!nativeRuntime && <div ref={endpointGeometry.refForEndpoint({ displayNodeId: `grid:${scene.root.id}` })}
@@ -1205,6 +1216,7 @@ export function MappingPocSelectionCanvas(props: {
           style={{ left: rectStyle.left + rectStyle.width + 12, top: rectStyle.top + rectStyle.height + 8 }}
         >
           <header>
+            <button type="button" disabled={isGenerating} onClick={escapeSelection} title="Cancel or deselect (Esc)" aria-keyshortcuts="Escape">Esc</button>
             <span>{selectedNodes.length ? `${selectedNodes.length} selected · ${candidateProjection.mappedANodeIds.length} mapped` : "Region selected · no code entities"}</span>
             <em className={hasCompleteSourceCoverage ? "is-covered" : "is-missing"}>
               {selectedNodes.length ? `source ${sourceCoveredNodeCount}/${selectedNodes.length} · ${selectedSourceRangeCount} ranges` : "No source mappings"}
@@ -1420,6 +1432,7 @@ export function MappingPocSelectionCanvas(props: {
 
       </div>
       <SelectionEffectsLayer session={session} selection={selection} diagramViews={canvasState.diagramViews} state={display} setState={setDisplay} setLayoutState={setDisplayLayout} boxes={boxes} scene={scene} cell={cell}
+        onEscape={escapeSelection}
         catalog={props.projectionCatalog} dirtyRepresentationIds={props.dirtyRepresentationIds} onRemove={removeEffect}
         busySelectionIds={Object.entries(canvasState.controls.surfaces).filter(([, surface]) => surface.promptPhase === 'generating').map(([id]) => id)}
         onActivate={root => {

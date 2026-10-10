@@ -1,6 +1,6 @@
 import { mappingTools, selectionTools } from './SelectionTools';
 import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Tldraw, useEditor, useQuickReactor, type Editor, type TLComponents } from 'tldraw';
+import { Tldraw, useEditor, useQuickReactor, useValue, type Editor, type TLComponents } from 'tldraw';
 import type { CanvasTransform, DiagramFocus } from '../../../../domain/core/diagrams/diagramCanvas';
 import type { CanvasSession } from '../workspace/canvasSession';
 import { restoreMappingCamera, saveMappingCamera } from './cameraCompatibility';
@@ -34,7 +34,8 @@ export function MappingEditorCanvas(props: {
   useLayoutEffect(() => canvasRuntime.connect(), [canvasRuntime]);
   const [editor, setEditor] = useState<Editor>();
   const [tool, setTool] = useState('select');
-  const [add, setAdd] = useState(false);
+  const canUndo = useValue('canvas undo available', () => canvasRuntime.canUndo.get(), [canvasRuntime]);
+  const canEscape = useValue('canvas escape available', () => canvasRuntime.canEscape.get(), [canvasRuntime]);
   const transformCallback = useRef(props.onTransformChange); transformCallback.current = props.onTransformChange;
   const initial = useRef(props.initialTransform);
   const root = useRef<HTMLDivElement>(null);
@@ -122,7 +123,10 @@ export function MappingEditorCanvas(props: {
     <div className="diagram-canvas__controls" data-diagram-canvas-static-ui>
       <button type="button" aria-pressed={tool === 'select'} onClick={() => { canvasRuntime.gestures.cancel?.(); editor?.setCurrentTool('select'); setTool('select'); }}>Select</button>
       <button type="button" aria-pressed={tool === 'hand'} onClick={() => { canvasRuntime.gestures.cancel?.(); editor?.setCurrentTool('hand'); setTool('hand'); }}>Pan</button>
-      <button type="button" aria-label="Add to selection" aria-pressed={add} onClick={() => { canvasRuntime.gestures.add = !add; setAdd(!add); }}>Add to selection</button>
+      <button type="button" disabled={!props.enabled || !canUndo} title="Undo (Ctrl+Z)" aria-keyshortcuts="Control+Z"
+        onClick={() => { canvasRuntime.gestures.cancel?.(); canvasRuntime.actions?.undo(); }}>Undo</button>
+      <button type="button" disabled={!props.enabled || !canEscape} title="Cancel or deselect (Esc)" aria-keyshortcuts="Escape"
+        onClick={() => canvasRuntime.actions?.escape()}>Esc</button>
       <button type="button" title="Reset zoom and center diagram" onClick={() => { const bounds = editor?.getCurrentPageBounds(); if (bounds) editor?.zoomToBounds(bounds.clone().expandBy(100), { animation: { duration: 150 } }); }}>Fit canvas</button>
     </div>
   </div>;
