@@ -156,16 +156,20 @@ try {
     assert.ok(dialogs.at(-1).includes("unsaved changes"));
     assert.equal((await catalog()).representations[representation.id].status, "settled");
     assert.equal(await evaluate(cdp, "document.querySelector('[aria-label=\"Diagram name\"]').value"), "Second diagram");
-    // A failed delete keeps the diagram available and reports the error.
+    // A failed delete keeps the diagram available without a canvas error popup.
     acceptDialog = true;
+    let deleteFailed = false;
     await cdp.send("Fetch.enable", { patterns: [{ urlPattern: "*/api/mapping/diagrams/*", requestStage: "Request" }] });
     cdp.on("Fetch.requestPaused", async ({ requestId }) => {
       await cdp.send("Fetch.fulfillRequest", { requestId, responseCode: 500,
         responseHeaders: [{ name: "Content-Type", value: "application/json" }],
         body: Buffer.from(JSON.stringify({ error: "Delete failed for test" })).toString("base64") });
+      deleteFailed = true;
     });
     await click(cdp, deleteSeed);
-    await waitFor(async () => (await evaluate(cdp, "document.querySelector('.mapping-project-error')?.textContent ?? ''")).includes("Delete failed for test"));
+    await waitFor(() => deleteFailed);
+    await waitForSelector(cdp, `${deleteSeed}:not(:disabled)`);
+    assert.equal(await evaluate(cdp, "Boolean(document.querySelector('.mapping-project-error'))"), false);
     assert.equal((await catalog()).representations[representation.id].status, "settled");
     await cdp.send("Fetch.disable");
     await waitForSelector(cdp, `${deleteSeed}:not(:disabled)`);

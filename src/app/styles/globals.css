@@ -297,7 +297,6 @@ select:focus-visible,
 .mapping-submenu button,
 .mapping-empty button,
 .mapping-create-dialog button,
-.mapping-project-error button { border: 1px solid var(--gutter); border-radius: 4px; background: var(--bg); color: var(--accent-cyan); padding: 7px 12px; cursor: pointer; }
 .mapping-submenu button:disabled { opacity: .45; cursor: default; }
 .mapping-submenu small { color: var(--muted); font: 9px var(--font-mono); }
 .mapping-floating-pane { position: absolute; top: 16px; left: 16px; z-index: 8; width: min(300px, 40vw); max-height: calc(100% - 100px); display: flex; flex-direction: column; overflow: auto; padding: 14px; border: 1px solid var(--gutter); border-radius: 6px; background: rgb(16 20 26 / 97%); box-shadow: 0 8px 25px #0005; }
@@ -320,8 +319,6 @@ select:focus-visible,
 .mapping-floating-pane nav button:disabled { opacity: .4; cursor: default; }
 .mapping-empty { padding: 80px 24px 24px 360px; color: var(--muted); }
 .mapping-empty h1 { margin-bottom: 20px; font-size: 20px; }
-.mapping-project-error { position: absolute; right: 20px; top: 20px; max-width: 500px; padding: 12px; z-index: 12; color: #ebcb8b; background: #191d24; border: 1px solid #ebcb8b; }
-.mapping-project-error button { margin-left: 12px; }
 .mapping-dialog-backdrop { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: #0009; }
 .mapping-create-dialog { width: min(560px, 90vw); max-height: 90vh; overflow: auto; padding: 24px; border: 1px solid var(--gutter); border-radius: 8px; background: var(--bg); }
 .mapping-create-dialog label { display: block; margin: 16px 0; color: var(--muted); }
