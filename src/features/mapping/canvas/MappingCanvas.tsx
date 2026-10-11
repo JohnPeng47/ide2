@@ -867,7 +867,7 @@ export function MappingPocSelectionCanvas(props: {
         return;
       }
       if (!selectionRect) return;
-      if (event.key.toLowerCase() === "c" && !event.altKey && !promptOpen && !askOpen
+      if (event.key.toLowerCase() === "c" && !event.altKey && !event.isComposing && !promptOpen && !askOpen
         && !window.getSelection()?.toString()) {
         event.preventDefault(); void copySelection(); return;
       }
@@ -1212,7 +1212,13 @@ export function MappingPocSelectionCanvas(props: {
           role="dialog"
           tabIndex={-1}
           aria-label="Selected node operations"
-          aria-keyshortcuts="N P A"
+          aria-keyshortcuts="C N P A"
+          onKeyDownCapture={event => {
+            if (event.key.toLowerCase() !== 'c') return;
+            // Handle Copy while focus is inside the panel, before canvas shortcuts.
+            hotkeyHandler.current(event.nativeEvent);
+            if (event.nativeEvent.defaultPrevented) event.stopPropagation();
+          }}
           style={{ left: rectStyle.left + rectStyle.width + 12, top: rectStyle.top + rectStyle.height + 8 }}
         >
           <header>
@@ -1227,8 +1233,8 @@ export function MappingPocSelectionCanvas(props: {
             <div className="mapping-poc-selection-actions">
               {props.onUpdateDiagram && <button type="button" disabled={isGenerating || !!diagramPlacement || !!movingBoxId}
                 onClick={() => { if (focusedItem) props.onUpdateDiagram?.(focusedItem.displayNodeId); }}>Update containing diagram with AI…</button>}
-              <button type="button" aria-label="Copy ASCII + code refs" aria-keyshortcuts="C Control+C Meta+C" onClick={() => void copySelection()}>
-                Copy ASCII + code refs
+              <button type="button" aria-label="Copy ASCII + code refs" title="Copy full selected rows and selected code references (C)" aria-keyshortcuts="C Control+C Meta+C" onClick={() => void copySelection()}>
+                <kbd>C</kbd> Copy ASCII + code refs
               </button>
               <button type="button" disabled={!hasCompleteSourceCoverage} onClick={() => {
                 openPrompt(); setPromptOperation("generate"); setStatusMessage("Describe the sub-diagram, then choose its region");
