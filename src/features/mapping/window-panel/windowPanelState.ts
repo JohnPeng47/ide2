@@ -1,4 +1,5 @@
-import { useEffect, useLayoutEffect, useState, type RefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState, type RefObject } from 'react';
+import type { WindowPanelLayout } from './WindowPanel';
 export type WindowPanelMode = 'full-single' | 'full-split' | 'split-single';
 export interface WindowPanelState {
   minimizedWidth: number; expandedWidth?: number; height?: number;
@@ -36,4 +37,23 @@ export function usePanelScroll(ref: RefObject<HTMLDivElement | null>, key: strin
     element.addEventListener('scroll', scroll); window.addEventListener('pagehide', save);
     return () => { clearTimeout(timer); save(); element.removeEventListener('scroll', scroll); window.removeEventListener('pagehide', save); };
   }, [ref, key, ready]);
+}
+
+/** Layout-only state for panels with their own panes; persisted per tab like the diff panel. */
+export function usePanelLayout<Pane extends string>(key: string, panes: readonly [Pane, Pane], modes: readonly WindowPanelMode[]) {
+  const [layout, setLayout] = useState<WindowPanelLayout<Pane>>(() => {
+    const initial: WindowPanelLayout<Pane> = { mode: modes[0], pane: panes[0], focusedPane: panes[0], minimized: false, ratio: .5, minimizedWidth: .4 };
+    try {
+      const value = JSON.parse(sessionStorage.getItem(key) ?? 'null');
+      if (!value) return initial;
+      const pane = (candidate: unknown) => panes.includes(candidate as Pane) ? candidate as Pane : panes[0];
+      const fraction = (candidate: unknown, min: number, max: number) => Number.isFinite(candidate) ? Math.max(min, Math.min(max, candidate as number)) : undefined;
+      return { mode: modes.includes(value.mode) ? value.mode : initial.mode, pane: pane(value.pane), focusedPane: pane(value.focusedPane),
+        minimized: value.minimized === true, ratio: fraction(value.ratio, .2, .65) ?? initial.ratio, minimizedWidth: fraction(value.minimizedWidth, .2, .95) ?? .4,
+        expandedWidth: fraction(value.expandedWidth, .2, .95), height: fraction(value.height, .2, .95) };
+    } catch { return initial; }
+  });
+  useEffect(() => { try { sessionStorage.setItem(key, JSON.stringify(layout)); } catch { /* Storage may be disabled. */ } }, [key, layout]);
+  const update = useCallback((patch: Partial<WindowPanelLayout<Pane>>) => setLayout(current => ({ ...current, ...patch })), []);
+  return [layout, update] as const;
 }

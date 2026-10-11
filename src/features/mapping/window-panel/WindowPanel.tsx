@@ -1,5 +1,8 @@
 import { useEffect, useId, useRef, type CSSProperties, type ReactNode } from 'react';
 import type { WindowPanelMode } from './windowPanelState';
+
+const windowPanelModes: readonly WindowPanelMode[] = ['full-single', 'full-split', 'split-single'];
+const windowPanelModeLabels: Record<WindowPanelMode, string> = { 'full-single': 'Full screen · single pane', 'full-split': 'Full screen · split panes', 'split-single': 'Beside canvas · single pane' };
 import './windowPanel.css';
 
 export interface WindowPanelLayout<Pane extends string> { mode: WindowPanelMode; pane: Pane; focusedPane: Pane; minimized: boolean; ratio: number;
@@ -8,7 +11,8 @@ type PaneContent<Pane extends string> = { id: Pane; title: string; content: Reac
 
 /** A workspace overlay with independent pane focus and a compact right-hand view. */
 export function WindowPanel<Pane extends string>(props: { title: string; subtitle?: string; notice?: ReactNode; actions?: ReactNode; canvasId: string; state: WindowPanelLayout<Pane>;
-  onChange: (patch: Partial<WindowPanelLayout<Pane>>) => void; onClose: () => void; panes: readonly [PaneContent<Pane>] | readonly [PaneContent<Pane>, PaneContent<Pane>]; canvas: ReactNode }) {
+  onChange: (patch: Partial<WindowPanelLayout<Pane>>) => void; onClose: () => void; panes: readonly [PaneContent<Pane>] | readonly [PaneContent<Pane>, PaneContent<Pane>]; canvas: ReactNode;
+  /** Layouts offered in the header; panels without a canvas pane omit split-single. */ modes?: readonly WindowPanelMode[]; className?: string }) {
   const tabId = useId();
   const body = useRef<HTMLDivElement>(null), drag = useRef(false);
   const panel = useRef<HTMLElement>(null);
@@ -30,7 +34,7 @@ export function WindowPanel<Pane extends string>(props: { title: string; subtitl
   const focus = (pane: Pane) => { if (props.state.focusedPane !== pane) props.onChange({ focusedPane: pane }); };
   const paneEvents = (pane: Pane) => ({ onClickCapture: () => focus(pane), onWheelCapture: () => focus(pane), onPointerDownCapture: () => focus(pane),
     onKeyDownCapture: () => focus(pane), onScrollCapture: (event: React.UIEvent) => { if ((event.target as HTMLElement).dataset.programmaticScroll !== 'true') focus(pane); } });
-  return <section ref={panel} style={style} className={`window-panel window-panel-${props.state.mode}${props.state.minimized ? ' window-panel-minimized' : ''}`} data-window-panel-canvas={props.canvasId} aria-label={props.title}>
+  return <section ref={panel} style={style} className={`window-panel window-panel-${props.state.mode}${props.state.minimized ? ' window-panel-minimized' : ''}${props.className ? ` ${props.className}` : ''}`} data-window-panel-canvas={props.canvasId} aria-label={props.title}>
     {(['left', 'bottom', 'corner'] as const).map(edge => <div key={edge} className={`window-panel-resize window-panel-resize-${edge}`}
       role="separator" aria-label={edge === 'left' ? 'Resize window width' : edge === 'bottom' ? 'Resize window height' : 'Resize window'}
       aria-orientation={edge === 'bottom' ? 'horizontal' : 'vertical'} tabIndex={0}
@@ -67,9 +71,7 @@ export function WindowPanel<Pane extends string>(props: { title: string; subtitl
       {!single && <><button type="button" aria-label={props.state.minimized ? 'Restore split view' : 'Minimize to focused pane'} onClick={() => props.onChange({ minimized: !props.state.minimized })}>{props.state.minimized ? 'Restore' : 'Minimize'}</button>
       <label>Layout <select aria-label="Window panel layout" value={props.state.mode}
         onChange={event => props.onChange({ mode: event.target.value as WindowPanelMode, minimized: false })}>
-        <option value="full-single">Full screen · single pane</option>
-        <option value="full-split">Full screen · split panes</option>
-        <option value="split-single">Beside canvas · single pane</option>
+        {(props.modes ?? windowPanelModes).map(mode => <option key={mode} value={mode}>{windowPanelModeLabels[mode]}</option>)}
       </select></label></>}
       <button type="button" onClick={props.onClose} aria-label={`Close ${props.title}`}>Close</button>
     </header>

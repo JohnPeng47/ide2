@@ -66,35 +66,38 @@ try {
     await waitFor(async () => evaluate(cdp, "[...document.querySelectorAll('.mapping-diagram-selection-actions button')].find(e=>e.textContent==='Update diagram with AI…')?.disabled"));
     await select('second');
     await click('.mapping-diagram-selection-actions button', 'Update diagram with AI…');
-    await waitForSelector(cdp, '#diagram-edit-prompt');
+    await waitForSelector(cdp, '.prompt-composer .prompt-body-text');
     for (const action of ['Close', 'Cancel', 'Escape']) {
       await cdp.send('Input.insertText', { text: 'Changed my mind' });
       if (action === 'Escape') {
         await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
         await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
-      } else await click('.diagram-edit-composer button', action);
-      await waitFor(async () => !await evaluate(cdp, "Boolean(document.querySelector('.diagram-edit-composer, .diagram-edit-launcher'))"));
+      } else await click('.prompt-composer button', action);
+      await waitFor(async () => !await evaluate(cdp, "Boolean(document.querySelector('.prompt-composer, .prompt-composer-launcher'))"));
       assert.equal(editRequests, 0, 'Dismissing a prompt must not start generation');
       await click('.mapping-diagram-selection-actions button', 'Update diagram with AI…');
-      await waitForSelector(cdp, '#diagram-edit-prompt');
-      assert.equal(await evaluate(cdp, "document.querySelector('#diagram-edit-prompt').value"), '');
+      await waitForSelector(cdp, '.prompt-composer .prompt-body-text');
+      assert.equal(await evaluate(cdp, "document.querySelector('.prompt-composer .prompt-body-text').value"), '');
     }
     await cdp.send('Input.insertText', { text: 'UI whole diagram update' });
+    // The expanded composer covers the canvas; minimize it to change the selection underneath.
+    await click('.prompt-composer button', 'Minimize');
     await select('second');
-    assert.ok(await evaluate(cdp, "document.querySelector('.diagram-edit-target').textContent.includes('/ First')"));
-    await click('.diagram-edit-composer button[type=submit]');
+    await click('.prompt-composer button', 'Restore');
+    assert.ok(await evaluate(cdp, "document.querySelector('.prompt-composer .window-panel-header small').textContent.includes('/ First')"));
+    await click('.prompt-composer button[type=submit]');
     await waitForSelector(cdp, '[data-edit-status=completed]', { timeoutMs: 15000 });
     assert.ok((await text()).includes('[edited: UI whole diagram update]'));
     await captureScreenshot(cdp, { output: process.env.UI_SCREENSHOT_PATH ?? path.join(root, 'completed.png') });
-    await click('[aria-label="Close diagram update"]');
-    await waitFor(async () => !await evaluate(cdp, "Boolean(document.querySelector('.diagram-edit-composer, .diagram-edit-launcher'))"));
+    await click('[aria-label="Close Update diagram with AI"]');
+    await waitFor(async () => !await evaluate(cdp, "Boolean(document.querySelector('.prompt-composer, .prompt-composer-launcher'))"));
     console.log('PASS: Close/Cancel/Escape discard drafts without requests; completed updates dismiss; whole selection, multi-selection guard, pinned target and persistence acknowledgement');
     // Reload immediately after completion: no explicit Save action.
     let loaded = false; cdp.on('Page.loadEventFired', () => { loaded = true; });
     await cdp.send('Page.reload', { ignoreCache: true }); await waitFor(() => loaded);
     await waitForSelector(cdp, '[data-grid-box=overview]');
     await waitFor(async () => (await text()).includes('[edited: UI whole diagram update]'));
-    assert.equal(await evaluate(cdp, "Boolean(document.querySelector('.diagram-edit-composer'))"), false);
+    assert.equal(await evaluate(cdp, "Boolean(document.querySelector('.prompt-composer'))"), false);
     await click('.mapping-grid-tools > span');
     await historyKey('z');
     await waitFor(async () => !(await text()).includes('[edited: UI whole diagram update]'));
@@ -121,11 +124,11 @@ try {
     await click('.retained-selection-controls button', 'Actions (A)');
     await waitForSelector(cdp, '.mapping-poc-selection-actions');
     await click('.mapping-poc-selection-actions button', 'Update containing diagram with AI…');
-    await waitForSelector(cdp, '#diagram-edit-prompt');
-    assert.ok(await evaluate(cdp, "document.querySelector('.diagram-edit-target').textContent.includes('/ Second')"));
-    assert.ok(await evaluate(cdp, "document.querySelector('.diagram-edit-target').textContent.includes('whole diagram')"));
+    await waitForSelector(cdp, '.prompt-composer .prompt-body-text');
+    assert.ok(await evaluate(cdp, "document.querySelector('.prompt-composer .window-panel-header small').textContent.includes('/ Second')"));
+    assert.ok(await evaluate(cdp, "document.querySelector('.prompt-composer .window-panel-header small').textContent.includes('whole diagram')"));
     await cdp.send('Input.insertText', { text: 'UI region owner update' });
-    await click('.diagram-edit-composer button[type=submit]');
+    await click('.prompt-composer button[type=submit]');
     await waitForSelector(cdp, '[data-edit-status=completed]', { timeoutMs: 15000 });
     assert.ok((await text()).includes('[edited: UI region owner update]'));
     assert.ok((await text()).includes('[edited: UI whole diagram update]'));

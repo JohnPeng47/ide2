@@ -2,6 +2,8 @@ import { completeMarquee } from '../../../../domain/mapping/selection/completeMa
 import type { SelectionHit, SelectionPolicy } from '../../../../domain/mapping/selection/selectionGesture';
 import { shareEqual, CanvasRuntimeContext } from '../tldraw/CanvasRuntimeContext';
 import { diagramSelectionItem, regionSelectionItem, selectedDiagramIds, type SelectionState } from '../../../../domain/mapping/selection/selectionState';
+import type { PromptReference } from '../../../../domain/mapping/agent/diagramEdit';
+import { diagramReference, nodesReference } from '../prompt-composer/promptReferences';
 import { useMappingServices } from '../services/MappingServices';
 import { useStore } from 'zustand';
 import type { CanvasSession } from '../workspace/canvasSession';
@@ -103,6 +105,12 @@ const emptySelectionBox = flattenGrid(resolveScene(emptySelectionScene)).find(bo
 
 export function MappingPocSelectionCanvas(props: {
   onUpdateDiagram?: (nodeId: string) => void;
+  /** Opens a create-diagram prompt anchored on this diagram. */
+  onCreateDiagram?: (nodeId: string) => void;
+  /** References are captured here, at the moment of the action, from the exact displayed revision. */
+  onReference?: (references: PromptReference[], mode: 'copy' | 'insert', nodeId: string) => void;
+  /** While set, a click on the canvas places something at that grid point instead of selecting. */
+  placement?: { onPlace: (point: ScenePoint) => void };
   onTransfer?: (mode: 'copy' | 'move', selectedIds: string[]) => void;
   onUndo?: (redo: boolean) => void;
   canWorkspaceUndo?: boolean;
@@ -233,6 +241,12 @@ export function MappingPocSelectionCanvas(props: {
   const diagramSelection = selectedDiagramIds(selection);
   const selectedDiagrams = (diagramSelection ?? []).filter(id => boxes.some(box => `grid:${box.box.id}` === id && box.box.kind === 'diagram'));
   const selectedNodeIds = focusedItem?.region?.selectedIds ?? [];
+  const contentOfBox = (boxId: string) => { const box = boxes.find(node => node.box.id === boxId); return box?.contentId ? scene.contents[box.contentId] : undefined; };
+  const selectedDiagramReferences = () => selectedDiagrams.flatMap(id => { const diagram = contentOfBox(id.slice(5)); return diagram ? [diagramReference(diagram)] : []; });
+  const focusedReference = () => {
+    const boxId = focusedItem?.displayNodeId.slice(5), diagram = boxId && contentOfBox(boxId);
+    return diagram && focusedItem?.region ? nodesReference(diagram, boxId, focusedItem.region.rect) : undefined;
+  };
   const [projectionChoice] = useControl("projectionChoice", canvasState, setCanvasState);
   const openDetailIds = new Set(Object.values(display.nodes).filter(node => node.kind === 'detail').map(node => node.kind === 'detail' ? node.sectionId : undefined));
   const openDetail = (sectionId: string) => {
@@ -510,6 +524,20 @@ export function MappingPocSelectionCanvas(props: {
     if (node) finishMarquee({ diagramIds: [], regions: [{ boxId: box!.box.id,
       rect: { startLine: node.line, endLine: node.line, startColumn: node.startColumn, endColumn: node.endColumn } }] }, policy, baseline);
   };
+
+  // A carried reference drops where the user clicks; the pointer never reaches selection or panning.
+  const placement = props.placement;
+  useEffect(() => {
+    const stage = nativeRuntime ? stageRef.current?.closest<HTMLElement>('[data-diagram-canvas]') : stageRef.current;
+    if (!stage || !placement || props.active === false) return;
+    const down = (event: globalThis.PointerEvent) => {
+      if (event.button || (event.target as Element).closest('[data-mapping-static-ui]')) return;
+      const point = scenePointAtClient(event.clientX, event.clientY); if (!point) return;
+      event.preventDefault(); event.stopImmediatePropagation(); placement.onPlace(point);
+    };
+    stage.addEventListener('pointerdown', down, true);
+    return () => stage.removeEventListener('pointerdown', down, true);
+  }, [nativeRuntime, placement, props.active, scenePointAtClient]);
 
   // Source panels live in native shapes, outside the application overlay. Keep
   // keyboard source navigation tied to the last panel the user actually touched.
@@ -1062,6 +1090,12 @@ export function MappingPocSelectionCanvas(props: {
           {props.onUpdateDiagram && <button type="button" disabled={isGenerating || selectedDiagrams.length !== 1 || selection.items.length !== 1 || !!diagramPlacement || !!movingBoxId}
             title={selection.items.length !== 1 ? 'Select exactly one whole diagram to update' : 'Update this diagram from a prompt'}
             onClick={() => props.onUpdateDiagram?.(selectedDiagrams[0])}>Update diagram with AI…</button>}
+          {props.onCreateDiagram && <button type="button" disabled={isGenerating || selectedDiagrams.length !== 1 || selection.items.length !== 1 || !!diagramPlacement || !!movingBoxId}
+            title="Create new diagrams beside this one from a prompt" onClick={() => props.onCreateDiagram?.(selectedDiagrams[0])}>Create diagram with AI…</button>}
+          {props.onReference && <button type="button" disabled={!selectedDiagramReferences().length}
+            onClick={() => props.onReference?.(selectedDiagramReferences(), 'insert', selectedDiagrams[0])}>Add to prompt</button>}
+          {props.onReference && <button type="button" disabled={!selectedDiagramReferences().length}
+            onClick={() => props.onReference?.(selectedDiagramReferences(), 'copy', selectedDiagrams[0])}>Copy as reference</button>}
           <button type="button" disabled={isGenerating || !!diagramPlacement || !!movingBoxId}
             onClick={() => {
               try {
@@ -1233,6 +1267,8 @@ export function MappingPocSelectionCanvas(props: {
             <div className="mapping-poc-selection-actions">
               {props.onUpdateDiagram && <button type="button" disabled={isGenerating || !!diagramPlacement || !!movingBoxId}
                 onClick={() => { if (focusedItem) props.onUpdateDiagram?.(focusedItem.displayNodeId); }}>Update containing diagram with AI…</button>}
+              {props.onReference && focusedItem && <button type="button" onClick={() => { const reference = focusedReference(); if (reference) props.onReference?.([reference], 'insert', focusedItem.displayNodeId); }}>Add to prompt</button>}
+              {props.onReference && focusedItem && <button type="button" onClick={() => { const reference = focusedReference(); if (reference) props.onReference?.([reference], 'copy', focusedItem.displayNodeId); }}>Copy as reference</button>}
               <button type="button" aria-label="Copy ASCII + code refs" title="Copy full selected rows and selected code references (C)" aria-keyshortcuts="C Control+C Meta+C" onClick={() => void copySelection()}>
                 <kbd>C</kbd> Copy ASCII + code refs
               </button>

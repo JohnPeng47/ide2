@@ -1,21 +1,22 @@
 import { AgentContext } from '../../../../domain/core/agents/agentContext';
-import { readFile } from 'node:fs/promises';
 import { Type } from '@earendil-works/pi-ai';
 import { DefaultResourceLoader, defineTool, getAgentDir, SettingsManager } from '@earendil-works/pi-coding-agent';
 import type { DiagramGenerationRequest, DiagramGenerator, GenerationOptions } from '../../../../domain/core/diagrams/diagramService';
 import { validateGeneratedDiagramEdit, type GeneratedDiagramEdit } from '../../../../domain/core/diagrams/generatedDiagramEdit';
+import { defaultTemplateSelection, renderPromptTemplate, resolvePromptTemplate } from '../../../../domain/mapping/agent/promptTemplates';
 import { PiAgentRuntime, progressFor } from '../../../core/agents/agentRuntime';
 import { createValidatedSubmission } from '../../../core/agents/validatedSubmission';
 
-export function renderDiagramEditPrompt(template: string, request: DiagramGenerationRequest) {
-  if (!request.context || !request.baseRevisionId) throw Error('Diagram edits require a captured base revision');
-  if (!template.includes('{{context}}') || !template.includes('{{instruction}}')) throw Error('Invalid diagram edit prompt template');
-  const fields: Record<string, string> = { context: JSON.stringify({ baseRevisionId: request.baseRevisionId,
-    diagram: request.context.diagram, connections: request.context.connections ?? [] }), instruction: JSON.stringify(request.instruction) };
-  return template.replace(/{{([^{}]+)}}/g, (_, key: string) => {
-    if (!(key in fields)) throw Error(`Unknown diagram edit template field: ${key}`);
-    return fields[key];
-  });
+/** Renders the request's validated template; requests without one use the default edit template. */
+export function renderDiagramEditPrompt(request: DiagramGenerationRequest) {
+  if (!request.context) throw Error('Diagram generation requires captured context');
+  const prompt = request.prompt ?? (() => {
+    const template = resolvePromptTemplate(defaultTemplateSelection('edit-diagram'), 'edit-diagram');
+    return { markdown: template.markdown, options: template.options, parameters: template.definition.parameters, references: [] };
+  })();
+  return renderPromptTemplate(prompt, {
+    context: JSON.stringify({ baseRevisionId: request.baseRevisionId ?? null, diagram: request.context.diagram, connections: request.context.connections ?? [] }),
+    references: JSON.stringify(prompt.references), instruction: JSON.stringify(request.instruction) });
 }
 
 export class PiDiagramEditRuntime extends PiAgentRuntime implements DiagramGenerator {
@@ -26,8 +27,7 @@ export class PiDiagramEditRuntime extends PiAgentRuntime implements DiagramGener
     if (!base) throw Error('Diagram edit context is required');
     options.signal?.throwIfAborted();
     const configured = await this.model();
-    const template = await readFile(new URL('./prompts/edit-diagram.md', import.meta.url), 'utf8');
-    const prompt = renderDiagramEditPrompt(template, request);
+    const prompt = renderDiagramEditPrompt(request);
     const submission = createValidatedSubmission<GeneratedDiagramEdit>({ toolName: 'submit_diagram_edit',
       validate: candidate => { try { validateGeneratedDiagramEdit(base, candidate); } catch (error) { return String(error); } },
       acceptedMessage: () => 'Validated diagram edit submitted.' });
@@ -45,7 +45,7 @@ export class PiDiagramEditRuntime extends PiAgentRuntime implements DiagramGener
       defaultModel: configured.modelId, defaultThinkingLevel: 'medium' });
     const resourceLoader = new DefaultResourceLoader({ cwd: this.sourceRoot, agentDir: getAgentDir(), settingsManager,
       noExtensions: true, noSkills: true, noPromptTemplates: true, noThemes: true, noContextFiles: true,
-      systemPrompt: 'You edit ASCII diagrams using captured context. Follow the editing specification and finish with a validated submit_diagram_edit tool call.' });
+      systemPrompt: 'You create and edit ASCII diagrams using captured context. Follow the specification and finish with a validated submit_diagram_edit tool call.' });
     await resourceLoader.reload(); options.signal?.throwIfAborted();
     const agentContext = request.agentContext ? AgentContext.fromSnapshot(request.agentContext) : undefined;
     const { session } = await this.createSession({ cwd: this.sourceRoot, modelRuntime: configured.runtime, model: configured.model,
@@ -72,9 +72,11 @@ export class PiDiagramEditRuntime extends PiAgentRuntime implements DiagramGener
 export class FakeDiagramEditRuntime implements DiagramGenerator {
   async generate(request: DiagramGenerationRequest, options: GenerationOptions) {
     options.signal?.throwIfAborted();
-    const base = request.context!.diagram;
+    const base = request.context!.diagram, instruction = request.instruction.replace(/[\r\n]/g, ' ');
     options.onProgress?.('Generating fake diagram edit');
-    return { ascii: `${base.content.ascii}\n[edited: ${request.instruction.replace(/[\r\n]/g, ' ')}]`,
+    if (!request.baseRevisionId) return { ascii: `[created: ${instruction}]`, structureKind: 'diagram' as const, mappings: [],
+      source: base.sourceContext.binding, evidence: base.sourceContext.evidence };
+    return { ascii: `${base.content.ascii}\n[edited: ${instruction}]`,
       structureKind: base.content.structure.kind, mappings: [...base.sourceContext.mappings],
       source: base.sourceContext.binding, evidence: base.sourceContext.evidence };
   }

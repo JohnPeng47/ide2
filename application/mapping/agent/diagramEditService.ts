@@ -1,24 +1,33 @@
 import { AgentContext, type AgentContextSnapshot } from '../../../domain/core/agents/agentContext';
 import { randomUUID } from 'node:crypto';
-import { CanvasHistory } from '../../../domain/core/diagrams/canvasHistory';
-import type { DiagramService, DiagramRevisionResult } from '../../../domain/core/diagrams/diagramService';
+import { CanvasHistory, type CanvasHistoryRecord } from '../../../domain/core/diagrams/canvasHistory';
+import type { DiagramService, DiagramRevisionResult, DiagramRevision } from '../../../domain/core/diagrams/diagramService';
+import type { GridBox } from '../../../domain/core/diagrams/lineGrid';
 import type { LiveDocumentSnapshot } from '../../../domain/mapping/agent/contracts';
-import type { DiagramEditRun, DiagramRevisionApplication, EditDiagramInput } from '../../../domain/mapping/agent/diagramEdit';
+import type { CreateDiagramInput, DiagramCreation, DiagramEditRun, DiagramRevisionApplication, EditDiagramInput, PromptReference } from '../../../domain/mapping/agent/diagramEdit';
+import { defaultTemplateSelection, resolvePromptTemplate, type PromptOperation } from '../../../domain/mapping/agent/promptTemplates';
 import { findBox } from '../../../domain/mapping/workspace/canvasDisplayNode';
+import { diagramSelectionNodes } from '../../../domain/mapping/workspace/mappingDocument';
 
 export interface DiagramEditCanvasPort {
   snapshot(sessionId: string): Promise<LiveDocumentSnapshot>;
   apply(sessionId: string, input: DiagramRevisionApplication): Promise<{ version: number; unresolvedEdgeIds: string[] }>;
+  /** Idempotent per requestId. Optional: runtimes without it reject create-diagram. */
+  create?(sessionId: string, input: { requestId: string; expectedVersion: number; diagrams: DiagramCreation[] }): Promise<{ version: number }>;
 }
 interface Run {
   agentContext?: AgentContextSnapshot;
-  input: EditDiagramInput;
+  input: CreateDiagramInput;
   signature: string;
   state: DiagramEditRun;
   abort: AbortController;
   revision?: DiagramRevisionResult;
+  created?: DiagramRevisionResult[];
   pending?: Promise<void>;
 }
+/** A reference as the model receives it: the pinned revision's text, never the live canvas. */
+export type ResolvedPromptReference = { ref: number; kind: PromptReference['kind']; label: string; diagramId: string; revisionId: string }
+  & ({ kind: 'diagram'; ascii: string } | { kind: 'nodes'; range: Extract<PromptReference, { kind: 'nodes' }>['range']; excerpt: string; nodes: { id: string; label: string }[] });
 
 /** A request owns both generation and installation; retries never rerun the model. */
 export class DiagramEditService {
@@ -26,21 +35,25 @@ export class DiagramEditService {
   private requests = new Map<string, string>();
   constructor(private readonly diagrams: DiagramService, private readonly canvas: DiagramEditCanvasPort) {}
 
-  start(input: EditDiagramInput, suppliedContext?: AgentContextSnapshot): DiagramEditRun {
+  start(input: EditDiagramInput | CreateDiagramInput, suppliedContext?: AgentContextSnapshot, operation: PromptOperation = 'edit-diagram'): DiagramEditRun {
     const agentContext = suppliedContext ? AgentContext.fromSnapshot(suppliedContext).toSnapshot() : undefined;
     if (input.agentContextId && !agentContext) throw Error('AGENT_CONTEXT_NOT_FOUND: resolve context before starting the edit');
+    if (operation === 'create-diagram' && !this.canvas.create) throw Error('Diagram creation UNAVAILABLE in this runtime');
+    if (operation === 'edit-diagram' && 'count' in input && input.count !== undefined) throw Error('count applies only to create-diagram');
+    // Fail fast on an unknown template or invalid options instead of after a model call.
+    resolvePromptTemplate(input.template ?? defaultTemplateSelection(operation), operation);
     const key = JSON.stringify([input.sessionId, input.requestId]);
-    const signature = JSON.stringify({ input, agentContextHash: agentContext?.contentHash });
+    const signature = JSON.stringify({ operation, input, agentContextHash: agentContext?.contentHash });
     const existing = this.requests.get(key);
     if (existing) {
       const run = this.runs.get(existing)!;
       if (run.signature !== signature) throw Error('REQUEST_ID_CONFLICT: edit request differs');
-      if (run.state.status === 'awaiting-acknowledgement' && !run.pending) this.launch(run, () => this.apply(run));
+      if (run.state.status === 'awaiting-acknowledgement' && !run.pending) this.launch(run, () => this.install(run));
       return structuredClone(run.state);
     }
     if (this.runs.size >= 500) throw Error('Diagram edit run capacity reached; restart the backend');
     const run: Run = { agentContext, input: structuredClone(input), signature, abort: new AbortController(), state: {
-      runId: `diagram-edit-${randomUUID()}`, status: 'generating', nodeId: input.nodeId, baseRevisionId: input.baseRevisionId
+      runId: `diagram-edit-${randomUUID()}`, operation, status: 'generating', nodeId: input.nodeId, baseRevisionId: input.baseRevisionId
     } };
     this.runs.set(run.state.runId, run); this.requests.set(key, run.state.runId);
     this.launch(run, () => this.generate(run));
@@ -67,8 +80,9 @@ export class DiagramEditService {
       run.state.error = message;
     }).finally(() => { run.pending = undefined; });
   }
+  private install(run: Run) { return run.state.operation === 'create-diagram' ? this.place(run) : this.apply(run); }
   private async generate(run: Run) {
-    const { input, abort } = run;
+    const { input, abort } = run, operation = run.state.operation;
     const snapshot = await this.canvas.snapshot(input.sessionId);
     abort.signal.throwIfAborted();
     if (snapshot.version !== input.expectedVersion) throw Error('VERSION_CONFLICT: read the canvas again');
@@ -79,17 +93,50 @@ export class DiagramEditService {
     if (!snapshot.history) throw Error('Canvas history is required for diagram generation');
     // Validated portable history imports the exact browser-issued revision identities.
     new CanvasHistory(snapshot.document, snapshot.canvas, snapshot.history, 'current');
+    const template = resolvePromptTemplate(input.template ?? defaultTemplateSelection(operation), operation);
+    const references = this.resolveReferences(input.references ?? [], snapshot.history);
     const lines = base.content.ascii.split('\n');
-    run.revision = await this.diagrams.generate({ input: { id: base.id, structureKind: base.content.structure.kind,
-      source: base.sourceContext.binding, evidence: base.sourceContext.evidence },
-      instruction: input.prompt, agentContext: run.agentContext, baseRevisionId: base.revisionId,
+    const request = { instruction: input.prompt, agentContext: run.agentContext,
+      prompt: { markdown: template.markdown, options: template.options, parameters: template.definition.parameters, references },
       context: { diagram: base, selection: { startLine: 1, endLine: lines.length, startColumn: 1,
-        endColumn: Math.max(1, ...lines.map(line => line.length)) }, connections: snapshot.document.edges }
-    }, { signal: abort.signal, onProgress: message => { if (run.state.status === 'generating') run.state.message = message; } });
+        endColumn: Math.max(1, ...lines.map(line => line.length)) }, connections: snapshot.document.edges } };
+    const options = { signal: abort.signal, onProgress: (message: string) => { if (run.state.status === 'generating') run.state.message = message; } };
+    if (operation === 'create-diagram') {
+      run.created = [];
+      for (let index = 0; index < (input.count ?? 1); index++) {
+        if (input.count && input.count > 1) options.onProgress(`Generating diagram ${index + 1} of ${input.count}…`);
+        run.created.push(await this.diagrams.generate({ ...request, input: { id: `diagram-${randomUUID()}`, structureKind: base.content.structure.kind,
+          source: base.sourceContext.binding, evidence: base.sourceContext.evidence } }, options));
+        abort.signal.throwIfAborted();
+      }
+      await this.place(run);
+      return;
+    }
+    run.revision = await this.diagrams.generate({ ...request, baseRevisionId: base.revisionId, input: { id: base.id,
+      structureKind: base.content.structure.kind, source: base.sourceContext.binding, evidence: base.sourceContext.evidence } }, options);
     abort.signal.throwIfAborted();
     run.state.generated = { diagramId: run.revision.diagram.diagramId, revisionId: run.revision.revision.id,
       ascii: run.revision.diagram.content.ascii };
     await this.apply(run);
+  }
+  /** References resolve against the canvas's own revision history first; the service registry covers revisions it issued. */
+  private resolveReferences(references: readonly PromptReference[], history: CanvasHistoryRecord): ResolvedPromptReference[] {
+    return references.map((reference, index) => {
+      const ref = index + 1;
+      let revision: DiagramRevision | undefined = history.diagramRevisions[reference.revisionId];
+      if (!revision) try { revision = this.diagrams.getRevision(reference.revisionId); } catch { /* reported below */ }
+      if (!revision || revision.diagramId !== reference.diagramId) throw Error(`PROMPT_REFERENCE_NOT_FOUND: [ref ${ref}] ${reference.label} is not available`);
+      const common = { ref, label: reference.label, diagramId: reference.diagramId, revisionId: reference.revisionId };
+      if (reference.kind === 'diagram') return { ...common, kind: 'diagram', ascii: revision.diagram.content.ascii };
+      const lines = revision.diagram.content.ascii.split('\n'), range = reference.range;
+      if (range.endLine > lines.length) throw Error(`PROMPT_REFERENCE_INVALID: [ref ${ref}] range is outside its revision`);
+      const known = new Map(diagramSelectionNodes(revision.diagram).map(node => [node.id, node.label]));
+      const unknown = reference.nodeIds.find(id => !known.has(id));
+      if (unknown) throw Error(`PROMPT_REFERENCE_INVALID: [ref ${ref}] node ${unknown} is not in its revision`);
+      return { ...common, kind: 'nodes', range,
+        excerpt: lines.slice(range.startLine - 1, range.endLine).map(line => line.slice(range.startColumn - 1, range.endColumn).trimEnd()).join('\n'),
+        nodes: reference.nodeIds.map(id => ({ id, label: known.get(id)! })) };
+    });
   }
   private async apply(run: Run) {
     run.state.status = 'applying'; delete run.state.error;
@@ -101,5 +148,35 @@ export class DiagramEditService {
       revisionId: revision.id, documentVersion: result.version, unresolvedEdgeIds: result.unresolvedEdgeIds };
     run.state.status = 'completed'; run.state.message = 'Diagram revision installed and workspace persisted';
   }
+  /** New diagrams never conflict with canvas edits: placement reads the latest version and sits beside the anchor. */
+  private async place(run: Run) {
+    run.state.status = 'applying'; delete run.state.error;
+    for (let attempt = 1; ; attempt++) {
+      try { return await this.placeOnce(run); }
+      catch (error) { if (attempt >= 3 || !String(error).includes('VERSION_CONFLICT')) throw error; }
+    }
+  }
+  private async placeOnce(run: Run) {
+    const snapshot = await this.canvas.snapshot(run.input.sessionId);
+    const anchorId = run.input.nodeId.slice(5), parent = findParent(snapshot.document.scene.root, anchorId);
+    const anchor = parent?.children.find(child => child.id === anchorId);
+    const width = (ascii: string) => Math.max(1, ...ascii.split('\n').map(line => line.length)) + 2;
+    let column = anchor ? anchor.position.column + width(anchor.kind === 'diagram' ? snapshot.document.scene.contents[anchor.contentId]?.content.ascii ?? '' : '') + 4 : 0;
+    const diagrams = run.created!.map(created => {
+      const { diagram } = created, position = { column, row: anchor?.position.row ?? 0 };
+      column += width(diagram.content.ascii) + 4;
+      return { id: diagram.id, position, ...(parent && parent.id !== snapshot.document.scene.root.id ? { parentId: `grid:${parent.id}` } : {}),
+        content: { ascii: diagram.content.ascii, structureKind: diagram.content.structure.kind, mappings: diagram.sourceContext.mappings,
+          evidence: diagram.sourceContext.evidence, source: diagram.sourceContext.binding } } as DiagramCreation;
+    });
+    const result = await this.canvas.create!(run.input.sessionId, { requestId: run.state.runId, expectedVersion: snapshot.version, diagrams });
+    run.state.created = { documentVersion: result.version, nodeIds: diagrams.map(diagram => `grid:${diagram.id}`) };
+    run.state.status = 'completed'; run.state.message = `${diagrams.length === 1 ? 'Diagram' : `${diagrams.length} diagrams`} created beside the anchor`;
+  }
   dispose() { for (const run of this.runs.values()) this.cancel(run.state.runId); }
+}
+
+function findParent(box: GridBox, id: string): Extract<GridBox, { kind: 'container' }> | undefined {
+  if (box.kind !== 'container') return undefined;
+  return box.children.some(child => child.id === id) ? box : box.children.map(child => findParent(child, id)).find(Boolean);
 }

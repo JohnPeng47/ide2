@@ -1,11 +1,15 @@
 import { DiffTreePanel } from './changes/DiffTreePanel';
 import { inferRepositoryId } from '../../../domain/core/repositories/repository';
-import { DiagramEditComposer } from './diagram-edit/DiagramEditComposer';
-import { DiagramEditCoordinator } from './diagram-edit/diagramEditCoordinator';
-import { createDiagramEditClient } from './diagram-edit/diagramEditClient';
+import { PromptComposer, type PromptRevision, type PromptRevisionSource } from './prompt-composer/PromptComposer';
+import { PromptComposerCoordinator } from './prompt-composer/promptComposerCoordinator';
+import { createDiagramEditClient } from './prompt-composer/diagramEditClient';
+import { copyPromptReferences, diagramTitle } from './prompt-composer/promptReferences';
+import type { DiagramRevision } from '../../../domain/core/diagrams/diagramService';
+import type { CanvasHistoryRecord } from '../../../domain/core/diagrams/canvasHistory';
+import type { PromptOperation } from '../../../domain/mapping/agent/promptTemplates';
 import { deselectCanvas } from '../../../domain/mapping/selection/canvasSelection';
 import { DiagramRevisionReceiver } from './agent/diagramRevisionReceiver';
-import type { DiagramRevisionApplication } from '../../../domain/mapping/agent/diagramEdit';
+import type { DiagramCreation, DiagramRevisionApplication, PromptReference } from '../../../domain/mapping/agent/diagramEdit';
 import { DefaultCanvasHistoryService } from '../../../domain/core/diagrams/canvasHistoryService';
 import { useStore } from 'zustand';
 import { CanvasWorkspace, type CanvasDraft as Draft, type CanvasDraftSeed } from './workspace/canvasWorkspace';
@@ -102,7 +106,9 @@ function MappingWorkspacePage() {
   const importRef = useRef<HTMLInputElement>(null);
   const [snapshot, setSnapshot] = useState<ProjectRepresentationsSnapshot>();
   const [workspace] = useState(() => new CanvasWorkspace(diagramService, canvasHistory));
-  const [diagramEdits] = useState(() => new DiagramEditCoordinator(createDiagramEditClient()));
+  const [prompts] = useState(() => new PromptComposerCoordinator(createDiagramEditClient()));
+  const carried = useStore(prompts.store, state => state.carried);
+  const composerOpen = useStore(prompts.store, state => !!state.activeKey);
   const drafts = useStore(workspace.store, state => state.drafts);
   const dirtySceneIds = useStore(workspace.dirtyScenes, state => state.ids);
   const setDrafts = workspace.setDrafts;
@@ -110,7 +116,7 @@ function MappingWorkspacePage() {
   useEffect(() => {
     clearTimeout(disposal.current);
     return () => { disposal.current = setTimeout(() => {
-      diagramEdits.dispose();
+      prompts.dispose();
       workspace.dispose();
       if (!injectedStorage) {
         if (storage.records) void storage.flush().catch(() => {}).finally(() => storage.dispose());
@@ -253,6 +259,22 @@ function MappingWorkspacePage() {
         persistence.current?.sync([id]);
         await storage.flush();
       });
+    }
+    if (command.method === 'create-diagrams') {
+      if (workspaceBusy || draft.busy) throw new Error('WORKSPACE_BUSY');
+      if (!persistence.current || !storage.records) throw Error('WORKSPACE_UNAVAILABLE: persistence is not ready');
+      const { requestId, expectedVersion, diagrams } = command.payload as { requestId: string; expectedVersion: number; diagrams: DiagramCreation[] };
+      const key = `${id}:create-diagrams:${requestId}`;
+      // Keep the receipt before flushing: retrying a failed write must not create the diagrams twice.
+      let result = appliedRequests.current.get(key) as { version: number } | undefined;
+      if (!result) {
+        result = { version: controller.applyUpdate(expectedVersion, diagrams.map(diagram => ({ method: 'diagram-create', id: diagram.id,
+          parentId: diagram.parentId, position: diagram.position, ...diagram.content }) as Extract<DiagramOperation, { method: 'diagram-create' }>)).version };
+        appliedRequests.current.set(key, result);
+      }
+      try { persistence.current.sync([id]); await storage.flush(); }
+      catch (error) { throw Error(`PERSISTENCE_PENDING: diagrams created; retry the same request to flush: ${String(error)}`); }
+      return result;
     }
     if (command.method === 'apply') {
       const { requestId, expectedVersion, operations } = command.payload as { requestId: string; expectedVersion: number; operations: DiagramOperation[] };
@@ -672,6 +694,79 @@ function MappingWorkspacePage() {
     for (const [id, draft] of Object.entries(drafts)) viewState.prune(id, canvasOf(draft).display);
   }, [drafts, viewState]);
 
+  // Revisions are immutable: cache each canvas's exported history until its checkpoint changes.
+  const histories = useRef(new WeakMap<object, { key: string; record: CanvasHistoryRecord }>());
+  const knownRevisions = () => {
+    const revisions = new Map<string, DiagramRevision>();
+    for (const draft of Object.values(drafts)) {
+      const controller = draft.session?.controller; if (!controller) continue;
+      const state = controller.getSnapshot(), key = `${state.canvasRevisionId}:${state.version}`;
+      let cached = histories.current.get(controller);
+      if (cached?.key !== key) histories.current.set(controller, cached = { key, record: controller.exportHistory() });
+      for (const revision of Object.values(cached.record.diagramRevisions)) revisions.set(revision.id, revision);
+    }
+    return revisions;
+  };
+  const revisionDepth = (revisions: ReadonlyMap<string, DiagramRevision>, id: string) => {
+    let depth = 0;
+    for (let revision = revisions.get(id); revision && depth < 100000; revision = revision.parentId ? revisions.get(revision.parentId) : undefined) depth++;
+    return depth || undefined;
+  };
+  const findRevision = (id: string) => {
+    const known = knownRevisions().get(id);
+    if (known) return known;
+    try { return diagramService.getRevision(id); } catch { return undefined; }
+  };
+  const revisionSource: PromptRevisionSource = {
+    list: target => {
+      const node = drafts[target.documentId]?.session?.controller.nodes().find(node => node.id === target.nodeId);
+      const diagram = node?.layout === 'grid' ? node.diagram : undefined;
+      if (!diagram) return [];
+      const revisions = knownRevisions();
+      for (const summary of diagramService.listRevisions(diagram.diagramId))
+        if (!revisions.has(summary.id)) try { revisions.set(summary.id, diagramService.getRevision(summary.id)); } catch { /* Not hydrated in this tab. */ }
+      return [...revisions.values()].filter(revision => revision.diagramId === diagram.diagramId).map((revision): PromptRevision => ({
+        id: revision.id, diagramId: revision.diagramId, sequence: revisionDepth(revisions, revision.id) ?? 1, current: revision.id === diagram.revisionId,
+        title: diagramTitle(revision.diagram), ascii: revision.diagram.content.ascii
+      })).sort((a, b) => b.sequence - a.sequence || a.id.localeCompare(b.id));
+    },
+    sequence: id => revisionDepth(knownRevisions(), id)
+  };
+  const openComposer = (documentId: string, nodeId: string, operation: PromptOperation) => {
+    const draft = drafts[documentId];
+    const node = draft?.session?.controller.nodes().find(node => node.id === nodeId);
+    if (!draft || node?.layout !== 'grid' || node.kind !== 'diagram') { setError('The selected diagram is no longer available.'); return; }
+    const title = node.diagram ? diagramTitle(node.diagram) : nodeId;
+    return prompts.open({ operation, canvasId, documentId, nodeId, label: `${draft.name} / ${title}` });
+  };
+  /** Copy goes to the clipboard; insert goes into the open composer, or opens an edit prompt for this diagram. */
+  const shareReferences = (documentId: string, references: PromptReference[], mode: 'copy' | 'insert', nodeId: string) => {
+    const count = `${references.length} reference${references.length === 1 ? '' : 's'}`;
+    if (mode === 'copy') {
+      void copyPromptReferences(references).then(() => setWorkspaceStatus(`Copied ${count} · paste into any prompt box`))
+        .catch(error => setError(`Copy failed: ${error instanceof Error ? error.message : String(error)}`));
+      return;
+    }
+    const key = prompts.store.getState().activeKey ?? openComposer(documentId, nodeId, 'edit-diagram');
+    if (!key) return;
+    for (const reference of references) if (!prompts.insertReference(reference, key)) {
+      setError('That prompt is busy or full. Wait for its request to finish, or remove a reference.'); return;
+    }
+    prompts.show(key); setWorkspaceStatus(`Added ${count} to the prompt`);
+  };
+  const placement = useMemo(() => carried && activeId ? { onPlace: (point: { column: number; row: number }) => {
+    const controller = draftRef.current[activeId]?.session?.controller, revision = findRevision(carried.reference.revisionId);
+    prompts.carry();
+    if (!controller || !revision) { setError('That revision is no longer available.'); return; }
+    const { content, sourceContext } = revision.diagram;
+    try {
+      controller.applyUpdate(controller.getSnapshot().version, [structuredClone({ method: 'diagram-create', id: `diagram-${crypto.randomUUID()}`, position: point,
+        ascii: content.ascii, structureKind: content.structure.kind, mappings: sourceContext.mappings, evidence: sourceContext.evidence,
+        source: sourceContext.binding }) as Extract<DiagramOperation, { method: 'diagram-create' }>]);
+      setWorkspaceStatus(`Placed ${carried.reference.label} on the canvas · Undo to remove`);
+    } catch (error) { setError(error instanceof Error ? error.message : String(error)); }
+  } } : undefined, [carried, activeId]);
+
   return <SourcePaneViewStateContext.Provider value={viewState}><UiTestFramework id="mapping-local-chat" title="Local chat variants" controls={LOCAL_CHAT_UI_CONTROLS}>
     {(ui) => <main className="mapping-poc-shell" data-local-chat-variant={ui.variant}>
       <header className="workspace-header mapping-poc-header" inert={!!pendingTransfer}>
@@ -706,12 +801,10 @@ function MappingWorkspacePage() {
           {Object.entries(drafts).filter(([id]) => mountedDocuments.current.has(id)).map(([id, draft]) => <SourcePaneDocumentContext.Provider key={`${workspaceEpoch}:${id}:${draft.reloadKey ?? ''}`} value={id}><SourcePaneDocumentActiveContext.Provider value={id === activeId && !changeMode}><div className="mapping-document-view" inert={!!pendingTransfer || workspaceBusy} hidden={draft.hidden || id !== activeId || !!changeMode}>
             <MappingEditorCanvas session={draft.session} className="mapping-poc-canvas" enabled={id === activeId && !draft.hidden && !changeMode} focusBox={draft.focusBox}
               initialTransform={draft.viewport} onTransformChange={viewport => viewState.setCamera(id, viewport)}>
-              <MappingPocSelectionCanvas onUpdateDiagram={nodeId => {
-                  const node = draft.session.controller.nodes().find(node => node.id === nodeId);
-                  if (node?.layout !== 'grid' || node.kind !== 'diagram') { setError('The selected diagram is no longer available.'); return; }
-                  const title = node.content?.ascii.split('\n').find(line => line.trim())?.trim().slice(0, 80) ?? nodeId;
-                  diagramEdits.open({ canvasId, documentId: id, nodeId, label: `${draft.name} / ${title}` });
-                }} onTransfer={(mode, selected) => beginTransfer(id, mode, selected)}
+              <MappingPocSelectionCanvas onUpdateDiagram={nodeId => { openComposer(id, nodeId, 'edit-diagram'); }}
+                onCreateDiagram={nodeId => { openComposer(id, nodeId, 'create-diagram'); }}
+                onReference={(references, mode, nodeId) => shareReferences(id, references, mode, nodeId)}
+                placement={id === activeId ? placement : undefined} onTransfer={(mode, selected) => beginTransfer(id, mode, selected)}
                 onUndo={redo => void undo(id, redo)} canWorkspaceUndo={!!boundary(id)} canWorkspaceRedo={!!boundary(id, true)} onJump={target => void jumpTo(target)} session={draft.session} active={id === activeId && !draft.hidden && !workspaceBusy && !pendingTransfer && !creating && !changeMode} focusBox={draft.focusBox} searchMatches={searchMatchesByDocument.get(id)}
                 projectContext={draft.revisionId ? { projectId: snapshot!.project!.id, representationId: draft.representationId ?? id, baseRevisionId: draft.revisionId } : undefined}
                 projectionCatalog={snapshot?.catalog ?? undefined}
@@ -738,7 +831,8 @@ function MappingWorkspacePage() {
                 searchFocus={proposalSearchFocus?.documentId === proposalSearchId ? proposalSearchFocus?.focus : undefined}
                 searchMatches={proposalSearchId ? searchMatchesByDocument.get(proposalSearchId) : undefined} />
                 : <p className="window-panel-message">Select a canvas in the explorer.</p>} />}
-          {!pendingTransfer && <DiagramSearchPanel service={search} activeDocumentId={proposalSearchId ?? activeId}
+          {!changeMode && <PromptComposer coordinator={prompts} revisions={revisionSource} />}
+          {!pendingTransfer && !(composerOpen && !changeMode) && <DiagramSearchPanel service={search} activeDocumentId={proposalSearchId ?? activeId}
             hideOpenButton={!!diffTreeMode} openRequest={searchOpenRequest}
             activeName={changeMode ? proposalSearchDocument && proposalSearchDocument.id === proposalSearchId ? proposalSearchDocument.name : 'Loading proposal…' : active?.name}
             onReveal={revealSearchResult} onClear={clearSearchFocus} onMatches={setSearchMatches} />}
@@ -758,7 +852,6 @@ function MappingWorkspacePage() {
         <footer className="mapping-poc-status"><span>{active?.name ?? "PROJECT DIAGRAMS"}</span>
           <span>{active?.newerRevision ? 'A newer saved revision is available. Your local edits were preserved.' : workspaceStatus || 'Drag boxes to move · Ctrl-drag selects regions · Space or middle-drag pans · Actions (A) opens selection actions'}</span></footer>
       </section>
-      <DiagramEditComposer coordinator={diagramEdits} />
       {creating && <div className="mapping-dialog-backdrop"><form className="mapping-create-dialog" role="dialog" aria-modal="true" aria-label="New project diagram"
         onKeyDown={(event) => {
           if (event.key === "Escape" && !savingId) { event.preventDefault(); setCreating(false); setError(""); }

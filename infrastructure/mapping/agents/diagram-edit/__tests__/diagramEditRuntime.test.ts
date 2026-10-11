@@ -57,10 +57,15 @@ it('requires a validated submission and cleans up on cancellation', async () => 
   expect(f.service.listRevisions(f.base.diagram.diagramId)).toHaveLength(1); f.runtime.dispose();
 });
 it('renders prompt values once, preserving literal template markers in user content', () => {
-  const f = fixture(), template = 'CONTEXT {{context}}\nINSTRUCTION {{instruction}}';
-  const result = renderDiagramEditPrompt(template, { ...f.request, instruction: '{{context}}\nKeep this literal' });
+  const f = fixture(), markdown = 'CONTEXT {{context}}\nREFS {{references}}\nSTYLE {{options.style}} {{options.detail}}\nINSTRUCTION {{instruction}}';
+  const parameters = [{ kind: 'enum' as const, key: 'style', options: [{ value: 'minimal', guidance: 'Fewest boxes.' }] }, { kind: 'number' as const, key: 'detail' }];
+  const prompt = { markdown, options: { style: 'minimal', detail: 2 }, parameters, references: [{ ref: 1, label: '{{instruction}}' }] };
+  const result = renderDiagramEditPrompt({ ...f.request, prompt, instruction: '{{context}}\nKeep this literal' });
   expect(result).toContain('INSTRUCTION "{{context}}\\nKeep this literal"');
-  expect(() => renderDiagramEditPrompt(`${template} {{unknown}}`, f.request)).toThrow('Unknown');
+  expect(result).toContain('STYLE Fewest boxes. 2');
+  expect(result).toContain('REFS [{"ref":1,"label":"{{instruction}}"}]');
+  expect(() => renderDiagramEditPrompt({ ...f.request, prompt: { ...prompt, markdown: `${markdown} {{unknown}}` } })).toThrow('Unknown');
+  expect(renderDiagramEditPrompt(f.request)).toContain(f.base.revision.id);
   f.runtime.dispose();
 });
 

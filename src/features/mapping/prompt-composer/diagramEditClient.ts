@@ -1,9 +1,11 @@
-import type { DiagramEditRun, EditDiagramInput } from '../../../../domain/mapping/agent/diagramEdit';
+import type { CreateDiagramInput, DiagramEditRun, EditDiagramInput } from '../../../../domain/mapping/agent/diagramEdit';
+import type { PromptOperation } from '../../../../domain/mapping/agent/promptTemplates';
 import { apiFetch, errorFrom } from '../../../shared/http/http';
 
 export interface DiagramEditClient {
   capture(canvasId: string, documentId: string, nodeId: string): Promise<Pick<EditDiagramInput, 'sessionId' | 'expectedVersion' | 'baseRevisionId'>>;
-  start(input: EditDiagramInput): Promise<DiagramEditRun>;
+  /** edit-diagram revises the captured diagram; create-diagram places new diagrams beside it. */
+  start(input: EditDiagramInput | CreateDiagramInput, operation: PromptOperation): Promise<DiagramEditRun>;
   status(runId: string): Promise<DiagramEditRun>;
   cancel(runId: string): Promise<DiagramEditRun>;
 }
@@ -35,7 +37,7 @@ export function createDiagramEditClient(): DiagramEditClient {
         return { sessionId, expectedVersion: read.version, baseRevisionId: read.node.diagram.revisionId };
       } catch (error) { attachments.delete(key); throw error; }
     },
-    start: input => call('edit-diagram', input),
+    start: (input, operation) => call(operation, input),
     status: runId => call('edit-diagram-status', { runId }),
     cancel: runId => call('cancel-diagram-edit', { runId })
   };

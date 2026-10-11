@@ -7,10 +7,21 @@ import { diagramRevisions } from './internal/revisionRegistry';
 export type { DiagramEdit, DiagramRevision, DiagramRevisionId } from './diagramRevisionEditor';
 export interface DiagramRevisionResult extends PreparedDiagramEdit { readonly revision: DiagramRevision }
 export type DiagramRevisionSummary = Readonly<Pick<DiagramRevision, 'id' | 'diagramId' | 'parentId'>>;
+/** The parts of a template parameter that rendering needs. */
+export type GenerationPromptParameter =
+  | { kind: 'enum'; key: string; options: readonly { value: string; guidance: string }[] }
+  | { kind: 'number'; key: string };
 export interface DiagramGenerationRequest {
   agentContext?: AgentContextSnapshot;
   input: Omit<DiagramInput, 'revision' | 'ascii'>;
   instruction: string;
+  /** Structured prompt: a validated template with options plus resolved, revision-pinned references. */
+  prompt?: {
+    markdown: string;
+    options: Readonly<Record<string, string | number>>;
+    parameters: readonly GenerationPromptParameter[];
+    references: readonly unknown[];
+  };
   baseRevisionId?: string;
   context?: {
     diagram: Diagram;
