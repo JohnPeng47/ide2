@@ -34,6 +34,7 @@ export interface SelectionRegion extends DisplayNodeBase {
   sourceAscii: string;
   sourceRevisionId?: string;
   rect: MappingPocGridRect;
+  contentNodeIds?: readonly string[];
   selectedIds: string[];
   displayMode: ChildDisplayMode;
   activeChildId?: string;

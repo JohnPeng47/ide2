@@ -1,7 +1,7 @@
+import { diagramContentNodes } from '../../../../domain/core/diagrams/diagramContentNodes';
 import type { Diagram } from '../../../../domain/core/diagrams/diagram';
 import { promptReferenceSchema, type PromptReference } from '../../../../domain/mapping/agent/diagramEdit';
 import type { MappingPocGridRect } from '../../../../domain/mapping/selection/mappingPoc';
-import { regionSelectionItem } from '../../../../domain/mapping/selection/selectionState';
 
 /** The first line with words, without box-drawing punctuation: borders make poor labels. */
 export function diagramTitle(diagram: Pick<Diagram, 'content' | 'id'>) {
@@ -16,13 +16,15 @@ export function diagramTitle(diagram: Pick<Diagram, 'content' | 'id'>) {
 export function diagramReference(diagram: Diagram): PromptReference {
   return { kind: 'diagram', label: diagramTitle(diagram), diagramId: diagram.diagramId, revisionId: diagram.revisionId };
 }
-export function nodesReference(diagram: Diagram, boxId: string, rect: MappingPocGridRect): PromptReference {
-  const item = regionSelectionItem(diagram, boxId, rect, 'capture');
+export function nodesReference(diagram: Diagram, _boxId: string, rect: MappingPocGridRect, contentNodeIds?: readonly string[]): PromptReference {
+  const selected = contentNodeIds && new Set(contentNodeIds);
+  const members = diagramContentNodes(diagram.content).filter(node => selected ? selected.has(node.id) :
+    node.line >= rect.startLine && node.line <= rect.endLine && node.startColumn <= rect.endColumn && node.endColumn >= rect.startColumn);
   const lines = diagram.content.ascii.split('\n');
   const endLine = Math.min(rect.endLine, lines.length), startLine = Math.min(rect.startLine, endLine);
   const excerpt = lines.slice(startLine - 1, endLine).map(line => line.slice(rect.startColumn - 1, rect.endColumn).trim()).find(Boolean);
-  return { kind: 'nodes', label: (excerpt || diagramTitle(diagram)).slice(0, 80), diagramId: diagram.diagramId, revisionId: diagram.revisionId,
-    nodeIds: [...item.region!.selectedIds], range: { startLine, endLine, startColumn: rect.startColumn, endColumn: Math.max(rect.startColumn, rect.endColumn) } };
+  return { kind: 'nodes', label: (members[0]?.label || excerpt || diagramTitle(diagram)).slice(0, 80), diagramId: diagram.diagramId, revisionId: diagram.revisionId,
+    nodeIds: members.map(node => node.id), range: { startLine, endLine, startColumn: rect.startColumn, endColumn: Math.max(rect.startColumn, rect.endColumn) } };
 }
 
 /** Plain text for other apps; HTML carries the structured references so a paste in any composer restores them. */

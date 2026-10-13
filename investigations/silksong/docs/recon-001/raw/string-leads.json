@@ -1,0 +1,1292 @@
+{
+  "meaning": "String leads only; no execution or reachability established.",
+  "pattern": "https?://|wss?://|powershell|cmd\\.exe|rundll32|regsvr32|schtasks|CreateRemoteThread|WriteProcessMemory|VirtualAllocEx|LoadLibrary|GetProcAddress|AssemblyResolve|DownloadString|DownloadFile|UploadData|ProcessStartInfo|FromBase64String",
+  "files": [
+    {
+      "path": "D3D12/D3D12Core.dll",
+      "sha256": "31f364f2b3aa1753e7ba9ff912d0721c8f424be5fa14503efddafbb30c635d3b",
+      "matches": [
+        {
+          "file_offset": "0x514b9c",
+          "encoding": "ascii",
+          "text": "GetProcAddress"
+        },
+        {
+          "file_offset": "0x514bda",
+          "encoding": "ascii",
+          "text": "LoadLibraryA"
+        },
+        {
+          "file_offset": "0x514bea",
+          "encoding": "ascii",
+          "text": "LoadLibraryW"
+        },
+        {
+          "file_offset": "0x514d08",
+          "encoding": "ascii",
+          "text": "LoadLibraryExW"
+        },
+        {
+          "file_offset": "0x515600",
+          "encoding": "ascii",
+          "text": "LoadLibraryExA"
+        },
+        {
+          "file_offset": "0x5a03c4",
+          "encoding": "ascii",
+          "text": "Chttp://www.microsoft.com/pkiops/crl/MicCodSigPCA2011_2011-07-08.crl0a"
+        },
+        {
+          "file_offset": "0x5a0425",
+          "encoding": "ascii",
+          "text": "Ehttp://www.microsoft.com/pkiops/certs/MicCodSigPCA2011_2011-07-08.crt0"
+        },
+        {
+          "file_offset": "0x5a0aab",
+          "encoding": "ascii",
+          "text": "Ihttp://crl.microsoft.com/pki/crl/products/MicRooCerAut2011_2011_03_22.crl0^"
+        },
+        {
+          "file_offset": "0x5a0b12",
+          "encoding": "ascii",
+          "text": "Bhttp://www.microsoft.com/pki/certs/MicRooCerAut2011_2011_03_22.crt0"
+        },
+        {
+          "file_offset": "0x5a0b81",
+          "encoding": "ascii",
+          "text": "3http://www.microsoft.com/pkiops/docs/primarycps.htm0@"
+        },
+        {
+          "file_offset": "0x5a0f56",
+          "encoding": "ascii",
+          "text": "http://www.microsoft.com0"
+        },
+        {
+          "file_offset": "0x5a1649",
+          "encoding": "ascii",
+          "text": "Nhttp://www.microsoft.com/pkiops/crl/Microsoft%20Time-Stamp%20PCA%202010(1).crl0l"
+        },
+        {
+          "file_offset": "0x5a16b5",
+          "encoding": "ascii",
+          "text": "Phttp://www.microsoft.com/pkiops/certs/Microsoft%20Time-Stamp%20PCA%202010(1).crt0"
+        },
+        {
+          "file_offset": "0x5a1d5a",
+          "encoding": "ascii",
+          "text": "3http://www.microsoft.com/pkiops/Docs/Repository.htm0"
+        },
+        {
+          "file_offset": "0x5a1e0f",
+          "encoding": "ascii",
+          "text": "Ehttp://crl.microsoft.com/pki/crl/products/MicRooCerAut_2010-06-23.crl0Z"
+        },
+        {
+          "file_offset": "0x5a1e72",
+          "encoding": "ascii",
+          "text": ">http://www.microsoft.com/pki/certs/MicRooCerAut_2010-06-23.crt0"
+        }
+      ]
+    },
+    {
+      "path": "Hollow Knight Silksong.exe",
+      "sha256": "5957b04989de6e242938f5ee0fc745a5b1af42da8cca44b0e6f8daf30d836496",
+      "matches": [
+        {
+          "file_offset": "0x1768c",
+          "encoding": "ascii",
+          "text": "GetProcAddress"
+        },
+        {
+          "file_offset": "0x1769e",
+          "encoding": "ascii",
+          "text": "LoadLibraryExW"
+        },
+        {
+          "file_offset": "0xa350b",
+          "encoding": "ascii",
+          "text": "<dpiAware xmlns=\"http://schemas.microsoft.com/SMI/2005/WindowsSettings\">True/PM</dpiAware>"
+        },
+        {
+          "file_offset": "0xa356a",
+          "encoding": "ascii",
+          "text": "<dpiAwareness xmlns=\"http://schemas.microsoft.com/SMI/2016/WindowsSettings\">PerMonitorV2</dpiAwareness>"
+        }
+      ]
+    },
+    {
+      "path": "Hollow Knight Silksong_Data/Managed/Assembly-CSharp-firstpass.dll",
+      "sha256": "20b54cb5f31fec3a490bbee21d447ceeb0f313d91abc9ec3983e1376b529ab0c",
+      "matches": []
+    },
+    {
+      "path": "Hollow Knight Silksong_Data/Managed/Assembly-CSharp.dll",
+      "sha256": "70713bb2b1f1b0c4c6b7007fa6a8446cf79818cb5e308c48c094c4d1de7114bb",
+      "matches": [
+        {
+          "file_offset": "0x514e5e",
+          "encoding": "ascii",
+          "text": "FromBase64String"
+        },
+        {
+          "file_offset": "0x5fa587",
+          "encoding": "ascii",
+          "text": "The tag. Note: Use Unity's <a href=\"http://unity3d.com/support/documentation/Components/class-TagManager.html\">Tag Manager</a> to add/edit tags."
+        },
+        {
+          "file_offset": "0x5fb8e9",
+          "encoding": "ascii",
+          "text": "pSee unity docs: <a href=\"http://unity3d.com/support/documentation/ScriptReference/GUI-depth.html\">GUI.Depth</a>."
+        },
+        {
+          "file_offset": "0x5fba0c",
+          "encoding": "ascii",
+          "text": "An array of layout options.See <a href=\"http://unity3d.com/support/documentation/ScriptReference/GUILayoutOption.html\" rel=\"nofollow\">GUILayoutOption</a>."
+        },
+        {
+          "file_offset": "0x6004d5",
+          "encoding": "ascii",
+          "text": "See unity docs: <a href=\"https://docs.unity3d.com/ScriptReference/Material.SetColor.html\" rel=\"nofollow\">Material.SetColor</a>"
+        },
+        {
+          "file_offset": "0x600749",
+          "encoding": "ascii",
+          "text": "The named texture. See unity docs: <a href=\"http://unity3d.com/support/documentation/ScriptReference/Material.SetTextureOffset.html\" rel=\"nofollow\">SetTextureOffset</a>"
+        },
+        {
+          "file_offset": "0x60087a",
+          "encoding": "ascii",
+          "text": "The named texture. See unity docs: <a href=\"http://unity3d.com/support/documentation/ScriptReference/Material.SetTextureScale.html\" rel=\"nofollow\">SetTextureScale</a>"
+        },
+        {
+          "file_offset": "0x609a09",
+          "encoding": "ascii",
+          "text": "Pick between <a href=\"http://unity3d.com/support/documentation/ScriptReference/GameObject.SendMessage.html\" rel=\"nofollow\">SendMessage</a>, <a href=\"http://unity3d.com/support/documentation/ScriptReference/GameObject.SendMessageUpwards.html\" rel=\"nofollow\">SendMessageUpwards</a>, or <a href=\"http://unity3d.com/support/documentation/ScriptReference/GameObject.BroadcastMessage.html\" rel=\"nofollow\">BroadcastMessage</a>."
+        },
+        {
+          "file_offset": "0x609bb5",
+          "encoding": "ascii",
+          "text": "Message delivery options. See <a href=\"http://unity3d.com/support/documentation/ScriptReference/SendMessageOptions.html\" rel=\"nofollow\">SendMessageOptions</a> in Unity Docs."
+        },
+        {
+          "file_offset": "0x619d11",
+          "encoding": "ascii",
+          "text": "0https://hutonggames.fogbugz.com/default.asp?W720"
+        },
+        {
+          "file_offset": "0x619f6c",
+          "encoding": "ascii",
+          "text": "0https://hutonggames.fogbugz.com/default.asp?W721"
+        },
+        {
+          "file_offset": "0x61a83c",
+          "encoding": "ascii",
+          "text": "0https://hutonggames.fogbugz.com/default.asp?W723"
+        },
+        {
+          "file_offset": "0x61b99e",
+          "encoding": "ascii",
+          "text": "0https://hutonggames.fogbugz.com/default.asp?W719"
+        },
+        {
+          "file_offset": "0x61fb3a",
+          "encoding": "ascii",
+          "text": "<a href=\"https://docs.unity3d.com/Manual/AnimationScripting.html\" rel =\"nofollow\" target=\"_blank\">Unity Animation Docs</a>"
+        },
+        {
+          "file_offset": "0x6236f1",
+          "encoding": "ascii",
+          "text": "<http://hutonggames.com/playmakerforum/index.php?topic=1711.0"
+        },
+        {
+          "file_offset": "0x625941",
+          "encoding": "ascii",
+          "text": "Draws a GUI Texture. NOTE: Uses OnGUI so you need a PlayMakerGUI component in the scene. See unity docs: <a href=\"http://unity3d.com/support/documentation/ScriptReference/GUI.DrawTexture.html\">DrawTexture</a>."
+        },
+        {
+          "file_offset": "0x626150",
+          "encoding": "ascii",
+          "text": "Sets the GUISkin used by GUI elements. Skins can be customized in the Unity editor. See unity docs: <a href=\"http://unity3d.com/support/documentation/Components/class-GUISkin.html\">GUISkin</a>."
+        },
+        {
+          "file_offset": "0x628188",
+          "encoding": "ascii",
+          "text": "See unity docs: <a href=\"http://unity3d.com/support/documentation/ScriptReference/Object.DontDestroyOnLoad.html\">DontDestroyOnLoad</a>."
+        },
+        {
+          "file_offset": "0x629abe",
+          "encoding": "ascii",
+          "text": "Sets the Game Object to use to play the audio source associated with a movie texture. Note: the Game Object must have an <a href=\"http://unity3d.com/support/documentation/Components/class-AudioSource.html\">AudioSource</a> component."
+        },
+        {
+          "file_offset": "0x62a38c",
+          "encoding": "ascii",
+          "text": "Tests if a rigid body is controlled by physics. See unity docs: <a href=\"http://unity3d.com/support/documentation/ScriptReference/Rigidbody-isKinematic.html\">IsKinematic</a>."
+        },
+        {
+          "file_offset": "0x62a442",
+          "encoding": "ascii",
+          "text": "Tests if a rigid body is sleeping. See Unity docs: <a href=\"http://unity3d.com/support/documentation/Components/RigidbodySleeping.html\">Rigidbody Sleeping</a>."
+        },
+        {
+          "file_offset": "0x62a73b",
+          "encoding": "ascii",
+          "text": "<http://hutonggames.com/playmakerforum/index.php?topic=4734.0"
+        },
+        {
+          "file_offset": "0x62a7e4",
+          "encoding": "ascii",
+          "text": "Controls whether physics affects the game object. See unity docs: <a href=\"http://unity3d.com/support/documentation/ScriptReference/Rigidbody-isKinematic.html\">IsKinematic</a>."
+        },
+        {
+          "file_offset": "0x62a8c3",
+          "encoding": "ascii",
+          "text": "Sets the mass of a game object's rigid body. See unity docs: <a href=\"http://unity3d.com/support/documentation/ScriptReference/Rigidbody-mass.html\">Rigidbody.Mass</a>"
+        },
+        {
+          "file_offset": "0x62a9dc",
+          "encoding": "ascii",
+          "text": "In most cases you should not modify the velocity directly, as this can result in unrealistic behaviour. See unity docs: <a href=\"http://unity3d.com/support/documentation/ScriptReference/Rigidbody-velocity.html\">Rigidbody.velocity</a>."
+        },
+        {
+          "file_offset": "0x62aace",
+          "encoding": "ascii",
+          "text": "Forces a rigid body to sleep at least one frame. See unity docs: <a href=\"http://unity3d.com/support/documentation/ScriptReference/Rigidbody.Sleep.html\">Rigidbody.sleep</a>."
+        },
+        {
+          "file_offset": "0x62ac84",
+          "encoding": "ascii",
+          "text": "#Rigid bodies start sleeping when they come to rest. This action wakes up all rigid bodies in the scene. E.g., if you Set Gravity and want objects at rest to respond.See Unity Docs: <a href=\"http://unity3d.com/support/documentation/ScriptReference/Rigidbody.WakeUp.html\">Rigidbody.WakeUp</a>."
+        },
+        {
+          "file_offset": "0x62adad",
+          "encoding": "ascii",
+          "text": "n<a href =\"http://unity3d.com/support/documentation/ScriptReference/Rigidbody.WakeUp.html\">Rigidbody.WakeUp</a>"
+        },
+        {
+          "file_offset": "0x62ae24",
+          "encoding": "ascii",
+          "text": "Forces a Game Object's Rigid Body to wake up. See Unity Docs: <a href=\"http://unity3d.com/support/documentation/ScriptReference/Rigidbody.WakeUp.html\">Rigidbody.WakeUp</a>."
+        },
+        {
+          "file_offset": "0x62f35f",
+          "encoding": "ascii",
+          "text": "See Unity <a href=\"http://unity3d.com/support/documentation/ScriptReference/MonoBehaviour.StartCoroutine.html\">StartCoroutine</a> docs for more details."
+        },
+        {
+          "file_offset": "0x6312aa",
+          "encoding": "ascii",
+          "text": "See C# <a href=\"http://msdn.microsoft.com/en-us/library/system.string.format(v=vs.90).aspx\" rel=\"nofollow\">string.Format documentation</a> for usage."
+        },
+        {
+          "file_offset": "0x631dc7",
+          "encoding": "ascii",
+          "text": "<http://hutonggames.com/playmakerforum/index.php?topic=4758.0"
+        },
+        {
+          "file_offset": "0x56eafc",
+          "encoding": "utf-16le",
+          "text": "https://hutonggames.fogbugz.com/default.asp?W1150"
+        }
+      ]
+    },
+    {
+      "path": "Hollow Knight Silksong_Data/Managed/TeamCherry.BuildBot.dll",
+      "sha256": "8f1700b2d7a33ec893d4b249d3e14d34e18010fee31f1a981908738ed866808e",
+      "matches": []
+    },
+    {
+      "path": "Hollow Knight Silksong_Data/Managed/TeamCherry.Cinematics.dll",
+      "sha256": "38e66a3d14c3a89c81e0c437553011286b8de050244313f8b250696b7ad92a5c",
+      "matches": []
+    },
+    {
+      "path": "Hollow Knight Silksong_Data/Managed/TeamCherry.Localization.dll",
+      "sha256": "f75d2e376f525f395d627816f77dd976829a0984d1b0349acc12ae4a8da5d043",
+      "matches": []
+    },
+    {
+      "path": "Hollow Knight Silksong_Data/Managed/TeamCherry.NestedFadeGroup.dll",
+      "sha256": "a1b3611073aae21a9ac1cefa708b3880c7f2043a836194e7b050badcb6dc752f",
+      "matches": []
+    },
+    {
+      "path": "Hollow Knight Silksong_Data/Managed/TeamCherry.SharedUtils.dll",
+      "sha256": "4588cb8d922c85d8785ca5d4b6f7502cf2c8960f4cd7f7bc33999595ce730ef2",
+      "matches": [
+        {
+          "file_offset": "0x62b7",
+          "encoding": "ascii",
+          "text": "FromBase64String"
+        }
+      ]
+    },
+    {
+      "path": "Hollow Knight Silksong_Data/Managed/TeamCherry.Splines.dll",
+      "sha256": "7d40d766f03ce6a47b7df3a8037102647c286692bd87b8cbb076dc6ca21102d8",
+      "matches": []
+    },
+    {
+      "path": "Hollow Knight Silksong_Data/Managed/TeamCherry.TK2D.dll",
+      "sha256": "06287167843feb2e3168299e03e26a70bd886ad6f90ee192a3257f70962e5700",
+      "matches": []
+    },
+    {
+      "path": "Hollow Knight Silksong_Data/Plugins/x86_64/InControlNative.dll",
+      "sha256": "60f7a8006b1fcc1551760c6a569cf1713a42ac39b6cab5fdaade3fbd600dc067",
+      "matches": [
+        {
+          "file_offset": "0x2f14c",
+          "encoding": "ascii",
+          "text": "LoadLibraryW"
+        },
+        {
+          "file_offset": "0x2f15c",
+          "encoding": "ascii",
+          "text": "GetProcAddress"
+        },
+        {
+          "file_offset": "0x2f65a",
+          "encoding": "ascii",
+          "text": "LoadLibraryExW"
+        }
+      ]
+    },
+    {
+      "path": "Hollow Knight Silksong_Data/Plugins/x86_64/XInputInterface64.dll",
+      "sha256": "af3409c7c1835e8867313fca6af245c14199de571db02b43e48856216e74d8cb",
+      "matches": [
+        {
+          "file_offset": "0xd4a0",
+          "encoding": "ascii",
+          "text": "[XInput.NET] Failed to load xinput1_3.dll, xinput1_4.dll and xinput9_1_0.dll (error codes 0x%08x, 0x%08x, 0x%08x respectively; check that \"DirectX End-User Runtimes (June 2010)\" is installed (http://www.microsoft.com/en-us/download/details.aspx?id=8109)"
+        },
+        {
+          "file_offset": "0xe142",
+          "encoding": "ascii",
+          "text": "GetProcAddress"
+        },
+        {
+          "file_offset": "0xe154",
+          "encoding": "ascii",
+          "text": "LoadLibraryA"
+        },
+        {
+          "file_offset": "0xe4ca",
+          "encoding": "ascii",
+          "text": "LoadLibraryW"
+        }
+      ]
+    },
+    {
+      "path": "Hollow Knight Silksong_Data/Plugins/x86_64/lib_burst_generated.dll",
+      "sha256": "00ef3d0ce8e1d507f109b9e3ccccf1f57ce22435b419ab218974401859319c24",
+      "matches": []
+    },
+    {
+      "path": "Hollow Knight Silksong_Data/Plugins/x86_64/steam_api64.dll",
+      "sha256": "1add7f151fa644870a735ae86e68d1f019f296130d8e7c0a7ed3ecc7482dccbc",
+      "matches": [
+        {
+          "file_offset": "0x4154a",
+          "encoding": "ascii",
+          "text": "GetProcAddress"
+        },
+        {
+          "file_offset": "0x415d4",
+          "encoding": "ascii",
+          "text": "LoadLibraryExW"
+        },
+        {
+          "file_offset": "0x4175e",
+          "encoding": "ascii",
+          "text": "LoadLibraryExA"
+        },
+        {
+          "file_offset": "0x46c5b",
+          "encoding": "ascii",
+          "text": "http://ocsp.digicert.com0C"
+        },
+        {
+          "file_offset": "0x46c80",
+          "encoding": "ascii",
+          "text": "7http://cacerts.digicert.com/DigiCertAssuredIDRootCA.crt0E"
+        },
+        {
+          "file_offset": "0x46cca",
+          "encoding": "ascii",
+          "text": "4http://crl3.digicert.com/DigiCertAssuredIDRootCA.crl0"
+        },
+        {
+          "file_offset": "0x47796",
+          "encoding": "ascii",
+          "text": "http://ocsp.digicert.com0A"
+        },
+        {
+          "file_offset": "0x477bb",
+          "encoding": "ascii",
+          "text": "5http://cacerts.digicert.com/DigiCertTrustedRootG4.crt0C"
+        },
+        {
+          "file_offset": "0x47803",
+          "encoding": "ascii",
+          "text": "2http://crl3.digicert.com/DigiCertTrustedRootG4.crl0 "
+        },
+        {
+          "file_offset": "0x47e4e",
+          "encoding": "ascii",
+          "text": "http://ocsp.digicert.com0A"
+        },
+        {
+          "file_offset": "0x47e73",
+          "encoding": "ascii",
+          "text": "5http://cacerts.digicert.com/DigiCertTrustedRootG4.crt0C"
+        },
+        {
+          "file_offset": "0x47ebb",
+          "encoding": "ascii",
+          "text": "2http://crl3.digicert.com/DigiCertTrustedRootG4.crl0"
+        },
+        {
+          "file_offset": "0x484f5",
+          "encoding": "ascii",
+          "text": "Ihttp://crl3.digicert.com/DigiCertTrustedG4RSA4096SHA256TimeStampingCA.crl0"
+        },
+        {
+          "file_offset": "0x48560",
+          "encoding": "ascii",
+          "text": "http://ocsp.digicert.com0X"
+        },
+        {
+          "file_offset": "0x48585",
+          "encoding": "ascii",
+          "text": "Lhttp://cacerts.digicert.com/DigiCertTrustedG4RSA4096SHA256TimeStampingCA.crt0"
+        },
+        {
+          "file_offset": "0x48baa",
+          "encoding": "ascii",
+          "text": "Mhttp://crl3.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crl0S"
+        },
+        {
+          "file_offset": "0x48bff",
+          "encoding": "ascii",
+          "text": "Mhttp://crl4.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crl0>"
+        },
+        {
+          "file_offset": "0x48c72",
+          "encoding": "ascii",
+          "text": "http://www.digicert.com/CPS0"
+        },
+        {
+          "file_offset": "0x48cae",
+          "encoding": "ascii",
+          "text": "http://ocsp.digicert.com0\\"
+        },
+        {
+          "file_offset": "0x48cd3",
+          "encoding": "ascii",
+          "text": "Phttp://cacerts.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crt0"
+        }
+      ]
+    },
+    {
+      "path": "MonoBleedingEdge/EmbedRuntime/MonoPosixHelper.dll",
+      "sha256": "e3b6503b4c17d164871b3fefc33d6aa0f31591ee71f5ef541c96e92d5661a79c",
+      "matches": [
+        {
+          "file_offset": "0x7edb0",
+          "encoding": "ascii",
+          "text": " unzip 1.01 Copyright 1998-2004 Gilles Vollant - http://www.winimage.com/zLibDll"
+        },
+        {
+          "file_offset": "0x7ee10",
+          "encoding": "ascii",
+          "text": " zip 1.01 Copyright 1998-2004 Gilles Vollant - http://www.winimage.com/zLibDll"
+        },
+        {
+          "file_offset": "0x89fdc",
+          "encoding": "ascii",
+          "text": "GetProcAddress"
+        },
+        {
+          "file_offset": "0x89fee",
+          "encoding": "ascii",
+          "text": "LoadLibraryExW"
+        },
+        {
+          "file_offset": "0x92e77",
+          "encoding": "ascii",
+          "text": "http://ocsp.digicert.com0A"
+        },
+        {
+          "file_offset": "0x92e9c",
+          "encoding": "ascii",
+          "text": "5http://cacerts.digicert.com/DigiCertTrustedRootG4.crt0C"
+        },
+        {
+          "file_offset": "0x92ee4",
+          "encoding": "ascii",
+          "text": "2http://crl3.digicert.com/DigiCertTrustedRootG4.crl0"
+        },
+        {
+          "file_offset": "0x93574",
+          "encoding": "ascii",
+          "text": "http://www.digicert.com/CPS0"
+        },
+        {
+          "file_offset": "0x935c9",
+          "encoding": "ascii",
+          "text": "Mhttp://crl3.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crl0S"
+        },
+        {
+          "file_offset": "0x9361e",
+          "encoding": "ascii",
+          "text": "Mhttp://crl4.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crl0"
+        },
+        {
+          "file_offset": "0x9368d",
+          "encoding": "ascii",
+          "text": "http://ocsp.digicert.com0\\"
+        },
+        {
+          "file_offset": "0x936b2",
+          "encoding": "ascii",
+          "text": "Phttp://cacerts.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crt0"
+        },
+        {
+          "file_offset": "0x940d1",
+          "encoding": "ascii",
+          "text": "http://ocsp.digicert.com0]"
+        },
+        {
+          "file_offset": "0x940f6",
+          "encoding": "ascii",
+          "text": "Qhttp://cacerts.digicert.com/DigiCertTrustedG4TimeStampingRSA4096SHA2562025CA1.crt0_"
+        },
+        {
+          "file_offset": "0x9415a",
+          "encoding": "ascii",
+          "text": "Nhttp://crl3.digicert.com/DigiCertTrustedG4TimeStampingRSA4096SHA2562025CA1.crl0 "
+        },
+        {
+          "file_offset": "0x947c1",
+          "encoding": "ascii",
+          "text": "http://ocsp.digicert.com0A"
+        },
+        {
+          "file_offset": "0x947e6",
+          "encoding": "ascii",
+          "text": "5http://cacerts.digicert.com/DigiCertTrustedRootG4.crt0C"
+        },
+        {
+          "file_offset": "0x9482e",
+          "encoding": "ascii",
+          "text": "2http://crl3.digicert.com/DigiCertTrustedRootG4.crl0 "
+        },
+        {
+          "file_offset": "0x94e5d",
+          "encoding": "ascii",
+          "text": "http://ocsp.digicert.com0C"
+        },
+        {
+          "file_offset": "0x94e82",
+          "encoding": "ascii",
+          "text": "7http://cacerts.digicert.com/DigiCertAssuredIDRootCA.crt0E"
+        },
+        {
+          "file_offset": "0x94ecc",
+          "encoding": "ascii",
+          "text": "4http://crl3.digicert.com/DigiCertAssuredIDRootCA.crl0"
+        }
+      ]
+    },
+    {
+      "path": "MonoBleedingEdge/EmbedRuntime/mono-2.0-bdwgc.dll",
+      "sha256": "270768fe844e27e33fb9a2eb923ab88e3d42bfb04fa24b2f1263989e5332fb7d",
+      "matches": [
+        {
+          "file_offset": "0x57b628",
+          "encoding": "ascii",
+          "text": "cmd.exe"
+        },
+        {
+          "file_offset": "0x58d8ee",
+          "encoding": "ascii",
+          "text": "here isencoded.  The balloondone by/commonbgcolorlaw of Indianaavoidedbut the2px 3pxjquery.after apolicy.men andfooter-= true;for usescreen.Indian image =family,http:// &nbsp;driverseternalsame asnoticedviewers})();"
+        },
+        {
+          "file_offset": "0x5935c2",
+          "encoding": "ascii",
+          "text": "  conversionabout the </p></div>integrated\" lang=\"enPortuguesesubstituteindividualimpossiblemultimediaalmost allpx solid #apart fromsubject toin Englishcriticizedexcept forguidelinesoriginallyremarkablethe secondh2 class=\"<a title=\"(includingparametersprohibited= \"http://dictionaryperceptionrevolutionfoundationpx;height:successfulsupportersmillenniumhis fatherthe &quot;no-repeat;commercialindustrialencouragedamount of unofficialefficiencyReferencescoordinatedisclaimerexpeditiondevelopingcalculatedsimplifiedlegitimatesubstring(0\" class=\"completelyillustratefive yearsinstrumentPublishing1\" class=\"psychologyconfidencenumber of absence offocused onjoined thestructurespreviously></iframe>once againbut ratherimmigrantsof course,a group ofLiteratureUnlike the</a>&nbsp;"
+        },
+        {
+          "file_offset": "0x5956d0",
+          "encoding": "ascii",
+          "text": "sByTagName(.jpg\" alt=\"1px solid #.gif\" alt=\"transparentinformationapplication\" onclick=\"establishedadvertising.png\" alt=\"environmentperformanceappropriate&amp;mdash;immediately</strong></rather thantemperaturedevelopmentcompetitionplaceholdervisibility:copyright\">0\" height=\"even thoughreplacementdestinationCorporation<ul class=\"AssociationindividualsperspectivesetTimeout(url(http://mathematicsmargin-top:eventually description) no-repeatcollections.JPG|thumb|participate/head><bodyfloat:left;<li class=\"hundreds of"
+        },
+        {
+          "file_offset": "0x595a0b",
+          "encoding": "ascii",
+          "text": "<div id=\"illustratedengineeringterritoriesauthoritiesdistributed6\" height=\"sans-serif;capable of disappearedinteractivelooking forit would beAfghanistanwas createdMath.floor(surroundingcan also beobservationmaintenanceencountered<h2 class=\"more recentit has beeninvasion of).getTime()fundamentalDespite the\"><div id=\"inspirationexaminationpreparationexplanation<input id=\"</a></span>versions ofinstrumentsbefore the  = 'http://Descriptionrelatively .substring(each of theexperimentsinfluentialintegrationmany peopledue to the combinationdo not haveMiddle East<noscript><copyright\" perhaps theinstitutionin Decemberarrangementmost famouspersonalitycreation oflimitationsexclusivelysovereignty-content\">"
+        },
+        {
+          "file_offset": "0x5982c4",
+          "encoding": "ascii",
+          "text": "nconformidadline-height:font-family:\" : \"http://applicationslink\" href=\"specifically//<![CDATA["
+        },
+        {
+          "file_offset": "0x598b64",
+          "encoding": "ascii",
+          "text": "such as the influence ofa particularsrc='http://navigation\" half of the substantial &nbsp;</div>advantage ofdiscovery offundamental metropolitanthe opposite\" xml:lang=\"deliberatelyalign=centerevolution ofpreservationimprovementsbeginning inJesus ChristPublicationsdisagreementtext-align:r, function()similaritiesbody></html>is currentlyalphabeticalis sometimestype=\"image/many of the flow:hidden;available indescribe theexistence ofall over thethe Internet"
+        },
+        {
+          "file_offset": "0x598f61",
+          "encoding": "ascii",
+          "text": "<li class=\"instrumentalSoviet Unionacknowledgedwhich can bename for theattention toattempts to developmentsIn fact, the<li class=\"aimplicationssuitable formuch of the colonizationpresidentialcancelBubble Informationmost of the is describedrest of the more or lessin SeptemberIntelligencesrc=\"http://px; height: available tomanufacturerhuman rightslink href=\"/availabilityproportionaloutside the astronomicalhuman beingsname of the are found inare based onsmaller thana person whoexpansion ofarguing thatnow known asIn the earlyintermediatederived fromScandinavian</a></div>"
+        },
+        {
+          "file_offset": "0x599277",
+          "encoding": "ascii",
+          "text": "<were createdmore generalinformation used for theindependent the Imperialcomponent ofto the northinclude the Constructionside of the would not befor instanceinvention ofmore complexcollectivelybackground: text-align: its originalinto accountthis processan extensivehowever, thethey are notrejected thecriticism ofduring whichprobably thethis article(function(){It should bean agreementaccidentallydiffers fromArchitecturebetter knownarrangementsinfluence onattended theidentical tosouth of thepass throughxml\" title=\"weight:bold;creating thedisplay:nonereplaced the<img src=\"/ihttps://www.World War IItestimonialsfound in therequired to and that thebetween the was designedconsists of considerablypublished bythe languageConservationconsisted ofrefer to theback to the css\" media=\"People from available onproved to besuggestions\"was known asvarieties oflikely to becomprised ofsupport the hands of thecoupled withconnect and border:none;performancesbefore beinglater becamecalculationsoften calledresidents ofmeaning that><li class=\"evidence forexplanationsenvironments\"></a></div>which allowsIntroductiondeveloped bya wide rangeon behalf ofvalign=\"top\"principle ofat the time,</noscript>"
+        },
+        {
+          "file_offset": "0x59971c",
+          "encoding": "ascii",
+          "text": "said to havein the firstwhile othershypotheticalphilosopherspower of thecontained inperformed byinability towere writtenspan style=\"input name=\"the questionintended forrejection ofimplies thatinvented thethe standardwas probablylink betweenprofessor ofinteractionschanging theIndian Ocean class=\"lastworking with'http://www.years beforeThis was therecreationalentering themeasurementsan extremelyvalue of thestart of the"
+        },
+        {
+          "file_offset": "0x59b7b2",
+          "encoding": "ascii",
+          "text": "<link rel=\" src='http://interested inconventional \" alt=\"\" /></are generallyhas also beenmost popular correspondingcredited withtyle=\"border:</a></span></.gif\" width=\"<iframe src=\"table class=\"inline-block;according to together withapproximatelyparliamentarymore and moredisplay:none;traditionallypredominantly&nbsp;|&nbsp;&nbsp;</span> cellspacing=<input name=\"or\" content=\"controversialproperty=\"og:/x-shockwave-demonstrationsurrounded byNevertheless,was the firstconsiderable Although the collaborationshould not beproportion of<span style=\"known as the shortly afterfor instance,described as /head>"
+        },
+        {
+          "file_offset": "0x59be99",
+          "encoding": "ascii",
+          "text": "<div class=\"more commonlyorganisationsfunctionalitywas completed &amp;mdash; participationthe characteran additionalappears to befact that thean example ofsignificantlyonmouseover=\"because they async = true;problems withseems to havethe result of src=\"http://familiar withpossession offunction () {took place inand sometimessubstantially<span></span>is often usedin an attemptgreat deal ofEnvironmentalsuccessfully virtually all20th century,professionalsnecessary to determined bycompatibilitybecause it isDictionary ofmodificationsThe followingmay refer to:Consequently,Internationalalthough somethat would beworld's firstclassified asbottom of the(particularlyalign=\"left\" most commonlybasis for thefoundation ofcontributionspopularity ofcenter of theto reduce thejurisdictionsapproximation onmouseout=\"New Testamentcollection of</span></a></in the Unitedfilm director-strict.dtd\">has been usedreturn to thealthough thischange in theseveral otherbut there areunprecedentedis similar toespecially inweight: bold;is called thecomputationalindicate thatrestricted to"
+        },
+        {
+          "file_offset": "0x59ced7",
+          "encoding": "ascii",
+          "text": "(function() {recommendationform action=\"/transformationreconstruction.style.display According to hidden\" name=\"along with thedocument.body.approximately Communicationspost\" action=\"meaning &quot;--<![endif]-->Prime Ministercharacteristic</a> <a class=the history of onmouseover=\"the governmenthref=\"https://was originallywas introducedclassificationrepresentativeare considered<![endif]-->"
+        },
+        {
+          "file_offset": "0x59d0f8",
+          "encoding": "ascii",
+          "text": "<table class=\"accompanied byaccount of the<script src=\"/nature of the the people in in addition tos); js.id = id\" width=\"100%\"regarding the Roman Catholican independentfollowing the .gif\" width=\"1the following discriminationarchaeologicalprime minister.js\"></script>combination of marginwidth=\"createElement(w.attachEvent(</a></td></tr>src=\"https://aIn particular, align=\"left\" Czech RepublicUnited Kingdomcorrespondenceconcluded that.html\" title=\"(function () {comes from theapplication of<span class=\"sbelieved to beement('script'</a>"
+        },
+        {
+          "file_offset": "0x59d51a",
+          "encoding": "ascii",
+          "text": "<div iwas consideredpercent of the\" /></a></div>collection of descended fromsection of theaccept-charsetto be confusedmember of the padding-right:translation ofinterpretation href='http://whether or notThere are alsothere are manya small numberother parts ofimpossible to  class=\"buttonlocated in the. However, theand eventuallyAt the end of because of itsrepresents the<form action=\" method=\"post\"it is possiblemore likely toan increase inhave also beencorresponds toannounced thatalign=\"right\">many countriesfor many yearsearliest knownbecause it waspt\"></script>"
+        },
+        {
+          "file_offset": "0x59e080",
+          "encoding": "ascii",
+          "text": "environmental to prevent thehave been usedespecially forunderstand theis essentiallywere the firstis the largesthave been made\" src=\"http://interpreted assecond half ofcrolling=\"no\" is composed ofII, Holy Romanis expected tohave their owndefined as thetraditionally have differentare often usedto ensure thatagreement withcontaining theare frequentlyinformation onexample is theresulting in a</a></li></ul> class=\"footerand especiallytype=\"button\" </span></span>which included>"
+        },
+        {
+          "file_offset": "0x59e8e8",
+          "encoding": "ascii",
+          "text": "<meta \" href=\"http://\"><span class=\"members of the window.locationvertical-align:/a> | <a href=\"<!doctype html>media=\"screen\" <option value=\"favicon.ico\" />"
+        },
+        {
+          "file_offset": "0x59f890",
+          "encoding": "ascii",
+          "text": "</span><a href=\"<a href=\"http://); return false;text-decoration: scrolling=\"no\" border-collapse:associated with Bahasa IndonesiaEnglish language<text xml:space=.gif\" border=\"0\"</body>"
+        },
+        {
+          "file_offset": "0x59f950",
+          "encoding": "ascii",
+          "text": "overflow:hidden;img src=\"http://addEventListenerresponsible for s.js\"></script>"
+        },
+        {
+          "file_offset": "0x59ffd0",
+          "encoding": "ascii",
+          "text": "robots\" content=\"<div id=\"footer\">the United States<img src=\"http://.jpg|right|thumb|.js\"></script>"
+        },
+        {
+          "file_offset": "0x5a0124",
+          "encoding": "ascii",
+          "text": "information about<div id=\"header\">\" action=\"http://<a href=\"https://<div id=\"content\"</div>"
+        },
+        {
+          "file_offset": "0x5a0189",
+          "encoding": "ascii",
+          "text": "<derived from the <img src='http://according to the "
+        },
+        {
+          "file_offset": "0x5a01ce",
+          "encoding": "ascii",
+          "text": "style=\"font-size:script language=\"Arial, Helvetica,</a><span class=\"</script><script political partiestd></tr></table><href=\"http://www.interpretation ofrel=\"stylesheet\" document.write('<charset=\"utf-8\">"
+        },
+        {
+          "file_offset": "0x5a0994",
+          "encoding": "ascii",
+          "text": "<img src=\"http://s;text-align:centerfont-weight: bold; According to the difference between\" frameborder=\"0\" \" style=\"position:link href=\"http://html4/loose.dtd\">"
+        },
+        {
+          "file_offset": "0x5a0b1f",
+          "encoding": "ascii",
+          "text": "<&nbsp;&nbsp;&nbsp;\"><a href=\"http://style=\"float:left;concerned with the=http%3A%2F%2Fwww.in popular culturetype=\"text/css\" />it is possible to Harvard Universitytylesheet\" href=\"/the main characterOxford University  name=\"keywords\" cstyle=\"text-align:the United Kingdomfederal government<div style=\"margin depending on the description of the<div class=\"header.min.js\"></script>destruction of theslightly differentin accordance withtelecommunicationsindicates that theshortly thereafterespecially in the European countriesHowever, there aresrc=\"http://staticsuggested that the\" src=\"http://www.a large number of Telecommunications\" rel=\"nofollow\" tHoly Roman Emperoralmost exclusively\" border=\"0\" alt=\"Secretary of Stateculminating in theCIA World Factbookthe most importantanniversary of thestyle=\"background-<li><em><a href=\"/the Atlantic Oceanstrictly speaking,shortly before thedifferent types ofthe Ottoman Empire><img src=\"http://An Introduction toconsequence of thedeparture from theConfederate Statesindigenous peoplesProceedings of theinformation on thetheories have beeninvolvement in thedivided into threeadjacent countriesis responsible fordissolution of thecollaboration withwidely regarded ashis contemporariesfounding member ofDominican Republicgenerally acceptedthe possibility ofare also availableunder constructionrestoration of thethe general publicis almost entirelypasses through thehas been suggestedcomputer and videoGermanic languages according to the different from theshortly afterwardshref=\"https://www.recent developmentBoard of Directors<div class=\"search| <a href=\"http://In particular, theMultiple footnotesor other substancethousands of yearstranslation of the</div>"
+        },
+        {
+          "file_offset": "0x5a1a50",
+          "encoding": "ascii",
+          "text": "keywords\" content=\"w3.org/1999/xhtml\"><a target=\"_blank\" text/html; charset=\" target=\"_blank\"><table cellpadding=\"autocomplete=\"off\" text-align: center;to last version by background-color: #\" href=\"http://www./div></div><div id=<a href=\"#\" class=\"\"><img src=\"http://cript\" src=\"http://"
+        },
+        {
+          "file_offset": "0x5a1b6e",
+          "encoding": "ascii",
+          "text": "<script language=\"//EN\" \"http://www.wencodeURIComponent(\" href=\"javascript:<div class=\"contentdocument.write('<scposition: absolute;script src=\"http:// style=\"margin-top:.min.js\"></script>"
+        },
+        {
+          "file_offset": "0x5a1c5d",
+          "encoding": "ascii",
+          "text": "</html>distinction between/\" target=\"_blank\"><link href=\"http://encoding=\"utf-8\"?>"
+        },
+        {
+          "file_offset": "0x5a1cb0",
+          "encoding": "ascii",
+          "text": "w.addEventListener?action=\"http://www.icon\" href=\"http:// style=\"background:type=\"text/css\" />"
+        },
+        {
+          "file_offset": "0x5a1e11",
+          "encoding": "ascii",
+          "text": "<script  style=\"font-size:1></span><span id=gbLibrary of Congress<img src=\"http://imEnglish translationAcademy of Sciencesdiv style=\"display:construction of the.getElementById(id)in conjunction withElement('script'); <meta property=\"og:"
+        },
+        {
+          "file_offset": "0x5a1f10",
+          "encoding": "ascii",
+          "text": " type=\"text\" name=\">Privacy Policy</a>administered by theenableSingleRequeststyle=&quot;margin:</div></div></div><><img src=\"http://i style=&quot;float:referred to as the total population ofin Washington, D.C. style=\"background-among other things,organization of theparticipated in thethe introduction ofidentified with thefictional character Oxford University misunderstanding ofThere are, however,stylesheet\" href=\"/Columbia Universityexpanded to includeusually referred toindicating that thehave suggested thataffiliated with thecorrelation betweennumber of different></td></tr></table>Republic of Ireland"
+        },
+        {
+          "file_offset": "0x5a217b",
+          "encoding": "ascii",
+          "text": "<script under the influencecontribution to theOfficial website ofheadquarters of thecentered around theimplications of thehave been developedFederal Republic ofbecame increasinglycontinuation of theNote, however, thatsimilar to that of capabilities of theaccordance with theparticipants in thefurther developmentunder the directionis often consideredhis younger brother</td></tr></table><a http-equiv=\"X-UA-physical propertiesof British Columbiahas been criticized(with the exceptionquestions about thepassing through the0\" cellpadding=\"0\" thousands of peopleredirects here. Forhave children under%3E%3C/script%3E\"));<a href=\"http://www.<li><a href=\"http://site_name\" content=\"text-decoration:nonestyle=\"display: none<meta http-equiv=\"X-new Date().getTime() type=\"image/x-icon\"</span><span class=\"language=\"javascriptwindow.location.href<a href=\"javascript:-->"
+        },
+        {
+          "file_offset": "0x5a24d9",
+          "encoding": "ascii",
+          "text": "<script type=\"t<a href='http://www.hortcut icon\" href=\"</div>"
+        },
+        {
+          "file_offset": "0x5a2518",
+          "encoding": "ascii",
+          "text": "<div class=\"<script src=\"http://\" rel=\"stylesheet\" t</div>"
+        },
+        {
+          "file_offset": "0x5a2553",
+          "encoding": "ascii",
+          "text": "<script type=/a> <a href=\"http:// allowTransparency=\"X-UA-Compatible\" conrelationship between"
+        },
+        {
+          "file_offset": "0x5a25bc",
+          "encoding": "ascii",
+          "text": "<script </a></li></ul></div>associated with the programming language</a><a href=\"http://</a></li><li class=\"form action=\"http://<div style=\"display:type=\"text\" name=\"q\"<table width=\"100%\" background-position:\" border=\"0\" width=\"rel=\"shortcut icon\" h6><ul><li><a href=\"  <meta http-equiv=\"css\" media=\"screen\" responsible for the \" type=\"application/\" style=\"background-html; charset=utf-8\" allowtransparency=\"stylesheet\" type=\"te"
+        },
+        {
+          "file_offset": "0x5a2906",
+          "encoding": "ascii",
+          "text": "<div cduring his lifetime,corresponding to thetype=\"image/x-icon\" an increasing numberdiplomatic relationsare often consideredmeta charset=\"utf-8\" <input type=\"text\" examples include the\"><img src=\"http://iparticipation in thethe establishment of"
+        },
+        {
+          "file_offset": "0x5a2dd0",
+          "encoding": "ascii",
+          "text": "html; charset=UTF-8\" setTimeout(function()display:inline-block;<input type=\"submit\" type = 'text/javascri<img src=\"http://www.\" \"http://www.w3.org/shortcut icon\" href=\"\" autocomplete=\"off\" </a></div><div class=</a></li>"
+        },
+        {
+          "file_offset": "0x5a2eac",
+          "encoding": "ascii",
+          "text": "<li class=\"css\" type=\"text/css\" <form action=\"http://xt/css\" href=\"http://link rel=\"alternate\" "
+        },
+        {
+          "file_offset": "0x5a2f0d",
+          "encoding": "ascii",
+          "text": "<script type=\"text/ onclick=\"javascript:(new Date).getTime()}height=\"1\" width=\"1\" People's Republic of  <a href=\"http://www.text-decoration:underthe beginning of the </div>"
+        },
+        {
+          "file_offset": "0x5a3008",
+          "encoding": "ascii",
+          "text": "<script src=\"http://option><option value=often referred to as /option>"
+        },
+        {
+          "file_offset": "0x5a3087",
+          "encoding": "ascii",
+          "text": "<a href=\"http://www</a><a href=\"http://w"
+        },
+        {
+          "file_offset": "0x5a3362",
+          "encoding": "ascii",
+          "text": "<html <meta charset=\"utf-8\">:url\" content=\"http://.css\" rel=\"stylesheet\"style type=\"text/css\">type=\"text/css\" href=\"w3.org/1999/xhtml\" xmltype=\"text/javascript\" method=\"get\" action=\"link rel=\"stylesheet\"  = document.getElementtype=\"image/x-icon\" />cellpadding=\"0\" cellsp.css\" type=\"text/css\" </a></li><li><a href=\"\" width=\"1\" height=\"1\"\"><a href=\"http://www.style=\"display:none;\">alternate\" type=\"appli-//W3C//DTD XHTML 1.0 ellspacing=\"0\" cellpad type=\"hidden\" value=\"/a>&nbsp;<span role=\"s"
+        },
+        {
+          "file_offset": "0x5a3682",
+          "encoding": "ascii",
+          "text": "<a href=\"http://www.css\" rel=\"stylesheet\" </div></div><div classlanguage=\"javascript\">aria-hidden=\"true\">"
+        },
+        {
+          "file_offset": "0x5a3748",
+          "encoding": "ascii",
+          "text": "<li><a href=\"http://ator\" aria-hidden=\"tru> <a href=\"http://www.language=\"javascript\" /option>"
+        },
+        {
+          "file_offset": "0x5a3890",
+          "encoding": "ascii",
+          "text": "<!DOCTYPE html PUBLIC \"nt-Type\" content=\"text/<meta http-equiv=\"Conteransitional//EN\" \"http:<html xmlns=\"http://www-//W3C//DTD XHTML 1.0 TDTD/xhtml1-transitional//www.w3.org/TR/xhtml1/pe = 'text/javascript';<meta name=\"descriptionparentNode.insertBefore<input type=\"hidden\" najs\" type=\"text/javascri(document).ready(functiscript type=\"text/javasimage\" content=\"http://UA-Compatible\" content=tml; charset=utf-8\" />"
+        },
+        {
+          "file_offset": "0x5a3b1a",
+          "encoding": "ascii",
+          "text": "<html xmlns=\"http-//W3C//DTD HTML 4.01 TentsByTagName('script')input type=\"hidden\" nam<script type=\"text/javas\" style=\"display:none;\">document.getElementById(=document.createElement(' type='text/javascript'input type=\"text\" name=\"d.getElementsByTagName(snical\" href=\"http://www.C//DTD HTML 4.01 Transit<style type=\"text/css\">"
+        },
+        {
+          "file_offset": "0x5a3cd8",
+          "encoding": "ascii",
+          "text": " style=\"display:none;\"><<li><a href=\"http://www. type='text/javascript'>"
+        },
+        {
+          "file_offset": "0x678110",
+          "encoding": "ascii",
+          "text": "DoAssemblyResolve"
+        },
+        {
+          "file_offset": "0x678140",
+          "encoding": "ascii",
+          "text": "AssemblyResolveEvent handlers cannot return Assemblies loaded for reflection only: %s"
+        },
+        {
+          "file_offset": "0x680a90",
+          "encoding": "ascii",
+          "text": "Cannot resolve dependency to assembly '%s' because it has not been preloaded. When using the ReflectionOnly APIs, dependent assemblies must be pre-loaded or loaded on demand through the ReflectionOnlyAssemblyResolve event."
+        },
+        {
+          "file_offset": "0x69f5e0",
+          "encoding": "ascii",
+          "text": "Attempting to JIT compile method '%s' while running in aot-only mode. See https://docs.microsoft.com/xamarin/ios/internals/limitations for more information."
+        },
+        {
+          "file_offset": "0x69f72f",
+          "encoding": "ascii",
+          "text": "See http://www.mono-project.com/Diagnostic:Delegate for an explanation and ways to fix this."
+        },
+        {
+          "file_offset": "0x6a7650",
+          "encoding": "ascii",
+          "text": "Download a newer corlib or a newer runtime at http://www.mono-project.com/download."
+        },
+        {
+          "file_offset": "0x6a8230",
+          "encoding": "ascii",
+          "text": "AOT restriction: Method '%s' must be static since it is decorated with [MonoPInvokeCallback]. See https://docs.microsoft.com/xamarin/ios/internals/limitations#reverse-callbacks"
+        },
+        {
+          "file_offset": "0x73652c",
+          "encoding": "ascii",
+          "text": "LoadLibraryW"
+        },
+        {
+          "file_offset": "0x736554",
+          "encoding": "ascii",
+          "text": "GetProcAddress"
+        },
+        {
+          "file_offset": "0x7366b4",
+          "encoding": "ascii",
+          "text": "LoadLibraryExW"
+        },
+        {
+          "file_offset": "0x775277",
+          "encoding": "ascii",
+          "text": "http://ocsp.digicert.com0A"
+        },
+        {
+          "file_offset": "0x77529c",
+          "encoding": "ascii",
+          "text": "5http://cacerts.digicert.com/DigiCertTrustedRootG4.crt0C"
+        },
+        {
+          "file_offset": "0x7752e4",
+          "encoding": "ascii",
+          "text": "2http://crl3.digicert.com/DigiCertTrustedRootG4.crl0"
+        },
+        {
+          "file_offset": "0x775974",
+          "encoding": "ascii",
+          "text": "http://www.digicert.com/CPS0"
+        },
+        {
+          "file_offset": "0x7759c9",
+          "encoding": "ascii",
+          "text": "Mhttp://crl3.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crl0S"
+        },
+        {
+          "file_offset": "0x775a1e",
+          "encoding": "ascii",
+          "text": "Mhttp://crl4.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crl0"
+        },
+        {
+          "file_offset": "0x775a8d",
+          "encoding": "ascii",
+          "text": "http://ocsp.digicert.com0\\"
+        },
+        {
+          "file_offset": "0x775ab2",
+          "encoding": "ascii",
+          "text": "Phttp://cacerts.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crt0"
+        },
+        {
+          "file_offset": "0x7764d1",
+          "encoding": "ascii",
+          "text": "http://ocsp.digicert.com0]"
+        },
+        {
+          "file_offset": "0x7764f6",
+          "encoding": "ascii",
+          "text": "Qhttp://cacerts.digicert.com/DigiCertTrustedG4TimeStampingRSA4096SHA2562025CA1.crt0_"
+        },
+        {
+          "file_offset": "0x77655a",
+          "encoding": "ascii",
+          "text": "Nhttp://crl3.digicert.com/DigiCertTrustedG4TimeStampingRSA4096SHA2562025CA1.crl0 "
+        },
+        {
+          "file_offset": "0x776bc1",
+          "encoding": "ascii",
+          "text": "http://ocsp.digicert.com0A"
+        },
+        {
+          "file_offset": "0x776be6",
+          "encoding": "ascii",
+          "text": "5http://cacerts.digicert.com/DigiCertTrustedRootG4.crt0C"
+        },
+        {
+          "file_offset": "0x776c2e",
+          "encoding": "ascii",
+          "text": "2http://crl3.digicert.com/DigiCertTrustedRootG4.crl0 "
+        },
+        {
+          "file_offset": "0x77725d",
+          "encoding": "ascii",
+          "text": "http://ocsp.digicert.com0C"
+        },
+        {
+          "file_offset": "0x777282",
+          "encoding": "ascii",
+          "text": "7http://cacerts.digicert.com/DigiCertAssuredIDRootCA.crt0E"
+        },
+        {
+          "file_offset": "0x7772cc",
+          "encoding": "ascii",
+          "text": "4http://crl3.digicert.com/DigiCertAssuredIDRootCA.crl0"
+        },
+        {
+          "file_offset": "0x57b648",
+          "encoding": "utf-16le",
+          "text": "cmd.exe"
+        }
+      ]
+    },
+    {
+      "path": "UnityCrashHandler64.exe",
+      "sha256": "a14daa19e208356b8f956abc6041ee945a0fab3eed54da8b5ae4a543be96051d",
+      "matches": [
+        {
+          "file_offset": "0x87100",
+          "encoding": "ascii",
+          "text": "https://perf-events.cloud.unity3d.com"
+        },
+        {
+          "file_offset": "0x94186",
+          "encoding": "ascii",
+          "text": "LoadLibraryA"
+        },
+        {
+          "file_offset": "0x941bc",
+          "encoding": "ascii",
+          "text": "LoadLibraryW"
+        },
+        {
+          "file_offset": "0x941e0",
+          "encoding": "ascii",
+          "text": "GetProcAddress"
+        },
+        {
+          "file_offset": "0x947ac",
+          "encoding": "ascii",
+          "text": "LoadLibraryExW"
+        },
+        {
+          "file_offset": "0x1724cb",
+          "encoding": "ascii",
+          "text": "<dpiAware xmlns=\"http://schemas.microsoft.com/SMI/2005/WindowsSettings\">True/PM</dpiAware>"
+        },
+        {
+          "file_offset": "0x173a77",
+          "encoding": "ascii",
+          "text": "http://ocsp.digicert.com0A"
+        },
+        {
+          "file_offset": "0x173a9c",
+          "encoding": "ascii",
+          "text": "5http://cacerts.digicert.com/DigiCertTrustedRootG4.crt0C"
+        },
+        {
+          "file_offset": "0x173ae4",
+          "encoding": "ascii",
+          "text": "2http://crl3.digicert.com/DigiCertTrustedRootG4.crl0"
+        },
+        {
+          "file_offset": "0x174174",
+          "encoding": "ascii",
+          "text": "http://www.digicert.com/CPS0"
+        },
+        {
+          "file_offset": "0x1741c9",
+          "encoding": "ascii",
+          "text": "Mhttp://crl3.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crl0S"
+        },
+        {
+          "file_offset": "0x17421e",
+          "encoding": "ascii",
+          "text": "Mhttp://crl4.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crl0"
+        },
+        {
+          "file_offset": "0x17428d",
+          "encoding": "ascii",
+          "text": "http://ocsp.digicert.com0\\"
+        },
+        {
+          "file_offset": "0x1742b2",
+          "encoding": "ascii",
+          "text": "Phttp://cacerts.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crt0"
+        },
+        {
+          "file_offset": "0x174cd1",
+          "encoding": "ascii",
+          "text": "http://ocsp.digicert.com0]"
+        },
+        {
+          "file_offset": "0x174cf6",
+          "encoding": "ascii",
+          "text": "Qhttp://cacerts.digicert.com/DigiCertTrustedG4TimeStampingRSA4096SHA2562025CA1.crt0_"
+        },
+        {
+          "file_offset": "0x174d5a",
+          "encoding": "ascii",
+          "text": "Nhttp://crl3.digicert.com/DigiCertTrustedG4TimeStampingRSA4096SHA2562025CA1.crl0 "
+        },
+        {
+          "file_offset": "0x1753c1",
+          "encoding": "ascii",
+          "text": "http://ocsp.digicert.com0A"
+        },
+        {
+          "file_offset": "0x1753e6",
+          "encoding": "ascii",
+          "text": "5http://cacerts.digicert.com/DigiCertTrustedRootG4.crt0C"
+        },
+        {
+          "file_offset": "0x17542e",
+          "encoding": "ascii",
+          "text": "2http://crl3.digicert.com/DigiCertTrustedRootG4.crl0 "
+        },
+        {
+          "file_offset": "0x175a5d",
+          "encoding": "ascii",
+          "text": "http://ocsp.digicert.com0C"
+        },
+        {
+          "file_offset": "0x175a82",
+          "encoding": "ascii",
+          "text": "7http://cacerts.digicert.com/DigiCertAssuredIDRootCA.crt0E"
+        },
+        {
+          "file_offset": "0x175acc",
+          "encoding": "ascii",
+          "text": "4http://crl3.digicert.com/DigiCertAssuredIDRootCA.crl0"
+        }
+      ]
+    },
+    {
+      "path": "UnityPlayer.dll",
+      "sha256": "5eadaec116a9810c68a3c67bc9ad07c6f233badeb06533987ce27deff471b21d",
+      "matches": [
+        {
+          "file_offset": "0x1a3e91c",
+          "encoding": "ascii",
+          "text": "# https://curl.se/docs/http-cookies.html"
+        },
+        {
+          "file_offset": "0x1a402a8",
+          "encoding": "ascii",
+          "text": "LoadLibraryExW"
+        },
+        {
+          "file_offset": "0x1a40350",
+          "encoding": "ascii",
+          "text": "# Your alt-svc cache. https://curl.se/docs/alt-svc.html"
+        },
+        {
+          "file_offset": "0x1a40520",
+          "encoding": "ascii",
+          "text": "# Your HSTS cache. https://curl.se/docs/hsts.html"
+        },
+        {
+          "file_offset": "0x1b54590",
+          "encoding": "ascii",
+          "text": "https://"
+        },
+        {
+          "file_offset": "0x1b545a0",
+          "encoding": "ascii",
+          "text": "http://"
+        },
+        {
+          "file_offset": "0x1c5feb0",
+          "encoding": "ascii",
+          "text": "Initializing Microsoft Media Foundation failed.  It seems that the Microsoft Media Foundation is not installed on this machine or a newer version of Microsoft Media Foundation is required.  To install the necessary libraries please install the Media Feature Pack from https://www.microsoft.com/en-us/search/result.aspx?q=Media+Feature+Pack for your version of Windows."
+        },
+        {
+          "file_offset": "0x1c614b9",
+          "encoding": "ascii",
+          "text": "      https://www.microsoft.com/en-ca/p/hevc-video-extensions-from-device-manufacturer/9n4wgh0z6vhq"
+        },
+        {
+          "file_offset": "0x1c6151d",
+          "encoding": "ascii",
+          "text": "      https://www.microsoft.com/en-us/p/hevc-video-extensions/9nmzlz57r3t7"
+        },
+        {
+          "file_offset": "0x1e68f66",
+          "encoding": "ascii",
+          "text": "LoadLibraryW"
+        },
+        {
+          "file_offset": "0x1e68f76",
+          "encoding": "ascii",
+          "text": "GetProcAddress"
+        },
+        {
+          "file_offset": "0x1e69204",
+          "encoding": "ascii",
+          "text": "LoadLibraryA"
+        },
+        {
+          "file_offset": "0x1e69730",
+          "encoding": "ascii",
+          "text": "LoadLibraryExW"
+        },
+        {
+          "file_offset": "0x1e6a6ca",
+          "encoding": "ascii",
+          "text": "wglGetProcAddress"
+        },
+        {
+          "file_offset": "0x1e6af06",
+          "encoding": "ascii",
+          "text": "LoadLibraryExA"
+        },
+        {
+          "file_offset": "0x201b677",
+          "encoding": "ascii",
+          "text": "http://ocsp.digicert.com0A"
+        },
+        {
+          "file_offset": "0x201b69c",
+          "encoding": "ascii",
+          "text": "5http://cacerts.digicert.com/DigiCertTrustedRootG4.crt0C"
+        },
+        {
+          "file_offset": "0x201b6e4",
+          "encoding": "ascii",
+          "text": "2http://crl3.digicert.com/DigiCertTrustedRootG4.crl0"
+        },
+        {
+          "file_offset": "0x201bd74",
+          "encoding": "ascii",
+          "text": "http://www.digicert.com/CPS0"
+        },
+        {
+          "file_offset": "0x201bdc9",
+          "encoding": "ascii",
+          "text": "Mhttp://crl3.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crl0S"
+        },
+        {
+          "file_offset": "0x201be1e",
+          "encoding": "ascii",
+          "text": "Mhttp://crl4.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crl0"
+        },
+        {
+          "file_offset": "0x201be8d",
+          "encoding": "ascii",
+          "text": "http://ocsp.digicert.com0\\"
+        },
+        {
+          "file_offset": "0x201beb2",
+          "encoding": "ascii",
+          "text": "Phttp://cacerts.digicert.com/DigiCertTrustedG4CodeSigningRSA4096SHA3842021CA1.crt0"
+        },
+        {
+          "file_offset": "0x201c8d1",
+          "encoding": "ascii",
+          "text": "http://ocsp.digicert.com0]"
+        },
+        {
+          "file_offset": "0x201c8f6",
+          "encoding": "ascii",
+          "text": "Qhttp://cacerts.digicert.com/DigiCertTrustedG4TimeStampingRSA4096SHA2562025CA1.crt0_"
+        },
+        {
+          "file_offset": "0x201c95a",
+          "encoding": "ascii",
+          "text": "Nhttp://crl3.digicert.com/DigiCertTrustedG4TimeStampingRSA4096SHA2562025CA1.crl0 "
+        },
+        {
+          "file_offset": "0x201cfc1",
+          "encoding": "ascii",
+          "text": "http://ocsp.digicert.com0A"
+        },
+        {
+          "file_offset": "0x201cfe6",
+          "encoding": "ascii",
+          "text": "5http://cacerts.digicert.com/DigiCertTrustedRootG4.crt0C"
+        },
+        {
+          "file_offset": "0x201d02e",
+          "encoding": "ascii",
+          "text": "2http://crl3.digicert.com/DigiCertTrustedRootG4.crl0 "
+        },
+        {
+          "file_offset": "0x201d65d",
+          "encoding": "ascii",
+          "text": "http://ocsp.digicert.com0C"
+        },
+        {
+          "file_offset": "0x201d682",
+          "encoding": "ascii",
+          "text": "7http://cacerts.digicert.com/DigiCertAssuredIDRootCA.crt0E"
+        },
+        {
+          "file_offset": "0x201d6cc",
+          "encoding": "ascii",
+          "text": "4http://crl3.digicert.com/DigiCertAssuredIDRootCA.crl0"
+        },
+        {
+          "file_offset": "0x1a14a36",
+          "encoding": "utf-16le",
+          "text": "phttp://"
+        },
+        {
+          "file_offset": "0x1a14a58",
+          "encoding": "utf-16le",
+          "text": "https://"
+        },
+        {
+          "file_offset": "0x1b6b400",
+          "encoding": "utf-16le",
+          "text": "rundll32.exe"
+        }
+      ]
+    }
+  ]
+}

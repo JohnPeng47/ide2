@@ -90,7 +90,14 @@ export function MappingEditorCanvas(props: {
       const bounds = editor.getShapePageBounds(mappingShapeId(`grid:${focus.id}`));
       const point = rect?.width && rect.height ? editor.screenToPage({ x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 })
         : bounds?.center;
-      if (point) editor.centerOnPoint({ x: point.x - 170 / editor.getZoomLevel(), y: point.y });
+      if (point) {
+        const viewport = root.current!.getBoundingClientRect();
+        const tools = root.current?.closest('.mapping-viewport')?.querySelector('.window-panel-tabbed')?.getBoundingClientRect();
+        // Center in the canvas space beside the visible tools; keep the explorer margin otherwise.
+        const explorer = root.current?.closest('.mapping-viewport')?.querySelector('.mapping-floating-pane')?.getBoundingClientRect();
+        const offset = tools?.width ? ((explorer?.right ?? viewport.left) + tools.left) / 2 - (viewport.left + viewport.width / 2) : 170;
+        editor.centerOnPoint({ x: point.x - offset / editor.getZoomLevel(), y: point.y });
+      }
     }); });
     return () => { cancelAnimationFrame(frame); cancelAnimationFrame(inner); };
   }, [editor, props.enabled, props.focusBox]);
@@ -105,6 +112,11 @@ export function MappingEditorCanvas(props: {
     onKeyDownCapture={event => {
       const target = event.target as HTMLElement;
       if (target.closest('input,textarea,select,[contenteditable=true]')) return;
+      // Let application Escape handling remove one selection instead of the SDK clearing every shape.
+      if (event.key === 'Escape' && editor?.getPath().endsWith('.idle')
+        && props.session.controller.getSnapshot().canvas.selection.items.length) {
+        editor.markEventAsHandled(event.nativeEvent);
+      }
       if ((event.ctrlKey || event.metaKey) && ['z', 'y'].includes(event.key.toLowerCase())) return;
       // Keep semantic delete cleanup and workspace transfer undo in application commands.
       if (event.key === 'Delete' || event.key === 'Backspace') {

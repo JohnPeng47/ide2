@@ -1,3 +1,4 @@
+import { toggleSubtreeSelection } from '../../../../../domain/mapping/selection/subtreeSelection';
 import { describe, expect, it, vi } from 'vitest';
 import { atom, computed, Mat, type Editor } from 'tldraw';
 import { CanvasRuntime } from '../CanvasRuntimeContext';
@@ -108,4 +109,30 @@ describe('native canvas read models and local anchors', () => {
     expect(geometry.get().x).toBe(source.rect.x + 700);
     dispose();
   });
+});
+
+it('synchronizes explicit membership, envelopes and history from controller state without pointer callbacks', () => {
+  const { controller, runtime, dispose } = setup();
+  const diagram = controller.getSnapshot().document.scene.contents.overview;
+  const nodes = diagramContentNodes(diagram.content);
+  const root = nodes.find(node => node.label === 'Root')!, branch = nodes.find(node => node.label === 'Branch')!;
+  controller.configureLayout({ width: 8, height: 18 }, { width: 1200, height: 900 });
+  controller.select({ type: 'replace', items: toggleSubtreeSelection({ items: [] }, diagram, 'overview', root.id).items });
+  const item = controller.getSnapshot().canvas.selection.items[0];
+  const first = runtime.floats.get(item.id).get()!;
+  expect(first.selected).toBe(true);
+  expect(first.node.bounds).toEqual({ width: item.region!.rect.endColumn * 8, height: 72 });
+  const cut = toggleSubtreeSelection(controller.getSnapshot().canvas.selection, diagram, 'overview', branch.id);
+  controller.select({ type: 'replace', items: cut.items });
+  expect(runtime.grids.get('grid:overview').get()!.selectedContent).toEqual(cut.items[0].region!.contentNodeIds);
+  expect(runtime.floats.get(item.id).get()!.node.bounds).toEqual(first.node.bounds);
+  expect(runtime.floats.get(item.id).get()!.selected).toBe(true);
+  controller.undo();
+  expect(runtime.grids.get('grid:overview').get()!.selectedContent).toEqual(item.region!.contentNodeIds);
+  controller.undo(true);
+  expect(runtime.grids.get('grid:overview').get()!.selectedContent).toEqual(cut.items[0].region!.contentNodeIds);
+  controller.select({ type: 'clear' });
+  expect(runtime.floats.get(item.id).get()!.selected).toBe(false);
+  expect(runtime.grids.get('grid:overview').get()!.selectedContent).toEqual([]);
+  dispose();
 });

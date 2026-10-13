@@ -29,7 +29,7 @@ export function completeMarquee(current: MappingCanvasState, marquee: CanvasMarq
     last = { ...displayGeometry(), id: item.id, kind: 'selection', childIds: [], expansion: 'expanded', displayMode: 'stacked',
       ...(existing?.kind === 'selection' ? existing : {}), sourceBoxId: item.displayNodeId.slice(5),
       sourceContentId: region.sourceContentId, sourceAscii: region.sourceAscii, sourceRevisionId: region.sourceRevisionId,
-      rect: region.rect, selectedIds: [...region.selectedIds] };
+      rect: region.rect, contentNodeIds: region.contentNodeIds, selectedIds: [...region.selectedIds] };
     next = { ...next, display: existing ? { ...next.display, nodes: { ...next.display.nodes, [last.id]: last } }
       : addDisplayNode(next.display, last) };
     surfaces[last.id] = { ...surfaces[last.id] ?? initialSelectionSurface(), actionsOpen: false };

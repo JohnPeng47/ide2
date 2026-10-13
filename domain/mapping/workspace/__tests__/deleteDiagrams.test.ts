@@ -32,8 +32,11 @@ it('deletes selected diagrams, incident edges, selection and owned panes in one 
   expect(after.version).toBe(before.version + 1);
   expect(after.document.edges).toEqual([]);
   expect(after.document.scene.contents.overview).toBeUndefined();
-  expect(after.canvas.display.rootIds).toEqual([]);
-  expect(after.canvas.display.nodes).toEqual({});
+  const remaining = after.canvas.selection.items[0];
+  expect(after.canvas.display.rootIds).toEqual([remaining.id]);
+  expect(after.canvas.display.nodes[remaining.id]).toMatchObject({ kind: 'selection', sourceBoxId: 'other' });
+  expect(after.canvas.display.nodes.selection).toBeUndefined();
+  expect(after.canvas.display.nodes.pane).toBeUndefined();
   expect(after.canvas.selection.items.map(item => item.displayNodeId)).toEqual(['grid:other']);
   controller.undo();
   expect(controller.getSnapshot().document).toEqual(before.document);

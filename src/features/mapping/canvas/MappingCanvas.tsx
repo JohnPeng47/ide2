@@ -1,9 +1,10 @@
 import { completeMarquee } from '../../../../domain/mapping/selection/completeMarquee';
 import type { SelectionHit, SelectionPolicy } from '../../../../domain/mapping/selection/selectionGesture';
 import { shareEqual, CanvasRuntimeContext } from '../tldraw/CanvasRuntimeContext';
-import { diagramSelectionItem, regionSelectionItem, selectedDiagramIds, type SelectionState } from '../../../../domain/mapping/selection/selectionState';
+import { diagramSelectionItem, regionSelectionItem, selectedDiagramIds, selectionContentNodes, type SelectionState } from '../../../../domain/mapping/selection/selectionState';
+import { toggleSubtreeSelection } from '../../../../domain/mapping/selection/subtreeSelection';
 import type { PromptReference } from '../../../../domain/mapping/agent/diagramEdit';
-import { diagramReference, nodesReference } from '../prompt-composer/promptReferences';
+import { nodesReference } from '../prompt-composer/promptReferences';
 import { useMappingServices } from '../services/MappingServices';
 import { useStore } from 'zustand';
 import type { CanvasSession } from '../workspace/canvasSession';
@@ -104,9 +105,10 @@ const emptySelectionScene = singleDiagramScene('[Empty canvas]');
 const emptySelectionBox = flattenGrid(resolveScene(emptySelectionScene)).find(box => box.contentId)!;
 
 export function MappingPocSelectionCanvas(props: {
+  onSelectionChange?: () => void;
+  extension?: { key: string; disabled?: boolean; origin?: { column: number; row: number }; onPlace: (point: { column: number; row: number }) => void };
   onUpdateDiagram?: (nodeId: string) => void;
-  /** Opens a create-diagram prompt anchored on this diagram. */
-  onCreateDiagram?: (nodeId: string) => void;
+  onOpenLlm?: () => void;
   /** References are captured here, at the moment of the action, from the exact displayed revision. */
   onReference?: (references: PromptReference[], mode: 'copy' | 'insert', nodeId: string) => void;
   /** While set, a click on the canvas places something at that grid point instead of selecting. */
@@ -242,10 +244,9 @@ export function MappingPocSelectionCanvas(props: {
   const selectedDiagrams = (diagramSelection ?? []).filter(id => boxes.some(box => `grid:${box.box.id}` === id && box.box.kind === 'diagram'));
   const selectedNodeIds = focusedItem?.region?.selectedIds ?? [];
   const contentOfBox = (boxId: string) => { const box = boxes.find(node => node.box.id === boxId); return box?.contentId ? scene.contents[box.contentId] : undefined; };
-  const selectedDiagramReferences = () => selectedDiagrams.flatMap(id => { const diagram = contentOfBox(id.slice(5)); return diagram ? [diagramReference(diagram)] : []; });
   const focusedReference = () => {
     const boxId = focusedItem?.displayNodeId.slice(5), diagram = boxId && contentOfBox(boxId);
-    return diagram && focusedItem?.region ? nodesReference(diagram, boxId, focusedItem.region.rect) : undefined;
+    return diagram && focusedItem?.region ? nodesReference(diagram, boxId, focusedItem.region.rect, focusedItem.region.contentNodeIds) : undefined;
   };
   const [projectionChoice] = useControl("projectionChoice", canvasState, setCanvasState);
   const openDetailIds = new Set(Object.values(display.nodes).filter(node => node.kind === 'detail').map(node => node.kind === 'detail' ? node.sectionId : undefined));
@@ -314,7 +315,7 @@ export function MappingPocSelectionCanvas(props: {
     && sourceCoveredNodeCount === selectedNodes.length;
   const copySelection = useCallback(async () => {
     if (!selectionRect) return;
-    const text = selectionClipboardText(content, selectionRect, selectedNodeIds)!;
+    const text = selectionClipboardText(content, selectionRect, selectedNodeIds, focusedItem?.region?.contentNodeIds)!;
     try {
       if (!navigator.clipboard?.writeText) throw new Error("Clipboard is unavailable in this browser");
       await navigator.clipboard.writeText(text);
@@ -322,7 +323,7 @@ export function MappingPocSelectionCanvas(props: {
     } catch (error) {
       setStatusMessage(`Copy failed: ${error instanceof Error ? error.message : "Clipboard access was denied"}`);
     }
-  }, [content, selectionRect, selectedNodeIds, selectedSourceRangeCount]);
+  }, [content, selectionRect, selectedNodeIds, selectedSourceRangeCount, focusedItem]);
   const selectedEvidenceIds = useMemo(() => [...new Set(diagramSource(content).mappings()
     .filter((mapping) => selectedNodeIdSet.has(`${content.id}:${mapping.id}`))
     .map((mapping) => exportedEvidenceId(scene, content.id, mapping.entityId)))], [scene, content, selectedNodeIdSet]);
@@ -506,6 +507,10 @@ export function MappingPocSelectionCanvas(props: {
     }).finally(() => replyControllers.current.delete(thread.id));
   }, [setChatThreads]);
 
+  const commitSelection = (select: (current: MappingCanvasState) => SelectionState) => {
+    controller.updateCanvas(current => updateSelection(current, { type: 'replace', items: select(current).items }), true);
+  };
+
   const finishMarquee = (marquee: CanvasMarqueeSelection, policy: SelectionPolicy, baseline?: SelectionState) => {
     controller.updateCanvas(current => completeMarquee(baseline ? { ...current, selection: baseline } : current, marquee, scene, boxes, policy), true);
   };
@@ -564,15 +569,13 @@ export function MappingPocSelectionCanvas(props: {
       width: (region.rect.endColumn - region.rect.startColumn + 1) * cell.width,
       height: (region.rect.endLine - region.rect.startLine + 1) * cell.height }), id, kind: 'selection', childIds: [], expansion: 'expanded', displayMode: 'stacked',
       sourceBoxId: focusedItem.displayNodeId.slice(5), sourceContentId: region.sourceContentId, sourceAscii: region.sourceAscii,
-      sourceRevisionId: region.sourceRevisionId, rect: { ...region.rect }, selectedIds: [...region.selectedIds] };
+      sourceRevisionId: region.sourceRevisionId, rect: { ...region.rect }, contentNodeIds: region.contentNodeIds, selectedIds: [...region.selectedIds] };
     controller.updateCanvas(current => ({ ...current, display: addDisplayNode(current.display, root), controls: { ...current.controls,
       surfaces: { ...current.controls.surfaces, [id]: { ...current.controls.surfaces.draft, actionsOpen: false } } } }), true);
     return id;
   }, [activeProjection, retainedSelectionId, display, focusedItem, activeBox, cell, controller]);
 
-  const selectedContentNodes = useMemo(() => selectionRect ? diagramContentNodes(content.content).filter(node =>
-    node.line >= selectionRect.startLine && node.line <= selectionRect.endLine
-      && node.startColumn <= selectionRect.endColumn && node.endColumn >= selectionRect.startColumn) : [], [content, selectionRect]);
+  const selectedContentNodes = useMemo(() => focusedItem?.region ? selectionContentNodes(content, focusedItem.region) : [], [content, focusedItem]);
   const openMapped = useCallback(() => {
     if (!props.projectContext || !selectedContentNodes.length) return;
     const ownerId = retainSelection(); if (!ownerId) return;
@@ -845,15 +848,24 @@ export function MappingPocSelectionCanvas(props: {
     hotkeyHandler.current = (event: globalThis.KeyboardEvent) => {
       if (props.active === false || event.defaultPrevented) return;
       const key = event.key.toLowerCase();
+      if (key === 'l' && !event.ctrlKey && !event.metaKey && !event.altKey
+        && !event.isComposing && !typingTarget(event.target)) {
+        if (event.repeat) return;
+        const item = controller.getSnapshot().canvas.selection.items.at(-1);
+        if (item ? props.onUpdateDiagram : props.onOpenLlm) {
+          event.preventDefault();
+          if (item) props.onUpdateDiagram?.(item.displayNodeId);
+          else props.onOpenLlm?.();
+          setActionsOpen(false);
+        }
+        return;
+      }
       if (event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && !event.isComposing
         && (key === 'z' || key === 'y') && !typingTarget(event.target)) {
         event.preventDefault();
         const redo = key === 'y', snapshot = controller.getSnapshot();
         if (!isGenerating && (redo ? snapshot.canRedo || props.canWorkspaceRedo : snapshot.canUndo || props.canWorkspaceUndo)) undo(redo);
         return;
-      }
-      if (!typingTarget(event.target) && event.key === 'Escape' && diagramSelection?.length) {
-        event.preventDefault(); clearSelectionFocus(); controller.updateCanvas(deselectCanvas, true); return;
       }
       const targetPane = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-display-node]') : null;
       if (event.key === 'Escape' && !event.repeat && !typingTarget(event.target)
@@ -894,6 +906,22 @@ export function MappingPocSelectionCanvas(props: {
         }
         return;
       }
+      // Regions remain selected when their action surface loses focus.
+      if (event.key === "Escape" && selection.items.length && promptPhase !== "generating") {
+        event.preventDefault();
+        if (event.repeat) return;
+        const current = controller.getSnapshot().canvas;
+        const item = current.selection.items.find(item => item.id === current.controls.selectionFocusId)
+          ?? current.selection.items.at(-1);
+        if (item) {
+          clearSelectionFocus();
+          controller.select({ type: 'remove', id: item.id });
+        }
+        return;
+      }
+      if (!selectionRect && event.key.toLowerCase() === 'a' && !event.ctrlKey && !event.metaKey && selectedDiagrams.length) {
+        event.preventDefault(); setActionsOpen(value => !value); return;
+      }
       if (!selectionRect) return;
       if (event.key.toLowerCase() === "c" && !event.altKey && !event.isComposing && !promptOpen && !askOpen
         && !window.getSelection()?.toString()) {
@@ -914,12 +942,11 @@ export function MappingPocSelectionCanvas(props: {
         setActionsOpen(value => !value);
         return;
       }
-      if (event.key === "Escape" && promptPhase !== "generating") {
-        clearSelectionFocus(); controller.updateCanvas(deselectCanvas, true);
-      }
     };
   }, [
     props.active,
+    props.onOpenLlm,
+    props.onUpdateDiagram,
     props.onUndo,
     props.canWorkspaceUndo,
     props.canWorkspaceRedo,
@@ -943,10 +970,11 @@ export function MappingPocSelectionCanvas(props: {
     promptOpen,
     promptPhase,
     selectedNodeIds.length,
+    selection.items.length,
     selectionRect
   ]);
 
-  const visibleSelectionRect = selectionRect && activeProjection.rect(selectionRect);
+  const visibleSelectionRect = selectionRect && activeProjection.selectionRect(selectionRect);
   const rectStyle = visibleSelectionRect && cell.width > 0 && cell.height > 0 ? {
     left: (visibleSelectionRect.startColumn - 1) * cell.width,
     top: (visibleSelectionRect.startLine - 1) * cell.height,
@@ -967,6 +995,70 @@ export function MappingPocSelectionCanvas(props: {
 
   const jumpCallback = useRef(props.onJump); jumpCallback.current = props.onJump;
   const onDiagramJump = useCallback((target: Parameters<NonNullable<typeof props.onJump>>[0]) => jumpCallback.current?.(target), []);
+  const selectionCallback = useRef(props.onSelectionChange); selectionCallback.current = props.onSelectionChange;
+  useEffect(() => { if (props.active !== false) selectionCallback.current?.(); }, [selection, props.active]);
+  const [extensionSource, setExtensionSource] = useState<{ x: number; y: number }>();
+  const [placingExtension, setPlacingExtension] = useState(false);
+  const [extensionPreview, setExtensionPreview] = useState<ScenePoint>();
+  const extensionBox = boxes.find(box => focusedItem ? focusedItem.displayNodeId === `grid:${box.box.id}`
+    : selection.items.some(item => item.displayNodeId === `grid:${box.box.id}`));
+  const fallbackExtensionSource = { x: ((extensionBox?.bounds.column ?? 0) + (extensionBox?.bounds.columns ?? 2)) * cell.width,
+    y: (extensionBox?.bounds.row ?? 0) * cell.height };
+  const extensionPoint = extensionPreview ?? props.extension?.origin;
+  const pickExtension = (point: { x: number; y: number }) => {
+    setExtensionSource(point); setExtensionPreview(undefined); setPlacingExtension(true);
+    stageRef.current?.focus({ preventScroll: true });
+  };
+  useEffect(() => {
+    setPlacingExtension(false); setExtensionPreview(undefined); setExtensionSource(undefined);
+  }, [props.extension?.key, props.active]);
+  useEffect(() => {
+    if (props.extension?.disabled) { setPlacingExtension(false); setExtensionPreview(undefined); }
+  }, [props.extension?.disabled]);
+  useEffect(() => {
+    if (!placingExtension || !props.extension || props.extension.disabled || props.active === false) return;
+    const viewport = stageRef.current?.closest<HTMLElement>('[data-diagram-canvas]');
+    if (!viewport) return;
+    let placingPointer: number | undefined;
+    const canvasTarget = (event: PointerEvent) => event.target instanceof Element && viewport.contains(event.target)
+      && !event.target.closest('input, textarea, select, [contenteditable=true], .retained-selection-controls');
+    const move = (event: PointerEvent) => {
+      if (!canvasTarget(event)) return;
+      const point = scenePointAtClient(event.clientX, event.clientY);
+      if (point) setExtensionPreview(point);
+      event.stopImmediatePropagation();
+    };
+    const down = (event: PointerEvent) => {
+      if (event.button !== 0 || !canvasTarget(event)) return;
+      placingPointer = event.pointerId;
+      event.preventDefault(); event.stopImmediatePropagation();
+    };
+    const up = (event: PointerEvent) => {
+      if (event.pointerId !== placingPointer) return;
+      placingPointer = undefined;
+      event.preventDefault(); event.stopImmediatePropagation();
+      if (!canvasTarget(event)) return;
+      const point = scenePointAtClient(event.clientX, event.clientY);
+      if (!point || boxes.some(box => box.box.kind === 'diagram' && point.column >= box.bounds.column
+        && point.column < box.bounds.column + box.bounds.columns && point.row >= box.bounds.row && point.row < box.bounds.row + box.bounds.rows)) {
+        setStatusMessage('Place the origin in an empty part of the canvas.'); return;
+      }
+      props.extension?.onPlace(point); setExtensionPreview(undefined); setPlacingExtension(false);
+    };
+    const cancel = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault(); event.stopImmediatePropagation();
+      setPlacingExtension(false); setExtensionPreview(undefined);
+    };
+    window.addEventListener('pointermove', move, true);
+    window.addEventListener('pointerdown', down, true);
+    window.addEventListener('pointerup', up, true);
+    window.addEventListener('keydown', cancel, true);
+    return () => {
+      window.removeEventListener('pointermove', move, true); window.removeEventListener('pointerdown', down, true);
+      window.removeEventListener('pointerup', up, true); window.removeEventListener('keydown', cancel, true);
+    };
+  }, [placingExtension, props.extension, props.active, boxes, scenePointAtClient]);
   const selectedContentKeys = useMemo(() => {
     const keys = new Set<string>();
     for (const item of selection.items) {
@@ -974,11 +1066,8 @@ export function MappingPocSelectionCanvas(props: {
       if (!region) continue;
       const diagram = scene.contents[region.sourceContentId];
       if (!diagram || diagram.content.ascii !== region.sourceAscii) continue;
-      for (const contentNode of diagramContentNodes(diagram.content)) {
-        if (contentNode.line >= region.rect.startLine && contentNode.line <= region.rect.endLine
-          && contentNode.startColumn <= region.rect.endColumn && contentNode.endColumn >= region.rect.startColumn)
-          keys.add(JSON.stringify([item.displayNodeId, contentNode.id]));
-      }
+      for (const contentNode of selectionContentNodes(diagram, region))
+        keys.add(JSON.stringify([item.displayNodeId, contentNode.id]));
     }
     return keys;
   }, [selection, scene.contents]);
@@ -1078,24 +1167,20 @@ export function MappingPocSelectionCanvas(props: {
     >
       <CanvasSelectionLayer stageRef={stageRef} active={props.active !== false && !isGenerating && !diagramPlacement && !movingBoxId}
         diagramIds={boxes.filter(box => box.box.kind === 'diagram').map(box => `grid:${box.box.id}`)} selected={selectedDiagrams}
-        onClear={() => { clearSelectionFocus(); controller.updateCanvas(deselectCanvas, true); }}
+        onClear={escapeSelection}
+        onSelectNode={hit => {
+          const box = boxes.find(box => `grid:${box.box.id}` === hit.diagramId), diagram = box?.contentId && scene.contents[box.contentId];
+          if (diagram && diagram.content.revisionId === hit.revision && hit.nodeId)
+            commitSelection(current => toggleSubtreeSelection(current.selection, diagram, box!.box.id, hit.nodeId!));
+        }}
         runtime={nativeRuntime ?? undefined} resolve={resolveMarquee} onComplete={finishMarquee} onTap={selectHit}
         onSelectDiagram={(id, toggle) => { clearSelectionFocus(); controller.select(toggle
           ? { type: 'toggleDiagram', displayNodeId: id } : { type: 'replace', items: [diagramSelectionItem(id)] }); }} />
-      {props.active !== false && selectedDiagrams.length > 0 && createPortal(
+      {props.active !== false && !selection.items.some(item => item.region) && selectedDiagrams.length > 0 && createPortal(
         <div className="mapping-diagram-selection-actions" role="toolbar" aria-label="Selected diagrams" data-diagram-canvas-static-ui data-mapping-static-ui>
           <strong role="status">{selectedDiagrams.length} {selectedDiagrams.length === 1 ? 'diagram' : 'diagrams'} selected</strong>
           {props.onTransfer && <button type="button" disabled={isGenerating || !!diagramPlacement || !!movingBoxId} onClick={() => props.onTransfer?.('copy', selectedDiagrams)}>Copy to canvas…</button>}
           {props.onTransfer && <button type="button" disabled={isGenerating || !!diagramPlacement || !!movingBoxId} onClick={() => props.onTransfer?.('move', selectedDiagrams)}>Move to canvas…</button>}
-          {props.onUpdateDiagram && <button type="button" disabled={isGenerating || selectedDiagrams.length !== 1 || selection.items.length !== 1 || !!diagramPlacement || !!movingBoxId}
-            title={selection.items.length !== 1 ? 'Select exactly one whole diagram to update' : 'Update this diagram from a prompt'}
-            onClick={() => props.onUpdateDiagram?.(selectedDiagrams[0])}>Update diagram with AI…</button>}
-          {props.onCreateDiagram && <button type="button" disabled={isGenerating || selectedDiagrams.length !== 1 || selection.items.length !== 1 || !!diagramPlacement || !!movingBoxId}
-            title="Create new diagrams beside this one from a prompt" onClick={() => props.onCreateDiagram?.(selectedDiagrams[0])}>Create diagram with AI…</button>}
-          {props.onReference && <button type="button" disabled={!selectedDiagramReferences().length}
-            onClick={() => props.onReference?.(selectedDiagramReferences(), 'insert', selectedDiagrams[0])}>Add to prompt</button>}
-          {props.onReference && <button type="button" disabled={!selectedDiagramReferences().length}
-            onClick={() => props.onReference?.(selectedDiagramReferences(), 'copy', selectedDiagrams[0])}>Copy as reference</button>}
           <button type="button" disabled={isGenerating || !!diagramPlacement || !!movingBoxId}
             onClick={() => {
               try {
@@ -1105,6 +1190,28 @@ export function MappingPocSelectionCanvas(props: {
             }}>Delete {selectedDiagrams.length === 1 ? 'diagram' : 'diagrams'}</button>
           <button type="button" disabled={isGenerating} aria-keyshortcuts="Escape" onClick={escapeSelection}>Deselect (Esc)</button>
         </div>, document.body)}
+      {props.extension && selection.items.length > 0 && <>
+        {!selection.items.some(item => item.region) && <button className="projection-join llm-origin" aria-label="Place new diagram origin"
+          disabled={props.extension.disabled} data-mapping-static-ui data-diagram-canvas-static-ui
+          style={{ left: fallbackExtensionSource.x - 8, top: fallbackExtensionSource.y - 8 }}
+          onClick={() => pickExtension(fallbackExtensionSource)}>+</button>}
+        {extensionPoint && <>
+          <svg className="llm-extension-edge" data-placing={placingExtension} width="1" height="1" aria-hidden="true">
+            <path d={`M${(extensionSource ?? fallbackExtensionSource).x} ${(extensionSource ?? fallbackExtensionSource).y} L${extensionPoint.column * cell.width} ${extensionPoint.row * cell.height}`}
+              fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="5 3" />
+          </svg>
+          <button className={`projection-join llm-origin${placingExtension ? ' llm-origin-preview' : ''}`} aria-label="Move new diagram origin"
+            disabled={props.extension.disabled} data-mapping-static-ui data-diagram-canvas-static-ui
+            style={{ left: extensionPoint.column * cell.width - 8, top: extensionPoint.row * cell.height - 8 }}
+            onClick={() => pickExtension(extensionSource ?? fallbackExtensionSource)}>+</button>
+        </>}
+      </>}
+      {!selectionRect && selectedDiagrams.length > 0 && <div className="mapping-whole-actions" data-mapping-static-ui data-diagram-canvas-static-ui>
+        <button onClick={() => setActionsOpen(value => !value)}>Actions (A)</button>
+        {actionsOpen && <div role="menu" aria-label="Selection actions"><button role="menuitem" onClick={() => {
+          props.onUpdateDiagram?.(selectedDiagrams[0]); setActionsOpen(false);
+        }}>LLM [L]</button></div>}
+      </div>}
       {!boxes.some(box => box.contentId) && <p className="mapping-empty-canvas">Empty canvas — right-click to paste a diagram, or Undo to restore.</p>}
       <CanvasPasteMenu selectionCount={!selectionRect ? selectedDiagrams.length : 0}
         onCancelSelection={() => { clearSelectionFocus(); controller.updateCanvas(deselectCanvas, true); }}
@@ -1265,16 +1372,13 @@ export function MappingPocSelectionCanvas(props: {
           </header>
           {!promptOpen && !askOpen ? (
             <div className="mapping-poc-selection-actions">
-              {props.onUpdateDiagram && <button type="button" disabled={isGenerating || !!diagramPlacement || !!movingBoxId}
-                onClick={() => { if (focusedItem) props.onUpdateDiagram?.(focusedItem.displayNodeId); }}>Update containing diagram with AI…</button>}
+              {props.onUpdateDiagram && <button type="button" aria-keyshortcuts="L" disabled={isGenerating || !!diagramPlacement || !!movingBoxId}
+                onClick={() => { if (focusedItem) { props.onUpdateDiagram?.(focusedItem.displayNodeId); setActionsOpen(false); } }}>LLM [L]</button>}
               {props.onReference && focusedItem && <button type="button" onClick={() => { const reference = focusedReference(); if (reference) props.onReference?.([reference], 'insert', focusedItem.displayNodeId); }}>Add to prompt</button>}
               {props.onReference && focusedItem && <button type="button" onClick={() => { const reference = focusedReference(); if (reference) props.onReference?.([reference], 'copy', focusedItem.displayNodeId); }}>Copy as reference</button>}
               <button type="button" aria-label="Copy ASCII + code refs" title="Copy full selected rows and selected code references (C)" aria-keyshortcuts="C Control+C Meta+C" onClick={() => void copySelection()}>
                 <kbd>C</kbd> Copy ASCII + code refs
               </button>
-              <button type="button" disabled={!hasCompleteSourceCoverage} onClick={() => {
-                openPrompt(); setPromptOperation("generate"); setStatusMessage("Describe the sub-diagram, then choose its region");
-              }}>Generate sub-diagram</button>
               <button
                 ref={openMappedRef}
                 type="button"
@@ -1388,7 +1492,7 @@ export function MappingPocSelectionCanvas(props: {
 
       {!nativeRuntime && chatThreads.filter(thread => {
         const owner = Object.values(display.nodes).find(node => node.childIds.includes(thread.id));
-        if (owner?.kind === 'selection' && scene.contents[owner.sourceContentId]?.content.ascii === owner.sourceAscii && contentProjections.has(owner.sourceBoxId) && !contentProjections.get(owner.sourceBoxId)!.rect(owner.rect)) return false;
+        if (owner?.kind === 'selection' && scene.contents[owner.sourceContentId]?.content.ascii === owner.sourceAscii && contentProjections.has(owner.sourceBoxId) && !contentProjections.get(owner.sourceBoxId)!.selectionRect(owner.rect)) return false;
         return !owner || owner.expansion === 'expanded' && (owner.kind !== 'selection' || boxes.some(box => box.box.id === owner.sourceBoxId && !box.box.collapsed));
       }).map((thread) => {
         const isActive = display.nodes[thread.id]?.expansion === 'expanded';
@@ -1473,7 +1577,7 @@ export function MappingPocSelectionCanvas(props: {
       ) : null}
 
       </div>
-      <SelectionEffectsLayer session={session} selection={selection} diagramViews={canvasState.diagramViews} state={display} setState={setDisplay} setLayoutState={setDisplayLayout} boxes={boxes} scene={scene} cell={cell}
+      <SelectionEffectsLayer extension={props.extension ? { disabled: props.extension.disabled, onPick: pickExtension } : undefined} session={session} selection={selection} diagramViews={canvasState.diagramViews} state={display} setState={setDisplay} setLayoutState={setDisplayLayout} boxes={boxes} scene={scene} cell={cell}
         onEscape={escapeSelection}
         catalog={props.projectionCatalog} dirtyRepresentationIds={props.dirtyRepresentationIds} onRemove={removeEffect}
         busySelectionIds={Object.entries(canvasState.controls.surfaces).filter(([, surface]) => surface.promptPhase === 'generating').map(([id]) => id)}
@@ -1481,7 +1585,7 @@ export function MappingPocSelectionCanvas(props: {
           controller.updateCanvas(current => {
             const next = updateSelection(current, { type: 'add', items: [{ id: root.id, displayNodeId: `grid:${root.sourceBoxId}`, region: {
               sourceContentId: root.sourceContentId, sourceRevisionId: root.sourceRevisionId, sourceAscii: root.sourceAscii,
-              rect: root.rect, selectedIds: root.selectedIds
+              rect: root.rect, contentNodeIds: root.contentNodeIds, selectedIds: root.selectedIds
             } }] });
             return { ...next, controls: { ...next.controls, activeBoxId: root.sourceBoxId, selectionFocusId: root.id } };
           }, true);

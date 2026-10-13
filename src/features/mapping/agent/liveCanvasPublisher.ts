@@ -13,7 +13,7 @@ export function observeCanvasSelection(session: CanvasSession, documentId: strin
   const canvasEpoch = crypto.randomUUID();
   let sequence = 0, stopped = false, timer: ReturnType<typeof setTimeout> | undefined;
   let previous: LiveSelection | undefined;
-  const cache = new Map<string, { diagram?: Diagram; rectKey: string; ids: readonly string[]; sourceAscii?: string; region: LiveRegion }>();
+  const cache = new Map<string, { diagram?: Diagram; rectKey: string; ids: readonly string[]; contentNodeIds?: readonly string[]; sourceAscii?: string; region: LiveRegion }>();
   const rectKey = (boxId: string, rect: MappingPocGridRect) => JSON.stringify([boxId, rect.startLine, rect.endLine, rect.startColumn, rect.endColumn]);
   const sample = () => {
     timer = undefined;
@@ -28,22 +28,22 @@ export function observeCanvasSelection(session: CanvasSession, documentId: strin
     const diagramIds = selectedDiagramIds(selection);
     const regions: LiveRegion[] = [];
     const add = (id: string, sourceBoxId: string, sourceContentId: string, rect: MappingPocGridRect,
-      ids: readonly string[], sourceAscii?: string) => {
+      ids: readonly string[], sourceAscii?: string, contentNodeIds?: readonly string[]) => {
       const diagram = snapshot.document.scene.contents[sourceContentId];
       const stale = sourceAscii !== undefined && (!diagram || diagram.content.ascii !== sourceAscii || boxes.get(sourceBoxId) !== sourceContentId);
       const key = rectKey(sourceBoxId, rect), cached = cache.get(id);
-      if (cached && cached.diagram === diagram && cached.rectKey === key && cached.ids === ids
+      if (cached && cached.diagram === diagram && cached.rectKey === key && cached.ids === ids && cached.contentNodeIds === contentNodeIds
         && cached.sourceAscii === sourceAscii && cached.region.stale === stale && cached.region.sourceContentId === sourceContentId) {
         regions.push(cached.region); return;
       }
-      const text = stale ? formatAsciiWithCodeReferences([asciiForSelection(sourceAscii!, rect)], [])
-        : diagram ? selectionClipboardText(diagram, rect, ids)! : '';
+      const text = stale ? cached?.sourceAscii === sourceAscii ? cached.region.text : formatAsciiWithCodeReferences([asciiForSelection(sourceAscii!, rect)], [])
+        : diagram ? selectionClipboardText(diagram, rect, ids, contentNodeIds)! : '';
       const region = { id, sourceBoxId, sourceContentId, rect, text, stale };
-      cache.set(id, { diagram, rectKey: key, ids, sourceAscii, region }); regions.push(region);
+      cache.set(id, { diagram, rectKey: key, ids, contentNodeIds, sourceAscii, region }); regions.push(region);
     };
     for (const item of selection.items) if (item.region) {
-      const { sourceContentId, sourceAscii, rect, selectedIds } = item.region;
-      add(item.id, item.displayNodeId.slice(5), sourceContentId, rect, selectedIds, sourceAscii);
+      const { sourceContentId, sourceAscii, rect, selectedIds, contentNodeIds } = item.region;
+      add(item.id, item.displayNodeId.slice(5), sourceContentId, rect, selectedIds, sourceAscii, contentNodeIds);
     }
     const liveIds = new Set(regions.map(region => region.id));
     for (const id of cache.keys()) if (!liveIds.has(id)) cache.delete(id);

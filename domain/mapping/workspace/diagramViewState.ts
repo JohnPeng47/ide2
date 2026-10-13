@@ -18,6 +18,12 @@ export function projectDiagramContent(content: DiagramContent, view?: DiagramVie
     ascii: sourceLines.map(line => rows[line - 1]).join('\n'), sourceLines,
     rowForLine: (line: number) => rowByLine.get(line),
     lineForRow: (row: number) => sourceLines[row],
+    /** Presentation can span a folded subtree; membership stays in raw node IDs. */
+    selectionRect: (rect: MappingPocGridRect): MappingPocGridRect | undefined => {
+      const visible = sourceLines.filter(line => line >= rect.startLine && line <= rect.endLine);
+      if (!visible.length) return undefined;
+      return { ...rect, startLine: rowByLine.get(visible[0])! + 1, endLine: rowByLine.get(visible.at(-1)!)! + 1 };
+    },
     /** Only exact, contiguous source regions can carry an editable selection. */
     rect: (rect: MappingPocGridRect): MappingPocGridRect | undefined => {
       const start = rowByLine.get(rect.startLine), end = rowByLine.get(rect.endLine);

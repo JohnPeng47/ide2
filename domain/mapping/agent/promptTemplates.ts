@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { GenerationPromptParameter } from '../../core/diagrams/diagramService';
 
 /** Prompt operations a template can drive. Each dispatches to its own backend lifecycle. */
-export type PromptOperation = 'create-diagram' | 'edit-diagram';
+export type PromptOperation = 'create-diagram' | 'edit-diagram' | 'extend-diagram';
 export type PromptOptionValue = string | number;
 export type PromptOptions = Readonly<Record<string, PromptOptionValue>>;
 export type PromptTemplateParameter =
@@ -85,6 +85,17 @@ ${editRules}
 
 ${contextSections}
 ` },
+  { id: 'extend-diagram/branch', version: 1, operation: 'extend-diagram', title: 'Extend diagram', parameters: [style, detail],
+    markdown: `# Task
+Create one new diagram that expands the selected references according to the instruction. The application places it at the chosen origin and connects the selected nodes to it. Submit only the new diagram.
+
+## Generation options
+- Approach: {{options.style}}
+- Target detail level: {{options.detail}} of 5.
+
+${editRules}
+
+${contextSections}` },
   { id: 'create-diagram/overview', version: 1, operation: 'create-diagram', title: 'Create diagram — From references',
     parameters: [
       { kind: 'enum', key: 'kind', label: 'Diagram kind', default: 'components', options: [

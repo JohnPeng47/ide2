@@ -65,9 +65,9 @@ export class AgentDiagrammingSessionService {
     const schema = agentToolSchemas[name];
     if (!schema) throw new Error('Unknown agent tool');
     const input = schema.parse(raw);
-    if (name === 'edit-diagram' || name === 'create-diagram' || name === 'edit-diagram-status' || name === 'cancel-diagram-edit') {
+    if (name === 'edit-diagram' || name === 'create-diagram' || name === 'extend-diagram' || name === 'edit-diagram-status' || name === 'cancel-diagram-edit') {
       if (!this.edits) throw Error('Diagram editing UNAVAILABLE in this runtime');
-      if (name === 'edit-diagram' || name === 'create-diagram') {
+      if (name === 'edit-diagram' || name === 'create-diagram' || name === 'extend-diagram') {
         const edit = agentToolSchemas[name].parse(input);
         const session = this.session(edit.sessionId); // Live attachment only; never creates a proposal.
         if (edit.agentContextId && !this.agentContexts) throw Error('AGENT_CONTEXT_UNAVAILABLE');

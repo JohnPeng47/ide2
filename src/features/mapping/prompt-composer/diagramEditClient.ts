@@ -31,6 +31,10 @@ export function createDiagramEditClient(): DiagramEditClient {
       }
       const sessionId = await attachment;
       try {
+        if (nodeId === 'canvas') {
+          const read = await call<{ value: { version: number } }>('exec', { sessionId, requestId: crypto.randomUUID(), code: 'return nodes.list();' });
+          return { sessionId, expectedVersion: read.value.version, baseRevisionId: 'empty' };
+        }
         const read = await call<{ version: number; node: { diagram?: { revisionId: string } } }>('diagram-search',
           { operation: 'read', sessionId, nodeId });
         if (!read.node.diagram) throw Error('The selected diagram is no longer available.');

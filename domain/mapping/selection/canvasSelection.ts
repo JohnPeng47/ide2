@@ -38,8 +38,11 @@ export function selectCanvasMarquee(scene: LineGridScene, views: DiagramViews | 
 /** Canvas integration keeps UI focus valid without giving it ownership of membership. */
 export function updateSelection(state: MappingCanvasState, command: SelectionCommand): MappingCanvasState {
   const selection = selectionCommand(state.selection, command);
-  const focused = selection.items.some(item => item.id === state.controls.selectionFocusId);
-  return { ...state, selection, controls: focused ? state.controls : { ...state.controls, selectionFocusId: null } };
+  const added = selection.items.filter(item => item.region && !state.selection.items.some(old => old.id === item.id)).at(-1);
+  const focused = selection.items.find(item => item.region && item.id === state.controls.selectionFocusId);
+  const nextFocus = added ?? focused ?? selection.items.filter(item => item.region).at(-1);
+  return { ...state, selection, controls: nextFocus?.id === state.controls.selectionFocusId ? state.controls
+    : { ...state.controls, selectionFocusId: nextFocus?.id ?? null, ...(nextFocus ? { activeBoxId: nextFocus.displayNodeId.slice(5) } : {}) } };
 }
 
 export function selectWholeDiagrams(state: MappingCanvasState, diagramIds: readonly string[]): MappingCanvasState {

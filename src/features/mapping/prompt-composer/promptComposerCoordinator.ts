@@ -1,20 +1,24 @@
 import { createStore } from 'zustand/vanilla';
 import type { CreateDiagramInput, DiagramEditRun, PromptReference } from '../../../../domain/mapping/agent/diagramEdit';
-import type { PromptOperation } from '../../../../domain/mapping/agent/promptTemplates';
+import { defaultTemplateSelection, type PromptOperation } from '../../../../domain/mapping/agent/promptTemplates';
 import type { DiagramEditClient } from './diagramEditClient';
-import { createPromptDraft, insertReferenceWithCursor, serializePromptDraft, type PromptCursor, type PromptDraft } from './promptDraft';
+import { createPromptDraft, insertReferenceWithCursor, removeBlock, serializePromptDraft, type PromptCursor, type PromptDraft } from './promptDraft';
 
 /** The fixed destination: the diagram to revise, or the anchor new diagrams are created beside. */
-export interface PromptComposerTarget { operation: PromptOperation; canvasId: string; documentId: string; nodeId: string; label: string }
+export interface PromptComposerTarget { operation: PromptOperation; canvasId: string; documentId: string; nodeId: string; label: string; subtreeLabel?: string; subtree?: CreateDiagramInput['subtree']; sources?: CreateDiagramInput['sources']; origin?: CreateDiagramInput['origin'] }
 export interface PromptComposerEntry {
   target: PromptComposerTarget;
   draft: PromptDraft;
   pending: boolean;
+  /** Selection identity -> automatic reference block; manual references have no binding. */
+  selectionReferences?: Record<string, string>;
   /** The exact request sent; retries resend it unchanged. */
   request?: CreateDiagramInput;
   run?: DiagramEditRun;
   error?: string;
 }
+/** An unavailable snapshot keeps its existing pinned chip until explicitly deselected. */
+export interface SelectionReference { id: string; reference?: PromptReference }
 /** A reference picked up from the revision list, waiting for a click in a prompt or on a canvas. */
 export interface CarriedReference { reference: PromptReference }
 export const composerKey = (target: Pick<PromptComposerTarget, 'operation' | 'documentId' | 'nodeId'>) =>
@@ -35,19 +39,61 @@ export class PromptComposerCoordinator {
     if (this.stopped || !this.entry(key)) return;
     this.store.setState(state => ({ entries: { ...state.entries, [key]: { ...state.entries[key], ...patch } } }));
   }
-  open(target: PromptComposerTarget) {
-    const key = composerKey(target);
+  open(target: PromptComposerTarget, fresh = false) {
+    const key = fresh ? crypto.randomUUID() : composerKey(target);
     this.store.setState(state => ({ activeKey: key, entries: { ...state.entries,
       [key]: state.entries[key] ?? { target: { ...target }, draft: createPromptDraft(target.operation), pending: false } } }));
     return key;
   }
-  show(key: string) { this.store.setState({ activeKey: key }); }
-  close() {
-    const key = this.store.getState().activeKey;
-    this.store.setState({ carried: undefined });
-    if (key && !composerUnsettled(this.entry(key))) this.dismiss(key);
-    else this.store.setState({ activeKey: undefined });
+  setTarget(key: string, patch: Partial<PromptComposerTarget>) {
+    const entry = this.entry(key); if (!entry || composerUnsettled(entry)) return;
+    this.patch(key, { target: { ...entry.target, ...patch }, error: undefined,
+      ...(patch.operation && patch.operation !== entry.target.operation ? { run: undefined, request: undefined,
+        draft: { ...entry.draft, count: 1, template: defaultTemplateSelection(patch.operation) } } : {}) });
   }
+  syncSelections(documentId: string, selections: readonly SelectionReference[], key = this.store.getState().activeKey) {
+    const entry = key && this.entry(key);
+    if (!key || !entry || entry.target.documentId !== documentId || composerUnsettled(entry)) return;
+    const desired = new Map(selections.map(selection => [selection.id, selection.reference]));
+    const bindings = { ...entry.selectionReferences };
+    let draft = entry.draft, cursor = this.cursors.get(key), changed = false, error: string | undefined;
+    for (const [selectionId, blockId] of Object.entries(bindings)) {
+      const reference = desired.get(selectionId);
+      const index = draft.body.findIndex(block => block.id === blockId);
+      if (!desired.has(selectionId)) {
+        if (index >= 0) {
+          const before = draft.body[index - 1], after = draft.body[index + 1];
+          if (cursor?.blockId === after?.id && before?.kind === 'text')
+            cursor = { blockId: before.id, offset: before.text.length + cursor.offset };
+          draft = removeBlock(draft, blockId);
+        }
+        delete bindings[selectionId]; changed = true;
+      } else {
+        const block = draft.body[index];
+        // A user-removed automatic chip stays removed until the selection is removed and re-added.
+        if (reference && block?.kind === 'reference' && JSON.stringify(block.reference) !== JSON.stringify(reference)) {
+          draft = { ...draft, body: draft.body.map(current => current.id === blockId
+            ? { ...block, reference: structuredClone(reference) } : current) };
+          changed = true;
+        }
+      }
+    }
+    try {
+      for (const [selectionId, reference] of desired) {
+        if (bindings[selectionId] || !reference) continue;
+        const inserted = insertReferenceWithCursor(draft, reference, cursor);
+        const trailing = inserted.draft.body.findIndex(block => block.id === inserted.cursor.blockId);
+        bindings[selectionId] = inserted.draft.body[trailing - 1].id;
+        draft = inserted.draft; cursor = inserted.cursor; changed = true;
+      }
+    } catch (cause) { error = cause instanceof Error ? cause.message : String(cause); }
+    if (changed || error) {
+      this.patch(key, { draft, selectionReferences: bindings, error });
+      if (cursor) this.cursors.set(key, cursor);
+    }
+  }
+  show(key: string) { this.store.setState({ activeKey: key }); }
+  close() { this.store.setState({ carried: undefined, activeKey: undefined }); }
   dismiss(key: string) {
     const entry = this.entry(key);
     if (!entry || composerUnsettled(entry)) return;
@@ -93,13 +139,21 @@ export class PromptComposerCoordinator {
     if (!entry || composerUnsettled(entry) || this.stopped) return;
     const { prompt, references } = serializePromptDraft(entry.draft);
     if (!prompt) return;
+    if (entry.target.operation === 'extend-diagram' && (!entry.target.sources?.length || !entry.target.origin)) {
+      this.patch(key, { error: 'Select nodes, click the green circle, then click empty canvas to place the origin.' }); return;
+    }
+    if (entry.target.operation === 'edit-diagram' && !entry.target.subtree) {
+      this.patch(key, { error: 'Select a tree node to choose the subtree to update.' }); return;
+    }
     this.patch(key, { pending: true, error: undefined, run: undefined, request: undefined });
     try {
       const { target, draft } = entry;
       const capture = await this.client.capture(target.canvasId, target.documentId, target.nodeId);
       if (this.stopped) return;
       const request: CreateDiagramInput = { ...capture, nodeId: target.nodeId, prompt, requestId: crypto.randomUUID(),
-        template: structuredClone(draft.template), ...(references.length ? { references } : {}),
+        template: structuredClone(draft.template),
+        ...(target.operation === 'edit-diagram' ? { subtree: target.subtree } : {}),
+        ...(target.operation === 'extend-diagram' ? { origin: target.origin, sources: target.sources } : {}), ...(references.length ? { references } : {}),
         ...(target.operation === 'create-diagram' ? { count: draft.count } : {}) };
       // Retain the exact request before sending: a lost response must never start a second generation.
       this.patch(key, { request });

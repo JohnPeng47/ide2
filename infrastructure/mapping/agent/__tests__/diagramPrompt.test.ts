@@ -1,3 +1,5 @@
+import { generatedDiagramOperations } from '../../../../domain/mapping/workspace/generatedDiagramOperations';
+import { diagramContentNodes } from '../../../../domain/core/diagrams/diagramContentNodes';
 import { expect, it, vi } from 'vitest';
 import { DiagramEditService } from '../../../../application/mapping/agent/diagramEditService';
 import { RevisionedDiagramService, type DiagramGenerationRequest, type DiagramGenerator } from '../../../../domain/core/diagrams/diagramService';
@@ -14,8 +16,7 @@ function fixture(generate: DiagramGenerator['generate'] = async () => ({ ascii: 
   const controller = new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('Original\n+-- Child')), initialCanvasState());
   const base = controller.getSnapshot().document.scene.contents.overview, receiver = new DiagramRevisionReceiver();
   const create = vi.fn(async (_session: string, input: { requestId: string; expectedVersion: number; diagrams: DiagramCreation[] }) =>
-    ({ version: controller.applyUpdate(input.expectedVersion, input.diagrams.map(diagram => ({ method: 'diagram-create', id: diagram.id,
-      parentId: diagram.parentId, position: diagram.position, ...structuredClone(diagram.content) }) as Extract<DiagramOperation, { method: 'diagram-create' }>)).version }));
+    ({ version: controller.applyUpdate(input.expectedVersion, generatedDiagramOperations(input.diagrams)).version }));
   const service = new DiagramEditService(new RevisionedDiagramService(generator), {
     snapshot: async () => structuredClone({ ...controller.getSnapshot(), history: controller.exportHistory(), name: 'Test' }),
     apply: async (_session, input) => receiver.apply('doc', structuredClone(input), controller, async () => {}), create
@@ -90,4 +91,56 @@ it('places created diagrams on the latest canvas version even when it changed du
   const complete = await settled(f.service, run.runId, 'completed');
   expect(f.create.mock.calls[0][1].expectedVersion).toBe(1);
   expect(complete.created!.documentVersion).toBe(2);
+});
+
+
+it('rejects generated changes outside the selected subtree before mutating the canvas', async () => {
+  const f = fixture(async () => ({ ascii: 'Unexpected root\n+-- Changed' }));
+  const child = diagramContentNodes(f.base.content).find(node => node.label === 'Child')!;
+  const run = f.service.start({ ...f.input, subtree: { contentNodeId: child.id, revisionId: f.base.content.revisionId } });
+  const result = await settled(f.service, run.runId, 'failed');
+  expect(result.error).toContain('SUBTREE_SCOPE');
+  expect(f.controller.getSnapshot().document.scene.contents.overview.content.ascii).toBe('Original\n+-- Child');
+  expect(f.controller.getSnapshot().version).toBe(0);
+});
+
+it('patches a selected subtree and preserves the identity of its unaffected parent', async () => {
+  const f = fixture(async () => ({ ascii: 'Original\n+-- Changed\n    `-- Added' }));
+  const child = diagramContentNodes(f.base.content).find(node => node.label === 'Child')!;
+  const parent = diagramContentNodes(f.base.content).find(node => node.label === 'Original')!;
+  const before = f.controller.exportHistory().diagramRevisions[f.base.revisionId].nodeRefs[parent.id];
+  const run = f.service.start({ ...f.input, subtree: { contentNodeId: child.id, revisionId: f.base.content.revisionId } });
+  await settled(f.service, run.runId, 'completed');
+  const next = f.controller.getSnapshot().document.scene.contents.overview;
+  const nextParent = diagramContentNodes(next.content).find(node => node.label === 'Original')!;
+  expect(f.controller.exportHistory().diagramRevisions[next.revisionId].nodeRefs[nextParent.id]).toBe(before);
+  expect(next.content.ascii).toBe('Original\n+-- Changed\n    `-- Added');
+  f.controller.undo(); expect(f.controller.getSnapshot().document.scene.contents.overview.content.ascii).toBe(f.base.content.ascii);
+});
+
+it('extends at the chosen origin with edges and undoes creation and edges together', async () => {
+  const f = fixture();
+  const node = diagramContentNodes(f.base.content)[0];
+  const sources = [{ kind: 'content-node' as const, displayNodeId: 'grid:overview', contentNodeId: node.id, revisionId: f.base.content.revisionId, side: 'auto' as const }];
+  const run = f.service.start({ ...f.input, origin: { column: 60, row: 20 }, sources }, undefined, 'extend-diagram');
+  const result = await settled(f.service, run.runId, 'completed');
+  const next = f.controller.getSnapshot().document;
+  expect(findBox(next.scene.root, result.created!.nodeIds[0].slice(5))!.position).toEqual({ column: 60, row: 20 });
+  expect(next.edges).toHaveLength(1); expect(next.edges[0].source).toEqual(sources[0]);
+  expect(next.scene.contents.overview.revisionId).toBe(f.base.revisionId);
+  f.controller.undo(); expect(f.controller.getSnapshot().document.edges).toHaveLength(0);
+  expect(findBox(f.controller.getSnapshot().document.scene.root, result.created!.nodeIds[0].slice(5))).toBeUndefined();
+});
+
+it('does not create an extension when source nodes change during generation', async () => {
+  let release!: () => void;
+  const pending = new Promise<void>(resolve => { release = resolve; });
+  const f = fixture(async () => { await pending; return { ascii: 'Generated' }; });
+  const node = diagramContentNodes(f.base.content)[0];
+  const run = f.service.start({ ...f.input, origin: { column: 60, row: 20 }, sources: [{ kind: 'content-node',
+    displayNodeId: 'grid:overview', contentNodeId: node.id, revisionId: f.base.content.revisionId, side: 'auto' }] }, undefined, 'extend-diagram');
+  await vi.waitFor(() => expect(f.generator.generate).toHaveBeenCalledOnce());
+  f.controller.applyUpdate(0, [{ method: 'replace', nodeId: 'grid:overview', ascii: 'Concurrent edit' }]); release();
+  const result = await settled(f.service, run.runId, 'failed');
+  expect(result.error).toContain('STALE_CONTENT_NODE'); expect(f.create).not.toHaveBeenCalled();
 });

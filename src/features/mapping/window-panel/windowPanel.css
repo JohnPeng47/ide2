@@ -73,3 +73,26 @@
 .window-panel-resize-bottom { bottom: 0; left: 12px; right: 0; height: 6px; cursor: ns-resize; }
 .window-panel-resize-corner { bottom: 0; left: 0; width: 14px; height: 14px; cursor: nesw-resize; }
 .window-panel-resize:hover, .window-panel-resize:focus-visible { background: #88c0d080; }
+
+.window-panel-tabbed { inset: 16px 16px auto auto; width: min(560px, calc(100% - min(348px, 43vw) - 16px)); height: min(680px, calc(100% - 32px)); min-width: 260px; min-height: 240px; max-width: calc(100% - min(348px, 43vw) - 16px); max-height: calc(100% - 32px); resize: both; }
+.window-panel-tab-close { margin-left: auto; }
+.window-panel-tool { display: flex; flex: 1; min-height: 0; overflow: auto; flex-direction: column; }
+.window-panel-tool[hidden] { display: none; }
+.window-panel-tool .diagram-search-panel { position: static; width: auto; max-height: none; flex: 1; box-shadow: none; border: none; }
+.workspace-tools-open { position: absolute; top: 64px; right: 16px; z-index: 9; }
+.llm-panel { min-height: 0; display: flex; flex-direction: column; flex: 1; }
+.llm-panel .prompt-composer-layout { flex-direction: column; }
+.llm-panel .prompt-composer-main { padding: 12px; }
+.llm-panel .prompt-revision-rail { max-height: 180px; }
+.llm-mode { display: flex; gap: 8px; padding: 12px; align-items: center; flex-wrap: wrap; }
+.llm-mode small { width: 100%; color: var(--muted); }
+.llm-explorer-new { margin: 10px 0; }
+.projection-join.llm-origin { color: #a3e6a3; background: #173f28; border-color: #70d994; cursor: crosshair; touch-action: none; }
+.projection-join.llm-origin:disabled { cursor: default; }
+.llm-extension-edge { position: absolute; overflow: visible; pointer-events: none; color: #70d994; z-index: 12; }
+.llm-origin-preview { pointer-events: none; }
+
+.mapping-whole-actions { position: absolute; left: 20px; top: -34px; z-index: 10; }
+.mapping-whole-actions [role=menu] { display: flex; padding: 6px; background: #101419; border: 1px solid var(--gutter); }
+
+.workspace-tools-open, .llm-explorer-new, .mapping-whole-actions button { padding: 6px 10px; border: 1px solid var(--gutter); border-radius: 4px; color: var(--fg); background: #1b222b; font: 12px var(--font-mono); cursor: pointer; }

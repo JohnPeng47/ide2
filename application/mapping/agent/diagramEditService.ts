@@ -1,3 +1,7 @@
+import { selectionExcerpt } from '../../../domain/mapping/workspace/selectionClipboard';
+import { diagramContentNodes } from '../../../domain/core/diagrams/diagramContentNodes';
+import { diagramSubtreeRange } from '../../../domain/core/diagrams/diagramSubtreeEdit';
+import { validateConnectionAnchor } from '../../../domain/core/diagrams/diagramConnection';
 import { AgentContext, type AgentContextSnapshot } from '../../../domain/core/agents/agentContext';
 import { randomUUID } from 'node:crypto';
 import { CanvasHistory, type CanvasHistoryRecord } from '../../../domain/core/diagrams/canvasHistory';
@@ -38,8 +42,9 @@ export class DiagramEditService {
   start(input: EditDiagramInput | CreateDiagramInput, suppliedContext?: AgentContextSnapshot, operation: PromptOperation = 'edit-diagram'): DiagramEditRun {
     const agentContext = suppliedContext ? AgentContext.fromSnapshot(suppliedContext).toSnapshot() : undefined;
     if (input.agentContextId && !agentContext) throw Error('AGENT_CONTEXT_NOT_FOUND: resolve context before starting the edit');
-    if (operation === 'create-diagram' && !this.canvas.create) throw Error('Diagram creation UNAVAILABLE in this runtime');
+    if (operation !== 'edit-diagram' && !this.canvas.create) throw Error('Diagram creation UNAVAILABLE in this runtime');
     if (operation === 'edit-diagram' && 'count' in input && input.count !== undefined) throw Error('count applies only to create-diagram');
+    if (operation === 'extend-diagram' && (!input.origin || !input.sources?.length)) throw Error('Extend requires a selection and a canvas origin');
     // Fail fast on an unknown template or invalid options instead of after a model call.
     resolvePromptTemplate(input.template ?? defaultTemplateSelection(operation), operation);
     const key = JSON.stringify([input.sessionId, input.requestId]);
@@ -80,30 +85,35 @@ export class DiagramEditService {
       run.state.error = message;
     }).finally(() => { run.pending = undefined; });
   }
-  private install(run: Run) { return run.state.operation === 'create-diagram' ? this.place(run) : this.apply(run); }
+  private install(run: Run) { return run.state.operation !== 'edit-diagram' ? this.place(run) : this.apply(run); }
   private async generate(run: Run) {
     const { input, abort } = run, operation = run.state.operation;
     const snapshot = await this.canvas.snapshot(input.sessionId);
     abort.signal.throwIfAborted();
     if (snapshot.version !== input.expectedVersion) throw Error('VERSION_CONFLICT: read the canvas again');
     const box = input.nodeId.startsWith('grid:') && findBox(snapshot.document.scene.root, input.nodeId.slice(5));
-    if (!box || box.kind !== 'diagram') throw Error('Expected diagram GridBox');
-    const base = snapshot.document.scene.contents[box.contentId];
-    if (base.revisionId !== input.baseRevisionId) throw Error('VERSION_CONFLICT: diagram base is no longer current');
+    const unanchored = operation === 'create-diagram' && input.nodeId === 'canvas';
+    if (!unanchored && (!box || box.kind !== 'diagram')) throw Error('Expected diagram GridBox');
+    const base = box && box.kind === 'diagram' ? snapshot.document.scene.contents[box.contentId]
+      : this.diagrams.create({ id: `context-${randomUUID()}`, revision: 0, ascii: '[New diagram]' }).diagram;
+    if (!unanchored && base.revisionId !== input.baseRevisionId) throw Error('VERSION_CONFLICT: diagram base is no longer current');
     if (!snapshot.history) throw Error('Canvas history is required for diagram generation');
     // Validated portable history imports the exact browser-issued revision identities.
     new CanvasHistory(snapshot.document, snapshot.canvas, snapshot.history, 'current');
     const template = resolvePromptTemplate(input.template ?? defaultTemplateSelection(operation), operation);
     const references = this.resolveReferences(input.references ?? [], snapshot.history);
     const lines = base.content.ascii.split('\n');
-    const request = { instruction: input.prompt, agentContext: run.agentContext,
+    if (input.subtree && input.subtree.revisionId !== base.content.revisionId) throw Error('VERSION_CONFLICT: selected subtree changed; select it again');
+    const editRange = operation === 'edit-diagram' && input.subtree ? diagramSubtreeRange(base, input.subtree.contentNodeId) : undefined;
+    if (operation === 'extend-diagram') for (const source of input.sources!) validateConnectionAnchor(snapshot.document.scene, source);
+    const request = { editRange, instruction: input.prompt, agentContext: run.agentContext,
       prompt: { markdown: template.markdown, options: template.options, parameters: template.definition.parameters, references },
       context: { diagram: base, selection: { startLine: 1, endLine: lines.length, startColumn: 1,
         endColumn: Math.max(1, ...lines.map(line => line.length)) }, connections: snapshot.document.edges } };
     const options = { signal: abort.signal, onProgress: (message: string) => { if (run.state.status === 'generating') run.state.message = message; } };
-    if (operation === 'create-diagram') {
+    if (operation !== 'edit-diagram') {
       run.created = [];
-      for (let index = 0; index < (input.count ?? 1); index++) {
+      for (let index = 0; index < (operation === 'extend-diagram' ? 1 : input.count ?? 1); index++) {
         if (input.count && input.count > 1) options.onProgress(`Generating diagram ${index + 1} of ${input.count}…`);
         run.created.push(await this.diagrams.generate({ ...request, input: { id: `diagram-${randomUUID()}`, structureKind: base.content.structure.kind,
           source: base.sourceContext.binding, evidence: base.sourceContext.evidence } }, options));
@@ -130,11 +140,13 @@ export class DiagramEditService {
       if (reference.kind === 'diagram') return { ...common, kind: 'diagram', ascii: revision.diagram.content.ascii };
       const lines = revision.diagram.content.ascii.split('\n'), range = reference.range;
       if (range.endLine > lines.length) throw Error(`PROMPT_REFERENCE_INVALID: [ref ${ref}] range is outside its revision`);
-      const known = new Map(diagramSelectionNodes(revision.diagram).map(node => [node.id, node.label]));
+      const known = new Map([...diagramSelectionNodes(revision.diagram), ...diagramContentNodes(revision.diagram.content)].map(node => [node.id, node.label]));
       const unknown = reference.nodeIds.find(id => !known.has(id));
       if (unknown) throw Error(`PROMPT_REFERENCE_INVALID: [ref ${ref}] node ${unknown} is not in its revision`);
       return { ...common, kind: 'nodes', range,
-        excerpt: lines.slice(range.startLine - 1, range.endLine).map(line => line.slice(range.startColumn - 1, range.endColumn).trimEnd()).join('\n'),
+        excerpt: reference.nodeIds.length && reference.nodeIds.every(id => diagramContentNodes(revision.diagram.content).some(node => node.id === id))
+          ? selectionExcerpt(revision.diagram, range, reference.nodeIds)
+          : lines.slice(range.startLine - 1, range.endLine).map(line => line.slice(range.startColumn - 1, range.endColumn).trimEnd()).join('\n'),
         nodes: reference.nodeIds.map(id => ({ id, label: known.get(id)! })) };
     });
   }
@@ -158,14 +170,15 @@ export class DiagramEditService {
   }
   private async placeOnce(run: Run) {
     const snapshot = await this.canvas.snapshot(run.input.sessionId);
+    if (run.state.operation === 'extend-diagram') for (const source of run.input.sources!) validateConnectionAnchor(snapshot.document.scene, source);
     const anchorId = run.input.nodeId.slice(5), parent = findParent(snapshot.document.scene.root, anchorId);
     const anchor = parent?.children.find(child => child.id === anchorId);
     const width = (ascii: string) => Math.max(1, ...ascii.split('\n').map(line => line.length)) + 2;
     let column = anchor ? anchor.position.column + width(anchor.kind === 'diagram' ? snapshot.document.scene.contents[anchor.contentId]?.content.ascii ?? '' : '') + 4 : 0;
     const diagrams = run.created!.map(created => {
-      const { diagram } = created, position = { column, row: anchor?.position.row ?? 0 };
+      const { diagram } = created, position = run.input.origin ?? { column, row: anchor?.position.row ?? 0 };
       column += width(diagram.content.ascii) + 4;
-      return { id: diagram.id, position, ...(parent && parent.id !== snapshot.document.scene.root.id ? { parentId: `grid:${parent.id}` } : {}),
+      return { id: diagram.id, position, ...(run.state.operation === 'extend-diagram' ? { sources: run.input.sources } : {}), ...(run.input.origin ? {} : parent && parent.id !== snapshot.document.scene.root.id ? { parentId: `grid:${parent.id}` } : {}),
         content: { ascii: diagram.content.ascii, structureKind: diagram.content.structure.kind, mappings: diagram.sourceContext.mappings,
           evidence: diagram.sourceContext.evidence, source: diagram.sourceContext.binding } } as DiagramCreation;
     });

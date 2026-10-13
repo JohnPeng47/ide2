@@ -2,7 +2,7 @@ import { NativeSelectionOwnership } from '../../../../domain/mapping/selection/s
 import { type Editor, type TLShapePartial } from 'tldraw';
 import { flattenGrid, resolveScene } from '../../../../domain/core/diagrams/lineGrid';
 import { updateSelection } from '../../../../domain/mapping/selection/canvasSelection';
-import { diagramSelectionItem, selectedDiagramIds } from '../../../../domain/mapping/selection/selectionState';
+import { selectedDiagramIds, syncNativeDiagramSelection } from '../../../../domain/mapping/selection/selectionState';
 import { updateDisplayGeometry } from '../../../../domain/mapping/workspace/displayModel';
 import type { MappingDocumentController, DiagramOperation } from '../../../../domain/mapping/workspace/mappingDocumentController';
 import { DEFAULT_CELL, mappingShapeId, projectMappingShapes } from './shapeProjection';
@@ -20,7 +20,6 @@ export class MappingEditorRuntime {
   private pendingProjection = false;
   private checkpoint = '';
   private unsubscribes: (() => void)[] = [];
-  private publishedSelection?: ReturnType<MappingDocumentController['getSnapshot']>['canvas']['selection'];
   private projected = new Map<string, TLShapePartial<MappingShape>>();
   constructor(readonly editor: Editor, readonly controller: MappingDocumentController, readonly selectionOwnership = new NativeSelectionOwnership()) {
     this.hydrate();
@@ -46,6 +45,7 @@ export class MappingEditorRuntime {
       finally { this.navigating = false; }
     }));
     this.unsubscribes.push(editor.store.listen(({ changes }) => {
+      if (this.syncing) return;
       if (Object.values(changes.added).some(record => record.typeName === 'shape')
         || Object.values(changes.removed).some(record => record.typeName === 'shape')
         || Object.values(changes.updated).some(([before, after]) => after.typeName === 'shape'
@@ -54,7 +54,8 @@ export class MappingEditorRuntime {
     }, { scope: 'all' }));
     const tick = () => {
       if (editor.inputs.getIsPointing() || editor.inputs.getIsDragging() || editor.inputs.getIsPinching()) return;
-      if (this.dirty) this.settle();
+      // Finish native geometry first, but never overwrite a pending domain selection.
+      if (this.dirty) this.settle(false, !this.pendingProjection);
       if (this.pendingProjection) this.publish();
     };
     editor.on('tick', tick);
@@ -104,8 +105,8 @@ export class MappingEditorRuntime {
       this.editor.run(() => this.editor.bringToFront(edgeIds), { ignoreShapeLock: true });
       this.projected = new Map(shapes.map(shape => [shape.props!.nodeId!, shape]));
       const selected = selectedDiagramIds(this.controller.getSnapshot().canvas.selection).map(mappingShapeId).filter(id => this.editor.getShape(id));
-      const selection = this.controller.getSnapshot().canvas.selection;
-      if (selection !== this.publishedSelection) { this.editor.setSelectedShapes(selected); this.publishedSelection = selection; }
+      const native = this.editor.getSelectedShapeIds();
+      if (native.length !== selected.length || selected.some(id => !native.includes(id))) this.editor.setSelectedShapes(selected);
     }, { history: record ? 'record' : 'ignore' });
   }
   private publish(record = true) {
@@ -178,8 +179,8 @@ export class MappingEditorRuntime {
         }
       }
       let canvas = display === snapshot.canvas.display ? snapshot.canvas : { ...snapshot.canvas, display };
-      const existing = selectedDiagramIds(canvas.selection);
-      if (captureSelection && selected.join() !== existing.join()) canvas = updateSelection(canvas, { type: 'replace', items: selected.map(diagramSelectionItem) });
+      const selection = captureSelection ? syncNativeDiagramSelection(canvas.selection, selected) : canvas.selection;
+      if (selection !== canvas.selection) canvas = updateSelection(canvas, { type: 'replace', items: selection.items });
       if (moves.length || canvas !== snapshot.canvas) this.controller.commitEditorGesture(moves, canvas);
       if (!captureSelection) {
         const ids = selectedDiagramIds(this.controller.getSnapshot().canvas.selection).map(mappingShapeId).filter(id => this.editor.getShape(id));

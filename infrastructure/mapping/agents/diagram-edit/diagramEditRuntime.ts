@@ -1,3 +1,4 @@
+import { subtreeReplacement } from '../../../../domain/core/diagrams/diagramSubtreeEdit';
 import { AgentContext } from '../../../../domain/core/agents/agentContext';
 import { Type } from '@earendil-works/pi-ai';
 import { DefaultResourceLoader, defineTool, getAgentDir, SettingsManager } from '@earendil-works/pi-coding-agent';
@@ -14,8 +15,8 @@ export function renderDiagramEditPrompt(request: DiagramGenerationRequest) {
     const template = resolvePromptTemplate(defaultTemplateSelection('edit-diagram'), 'edit-diagram');
     return { markdown: template.markdown, options: template.options, parameters: template.definition.parameters, references: [] };
   })();
-  return renderPromptTemplate(prompt, {
-    context: JSON.stringify({ baseRevisionId: request.baseRevisionId ?? null, diagram: request.context.diagram, connections: request.context.connections ?? [] }),
+  return (request.editRange ? `Only change raw lines ${request.editRange.startLine} through ${request.editRange.endLine} (the selected subtree). Return the complete diagram with every line before and after that range unchanged. Preserve the branch indentation and connectors. Changes outside that range are rejected.\n\n` : '') + renderPromptTemplate(prompt, {
+    context: JSON.stringify({ baseRevisionId: request.baseRevisionId ?? null, diagram: request.context.diagram, editableSubtree: request.editRange ?? null, connections: request.context.connections ?? [] }),
     references: JSON.stringify(prompt.references), instruction: JSON.stringify(request.instruction) });
 }
 
@@ -29,7 +30,7 @@ export class PiDiagramEditRuntime extends PiAgentRuntime implements DiagramGener
     const configured = await this.model();
     const prompt = renderDiagramEditPrompt(request);
     const submission = createValidatedSubmission<GeneratedDiagramEdit>({ toolName: 'submit_diagram_edit',
-      validate: candidate => { try { validateGeneratedDiagramEdit(base, candidate); } catch (error) { return String(error); } },
+      validate: candidate => { try { validateGeneratedDiagramEdit(base, candidate); if (request.editRange) subtreeReplacement(base, candidate.ascii, request.editRange); } catch (error) { return String(error); } },
       acceptedMessage: () => 'Validated diagram edit submitted.' });
     const submit = defineTool({ name: 'submit_diagram_edit', label: 'Submit diagram edit',
       description: 'Submit the complete revised ASCII and mappings into the supplied evidence.',
@@ -76,7 +77,10 @@ export class FakeDiagramEditRuntime implements DiagramGenerator {
     options.onProgress?.('Generating fake diagram edit');
     if (!request.baseRevisionId) return { ascii: `[created: ${instruction}]`, structureKind: 'diagram' as const, mappings: [],
       source: base.sourceContext.binding, evidence: base.sourceContext.evidence };
-    return { ascii: `${base.content.ascii}\n[edited: ${instruction}]`,
+    const lines = base.content.ascii.split('\n');
+    if (request.editRange) lines[request.editRange.startLine - 1] += ` [edited: ${instruction}]`;
+    else lines.push(`[edited: ${instruction}]`);
+    return { ascii: lines.join('\n'),
       structureKind: base.content.structure.kind, mappings: [...base.sourceContext.mappings],
       source: base.sourceContext.binding, evidence: base.sourceContext.evidence };
   }

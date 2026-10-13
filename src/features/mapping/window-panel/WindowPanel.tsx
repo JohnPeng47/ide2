@@ -10,7 +10,7 @@ export interface WindowPanelLayout<Pane extends string> { mode: WindowPanelMode;
 type PaneContent<Pane extends string> = { id: Pane; title: string; content: ReactNode };
 
 /** A workspace overlay with independent pane focus and a compact right-hand view. */
-export function WindowPanel<Pane extends string>(props: { title: string; subtitle?: string; notice?: ReactNode; actions?: ReactNode; canvasId: string; state: WindowPanelLayout<Pane>;
+function SplitWindowPanel<Pane extends string>(props: { title: string; subtitle?: string; notice?: ReactNode; actions?: ReactNode; canvasId: string; state: WindowPanelLayout<Pane>;
   onChange: (patch: Partial<WindowPanelLayout<Pane>>) => void; onClose: () => void; panes: readonly [PaneContent<Pane>] | readonly [PaneContent<Pane>, PaneContent<Pane>]; canvas: ReactNode;
   /** Layouts offered in the header; panels without a canvas pane omit split-single. */ modes?: readonly WindowPanelMode[]; className?: string }) {
   const tabId = useId();
@@ -104,5 +104,32 @@ export function WindowPanel<Pane extends string>(props: { title: string; subtitl
         </div>
       </div>
     </div>
+  </section>;
+}
+
+
+/** A panel may host independent tools as tabs, or use the original two-pane layout. */
+export function WindowPanel<Pane extends string>(props: Parameters<typeof SplitWindowPanel<Pane>>[0] | {
+  title: string; tabs: readonly PaneContent<Pane>[]; activeTab: Pane; onTabChange: (tab: Pane) => void;
+  onClose: () => void; className?: string;
+}) {
+  const id = useId();
+  if (!('tabs' in props)) return <SplitWindowPanel {...props} />;
+  return <section className={`window-panel window-panel-tabbed ${props.className ?? ''}`} aria-label={props.title}
+    data-mapping-static-ui data-diagram-canvas-static-ui onKeyDown={event => event.stopPropagation()}>
+    <header className="window-panel-tabs" role="tablist" aria-label={props.title}>
+      {props.tabs.map((tab, index) => <button key={tab.id} id={`${id}-${tab.id}`} role="tab"
+        aria-selected={props.activeTab === tab.id} aria-controls={`${id}-${tab.id}-panel`} tabIndex={props.activeTab === tab.id ? 0 : -1}
+        onClick={() => props.onTabChange(tab.id)} onKeyDown={event => {
+          if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+          event.preventDefault();
+          const next = event.key === 'Home' ? 0 : event.key === 'End' ? props.tabs.length - 1
+            : (index + (event.key === 'ArrowLeft' ? -1 : 1) + props.tabs.length) % props.tabs.length;
+          props.onTabChange(props.tabs[next].id); document.getElementById(`${id}-${props.tabs[next].id}`)?.focus();
+        }}>{tab.title}</button>)}
+      <button className="window-panel-tab-close" aria-label={`Close ${props.title}`} onClick={props.onClose}>×</button>
+    </header>
+    {props.tabs.map(tab => <div key={tab.id} id={`${id}-${tab.id}-panel`} role="tabpanel" aria-labelledby={`${id}-${tab.id}`}
+      className="window-panel-tool" hidden={props.activeTab !== tab.id}>{tab.content}</div>)}
   </section>;
 }

@@ -1,9 +1,14 @@
+import { selectionContentNodes } from '../../../domain/mapping/selection/selectionState';
+import { generatedDiagramOperations } from '../../../domain/mapping/workspace/generatedDiagramOperations';
+import { WindowPanel } from './window-panel/WindowPanel';
+import { diagramContentNodes } from '../../../domain/core/diagrams/diagramContentNodes';
+import type { ContentNodeAnchor } from '../../../domain/core/diagrams/diagramConnection';
 import { DiffTreePanel } from './changes/DiffTreePanel';
 import { inferRepositoryId } from '../../../domain/core/repositories/repository';
 import { PromptComposer, type PromptRevision, type PromptRevisionSource } from './prompt-composer/PromptComposer';
-import { PromptComposerCoordinator } from './prompt-composer/promptComposerCoordinator';
+import { PromptComposerCoordinator, composerUnsettled } from './prompt-composer/promptComposerCoordinator';
 import { createDiagramEditClient } from './prompt-composer/diagramEditClient';
-import { copyPromptReferences, diagramTitle } from './prompt-composer/promptReferences';
+import { copyPromptReferences, diagramTitle, diagramReference, nodesReference } from './prompt-composer/promptReferences';
 import type { DiagramRevision } from '../../../domain/core/diagrams/diagramService';
 import type { CanvasHistoryRecord } from '../../../domain/core/diagrams/canvasHistory';
 import type { PromptOperation } from '../../../domain/mapping/agent/promptTemplates';
@@ -82,7 +87,7 @@ function MappingWorkspacePage() {
   const [storage] = useState(() => injectedStorage ?? new WorkspaceStorage());
   const persistence = useRef<WorkspacePersistence | undefined>(undefined);
   const [pendingTransfer, setPendingTransfer] = useState<{ sourceId: string; mode: 'copy' | 'move'; selectedIds: string[]; revisionId: string }>();
-  const [explorerTab, setExplorerTab] = useState<'diagrams'|'changes'>('diagrams');
+  const [explorerTab, setExplorerTab] = useState<'diagrams'|'changes'|'llms'>('diagrams');
   const [changeMode, setChangeMode] = useState<DisplayModeChange>();
   const [diffTreeMode, setDiffTreeMode] = useState<DisplayModeChange>();
   const [diffTreeReveal, setDiffTreeReveal] = useState<{ sessionId: string; nodeId: string; serial: number }>();
@@ -108,7 +113,13 @@ function MappingWorkspacePage() {
   const [workspace] = useState(() => new CanvasWorkspace(diagramService, canvasHistory));
   const [prompts] = useState(() => new PromptComposerCoordinator(createDiagramEditClient()));
   const carried = useStore(prompts.store, state => state.carried);
-  const composerOpen = useStore(prompts.store, state => !!state.activeKey);
+  const { entries: llmEntries, activeKey: activeLlm } = useStore(prompts.store);
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const [toolTab, setToolTab] = useState<'search' | 'llm'>('search');
+  const closeTools = () => {
+    setToolsOpen(false);
+    document.querySelector<HTMLElement>('.mapping-document-view:not([hidden]) .mapping-poc-graph-stage')?.focus({ preventScroll: true });
+  };
   const drafts = useStore(workspace.store, state => state.drafts);
   const dirtySceneIds = useStore(workspace.dirtyScenes, state => state.ids);
   const setDrafts = workspace.setDrafts;
@@ -138,6 +149,16 @@ function MappingWorkspacePage() {
   const [newAscii, setNewAscii] = useState("[New diagram]");
   const [copyCurrent, setCopyCurrent] = useState(false);
   const active = activeId ? drafts[activeId] : undefined;
+  const revealedLlmRuns = useRef(new Set<string>());
+  useEffect(() => {
+    const entry = activeLlm ? llmEntries[activeLlm] : undefined, run = entry?.run;
+    const nodeId = run?.created?.nodeIds[0];
+    if (!entry || !run || run.status !== 'completed' || !nodeId || entry.target.documentId !== activeId || revealedLlmRuns.current.has(run.runId)) return;
+    revealedLlmRuns.current.add(run.runId);
+    setDrafts(current => current[entry.target.documentId] ? { ...current, [entry.target.documentId]: {
+      ...current[entry.target.documentId], focusBox: { id: nodeId.slice(5), serial: Date.now() }
+    } } : current);
+  }, [llmEntries, activeLlm, activeId]);
   const controllers = { current: workspace.controllers };
   const cancelTransfer = useCallback(() => {
     if (transferBusy.current) return;
@@ -268,8 +289,7 @@ function MappingWorkspacePage() {
       // Keep the receipt before flushing: retrying a failed write must not create the diagrams twice.
       let result = appliedRequests.current.get(key) as { version: number } | undefined;
       if (!result) {
-        result = { version: controller.applyUpdate(expectedVersion, diagrams.map(diagram => ({ method: 'diagram-create', id: diagram.id,
-          parentId: diagram.parentId, position: diagram.position, ...diagram.content }) as Extract<DiagramOperation, { method: 'diagram-create' }>)).version };
+        result = { version: controller.applyUpdate(expectedVersion, generatedDiagramOperations(diagrams)).version };
         appliedRequests.current.set(key, result);
       }
       try { persistence.current.sync([id]); await storage.flush(); }
@@ -732,12 +752,55 @@ function MappingWorkspacePage() {
     },
     sequence: id => revisionDepth(knownRevisions(), id)
   };
-  const openComposer = (documentId: string, nodeId: string, operation: PromptOperation) => {
-    const draft = drafts[documentId];
-    const node = draft?.session?.controller.nodes().find(node => node.id === nodeId);
-    if (!draft || node?.layout !== 'grid' || node.kind !== 'diagram') { setError('The selected diagram is no longer available.'); return; }
-    const title = node.diagram ? diagramTitle(node.diagram) : nodeId;
-    return prompts.open({ operation, canvasId, documentId, nodeId, label: `${draft.name} / ${title}` });
+  const capturedSelection = (documentId: string) => {
+    const controller = drafts[documentId]?.session.controller;
+    const snapshot = controller?.getSnapshot();
+    const references: PromptReference[] = [], selections: { id: string; reference?: PromptReference }[] = [], sources: ContentNodeAnchor[] = [];
+    let subtree: import('../../../domain/mapping/agent/diagramEdit').EditDiagramInput['subtree'];
+    let selectedNodeId: string | undefined, subtreeLabel: string | undefined;
+    for (const item of snapshot?.canvas.selection.items ?? []) {
+      const box = findBox(snapshot!.document.scene.root, item.displayNodeId.slice(5));
+      const diagram = box?.kind === 'diagram' ? snapshot!.document.scene.contents[box.contentId] : undefined;
+      if (!diagram || item.region && item.region.sourceAscii !== diagram.content.ascii) {
+        selections.push({ id: item.id }); continue;
+      }
+      const reference = item.region ? nodesReference(diagram, box!.id, item.region.rect, item.region.contentNodeIds) : diagramReference(diagram);
+      references.push(reference); selections.push({ id: item.id, reference });
+      const nodes = diagramContentNodes(diagram.content);
+      const selected = item.region ? selectionContentNodes(diagram, item.region) : nodes.filter(node => !node.parentId);
+      for (const node of selected) sources.push({ kind: 'content-node', displayNodeId: item.displayNodeId,
+        contentNodeId: node.id, revisionId: diagram.content.revisionId, side: 'auto' });
+      if (item.region && selected.length && (!subtree || item.id === snapshot!.canvas.controls.selectionFocusId)) {
+        subtree = { contentNodeId: selected[0].id, revisionId: diagram.content.revisionId }; selectedNodeId = item.displayNodeId; subtreeLabel = selected[0].label;
+      }
+    }
+    return { references, selections, sources: [...new Map(sources.map(source => [JSON.stringify(source), source])).values()], subtree, selectedNodeId, subtreeLabel };
+  };
+  const selectionChanged = (documentId: string) => {
+    const captured = capturedSelection(documentId);
+    const key = prompts.store.getState().activeKey, entry = key && prompts.store.getState().entries[key];
+    if (key && entry && entry.target.documentId === documentId) prompts.setTarget(key, {
+      sources: captured.sources, ...((!entry.target.subtree || entry.run?.status === 'completed' || entry.run?.status === 'conflict') && captured.subtree ? { subtree: captured.subtree, subtreeLabel: captured.subtreeLabel, nodeId: captured.selectedNodeId } : {}) });
+    prompts.syncSelections(documentId, captured.selections);
+  };
+  const openComposer = (documentId: string, nodeId: string, operation: PromptOperation, fresh = false) => {
+    const draft = drafts[documentId], captured = capturedSelection(documentId);
+    nodeId = captured.selectedNodeId ?? nodeId;
+    const node = draft?.session.controller.nodes().find(node => node.id === nodeId);
+    if (!draft || nodeId !== 'canvas' && (node?.layout !== 'grid' || node.kind !== 'diagram')) { setError('Open a canvas containing a diagram to start an LLM.'); return; }
+    const title = node?.layout === 'grid' && node.diagram ? diagramTitle(node.diagram) : 'New diagram';
+    const key = prompts.open({ operation, canvasId, documentId, nodeId, label: `${draft.name} / ${captured.subtreeLabel ?? title}`,
+      subtree: captured.subtree, subtreeLabel: captured.subtreeLabel, sources: captured.sources }, fresh);
+    prompts.syncSelections(documentId, captured.selections);
+    setToolsOpen(true); setToolTab('llm'); setExplorerTab('llms');
+    if (nodeId.startsWith('grid:')) setDrafts(current => ({ ...current, [documentId]: { ...current[documentId],
+      focusBox: { id: nodeId.slice(5), contentNodeId: captured.subtree?.contentNodeId, serial: Date.now() } } }));
+    return key;
+  };
+  const newLlm = () => {
+    if (!activeId || !active) return;
+    const node = active.session.controller.nodes().find(node => node.layout === 'grid' && node.kind === 'diagram');
+    openComposer(activeId, node?.id ?? 'canvas', 'create-diagram', true);
   };
   /** Copy goes to the clipboard; insert goes into the open composer, or opens an edit prompt for this diagram. */
   const shareReferences = (documentId: string, references: PromptReference[], mode: 'copy' | 'insert', nodeId: string) => {
@@ -801,8 +864,18 @@ function MappingWorkspacePage() {
           {Object.entries(drafts).filter(([id]) => mountedDocuments.current.has(id)).map(([id, draft]) => <SourcePaneDocumentContext.Provider key={`${workspaceEpoch}:${id}:${draft.reloadKey ?? ''}`} value={id}><SourcePaneDocumentActiveContext.Provider value={id === activeId && !changeMode}><div className="mapping-document-view" inert={!!pendingTransfer || workspaceBusy} hidden={draft.hidden || id !== activeId || !!changeMode}>
             <MappingEditorCanvas session={draft.session} className="mapping-poc-canvas" enabled={id === activeId && !draft.hidden && !changeMode} focusBox={draft.focusBox}
               initialTransform={draft.viewport} onTransformChange={viewport => viewState.setCamera(id, viewport)}>
-              <MappingPocSelectionCanvas onUpdateDiagram={nodeId => { openComposer(id, nodeId, 'edit-diagram'); }}
-                onCreateDiagram={nodeId => { openComposer(id, nodeId, 'create-diagram'); }}
+              <MappingPocSelectionCanvas onUpdateDiagram={nodeId => { openComposer(id, nodeId, capturedSelection(id).subtree ? 'edit-diagram' : 'create-diagram', true); }}
+                onOpenLlm={() => {
+                  const key = prompts.store.getState().activeKey;
+                  const entry = key && prompts.store.getState().entries[key];
+                  if (entry && entry.target.documentId === id) {
+                    prompts.syncSelections(id, capturedSelection(id).selections);
+                    setToolsOpen(true); setToolTab('llm'); setExplorerTab('llms');
+                  } else newLlm();
+                }}
+                onSelectionChange={() => selectionChanged(id)}
+                extension={toolsOpen && toolTab === 'llm' && activeLlm && llmEntries[activeLlm]?.target.documentId === id && llmEntries[activeLlm].target.operation === 'extend-diagram'
+                  ? { key: activeLlm, disabled: composerUnsettled(llmEntries[activeLlm]), origin: llmEntries[activeLlm].target.origin, onPlace: point => prompts.setTarget(activeLlm, { origin: point }) } : undefined}
                 onReference={(references, mode, nodeId) => shareReferences(id, references, mode, nodeId)}
                 placement={id === activeId ? placement : undefined} onTransfer={(mode, selected) => beginTransfer(id, mode, selected)}
                 onUndo={redo => void undo(id, redo)} canWorkspaceUndo={!!boundary(id)} canWorkspaceRedo={!!boundary(id, true)} onJump={target => void jumpTo(target)} session={draft.session} active={id === activeId && !draft.hidden && !workspaceBusy && !pendingTransfer && !creating && !changeMode} focusBox={draft.focusBox} searchMatches={searchMatchesByDocument.get(id)}
@@ -831,12 +904,28 @@ function MappingWorkspacePage() {
                 searchFocus={proposalSearchFocus?.documentId === proposalSearchId ? proposalSearchFocus?.focus : undefined}
                 searchMatches={proposalSearchId ? searchMatchesByDocument.get(proposalSearchId) : undefined} />
                 : <p className="window-panel-message">Select a canvas in the explorer.</p>} />}
-          {!changeMode && <PromptComposer coordinator={prompts} revisions={revisionSource} />}
-          {!pendingTransfer && !(composerOpen && !changeMode) && <DiagramSearchPanel service={search} activeDocumentId={proposalSearchId ?? activeId}
-            hideOpenButton={!!diffTreeMode} openRequest={searchOpenRequest}
-            activeName={changeMode ? proposalSearchDocument && proposalSearchDocument.id === proposalSearchId ? proposalSearchDocument.name : 'Loading proposal…' : active?.name}
-            onReveal={revealSearchResult} onClear={clearSearchFocus} onMatches={setSearchMatches} />}
+          {!pendingTransfer && <>
+            {!toolsOpen && !diffTreeMode && <button className="workspace-tools-open" aria-label="Search diagrams" onClick={() => { setToolTab('search'); setToolsOpen(true); }}>Search</button>}
+            <div hidden={!toolsOpen}>
+              <WindowPanel title="Workspace tools" activeTab={toolTab} onTabChange={setToolTab} onClose={closeTools} tabs={[
+                { id: 'search', title: 'Search', content: <DiagramSearchPanel embedded openRequest={searchOpenRequest} visible={toolsOpen && toolTab === 'search'}
+                  onOpen={() => { setToolTab('search'); setToolsOpen(true); }} onClose={closeTools}
+                  service={search} activeDocumentId={proposalSearchId ?? activeId}
+                  activeName={changeMode ? proposalSearchDocument?.name : active?.name}
+                  onReveal={revealSearchResult} onClear={clearSearchFocus} onMatches={setSearchMatches} /> },
+                { id: 'llm', title: 'LLM', content: <PromptComposer coordinator={prompts} revisions={revisionSource} /> }
+              ]} />
+            </div>
+          </>}
           <FloatingPane highlighted={!!pendingTransfer}><MappingDiagramExplorer explorerTab={explorerTab}
+            llms={<><button className="llm-explorer-new" disabled={!active} onClick={newLlm}>New LLM</button>
+              <nav aria-label="LLM sessions">{Object.entries(llmEntries).map(([key, entry]) => <div key={key} className="mapping-explorer-row">
+                <button aria-current={activeLlm === key ? 'page' : undefined} className={activeLlm === key ? 'is-active' : undefined}
+                  onClick={() => { prompts.show(key); prompts.syncSelections(entry.target.documentId, capturedSelection(entry.target.documentId).selections, key); setToolTab('llm'); setToolsOpen(true); setChangeMode(undefined); setActiveId(entry.target.documentId); }}>
+                  {entry.target.label} · {entry.run?.status ?? entry.target.operation}
+                </button>
+                <button className="mapping-explorer-delete" aria-label={`Dismiss LLM ${entry.target.label}`} disabled={composerUnsettled(entry)} onClick={() => prompts.dismiss(key)}>×</button>
+              </div>)}</nav></>}
             transfer={pendingTransfer ? { mode: pendingTransfer.mode, count: pendingTransfer.selectedIds.length,
               sourceId: drafts[pendingTransfer.sourceId]?.representationId ?? pendingTransfer.sourceId, busy: workspaceBusy, error, progress: transferProgress,
               onCancel: cancelTransfer, onNew: name => void transfer({ name }) } : undefined}

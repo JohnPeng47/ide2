@@ -15,6 +15,7 @@ import type { ProjectRepresentationCatalogRecord } from '../../../../domain/core
 import { DisplayPane } from './DisplayPane';
 
 export function SelectionEffectsLayer(props: {
+  extension?: { disabled?: boolean; onPick: (point: { x: number; y: number }) => void };
   session: CanvasSession; selection: SelectionState;
   state: DisplayState; setLayoutState: Dispatch<SetStateAction<DisplayState>>; setState: Dispatch<SetStateAction<DisplayState>>;
   diagramViews?: DiagramViews; boxes: ResolvedGridBox[]; scene: LineGridScene; cell: { width: number; height: number };
@@ -48,7 +49,7 @@ export function SelectionEffectsLayer(props: {
       if (!selected && root.childIds.length === 0) return null;
       const missing = !box;
       const stale = props.scene.contents[root.sourceContentId]?.content.ascii !== root.sourceAscii;
-      if (!missing && !stale && !diagramProjection(props.scene, root.sourceBoxId, root.sourceContentId, props.diagramViews).rect(root.rect)) return null;
+      if (!missing && !stale && !diagramProjection(props.scene, root.sourceBoxId, root.sourceContentId, props.diagramViews).selectionRect(root.rect)) return null;
       const rect = { ...root.position, ...root.bounds };
       const projected = layoutProjectedPanes(props.state, root);
       const inCanvas = (id: string) => {
@@ -73,10 +74,14 @@ export function SelectionEffectsLayer(props: {
           }}><option value="stacked">Stacked</option><option value="chained">Chained</option></select>
           <button type="button" disabled={props.busySelectionIds.includes(root.id)} onClick={() => props.onRemove(root.id)} aria-label="Remove selection">×</button>
         </div>
-        <button className="projection-join selection-root-join" data-mapping-static-ui data-diagram-canvas-static-ui type="button"
+        <button className={`projection-join selection-root-join${props.extension && selected ? ' llm-origin' : ''}`} data-mapping-static-ui data-diagram-canvas-static-ui type="button"
           style={{ left: rect.x + rect.width - 8, top: layout.axisY - 8 }}
-          aria-label={root.expansion === 'expanded' ? 'Collapse selection effects' : 'Expand selection effects'}
-          aria-expanded={root.expansion === 'expanded'} onClick={() => toggle(root.id)}>{root.expansion === 'expanded' ? '−' : '+'}</button>
+          disabled={!!props.extension && (props.extension.disabled || stale || missing)}
+          aria-label={props.extension && selected ? 'Place new diagram origin' : root.expansion === 'expanded' ? 'Collapse selection effects' : 'Expand selection effects'}
+          aria-expanded={props.extension && selected ? undefined : root.expansion === 'expanded'} onClick={() => {
+            if (props.extension && selected) props.extension.onPick({ x: rect.x + rect.width, y: layout.axisY });
+            else toggle(root.id);
+          }}>{props.extension && selected ? '+' : root.expansion === 'expanded' ? '−' : '+'}</button>
         {layout.links.slice(1).map(link => <button key={`join-${link.id}`} className="projection-join" type="button" data-mapping-static-ui data-diagram-canvas-static-ui
           style={{ left: link.x1 - 8, top: link.y - 8 }} aria-label={props.state.nodes[link.id].expansion === 'expanded' ? 'Collapse child pane' : 'Expand child pane'}
           aria-expanded={props.state.nodes[link.id].expansion === 'expanded'} onClick={() => toggle(link.id)}>{props.state.nodes[link.id].expansion === 'expanded' ? '−' : '+'}</button>)}

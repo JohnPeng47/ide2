@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { contentNodeAnchorSchema, type ContentNodeAnchor } from '../../core/diagrams/diagramConnection';
 import type { DiagramInput } from '../../core/diagrams/diagram';
 import type { DiagramRevision } from '../../core/diagrams/diagramRevisionEditor';
 import { promptTemplateSelectionSchema, type PromptOperation } from './promptTemplates';
@@ -21,10 +22,14 @@ const promptFields = {
 };
 export const editDiagramSchema = z.object({
   sessionId: id, nodeId: id, expectedVersion: z.number().int().nonnegative(),
+  subtree: z.object({ contentNodeId: z.string().min(1).max(500), revisionId: id }).strict().optional(),
+  origin: z.object({ column: z.number().int().nonnegative(), row: z.number().int().nonnegative() }).strict().optional(),
+  sources: z.array(contentNodeAnchorSchema).max(500).optional(),
   baseRevisionId: id, agentContextId: id.optional(), prompt: z.string().trim().min(1).max(20000), requestId: id, ...promptFields
 }).strict();
 /** nodeId/baseRevisionId pin the anchor diagram: its revision is the context and new diagrams are placed beside it. */
 export const createDiagramSchema = editDiagramSchema.extend({ count: z.number().int().min(1).max(4).optional() }).strict();
+export const extendDiagramSchema = editDiagramSchema.extend({ origin: editDiagramSchema.shape.origin.unwrap(), sources: z.array(contentNodeAnchorSchema).min(1).max(500) }).strict();
 export const diagramEditRunSchema = z.object({ runId: id }).strict();
 export type EditDiagramInput = z.infer<typeof editDiagramSchema>;
 export type CreateDiagramInput = z.infer<typeof createDiagramSchema>;
@@ -39,6 +44,7 @@ export interface DiagramRevisionApplication {
 export interface DiagramCreation {
   id: string; parentId?: string; position: { column: number; row: number };
   content: Omit<DiagramInput, 'id' | 'revision'>;
+  sources?: ContentNodeAnchor[];
 }
 export interface DiagramEditRun {
   runId: string;

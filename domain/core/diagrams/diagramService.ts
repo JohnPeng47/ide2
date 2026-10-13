@@ -1,3 +1,4 @@
+import { subtreeReplacement, type SubtreeRange } from './diagramSubtreeEdit';
 import type { AgentContextSnapshot } from '../agents/agentContext';
 import type { Diagram, DiagramInput } from './diagram';
 import { DiagramRevisionEditor, type DiagramEdit, type DiagramRevision, type PreparedDiagramEdit } from './diagramRevisionEditor';
@@ -23,6 +24,7 @@ export interface DiagramGenerationRequest {
     references: readonly unknown[];
   };
   baseRevisionId?: string;
+  editRange?: SubtreeRange;
   context?: {
     diagram: Diagram;
     connections?: readonly import('./diagramConnection').DiagramConnection[];
@@ -86,6 +88,19 @@ export class RevisionedDiagramService implements DiagramService {
       throw Error('Generation base belongs to another diagram');
     const generated = await this.generator.generate(structuredClone(request), options);
     options.signal?.throwIfAborted();
+    if (request.baseRevisionId && request.editRange) {
+      const base = this.getRevision(request.baseRevisionId).diagram;
+      const patch = subtreeReplacement(base, generated.ascii, request.editRange);
+      // patchDiagram rebases untouched mappings and logical identities. Only accept generated mappings inside the replacement.
+      const inserted = patch ? patch.split('\n').length : 0;
+      const delta = inserted - (request.editRange.endLine - request.editRange.startLine + 1);
+      const retained = base.sourceContext.mappings.filter(m => m.line < request.editRange!.startLine || m.line > request.editRange!.endLine)
+        .map(m => ({ ...m, line: m.line > request.editRange!.endLine ? m.line + delta : m.line }));
+      const retainedIds = new Set(retained.map(m => m.id));
+      const mappings = [...retained, ...(generated.mappings ?? []).filter(m => m.line >= request.editRange!.startLine
+        && m.line < request.editRange!.startLine + inserted && !retainedIds.has(m.id))];
+      return this.revise(request.baseRevisionId, { kind: 'patch', start: request.editRange.startLine, end: request.editRange.endLine, patch, mappings });
+    }
     return request.baseRevisionId
       ? this.revise(request.baseRevisionId, { kind: 'replace', input: generated })
       : this.create({ ...request.input, ...generated, id: request.input.id, revision: 0 });

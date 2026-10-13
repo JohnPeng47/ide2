@@ -96,25 +96,39 @@ after restart; its old handles are still expired and require a fresh read for ed
 
 ## Prompt-driven diagram edits
 
-The Mapping UI exposes this flow in two places:
+Ctrl-click a node to toggle its subtree, including descendants. Clicking a selected
+node removes that branch while preserving other selected branches, the selection
+rectangle, and its position in selection order. Explicit node IDs determine highlights,
+references, and copied content; the rectangle is a visual envelope. Ctrl-drag selects
+rectangular regions. Whole diagrams and node
+references can coexist in the same selection. Open **Actions → LLM [L]** (or press
+**L**) to open the shared Search/LLM window on the right, aligned with Explorer. The **LLMs** Explorer
+tab creates, switches, and dismisses independent prompt sessions. With no selection,
+**L** reopens the active LLM session or starts a new Create diagram prompt. The shortcut
+also works from Explorer and action menus, and leaves text entry alone. Closing the window
+preserves drafts. Each automatic reference follows its selection: changing membership
+updates the existing chip, and clearing the selection removes it. Manually inserted
+references stay pinned. References freeze with the request during generation.
 
-- Select exactly one whole diagram, then choose **Update diagram with AI…** in
-  the selection toolbar. Mixed or multiple selections disable the action.
-- Ctrl-drag a region, open its retained **Actions** menu, then choose
-  **Update containing diagram with AI…**. This updates the whole owning diagram.
+The LLM panel offers three modes:
 
-Both actions open the same composer with a pinned target and explicit whole-diagram
-scope. Source mappings are optional. The current document/base versions are read
-on submission. Changing selection does not redirect the request; canvas version
-changes during generation are still checked by the backend and can cause a conflict.
-Cancel, Close, or Escape dismiss an unsubmitted prompt completely. Completed or
-cancelled updates can also be closed or dismissed. While an update is in progress,
-Hide keeps its status accessible through a reopen button; progress continues. Cancellation is available during generation;
-a retry after an ambiguous response reuses the original request. Conflict recovery
-requires explicitly submitting against the latest diagram. Successful updates are
-one undoable change and acknowledge workspace persistence.
+- **Create diagram** generates one new diagram without requiring a selection.
+- **Update subtree** targets the selected node and its descendants. The application
+  rejects changes outside that raw line range and preserves unaffected mappings.
+  Other selected nodes remain prompt references, without expanding the edit scope.
+- **Extend diagram** requires selected nodes. Click the small green circle on the
+  selection, move the cursor with the preview edge following it, then click empty
+  canvas to place the origin. Escape cancels placement; the source selection stays
+  visible. Generation adds one diagram and connects the selected nodes to it in a
+  single undoable transaction.
 
-`DiagramEditCoordinator` owns transient UI run state outside canvas history and
+Source mappings are optional. The current document/base versions are read on
+submission. Selection changes do not redirect an in-flight request. A stale subtree
+or extension source requires selecting a current node again. Cancellation is
+available during generation; a retry after an ambiguous response reuses the original
+request. Successful operations acknowledge workspace persistence.
+
+`PromptComposerCoordinator` owns transient UI run state outside canvas history and
 selection state. It does not set the document's legacy generation busy flag, so the
 existing browser bridge can apply the issued revision. Runs are tracked in the UI
 until page reload; installed revisions and undo history survive reload.

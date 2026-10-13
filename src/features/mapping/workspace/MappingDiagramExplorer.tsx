@@ -2,12 +2,13 @@ import { repositoryGroups, type Repository } from '../../../../domain/core/repos
 import { RepositoryTreeGroup } from './RepositoryTreeGroup';
 import { ChangeSessionExplorer } from '../changes/ChangeSessionExplorer';
 import type { DisplayModeChange } from '../changes/changeSessionApi';
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { GridBox, LineGridScene } from "../../../../domain/core/diagrams/lineGrid";
 import type { ProjectRepresentationRecord } from "../../../../domain/core/representations/projectCatalog";
 export function MappingDiagramExplorer(props: {
   transfer?: { mode: 'copy' | 'move'; count: number; sourceId: string; busy: boolean; error?: string; progress?: string; onCancel: () => void; onNew: (name: string) => void };
-  explorerTab: 'diagrams'|'changes'; onTabChange: (tab: 'diagrams'|'changes') => void;
+  explorerTab: 'diagrams'|'changes'|'llms'; onTabChange: (tab: 'diagrams'|'changes'|'llms') => void;
+  llms?: ReactNode;
   changeMode?: DisplayModeChange; onChangeSelect: (mode: DisplayModeChange) => void;
   repositories?: Repository[]; projectName: string; diagrams: Pick<ProjectRepresentationRecord, 'id' | 'name' | 'repositoryId'>[]; activeId?: string;
   scene?: LineGridScene; dirtyIds: string[]; onOpen: (id: string) => void; onFocus: (boxId: string) => void;
@@ -31,9 +32,9 @@ export function MappingDiagramExplorer(props: {
   return <>
     <header><strong>{props.projectName}</strong><span>PROJECT DIAGRAMS</span></header>
     <div className="mapping-explorer-tabs" role="tablist" aria-label="Explorer mode">
-      {(['diagrams','changes'] as const).map(tab => <button disabled={!!props.transfer} key={tab} role="tab" aria-selected={props.explorerTab === tab} onClick={() => props.onTabChange(tab)}>{tab === 'diagrams' ? 'Diagrams' : 'Changes'}</button>)}
+      {(['diagrams','changes','llms'] as const).map(tab => <button disabled={!!props.transfer} key={tab} role="tab" aria-selected={props.explorerTab === tab} onClick={() => props.onTabChange(tab)}>{tab === 'diagrams' ? 'Diagrams' : tab === 'llms' ? 'LLMs' : 'Changes'}</button>)}
     </div>
-    {props.explorerTab === 'changes' ? <ChangeSessionExplorer repositories={props.repositories ?? []} mode={props.changeMode} onSelect={props.onChangeSelect} /> : <>
+    {props.explorerTab === 'llms' ? props.llms : props.explorerTab === 'changes' ? <ChangeSessionExplorer repositories={props.repositories ?? []} mode={props.changeMode} onSelect={props.onChangeSelect} /> : <>
     {props.transfer && <div ref={picker} tabIndex={-1} className="mapping-transfer-picker" aria-label="Choose destination canvas" aria-busy={props.transfer.busy}>
       <h2>{props.transfer.mode === 'copy' ? 'Copy' : 'Move'} {props.transfer.count} {props.transfer.count === 1 ? 'diagram' : 'diagrams'}</h2>
       <p role="status">{props.transfer.busy ? props.transfer.progress : newCanvas ? 'Name the new canvas, then confirm below.' : 'Choose an existing canvas below, or create a new one.'}</p>

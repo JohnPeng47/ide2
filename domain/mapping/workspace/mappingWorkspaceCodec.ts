@@ -104,7 +104,7 @@ export function deserializeWorkspace(json: string | unknown, historyValidation: 
       for (const key of ['projectionId', 'sourceRevisionId', 'targetRevisionId']) if (node[key] !== undefined) id(node[key]);
       if (node.kind === 'selection') {
         if (node.selectionActive !== undefined) check(typeof node.selectionActive === 'boolean', 'invalid selection state');
-        id(node.sourceBoxId); id(node.sourceContentId); string(node.sourceAscii); rect(node.rect); strings(node.selectedIds);
+        id(node.sourceBoxId); id(node.sourceContentId); string(node.sourceAscii); rect(node.rect); strings(node.selectedIds); if (node.contentNodeIds !== undefined) strings(node.contentNodeIds);
         check(['stacked', 'chained'].includes(node.displayMode), 'invalid display mode');
       } else if (node.kind === 'projection') {
         string(node.title); object(node.content);
@@ -275,10 +275,9 @@ export function deserializeWorkspace(json: string | unknown, historyValidation: 
       if (item.region !== undefined) {
         object(item.region); id(item.region.sourceContentId); string(item.region.sourceAscii);
         if (item.region.sourceRevisionId !== undefined) id(item.region.sourceRevisionId);
-        rect(item.region.rect); strings(item.region.selectedIds); regions.add(item.displayNodeId);
+        rect(item.region.rect); strings(item.region.selectedIds); if (item.region.contentNodeIds !== undefined) strings(item.region.contentNodeIds); regions.add(item.displayNodeId);
       } else { check(!diagrams.has(item.displayNodeId), 'duplicate selected diagram'); diagrams.add(item.displayNodeId); }
     }
-    check(![...diagrams].some(id => regions.has(id)), 'whole diagram overlaps selected region');
     const focusId = doc.canvas.controls.selectionFocusId;
     check(focusId === null || selection.items.some((item: any) => item.id === focusId && item.region), 'missing selection focus');
     if (c.activeThreadId !== null) check(Object.hasOwn(nodes, c.activeThreadId), 'missing control owner');

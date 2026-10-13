@@ -6,14 +6,14 @@ import { initialMappingGrid } from '../mappingGrid';
 import { diagramSelectionItem, regionSelectionItem } from '../../selection/selectionState';
 function snapshot(): MappingWorkspaceSnapshot { const document = initialMappingGrid(); return { schemaVersion: 3, projectId: 'project', activeDocumentId: 'diagram', documents: [{ representationId: 'diagram', revisionId: 'revision', name: 'Diagram', savedName: 'Diagram', savedScene: JSON.stringify(document.scene), document, canvas: initialCanvasState(), viewport: { offset: { x: 42, y: 51 }, scale: .8 } }] }; }
 describe('workspace codec', () => {
-  it('round trips the canonical collection independently of panels and rejects conflicting membership', () => {
+  it('round trips the canonical collection independently of panels, including mixed node and diagram membership', () => {
     const input = snapshot(), doc = input.documents[0];
     const content = Object.values(doc.document.scene.contents)[0];
     const item = regionSelectionItem(content, 'overview', { startLine: 1, endLine: 1, startColumn: 1, endColumn: 2 }, 'selection');
     doc.canvas.selection = { items: [item] }; doc.canvas.controls.selectionFocusId = item.id;
     expect(deserializeWorkspace(serializeWorkspace(input))).toEqual(input);
     doc.canvas.selection = { items: [item, diagramSelectionItem('grid:overview')] };
-    expect(() => deserializeWorkspace(input)).toThrow('overlaps');
+    expect(deserializeWorkspace(serializeWorkspace(input))).toEqual(input);
     doc.canvas.selection = { items: [item, item] };
     expect(() => deserializeWorkspace(input)).toThrow('duplicate selection');
   });

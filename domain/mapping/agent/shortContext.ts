@@ -59,7 +59,7 @@ export function shortCanvasContext(context: ApiLiveCanvasContext) {
         sourceRevisionId: value.sourceRevisionId, sourceAsciiSha256: asciiSha256(value.sourceAscii),
         matchesCurrentSource: source?.layout === 'grid' && source.diagram?.id === value.sourceContentId
           && source.content?.ascii === value.sourceAscii,
-        rect: value.rect, selectedIds: value.selectedIds, displayMode: value.displayMode,
+        rect: value.rect, selectedIds: value.selectedIds, contentNodeIds: value.contentNodeIds, displayMode: value.displayMode,
         activeChildId: value.activeChildId }];
     }),
     // Preserve discoverability and parent/child relationships for non-diagram panes.

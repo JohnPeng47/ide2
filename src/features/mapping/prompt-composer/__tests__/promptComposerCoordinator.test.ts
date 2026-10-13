@@ -1,9 +1,9 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import type { DiagramEditRun } from '../../../../../domain/mapping/agent/diagramEdit';
 import { PromptComposerCoordinator, composerKey, type PromptComposerTarget } from '../promptComposerCoordinator';
-import { serializePromptDraft, setBlockText } from '../promptDraft';
+import { serializePromptDraft, setBlockText, removeBlock } from '../promptDraft';
 
-const target: PromptComposerTarget = { operation: 'edit-diagram', canvasId: 'canvas', documentId: 'doc', nodeId: 'grid:first', label: 'First' };
+const target: PromptComposerTarget = { operation: 'edit-diagram', canvasId: 'canvas', documentId: 'doc', nodeId: 'grid:first', label: 'First', subtree: { contentNodeId: 'node', revisionId: 'content' } };
 const key = composerKey(target);
 const run = (status: DiagramEditRun['status'] = 'generating'): DiagramEditRun => ({ runId: 'run', operation: 'edit-diagram', status, nodeId: target.nodeId, baseRevisionId: 'base' });
 const coordinators: PromptComposerCoordinator[] = [];
@@ -74,15 +74,16 @@ it('retries status reads without starting another generation', async () => {
   await f.coordinator.retry(key);
   expect(f.entry().run?.status).toBe('completed'); expect(f.client.start).toHaveBeenCalledOnce();
 });
-it('discards an unsubmitted prompt on close without leaving an entry to reopen', () => {
+it('keeps drafts when the panel closes and restores them from Explorer', () => {
   const f = fixture(); f.coordinator.close();
-  expect(f.coordinator.store.getState()).toEqual({ entries: {}, activeKey: undefined, carried: undefined });
-  expect(f.client.capture).not.toHaveBeenCalled(); expect(f.client.start).not.toHaveBeenCalled();
-  f.coordinator.open(target); expect(promptOf(f.coordinator, key)).toBe('');
+  expect(f.coordinator.store.getState().activeKey).toBeUndefined();
+  expect(promptOf(f.coordinator, key)).toBe('Update first');
+  f.coordinator.show(key); expect(promptOf(f.coordinator, key)).toBe('Update first');
+  f.coordinator.dismiss(key); expect(f.entry()).toBeUndefined();
 });
 it('dismisses completed updates but preserves requests with an unknown outcome', async () => {
   const f = fixture(); f.client.start.mockResolvedValueOnce(run('completed'));
-  await f.coordinator.submit(key); f.coordinator.close(); expect(f.entry()).toBeUndefined();
+  await f.coordinator.submit(key); f.coordinator.dismiss(key); expect(f.entry()).toBeUndefined();
   f.coordinator.open(target); setPrompt(f.coordinator, key, 'Another edit');
   f.client.start.mockRejectedValueOnce(Error('response lost')); await f.coordinator.submit(key);
   f.coordinator.close(); f.coordinator.dismiss(key);
@@ -93,7 +94,7 @@ it('does not resurrect a dismissed cancelled run when a stale status read comple
   let finish!: (value: DiagramEditRun) => void;
   f.client.status.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
   const polling = f.coordinator.refresh(key); await f.coordinator.cancel(key);
-  f.coordinator.close(); finish(run()); await polling;
+  f.coordinator.dismiss(key); finish(run()); await polling;
   expect(f.entry()).toBeUndefined();
 });
 it('sends the structured draft and dispatches create-diagram with its count', async () => {
@@ -119,4 +120,81 @@ it('locks references and templates while a request is unsettled and clears a car
   f.coordinator.close();
   expect(f.coordinator.store.getState().carried).toBeUndefined();
   expect(f.entry()).toBeDefined();
+});
+
+const selectedReference = (nodeIds: string[]) => ({ kind: 'nodes' as const, label: 'Branch', diagramId: 'diagram', revisionId: 'revision',
+  nodeIds, range: { startLine: 1, endLine: 7, startColumn: 1, endColumn: 30 } });
+const referenceBlocks = (entry: ReturnType<typeof fixture>['entry']) => entry().draft.body.filter(block => block.kind === 'reference');
+
+it('updates the same automatic reference block in place and submits only the current nodes', async () => {
+  const f = fixture();
+  f.coordinator.setCursor(key, { blockId: f.entry().draft.body[0].id, offset: 6 });
+  f.coordinator.syncSelections('doc', [{ id: 'selection', reference: selectedReference(['root', 'child', 'leaf']) }]);
+  const before = f.entry().draft, blockId = referenceBlocks(f.entry)[0].id;
+  const prompt = serializePromptDraft(before).prompt;
+  const reduced = selectedReference(['root', 'child']);
+  f.coordinator.syncSelections('doc', [{ id: 'selection', reference: reduced }]);
+  expect(referenceBlocks(f.entry)).toEqual([{ kind: 'reference', id: blockId, reference: reduced }]);
+  expect(f.entry().draft.body.map(block => block.id)).toEqual(before.body.map(block => block.id));
+  expect(promptOf(f.coordinator, key)).toBe(prompt);
+  await f.coordinator.submit(key);
+  expect(f.client.start).toHaveBeenCalledWith(expect.objectContaining({ references: [reduced], prompt }), 'edit-diagram');
+});
+
+it('removes deselected automatic references, preserves manual references and restores one chip on undo', () => {
+  const f = fixture(), manual = selectedReference(['manual']);
+  f.coordinator.insertReference(manual);
+  const manualId = referenceBlocks(f.entry)[0].id;
+  const selected = [{ id: 'selection', reference: selectedReference(['root', 'child']) }];
+  f.coordinator.syncSelections('doc', selected);
+  f.coordinator.syncSelections('doc', []);
+  expect(referenceBlocks(f.entry)).toEqual([{ kind: 'reference', id: manualId, reference: manual }]);
+  f.coordinator.syncSelections('doc', selected);
+  f.coordinator.syncSelections('doc', selected);
+  expect(referenceBlocks(f.entry)).toHaveLength(2);
+  expect(serializePromptDraft(f.entry().draft).references).toEqual([manual, selected[0].reference]);
+});
+
+it('does not reinsert a manually dismissed automatic chip while its selection remains active', () => {
+  const f = fixture();
+  f.coordinator.syncSelections('doc', [{ id: 'selection', reference: selectedReference(['root', 'child']) }]);
+  const blockId = referenceBlocks(f.entry)[0].id;
+  f.coordinator.updateDraft(key, draft => removeBlock(draft, blockId));
+  f.coordinator.syncSelections('doc', [{ id: 'selection', reference: selectedReference(['root']) }]);
+  expect(referenceBlocks(f.entry)).toHaveLength(0);
+  f.coordinator.syncSelections('doc', []);
+  f.coordinator.syncSelections('doc', [{ id: 'selection', reference: selectedReference(['root']) }]);
+  expect(referenceBlocks(f.entry)).toHaveLength(1);
+});
+
+it('isolates selection references between documents and composer sessions', () => {
+  const f = fixture(), selection = { id: 'selection', reference: selectedReference(['root', 'child']) };
+  f.coordinator.syncSelections('doc', [selection]);
+  f.coordinator.syncSelections('another-doc', []);
+  expect(referenceBlocks(f.entry)).toHaveLength(1);
+  const second = f.coordinator.open(target, true);
+  f.coordinator.syncSelections('doc', [{ ...selection, reference: selectedReference(['root']) }]);
+  expect(serializePromptDraft(f.coordinator.store.getState().entries[second].draft).references).toEqual([selectedReference(['root'])]);
+  expect(serializePromptDraft(f.entry().draft).references).toEqual([selection.reference]);
+});
+
+it('freezes the submitted references during generation and ambiguous-response retries', async () => {
+  const f = fixture(), original = selectedReference(['root', 'child']);
+  f.coordinator.syncSelections('doc', [{ id: 'selection', reference: original }]);
+  f.client.start.mockRejectedValueOnce(Error('response lost'));
+  await f.coordinator.submit(key);
+  f.coordinator.syncSelections('doc', [{ id: 'selection', reference: selectedReference(['root']) }]);
+  expect(serializePromptDraft(f.entry().draft).references).toEqual([original]);
+  await f.coordinator.retry(key);
+  expect(f.client.start.mock.calls[1]).toEqual(f.client.start.mock.calls[0]);
+});
+
+it('keeps the pinned snapshot of a still-selected stale region until that selection is cleared', () => {
+  const f = fixture(), reference = selectedReference(['root', 'child']);
+  f.coordinator.syncSelections('doc', [{ id: 'selection', reference }]);
+  const before = f.entry().draft;
+  f.coordinator.syncSelections('doc', [{ id: 'selection' }]);
+  expect(f.entry().draft).toBe(before);
+  f.coordinator.syncSelections('doc', []);
+  expect(referenceBlocks(f.entry)).toHaveLength(0);
 });

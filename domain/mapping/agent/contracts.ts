@@ -1,5 +1,5 @@
 import { diffTreeInputSchema } from '../changes/diffTree';
-import { editDiagramSchema, createDiagramSchema, diagramEditRunSchema } from './diagramEdit';
+import { editDiagramSchema, createDiagramSchema, extendDiagramSchema, diagramEditRunSchema } from './diagramEdit';
 import { diagramMigrationSchema } from '../changes/diagramMigration';
 import { diagramChangeSchema } from '../changes/diagramChangeSession';
 import { diagramJumpSchema } from '../../core/diagrams/diagramJump';
@@ -27,7 +27,7 @@ export const acceptChangeSessionSchema = z.object({ changeSessionId: idSchema, r
 const hunkPageFields = { offset: z.number().int().nonnegative().default(0), limit: z.number().int().min(1).max(100).default(50), includePatches: z.boolean().default(true) };
 export const discoverDiffHunksSchema = z.object({ repositoryId: idSchema.optional(), commits: z.array(z.string().min(1).max(200)).max(2000).default([]), head: z.string().min(1).max(200).optional(), ...hunkPageFields }).strict();
 export const readDiffTreeSchema = z.object({ changeSessionId: idSchema, nodeIds: z.array(idSchema).max(2000).optional(), hunkIds: z.array(idSchema).max(2000).optional(), ...hunkPageFields }).strict().refine(input => !(input.nodeIds && input.hunkIds), 'Choose nodeIds or hunkIds');
-export const agentToolSchemas = { get_repository_diff_hunks: discoverDiffHunksSchema, read_change_session_diff_tree: readDiffTreeSchema, list_repositories: z.object({}).strict(), register_repository: z.object({ path: z.string().min(1), name: z.string().trim().min(1).max(120).optional(), requestId: idSchema }).strict(), 'edit-diagram': editDiagramSchema, 'create-diagram': createDiagramSchema, 'edit-diagram-status': diagramEditRunSchema,
+export const agentToolSchemas = { get_repository_diff_hunks: discoverDiffHunksSchema, read_change_session_diff_tree: readDiffTreeSchema, list_repositories: z.object({}).strict(), register_repository: z.object({ path: z.string().min(1), name: z.string().trim().min(1).max(120).optional(), requestId: idSchema }).strict(), 'edit-diagram': editDiagramSchema, 'create-diagram': createDiagramSchema, 'extend-diagram': extendDiagramSchema, 'edit-diagram-status': diagramEditRunSchema,
   'cancel-diagram-edit': diagramEditRunSchema, create_diagram_change_session: createChangeSessionSchema, update_diagram_change_session: updateChangeSessionSchema, accept_diagram_change_session: acceptChangeSessionSchema, 'diagram-search': searchSchema, 'canvas-api-search': apiSearchSchema, exec: execSchema, draw_diagram: drawSchema, save_diagram: saveSchema, set_diagram_source_mappings: setSourceMappingsSchema };
 export type AgentToolName = keyof typeof agentToolSchemas;
 

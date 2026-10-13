@@ -47,7 +47,7 @@ it('rejects a region crossing folded lines, but still allows selecting the whole
   expect(selectCanvasMarquee(scene, views, { left: -1, top: -1, right: 100, bottom: 100 }).diagramIds).toEqual(['grid:overview']);
 });
 
-it('promotion clears its regions and focus without deleting panel context or regions on other diagrams', () => {
+it('whole-diagram addition preserves regions, focus and panel context', () => {
   const state = initialCanvasState();
   const a: SelectionRegion = { ...displayGeometry(), id: 'a', kind: 'selection', childIds: [], expansion: 'expanded',
     sourceBoxId: 'overview', sourceContentId: 'overview', sourceAscii: 'Root', displayMode: 'stacked', selectedIds: [],
@@ -58,9 +58,9 @@ it('promotion clears its regions and focus without deleting panel context or reg
   state.selection = { items: [a, b].map(node => ({ id: node.id, displayNodeId: `grid:${node.sourceBoxId}`, region: { sourceContentId: node.sourceContentId, sourceAscii: node.sourceAscii, rect: node.rect, selectedIds: node.selectedIds } })) };
   const promoted = updateSelection(state, { type: 'add', items: [diagramSelectionItem('grid:overview')] });
   expect(promoted.display.nodes.a).toBe(a);
-  expect(promoted.selection.items.map(item => item.id)).toEqual(['b', 'grid:overview']);
+  expect(promoted.selection.items.map(item => item.id)).toEqual(['a', 'b', 'grid:overview']);
   expect(promoted.display.nodes.b).toBe(b);
-  expect(promoted.controls.selectionFocusId).toBeNull();
+  expect(promoted.controls.selectionFocusId).toBe('a');
   expect(selectedDiagramIds(promoted.selection)).toEqual(['grid:overview']);
   const cleared = deselectCanvas(promoted);
   expect(cleared.selection.items).toEqual([]);

@@ -18,7 +18,7 @@ export function importLegacySelection(canvas: MappingCanvasState, scene: LineGri
     const { selectionActive, ...context } = node as SelectionRegion & { selectionActive?: boolean };
     if (selectionActive !== false) items.push({ id, displayNodeId: `grid:${node.sourceBoxId}`, region: {
       sourceContentId: node.sourceContentId, sourceRevisionId: node.sourceRevisionId, sourceAscii: node.sourceAscii,
-      rect: node.rect, selectedIds: node.selectedIds
+      rect: node.rect, selectedIds: node.selectedIds, ...(node.contentNodeIds ? { contentNodeIds: node.contentNodeIds } : {})
     } });
     return [id, context];
   }));

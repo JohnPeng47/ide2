@@ -43,10 +43,11 @@ it('native final and delayed camera settlements cannot erase region membership o
   expect(editor.getSelectedShapes()).toEqual([]);
   expect(controller.exportHistory().past).toEqual([]);
 });
-it('an intended native selection still imports desktop shape membership', () => {
+it('an intended native selection imports desktop shapes while preserving selected regions', () => {
   const { controller, runtime, ownership } = setup();
+  const regions = controller.getSnapshot().canvas.selection.items;
   ownership.claim('native'); runtime.settle();
-  expect(controller.getSnapshot().canvas.selection.items).toEqual([{ id: 'grid:overview', displayNodeId: 'grid:overview' }]);
+  expect(controller.getSnapshot().canvas.selection.items).toEqual([...regions, { id: 'grid:overview', displayNodeId: 'grid:overview' }]);
   expect(controller.exportHistory().past).toHaveLength(1);
 });
 it('native move geometry commits once with application membership retained and undoable', () => {

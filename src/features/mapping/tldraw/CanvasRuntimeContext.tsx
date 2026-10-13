@@ -1,4 +1,5 @@
 import { SelectionToolBridge } from './SelectionTools';
+import { selectionContentNodes } from '../../../../domain/mapping/selection/selectionState';
 import { createContext } from 'react';
 import { atom, transact, type Atom, type Editor } from 'tldraw';
 import type { CanvasSession } from '../workspace/canvasSession';
@@ -9,7 +10,6 @@ import { flattenGrid, resolveScene } from '../../../../domain/core/diagrams/line
 import type { Diagram } from '../../../../domain/core/diagrams/diagram';
 import { canvasDisplayNodes, findBox, type CanvasDisplayNode } from '../../../../domain/mapping/workspace/canvasDisplayNode';
 import { diagramProjection, type DiagramViewState } from '../../../../domain/mapping/workspace/diagramViewState';
-import { diagramContentNodes } from '../../../../domain/core/diagrams/diagramContentNodes';
 import type { DisplayState, FloatingPane, SelectionRegion } from '../../../../domain/mapping/workspace/displayModel';
 import type { DiagramAnchor, DiagramConnection } from '../../../../domain/core/diagrams/diagramConnection';
 import { resolveEndpoint } from '../../../../domain/mapping/workspace/connectionLayout';
@@ -96,8 +96,7 @@ export class CanvasRuntime {
       const id = `grid:${box.box.id}`, diagram = box.contentId ? s.document.scene.contents[box.contentId] : undefined;
       const view = box.box.collapsed ? undefined : s.canvas.diagramViews?.[id];
       const selectedContent = s.canvas.selection.items.filter(item => item.displayNodeId === id && item.region && diagram?.content.ascii === item.region.sourceAscii)
-        .flatMap(item => diagramContentNodes(diagram!.content).filter(node => node.line >= item.region!.rect.startLine && node.line <= item.region!.rect.endLine
-          && node.startColumn <= item.region!.rect.endColumn && node.endColumn >= item.region!.rect.startColumn).map(node => node.id));
+        .flatMap(item => selectionContentNodes(diagram!, item.region).map(node => node.id));
       grids.set(id, { id, frame: { boxId: box.box.id, kind: box.box.kind, collapsed: box.box.collapsed, root: box.box.id === s.document.scene.root.id,
         bounds: box.bounds, selected: s.canvas.selection.items.some(item => item.displayNodeId === id && !item.region) },
         diagram, view, node: this.registry.find(node => node.id === id)!, cell, selectedContent,
@@ -115,7 +114,7 @@ export class CanvasRuntime {
       const content = region && s.document.scene.contents[region.sourceContentId]?.content;
       const stale = !!region && content?.ascii !== region.sourceAscii, missing = !!region && !box;
       const hiddenByAncestor = region && !box && !!findBox(s.document.scene.root, region.sourceBoxId);
-      const visible = !region || !hiddenByAncestor && !box?.box.collapsed && (!box || stale || !!diagramProjection(s.document.scene, region.sourceBoxId, region.sourceContentId, s.canvas.diagramViews).rect(region.rect));
+      const visible = !region || !hiddenByAncestor && !box?.box.collapsed && (!box || stale || !!diagramProjection(s.document.scene, region.sourceBoxId, region.sourceContentId, s.canvas.diagramViews).selectionRect(region.rect));
       floats.set(node.id, { node, parent, root: region, missing, stale, visible: visible && (node.kind !== 'conversation' || !parent || parent.expansion === 'expanded'),
         selected: s.canvas.selection.items.some(item => item.id === node.id), sourceRevisionId: content?.revisionId });
     }

@@ -13,6 +13,7 @@ export function CanvasSelectionLayer(props: { stageRef: RefObject<HTMLDivElement
   onComplete: (selection: CanvasMarqueeSelection, policy: SelectionPolicy) => void;
   onTap: (hit: SelectionHit, policy: SelectionPolicy, whole: boolean) => void;
   onClear: () => void;
+  onSelectNode: (hit: SelectionHit) => void;
   onSelectDiagram: (id: string, toggle: boolean) => void }) {
   const nativeEditor = useValue('selection editor', () => props.runtime?.editor, [props.runtime]);
   const current = useRef(props); current.current = props;
@@ -33,16 +34,26 @@ export function CanvasSelectionLayer(props: { stageRef: RefObject<HTMLDivElement
     const boxes = () => [...viewport.querySelectorAll<HTMLElement>('[data-grid-box]')]
       .filter(el => current.current.diagramIds.includes(`grid:${el.dataset.gridBox}`))
       .map(el => ({ id: `grid:${el.dataset.gridBox}`, bounds: el.getBoundingClientRect() }));
+    const nodeAtPoint = (event: MouseEvent) => document.elementsFromPoint(event.clientX, event.clientY)
+      .map(element => element.closest<HTMLElement>('[data-content-node-id][data-display-node-id]'))
+      .find(element => element && viewport.contains(element))
+      // The native whole-diagram hit area can mask its text from elementsFromPoint.
+      ?? [...viewport.querySelectorAll<HTMLElement>('[data-content-node-id][data-display-node-id]')].find(element => {
+        const bounds = element.getBoundingClientRect();
+        return bounds.width > 0 && bounds.height > 0 && event.clientX >= bounds.left && event.clientX <= bounds.right
+          && event.clientY >= bounds.top && event.clientY <= bounds.bottom;
+      });
     const ui = (event: MouseEvent) => {
       const target = event.target as Element;
       if (target.closest('[data-diagram-move-handle]')) return false;
       if (target.closest('[data-diagram-jump-id]') && (event.ctrlKey || ('pointerType' in event ? event.pointerType !== 'mouse' : bridge?.pointerType !== 'mouse'))) return false;
+      if (event.ctrlKey && target.closest('.retained-selection-controls, .mapping-whole-actions') && nodeAtPoint(event)) return false;
       return !!target.closest('button, a, input, textarea, select, [contenteditable=true], [data-mapping-static-ui], [data-diagram-canvas-static-ui], [data-display-node], .window-panel');
     };
     const hit = (event: MouseEvent, captured = false): SelectionHit | undefined => {
       // A DOM dblclick may still target the native capture element after release.
       const target = captured ? document.elementFromPoint(event.clientX, event.clientY) : event.target as Element;
-      const label = target?.closest<HTMLElement>('[data-content-node-id]');
+      const label = target?.closest<HTMLElement>('[data-content-node-id]') ?? nodeAtPoint(event);
       if (label?.dataset.displayNodeId?.startsWith('grid:')) return { diagramId: label.dataset.displayNodeId,
         nodeId: label.dataset.contentNodeId, revision: label.dataset.contentRevision };
       const box = boxes().find(({ bounds: r }) => event.clientX >= r.left && event.clientX <= r.right && event.clientY >= r.top && event.clientY <= r.bottom);
@@ -125,10 +136,13 @@ export function CanvasSelectionLayer(props: { stageRef: RefObject<HTMLDivElement
     const up = (event: PointerEvent) => {
       const owned = recognizer.contacts.has(event.pointerId);
       if (!owned) return;
+      const gesture = recognizer.gesture;
       const result = recognizer.up(point(event));
       clearPreview();
       if (result?.kind === 'marquee') current.current.onComplete(current.current.resolve(result.bounds, promoted), result.policy);
       else if (result) current.current.onTap(result.hit, result.policy, !result.hit.nodeId);
+      else if (gesture?.kind === 'marquee' && !gesture.moved && gesture.start.pointerType === 'mouse'
+        && gesture.start.ctrl && gesture.start.hit?.nodeId && event.detail < 2) current.current.onSelectNode(gesture.start.hit);
       if (!editor && viewport.hasPointerCapture(event.pointerId)) viewport.releasePointerCapture(event.pointerId);
       // Native pointer-up still needs its tool. Restore on the next tick, after
       // geometry has settled, rather than ending translation in DOM capture.

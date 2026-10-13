@@ -5,14 +5,16 @@ import { SearchQueryHistory } from './searchQueryHistory';
 import './diagramSearch.css';
 
 const preferenceKey = 'diagram-search-auto-select';
-export function DiagramSearchPanel({ service, activeDocumentId, activeName, hideOpenButton, openRequest, onReveal, onClear, onMatches }: {
+export function DiagramSearchPanel({ service, activeDocumentId, activeName, onReveal, onClear, onMatches, hideOpenButton, openRequest, embedded, visible, onOpen, onClose }: {
+  embedded?: boolean; visible?: boolean; onOpen?: () => void; onClose?: () => void;
   service: DiagramSearchService; activeDocumentId?: string; activeName?: string;
   hideOpenButton?: boolean; openRequest?: number;
   onReveal: (result: DiagramLineSearchResult) => Promise<void>;
   onClear: () => void;
   onMatches: (results: readonly DiagramLineSearchResult[]) => void;
 }) {
-  const [opened, setOpened] = useState(false), [global, setGlobal] = useState(false);
+  const [localOpened, setOpened] = useState(false), [global, setGlobal] = useState(false);
+  const opened = embedded ? !!visible : localOpened;
   const [query, setQuery] = useState(''), [caseSensitive, setCaseSensitive] = useState(false);
   const [queryHistory] = useState(() => {
     try { return new SearchQueryHistory(localStorage); } catch { return new SearchQueryHistory(); }
@@ -29,9 +31,9 @@ export function DiagramSearchPanel({ service, activeDocumentId, activeName, hide
   const state = useSyncExternalStore(service.subscribe, service.getSnapshot);
   const open = (all: boolean) => {
     if (!opened) previousFocus.current = document.activeElement as HTMLElement;
-    setGlobal(all); setOpened(true); setFocusSerial(value => value + 1);
+    setGlobal(all); setOpened(true); onOpen?.(); setFocusSerial(value => value + 1);
   };
-  const close = () => { setOpened(false); previousFocus.current?.focus(); };
+  const close = () => { setOpened(false); onClose?.(); if (!embedded) previousFocus.current?.focus(); };
   useEffect(() => { if (openRequest) open(false); }, [openRequest]);
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
@@ -75,8 +77,8 @@ export function DiagramSearchPanel({ service, activeDocumentId, activeName, hide
     input.current?.focus();
   };
   return <>
-    {!opened && !hideOpenButton && <button className="diagram-search-open" aria-label="Search diagrams" title="Find in canvas (Ctrl+F); find in project (Ctrl+Shift+F)" onClick={() => open(global)}>Search</button>}
-    {opened && <section className="diagram-search-panel" role="search" aria-label="Diagram search" onKeyDown={event => {
+    {!embedded && !opened && !hideOpenButton && <button className="diagram-search-open" aria-label="Search diagrams" title="Find in canvas (Ctrl+F); find in project (Ctrl+Shift+F)" onClick={() => open(global)}>Search</button>}
+    {(embedded || opened) && <section className="diagram-search-panel" role="search" aria-label="Diagram search" onKeyDown={event => {
       if (event.nativeEvent.isComposing) return;
       const inInput = event.target === input.current;
       const navigatingResults = event.target instanceof Element && !!event.target.closest('.diagram-search-results');

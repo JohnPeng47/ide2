@@ -114,7 +114,7 @@ try {
     assert.ok((await text()).includes('[edited: UI whole diagram update]'));
     await historyKey('z');
     // Ctrl-drag part of the other diagram to expose the region action menu.
-    await click('.mapping-diagram-selection-actions button', 'Deselect (Esc)');
+    await click('.mapping-diagram-selection-actions button', 'Deselect all');
     const start = await diagramPoint('second');
     const end = { x: start.x + 40, y: start.y + 22 };
     await mouse('mousePressed', start, 1, 2);

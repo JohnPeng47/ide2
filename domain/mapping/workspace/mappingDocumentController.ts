@@ -1,3 +1,4 @@
+import { syncSelectionPresentation } from '../selection/selectionPresentation';
 import { importLegacySelection } from '../selection/importLegacySelection';
 import { updateSelection } from '../selection/canvasSelection';
 import type { SelectionCommand } from '../selection/selectionState';
@@ -93,7 +94,7 @@ export class MappingDocumentController {
     return display === state.canvas.display ? state : { ...state, canvas: { ...state.canvas, display } };
   }
   constructor(document: MappingGridDocument, canvas: MappingCanvasState, version = 0, cell?: ControllerSnapshot['cell'], endpointBounds?: EndpointBounds, history?: CanvasHistoryRecord, private readonly diagrams: DiagramService = new RevisionedDiagramService(), private readonly historyService: CanvasHistoryService = defaultHistoryService) {
-    canvas = importLegacySelection(canvas, document.scene);
+    canvas = syncSelectionPresentation(importLegacySelection(canvas, document.scene));
     const normalized = history && structuredClone(history);
     if (normalized) for (const snapshot of Object.values(normalized.snapshots)) {
       if (!snapshot.view || typeof snapshot.view !== 'object' || !('display' in snapshot.view)) snapshot.view = structuredClone(canvas);
@@ -142,7 +143,7 @@ export class MappingDocumentController {
     return structuredClone(this.nodeCache.nodes);
   }
   private updateSnapshot(next: State, record: boolean, increment = true) {
-    next = { ...next, canvas: importLegacySelection(next.canvas, next.document.scene) };
+    next = { ...next, canvas: syncSelectionPresentation(importLegacySelection(next.canvas, next.document.scene)) };
     if (next.document.scene !== this.snapshot.document.scene || next.canvas.selection !== this.snapshot.canvas.selection
       || next.canvas.controls.selectionFocusId !== this.snapshot.canvas.controls.selectionFocusId) {
       // Deleted instances disappear from membership; captured regions remain available as stale snapshots.
@@ -319,7 +320,7 @@ export class MappingDocumentController {
         canvas.diagramViews = { ...canvas.diagramViews, [op.nodeId]: { contentRevisionId: content.revisionId, collapsedContentNodeIds: [...ids] } };
         const focused = canvas.selection.items.find(item => item.id === canvas.controls.selectionFocusId);
         if (focused?.region && focused.displayNodeId === op.nodeId
-          && !projectDiagramContent(content, canvas.diagramViews[op.nodeId]).rect(focused.region.rect))
+          && !projectDiagramContent(content, canvas.diagramViews[op.nodeId]).selectionRect(focused.region.rect))
           canvas.controls = { ...canvas.controls, selectionFocusId: null };
       } else if (op.method === 'diagram-revision-apply') {
         const box = findBox(document.scene.root, this.gridId(op.nodeId));

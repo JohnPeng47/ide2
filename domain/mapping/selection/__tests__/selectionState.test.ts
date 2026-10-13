@@ -18,14 +18,14 @@ it('uses one ordered collection for mixed selections and reuses repeated region 
   expect(selectionCommand(state, { type: 'replace', items: [{ ...a, id: 'new-id' }] }).items).toEqual([a]);
 });
 
-it('plain double-click replaces everything while toggle preserves unrelated regions and never resurrects old ones', () => {
+it('plain double-click replaces everything while toggle preserves all regions, including those inside the diagram', () => {
   const state = { items: [a, b] };
   const diagram = diagramSelectionItem('grid:overview');
   expect(selectionCommand(state, { type: 'replace', items: [diagram] }).items).toEqual([diagram]);
   const toggled = selectionCommand(state, { type: 'toggleDiagram', displayNodeId: diagram.displayNodeId });
-  expect(toggled.items).toEqual([b, diagram]);
-  expect(selectionCommand(toggled, { type: 'toggleDiagram', displayNodeId: diagram.displayNodeId }).items).toEqual([b]);
-  expect(selectionCommand(toggled, { type: 'add', items: [a] }).items).toEqual([b, a]);
+  expect(toggled.items).toEqual([a, b, diagram]);
+  expect(selectionCommand(toggled, { type: 'toggleDiagram', displayNodeId: diagram.displayNodeId }).items).toEqual([a, b]);
+  expect(selectionCommand(toggled, { type: 'add', items: [a] }).items).toEqual([a, b, diagram]);
 });
 
 it('imports old membership once and keeps inactive panel context separate', () => {
@@ -47,7 +47,7 @@ it('imports old membership once and keeps inactive panel context separate', () =
   expect(canvas.display.nodes[b.id].selectionActive).toBe(false);
 });
 
-it('migrates an unretained rectangle with a deterministic ID and gives whole diagrams precedence', () => {
+it('migrates an unretained rectangle with a deterministic ID and preserves mixed legacy selections', () => {
   const canvas: any = initialCanvasState(); delete canvas.selection;
   canvas.controls = { ...canvas.controls, selectionRect: rect, selectedNodeIds: [], retainedSelectionId: null };
   const first = importLegacySelection(canvas, scene), second = importLegacySelection(canvas, scene);
@@ -55,8 +55,8 @@ it('migrates an unretained rectangle with a deterministic ID and gives whole dia
   expect(first.controls.selectionFocusId).toBe(first.selection.items[0].id);
   canvas.controls.selectedDiagramIds = ['grid:overview'];
   const promoted = importLegacySelection(canvas, scene);
-  expect(promoted.selection.items).toEqual([diagramSelectionItem('grid:overview')]);
-  expect(promoted.controls.selectionFocusId).toBeNull();
+  expect(promoted.selection.items).toEqual([...first.selection.items, diagramSelectionItem('grid:overview')]);
+  expect(promoted.controls.selectionFocusId).toBe(first.controls.selectionFocusId);
 });
 
 it('undo restores canonical membership, while panel removal cannot recreate a focused region', () => {

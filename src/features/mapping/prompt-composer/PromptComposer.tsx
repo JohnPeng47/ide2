@@ -3,14 +3,12 @@ import { createPortal } from 'react-dom';
 import { useStore } from 'zustand';
 import type { PromptReference } from '../../../../domain/mapping/agent/diagramEdit';
 import { findPromptTemplate, promptTemplateCatalog, promptTemplates, type PromptTemplateParameter } from '../../../../domain/mapping/agent/promptTemplates';
-import { WindowPanel } from '../window-panel/WindowPanel';
-import { usePanelLayout } from '../window-panel/windowPanelState';
 import { TemplateEditor } from './TemplateEditor';
 import { composerUnsettled, type PromptComposerCoordinator, type PromptComposerEntry, type PromptComposerTarget } from './promptComposerCoordinator';
-import { draftReferences, maxPromptCount, referenceSummary, removeBlock, selectTemplate, serializePromptDraft, setBlockText, setCount,
+import { draftReferences, referenceSummary, removeBlock, selectTemplate, serializePromptDraft, setBlockText,
   setTemplateMarkdown, setTemplateOption, insertReference, type PromptBlock } from './promptDraft';
-import { copyPromptReferences, pastedPromptReferences } from './promptReferences';
-import { maxRevisionNameLength, renameRevision, revisionNames } from './revisionNames';
+import { pastedPromptReferences } from './promptReferences';
+import { revisionNames } from './revisionNames';
 import './promptComposer.css';
 
 /** One immutable revision of the target diagram, newest first. sequence numbers the revision chain from 1. */
@@ -19,8 +17,6 @@ export interface PromptRevisionSource {
   list(target: PromptComposerTarget): PromptRevision[];
   sequence(revisionId: string): number | undefined;
 }
-type Pane = 'prompt' | 'revisions';
-const panes = ['prompt', 'revisions'] as const, modes = ['full-single', 'full-split'] as const;
 const promptLimit = 20000;
 const measure = typeof document === 'undefined' ? undefined! : document.createElement('canvas');
 
@@ -33,65 +29,31 @@ function useRevisionTag(source: PromptRevisionSource) {
 }
 
 export function PromptComposer({ coordinator, revisions }: { coordinator: PromptComposerCoordinator; revisions: PromptRevisionSource }) {
-  const { entries, activeKey } = useStore(coordinator.store);
+  const { entries, activeKey, carried } = useStore(coordinator.store);
+  const [railOpen, setRailOpen] = useState(false);
   const entry = activeKey ? entries[activeKey] : undefined;
-  const keys = Object.keys(entries);
-  if (!keys.length) return null;
-  if (!entry || !activeKey) return <div className="prompt-composer-launcher" data-mapping-static-ui data-diagram-canvas-static-ui>
-    {keys.map(key => <div key={key}>
-      <button type="button" onClick={() => coordinator.show(key)}>{entries[key].target.operation === 'create-diagram' ? 'Diagram creation' : 'Diagram update'}: {entries[key].target.label}
-        {entries[key].run ? ` (${entries[key].run!.status})` : ''}</button>
-      {!composerUnsettled(entries[key]) && <button type="button" aria-label={`Dismiss ${entries[key].target.label}`}
-        onClick={() => coordinator.dismiss(key)}>Dismiss</button>}
-    </div>)}
-  </div>;
-  return <ComposerWindow key={activeKey} coordinator={coordinator} entryKey={activeKey} entry={entry} revisions={revisions}
-    others={keys.filter(key => key !== activeKey).map(key => ({ key, label: entries[key].target.label }))} />;
-}
-
-function ComposerWindow({ coordinator, entryKey, entry, revisions, others }: { coordinator: PromptComposerCoordinator; entryKey: string;
-  entry: PromptComposerEntry; revisions: PromptRevisionSource; others: { key: string; label: string }[] }) {
-  const [layout, setLayout] = usePanelLayout<Pane>('prompt-composer-layout', panes, modes);
-  const [railOpen, setRailOpen] = useState(true);
-  const carried = useStore(coordinator.store, state => state.carried);
-  const create = entry.target.operation === 'create-diagram';
-  const list = revisions.list(entry.target);
-  // A newly shown prompt starts expanded; minimizing is for reaching the canvas during this prompt only.
-  useEffect(() => { setLayout({ minimized: false }); }, [setLayout]);
-  // The expanded panel covers the canvas, so canvas selection controls would float over the prompt.
-  useEffect(() => {
-    document.body.classList.toggle('has-prompt-composer', !layout.minimized);
-    return () => document.body.classList.remove('has-prompt-composer');
-  }, [layout.minimized]);
-  const keyDown = (event: React.KeyboardEvent) => {
-    // Typing in the composer must never trigger canvas shortcuts.
-    event.stopPropagation();
-    if (event.key === 'Escape' && !event.defaultPrevented) { event.preventDefault(); if (carried) coordinator.carry(); else coordinator.close(); }
-  };
-  return <>
-    <WindowPanel className="prompt-composer" title={create ? 'Create diagram with AI' : 'Update diagram with AI'}
-      subtitle={`Target: ${entry.target.label} · ${create ? 'new diagrams are placed beside it' : 'whole diagram'} · fixed when selection changes`}
-      canvasId={entry.target.canvasId} state={layout} onChange={setLayout} onClose={() => coordinator.close()} modes={modes} canvas={null}
-      notice={others.length ? <nav className="prompt-composer-others" aria-label="Other prompts">{others.map(other =>
-        <button type="button" key={other.key} onClick={() => coordinator.show(other.key)}>{other.label}</button>)}</nav> : undefined}
-      panes={[
-        { id: 'prompt', title: 'Prompt', content: <div className="prompt-composer-pane" onKeyDown={keyDown}>
-          <PromptPane coordinator={coordinator} entryKey={entryKey} entry={entry} revisions={revisions} list={list}
-            railOpen={railOpen} onToggleRail={() => { setRailOpen(open => !open); if (railOpen) coordinator.carry(); }} carrying={!!carried} />
-        </div> },
-        { id: 'revisions', title: `Revisions (${list.length})`, content: <div className="prompt-composer-pane" onKeyDown={keyDown}>
-          <RevisionsPane coordinator={coordinator} entryKey={entryKey} entry={entry} revisions={revisions} list={list}
-            onInserted={() => setLayout({ pane: 'prompt', focusedPane: 'prompt' })} />
-        </div> }
-      ]} />
+  if (!entry || !activeKey) return <p className="window-panel-message">Select nodes and choose LLM [L], or start a new LLM in Explorer.</p>;
+  const locked = composerUnsettled(entry), list = revisions.list(entry.target);
+  return <div className="llm-panel prompt-composer" onKeyDown={event => event.stopPropagation()}>
+    <div className="llm-mode">
+      <label>Mode <select aria-label="LLM mode" value={entry.target.operation} disabled={locked}
+        onChange={event => coordinator.setTarget(activeKey, { operation: event.target.value as import('../../../../domain/mapping/agent/promptTemplates').PromptOperation })}>
+        <option value="create-diagram">Create diagram</option><option value="edit-diagram">Update subtree</option><option value="extend-diagram">Extend diagram</option>
+      </select></label>
+      <small>{entry.target.label}</small>
+      <small>{entry.target.operation === 'edit-diagram' ? entry.target.subtree ? `Update ${entry.target.subtreeLabel ?? 'selected node'} and its descendants.` : 'Select a node to choose the subtree to update.'
+        : entry.target.operation === 'extend-diagram' ? entry.target.origin ? `New origin: column ${entry.target.origin.column}, row ${entry.target.origin.row}` : 'Click the green circle, move to empty canvas, then click to place. Escape cancels.' : 'Create one new diagram from your prompt and references.'}</small>
+    </div>
+    <PromptPane key={activeKey} coordinator={coordinator} entryKey={activeKey} entry={entry} revisions={revisions} list={list}
+      railOpen={railOpen} onToggleRail={() => setRailOpen(open => !open)} carrying={!!carried} />
     {carried && <CarriedGhost coordinator={coordinator} reference={carried.reference} revisions={revisions} />}
-  </>;
+  </div>;
 }
 
 function statusMessage(entry: PromptComposerEntry) {
-  const status = entry.run?.status, create = entry.target.operation === 'create-diagram';
+  const status = entry.run?.status, create = entry.target.operation !== 'edit-diagram';
   const created = entry.run?.created?.nodeIds.length ?? 0;
-  return status === 'completed' ? create ? `Created ${created === 1 ? 'a diagram' : `${created} diagrams`} beside the anchor and saved the workspace. You can undo this change.`
+  return status === 'completed' ? create ? `Created ${created === 1 ? 'a diagram' : `${created} diagrams`} and saved the workspace. You can undo this change.`
       : 'Diagram updated and workspace saved. You can undo this change.'
     : status === 'conflict' ? 'The canvas changed before the update could be applied. Your prompt is preserved; submit again using the latest diagram.'
     : status === 'awaiting-acknowledgement' ? `The ${create ? 'diagrams' : 'update'} may already be applied. Retry confirmation to finish safely.`
@@ -106,7 +68,7 @@ function statusMessage(entry: PromptComposerEntry) {
 
 function PromptPane({ coordinator, entryKey, entry, revisions, list, railOpen, onToggleRail, carrying }: { coordinator: PromptComposerCoordinator;
   entryKey: string; entry: PromptComposerEntry; revisions: PromptRevisionSource; list: PromptRevision[]; railOpen: boolean; onToggleRail: () => void; carrying: boolean }) {
-  const locked = composerUnsettled(entry), status = entry.run?.status, create = entry.target.operation === 'create-diagram';
+  const locked = composerUnsettled(entry), status = entry.run?.status, create = entry.target.operation !== 'edit-diagram';
   const { prompt } = serializePromptDraft(entry.draft), references = draftReferences(entry.draft);
   const update = (change: Parameters<PromptComposerCoordinator['updateDraft']>[1]) => coordinator.updateDraft(entryKey, change);
   return <div className="prompt-composer-layout">
@@ -123,14 +85,6 @@ function PromptPane({ coordinator, entryKey, entry, revisions, list, railOpen, o
           <span className="prompt-counter" data-over={prompt.length > promptLimit}>{references.length} refs · {prompt.length.toLocaleString()} / {promptLimit.toLocaleString()}</span>
         </div>
       </div>
-      <div className="prompt-count" role="group" aria-labelledby={`${entryKey}-count`}>
-        <span id={`${entryKey}-count`}>Diagrams to generate</span>
-        <button type="button" aria-label="Fewer diagrams" disabled={locked || !create || entry.draft.count <= 1} onClick={() => update(draft => setCount(draft, draft.count - 1))}>−</button>
-        <output aria-live="polite">{create ? entry.draft.count : 1}</output>
-        <button type="button" aria-label="More diagrams" disabled={locked || !create || entry.draft.count >= maxPromptCount} onClick={() => update(draft => setCount(draft, draft.count + 1))}>+</button>
-        <small>{create ? entry.draft.count === 1 ? 'One new diagram beside the anchor' : 'Each is placed beside the anchor so you can compare them'
-          : 'An edit applies one revision. Create new diagrams to generate several.'}</small>
-      </div>
       <p role="status" aria-live="polite" className="prompt-status" data-edit-status={status ?? (entry.pending ? 'preparing' : 'composing')}>{statusMessage(entry)}</p>
       {(entry.error || entry.run?.error) && <p role="alert" className="prompt-error">{entry.error ?? entry.run?.error}</p>}
       {!!entry.run?.result?.unresolvedEdgeIds.length && <p role="alert" className="prompt-error">Some connections need their endpoints repaired: {entry.run.result.unresolvedEdgeIds.join(', ')}</p>}
@@ -139,8 +93,8 @@ function PromptPane({ coordinator, entryKey, entry, revisions, list, railOpen, o
         {status === 'generating' && <button type="button" disabled={entry.pending} onClick={() => void coordinator.cancel(entryKey)}>{create ? 'Cancel creation' : 'Cancel update'}</button>}
         {(status === 'awaiting-acknowledgement' || entry.error && locked) && <button type="button" disabled={entry.pending}
           onClick={() => void coordinator.retry(entryKey)}>{status === 'awaiting-acknowledgement' ? 'Retry confirmation' : entry.run ? 'Refresh status' : 'Retry request'}</button>}
-        {!locked && <button type="submit" className="prompt-primary" disabled={!prompt || prompt.length > promptLimit}>{create
-          ? entry.draft.count === 1 ? 'Create diagram' : `Create ${entry.draft.count} diagrams`
+        {!locked && <button type="submit" className="prompt-primary" disabled={!prompt || prompt.length > promptLimit || entry.target.operation === 'edit-diagram' && !entry.target.subtree || entry.target.operation === 'extend-diagram' && (!entry.target.sources?.length || !entry.target.origin)}>{create
+          ? entry.target.operation === 'extend-diagram' ? 'Extend diagram' : 'Create diagram'
           : status === 'conflict' ? 'Update latest diagram' : 'Update diagram'}</button>}
       </footer>
     </form>
@@ -193,12 +147,13 @@ function PromptBody({ coordinator, entryKey, entry, locked, revisions, carrying,
   const body = useRef<HTMLDivElement>(null), focusNext = useRef<{ blockId: string; offset: number }>(undefined);
   const update = (change: Parameters<PromptComposerCoordinator['updateDraft']>[1]) => coordinator.updateDraft(entryKey, change);
   const blocks = entry.draft.body;
-  // Opening a prompt puts the caret at the end of its text, ready to type.
-  useEffect(() => {
+  const focusEnd = () => {
     const areas = body.current?.querySelectorAll<HTMLTextAreaElement>('textarea');
     const last = areas?.[areas.length - 1];
     if (last && !last.disabled) { last.focus(); last.setSelectionRange(last.value.length, last.value.length); }
-  }, []);
+  };
+  // Opening a prompt puts the caret at the end of its text, ready to type.
+  useEffect(focusEnd, []);
   useLayoutEffect(() => {
     const next = focusNext.current; if (!next) return;
     focusNext.current = undefined;
@@ -214,7 +169,11 @@ function PromptBody({ coordinator, entryKey, entry, locked, revisions, carrying,
     return true;
   };
   return <div ref={body} className="prompt-body" aria-label="Prompt body" data-drop-target={carrying && !locked}
-    onClick={event => { if (event.target === event.currentTarget && dropCarried()) event.preventDefault(); }}>
+    onClick={event => {
+      if (event.target !== event.currentTarget || locked) return;
+      if (dropCarried()) event.preventDefault();
+      else focusEnd();
+    }}>
     {blocks.map((block, index) => block.kind === 'reference'
       ? <ReferenceChip key={block.id} reference={block.reference} revisions={revisions} onRemove={locked ? undefined : () => {
           const previous = blocks[index - 1];
@@ -327,63 +286,4 @@ function RevisionRail({ id, coordinator, list }: { id: string; coordinator: Prom
       </li>;
     })}</ul>
   </aside>;
-}
-
-function RevisionsPane({ coordinator, entryKey, entry, revisions, list, onInserted }: { coordinator: PromptComposerCoordinator; entryKey: string;
-  entry: PromptComposerEntry; revisions: PromptRevisionSource; list: PromptRevision[]; onInserted: () => void }) {
-  const [selectedId, setSelectedId] = useState(list[0]?.id);
-  const [renaming, setRenaming] = useState<string>();
-  const [filter, setFilter] = useState('');
-  const [message, setMessage] = useState('');
-  const names = useStore(revisionNames, state => state.names);
-  const selected = list.find(revision => revision.id === selectedId) ?? list[0];
-  const shown = list.filter(revision => !filter.trim() || `r${revision.sequence} ${names[revision.id] ?? ''} ${revision.id}`.toLowerCase().includes(filter.trim().toLowerCase()));
-  if (!selected) return <p className="window-panel-message">This diagram has no recorded revisions.</p>;
-  return <div className="prompt-revisions">
-    <div className="prompt-revisions-list">
-      <div className="diff-pane-toolbar">
-        <input type="search" aria-label="Filter revisions" placeholder="Filter by name or ID" value={filter} onChange={event => setFilter(event.target.value)} />
-      </div>
-      <div role="listbox" aria-label="Diagram revisions" tabIndex={0} aria-activedescendant={`${entryKey}-${selected.id}`}
-        onKeyDown={event => {
-          const index = shown.findIndex(revision => revision.id === selected.id);
-          const next = event.key === 'ArrowDown' ? shown[index + 1] : event.key === 'ArrowUp' ? shown[index - 1] : undefined;
-          if (next) { event.preventDefault(); setSelectedId(next.id); setRenaming(undefined); }
-        }}>
-        {shown.map(revision => <div key={revision.id} id={`${entryKey}-${revision.id}`} role="option" aria-selected={revision.id === selected.id}
-          onClick={() => { setSelectedId(revision.id); setRenaming(undefined); }}>
-          <span className="prompt-revision-tag">r{revision.sequence}</span>
-          <span className="prompt-revision-name"><span data-named={!!names[revision.id]}>{names[revision.id] ?? 'Untitled revision'}</span>
-            <small>{revision.current ? 'current' : revision.id}</small></span>
-        </div>)}
-      </div>
-    </div>
-    <div className="prompt-revision-detail">
-      <header>
-        <span className="prompt-revision-tag">r{selected.sequence}</span>
-        {renaming === selected.id
-          ? <form className="prompt-rename" onSubmit={event => { event.preventDefault();
-              renameRevision(selected.id, String(new FormData(event.currentTarget).get('name') ?? '')); setRenaming(undefined); }}>
-              <input name="name" aria-label="Revision name" autoFocus maxLength={maxRevisionNameLength} defaultValue={names[selected.id] ?? ''}
-                onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setRenaming(undefined); } }} />
-              <button type="submit" className="prompt-primary">Save name</button>
-              <button type="button" onClick={() => setRenaming(undefined)}>Cancel</button>
-            </form>
-          : <><strong>{names[selected.id] ?? 'Untitled revision'}</strong>
-              <button type="button" onClick={() => setRenaming(selected.id)} aria-label={`Rename r${selected.sequence}`}>Rename</button></>}
-        <small>{selected.current ? 'Current revision' : selected.id}</small>
-      </header>
-      <pre className="prompt-revision-preview" aria-label={`Revision r${selected.sequence} preview`}>{selected.ascii}</pre>
-      <footer>
-        <button type="button" className="prompt-primary" disabled={composerUnsettled(entry)} onClick={() => {
-          if (coordinator.insertReference(revisionReference(selected), entryKey)) { setMessage(''); onInserted(); }
-        }}>Insert into prompt</button>
-        <button type="button" onClick={() => void copyPromptReferences([revisionReference(selected)])
-          .then(() => setMessage('Reference copied. Paste it into any prompt box.')).catch(error => setMessage(`Copy failed: ${String(error)}`))}>Copy as reference</button>
-        <button type="button" onClick={() => coordinator.carry(revisionReference(selected))}>Place on canvas…</button>
-        <ReferenceChip reference={revisionReference(selected)} revisions={revisions} />
-      </footer>
-      <p className="prompt-hint" role="status">{message || 'Names are stored separately, keyed by revision ID. Renaming never changes the revision.'}</p>
-    </div>
-  </div>;
 }
