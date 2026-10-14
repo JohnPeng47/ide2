@@ -97,7 +97,7 @@ function MappingWorkspacePage() {
     setDiffTreeReveal(previous => ({ sessionId: changeMode.sessionId, nodeId, serial: (previous?.serial ?? 0) + 1 }));
   };
   const selectChangeMode = (mode: DisplayModeChange) => {
-    if (mode.view === 'diff-tree') { setDiffTreeReveal(undefined); setDiffTreeMode(mode); }
+    if (mode.view === 'diff-tree' || mode.view === 'treemaps') { setDiffTreeReveal(undefined); setDiffTreeMode(mode); }
     setChangeMode({ ...mode, view: undefined });
   };
   const [workspaceEpoch, setWorkspaceEpoch] = useState(0);

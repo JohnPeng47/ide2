@@ -11,7 +11,7 @@ type PaneContent<Pane extends string> = { id: Pane; title: string; content: Reac
 
 /** A workspace overlay with independent pane focus and a compact right-hand view. */
 function SplitWindowPanel<Pane extends string>(props: { title: string; subtitle?: string; notice?: ReactNode; actions?: ReactNode; canvasId: string; state: WindowPanelLayout<Pane>;
-  onChange: (patch: Partial<WindowPanelLayout<Pane>>) => void; onClose: () => void; panes: readonly [PaneContent<Pane>] | readonly [PaneContent<Pane>, PaneContent<Pane>]; canvas: ReactNode;
+  onChange: (patch: Partial<WindowPanelLayout<Pane>>) => void; onClose: () => void; panes: readonly [PaneContent<Pane>, ...PaneContent<Pane>[]]; canvas: ReactNode;
   /** Layouts offered in the header; panels without a canvas pane omit split-single. */ modes?: readonly WindowPanelMode[]; className?: string }) {
   const tabId = useId();
   const body = useRef<HTMLDivElement>(null), drag = useRef(false);
@@ -29,8 +29,9 @@ function SplitWindowPanel<Pane extends string>(props: { title: string; subtitle?
   const style: CSSProperties = { ...(width !== undefined ? { left: 'auto', width: `${width * 100}%` } : {}),
     ...(props.state.height !== undefined ? { bottom: 'auto', height: `${props.state.height * 100}%` } : {}) };
   const single = props.panes.length === 1;
-  const split = !single && !props.state.minimized && props.state.mode === 'full-split';
   const activePane = props.state.minimized ? props.state.focusedPane : props.state.pane;
+  const extraPane = props.panes.slice(2).find(pane => pane.id === activePane);
+  const split = !single && !extraPane && !props.state.minimized && props.state.mode === 'full-split';
   const focus = (pane: Pane) => { if (props.state.focusedPane !== pane) props.onChange({ focusedPane: pane }); };
   const paneEvents = (pane: Pane) => ({ onClickCapture: () => focus(pane), onWheelCapture: () => focus(pane), onPointerDownCapture: () => focus(pane),
     onKeyDownCapture: () => focus(pane), onScrollCapture: (event: React.UIEvent) => { if ((event.target as HTMLElement).dataset.programmaticScroll !== 'true') focus(pane); } });
@@ -79,12 +80,13 @@ function SplitWindowPanel<Pane extends string>(props: { title: string; subtitle?
     <div className="window-panel-workspace">
       {!single && props.state.mode === 'split-single' && <div hidden={props.state.minimized} className="window-panel-canvas" aria-label="Canvas beside panel">{props.canvas}</div>}
       <div className="window-panel-content">
-        {!single && !split && <div className="window-panel-tabs" role="tablist" aria-label="Panel panes">
+        {!single && (!split || props.panes.length > 2) && <div className="window-panel-tabs" role="tablist" aria-label="Panel panes">
           {props.panes.map(pane => <button key={pane.id} role="tab" id={`${tabId}-${pane.id}`} aria-controls={`${tabId}-${pane.id}-panel`}
             tabIndex={activePane === pane.id ? 0 : -1} aria-selected={activePane === pane.id}
             onKeyDown={event => {
               if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
-                event.preventDefault(); const next = event.key === 'Home' ? props.panes[0] : event.key === 'End' ? props.panes[1]! : props.panes.find(p => p.id !== pane.id)!;
+                event.preventDefault(); const index = props.panes.findIndex(p => p.id === pane.id);
+                const next = props.panes[event.key === 'Home' ? 0 : event.key === 'End' ? props.panes.length - 1 : (index + (event.key === 'ArrowLeft' ? -1 : 1) + props.panes.length) % props.panes.length];
                 props.onChange({ pane: next.id, focusedPane: next.id }); document.getElementById(`${tabId}-${next.id}`)?.focus();
               }
             }}
@@ -101,6 +103,8 @@ function SplitWindowPanel<Pane extends string>(props: { title: string; subtitle?
             onPointerMove={event => { if (drag.current && body.current) { const rect = body.current.getBoundingClientRect(); props.onChange({ ratio: Math.max(.2, Math.min(.65, (event.clientX - rect.left) / rect.width)) }); } }}
             onPointerUp={() => { drag.current = false; }} onPointerCancel={() => { drag.current = false; }} onLostPointerCapture={() => { drag.current = false; }} />}
           {!single && (split || activePane === props.panes[1]!.id) && <div className="window-panel-secondary" data-pane={props.panes[1]!.id} data-focused={props.state.focusedPane === props.panes[1]!.id} {...paneEvents(props.panes[1]!.id)} role={split ? undefined : 'tabpanel'} id={`${tabId}-${props.panes[1]!.id}-panel`} aria-labelledby={split ? undefined : `${tabId}-${props.panes[1]!.id}`}>{props.panes[1]!.content}</div>}
+          {extraPane && <div className="window-panel-secondary" data-pane={extraPane.id} data-focused={props.state.focusedPane === extraPane.id}
+            {...paneEvents(extraPane.id)} role="tabpanel" id={`${tabId}-${extraPane.id}-panel`} aria-labelledby={`${tabId}-${extraPane.id}`}>{extraPane.content}</div>}
         </div>
       </div>
     </div>

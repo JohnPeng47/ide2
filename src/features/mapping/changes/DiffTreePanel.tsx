@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { WindowPanel } from '../window-panel/WindowPanel';
 import { usePanelScroll, useSaveWindowPanelState, useWindowPanelState } from '../window-panel/windowPanelState';
+import { ChangeTreemapContent } from './ChangeTreemapContent';
 import { DiffTreeView } from './DiffTreeView';
 import { DiffHunkView } from './DiffHunkView';
 import type { DisplayModeChange } from './changeSessionApi';
@@ -15,6 +16,9 @@ export function DiffTreePanel({ mode, canvas, revealCanvasSerial, revealNode, on
   const storageKey = `diff-tree:${mode.sessionId}`;
   const [state, setState] = useWindowPanelState(storageKey);
   useSaveWindowPanelState(storageKey, state);
+  useEffect(() => {
+    if (mode.view === 'treemaps') setState(previous => ({ ...previous, pane: 'treemaps', focusedPane: 'treemaps' }));
+  }, [mode.view, mode.serial, setState]);
   useEffect(() => {
     if (revealCanvasSerial !== undefined) setState(previous => previous.minimized ? previous : { ...previous, minimized: true });
   }, [revealCanvasSerial, setState]);
@@ -41,7 +45,8 @@ export function DiffTreePanel({ mode, canvas, revealCanvasSerial, revealNode, on
     const ancestors = new Set<string>();
     let parent = node.parentId;
     while (parent) { ancestors.add(parent); parent = data.diffTree.nodes.find(node => node.id === parent)?.parentId; }
-    const pane = state.minimized || state.mode === 'full-split' ? state.focusedPane : state.pane;
+    const activePane = state.minimized || state.mode === 'full-split' ? state.focusedPane : state.pane;
+    const pane = activePane === 'treemaps' ? 'tree' : activePane;
     setState(previous => ({ ...previous, minimized: true, focusedPane: pane, selectedNode: node.id, trackedNode: undefined,
       hunkFilterNode: pane === 'hunks' ? node.id : previous.hunkFilterNode,
       collapsed: previous.collapsed.filter(id => !ancestors.has(id)) }));
@@ -88,7 +93,7 @@ export function DiffTreePanel({ mode, canvas, revealCanvasSerial, revealNode, on
     if (destinations.length) jump(destinations[0].target, destinations[0].nodeId);
     else setNavigationError('This hunk has no mapped diagram destination.');
   };
-  return <WindowPanel<'tree' | 'hunks'> title={data ? `${data.title} · DiffTree` : 'DiffTree'}
+  return <WindowPanel<'tree' | 'hunks' | 'treemaps'> title={data ? `${data.title} · DiffTree` : 'DiffTree'}
     actions={<button type="button" aria-label="Search diagrams" title="Find in proposal canvas (Ctrl+F)" onClick={onSearch}>Search</button>}
     subtitle={data ? `${data.status} · HEAD ${data.head?.slice(0, 12) ?? 'unknown'} · ${data.commits?.length ?? 0} commits` : undefined}
     notice={(error || navigationError) && <p role="alert" className="window-panel-message">{error || navigationError}</p>}
@@ -101,7 +106,8 @@ export function DiffTreePanel({ mode, canvas, revealCanvasSerial, revealNode, on
       key={`${data.diffTree?.revisionId}:${hunkFilter?.id ?? '*'}`} hunks={visibleHunks} filterLabel={hunkFilter?.label} onShowAll={() => select('*')}
       scrollTarget={scrollTarget} onDidScroll={didScroll} storageKey={hunkStorageKey} wrap={state.wrap}
       onWrap={() => setState(previous => ({ ...previous, wrap: !previous.wrap }))} onTrack={tracked} onOpen={openHunk} />
-      : <p className="window-panel-message">Loading hunks…</p> }]} />;
+      : <p className="window-panel-message">Loading hunks…</p> }, { id: 'treemaps', title: 'Treemaps', content: <ChangeTreemapContent mode={mode}
+        onNavigate={next => { onNavigate(next); setState(previous => ({ ...previous, minimized: true, focusedPane: 'treemaps' })); }} /> }]} />;
 }
 
 function Hunks({ hunks, filterLabel, onShowAll, scrollTarget, onDidScroll, storageKey, wrap, onWrap, onTrack, onOpen }: {

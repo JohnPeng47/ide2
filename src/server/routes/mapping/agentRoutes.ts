@@ -29,6 +29,13 @@ export async function handleAgentRoutes(request: Connect.IncomingMessage, respon
       return sendJson(response, 200, await service.call('accept_diagram_change_session', { ...body, changeSessionId: decodeURIComponent(accept[1]) }));
     }
     if (path === '/change-sessions' && request.method === 'GET') return sendJson(response, 200, await service.changes?.list() ?? []);
+    const treemaps = path.match(/^\/change-sessions\/([^/]+)\/treemaps$/);
+    if (treemaps && request.method === 'GET' && service.changes) {
+      const version = url.searchParams.has('version') ? Number(url.searchParams.get('version')) : undefined;
+      if (version !== undefined && (!Number.isSafeInteger(version) || version < 0)) throw Error('Invalid session version');
+      response.setHeader('cache-control', 'no-store');
+      return sendJson(response, 200, await service.changes.readTreemaps(decodeURIComponent(treemaps[1]), version));
+    }
     const preview = path.match(/^\/change-sessions\/([^/]+)\/preview$/);
     if (preview && request.method === 'GET' && service.changes) {
       const documentId = url.searchParams.get('documentId'); if (!documentId) throw Error('documentId is required');

@@ -41,6 +41,9 @@ export function ChangeSessionExplorer(props: { repositories?: Repository[]; mode
         {session.diffTree && <button data-open-difftree={session.id}
           onClick={() => openDiffTree(session.id, props.mode?.sessionId === session.id ? props.mode.documentId : session.documents[0]?.id ?? '')}>
           Diff tree · {session.diffTree.hunkCount} hunks</button>}
+        <button data-open-treemaps={session.id} onClick={() => props.onSelect({ kind: 'change-session', sessionId: session.id,
+          documentId: props.mode?.sessionId === session.id ? props.mode.documentId : session.documents[0]?.id ?? '',
+          view: 'treemaps', serial: (props.mode?.serial ?? 0) + 1 })}>Treemaps · changed LOC</button>
         <ul>{session.documents.filter(doc => session.diffTree || session.changes.some(c => c.documentId === doc.id)).map(doc => <li key={doc.id}>
           <button onClick={() => select(session.id, doc.id)}>{doc.name}</button>
           {session.diffTree && <button data-open-difftree-document={doc.id}

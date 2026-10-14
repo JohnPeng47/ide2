@@ -1,3 +1,4 @@
+import type { ChangeTreemaps } from '../../../../domain/mapping/changes/changeTreemap';
 import type { DiagramChangeSession, ChangeSessionSummary } from '../../../../domain/mapping/changes/diagramChangeSession';
 import { apiFetch } from '../../../shared/http/http';
 async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
@@ -16,7 +17,7 @@ export async function acceptChangeSession(id: string, expectedVersion: number, r
   if (!response.ok) throw new Error(body.error ?? 'Could not accept change session');
   return body;
 }
-export interface DisplayModeChange { view?: 'diff-tree'; kind: 'change-session'; sessionId: string; documentId: string; changeId?: string; migrationId?: string; migrationRole?: 'source' | 'destination'; displayNodeId?: string; contentNodeId?: string; serial: number }
+export interface DisplayModeChange { view?: 'diff-tree' | 'treemaps'; kind: 'change-session'; sessionId: string; documentId: string; changeId?: string; migrationId?: string; migrationRole?: 'source' | 'destination'; displayNodeId?: string; contentNodeId?: string; serial: number }
 
 export interface DiffTreeRead {
   changeSessionId: string; title: string; version: number; status: DiagramChangeSession['status']; head?: string; commits?: string[];
@@ -35,3 +36,10 @@ export async function readDiffTree(id: string, input: { nodeIds?: string[]; offs
   });
   const result = await response.json(); if (!response.ok) throw Error(result.error ?? 'Could not read DiffTree'); return result;
 }
+
+export interface ChangeTreemapRead extends ChangeTreemaps {
+  id: string; title: string; version: number; status: DiagramChangeSession['status']; head?: string; commits: string[];
+  hunks: import('../../../../domain/core/diffs/gitDiffHunk').GitDiffHunk[];
+}
+export const readChangeTreemaps = (id: string, version?: number, signal?: AbortSignal) =>
+  get<ChangeTreemapRead | null>(`/${encodeURIComponent(id)}/treemaps${version === undefined ? '' : `?version=${version}`}`, signal);

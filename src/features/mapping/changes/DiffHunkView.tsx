@@ -24,7 +24,7 @@ export function DiffHunkView({ hunk, wrap, onOpen }: { hunk: GitDiffHunk; wrap: 
   return <article ref={ref} tabIndex={0} className="diff-hunk" data-hunk-id={hunk.id} aria-label={`${hunk.path} at ${hunk.commit.slice(0, 12)}`}>
     <header className="diff-hunk-header"><strong>{hunk.path}</strong><small title={hunk.commit}>{hunk.commit.slice(0, 8)}</small>
       <small className="diff-count-added">+{added}</small><small className="diff-count-removed">−{removed}</small>
-      <button onClick={onOpen} title="Open mapped diagram change">Diagram ↗</button>
+      <button onClick={onOpen} disabled={!onOpen} title={onOpen ? "Open mapped diagram change" : "No mapped diagram destination"}>Diagram ↗</button>
       <button aria-live="polite" onClick={async () => { try { await navigator.clipboard.writeText(hunk.patch); setCopy('Copied'); } catch { setCopy('Copy failed'); } }}>{copy}</button></header>
     {hunk.kind === 'text' ? <>
       <div className="diff-hunk-range">{hunk.patch.split('\n')[0]}</div>

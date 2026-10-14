@@ -1,3 +1,4 @@
+import { buildChangeTreemaps } from '../../../domain/mapping/changes/changeTreemap';
 import { defaultDiffTree, diffTreeSummary, diffTreeNodes, resolveDiffTreeHunks, validateDiffTree, writeDiffTree, type DiffTreeInput } from '../../../domain/mapping/changes/diffTree';
 import type { RepositoryContext } from '../../../domain/core/repositories/repository';
 import type { GitDiffHunk } from '../../../domain/core/diffs/gitDiffHunk';
@@ -73,6 +74,27 @@ export class ChangeSessionService {
     const preview = await this.repository.readPreview(projectId, id, documentId);
     // Resolve acceptance against the exact generation returned by the scoped read.
     return { ...preview, ...await this.effectiveSummary(preview), document: preview.document };
+  }
+  /** Read one coherent generation without loading histories, receipts, or live Git files. */
+  async readTreemaps(id: string, version?: number) {
+    const projectId = await this.projectId();
+    const summary = await this.effectiveSummary(await this.repository.readSummary(projectId, id));
+    if (summary.version === version) return null;
+    const stored = this.repository.readDiffTree ? await this.repository.readDiffTree(projectId, id)
+      : await this.get(id).then(session => ({ summary: summarizeChangeSession(session), diffTree: session.diffTree }));
+    const captured = await this.effectiveSummary(stored.summary);
+    const documents: import('../../../domain/mapping/changes/diagramChangeSession').ChangePreviewDocument[] = [];
+    for (let offset = 0; offset < captured.documents.length; offset += 4) {
+      const previews = await Promise.all(captured.documents.slice(offset, offset + 4).map(doc => this.repository.readPreview(projectId, id, doc.id)));
+      for (const preview of previews) {
+        if ((await this.effectiveSummary(preview)).version !== captured.version) throw Error('VERSION_CONFLICT: changes updated while loading treemaps; retry');
+        documents.push(preview.document);
+      }
+    }
+    if ((await this.effectiveSummary(await this.repository.readSummary(projectId, id))).version !== captured.version)
+      throw Error('VERSION_CONFLICT: changes updated while loading treemaps; retry');
+    return { id, title: captured.title, version: captured.version, status: captured.status, head: captured.head,
+      commits: captured.commits ?? [], hunks: stored.diffTree?.hunks ?? [], ...buildChangeTreemaps(stored.diffTree, documents) };
   }
   async discoverHunks(input: { repositoryId?: string; commits?: string[]; head?: string; offset: number; limit: number; includePatches: boolean }) {
     await this.projectId();

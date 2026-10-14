@@ -197,3 +197,30 @@ it('persists explicit diagram destinations without replacing hunk mappings or AS
       diffTree: { expectedRevisionId: before.diffTree.revisionId, mappings: [{ id: 'empty', source: { line: 2 }, targets: [] }] } })).rejects.toThrow();
   } finally { f.agent.dispose(); }
 });
+
+it('reads treemaps from pinned snapshots without full histories, generation, or live Git capture', async () => {
+  const f = await setup();
+  const created = await f.tool('create_diagram_change_session', f.request), id = created.changeSessionId;
+  const readFull = vi.spyOn(f.records, 'read').mockRejectedValue(Error('Full history read is not allowed'));
+  const capture = vi.spyOn(f.store.repositories!, 'captureHunks').mockRejectedValue(Error('Live Git capture is not allowed'));
+  const preview = vi.spyOn(f.records, 'readPreview');
+  const first = await f.changes.readTreemaps(id);
+  expect(first).toMatchObject({ id, version: 0, actual: 5, mapped: 0, unmapped: 5, extra: 0, nonTextHunks: 1 });
+  expect(first?.files.hunkIds).toHaveLength(4);
+  expect(first).not.toHaveProperty('documents'); expect(first).not.toHaveProperty('receipts');
+  preview.mockClear();
+  expect(await f.changes.readTreemaps(id, 0)).toBeNull();
+  expect(preview).not.toHaveBeenCalled(); expect(readFull).not.toHaveBeenCalled(); expect(capture).not.toHaveBeenCalled();
+  const http = createServer((req, res) => { void handleAgentRoutes(req, res, new URL(req.url!, 'http://localhost'), f.agent); });
+  await new Promise<void>(resolve => http.listen(0, '127.0.0.1', resolve));
+  const url = `http://127.0.0.1:${(http.address() as { port: number }).port}/api/mapping/agent/change-sessions/${id}/treemaps`;
+  try {
+    const response = await fetch(url); expect(response.status).toBe(200); expect(response.headers.get('cache-control')).toBe('no-store');
+    expect(await response.json()).toMatchObject({ actual: 5, extra: 0 });
+    expect(await (await fetch(`${url}?version=0`)).json()).toBeNull();
+    expect((await fetch(`${url}?version=-1`)).status).toBe(400);
+    const snapshot = await f.records.readPreview(f.project.id, id, created.documents[0].documentId);
+    preview.mockResolvedValueOnce({ ...snapshot, version: snapshot.version + 1 });
+    await expect(f.changes.readTreemaps(id)).rejects.toThrow('VERSION_CONFLICT');
+  } finally { await new Promise<void>(resolve => http.close(() => resolve())); }
+});

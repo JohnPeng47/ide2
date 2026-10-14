@@ -252,3 +252,43 @@ patch. Hunks cannot be supplied or modified by callers.
 
 See [the agent flow](../../AGENTS.md#changesession-difftree-flow) for the complete
 creation, read, mapping-update, validation and acceptance sequence.
+
+## Changed-LOC treemaps
+
+Open **Changes → a session → Diff tree → Treemaps**. The Treemaps tab
+provides full-width Files and Diagrams groupings, drill-down breadcrumbs, and
+navigation back to a mapped canvas region by clicking its rectangle. The panel
+minimizes to reveal the destination. Use **Zoom into region** to drill into a
+selected diagram subtree; file directories still zoom on click. Source diffs
+remain in the Hunks tab.
+
+The file map sizes rectangles by additions plus deletions in the captured commits.
+The diagram map divides each hunk’s changed LOC equally across all distinct mapped
+nodes, including nodes in different diagrams. Duplicate links to the same destination
+count once. Fractional weights are retained internally and only labels are rounded.
+An **Unmapped** rectangle includes changes with no resolved destination, so both
+maps total the same actual changed LOC. Binary and metadata-only hunks have zero area.
+Tests and documentation count; context lines do not. Repeated edits across selected
+commits count as separate activity, using the same first-parent captures as the DiffTree.
+
+The diagram hierarchy comes from captured diagram content. Direct hunk mappings
+use their explicit diagram destinations, or the nearest destination-bearing
+DiffTree ancestor. A parent with its own hunks and weighted children has a
+**Directly mapped here** portion. Parent subtotals add their allocated shares;
+they do not create additional contributions. Broad mappings are not guessed onto
+leaves. Destinations only in the baseline appear under **Previous revision** and
+cannot navigate to a live content anchor. Unresolved targets are reported; a hunk
+with no resolved targets goes into Unmapped.
+
+Tooltips distinguish allocated LOC from the full shared hunk LOC and show how
+many destinations share each hunk (a range when the counts differ). This is an
+equal allocation of hunk attribution, not a precise partition of source lines.
+The totals show actual LOC, LOC allocated to diagrams, unmapped LOC, and duplicate
+LOC discounted. The API retains `rawMapped` for attribution before allocation and
+`extra = rawMapped − covered` for the discounted duplication; `mapped = covered`.
+
+`GET /api/mapping/agent/change-sessions/:id/treemaps` derives the view from scoped
+DiffTree and preview reads of one session version. An optional `version` query
+returns `null` when unchanged. This operation never calls an LLM, captures live
+Git changes, edits diagrams, or saves new session data, and works with HTTP
+agent mutations and AI generation disabled.
