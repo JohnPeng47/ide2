@@ -1,30 +1,82 @@
-.change-treemap-map { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: auto; }
-.change-treemap-switch [aria-pressed=true] { background: #293f4b; border-color: #88c0d0; }
-.change-treemap-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 12px; border-bottom: 1px solid var(--gutter); font-size: 11px; color: var(--muted); }
-.change-treemap-summary > span { padding: 6px 8px; background: #182029; border: 1px solid #2c3743; border-radius: 4px; text-align: left; font-size: 11px; }
-.change-treemap-summary strong { color: var(--fg); font: 600 17px var(--font-mono); display: block; margin-bottom: 3px; }
-.change-treemap-breadcrumbs { padding: 8px 12px; overflow-wrap: anywhere; font-size: 11px; }
-.change-treemap-breadcrumbs button { border: 0; background: transparent; padding: 3px; text-align: left; }
-.change-treemap-breadcrumbs [aria-current] { color: #a5d7ee; }
-.change-treemap-legend { display: flex; gap: 12px; flex-wrap: wrap; padding: 2px 12px 10px; color: var(--muted); font-size: 10px; }
-.change-treemap-legend span::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 5px; border-radius: 2px; background: var(--tile-color); }
-.change-treemap-panel [data-tone=added] { --tile-color: #265847; --tile-border: #4c9775; }
-.change-treemap-panel [data-tone=mixed] { --tile-color: #354863; --tile-border: #6a88b0; }
-.change-treemap-panel [data-tone=deleted] { --tile-color: #623746; --tile-border: #aa657b; }
-.change-treemap-plot { position: relative; margin: 0 10px; min-height: 280px; flex: 1; overflow: hidden; }
-.change-treemap-cell { position: absolute; box-sizing: border-box; border: 2px solid #101419; overflow: hidden; background: var(--tile-color); }
-.change-treemap-cell[data-selected=true] { outline: 2px solid #e8d394; outline-offset: -4px; }
-.change-treemap-cell > button { border: 1px solid var(--tile-border); border-radius: 2px; background: transparent; color: #f1f5f9; width: 100%; overflow: hidden; text-align: left; padding: 5px 7px; }
-.change-treemap-cell > button:hover { background: #ffffff18; }
-.change-treemap-cell > button span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
-.change-treemap-cell small { display: block; font: 10px var(--font-mono); opacity: .85; margin-top: 3px; }
-.change-treemap-cell > .change-treemap-leaf { height: 100%; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
-.change-treemap-cell > .change-treemap-heading { height: 28px; display: flex; align-items: center; gap: 6px; }
-.change-treemap-heading span { flex: 1; }
-.change-treemap-heading small { flex-shrink: 0; margin: 0; }
-.change-treemap-nested { position: absolute; left: 2px; top: 28px; }
-.change-treemap-region-picker { display: flex; align-items: center; gap: 8px; padding: 10px 12px; font-size: 11px; color: var(--muted); }
+.change-treemap-panel { --blueprint-border: #2e5574; --blueprint-muted: #91afc5; --blueprint-green: #76c99b; --blueprint-orange: #f0a35a; display: flex; flex-direction: column; flex: 1; min-height: 0; min-width: 0; overflow: auto; padding: 14px; gap: 12px; background: #0a1622; color: #d6e4f0; font: 11px/1.5 var(--font-mono); container-type: inline-size; }
+.window-panel .change-treemap-panel button, .window-panel .change-treemap-panel select { border-radius: 0; border-color: var(--blueprint-border); background: transparent; color: inherit; font: inherit; }
+.window-panel .change-treemap-panel :focus-visible { outline: 2px solid #ffd27a; outline-offset: -2px; }
+.change-treemap-map { display: flex; flex-direction: column; flex: 1 0 auto; min-height: 430px; gap: 10px; }
+.change-treemap-switch { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.change-treemap-caption, .change-treemap-area-note { color: var(--blueprint-muted); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
+.change-treemap-area-note { margin-left: auto; }
+.change-treemap-group-buttons { display: flex; border: 1px solid var(--blueprint-border); }
+.window-panel .change-treemap-group-buttons button { border: 0; padding: 6px 12px; text-transform: uppercase; letter-spacing: .1em; }
+.window-panel .change-treemap-group-buttons button + button { border-left: 1px solid var(--blueprint-border); }
+.window-panel .change-treemap-group-buttons [aria-pressed=true] { background: #1d3a52; color: #fff; }
+.change-treemap-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--blueprint-border); }
+.change-treemap-summary > span { padding: 8px 10px; min-width: 0; }
+.change-treemap-summary > span + span { border-left: 1px solid var(--blueprint-border); }
+.change-treemap-summary small, .change-treemap-selection small, .change-treemap-selection dt { display: block; color: var(--blueprint-muted); font-size: 9px; letter-spacing: .08em; text-transform: uppercase; }
+.change-treemap-summary strong { display: block; font-size: 16px; font-weight: 700; margin-top: 3px; }
+.change-treemap-guide { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px 12px; }
+.change-treemap-breadcrumbs { overflow-wrap: anywhere; }
+.window-panel .change-treemap-breadcrumbs button { border: 0; padding: 3px; text-align: left; color: var(--blueprint-muted); }
+.window-panel .change-treemap-breadcrumbs [aria-current] { color: #ffd27a; }
+.change-treemap-legend { display: flex; gap: 12px; flex-wrap: wrap; color: var(--blueprint-muted); font-size: 9px; letter-spacing: .06em; text-transform: uppercase; }
+.change-treemap-legend span::before { content: ''; display: inline-block; width: 12px; height: 9px; margin-right: 5px; vertical-align: middle; border: 1px solid var(--tile-stroke); }
+.change-treemap-legend [data-tone=added]::before { background: repeating-linear-gradient(135deg, #76c99b88 0 1px, transparent 1px 4px); }
+.change-treemap-legend [data-tone=deleted]::before { background: repeating-linear-gradient(135deg, #f0a35a88 0 1px, transparent 1px 4px); }
+.change-treemap-panel [data-tone=added] { --tile-stroke: #76c99b; }
+.change-treemap-panel [data-tone=mixed] { --tile-stroke: #b9c8d6; }
+.change-treemap-panel [data-tone=deleted] { --tile-stroke: #f0a35a; }
+.change-treemap-summary [data-tone=added] strong, .change-treemap-selection [data-tone=added] dd { color: var(--blueprint-green); }
+.change-treemap-selection [data-tone=deleted] dd { color: var(--blueprint-orange); }
+.change-treemap-plot { position: relative; min-height: 240px; flex: 1 0 240px; overflow: hidden; background-color: #0c1a28; background-image: linear-gradient(#6f98b817 1px, transparent 1px), linear-gradient(90deg, #6f98b817 1px, transparent 1px); background-size: 20px 20px; }
+.change-treemap-cell { position: absolute; box-sizing: border-box; pointer-events: none; }
+/* One inset and one outline per tile; the wrapper never adds a second border. */
+.window-panel .change-treemap-cell > button { position: absolute; inset: 1px; min-width: 0; min-height: 0; box-sizing: border-box; overflow: hidden; pointer-events: auto; padding: 5px 6px; border: 1px solid var(--tile-stroke); background: #0a162299; color: #d6e4f0; text-align: left; display: flex; flex-direction: column; gap: 2px; }
+.change-treemap-cell[data-nested=true]::before { content: ''; position: absolute; inset: 1px; border: 1px dashed #3d6a8a; }
+.window-panel .change-treemap-cell > .change-treemap-heading { bottom: auto; height: 20px; border: 0; background: transparent; display: flex; flex-direction: row; align-items: center; gap: 6px; padding: 0 5px; color: #8fbfdf; }
+.change-treemap-label { position: relative; display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; letter-spacing: .04em; text-transform: uppercase; }
+.change-treemap-heading .change-treemap-label { flex: 1; min-width: 0; font-size: 9px; }
+.change-treemap-cell small { position: relative; display: block; font-size: 9px; color: #9bc3df; white-space: nowrap; flex-shrink: 0; }
+.change-treemap-hatching { position: absolute; bottom: 0; left: 0; right: 0; pointer-events: none; background: repeating-linear-gradient(135deg, #f0a35a66 0 1px, transparent 1px 5px); }
+.change-treemap-additions { top: 0; bottom: auto; background: repeating-linear-gradient(135deg, #76c99b66 0 1px, transparent 1px 5px); }
+.window-panel .change-treemap-cell > button:hover { background-color: #7fbee81f; }
+.change-treemap-cell[data-selected=true]::after { content: ''; position: absolute; inset: 2px; outline: 1px dashed #ffd27a; outline-offset: -1px; pointer-events: none; }
+.change-treemap-region-picker { display: flex; align-items: center; gap: 8px; color: var(--blueprint-muted); font-size: 10px; }
+.change-treemap-region-picker > span { text-transform: uppercase; letter-spacing: .06em; }
 .change-treemap-region-picker select { flex: 1; min-width: 0; max-width: 100%; }
-.change-treemap-footnote { padding: 0 12px 12px; color: var(--muted); font-size: 11px; line-height: 1.5; }
-.change-treemap-footnote p { margin: 4px 0; }
-.change-treemap-panel { display: flex; flex-direction: column; flex: 1; min-height: 0; min-width: 0; }
+.window-panel .change-treemap-region-picker select { background: #0c1a28; }
+.change-treemap-selection { flex-shrink: 0; border: 1px solid var(--blueprint-border); }
+.change-treemap-selection-title { padding: 8px 10px; border-bottom: 1px solid var(--blueprint-border); }
+.change-treemap-selection-title strong { display: block; font-size: 13px; overflow-wrap: anywhere; margin-top: 3px; }
+.change-treemap-selection-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0; }
+.change-treemap-selection-stats > div { min-width: 0; padding: 8px 10px; }
+.change-treemap-selection-stats > div + div { border-left: 1px solid var(--blueprint-border); }
+.change-treemap-selection dd { margin: 3px 0 0; font-weight: 700; overflow-wrap: anywhere; }
+.change-treemap-selection-stats > div:first-child dd { text-transform: uppercase; }
+.change-treemap-selection-actions { display: flex; gap: 8px; flex-wrap: wrap; padding: 8px 10px; border-top: 1px solid var(--blueprint-border); }
+.window-panel .change-treemap-selection-actions button { font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
+.window-panel .change-treemap-selection-actions .change-treemap-open { color: #ffd27a; border-color: #ffd27a; }
+.change-treemap-footnote { flex-shrink: 0; color: var(--blueprint-muted); font-size: 10px; line-height: 1.6; }
+.change-treemap-footnote p { margin: 0; }
+@container (max-width: 480px) {
+  .change-treemap-area-note { width: 100%; margin-left: 0; }
+  .change-treemap-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .change-treemap-summary > span:nth-child(3) { border-left: 0; }
+  .change-treemap-summary > span:nth-child(n+3) { border-top: 1px solid var(--blueprint-border); }
+  .change-treemap-selection-stats > div { padding: 6px; }
+  .change-treemap-selection dt { font-size: 8px; letter-spacing: 0; }
+}
+
+/* Each diagram's position color follows its descendants, independently of change hatching. */
+.window-panel .change-treemap-cell[data-treemap-color] > button { background-color: color-mix(in srgb, var(--treemap-diagram-color) 22%, transparent); }
+.window-panel .change-treemap-cell[data-treemap-color] > button:hover { background-color: color-mix(in srgb, var(--treemap-diagram-color) 32%, transparent); }
+.change-treemap-cell[data-treemap-color][data-nested=true]::before { border-color: var(--treemap-diagram-color); }
+.change-treemap-cell[data-treemap-color][data-treemap-kind=diagram] .change-treemap-label::before,
+.change-treemap-selection[data-treemap-color] .change-treemap-selection-title strong::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 6px; background: var(--treemap-diagram-color); }
+
+.change-treemap-tooltip { position: fixed; z-index: 10000; pointer-events: none; display: flex; flex-direction: column; gap: 4px; width: max-content; max-width: min(360px, calc(100vw - 16px)); box-sizing: border-box; padding: 9px 12px; border: 1px solid #628ba8; background: #0a1622; color: #d6e4f0; box-shadow: 0 4px 16px #0008; font: 11px/1.5 var(--font-mono); overflow-wrap: anywhere; }
+.change-treemap-tooltip strong { color: #b7d6ed; }
+.change-treemap-tooltip b { color: #ffd27a; }
+
+.change-treemap-zoom-controls { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; flex: 0 0 auto; gap: 8px; padding: 8px; border: 1px solid var(--blueprint-border); background: #0a1622; box-shadow: 0 4px 10px #0004; }
+.window-panel .change-treemap-zoom-controls button { flex-shrink: 0; padding: 5px 9px; color: #ffd27a; }
+.change-treemap-zoom-controls span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--blueprint-muted); }

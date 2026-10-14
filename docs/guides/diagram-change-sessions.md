@@ -262,6 +262,28 @@ minimizes to reveal the destination. Use **Zoom into region** to drill into a
 selected diagram subtree; file directories still zoom on click. Source diffs
 remain in the Hunks tab.
 
+The Blueprint presentation uses a navy grid and outline colours for the dominant
+added/deleted side. Green and orange hatching show the added and deleted shares
+of a tile at the same opacity. Dashed
+frames mark nested groups; a title-block inspector shows the selected region's
+kind, LOC, additions, and deletions. Nested tiles share pixel-aligned side and
+bottom edges, with a heading strip above each group. Hovering or focusing a tile
+shows its containing diagram name, node name, and percentage of the session’s
+total changed LOC. The denominator stays fixed while zooming. A sticky toolbar
+provides **Zoom out** (one level) and **Reset zoom** (the full map).
+
+In Diagrams mode, each node has a deterministic identity color based on its
+preorder position in the full hierarchy (excluding Unmapped). A fixed palette
+assigns the first positions; later positions use a deterministic hue sequence.
+Zooming, resizing, selecting, and reopening do not reassign colors. A direct
+allocation tile shares its parent target's color.
+
+Each visible tile colors its corresponding canvas subtree, including descendants,
+whitespace and diff rows. Zoom reveals finer subtree colors. The entire containing
+diagram stays tiled; child regions replace parent fills without accumulating
+opacity. Green/orange hatching still indicates changes. Identity tints are
+view-only and clear when switching to Files or leaving Treemaps.
+
 The file map sizes rectangles by additions plus deletions in the captured commits.
 The diagram map divides each hunk’s changed LOC equally across all distinct mapped
 nodes, including nodes in different diagrams. Duplicate links to the same destination

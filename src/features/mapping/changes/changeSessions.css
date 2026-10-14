@@ -41,3 +41,7 @@ nav[aria-label="Diagram changes"] small { color: var(--muted); }
 .repository-heading { padding: 8px 0; color: var(--accent-cyan, #88c0d0); font-weight: 600; cursor: pointer; }
 .change-repository-context { color: var(--muted); font-size: 11px; margin: 4px 0; }
 .change-commit-list { font-size: 11px; overflow-wrap: anywhere; }
+
+/* Subtree tints partition the resolved diagram, including whitespace and diff rows. */
+.change-preview-stage { isolation: isolate; }
+.change-preview-treemap-tint { position: absolute; z-index: -1; pointer-events: none; box-sizing: border-box; background: color-mix(in srgb, var(--treemap-diagram-color) 22%, transparent); }

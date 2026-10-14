@@ -15,13 +15,18 @@ import type { SaveProjectDiagramInput } from '../../../../domain/core/diagrams/p
 import { readBody, sendEvent, sendJson } from '../../http/http';
 import { handleLocalChat } from './chat/localChatRoutes';
 import { handleFileCompaction } from './compaction/fileCompactionRoutes';
+import type { DiffSessionWorkflowService } from '../../../../application/mapping/changes/diffSessionWorkflowService';
+import { handleDiffSessionWorkflow } from './changes/diffSessionWorkflowRoutes';
 
-export function createMappingRoutes({ selection, diagrams, workspace, chat, compactionService, agent, liveCanvas }: {
+export function createMappingRoutes({ selection, diagrams, workspace, chat, compactionService, agent, liveCanvas, diffSessionWorkflows }: {
+  diffSessionWorkflows?: DiffSessionWorkflowService;
   agent?: AgentDiagrammingSessionService; liveCanvas?: LiveCanvasService;
   selection: SelectionService; diagrams: MappingDiagramService; workspace: MappingWorkspaceService;
   chat: LocalChatService; compactionService: FileCompactionService;
 }) {
   return async (request: Connect.IncomingMessage, response: ServerResponse, url: URL): Promise<void> => {
+    if (url.pathname.startsWith('/api/mapping/workflows/diff-session-create') && diffSessionWorkflows)
+      return handleDiffSessionWorkflow(request, response, url, diffSessionWorkflows);
     if (url.pathname === '/api/mapping/live/context/short' && liveCanvas) return readShortContext(request, response, url, liveCanvas);
     const selectionRead = url.pathname.match(/^\/api\/mapping\/live\/connections\/([^/]+)\/selection$/);
     if (selectionRead && liveCanvas) return readLiveSelection(request, response, decodeURIComponent(selectionRead[1]), liveCanvas);

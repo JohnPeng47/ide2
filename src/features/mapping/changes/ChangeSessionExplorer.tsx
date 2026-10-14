@@ -6,6 +6,7 @@ import { listChangeSessions, type DisplayModeChange } from './changeSessionApi';
 import type { ChangeSessionSummary, DiagramChange } from '../../../../domain/mapping/changes/diagramChangeSession';
 import './changeSessions.css';
 import { prefetchDiffTree } from './diffTreeData';
+import { DiffSessionWorkflowPanel } from './DiffSessionWorkflowPanel';
 const labels = { 1: 'Modify', 2: 'Add diagram', 3: 'New canvas', 4: 'Major update' };
 export function ChangeBadge({ change }: { change: DiagramChange }) {
   return <span className={`change-type change-type-${change.type}`}>{change.reasons.length && change.type === 1 ? change.reasons.join('+') : change.type} {labels[change.type]}</span>;
@@ -28,6 +29,8 @@ export function ChangeSessionExplorer(props: { repositories?: Repository[]; mode
     kind: 'change-session', sessionId, documentId: migration[role].documentId, migrationId: migration.id,
     migrationRole: role, serial: (props.mode?.serial ?? 0) + 1 });
   return <>
+    <DiffSessionWorkflowPanel sessions={sessions} repositories={props.repositories ?? []}
+      onOpen={id => openDiffTree(id, sessions.find(s => s.id === id)?.documents[0]?.id ?? '')} />
     <input type="search" aria-label="Filter change sessions" placeholder="Find changes…" value={query} onChange={e => setQuery(e.target.value)} />
     {error && <p role="alert">{error}</p>}
     {loading ? <p>Loading changes…</p> : !sessions.length && <p>No active change sessions.</p>}

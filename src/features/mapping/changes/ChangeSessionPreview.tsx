@@ -1,3 +1,5 @@
+import { treemapCanvasTiles } from './treemapCanvasTiles';
+import { diagramColorStyle, type TreemapDiagramColor } from './treemapDiagramColors';
 import { changeMigrationPreview, migrationMarkKey, type MigrationPreview } from './changeMigrationPreview';
 import { useDiffTreeData } from './diffTreeData';
 import { diffTreeCoverage, diagramCoverage, diagramDiffTreeNodes, coverageLabel, coverageTitle, type DiffCoverage } from './diffTreeCoverage';
@@ -21,7 +23,7 @@ import { revealSearchMatches } from '../search/revealSearchMatches';
 import '../canvas/diagramConnections.css';
 import './changeSessions.css';
 
-export function ChangeSessionPreview(props: { compact?: boolean; mode: DisplayModeChange; onSelect: (mode: DisplayModeChange) => void;
+export function ChangeSessionPreview(props: { treemapColors?: readonly TreemapDiagramColor[]; compact?: boolean; mode: DisplayModeChange; onSelect: (mode: DisplayModeChange) => void;
   onSearchDocument?: (document: SearchDocument) => void; searchFocus?: DiagramFocus;
   searchMatches?: readonly DiagramLineSearchResult[];
   onDiffTreeJump?: (nodeId: string) => void;
@@ -89,7 +91,7 @@ export function ChangeSessionPreview(props: { compact?: boolean; mode: DisplayMo
     {error && <p className="change-preview-message" role="alert">{error}</p>}
     {doc
       ? <PreviewCanvas key={`${session!.id}:${doc.id}:${doc.version}:${props.mode.migrationId ? props.mode.serial : ''}`} doc={doc}
-          compact={props.compact} coverage={coverage} searchFocus={props.searchFocus}
+          compact={props.compact} coverage={coverage} treemapColors={props.treemapColors} searchFocus={props.searchFocus}
           searchMatches={props.searchMatches} onDiffTreeJump={props.onDiffTreeJump}
           diff={diff!} modifiedDiagramIds={modifiedDiagramIds} migrations={migrations!} focusContentNodeId={props.mode.contentNodeId ?? selectedEndpoint?.focusContentNodeId}
           focusId={props.mode.displayNodeId ?? (selectedEndpoint?.focusContentNodeId ? selectedEndpoint.endpoint.displayNodeId : change?.nodeId)} serial={props.mode.serial} onJump={target => {
@@ -117,7 +119,7 @@ function previewFocusBounds(viewport: HTMLElement) {
   return { left, top, width: Math.max(0, right - left), height: Math.max(0, bounds.bottom - top) };
 }
 
-function PreviewCanvas({ coverage, compact, doc, focusId, focusContentNodeId, serial, onJump, onDiffTreeJump, diff, modifiedDiagramIds, migrations, searchFocus, searchMatches }: { coverage?: DiffCoverage; compact?: boolean; doc: ChangePreviewDocument; focusId?: string; focusContentNodeId?: string; migrations: MigrationPreview; serial: number; searchFocus?: DiagramFocus;
+function PreviewCanvas({ treemapColors, coverage, compact, doc, focusId, focusContentNodeId, serial, onJump, onDiffTreeJump, diff, modifiedDiagramIds, migrations, searchFocus, searchMatches }: { treemapColors?: readonly TreemapDiagramColor[]; coverage?: DiffCoverage; compact?: boolean; doc: ChangePreviewDocument; focusId?: string; focusContentNodeId?: string; migrations: MigrationPreview; serial: number; searchFocus?: DiagramFocus;
   searchMatches?: readonly DiagramLineSearchResult[];
   onDiffTreeJump?: (nodeId: string) => void;
   diff: ReturnType<typeof diffChangeDocument>; modifiedDiagramIds: ReadonlySet<string>;
@@ -204,10 +206,25 @@ function PreviewCanvas({ coverage, compact, doc, focusId, focusContentNodeId, se
         visibleRow: projection.prefixRowForNode.get(target.contentNodeId) ?? projection.rowForLine.get(target.line),
         branchColumn: projection.columnForLine(target.line, target.branchColumn) })) } };
   });
+  const canvasTiles = useMemo(() => boxes.flatMap(({ box, bounds }) => {
+    if (box.kind !== 'diagram') return [];
+    const displayNodeId = `grid:${box.id}`, projection = text.projections.get(displayNodeId);
+    if (!projection) return [];
+    const colors = treemapColors?.filter(color => color.displayNodeId === displayNodeId
+      && (color.documentId === doc.id || color.documentId === doc.representationId)) ?? [];
+    return treemapCanvasTiles(scene.contents[box.contentId].content, projection, bounds, colors)
+      .map(tile => ({ ...tile, column: tile.column + bounds.column, row: tile.row + bounds.row }));
+  }), [boxes, text.projections, scene, treemapColors, doc.id, doc.representationId]);
   const focusBox = useMemo(() => searchFocus ?? (focusId?.startsWith('grid:') ? { id: focusId.slice(5), contentNodeId: focusContentNodeId, serial } : undefined), [focusId, focusContentNodeId, serial, searchFocus]);
   return <DraggableDiagramCanvas enabled resetKey={doc.id} className="mapping-poc-canvas" leftInset={compact ? 0 : 340}
     focusBox={focusBox} getFocusBounds={previewFocusBounds}>
     <div className="change-preview-stage" style={{ position: 'relative', marginLeft: coverageFor ? 175 : 0, width: resolved.bounds.columns * cell.width, height: resolved.bounds.rows * cell.height }}>
+      {canvasTiles.map(({ identity, column, row, columns, rows }) => <div
+        key={`${identity.position}:${column}:${row}`} className="change-preview-treemap-tint" aria-hidden="true"
+        data-treemap-diagram={identity.displayNodeId} data-content-node-id={identity.contentNodeId}
+        data-treemap-color={identity.color} data-diagram-position={identity.position}
+        style={{ ...diagramColorStyle(identity.color), left: column * cell.width, top: row * cell.height,
+          width: columns * cell.width, height: rows * cell.height }} />)}
       {(searchMatches?.length ? searchMatches : searchFocus?.search ? [searchFocus.search] : []).map(result => {
         const projection = text.projections.get(result.displayNodeId);
         const box = boxes.find(box => box.box.id === result.displayNodeId.slice(5));

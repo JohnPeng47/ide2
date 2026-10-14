@@ -30,40 +30,66 @@ the Diagrams tree and the "46 duplicate discounted" figure are invented.
 | `Blueprint.dc.html` | 3 · Blueprint | Monospace, grid background, outline-only tiles stroked by dominant tone, hatched band = deleted share, dashed frames for directories, title-block inspector |
 | `Cushion.dc.html` | 4 · Cushions + ranked list | Depth shown by lightness, tone strip on top, ranked bar list of the focused level with tile/row hover sync |
 
-## Decision so far
+## Implemented direction
 
-The user picked **#3 Blueprint** for implementation in `ChangeTreemapContent.tsx` / `changeTreemap.css`.
-It has not been implemented yet.
+Blueprint (#3) is now implemented in `ChangeTreemapContent.tsx` and
+`changeTreemap.css`: navy grid, monospace labels, green/orange/neutral outlines,
+added/deleted-share hatching at equal opacity, dashed group frames, compact four-column totals, and a
+region inspector styled as a drafting title block. Totals wrap to two columns in
+compact panels. Real ChangeSession data replaces the mockup's sample data.
+Hover/focus tooltips show the containing diagram, node, and share of total session
+changed LOC; the percentage denominator stays fixed across zoom levels.
+Zoomed views have sticky Zoom out / Reset zoom controls to return one level or
+to the complete map without hunting through breadcrumbs.
 
-## Open issue: box edges don't align ("fragmentation")
+Existing behavior is retained: Files/Diagrams, equal LOC allocation, Unmapped,
+breadcrumbs, region selection, explicit zoom, and rectangle clicks that navigate
+to the proposed diagram and minimize the panel. No source-code split pane was added.
 
-The user shared a screenshot of the current treemap where tile edges do not line up. The suspected causes:
+## Subtree identity colors
 
-1. **Cumulative nesting inset.** Each nested region is placed at `left: 2px; top: 28px` inside a cell that
-   already has a 2px border, with size `rect.width - 8` × `rect.height - 34`. Every nesting level pulls
-   children ~4px in from the sides and ~30px down. A deep tile's edge then sits several px inside the
-   top-level region edge, while a shallower neighbour sits flush, so a seam that should be one
-   continuous line becomes a staircase.
-2. **Double borders.** Each cell draws a 2px dark border and its inner `<button>` draws another 1px
-   coloured border further in, so two outlines run at different offsets.
-3. **Fractional coordinates.** `treemapLayout` returns non-integer rects. Antialiasing makes some gaps look
-   2px and others 3px.
+`treemapDiagramColors.ts` assigns each node a fixed color by preorder position in
+the full diagram hierarchy (excluding Unmapped). Direct-allocation tiles reuse
+their target parent's color. Positions are independent of zoom and layout.
 
-Proposed fix (presentation only, no weighting change):
+Visible treemap nodes tint their corresponding canvas subtrees, including their
+descendants and diff rows. Zoom reveals finer colors. `treemapCanvasTiles.ts`
+partitions the entire containing diagram, retaining parent colors in remaining
+space without stacking translucent fills. Assignments are scoped by session,
+document, display node, and content node; Files mode and closing Treemaps clear
+the tints. Green/orange hatching and LOC allocation are unchanged.
 
-- Snap each rect's *edges* to integer pixels (`x0 = round(x)`, `x1 = round(x + w)`, same for y) so
-  neighbours share exact edges.
-- Use one uniform gutter: a single 1px inset and a single 1px outline per tile, with no inner button border.
-- Render all tiles in one shared coordinate space (flatten the tree, as the designs do) rather than nesting
-  absolutely positioned divs inside bordered cells.
-- Either make nested regions flush (only a header strip, no side/bottom padding, so seams continue
-  straight), or keep a small inset that is identical on every side and level. **This choice is still
-  open.** The user wasn't yet sure they understood the problem and wanted to investigate locally first.
+Browser checks verify distinct parent/child colors, matching subtree labels,
+whole-diagram coverage without overlaps, navigation, zoom, reopening and cleanup.
+Geometry tests cover modified label pairs, siblings and folded descendants.
+The production build, 21 focused tests, and browser check passed; Proposal 2 was
+also inspected live with matching editContexts colors in the treemap and canvas.
 
-## Next steps
+## Box alignment: investigation and fix
 
-1. Reproduce the misalignment locally and confirm the causes above.
-2. Decide flush nesting vs. uniform inset.
-3. Port the Blueprint look into `ChangeTreemapContent.tsx` / `changeTreemap.css`, keeping
-   `treemapLayout` and `changeTreemap.ts` unchanged. Run `npm test` and `npm run typecheck`. The existing
-   `src/features/mapping/changes/__tests__/treemapLayout.test.ts` must still pass.
+The browser confirmed each old nested level added a **4px side inset / 30px top
+inset**, with both a 2px cell border and a 1px button border. This accumulated
+into stepped edges. Layout coordinates were also fractional.
+
+The implemented presentation uses **flush nesting**: child regions share their
+parent's left, right, and bottom edges, with only a 22px heading reserved above.
+All rendered cells are siblings in the same coordinate space. Shared edges are
+rounded to pixels (not widths independently), with a uniform 1px visual inset
+and one outline per tile. Group frames are dashed and leaf tiles have solid
+outlines; there is no second border on the cell wrapper.
+
+`treemapLayout.ts` and `domain/mapping/changes/changeTreemap.ts` remain unchanged.
+The existing depth/size nesting thresholds are preserved. Pixel snapping is a
+rendering step; fractional LOC weights remain intact.
+
+## Validation
+
+The browser check in `tests/browser/mapping/browser-change-treemaps-check.mjs`
+now verifies shared pixel-aligned edges at every rendered depth, wide and compact
+layouts, the blueprint grid, one-third deletion hatching, unchanged LOC totals,
+zoom, direct diagram navigation, empty/binary states, and read-only behavior.
+Production build, standalone `npm run typecheck`, and the browser check pass.
+The full suite passed 738/739 tests; the existing 5-second timeout in
+`projectProjection.test.ts` recurred under load, then all six tests in that file
+passed when rerun alone. Proposal 2 was also inspected in the live application
+in expanded and compact modes; its actual total remains 2,111 LOC.

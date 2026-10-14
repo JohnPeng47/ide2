@@ -1,3 +1,4 @@
+import type { TreemapCanvasColors } from './changes/treemapDiagramColors';
 import { selectionContentNodes } from '../../../domain/mapping/selection/selectionState';
 import { generatedDiagramOperations } from '../../../domain/mapping/workspace/generatedDiagramOperations';
 import { WindowPanel } from './window-panel/WindowPanel';
@@ -89,6 +90,7 @@ function MappingWorkspacePage() {
   const [pendingTransfer, setPendingTransfer] = useState<{ sourceId: string; mode: 'copy' | 'move'; selectedIds: string[]; revisionId: string }>();
   const [explorerTab, setExplorerTab] = useState<'diagrams'|'changes'|'llms'>('diagrams');
   const [changeMode, setChangeMode] = useState<DisplayModeChange>();
+  const [treemapCanvasColors, setTreemapCanvasColors] = useState<TreemapCanvasColors>();
   const [diffTreeMode, setDiffTreeMode] = useState<DisplayModeChange>();
   const [diffTreeReveal, setDiffTreeReveal] = useState<{ sessionId: string; nodeId: string; serial: number }>();
   const revealDiffTreeNode = (nodeId: string) => {
@@ -891,15 +893,17 @@ function MappingWorkspacePage() {
           {!active && !changeMode && <div className="mapping-empty"><h1>{snapshot ? "Create a project diagram" : error ? "Could not load project diagrams" : "Loading project diagrams…"}</h1>
             {snapshot && <button type="button" onClick={() => setCreating(true)}>New diagram</button>}</div>}
           {changeMode && <ChangeSessionPreview mode={changeMode} onSelect={selectChangeMode} onOpenAccepted={openAccepted}
+              treemapColors={treemapCanvasColors?.sessionId === changeMode?.sessionId ? treemapCanvasColors?.diagrams : undefined}
               onDiffTreeJump={revealDiffTreeNode}
               onSearchDocument={onProposalSearchDocument} searchFocus={proposalSearchFocus && proposalSearchFocus.documentId === proposalSearchId ? proposalSearchFocus.focus : undefined}
               searchMatches={proposalSearchId ? searchMatchesByDocument.get(proposalSearchId) : undefined} />}
-          {diffTreeMode && <DiffTreePanel key={diffTreeMode.sessionId} mode={diffTreeMode}
+          {diffTreeMode && <DiffTreePanel key={diffTreeMode.sessionId} mode={diffTreeMode} onCanvasColors={setTreemapCanvasColors}
               revealNode={diffTreeReveal?.sessionId === diffTreeMode.sessionId ? diffTreeReveal : undefined}
               onSearch={() => setSearchOpenRequest(value => value + 1)}
               revealCanvasSerial={proposalSearchFocus?.documentId === proposalSearchId ? proposalSearchFocus?.focus.serial : undefined}
               onClose={() => { setDiffTreeMode(undefined); setDiffTreeReveal(undefined); }} onNavigate={setChangeMode}
               canvas={changeMode?.documentId ? <ChangeSessionPreview compact mode={changeMode} onSelect={selectChangeMode} onOpenAccepted={openAccepted}
+                treemapColors={treemapCanvasColors?.sessionId === changeMode?.sessionId ? treemapCanvasColors?.diagrams : undefined}
                 onDiffTreeJump={revealDiffTreeNode}
                 searchFocus={proposalSearchFocus?.documentId === proposalSearchId ? proposalSearchFocus?.focus : undefined}
                 searchMatches={proposalSearchId ? searchMatchesByDocument.get(proposalSearchId) : undefined} />

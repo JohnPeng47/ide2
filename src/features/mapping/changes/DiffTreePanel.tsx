@@ -1,3 +1,4 @@
+import type { TreemapCanvasColors } from './treemapDiagramColors';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { WindowPanel } from '../window-panel/WindowPanel';
 import { usePanelScroll, useSaveWindowPanelState, useWindowPanelState } from '../window-panel/windowPanelState';
@@ -11,7 +12,7 @@ import { useDiffTreeData } from './diffTreeData';
 import { diffTreeCoverage } from './diffTreeCoverage';
 
 /** Workspace overlay: its lifetime follows the review, not the canvas underneath. */
-export function DiffTreePanel({ mode, canvas, revealCanvasSerial, revealNode, onSearch, onClose, onNavigate }: { mode: DisplayModeChange; canvas: ReactNode; revealCanvasSerial?: number; revealNode?: { nodeId: string; serial: number }; onSearch: () => void; onClose: () => void;
+export function DiffTreePanel({ mode, canvas, revealCanvasSerial, revealNode, onSearch, onClose, onNavigate, onCanvasColors }: { onCanvasColors?: (colors: TreemapCanvasColors | undefined) => void; mode: DisplayModeChange; canvas: ReactNode; revealCanvasSerial?: number; revealNode?: { nodeId: string; serial: number }; onSearch: () => void; onClose: () => void;
   onNavigate: (mode: DisplayModeChange) => void }) {
   const storageKey = `diff-tree:${mode.sessionId}`;
   const [state, setState] = useWindowPanelState(storageKey);
@@ -106,7 +107,7 @@ export function DiffTreePanel({ mode, canvas, revealCanvasSerial, revealNode, on
       key={`${data.diffTree?.revisionId}:${hunkFilter?.id ?? '*'}`} hunks={visibleHunks} filterLabel={hunkFilter?.label} onShowAll={() => select('*')}
       scrollTarget={scrollTarget} onDidScroll={didScroll} storageKey={hunkStorageKey} wrap={state.wrap}
       onWrap={() => setState(previous => ({ ...previous, wrap: !previous.wrap }))} onTrack={tracked} onOpen={openHunk} />
-      : <p className="window-panel-message">Loading hunks…</p> }, { id: 'treemaps', title: 'Treemaps', content: <ChangeTreemapContent mode={mode}
+      : <p className="window-panel-message">Loading hunks…</p> }, { id: 'treemaps', title: 'Treemaps', content: <ChangeTreemapContent mode={mode} onCanvasColors={onCanvasColors}
         onNavigate={next => { onNavigate(next); setState(previous => ({ ...previous, minimized: true, focusedPane: 'treemaps' })); }} /> }]} />;
 }
 

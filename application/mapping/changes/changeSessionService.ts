@@ -22,6 +22,14 @@ import { connectionBox, validateConnectionAnchor } from '../../../domain/core/di
 import { stateKey } from '../../../domain/core/diagrams/canvasHistory';
 import type { ChangeSessionAcceptance } from '../../../domain/core/representations/changeAcceptance';
 
+export interface ChangeSessionCapture {
+  projectId: string;
+  context?: RepositoryContext;
+  hunks: GitDiffHunk[];
+  documents: ChangeSessionDocument[];
+  baselineChangeSessionId?: string;
+}
+
 export class ChangeSessionService {
   private readonly historyService = new DefaultCanvasHistoryService();
   private queues = new Map<string, Promise<unknown>>();
@@ -166,49 +174,73 @@ export class ChangeSessionService {
       return summarizeChangeSession(session);
     });
   }
-  async create(input: { title: string; description?: string; canvasId?: string; requestId: string; repositoryId?: string; commits?: string[]; head?: string; diffTree?: DiffTreeInput }) {
+  async create(input: { title: string; description?: string; canvasId?: string; requestId: string; repositoryId?: string; commits?: string[]; head?: string; diffTree?: DiffTreeInput }, captured?: ChangeSessionCapture) {
     const projectId = await this.projectId();
     const id = `change-${createHash('sha256').update(`${projectId}:${input.requestId}`).digest('hex').slice(0,32)}`;
     return this.serialize(id, async () => {
-      const signature = JSON.stringify(input);
+      const signature = JSON.stringify(captured ? { input, captureHash: stateKey(captured) } : input);
       const prior = await this.repository.read(projectId, id).catch(error => { if (error.code === 'ENOENT') return undefined; throw error; });
       if (prior) {
         if (prior.receipts.create?.signature !== signature) throw new Error('REQUEST_ID_CONFLICT');
         return prior.receipts.create.result;
       }
-      if (!this.source.repositories && (input.repositoryId || input.commits?.length || input.head)) throw Error('Repository registry unavailable');
-      const context = await this.source.repositories?.resolveContext(input);
+      const capture = captured ?? await this.capture(input);
+      if (capture.projectId !== projectId) throw Error('Captured context belongs to another project');
+      const { context, hunks } = capture;
       if (input.diffTree && !context) throw Error('DiffTree requires pinned repository context');
-      const hunks = context ? await this.captureHunks(context) : [];
       const diffTree = context ? input.diffTree ? writeDiffTree(this.diagrams, input.diffTree, hunks) : defaultDiffTree(this.diagrams, hunks) : undefined;
-      const documents = new Map<string, ChangeSessionDocument>();
-      const catalog = await this.source.projectCatalogs.loadRepresentationCatalog(projectId);
-      for (const rep of Object.values(catalog.representations).filter(r => r.status === 'settled' && (!context || r.repositoryId === context.repositoryId))) {
-        const revision = catalog.revisions[rep.currentRevisionId];
-        const baseline = { document: documentFromRevision(revision), canvas: initialCanvasState() };
-        documents.set(rep.id, { id: rep.id, name: rep.name, repositoryId: rep.repositoryId, representationId: rep.id, savedRevisionId: revision.id, history: this.forkHistory(baseline, historyFromRevision(revision)),
-          baseline, proposed: structuredClone(baseline), version: 0, past: [], future: [] });
-      }
-      const live = this.bridge.list().filter(c => c.projectId === projectId && (!input.canvasId || c.canvasId === input.canvasId));
-      if (input.canvasId && !live.length) throw new Error('Unknown project canvas');
-      if (!input.canvasId && live.length > 1) throw new Error('Multiple live workspaces: specify canvasId to capture drafts');
-      for (const canvas of live) for (const doc of canvas.documents) {
-        const saved = catalog.representations[doc.representationId ?? doc.documentId];
-        if (context && (saved?.repositoryId ?? doc.repositoryId) !== context.repositoryId) continue;
-        const snapshot = await this.bridge.dispatch(canvas.canvasId, { method: 'snapshot', documentId: doc.documentId }) as LiveDocumentSnapshot;
-        if (context && (saved?.repositoryId ?? snapshot.repositoryId ?? doc.repositoryId) !== context.repositoryId) throw Error('Canvas repository changed during capture');
-        const baseline = structuredClone({ document: snapshot.document, canvas: snapshot.canvas });
-        const key = snapshot.representationId ?? doc.representationId ?? doc.documentId;
-        documents.set(key, { id: key, name: snapshot.name, repositoryId: saved?.repositoryId ?? snapshot.repositoryId ?? doc.repositoryId, representationId: snapshot.representationId ?? doc.representationId,
-          history: this.forkHistory(baseline, snapshot.history),
-          savedRevisionId: snapshot.revisionId, capturedVersion: snapshot.version, baseline, proposed: structuredClone(baseline), version: 0, past: [], future: [] });
-      }
+      const documents = new Map(capture.documents.map(doc => [doc.id, structuredClone(doc)]));
       const result = { ...context, ...(diffTree ? { diffTree: diffTreeSummary(diffTree) } : {}), changeSessionId: id, canvasId: id, version: 0, documents: [...documents.values()].map(d => ({ documentId: d.id, name: d.name })) };
       const now = new Date().toISOString();
       await this.repository.write({ ...context, ...(diffTree ? { diffTree } : {}), schemaVersion: 1, id, projectId, title: input.title, description: input.description ?? '', status: 'draft', version: 0,
         createdAt: now, updatedAt: now, documents: [...documents.values()], changes: [], receipts: { create: { signature, result } } });
       return result;
     });
+  }
+  /** Freeze exactly the inputs the workflow analyzes, without creating a proposal. */
+  async capture(input: { repositoryId?: string; commits?: string[]; head?: string; canvasId?: string; baselineChangeSessionId?: string }): Promise<ChangeSessionCapture> {
+    const projectId = await this.projectId();
+    if (input.baselineChangeSessionId) {
+      const original = await this.get(input.baselineChangeSessionId);
+      if (!original.repositoryId || !original.commits || !original.head || !original.diffTree) throw Error('Baseline session has no pinned Git context');
+      if (input.repositoryId || input.commits || input.head || input.canvasId) throw Error('A baseline session supplies its own repository, commits and canvases');
+      const documents = original.documents.filter(doc => doc.baseline).map(doc => {
+        const baseline = structuredClone(doc.baseline!);
+        return { id: doc.id, name: doc.name, representationId: doc.representationId, savedRevisionId: doc.savedRevisionId,
+          repositoryId: doc.repositoryId ?? original.repositoryId, baseline, proposed: structuredClone(baseline),
+          history: this.forkHistory(baseline), version: 0, past: [], future: [] } satisfies ChangeSessionDocument;
+      });
+      if (!documents.length) throw Error('Baseline session has no original canvases');
+      return { projectId, baselineChangeSessionId: original.id,
+        context: { repositoryId: original.repositoryId, commits: [...original.commits], head: original.head },
+        hunks: structuredClone(original.diffTree.hunks), documents };
+    }
+    if (!this.source.repositories && (input.repositoryId || input.commits?.length || input.head)) throw Error('Repository registry unavailable');
+    const context = await this.source.repositories?.resolveContext(input);
+    const hunks = context ? await this.captureHunks(context) : [];
+    const documents = new Map<string, ChangeSessionDocument>();
+    const catalog = await this.source.projectCatalogs.loadRepresentationCatalog(projectId);
+    for (const rep of Object.values(catalog.representations).filter(r => r.status === 'settled' && (!context || r.repositoryId === context.repositoryId))) {
+      const revision = catalog.revisions[rep.currentRevisionId];
+      const baseline = { document: documentFromRevision(revision), canvas: initialCanvasState() };
+      documents.set(rep.id, { id: rep.id, name: rep.name, repositoryId: rep.repositoryId, representationId: rep.id, savedRevisionId: revision.id, history: this.forkHistory(baseline, historyFromRevision(revision)),
+        baseline, proposed: structuredClone(baseline), version: 0, past: [], future: [] });
+    }
+    const live = this.bridge.list().filter(c => c.projectId === projectId && (!input.canvasId || c.canvasId === input.canvasId));
+    if (input.canvasId && !live.length) throw new Error('Unknown project canvas');
+    if (!input.canvasId && live.length > 1) throw new Error('Multiple live workspaces: specify canvasId to capture drafts');
+    for (const canvas of live) for (const doc of canvas.documents) {
+      const saved = catalog.representations[doc.representationId ?? doc.documentId];
+      if (context && (saved?.repositoryId ?? doc.repositoryId) !== context.repositoryId) continue;
+      const snapshot = await this.bridge.dispatch(canvas.canvasId, { method: 'snapshot', documentId: doc.documentId }) as LiveDocumentSnapshot;
+      if (context && (saved?.repositoryId ?? snapshot.repositoryId ?? doc.repositoryId) !== context.repositoryId) throw Error('Canvas repository changed during capture');
+      const baseline = structuredClone({ document: snapshot.document, canvas: snapshot.canvas });
+      const key = snapshot.representationId ?? doc.representationId ?? doc.documentId;
+      documents.set(key, { id: key, name: snapshot.name, repositoryId: saved?.repositoryId ?? snapshot.repositoryId ?? doc.repositoryId, representationId: snapshot.representationId ?? doc.representationId,
+        history: this.forkHistory(baseline, snapshot.history),
+        savedRevisionId: snapshot.revisionId, capturedVersion: snapshot.version, baseline, proposed: structuredClone(baseline), version: 0, past: [], future: [] });
+    }
+    return { projectId, context, hunks, documents: [...documents.values()] };
   }
   private forkHistory(state: ChangeDocumentState, history?: import('../../../domain/core/diagrams/canvasHistory').CanvasHistoryRecord) {
     const context = this.historyService.openContext(state.document, state.canvas, history);

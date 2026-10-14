@@ -1,0 +1,8 @@
+.diff-session-workflow { margin: 8px 0 14px; padding: 8px; border: 1px solid var(--border-color, #c5c9ce); border-radius: 6px; }
+.diff-session-workflow summary { cursor: pointer; }
+.diff-session-workflow fieldset { padding: 0; border: 0; min-width: 0; }
+.diff-session-workflow label { display: grid; gap: 4px; margin: 10px 0; }
+.diff-session-workflow input, .diff-session-workflow select, .diff-session-workflow textarea { width: 100%; box-sizing: border-box; min-width: 0; font: inherit; }
+.diff-session-workflow textarea { min-height: 70px; resize: vertical; }
+.diff-session-workflow p, .diff-session-workflow small { font-size: 12px; overflow-wrap: anywhere; }
+.diff-session-workflow button { margin: 4px 6px 4px 0; }

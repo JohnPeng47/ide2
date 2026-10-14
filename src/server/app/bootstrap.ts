@@ -35,6 +35,9 @@ import { resolveFileCompactionSettings } from '../../../infrastructure/mapping/a
 import { loadFileCompactionPrompts } from '../../../infrastructure/mapping/agents/compaction/prompts';
 import { FileCompactionStore } from '../../../infrastructure/mapping/persistence/compactionStore';
 import { MappingWorkspaceStore } from '../../../infrastructure/mapping/persistence/workspace/mappingWorkspaceStore';
+import { DiffSessionWorkflowService } from '../../../application/mapping/changes/diffSessionWorkflowService';
+import { PiDiffSessionRuntime } from '../../../infrastructure/mapping/agents/diff-session-create/diffSessionRuntime';
+import { FileDiffSessionRunStore, loadDiffSessionPrompts, createDiffSessionSourceReader } from '../../../infrastructure/mapping/agents/diff-session-create/diffSessionStorage';
 
 export const corpusAccess: CorpusAccess = {
   provider: corpusProvider, readDocumentLines: readCorpusDocumentLines, discover: discoverDomainCorpus
@@ -66,8 +69,12 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
   const apiProjection = new CanvasApiProjection();
   const liveCanvas = new LiveCanvasService(() => canvasBridge.list(), async (workspaceInstanceId, documentId) =>
     await canvasBridge.dispatch(workspaceInstanceId, { method: 'context', documentId }) as import('../../../domain/mapping/agent/liveCanvasStatus').LiveCanvasContext, agentContexts, apiProjection);
+  const changes = new ChangeSessionService(new DiagramChangeSessionStore(store.storeRoot, undefined, true), store, canvasBridge);
   const agent = new AgentDiagrammingSessionService(canvasBridge, diagrams, store, new QuickJsAgentRuntime(),
-    new ChangeSessionService(new DiagramChangeSessionStore(store.storeRoot, undefined, true), store, canvasBridge), new RevisionedDiagramService(diagramEditRuntime), agentContexts, apiProjection);
+    changes, new RevisionedDiagramService(diagramEditRuntime), agentContexts, apiProjection);
+  const diffSessionWorkflows = new DiffSessionWorkflowService(changes, agent, new PiDiffSessionRuntime(options.piEnabled === true),
+    new FileDiffSessionRunStore(store.storeRoot), { enabled: options.piEnabled === true, sourceRoot: mappingPocSourceRoot,
+      loadPrompts: loadDiffSessionPrompts, sourceReader: capture => createDiffSessionSourceReader(store.repositories, capture) });
   const routes = {
     core: createCoreRoutes({
       application: core,
@@ -76,14 +83,15 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
     }),
     mapping: createMappingRoutes({
       selection: new SelectionService(store, mappingRuntime, mappingPocSourceRoot),
-      diagrams, agent, liveCanvas,
+      diagrams, agent, liveCanvas, diffSessionWorkflows,
       workspace: new MappingWorkspaceService(store, new MappingWorkspaceStore(store.storeRoot, store.diagramPersistence)),
       chat: new LocalChatService(store, corpusAccess, chatRuntime, mappingPocSourceRoot),
       compactionService
     })
   };
   return {
-    routes, liveCanvas, dispose() {
+    routes, liveCanvas, diffSessionWorkflows, dispose() {
+      diffSessionWorkflows.dispose();
       agent.dispose(); diagramEditRuntime.dispose(); canvasBridge.dispose(); languageService?.dispose(); mappingRuntime.dispose(); chatRuntime.dispose(); compactionService.dispose();
     }
   };

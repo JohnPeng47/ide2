@@ -1,4 +1,4 @@
-import { DiagramPersistence } from '../../../domain/core/diagrams/diagramPersistence';
+import { DiagramPersistence, restoreDiagramData } from '../../../domain/core/diagrams/diagramPersistence';
 import type { ChangeSessionWriteScope, DiagramChangeSessionRepository } from '../../../application/mapping/changes/ports';
 import { summarizeChangeSession, type ChangeSessionSummary, type ChangeSessionPreview, type DiagramChangeSession } from '../../../domain/mapping/changes/diagramChangeSession';
 import { ChangeSessionRecords, type SessionWrite } from './changeSessionRecords';
@@ -23,6 +23,12 @@ export class DiagramChangeSessionStore implements DiagramChangeSessionRepository
   }
   async read(projectId: string, id: string) {
     const result = this.background ? await changeSessionWorker(this.root).request<{ session: DiagramChangeSession; token: string }>('read', [projectId, id]) : await this.records.read(projectId, id);
+    // Worker messages carry portable histories; register their revisions in this
+    // process before controllers fork or edit those diagrams.
+    if (this.background) await restoreDiagramData(result.session.documents.map(document => document.history), {
+      get: async () => { throw Error('Worker returned an unresolved diagram record'); },
+      put: async () => { throw Error('Worker restoration is read-only'); }
+    }, 'current');
     this.tokens.set(result.session, result.token); return result.session;
   }
   async write(session: DiagramChangeSession, scope?: ChangeSessionWriteScope) {
