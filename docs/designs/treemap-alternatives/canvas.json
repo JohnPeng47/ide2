@@ -1,0 +1,18 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-10-14T12:00:00Z" },
+  "title": "Treemap View Alternatives",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 560, "h": 840, "title": "1 · Diverging heat", "is_interactive": true },
+    "Ledger.dc.html": { "x": 640, "y": 0, "w": 560, "h": 840, "title": "2 · Ledger tiles", "is_interactive": true },
+    "Blueprint.dc.html": { "x": 1280, "y": 0, "w": 560, "h": 840, "title": "3 · Blueprint", "is_interactive": true },
+    "Cushion.dc.html": { "x": 1920, "y": 0, "w": 560, "h": 1140, "title": "4 · Cushions + ranked list", "is_interactive": true }
+  },
+  "order": ["Main.dc.html", "Ledger.dc.html", "Blueprint.dc.html", "Cushion.dc.html"],
+  "notes": {
+    "heading": { "x": 0, "y": -260, "text": "Change treemap — four presentations, same block sizes", "kind": "title1", "maxW": 2480 }
+  },
+  "designSystems": []
+}

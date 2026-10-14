@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Treemap — cushions and ranked list</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0f141a}
+button{font:inherit;cursor:pointer}
+.crumb:hover{color:#ffffff}
+button:focus-visible{outline:2px solid #e8d394;outline-offset:1px}
+a{color:#8cc4e8}a:hover{color:#b5dbf3}
+</style>
+</helmet>
+<div style="width: 560px; min-height: 1140px; box-sizing: border-box; background: #0f141a; color: #e3e9ef; font-family: 'IBM Plex Sans', system-ui, sans-serif; display: flex; flex-direction: column; gap: 12px; padding: 16px 20px">
+  <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+    <div role="group" aria-label="Treemap grouping" style="display: flex; gap: 4px">
+      <button type="button" aria-pressed="{{filesPressed}}" onClick="{{setFiles}}" style="padding: 6px 14px; border-radius: 999px; border: 1px solid {{filesLine}}; background: {{filesBg}}; color: {{filesFg}}; font-size: 12px; font-weight: 500">Files</button>
+      <button type="button" aria-pressed="{{diagramsPressed}}" onClick="{{setDiagrams}}" style="padding: 6px 14px; border-radius: 999px; border: 1px solid {{diagramsLine}}; background: {{diagramsBg}}; color: {{diagramsFg}}; font-size: 12px; font-weight: 500">Diagrams</button>
+    </div>
+    <span style="margin-left: auto; font-size: 11px; color: #8797a7">{{areaNote}}</span>
+  </div>
+
+  <p aria-label="Change LOC totals" style="margin: 0; font-size: 12px; line-height: 1.6; color: #a9b6c3"><span style="font: 600 13px 'JetBrains Mono', monospace; color: #e3e9ef">{{actual}}</span> actual LOC · <span style="font: 600 13px 'JetBrains Mono', monospace; color: #8fc1f0">{{mapped}}</span> allocated to diagrams · <span style="font: 600 13px 'JetBrains Mono', monospace; color: #e3e9ef">{{unmapped}}</span> unmapped · <span title="Extra attribution removed by dividing each hunk equally across its mapped nodes."><span style="font: 600 13px 'JetBrains Mono', monospace; color: #e3e9ef">{{extra}}</span> duplicate discounted</span></p>
+
+  <nav aria-label="Treemap path" style="display: flex; flex-wrap: wrap; align-items: center; font-size: 11.5px; gap: 2px">
+    <sc-for list="{{crumbs}}" as="b" hint-placeholder-count="2">
+      <sc-if value="{{b.sep}}" hint-placeholder-val="{{false}}"><span aria-hidden="true" style="color: #4b5866; padding: 0 2px">/</span></sc-if>
+      <button type="button" class="crumb" onClick="{{b.pick}}" style="border: 0; border-radius: 4px; background: {{b.bg}}; padding: 3px 7px; color: {{b.color}}">{{b.label}}</button>
+    </sc-for>
+  </nav>
+
+  <div aria-label="Changed LOC treemap" style="position: relative; width: 520px; height: 420px">
+    <sc-for list="{{cells}}" as="c" hint-placeholder-count="12">
+      <sc-if value="{{c.nested}}" hint-placeholder-val="{{false}}">
+        <div style="position: absolute; left: {{c.x}}px; top: {{c.y}}px; width: {{c.w}}px; height: {{c.h}}px; box-sizing: border-box; background: {{c.bg}}; border-radius: {{c.radius}}px; box-shadow: {{c.shadow}}">
+          <button type="button" onClick="{{c.pick}}" onMouseEnter="{{c.enter}}" onMouseLeave="{{leave}}" aria-label="{{c.aria}}" title="{{c.aria}}" style="width: 100%; height: 24px; display: flex; align-items: center; gap: 6px; padding: 0 8px; box-sizing: border-box; background: transparent; border: 0; text-align: left; color: #c8d3de">
+            <span style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 600">{{c.label}}</span>
+            <span style="flex-shrink: 0; font: 10px 'JetBrains Mono', monospace; color: #8797a7">{{c.value}}</span>
+          </button>
+        </div>
+      </sc-if>
+      <sc-if value="{{c.leaf}}" hint-placeholder-val="{{true}}">
+        <button type="button" onClick="{{c.pick}}" onMouseEnter="{{c.enter}}" onMouseLeave="{{leave}}" aria-label="{{c.aria}}" title="{{c.aria}}" style="position: absolute; left: {{c.x}}px; top: {{c.y}}px; width: {{c.w}}px; height: {{c.h}}px; box-sizing: border-box; background: {{c.bg}}; border: 0; border-radius: {{c.radius}}px; box-shadow: {{c.shadow}}; padding: 8px 7px 5px; overflow: hidden; text-align: left; display: flex; flex-direction: column; gap: 2px; color: #f1f5f9">
+          <span aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 0; height: 3px; background: {{c.toneColor}}"></span>
+          <sc-if value="{{c.showLabel}}" hint-placeholder-val="{{true}}"><span style="display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 500">{{c.label}}</span></sc-if>
+          <sc-if value="{{c.showMeta}}" hint-placeholder-val="{{true}}"><span style="font: 10px 'JetBrains Mono', monospace; color: #b4c1ce; white-space: nowrap">{{c.value}}</span></sc-if>
+        </button>
+      </sc-if>
+    </sc-for>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 14px; font-size: 10.5px; color: #8797a7; flex-wrap: wrap">
+    <span><span style="display: inline-block; width: 12px; height: 3px; background: #5b9bd5; margin-right: 5px; vertical-align: middle"></span>more additions</span>
+    <span><span style="display: inline-block; width: 12px; height: 3px; background: #a3afbb; margin-right: 5px; vertical-align: middle"></span>mixed</span>
+    <span><span style="display: inline-block; width: 12px; height: 3px; background: #e08a3c; margin-right: 5px; vertical-align: middle"></span>more deletions</span>
+    <span style="margin-left: auto">Lighter = deeper</span>
+  </div>
+
+  <div aria-label="Selected treemap region" style="padding: 12px 14px; background: #18202a; border-radius: 8px; display: flex; flex-direction: column; gap: 10px">
+    <span style="font-size: 12px; line-height: 1.45">{{selectionText}}</span>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center">
+      <sc-if value="{{canZoom}}" hint-placeholder-val="{{true}}"><button type="button" onClick="{{zoomSelected}}" style="padding: 7px 12px; border-radius: 999px; border: 1px solid #3a4756; background: transparent; color: #e3e9ef; font-size: 11.5px">Zoom into region</button></sc-if>
+      <sc-if value="{{canOpen}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{openSelected}}" style="padding: 7px 12px; border-radius: 999px; border: 0; background: #3f74ad; color: #ffffff; font-size: 11.5px">Open in canvas ↗</button></sc-if>
+      <span style="font-size: 11px; color: #8797a7">{{opened}}</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 2px">
+    <div style="display: flex; justify-content: space-between; font-size: 10px; color: #8797a7; letter-spacing: 0.06em; text-transform: uppercase; padding: 0 8px 6px">
+      <span>{{listTitle}}</span><span>LOC</span>
+    </div>
+    <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+      <button type="button" onClick="{{r.pick}}" onMouseEnter="{{r.enter}}" onMouseLeave="{{leave}}" aria-label="{{r.aria}}" style="display: grid; grid-template-columns: 170px minmax(0, 1fr) 56px; align-items: center; gap: 10px; padding: 7px 8px; border: 0; border-radius: 6px; background: {{r.bg}}; color: #e3e9ef; text-align: left">
+        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px">{{r.label}}</span>
+        <span aria-hidden="true" style="display: flex; height: 8px; border-radius: 2px; overflow: hidden; width: {{r.barPct}}%">
+          <span style="display: block; width: {{r.addPct}}%; background: #5b9bd5"></span>
+          <span style="display: block; flex: 1; background: #e08a3c"></span>
+        </span>
+        <span style="font: 11px 'JetBrains Mono', monospace; text-align: right; color: #c3cfdb">{{r.value}}</span>
+      </button>
+    </sc-for>
+  </div>
+
+  <p style="margin: 0; font-size: 10.5px; line-height: 1.5; color: #7d8b99">Hovering a tile or a row lights up its twin. The list ranks the current zoom level’s children. Sample data.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":560,"height":1140}}'>
+const FILE_ROWS = [
+  ['application/mapping/changes/changeSessionService.ts', 22, 6],
+  ['docs/guides/diagram-change-sessions.md', 40, 12],
+  ['domain/mapping/changes/__tests__/changeTreemap.test.ts', 102, 0],
+  ['domain/mapping/changes/changeTreemap.ts', 167, 18],
+  ['infrastructure/mapping/changes/__tests__/diffTree.test.ts', 27, 9],
+  ['package.json', 1, 0],
+  ['src/features/mapping/MappingPage.tsx', 1, 1],
+  ['src/features/mapping/changes/ChangeSessionExplorer.tsx', 3, 0],
+  ['src/features/mapping/changes/ChangeTreemapContent.tsx', 120, 64],
+  ['src/features/mapping/changes/DiffHunkView.tsx', 1, 1],
+  ['src/features/mapping/changes/DiffTreePanel.tsx', 9, 23],
+  ['src/features/mapping/changes/__tests__/treemapLayout.test.ts', 21, 0],
+  ['src/features/mapping/changes/changeSessionApi.ts', 9, 11],
+  ['src/features/mapping/changes/changeTreemap.css', 30, 41],
+  ['src/features/mapping/changes/treemapLayout.ts', 23, 0],
+  ['src/features/mapping/window-panel/WindowPanel.tsx', 8, 4],
+  ['src/features/mapping/window-panel/windowPanelState.ts', 3, 3],
+  ['src/server/routes/mapping/agentRoutes.ts', 7, 0],
+  ['tests/browser/mapping/browser-change-treemaps-check.mjs', 155, 0]
+];
+const mk = (id, label, kind, added, deleted, children) => ({ id, label, kind, added: added || 0, deleted: deleted || 0, children: children || [] });
+const sumTree = (n) => { if (n.children.length) { n.added = 0; n.deleted = 0; n.children.forEach((c) => { sumTree(c); n.added += c.added; n.deleted += c.deleted; }); } n.value = n.added + n.deleted; return n; };
+const buildFiles = () => {
+  const root = mk('files', 'All files', 'root');
+  FILE_ROWS.forEach(([path, a, d]) => {
+    let parent = root, acc = '';
+    const parts = path.split('/');
+    parts.forEach((part, i) => {
+      acc += (acc ? '/' : '') + part;
+      let child = parent.children.find((c) => c.id === acc);
+      if (!child) { child = mk(acc, part, i === parts.length - 1 ? 'file' : 'directory'); parent.children.push(child); }
+      parent = child;
+    });
+    parent.added = a; parent.deleted = d;
+  });
+  return sumTree(root);
+};
+const buildDiagrams = () => sumTree(mk('diagrams', 'All diagrams', 'root', 0, 0, [
+  mk('dg-flow', 'Change session flow', 'diagram', 0, 0, [mk('n-proj', 'Treemap projection', 'node', 269, 18), mk('n-panel', 'Treemap panel', 'node', 150, 105), mk('n-svc', 'Session service', 'node', 29, 6), mk('n-win', 'Window panel', 'node', 11, 7)]),
+  mk('dg-diff', 'Diff tree', 'diagram', 0, 0, [mk('n-map', 'Hunk mapping', 'node', 36, 24), mk('n-layout', 'Layout', 'node', 44, 0), mk('n-routes', 'Agent routes', 'node', 29, 6)]),
+  mk('unmapped', 'Unmapped', 'unmapped', 0, 0, [mk('u-check', 'browser-change-treemaps-check.mjs', 'file', 155, 0), mk('u-doc', 'diagram-change-sessions.md', 'file', 40, 12), mk('u-pkg', 'package.json', 'file', 1, 0)])
+]));
+const indexTree = (root) => { const nodes = {}, parents = {}; const visit = (n) => { nodes[n.id] = n; n.children.forEach((c) => { parents[c.id] = n.id; visit(c); }); }; visit(root); return { nodes, parents }; };
+const TREES = { files: buildFiles(), diagrams: buildDiagrams() };
+const INDEX = { files: indexTree(TREES.files), diagrams: indexTree(TREES.diagrams) };
+const PLOT = { w: 520, h: 420 };
+
+/* Same as treemapLayout.ts: balanced binary partition on node.value. Untouched. */
+const treemapLayout = (nodes, width, height) => {
+  const output = [];
+  const items = nodes.filter((node) => Number.isFinite(node.value) && node.value > 0);
+  const place = (start, end, total, rect) => {
+    if (end - start === 1) { output.push({ node: items[start], rect }); return; }
+    let split = start + 1, weight = items[start].value;
+    while (split < end - 1 && Math.abs(weight + items[split].value - total / 2) < Math.abs(weight - total / 2)) weight += items[split++].value;
+    const fraction = weight / total;
+    if (rect.width >= rect.height) {
+      const left = rect.width * fraction;
+      place(start, split, weight, { ...rect, width: left });
+      place(split, end, total - weight, { ...rect, x: rect.x + left, width: rect.width - left });
+    } else {
+      const top = rect.height * fraction;
+      place(start, split, weight, { ...rect, height: top });
+      place(split, end, total - weight, { ...rect, y: rect.y + top, height: rect.height - top });
+    }
+  };
+  if (items.length && width > 0 && height > 0) place(0, items.length, items.reduce((s, n) => s + n.value, 0), { x: 0, y: 0, width, height });
+  return output;
+};
+const flatten = (nodes, w, h, depth, ox, oy, cfg, out) => {
+  treemapLayout(nodes, w, h).forEach(({ node, rect }) => {
+    const nested = depth < 2 && node.children.length > 0 && rect.width > 140 && rect.height > 100;
+    const x = ox + rect.x, y = oy + rect.y;
+    out.push({ node, x, y, w: rect.width, h: rect.height, depth, nested });
+    if (nested) flatten(node.children, Math.max(0, rect.width - cfg.padX * 2), Math.max(0, rect.height - cfg.head - cfg.padB), depth + 1, x + cfg.padX, y + cfg.head, cfg, out);
+  });
+  return out;
+};
+const fmt = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 1 });
+const r1 = (n) => Math.round(n * 10) / 10;
+const tone = (n) => n.added > n.deleted * 2 ? 'added' : n.deleted > n.added * 2 ? 'deleted' : 'mixed';
+const TONE = { added: '#5b9bd5', deleted: '#e08a3c', mixed: '#a3afbb' };
+const GROUP_BG = ['#18212b', '#212c38', '#2a3746'];
+const LEAF_BG = ['#2a3746', '#314153', '#3a4c60'];
+const LEAF_HOT = ['#36495e', '#3e536b', '#486079'];
+
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {};
+    const view = s.view || 'files';
+    const tree = TREES[view], idx = INDEX[view];
+    const focusMap = s.focus || {}, selMap = s.selected || {};
+    const focus = idx.nodes[focusMap[view]] || tree;
+    const selected = idx.nodes[selMap[view]] || focus;
+    const hover = s.hover || '';
+    const pick = (node, zoom) => this.setState({ selected: Object.assign({}, selMap, { [view]: node.id }), focus: zoom ? Object.assign({}, focusMap, { [view]: node.id }) : focusMap, opened: '', hover: '' });
+    const enter = (node) => () => { if ((this.state || {}).hover !== node.id) this.setState({ hover: node.id }); };
+    const allocated = (n) => view === 'diagrams' && n.kind !== 'unmapped' && n.kind !== 'file';
+    const describe = (n) => n.label + ': ' + fmt(n.value) + (allocated(n) ? ' allocated' : ' changed') + ' LOC (+' + fmt(n.added) + ' / −' + fmt(n.deleted) + ')';
+    const crumbs = []; let cur = focus;
+    while (cur) { crumbs.unshift(cur); cur = idx.nodes[idx.parents[cur.id]]; }
+    const raw = flatten(focus.children.length ? focus.children : [focus], PLOT.w, PLOT.h, 0, 0, 0, { padX: 5, head: 24, padB: 5 }, []);
+    const cells = raw.map((c) => {
+      const gap = c.nested ? 1 : 2, w = Math.max(0, c.w - gap * 2), h = Math.max(0, c.h - gap * 2), d = Math.min(2, c.depth);
+      const sel = selected.id === c.node.id, hot = hover === c.node.id;
+      return {
+        nested: c.nested, leaf: !c.nested, x: r1(c.x + gap), y: r1(c.y + gap), w: r1(w), h: r1(h),
+        label: c.node.label, value: fmt(c.node.value), aria: describe(c.node),
+        bg: c.nested ? (hot ? '#263240' : GROUP_BG[d]) : (hot ? LEAF_HOT[d] : LEAF_BG[d]),
+        radius: c.nested ? 8 : 5, toneColor: TONE[tone(c.node)],
+        shadow: sel ? 'inset 0 0 0 2px #e8d394' : hot ? 'inset 0 0 0 1px #8fa9bf' : 'none',
+        showLabel: w > 40 && h > 22, showMeta: w > 50 && h > 40,
+        pick: () => pick(c.node, c.node.children.length > 0), enter: enter(c.node)
+      };
+    });
+    const kids = (focus.children.length ? focus.children : [focus]).filter((n) => n.value > 0).slice().sort((a, b) => b.value - a.value);
+    const max = kids.length ? kids[0].value : 1;
+    const rows = kids.map((n) => ({
+      label: n.label, value: fmt(n.value), aria: describe(n),
+      barPct: r1(Math.max(2, 100 * n.value / max)), addPct: r1(100 * n.added / Math.max(1, n.value)),
+      bg: selected.id === n.id ? '#2a3442' : hover === n.id ? '#1d2631' : 'transparent',
+      pick: () => pick(n, false), enter: enter(n)
+    }));
+    const on = (v) => view === v;
+    const actual = TREES.files.value, unmapped = INDEX.diagrams.nodes.unmapped.value;
+    return {
+      filesPressed: on('files'), diagramsPressed: on('diagrams'),
+      filesBg: on('files') ? '#e3e9ef' : 'transparent', filesFg: on('files') ? '#0f141a' : '#a9b6c3', filesLine: on('files') ? '#e3e9ef' : '#2f3a46',
+      diagramsBg: on('diagrams') ? '#e3e9ef' : 'transparent', diagramsFg: on('diagrams') ? '#0f141a' : '#a9b6c3', diagramsLine: on('diagrams') ? '#e3e9ef' : '#2f3a46',
+      setFiles: () => this.setState({ view: 'files', opened: '', hover: '' }), setDiagrams: () => this.setState({ view: 'diagrams', opened: '', hover: '' }),
+      areaNote: view === 'diagrams' ? 'Area = allocated changed LOC' : 'Area = added + deleted LOC',
+      actual: fmt(actual), unmapped: fmt(unmapped), mapped: fmt(actual - unmapped), extra: fmt(46),
+      crumbs: crumbs.map((n, i) => ({ label: n.label, sep: i > 0, color: n.id === focus.id ? '#0f141a' : '#a9b6c3', bg: n.id === focus.id ? '#a5d7ee' : 'transparent', pick: () => pick(n, true) })),
+      cells, rows, leave: () => { if ((this.state || {}).hover) this.setState({ hover: '' }); },
+      listTitle: 'Inside ' + focus.label,
+      selectionText: describe(selected),
+      canZoom: selected.children.length > 0 && selected.id !== focus.id, zoomSelected: () => pick(selected, true),
+      canOpen: selected.kind === 'node', openSelected: () => this.setState({ opened: 'Would open ' + selected.label + ' in its diagram' }), opened: s.opened || ''
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,3 +1,9 @@
+# Current work
+
+Before starting, read `SUMMARY.md` at the repository root. It covers the in-progress change-treemap
+redesign (designs in `docs/designs/treemap-alternatives/`), the chosen direction, and the open
+box-alignment issue.
+
 # Canvas API
 
 Connect to the running application's MCP server:
