@@ -1,47 +1,47 @@
-.mapping-explorer-tabs { display: flex; gap: 6px; margin: 10px 0; }
-.mapping-explorer-tabs button { flex: 1; padding: 8px; color: var(--fg); background: transparent; border: 1px solid var(--gutter); border-radius: 4px; cursor: pointer; }
-.mapping-explorer-tabs button[aria-selected=true] { background: #243640; border-color: #88c0d0; }
-.change-type { display: inline-block; padding: 2px 5px; margin: 4px 0; border: 1px solid currentColor; border-radius: 3px; font-size: 10px; }
-.change-type-1 { color: #f2ca75; } .change-type-2 { color: #a3d997; } .change-type-3 { color: #8bc8ff; } .change-type-4 { color: #d6acff; }
-nav[aria-label="Diagram changes"] button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
-nav[aria-label="Diagram changes"] summary { padding: 10px 0; cursor: pointer; }
+.mapping-explorer-tabs { display: flex; gap: var(--space-3); margin: 10px 0; }
+.mapping-explorer-tabs button { flex: 1; padding: var(--space-4); color: var(--fg); background: transparent; border: 1px solid var(--gutter); border-radius: var(--radius-md); cursor: pointer; }
+.mapping-explorer-tabs button[aria-selected=true] { background: var(--surface-selected); border-color: var(--accent-primary); }
+.change-type { display: inline-block; padding: var(--space-1) 5px; margin: 4px 0; border: 1px solid currentColor; border-radius: var(--radius-sm); font-size: var(--text-xs); }
+.change-type-1 { color: var(--accent-warning); } .change-type-2 { color: var(--accent-success); } .change-type-3 { color: var(--accent-info); } .change-type-4 { color: var(--accent-secondary); }
+nav[aria-label="Diagram changes"] button { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); }
+nav[aria-label="Diagram changes"] summary { padding: var(--space-5) 0; cursor: pointer; }
 nav[aria-label="Diagram changes"] small { color: var(--muted); }
-.change-session-preview { position: absolute; inset: 0; display: grid; grid-template-rows: minmax(0, 1fr); background: var(--bg, #0d1117); }
+.change-session-preview { position: absolute; inset: 0; display: grid; grid-template-rows: minmax(0, 1fr); background: var(--bg, var(--surface-app)); }
 .change-session-preview > .mapping-poc-canvas { grid-row: 1; width: 100%; height: 100%; }
 .change-preview-message { position: absolute; top: 95px; left: 360px; z-index: 12; }
-.change-session-actions { position: absolute; top: 12px; left: 360px; right: 20px; z-index: 12; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 14px; border: 1px solid var(--gutter); border-radius: 6px; background: var(--bg, #0d1117); }
-.change-session-actions button { padding: 7px 12px; color: var(--fg); background: #243640; border: 1px solid #88c0d0; border-radius: 4px; cursor: pointer; white-space: nowrap; }
+.change-session-actions { position: absolute; top: 12px; left: 360px; right: 20px; z-index: 12; display: flex; align-items: center; justify-content: space-between; gap: var(--space-8); padding: var(--space-5) var(--space-7); border: 1px solid var(--gutter); border-radius: var(--radius-lg); background: var(--bg, var(--surface-app)); }
+.change-session-actions button { padding: 7px var(--space-6); color: var(--fg); background: var(--surface-selected); border: 1px solid var(--accent-primary); border-radius: var(--radius-md); cursor: pointer; white-space: nowrap; }
 .change-session-actions button:disabled { opacity: .6; cursor: wait; }
-.change-preview-box { position: absolute; pointer-events: none; border: 1px dotted #456070; }
-.change-preview-box.is-change-target { outline: 1px solid #f2ca75; }
-.change-preview-box.is-added-diagram { border: 2px solid #a3d997; }
-.change-preview-box.is-added-diagram.is-change-target { outline-color: #a3d997; }
+.change-preview-box { position: absolute; pointer-events: none; border: 1px dotted var(--border-default); }
+.change-preview-box.is-change-target { outline: 1px solid var(--accent-warning); }
+.change-preview-box.is-added-diagram { border: 2px solid var(--accent-success); }
+.change-preview-box.is-added-diagram.is-change-target { outline-color: var(--accent-success); }
 .change-preview-stage .mapping-poc-ascii { margin: 0; }
-.change-diff-added { background: #244832; color: #c1f0bb; }
-.change-diff-modified { background: #51401e; color: #ffe2a0; }
-.change-diff-removed { background: #532c35; color: #ffc1c6; }
-.change-diff-moved { outline: 1px solid #8bc8ff; outline-offset: 0; }
-.change-diff-descendants { text-decoration: underline dotted #d6acff; text-underline-offset: 3px; }
-.change-preview-stage .change-diff-mapped { text-decoration: underline dotted #88c0d0 2px; text-underline-offset: 3px; cursor: pointer; }
-.change-preview-stage .change-diff-mapped:focus-visible { outline: 2px solid #88c0d0; }
+.change-diff-added { background: var(--diff-added-fill); color: var(--diff-added-text); }
+.change-diff-modified { background: var(--diff-modified-fill); color: var(--diff-modified-text); }
+.change-diff-removed { background: var(--diff-deleted-fill); color: var(--diff-deleted-text); }
+.change-diff-moved { outline: 1px solid var(--accent-info); outline-offset: 0; }
+.change-diff-descendants { text-decoration: underline dotted var(--accent-secondary); text-underline-offset: 3px; }
+.change-preview-stage .change-diff-mapped { cursor: pointer; }
+.change-preview-stage .change-diff-mapped:focus-visible { outline: 2px solid var(--accent-primary); }
 .change-preview-stage .change-diff-added .diagram-jump,
 .change-preview-stage .change-diff-modified .diagram-jump,
 .change-preview-stage .change-diff-removed .diagram-jump { color: inherit; }
-.migration-source { --migration-accent: #7da7d9; --migration-fill: #20364d; background: var(--migration-fill); color: #d5e6fa; outline: 1px dashed var(--migration-accent); }
-.migration-destination { --migration-accent: #66b3ff; --migration-fill: #173f70; background: var(--migration-fill); color: #e1f0ff; outline: 1px solid var(--migration-accent); }
+.migration-source { --migration-accent: var(--migration-source-border); --migration-fill: var(--migration-source-fill); background: var(--migration-fill); color: var(--migration-source-text); outline: 1px dashed var(--migration-accent); }
+.migration-destination { --migration-accent: var(--migration-target-border); --migration-fill: var(--migration-target-fill); background: var(--migration-fill); color: var(--migration-target-text); outline: 1px solid var(--migration-accent); }
 .migration-with-edit { background: revert; color: inherit; box-shadow: inset 0 -2px var(--migration-accent); }
-.migration-with-edit.change-diff-added { background: #244832; color: #c1f0bb; }
-.migration-with-edit.change-diff-modified { background: #51401e; color: #ffe2a0; }
-.migration-with-edit.migration-source.migration-destination { border-bottom: 2px dashed #7da7d9; }
+.migration-with-edit.change-diff-added { background: var(--diff-added-fill); color: var(--diff-added-text); }
+.migration-with-edit.change-diff-modified { background: var(--diff-modified-fill); color: var(--diff-modified-text); }
+.migration-with-edit.migration-source.migration-destination { border-bottom: 2px dashed var(--migration-source-border); }
 .migration-source .diagram-jump, .migration-destination .diagram-jump { color: inherit; }
-.migration-links { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 14px; }
+.migration-links { display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 6px 0 14px; }
 .migration-links button { border: 0; padding: 5px; cursor: pointer; }
-.mapping-floating-pane nav .migration-links button { background: var(--migration-fill); color: #e1f0ff; padding: 7px; }
+.mapping-floating-pane nav .migration-links button { background: var(--migration-fill); color: var(--migration-target-text); padding: 7px; }
 .migration-links button[aria-pressed=true] { outline-width: 2px; }
-.repository-heading { padding: 8px 0; color: var(--accent-cyan, #88c0d0); font-weight: 600; cursor: pointer; }
-.change-repository-context { color: var(--muted); font-size: 11px; margin: 4px 0; }
-.change-commit-list { font-size: 11px; overflow-wrap: anywhere; }
+.repository-heading { padding: var(--space-4) 0; color: var(--accent-cyan, var(--accent-primary)); font-weight: 600; cursor: pointer; }
+.change-repository-context { color: var(--muted); font-size: var(--text-sm); margin: 4px 0; }
+.change-commit-list { font-size: var(--text-sm); overflow-wrap: anywhere; }
 
 /* Subtree tints partition the resolved diagram, including whitespace and diff rows. */
 .change-preview-stage { isolation: isolate; }
-.change-preview-treemap-tint { position: absolute; z-index: -1; pointer-events: none; box-sizing: border-box; background: color-mix(in srgb, var(--treemap-diagram-color) 22%, transparent); }
+.change-preview-treemap-tint { position: absolute; z-index: -1; pointer-events: none; box-sizing: border-box; background: color-mix(in srgb, var(--treemap-diagram-color) var(--canvas-identity-opacity), transparent); }

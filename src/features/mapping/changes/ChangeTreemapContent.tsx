@@ -13,6 +13,7 @@ const description = (node: ChangeTreemapNode) => {
   return `${node.label}: ${format(node.value)} ${allocation ? 'allocated' : 'changed'} LOC (+${format(node.added)} / −${format(node.deleted)})${shared}${node.previous ? ' · previous revision' : ''}`;
 };
 type View = 'files' | 'diagrams';
+const groupingKey = 'change-treemap-grouping';
 function indexTree(root: ChangeTreemapNode) {
   const nodes = new Map<string, ChangeTreemapNode>(), parents = new Map<string, string>();
   const diagrams = new Map<string, string>();
@@ -29,7 +30,13 @@ export function ChangeTreemapContent({ mode, onNavigate, onCanvasColors }: {
   mode: DisplayModeChange; onCanvasColors?: (colors: TreemapCanvasColors | undefined) => void; onNavigate: (mode: DisplayModeChange) => void;
 }) {
   const [data, setData] = useState<ChangeTreemapRead>(), [error, setError] = useState('');
-  const [view, setView] = useState<View>('files');
+  const [view, setView] = useState<View>(() => {
+    try { return localStorage.getItem(groupingKey) === 'files' ? 'files' : 'diagrams'; }
+    catch { return 'diagrams'; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(groupingKey, view); } catch { /* Storage can be unavailable. */ }
+  }, [view]);
   const [locations, setLocations] = useState<Record<View, { focus?: string; selected?: string }>>({ files: {}, diagrams: {} });
   useEffect(() => {
     const abort = new AbortController(); let timer: ReturnType<typeof setTimeout>, version: number | undefined;
@@ -86,7 +93,7 @@ export function ChangeTreemapContent({ mode, onNavigate, onCanvasColors }: {
       <span title="Extra attribution removed by dividing each hunk equally across its mapped nodes."><small>Dup. discounted</small><strong>{format(data.extra)}</strong></span>
     </div>}
     <div className="change-treemap-guide"><nav className="change-treemap-breadcrumbs" aria-label="Treemap path">{breadcrumbs.map((node, i) => <span key={node.id}>{i > 0 && <span aria-hidden="true"> / </span>}<button aria-current={node.id === focus?.id ? 'location' : undefined} onClick={() => pick(node, true)}>{node.label}</button></span>)}</nav>
-    <div className="change-treemap-legend" aria-label="Treemap legend"><span data-tone="added">Added</span><span data-tone="mixed">Mixed</span><span data-tone="deleted">Deleted share</span></div></div>
+    </div>
     {!data ? <p className="window-panel-message">Loading captured changes…</p> : focus?.value ? <>
       <Treemap node={focus} totalLoc={data.actual} diagramNames={index?.diagrams} onVisibleNodes={publishColors} colors={view === 'diagrams' ? colors.nodes : undefined} selected={selected?.id} onPick={(node, zoom) => {
         if (node.target && !node.previous) { pick(node); navigate(node); }
@@ -124,7 +131,7 @@ export function ChangeTreemapContent({ mode, onNavigate, onCanvasColors }: {
       </div>}
     </section>}
     {data && <footer className="change-treemap-footnote">
-      <p>Outline = dominant side · Green = added share · Orange = deleted share · Dashed frame = group</p>
+      <p>Area = changed LOC · Dashed frame = group</p>
       {view === 'diagrams' && <p>Node background colors match their canvas subtrees. Each hunk’s changed LOC is divided equally across its mapped nodes. Unmapped changes keep their full area.</p>}
       {data.unresolvedTargets > 0 && <p>{data.unresolvedTargets} diagram destinations could not be resolved in the captured snapshots.</p>}
       {data.nonTextHunks > 0 && <p>{data.nonTextHunks} binary / metadata changes · no LOC area</p>}
@@ -152,11 +159,9 @@ function Treemap({ node, totalLoc, diagramNames, selected, onPick, colors, onVis
   useEffect(() => { onVisibleNodes([node, ...cells.map(cell => cell.node)]); }, [node, cells, onVisibleNodes]);
   return <div ref={ref} className="change-treemap-plot" aria-label="Changed LOC treemap">
     {cells.map(({ node, rect, nested, depth, parentId }) => {
-      const tone = node.added > node.deleted * 2 ? 'added' : node.deleted > node.added * 2 ? 'deleted' : 'mixed';
       const identity = colors?.get(node.id);
       const canOpen = node.target && !node.previous;
-      const deletedShare = node.value > 0 ? Math.max(0, Math.min(100, 100 * node.deleted / node.value)) : 0;
-      return <div key={node.id} className="change-treemap-cell" data-tone={tone} data-selected={selected === node.id}
+      return <div key={node.id} className="change-treemap-cell" data-selected={selected === node.id}
         data-treemap-color={identity?.color} data-diagram-position={identity?.position} data-treemap-kind={node.kind} data-loc={node.value} data-depth={depth} data-node-id={node.id} data-parent-id={parentId} data-nested={nested}
         style={{ ...diagramColorStyle(identity?.color), left: rect.x, top: rect.y, width: rect.width, height: rect.height }}>
         <button className={nested ? 'change-treemap-heading' : 'change-treemap-leaf'}
@@ -166,8 +171,6 @@ function Treemap({ node, totalLoc, diagramNames, selected, onPick, colors, onVis
           onFocus={event => { const rect = event.currentTarget.getBoundingClientRect(); setHover({ node, x: rect.left, y: rect.bottom }); }}
           onBlur={() => setHover(undefined)} onKeyDown={event => { if (event.key === 'Escape') setHover(undefined); }}
           onClick={() => { setHover(undefined); onPick(node, node.children.length > 0); }}>
-          {!nested && deletedShare > 0 && <span className="change-treemap-hatching" aria-hidden="true" style={{ height: `${deletedShare}%` }} />}
-          {!nested && node.added > 0 && <span className="change-treemap-hatching change-treemap-additions" aria-hidden="true" style={{ height: `${100 - deletedShare}%` }} />}
           {(nested || (rect.width > 40 && rect.height > 18)) && <span className="change-treemap-label">{node.previous ? '◌ ' : ''}{node.label}</span>}
           {(nested || (rect.width > 54 && rect.height > 36)) && <small>{format(node.value)} LOC{canOpen ? ' ↗' : node.children.length > 0 ? ' ↳' : ''}</small>}
         </button>
@@ -191,6 +194,10 @@ function TreemapTooltip({ id, node, diagramName, totalLoc, x, y }: {
     <strong>{diagramName ?? node.label}</strong>
     {diagramName && diagramName !== node.label && <span>{node.label}</span>}
     <span><b>{format(totalLoc > 0 ? 100 * node.value / totalLoc : 0)}%</b> of total changed LOC · {format(node.value)} LOC</span>
+    <span className="change-treemap-tooltip-diff">
+      <span data-change="added">+{format(node.added)} added</span>
+      <span data-change="deleted">−{format(node.deleted)} deleted</span>
+    </span>
   </div>, document.body);
 }
 

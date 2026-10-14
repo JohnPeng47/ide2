@@ -14,7 +14,8 @@ export function treemapCanvasTiles(content: DiagramContent, projection: Projecti
   const regions: Tile[] = [];
   for (const identity of colors) {
     if (!identity.contentNodeId) {
-      regions.push({ identity, column: 0, row: 0, ...bounds });
+      // Bounds may also carry the scene origin. Tiles stay local until placement.
+      regions.push({ identity, column: 0, row: 0, columns: bounds.columns, rows: bounds.rows });
       continue;
     }
     const node = nodes.get(identity.contentNodeId);

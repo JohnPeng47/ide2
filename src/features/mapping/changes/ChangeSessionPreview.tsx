@@ -263,9 +263,9 @@ function PreviewCanvas({ treemapColors, coverage, compact, doc, focusId, focusCo
           const migrationClass = [...new Set(marks?.map(mark => `migration-${mark.role}`))].join(' ');
           const side = modifiedDiagramIds.has(owner.displayNodeId) ? diff.diagrams.get(owner.displayNodeId)?.proposed : undefined;
           const change = owner.contentNodeId ? side?.nodes.get(owner.contentNodeId) : undefined;
-          const status = !baselineDiagramIds.has(owner.displayNodeId.slice(5)) ? 'added' : owner.contentNodeId ? change?.status : side?.lines.get(owner.sourceLine);
-          if (!status && !change?.moved && !change?.containsChanges && !marks?.length) return;
+          const status = !baselineDiagramIds.has(owner.displayNodeId.slice(5)) ? undefined : owner.contentNodeId ? change?.status : side?.lines.get(owner.sourceLine);
           const mapped = onDiffTreeJump ? mappedNodesFor?.(owner.displayNodeId, owner.contentNodeId) ?? [] : [];
+          if (!status && !change?.moved && !change?.containsChanges && !marks?.length && !mapped.length) return;
           return { className: [migrationClass, mapped.length && 'change-diff-mapped', marks?.length && status && 'migration-with-edit', status && `change-diff-${status}`, change?.moved && 'change-diff-moved',
             change?.containsChanges && !status && !change.moved && 'change-diff-descendants'].filter(Boolean).join(' '),
             'data-difftree-mapped': mapped.length ? true : undefined,

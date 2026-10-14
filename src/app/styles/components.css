@@ -1,0 +1,28 @@
+/* Component contracts and compatibility aliases for the extracted application styles. */
+:root {
+  --bg: var(--surface-app);
+  --fg: var(--text-primary);
+  --muted: var(--text-muted);
+  --gutter: var(--border-default);
+  --border: var(--border-subtle);
+  --accent-cyan: var(--accent-primary);
+  --accent-cyan-hover: var(--accent-primary-hover);
+  --accent-green: var(--accent-success);
+  --accent-purple: var(--accent-secondary);
+  --accent-yellow: var(--accent-warning);
+  --accent-red: var(--accent-danger);
+  --canvas-background: var(--surface-canvas);
+  --panel-background: var(--surface-panel);
+  --panel-radius: var(--radius-panel);
+  --control-background: var(--surface-control);
+  --control-border: var(--border-default);
+  --control-radius: var(--radius-md);
+  --tooltip-background: var(--surface-blueprint);
+  --tooltip-foreground: var(--text-visualization);
+  --treemap-background: var(--surface-visualization);
+  --treemap-panel-background: var(--surface-blueprint);
+  --treemap-foreground: var(--text-visualization);
+  --treemap-border: var(--border-visualization);
+  --treemap-grid: var(--grid-visualization);
+  --focus-ring: var(--accent-primary);
+}

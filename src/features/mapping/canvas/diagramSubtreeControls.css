@@ -5,17 +5,17 @@
   place-items: center;
   box-sizing: border-box;
   padding: 0;
-  border: 1px solid rgb(136 192 208 / 25%);
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 25.000%, transparent);
   border-radius: 2px;
-  background: #11161c;
+  background: var(--surface-raised);
   color: var(--fg);
-  font: 12px var(--font-mono);
+  font: var(--text-md) var(--font-mono);
   white-space: pre;
   cursor: pointer;
   pointer-events: auto;
 }
 .mapping-subtree-toggle:hover, .mapping-subtree-toggle:focus-visible {
-  border-color: var(--accent, #88c0d0);
-  color: var(--accent, #88c0d0);
+  border-color: var(--accent, var(--accent-primary));
+  color: var(--accent, var(--accent-primary));
 }
 .mapping-subtree-toggle:disabled { opacity: .4; cursor: default; }

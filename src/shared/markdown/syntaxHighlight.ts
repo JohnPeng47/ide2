@@ -1,7 +1,6 @@
 import type { MarkdownIt, Token } from "markdown-it";
 
-// Codex's terminal renderer uses the Catppuccin Mocha token palette.
-const SHIKI_THEME = "catppuccin-mocha";
+import { themeDefinitions, type ThemeName } from "../theme/themeDefinitions";
 const MAX_HIGHLIGHT_BYTES = 512 * 1024;
 const MAX_HIGHLIGHT_LINES = 10_000;
 const CACHE_LIMIT = 80;
@@ -33,11 +32,11 @@ export function installTerminalCodeRenderer(markdown: MarkdownIt): void {
   };
 }
 
-export async function highlightTerminalMarkdownFences(tokens: Token[]): Promise<void> {
+export async function highlightTerminalMarkdownFences(tokens: Token[], theme: ThemeName = "dark"): Promise<void> {
   await Promise.all(tokens.filter((token) => token.type === "fence").map(async (token) => {
     const language = requestedLanguage(token.info);
     if (!language || exceedsLimits(token.content)) return;
-    const html = await highlightedCode(token.content, language);
+    const html = await highlightedCode(token.content, language, theme);
     if (html) token.meta = { ...token.meta, terminalHighlightedHtml: html };
   }));
 }
@@ -52,7 +51,8 @@ function exceedsLimits(code: string): boolean {
   return code.length > MAX_HIGHLIGHT_BYTES || code.split("\n").length > MAX_HIGHLIGHT_LINES;
 }
 
-function highlightedCode(code: string, language: string): Promise<string | null> {
+function highlightedCode(code: string, language: string, theme: ThemeName): Promise<string | null> {
+  const SHIKI_THEME = themeDefinitions[theme].markdown;
   const key = `${SHIKI_THEME}\0${language}\0${code}`;
   const cached = highlightCache.get(key);
   if (cached) return cached;

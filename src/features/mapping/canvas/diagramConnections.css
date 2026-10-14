@@ -1,14 +1,14 @@
 .diagram-connections { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 6; }
-.diagram-connections text { font: 12px var(--font-mono); paint-order: stroke; stroke: #11161c; stroke-width: 3px; }
+.diagram-connections text { font: var(--text-md) var(--font-mono); paint-order: stroke; stroke: var(--surface-raised); stroke-width: 3px; }
 .diagram-connection-hit { pointer-events: stroke; cursor: pointer; }
-.diagram-connection-hit:focus { outline: none; stroke: rgb(125 211 252 / 25%); }
+.diagram-connection-hit:focus { outline: none; stroke: color-mix(in srgb, var(--accent-info) 25.000%, transparent); }
 .diagram-connection-focus { fill: none; stroke: currentColor; stroke-width: 7px; opacity: .25; pointer-events: none; }
 .edge-focus-overlay { position: absolute; inset: 0; z-index: 7; pointer-events: none; overflow: hidden; }
 .edge-focus-overlay > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .edge-focus-overlay rect { fill: none; stroke: var(--accent-cyan); stroke-width: 2px; }
-.edge-focus-hint { position: absolute; display: flex; gap: 3px; padding: 3px; border: 1px solid var(--accent-cyan); border-radius: 4px; background: #101820; box-shadow: 0 2px 8px #0008; pointer-events: auto; }
+.edge-focus-hint { position: absolute; display: flex; gap: 3px; padding: 3px; border: 1px solid var(--accent-cyan); border-radius: var(--radius-md); background: var(--surface-raised); box-shadow: 0 2px 8px color-mix(in srgb, var(--shadow-color) 53.333%, transparent); pointer-events: auto; }
 .edge-focus-hint[data-orientation=horizontal] { transform: translate(-50%, calc(-100% - 8px)); }
 .edge-focus-hint[data-orientation=vertical] { transform: translate(8px, -50%); }
-.edge-focus-hint button { min-width: 22px; padding: 1px 5px; border: 0; border-radius: 2px; color: #d7f3fc; background: #22323e; font: 13px/20px var(--font-mono); }
-.edge-focus-hint button:hover { background: #375766; }
+.edge-focus-hint button { min-width: 22px; padding: 1px 5px; border: 0; border-radius: 2px; color: var(--accent-primary); background: var(--surface-hover); font: var(--text-lg)/20px var(--font-mono); }
+.edge-focus-hint button:hover { background: var(--border-strong); }
 .edge-focus-hint kbd { font: inherit; }

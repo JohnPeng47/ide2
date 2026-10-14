@@ -1,3 +1,4 @@
+import { useTheme } from '../../../shared/theme/theme';
 import { mappingTools, selectionTools } from './SelectionTools';
 import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Tldraw, useEditor, useQuickReactor, useValue, type Editor, type TLComponents } from 'tldraw';
@@ -32,6 +33,7 @@ export function MappingEditorCanvas(props: {
 }) {
   const canvasRuntime = useMemo(() => new CanvasRuntime(props.session), [props.session]);
   useLayoutEffect(() => canvasRuntime.connect(), [canvasRuntime]);
+  const theme = useTheme();
   const [editor, setEditor] = useState<Editor>();
   const [tool, setTool] = useState('select');
   const canUndo = useValue('canvas undo available', () => canvasRuntime.canUndo.get(), [canvasRuntime]);
@@ -128,7 +130,7 @@ export function MappingEditorCanvas(props: {
       }
     }}>
     <CanvasRuntimeContext.Provider value={canvasRuntime}><ContentContext.Provider value={props.children}>
-      <Tldraw licenseKey={import.meta.env.VITE_TLDRAW_LICENSE_KEY} shapeUtils={shapeUtils} tools={mappingTools} components={components} hideUi onMount={setEditor} overrides={{ tools: (_editor, tools) => ({ select: tools.select, hand: tools.hand }), actions: () => ({}) }}
+      <Tldraw colorScheme={theme} licenseKey={import.meta.env.VITE_TLDRAW_LICENSE_KEY} shapeUtils={shapeUtils} tools={mappingTools} components={components} hideUi onMount={setEditor} overrides={{ tools: (_editor, tools) => ({ select: tools.select, hand: tools.hand }), actions: () => ({}) }}
         options={{ maxShapesPerPage: 10000, createTextOnCanvasDoubleClick: false }} autoFocus={false} />
     </ContentContext.Provider></CanvasRuntimeContext.Provider>
     <ConnectionFocus runtime={canvasRuntime} editor={editor} enabled={props.enabled} root={root} />

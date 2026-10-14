@@ -1,10 +1,10 @@
 .mapping-editor-canvas { position: relative; width: 100%; height: 100%; overflow: hidden; isolation: isolate; }
-.mapping-editor-canvas .tl-background { background: var(--canvas-background, #171b21); }
+.mapping-editor-canvas .tl-background { background: var(--canvas-background, var(--surface-canvas)); }
 .mapping-editor-overlay { position: absolute; left: 0; top: 0; transform-origin: 0 0; pointer-events: none; }
 .mapping-editor-overlay .mapping-poc-graph-stage { pointer-events: none; }
 .mapping-editor-overlay button, .mapping-editor-overlay input, .mapping-editor-overlay textarea,
 .mapping-editor-overlay select, .mapping-editor-overlay [data-mapping-static-ui] { pointer-events: auto; }
-.mapping-native-shape { overflow: visible; pointer-events: auto; color: #d4d9e2; }
+.mapping-native-shape { overflow: visible; pointer-events: auto; color: var(--text-primary); }
 .mapping-native-body { position: relative; width: 100%; height: 100%; }
 .mapping-native-body > .mapping-grid-box { inset: 0; width: 100%; height: 100%; }
 .mapping-native-body .mapping-poc-ascii { margin: 0; padding: 0; }
@@ -20,10 +20,10 @@
 /* Leave the SDK's own production-license notice unobstructed. */
 .mapping-editor-canvas > .diagram-canvas__controls { right: 12px; top: 12px; bottom: auto;
   max-width: calc(100% - 24px); flex-wrap: wrap; }
-.mapping-editor-canvas > .diagram-canvas__controls button[aria-pressed="true"] { background: #88c0d02b; color: var(--fg); }
+.mapping-editor-canvas > .diagram-canvas__controls button[aria-pressed="true"] { background: color-mix(in srgb, var(--accent-primary) 16.863%, transparent); color: var(--fg); }
 @media (any-pointer: coarse) {
-  .mapping-editor-canvas > .diagram-canvas__controls { font-size: 12px; }
-  .mapping-editor-canvas > .diagram-canvas__controls button { min-width: 44px; min-height: 44px; padding: 8px 12px; }
+  .mapping-editor-canvas > .diagram-canvas__controls { font-size: var(--text-md); }
+  .mapping-editor-canvas > .diagram-canvas__controls button { min-width: 44px; min-height: 44px; padding: var(--space-4) var(--space-6); }
 }
 
 /* Apply touch policy at the canvas itself; sibling source panels retain scrolling. */

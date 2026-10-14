@@ -1,7 +1,7 @@
 import type { TokensResult } from "shiki";
 import type { ContentPresentation } from "../../../domain/core/profiles/domainProfile";
 
-const SHIKI_THEME = "dark-plus";
+import { themeDefinitions, type ThemeName } from "../theme/themeDefinitions";
 const TOKEN_CACHE_LIMIT = 40;
 
 const LANGUAGE_BY_EXTENSION: Record<string, { id: string; name: string }> = {
@@ -72,7 +72,8 @@ export function contentLanguageName(path: string, presentation: ContentPresentat
   return presentation.syntaxHighlighting === "code" ? sourceLanguageName(path) : "Plain text";
 }
 
-export async function tokenizeSource(path: string, source: string): Promise<TokensResult> {
+export async function tokenizeSource(path: string, source: string, theme: ThemeName = "dark"): Promise<TokensResult> {
+  const SHIKI_THEME = themeDefinitions[theme].source;
   const configuredLanguage = LANGUAGE_BY_EXTENSION[languageKey(path)]?.id;
   const candidateLanguage = configuredLanguage ?? languageKey(path);
   const key = `${SHIKI_THEME}\0${candidateLanguage}\0${source}`;

@@ -26,7 +26,9 @@ it('tiles full subtree ranges, preserving siblings and both diff rows without ov
   const check = (active: TreemapDiagramColor[], views?: Parameters<typeof changePreviewText>[1]) => {
     const result = views ? changePreviewText(scene, views, diffs, new Set(['grid:overview'])) : text;
     const p = result.projections.get('grid:overview')!, b = result.boxes.find(box => box.box.id === 'overview')!.bounds;
-    const tiles = treemapCanvasTiles(next.content, p, b, active);
+    // Scene bounds carry a nonzero origin; partitioning must use only their size.
+    const positionedBounds = { ...b, column: 17, row: 9 };
+    const tiles = treemapCanvasTiles(next.content, p, positionedBounds, active);
     expect(tiles.reduce((sum, tile) => sum + tile.columns * tile.rows, 0)).toBe(b.columns * b.rows);
     for (let row = 0; row < b.rows; row++) for (let col = 0; col < b.columns; col++)
       expect(tiles.filter(tile => row >= tile.row && row < tile.row + tile.rows && col >= tile.column && col < tile.column + tile.columns)).toHaveLength(1);

@@ -93,3 +93,32 @@ The full suite passed 738/739 tests; the existing 5-second timeout in
 `projectProjection.test.ts` recurred under load, then all six tests in that file
 passed when rerun alone. Proposal 2 was also inspected in the live application
 in expanded and compact modes; its actual total remains 2,111 LOC.
+
+## Theme system
+
+Current Dark and Neutral Light now share foundations, semantic roles and component
+contracts under `src/app/styles/`. Feature CSS consumes those tokens; a floating
+toggle switches the document theme and persists the choice. Neutral Light uses
+matching white canvas/treemap surfaces with dark labels. Code/Markdown highlighting
+and the native canvas follow the theme. See `docs/guides/theme-system.md`.
+
+Theme validation: production build and the full treemap browser flow passed,
+including light/dark surfaces, identity tint parity, keyboard activation and
+persistence after reload. Theme/source/Markdown contract tests passed. The full
+suite initially passed 743/750; all seven failed cases passed after updating the
+App expectation and rerunning the affected files (concurrent workflow work and
+two persistence timeouts). Proposal 2 was inspected in Neutral Light live.
+
+## Treemap presentation refinements
+
+Treemaps now use plain identity fills and neutral outlines, with no added/deleted
+hatching. Hover tooltips include green +added and red −deleted LOC. The identity
+palette and generated hues exclude green, lime and teal (45–205 degrees).
+The floating theme control has an adjacent settings button for independent
+treemap and diagram background opacity sliders; both persist across reloads.
+Entirely new diagrams retain their green boundary without green text highlights;
+mapped labels remain clickable without dotted underlines. Canvas tint offsets
+were caused by copying a scene origin into local tile bounds and adding it twice;
+whole-diagram tiles now use only the bounds' dimensions before final placement.
+Regression checks cover nonzero scene origins, partition coverage, slider
+independence and persistence, and tooltip additions/deletions in both themes.

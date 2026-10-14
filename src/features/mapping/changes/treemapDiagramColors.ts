@@ -2,9 +2,10 @@ import type { CSSProperties } from 'react';
 import type { ChangeTreemapNode } from '../../../../domain/mapping/changes/changeTreemap';
 
 // Position is a preorder rank in the full tree, never a zoomed or pixel position.
-const palette = ['#a78bfa', '#67d8ef', '#f7b267', '#f28bbd', '#91c788', '#879cf5', '#e5cd76', '#cf9deb', '#75cdb2', '#e99882', '#a3bfd9', '#c0ce80'];
 export function diagramColorAt(position: number): string {
-  return palette[position] ?? `hsl(${(position * 137.508 % 360).toFixed(3)} 65% 72%)`;
+  // Rotate through blue → purple → red → orange, skipping hues 45–205°.
+  return position < 12 ? `var(--diagram-color-${position + 1})`
+    : `hsl(${((205 + position * 137.508 % 200) % 360).toFixed(3)} var(--diagram-color-saturation) var(--diagram-color-lightness))`;
 }
 export interface TreemapDiagramColor {
   documentId: string; displayNodeId: string; contentNodeId?: string; position: number; color: string;

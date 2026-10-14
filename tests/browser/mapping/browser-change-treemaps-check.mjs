@@ -33,6 +33,7 @@ try {
   const diagrams = new RevisionedDiagramService();
   for (const [name, ascii] of [['Authentication', 'Authentication\n`-- Sign-in\n    `-- Create session'], ['Storage', 'Storage\n`-- Persist']]) {
     const scene = singleDiagramScene(ascii);
+    scene.root.position = { column: 7, row: 3 };
     scene.contents = { ...scene.contents, overview: diagrams.create({ id: 'overview', revision: 0, ascii, structureKind: 'tree' }).diagram };
     await store.projectCatalogs.saveMappingDiagram(project.id, { ...canvasSaveFixture({ name, scene }), repositoryId });
   }
@@ -62,6 +63,8 @@ try {
   await withHeadlessBrowser({ url: `${url}/mapping`, width: 1680, height: 1050, chromePath: process.env.CHROME_PATH,
     arguments: ['--disable-gpu', ...(process.platform === 'linux' ? ['--no-sandbox'] : [])] }, async ({ cdp }) => {
     const errors = [], requests = [];
+    cdp.on('Page.javascriptDialogOpening', event => { if (event.type === 'beforeunload') void cdp.send('Page.handleJavaScriptDialog', { accept: true }); });
+    await cdp.send('Page.enable');
     await cdp.send('Runtime.enable'); await cdp.send('Network.enable');
     cdp.on('Runtime.exceptionThrown', e => errors.push(e.exceptionDetails));
     cdp.on('Network.requestWillBeSent', e => requests.push(e.request.url));
@@ -77,6 +80,16 @@ try {
       const tooltip = await evaluate(cdp, `(() => {const e=document.querySelector('.change-treemap-tooltip'),r=e.getBoundingClientRect();return {text:e.textContent,visible:r.left>=0 && r.top>=0 && r.right<=innerWidth && r.bottom<=innerHeight,described:!!document.querySelector('[aria-describedby="'+e.id+'"]')};})()`);
       assert.ok(tooltip.text.includes(name));
       assert.ok(tooltip.text.includes(percent+'% of total changed LOC'));
+      assert.ok(tooltip.text.includes(label === 'Create session' ? '+1 added' : '+2 added'));
+      assert.ok(tooltip.text.includes(label === 'Create session' ? '−0.5 deleted' : '−1 deleted'));
+      assert.equal(await evaluate(cdp, `(() => {
+        const tip=document.querySelector('.change-treemap-tooltip'), css=getComputedStyle(tip);
+        const added=getComputedStyle(tip.querySelector('[data-change=added]')).color;
+        const deleted=getComputedStyle(tip.querySelector('[data-change=deleted]')).color;
+        const rgb=color=>color.match(/[\\d.]+/g).map(Number);
+        const a=rgb(added), d=rgb(deleted);
+        return a[1]>a[0] && a[1]>a[2] && d[0]>d[1] && d[0]>d[2];
+      })()`), true, 'Tooltip renders additions in green and deletions in red');
       assert.equal(tooltip.visible, true, 'Tooltip stays within viewport');
       assert.equal(tooltip.described, true, 'Tooltip is linked to its tile for keyboard users');
       if (process.env.CHANGE_TREEMAP_SCREENSHOT) await captureScreenshot(cdp, { output: process.env.CHANGE_TREEMAP_SCREENSHOT.replace('.png', '-tooltip.png') });
@@ -113,6 +126,8 @@ try {
     await waitForSelector(cdp, '.window-panel [role=tab]');
     await click('.window-panel [role=tab]', 'Treemaps');
     await waitForSelector(cdp, '.change-treemap-cell');
+    assert.equal(await evaluate(cdp, "document.querySelector('.change-treemap-switch button[aria-pressed=true]').textContent"), 'Diagrams', 'New viewers start with diagram colors');
+    await click('.change-treemap-switch button', 'Files');
     assert.equal(await evaluate(cdp, "document.querySelectorAll('.window-panel .window-panel').length"), 0, 'Treemaps share the existing window');
     await click('.window-panel [role=tab]', 'Hunks');
     await waitForSelector(cdp, '[aria-label="Captured hunks"]');
@@ -165,15 +180,18 @@ try {
           const a=e.getBoundingClientRect(),b=node.getBoundingClientRect();return a.top<=b.top+.5 && a.bottom>=b.bottom-.5 && a.left<=b.left+.5 && a.right>=b.right-.5;
         });
         return {color:tint.dataset.treemapColor,position:tint.dataset.diagramPosition,subtree:!!tint.dataset.contentNodeId,
+          contained:tiles.every(t=>t.x>=r.x-.01 && t.y>=r.y-.01 && t.x+t.w<=r.x+r.w+.01 && t.y+t.h<=r.y+r.h+.01),
           fraction:tiles.reduce((sum,t)=>sum+t.w*t.h,0)/(r.w*r.h),overlap,matches,
           background:getComputedStyle(tint).backgroundColor,pointerEvents:getComputedStyle(tint).pointerEvents};
       })()`);
       if (label) { assert.equal(overlay.color, identity.color); assert.equal(overlay.position, identity.position); }
       assert.ok(Math.abs(overlay.fraction-1)<.0001, 'Tiling covers the entire containing diagram');
+      assert.equal(overlay.contained, true, 'Every tint stays inside its containing diagram at a nonzero scene origin');
       assert.equal(overlay.overlap, false, 'Ancestor tints never stack over subtree colors');
       if (label) { assert.equal(overlay.subtree, true); assert.equal(overlay.matches, true, 'Node label lies in its matching colored subtree'); }
       assert.notEqual(overlay.background, 'rgba(0, 0, 0, 0)');
       assert.equal(overlay.pointerEvents, 'none');
+      assert.equal(await evaluate(cdp, "[...document.querySelectorAll('.change-preview-stage .change-diff-mapped')].every(e=>getComputedStyle(e).textDecorationLine==='none')"), true, 'Mapped labels have no underline');
     };
     await assertBlueprintGeometry();
     const areas = await evaluate(cdp, "[...document.querySelectorAll('.change-treemap-plot > .change-treemap-cell[data-depth=\"0\"]')].map(e=>{const r=e.getBoundingClientRect();return {loc:Number(e.dataset.loc),area:r.width*r.height};})");
@@ -182,9 +200,7 @@ try {
     assert.equal(await evaluate(cdp, "document.querySelector('.change-treemap-plot > [data-treemap-kind=unmapped]').dataset.loc"), '1');
     await click('.change-treemap-cell[data-treemap-kind=unmapped] button');
     assert.equal(await evaluate(cdp, "!!document.querySelector('.window-panel-minimized')"), false, 'Unmapped region has no navigation target');
-    const hatch = await evaluate(cdp, `(() => { const c=document.querySelector('.change-treemap-cell[data-treemap-kind="node"]:not([data-nested="true"])'); const h=c.querySelector('.change-treemap-hatching'); return {height:h?.style.height, background:h && getComputedStyle(h).backgroundImage}; })()`);
-    assert.ok(Math.abs(parseFloat(hatch.height) - 100 / 3) < .001, 'Deleted hatch uses the actual one-third deleted share');
-    assert.ok(hatch.background.includes('repeating-linear-gradient'));
+    assert.equal(await evaluate(cdp, "document.querySelectorAll('.change-treemap-hatching, .change-treemap-legend').length"), 0, 'Treemaps have plain fills without diff hatching');
     await captureScreenshot(cdp, { output: process.env.CHANGE_TREEMAP_SCREENSHOT ?? path.join(root, 'treemaps.png') });
     const widthBefore = await evaluate(cdp, "document.querySelector('.change-treemap-plot').getBoundingClientRect().width");
     await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
@@ -221,6 +237,53 @@ try {
     await waitForSelector(cdp, '.window-panel-minimized');
     await waitForSelector(cdp, `[data-change-session="${session.id}"] .is-change-target`);
     await assertCanvasIdentity(sessionIdentity, 'Create session');
+    const beforeTheme = await evaluate(cdp, `[...document.querySelectorAll('.change-treemap-cell')].map(e=>({id:e.dataset.nodeId,loc:e.dataset.loc,color:e.dataset.treemapColor,rect:e.getAttribute('style')}))`);
+    await click('.theme-toggle');
+    await waitFor(async () => await evaluate(cdp, "document.documentElement.dataset.theme==='light'"));
+    const light = await evaluate(cdp, `(() => {
+      const tile=document.querySelector('.change-treemap-cell button[aria-label^="Create session:"]');
+      const tint=[...document.querySelectorAll('.change-preview-treemap-tint')].find(e=>e.dataset.treemapColor===tile.parentElement.dataset.treemapColor);
+      return {canvas:getComputedStyle(document.querySelector('.mapping-viewport > .change-session-preview .mapping-poc-canvas')).backgroundColor,
+        plot:getComputedStyle(document.querySelector('.change-treemap-plot')).backgroundColor,
+        foreground:getComputedStyle(document.querySelector('.change-treemap-panel')).color,
+        tile:getComputedStyle(tile).backgroundColor,tint:getComputedStyle(tint).backgroundColor,
+        scheme:getComputedStyle(document.documentElement).colorScheme};
+    })()`);
+    assert.equal(light.canvas, 'rgb(255, 255, 255)');
+    assert.equal(light.plot, light.canvas, 'Canvas and treemap share the same neutral light surface');
+    assert.equal(light.tile, light.tint, 'Matching identities use the same tint opacity');
+    assert.equal(light.foreground, 'rgb(32, 36, 43)');
+    assert.equal(light.scheme, 'light');
+    assert.deepEqual(await evaluate(cdp, `[...document.querySelectorAll('.change-treemap-cell')].map(e=>({id:e.dataset.nodeId,loc:e.dataset.loc,color:e.dataset.treemapColor,rect:e.getAttribute('style')}))`), beforeTheme, 'Changing theme preserves color identities, LOC and layout');
+    await assertBlueprintGeometry();
+    await assertTooltip('Create session', 'Authentication / Authentication', 30);
+    if (process.env.CHANGE_TREEMAP_SCREENSHOT) await captureScreenshot(cdp, { output: process.env.CHANGE_TREEMAP_SCREENSHOT.replace('.png', '-light.png') });
+    await click('.theme-settings-toggle');
+    await waitForSelector(cdp, '.theme-picker-panel');
+    const setSlider = async (label, key, code) => {
+      await click(`input[aria-label="${label}"]`);
+      for (const type of ['keyDown', 'keyUp']) await cdp.send('Input.dispatchKeyEvent', { type, key, code: key, windowsVirtualKeyCode: code });
+    };
+    const fills = () => evaluate(cdp, `({tile:getComputedStyle(document.querySelector('.change-treemap-cell[data-treemap-color] > button')).backgroundColor,canvas:getComputedStyle(document.querySelector('.change-preview-treemap-tint')).backgroundColor})`);
+    const initialFills = await fills();
+    await setSlider('Treemap color opacity', 'End', 35);
+    const solidMap = await fills();
+    assert.notEqual(solidMap.tile, initialFills.tile, 'Treemap opacity changes immediately');
+    assert.equal(solidMap.canvas, initialFills.canvas, 'Treemap slider leaves canvas opacity alone');
+    await setSlider('Diagram background opacity', 'Home', 36);
+    const clearCanvas = await fills();
+    assert.notEqual(clearCanvas.canvas, solidMap.canvas, 'Canvas opacity changes immediately');
+    assert.equal(clearCanvas.tile, solidMap.tile, 'Canvas slider leaves treemap opacity alone');
+    await setSlider('Diagram background opacity', 'ArrowRight', 39);
+    const preferences = await evaluate(cdp, "JSON.parse(localStorage.getItem('new-diagram-color-opacity'))");
+    assert.equal(preferences.treemap, 100);
+    assert.ok(preferences.canvas > 0 && preferences.canvas < 100);
+    if (process.env.CHANGE_TREEMAP_SCREENSHOT) await captureScreenshot(cdp, { output: process.env.CHANGE_TREEMAP_SCREENSHOT.replace('.png', '-settings.png') });
+    for (const type of ['keyDown', 'keyUp']) await cdp.send('Input.dispatchKeyEvent', { type, key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
+    assert.equal(await evaluate(cdp, "document.activeElement.classList.contains('theme-settings-toggle') && !document.querySelector('.theme-picker-panel')"), true, 'Escape closes settings and restores button focus');
+    await click('.theme-toggle');
+    assert.equal(await evaluate(cdp, "document.documentElement.dataset.theme"), 'dark');
+
     if (process.env.CHANGE_TREEMAP_SCREENSHOT) await captureScreenshot(cdp, { output: process.env.CHANGE_TREEMAP_SCREENSHOT.replace('.png', '-canvas.png') });
     await click('.change-treemap-zoom-controls button', '← Zoom out');
     await waitFor(async () => await evaluate(cdp, "document.querySelector('.change-treemap-breadcrumbs [aria-current]').textContent === 'Authentication'"));
@@ -237,7 +300,7 @@ try {
     await waitForSelector(cdp, '.change-treemap-summary');
     if (await evaluate(cdp, "!!document.querySelector('.window-panel-minimized')")) await click('.window-panel-header button', 'Restore');
     assert.ok(await evaluate(cdp, "document.querySelector('.change-treemap-footnote').textContent.includes('1 binary / metadata changes')"));
-    await click('.change-treemap-switch button', 'Diagrams');
+    assert.equal(await evaluate(cdp, "document.querySelector('.change-treemap-switch button[aria-pressed=true]').textContent"), 'Diagrams', 'Reopening remembers diagram grouping');
     await waitForSelector(cdp, '.change-treemap-cell[data-treemap-kind=diagram]');
     assert.deepEqual(await evaluate(cdp, `[...document.querySelectorAll('.change-treemap-cell[data-treemap-kind="diagram"]')].map(e=>({color:e.dataset.treemapColor,position:e.dataset.diagramPosition}))`), identities, 'Reopening retains fixed position colors');
     await click('.change-treemap-switch button', 'Files');
@@ -253,8 +316,24 @@ try {
     await waitFor(async () => await evaluate(cdp, "document.querySelector('.change-treemap-panel')?.textContent.includes('No added or deleted text lines')")).catch(async error => { console.log('Empty session state', await evaluate(cdp, "({panel:document.querySelector('.change-treemap-panel')?.textContent, alerts:[...document.querySelectorAll('[role=alert]')].map(e=>e.textContent), sessions:[...document.querySelectorAll('[data-open-treemaps]')].map(e=>({id:e.dataset.openTreemaps,rect:e.getBoundingClientRect().toJSON()}))})")); await captureScreenshot(cdp,{output:path.join(root,'empty-error.png')}); throw error; });
     assert.equal(await evaluate(cdp, "document.querySelectorAll('.change-treemap-cell').length"), 0);
     assert.equal(requests.some(url => /diagram-edits|create-diagram|extend-diagram/.test(url)), false, 'No LLM generation calls');
+    await click('.theme-toggle');
+    console.log('PASS Dark/light surfaces, identity fills, LOC and layout preservation; checking reload');
+    const loaded = new Promise(resolve => cdp.on('Page.loadEventFired', resolve));
+    await cdp.send('Page.reload', { ignoreCache: true });
+    await loaded;
+    await waitForSelector(cdp, '.theme-toggle[aria-label="Switch to Current Dark"]');
+    assert.equal(await evaluate(cdp, "document.documentElement.dataset.theme"), 'light', 'Theme survives reload');
+    await click('.theme-settings-toggle');
+    assert.deepEqual(await evaluate(cdp, "Object.fromEntries([...document.querySelectorAll('.theme-picker-panel input')].map((e,i)=>[i===0?'treemap':'canvas',Number(e.value)]))"), preferences, 'Both opacity settings survive reload');
+    await click('.theme-settings-toggle');
+    await click('.theme-toggle');
+    assert.equal(await evaluate(cdp, "document.documentElement.dataset.theme"), 'dark');
+    assert.equal(await evaluate(cdp, "document.activeElement.classList.contains('theme-toggle')"), true, 'Floating toggle retains keyboard focus');
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', text: '\r', windowsVirtualKeyCode: 13 });
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+    await waitFor(async () => await evaluate(cdp, "document.documentElement.dataset.theme==='light'"));
     assert.deepEqual(errors, []);
-    console.log('PASS Deterministic subtree colors, matching non-overlapping canvas tiles, zoom/reopen stability, Blueprint grid, hatching, flush pixel-aligned tiles, Files/Diagrams LOC, fractional allocation and unmapped area, nested zoom, full-width map without source code, direct rectangle navigation and explicit zoom, empty/binary states, and no LLM requests');
+    console.log('PASS Deterministic subtree colors, matching non-overlapping canvas tiles, zoom/reopen stability, Blueprint grid, plain fills, independent persisted opacity sliders, flush pixel-aligned tiles, Files/Diagrams LOC, fractional allocation and unmapped area, nested zoom, full-width map without source code, direct rectangle navigation and explicit zoom, empty/binary states, and no LLM requests');
   });
   assert.equal((await changes.get(session.id)).version, version, 'Viewing never mutates the ChangeSession');
 } finally {

@@ -1,3 +1,4 @@
+import { useTheme } from "../theme/theme";
 import { tokenizeSource, sourceLanguageName, contentLanguageName } from "./sourceHighlighting";
 export { sourceLanguageName, contentLanguageName } from "./sourceHighlighting";
 import type { SourceLocation, SourcePosition } from '../../../domain/core/source/sourceNavigation';
@@ -161,6 +162,7 @@ export function SourceCodeView(props: {
     props.navigationRange ? collapsedSections(props.range, props.preview).filter(section =>
       props.navigationRange!.start.line + 1 >= section.startLine && props.navigationRange!.start.line + 1 <= section.endLine).map(sectionKey) : []));
   const [expandedGraphNodes, setExpandedGraphNodes] = useState<Set<string>>(() => new Set());
+  const theme = useTheme();
   const source = useMemo(() => props.preview.lines.join("\n"), [props.preview.lines]);
   const sourceIdentity = `${props.preview.path}:${props.preview.startLine}:${source}`;
   const sections = useMemo(
@@ -177,13 +179,13 @@ export function SourceCodeView(props: {
     setHighlighted(null);
     setHighlightFailed(false);
     if (props.presentation.syntaxHighlighting === "plain") return undefined;
-    void tokenizeSource(props.preview.path, source).then((result) => {
+    void tokenizeSource(props.preview.path, source, theme).then((result) => {
       if (!cancelled) setHighlighted(result);
     }).catch(() => {
       if (!cancelled) setHighlightFailed(true);
     });
     return () => { cancelled = true; };
-  }, [props.presentation.syntaxHighlighting, props.preview.path, source]);
+  }, [props.presentation.syntaxHighlighting, props.preview.path, source, theme]);
 
   useEffect(() => {
     const destination = props.navigationRange?.start.line;
@@ -388,8 +390,8 @@ export function SourceCodeView(props: {
     props.presentation.sourceCompaction, props.compacted, props.foldPresentation, sectionsByStart, expandedSections, expandedGraphNodes, highlighted]);
 
   const rootStyle = {
-    "--source-bg": highlighted?.bg ?? "#1e1e1e",
-    "--source-fg": highlighted?.fg ?? "#d4d4d4"
+    "--source-bg": highlighted?.bg ?? "var(--surface-code)",
+    "--source-fg": highlighted?.fg ?? "var(--text-primary)"
   } as CSSProperties;
 
   return (

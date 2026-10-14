@@ -1,3 +1,4 @@
+import type { ThemeName } from "../theme/themeDefinitions";
 import MarkdownIt from "markdown-it";
 import { decorateMarkdownLinks, terminalRepositoryLinkController } from "./links";
 import { highlightTerminalMarkdownFences, installTerminalCodeRenderer } from "./syntaxHighlight";
@@ -22,11 +23,12 @@ markdownRenderer.renderer.rules.heading_open = (tokens, index, options, environm
 export async function renderTerminalMarkdownFragment(
   source: string,
   documentPath = "",
-  sourceLineOffset = 0
+  sourceLineOffset = 0,
+  theme: ThemeName = "dark"
 ): Promise<string> {
   const environment = {};
   const tokens = markdownRenderer.parse(source, environment);
-  await highlightTerminalMarkdownFences(tokens);
+  await highlightTerminalMarkdownFences(tokens, theme);
   decorateTerminalMarkdownSourceLines(tokens, sourceLineOffset);
   decorateTerminalMarkdownHeadings(tokens);
   decorateMarkdownLinks(tokens, documentPath);
