@@ -21,6 +21,7 @@ export interface DiagramEditCanvasPort {
 }
 interface Run {
   agentContext?: AgentContextSnapshot;
+  nextAgentContext?: AgentContextSnapshot;
   input: CreateDiagramInput;
   signature: string;
   state: DiagramEditRun;
@@ -40,7 +41,12 @@ export class DiagramEditService {
   constructor(private readonly diagrams: DiagramService, private readonly canvas: DiagramEditCanvasPort) {}
 
   start(input: EditDiagramInput | CreateDiagramInput, suppliedContext?: AgentContextSnapshot, operation: PromptOperation = 'edit-diagram'): DiagramEditRun {
-    const agentContext = suppliedContext ? AgentContext.fromSnapshot(suppliedContext).toSnapshot() : undefined;
+    if (input.agentContext && (input.agentContextId || suppliedContext)) throw Error('Provide only one agent context source');
+    if (input.agentContext && !input.llmSessionId) throw Error('Panel context requires llmSessionId');
+    const rawContext = input.agentContext ?? suppliedContext;
+    const agentContext = rawContext ? AgentContext.fromSnapshot(rawContext).toSnapshot() : undefined;
+    if (input.llmSessionId && agentContext && agentContext.source.sourceSessionId !== input.llmSessionId)
+      throw Error('AGENT_CONTEXT_SESSION_MISMATCH: context belongs to another panel');
     if (input.agentContextId && !agentContext) throw Error('AGENT_CONTEXT_NOT_FOUND: resolve context before starting the edit');
     if (operation !== 'edit-diagram' && !this.canvas.create) throw Error('Diagram creation UNAVAILABLE in this runtime');
     if (operation === 'edit-diagram' && 'count' in input && input.count !== undefined) throw Error('count applies only to create-diagram');
@@ -106,16 +112,21 @@ export class DiagramEditService {
     if (input.subtree && input.subtree.revisionId !== base.content.revisionId) throw Error('VERSION_CONFLICT: selected subtree changed; select it again');
     const editRange = operation === 'edit-diagram' && input.subtree ? diagramSubtreeRange(base, input.subtree.contentNodeId) : undefined;
     if (operation === 'extend-diagram') for (const source of input.sources!) validateConnectionAnchor(snapshot.document.scene, source);
-    const request = { editRange, instruction: input.prompt, agentContext: run.agentContext,
+    const request = { editRange, instruction: input.prompt, agentContext: run.agentContext, llmSessionId: input.llmSessionId,
       prompt: { markdown: template.markdown, options: template.options, parameters: template.definition.parameters, references },
       context: { diagram: base, selection: { startLine: 1, endLine: lines.length, startColumn: 1,
         endColumn: Math.max(1, ...lines.map(line => line.length)) }, connections: snapshot.document.edges } };
-    const options = { signal: abort.signal, onProgress: (message: string) => { if (run.state.status === 'generating') run.state.message = message; } };
+    const options = { signal: abort.signal, onAgentSession: (id: string) => { run.state.agentSessionId = id; },
+      onAgentContext: (context: AgentContextSnapshot) => {
+        const next = AgentContext.fromSnapshot(context).toSnapshot();
+        if (next.source.sourceSessionId !== input.llmSessionId) throw Error('AGENT_CONTEXT_SESSION_MISMATCH');
+        run.nextAgentContext = next;
+      }, onProgress: (message: string) => { if (run.state.status === 'generating') run.state.message = message; } };
     if (operation !== 'edit-diagram') {
       run.created = [];
       for (let index = 0; index < (operation === 'extend-diagram' ? 1 : input.count ?? 1); index++) {
         if (input.count && input.count > 1) options.onProgress(`Generating diagram ${index + 1} of ${input.count}…`);
-        run.created.push(await this.diagrams.generate({ ...request, input: { id: `diagram-${randomUUID()}`, structureKind: base.content.structure.kind,
+        run.created.push(await this.diagrams.generate({ ...request, agentContext: run.nextAgentContext ?? run.agentContext, input: { id: `diagram-${randomUUID()}`, structureKind: base.content.structure.kind,
           source: base.sourceContext.binding, evidence: base.sourceContext.evidence } }, options));
         abort.signal.throwIfAborted();
       }
@@ -158,6 +169,7 @@ export class DiagramEditService {
       expectedVersion: input.expectedVersion, nodeId: input.nodeId, baseRevisionId: input.baseRevisionId, revision });
     run.state.result = { diagramId: revision.diagramId, previousRevisionId: input.baseRevisionId,
       revisionId: revision.id, documentVersion: result.version, unresolvedEdgeIds: result.unresolvedEdgeIds };
+    run.state.agentContext = run.nextAgentContext;
     run.state.status = 'completed'; run.state.message = 'Diagram revision installed and workspace persisted';
   }
   /** New diagrams never conflict with canvas edits: placement reads the latest version and sits beside the anchor. */
@@ -184,6 +196,7 @@ export class DiagramEditService {
     });
     const result = await this.canvas.create!(run.input.sessionId, { requestId: run.state.runId, expectedVersion: snapshot.version, diagrams });
     run.state.created = { documentVersion: result.version, nodeIds: diagrams.map(diagram => `grid:${diagram.id}`) };
+    run.state.agentContext = run.nextAgentContext;
     run.state.status = 'completed'; run.state.message = `${diagrams.length === 1 ? 'Diagram' : `${diagrams.length} diagrams`} created beside the anchor`;
   }
   dispose() { for (const run of this.runs.values()) this.cancel(run.state.runId); }

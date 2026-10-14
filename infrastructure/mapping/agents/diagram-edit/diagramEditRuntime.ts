@@ -1,4 +1,5 @@
 import { subtreeReplacement } from '../../../../domain/core/diagrams/diagramSubtreeEdit';
+import { captureDiagramAgentContext } from './diagramAgentContext';
 import { AgentContext } from '../../../../domain/core/agents/agentContext';
 import { Type } from '@earendil-works/pi-ai';
 import { DefaultResourceLoader, defineTool, getAgentDir, SettingsManager } from '@earendil-works/pi-coding-agent';
@@ -51,6 +52,7 @@ export class PiDiagramEditRuntime extends PiAgentRuntime implements DiagramGener
     const agentContext = request.agentContext ? AgentContext.fromSnapshot(request.agentContext) : undefined;
     const { session } = await this.createSession({ cwd: this.sourceRoot, modelRuntime: configured.runtime, model: configured.model,
       thinkingLevel: 'medium', tools: ['submit_diagram_edit'], customTools: [submit], resourceLoader, settingsManager }, agentContext);
+    options.onAgentSession?.(session.sessionId);
     const unsubscribe = session.subscribe(event => {
       const progress = progressFor(event, `${configured.provider}/${configured.modelId}`, session.sessionId);
       if (progress) options.onProgress?.(progress.message);
@@ -63,6 +65,7 @@ export class PiDiagramEditRuntime extends PiAgentRuntime implements DiagramGener
       options.signal?.throwIfAborted();
       if (!submission.value) throw Error('Diagram edit agent finished without a validated submission');
       const candidate = validateGeneratedDiagramEdit(base, submission.value);
+      if (request.llmSessionId) options.onAgentContext?.(captureDiagramAgentContext(request.llmSessionId, session.messages));
       return { ...candidate, source: base.sourceContext.binding, evidence: base.sourceContext.evidence };
     } finally {
       options.signal?.removeEventListener('abort', abort); unsubscribe(); session.dispose(); this.sessions.delete(session);
@@ -74,6 +77,12 @@ export class FakeDiagramEditRuntime implements DiagramGenerator {
   async generate(request: DiagramGenerationRequest, options: GenerationOptions) {
     options.signal?.throwIfAborted();
     const base = request.context!.diagram, instruction = request.instruction.replace(/[\r\n]/g, ' ');
+    options.onAgentSession?.(`fake-agent-${crypto.randomUUID()}`);
+    if (request.llmSessionId) options.onAgentContext?.(AgentContext.fromMessages(request.llmSessionId, [
+      ...(request.agentContext?.messages ?? []),
+      { role: 'user', content: [{ type: 'text', text: request.instruction }], timestamp: 0 },
+      { role: 'assistant', content: [{ type: 'text', text: `Generated diagram for: ${request.instruction}` }], timestamp: 0 },
+    ]).toSnapshot());
     options.onProgress?.('Generating fake diagram edit');
     if (!request.baseRevisionId) return { ascii: `[created: ${instruction}]`, structureKind: 'diagram' as const, mappings: [],
       source: base.sourceContext.binding, evidence: base.sourceContext.evidence };

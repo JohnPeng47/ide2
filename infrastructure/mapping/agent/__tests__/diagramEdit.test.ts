@@ -1,7 +1,7 @@
 import { AgentContext } from '../../../../domain/core/agents/agentContext';
 import { expect, it, vi } from 'vitest';
 import { DiagramEditService } from '../../../../application/mapping/agent/diagramEditService';
-import { RevisionedDiagramService, type DiagramGenerator } from '../../../../domain/core/diagrams/diagramService';
+import { RevisionedDiagramService, type DiagramGenerator, type DiagramGenerationRequest, type GenerationOptions } from '../../../../domain/core/diagrams/diagramService';
 import { singleDiagramScene } from '../../../../domain/core/diagrams/projectDiagramCanvas';
 import { MappingDocumentController } from '../../../../domain/mapping/workspace/mappingDocumentController';
 import { mappingDocumentFromScene } from '../../../../domain/mapping/workspace/mappingDocument';
@@ -26,6 +26,34 @@ async function settled(service: DiagramEditService, runId: string, status: strin
   await vi.waitFor(() => expect(service.get(runId).status).toBe(status));
   return service.get(runId);
 }
+
+it('publishes panel context only after persistence and passes it into the next generation', async () => {
+  const generate = vi.fn(async (request: DiagramGenerationRequest, options: GenerationOptions) => {
+    options.onAgentSession?.('runtime-id');
+    options.onAgentContext?.(AgentContext.fromMessages(request.llmSessionId!, [
+      ...(request.agentContext?.messages ?? []), { role: 'user', content: [{ type: 'text', text: request.instruction }], timestamp: 0 }
+    ]).toSnapshot());
+    return { ascii: 'Generated' };
+  });
+  const f = fixture({ generate }), input = { ...f.input, llmSessionId: 'panel' };
+  f.persist.mockRejectedValueOnce(Error('Disk unavailable'));
+  const run = f.service.start(input);
+  const pending = await settled(f.service, run.runId, 'awaiting-acknowledgement');
+  expect(pending.agentSessionId).toBe('runtime-id');
+  expect(pending.agentContext).toBeUndefined();
+  f.service.start(input);
+  const completed = await settled(f.service, run.runId, 'completed');
+  expect(completed.agentContext?.source.sourceSessionId).toBe('panel');
+  expect(generate).toHaveBeenCalledOnce();
+  const next = f.service.start({ ...input, requestId: 'next', expectedVersion: 1,
+    baseRevisionId: completed.result!.revisionId, agentContext: completed.agentContext, prompt: 'Continue' });
+  const continued = await settled(f.service, next.runId, 'completed');
+  expect(generate.mock.calls[1][0].agentContext).toEqual(completed.agentContext);
+  expect(continued.agentContext?.messages).toHaveLength(2);
+  expect(() => f.service.start({ ...input, requestId: 'wrong-panel', llmSessionId: 'other', agentContext: completed.agentContext })).toThrow('AGENT_CONTEXT_SESSION_MISMATCH');
+  expect(() => f.service.start({ ...input, requestId: 'missing-panel', llmSessionId: undefined, agentContext: completed.agentContext })).toThrow('requires llmSessionId');
+  expect(() => f.service.start({ ...input, requestId: 'ambiguous', agentContextId: 'uploaded', agentContext: completed.agentContext })).toThrow('only one agent context');
+});
 
 it('installs exactly the generated revision once and restores its identity through durable undo/redo', async () => {
   const generate = vi.fn(async () => ({ ascii: 'Edited\n`-- New branch', structureKind: 'tree' as const }));

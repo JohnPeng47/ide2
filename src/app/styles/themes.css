@@ -1,6 +1,9 @@
 /* Semantic roles. Components never select a light/dark color themselves. */
 :root, :root[data-theme="dark"] {
   color-scheme: dark;
+  --treemap-hover-border: #60a5fa;
+  --treemap-loc-low: hsl(217 35% clamp(4%, calc(20% + var(--treemap-shade-shift)), 98%));
+  --treemap-loc-high: hsl(217 95% clamp(4%, calc(72% + var(--treemap-shade-shift)), 98%));
   --surface-app: var(--neutral-950);
   --surface-panel: #101419;
   --surface-raised: #141920;
@@ -11,6 +14,14 @@
   --surface-canvas: #0d1014;
   --surface-code: #1e1e1e;
   --surface-code-gutter: #181818;
+  --diagram-syntax-type: #4ec9b0;
+  --diagram-syntax-function: #dcdcaa;
+  --diagram-syntax-variable: #9cdcfe;
+  --diagram-syntax-keyword: #c586c0;
+  --diagram-syntax-string: #ce9178;
+  --diagram-syntax-number: #b5cea8;
+  --diagram-syntax-reference: #c4a7ef;
+  --diagram-syntax-structure: #939dab;
   --surface-backdrop: #05070ab8;
   --text-primary: #d8dee9;
   --text-secondary: #b7bfca;
@@ -66,6 +77,9 @@
 }
 :root[data-theme="light"] {
   color-scheme: light;
+  --treemap-hover-border: #2563eb;
+  --treemap-loc-low: hsl(217 70% clamp(4%, calc(94% + var(--treemap-shade-shift)), 98%));
+  --treemap-loc-high: hsl(217 90% clamp(4%, calc(55% + var(--treemap-shade-shift)), 98%));
   --surface-app: var(--neutral-100);
   --surface-panel: var(--neutral-50);
   --surface-raised: var(--neutral-0);
@@ -76,6 +90,14 @@
   --surface-canvas: var(--neutral-0);
   --surface-code: var(--neutral-0);
   --surface-code-gutter: #f2f3f5;
+  --diagram-syntax-type: #176b60;
+  --diagram-syntax-function: #795e00;
+  --diagram-syntax-variable: #175b91;
+  --diagram-syntax-keyword: #80388c;
+  --diagram-syntax-string: #9b4528;
+  --diagram-syntax-number: #356a30;
+  --diagram-syntax-reference: #7046a3;
+  --diagram-syntax-structure: #687382;
   --surface-backdrop: #20242b55;
   --text-primary: var(--neutral-900);
   --text-secondary: var(--neutral-700);

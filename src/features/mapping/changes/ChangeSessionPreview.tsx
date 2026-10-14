@@ -1,9 +1,9 @@
-import { treemapCanvasTiles } from './treemapCanvasTiles';
+import { useTreemapRegionSelection } from '../treemap/useTreemapRegionSelection';
+import { treemapCanvasTiles, treemapCanvasRegions } from './treemapCanvasTiles';
 import { diagramColorStyle, type TreemapDiagramColor } from './treemapDiagramColors';
 import { changeMigrationPreview, migrationMarkKey, type MigrationPreview } from './changeMigrationPreview';
 import { useDiffTreeData } from './diffTreeData';
-import { diffTreeCoverage, diagramCoverage, diagramDiffTreeNodes, coverageLabel, coverageTitle, type DiffCoverage } from './diffTreeCoverage';
-import { createPortal } from 'react-dom';
+import { diffTreeCoverage, diagramCoverage, coverageLabel, coverageTitle, type DiffCoverage } from './diffTreeCoverage';
 import { diagramContentNodes } from '../../../../domain/core/diagrams/diagramContentNodes';
 import { ChangePreviewState } from './changePreviewState';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
@@ -26,7 +26,6 @@ import './changeSessions.css';
 export function ChangeSessionPreview(props: { treemapColors?: readonly TreemapDiagramColor[]; compact?: boolean; mode: DisplayModeChange; onSelect: (mode: DisplayModeChange) => void;
   onSearchDocument?: (document: SearchDocument) => void; searchFocus?: DiagramFocus;
   searchMatches?: readonly DiagramLineSearchResult[];
-  onDiffTreeJump?: (nodeId: string) => void;
   onOpenAccepted: (session: Omit<DiagramChangeSession, 'receipts'>, documentId: string) => Promise<void> }) {
   const [loaded, setLoaded] = useState<{ session: Preview; diff: ReturnType<typeof diffChangeDocument> }>();
   const session = loaded?.session;
@@ -92,7 +91,7 @@ export function ChangeSessionPreview(props: { treemapColors?: readonly TreemapDi
     {doc
       ? <PreviewCanvas key={`${session!.id}:${doc.id}:${doc.version}:${props.mode.migrationId ? props.mode.serial : ''}`} doc={doc}
           compact={props.compact} coverage={coverage} treemapColors={props.treemapColors} searchFocus={props.searchFocus}
-          searchMatches={props.searchMatches} onDiffTreeJump={props.onDiffTreeJump}
+          searchMatches={props.searchMatches}
           diff={diff!} modifiedDiagramIds={modifiedDiagramIds} migrations={migrations!} focusContentNodeId={props.mode.contentNodeId ?? selectedEndpoint?.focusContentNodeId}
           focusId={props.mode.displayNodeId ?? (selectedEndpoint?.focusContentNodeId ? selectedEndpoint.endpoint.displayNodeId : change?.nodeId)} serial={props.mode.serial} onJump={target => {
             const destination = session!.documents.find(d => d.representationId === target.representationId || d.id === target.representationId);
@@ -119,9 +118,8 @@ function previewFocusBounds(viewport: HTMLElement) {
   return { left, top, width: Math.max(0, right - left), height: Math.max(0, bounds.bottom - top) };
 }
 
-function PreviewCanvas({ treemapColors, coverage, compact, doc, focusId, focusContentNodeId, serial, onJump, onDiffTreeJump, diff, modifiedDiagramIds, migrations, searchFocus, searchMatches }: { treemapColors?: readonly TreemapDiagramColor[]; coverage?: DiffCoverage; compact?: boolean; doc: ChangePreviewDocument; focusId?: string; focusContentNodeId?: string; migrations: MigrationPreview; serial: number; searchFocus?: DiagramFocus;
+function PreviewCanvas({ treemapColors, coverage, compact, doc, focusId, focusContentNodeId, serial, onJump, diff, modifiedDiagramIds, migrations, searchFocus, searchMatches }: { treemapColors?: readonly TreemapDiagramColor[]; coverage?: DiffCoverage; compact?: boolean; doc: ChangePreviewDocument; focusId?: string; focusContentNodeId?: string; migrations: MigrationPreview; serial: number; searchFocus?: DiagramFocus;
   searchMatches?: readonly DiagramLineSearchResult[];
-  onDiffTreeJump?: (nodeId: string) => void;
   diff: ReturnType<typeof diffChangeDocument>; modifiedDiagramIds: ReadonlySet<string>;
   onJump: NonNullable<Parameters<typeof DiagramText>[0]['onJump']> }) {
   const controller = useMemo(() => {
@@ -181,21 +179,6 @@ function PreviewCanvas({ treemapColors, coverage, compact, doc, focusId, focusCo
     [scene, state.canvas.diagramViews, diff, modifiedDiagramIds, state.document.jumps, migrations]);
   const { resolved, boxes } = text;
   const coverageFor = useMemo(() => coverage ? diagramCoverage(doc, coverage) : undefined, [doc, coverage]);
-  const mappedNodesFor = useMemo(() => coverage ? diagramDiffTreeNodes(doc, coverage) : undefined, [doc, coverage]);
-  const [mappingMenu, setMappingMenu] = useState<{ ids: string[]; left: number; top: number }>();
-  const mappingMenuRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!mappingMenu) return;
-    mappingMenuRef.current?.querySelector('button')?.focus();
-    const outside = (event: PointerEvent) => { if (!mappingMenuRef.current?.contains(event.target as Node)) setMappingMenu(undefined); };
-    window.addEventListener('pointerdown', outside, true);
-    return () => window.removeEventListener('pointerdown', outside, true);
-  }, [mappingMenu]);
-  const openMapped = (ids: string[], element: HTMLElement) => {
-    if (ids.length === 1) { setMappingMenu(undefined); onDiffTreeJump?.(ids[0]); return; }
-    const rect = element.getBoundingClientRect();
-    setMappingMenu({ ids, left: Math.max(8, Math.min(rect.left, window.innerWidth - 288)), top: Math.max(8, Math.min(rect.bottom + 4, window.innerHeight - 178)) });
-  };
   const nodes = controller.nodes();
   const controlNodes = nodes.map(node => {
     if (node.layout !== 'grid' || node.kind !== 'diagram') return node;
@@ -206,21 +189,25 @@ function PreviewCanvas({ treemapColors, coverage, compact, doc, focusId, focusCo
         visibleRow: projection.prefixRowForNode.get(target.contentNodeId) ?? projection.rowForLine.get(target.line),
         branchColumn: projection.columnForLine(target.line, target.branchColumn) })) } };
   });
+  const tintRef = useTreemapRegionSelection(treemapColors);
   const canvasTiles = useMemo(() => boxes.flatMap(({ box, bounds }) => {
     if (box.kind !== 'diagram') return [];
     const displayNodeId = `grid:${box.id}`, projection = text.projections.get(displayNodeId);
     if (!projection) return [];
     const colors = treemapColors?.filter(color => color.displayNodeId === displayNodeId
       && (color.documentId === doc.id || color.documentId === doc.representationId)) ?? [];
-    return treemapCanvasTiles(scene.contents[box.contentId].content, projection, bounds, colors)
-      .map(tile => ({ ...tile, column: tile.column + bounds.column, row: tile.row + bounds.row }));
+    const content = scene.contents[box.contentId].content;
+    return [
+      ...treemapCanvasTiles(content, projection, bounds, colors).map(tile => ({ ...tile, outline: false })),
+      ...treemapCanvasRegions(content, projection, bounds, colors.filter(color => color.hovered)).map(tile => ({ ...tile, outline: true })),
+    ].map(tile => ({ ...tile, column: tile.column + bounds.column, row: tile.row + bounds.row }));
   }), [boxes, text.projections, scene, treemapColors, doc.id, doc.representationId]);
   const focusBox = useMemo(() => searchFocus ?? (focusId?.startsWith('grid:') ? { id: focusId.slice(5), contentNodeId: focusContentNodeId, serial } : undefined), [focusId, focusContentNodeId, serial, searchFocus]);
   return <DraggableDiagramCanvas enabled resetKey={doc.id} className="mapping-poc-canvas" leftInset={compact ? 0 : 340}
     focusBox={focusBox} getFocusBounds={previewFocusBounds}>
     <div className="change-preview-stage" style={{ position: 'relative', marginLeft: coverageFor ? 175 : 0, width: resolved.bounds.columns * cell.width, height: resolved.bounds.rows * cell.height }}>
-      {canvasTiles.map(({ identity, column, row, columns, rows }) => <div
-        key={`${identity.position}:${column}:${row}`} className="change-preview-treemap-tint" aria-hidden="true"
+      {canvasTiles.map(({ identity, column, row, columns, rows, outline }, index) => <div ref={index === 0 ? tintRef : undefined} data-treemap-region={outline ? undefined : identity.nodeId}
+        key={`${outline}:${identity.position}:${column}:${row}`} className={outline ? "treemap-canvas-hover" : "change-preview-treemap-tint"} aria-hidden="true"
         data-treemap-diagram={identity.displayNodeId} data-content-node-id={identity.contentNodeId}
         data-treemap-color={identity.color} data-diagram-position={identity.position}
         style={{ ...diagramColorStyle(identity.color), left: column * cell.width, top: row * cell.height,
@@ -249,41 +236,29 @@ function PreviewCanvas({ treemapColors, coverage, compact, doc, focusId, focusCo
         });
       })}
       <DiagramText ref={pre} className="mapping-poc-ascii" rows={text.rows} registerEndpoint={geometry.registerEndpoint} onJump={onJump}
-        renderRun={run => (run as PreviewTextRun).migrations?.length
+        renderRun={(run, highlightedText) => (run as PreviewTextRun).migrations?.length
           ? <span className={`migration-source${(run as PreviewTextRun).diffVersion ? ' migration-with-edit change-diff-modified' : ''}`}
               data-diff-status={(run as PreviewTextRun).diffVersion ? 'modified' : 'removed'} data-diff-version={(run as PreviewTextRun).diffVersion}
-              data-migration-id={(run as PreviewTextRun).migrations!.map(m => m.id).join(' ')} title="Migration source · original text">{run.text}</span>
+              data-migration-id={(run as PreviewTextRun).migrations!.map(m => m.id).join(' ')} title="Migration source · original text">{highlightedText}</span>
           : (run as PreviewTextRun).diffStatus === 'removed'
-          ? <span className="change-diff-removed" data-diff-status="removed">{run.text}</span>
+          ? <span className="change-diff-removed" data-diff-status="removed">{highlightedText}</span>
           : (run as PreviewTextRun).diffVersion
-          ? <span className="change-diff-modified" data-diff-status="modified" data-diff-version={(run as PreviewTextRun).diffVersion}>{run.text}</span>
-          : run.text}
+          ? <span className="change-diff-modified" data-diff-status="modified" data-diff-version={(run as PreviewTextRun).diffVersion}>{highlightedText}</span>
+          : highlightedText}
         nodeProps={owner => {
           const marks = owner.contentNodeId ? migrations.proposed.get(migrationMarkKey(owner.displayNodeId, owner.contentNodeId)) : undefined;
           const migrationClass = [...new Set(marks?.map(mark => `migration-${mark.role}`))].join(' ');
           const side = modifiedDiagramIds.has(owner.displayNodeId) ? diff.diagrams.get(owner.displayNodeId)?.proposed : undefined;
           const change = owner.contentNodeId ? side?.nodes.get(owner.contentNodeId) : undefined;
           const status = !baselineDiagramIds.has(owner.displayNodeId.slice(5)) ? undefined : owner.contentNodeId ? change?.status : side?.lines.get(owner.sourceLine);
-          const mapped = onDiffTreeJump ? mappedNodesFor?.(owner.displayNodeId, owner.contentNodeId) ?? [] : [];
-          if (!status && !change?.moved && !change?.containsChanges && !marks?.length && !mapped.length) return;
-          return { className: [migrationClass, mapped.length && 'change-diff-mapped', marks?.length && status && 'migration-with-edit', status && `change-diff-${status}`, change?.moved && 'change-diff-moved',
+          if (!status && !change?.moved && !change?.containsChanges && !marks?.length) return;
+          return { className: [migrationClass, marks?.length && status && 'migration-with-edit', status && `change-diff-${status}`, change?.moved && 'change-diff-moved',
             change?.containsChanges && !status && !change.moved && 'change-diff-descendants'].filter(Boolean).join(' '),
-            'data-difftree-mapped': mapped.length ? true : undefined,
-            'data-diagram-canvas-static-ui': mapped.length ? true : undefined,
-            role: mapped.length ? 'button' : undefined, tabIndex: mapped.length ? 0 : undefined,
-            onClick: mapped.length ? event => {
-              if ((event.target as Element).closest('button, a')) return;
-              event.stopPropagation(); openMapped(mapped, event.currentTarget);
-            } : undefined,
-            onKeyDown: mapped.length ? event => {
-              if (event.target !== event.currentTarget || !['Enter', ' '].includes(event.key)) return;
-              event.preventDefault(); event.stopPropagation(); openMapped(mapped, event.currentTarget);
-            } : undefined,
             'data-migration-id': marks?.map(mark => mark.id).join(' '), 'data-migration-role': marks?.map(mark => mark.role).join(' '),
             'data-diff-status': status, 'data-diff-moved': change?.moved || undefined, 'data-diff-descendants': change?.containsChanges || undefined,
             'data-diff-version': status === 'modified' ? 'current' : undefined,
             title: [...(marks?.map(mark => `${mark.id} · ${mark.role}: ${mark.title}`) ?? []), status && `${status[0].toUpperCase()}${status.slice(1)}`, change?.moved && 'Moved or reparented',
-              change?.containsChanges && 'Changes inside subtree', mapped.length && `Open mapped DiffTree: ${mapped.map(id => coverage!.labelFor(id)).join(' / ')}`].filter(Boolean).join(' · ') };
+              change?.containsChanges && 'Changes inside subtree'].filter(Boolean).join(' · ') };
         }} />
       {boxes.map(({ box, bounds }) => <div key={box.id} data-grid-box={box.id}
         ref={element => geometry.registerEndpoint({ displayNodeId: `grid:${box.id}` }, element)}
@@ -304,9 +279,5 @@ function PreviewCanvas({ treemapColors, coverage, compact, doc, focusId, focusCo
         })}
       </svg>
     </div>
-    {mappingMenu && createPortal(<div ref={mappingMenuRef} className="diagram-mapping-choices" role="menu" aria-label="Mapped DiffTree nodes"
-      style={{ left: mappingMenu.left, top: mappingMenu.top }} onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); setMappingMenu(undefined); } }}>
-      {mappingMenu.ids.map(id => <button key={id} type="button" role="menuitem" onClick={() => { setMappingMenu(undefined); onDiffTreeJump?.(id); }}>{coverage?.labelFor(id)}</button>)}
-    </div>, document.body)}
   </DraggableDiagramCanvas>;
 }

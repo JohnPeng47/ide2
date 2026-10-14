@@ -37,19 +37,5 @@
   --layer-tooltip: 10000;
   --treemap-identity-opacity: 22%;
   --canvas-identity-opacity: 22%;
-  /* Identity hues exclude green, teal, lime, and their neighboring shades. */
-  --diagram-color-1: #a78bfa;
-  --diagram-color-2: #7aa2f7;
-  --diagram-color-3: #f7b267;
-  --diagram-color-4: #f28bbd;
-  --diagram-color-5: #c49bfa;
-  --diagram-color-6: #879cf5;
-  --diagram-color-7: #e6b86a;
-  --diagram-color-8: #cf9deb;
-  --diagram-color-9: #f099cc;
-  --diagram-color-10: #e99882;
-  --diagram-color-11: #a3b2e0;
-  --diagram-color-12: #d4a0b9;
-  --diagram-color-saturation: 65%;
-  --diagram-color-lightness: 72%;
+  --treemap-shade-shift: 0%;
 }

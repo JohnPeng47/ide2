@@ -1,7 +1,6 @@
 .change-treemap-panel { --blueprint-border: var(--treemap-border); --blueprint-muted: var(--text-visualization-muted); --blueprint-green: var(--change-added); --blueprint-orange: var(--change-deleted); display: flex; flex-direction: column; flex: 1; min-height: 0; min-width: 0; overflow: auto; padding: var(--space-7); gap: var(--space-6); background: var(--treemap-panel-background); color: var(--treemap-foreground); font: var(--text-sm)/1.5 var(--font-mono); container-type: inline-size; }
 .window-panel .change-treemap-panel button, .window-panel .change-treemap-panel select { border-radius: 0; border-color: var(--blueprint-border); background: transparent; color: inherit; font: inherit; }
 .window-panel .change-treemap-panel :focus-visible { outline: 2px solid var(--attention-color); outline-offset: -2px; }
-.change-treemap-map { display: flex; flex-direction: column; flex: 1 0 auto; min-height: 430px; gap: var(--space-5); }
 .change-treemap-switch { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-5); }
 .change-treemap-caption, .change-treemap-area-note { color: var(--blueprint-muted); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .08em; }
 .change-treemap-area-note { margin-left: auto; }
@@ -12,15 +11,12 @@
 .change-treemap-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--blueprint-border); }
 .change-treemap-summary > span { padding: var(--space-4) var(--space-5); min-width: 0; }
 .change-treemap-summary > span + span { border-left: 1px solid var(--blueprint-border); }
-.change-treemap-summary small, .change-treemap-selection small, .change-treemap-selection dt { display: block; color: var(--blueprint-muted); font-size: var(--text-2xs); letter-spacing: .08em; text-transform: uppercase; }
 .change-treemap-summary strong { display: block; font-size: var(--text-xl); font-weight: 700; margin-top: 3px; }
-.change-treemap-guide { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-3) var(--space-6); }
+.change-treemap-guide { display: flex; justify-content: flex-start; align-items: center; flex-wrap: wrap; gap: var(--space-3) var(--space-6); }
 .change-treemap-breadcrumbs { overflow-wrap: anywhere; }
 .window-panel .change-treemap-breadcrumbs button { border: 0; padding: 3px; text-align: left; color: var(--blueprint-muted); }
 .window-panel .change-treemap-breadcrumbs [aria-current] { color: var(--attention-color); }
-.change-treemap-summary [data-tone=added] strong, .change-treemap-selection [data-tone=added] dd { color: var(--blueprint-green); }
-.change-treemap-selection [data-tone=deleted] dd { color: var(--blueprint-orange); }
-.change-treemap-plot { position: relative; min-height: 240px; flex: 1 0 240px; overflow: hidden; background-color: var(--treemap-background); background-image: linear-gradient(var(--treemap-grid) 1px, transparent 1px), linear-gradient(90deg, var(--treemap-grid) 1px, transparent 1px); background-size: 20px 20px; }
+.change-treemap-plot { position: relative; min-height: 160px; flex: 1 1 0; overflow: hidden; background-color: var(--treemap-background); background-image: linear-gradient(var(--treemap-grid) 1px, transparent 1px), linear-gradient(90deg, var(--treemap-grid) 1px, transparent 1px); background-size: 20px 20px; }
 .change-treemap-cell { position: absolute; box-sizing: border-box; pointer-events: none; }
 /* One inset and one outline per tile; the wrapper never adds a second border. */
 .window-panel .change-treemap-cell > button { position: absolute; inset: 1px; min-width: 0; min-height: 0; box-sizing: border-box; overflow: hidden; pointer-events: auto; padding: 5px var(--space-3); border: 1px solid var(--border-visualization); background: color-mix(in srgb, var(--surface-blueprint) 60.000%, transparent); color: var(--treemap-foreground); text-align: left; display: flex; flex-direction: column; gap: var(--space-1); }
@@ -31,45 +27,32 @@
 .change-treemap-cell small { position: relative; display: block; font-size: var(--text-2xs); color: var(--text-visualization-muted); white-space: nowrap; flex-shrink: 0; }
 .window-panel .change-treemap-cell > button:hover { background-color: color-mix(in srgb, var(--accent-info) 12.157%, transparent); }
 .change-treemap-cell[data-selected=true]::after { content: ''; position: absolute; inset: 2px; outline: 1px dashed var(--attention-color); outline-offset: -1px; pointer-events: none; }
-.change-treemap-region-picker { display: flex; align-items: center; gap: var(--space-4); color: var(--blueprint-muted); font-size: var(--text-xs); }
-.change-treemap-region-picker > span { text-transform: uppercase; letter-spacing: .06em; }
-.change-treemap-region-picker select { flex: 1; min-width: 0; max-width: 100%; }
-.window-panel .change-treemap-region-picker select { background: var(--surface-visualization); }
-.change-treemap-selection { flex-shrink: 0; border: 1px solid var(--blueprint-border); }
-.change-treemap-selection-title { padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--blueprint-border); }
-.change-treemap-selection-title strong { display: block; font-size: var(--text-lg); overflow-wrap: anywhere; margin-top: 3px; }
-.change-treemap-selection-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0; }
-.change-treemap-selection-stats > div { min-width: 0; padding: var(--space-4) var(--space-5); }
-.change-treemap-selection-stats > div + div { border-left: 1px solid var(--blueprint-border); }
-.change-treemap-selection dd { margin: 3px 0 0; font-weight: 700; overflow-wrap: anywhere; }
-.change-treemap-selection-stats > div:first-child dd { text-transform: uppercase; }
-.change-treemap-selection-actions { display: flex; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-4) var(--space-5); border-top: 1px solid var(--blueprint-border); }
-.window-panel .change-treemap-selection-actions button { font-size: var(--text-xs); letter-spacing: .06em; text-transform: uppercase; }
-.window-panel .change-treemap-selection-actions .change-treemap-open { color: var(--attention-color); border-color: var(--attention-color); }
-.change-treemap-footnote { flex-shrink: 0; color: var(--blueprint-muted); font-size: var(--text-xs); line-height: 1.6; }
-.change-treemap-footnote p { margin: 0; }
 @container (max-width: 480px) {
   .change-treemap-area-note { width: 100%; margin-left: 0; }
   .change-treemap-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .change-treemap-summary > span:nth-child(3) { border-left: 0; }
   .change-treemap-summary > span:nth-child(n+3) { border-top: 1px solid var(--blueprint-border); }
-  .change-treemap-selection-stats > div { padding: var(--space-3); }
-  .change-treemap-selection dt { font-size: 8px; letter-spacing: 0; }
 }
 
 /* Node identities stay stable across themes; only their compositing surface changes. */
-.window-panel .change-treemap-cell[data-treemap-color] > button { background-color: color-mix(in srgb, var(--treemap-diagram-color) var(--treemap-identity-opacity), transparent); }
+.window-panel .change-treemap-cell[data-loc-color] > button { background-color: color-mix(in srgb, var(--treemap-diagram-color) var(--treemap-identity-opacity), transparent); }
 .change-treemap-cell[data-treemap-color][data-nested=true]::before { border-color: var(--treemap-diagram-color); }
-.change-treemap-cell[data-treemap-color][data-treemap-kind=diagram] .change-treemap-label::before,
-.change-treemap-selection[data-treemap-color] .change-treemap-selection-title strong::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 6px; background: var(--treemap-diagram-color); }
+.change-treemap-cell[data-treemap-color][data-treemap-kind=diagram] .change-treemap-label::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 6px; background: var(--treemap-diagram-color); }
 
-.change-treemap-tooltip { --treemap-panel-background: var(--tooltip-background); --treemap-foreground: var(--tooltip-foreground); position: fixed; z-index: var(--layer-tooltip); pointer-events: none; display: flex; flex-direction: column; gap: var(--space-2); width: max-content; max-width: min(360px, calc(100vw - 16px)); box-sizing: border-box; padding: 9px var(--space-6); border: 1px solid var(--border-strong); background: var(--treemap-panel-background); color: var(--treemap-foreground); box-shadow: var(--shadow-popup); font: var(--text-sm)/1.5 var(--font-mono); overflow-wrap: anywhere; }
-.change-treemap-tooltip strong { color: var(--text-visualization-heading); }
-.change-treemap-tooltip b { color: var(--attention-color); }
-.change-treemap-tooltip-diff { display: flex; gap: var(--space-6); font-variant-numeric: tabular-nums; }
+.change-treemap-tooltip { --treemap-panel-background: var(--tooltip-background); --treemap-foreground: var(--tooltip-foreground); position: fixed; z-index: var(--layer-tooltip); pointer-events: none; display: flex; align-items: center; gap: var(--space-5); width: max-content; max-width: calc(100vw - 16px); box-sizing: border-box; padding: 5px 8px; border: 1px solid var(--border-strong); background: var(--treemap-panel-background); color: var(--treemap-foreground); box-shadow: var(--shadow-popup); font: var(--text-sm)/1.5 var(--font-mono); overflow-wrap: anywhere; }
+.change-treemap-tooltip-diff { display: flex; gap: var(--space-4); font-variant-numeric: tabular-nums; }
 .change-treemap-tooltip [data-change=added] { color: var(--diff-added-text); }
 .change-treemap-tooltip [data-change=deleted] { color: var(--diff-deleted-text); }
 
-.change-treemap-zoom-controls { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; flex: 0 0 auto; gap: var(--space-4); padding: var(--space-4); border: 1px solid var(--blueprint-border); background: var(--treemap-panel-background); box-shadow: 0 4px 10px color-mix(in srgb, var(--shadow-color) 26.667%, transparent); }
 .window-panel .change-treemap-zoom-controls button { flex-shrink: 0; padding: 5px 9px; color: var(--attention-color); }
-.change-treemap-zoom-controls span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--blueprint-muted); }
+.change-treemap-zoom-controls { display: flex; gap: var(--space-3); flex-wrap: wrap; }
+.change-treemap-panel > :not(.change-treemap-plot) { flex-shrink: 0; }
+.treemap-notice { color: var(--text-muted); margin: 0; }
+
+.change-treemap-summary small { display: block; color: var(--text-visualization-muted); font-size: var(--text-2xs); letter-spacing: .08em; text-transform: uppercase; }
+.change-treemap-summary [data-tone=added] strong { color: var(--change-added); }
+
+.treemap-loc-legend { display: flex; align-items: center; gap: var(--space-4); color: var(--text-visualization-muted); font-size: var(--text-xs); }
+.treemap-loc-legend i { display: block; flex: 1; max-width: 180px; height: 9px; border: 1px solid var(--border-visualization); background: linear-gradient(to right, color-mix(in srgb, var(--treemap-loc-low) var(--treemap-identity-opacity), transparent), color-mix(in srgb, var(--treemap-loc-high) var(--treemap-identity-opacity), transparent)); }
+
+.treemap-canvas-hover { position: absolute; z-index: 1; pointer-events: none; box-sizing: border-box; border: 2px solid var(--treemap-hover-border); }

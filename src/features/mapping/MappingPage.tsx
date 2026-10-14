@@ -1,3 +1,6 @@
+import { CanvasTreemapPanel } from './treemap/CanvasTreemapPanel';
+import { CanvasTreemapColors } from './treemap/CanvasTreemapColors';
+import type { TreemapDiagramColor } from './changes/treemapDiagramColors';
 import type { TreemapCanvasColors } from './changes/treemapDiagramColors';
 import { selectionContentNodes } from '../../../domain/mapping/selection/selectionState';
 import { generatedDiagramOperations } from '../../../domain/mapping/workspace/generatedDiagramOperations';
@@ -90,16 +93,13 @@ function MappingWorkspacePage() {
   const [pendingTransfer, setPendingTransfer] = useState<{ sourceId: string; mode: 'copy' | 'move'; selectedIds: string[]; revisionId: string }>();
   const [explorerTab, setExplorerTab] = useState<'diagrams'|'changes'|'llms'>('diagrams');
   const [changeMode, setChangeMode] = useState<DisplayModeChange>();
+  const [canvasTreemapOpen, setCanvasTreemapOpen] = useState(false);
+  const [liveTreemapColors, setLiveTreemapColors] = useState<readonly TreemapDiagramColor[]>();
   const [treemapCanvasColors, setTreemapCanvasColors] = useState<TreemapCanvasColors>();
   const [diffTreeMode, setDiffTreeMode] = useState<DisplayModeChange>();
-  const [diffTreeReveal, setDiffTreeReveal] = useState<{ sessionId: string; nodeId: string; serial: number }>();
-  const revealDiffTreeNode = (nodeId: string) => {
-    if (!changeMode) return;
-    setDiffTreeMode(changeMode);
-    setDiffTreeReveal(previous => ({ sessionId: changeMode.sessionId, nodeId, serial: (previous?.serial ?? 0) + 1 }));
-  };
+
   const selectChangeMode = (mode: DisplayModeChange) => {
-    if (mode.view === 'diff-tree' || mode.view === 'treemaps') { setDiffTreeReveal(undefined); setDiffTreeMode(mode); }
+    if (mode.view === 'diff-tree' || mode.view === 'treemaps') { setDiffTreeMode(mode); }
     setChangeMode({ ...mode, view: undefined });
   };
   const [workspaceEpoch, setWorkspaceEpoch] = useState(0);
@@ -848,6 +848,7 @@ function MappingWorkspacePage() {
             {!agentStatus.connected ? 'Agents unavailable' : agentStatus.count
               ? `${agentStatus.count} agent${agentStatus.count === 1 ? '' : 's'} connected` : 'No agents connected'}
           </span>
+          <button disabled={!active} aria-pressed={canvasTreemapOpen} onClick={() => setCanvasTreemapOpen(value => !value)}>Treemaps</button>
           <button disabled={workspaceBusy || Boolean(deletingId) || !active || Object.values(drafts).some(draft => draft.busy)} onClick={() => void workspaceAction('save')}>Save workspace</button>
           <button disabled={workspaceBusy || Boolean(deletingId) || Object.values(drafts).some(draft => draft.busy)} onClick={() => void workspaceAction('restore')}>Restore workspace</button>
           <button disabled={workspaceBusy || !active} onClick={() => void workspaceAction('export')}>Export</button>
@@ -864,6 +865,7 @@ function MappingWorkspacePage() {
       <section className="mapping-poc-workspace">
         <div className="mapping-viewport">
           {Object.entries(drafts).filter(([id]) => mountedDocuments.current.has(id)).map(([id, draft]) => <SourcePaneDocumentContext.Provider key={`${workspaceEpoch}:${id}:${draft.reloadKey ?? ''}`} value={id}><SourcePaneDocumentActiveContext.Provider value={id === activeId && !changeMode}><div className="mapping-document-view" inert={!!pendingTransfer || workspaceBusy} hidden={draft.hidden || id !== activeId || !!changeMode}>
+            <CanvasTreemapColors.Provider value={canvasTreemapOpen && id === activeId && !changeMode ? liveTreemapColors : undefined}>
             <MappingEditorCanvas session={draft.session} className="mapping-poc-canvas" enabled={id === activeId && !draft.hidden && !changeMode} focusBox={draft.focusBox}
               initialTransform={draft.viewport} onTransformChange={viewport => viewState.setCamera(id, viewport)}>
               <MappingPocSelectionCanvas onUpdateDiagram={nodeId => { openComposer(id, nodeId, capturedSelection(id).subtree ? 'edit-diagram' : 'create-diagram', true); }}
@@ -887,24 +889,27 @@ function MappingWorkspacePage() {
                 onBusyChange={(busy) => setDrafts((current) => !current[id] || current[id].busy === busy ? current : { ...current, [id]: { ...current[id], busy } })}
                 localChatVariant={ui.variant as LocalChatVariant} />
             </MappingEditorCanvas>
+            </CanvasTreemapColors.Provider>
             <SourceWindowPanel session={draft.session} projectId={snapshot?.project?.id}
               active={id === activeId && !draft.hidden && !changeMode} />
           </div></SourcePaneDocumentActiveContext.Provider></SourcePaneDocumentContext.Provider>)}
           {!active && !changeMode && <div className="mapping-empty"><h1>{snapshot ? "Create a project diagram" : error ? "Could not load project diagrams" : "Loading project diagrams…"}</h1>
             {snapshot && <button type="button" onClick={() => setCreating(true)}>New diagram</button>}</div>}
+          {canvasTreemapOpen && !changeMode && active && activeId && snapshot?.project && <CanvasTreemapPanel key={activeId}
+            documentId={activeId} projectId={snapshot.project.id} name={active.name} session={active.session}
+            onClose={() => setCanvasTreemapOpen(false)} onCanvasColors={setLiveTreemapColors}
+            onNavigate={target => { if (target.displayNodeId?.startsWith('grid:')) setDrafts(current => ({ ...current, [activeId]: { ...current[activeId],
+              focusBox: { id: target.displayNodeId!.slice(5), contentNodeId: target.contentNodeId, serial: Date.now() } } })); }} />}
           {changeMode && <ChangeSessionPreview mode={changeMode} onSelect={selectChangeMode} onOpenAccepted={openAccepted}
               treemapColors={treemapCanvasColors?.sessionId === changeMode?.sessionId ? treemapCanvasColors?.diagrams : undefined}
-              onDiffTreeJump={revealDiffTreeNode}
               onSearchDocument={onProposalSearchDocument} searchFocus={proposalSearchFocus && proposalSearchFocus.documentId === proposalSearchId ? proposalSearchFocus.focus : undefined}
               searchMatches={proposalSearchId ? searchMatchesByDocument.get(proposalSearchId) : undefined} />}
           {diffTreeMode && <DiffTreePanel key={diffTreeMode.sessionId} mode={diffTreeMode} onCanvasColors={setTreemapCanvasColors}
-              revealNode={diffTreeReveal?.sessionId === diffTreeMode.sessionId ? diffTreeReveal : undefined}
               onSearch={() => setSearchOpenRequest(value => value + 1)}
               revealCanvasSerial={proposalSearchFocus?.documentId === proposalSearchId ? proposalSearchFocus?.focus.serial : undefined}
-              onClose={() => { setDiffTreeMode(undefined); setDiffTreeReveal(undefined); }} onNavigate={setChangeMode}
+              onClose={() => { setDiffTreeMode(undefined); }} onNavigate={setChangeMode}
               canvas={changeMode?.documentId ? <ChangeSessionPreview compact mode={changeMode} onSelect={selectChangeMode} onOpenAccepted={openAccepted}
                 treemapColors={treemapCanvasColors?.sessionId === changeMode?.sessionId ? treemapCanvasColors?.diagrams : undefined}
-                onDiffTreeJump={revealDiffTreeNode}
                 searchFocus={proposalSearchFocus?.documentId === proposalSearchId ? proposalSearchFocus?.focus : undefined}
                 searchMatches={proposalSearchId ? searchMatchesByDocument.get(proposalSearchId) : undefined} />
                 : <p className="window-panel-message">Select a canvas in the explorer.</p>} />}

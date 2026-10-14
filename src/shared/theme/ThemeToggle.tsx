@@ -17,7 +17,14 @@ export function ThemeToggle() {
     if (event.key === 'Escape' && open) { event.stopPropagation(); setOpen(false); opener.current?.focus(); }
   }}>
     {open && <section className="theme-picker-panel" id={panelId} aria-label="Appearance settings">
-      <strong>Color opacity</strong>
+      <strong>Treemap colors</strong>
+      <label><span>Color scale</span>
+        <select aria-label="Treemap color scale" value={opacity.scale}
+          onChange={event => setColorOpacity('scale', event.target.value === 'continuous' ? 'continuous' : 'ranked')}>
+          <option value="ranked">Ranked</option><option value="continuous">Continuous</option>
+        </select>
+        <small>{opacity.scale === 'ranked' ? 'Evenly spaced shades by LOC rank. Equal LOC shares a shade.' : 'Shade changes proportionally with LOC.'}</small>
+      </label>
       {(['treemap', 'canvas'] as const).map(key => <label key={key}>
         <span>{key === 'treemap' ? 'Diagram treemap' : 'Diagram backgrounds'}<output>{opacity[key]}%</output></span>
         <input type="range" min="0" max="100" step="1" value={opacity[key]}
@@ -25,6 +32,12 @@ export function ThemeToggle() {
           aria-valuetext={`${opacity[key]}% opaque`} onChange={event => setColorOpacity(key, Number(event.target.value))} />
       </label>)}
       <small>0% transparent · 100% solid</small>
+      <label><span>Shade shift<output>{opacity.shade > 0 ? '+' : ''}{opacity.shade}</output></span>
+        <input type="range" min="-20" max="20" step="1" value={opacity.shade} aria-label="Shade shift"
+          aria-valuetext={opacity.shade === 0 ? 'Default shade' : `${Math.abs(opacity.shade)} ${opacity.shade > 0 ? 'lighter' : 'darker'}`}
+          onChange={event => setColorOpacity('shade', Number(event.target.value))} />
+        <small>Darker ← · → Lighter</small>
+      </label>
     </section>}
     <div className="theme-picker-buttons"><button className="theme-toggle" type="button" onClick={() => setTheme(next)}
     aria-label={`Switch to ${themeDefinitions[next].label}`} title={`Current theme: ${themeDefinitions[theme].label}`}>

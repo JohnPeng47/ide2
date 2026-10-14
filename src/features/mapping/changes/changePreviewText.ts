@@ -20,7 +20,7 @@ export function changePreviewText(scene: LineGridScene, views: DiagramViews | un
     if (box.kind !== 'diagram') continue;
     const displayNodeId = `grid:${box.id}`, diagram = scene.contents[box.contentId], content = diagram.content;
     const visible = projectDiagramContent(content, views?.[displayNodeId]);
-    const ranges = diagramTextRanges({ ascii: content.ascii, content, displayNodeId, mappings: diagram.sourceContext.mappings, jumps: [...(diagram.jumps ?? []), ...jumps.filter(jump => jump.sourceDisplayNodeId === displayNodeId)] });
+    const ranges = diagramTextRanges({ ascii: content.ascii, content, displayNodeId, mappings: diagram.sourceContext.mappings, sourceContext: diagram.sourceContext, jumps: [...(diagram.jumps ?? []), ...jumps.filter(jump => jump.sourceDisplayNodeId === displayNodeId)] });
     const source = content.ascii.split('\n'), edits = new Map<number, Edit[]>();
     if (modifiedDiagramIds.has(displayNodeId)) for (const modification of diffs.get(displayNodeId)?.modifications ?? []) {
       const selected = modification.proposed;

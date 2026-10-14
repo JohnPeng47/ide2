@@ -12,3 +12,5 @@
 .theme-picker-panel input { width: 100%; margin: 0; accent-color: var(--accent-primary); cursor: pointer; }
 .theme-picker-panel small { color: var(--text-muted); }
 @media (max-width: 600px) { .theme-toggle span { display: none; } .theme-picker-buttons button { width: 44px; padding: 0; } .theme-picker { right: max(10px, env(safe-area-inset-right)); bottom: max(10px, env(safe-area-inset-bottom)); } }
+
+.theme-picker-panel select { padding: var(--space-4); border: var(--stroke-thin) solid var(--control-border); border-radius: var(--radius-control); background: var(--surface-raised); color: var(--text-primary); font: inherit; }

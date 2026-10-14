@@ -14,6 +14,7 @@ export type GenerationPromptParameter =
   | { kind: 'number'; key: string };
 export interface DiagramGenerationRequest {
   agentContext?: AgentContextSnapshot;
+  llmSessionId?: string;
   input: Omit<DiagramInput, 'revision' | 'ascii'>;
   instruction: string;
   /** Structured prompt: a validated template with options plus resolved, revision-pinned references. */
@@ -32,7 +33,11 @@ export interface DiagramGenerationRequest {
     projectId?: string; representationId?: string; baseRevisionId?: string;
   };
 }
-export interface GenerationOptions { signal?: AbortSignal; onProgress?: (message: string) => void }
+export interface GenerationOptions {
+  signal?: AbortSignal; onProgress?: (message: string) => void;
+  onAgentSession?: (sessionId: string) => void;
+  onAgentContext?: (context: AgentContextSnapshot) => void;
+}
 export interface DiagramGenerator {
   generate(request: DiagramGenerationRequest, options: GenerationOptions): Promise<Omit<DiagramInput, 'id' | 'revision'>>;
 }

@@ -272,6 +272,9 @@ shows its containing diagram name, node name, and percentage of the session’s
 total changed LOC. The denominator stays fixed while zooming. A sticky toolbar
 provides **Zoom out** (one level) and **Reset zoom** (the full map).
 
+Treemaps remember the Files/Diagrams grouping in this browser and default to
+Diagrams when no preference is saved.
+
 In Diagrams mode, each node has a deterministic identity color based on its
 preorder position in the full hierarchy (excluding Unmapped). A fixed palette
 assigns the first positions; later positions use a deterministic hue sequence.

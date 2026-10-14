@@ -9,3 +9,6 @@ Create a ChangeSession implementing your preceding proposal for the pinned conte
 7. Inspect the final diagrams, DiffTree and connections. Mark the proposal ready through update_diagram_change_session; repair validation errors before retrying. Call complete_diff_session to validate the final receipt. Do not call save_diagram or accept the proposal.
 
 Do not finish with only a plan or instructions. Finish with the created ChangeSession ID and a concise summary of the actual changes.
+
+[TOOL EFFICIENCY]
+You already analyzed the captured hunks in the previous turn. Hunk and DiffTree reads now default to metadata only; request includePatches:true only when you need to recheck source changes. Mutation replies contain compact node summaries, not another full canvas. Read only the diagram whose fresh anchors you need via nodes.get({nodeId}). Diagram reads retain ASCII, anchor IDs, source bindings and mapping ranges; captured originalLines are omitted. To inspect exact saved evidence, explicitly return the needed node.diagram.sourceContext.evidence entry from exec, or read the pinned source. Return just the fields needed from exec (for example version and selected node IDs), and group independent synchronous edits in one exec where practical. nodes.list() returns {version,nodes}, not an array.

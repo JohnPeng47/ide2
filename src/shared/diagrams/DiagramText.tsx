@@ -7,7 +7,7 @@ type Props = Omit<ComponentPropsWithRef<'pre'>, 'children'> & {
   rows: readonly DiagramTextRow[];
   registerEndpoint?: (identity: Pick<DiagramTextOwner, 'displayNodeId' | 'contentNodeId' | 'revisionId'>, element: Element | null) => void;
   onJump?: (target: DiagramJumpTarget) => void;
-  renderRun?: (run: DiagramTextRun) => ReactNode;
+  renderRun?: (run: DiagramTextRun, highlightedText: ReactNode) => ReactNode;
   rowProps?: (row: DiagramTextRow) => HTMLAttributes<HTMLSpanElement>;
   /** Optional display-only decoration; never changes source text or endpoint identity. */
   nodeSuffix?: (owner: DiagramTextOwner) => ReactNode;
@@ -17,13 +17,31 @@ type Props = Omit<ComponentPropsWithRef<'pre'>, 'children'> & {
 /** Shared JSX for both viewers. Controllers retain gestures, folding, and source actions. */
 export function DiagramText({ rows, onJump, renderRun, rowProps, nodeProps, nodeSuffix, registerEndpoint, ...pre }: Props) {
   const endpointRefs = useMemo(() => new Map<string, (element: Element | null) => void>(), [registerEndpoint]);
+  const highlighted = useRef<Element[]>([]);
+  const clearHighlight = () => { highlighted.current.forEach(element => element.classList.remove('is-symbol-match')); highlighted.current = []; };
+  useEffect(() => clearHighlight, [rows]);
+  const highlight = (target: EventTarget | null, root: HTMLElement) => {
+    clearHighlight();
+    const token = target instanceof Element ? target.closest<HTMLElement>('[data-diagram-symbol]') : null;
+    if (!token) return;
+    const scope = root.closest('.mapping-document-view, .change-session-preview') ?? root;
+    highlighted.current = [...scope.querySelectorAll<HTMLElement>('[data-diagram-symbol]')]
+      .filter(element => element.dataset.diagramSymbol === token.dataset.diagramSymbol);
+    highlighted.current.forEach(element => element.classList.add('is-symbol-match'));
+  };
   const refFor = (owner: DiagramTextOwner) => {
     const key = JSON.stringify([owner.displayNodeId, owner.contentNodeId, owner.revisionId]);
     let ref = endpointRefs.get(key);
     if (!ref) { ref = element => registerEndpoint?.({ displayNodeId: owner.displayNodeId, contentNodeId: owner.contentNodeId, revisionId: owner.revisionId }, element); endpointRefs.set(key, ref); }
     return ref;
   };
-  return <pre {...pre}>{rows.map((row, index) => {
+  const render = (run: DiagramTextRun) => renderRun ? renderRun(run, <DiagramSyntaxText run={run} />) : <DiagramSyntaxText run={run} />;
+  return <pre {...pre}
+    onPointerOver={event => { pre.onPointerOver?.(event); highlight(event.target, event.currentTarget); }}
+    onPointerLeave={event => { pre.onPointerLeave?.(event); clearHighlight(); }}
+    onFocusCapture={event => { pre.onFocusCapture?.(event); highlight(event.target instanceof Element ? event.target.querySelector('[data-diagram-symbol]') ?? event.target : event.target, event.currentTarget); }}
+    onBlurCapture={event => { pre.onBlurCapture?.(event); clearHighlight(); }}
+  >{rows.map((row, index) => {
     // Keep one outline around a label even when source mappings split its text.
     const groups: DiagramTextRun[][] = [];
     for (const run of row.runs) {
@@ -43,8 +61,10 @@ export function DiagramText({ rows, onJump, renderRun, rowProps, nodeProps, node
       const contents = pieces.map(piece => {
         const run = piece[0];
         return <Fragment key={run.start}>{run.jump && onJump
-          ? <JumpChoices run={run} onJump={onJump} text={piece.map(item => item.text).join('')} />
-          : piece.map(item => <Fragment key={item.start}>{renderRun ? renderRun(item) : item.text}</Fragment>)}</Fragment>;
+          ? <JumpChoices run={run} onJump={onJump} text={piece.map(item => item.text).join('')}>
+              {piece.map(item => <Fragment key={item.start}>{render(item)}</Fragment>)}
+            </JumpChoices>
+          : piece.map(item => <Fragment key={item.start}>{render(item)}</Fragment>)}</Fragment>;
       });
       return <Fragment key={first.start}><span
         {...decoration}
@@ -63,7 +83,14 @@ export function DiagramText({ rows, onJump, renderRun, rowProps, nodeProps, node
   })}</pre>;
 }
 
-export function JumpChoices({ run, onJump, text }: { run: DiagramTextRun; text: string; onJump: (target: DiagramJumpTarget) => void }) {
+export function DiagramSyntaxText({ run }: { run: DiagramTextRun }) {
+  if (!run.syntax) return run.text;
+  const { kind, role, symbol, title } = run.syntax;
+  return <span className={`diagram-syntax syntax-${kind}${role === 'definition' ? ' syntax-definition' : ''}`}
+    data-syntax-kind={kind} data-syntax-role={role} data-diagram-symbol={symbol} title={title}>{run.text}</span>;
+}
+
+export function JumpChoices({ run, onJump, text, children }: { run: DiagramTextRun; text: string; children?: ReactNode; onJump: (target: DiagramJumpTarget) => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
   useEffect(() => {
@@ -78,7 +105,7 @@ export function JumpChoices({ run, onJump, text }: { run: DiagramTextRun; text: 
       onPointerDown={event => { if (!event.ctrlKey && event.pointerType === 'mouse') event.stopPropagation(); }}
       onClick={event => { if (event.ctrlKey || event.metaKey) return; event.stopPropagation();
         if (jumps.length === 1) onJump(jumps[0].target); else setOpen(value => !value); }}
-      title={jumps.length === 1 ? 'Open linked diagram' : `Choose from ${jumps.length} linked diagrams`}>{text}</button>
+      title={jumps.length === 1 ? 'Open linked diagram' : `Choose from ${jumps.length} linked diagrams`}>{children ?? text}</button>
     {open && <span className="diagram-jump-choices" role="menu" aria-label="Linked diagrams" data-mapping-static-ui data-diagram-canvas-static-ui>
       {jumps.map((jump, i) => <button key={jump.id} type="button" role="menuitem" onClick={event => { event.stopPropagation(); setOpen(false); onJump(jump.target); }}>
         {(jump as { label?: string }).label || `Destination ${i + 1}: ${jump.target.displayNodeId ?? jump.target.representationId}`}

@@ -41,6 +41,7 @@
     "check:diagram-delete": "npm run build && node --import tsx tests/browser/mapping/browser-diagram-delete-check.mjs",
     "check:diagram-transfer": "npm run build && node --import tsx tests/browser/mapping/browser-diagram-transfer-check.mjs",
     "check:tldraw": "npm run build && node --import tsx tests/browser/mapping/browser-tldraw-check.mjs",
+    "check:canvas-treemaps": "npm run build && node --import tsx tests/browser/mapping/browser-canvas-treemaps-check.mjs",
     "check:change-treemaps": "npm run build && node --import tsx tests/browser/mapping/browser-change-treemaps-check.mjs",
     "check:ipad-gestures": "npm run build && node --import tsx tests/browser/mapping/browser-ipad-gestures-check.mjs"
   },

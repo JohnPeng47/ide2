@@ -108,7 +108,7 @@ export function DiffTreePanel({ mode, canvas, revealCanvasSerial, revealNode, on
       scrollTarget={scrollTarget} onDidScroll={didScroll} storageKey={hunkStorageKey} wrap={state.wrap}
       onWrap={() => setState(previous => ({ ...previous, wrap: !previous.wrap }))} onTrack={tracked} onOpen={openHunk} />
       : <p className="window-panel-message">Loading hunks…</p> }, { id: 'treemaps', title: 'Treemaps', content: <ChangeTreemapContent mode={mode} onCanvasColors={onCanvasColors}
-        onNavigate={next => { onNavigate(next); setState(previous => ({ ...previous, minimized: true, focusedPane: 'treemaps' })); }} /> }]} />;
+        onNavigate={onNavigate} /> }]} />;
 }
 
 function Hunks({ hunks, filterLabel, onShowAll, scrollTarget, onDidScroll, storageKey, wrap, onWrap, onTrack, onOpen }: {

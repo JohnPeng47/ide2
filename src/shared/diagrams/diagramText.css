@@ -1,7 +1,19 @@
 .diagram-content-node { font: inherit; letter-spacing: inherit; }
+.diagram-syntax { font: inherit; letter-spacing: inherit; }
+.syntax-type { color: var(--diagram-syntax-type); }
+.syntax-function { color: var(--diagram-syntax-function); }
+.syntax-variable { color: var(--diagram-syntax-variable); }
+.syntax-keyword { color: var(--diagram-syntax-keyword); }
+.syntax-string { color: var(--diagram-syntax-string); }
+.syntax-number { color: var(--diagram-syntax-number); }
+.syntax-reference { color: var(--diagram-syntax-reference); }
+.syntax-structure { color: var(--diagram-syntax-structure); }
+.syntax-definition { font-weight: 600; }
+.diagram-syntax.is-symbol-match { background: var(--selection-fill); box-shadow: inset 0 -1px var(--selection-border); }
+/* Foreground syntax remains independent of diff/treemap backgrounds. */
 .diagram-content-node:hover, .diagram-content-node.is-selected { outline: 1px solid var(--accent-cyan); outline-offset: 0; }
 .diagram-content-node[data-jump-focus] { outline: 1px solid var(--accent-yellow); }
-.diagram-jump { display: inline; border: 0; border-radius: 0; padding: 0; margin: 0; background: transparent; color: var(--accent-cyan); font: inherit; letter-spacing: inherit; line-height: inherit; white-space: pre; vertical-align: baseline; cursor: pointer; }
+.diagram-jump { display: inline; border: 0; border-radius: 0; padding: 0; margin: 0; background: transparent; color: var(--diagram-syntax-reference); font: inherit; letter-spacing: inherit; line-height: inherit; white-space: pre; vertical-align: baseline; cursor: pointer; }
 .diagram-jump:hover, .diagram-jump:focus-visible { outline: 1px solid currentColor; outline-offset: 0; }
 
 .diagram-mapping-choices { position: fixed; z-index: 100; display: grid; max-width: 280px; max-height: 170px; overflow: auto; border: 1px solid var(--gutter); background: var(--surface-raised); padding: var(--space-2); }

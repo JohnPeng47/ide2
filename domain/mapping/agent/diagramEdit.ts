@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { agentContextSnapshotSchema, type AgentContextSnapshot } from '../../core/agents/agentContext';
 import { contentNodeAnchorSchema, type ContentNodeAnchor } from '../../core/diagrams/diagramConnection';
 import type { DiagramInput } from '../../core/diagrams/diagram';
 import type { DiagramRevision } from '../../core/diagrams/diagramRevisionEditor';
@@ -16,6 +17,9 @@ export const promptReferenceSchema = z.discriminatedUnion('kind', [
 ]);
 export type PromptReference = z.infer<typeof promptReferenceSchema>;
 const promptFields = {
+  /** Panel-owned conversation identity and its last completed context. */
+  llmSessionId: id.optional(),
+  agentContext: agentContextSnapshotSchema.optional(),
   template: promptTemplateSelectionSchema.optional(),
   /** The instruction cites references[N-1] as [ref N]. */
   references: z.array(promptReferenceSchema).max(20).optional()
@@ -47,6 +51,10 @@ export interface DiagramCreation {
   sources?: ContentNodeAnchor[];
 }
 export interface DiagramEditRun {
+  /** Actual runtime session for diagnostics/clipboard; each run may have a new ID. */
+  agentSessionId?: string;
+  /** Updated conversation, published only after the canvas acknowledges success. */
+  agentContext?: AgentContextSnapshot;
   runId: string;
   operation: PromptOperation;
   status: 'generating' | 'applying' | 'completed' | 'conflict' | 'failed' | 'cancelled' | 'awaiting-acknowledgement';

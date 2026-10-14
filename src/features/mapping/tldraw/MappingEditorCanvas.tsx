@@ -94,7 +94,8 @@ export function MappingEditorCanvas(props: {
         : bounds?.center;
       if (point) {
         const viewport = root.current!.getBoundingClientRect();
-        const tools = root.current?.closest('.mapping-viewport')?.querySelector('.window-panel-tabbed')?.getBoundingClientRect();
+        const tools = [...root.current?.closest('.mapping-viewport')?.querySelectorAll('.window-panel-tabbed, .canvas-treemap-window') ?? []]
+          .map(element => element.getBoundingClientRect()).filter(rect => rect.width > 0).sort((a, b) => a.left - b.left)[0];
         // Center in the canvas space beside the visible tools; keep the explorer margin otherwise.
         const explorer = root.current?.closest('.mapping-viewport')?.querySelector('.mapping-floating-pane')?.getBoundingClientRect();
         const offset = tools?.width ? ((explorer?.right ?? viewport.left) + tools.left) / 2 - (viewport.left + viewport.width / 2) : 170;

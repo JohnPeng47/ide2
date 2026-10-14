@@ -15,6 +15,7 @@ function setup(fail = false, hold = false) {
     sessionId: 'one-session', dispose, transcript: () => turns,
     async runStep(request: import('../../../core/agents/agentWorkflow').AgentStepRequest) {
       turns.push(request.stepId);
+      input.onMetric?.({ kind: 'step', step: request.stepId as 'analyze' | 'materialize', name: request.stepId, startedAt: new Date().toISOString(), durationMs: 1 });
       if (hold) await new Promise((_, reject) => input.signal.addEventListener('abort', () => reject(input.signal.reason), { once: true }));
       if (request.stepId === 'analyze') return { text: 'Complete analysis' };
       const create = input.tools('materialize').find(tool => tool.name === 'create_diagram_change_session')!;
@@ -38,6 +39,7 @@ it('persists two sequential user requests and one conversation; replay does not 
   await vi.waitFor(() => expect(f.records.get(run.id)?.status).toBe('completed'));
   expect(f.turns).toEqual(['analyze', 'materialize']); expect(f.runtime.openSession).toHaveBeenCalledTimes(1);
   expect(f.artifacts.get('conversation')).toEqual(f.turns);
+  expect((f.artifacts.get('performance') as any[]).map(metric => metric.step)).toEqual(f.turns);
   expect(f.artifacts.get('analyze-request')).toMatchObject({ role: 'user' });
   expect(f.artifacts.get('materialize-request')).toEqual({ role: 'user', content: 'Create' });
   expect((await f.service.start(request)).changeSessionId).toBe('generated');

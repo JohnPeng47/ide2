@@ -111,7 +111,10 @@ it('isolates shared MCP operations, persists sessions and history, rejects bad r
     const newNode=await exec('return nodes.draw({ascii:"Detail\\n`-- Child",structureKind:"tree",position:{column:40,row:0}});',{sessionId,expectedVersion:2});
     let session=await changes.get(changeSessionId);
     await expect(call('update_diagram_change_session',{changeSessionId,requestId:'readybad',expectedVersion:session.version,status:'ready'})).rejects.toThrow('needs an edge');
-    await exec(`const source=nodes.get({nodeId:'grid:overview'}); return edges.create({source:{kind:'content-node',displayNodeId:source.id,contentNodeId:Object.values(source.content.structure.nodes)[0].id,revisionId:source.content.revisionId},target:{kind:'box',displayNodeId:${JSON.stringify(newNode.value.id)}},appearance:{}});`,{sessionId,expectedVersion:3});
+    const owner = diagramContentNodes(session.documents[0].proposed.document.scene.contents.overview.content).find(n => n.label === 'Changed again')!;
+    expect(session.documents[0].proposed.nodeOrigins?.[owner.id]).toBeUndefined();
+    // Detail attaches directly to the edited owner, without an unrelated baseline-origin edge.
+    await exec(`const source=nodes.get({nodeId:'grid:overview'}); return edges.create({source:{kind:'content-node',displayNodeId:source.id,contentNodeId:Object.values(source.content.structure.nodes).find(n=>n.label==='Changed again').id,revisionId:source.content.revisionId},target:{kind:'box',displayNodeId:${JSON.stringify(newNode.value.id)}},appearance:{}});`,{sessionId,expectedVersion:3});
     session=await changes.get(changeSessionId);
     await call('update_diagram_change_session',{changeSessionId,requestId:'ready',expectedVersion:session.version,status:'ready',changes:session.changes.map(c=>({...c,title:`Review ${c.title}`,type:c.type===1?4:c.type}))});
     expect((await changes.get(changeSessionId)).status).toBe('ready');

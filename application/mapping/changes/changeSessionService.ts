@@ -429,9 +429,9 @@ export class ChangeSessionService {
     for (const change of s.changes.filter(c => c.type === 2)) {
       const doc = this.document(s, change.documentId);
       const connected = doc.proposed.document.edges.some(edge => edge.target.displayNodeId === change.nodeId
-        && !!doc.baseline && !!connectionBox(doc.baseline.document.scene, edge.source.displayNodeId)
-        && (doc.proposed.nodeOrigins ? !!doc.proposed.nodeOrigins[edge.source.contentNodeId]
-          : Object.values(doc.baseline.document.scene.contents).some(d => diagramContentNodes(d.content).some(n => n.id === edge.source.contentNodeId))));
+        // The owner may be introduced/replaced by this proposal. Require its
+        // containing diagram to exist in the baseline, not the owner node itself.
+        && !!doc.baseline && !!connectionBox(doc.baseline.document.scene, edge.source.displayNodeId));
       if (!connected) throw new Error(`Added diagram needs an edge from an existing diagram: ${change.title}`);
     }
   }

@@ -1,3 +1,4 @@
+import { compactDiffSessionToolResult } from './diffSessionToolResults';
 import { z } from 'zod';
 import { canvasDisplayNodes } from '../../../domain/mapping/workspace/canvasDisplayNode';
 import { agentToolSchemas, canvasApiSpec, type AgentToolName } from '../../../domain/mapping/agent/contracts';
@@ -20,7 +21,7 @@ export class DiffSessionTools {
     private readonly onCreated: (id: string) => Promise<void>) {}
 
   private tool(name: string, description: string, schema: z.ZodType, execute: (input: any) => Promise<unknown>): DiffSessionTool {
-    return { name, description, schema: z.toJSONSchema(schema), execute: raw => execute(schema.parse(raw)) };
+    return { name, description, schema: z.toJSONSchema(schema), execute: async raw => compactDiffSessionToolResult(name, await execute(schema.parse(raw))) };
   }
   private frozenSearch(input: z.infer<typeof agentToolSchemas['diagram-search']>) {
     const documents = this.capture.documents.filter(doc => !input.representationId || input.representationId === doc.id);
@@ -47,7 +48,7 @@ export class DiffSessionTools {
         if (input.nodeId && Array.isArray(result.nodes)) result.nodes = result.nodes.filter((node: any) => node.id === input.nodeId);
         return result;
       }),
-      this.tool('get_repository_diff_hunks', 'Read the immutable hunks captured for this workflow; commits/head cannot change.', agentToolSchemas.get_repository_diff_hunks, async input => {
+      this.tool('get_repository_diff_hunks', 'Read the immutable hunks captured for this workflow; commits/head cannot change.', agentToolSchemas.get_repository_diff_hunks.safeExtend({ includePatches: z.boolean().default(step === 'analyze') }), async input => {
         const hunks = this.capture.hunks.slice(input.offset, input.offset + input.limit);
         return { ...this.capture.context, total: this.capture.hunks.length,
           nextOffset: input.offset + input.limit < this.capture.hunks.length ? input.offset + input.limit : null,
@@ -66,7 +67,7 @@ export class DiffSessionTools {
         }),
       ...(['exec', 'draw_diagram', 'set_diagram_source_mappings', 'update_diagram_change_session', 'read_change_session_diff_tree'] as const).map(name =>
         this.tool(name, name === 'exec' ? 'Execute synchronous short canvas API JavaScript on this proposal. Return results. Attach using canvas.attach; use current document expectedVersion for mutations.'
-          : `Call ${name} on this workflow's proposal using the current version and a new requestId for each new mutation.`, agentToolSchemas[name],
+          : `Call ${name} on this workflow's proposal using the current version and a new requestId for each new mutation.`, name === 'read_change_session_diff_tree' ? agentToolSchemas[name].safeExtend({ includePatches: z.boolean().default(false) }) : agentToolSchemas[name],
         async input => this.agent.call(name as AgentToolName, this.bound(input)))),
       this.tool('complete_diff_session', 'Validate the ready proposal and complete this workflow. Repair errors before retrying.', z.object({}).strict(), async () => {
         if (!this.changeSessionId) throw Error('Create the proposal first');

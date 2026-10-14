@@ -6,7 +6,7 @@ import { runAgentWorkflow } from '../../core/agents/agentWorkflow';
 import type { AgentDiagrammingSessionService } from '../agent/sessionService';
 import type { ChangeSessionCapture, ChangeSessionService } from './changeSessionService';
 import { DiffSessionTools, type DiffSessionSourceReader } from './diffSessionTools';
-import { createDiffSessionWorkflow, DIFF_SESSION_MODEL, type DiffSessionAgentSession, type DiffSessionPrompts, type DiffSessionRuntime } from './diffSessionWorkflow';
+import { createDiffSessionWorkflow, DIFF_SESSION_MODEL, type DiffSessionAgentSession, type DiffSessionMetric, type DiffSessionPrompts, type DiffSessionRuntime } from './diffSessionWorkflow';
 
 export const diffSessionRequestSchema = z.object({
   requestId: z.string().min(1).max(200), title: z.string().trim().min(1).max(200),
@@ -61,6 +61,7 @@ export class DiffSessionWorkflowService {
   }
   private async execute(run: DiffSessionRun, signal: AbortSignal) {
     let session: DiffSessionAgentSession | undefined;
+    const metrics: DiffSessionMetric[] = [];
     const save = () => { run.updatedAt = new Date().toISOString(); return this.store.save(run); };
     try {
       const capture = await this.changes.capture(run.request);
@@ -72,7 +73,7 @@ export class DiffSessionWorkflowService {
       const tools = new DiffSessionTools(capture, this.changes, this.agent, await this.options.sourceReader(capture),
         run.id, run.request.title, async id => { run.changeSessionId = id; await save(); });
       session = await this.runtime.openSession({ sourceRoot: this.options.sourceRoot, signal, tools: step => tools.tools(step),
-        onProgress: message => { run.message = message; } });
+        onProgress: message => { run.message = message; }, onMetric: metric => { metrics.push(metric); } });
       run.agentSessionId = session.sessionId; await save();
       const result = await runAgentWorkflow(createDiffSessionWorkflow(prompts, capture), async request => {
         run.stage = request.stepId as 'analyze' | 'materialize'; run.message = `Running ${request.stepId}`;
@@ -80,6 +81,7 @@ export class DiffSessionWorkflowService {
         const output = await session!.runStep(request);
         await this.store.artifact(run.id, `${request.stepId}-response`, output);
         await this.store.artifact(run.id, 'conversation', session!.transcript());
+        await this.store.artifact(run.id, 'performance', metrics);
         return output;
       }, { signal });
       run.stage = 'validate'; await save();
@@ -92,6 +94,7 @@ export class DiffSessionWorkflowService {
     } finally {
       try {
         if (session) await this.store.artifact(run.id, 'conversation', session.transcript());
+        await this.store.artifact(run.id, 'performance', metrics);
       } finally { session?.dispose(); await save(); }
     }
   }

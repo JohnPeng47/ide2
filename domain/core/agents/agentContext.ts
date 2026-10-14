@@ -89,6 +89,13 @@ export class AgentContext {
     return new AgentContext({ ...data, contentHash: sha256(canonical(data)) });
   }
 
+  /** Capture a complete conversation while retaining its panel-owned identity. */
+  static fromMessages(sourceSessionId: string, messages: readonly AgentContextMessage[]): AgentContext {
+    return AgentContext.fromTrajectory({ agentType: 'diagram-composer', sourceSessionId, format: 'messages-v1',
+      fromEntryId: 'message-0', throughEntryId: `message-${messages.length - 1}`,
+      entries: messages.map((message, index) => ({ id: `message-${index}`, parentId: index ? `message-${index - 1}` : null, message })) });
+  }
+
   static fromSnapshot(raw: unknown): AgentContext {
     bounded(raw);
     const snapshot = agentContextSnapshotSchema.parse(raw);

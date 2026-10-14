@@ -1,4 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
+import { AgentContext } from '../../../../../domain/core/agents/agentContext';
 import type { DiagramEditRun } from '../../../../../domain/mapping/agent/diagramEdit';
 import { PromptComposerCoordinator, composerKey, type PromptComposerTarget } from '../promptComposerCoordinator';
 import { serializePromptDraft, setBlockText, removeBlock } from '../promptDraft';
@@ -18,6 +19,37 @@ function fixture() {
   return { client, coordinator, entry: () => coordinator.store.getState().entries[key] };
 }
 afterEach(() => { coordinators.splice(0).forEach(c => c.dispose()); vi.useRealTimers(); });
+it('reuses completed context across hiding and reopening a panel, with isolated new panels', async () => {
+  const f = fixture(), sessionId = f.entry().llmSessionId;
+  const context = AgentContext.fromMessages(sessionId, [{ role: 'user', content: [{ type: 'text', text: 'Previous request' }], timestamp: 0 }]).toSnapshot();
+  f.client.start.mockResolvedValueOnce({ ...run('completed'), agentContext: context, agentSessionId: 'runtime-one' });
+  await f.coordinator.submit(key);
+  expect(f.entry().agentContext).toEqual(context);
+  expect(f.entry().agentSessionId).toBe('runtime-one');
+  f.coordinator.close(); f.coordinator.show(key);
+  setPrompt(f.coordinator, key, 'Follow up');
+  f.client.start.mockRejectedValueOnce(Error('Lost response'));
+  await f.coordinator.submit(key);
+  expect(f.client.start.mock.calls[1][0]).toMatchObject({ llmSessionId: sessionId, agentContext: context, prompt: 'Follow up' });
+  f.client.start.mockResolvedValueOnce(run('failed'));
+  await f.coordinator.retry(key);
+  expect(f.client.start.mock.calls[2]).toEqual(f.client.start.mock.calls[1]);
+  expect(f.entry().agentContext).toEqual(context);
+  const other = f.coordinator.open(target, true);
+  expect(f.coordinator.store.getState().entries[other].llmSessionId).not.toBe(sessionId);
+  expect(f.coordinator.store.getState().entries[other].agentContext).toBeUndefined();
+  f.coordinator.dismiss(key); f.coordinator.open(target);
+  expect(f.entry().llmSessionId).not.toBe(sessionId);
+  expect(f.entry().agentContext).toBeUndefined();
+});
+
+it.each(['failed', 'cancelled', 'conflict'] as const)('does not advance panel context for a %s run', async status => {
+  const f = fixture();
+  const context = AgentContext.fromMessages(f.entry().llmSessionId, [{ role: 'user', content: [{ type: 'text', text: 'Unapplied' }], timestamp: 0 }]).toSnapshot();
+  f.client.start.mockResolvedValueOnce({ ...run(status), agentContext: context });
+  await f.coordinator.submit(key);
+  expect(f.entry().agentContext).toBeUndefined();
+});
 it('pins the target across opening another diagram and deduplicates double submits', async () => {
   const f = fixture();
   let finish!: (value: Awaited<ReturnType<typeof f.client.capture>>) => void;

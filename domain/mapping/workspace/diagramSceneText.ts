@@ -10,7 +10,7 @@ export function diagramSceneText(scene: LineGridScene, views?: DiagramViews, jum
   const ascii = composeScene(scene, (diagram, box) => {
     const projection = projectDiagramContent(diagram.content, box.collapsed ? undefined : views?.[`grid:${box.id}`]);
     const local = diagramTextRanges({ ascii: diagram.content.ascii, content: diagram.content,
-      displayNodeId: `grid:${box.id}`, mappings: diagram.sourceContext.mappings,
+      displayNodeId: `grid:${box.id}`, mappings: diagram.sourceContext.mappings, sourceContext: diagram.sourceContext,
       jumps: [...(diagram.jumps ?? []), ...jumps.filter(jump => jump.sourceDisplayNodeId === `grid:${box.id}`)] });
     const { column, row } = boxes.get(box.id)!.bounds;
     projection.sourceLines.forEach((line, visibleRow) => {

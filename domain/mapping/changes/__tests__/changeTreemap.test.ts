@@ -48,6 +48,14 @@ it('splits hunks globally across distinct destinations without counting parent s
   ] }, hunks);
   const result = buildChangeTreemaps(tree, [doc, other]);
   expect(result).toMatchObject({ actual: 6, mapped: 6, rawMapped: 10, covered: 6, unmapped: 0, extra: 4 });
+  expect(result.diagrams.label).toBe('All canvases');
+  expect(result.diagrams.children.map(n => n.kind)).toEqual(['canvas', 'canvas']);
+  const canvases = result.diagrams.children;
+  expect(canvases.map(n => n.label)).toEqual(['doc', 'other']);
+  expect(canvases[0].value).toBeCloseTo(6 - 2 / 3);
+  expect(canvases[1].value).toBeCloseTo(2 / 3);
+  expect(canvases.flatMap(n => n.children).every(n => n.kind === 'diagram')).toBe(true);
+  expect(canvases[1].target).toEqual({ representationId: other.id });
   const parent = flatten(result.diagrams).find(n => n.label === 'Parent')!;
   expect(parent.value).toBeCloseTo(4 + 4 / 3);
   expect(parent.children.find(n => n.kind === 'direct')?.value).toBeCloseTo(4 + 2 / 3);
@@ -78,7 +86,7 @@ it('inherits diagram destinations through DiffTree headings without spreading pa
     { id: 'hunks', source: { line: 2 }, targets: [{ kind: 'diff-hunk', hunkId: hunks[0].id }] }
   ] }, hunks);
   const result = buildChangeTreemaps(tree, [doc]);
-  expect(result.diagrams.children.find(n => n.kind === 'diagram')).toMatchObject({ kind: 'diagram', value: 2, children: [] });
+  expect(flatten(result.diagrams).find(n => n.kind === 'diagram')).toMatchObject({ kind: 'diagram', value: 2, children: [] });
   expect(result.unmapped).toBe(4);
 });
 it('retains baseline destinations without guessing new anchors; unknown targets remain unmapped', () => {

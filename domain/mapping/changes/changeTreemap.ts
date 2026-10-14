@@ -6,7 +6,7 @@ import type { ChangePreviewDocument } from './diagramChangeSession';
 import { diffTreeNodes, type ChangeSessionDiffTree } from './diffTree';
 
 export interface ChangeTreemapNode {
-  id: string; label: string; kind: 'root' | 'directory' | 'file' | 'diagram' | 'node' | 'direct' | 'unmapped';
+  id: string; label: string; kind: 'root' | 'directory' | 'file' | 'canvas' | 'diagram' | 'node' | 'direct' | 'unmapped';
   value: number; added: number; deleted: number; hunkIds: string[]; children: ChangeTreemapNode[];
   target?: DiagramJumpTarget; previous?: boolean;
   allocation?: { rawLoc: number; sharedLoc: number; minDestinations: number; maxDestinations: number };
@@ -42,7 +42,7 @@ export function hunkLoc(hunk: GitDiffHunk) {
 export function buildChangeTreemaps(tree: ChangeSessionDiffTree | undefined, documents: readonly ChangePreviewDocument[]): ChangeTreemaps {
   const hunks = new Map((tree?.hunks ?? []).map(h => [h.id, h]));
   const weights = new Map([...hunks].map(([id, hunk]) => [id, hunkLoc(hunk)]));
-  const files = node('files', 'All files', 'root'), diagrams = node('diagrams', 'All diagrams', 'root');
+  const files = node('files', 'All files', 'root'), diagrams = node('diagrams', 'All canvases', 'root');
   for (const hunk of hunks.values()) {
     let parent = files, path = '';
     const parts = hunk.path.split('/');
@@ -67,6 +67,9 @@ export function buildChangeTreemaps(tree: ChangeSessionDiffTree | undefined, doc
     return result;
   };
   for (const doc of documents) {
+    const canvas = node(key('canvas', doc.id), doc.name, 'canvas');
+    canvas.target = { representationId: doc.id };
+    diagrams.children.push(canvas);
     const before = boxes(doc.baseline?.document.scene), after = boxes(doc.proposed.document.scene);
     for (const boxId of new Set([...after.keys(), ...before.keys()])) {
       const display = `grid:${boxId}`, nextBox = after.get(boxId), oldBox = before.get(boxId);
@@ -74,10 +77,10 @@ export function buildChangeTreemaps(tree: ChangeSessionDiffTree | undefined, doc
       const old = oldBox && doc.baseline?.document.scene.contents[oldBox.contentId];
       const content = next ?? old;
       if (!content) continue;
-      const root = node(key('diagram', doc.id, boxId), `${doc.name} / ${content.content.ascii.split('\n').find(line => line.trim())?.trim() ?? boxId}`, 'diagram');
+      const root = node(key('diagram', doc.id, boxId), content.content.ascii.split('\n').find(line => line.trim())?.trim() ?? boxId, 'diagram');
       root.previous = !next;
       root.target = { representationId: doc.id, displayNodeId: display };
-      diagrams.children.push(root); register(doc, display, '', root);
+      canvas.children.push(root); register(doc, display, '', root);
       const addContent = (diagram: typeof content, parent: Builder, previous: boolean) => {
         const nodes = diagramContentNodes(diagram.content);
         const entries = new Map(nodes.map(n => {

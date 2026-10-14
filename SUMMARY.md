@@ -122,3 +122,126 @@ were caused by copying a scene origin into local tile bounds and adding it twice
 whole-diagram tiles now use only the bounds' dimensions before final placement.
 Regression checks cover nonzero scene origins, partition coverage, slider
 independence and persistence, and tooltip additions/deletions in both themes.
+
+## Shared regular-canvas treemaps
+
+Regular canvases now have a Treemaps toolbar button opening the same shared
+`TreemapContent` renderer used by ChangeSessions. Both panels remove the bottom
+inspector/dropdown/footnotes and fill the remaining space with tiles. Zoom in sits
+beside the breadcrumbs and applies to a selected region with children; Zoom out
+and Reset appear after drilling in. Tile navigation keeps the panel open and
+centers native canvas nodes beside the visible panel.
+
+Canvas scope defaults to Mapped ranges (unique verified mapped lines per file),
+with Referenced files counting complete referenced files and showing unmapped
+lines as a separate tile. Scope persists in browser storage. Physical LOC includes
+blank/comment lines but excludes the phantom line after a terminal newline.
+`domain/mapping/treemap/canvasTreemap.ts` sweeps range boundaries, deduplicates
+repeated mappings to the same node, and divides overlapping lines among distinct
+destinations. Source identity includes repository/corpus/revision and path.
+The active live scene supplies hierarchy/mappings, including folded diagrams.
+Current files are read through the existing codeRepo worker with six concurrent
+reads; opening, window focus, and Refresh sources refresh file contents. Missing,
+binary, stale, and unresolved mappings are reported instead of guessed.
+
+Regular-canvas tooltips show scope percentage and source LOC (no diff +/-), with
+the same colors/opacity controls and partitioned native-shape backgrounds.
+Source mappings and diagram documents are never generated or changed by this view.
+Checks: `npm run check:canvas-treemaps`, `npm run check:change-treemaps`, allocation
+and canvas tile unit tests, and architecture dependency tests.
+
+Validation for the shared view passed: production build, 14 focused unit/architecture
+tests, and both regular-canvas and ChangeSession treemap browser flows. Screenshots
+were inspected in light mode, including the selected canvas node beside the panel.
+
+## Blue LOC shading experiment
+
+Replaced rotating identity hues with one blue scale derived from each tile's LOC.
+Equal values share a shade; maximum comes from the complete map excluding
+Unmapped and remains fixed while zooming. The legend shows 0 and that maximum.
+Dark mode increases brightness/saturation for higher LOC; light mode darkens it.
+Files also use the scale. Unmapped retains its neutral fill. Canvas tints match
+the visible tiles; direct-allocation tiles use their own weight, leaving the
+parent heading row in its aggregate shade. Position now controls paint order only.
+The floating theme settings add a shared Shade shift slider (−20…+20 lightness),
+persisted with the independent opacity preferences; older settings default to zero.
+Build, color/tiling/theme unit tests, and both treemap browser flows passed, including
+shade changes in both views and reload persistence. Dark/light screenshots inspected.
+
+
+### Ranked treemap shading and canvas hover
+
+The floating appearance panel now offers Ranked (default, including legacy preferences)
+and Continuous blue LOC scales. Ranked spreads distinct positive values from the complete
+hierarchy evenly over the shade range; ties share a shade. Aggregate headings participate,
+Unmapped/root do not. Zoom leaves the reference scale fixed; LOC/area remain unchanged.
+The setting persists with opacity/shade controls. Both source and diff treemaps publish
+matching canvas shades. Hover or keyboard focus adds a blue outline around the matching
+canvas subtree's region via shared projected region geometry, without invoking navigation.
+Leaving/blur/closing clears the transient highlight.
+
+Validation: production build, seven focused unit tests, and both source/diff browser
+checks pass, including scale switching/persistence and hover without camera movement.
+
+
+### Canvas-first DiffSession treemaps and reverse selection
+
+DiffSession diagram treemaps now group All canvases → canvas → diagram → subtree.
+Canvas totals aggregate their allocated changed LOC; unmapped hunks remain at the
+session root. Regular canvas treemaps retain their existing hierarchy. Canvas groups
+navigate by document ID, while descendant nodes retain exact diagram/subtree targets.
+
+While diagram treemaps are displayed, clicks on painted canvas regions select the
+corresponding tile, reveal its containing treemap group if needed, and focus it to
+show the tooltip and blue canvas outline. The shared pointer observer hit-tests the
+partitioned backgrounds; source links/controls and drags remain independent. It never
+invokes canvas navigation. DiffSession text no longer opens mapped DiffTree jump menus.
+
+Validation: production build, 11 focused unit tests, and regular/diff treemap browser
+flows passed, including reverse selection, fixed cameras, canvas grouping/totals,
+settings, zoom and source scopes. The broader DiffTree browser script currently
+stops at its earlier search-panel Escape assertion, before the changed click checks.
+
+
+### Compact treemap tooltips
+
+Tooltips now show only LOC and, for DiffSessions, green +added/red −deleted counts
+on one compact row. Removed names and percentages. Positioning uses the full tile
+rectangle (including nested regions), choosing right/left/above/below with an 8px
+gap and viewport containment, never clamping back over the hovered box. The same
+placement applies to keyboard focus and canvas-to-treemap selection. With no valid
+outside space the tooltip stays hidden. Geometry tests cover small edge tiles,
+large regions and the no-space case; browser checks assert no overlap.
+
+Compact tooltip validation passed: production build, placement edge-case tests,
+and both source/DiffSession browser checks with compactness and non-overlap assertions.
+
+Tooltip follow-up: restored LOC percentage beside the count in both views. It uses
+total session/scope LOC (including unmapped), not the zoomed region subtotal.
+
+
+### Panel-owned agent context and session ID
+
+Each `PromptComposerEntry` now owns a stable `llmSessionId` and the latest successful
+`AgentContextSnapshot`. Create, extend, and update requests send that snapshot back
+with fresh canvas inputs. The runtime captures user/assistant/tool messages after a
+validated submission, and the application publishes the next context only after the
+canvas change is acknowledged. Failed/cancelled/conflicting requests preserve the
+previous context; transport/persistence retries reuse their exact original request.
+Multiple creations in one request chain the same conversation.
+
+Hiding/reopening a composer preserves its context; dismissing it or reloading the
+page starts fresh (composer state remains in memory). Separate panels have separate
+identities. Inline snapshots use existing hash/size/tool-pair validation and must
+match the panel identity. Existing uploaded `agentContextId` calls remain supported.
+
+The composer footer offers **Copy agent session ID** once generation starts. This
+copies the latest actual Pi runtime ID, with copied/error feedback. Each generation
+still uses a fresh disposable Pi runtime seeded from the panel's accumulated context;
+the persistent conversation identity and per-generation runtime ID are distinct.
+
+Validation: production build and 52 focused tests passed (panel lifecycle, retry
+identity, snapshot validation, transcript capture, and persistence acknowledgement).
+The disposable CDP browser flow verified clipboard contents and a second generation
+with the previous conversation after hiding/reopening the same panel, plus isolation
+of a new panel. No real model calls were used.

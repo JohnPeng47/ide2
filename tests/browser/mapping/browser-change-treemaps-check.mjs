@@ -74,14 +74,19 @@ try {
       for (const type of ['mousePressed', 'mouseReleased']) await cdp.send('Input.dispatchMouseEvent', { type, ...point, button: 'left', buttons: type === 'mousePressed' ? 1 : 0, clickCount: 1 });
     };
     const assertTooltip = async (label, name, percent) => {
+      const camera = () => evaluate(cdp, "document.querySelector('.mapping-viewport > .change-session-preview .diagram-canvas__surface').style.transform");
+      await evaluate(cdp, 'new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
+      await waitFor(async () => await evaluate(cdp, "document.querySelector('.mapping-viewport > .change-session-preview .diagram-canvas__surface').getAnimations().every(animation=>animation.playState!=='running')"));
+      const cameraBefore = await camera();
       const point = await evaluate(cdp, `(() => { const e=document.querySelector('.change-treemap-cell button[aria-label^="'+${JSON.stringify(label)}+':"]'); const r=e.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}; })()`);
       await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', ...point });
       await waitForSelector(cdp, '.change-treemap-tooltip');
       const tooltip = await evaluate(cdp, `(() => {const e=document.querySelector('.change-treemap-tooltip'),r=e.getBoundingClientRect();return {text:e.textContent,visible:r.left>=0 && r.top>=0 && r.right<=innerWidth && r.bottom<=innerHeight,described:!!document.querySelector('[aria-describedby="'+e.id+'"]')};})()`);
-      assert.ok(tooltip.text.includes(name));
-      assert.ok(tooltip.text.includes(percent+'% of total changed LOC'));
-      assert.ok(tooltip.text.includes(label === 'Create session' ? '+1 added' : '+2 added'));
-      assert.ok(tooltip.text.includes(label === 'Create session' ? '−0.5 deleted' : '−1 deleted'));
+      assert.equal(tooltip.text.includes(name), false, 'Tooltip omits diagram names');
+      assert.ok(tooltip.text.includes(label === 'Create session' ? '1.5 LOC' : '3 LOC'));
+      assert.ok(tooltip.text.includes(percent + '%'));
+      assert.ok(tooltip.text.includes(label === 'Create session' ? '+1' : '+2'));
+      assert.ok(tooltip.text.includes(label === 'Create session' ? '−0.5' : '−1'));
       assert.equal(await evaluate(cdp, `(() => {
         const tip=document.querySelector('.change-treemap-tooltip'), css=getComputedStyle(tip);
         const added=getComputedStyle(tip.querySelector('[data-change=added]')).color;
@@ -91,10 +96,25 @@ try {
         return a[1]>a[0] && a[1]>a[2] && d[0]>d[1] && d[0]>d[2];
       })()`), true, 'Tooltip renders additions in green and deletions in red');
       assert.equal(tooltip.visible, true, 'Tooltip stays within viewport');
+      assert.equal(await evaluate(cdp, `(() => {
+        const tip=document.querySelector('.change-treemap-tooltip'), a=tip.getBoundingClientRect();
+        const b=document.querySelector('[aria-describedby="'+tip.id+'"]').parentElement.getBoundingClientRect();
+        return a.height<40 && (a.left>=b.right || a.right<=b.left || a.top>=b.bottom || a.bottom<=b.top);
+      })()`), true, 'Compact tooltip never overlaps its full tile');
+      if (label === 'Create session') {
+        await waitForSelector(cdp, '.mapping-viewport > .change-session-preview .treemap-canvas-hover');
+        assert.equal(await evaluate(cdp, `(() => {
+          const tile=document.querySelector('.change-treemap-cell button[aria-label^="Create session:"]').parentElement;
+          const outline=document.querySelector('.mapping-viewport > .change-session-preview .treemap-canvas-hover');
+          const css=getComputedStyle(outline);
+          return outline.dataset.diagramPosition===tile.dataset.diagramPosition && css.borderTopWidth==='2px' && css.pointerEvents==='none';
+        })()`), true, 'Hover outlines the matching canvas subtree');
+        assert.deepEqual(await camera(), cameraBefore, 'Hover does not move the preview camera');
+      }
       assert.equal(tooltip.described, true, 'Tooltip is linked to its tile for keyboard users');
       if (process.env.CHANGE_TREEMAP_SCREENSHOT) await captureScreenshot(cdp, { output: process.env.CHANGE_TREEMAP_SCREENSHOT.replace('.png', '-tooltip.png') });
       await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 5, y: 5 });
-      await waitFor(async () => await evaluate(cdp, "!document.querySelector('.change-treemap-tooltip')"));
+      await waitFor(async () => await evaluate(cdp, "!document.querySelector('.change-treemap-tooltip') && !document.querySelector('.treemap-canvas-hover')"));
     };
     const assertBlueprintGeometry = async () => {
       const violations = await evaluate(cdp, `(() => {
@@ -149,12 +169,39 @@ try {
     assert.ok(await evaluate(cdp, "[...document.querySelectorAll('.change-treemap-cell')].some(e=>e.textContent.includes('auth.test.ts'))"), 'Tests contribute LOC');
     await assertTooltip('auth.ts', 'auth.ts', 60);
     await click('.change-treemap-cell button[aria-label^="auth.ts:"]');
-    await waitFor(async () => await evaluate(cdp, `document.querySelector('[aria-label="Selected treemap region"]').title.includes("auth.ts: 3 changed LOC")`));
+    assert.equal(await evaluate(cdp, "document.querySelectorAll('.change-treemap-selection, .change-treemap-region-picker, .change-treemap-footnote').length"), 0, 'Inspector removed so tiles fill the panel');
+    assert.equal(await evaluate(cdp, "document.querySelector('.change-treemap-cell[data-selected=true]').dataset.loc"), '3');
     assert.equal(await evaluate(cdp, "document.querySelectorAll('.change-treemap-panel .diff-hunk, .change-treemap-detail-pane').length"), 0, "Treemaps have no source-code pane");
     assert.ok(await evaluate(cdp, "document.querySelector('.change-treemap-plot').getBoundingClientRect().width > document.querySelector('[data-pane=treemaps]').getBoundingClientRect().width * .95"), "Map fills the panel width");
     assert.equal(await evaluate(cdp, "!!document.querySelector('.window-panel-minimized')"), false, 'File selection does not navigate');
     await click('.change-treemap-switch button', 'Diagrams');
     await waitFor(async () => await evaluate(cdp, "document.querySelectorAll('.change-treemap-plot > .change-treemap-cell[data-depth=\"0\"]').length===3"));
+    await click('.change-treemap-cell[data-treemap-kind=diagram][data-diagram-position="4"] button');
+    await waitForSelector(cdp, '.mapping-viewport > .change-session-preview .change-preview-treemap-tint');
+    assert.deepEqual(await evaluate(cdp, "[...document.querySelectorAll('.change-treemap-cell[data-depth=\"0\"]')].map(e=>e.dataset.treemapKind)"), ['canvas', 'canvas', 'unmapped']);
+    assert.equal(await evaluate(cdp, "document.querySelector('.change-treemap-breadcrumbs').textContent"), 'All canvases');
+    await click('.theme-settings-toggle');
+    assert.equal(await evaluate(cdp, 'document.querySelector(".theme-picker-panel select").value'), 'ranked', 'Ranked is the default');
+    const readColors = () => evaluate(cdp, "[...document.querySelectorAll('.change-treemap-cell[data-treemap-color]')].map(e=>e.dataset.treemapColor)");
+    const readCanvasColors = () => evaluate(cdp, "[...document.querySelectorAll('.change-preview-treemap-tint')].map(e=>e.dataset.treemapColor)");
+    const readGeometry = () => evaluate(cdp, "[...document.querySelectorAll('.change-treemap-cell')].map(e=>[e.dataset.loc,e.style.left,e.style.top,e.style.width,e.style.height])");
+    const rankedColors = await readColors(), rankedCanvas = await readCanvasColors(), rankedGeometry = await readGeometry();
+    const chooseScale = async key => {
+      await click('.theme-picker-panel select');
+      for (const [k, code] of [[key, key === 'End' ? 35 : 36], ['Enter', 13]])
+        for (const type of ['keyDown', 'keyUp']) await cdp.send('Input.dispatchKeyEvent', { type, key: k, code: k, windowsVirtualKeyCode: code });
+    };
+    await chooseScale('End');
+    await waitFor(async () => await evaluate(cdp, "document.querySelector('.treemap-loc-legend').textContent.includes('Continuous')"));
+    assert.notDeepEqual(await readColors(), rankedColors, 'Continuous changes tile shades');
+    await waitFor(async () => JSON.stringify(await readCanvasColors()) !== JSON.stringify(rankedCanvas));
+    assert.notDeepEqual(await readCanvasColors(), rankedCanvas, 'Continuous changes matching canvas shades');
+    assert.deepEqual(await readGeometry(), rankedGeometry, 'Scale choice preserves LOC and tile geometry');
+    assert.equal(await evaluate(cdp, "JSON.parse(localStorage.getItem('new-diagram-color-opacity')).scale"), 'continuous');
+    await chooseScale('Home');
+    await waitFor(async () => await evaluate(cdp, "document.querySelector('.treemap-loc-legend').textContent.includes('Ranked')"));
+    assert.deepEqual(await readColors(), rankedColors, 'Ranked shades are deterministic');
+    await click('.theme-settings-toggle');
     const identities = await evaluate(cdp, `[...document.querySelectorAll('.change-treemap-cell[data-treemap-kind="diagram"]')].map(e=>({color:e.dataset.treemapColor,position:e.dataset.diagramPosition}))`);
     assert.equal(identities.length, 2);
     assert.deepEqual(identities.map(i=>i.position), ['0','4']);
@@ -169,7 +216,7 @@ try {
       const overlay = await evaluate(cdp, `(() => {
         const stage=document.querySelector('.mapping-viewport > .change-session-preview .change-preview-stage');
         const tints=[...stage.querySelectorAll('.change-preview-treemap-tint')];
-        const tint=tints.find(e=>e.dataset.treemapColor===${JSON.stringify(identity.color)}) ?? tints[0];
+        const tint=tints.find(e=>e.dataset.diagramPosition===${JSON.stringify(identity.position)} && e.dataset.treemapColor===${JSON.stringify(identity.color)}) ?? tints[0];
         const box=stage.querySelector('[data-grid-box="'+tint.dataset.treemapDiagram.slice(5)+'"]');
         const rect=e=>({x:parseFloat(e.style.left),y:parseFloat(e.style.top),w:parseFloat(e.style.width),h:parseFloat(e.style.height)});
         const r=rect(box), tiles=tints.filter(e=>e.dataset.treemapDiagram===tint.dataset.treemapDiagram).map(rect);
@@ -207,36 +254,58 @@ try {
     await waitFor(async () => await evaluate(cdp, `document.querySelector('.change-treemap-plot').getBoundingClientRect().width < ${widthBefore - 50}`));
     assert.equal(await evaluate(cdp, "[...document.querySelectorAll('.change-treemap-plot > .change-treemap-cell[data-depth=\"0\"]')].reduce((sum,e)=>sum+Number(e.dataset.loc),0)"), 5);
     await assertBlueprintGeometry();
-    await click('.change-treemap-cell button[aria-label^="Storage / Storage:"]');
+    await click('.change-treemap-cell[data-treemap-kind=diagram] button[aria-label^="Storage:"]');
     await assertCanvasIdentity(identities[1]);
-    await click('.window-panel-header button', 'Restore');
-    await click('.change-treemap-cell button[aria-label^="Authentication / Authentication:"]');
-    await waitForSelector(cdp, '.window-panel-minimized');
+    await click('.change-treemap-cell[data-treemap-kind=diagram] button[aria-label^="Authentication:"]');
     await assertBlueprintGeometry();
     await waitForSelector(cdp, `[data-change-session="${session.id}"] .is-change-target`);
     await assertCanvasIdentity(identities[0]);
-    await click('.window-panel-header button', 'Restore');
-    await click('.change-treemap-selection button', 'Zoom into region');
+    await click('.change-treemap-zoom-controls button', 'Zoom in');
     await waitFor(async () => await evaluate(cdp, "document.querySelector('[aria-label=\"Treemap path\"]').textContent.includes('Authentication / Authentication')"));
     await assertTooltip('Sign-in', 'Authentication / Authentication', 60);
     const signInIdentity = await tileIdentity('Sign-in');
-    assert.notEqual(signInIdentity.color, identities[0].color, 'Subtree gets its own color');
+    assert.equal(signInIdentity.color, identities[0].color, 'Equal LOC gets the same shade even at different hierarchy levels');
     await click('.change-treemap-cell button[aria-label^="Sign-in:"]');
     await assertCanvasIdentity(signInIdentity, 'Sign-in');
-    await waitForSelector(cdp, '.window-panel-minimized');
-    await click('.window-panel-header button', 'Restore');
-    await click('.change-treemap-selection button', 'Zoom into region');
+    await click('.change-treemap-zoom-controls button', 'Zoom in');
     await waitForSelector(cdp, '.change-treemap-cell[data-treemap-kind=direct]');
     assert.equal(await evaluate(cdp, "document.querySelector('.change-treemap-cell[data-treemap-kind=direct]').dataset.loc"), '1.5');
     await assertTooltip('Create session', 'Authentication / Authentication', 30);
     const sessionIdentity = await tileIdentity('Create session');
     assert.notEqual(sessionIdentity.color, signInIdentity.color, 'Child and parent have distinct colors');
     await click('.change-treemap-cell button[aria-label^="Create session:"]');
-    assert.ok(await evaluate(cdp, `document.querySelector('[aria-label="Selected treemap region"]').title.includes("Create session: 1.5 allocated LOC")`));
+    assert.equal(await evaluate(cdp, "document.querySelector('.change-treemap-cell[data-selected=true]').dataset.loc"), '1.5');
+    assert.equal(await evaluate(cdp, "document.querySelector('.change-treemap-zoom-controls button').disabled"), true, 'A leaf cannot be zoomed into');
     assert.match(await evaluate(cdp, `document.querySelector('.change-treemap-cell button[aria-label^="Create session:"]').getAttribute('aria-label')`), /3 shared LOC; each shared hunk split across 2 mapped nodes/);
-    await waitForSelector(cdp, '.window-panel-minimized');
     await waitForSelector(cdp, `[data-change-session="${session.id}"] .is-change-target`);
     await assertCanvasIdentity(sessionIdentity, 'Create session');
+    await click('[aria-label="Window panel layout"]');
+    for (const [key, code] of [['End', 35], ['Enter', 13]]) for (const type of ['keyDown', 'keyUp'])
+      await cdp.send('Input.dispatchKeyEvent', { type, key, code: key, windowsVirtualKeyCode: code });
+    await waitForSelector(cdp, '.window-panel-canvas .change-preview-treemap-tint');
+    await click('.change-treemap-cell button[aria-label^="Create session:"]');
+    let canvasPoint;
+    await waitFor(async () => (canvasPoint = await evaluate(cdp, `(() => {
+      const tile=document.querySelector('.change-treemap-cell button[aria-label^="Create session:"]').parentElement;
+      const region=[...document.querySelectorAll('.window-panel-canvas .change-preview-treemap-tint')].find(e=>e.dataset.treemapRegion===tile.dataset.nodeId);
+      if(!region)return null;const r=region.getBoundingClientRect(),p={x:r.right-3,y:r.top+r.height/2};
+      return document.querySelector('.window-panel-canvas').contains(document.elementFromPoint(p.x,p.y))?p:null;
+    })()`)));
+    const reverseCamera = await evaluate(cdp, "document.querySelector('.window-panel-canvas .diagram-canvas__surface').style.transform");
+    for (const type of ['mousePressed', 'mouseReleased']) await cdp.send('Input.dispatchMouseEvent', { type, ...canvasPoint, button: 'left', buttons: type === 'mousePressed' ? 1 : 0, clickCount: 1 });
+    await waitFor(async () => await evaluate(cdp, "document.querySelector('.change-treemap-cell[data-selected=true] button')?.getAttribute('aria-label').startsWith('Create session:') && !!document.querySelector('.change-treemap-tooltip')"));
+    assert.equal(await evaluate(cdp, "document.querySelector('.window-panel-canvas .diagram-canvas__surface').style.transform"), reverseCamera);
+    assert.equal(await evaluate(cdp, "document.querySelectorAll('.diagram-mapping-choices').length"), 0);
+    if (process.env.CHANGE_TREEMAP_SCREENSHOT) await captureScreenshot(cdp, { output: process.env.CHANGE_TREEMAP_SCREENSHOT.replace('.png', '-reverse.png') });
+    await click('[aria-label="Window panel layout"]');
+    for (const [key, code] of [['Home', 36], ['ArrowDown', 40], ['Enter', 13]]) for (const type of ['keyDown', 'keyUp'])
+      await cdp.send('Input.dispatchKeyEvent', { type, key, code: key, windowsVirtualKeyCode: code });
+    await waitFor(async () => await evaluate(cdp, "document.querySelector('.window-panel-full-split') && !document.querySelector('.window-panel-canvas')"));
+    await waitFor(async () => await evaluate(cdp, `(() => {
+      const plot=document.querySelector('.change-treemap-plot'), cells=[...plot.children];
+      return Math.max(...cells.map(e=>parseFloat(e.style.left)+parseFloat(e.style.width)))===Math.round(plot.getBoundingClientRect().width)
+        && Math.max(...cells.map(e=>parseFloat(e.style.top)+parseFloat(e.style.height)))===Math.round(plot.getBoundingClientRect().height);
+    })()`));
     const beforeTheme = await evaluate(cdp, `[...document.querySelectorAll('.change-treemap-cell')].map(e=>({id:e.dataset.nodeId,loc:e.dataset.loc,color:e.dataset.treemapColor,rect:e.getAttribute('style')}))`);
     await click('.theme-toggle');
     await waitFor(async () => await evaluate(cdp, "document.documentElement.dataset.theme==='light'"));
@@ -275,8 +344,16 @@ try {
     assert.notEqual(clearCanvas.canvas, solidMap.canvas, 'Canvas opacity changes immediately');
     assert.equal(clearCanvas.tile, solidMap.tile, 'Canvas slider leaves treemap opacity alone');
     await setSlider('Diagram background opacity', 'ArrowRight', 39);
+    const beforeShade = await fills();
+    const geometryBeforeShade = await evaluate(cdp, "[...document.querySelectorAll('.change-treemap-cell')].map(e=>e.getAttribute('style'))");
+    await setSlider('Shade shift', 'End', 35);
+    const lighter = await fills();
+    assert.notEqual(lighter.tile, beforeShade.tile, 'Shade changes the treemap');
+    assert.notEqual(lighter.canvas, beforeShade.canvas, 'Shade changes canvas backgrounds');
+    assert.deepEqual(await evaluate(cdp, "[...document.querySelectorAll('.change-treemap-cell')].map(e=>e.getAttribute('style'))"), geometryBeforeShade, 'Shade leaves LOC and geometry alone');
     const preferences = await evaluate(cdp, "JSON.parse(localStorage.getItem('new-diagram-color-opacity'))");
     assert.equal(preferences.treemap, 100);
+    assert.equal(preferences.shade, 20);
     assert.ok(preferences.canvas > 0 && preferences.canvas < 100);
     if (process.env.CHANGE_TREEMAP_SCREENSHOT) await captureScreenshot(cdp, { output: process.env.CHANGE_TREEMAP_SCREENSHOT.replace('.png', '-settings.png') });
     for (const type of ['keyDown', 'keyUp']) await cdp.send('Input.dispatchKeyEvent', { type, key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
@@ -288,7 +365,7 @@ try {
     await click('.change-treemap-zoom-controls button', '← Zoom out');
     await waitFor(async () => await evaluate(cdp, "document.querySelector('.change-treemap-breadcrumbs [aria-current]').textContent === 'Authentication'"));
     await click('.change-treemap-zoom-controls button', 'Reset zoom');
-    await waitFor(async () => await evaluate(cdp, "!document.querySelector('.change-treemap-zoom-controls')"));
+    await waitFor(async () => await evaluate(cdp, "document.querySelectorAll('.change-treemap-zoom-controls button').length===1 && document.querySelector('.change-treemap-zoom-controls button').disabled"));
     await waitFor(async () => await evaluate(cdp, "document.querySelectorAll('.change-treemap-cell[data-depth=\"0\"]').length===3"));
     await assertBlueprintGeometry();
     assert.deepEqual(await evaluate(cdp, `[...document.querySelectorAll('.change-treemap-cell[data-treemap-kind="diagram"]')].map(e=>({color:e.dataset.treemapColor,position:e.dataset.diagramPosition}))`), identities, 'Returning from zoom restores the original diagram colors');
@@ -299,7 +376,7 @@ try {
     await click('.window-panel [role=tab]', 'Treemaps');
     await waitForSelector(cdp, '.change-treemap-summary');
     if (await evaluate(cdp, "!!document.querySelector('.window-panel-minimized')")) await click('.window-panel-header button', 'Restore');
-    assert.ok(await evaluate(cdp, "document.querySelector('.change-treemap-footnote').textContent.includes('1 binary / metadata changes')"));
+    assert.ok(await evaluate(cdp, "document.querySelector('.treemap-notice').textContent.includes('1 binary / metadata changes')"));
     assert.equal(await evaluate(cdp, "document.querySelector('.change-treemap-switch button[aria-pressed=true]').textContent"), 'Diagrams', 'Reopening remembers diagram grouping');
     await waitForSelector(cdp, '.change-treemap-cell[data-treemap-kind=diagram]');
     assert.deepEqual(await evaluate(cdp, `[...document.querySelectorAll('.change-treemap-cell[data-treemap-kind="diagram"]')].map(e=>({color:e.dataset.treemapColor,position:e.dataset.diagramPosition}))`), identities, 'Reopening retains fixed position colors');
@@ -324,7 +401,7 @@ try {
     await waitForSelector(cdp, '.theme-toggle[aria-label="Switch to Current Dark"]');
     assert.equal(await evaluate(cdp, "document.documentElement.dataset.theme"), 'light', 'Theme survives reload');
     await click('.theme-settings-toggle');
-    assert.deepEqual(await evaluate(cdp, "Object.fromEntries([...document.querySelectorAll('.theme-picker-panel input')].map((e,i)=>[i===0?'treemap':'canvas',Number(e.value)]))"), preferences, 'Both opacity settings survive reload');
+    assert.deepEqual(await evaluate(cdp, "({...Object.fromEntries([...document.querySelectorAll('.theme-picker-panel input')].map((e,i)=>[['treemap','canvas','shade'][i],Number(e.value)])),scale:document.querySelector('.theme-picker-panel select').value})"), preferences, 'Both opacity settings survive reload');
     await click('.theme-settings-toggle');
     await click('.theme-toggle');
     assert.equal(await evaluate(cdp, "document.documentElement.dataset.theme"), 'dark');
@@ -333,7 +410,7 @@ try {
     await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
     await waitFor(async () => await evaluate(cdp, "document.documentElement.dataset.theme==='light'"));
     assert.deepEqual(errors, []);
-    console.log('PASS Deterministic subtree colors, matching non-overlapping canvas tiles, zoom/reopen stability, Blueprint grid, plain fills, independent persisted opacity sliders, flush pixel-aligned tiles, Files/Diagrams LOC, fractional allocation and unmapped area, nested zoom, full-width map without source code, direct rectangle navigation and explicit zoom, empty/binary states, and no LLM requests');
+    console.log('PASS Deterministic subtree colors, matching non-overlapping canvas tiles, zoom/reopen stability, Blueprint grid, plain fills, independent persisted opacity sliders, flush pixel-aligned tiles, Files/Diagrams LOC, fractional allocation and unmapped area, nested zoom, full-width map without source code, direct rectangle navigation without minimizing and explicit zoom, empty/binary states, and no LLM requests');
   });
   assert.equal((await changes.get(session.id)).version, version, 'Viewing never mutates the ChangeSession');
 } finally {

@@ -33,3 +33,9 @@ Use `--diagrams-dir` and `--project-root` for a different store or checkout. The
 Run records live under `<store>/diff-session-workflows/<runId>/`. They retain the frozen context, prompt templates, each user request/response and conversation. A process restart marks unfinished runs interrupted; it does not silently spend tokens restarting them. Failures preserve any partial proposal for inspection. Cancellation does not roll back completed proposal edits.
 
 The analysis stage exposes only read tools. Materialization binds all write tools to the run's isolated ChangeSession. Completion requires a ready, nonempty proposal and DiffTree coverage of every captured hunk. The workflow never accepts a proposal or publishes the original canvases.
+
+## Performance diagnostics
+
+`performance.json` records each step's wall time, individual tool latency and response bytes, assistant-response latency/token usage, and any context compaction. Step durations include their model/tool intervals; do not add these overlapping totals together. The conversation artifact retains the full session message log even when the model's active context is compacted.
+
+Workflow mutation replies return versions and node summaries. Diagram reads retain full ASCII, current anchor IDs, source bindings and mapping ranges, but omit rendering indexes and captured source lines. Explicit source-evidence selections through `exec` remain available. During materialization, hunk and DiffTree reads default to metadata; use `includePatches: true` to reread patches. After the completion tool validates the ready proposal, automatic compaction is disabled for the finished session.

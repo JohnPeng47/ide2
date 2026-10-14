@@ -28,20 +28,31 @@ panels inherit the theme without requiring extra React providers. The native
 
 ## Diagram colors and changed code
 
-Node identity is independent of theme: the deterministic position-to-color mapping
-uses the foundation identity palette, followed by deterministic hues. Both exclude
-green and neighboring lime/teal hues (45–205°), keeping them distinct from added-code
-indicators. Theme changes
-never change node IDs, LOC allocation, layout or saved diagrams.
+Treemap color is a single blue LOC scale. The floating settings offer Ranked
+(default) and Continuous. Ranked evenly spaces the distinct positive LOC values
+across the shade range; ties share a shade and a single value uses the high endpoint.
+Continuous shades are proportional to LOC. Both use the complete hierarchy
+(including aggregate headings, excluding the virtual root and Unmapped),
+so zooming does not recolor a node. Higher values are brighter in dark mode and
+darker in light mode. Theme changes never change node IDs, LOC allocation,
+layout or saved diagrams. Position still determines canvas paint order, not hue.
+Unmapped regions stay neutral. Files use the same scale without canvas identities.
 
 The canvas and treemap default to 22% identity opacity, with non-overlapping subtree
 fills. The settings button beside the floating theme toggle opens independent
 0–100% opacity sliders for diagram treemap tiles and canvas backgrounds. They
 update immediately and persist under `new-diagram-color-opacity`, independently
 of theme, with cross-tab synchronization. The CSS contracts are
-`--treemap-identity-opacity` and `--canvas-identity-opacity`. Neutral Light gives both a white base and neutral grid. Current Dark keeps
+`--treemap-identity-opacity` and `--canvas-identity-opacity`. A shared Shade shift
+slider adjusts lightness from −20 to +20 using `--treemap-shade-shift`, preserving
+LOC ordering and leaving opacity independent. It is stored alongside opacity;
+older saved preferences default to zero shift and Ranked. The scale choice is
+persisted alongside the sliders. Hovering a diagram tile outlines its corresponding
+canvas region in blue (`--treemap-hover-border`) without camera navigation; leaving
+the tile clears the outline. The theme endpoints are
+`--treemap-loc-low` and `--treemap-loc-high`. Neutral Light gives both a white base and neutral grid. Current Dark keeps
 the dark canvas and navy Blueprint surfaces. Treemap tiles use plain identity fills and neutral outlines; added/deleted LOC
-remain in the inspector and in hover tooltips (green additions, red deletions). Entirely added diagrams use their green boundary without
+remain in hover tooltips (green additions, red deletions). Entirely added diagrams use their green boundary without
 repeating the green fill on every text label. Mapped labels remain clickable without
 a dotted underline. Text/fill/border roles for other diff rows remain separate. Authored connection colors remain document data.
 
@@ -50,6 +61,23 @@ a dotted underline. Text/fill/border roles for other diff rows remain separate. 
 `src/shared/theme/themeDefinitions.ts` names the themes and their code palettes.
 Source highlighting uses `dark-plus` / `light-plus`; embedded Markdown uses
 `catppuccin-mocha` / `catppuccin-latte`. Highlight caches include theme identity.
+Diagram text uses the `--diagram-syntax-*` roles: teal types, gold functions,
+blue members/variables, purple keywords, orange strings, green numbers, violet
+diagram references, and muted tree connectors. Both themes provide their own
+foreground palette; diff and treemap fills remain independent.
+
+`diagramSyntax.ts` recognizes conservative TypeScript-like fragments within ASCII
+diagrams, protecting paths and prose. Current source mappings override lexical
+guesses using captured evidence. Explicit declarations/signatures are semibold;
+mapping a reference to a source declaration does not make it a definition. Hover
+highlights matching source identities within the visible document, with file,
+range and captured revision in the tooltip. Unmapped lexical matches are scoped
+to one diagram instance/revision and never create navigation targets. Diagram
+links retain their validated jump targets; source navigation remains available
+through the existing node source action. Stale or ambiguous evidence supplies no
+semantic identity. Syntax spans preserve raw text, source coordinates, selection,
+folding and endpoint owners in both live and ChangeSession rendering.
+
 The native tldraw renderer receives the same light/dark mode. Standalone exported
 terminal Markdown documents keep their existing self-contained dark presentation.
 
@@ -70,3 +98,17 @@ states, diff rows, canvas overlays, code views and portaled tooltips. The contra
 and syntax-palette tests live in `src/shared/theme/__tests__/themes.test.ts`.
 The treemap browser check exercises the floating control, keyboard input, reload
 persistence, matching canvas/tile fills, and unchanged layout and LOC values.
+
+
+With a diagram treemap open, clicking its corresponding painted canvas region selects
+and focuses the tile, showing the same tooltip and outline as hover. This selection
+can reveal a containing treemap group but never navigates the canvas camera. Dragging
+and source/control buttons do not select treemap tiles. DiffSession treemaps group
+canvases above diagrams; live canvas treemaps start at the diagrams in that canvas.
+
+
+Treemap tooltips use one compact row: LOC and its percentage of total scope LOC,
+then green added/red deleted counts for DiffSessions. Names remain out of the
+tooltip. The percentage denominator stays fixed while zooming. Placement uses the entire hovered tile rectangle, trying its
+right, left, top and bottom edges with an 8px gap. The tooltip stays inside the
+viewport without covering its tile; if no outside space exists, it stays hidden.

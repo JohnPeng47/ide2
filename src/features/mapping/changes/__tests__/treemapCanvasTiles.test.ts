@@ -5,7 +5,7 @@ import { singleDiagramScene } from '../../../../../domain/core/diagrams/projectD
 import { diffDiagramContent } from '../../../../../domain/mapping/changes/diagramContentDiff';
 import { changePreviewText } from '../changePreviewText';
 import { treemapCanvasTiles } from '../treemapCanvasTiles';
-import { diagramColorAt, type TreemapDiagramColor } from '../treemapDiagramColors';
+import { treemapLocColor, type TreemapDiagramColor } from '../treemapDiagramColors';
 
 it('tiles full subtree ranges, preserving siblings and both diff rows without overlapping fills', () => {
   const before = 'Root\n|-- Parent\n|   `-- Old\n`-- Sibling';
@@ -17,7 +17,7 @@ it('tiles full subtree ranges, preserving siblings and both diff rows without ov
   scene.contents = { ...scene.contents, overview: next };
   const nodes = diagramContentNodes(next.content);
   const identity = (position: number, label?: string): TreemapDiagramColor => ({ documentId: 'doc', displayNodeId: 'grid:overview',
-    contentNodeId: nodes.find(node => node.label === label)?.id, position, color: diagramColorAt(position) });
+    contentNodeId: nodes.find(node => node.label === label)?.id, position, color: treemapLocColor(position, 4) });
   const colors = [identity(0), identity(1, 'Parent'), identity(2, 'New'), identity(3, 'Sibling')];
   const diffs = new Map([['grid:overview', diffDiagramContent(old.content, next.content)]]);
   const text = changePreviewText(scene, undefined, diffs, new Set(['grid:overview']));

@@ -3,6 +3,8 @@ import type { DiagramContent } from './diagramContent';
 import { diagramContentNodes } from './diagramContentNodes';
 import { activeDiagramJumps, type DiagramJump } from './diagramJump';
 import type { DiagramElementMapping } from '../records/domain';
+import type { DiagramSourceContext } from './diagram';
+import { diagramSyntaxLine, mappedDiagramSyntax, type DiagramSyntax } from './diagramSyntax';
 
 export interface DiagramTextOwner {
   displayNodeId: string;
@@ -15,11 +17,14 @@ export interface DiagramTextOwner {
 export interface DiagramTextRange {
   start: number; end: number; owner?: DiagramTextOwner;
   mapping?: DiagramElementMapping; jump?: DiagramJump;
+  syntax?: DiagramSyntax;
+  semantic?: boolean;
 }
 export interface DiagramTextRun {
   jumps?: readonly DiagramJump[];
   start: number; end: number; text: string; owner?: DiagramTextOwner;
   mappings: readonly DiagramElementMapping[]; jump?: DiagramJump;
+  syntax?: DiagramSyntax;
 }
 export interface DiagramTextRow { text: string; sourceLine?: number; runs: DiagramTextRun[] }
 
@@ -35,8 +40,14 @@ export function textRow(text: string, ranges: readonly DiagramTextRange[], sourc
     const base = covering.find(range => range.owner && !range.owner.contentNodeId)?.owner;
     const owner = labels.length === 1 ? labels[0].owner : base;
     const jumps = covering.flatMap(range => range.jump ? [range.jump] : []);
+    const semantic = covering.filter(range => range.semantic && range.syntax);
+    const identities = new Set(semantic.map(range => range.syntax!.symbol));
+    // Ambiguous mappings retain all navigation choices, without inventing a single symbol.
+    const syntax = semantic.length ? identities.size === 1 ? semantic[0].syntax : undefined
+      : covering.find(range => range.syntax)?.syntax;
     runs.push({ start, end, text: text.slice(start, end), owner,
       mappings: covering.flatMap(range => range.mapping ? [range.mapping] : []),
+      ...(syntax ? { syntax } : {}),
       ...(jumps.length ? { jump: jumps[0], jumps } : {}) });
   }
   return { text, sourceLine, runs };
@@ -46,6 +57,7 @@ export function textRow(text: string, ranges: readonly DiagramTextRange[], sourc
 export function diagramTextRanges(input: {
   ascii: string; content?: DiagramContent; displayNodeId: string;
   mappings?: readonly DiagramElementMapping[]; jumps?: readonly DiagramJump[];
+  sourceContext?: DiagramSourceContext;
 }): Map<number, DiagramTextRange[]> {
   const lines = input.ascii.split('\n');
   const current = input.content?.ascii === input.ascii && input.content.asciiSha256 === asciiSha256(input.ascii)
@@ -64,6 +76,14 @@ export function diagramTextRanges(input: {
   for (const mapping of input.mappings ?? []) result.get(mapping.line)?.push({ start: mapping.startColumn - 1, end: mapping.endColumn, mapping });
   for (const jump of current ? activeDiagramJumps(current, input.jumps) : []) result.get(jump.source.line)?.push({
     start: jump.source.startColumn - 1, end: jump.source.endColumn, jump });
+  if (current) {
+    const source = input.sourceContext?.contentHash === current.asciiSha256 ? input.sourceContext : undefined;
+    lines.forEach((line, index) => {
+      const syntax = diagramSyntaxLine(line, JSON.stringify([input.displayNodeId, current.revisionId]));
+      result.get(index + 1)!.push(...syntax);
+      if (source) result.get(index + 1)!.push(...mappedDiagramSyntax(line, index + 1, source, syntax).map(range => ({ ...range, semantic: true })));
+    });
+  }
   return result;
 }
 

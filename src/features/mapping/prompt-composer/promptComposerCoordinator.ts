@@ -1,3 +1,4 @@
+import type { AgentContextSnapshot } from '../../../../domain/core/agents/agentContext';
 import { createStore } from 'zustand/vanilla';
 import type { CreateDiagramInput, DiagramEditRun, PromptReference } from '../../../../domain/mapping/agent/diagramEdit';
 import { defaultTemplateSelection, type PromptOperation } from '../../../../domain/mapping/agent/promptTemplates';
@@ -7,6 +8,9 @@ import { createPromptDraft, insertReferenceWithCursor, removeBlock, serializePro
 /** The fixed destination: the diagram to revise, or the anchor new diagrams are created beside. */
 export interface PromptComposerTarget { operation: PromptOperation; canvasId: string; documentId: string; nodeId: string; label: string; subtreeLabel?: string; subtree?: CreateDiagramInput['subtree']; sources?: CreateDiagramInput['sources']; origin?: CreateDiagramInput['origin'] }
 export interface PromptComposerEntry {
+  llmSessionId: string;
+  agentContext?: AgentContextSnapshot;
+  agentSessionId?: string;
   target: PromptComposerTarget;
   draft: PromptDraft;
   pending: boolean;
@@ -42,7 +46,7 @@ export class PromptComposerCoordinator {
   open(target: PromptComposerTarget, fresh = false) {
     const key = fresh ? crypto.randomUUID() : composerKey(target);
     this.store.setState(state => ({ activeKey: key, entries: { ...state.entries,
-      [key]: state.entries[key] ?? { target: { ...target }, draft: createPromptDraft(target.operation), pending: false } } }));
+      [key]: state.entries[key] ?? { llmSessionId: crypto.randomUUID(), target: { ...target }, draft: createPromptDraft(target.operation), pending: false } } }));
     return key;
   }
   setTarget(key: string, patch: Partial<PromptComposerTarget>) {
@@ -126,7 +130,9 @@ export class PromptComposerCoordinator {
   }
   carry(reference?: PromptReference) { this.store.setState({ carried: reference && { reference: structuredClone(reference) } }); }
   private accept(key: string, run: DiagramEditRun) {
-    this.patch(key, { run, error: undefined });
+    this.patch(key, { run, error: undefined,
+      ...(run.agentSessionId ? { agentSessionId: run.agentSessionId } : {}),
+      ...(run.status === 'completed' && run.agentContext ? { agentContext: structuredClone(run.agentContext) } : {}) });
     this.schedule(key);
   }
   private schedule(key: string) {
@@ -150,7 +156,8 @@ export class PromptComposerCoordinator {
       const { target, draft } = entry;
       const capture = await this.client.capture(target.canvasId, target.documentId, target.nodeId);
       if (this.stopped) return;
-      const request: CreateDiagramInput = { ...capture, nodeId: target.nodeId, prompt, requestId: crypto.randomUUID(),
+      const request: CreateDiagramInput = { ...capture, llmSessionId: entry.llmSessionId,
+        ...(entry.agentContext ? { agentContext: structuredClone(entry.agentContext) } : {}), nodeId: target.nodeId, prompt, requestId: crypto.randomUUID(),
         template: structuredClone(draft.template),
         ...(target.operation === 'edit-diagram' ? { subtree: target.subtree } : {}),
         ...(target.operation === 'extend-diagram' ? { origin: target.origin, sources: target.sources } : {}), ...(references.length ? { references } : {}),

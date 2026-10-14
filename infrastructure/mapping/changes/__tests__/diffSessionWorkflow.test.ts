@@ -46,6 +46,12 @@ it('recreates Proposal 2 inputs from originals, isolates all writes, and replays
     }
     const agent = new AgentDiagrammingSessionService(bridge, {} as MappingDiagramService, source, new QuickJsAgentRuntime(), changes);
     const tools = new DiffSessionTools(capture, changes, agent, async () => ({}), 'workflow-run', 'Regenerated', async () => {});
+    const readHunks = (stage: 'analyze' | 'materialize', includePatches?: boolean) => tools.tools(stage)
+      .find(tool => tool.name === 'get_repository_diff_hunks')!.execute({ repositoryId: original.repositoryId, commits: original.commits, limit: 1,
+        ...(includePatches === undefined ? {} : { includePatches }) }) as Promise<any>;
+    expect((await readHunks('analyze')).hunks[0]).toHaveProperty('patch');
+    expect((await readHunks('materialize')).hunks[0]).not.toHaveProperty('patch');
+    expect((await readHunks('materialize', true)).hunks[0]).toHaveProperty('patch');
     expect(tools.tools('analyze').map(tool => tool.name)).not.toContain('exec');
     const create = tools.tools('materialize').find(tool => tool.name === 'create_diagram_change_session')!;
     const result = await create.execute({}) as any;

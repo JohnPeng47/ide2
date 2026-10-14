@@ -14,11 +14,17 @@ export interface DiffSessionAgentSession {
   transcript(): unknown;
   dispose(): void;
 }
+export interface DiffSessionMetric {
+  kind: 'step' | 'tool' | 'model' | 'compaction'; step: DiffSessionStep; name: string;
+  startedAt: string; durationMs: number; responseBytes?: number; error?: string;
+  usage?: { input: number; output: number; cacheRead: number; cacheWrite: number; totalTokens: number };
+}
 export interface DiffSessionRuntime {
   openSession(input: {
     sourceRoot: string; signal: AbortSignal;
     tools(step: DiffSessionStep): DiffSessionTool[];
     onProgress(message: string): void;
+    onMetric?(metric: DiffSessionMetric): void;
   }): Promise<DiffSessionAgentSession>;
   dispose(): void;
 }

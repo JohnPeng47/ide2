@@ -32,3 +32,20 @@ it('orients the shared open arrowhead for each target side', () => {
     expect(html).toContain('fill="none"');
   }
 });
+
+it('keeps syntax inside one jump button and lets review wrappers retain their highlighting', () => {
+  const ascii = 'Root\n`-- applyUpdate(value)';
+  const content = buildDiagramContent(ascii, 'v1', 'tree');
+  const ranges = diagramTextRanges({ ascii, content, displayNodeId: 'grid:a', jumps: [{ id: 'jump',
+    source: { revisionId: content.revisionId, contentHash: content.asciiSha256, line: 2, startColumn: 5, endColumn: 22 },
+    target: { representationId: 'destination' } }] });
+  const rows = ascii.split('\n').map((line, i) => textRow(line, ranges.get(i + 1)!));
+  const html = renderToStaticMarkup(createElement(DiagramText, { rows, onJump: () => {},
+    renderRun: (_run, text) => createElement('span', { className: 'change-diff-modified' }, text) }));
+  expect(html.replace(/<[^>]+>/g, '')).toBe(ascii);
+  expect(html.match(/data-diagram-jump-id="jump"/g)).toHaveLength(1);
+  expect(html).toContain('syntax-function');
+  expect(html).toContain('syntax-variable');
+  expect(html).toContain('change-diff-modified');
+  expect(html.match(/class="diagram-content-node"/g)).toHaveLength(2);
+});

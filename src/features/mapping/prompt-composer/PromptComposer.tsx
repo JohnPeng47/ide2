@@ -68,6 +68,13 @@ function statusMessage(entry: PromptComposerEntry) {
 
 function PromptPane({ coordinator, entryKey, entry, revisions, list, railOpen, onToggleRail, carrying }: { coordinator: PromptComposerCoordinator;
   entryKey: string; entry: PromptComposerEntry; revisions: PromptRevisionSource; list: PromptRevision[]; railOpen: boolean; onToggleRail: () => void; carrying: boolean }) {
+  const [copyStatus, setCopyStatus] = useState('');
+  useEffect(() => setCopyStatus(''), [entry.agentSessionId]);
+  const copySession = async () => {
+    if (!entry.agentSessionId) return;
+    try { await navigator.clipboard.writeText(entry.agentSessionId); setCopyStatus('Copied'); }
+    catch { setCopyStatus('Could not copy'); }
+  };
   const locked = composerUnsettled(entry), status = entry.run?.status, create = entry.target.operation !== 'edit-diagram';
   const { prompt } = serializePromptDraft(entry.draft), references = draftReferences(entry.draft);
   const update = (change: Parameters<PromptComposerCoordinator['updateDraft']>[1]) => coordinator.updateDraft(entryKey, change);
@@ -89,6 +96,8 @@ function PromptPane({ coordinator, entryKey, entry, revisions, list, railOpen, o
       {(entry.error || entry.run?.error) && <p role="alert" className="prompt-error">{entry.error ?? entry.run?.error}</p>}
       {!!entry.run?.result?.unresolvedEdgeIds.length && <p role="alert" className="prompt-error">Some connections need their endpoints repaired: {entry.run.result.unresolvedEdgeIds.join(', ')}</p>}
       <footer className="prompt-composer-footer">
+        {entry.agentSessionId && <button type="button" onClick={() => void copySession()}
+          aria-label="Copy agent session ID" title={entry.agentSessionId}>{copyStatus || 'Copy agent session ID'}</button>}
         {!locked && !status && <button type="button" onClick={() => coordinator.close()}>Cancel</button>}
         {status === 'generating' && <button type="button" disabled={entry.pending} onClick={() => void coordinator.cancel(entryKey)}>{create ? 'Cancel creation' : 'Cancel update'}</button>}
         {(status === 'awaiting-acknowledgement' || entry.error && locked) && <button type="button" disabled={entry.pending}

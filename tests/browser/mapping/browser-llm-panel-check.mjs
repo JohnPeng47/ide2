@@ -42,6 +42,8 @@ try {
     await cdp.send('Network.enable');
     const submittedEdits=[];
     cdp.on('Network.requestWillBeSent',event=>{ if(event.request.url.endsWith('/api/mapping/agent/diagram-edits') && event.request.postData) submittedEdits.push(JSON.parse(event.request.postData)); });
+    const submittedCreates=[];
+    cdp.on('Network.requestWillBeSent',event=>{ if(event.request.url.endsWith('/api/mapping/agent/tools/create-diagram') && event.request.postData) submittedCreates.push(JSON.parse(event.request.postData)); });
     cdp.on('Page.javascriptDialogOpening', () => void cdp.send('Page.handleJavaScriptDialog', { accept: true }));
     const send = cdp.send.bind(cdp);
     cdp.send = async (method, parameters) => {
@@ -158,6 +160,13 @@ try {
     assert.equal(submittedEdits.length,1);
     assert.deepEqual(submittedEdits[0].references.map(reference=>reference.nodeIds.length),[1,1], 'Submitted references contain current selections without historical duplicates');
     console.log('PASS subtree update with the current reference node counts');
+    await cdp.send('Browser.grantPermissions', { origin: url, permissions: ['clipboardReadWrite', 'clipboardSanitizedWrite'] });
+    const runtimeId = await evaluate(cdp, "document.querySelector('[aria-label=\"Copy agent session ID\"]').title");
+    assert.ok(runtimeId.startsWith('fake-agent-'));
+    await click('[aria-label="Copy agent session ID"]');
+    await waitFor(async()=>await evaluate(cdp, "document.querySelector('[aria-label=\"Copy agent session ID\"]').textContent==='Copied'"));
+    assert.equal(await evaluate(cdp, 'navigator.clipboard.readText()'), runtimeId);
+    console.log('PASS copy actual agent session ID to clipboard');
     await click('[aria-label="Close Workspace tools"]');
     await key('z',2);
     await waitFor(async()=>!(await text()).includes('[edited:'));
@@ -170,7 +179,9 @@ try {
     await key('End'); await key('Enter');
     await waitFor(async()=>await evaluate(cdp,"document.querySelector('[aria-label=\"LLM mode\"]').value==='extend-diagram'"));
     await waitForSelector(cdp,'.llm-origin');
-    assert.equal(await evaluate(cdp,"getComputedStyle(document.querySelector('.llm-origin')).borderTopColor"),'rgb(112, 217, 148)', 'Extend marker turns green');
+    const markerColor = await evaluate(cdp,"getComputedStyle(document.querySelector('.llm-origin')).borderTopColor");
+    const [red, green, blue] = markerColor.match(/\d+/g).map(Number);
+    assert.ok(green > red && green > blue, 'Extend marker uses the theme’s green accent');
     await waitFor(async()=>await evaluate(cdp,"document.querySelector('.llm-origin').getBoundingClientRect().right<document.querySelector('.window-panel').getBoundingClientRect().left"));
     const sourceSelection = await evaluate(cdp,"document.querySelector('[data-selection-active=true]').dataset.selectionRoot");
     const selectionVisible = async () => evaluate(cdp,"[...document.querySelectorAll('.retained-selection')].some(e=>{const r=e.getBoundingClientRect();return r.width>0&&r.height>0})");
@@ -280,6 +291,23 @@ try {
     await waitForSelector(cdp,'[data-edit-status=completed]',{timeoutMs:15000});
     await waitFor(async()=>(await text()).includes('[created: Independent diagram]'));
     console.log('PASS create without selection');
+    const firstCreate = submittedCreates.at(-1);
+    assert.ok(firstCreate.llmSessionId);
+    assert.equal(firstCreate.agentContext, undefined, 'A new panel starts without another panel’s history');
+    const firstCreateId = await evaluate(cdp, "document.querySelector('[aria-label=\"Copy agent session ID\"]').title");
+    await click('[aria-label="Close Workspace tools"]');
+    await click('[aria-label="LLM sessions"] button[aria-current=page]');
+    await click('.prompt-body-text'); await key('a', 2); await cdp.send('Input.insertText', { text: 'Continue our previous discussion' });
+    await click('.llm-panel button[type=submit]');
+    await waitForSelector(cdp,'[data-edit-status=completed]',{timeoutMs:15000});
+    await waitFor(async()=>(await text()).includes('[created: Continue our previous discussion]'));
+    const followup = submittedCreates.at(-1);
+    assert.equal(followup.llmSessionId, firstCreate.llmSessionId);
+    assert.equal(followup.agentContext.source.sourceSessionId, firstCreate.llmSessionId);
+    assert.equal(followup.agentContext.messages[0].content[0].text, 'Independent diagram');
+    assert.equal(followup.agentContext.messages.length, 2);
+    assert.notEqual(await evaluate(cdp, "document.querySelector('[aria-label=\"Copy agent session ID\"]').title"), firstCreateId);
+    console.log('PASS follow-up reuses panel context after reopening and exposes its new runtime ID');
     await click('[aria-label="Close Workspace tools"]');
     await click('[title="Reset zoom and center diagram"]');
     await waitFor(async()=>await evaluate(cdp,"!document.querySelector('.tl-hit-test-blocker:not(.tl-hit-test-blocker__hidden)')"));

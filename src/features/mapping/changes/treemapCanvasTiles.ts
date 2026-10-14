@@ -1,21 +1,21 @@
 import type { DiagramContent } from '../../../../domain/core/diagrams/diagramContent';
 import { diagramContentNodes } from '../../../../domain/core/diagrams/diagramContentNodes';
-import type { changePreviewText } from './changePreviewText';
 import type { TreemapDiagramColor } from './treemapDiagramColors';
 
-type Projection = ReturnType<typeof changePreviewText>['projections'] extends Map<string, infer P> ? P : never;
+interface Projection { rows: readonly unknown[]; rowForLine: ReadonlyMap<number, number>; prefixRowForNode: ReadonlyMap<string, number>; columnForLine: (line: number, column: number) => number }
 interface Tile { identity: TreemapDiagramColor; column: number; row: number; columns: number; rows: number }
 
 /** Partition the entire diagram into non-overlapping tints. Visible child regions
  * replace their parent's tint; hidden treemap descendants cannot obscure a tile's color. */
-export function treemapCanvasTiles(content: DiagramContent, projection: Projection,
+export function treemapCanvasRegions(content: DiagramContent, projection: Projection,
   bounds: { columns: number; rows: number }, colors: readonly TreemapDiagramColor[]): Tile[] {
   const nodes = new Map(diagramContentNodes(content).map(node => [node.id, node]));
   const regions: Tile[] = [];
   for (const identity of colors) {
     if (!identity.contentNodeId) {
       // Bounds may also carry the scene origin. Tiles stay local until placement.
-      regions.push({ identity, column: 0, row: 0, columns: bounds.columns, rows: bounds.rows });
+      const row = identity.direct ? 1 : 0;
+      if (bounds.rows > row) regions.push({ identity, column: 0, row, columns: bounds.columns, rows: bounds.rows - row });
       continue;
     }
     const node = nodes.get(identity.contentNodeId);
@@ -35,8 +35,17 @@ export function treemapCanvasTiles(content: DiagramContent, projection: Projecti
     const end = nextLine === undefined ? projection.rows.length
       : (nextNode && projection.prefixRowForNode.get(nextNode.id)) ?? projection.rowForLine.get(nextLine)!;
     const column = Math.max(0, Math.min(bounds.columns, projection.columnForLine(node.line, node.branchColumn)));
-    regions.push({ identity, column, row, columns: bounds.columns - column, rows: Math.max(1, end - row) });
+    // Aggregate headings keep their own shade; directly mapped code fills the
+    // remaining parent region, before deeper child regions replace it.
+    const start = row + (identity.direct ? 1 : 0);
+    if (end > start) regions.push({ identity, column, row: start, columns: bounds.columns - column, rows: end - start });
   }
+  return regions;
+}
+
+export function treemapCanvasTiles(content: DiagramContent, projection: Projection,
+  bounds: { columns: number; rows: number }, colors: readonly TreemapDiagramColor[]): Tile[] {
+  const regions = treemapCanvasRegions(content, projection, bounds, colors);
   // Partition at rectangle edges, then merge identical vertical runs. This avoids
   // stacking translucent ancestor fills and changing the child's apparent color.
   const edges = [...new Set(regions.flatMap(region => [region.row, region.row + region.rows]))].sort((a, b) => a - b);
@@ -49,7 +58,7 @@ export function treemapCanvasTiles(content: DiagramContent, projection: Projecti
       const column = columns[j], width = columns[j + 1] - column;
       const region = [...active].reverse().find(region => region.column <= column && region.column + region.columns > column);
       if (!region) continue;
-      const key = `${region.identity.position}:${column}:${width}`, previous = last.get(key);
+      const key = `${region.identity.position}:${!!region.identity.direct}:${column}:${width}`, previous = last.get(key);
       if (previous && previous.row + previous.rows === row) previous.rows += rows;
       else {
         const tile = { identity: region.identity, column, row, columns: width, rows };

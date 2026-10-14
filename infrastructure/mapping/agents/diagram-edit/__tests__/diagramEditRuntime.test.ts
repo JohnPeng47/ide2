@@ -13,9 +13,16 @@ vi.mock('@earendil-works/pi-coding-agent', () => ({
   SessionManager: { inMemory: () => ({ messages: [] as unknown[], appendMessage(message: unknown) { this.messages.push(message); } }) }, SettingsManager: { inMemory: () => ({}) }, defineTool: (tool: unknown) => tool,
   createAgentSession: async (options: { customTools: Tool[]; sessionManager: { messages: unknown[] } }) => {
     const chat = { history: structuredClone(options.sessionManager.messages), prompts: [] as string[], abort: vi.fn(async () => {}), dispose: vi.fn() };
+    const messages = structuredClone(chat.history);
+    const tool: Tool = { execute: async (id, candidate) => {
+      messages.push({ role: 'assistant', content: [{ type: 'toolCall', id, name: 'submit_diagram', arguments: candidate }] });
+      const result = await options.customTools[0].execute(id, candidate);
+      messages.push({ role: 'toolResult', toolCallId: id, toolName: 'submit_diagram', content: [{ type: 'text', text: JSON.stringify(result) }], isError: false });
+      return result;
+    } };
     harness.chats.push(chat);
-    return { session: { sessionId: 'test', ...chat, subscribe: () => () => {}, prompt: async (text: string) => {
-      chat.prompts.push(text); await harness.actions.shift()?.(options.customTools[0]);
+    return { session: { sessionId: 'test', messages, ...chat, subscribe: () => () => {}, prompt: async (text: string) => {
+      chat.prompts.push(text); messages.push({ role: 'user', content: text }); await harness.actions.shift()?.(tool);
     } } };
   }
 }));
@@ -45,6 +52,24 @@ it('corrects rejected submissions in one agent session and issues only the valid
   expect(harness.chats[0].prompts[0]).toContain(f.base.revision.id);
   expect(harness.chats[0].prompts[0]).toContain('Add a child');
   expect(harness.chats[0].dispose).toHaveBeenCalledOnce(); f.runtime.dispose();
+});
+
+it('captures and reuses the full successful transcript, including tool results', async () => {
+  const f = fixture(), captured = vi.fn(), session = vi.fn();
+  harness.actions.push(async tool => { await tool.execute('first', { ascii: 'First', structureKind: 'tree', mappings: [] }); });
+  await f.service.generate({ ...f.request, llmSessionId: 'panel' }, { onAgentContext: captured, onAgentSession: session });
+  expect(session).toHaveBeenCalledWith('test');
+  const first = captured.mock.calls[0][0];
+  expect(first.source.sourceSessionId).toBe('panel');
+  expect(first.messages.map((m: { role: string }) => m.role)).toEqual(['user', 'assistant', 'toolResult']);
+  harness.actions.push(async tool => { await tool.execute('second', { ascii: 'Second', structureKind: 'tree', mappings: [] }); });
+  await f.service.generate({ ...f.request, llmSessionId: 'panel', agentContext: first, instruction: 'Continue the previous request' }, { onAgentContext: captured });
+  expect(harness.chats[1].history).toEqual(AgentContext.fromSnapshot(first).toPiMessages());
+  expect(captured.mock.calls[1][0].messages).toHaveLength(6);
+  expect(captured.mock.calls[1][0].messages.slice(0, 3)).toEqual(expect.arrayContaining(first.messages.map((m: object) => expect.objectContaining(m))));
+  await expect(f.service.generate({ ...f.request, llmSessionId: 'panel', agentContext: first }, { onAgentContext: captured })).rejects.toThrow('without a validated submission');
+  expect(captured).toHaveBeenCalledTimes(2);
+  f.runtime.dispose();
 });
 it('requires a validated submission and cleans up on cancellation', async () => {
   const f = fixture();

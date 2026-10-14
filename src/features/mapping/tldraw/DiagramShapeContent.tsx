@@ -1,3 +1,4 @@
+import { DiagramTreemapTint } from '../treemap/CanvasTreemapColors';
 import { memo, useContext, useMemo } from 'react';
 import { useValue } from 'tldraw';
 import { CanvasRuntimeContext, type GridModel } from './CanvasRuntimeContext';
@@ -15,7 +16,7 @@ const Text = memo(function Text({ model }: { model: Pick<GridModel, 'id' | 'diag
     const diagram = model.diagram!;
     const projection = projectDiagramContent(diagram.content, model.view);
     const ranges = diagramTextRanges({ ascii: diagram.content.ascii, content: diagram.content, displayNodeId: model.id,
-      mappings: diagram.sourceContext.mappings, jumps: [...(diagram.jumps ?? []), ...model.jumps] });
+      mappings: diagram.sourceContext.mappings, sourceContext: diagram.sourceContext, jumps: [...(diagram.jumps ?? []), ...model.jumps] });
     return projection.ascii.split('\n').map((line, index) => textRow(line, ranges.get(projection.sourceLines[index]) ?? [], projection.sourceLines[index]));
   }, [model.diagram, model.view, model.jumps, model.id]);
   return <DiagramText className="mapping-poc-ascii" rows={rows} data-graph="A" data-line-count={rows.length}
@@ -33,7 +34,7 @@ export function DiagramShapeContent({ nodeId }: { nodeId: string }) {
   if (!model) return null;
   const { frame, cell } = model;
   return <>
-    {model.diagram && <Text model={model} />}
+    {model.diagram && <><DiagramTreemapTint model={model} /><Text model={model} /></>}
     <DiagramSubtreeControls nodes={[model.node]} visibleBoxIds={new Set([frame.boxId])} cell={cell}
       disabled={interaction.subtreeDisabled} onCollapse={(id, contentId, collapsed) => runtime.actions?.collapse(id, collapsed, contentId)} />
     <div className={`mapping-grid-box${frame.kind === 'container' ? ' is-container' : ''}`}
