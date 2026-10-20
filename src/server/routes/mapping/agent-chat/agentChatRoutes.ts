@@ -16,6 +16,7 @@ export async function handleAgentChat(request: Connect.IncomingMessage, response
   if (request.socket.localPort) chat.setMcpOrigin(`http://127.0.0.1:${request.socket.localPort}`);
   const route = url.pathname.slice('/api/mapping/agent-chat'.length);
   if (route === '/info' && request.method === 'GET') return sendJson(response, 200, await chat.info());
+  if (route === '/sessions/resume' && request.method === 'POST') return sendJson(response, 200, await chat.resume(await readBody(request)));
   if (route === '/sessions') {
     if (request.method === 'GET') return sendJson(response, 200, await chat.list());
     if (request.method === 'POST') return sendJson(response, 200, await chat.create(await readBody(request)));

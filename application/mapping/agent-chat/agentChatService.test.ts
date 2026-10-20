@@ -38,6 +38,114 @@ function fixture(initial: ChatSession[] = [], canvasReader?: ChatCanvasReader, t
 const input = (text = 'Hello') => ({ text, requestId: crypto.randomUUID(), model: 'test-model', effort: 'high', sandbox: 'workspace-write' });
 
 describe('Codex agent chat', () => {
+  const nativeThreadId = '019a0000-0000-7000-8000-000000000001';
+  const nativeResume = () => ({
+    thread: { id: nativeThreadId, name: 'CLI conversation', cwd: '/original/project', createdAt: 1700000000, status: { type: 'idle' }, turns: [
+      { id: 'old-turn', status: 'completed', items: [
+        { id: 'old-user', type: 'userMessage', content: [{ type: 'text', text: 'Original question\nwith context' }, { type: 'localImage', path: '/image.png' }] },
+        { id: 'old-command', type: 'commandExecution', command: 'pwd', status: 'completed', aggregatedOutput: '/original/project' },
+        { id: 'old-answer', type: 'agentMessage', text: 'Original answer', phase: 'final_answer' },
+        { id: 'old-partial', type: 'commandExecution', command: 'unfinished', status: 'inProgress' }
+      ] }
+    ] },
+    model: 'native-model', reasoningEffort: 'medium', sandbox: { type: 'workspaceWrite' }
+  });
+  it('imports native history and settings once without overriding instructions, tools, or cwd', async () => {
+    const { service, connection, saved } = fixture();
+    const rpc = vi.spyOn(connection, 'request').mockResolvedValue(nativeResume());
+    try {
+      const [session, duplicate] = await Promise.all([
+        service.resume({ sessionId: ` ${nativeThreadId.toUpperCase()} ` }),
+        service.resume({ sessionId: nativeThreadId })
+      ]);
+      expect(duplicate.id).toBe(session.id);
+      expect(rpc).toHaveBeenCalledExactlyOnceWith('thread/resume', { threadId: nativeThreadId, sandbox: 'danger-full-access', approvalPolicy: 'never', approvalsReviewer: 'user' });
+      expect(session).toMatchObject({ origin: 'codex', canvasTools: false, title: 'CLI conversation', cwd: '/original/project',
+        threadId: nativeThreadId, accessDefaultApplied: true, settings: { model: 'native-model', effort: 'medium', sandbox: 'danger-full-access' } });
+      expect(session.items).toEqual([
+        expect.objectContaining({ id: 'old-user', kind: 'user', text: 'Original question\nwith context\n[Image]', turnId: 'old-turn' }),
+        expect.objectContaining({ kind: 'tool', text: '/original/project', command: expect.objectContaining({ command: 'pwd' }) }),
+        expect.objectContaining({ kind: 'assistant', text: 'Original answer', phase: 'final_answer' }),
+        expect.objectContaining({ status: 'interrupted' })
+      ]);
+      expect(saved.get(session.id)).toEqual(session);
+      expect((await service.resume({ sessionId: nativeThreadId })).id).toBe(session.id);
+      expect(rpc).toHaveBeenCalledTimes(1);
+      expect(await service.list()).toHaveLength(1);
+    } finally { service.dispose(); }
+  });
+  it('continues the imported thread after restart without injecting the Agent Chat prompt or MCP config', async () => {
+    const { service, connection, store } = fixture();
+    vi.spyOn(connection, 'request').mockResolvedValueOnce(nativeResume());
+    const session = await service.resume({ sessionId: nativeThreadId });
+    service.dispose();
+    const next = new Connection();
+    const mcp = { config: vi.fn(() => ({ custom: true })), bind: vi.fn(() => { throw Error('No Agent Chat binding for a native session'); }), clear: vi.fn(), setOrigin: vi.fn() };
+    const restored = new AgentChatService(next, store, '/workspace', undefined, undefined, mcp);
+    try {
+      await restored.send(session.id, { ...input('Continue'), ...session.settings });
+      expect(next.calls[0]).toEqual({ method: 'thread/resume', params: {
+        threadId: nativeThreadId, cwd: '/original/project', sandbox: 'danger-full-access', approvalPolicy: 'never', approvalsReviewer: 'user'
+      } });
+      expect(mcp.config).not.toHaveBeenCalled();
+      expect(mcp.bind).not.toHaveBeenCalled();
+      expect(next.calls[1]).toMatchObject({ method: 'turn/start', params: { threadId: nativeThreadId, model: 'native-model', effort: 'medium', approvalPolicy: 'never', sandboxPolicy: { type: 'dangerFullAccess' } } });
+      next.notify({ method: 'item/completed', params: { threadId: nativeThreadId, turnId: 'turn-1', item: { id: 'continued', type: 'agentMessage', text: 'Continued answer' } } });
+      expect((await restored.get(session.id)).items.at(-1)?.text).toBe('Continued answer');
+    } finally { restored.dispose(); }
+  });
+  it('opens an existing Agent Chat thread without duplicating it or disabling its tools', async () => {
+    const { service, connection } = fixture([], undefined, { definitions: [], call: vi.fn() });
+    const rpc = vi.spyOn(connection, 'request').mockResolvedValueOnce({ thread: { id: nativeThreadId }, model: 'test-model' });
+    try {
+      const session = await service.create({});
+      expect(await service.resume({ sessionId: nativeThreadId })).toEqual(session);
+      expect(session.canvasTools).toBe(true);
+      expect(rpc).toHaveBeenCalledTimes(1);
+    } finally { service.dispose(); }
+  });
+  it.each(['read-only', 'workspace-write'] as const)('upgrades an earlier %s import to YOLO once and preserves later explicit choices', async sandbox => {
+    const { service, connection, store, saved } = fixture();
+    vi.spyOn(connection, 'request').mockResolvedValueOnce(nativeResume());
+    const imported = await service.resume({ sessionId: nativeThreadId });
+    service.dispose();
+    const legacy = { ...imported, settings: { ...imported.settings, sandbox } };
+    delete legacy.accessDefaultApplied;
+    await store.save(legacy);
+
+    const next = new Connection();
+    const migrated = new AgentChatService(next, store, '/workspace');
+    try {
+      const session = await migrated.resume({ sessionId: nativeThreadId });
+      expect(session.settings.sandbox).toBe('danger-full-access');
+      expect(saved.get(session.id)).toMatchObject({ accessDefaultApplied: true, settings: { sandbox: 'danger-full-access' } });
+      await migrated.send(session.id, { ...input(), ...session.settings });
+      expect(next.calls[0]).toMatchObject({ method: 'thread/resume', params: { sandbox: 'danger-full-access', approvalPolicy: 'never' } });
+      expect(next.calls[1]).toMatchObject({ method: 'turn/start', params: { sandboxPolicy: { type: 'dangerFullAccess' }, approvalPolicy: 'never' } });
+      next.notify({ method: 'turn/completed', params: { threadId: nativeThreadId, turn: { status: 'completed' } } });
+      await migrated.send(session.id, { ...input('Explicit access selection'), sandbox });
+    } finally { migrated.dispose(); }
+
+    const restarted = new AgentChatService(new Connection(), store, '/workspace');
+    try {
+      expect((await restarted.get(imported.id)).settings.sandbox).toBe(sandbox);
+    } finally { restarted.dispose(); }
+  });
+  it('rejects invalid or active sessions, surfaces missing sessions, and permits retry after failure', async () => {
+    const { service, connection } = fixture();
+    const rpc = vi.spyOn(connection, 'request');
+    try {
+      await expect(service.resume({ sessionId: '../session.jsonl' })).rejects.toThrow();
+      expect(rpc).not.toHaveBeenCalled();
+      rpc.mockRejectedValueOnce(Error('Session not found'));
+      await expect(service.resume({ sessionId: nativeThreadId })).rejects.toThrow('Session not found');
+      rpc.mockResolvedValueOnce({ ...nativeResume(), thread: { ...nativeResume().thread, status: { type: 'active' } } });
+      await expect(service.resume({ sessionId: nativeThreadId })).rejects.toThrow('active turn');
+      expect(await service.list()).toHaveLength(0);
+      rpc.mockResolvedValueOnce(nativeResume());
+      expect((await service.resume({ sessionId: nativeThreadId })).items).toHaveLength(4);
+    } finally { service.dispose(); }
+  });
   it('defaults to YOLO and carries full access through sends, restart/resume, and Read Canvas', async () => {
     const { service, connection, store } = fixture();
     const session = await service.create({});

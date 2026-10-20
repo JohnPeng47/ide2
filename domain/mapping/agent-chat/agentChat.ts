@@ -7,6 +7,7 @@ export const chatSettingsSchema = z.object({
   sandbox: z.enum(['read-only', 'workspace-write', 'danger-full-access']).default('danger-full-access')
 });
 export type ChatSettings = z.infer<typeof chatSettingsSchema>;
+export const chatResumeSchema = z.object({ sessionId: z.string().trim().uuid().transform(value => value.toLowerCase()) });
 export const chatCanvasTargetSchema = z.object({ workspaceInstanceId: z.string().min(1).max(200), documentId: z.string().min(1).max(200) }).strict();
 export type ChatCanvasTarget = z.infer<typeof chatCanvasTargetSchema>;
 /** Browser-captured context, pinned to the same revision as the visible selection. */
@@ -43,6 +44,10 @@ export interface ChatItem {
 export interface ChatQuestion { id: string; header: string; question: string; isSecret?: boolean; options?: { label: string; description: string }[] | null }
 export interface ChatApproval { id: string; kind: 'approval' | 'input' | 'permissions'; title: string; detail: string; questions?: ChatQuestion[]; turnId?: string }
 export interface ChatSession {
+  /** Imported native threads must not receive Agent Chat's prompt or tool overrides. */
+  origin?: 'codex';
+  /** Marks imports that have adopted Agent Chat's default rather than native access. */
+  accessDefaultApplied?: true;
   canvasTools?: boolean;
   canvasContext?: { canvas?: ChatCanvasTarget; references: ChatReference[] };
   id: string; threadId: string; title: string; cwd: string; createdAt: string; updatedAt: string;

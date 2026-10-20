@@ -121,7 +121,23 @@ createInterface({ input: process.stdin }).on('line', line => {
     const threadId = `thread-${++nextThread}`; threadMcp.set(threadId, p.config); threadTools.set(threadId, p.dynamicTools ?? []);
     return output({ id, result: { thread: { id: threadId }, model: p.model || 'fixture-codex' } });
   }
-  if (method === 'thread/resume') { if (p.config) threadMcp.set(p.threadId, p.config); return output({ id, result: { thread: { id: p.threadId } } }); }
+  if (method === 'thread/resume') {
+    if (p.threadId === '019a0000-0000-7000-8000-000000000001') {
+      if (p.developerInstructions || p.baseInstructions || p.dynamicTools || p.config) throw Error('Native resume must preserve its prompt and tools');
+      if (p.sandbox !== 'danger-full-access' || p.approvalPolicy !== 'never') throw Error('Agent Chat imports must default to YOLO');
+      return output({ id, result: {
+        thread: { id: p.threadId, name: 'Previous CLI session', cwd: process.cwd(), createdAt: 1700000000, status: { type: 'idle' }, turns: [
+          { id: 'native-turn', status: 'completed', items: [
+            { type: 'userMessage', id: 'native-user', content: [{ type: 'text', text: 'A question from the CLI' }] },
+            { type: 'agentMessage', id: 'native-answer', text: 'An answer from the CLI', phase: 'final_answer' }
+          ] }
+        ] }, model: 'fixture-other', reasoningEffort: 'medium', sandbox: { type: 'dangerFullAccess' }
+      } });
+    }
+    if (/^[a-f0-9-]{36}$/.test(p.threadId)) return output({ id, error: { code: -32602, message: 'Codex session not found on this server.' } });
+    if (p.config) threadMcp.set(p.threadId, p.config);
+    return output({ id, result: { thread: { id: p.threadId } } });
+  }
   if (method === 'turn/interrupt') { output({ id, result: {} }); finish(p.threadId, p.turnId, 'interrupted'); return; }
   if (method === 'turn/start') {
     const threadId = p.threadId, turnId = `turn-${++nextTurn}`, text = p.input[0]?.text;

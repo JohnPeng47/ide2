@@ -65,6 +65,7 @@ export function AgentChatPanel({ open, projectId, canvasTarget, onCopyDiagram, r
   const [drafts, setDrafts] = useState<Record<string, ChatDraft>>({});
   const [error, setError] = useState(''), [busy, setBusy] = useState(false), [connected, setConnected] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [resumeId, setResumeId] = useState(''), [resumeError, setResumeError] = useState('');
   const stream = useRef<ChatStream | undefined>(undefined), visible = useRef(open);
   visible.current = open;
   const emptyDraft = useMemo(emptyChatDraft, []);
@@ -136,7 +137,8 @@ export function AgentChatPanel({ open, projectId, canvasTarget, onCopyDiagram, r
       const event = JSON.parse(message.data) as ChatEvent;
       setConnected(true);
       if (event.type === 'snapshot') {
-        const restored = tabSettings.current[selected] ?? event.session.settings, model = tabSettings.current[selected]?.model ?? preferredModel.current ?? restored.model;
+        const restored = tabSettings.current[selected] ?? event.session.settings;
+        const model = tabSettings.current[selected]?.model ?? (event.session.origin === 'codex' ? restored.model : preferredModel.current ?? restored.model);
         setSettings({ ...restored, model, effort: model === restored.model ? restored.effort : '' });
       }
       buffer.receive(event);
@@ -206,6 +208,20 @@ export function AgentChatPanel({ open, projectId, canvasTarget, onCopyDiagram, r
     } finally { setBusy(false); }
   };
   const stop = async () => { setBusy(true); try { await chatRequest(`/sessions/${selected}/interrupt`, {}); } catch (error) { setError(String(error)); } finally { setBusy(false); } };
+  const resume = async () => {
+    if (busy || !resumeId.trim() || !info) return;
+    setBusy(true); setResumeError('');
+    try {
+      const restored = await chatRequest<ChatSession>('/sessions/resume', { sessionId: resumeId.trim() });
+      tabSettings.current[selected] = settings;
+      tabSettings.current[restored.id] = restored.settings;
+      setSettings(restored.settings);
+      setSessions(current => [{ id: restored.id, title: restored.title, cwd: restored.cwd, updatedAt: restored.updatedAt, status: restored.status }, ...current.filter(entry => entry.id !== restored.id)]);
+      setTabs(current => activateChatTab(current, restored.id));
+      setSession(restored); setError(''); setResumeId(''); sidebar.close();
+    } catch (error) { setResumeError(error instanceof Error ? error.message : String(error)); }
+    finally { setBusy(false); }
+  };
   const chooseModel = (model: string) => {
     preferredModel.current = model;
     setSettings(current => ({ ...current, model, effort: '' }));
@@ -217,6 +233,16 @@ export function AgentChatPanel({ open, projectId, canvasTarget, onCopyDiagram, r
     <div className="agent-chat-sessions"><select aria-label="Agent conversations" value={activeSessionId} disabled={busy} onChange={event => { if (event.target.value) activate(event.target.value); else newTab(); sidebar.close(); }}>
       <option value="">New conversation</option>{sessions.map(entry => <option key={entry.id} value={entry.id}>{entry.status === 'running' ? '● ' : ''}{entry.title}</option>)}
     </select><button disabled={busy} onClick={() => { newTab(); sidebar.close(); }}>New chat</button></div>
+    <form className="agent-chat-resume" onSubmit={event => { event.preventDefault(); void resume(); }}>
+      <label htmlFor={`${tabsId}-resume`}>Codex session ID</label>
+      <input id={`${tabsId}-resume`} aria-describedby={`${tabsId}-resume-help`} value={resumeId} disabled={busy}
+        placeholder="Paste session ID" autoComplete="off" spellCheck={false}
+        onChange={event => { setResumeId(event.target.value); setResumeError(''); }} />
+      <small id={`${tabsId}-resume-help`}>Resume a previous Codex session stored on this server, including CLI sessions.</small>
+      <button disabled={!info || busy || !resumeId.trim()}>Resume session</button>
+      {resumeError && <small className="agent-chat-reference-error" role="alert">{resumeError}</small>}
+      {session && <small className="agent-chat-session-location" title={session.threadId}>{session.cwd}</small>}
+    </form>
       <div className="agent-chat-controls"><label>Model<select aria-label="Codex model" disabled={running || busy} value={settings.model} onChange={event => chooseModel(event.target.value)}>
         <option value="">Codex default</option>{settings.model && !model && <option value={settings.model}>{settings.model}</option>}{info?.models.map(model => <option key={model.id} value={model.id}>{model.name}</option>)}</select></label>
         <label>Effort<select aria-label="Reasoning effort" disabled={running || busy} value={settings.effort} onChange={event => setSettings(current => ({ ...current, effort: event.target.value as ChatSettings['effort'] }))}>

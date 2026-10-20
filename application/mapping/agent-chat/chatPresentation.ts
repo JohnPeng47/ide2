@@ -9,11 +9,14 @@ const list = (value: unknown): Record<string, unknown>[] => Array.isArray(value)
 /** Keep protocol meaning here; the UI never has to reverse-engineer a shell command or JSON blob. */
 export function presentNativeItem(native: Record<string, unknown>, turnId: string | undefined, completed: boolean, old?: ChatItem): ChatItem {
   const sourceType = string(native.type);
-  const kind: ChatItem['kind'] = sourceType === 'agentMessage' ? 'assistant' : sourceType === 'reasoning' ? 'reasoning'
+  const kind: ChatItem['kind'] = sourceType === 'userMessage' ? 'user' : sourceType === 'agentMessage' ? 'assistant' : sourceType === 'reasoning' ? 'reasoning'
     : sourceType === 'plan' ? 'plan' : ['contextCompaction', 'enteredReviewMode', 'exitedReviewMode'].includes(sourceType) ? 'notice' : 'tool';
   const status = native.success === false ? 'failed' : string(native.status) || (completed ? 'completed' : 'inProgress');
   const item: ChatItem = { ...old, id: string(native.id), kind, sourceType, turnId: turnId || old?.turnId, status, text: old?.text ?? '' };
-  if (kind === 'assistant' || kind === 'plan') {
+  if (kind === 'user') {
+    item.text = list(native.content).map(part => part.type === 'text' ? string(part.text)
+      : part.type === 'image' || part.type === 'localImage' ? '[Image]' : string(part.text) || string(part.name)).filter(Boolean).join('\n');
+  } else if (kind === 'assistant' || kind === 'plan') {
     // An explicit completed payload is canonical, even when empty. Missing fields retain partial text.
     if (typeof native.text === 'string' && (completed || native.text)) item.text = native.text;
     if (['commentary', 'partial_answer', 'final_answer'].includes(string(native.phase))) item.phase = native.phase as ChatItem['phase'];

@@ -1,6 +1,6 @@
 import { AGENT_CHAT_SYSTEM_PROMPT } from './agentChatPrompt';
 import { ApplicationError } from '../../core/errors';
-import { chatAnswerSchema, chatReadCanvasSchema, chatSendSchema, chatSettingsSchema, findChatItem, reduceChatEvent, type ChatCanvasTarget, type ChatSend, type ChatEvent, type ChatInfo, type ChatItem, type ChatQuestion, type ChatSession, type ChatSessionSummary, type ChatUpdate } from '../../../domain/mapping/agent-chat/agentChat';
+import { chatAnswerSchema, chatReadCanvasSchema, chatResumeSchema, chatSendSchema, chatSettingsSchema, findChatItem, reduceChatEvent, type ChatCanvasTarget, type ChatSend, type ChatEvent, type ChatInfo, type ChatItem, type ChatQuestion, type ChatSession, type ChatSessionSummary, type ChatUpdate } from '../../../domain/mapping/agent-chat/agentChat';
 import type { ChatMcpBinding, ChatCanvasReader, ChatStore, ChatTools, CodexConnection, CodexMessage } from './ports';
 
 import { presentNativeItem, printable, record, string } from './chatPresentation';
@@ -9,6 +9,7 @@ export class AgentChatService {
   private sessions = new Map<string, ChatSession>();
   private loaded: Promise<void>;
   private resumed = new Set<string>();
+  private importing = new Map<string, Promise<ChatSession>>();
   private listeners = new Map<string, Set<(event: ChatEvent) => void>>();
   private requests = new Map<string, { wireId: string | number; method: string; params: Record<string, unknown> }>();
   private starting = new Map<string, Promise<void>>();
@@ -16,12 +17,19 @@ export class AgentChatService {
   private deltaBuffers = new Map<string, { events: Extract<ChatUpdate, { type: 'delta' }>[]; timer: ReturnType<typeof setTimeout> }>();
   private threadSessions = new Map<string, string>();
   constructor(private connection: CodexConnection, private store: ChatStore, private cwd: string, private canvasReader?: ChatCanvasReader, private tools?: ChatTools, private mcp?: ChatMcpBinding) {
-    this.loaded = store.list().then(sessions => {
+    this.loaded = store.list().then(async sessions => {
       for (const session of sessions) {
+        // Upgrade earlier imports once. Later explicit access selections stay saved.
+        const migrateAccess = session.origin === 'codex' && !session.accessDefaultApplied;
+        if (migrateAccess) {
+          session.settings = { ...session.settings, sandbox: 'danger-full-access' };
+          session.accessDefaultApplied = true;
+        }
         this.threadSessions.set(session.threadId, session.id);
         this.sessions.set(session.id, { ...session, schemaVersion: 2, pending: [], activity: null,
           items: session.items.map(item => item.status === 'inProgress' ? { ...item, status: 'interrupted' } : item),
           ...(session.status === 'running' ? { status: 'interrupted', error: 'Server restarted. Send a message to resume.' } : {}) });
+        if (migrateAccess) await store.save(this.sessions.get(session.id)!);
       }
     });
     // A failed store is surfaced by every public operation, without an unhandled rejection at startup.
@@ -69,6 +77,42 @@ export class AgentChatService {
     await this.store.save(session); this.sessions.set(session.id, session); this.threadSessions.set(session.threadId, session.id); this.resumed.add(session.threadId);
     return session;
   }
+  async resume(input: unknown): Promise<ChatSession> {
+    await this.loaded;
+    const { sessionId: threadId } = chatResumeSchema.parse(input);
+    const existing = this.threadSessions.get(threadId);
+    if (existing) return this.get(existing);
+    const pending = this.importing.get(threadId);
+    if (pending) return pending;
+    const run = this.importThread(threadId);
+    this.importing.set(threadId, run);
+    try { return await run; } finally { this.importing.delete(threadId); }
+  }
+  private async importThread(threadId: string): Promise<ChatSession> {
+    // Native resume restores the saved base prompt, tools, cwd and model. Do not
+    // replace its developer instructions or register tools owned by another client.
+    const result = await this.connection.request<{
+      thread: { id: string; name?: string; preview?: string; cwd: string; createdAt: number; status?: { type: string }; turns: Record<string, unknown>[] };
+      model: string; reasoningEffort?: string;
+    }>('thread/resume', { threadId, sandbox: 'danger-full-access', approvalPolicy: 'never', approvalsReviewer: 'user' });
+    const thread = result.thread;
+    if (thread.status?.type === 'active') throw new ApplicationError('conflict', 'This Codex session has an active turn. Wait for it to finish before resuming here.');
+    const items: ChatItem[] = thread.turns.flatMap(turn => (Array.isArray(turn.items) ? turn.items : []).map(native => {
+      const item = presentNativeItem(record(native), string(turn.id), true);
+      return item.status === 'inProgress' ? { ...item, status: 'interrupted' } : item;
+    }));
+    const now = new Date().toISOString();
+    const session: ChatSession = {
+      schemaVersion: 2, origin: 'codex', accessDefaultApplied: true, canvasTools: false, id: crypto.randomUUID(), threadId: thread.id,
+      title: (thread.name || thread.preview || items.find(item => item.kind === 'user')?.text || 'Resumed Codex session').slice(0, 70),
+      cwd: thread.cwd, createdAt: new Date(thread.createdAt * 1000).toISOString(), updatedAt: now,
+      settings: { model: result.model, effort: result.reasoningEffort || '', sandbox: 'danger-full-access' },
+      status: 'idle', items, pending: [], requestIds: []
+    };
+    await this.store.save(session);
+    this.sessions.set(session.id, session); this.threadSessions.set(session.threadId, session.id); this.resumed.add(session.threadId);
+    return session;
+  }
   async send(id: string, input: unknown) {
     return this.startTurn(id, chatSendSchema.parse(input));
   }
@@ -92,11 +136,13 @@ export class AgentChatService {
           toolOutput = { name: 'read_canvas', namespace: null, output: JSON.stringify(context) };
         }
         if (!this.resumed.has(session.threadId)) {
-          await this.connection.request('thread/resume', { threadId: session.threadId, ...(this.mcp ? { config: this.mcp.config(id) } : {}), cwd: session.cwd, developerInstructions: AGENT_CHAT_SYSTEM_PROMPT, sandbox: data.sandbox, approvalPolicy: data.sandbox === 'danger-full-access' ? 'never' : 'on-request', approvalsReviewer: 'user' });
+          await this.connection.request('thread/resume', { threadId: session.threadId,
+            ...(session.origin === 'codex' ? {} : { developerInstructions: AGENT_CHAT_SYSTEM_PROMPT, ...(this.mcp ? { config: this.mcp.config(id) } : {}) }),
+            cwd: session.cwd, sandbox: data.sandbox, approvalPolicy: data.sandbox === 'danger-full-access' ? 'never' : 'on-request', approvalsReviewer: 'user' });
           this.resumed.add(session.threadId);
         }
         this.sessions.get(id)!.canvasContext = structuredClone({ canvas: data.canvas ?? canvas, references: data.references ?? [] });
-        this.mcp?.bind(id, data.canvas ?? canvas, data.sandbox === 'read-only');
+        if (session.origin !== 'codex') this.mcp?.bind(id, data.canvas ?? canvas, data.sandbox === 'read-only');
         // Commit the client request before issuing a turn, so retrying a lost HTTP response cannot run it twice.
         this.sessions.get(id)!.requestIds.push(data.requestId);
         if (!canvas) this.emit(id, { type: 'item', item: { id: data.requestId, kind: 'user', text: data.text, status: 'completed',
