@@ -29,8 +29,10 @@ describe('shared selection recognition', () => {
     controller.down(start({ pointerType: 'mouse' })); controller.move(start({ x: 25 }));
     expect(controller.up(start({ time: 90 }))).toBeUndefined();
   });
-  it('leaves stationary Ctrl-clicks unchanged so Ctrl-doubleclick can toggle a whole diagram', () => {
+  it('leaves stationary mouse clicks to the Ctrl-click count handler', () => {
     const controller = new SelectionGestureController();
+    controller.down(start({ pointerType: 'mouse' }));
+    expect(controller.up(start({ time: 20 }))).toBeUndefined();
     controller.down(start({ pointerType: 'mouse', ctrl: true }));
     expect(controller.up(start({ time: 30 }))).toBeUndefined();
   });

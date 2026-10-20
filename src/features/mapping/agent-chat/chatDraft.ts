@@ -1,7 +1,7 @@
 import type { ChatReference } from '../../../../domain/mapping/agent-chat/agentChat';
 import { normalizePromptBody, promptText, serializePromptBody, type PromptBodyBlock } from '../prompt-composer/promptBody';
 
-export type ChatDraft = readonly PromptBodyBlock<ChatReference>[];
+export type ChatDraft = readonly (PromptBodyBlock<ChatReference> & { selectionKey?: string })[];
 export const emptyChatDraft = (): ChatDraft => [promptText()];
 export const serializeChatDraft = (draft: ChatDraft) => serializePromptBody(draft);
 export const draftLength = (draft: ChatDraft) => draft.reduce((size, block) => size + (block.kind === 'text' ? block.text.length : 1), 0);
@@ -21,4 +21,37 @@ export function replaceChatDraft(draft: ChatDraft, start: number, end: number, i
   // New identities also make pasted copies independent of their originals.
   return normalizePromptBody([...sliceChatDraft(draft, 0, start), ...inserted, ...sliceChatDraft(draft, end)]
     .map(block => ({ ...block, id: crypto.randomUUID() })));
+}
+
+/** Reconcile automatic attachments by selection identity, independently of DOM clicks.
+ * Missing chips stay dismissed until their selection leaves and re-enters the queue.
+ * Pasted/manual references have no selectionKey and remain pinned snapshots. */
+export function syncChatDraftSelections(draft: ChatDraft, entries: readonly { key: string; value: ChatReference }[],
+  seen: ReadonlySet<string>, cursor: { anchor: number; focus: number }) {
+  const desired = new Map(entries.map(entry => [entry.key, entry.value]));
+  const present = new Set<string>();
+  const removed: number[] = [];
+  let offset = 0, changed = false;
+  const body = draft.flatMap(block => {
+    const position = offset;
+    offset += block.kind === 'text' ? block.text.length : 1;
+    if (block.kind !== 'reference' || !block.selectionKey) return [block];
+    const reference = desired.get(block.selectionKey);
+    if (!reference) { removed.push(position); changed = true; return []; }
+    present.add(block.selectionKey);
+    if (JSON.stringify(reference) === JSON.stringify(block.reference)) return [block];
+    changed = true;
+    return [{ ...block, reference: structuredClone(reference) }];
+  });
+  const remap = (position: number) => Math.max(0, Math.min(offset, position) - removed.filter(at => at < position).length);
+  let selection = { anchor: remap(cursor.anchor), focus: remap(cursor.focus) };
+  let next: ChatDraft = changed ? normalizePromptBody(body) : draft;
+  const added: ChatDraft = entries.filter(entry => !seen.has(entry.key) && !present.has(entry.key))
+    .map(entry => ({ kind: 'reference', id: crypto.randomUUID(), selectionKey: entry.key, reference: structuredClone(entry.value) }));
+  if (added.length) {
+    // Insert at the caret without replacing selected prompt text.
+    next = replaceChatDraft(next, selection.focus, selection.focus, added);
+    selection = { anchor: selection.focus + added.length, focus: selection.focus + added.length };
+  }
+  return { draft: next, selection, seen: new Set(desired.keys()) };
 }

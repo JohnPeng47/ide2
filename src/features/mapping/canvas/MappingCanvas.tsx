@@ -2,7 +2,7 @@ import { completeMarquee } from '../../../../domain/mapping/selection/completeMa
 import type { SelectionHit, SelectionPolicy } from '../../../../domain/mapping/selection/selectionGesture';
 import { shareEqual, CanvasRuntimeContext } from '../tldraw/CanvasRuntimeContext';
 import { diagramSelectionItem, regionSelectionItem, selectedDiagramIds, selectionContentNodes, type SelectionState } from '../../../../domain/mapping/selection/selectionState';
-import { toggleSubtreeSelection } from '../../../../domain/mapping/selection/subtreeSelection';
+import { toggleNodeSelection } from '../../../../domain/mapping/selection/subtreeSelection';
 import type { PromptReference } from '../../../../domain/mapping/agent/diagramEdit';
 import { nodesReference } from '../prompt-composer/promptReferences';
 import { useMappingServices } from '../services/MappingServices';
@@ -506,6 +506,7 @@ export function MappingPocSelectionCanvas(props: {
     }).finally(() => replyControllers.current.delete(thread.id));
   }, [setChatThreads]);
 
+  const nodeClick = useRef<{ hit: SelectionHit; before: SelectionState; after: SelectionState } | undefined>(undefined);
   const commitSelection = (select: (current: MappingCanvasState) => SelectionState) => {
     controller.updateCanvas(current => updateSelection(current, { type: 'replace', items: select(current).items }), true);
   };
@@ -1156,10 +1157,22 @@ export function MappingPocSelectionCanvas(props: {
       <CanvasSelectionLayer stageRef={stageRef} active={props.active !== false && !isGenerating && !diagramPlacement && !movingBoxId}
         diagramIds={boxes.filter(box => box.box.kind === 'diagram').map(box => `grid:${box.box.id}`)} selected={selectedDiagrams}
         onClear={escapeSelection}
-        onSelectNode={hit => {
+        onSelectNode={(hit, subtree) => {
           const box = boxes.find(box => `grid:${box.box.id}` === hit.diagramId), diagram = box?.contentId && scene.contents[box.contentId];
-          if (diagram && diagram.content.revisionId === hit.revision && hit.nodeId)
-            commitSelection(current => toggleSubtreeSelection(current.selection, diagram, box!.box.id, hit.nodeId!));
+          if (diagram && diagram.content.revisionId === hit.revision && hit.nodeId) {
+            commitSelection(current => {
+              const previous = nodeClick.current;
+              // Reinterpret the complete double-click from before its first
+              // click, instead of toggling against that intermediate selection.
+              const before = subtree && previous?.after === current.selection
+                && previous.hit.diagramId === hit.diagramId && previous.hit.nodeId === hit.nodeId
+                && previous.hit.revision === hit.revision ? previous.before : current.selection;
+              const after = toggleNodeSelection(before, diagram, box!.box.id, hit.nodeId!, subtree);
+              nodeClick.current = subtree ? undefined : { hit, before, after };
+              return after;
+            });
+            if (nodeClick.current) nodeClick.current.after = controller.getSnapshot().canvas.selection;
+          }
         }}
         runtime={nativeRuntime ?? undefined} resolve={resolveMarquee} onComplete={finishMarquee} onTap={selectHit}
         onSelectDiagram={(id, toggle) => { clearSelectionFocus(); controller.select(toggle

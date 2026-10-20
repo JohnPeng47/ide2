@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import type { ChatReference } from '../../../../domain/mapping/agent-chat/agentChat';
 import { promptText } from '../prompt-composer/promptBody';
-import { draftLength, replaceChatDraft, serializeChatDraft, sliceChatDraft, type ChatDraft } from './chatDraft';
+import { draftLength, replaceChatDraft, serializeChatDraft, sliceChatDraft, syncChatDraftSelections, type ChatDraft } from './chatDraft';
 
 const reference = (label: string): ChatReference => ({ canvas: { workspaceInstanceId: 'workspace', documentId: 'doc' }, canvasName: 'Canvas', displayNodeId: 'grid:overview',
   reference: { kind: 'diagram', label, diagramId: label, revisionId: 'pinned-revision' }, ascii: `${label}\n  Child` });
@@ -36,4 +36,34 @@ it('handles selections crossing text and references, renumbering surviving attac
 
 it('does not infer attachments from manually typed marker text', () => {
   expect(serializeChatDraft([promptText('Literal [ref 1]')])).toEqual({ prompt: 'Literal [ref 1]', references: [] });
+});
+
+it('updates queue references in place and removes deselected ones while keeping text and manual references', () => {
+  const initial = syncChatDraftSelections([promptText('Explain '), chip('Manual')], [{ key: 'selection', value: reference('Branch') }],
+    new Set(), { anchor: 8, focus: 8 });
+  const id = initial.draft.find(block => block.selectionKey === 'selection')!.id;
+  const updated = syncChatDraftSelections(initial.draft, [{ key: 'selection', value: reference('Reduced') }], initial.seen, initial.selection);
+  expect(updated.draft.find(block => block.selectionKey === 'selection')!.id).toBe(id);
+  expect(serializeChatDraft(updated.draft).references.map(ref => ref.reference.label)).toEqual(['Reduced', 'Manual']);
+  const removed = syncChatDraftSelections(updated.draft, [], updated.seen, updated.selection);
+  expect(serializeChatDraft(removed.draft)).toEqual({ prompt: 'Explain [ref 1]', references: [reference('Manual')] });
+  expect(removed.selection).toEqual({ anchor: 8, focus: 8 });
+});
+
+it('reconciles a single-click reference into only the final double-click subtree reference', () => {
+  const single = syncChatDraftSelections([promptText('Explain')], [{ key: 'single', value: reference('Node') }],
+    new Set(), { anchor: 0, focus: 7 });
+  const subtree = syncChatDraftSelections(single.draft, [{ key: 'subtree', value: reference('Subtree') }], single.seen, single.selection);
+  expect(serializeChatDraft(subtree.draft)).toEqual({ prompt: 'Explain[ref 1]', references: [reference('Subtree')] });
+  expect(subtree.selection).toEqual({ anchor: 8, focus: 8 });
+});
+
+it('does not resurrect dismissed or sent references until their selection is removed and re-added', () => {
+  const entries = [{ key: 'selection', value: reference('Branch') }];
+  const first = syncChatDraftSelections([promptText()], entries, new Set(), { anchor: 0, focus: 0 });
+  const dismissed = syncChatDraftSelections([promptText('Keep typing')], entries, first.seen, { anchor: 11, focus: 11 });
+  expect(serializeChatDraft(dismissed.draft).references).toEqual([]);
+  const cleared = syncChatDraftSelections(dismissed.draft, [], dismissed.seen, dismissed.selection);
+  const reselected = syncChatDraftSelections(cleared.draft, entries, cleared.seen, cleared.selection);
+  expect(serializeChatDraft(reselected.draft).references).toHaveLength(1);
 });

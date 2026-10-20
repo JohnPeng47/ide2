@@ -13,7 +13,7 @@ export function CanvasSelectionLayer(props: { stageRef: RefObject<HTMLDivElement
   onComplete: (selection: CanvasMarqueeSelection, policy: SelectionPolicy) => void;
   onTap: (hit: SelectionHit, policy: SelectionPolicy, whole: boolean) => void;
   onClear: () => void;
-  onSelectNode: (hit: SelectionHit) => void;
+  onSelectNode: (hit: SelectionHit, subtree: boolean) => void;
   onSelectDiagram: (id: string, toggle: boolean) => void }) {
   const nativeEditor = useValue('selection editor', () => props.runtime?.editor, [props.runtime]);
   const current = useRef(props); current.current = props;
@@ -24,6 +24,7 @@ export function CanvasSelectionLayer(props: { stageRef: RefObject<HTMLDivElement
     const recognizer = new SelectionGestureController();
     const bridge = props.runtime?.gestures, editor = nativeEditor;
     let promoted: string[] = [], restoreTool: string | undefined;
+    let pendingNodeClick: SelectionHit | undefined;
     let previewFrame = 0, pendingPreview: { bounds: SelectionBounds; diagrams: SelectionBounds[] } | undefined;
     const clearPreview = () => { cancelAnimationFrame(previewFrame); previewFrame = 0; pendingPreview = undefined; setPreview(undefined); };
     const queuePreview = (value: NonNullable<typeof pendingPreview>) => {
@@ -69,6 +70,7 @@ export function CanvasSelectionLayer(props: { stageRef: RefObject<HTMLDivElement
     };
     if (bridge) bridge.cancel = cancel;
     const down = (event: PointerEvent) => {
+      pendingNodeClick = undefined;
       if (ui(event)) return;
       // A toolbar change may precede this contact without an intervening SDK tick.
       // Synchronize before starting recognition so that tick cannot cancel it.
@@ -142,7 +144,7 @@ export function CanvasSelectionLayer(props: { stageRef: RefObject<HTMLDivElement
       if (result?.kind === 'marquee') current.current.onComplete(current.current.resolve(result.bounds, promoted), result.policy);
       else if (result) current.current.onTap(result.hit, result.policy, !result.hit.nodeId);
       else if (gesture?.kind === 'marquee' && !gesture.moved && gesture.start.pointerType === 'mouse'
-        && gesture.start.ctrl && gesture.start.hit?.nodeId && event.detail < 2) current.current.onSelectNode(gesture.start.hit);
+        && gesture.start.ctrl && gesture.start.hit?.nodeId) pendingNodeClick = gesture.start.hit;
       if (!editor && viewport.hasPointerCapture(event.pointerId)) viewport.releasePointerCapture(event.pointerId);
       // Native pointer-up still needs its tool. Restore on the next tick, after
       // geometry has settled, rather than ending translation in DOM capture.
@@ -198,9 +200,17 @@ export function CanvasSelectionLayer(props: { stageRef: RefObject<HTMLDivElement
       if (!target || (!(event.ctrlKey || event.metaKey) && target.nodeId)) return;
       event.preventDefault(); event.stopPropagation(); window.getSelection()?.removeAllRanges();
       bridge?.ownership.claim('application');
+      if (target.nodeId && event.ctrlKey && !event.metaKey) return; // Handled by the second click.
       current.current.onSelectDiagram(target.diagramId, event.ctrlKey || event.metaKey);
     };
     const click = (event: MouseEvent) => {
+      const node = pendingNodeClick; pendingNodeClick = undefined;
+      if (node && event.button === 0 && event.ctrlKey && !event.metaKey) {
+        event.preventDefault(); event.stopPropagation();
+        bridge?.ownership.claim('application');
+        current.current.onSelectNode(node, event.detail === 2);
+        return;
+      }
       if (event.detail > 0 && bridge && bridge.pointerType !== 'mouse' && !ui(event)) { event.preventDefault(); event.stopPropagation(); }
     };
     viewport.addEventListener('dblclick', doubleClick, true);

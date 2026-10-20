@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { chatReferenceSchema } from '../../../../domain/mapping/agent-chat/agentChat';
 import { normalizePromptBody, promptText } from '../prompt-composer/promptBody';
-import { draftLength, replaceChatDraft, serializeChatDraft, sliceChatDraft, type ChatDraft } from './chatDraft';
+import { draftLength, replaceChatDraft, serializeChatDraft, sliceChatDraft, syncChatDraftSelections, type ChatDraft } from './chatDraft';
 import { placeDraftSelection, readDraftDom, readDraftSelection, renderDraftDom, type DraftSelection } from './chatDraftDom';
 import type { captureChatReferences } from './ChatReferences';
 
@@ -104,14 +104,11 @@ export function ChatPromptEditor({ value, draftKey, selectedReferences, open, di
   }, []);
   useEffect(() => {
     if (!open || disabled || composing.current) return;
-    const entries = selectedReferences.map(entry => ({ ...entry, selectionKey: JSON.stringify([entry.key, entry.value.reference.kind,
-      entry.value.reference.kind === 'nodes' ? [entry.value.reference.nodeIds, entry.value.reference.range] : null]) }));
-    const added = entries.filter(entry => !seen.current.has(entry.selectionKey));
-    seen.current = new Set(entries.map(entry => entry.selectionKey));
-    if (!added.length) return;
-    // Canvas selections insert snapshots once. Deselecting, editing, or removing a chip never rewrites them.
-    replace(added.map(entry => ({ kind: 'reference', id: crypto.randomUUID(), reference: structuredClone(entry.value) })), history.selection, document.activeElement === root.current);
-  }, [selectedReferences, open, disabled, compositionActive]);
+    const state = current.current;
+    const next = syncChatDraftSelections(state.value, selectedReferences, seen.current, state.history.selection);
+    seen.current = next.seen;
+    if (next.draft !== state.value) commit(next.draft, next.selection, document.activeElement === root.current);
+  }, [selectedReferences, draftKey, open, disabled, compositionActive]);
 
   return <div ref={root} className="agent-chat-prompt" role="textbox" aria-label="Message Codex" aria-multiline="true" aria-disabled={disabled}
     contentEditable={!disabled} suppressContentEditableWarning data-placeholder="Ask Codex to do anything…" data-empty={!draftLength(value)}

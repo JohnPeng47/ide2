@@ -53,18 +53,18 @@ try {
     };
     const mouse = async (type, p, clickCount = 1, modifiers = 0) => cdp.send('Input.dispatchMouseEvent', { type, ...p, button: 'left', buttons: type === 'mouseReleased' ? 0 : 1, clickCount, modifiers });
     const click = async (selector, text) => {
-      const p = await evaluate(cdp, `(() => { const e=[...document.querySelectorAll(${JSON.stringify(selector)})].find(e=>!${JSON.stringify(text)} || e.textContent.trim()===${JSON.stringify(text)}); if (!e || e.disabled) throw Error('Unavailable: '+${JSON.stringify(text ?? selector)}); const r=e.getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2}; })()`);
+      const p = await evaluate(cdp, `(() => { const e=[...document.querySelectorAll(${JSON.stringify(selector)})].find(e=>!${JSON.stringify(text)} || e.textContent.trim()===${JSON.stringify(text)}); if (!e || e.disabled) throw Error('Unavailable: '+${JSON.stringify(text ?? selector)}); const r=e.getBoundingClientRect(); for (const fraction of [0.5, 0.2, 0.8]) { const p={x:r.x+r.width/2,y:r.y+r.height*fraction}; if(e.contains(document.elementFromPoint(p.x,p.y))) return p; } throw Error('Occluded: '+${JSON.stringify(text ?? selector)}); })()`);
       await mouse('mousePressed', p); await mouse('mouseReleased', p);
     };
     const diagramPoint = async id => evaluate(cdp, `(() => {const r=document.querySelector('[data-grid-box="${id}"]').getBoundingClientRect();return{x:r.x+8,y:r.y+8};})()`);
-    const select = async id => { const p = await evaluate(cdp, `(() => {const r=document.querySelector('[data-grid-box="${id}"]').getBoundingClientRect();return{x:r.right-6,y:r.bottom-6};})()`); await mouse('mousePressed', p, 2, 2); await mouse('mouseReleased', p, 2, 2); };
+    const select = async id => { const p = await evaluate(cdp, `(() => {const r=document.querySelector('[data-grid-box="${id}"]').getBoundingClientRect();return{x:r.x+2,y:r.bottom-6};})()`); await mouse('mousePressed', p, 2, 2); await mouse('mouseReleased', p, 2, 2); };
     const text = async () => evaluate(cdp, "[...document.querySelectorAll('[data-native-node] .mapping-poc-ascii')].map(el => el.textContent).join('\\n')");
     const key = async (value, modifiers = 0) => {
       await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: value, code: ['Escape','End','Enter','Delete'].includes(value) ? value : `Key${value.toUpperCase()}`, modifiers, windowsVirtualKeyCode: ({Escape:27,End:35,Enter:13,Delete:46})[value] ?? value.toUpperCase().charCodeAt(0) });
       await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: value, modifiers });
     };
     const nodePoint = async label => evaluate(cdp, `(() => { const e=[...document.querySelectorAll('[data-content-node-id][data-display-node-id]')].find(e=>e.textContent.trim()===${JSON.stringify(label)} && e.getBoundingClientRect().width>0); if(!e)throw Error('Missing node'); const r=e.getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2}; })()`);
-    const nodeClick = async label => { await waitFor(async()=>await evaluate(cdp,"!document.querySelector('.tl-hit-test-blocker:not(.tl-hit-test-blocker__hidden)')")); const p=await nodePoint(label); await mouse('mousePressed',p,1,2); await mouse('mouseReleased',p,1,2); };
+    const nodeClick = async label => { await waitFor(async()=>await evaluate(cdp,"!document.querySelector('.tl-hit-test-blocker:not(.tl-hit-test-blocker__hidden)')")); const p=await nodePoint(label); await mouse('mousePressed',p,2,2); await mouse('mouseReleased',p,2,2); };
     await waitForSelector(cdp, '[data-grid-box=second]');
     await waitFor(async () => (await diagramPoint('overview')).x > 320);
     const selectedLabels = async () => evaluate(cdp,"[...document.querySelectorAll('[data-native-node] [data-content-node-id].is-selected')].map(e=>e.textContent.trim()).sort()");
@@ -124,7 +124,7 @@ try {
     await waitForSelection(['First','Untouched']);
     await nodeClick('First');
     await waitFor(async()=>(await selectedLabels()).length===0);
-    console.log('PASS Ctrl-click subtree toggle, nested leaf removal, siblings, other diagrams and whole-diagram subtraction');
+    console.log('PASS Ctrl-double-click subtree toggle, nested leaf removal, siblings, other diagrams and whole-diagram subtraction');
     await nodeClick('Existing');
     await waitForSelector(cdp,'.retained-selection-controls');
     await click('.retained-selection-controls button','Actions (A)');
@@ -153,7 +153,7 @@ try {
     await nodeClick('Other');
     await click('[aria-label="LLM sessions"] button[aria-current=page]');
     assert.equal(await evaluate(cdp, "document.querySelectorAll('.prompt-reference').length"), 2);
-    console.log('PASS automatic references from subsequent Ctrl-click selections');
+    console.log('PASS automatic references from subsequent Ctrl-double-click selections');
     await click('.prompt-body-text'); await cdp.send('Input.insertText', { text: 'Revise branch' });
     await click('.llm-panel button[type=submit]');
     await waitForSelector(cdp,'[data-edit-status=completed]',{timeoutMs:15000});
@@ -264,7 +264,7 @@ try {
     assert.equal(await evaluate(cdp,"document.querySelectorAll('.mapping-diagram-selection-actions').length"),0);
     await key('b', 2); await key('l');
     assert.ok(await evaluate(cdp,"document.querySelectorAll('.prompt-reference').length>=2"));
-    console.log('PASS mixed whole-diagram and Ctrl-click node references');
+    console.log('PASS mixed whole-diagram and Ctrl-double-click node references');
     const loaded = new Promise(resolve => { const off = cdp.on('Page.loadEventFired', () => { off(); resolve(); }); });
     await cdp.send('Page.reload',{ignoreCache:true}); await loaded;
     await waitForSelector(cdp,'[data-grid-box=second]');

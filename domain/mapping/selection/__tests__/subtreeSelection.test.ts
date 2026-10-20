@@ -2,7 +2,7 @@ import { expect, it } from 'vitest';
 import { RevisionedDiagramService } from '../../../core/diagrams/diagramService';
 import { diagramContentNodes } from '../../../core/diagrams/diagramContentNodes';
 import { diagramSelectionItem, regionSelectionItem, selectionContentNodes, syncNativeDiagramSelection, type SelectionState } from '../selectionState';
-import { toggleSubtreeSelection } from '../subtreeSelection';
+import { toggleNodeSelection, toggleSubtreeSelection } from '../subtreeSelection';
 
 const diagram = new RevisionedDiagramService().create({ id: 'tree', revision: 0,
   ascii: 'Root\n+-- Branch\n|   +-- Leaf\n|   `-- Peer\n`-- Sibling', structureKind: 'tree' }).diagram;
@@ -11,6 +11,16 @@ const node = (label: string) => nodes.find(node => node.label === label)!;
 const toggle = (state: SelectionState, label: string) => toggleSubtreeSelection(state, diagram, 'tree', node(label).id);
 const selected = (state: SelectionState) => nodes.filter(node => state.items.some(item => item.displayNodeId === 'grid:tree'
   && selectionContentNodes(diagram, item.region).some(selected => selected.id === node.id))).map(node => node.label);
+
+it('toggles a single node without selecting or removing its descendants', () => {
+  const single = toggleNodeSelection({ items: [] }, diagram, 'tree', node('Branch').id);
+  expect(selected(single)).toEqual(['Branch']);
+  expect(toggleNodeSelection(single, diagram, 'tree', node('Branch').id).items).toEqual([]);
+  const all = toggle({ items: [] }, 'Root');
+  const withoutBranch = toggleNodeSelection(all, diagram, 'tree', node('Branch').id);
+  expect(selected(withoutBranch)).toEqual(['Root', 'Leaf', 'Peer', 'Sibling']);
+  expect(withoutBranch.items[0].id).toBe(all.items[0].id);
+});
 
 it('selects and deselects the complete subtree using canonical child relationships', () => {
   const state = toggle({ items: [] }, 'Branch');

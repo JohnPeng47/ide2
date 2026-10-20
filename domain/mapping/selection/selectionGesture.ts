@@ -50,7 +50,9 @@ export class SelectionGestureController {
     if (gesture.start.pointerType === 'touch') return;
     if (gesture.kind === 'marquee' && gesture.moved) return { kind: 'marquee', bounds: gesture.bounds, policy: gesture.policy };
     if (gesture.moved || ['native', 'move', 'blocked'].includes(gesture.kind)) return;
-    if (gesture.start.pointerType === 'mouse' && gesture.kind !== 'node') return;
+    // Mouse node selection is handled by Ctrl-click after release, when the
+    // browser supplies the click count. Plain label clicks never select nodes.
+    if (gesture.start.pointerType === 'mouse') return;
     if (gesture.start.hit) return { kind: 'tap', hit: gesture.start.hit, policy: gesture.policy };
   }
   /** Keep the multi-contact latch until every contact has left, including after cancellation. */
