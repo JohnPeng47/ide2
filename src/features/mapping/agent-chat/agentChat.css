@@ -175,6 +175,13 @@
 .agent-chat-resume input { width: 100%; min-width: 0; box-sizing: border-box; }
 .agent-chat-resume small { color: var(--text-muted); overflow-wrap: anywhere; }
 .agent-chat-resume .agent-chat-reference-error { color: var(--accent-danger); }
+.agent-chat-working { display: flex; align-items: baseline; gap: 7px; min-width: 0; padding: 1px 0 8px; color: var(--text-muted); font: 12px/1.6 var(--font-mono, monospace); }
+.agent-chat-working-label, .agent-chat-elapsed { flex-shrink: 0; }
+.agent-chat-elapsed { font-variant-numeric: tabular-nums; }
+.agent-chat-working-detail { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agent-chat-working[data-animated=true] .agent-chat-working-label { animation: agent-chat-working-pulse 2.2s ease-in-out infinite; }
+@keyframes agent-chat-working-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { .agent-chat-working[data-animated=true] .agent-chat-working-label { animation: none; } }
 .agent-chat-composer-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; }
 .agent-chat-composer-actions button { font-size: 12px; padding: 3px 8px; }
 

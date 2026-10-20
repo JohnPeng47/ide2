@@ -5,7 +5,7 @@ import { tmpdir, homedir } from 'node:os';
 import path from 'node:path';
 import { createServer } from 'node:net';
 import { seedMappingFixture } from '../support/browser-mapping-fixture.mjs';
-const { withHeadlessBrowser, evaluate, waitFor, waitForSelector } = await import(path.join(homedir(), '.codex/skills/front-end/browser-test.mjs'));
+const { withHeadlessBrowser, evaluate, waitFor, waitForSelector, captureScreenshot } = await import(path.join(homedir(), '.codex/skills/front-end/browser-test.mjs'));
 const root = path.resolve(new URL('../../..', import.meta.url).pathname);
 const fixture = await mkdtemp(path.join(tmpdir(), 'chat-resume-'));
 const nativeId = '019a0000-0000-7000-8000-000000000001';
@@ -74,8 +74,26 @@ try {
     assert.equal(await evaluate(cdp, 'document.querySelector(".agent-chat-prompt").textContent'), 'Keep my draft');
     await click('.agent-chat-tab[data-active=false] [role=tab]');
     await sendPrompt('wait'); await state('running');
+    await waitForSelector(cdp, '.agent-chat-working');
+    await waitFor(() => evaluate(cdp, 'document.querySelector(".agent-chat-elapsed").textContent === "(2s)"'));
+    assert.equal(await evaluate(cdp, 'getComputedStyle(document.querySelector(".agent-chat-working-label")).animationName'), 'agent-chat-working-pulse');
+    assert.ok(await evaluate(cdp, '(() => { const r = document.querySelector(".agent-chat-working").getBoundingClientRect(); return r.height > 0 && r.top >= 0 && r.bottom < innerHeight; })()'));
+    await captureScreenshot(cdp, { output: process.env.AGENT_CHAT_RESUME_SCREENSHOT ?? path.join(fixture, 'working.png') });
+    await cdp.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
+    assert.equal(await evaluate(cdp, 'getComputedStyle(document.querySelector(".agent-chat-working-label")).animationName'), 'none');
+    await cdp.send('Emulation.setEmulatedMedia', { features: [] });
+    await click('.agent-chat-tab[data-active=false] [role=tab]');
+    assert.equal(await evaluate(cdp, '!!document.querySelector(".agent-chat-working")'), false);
+    await click('.agent-chat-tab[data-active=false] [role=tab]'); await state('running');
+    assert.ok(await evaluate(cdp, 'parseInt(document.querySelector(".agent-chat-elapsed").textContent.slice(1)) >= 2'), 'Switching tabs preserves elapsed time');
+    await click('.agent-chat-send'); await state('interrupted');
+    assert.equal(await evaluate(cdp, '!!document.querySelector(".agent-chat-working")'), false);
+    await sendPrompt('question');
+    await waitFor(() => evaluate(cdp, 'document.querySelector(".agent-chat-working-label")?.textContent.includes("Waiting for you")'));
+    assert.equal(await evaluate(cdp, 'getComputedStyle(document.querySelector(".agent-chat-working-label")).animationName'), 'none');
     await click('.agent-chat-send'); await state('interrupted');
     await sendPrompt('Continue'); await state('idle');
+    assert.equal(await evaluate(cdp, '!!document.querySelector(".agent-chat-working")'), false);
     await cdp.send('Page.reload'); await open(); await state('idle');
     assert.equal(await evaluate(cdp, 'document.querySelectorAll(".agent-chat-tabs [role=tab]").length'), 1);
     assert.ok(await evaluate(cdp, 'document.querySelector(".agent-chat-timeline").textContent.includes("An answer from the CLI")'));
@@ -83,7 +101,7 @@ try {
     assert.equal(await evaluate(cdp, 'document.querySelector("[aria-label=\'Codex access\']").value'), 'danger-full-access');
     assert.equal((await (await fetch(`${base}/api/mapping/agent-chat/sessions`)).json()).length, 1);
     assert.deepEqual(errors, []);
-    console.log('PASS: native resume, duplicate/missing IDs, drafts, history after reload, continuation and stop.');
+    console.log('PASS: native resume, duplicate/missing IDs, drafts, history after reload, working timer, tab switching, stop, waiting, reduced motion.');
   });
 } finally {
   if (server && server.exitCode === null) { server.kill('SIGTERM'); await new Promise(resolve => server.once('exit', resolve)); }

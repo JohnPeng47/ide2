@@ -4,6 +4,7 @@ import { WindowPanelSidebarContext } from '../window-panel/WindowPanel';
 import { type ChatAnswer, type ChatApproval, type ChatCanvasTarget, type ChatReadCanvas, type ChatEvent, type ChatInfo, type ChatSession, type ChatSessionSummary, type ChatSettings } from '../../../../domain/mapping/agent-chat/agentChat';
 import { MarkdownActivityContext } from './markdown/CodexMarkdown';
 import { ChatTranscript } from './ChatTranscript';
+import { ChatWorking } from './ChatWorking';
 import { useChatZoom } from './useTranscriptZoom';
 import { ChatHighlightContext, type OpenHighlightReference } from './ChatHighlightLink';
 import { ChatFileLinks } from './ChatFileLinks';
@@ -278,6 +279,7 @@ export function AgentChatPanel({ open, projectId, canvasTarget, onCopyDiagram, r
     {session?.items.length ? <ChatTranscript key={session.id} session={session} open={open} zoom={zoom} onZoomChange={setZoom} /> : <div className="agent-chat-timeline"><div className="agent-chat-empty"><span>CODEX</span><h2>What would you like to work on?</h2><p>Ask about your project, explore code, or make a change.</p>{info && <code>{info.cwd}</code>}</div></div>}
     <div className="agent-chat-requests">{session?.pending.map(request => <PendingRequest key={request.id} request={request} onAnswer={answer => chatRequest(`/sessions/${selected}/answer/${request.id}`, answer)} />)}</div>
     <form className="agent-chat-composer" onSubmit={event => { event.preventDefault(); void send(); }}>
+      {running && <ChatWorking key={session.id} startedAt={session.turnStartedAt} open={open} waiting={session.pending.length > 0} activity={session.activity} />}
       {session && !session.canvasTools && <small className="agent-chat-tool-hint">Start a new chat to enable diagram editing tools.</small>}
       {referenceError && <small className="agent-chat-reference-error" role="alert">{referenceError}</small>}
       <ChatPromptEditor value={draft} draftKey={selected} selectedReferences={selectedReferences} open={open} disabled={!info || busy}
