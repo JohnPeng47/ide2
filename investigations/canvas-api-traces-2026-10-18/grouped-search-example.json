@@ -1,0 +1,415 @@
+{
+  "total": 1550,
+  "groups": [
+    {
+      "origin": "saved",
+      "representationId": "representation-b697fd11-5c8d-49e7-a6b5-b12030f2f79a",
+      "revisionId": "representation-revision-2281b568-a1d5-4ec5-8e21-41a394aace95",
+      "name": "Canvas domain model - baseline 03f2168 (before tldraw)",
+      "nodeId": "grid:overview",
+      "matches": [
+        {
+          "snippet": "          MappingPage                              baseline 03f2168, before tldraw",
+          "line": 1
+        },
+        {
+          "snippet": "          |",
+          "line": 2
+        },
+        {
+          "snippet": "          |-- injected services",
+          "line": 3
+        },
+        {
+          "snippet": "          |   |-- DiagramService                   immutable content revisions -> [G]",
+          "line": 4
+        },
+        {
+          "snippet": "          |   `-- CanvasHistoryService             canvas contexts and checkpoints -> [E]",
+          "line": 5
+        },
+        {
+          "snippet": "          |",
+          "line": 6
+        },
+        {
+          "snippet": "          |-- workspace: CanvasWorkspace",
+          "line": 7
+        },
+        {
+          "snippet": "          |   |-- drafts[documentId]: CanvasDraft   metadata + stable session handle",
+          "line": 8
+        },
+        {
+          "snippet": "          |   |   |-- representationId? / name / revisionId / busy",
+          "line": 9
+        },
+        {
+          "snippet": "          |   |   |-- savedName / savedScene / savedEdges / hidden?",
+          "line": 10
+        },
+        {
+          "snippet": "          |   |   |-- viewport? / focusBox?",
+          "line": 11
+        },
+        {
+          "snippet": "          |   |   `-- session: CanvasSession",
+          "line": 12
+        },
+        {
+          "snippet": "          |   |       |-- controller: MappingDocumentController",
+          "line": 13
+        },
+        {
+          "snippet": "          |   |       |-- document                 semantic document store",
+          "line": 14
+        },
+        {
+          "snippet": "          |   |       |-- presentation             display / diagramViews",
+          "line": 15
+        },
+        {
+          "snippet": "          |   |       |-- selection                SelectionState.items[]",
+          "line": 16
+        },
+        {
+          "snippet": "          |   |       |-- controls / geometry / status",
+          "line": 17
+        },
+        {
+          "snippet": "          |   |       `-- onCommit()               notify workspace persistence",
+          "line": 18
+        },
+        {
+          "snippet": "          |   |-- controllers[documentId]          index of session-owned controllers",
+          "line": 19
+        },
+        {
+          "snippet": "          |   `-- owns session creation, subscriptions and disposal",
+          "line": 20
+        },
+        {
+          "snippet": "          |",
+          "line": 21
+        },
+        {
+          "snippet": "          |-- MappingDocumentController",
+          "line": 22
+        },
+        {
+          "snippet": "          |   |-- diagrams: DiagramService         content edits -> [G]",
+          "line": 23
+        },
+        {
+          "snippet": "          |   |-- historyService: CanvasHistoryService",
+          "line": 24
+        },
+        {
+          "snippet": "          |   |-- context: CanvasEditingContext    opaque history handle",
+          "line": 25
+        },
+        {
+          "snippet": "          |   |-- getSnapshot(): ControllerSnapshot",
+          "line": 26
+        },
+        {
+          "snippet": "          |   |   |-- contextId / canvasRevisionId / version",
+          "line": 27
+        },
+        {
+          "snippet": "          |   |   |-- canUndo / canRedo             historyService.state(context)",
+          "line": 28
+        },
+        {
+          "snippet": "          |   |   |-- document: MappingGridDocument",
+          "line": 29
+        },
+        {
+          "snippet": "          |   |   |   |-- scene: LineGridScene",
+          "line": 30
+        },
+        {
+          "snippet": "          |   |   |   |   |-- root: GridBox         grid containment + layout -> [A]",
+          "line": 31
+        },
+        {
+          "snippet": "          |   |   |   |   `-- contents[id]: Diagram -> [B]",
+          "line": 32
+        },
+        {
+          "snippet": "          |   |   |   `-- edges / jumps / sections",
+          "line": 33
+        },
+        {
+          "snippet": "          |   |   `-- canvas: MappingCanvasState",
+          "line": 34
+        },
+        {
+          "snippet": "          |   |       |-- selection: SelectionState",
+          "line": 35
+        },
+        {
+          "snippet": "          |   |       |   `-- items[]               unified diagram / region membership",
+          "line": 36
+        },
+        {
+          "snippet": "          |   |       |-- diagramViews             per-diagram folding state",
+          "line": 37
+        },
+        {
+          "snippet": "          |   |       |-- display: DisplayState    floating objects only -> [C]",
+          "line": 38
+        },
+        {
+          "snippet": "          |   |       `-- controls: MappingControls",
+          "line": 39
+        },
+        {
+          "snippet": "          |   |           |-- activeBoxId / selectionFocusId / activeThreadId",
+          "line": 40
+        },
+        {
+          "snippet": "          |   |           `-- surfaces[ownerId]: SelectionSurfaceState",
+          "line": 41
+        },
+        {
+          "snippet": "          |   |-- getCanvasSnapshot(): CanvasDocument",
+          "line": 42
+        },
+        {
+          "snippet": "          |   |-- resolveDiagram(diagramId): DiagramView",
+          "line": 43
+        },
+        {
+          "snippet": "          |   |-- exportHistory() / forkHistory()",
+          "line": 44
+        },
+        {
+          "snippet": "          |   |   `-- historyService.exportContext() / forkContext()",
+          "line": 45
+        },
+        {
+          "snippet": "          |   |-- undo / redo / reset",
+          "line": 46
+        },
+        {
+          "snippet": "          |   |   `-- CanvasHistoryService navigation",
+          "line": 47
+        },
+        {
+          "snippet": "          |   |",
+          "line": 48
+        },
+        {
+          "snippet": "          |   `-- nodes(): DisplayNode[]         derived public registry",
+          "line": 49
+        },
+        {
+          "snippet": "          |       |",
+          "line": 50
+        },
+        {
+          "snippet": "          |       |-- DisplayNode = CanvasDisplayNode",
+          "line": 51
+        },
+        {
+          "snippet": "          |       |   |-- id                     grid:... or floating:...",
+          "line": 52
+        },
+        {
+          "snippet": "          |       |   |-- version                document version at read time",
+          "line": 53
+        },
+        {
+          "snippet": "          |       |   |-- childIds[]",
+          "line": 54
+        },
+        {
+          "snippet": "          |       |   `-- expansion              expanded | collapsed",
+          "line": 55
+        },
+        {
+          "snippet": "          |       |",
+          "line": 56
+        },
+        {
+          "snippet": "          |       |-- Grid branch                layout: \"grid\"",
+          "line": 57
+        },
+        {
+          "snippet": "          |       |   |-- kind                   diagram | group",
+          "line": 58
+        },
+        {
+          "snippet": "          |       |   |-- boxId                  authoritative GridBox ID",
+          "line": 59
+        },
+        {
+          "snippet": "          |       |   |-- geometry",
+          "line": 60
+        },
+        {
+          "snippet": "          |       |   |   |-- units              \"cells\"",
+          "line": 61
+        },
+        {
+          "snippet": "          |       |   |   `-- bounds: GridBounds",
+          "line": 62
+        },
+        {
+          "snippet": "          |       |   |       `-- column / row / columns / rows",
+          "line": 63
+        },
+        {
+          "snippet": "          |       |   `-- content?: DiagramContent",
+          "line": 64
+        },
+        {
+          "snippet": "          |       |",
+          "line": 65
+        },
+        {
+          "snippet": "          |       `-- Floating branch            layout: \"floating\"",
+          "line": 66
+        },
+        {
+          "snippet": "          |           |-- geometry",
+          "line": 67
+        },
+        {
+          "snippet": "          |           |   |-- units              \"pixels\"",
+          "line": 68
+        },
+        {
+          "snippet": "          |           |   |-- position { x, y }",
+          "line": 69
+        },
+        {
+          "snippet": "          |           |   |-- bounds { width, height }",
+          "line": 70
+        },
+        {
+          "snippet": "          |           |   `-- coordinateSpace    canvas | viewport",
+          "line": 71
+        },
+        {
+          "snippet": "          |           |-- placement: FloatingPlacement",
+          "line": 72
+        },
+        {
+          "snippet": "          |           |   |-- grid-region        selected source rectangle",
+          "line": 73
+        },
+        {
+          "snippet": "          |           |   |-- parent             projection owner",
+          "line": 74
+        },
+        {
+          "snippet": "          |           |   |-- conversation       anchor + presentation",
+          "line": 75
+        },
+        {
+          "snippet": "          |           |   `-- stored             retained coordinate space",
+          "line": 76
+        },
+        {
+          "snippet": "          |           `-- value: FloatingBox",
+          "line": 77
+        },
+        {
+          "snippet": "          |               |-- SelectionRegion   kind: selection",
+          "line": 78
+        },
+        {
+          "snippet": "          |               |-- ProjectedPane     kind: projection",
+          "line": 79
+        },
+        {
+          "snippet": "          |               |-- ConversationPane  kind: conversation",
+          "line": 80
+        },
+        {
+          "snippet": "          |               `-- DetailPane        kind: detail",
+          "line": 81
+        },
+        {
+          "snippet": "          |",
+          "line": 82
+        },
+        {
+          "snippet": "          |-- useAgentCanvasBridge(...)             agent access + controller edits -> [D]",
+          "line": 83
+        },
+        {
+          "snippet": "          |",
+          "line": 84
+        },
+        {
+          "snippet": "          |-- WorkspacePersistence                  incremental autosave adapter",
+          "line": 85
+        },
+        {
+          "snippet": "          |   |-- CanvasWorkspace.onPersist(documentIds)",
+          "line": 86
+        },
+        {
+          "snippet": "          |   |-- SourcePaneViewState changes",
+          "line": 87
+        },
+        {
+          "snippet": "          |   `-- controller.persistenceChanges(cursor) -> RecordStorage.batch()",
+          "line": 88
+        },
+        {
+          "snippet": "          |       `-- Workspace persistence flow    detailed owner-to-storage path",
+          "line": 89
+        },
+        {
+          "snippet": "          |",
+          "line": 90
+        },
+        {
+          "snippet": "          |-- WorkspaceStorage",
+          "line": 91
+        },
+        {
+          "snippet": "          |   |-- owns RecordStorage                cached records + pending writes",
+          "line": 92
+        },
+        {
+          "snippet": "          |   `-- owns workspaceStorage.worker      encoding, transport and restore",
+          "line": 93
+        },
+        {
+          "snippet": "          |",
+          "line": 94
+        },
+        {
+          "snippet": "          `-- capture(): MappingWorkspaceSnapshot   explicit export / workspace operations",
+          "line": 95
+        },
+        {
+          "snippet": "              |-- schemaVersion: 3 / projectId / activeDocumentId / transfers",
+          "line": 96
+        },
+        {
+          "snippet": "              `-- documents[]: MappingDocumentSnapshot",
+          "line": 97
+        },
+        {
+          "snippet": "                  |-- identity / name / saved baselines / revisionId / hidden?",
+          "line": 98
+        },
+        {
+          "snippet": "                  |-- document / canvas / viewport",
+          "line": 99
+        },
+        {
+          "snippet": "                  `-- history                       controller.exportHistory()",
+          "line": 100
+        }
+      ]
+    }
+  ],
+  "nextOffset": 100
+}

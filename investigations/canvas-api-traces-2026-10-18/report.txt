@@ -1,0 +1,229 @@
+CANVAS API CHAT TRACE AUDIT — 2026-10-18
+
+Two historical user-query traces. No historical API calls were replayed.
+The application and live canvases were not modified.
+
+READING THE MEASUREMENTS
+
+Sizes below use decimal KB (1 KB = 1,000 bytes).
+R = complete response value serialized in recorded command stdout.
+P = projection, preview, or excerpt printed by the agent's script.
+W = complete MCP wrapper printed in stdout, including duplicated representations.
+? = not recorded; the historical temporary file is no longer present.
+
+These are UTF-8 text sizes, NOT measured network traffic or token counts.
+Python and JavaScript serialization differ: the exact same first search page
+is 35,211 bytes in B's Python output and 33,807 bytes in A's compact JS output.
+Command stdout comes from event_msg/item_completed/CommandExecution records,
+which retain more output than the truncated tool result shown to the model.
+Full stdout sizes must not be interpreted as exact model-context sizes.
+
+Times are recorded whole-command durations, including process startup, MCP
+initialization, serialization, and local processing. No individual HTTP-call
+latencies were recorded inside these commands. Each batch duration is counted
+once; its children share that timing and must not be assigned the batch time
+individually. Concurrent branches overlap.
+
+TRACE A — 2026-10-10, America/Toronto
+Session: 01a1289e-b5be-7121-8254-c92826952b38
+User prompt at source line 58: inspect pane w3A:p34 and use the short Canvas
+API to propose modifications/migrations/missing diagrams for standalone
+create-diagram and /api/llm creation and reading.
+Answer at line 153: proposals based on nine live canvases.
+
+User: use the short Canvas API to identify diagram changes
+|
+|-- 1. Locate server                              [batch 0.426s; stdout 20.425 KB]
+|   |-- GET :5193 /api/mapping/agent/canvases       [time shared; R 4.423 KB]
+|   |   `-- One workspace, nine document entries
+|   `-- GET :3773 /api/mapping/agent/canvases       [time shared; P 15.000 KB]
+|       `-- Wrong server: HTTP 200 HTML, sliced to 15,000 characters
+|
+|-- 2. MCP discovery                              [batch 2.165s; stdout 52.542 KB]
+|   |-- initialize + tools/list                   [time shared; full size ?]
+|   |   `-- Only three selected tool schemas printed: P 2.623 KB
+|   |-- canvas-api-search(query="")               [time shared; W 49.737 KB]
+|   |   |-- 18 methods; logical JSON documentation: 23.251 KB
+|   |   `-- Same value in content[0].text AND structuredContent.result
+|   `-- exec: return canvas.list()                [time shared; W 0.179 KB]
+|       `-- HTTP_WRITES_DISABLED, despite this being a read
+|
+|-- 3. Documentation + saved search               [batch 24.222s; stdout 34.733 KB]
+|   |-- canvas-api-search("canvas.attach")        [time shared; R* 0.499 KB]
+|   |-- canvas-api-search("nodes.list")           [time shared; R* 0.424 KB]
+|   `-- diagram-search(search, query="", limit=100)
+|       |                                        [time shared; R 33.807 KB]
+|       |-- total=1550, nextOffset=100
+|       |-- First 100 hits are lines from ONE diagram
+|       `-- Actual snippet strings: 5.767 KB (17.1% of the JSON size)
+|
+|-- 4. Live context fallback                      [batch 13.855s; P 4.924 KB]
+|   |-- GET /agent/canvases again                 [time shared; full size ?]
+|   `-- GET /live/context/short x9, concurrently  [individual times/sizes ?]
+|       |-- Canvas domain model                  [HTTP 200; P 557 bytes]
+|       |-- PersistentLayer                      [HTTP 200; P 518 bytes]
+|       |-- Workspace persistence flow           [HTTP 200; P 529 bytes]
+|       |-- ChangeSession                        [HTTP 200; P 545 bytes]
+|       |-- Mapping page - MCP and HTTP API      [HTTP 200; P 534 bytes]
+|       |-- Unified selection                    [HTTP 200; P 554 bytes]
+|       |-- AgentContext                         [HTTP 200; P 568 bytes]
+|       |-- tldraw - Editor, Store, History       [HTTP 200; P 548 bytes]
+|       `-- MappingDocumentController            [HTTP 200; P 562 bytes]
+|       Full responses saved to now-missing /tmp/create-diagram-plan-short.json.
+|       This batch overlaps the preceding MCP/search batch.
+|
+`-- 5. Read cached responses locally (no more API requests)
+    |-- Titles, IDs, line counts: 38 diagrams     [0.803s; P 4.865 KB]
+    |-- Relevant ASCII + edges: three canvases    [0.475s; P 29.414 KB]
+    `-- More relevant ASCII                      [0.187s; stdout 11.840 KB]
+        Last command also runs rg on missing PLAN.md and exits 1.
+        Its output includes that local error; not all bytes are diagram text.
+
+R* in step 3 is structuredContent with its small result wrapper retained;
+the MCP content text duplicate was discarded by the client script.
+Discovery and search tool results were truncated before reaching the model.
+The 15 KB HTML output is agent-side probing waste, not a large Canvas response.
+
+TRACE B — 2026-10-13, America/Toronto
+Session: 01a13723-9903-7130-b48a-9898d33ec808
+User prompt at line 9: use the short Canvas API and recent commits to choose
+a cutoff for future ChangeSessions and identify missing diagrams/canvases.
+Answer at line 148: baseline 032bc3f4, first example 936f7b72; saved coverage
+requires updating. The answer explicitly excludes unsaved browser changes.
+
+User: inspect existing diagram coverage and choose a commit cutoff
+|
+|-- 1. MCP discovery                              [batch 1.316s; stdout 56.407 KB]
+|   |-- initialize                               [time shared; R 1.320 KB]
+|   |-- tools/list                               [time shared; full size ?]
+|   |   `-- Four selected schemas printed: P 3.218 KB
+|   |-- canvas-api-search(query="")               [time shared; W 51.628 KB]
+|   |   `-- Same 23.251 KB logical docs as A, duplicated in MCP result
+|   `-- exec: return canvas.list()                [time shared; W 0.237 KB]
+|       `-- Validation error: required requestId missing
+|
+|-- 2. Retry with requestId; discover saved data   [batch 2.049s; stdout 35.558 KB]
+|   |-- exec: return canvas.list()                [time shared; R 0.120 KB]
+|   |   `-- HTTP_WRITES_DISABLED
+|   |-- list_repositories                        [time shared; R 0.224 KB]
+|   `-- diagram-search(search, query="", limit=100)
+|       |                                        [time shared; R 35.211 KB]
+|       `-- 100 line hits; same logical page as A; only 5.767 KB of snippets
+|
+|-- 3. Inventory via saved-search pagination      [batch 23.492s; P 2.467 KB]
+|   |-- diagram-search offsets 0,100,...,1500     [16 calls; each time/size ?]
+|   |   |-- First page requested AGAIN after step 2
+|   |   `-- 1,550 hits reduced to 8 canvases / 37 diagram IDs
+|   `-- Concurrent alternate-server attempt      [separate batch 0.916s]
+|       `-- exec: canvas.list() on :5193          [R 0.120 KB; writes disabled]
+|   Full 16-page responses were redirected to a now-missing temporary file.
+|   The 2.467 KB is the resulting inventory, NOT the 1,550-hit API payload.
+|
+|-- 4. Reconstruct ASCII from cached line hits (local processing)
+|   |-- Verify 16 pages + list diagram IDs        [0.849s; P 2.502 KB]
+|   |-- Group snippets by diagram + keyword scan [0.505s; P 15.118 KB]
+|   |-- Read relevant reconstructed ASCII        [0.503s; P 20.969 KB]
+|   `-- More ASCII plus git commit list           [0.517s; P 7.760 KB]
+|
+`-- 5. Read all eight saved representations again [batch 9.675s; P 12.008 KB]
+    `-- diagram-search(operation="read") x8      [each time/full size ?]
+        |-- AgentContext
+        |-- Unified selection
+        |-- Mapping page - MCP and HTTP API
+        |-- Workspace persistence flow
+        |-- Canvas domain model
+        |-- tldraw - Editor, Store, History
+        |-- PersistentLayer
+        `-- ChangeSession
+        Script printed only the first 1,500 characters of each response.
+        Full responses saved to now-missing /tmp/diagram-audit-reads.jsonl.
+        Follow-up code walks revision data to extract source-file paths.
+        That need is valid, but it did not require re-fetching every field.
+
+No /live/context/short request occurs in this B trace. Although the historical
+final answer called it the "short API", the actual trace uses saved search/read.
+
+FINDINGS AND DESIGN IMPLICATIONS
+
+1. Duplicate discovery representation is proven, not estimated.
+   A's complete printed MCP result is 49,737 bytes for 23,251 bytes of logical
+   docs (2.14x). json.loads(content[0].text) == structuredContent.result.
+   B's 51,628-byte form adds Python whitespace and the JSON-RPC envelope.
+   The client could project one representation; do not assume every MCP host
+   injects both into model context. Here the discovery script printed both.
+   Current infrastructure/mapping/mcp/server.ts also emits both fields.
+
+2. Empty search acts as a line dump instead of a discovery index.
+   100 hits serialize to 33,807 compact bytes; snippet strings total 5,767
+   bytes. The rest is identifiers, metadata, field names, and JSON structure.
+   Five common identity fields need not be repeated on every result:
+   origin, representationId, revisionId, name, nodeId.
+   Grouping these fields once preserves every hit
+   and reduces this page to 8,578 bytes: 74.6% smaller, verified losslessly.
+   See grouped-search-example.json for that exact alternative.
+
+3. Read access through exec caused fallback work.
+   Both sessions receive HTTP_WRITES_DISABLED for canvas.list(). B first
+   misses requestId, then tries two server ports. A successfully uses the
+   direct GET listing and live short-context endpoint instead.
+   A dedicated read-only catalog/list tool would avoid read intent passing
+   through a mutation-oriented exec gate and version/requestId conventions.
+   These are observed historical failures, not an assertion about every
+   current server configuration.
+
+4. "Short context" still requires client-side selection.
+   A fetches nine complete short contexts before selecting relevant diagrams.
+   Its local index of all 38 diagram titles/IDs/line counts is only 4.865 KB.
+   B constructs an even smaller 2.467 KB inventory by reading 1,550 line hits.
+   Offer that inventory directly, including saved documents when no live
+   canvas is attached. Then offer selected diagram ASCII/source refs/edges.
+   Full historical short-context bytes are unavailable: this audit cannot
+   quantify their overhead or honestly claim a total network-byte saving.
+
+5. Discovery should start small.
+   Empty canvas-api-search returns schemas/examples for 18 methods; A then
+   separately requests canvas.attach and nodes.list documentation anyway.
+   A compact method index plus targeted documentation would reduce initial
+   context consumption. Existing AGENTS.md specifically directs empty-query
+   discovery, so this cost is encouraged by the documented workflow.
+
+6. Timing points to workflow cost; it does not isolate backend latency.
+   A's docs/search batch is 24.222s, live-context batch 13.855s (overlapping).
+   B's 16-page enumeration is 23.492s, full eight-document reads 9.675s.
+   Historical records do not attribute those seconds to individual calls,
+   browser polling, saved-data loading, or startup. Add per-call telemetry
+   before choosing which backend operation to optimize.
+
+Suggested read workflow (proposal; these tool names are not implemented):
+
+answer a diagram question
+|-- catalog(scope=live+saved, fields=ids,titles,versions,lineCounts)
+|-- search(query, groupBy=diagram, maxHitsPerDiagram=3, maxBytes=...)
+`-- read(diagramIds, fields=ascii,sourceRefs,edges, optionalLineRanges)
+    `-- Return one selected representation to the model
+
+Record requestId, method, parameters excluding sensitive data, elapsedMs,
+HTTP-body bytes, MCP-result bytes, model-visible bytes, hitCount, nextOffset,
+and truncation status separately. That distinguishes expensive retrieval
+from inefficient presentation.
+
+EVIDENCE / REPRODUCIBILITY
+
+A source:
+/home/john/.codex/sessions/2026/10/10/rollout-2026-10-10T21-40-52-01a1289e-b5be-7121-8254-c92826952b38.jsonl
+Command records: lines 91,100,114,121,131,136,143.
+Call scripts: lines 89,98,105,112,129,134,141.
+
+B source:
+/home/john/.codex/sessions/2026/10/13/rollout-2026-10-13T17-20-42-01a13723-9903-7130-b48a-9898d33ec808.jsonl
+Command records: lines 36,45,52,64,67,74,83,84,85.
+Call scripts: lines 34,43,50,65,72,81.
+
+analyze.py reads these immutable historical records and writes evidence.json
+and grouped-search-example.json. Its assertions verify both sessions' first
+search pages are equal, the docs duplication, and lossless search grouping.
+evidence.json includes exact commands, stdout, durations, source lines, and
+calculated metrics. It includes no encrypted reasoning or credential files.
+This is a purposive two-trace sample, not a latency distribution or an
+estimate of all sessions. Code-reading/git/Herdr setup calls are excluded
+from API trees; selected local postprocessing is explicitly marked.
