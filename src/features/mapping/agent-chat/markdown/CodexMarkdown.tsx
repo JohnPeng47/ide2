@@ -11,6 +11,7 @@ import { ChatFileLink } from '../ChatFileLinks';
 import { CopyButton } from './CopyButton';
 import { CopyToCanvasButton } from '../ChatCanvasCopy';
 import { useTheme, themeDefinitions } from '../../../../shared/theme/theme';
+import { useSelectableStream } from './useSelectableStream';
 
 export const MarkdownActivityContext = createContext(true);
 
@@ -71,8 +72,9 @@ const components: Components = {
 };
 export const CodexMarkdown = memo(function CodexMarkdown({ text, streaming = false }: { text: string; streaming?: boolean }) {
   const enabled = useContext(MarkdownActivityContext);
+  const display = useSelectableStream(text, streaming);
   const plugins = useMemo(() => [remarkGfm, remarkGithubAlerts, remarkNormalizeListItemIndentation, remarkBreaks,
-    ...(streaming ? [createIncrementalMarkdownPlugin()] : [])], [streaming]);
-  return <MarkdownActivityContext.Provider value={enabled && !streaming}><div className="agent-markdown"><ReactMarkdown remarkPlugins={plugins} components={components}
-    urlTransform={url => /^(file|highlight):/i.test(url) ? url : defaultUrlTransform(url)}>{text}</ReactMarkdown></div></MarkdownActivityContext.Provider>;
+    ...(display.streaming ? [createIncrementalMarkdownPlugin()] : [])], [display.streaming]);
+  return <MarkdownActivityContext.Provider value={enabled && !display.streaming}><div ref={display.root} className="agent-markdown" onPointerDown={display.onPointerDown}><ReactMarkdown remarkPlugins={plugins} components={components}
+    urlTransform={url => /^(file|highlight):/i.test(url) ? url : defaultUrlTransform(url)}>{display.text}</ReactMarkdown></div></MarkdownActivityContext.Provider>;
 });

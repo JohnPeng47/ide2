@@ -130,6 +130,8 @@ export const ChatTranscript = memo(function ChatTranscript({ session, open, zoom
       frame = requestAnimationFrame(() => {
         const el = viewport.current;
         if (!el) return;
+        const selection = window.getSelection();
+        if (selection && !selection.isCollapsed && (el.contains(selection.anchorNode) || el.contains(selection.focusNode))) return;
         if (follow.current) el.scrollTop = el.scrollHeight;
         else if (anchor.current) {
           const row = Array.from(el.querySelectorAll<HTMLElement>('[data-transcript-row]')).find(row => row.dataset.transcriptRow === anchor.current!.id);
