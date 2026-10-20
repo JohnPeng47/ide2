@@ -104,7 +104,7 @@ export class ChangeSessionService {
     return { id, title: captured.title, version: captured.version, status: captured.status, head: captured.head,
       commits: captured.commits ?? [], hunks: stored.diffTree?.hunks ?? [], ...buildChangeTreemaps(stored.diffTree, documents) };
   }
-  async discoverHunks(input: { repositoryId?: string; commits?: string[]; head?: string; offset: number; limit: number; includePatches: boolean }) {
+  async discoverHunks(input: { repositoryId?: string; commits?: string[]; head?: string; comparisonBase?: string | null; offset: number; limit: number; includePatches: boolean }) {
     await this.projectId();
     if (!this.source.repositories) throw Error('Repository registry unavailable');
     const context = await this.source.repositories.resolveContext(input);
@@ -112,7 +112,7 @@ export class ChangeSessionService {
     return { ...context, ...this.hunkPage(hunks, input) };
   }
   private async captureHunks(context: RepositoryContext): Promise<GitDiffHunk[]> {
-    if (!context.commits.length) return [];
+    if (!context.commits.length && context.comparisonBase === undefined) return [];
     if (!this.source.repositories?.captureHunks) throw Error('Git hunk capture unavailable');
     return this.source.repositories.captureHunks(context);
   }
@@ -129,7 +129,7 @@ export class ChangeSessionService {
       : await this.get(input.changeSessionId).then(session => ({ summary: summarizeChangeSession(session), diffTree: session.diffTree }));
     const summary = await this.effectiveSummary(stored.summary), tree = stored.diffTree;
     const context = { changeSessionId: summary.id, title: summary.title, version: summary.version, status: summary.status,
-      repositoryId: summary.repositoryId, commits: summary.commits, head: summary.head, documents: summary.documents, changes: summary.changes };
+      repositoryId: summary.repositoryId, commits: summary.commits, head: summary.head, comparisonBase: summary.comparisonBase, documents: summary.documents, changes: summary.changes };
     if (!tree) return { ...context, diffTree: null, ...this.hunkPage([], input), unmappedNodeIds: [] };
     const selection = input.nodeIds ? resolveDiffTreeHunks(tree, input.nodeIds) : undefined;
     const ids = input.hunkIds ?? selection?.hunkIds;
@@ -174,7 +174,7 @@ export class ChangeSessionService {
       return summarizeChangeSession(session);
     });
   }
-  async create(input: { title: string; description?: string; canvasId?: string; requestId: string; repositoryId?: string; commits?: string[]; head?: string; diffTree?: DiffTreeInput }, captured?: ChangeSessionCapture) {
+  async create(input: { title: string; description?: string; canvasId?: string; requestId: string; repositoryId?: string; commits?: string[]; head?: string; comparisonBase?: string | null; diffTree?: DiffTreeInput }, captured?: ChangeSessionCapture) {
     const projectId = await this.projectId();
     const id = `change-${createHash('sha256').update(`${projectId}:${input.requestId}`).digest('hex').slice(0,32)}`;
     return this.serialize(id, async () => {
@@ -198,12 +198,12 @@ export class ChangeSessionService {
     });
   }
   /** Freeze exactly the inputs the workflow analyzes, without creating a proposal. */
-  async capture(input: { repositoryId?: string; commits?: string[]; head?: string; canvasId?: string; baselineChangeSessionId?: string }): Promise<ChangeSessionCapture> {
+  async capture(input: { repositoryId?: string; commits?: string[]; head?: string; comparisonBase?: string | null; canvasId?: string; baselineChangeSessionId?: string }): Promise<ChangeSessionCapture> {
     const projectId = await this.projectId();
     if (input.baselineChangeSessionId) {
       const original = await this.get(input.baselineChangeSessionId);
       if (!original.repositoryId || !original.commits || !original.head || !original.diffTree) throw Error('Baseline session has no pinned Git context');
-      if (input.repositoryId || input.commits || input.head || input.canvasId) throw Error('A baseline session supplies its own repository, commits and canvases');
+      if (input.repositoryId || input.commits || input.head || input.canvasId || input.comparisonBase !== undefined) throw Error('A baseline session supplies its own repository, commits and canvases');
       const documents = original.documents.filter(doc => doc.baseline).map(doc => {
         const baseline = structuredClone(doc.baseline!);
         return { id: doc.id, name: doc.name, representationId: doc.representationId, savedRevisionId: doc.savedRevisionId,
@@ -212,7 +212,7 @@ export class ChangeSessionService {
       });
       if (!documents.length) throw Error('Baseline session has no original canvases');
       return { projectId, baselineChangeSessionId: original.id,
-        context: { repositoryId: original.repositoryId, commits: [...original.commits], head: original.head },
+        context: { repositoryId: original.repositoryId, commits: [...original.commits], head: original.head, ...(original.comparisonBase !== undefined ? { comparisonBase: original.comparisonBase } : {}) },
         hunks: structuredClone(original.diffTree.hunks), documents };
     }
     if (!this.source.repositories && (input.repositoryId || input.commits?.length || input.head)) throw Error('Repository registry unavailable');
@@ -366,7 +366,7 @@ export class ChangeSessionService {
     if (input.diffTree) {
       const session = await this.get(input.changeSessionId);
       if (!session.repositoryId || !session.head || !session.commits) throw Error('DiffTree requires pinned repository context');
-      if (!session.diffTree) captured = await this.captureHunks({ repositoryId: session.repositoryId, head: session.head, commits: session.commits });
+      if (!session.diffTree) captured = await this.captureHunks({ repositoryId: session.repositoryId, head: session.head, commits: session.commits, comparisonBase: session.comparisonBase });
     }
     return this.mutate(input.changeSessionId, input.requestId, JSON.stringify(input), s => {
       if (s.version !== input.expectedVersion) throw new Error('VERSION_CONFLICT: reread change session');

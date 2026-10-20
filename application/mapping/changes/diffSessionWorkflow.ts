@@ -33,7 +33,8 @@ export interface DiffSessionPrompts { analyze: string; materialize: string }
 /** Each step is a new user message; the executor owns the shared conversation. */
 export function createDiffSessionWorkflow(prompts: DiffSessionPrompts, capture: ChangeSessionCapture): AgentWorkflow<DiffSessionStepResult> {
   const context = JSON.stringify({ ...capture.context, baselineChangeSessionId: capture.baselineChangeSessionId,
-    documents: capture.documents.map(doc => ({ documentId: doc.id, name: doc.name })), hunkCount: capture.hunks.length });
+    documents: capture.documents.map(doc => ({ documentId: doc.id, name: doc.name })), hunkCount: capture.hunks.length,
+    ...(capture.context?.comparisonBase !== undefined ? { comparison: "These hunks represent the net push change from comparisonBase (null = empty tree) to head, including removals on force-push. commits lists commits newly reachable in this push and may be empty for a rollback. Hunk parent means comparison base in this mode." } : {}) });
   return {
     id: 'diff-session-create',
     steps: [

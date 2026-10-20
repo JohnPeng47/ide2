@@ -1,0 +1,13 @@
+{
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "name": "diagram-artifacts-push",
+  "main": "worker.ts",
+  "compatibility_date": "2026-10-14",
+  "workers_dev": false,
+  "vars": {
+    "PUSH_ENDPOINT": "https://YOUR-APP/api/mapping/integrations/connections/artifacts-test/artifacts"
+  },
+  "queues": {
+    "consumers": [{ "queue": "diagram-artifacts-push" }]
+  }
+}

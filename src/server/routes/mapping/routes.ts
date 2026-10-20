@@ -1,5 +1,7 @@
 import type { AgentChatService } from '../../../../application/mapping/agent-chat/agentChatService';
 import { handleAgentChat } from './agent-chat/agentChatRoutes';
+import type { PushIntegrationService } from '../../../../application/core/integrations/pushIntegrationService';
+import { handlePushIntegration } from './integrations/pushIntegrationRoutes';
 import type { LiveCanvasService } from '../../../../application/mapping/agent/liveCanvasService';
 import { readLiveSelection, readShortContext } from './liveCanvasRoutes';
 import type { WorkspaceBatch } from '../../../../domain/mapping/workspace/workspaceRecords';
@@ -20,15 +22,18 @@ import { handleFileCompaction } from './compaction/fileCompactionRoutes';
 import type { DiffSessionWorkflowService } from '../../../../application/mapping/changes/diffSessionWorkflowService';
 import { handleDiffSessionWorkflow } from './changes/diffSessionWorkflowRoutes';
 
-export function createMappingRoutes({ selection, diagrams, workspace, chat, compactionService, agent, agentChat, liveCanvas, diffSessionWorkflows }: {
+export function createMappingRoutes({ selection, diagrams, workspace, chat, compactionService, agent, agentChat, liveCanvas, diffSessionWorkflows, pushIntegrations, pushToken }: {
   agentChat?: AgentChatService;
   diffSessionWorkflows?: DiffSessionWorkflowService;
+  pushIntegrations?: PushIntegrationService; pushToken?: string;
   agent?: AgentDiagrammingSessionService; liveCanvas?: LiveCanvasService;
   selection: SelectionService; diagrams: MappingDiagramService; workspace: MappingWorkspaceService;
   chat: LocalChatService; compactionService: FileCompactionService;
 }) {
   return async (request: Connect.IncomingMessage, response: ServerResponse, url: URL): Promise<void> => {
     if (url.pathname.startsWith('/api/mapping/agent-chat/') && agentChat) return handleAgentChat(request, response, url, agentChat);
+    if (url.pathname.startsWith('/api/mapping/integrations/') && pushIntegrations)
+      return handlePushIntegration(request, response, url, pushIntegrations, pushToken);
     if (url.pathname.startsWith('/api/mapping/workflows/diff-session-create') && diffSessionWorkflows)
       return handleDiffSessionWorkflow(request, response, url, diffSessionWorkflows);
     if (url.pathname === '/api/mapping/live/context/short' && liveCanvas) return readShortContext(request, response, url, liveCanvas);

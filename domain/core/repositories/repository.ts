@@ -9,7 +9,9 @@ export interface Repository {
 }
 const sha = z.string().regex(/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/);
 export const repositoryContextSchema = z.object({
-  repositoryId: z.string().min(1).max(200), commits: z.array(sha).max(2000), head: sha
+  repositoryId: z.string().min(1).max(200), commits: z.array(sha).max(2000), head: sha,
+  /** When present, hunks compare this tree to head; null means an empty tree (new branch). */
+  comparisonBase: sha.nullable().optional()
 }).strict().refine(context => new Set(context.commits).size === context.commits.length, 'Duplicate commits');
 export type RepositoryContext = z.infer<typeof repositoryContextSchema>;
 

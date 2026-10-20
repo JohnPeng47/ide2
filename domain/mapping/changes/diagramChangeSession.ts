@@ -28,7 +28,7 @@ export interface ChangeSessionDocument {
 }
 export interface DiagramChangeSession {
   /** Absent on legacy sessions whose historical Git context is unknown. */
-  repositoryId?: string; commits?: string[]; head?: string;
+  repositoryId?: string; commits?: string[]; head?: string; comparisonBase?: string | null;
   diffTree?: ChangeSessionDiffTree;
   schemaVersion: 1; id: string; projectId: string; title: string; description: string;
   status: 'draft' | 'ready' | 'accepted' | 'archived'; version: number; createdAt: string; updatedAt: string;
@@ -50,7 +50,7 @@ const acceptance = z.object({ changeSessionId: changeId, sessionVersion: z.numbe
 export function validateChangeSessionSummary(input: unknown): ChangeSessionSummary {
   const summary = z.object({
     diffTree: diffTreeSummarySchema.optional(),
-    repositoryId: changeId.optional(), commits: repositoryContextSchema.shape.commits.optional(), head: repositoryContextSchema.shape.head.optional(),
+    repositoryId: changeId.optional(), commits: repositoryContextSchema.shape.commits.optional(), head: repositoryContextSchema.shape.head.optional(), comparisonBase: repositoryContextSchema.shape.comparisonBase,
     schemaVersion: z.literal(1), id: changeId, projectId: changeId, title: z.string().min(1).max(200), description: z.string().max(100000),
     status: z.enum(['draft', 'ready', 'accepted', 'archived']), acceptance: acceptance.optional(),
     version: z.number().int().nonnegative(), createdAt: z.string(), updatedAt: z.string(),
@@ -72,7 +72,7 @@ export function validateChangeSession(input: unknown): DiagramChangeSession {
   const state = z.custom<ChangeDocumentState>(value => !!value && typeof value === 'object' && 'document' in value && 'canvas' in value);
   const parsed = z.object({
     diffTree: z.custom<ChangeSessionDiffTree>().optional(),
-    repositoryId: changeId.optional(), commits: repositoryContextSchema.shape.commits.optional(), head: repositoryContextSchema.shape.head.optional(),
+    repositoryId: changeId.optional(), commits: repositoryContextSchema.shape.commits.optional(), head: repositoryContextSchema.shape.head.optional(), comparisonBase: repositoryContextSchema.shape.comparisonBase,
     schemaVersion: z.literal(1), id: changeId, projectId: changeId, title: z.string().min(1).max(200), description: z.string().max(100000),
     status: z.enum(['draft','ready','accepted','archived']), acceptance: acceptance.optional(), version: z.number().int().nonnegative(), createdAt: z.string(), updatedAt: z.string(),
     documents: z.array(z.object({ history: z.custom<CanvasHistoryRecord>().optional(), id: changeId, name: z.string().min(1).max(200), repositoryId: changeId.optional(), representationId: changeId.optional(), savedRevisionId: changeId.optional(),
@@ -84,8 +84,15 @@ export function validateChangeSession(input: unknown): DiagramChangeSession {
   validateRepositoryContext(parsed);
   if (parsed.diffTree) {
     validateDiffTree(parsed.diffTree);
-    if (!parsed.repositoryId || parsed.diffTree.hunks.some(hunk => hunk.repositoryId !== parsed.repositoryId || !parsed.commits?.includes(hunk.commit)))
+    const wrongContext = parsed.diffTree.hunks.some(hunk => {
+      const matchesComparison = parsed.comparisonBase !== undefined
+        ? hunk.commit === parsed.head && hunk.parent === parsed.comparisonBase
+        : parsed.commits?.includes(hunk.commit);
+      return hunk.repositoryId !== parsed.repositoryId || !matchesComparison;
+    });
+    if (!parsed.repositoryId || wrongContext) {
       throw Error('DiffTree hunks belong to another repository or commit selection');
+    }
   }
   if ((parsed.status === 'accepted') !== !!parsed.acceptance || parsed.acceptance && parsed.acceptance.changeSessionId !== parsed.id)
     throw new Error('Invalid change-session acceptance');
@@ -103,7 +110,7 @@ export function validateChangeSession(input: unknown): DiagramChangeSession {
   return parsed;
 }
 
-function validateRepositoryContext(session: { repositoryId?: string; commits?: string[]; head?: string }) {
-  if (session.repositoryId !== undefined || session.commits !== undefined || session.head !== undefined)
-    repositoryContextSchema.parse({ repositoryId: session.repositoryId, commits: session.commits, head: session.head });
+function validateRepositoryContext(session: { repositoryId?: string; commits?: string[]; head?: string; comparisonBase?: string | null }) {
+  if (session.repositoryId !== undefined || session.commits !== undefined || session.head !== undefined || session.comparisonBase !== undefined)
+    repositoryContextSchema.parse({ repositoryId: session.repositoryId, commits: session.commits, head: session.head, comparisonBase: session.comparisonBase });
 }

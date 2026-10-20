@@ -39,3 +39,12 @@ The analysis stage exposes only read tools. Materialization binds all write tool
 `performance.json` records each step's wall time, individual tool latency and response bytes, assistant-response latency/token usage, and any context compaction. Step durations include their model/tool intervals; do not add these overlapping totals together. The conversation artifact retains the full session message log even when the model's active context is compacted.
 
 Workflow mutation replies return versions and node summaries. Diagram reads retain full ASCII, current anchor IDs, source bindings and mapping ranges, but omit rendering indexes and captured source lines. Explicit source-evidence selections through `exec` remain available. During materialization, hunk and DiffTree reads default to metadata; use `includePatches: true` to reread patches. After the completion tool validates the ready proposal, automatic compaction is disabled for the finished session.
+
+## Push-triggered sessions
+
+[Push integrations](push-integrations.md) invoke the same workflow once per push.
+Their request includes `comparisonBase`: an old commit SHA, or null for a new
+branch's empty tree. In this mode hunks represent the net base-to-head change,
+while `commits` retains the complete newly reachable list (possibly empty for a
+rewind). The mode persists with the ChangeSession and is reused when regenerating
+its baseline. Requests without `comparisonBase` retain per-commit first-parent diffs.

@@ -4,18 +4,18 @@ import type { RepositoryContext } from '../../../domain/core/repositories/reposi
 import { parseGitFileDiff, type GitDiffHunk } from '../../../domain/core/diffs/gitDiffHunk';
 
 const MAX_BYTES = 8 * 1024 * 1024;
-/** Immutable first-parent commit diffs. Renames are represented as deletion/addition. */
+/** Immutable first-parent commit diffs, or an explicit push base-to-head comparison. */
 export async function captureGitHunks(root: string, context: RepositoryContext): Promise<GitDiffHunk[]> {
   const git = async (...args: string[]) => (await execFileAsync('git', ['--literal-pathspecs', '-C', root, ...args], {
     encoding: 'utf8', maxBuffer: MAX_BYTES, timeout: 15000, env: { ...process.env, LC_ALL: 'C', GIT_NO_REPLACE_OBJECTS: '1' }
   })).stdout;
   const hunks: GitDiffHunk[] = [];
   let bytes = 0;
-  for (const commit of context.commits) {
+  for (const commit of context.comparisonBase !== undefined ? [context.head] : context.commits) {
     // Read the actual object: rev-list treats a shallow boundary as a root.
     const object = await git('cat-file', 'commit', commit);
     const headers = object.split('\n\n', 1)[0];
-    const parent = headers.match(/^parent ([a-f0-9]+)$/m)?.[1] ?? null;
+    const parent = context.comparisonBase !== undefined ? context.comparisonBase : headers.match(/^parent ([a-f0-9]+)$/m)?.[1] ?? null;
     const base = parent ?? createHash(commit.length === 64 ? 'sha256' : 'sha1').update('tree 0\0').digest('hex');
     const entries = (await git('diff', '--no-ext-diff', '--no-textconv', '--no-renames', '--name-status', '-z', base, commit, '--')).split('\0');
     entries.pop();

@@ -3,5 +3,5 @@ export interface RepositoryRegistry {
   list(): Promise<Repository[]>;
   register(input: { path: string; name?: string }): Promise<Repository>;
   captureHunks?(context: RepositoryContext): Promise<import('../../../domain/core/diffs/gitDiffHunk').GitDiffHunk[]>;
-  resolveContext(input: { repositoryId?: string; commits?: string[]; head?: string }): Promise<RepositoryContext>;
+  resolveContext(input: { repositoryId?: string; commits?: string[]; head?: string; comparisonBase?: string | null }): Promise<RepositoryContext>;
 }

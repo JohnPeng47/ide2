@@ -4,6 +4,9 @@ import { AgentChatService } from '../../../application/mapping/agent-chat/agentC
 import { ChatDiagramTools } from '../../../application/mapping/agent-chat/chatDiagramTools';
 import { StdioCodexConnection } from '../../../infrastructure/mapping/agent-chat/codexConnection';
 import { FileChatStore } from '../../../infrastructure/mapping/agent-chat/chatStore';
+import { PushIntegrationService } from '../../../application/core/integrations/pushIntegrationService';
+import { FilePushIntegrationStore } from '../../../infrastructure/core/integrations/pushIntegrationStore';
+import { GitPushSource } from '../../../infrastructure/core/integrations/gitPushSource';
 import { CanvasApiProjection } from '../../../application/mapping/agent/apiProjection';
 import { AgentContextService } from '../../../application/mapping/agent/agentContextService';
 import { LiveCanvasService } from '../../../application/mapping/agent/liveCanvasService';
@@ -82,6 +85,8 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
   const diffSessionWorkflows = new DiffSessionWorkflowService(changes, agent, new PiDiffSessionRuntime(options.piEnabled === true),
     new FileDiffSessionRunStore(store.storeRoot), { enabled: options.piEnabled === true, sourceRoot: mappingPocSourceRoot,
       loadPrompts: loadDiffSessionPrompts, sourceReader: capture => createDiffSessionSourceReader(store.repositories, capture) });
+  const pushIntegrations = new PushIntegrationService(new FilePushIntegrationStore(store.storeRoot),
+    new GitPushSource(store.repositories), diffSessionWorkflows, options.piEnabled === true);
   const routes = {
     core: createCoreRoutes({
       application: core,
@@ -90,14 +95,14 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
     }),
     mapping: createMappingRoutes({
       selection: new SelectionService(store, mappingRuntime, mappingPocSourceRoot),
-      diagrams, agent, agentChat, liveCanvas, diffSessionWorkflows,
+      diagrams, agent, agentChat, liveCanvas, diffSessionWorkflows, pushIntegrations, pushToken: process.env.NEW_DIAGRAM_PUSH_TOKEN,
       workspace: new MappingWorkspaceService(store, new MappingWorkspaceStore(store.storeRoot, store.diagramPersistence)),
       chat: new LocalChatService(store, corpusAccess, chatRuntime, mappingPocSourceRoot),
       compactionService
     })
   };
   return {
-    routes, liveCanvas, diffSessionWorkflows, dispose() {
+    routes, liveCanvas, diffSessionWorkflows, pushIntegrations, dispose() {
       agentChat.dispose();
       diffSessionWorkflows.dispose();
       agent.dispose(); diagramEditRuntime.dispose(); canvasBridge.dispose(); languageService?.dispose(); mappingRuntime.dispose(); chatRuntime.dispose(); compactionService.dispose();

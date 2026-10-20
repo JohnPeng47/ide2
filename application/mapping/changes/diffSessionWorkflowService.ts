@@ -11,10 +11,11 @@ import { createDiffSessionWorkflow, DIFF_SESSION_MODEL, type DiffSessionAgentSes
 export const diffSessionRequestSchema = z.object({
   requestId: z.string().min(1).max(200), title: z.string().trim().min(1).max(200),
   baselineChangeSessionId: z.string().min(1).max(200).optional(), repositoryId: z.string().min(1).max(200).optional(),
-  commits: z.array(z.string().min(1).max(200)).min(1).max(200).optional(), head: z.string().min(1).max(200).optional(),
+  commits: z.array(z.string().min(1).max(200)).max(2000).optional(),
+  comparisonBase: z.string().regex(/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/).nullable().optional(), head: z.string().min(1).max(200).optional(),
   canvasId: z.string().min(1).max(200).optional()
-}).strict().refine(input => input.baselineChangeSessionId ? !input.repositoryId && !input.commits && !input.head && !input.canvasId
-  : !!input.repositoryId && !!input.commits?.length, 'Specify a baseline ChangeSession OR a repository and commits');
+}).strict().refine(input => input.baselineChangeSessionId ? !input.repositoryId && !input.commits && !input.head && !input.canvasId && input.comparisonBase === undefined
+  : !!input.repositoryId && (!!input.commits?.length || input.comparisonBase !== undefined && !!input.head && !!input.commits), 'Specify a baseline ChangeSession OR a repository and commits');
 export type DiffSessionRequest = z.infer<typeof diffSessionRequestSchema>;
 export type { DiffSessionRun } from '../../../domain/mapping/changes/diffSessionWorkflow';
 export interface DiffSessionRunStore {

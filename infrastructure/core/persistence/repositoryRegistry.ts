@@ -75,7 +75,7 @@ export class GitRepositoryRegistry implements RepositoryRegistry {
     if (!repository) throw Error('Unknown repositoryId');
     return captureGitHunks(await this.availableRoot(repository), context);
   }
-  async resolveContext(input: { repositoryId?: string; commits?: string[]; head?: string }) {
+  async resolveContext(input: { repositoryId?: string; commits?: string[]; head?: string; comparisonBase?: string | null }) {
     const repositories = await this.list();
     const repository = input.repositoryId ? repositories.find(r => r.id === input.repositoryId) : repositories.length === 1 ? repositories[0] : undefined;
     if (!repository) throw Error('Specify a registered repositoryId for this ChangeSession');
@@ -92,6 +92,7 @@ export class GitRepositoryRegistry implements RepositoryRegistry {
     const head = await resolve(input.head ?? 'HEAD');
     const commits = new Set<string>();
     for (const ref of input.commits ?? []) commits.add(await resolve(ref));
-    return repositoryContextSchema.parse({ repositoryId: repository.id, head, commits: [...commits] });
+    return repositoryContextSchema.parse({ repositoryId: repository.id, head, commits: [...commits],
+      ...(input.comparisonBase !== undefined ? { comparisonBase: input.comparisonBase === null ? null : await resolve(input.comparisonBase) } : {}) });
   }
 }
