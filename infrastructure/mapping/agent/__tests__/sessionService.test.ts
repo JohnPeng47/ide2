@@ -22,7 +22,7 @@ it('routes document copies through the live bridge and retries a lost reply with
     register() {}, list: () => [{canvasId:'canvas',documents:[{documentId:'source',name:'Source'}]}], poll: async () => [], reply() {}, unregister() {}, dispose() {},
     async dispatch(canvasId, command) {
       expect(canvasId).toBe('canvas');
-      if (command.method === 'snapshot') return { ...(command.documentId === 'copy' ? copied! : source).getSnapshot(), name:'Test' };
+      if (command.method === 'snapshot' || command.method === 'identity') return { ...(command.documentId === 'copy' ? copied! : source).getSnapshot(), name:'Test' };
       expect(command.method).toBe('copy-document');
       expect(command.documentId).toBe('source');
       const payload = command.payload as {name:string;expectedVersion:number;requestId:string};
@@ -58,7 +58,7 @@ it('commits each exec edit immediately with distinct versions, undo entries and 
   const bridge: CanvasSessionPort = {
     register() {}, list: () => [{canvasId:'canvas',documents:[{documentId:'doc',name:'Test'}]}], poll: async () => [], reply() {}, unregister() {}, dispose() {},
     async dispatch(_canvasId, command) {
-      if (command.method === 'snapshot') return {...controller.getSnapshot(),name:'Test'};
+      if (command.method === 'snapshot' || command.method === 'identity') return {...controller.getSnapshot(),name:'Test'};
       if (command.method === 'apply') { const payload = command.payload as {expectedVersion:number;operations:DiagramOperation[]}; return controller.transact(payload.expectedVersion,payload.operations); }
       throw new Error('Unexpected command');
     }
@@ -96,13 +96,13 @@ it('sets source mappings through MCP with atomic validation, stable anchors, his
   const stableIds = controller.resolveDiagram('overview').nodes.map(n => n.id);
   const bridge: CanvasSessionPort = { register() {}, list: () => [{canvasId:'canvas',documents:[{documentId:'doc',name:'Test'}]}], poll: async () => [], reply() {}, unregister() {}, dispose() {},
     async dispatch(_id, command) {
-      if (command.method === 'snapshot') return {...controller.getSnapshot(), history: controller.exportHistory(), name:'Test'};
+      if (command.method === 'snapshot' || command.method === 'identity') return {...controller.getSnapshot(), history: controller.exportHistory(), name:'Test'};
       const p = command.payload as {expectedVersion:number;operations:DiagramOperation[]};
       return controller.transact(p.expectedVersion, p.operations);
     } };
   const service = new AgentDiagrammingSessionService(bridge, {} as MappingDiagramService, {} as DiagramRepository, new QuickJsAgentRuntime());
   const attached = await service.call('exec', {requestId:'attach',code:'return canvas.attach({canvasId:"canvas",documentId:"doc"});'}) as {value:{sessionId:string}};
-  const input = { sessionId: attached.value.sessionId, requestId: 'map', expectedVersion: 1, nodeId: node.id, expectedContentHash: node.content!.asciiSha256,
+  const input = { sessionId: attached.value.sessionId, requestId: 'map', expectedVersion: 1, nodeId: node.id,
     mappings: [{id:'m',entityId:'e',sourceRangeIndex:0,sourceRangeId:'r',line:2,startColumn:5,endColumn:9}],
     evidence: {e:{id:'e',handle:'Child',label:'Child',category:'operation',summary:'Child declaration',sourceRanges:[{id:'r',path:'child.ts',startLine:1,endLine:1,originalLines:['function Child() {}']}]}} };
   const result = await service.call('set_diagram_source_mappings', input);
@@ -121,14 +121,14 @@ it('sets source mappings through MCP with atomic validation, stable anchors, his
   restored.undo(true); expect(restored.resolveDiagram('overview').sourceContext.mappings).toEqual(input.mappings);
   for (const [suffix, override, error] of [
     ['version', {expectedVersion:1}, 'VERSION_CONFLICT'],
-    ['hash', {expectedContentHash:'0'.repeat(64)}, 'CONTENT_HASH_CONFLICT'],
+    ['hash', {expectedContentHash:'0'.repeat(64)}, 'Unrecognized key'],
     ['evidence', {evidence:{}}, 'unknown diagram evidence'],
     ['bounds', {mappings:[{...input.mappings[0],line:99}]}, 'Invalid diagram-local source mapping']
   ] as const) {
     await expect(service.call('set_diagram_source_mappings', Object.assign({...input,requestId:suffix,expectedVersion:2},override))).rejects.toThrow(error);
     expect(controller.getSnapshot()).toEqual(current);
   }
-  const clear = { nodeId: node.id, expectedContentHash: input.expectedContentHash, mappings: [], evidence: {} };
+  const clear = { nodeId: node.id, mappings: [], evidence: {} };
   await service.call('exec', {sessionId:input.sessionId,requestId:'clear',expectedVersion:2,code:`return nodes.setSourceMappings(${JSON.stringify(clear)});`});
   expect(controller.resolveDiagram('overview').sourceContext.mappings).toEqual([]);
 });
@@ -141,7 +141,7 @@ it('retries a lost acknowledgement without repeating earlier edits or changing g
   const bridge: CanvasSessionPort = {
     register() {}, list: () => [{canvasId:'canvas',documents:[{documentId:'doc',name:'Test'}]}], poll: async () => [], reply() {}, unregister() {}, dispose() {},
     async dispatch(_id, command) {
-      if (command.method === 'snapshot') return {...controller.getSnapshot(),name:'Test'};
+      if (command.method === 'snapshot' || command.method === 'identity') return {...controller.getSnapshot(),name:'Test'};
       const p = command.payload as { expectedVersion: number; operations: DiagramOperation[]; requestId: string };
       attempts.push({requestId:p.requestId,operations:p.operations});
       if (receipts.has(p.requestId)) return receipts.get(p.requestId);
@@ -178,7 +178,7 @@ it('keeps committed edits on a later conflict and lets scripts catch individual 
   const bridge: CanvasSessionPort = {
     register() {}, list: () => [{canvasId:'canvas',documents:[{documentId:'doc',name:'Test'}]}], poll: async () => [], reply() {}, unregister() {}, dispose() {},
     async dispatch(_id, command) {
-      if (command.method === 'snapshot') return {...controller.getSnapshot(),name:'Test'};
+      if (command.method === 'snapshot' || command.method === 'identity') return {...controller.getSnapshot(),name:'Test'};
       const p = command.payload as {expectedVersion:number;operations:DiagramOperation[]};
       const result = controller.applyUpdate(p.expectedVersion,p.operations);
       if (concurrentEdit) {

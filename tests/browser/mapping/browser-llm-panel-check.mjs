@@ -88,9 +88,11 @@ try {
     await key('y',2);
     await waitForSelection(['First','Other','Untouched']);
     assert.deepEqual(await envelopes(), originalEnvelopes, 'Undo/redo updates membership without fragmenting the rectangle');
+    await click('[aria-label="Menu"]');
     await click('button','Save workspace');
-    await waitFor(async()=>await evaluate(cdp,"document.querySelector('.mapping-poc-status').textContent.includes('Workspace saved')"));
+    await waitFor(async()=>await evaluate(cdp,"document.querySelector('.mapping-menu-status')?.textContent.includes('Workspace saved')"));
     await click('button','Restore workspace');
+    await key('Escape');
     await waitForSelection(['First','Other','Untouched']);
     await waitFor(async()=>JSON.stringify(await envelopes())===JSON.stringify(originalEnvelopes));
     const selectionReloaded = new Promise(resolve => { const off=cdp.on('Page.loadEventFired',()=>{off();resolve();}); });
@@ -126,7 +128,7 @@ try {
     await nodeClick('Existing');
     await waitForSelector(cdp,'.retained-selection-controls');
     await click('.retained-selection-controls button','Actions (A)');
-    await key('l');
+    await key('b', 2); await key('l');
     await waitForSelector(cdp,'.llm-panel .prompt-body-text');
     assert.equal(await evaluate(cdp, "document.querySelector('[aria-label=\"LLM mode\"]').value"), 'edit-diagram');
     assert.equal(await evaluate(cdp, "document.querySelectorAll('.prompt-reference').length"), 1);
@@ -173,7 +175,7 @@ try {
     console.log('PASS subtree undo');
     await key('Escape'); await key('Escape');
     await nodeClick('Existing');
-    await key('l');
+    await key('b', 2); await key('l');
     // Switch mode with real keyboard input.
     await click('[aria-label="LLM mode"]');
     await key('End'); await key('Enter');
@@ -260,7 +262,7 @@ try {
     await select('second');
     await nodeClick('Existing');
     assert.equal(await evaluate(cdp,"document.querySelectorAll('.mapping-diagram-selection-actions').length"),0);
-    await key('l');
+    await key('b', 2); await key('l');
     assert.ok(await evaluate(cdp,"document.querySelectorAll('.prompt-reference').length>=2"));
     console.log('PASS mixed whole-diagram and Ctrl-click node references');
     const loaded = new Promise(resolve => { const off = cdp.on('Page.loadEventFired', () => { off(); resolve(); }); });
@@ -271,18 +273,18 @@ try {
     console.log('PASS persisted extension survives reload');
     for(let i=0;i<10;i++) await key('Escape');
     await click('[role=tab]','Diagrams');
-    await key('l');
+    await key('b', 2); await key('l');
     await waitForSelector(cdp,'.llm-panel .prompt-body-text');
     assert.ok(await evaluate(cdp,"[...document.querySelectorAll('[role=tab]')].some(e=>e.textContent==='LLMs' && e.getAttribute('aria-selected')==='true')"));
     assert.equal(await evaluate(cdp,"document.querySelector('[aria-label=\"LLM mode\"]').value"),'create-diagram');
     assert.equal(await evaluate(cdp,"document.querySelectorAll('.prompt-reference').length"),0);
     await click('.prompt-body-text'); await cdp.send('Input.insertText',{text:'Independent diagram'});
     const sessionCount=await evaluate(cdp,"document.querySelectorAll('[aria-label=\"LLM sessions\"] .mapping-explorer-row').length");
-    await key('l');
+    await key('b', 2); await key('l');
     assert.equal(await evaluate(cdp,"document.querySelectorAll('[aria-label=\"LLM sessions\"] .mapping-explorer-row').length"),sessionCount, 'Typing L does not open another session');
     await click('[aria-label="Close Workspace tools"]');
     await click('[role=tab]','Diagrams');
-    await key('l');
+    await key('b', 2); await key('l');
     await waitForSelector(cdp,'.llm-panel .prompt-body-text');
     assert.equal(await evaluate(cdp,"document.querySelectorAll('[aria-label=\"LLM sessions\"] .mapping-explorer-row').length"),sessionCount, 'L reopens the current session without duplicating it');
     assert.equal(await evaluate(cdp,"document.querySelector('.prompt-body-text').value"),'Independent diagram');

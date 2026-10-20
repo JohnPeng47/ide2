@@ -3,7 +3,7 @@ import { useSyncExternalStore } from 'react';
 export const colorOpacityStorageKey = 'new-diagram-color-opacity';
 export type TreemapColorScale = 'ranked' | 'continuous';
 export type ColorOpacity = { treemap: number; canvas: number; shade: number; scale: TreemapColorScale };
-const defaults: ColorOpacity = { treemap: 22, canvas: 22, shade: 0, scale: 'ranked' };
+const defaults: ColorOpacity = { treemap: 22, canvas: 22, shade: 0, scale: 'continuous' };
 let current = defaults;
 const listeners = new Set<() => void>();
 const normalize = (value: unknown) => typeof value === 'number' && Number.isFinite(value)
@@ -11,7 +11,7 @@ const normalize = (value: unknown) => typeof value === 'number' && Number.isFini
 
 function apply(value: Partial<ColorOpacity> | null) {
   current = { treemap: normalize(value?.treemap), canvas: normalize(value?.canvas),
-    scale: value?.scale === 'continuous' ? 'continuous' : 'ranked',
+    scale: value?.scale === 'ranked' ? 'ranked' : defaults.scale,
     shade: typeof value?.shade === 'number' && Number.isFinite(value.shade) ? Math.round(Math.max(-20, Math.min(20, value.shade))) : 0 };
   for (const key of ['treemap', 'canvas'] as const)
     document.documentElement.style.setProperty(`--${key}-identity-opacity`, `${current[key]}%`);

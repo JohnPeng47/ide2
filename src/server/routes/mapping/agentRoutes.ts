@@ -3,7 +3,7 @@ import type { Connect } from 'vite';
 import { z } from 'zod';
 import type { AgentDiagrammingSessionService } from '../../../../application/mapping/agent/sessionService';
 import { agentToolSchemas, type AgentToolName } from '../../../../domain/mapping/agent/contracts';
-import { readBody, sendJson } from '../../http/http';
+import { readBody, sendJson, RequestTooLarge } from '../../http/http';
 const attachment = z.object({ canvasId: z.string().uuid(), documentId: z.string().min(1) }).strict();
 const registration = z.object({ canvasId: z.string().uuid(), stableWorkspaceId: z.string().uuid().optional(), projectId: z.string().optional(), documents: z.array(z.object({ documentId: z.string().min(1), name: z.string(), repositoryId: z.string().min(1).max(200).optional(), representationId: z.string().optional() })).max(100) }).strict();
 export async function handleAgentRoutes(request: Connect.IncomingMessage, response: ServerResponse, url: URL, service: AgentDiagrammingSessionService) {
@@ -66,10 +66,19 @@ export async function handleAgentRoutes(request: Connect.IncomingMessage, respon
       return sendJson(response, 405, { error: 'method not allowed' });
     }
     const tool = path.match(/^\/tools\/([^/]+)$/);
-    if (tool && request.method === 'POST' && Object.hasOwn(agentToolSchemas, tool[1])) return sendJson(response, 200, await service.call(tool[1] as AgentToolName, await readBody(request)));
+    if (tool && request.method === 'POST' && Object.hasOwn(agentToolSchemas, tool[1])) {
+      const input = await readBody(request), token = request.headers['x-canvas-chat-binding'];
+      return sendJson(response, 200, await (typeof token === 'string' ? service.callBound(token, tool[1] as AgentToolName, input) : service.call(tool[1] as AgentToolName, input)));
+    }
     return sendJson(response, 404, { error: 'Unknown agent endpoint' });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    if (error instanceof RequestTooLarge) {
+      const canvas = path.match(/^\/canvases\/([^/]+)\/reply$/);
+      const commandId = request.headers['x-canvas-command-id'];
+      if (canvas && typeof commandId === 'string') service.bridge.reply(decodeURIComponent(canvas[1]), commandId, { error: `CANVAS_REPLY_REJECTED: ${message}; retry the identical requestId if this was a mutation` });
+      return sendJson(response, 413, { error: message });
+    }
     return sendJson(response, message.includes('VERSION_CONFLICT') || message.includes('REQUEST_ID_CONFLICT') || message.includes('CONTENT_HASH_CONFLICT') ? 409 : message.includes('UNAVAILABLE') ? 503 : 400, { error: message });
   }
 }

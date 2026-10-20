@@ -69,15 +69,18 @@ export function validateConnections(scene: LineGridScene, input: unknown): Diagr
   return edges;
 }
 
-/** Deletions remove incident edges. Changed content retains stale, explicitly repairable anchors. */
-export function reconcileConnections(before: LineGridScene, after: LineGridScene, edges: readonly DiagramConnection[]): DiagramConnection[] {
+/** Deletions remove incident edges. Only proven node correspondence can rebase changed content. */
+export function reconcileConnections(before: LineGridScene, after: LineGridScene, edges: readonly DiagramConnection[], nodeIds?: ReadonlyMap<string, string>): DiagramConnection[] {
   const update = <T extends DiagramAnchor>(anchor: T): T => {
     if (anchor.kind !== 'content-node') return anchor;
     const oldBox = connectionBox(before, anchor.displayNodeId), newBox = connectionBox(after, anchor.displayNodeId);
     if (oldBox?.kind !== 'diagram' || newBox?.kind !== 'diagram') return anchor;
     const oldContent = before.contents[oldBox.contentId].content, content = after.contents[newBox.contentId].content;
-    if (oldContent.revisionId === content.revisionId || oldContent.revisionId !== anchor.revisionId
-      || oldContent.ascii !== content.ascii || oldContent.structure.kind !== content.structure.kind) return anchor;
+    if (oldContent.revisionId === content.revisionId || oldContent.revisionId !== anchor.revisionId) return anchor;
+    const mapped = nodeIds?.get(anchor.contentNodeId);
+    if (mapped && connectionContentNodes(content).some(node => node.id === mapped))
+      return { ...anchor, revisionId: content.revisionId, contentNodeId: mapped };
+    if (oldContent.ascii !== content.ascii || oldContent.structure.kind !== content.structure.kind) return anchor;
     const oldNode = connectionContentNodes(oldContent).find(node => node.id === anchor.contentNodeId);
     const node = oldNode && connectionContentNodes(content).find(node => node.line === oldNode.line && node.startColumn === oldNode.startColumn);
     return node ? { ...anchor, revisionId: content.revisionId, contentNodeId: node.id } : anchor;

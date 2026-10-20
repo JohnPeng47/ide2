@@ -7,6 +7,7 @@ import type { MappingCanvasState } from '../../../../domain/mapping/workspace/ma
 import type { CanvasHistoryRecord } from '../../../../domain/core/diagrams/canvasHistory';
 import { stateKey } from '../../../../domain/core/diagrams/canvasHistory';
 import type { DiagramService } from '../../../../domain/core/diagrams/diagramService';
+import { CanvasCursorCopy } from '../canvas/cursorCopy';
 
 /** Consumers can select and subscribe; mutations stay behind session commands. */
 export function readable<T>(store: StoreApi<T>): Pick<StoreApi<T>, 'getState' | 'getInitialState' | 'subscribe'> {
@@ -20,6 +21,7 @@ export interface DocumentStatus { isDirty: boolean; sceneDirty: boolean; canUndo
  * tldraw Editor owns live geometry and undo navigation; pointer/camera samples do
  * not publish application state. Headless sessions use the same domain commands. */
 export class CanvasSession {
+  readonly cursorCopy = new CanvasCursorCopy();
   readonly controller: MappingDocumentController;
   readonly document;
   private readonly documentState;
@@ -101,5 +103,5 @@ export class CanvasSession {
     this.publishStatus();
   }
   onCommit(listener: () => void) { this.commitListeners.add(listener); return () => { this.commitListeners.delete(listener); }; }
-  dispose() { this.unsubscribe(); this.commitListeners.clear(); }
+  dispose() { this.cursorCopy.clear(); this.unsubscribe(); this.commitListeners.clear(); }
 }

@@ -1,3 +1,4 @@
+import { validateDiagramHighlights, rebaseDiagramHighlights, type DiagramHighlight } from './diagramHighlight';
 import { validateDiagram, type Diagram, type DiagramInput } from './diagram';
 import { constructDiagram } from './internal/constructDiagram';
 import { patchDiagram } from './patchDiagram';
@@ -32,7 +33,8 @@ export type DiagramEdit =
   | { kind: 'source-mappings'; expectedContentHash: string; mappings: NonNullable<DiagramInput['mappings']>; evidence: NonNullable<DiagramInput['evidence']>; source?: DiagramInput['source'] }
   | { kind: 'patch'; start: number; end: number; patch: string; mappings?: DiagramInput['mappings'] }
   | { kind: 'replace'; input: Omit<DiagramInput, 'id' | 'revision'> }
-  | { kind: 'jumps'; jumps: DiagramJump[] };
+  | { kind: 'jumps'; jumps: DiagramJump[] }
+  | { kind: 'highlights'; highlights: DiagramHighlight[] };
 
 /** Canonical content ownership; context bindings are supplied by canvas history. */
 export interface DiagramRevisionOperations {
@@ -85,10 +87,14 @@ export class DiagramRevisionEditor implements DiagramRevisionOperations {
       }
       return prepared;
     }
-    const diagram = edit.kind === 'jumps'
+    const diagram = edit.kind === 'highlights'
+      ? { ...before, highlights: validateDiagramHighlights(edit.highlights) }
+      : edit.kind === 'jumps'
       ? { ...structuredClone(before), jumps: validateDiagramJumps(before.content, edit.jumps, false) }
       : constructDiagram({ ...edit.input, id: diagramId, revision: before.revision + 1 });
-    const next = edit.kind === 'replace' && before.jumps ? { ...diagram, jumps: rebaseDiagramJumps(before.content, diagram.content, before.jumps) } : diagram;
+    const next = edit.kind === 'replace' ? { ...diagram,
+      ...(before.jumps ? { jumps: rebaseDiagramJumps(before.content, diagram.content, before.jumps) } : {}),
+      ...(before.highlights ? { highlights: rebaseDiagramHighlights(before.highlights, correspondingNodes(before, diagram)) } : {}) } : diagram;
     validateDiagram(next);
     return { diagram: next, nodeIds: correspondingNodes(before, next) };
   }

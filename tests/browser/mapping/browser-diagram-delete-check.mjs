@@ -93,11 +93,6 @@ try {
       await mouse('mousePressed',p,modifiers); await mouse('mouseReleased',p,modifiers);
       await mouse('mousePressed',p,modifiers,2); await mouse('mouseReleased',p,modifiers,2);
     };
-    const drag = async (from,to,modifiers=2) => {
-      await mouse('mousePressed',from,modifiers);
-      await mouse('mouseMoved',to,modifiers);
-      await mouse('mouseReleased',to,modifiers);
-    };
     const present = async ids => waitFor(async () => JSON.stringify(await evaluate(cdp,
       `[...document.querySelectorAll('${visible} [data-grid-box]')].map(el=>el.dataset.gridBox).filter(id=>['a','b','c'].includes(id)).sort()`)) === JSON.stringify([...ids].sort()));
     const persisted = async predicate => {
@@ -109,9 +104,10 @@ try {
     await present(['a','b','c']);
     assert.equal(await evaluate(cdp, `!!document.querySelector('[aria-label="Selected diagrams"]')`), false);
     await double('b'); await selected(['b']);
-    await waitForSelector(cdp, '[aria-label="Selected diagrams"]');
+    assert.equal(await evaluate(cdp, `!!document.querySelector('[aria-label="Selected diagrams"]')`), false, 'Selecting a diagram does not open a popup toolbar');
     if (process.env.DIAGRAM_DELETE_SCREENSHOT) await captureScreenshot(cdp, {output:process.env.DIAGRAM_DELETE_SCREENSHOT});
-    await click('[aria-label="Selected diagrams"] button', 'Delete diagram');
+    if (!await evaluate(cdp, `!!document.querySelector('.mapping-whole-actions [role=menu]')`)) await click('.mapping-whole-actions > button', 'Actions (A)');
+    await click('[aria-label="Selection actions"] button', 'Delete diagram');
     await present(['a','c']);
     assert.equal(await evaluate(cdp, `!!document.querySelector('[aria-label="Selected diagrams"]')`), false);
     const deleted = await persisted(doc => doc.document.edges.length === 1);
@@ -125,12 +121,13 @@ try {
     await click(`${visible} .mapping-grid-tools button`, 'Undo');
     await present(['a','b','c']);
     await key('Escape', 'Escape', 27);
-    // Ctrl-marquee selects every diagram, including the final remaining diagrams.
-    const a=await box('a'), c=await box('c');
-    await drag({x:a.left-5,y:a.top-5},{x:c.right+5,y:c.bottom+5});
+    // Ctrl-double-click adds each diagram to the selection.
+    await double('a', 2); await double('b', 2); await double('c', 2);
     await selected(['a','b','c']);
-    await click('[aria-label="Selected diagrams"] button', 'Delete diagrams');
+    if (!await evaluate(cdp, `!!document.querySelector('.mapping-whole-actions [role=menu]')`)) await click('.mapping-whole-actions > button', 'Actions (A)');
+    await click('[aria-label="Selection actions"] button', 'Delete diagrams');
     await present([]); await waitForSelector(cdp, '.mapping-empty-canvas');
+    await click('[aria-label="Menu"]');
     await click('.mapping-workspace-actions button', 'Save workspace');
     await persisted(doc => Object.keys(doc.document.scene.contents).length === 0 && doc.document.edges.length === 0);
     await waitFor(async()=>await evaluate(cdp, `[...document.querySelectorAll('.mapping-workspace-actions button')].some(el=>el.textContent==='Save workspace'&&!el.disabled)`));
@@ -146,7 +143,7 @@ try {
     await click(`${visible} .mapping-grid-tools button`, 'Redo');
     await present([]); await waitForSelector(cdp, '.mapping-empty-canvas');
     assert.deepEqual(exceptions, []);
-    console.log('PASS: selection-only Delete controls, single/multi deletion, incident edges, Undo/Redo, empty canvas, save/reload and persisted undo history');
+    console.log('PASS: no selection popup, Delete in Actions, single/multi deletion, incident edges, Undo/Redo, empty canvas, save/reload and persisted undo history');
   });
 } finally {
   if (server && server.exitCode === null) { server.kill('SIGTERM'); await new Promise(resolve => server.once('exit', resolve)); }

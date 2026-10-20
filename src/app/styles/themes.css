@@ -23,6 +23,11 @@
   --diagram-syntax-reference: #c4a7ef;
   --diagram-syntax-structure: #939dab;
   --surface-backdrop: #05070ab8;
+  /* Codex terminal markdown: neutral foreground, ChatGPT blue, Catppuccin raw-code green. */
+  --agent-transcript-text: #d4d4d4;
+  --agent-markdown-accent: #63a8f8;
+  --agent-markdown-code: #a6e3a1;
+  --agent-markdown-quote: #a6e3a1;
   --text-primary: #d8dee9;
   --text-secondary: #b7bfca;
   --text-muted: #939dab;
@@ -99,6 +104,11 @@
   --diagram-syntax-reference: #7046a3;
   --diagram-syntax-structure: #687382;
   --surface-backdrop: #20242b55;
+  --agent-transcript-text: #333333;
+  --agent-markdown-accent: #1c64c8;
+  /* Darken Latte green for readable small text on the light panel. */
+  --agent-markdown-code: #2f7d20;
+  --agent-markdown-quote: #2f7d20;
   --text-primary: var(--neutral-900);
   --text-secondary: var(--neutral-700);
   --text-muted: #596575;

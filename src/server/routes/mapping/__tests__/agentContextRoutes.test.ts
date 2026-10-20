@@ -29,7 +29,7 @@ it('uploads over a bound WebSocket and uses that immutable context in an HTTP di
     list: () => [{ canvasId: 'workspace', documents: [{ documentId: 'doc', name: 'Test' }, { documentId: 'other', name: 'Other' }] },
       { canvasId: 'publisher-only', documents: [] }],
     async dispatch(_canvasId, command) {
-      if (command.method === 'snapshot') return { ...controller.getSnapshot(), history: controller.exportHistory(), name: 'Test' };
+      if ((command.method === 'snapshot' || command.method === 'identity')) return { ...controller.getSnapshot(), history: controller.exportHistory(), name: 'Test' };
       if (command.method === 'apply-diagram-revision') return receiver.apply('doc', command.payload as DiagramRevisionApplication, controller, async () => {});
       throw Error(`Unexpected command ${command.method}`);
     }

@@ -1,5 +1,7 @@
-import { useEffect, useId, useRef, type CSSProperties, type ReactNode } from 'react';
+import { createContext, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { WindowPanelMode } from './windowPanelState';
+import { TabbedPanelResize } from './TabbedPanelResize';
+import { readWindowPanelSize, saveWindowPanelSize } from './windowPanelSize';
 
 const windowPanelModes: readonly WindowPanelMode[] = ['full-single', 'full-split', 'split-single'];
 const windowPanelModeLabels: Record<WindowPanelMode, string> = { 'full-single': 'Full screen · single pane', 'full-split': 'Full screen · split panes', 'split-single': 'Beside canvas · single pane' };
@@ -12,10 +14,34 @@ type PaneContent<Pane extends string> = { id: Pane; title: string; content: Reac
 /** A workspace overlay with independent pane focus and a compact right-hand view. */
 function SplitWindowPanel<Pane extends string>(props: { title: string; subtitle?: string; notice?: ReactNode; actions?: ReactNode; canvasId: string; state: WindowPanelLayout<Pane>;
   onChange: (patch: Partial<WindowPanelLayout<Pane>>) => void; onClose: () => void; panes: readonly [PaneContent<Pane>, ...PaneContent<Pane>[]]; canvas: ReactNode;
+  /** Stable identity for this panel's saved dimensions, independent of its title. */ sizeStorageKey?: string;
   /** Layouts offered in the header; panels without a canvas pane omit split-single. */ modes?: readonly WindowPanelMode[]; className?: string }) {
   const tabId = useId();
   const body = useRef<HTMLDivElement>(null), drag = useRef(false);
   const panel = useRef<HTMLElement>(null);
+  const restoredKey = useRef<string | undefined>(undefined);
+  const pendingSize = useRef<Partial<WindowPanelLayout<Pane>> | null>(null);
+  useLayoutEffect(() => {
+    if (restoredKey.current === props.sizeStorageKey) return;
+    restoredKey.current = props.sizeStorageKey;
+    const saved = readWindowPanelSize(props.sizeStorageKey, 'fraction');
+    if (saved) props.onChange({
+      ...(saved.width !== undefined ? { expandedWidth: saved.width } : {}),
+      ...(saved.height !== undefined ? { height: saved.height } : {}),
+      ...(saved.minimizedWidth !== undefined ? { minimizedWidth: saved.minimizedWidth } : {}),
+    });
+  }, [props.sizeStorageKey, props.onChange]);
+  const saveSize = () => {
+    const size = pendingSize.current;
+    if (!size) return;
+    pendingSize.current = null;
+    saveWindowPanelSize(props.sizeStorageKey, 'fraction', { width: size.expandedWidth, height: size.height, minimizedWidth: size.minimizedWidth });
+  };
+  const changeSize = (patch: Partial<WindowPanelLayout<Pane>>) => {
+    pendingSize.current = { expandedWidth: props.state.expandedWidth, height: props.state.height,
+      minimizedWidth: props.state.minimizedWidth, ...pendingSize.current, ...patch };
+    props.onChange(patch);
+  };
   useEffect(() => {
     const element = panel.current!;
     // Trackpad pinch arrives as Ctrl-wheel. Outside the canvas it otherwise
@@ -45,9 +71,10 @@ function SplitWindowPanel<Pane extends string>(props: { title: string; subtitle?
         if (!horizontal && !vertical) return;
         event.preventDefault(); event.stopPropagation();
         const rect = panel.current!.getBoundingClientRect(), area = panel.current!.parentElement!.getBoundingClientRect();
-        if (horizontal) props.onChange({ [props.state.minimized ? 'minimizedWidth' : 'expandedWidth']:
+        if (horizontal) changeSize({ [props.state.minimized ? 'minimizedWidth' : 'expandedWidth']:
           Math.max(.2, Math.min(.95, (rect.width + (event.key === 'ArrowLeft' ? 24 : -24)) / area.width)) });
-        else props.onChange({ height: Math.max(.2, Math.min(.95, (rect.height + (event.key === 'ArrowDown' ? 24 : -24)) / area.height)) });
+        else changeSize({ height: Math.max(.2, Math.min(.95, (rect.height + (event.key === 'ArrowDown' ? 24 : -24)) / area.height)) });
+        saveSize();
       }}
       onPointerDown={event => {
         if (event.button !== 0) return;
@@ -59,13 +86,13 @@ function SplitWindowPanel<Pane extends string>(props: { title: string; subtitle?
       onPointerMove={event => {
         const start = resize.current; if (!start) return;
         event.preventDefault(); event.stopPropagation();
-        props.onChange({ ...(edge !== 'bottom' ? { [props.state.minimized ? 'minimizedWidth' : 'expandedWidth']:
+        changeSize({ ...(edge !== 'bottom' ? { [props.state.minimized ? 'minimizedWidth' : 'expandedWidth']:
           Math.max(.2, Math.min(.95, (start.right - 8) / start.areaWidth, (start.width + start.x - event.clientX) / start.areaWidth)) } : {}),
           ...(edge !== 'left' ? { height: Math.max(.2, Math.min(.95, (start.areaHeight - start.top - 8) / start.areaHeight,
             (start.height + event.clientY - start.y) / start.areaHeight)) } : {}) });
       }}
-      onPointerUp={() => { resize.current = undefined; }} onPointerCancel={() => { resize.current = undefined; }}
-      onLostPointerCapture={() => { resize.current = undefined; }} />)}
+      onPointerUp={() => { resize.current = undefined; saveSize(); }} onPointerCancel={() => { resize.current = undefined; saveSize(); }}
+      onLostPointerCapture={() => { resize.current = undefined; saveSize(); }} />)}
     <header className="window-panel-header">
       <div><strong>{props.title}</strong>{props.subtitle && <small>{props.subtitle}</small>}</div>
       {props.actions}
@@ -112,19 +139,46 @@ function SplitWindowPanel<Pane extends string>(props: { title: string; subtitle?
 }
 
 
+/** Optional destination for a tool's controls without moving/remounting the tool itself. */
+export const WindowPanelSidebarContext = createContext<{ element: HTMLElement | null; close: () => void }>({ element: null, close: () => {} });
+
 /** A panel may host independent tools as tabs, or use the original two-pane layout. */
 export function WindowPanel<Pane extends string>(props: Parameters<typeof SplitWindowPanel<Pane>>[0] | {
   title: string; tabs: readonly PaneContent<Pane>[]; activeTab: Pane; onTabChange: (tab: Pane) => void;
-  onClose: () => void; className?: string;
+  onClose: () => void; className?: string; compact?: boolean;
+  /** Stable identity for this panel's saved dimensions, shared across its tabs. */ sizeStorageKey?: string;
 }) {
   const id = useId();
+  const panel = useRef<HTMLElement>(null), toggle = useRef<HTMLButtonElement>(null);
+  const [sidebar, setSidebar] = useState<HTMLDivElement | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const tabbed = 'tabs' in props;
+  useLayoutEffect(() => {
+    const element = panel.current;
+    if (!tabbed || !element) return;
+    const saved = readWindowPanelSize(props.sizeStorageKey, 'pixels');
+    element.style.width = saved?.width ? `${saved.width}px` : '';
+    element.style.height = saved?.height ? `${saved.height}px` : '';
+  }, [tabbed, props.sizeStorageKey]);
+  const compact = 'tabs' in props && props.compact;
+  const closeSidebar = useCallback(() => {
+    setDrawerOpen(false);
+    requestAnimationFrame(() => panel.current?.querySelector<HTMLElement>('.agent-chat-prompt')?.focus({ preventScroll: true }));
+  }, []);
+  const sidebarContext = useMemo(() => ({ element: sidebar, close: closeSidebar }), [sidebar, closeSidebar]);
+  useEffect(() => {
+    if (!drawerOpen || !compact) return;
+    const outside = (event: PointerEvent) => {
+      if (!panel.current?.contains(event.target as Node)) setDrawerOpen(false);
+    };
+    window.addEventListener('pointerdown', outside);
+    return () => window.removeEventListener('pointerdown', outside);
+  }, [drawerOpen, compact]);
   if (!('tabs' in props)) return <SplitWindowPanel {...props} />;
-  return <section className={`window-panel window-panel-tabbed ${props.className ?? ''}`} aria-label={props.title}
-    data-mapping-static-ui data-diagram-canvas-static-ui onKeyDown={event => event.stopPropagation()}>
-    <header className="window-panel-tabs" role="tablist" aria-label={props.title}>
+  const tabs = <header className="window-panel-tabs" role="tablist" aria-label={props.title}>
       {props.tabs.map((tab, index) => <button key={tab.id} id={`${id}-${tab.id}`} role="tab"
         aria-selected={props.activeTab === tab.id} aria-controls={`${id}-${tab.id}-panel`} tabIndex={props.activeTab === tab.id ? 0 : -1}
-        onClick={() => props.onTabChange(tab.id)} onKeyDown={event => {
+        onClick={() => { props.onTabChange(tab.id); setDrawerOpen(false); }} onKeyDown={event => {
           if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
           event.preventDefault();
           const next = event.key === 'Home' ? 0 : event.key === 'End' ? props.tabs.length - 1
@@ -132,8 +186,25 @@ export function WindowPanel<Pane extends string>(props: Parameters<typeof SplitW
           props.onTabChange(props.tabs[next].id); document.getElementById(`${id}-${props.tabs[next].id}`)?.focus();
         }}>{tab.title}</button>)}
       <button className="window-panel-tab-close" aria-label={`Close ${props.title}`} onClick={props.onClose}>×</button>
-    </header>
+    </header>;
+  return <section ref={panel} className={`window-panel window-panel-tabbed${compact ? ' window-panel-compact' : ''} ${props.className ?? ''}`} aria-label={props.title}
+    data-mapping-static-ui data-diagram-canvas-static-ui onKeyDown={event => {
+      event.stopPropagation();
+      if (event.key === 'Escape' && drawerOpen) { event.preventDefault(); setDrawerOpen(false); toggle.current?.focus(); }
+    }}>
+    <TabbedPanelResize panel={panel} sizeStorageKey={props.sizeStorageKey} />
+    {compact ? <><button ref={toggle} type="button" className="window-panel-sidebar-toggle" aria-label="Chat menu" aria-expanded={drawerOpen}
+      aria-controls={`${id}-sidebar`} title={drawerOpen ? 'Hide chat menu' : 'Conversations and settings'}
+      onClick={() => setDrawerOpen(value => !value)}>{drawerOpen ? '>' : '<'}</button>
+      <button type="button" className="window-panel-compact-close" aria-label="Close Agent Chat" title="Minimize chat"
+        onClick={() => { setDrawerOpen(false); props.onClose(); }}>×</button></> : tabs}
+    <aside className="window-panel-sidebar" id={`${id}-sidebar`} hidden={!compact || !drawerOpen} aria-label="Chat conversations and settings">
+      {compact && tabs}
+      <div ref={setSidebar} />
+    </aside>
+    <WindowPanelSidebarContext.Provider value={sidebarContext}>
     {props.tabs.map(tab => <div key={tab.id} id={`${id}-${tab.id}-panel`} role="tabpanel" aria-labelledby={`${id}-${tab.id}`}
       className="window-panel-tool" hidden={props.activeTab !== tab.id}>{tab.content}</div>)}
+    </WindowPanelSidebarContext.Provider>
   </section>;
 }

@@ -35,6 +35,8 @@ export function shortCanvasContext(context: ApiLiveCanvasContext) {
       return {
         ...summary(node), revisionId: content.revisionId, asciiSha256: content.asciiSha256,
         ascii: content.ascii, structureKind: content.structure.kind,
+        ...(node.diagram?.highlights?.length ? { highlights: node.diagram.highlights.map(item => ({ ...item,
+          status: !item.contentNodeId || content.structure.nodes[item.contentNodeId] ? 'current' as const : 'stale' as const })) } : {}),
         collapsedAnchorIds: node.collapsible.subtrees.filter(item => item.expansion === 'collapsed').map(item => item.contentNodeId),
         sourceReferences: {
           binding: source?.binding, mappings: source?.mappings ?? [],

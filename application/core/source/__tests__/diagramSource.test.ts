@@ -61,7 +61,7 @@ it('isolates same-path source reads, mapped evidence and compactions across repo
   expect(Object.keys(cb.catalog.activeByPath)).toHaveLength(2);
   // Saved and live MCP searches use the same diagram-local evidence query.
   const bridge: CanvasSessionPort = {register(){},list:()=>[{canvasId:'canvas',documents:[{documentId:'doc',name:'Both'}]}],poll:async()=>[],reply(){},unregister(){},dispose(){},
-    async dispatch(_id,command){if(command.method==='snapshot')return {...controller.getSnapshot(),name:'Both'};throw new Error('unexpected command');}};
+    async dispatch(_id,command){if((command.method==='snapshot'||command.method==='identity'))return {...controller.getSnapshot(),name:'Both'};throw new Error('unexpected command');}};
   const agent=new AgentDiagrammingSessionService(bridge,new MappingDiagramService(store,corpusAccess,root),store,new QuickJsAgentRuntime());
   const attached=await agent.call('exec',{requestId:'attach',code:'return canvas.attach({canvasId:"canvas",documentId:"doc"});'}) as any;
   for(const scope of [{representationId:saved.representation.id},{sessionId:attached.value.sessionId}]) {

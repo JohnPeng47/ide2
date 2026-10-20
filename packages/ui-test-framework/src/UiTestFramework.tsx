@@ -109,6 +109,8 @@ export function UiTestFramework<const Controls extends UiTestControls>(props: {
   controls: Controls;
   children: (values: UiTestValues<Controls>) => ReactNode;
   title?: string;
+  triggerLabel?: string;
+  menuContent?: ReactNode;
   persist?: boolean;
 }) {
   const reactId = useId().replaceAll(":", "");
@@ -173,7 +175,7 @@ export function UiTestFramework<const Controls extends UiTestControls>(props: {
         >
           <header>
             <div>
-              <span>DEV TOOL</span>
+              <span>{props.menuContent ? "WORKSPACE" : "DEV TOOL"}</span>
               <strong>{props.title ?? "UI variants"}</strong>
             </div>
             <button
@@ -182,6 +184,7 @@ export function UiTestFramework<const Controls extends UiTestControls>(props: {
               disabled={Object.entries(defaultValues).every(([id, value]) => values[id] === value)}
             >reset all</button>
           </header>
+          {props.menuContent}
           <div className="ui-test-framework__controls">
             {Object.entries(props.controls).map(([id, control]) => {
               const inputId = controlId(panelId, id);
@@ -244,12 +247,12 @@ export function UiTestFramework<const Controls extends UiTestControls>(props: {
         type="button"
         className="ui-test-framework__dial"
         data-ui-test-dial="true"
-        aria-label="Toggle UI testing controls"
+        aria-label={props.triggerLabel ?? "Toggle UI testing controls"}
         aria-controls={panelId}
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
       >
-        <span aria-hidden="true">UI</span>
+        <span aria-hidden="true">{props.triggerLabel ?? "UI"}</span>
       </button>
     </div>,
     document.body

@@ -1,3 +1,4 @@
+import { validateDiagramHighlights, type DiagramHighlight } from './diagramHighlight';
 import type { DeepReadonly } from '../immutability';
 import { validateDiagramJumps, type DiagramJump } from './diagramJump';
 import { buildDiagramContent, type DiagramContent } from './diagramContent';
@@ -29,6 +30,7 @@ export interface Diagram {
   readonly revision: number;
   readonly content: DeepReadonly<DiagramContent>;
   readonly sourceContext: DeepReadonly<DiagramSourceContext>;
+  readonly highlights?: DeepReadonly<DiagramHighlight[]>;
   readonly jumps?: DeepReadonly<DiagramJump[]>;
 }
 export interface DiagramInput {
@@ -36,6 +38,7 @@ export interface DiagramInput {
   mappings?: readonly DiagramElementMapping[];
   evidence?: DiagramSourceContext['evidence'];
   source?: DiagramSourceBinding;
+  highlights?: readonly DiagramHighlight[];
   jumps?: readonly DiagramJump[];
 }
 export function validateSourceBinding(binding: DiagramSourceBinding): void {
@@ -57,6 +60,7 @@ export function validateDiagram(diagram: Diagram): void {
   if (!source || !source.evidence || !Array.isArray(source.mappings) || source.contentHash !== asciiSha256(content.ascii)) throw new Error('Diagram source context does not match content');
   if (source.binding) validateSourceBinding(source.binding);
   validateDiagramJumps(content, diagram.jumps);
+  validateDiagramHighlights(diagram.highlights);
   validateDiagramLocalMappings(content.ascii, source.mappings);
   for (const [id, entry] of Object.entries(source.evidence)) {
     if (entry?.sourceId && source.binding && entry.sourceId !== source.binding.sourceId) throw new Error('Evidence belongs to another diagram source');

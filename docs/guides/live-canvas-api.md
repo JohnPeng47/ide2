@@ -290,6 +290,49 @@ larger contexts fail visibly instead of returning partial contents. Initial
 context traffic gets a temporary bounded backpressure allowance so its own large
 frame does not cause otherwise healthy selection updates to be dropped.
 
+## Copy a diagram for cursor placement
+
+An attached reader can stage a diagram in its bound canvas document over the same
+WebSocket. The backend must be started with `--http` to enable canvas writes.
+
+The browser advertises `capabilities: ["diagram.copy"]` in its `publish` handshake.
+This optional field keeps protocol v2 selection publishers compatible. If the
+capability is absent, copying fails immediately with `COPY_UNSUPPORTED` and reload/
+reconnect guidance; the server sends no staging command and keeps the reader attached.
+Deploy the updated server before serving the updated browser build: earlier servers
+reject unknown handshake fields. Already-open tabs need a reload to gain the capability.
+
+```json
+{"type":"diagram.copy","requestId":"unique-copy-id","text":"Root\n|-- Child\n`-- Tail"}
+```
+
+After the owning browser stages the text, the server replies with
+`{type: "diagram.copied", requestId, connectionId, workspaceInstanceId, documentId, canvasEpoch}`.
+Errors use `{type: "error", requestId, code, error}` and leave the reader attached.
+No document version or position is needed for staging: it does not edit or save
+the canvas. The browser displays a highlighted copy cursor, a small text preview,
+and a placement hint. The preview truncates long text without altering the buffer. Ctrl+V
+(or Cmd+V) over the canvas inserts at the pointer using the current camera and
+document version. Each paste is undoable; the buffer stays available for repeated
+pastes. Escape clears it without adding history. Text inputs retain normal paste.
+
+The buffer belongs to the target document session. It is not persisted and clears
+on browser publisher disconnect, document removal/replacement, or reload. Switching
+documents never pastes another document's buffer.
+
+Input is bounded to 41,000 JavaScript characters including an optional single
+Markdown fence. CRLF becomes LF and the fence is removed; spaces and blank lines
+inside the diagram are preserved. The resulting text must contain 1–20,000
+printable ASCII/LF characters and some non-whitespace text.
+
+The browser acknowledgement timeout is 25 seconds; clients should allow at least
+30 seconds. After an ambiguous transport failure, retry identical arguments with
+the same request ID. Receipt deduplication prevents a retry from re-arming a buffer
+cleared with Escape or overwriting a newer copy. Changed arguments require a fresh
+ID. Receipts are bounded to 2,000 per backend/browser publisher lifetime; exhaustion
+fails explicitly. Backend restart ends retry guarantees, so rediscover and attach
+before issuing a new operation.
+
 ## Upload coding-agent context
 
 An attached reader can upload an immutable slice of its coding trajectory for

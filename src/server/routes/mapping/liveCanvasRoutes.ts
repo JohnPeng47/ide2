@@ -54,7 +54,7 @@ interface UpgradeServer {
   off(event: 'upgrade', listener: UpgradeListener): unknown;
 }
 
-export function attachLiveCanvasSockets(server: UpgradeServer, service: LiveCanvasService, options: { agentContextUploadsEnabled?: boolean } = {}) {
+export function attachLiveCanvasSockets(server: UpgradeServer, service: LiveCanvasService, options: { agentContextUploadsEnabled?: boolean; canvasWritesEnabled?: boolean } = {}) {
   const sockets = new WebSocketServer({ noServer: true, maxPayload: 8 * 1024 * 1024, perMessageDeflate: false });
   const alive = new Set<WebSocket>();
   sockets.on('connection', ws => {
@@ -86,6 +86,8 @@ export function attachLiveCanvasSockets(server: UpgradeServer, service: LiveCanv
         if (decoded && typeof decoded === 'object' && 'requestId' in decoded
           && typeof decoded.requestId === 'string' && decoded.requestId.length <= 200) requestId = decoded.requestId;
         const message = liveCanvasMessageSchema.parse(decoded);
+        if ((message.type === 'diagram.paste' || message.type === 'diagram.copy') && options.canvasWritesEnabled !== true)
+          throw new LiveCanvasError('HTTP_WRITES_DISABLED', 403, 'Canvas writes are disabled; start the server with --http to enable them.');
         if (options.agentContextUploadsEnabled !== true && message.type === 'agent-context.upload') {
           throw new LiveCanvasError('HTTP_WRITES_DISABLED', 403, 'Agent context uploads are disabled; start the server with --http to enable them.');
         }
@@ -106,11 +108,23 @@ export function attachLiveCanvasSockets(server: UpgradeServer, service: LiveCanv
             connectionId = initial.connectionId;
             send({ type: 'attached', ...initial, ...(context ? { context } : {}) });
           } else {
-            service.publish(ws, message.workspaceInstanceId, send);
+            service.publish(ws, message.workspaceInstanceId, send, message.capabilities);
             workspaceInstanceId = message.workspaceInstanceId;
             send({ type: 'publisher.ready', protocolVersion: 2 });
           }
           clearTimeout(handshake);
+        } else if (message.type === 'diagram.copy') {
+          if (!connectionId) throw new LiveCanvasError('READER_REQUIRED', 403);
+          send(await service.copy(connectionId, message));
+        } else if (message.type === 'diagram.copy.reply') {
+          if (!workspaceInstanceId) throw new LiveCanvasError('PUBLISHER_REQUIRED', 403);
+          service.copyReply(ws, workspaceInstanceId, message);
+        } else if (message.type === 'diagram.paste') {
+          if (!connectionId) throw new LiveCanvasError('READER_REQUIRED', 403);
+          send(await service.paste(connectionId, message));
+        } else if (message.type === 'diagram.paste.reply') {
+          if (!workspaceInstanceId) throw new LiveCanvasError('PUBLISHER_REQUIRED', 403);
+          service.pasteReply(ws, workspaceInstanceId, message);
         } else if (message.type === 'agent-context.upload') {
           if (!connectionId) throw new LiveCanvasError('READER_REQUIRED', 403);
           const { type: _, requestId: uploadRequestId, ...trajectory } = message;

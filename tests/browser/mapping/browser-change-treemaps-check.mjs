@@ -181,16 +181,18 @@ try {
     assert.deepEqual(await evaluate(cdp, "[...document.querySelectorAll('.change-treemap-cell[data-depth=\"0\"]')].map(e=>e.dataset.treemapKind)"), ['canvas', 'canvas', 'unmapped']);
     assert.equal(await evaluate(cdp, "document.querySelector('.change-treemap-breadcrumbs').textContent"), 'All canvases');
     await click('.theme-settings-toggle');
-    assert.equal(await evaluate(cdp, 'document.querySelector(".theme-picker-panel select").value'), 'ranked', 'Ranked is the default');
+    assert.equal(await evaluate(cdp, 'document.querySelector(".theme-picker-panel select").value'), 'continuous', 'Continuous is the default');
     const readColors = () => evaluate(cdp, "[...document.querySelectorAll('.change-treemap-cell[data-treemap-color]')].map(e=>e.dataset.treemapColor)");
     const readCanvasColors = () => evaluate(cdp, "[...document.querySelectorAll('.change-preview-treemap-tint')].map(e=>e.dataset.treemapColor)");
     const readGeometry = () => evaluate(cdp, "[...document.querySelectorAll('.change-treemap-cell')].map(e=>[e.dataset.loc,e.style.left,e.style.top,e.style.width,e.style.height])");
-    const rankedColors = await readColors(), rankedCanvas = await readCanvasColors(), rankedGeometry = await readGeometry();
     const chooseScale = async key => {
       await click('.theme-picker-panel select');
       for (const [k, code] of [[key, key === 'End' ? 35 : 36], ['Enter', 13]])
         for (const type of ['keyDown', 'keyUp']) await cdp.send('Input.dispatchKeyEvent', { type, key: k, code: k, windowsVirtualKeyCode: code });
     };
+    await chooseScale('Home');
+    await waitFor(async () => await evaluate(cdp, "document.querySelector('.treemap-loc-legend').textContent.includes('Ranked')"));
+    const rankedColors = await readColors(), rankedCanvas = await readCanvasColors(), rankedGeometry = await readGeometry();
     await chooseScale('End');
     await waitFor(async () => await evaluate(cdp, "document.querySelector('.treemap-loc-legend').textContent.includes('Continuous')"));
     assert.notDeepEqual(await readColors(), rankedColors, 'Continuous changes tile shades');
@@ -370,6 +372,19 @@ try {
     await assertBlueprintGeometry();
     assert.deepEqual(await evaluate(cdp, `[...document.querySelectorAll('.change-treemap-cell[data-treemap-kind="diagram"]')].map(e=>({color:e.dataset.treemapColor,position:e.dataset.diagramPosition}))`), identities, 'Returning from zoom restores the original diagram colors');
     await click('[aria-label="Close Treemap review · DiffTree"]');
+    await waitFor(async () => await evaluate(cdp, "!document.querySelector('.change-preview-treemap-tint')"));
+    await click(`[data-open-treemaps="${session.id}"]`);
+    await waitForSelector(cdp, '.window-panel-tabbed .change-treemap-cell');
+    assert.equal(await evaluate(cdp, `document.querySelector('.window-panel-tabbed [role=tab][aria-selected=true]').textContent`), 'Treemaps');
+    assert.deepEqual(await evaluate(cdp, `[...document.querySelectorAll('.window-panel-tabbed [aria-label="Change LOC totals"] strong')].map(e=>Number(e.textContent))`), [5, 4, 1, 3]);
+    await click('.window-panel-tabbed [role=tab]', 'Search');
+    await waitFor(async () => await evaluate(cdp, "!document.querySelector('.change-preview-treemap-tint')"));
+    await click('.window-panel-tabbed [role=tab]', 'Treemaps');
+    await waitForSelector(cdp, '.window-panel-tabbed .change-treemap-cell[data-treemap-kind=diagram]');
+    await click('.window-panel-tabbed .change-treemap-cell button[aria-label^="Authentication:"]');
+    await waitForSelector(cdp, '.change-preview-treemap-tint');
+    await captureScreenshot(cdp, { output: path.join(root, 'workspace-treemaps.png') });
+    await click('[aria-label="Close Workspace tools"]');
     await waitFor(async () => await evaluate(cdp, "!document.querySelector('.change-preview-treemap-tint')"));
     await click(`[data-open-difftree="${session.id}"]`);
     await waitForSelector(cdp, '.window-panel [role=tab]');

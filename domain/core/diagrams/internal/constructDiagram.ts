@@ -5,6 +5,7 @@ import { validateDiagram, type Diagram, type DiagramInput } from '../diagram';
 export function constructDiagram(input: DiagramInput): Diagram {
   const content = buildDiagramContent(input.ascii, `${input.id}:${input.revision}`, input.structureKind ?? 'diagram');
   const diagram: Diagram = { id: input.id, revision: input.revision, diagramId: `diagram-${crypto.randomUUID()}`, revisionId: `diagram-revision-${crypto.randomUUID()}`, content,
+    ...(input.highlights ? { highlights: structuredClone(input.highlights) } : {}),
     ...(input.jumps ? { jumps: structuredClone(input.jumps) } : {}),
     sourceContext: { ...(input.source ? { binding: structuredClone(input.source) } : {}), contentHash: content.asciiSha256,
       mappings: structuredClone(input.mappings ?? []), evidence: structuredClone(input.evidence ?? {}) } };

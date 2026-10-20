@@ -1,3 +1,4 @@
+import { currentCanvasRead } from '../../../../domain/mapping/agent/currentCanvasRead';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
 import { mkdtemp, rm } from 'node:fs/promises';
@@ -33,7 +34,8 @@ function fixture(store = {} as DiagramRepository) {
   const bridge: CanvasSessionPort = {
     register() {}, list: () => descriptors, poll: async () => [], reply() {}, unregister() {}, dispose() {},
     async dispatch(_id, command) {
-      if (command.method === 'snapshot') return { ...controller.getSnapshot(), name: 'Test' };
+      if (command.method === 'read') return currentCanvasRead(controller.getSnapshot(), command.payload as any);
+      if (command.method === 'snapshot' || command.method === 'identity') return { ...controller.getSnapshot(), name: 'Test' };
       const p = command.payload as { expectedVersion: number; operations: DiagramOperation[]; requestId: string };
       const prior = receipts.get(p.requestId);
       if (prior) return prior;
@@ -162,11 +164,91 @@ it('projects top-level mutation responses and validates short jump targets again
     expect(jumped.value.diagram.jumps[0].target.contentNodeId).toBe(targetId);
     expect(f.controller.getSnapshot().document.scene.contents.overview.jumps![0].target.contentNodeId).toBe(f.projection.resolveAnchorId(targetId));
     const mappings = await f.call('set_diagram_source_mappings', { sessionId: session, requestId: 'mappings', expectedVersion: jumped.transaction.version,
-      nodeId: 'grid:overview', expectedContentHash: jumped.value.content.asciiSha256, mappings: [], evidence: {} });
+      nodeId: 'grid:overview', mappings: [], evidence: {} });
     assertCompact(mappings.nodes);
     const drawn = await f.call('draw_diagram', { sessionId: session, requestId: 'draw', expectedVersion: mappings.version, ascii: '[Another]' });
     assertCompact(drawn.nodes);
     // Saved exports and persisted documents continue to use full canonical IDs.
     expect(await catalog.loadRepresentationCatalog('project')).toEqual(wrong.catalog);
   } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+it('persists multiple colored node highlights, updates targets in place, and restores selective removal through history', async () => {
+  const f = fixture(), session = await f.attach();
+  const before = (await f.exec(session, `return ${nodeCode};`)).value;
+  const anchors = Object.values(before.content.structure.nodes) as { id: string }[];
+  const highlight = async (index: number, color?: string) => (await f.exec(session,
+    `return nodes.highlight(${JSON.stringify({ nodeId: before.id, contentNodeId: anchors[index].id, color })});`)).value;
+  await highlight(0, 'blue');
+  let node = await highlight(1);
+  expect(node.diagram.highlights.map((h: any) => h.color)).toEqual(['blue', 'yellow']);
+  const first = node.diagram.highlights[0].id;
+  node = await highlight(0, '#12abEF');
+  expect(node.diagram.highlights.find((h: any) => h.id === first).color).toBe('#12abEF');
+  expect(node.content).toEqual(before.content);
+  expect(node.diagram.highlights).toHaveLength(2);
+  const snapshot = f.controller.getSnapshot();
+  const restored = new MappingDocumentController(snapshot.document, snapshot.canvas, snapshot.version, undefined, undefined, f.controller.exportHistory());
+  expect(restored.nodes().find(n => n.layout === 'grid' && n.id === before.id)).toMatchObject({ diagram: { highlights: expect.arrayContaining([expect.objectContaining({ id: first })]) } });
+  await f.exec(session, `return nodes.removeHighlights({nodeId:'grid:overview',highlightIds:[${JSON.stringify(first)}]});`);
+  expect(f.controller.getSnapshot().document.scene.contents.overview.highlights).toHaveLength(1);
+  f.controller.undo();
+  expect(f.controller.getSnapshot().document.scene.contents.overview.highlights).toHaveLength(2);
+  f.controller.undo(true);
+  await f.exec(session, "return nodes.removeHighlights({nodeId:'grid:overview'});");
+  expect(f.controller.getSnapshot().document.scene.contents.overview.highlights).toEqual([]);
+  await expect(highlight(0, 'expression(alert(1))')).rejects.toThrow();
+  await expect(f.exec(session, "nodes.removeHighlights({nodeId:'grid:overview',highlightIds:['missing']});")).rejects.toThrow('Unknown highlight');
+  const version = f.controller.getSnapshot().version;
+  await expect(f.exec(session, "nodes.highlight({nodeId:'grid:overview'});", { expectedVersion: version - 1 })).rejects.toThrow('VERSION_CONFLICT');
+  expect(f.controller.getSnapshot().version).toBe(version);
+});
+
+it('rebases untouched highlights on patches, retains stale targets without rendering them, and rejects stale handles', async () => {
+  const f = fixture(), session = await f.attach();
+  const node = (await f.exec(session, `return ${nodeCode};`)).value;
+  const anchors = Object.values(node.content.structure.nodes) as { id: string; line: number }[];
+  const first = anchors.find(n => n.line === 1)!, last = anchors.find(n => n.line === 4)!;
+  await f.exec(session, `nodes.highlight({nodeId:'grid:overview',contentNodeId:${JSON.stringify(first.id)},color:'green'}); nodes.highlight({nodeId:'grid:overview',contentNodeId:${JSON.stringify(last.id)},color:'pink'});`);
+  const old = f.controller.getSnapshot().document.scene.contents.overview.highlights!;
+  await f.exec(session, "nodes.patchDiagram({nodeId:'grid:overview',start:2,end:2,patch:'|-- Updated\\n|-- Inserted'});");
+  const updated = (await f.exec(session, `return ${nodeCode};`)).value;
+  expect(updated.diagram.highlights).toHaveLength(2);
+  const lastHighlight = updated.diagram.highlights.find((h: any) => h.id === old[1].id);
+  expect(updated.content.structure.nodes[lastHighlight.contentNodeId].line).toBe(5);
+  await expect(f.exec(session, `nodes.highlight({nodeId:'grid:overview',contentNodeId:${JSON.stringify(first.id)}});`)).rejects.toThrow('STALE_CONTENT_NODE');
+  await f.exec(session, "nodes.replace({nodeId:'grid:overview',ascii:'Entirely new'});");
+  const diagram = f.controller.getSnapshot().document.scene.contents.overview;
+  const { activeDiagramHighlights } = await import('../../../../domain/core/diagrams/diagramHighlight');
+  expect(diagram.highlights).toHaveLength(2);
+  expect(activeDiagramHighlights(diagram.content, diagram.highlights)).toEqual([]);
+  await f.exec(session, `nodes.removeHighlights({nodeId:'grid:overview',highlightIds:${JSON.stringify(old.map(h => h.id))}});`);
+  expect(f.controller.getSnapshot().document.scene.contents.overview.highlights).toEqual([]);
+});
+
+it('makes native chat highlight links from saved IDs, supports selected nodes, and retries without adding history', async () => {
+  const f = fixture();
+  const { ChatDiagramTools } = await import('../../../../application/mapping/agent-chat/chatDiagramTools');
+  const { parseHighlightReference } = await import('../../../../domain/mapping/agent-chat/highlightReference');
+  const diagram = f.controller.getSnapshot().document.scene.contents.overview;
+  const { diagramContentNodes } = await import('../../../../domain/core/diagrams/diagramContentNodes');
+  const ids = diagramContentNodes(diagram.content).slice(0, 2).map(n => n.id);
+  const tools = new ChatDiagramTools(f.agent);
+  const session = { id: 'chat', settings: { model: '', effort: '', sandbox: 'workspace-write' as const },
+    canvasContext: { canvas: { workspaceInstanceId: 'canvas', documentId: 'doc' }, references: [{
+      canvas: { workspaceInstanceId: 'canvas', documentId: 'doc' }, canvasName: 'Test', displayNodeId: 'grid:overview', ascii: diagram.content.ascii,
+      reference: { kind: 'nodes' as const, label: 'Root', diagramId: diagram.diagramId, revisionId: diagram.revisionId,
+        nodeIds: ids, range: { startLine: 1, endLine: 2, startColumn: 1, endColumn: 20 } }
+    }] } };
+  const input = { reference: 1, color: 'purple', requestId: 'chat-highlight' };
+  const result = await tools.call('highlight-node', input, session) as any;
+  expect(result.highlights).toHaveLength(2);
+  expect(parseHighlightReference(result.highlights[0].markdownUrl)).toEqual({ documentId: 'doc', nodeId: 'grid:overview', highlightId: result.highlights[0].id });
+  const version = f.controller.getSnapshot().version;
+  expect(await tools.call('highlight-node', input, session)).toEqual(result);
+  expect(f.controller.getSnapshot().version).toBe(version);
+  await expect(tools.call('highlight-node', { ...input, color: 'orange' }, session)).rejects.toThrow('REQUEST_ID_CONFLICT');
+  await expect(tools.call('highlight-node', { ...input, requestId: 'read-only' }, { ...session, settings: { ...session.settings, sandbox: 'read-only' } })).rejects.toThrow('Workspace access');
+  const removed = await tools.call('remove-highlights', { nodeId: 'grid:overview', highlightIds: [result.highlights[0].id], requestId: 'remove-one' }, session) as any;
+  expect(removed.highlights).toHaveLength(1);
 });

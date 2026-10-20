@@ -99,7 +99,9 @@ try {
     await click('[role=tab]', 'Changes'); await click(`[data-change-session-summary="${id}"]`); await open(docA);
     await until(`document.querySelectorAll('.diff-hunk').length === ${discovered.total}`);
     const find = async (global = false) => {
-      await cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'f', code: 'KeyF', windowsVirtualKeyCode: 70, modifiers: global ? 10 : 2 });
+      await cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'b', code: 'KeyB', windowsVirtualKeyCode: 66, modifiers: 2 });
+      await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'b', code: 'KeyB', windowsVirtualKeyCode: 66 });
+      await cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'f', code: 'KeyF', windowsVirtualKeyCode: 70, modifiers: global ? 8 : 0 });
       await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'f', code: 'KeyF', windowsVirtualKeyCode: 70 });
       await until('document.activeElement?.getAttribute("aria-label") === "Search diagram text"');
     };
@@ -117,14 +119,14 @@ try {
     await until('document.querySelector(".diagram-search-panel [role=status]")?.textContent === "1 matching line"');
     await cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
     await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
-    await until('!document.querySelector(".diagram-search-panel")');
+    await until('!document.querySelector(".diagram-search-panel")?.checkVisibility()');
     await click('.window-panel [aria-label="Search diagrams"]');
     await until('document.activeElement?.getAttribute("aria-label") === "Search diagram text"');
     await click('[aria-label="Close diagram search"]');
-    await until('!document.querySelector(".diagram-search-panel")');
+    await until('!document.querySelector(".diagram-search-panel")?.checkVisibility()');
     await click('[aria-label="Restore split view"]');
     await until('!document.querySelector(".window-panel-minimized")');
-    console.log('Verified Ctrl+F over DiffTree, proposal-only results, search focus reveal and project-scope isolation');
+    console.log('Verified Ctrl+B, F over DiffTree, proposal-only results, search focus reveal and project-scope isolation');
     const pinchPoint = await read(`(()=>{const r=document.querySelector('.diff-tree-scroll').getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2}})()`);
     await cdp.send('Input.synthesizePinchGesture', { ...pinchPoint, scaleFactor: 1.15, relativeSpeed: 800, gestureSourceType: 'mouse' });
     await read('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');

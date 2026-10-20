@@ -1,3 +1,5 @@
+import type { AgentChatService } from '../../../../application/mapping/agent-chat/agentChatService';
+import { handleAgentChat } from './agent-chat/agentChatRoutes';
 import type { LiveCanvasService } from '../../../../application/mapping/agent/liveCanvasService';
 import { readLiveSelection, readShortContext } from './liveCanvasRoutes';
 import type { WorkspaceBatch } from '../../../../domain/mapping/workspace/workspaceRecords';
@@ -18,13 +20,15 @@ import { handleFileCompaction } from './compaction/fileCompactionRoutes';
 import type { DiffSessionWorkflowService } from '../../../../application/mapping/changes/diffSessionWorkflowService';
 import { handleDiffSessionWorkflow } from './changes/diffSessionWorkflowRoutes';
 
-export function createMappingRoutes({ selection, diagrams, workspace, chat, compactionService, agent, liveCanvas, diffSessionWorkflows }: {
+export function createMappingRoutes({ selection, diagrams, workspace, chat, compactionService, agent, agentChat, liveCanvas, diffSessionWorkflows }: {
+  agentChat?: AgentChatService;
   diffSessionWorkflows?: DiffSessionWorkflowService;
   agent?: AgentDiagrammingSessionService; liveCanvas?: LiveCanvasService;
   selection: SelectionService; diagrams: MappingDiagramService; workspace: MappingWorkspaceService;
   chat: LocalChatService; compactionService: FileCompactionService;
 }) {
   return async (request: Connect.IncomingMessage, response: ServerResponse, url: URL): Promise<void> => {
+    if (url.pathname.startsWith('/api/mapping/agent-chat/') && agentChat) return handleAgentChat(request, response, url, agentChat);
     if (url.pathname.startsWith('/api/mapping/workflows/diff-session-create') && diffSessionWorkflows)
       return handleDiffSessionWorkflow(request, response, url, diffSessionWorkflows);
     if (url.pathname === '/api/mapping/live/context/short' && liveCanvas) return readShortContext(request, response, url, liveCanvas);
@@ -46,6 +50,8 @@ export function createMappingRoutes({ selection, diagrams, workspace, chat, comp
       return sendJson(response, 200, await workspace.save(await readBody(request, 64 * 1024 * 1024)));
     }
     if (url.pathname === '/api/mapping/chat') return handleLocalChat(request, response, chat);
+    if (url.pathname === '/api/mapping/diagrams/publish' && request.method === 'POST')
+      return sendJson(response, 200, await diagrams.publishCheckpoint(await readBody(request) as import('../../../../domain/core/diagrams/checkpointPublication').CheckpointPublication));
     if (url.pathname === '/api/mapping/diagrams') {
       if (request.method !== 'POST') return sendJson(response, 405, { error: 'method not allowed' });
       return sendJson(response, 200, await diagrams.save(await readBody(request) as SaveProjectDiagramInput));

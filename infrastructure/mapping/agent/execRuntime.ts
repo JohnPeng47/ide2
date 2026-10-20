@@ -14,7 +14,7 @@ export class QuickJsAgentRuntime implements AgentExecRuntime {
         if (++calls > 100) throw new Error('Execution exceeds 100 API calls');
         const value = await invoke(context.getString(method), JSON.parse(context.getString(json)));
         const result = JSON.stringify(value ?? null);
-        if (result.length > 4 * 1024 * 1024) throw new Error('API result exceeds 4MB');
+        if (Buffer.byteLength(result) > 4 * 1024 * 1024) throw new Error('API result exceeds 4MB');
         return context.newString(result);
       });
       context.setProp(context.global, '__call', call); call.dispose();
@@ -22,7 +22,7 @@ export class QuickJsAgentRuntime implements AgentExecRuntime {
       const result = await context.evalCodeAsync(`"use strict"; ${groups}\nJSON.stringify((function() {\n${code}\n})() ?? null)`);
       if (result.error) { const error = context.dump(result.error); result.error.dispose(); throw new Error(error?.message ?? String(error)); }
       const json = context.getString(result.value); result.value.dispose();
-      if (json.length > 4 * 1024 * 1024) throw new Error('Execution result exceeds 4MB');
+      if (Buffer.byteLength(json) > 4 * 1024 * 1024) throw new Error('Execution result exceeds 4MB');
       return JSON.parse(json);
     } finally { context.dispose(); }
   }

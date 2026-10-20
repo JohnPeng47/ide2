@@ -27,7 +27,7 @@ export function diagramApi(
       next();
       return;
     }
-    if (options.httpEnabled !== true && isAgentMutationRequest(request.method, url.pathname)) return sendJson(response, 403, {
+    if (options.httpEnabled !== true && !request.headers['x-canvas-chat-binding'] && isAgentMutationRequest(request.method, url.pathname)) return sendJson(response, 403, {
       code: "HTTP_WRITES_DISABLED", error: "Agent API writes are disabled; start the server with --http to enable them."
     });
     const { routes } = backend;
@@ -52,7 +52,8 @@ export function diagramApi(
   const attach = (server: ViteDevServer | PreviewServer) => {
     server.middlewares.use(middleware);
     const disposeSockets = server.httpServer
-      ? attachLiveCanvasSockets(server.httpServer, backend.liveCanvas, { agentContextUploadsEnabled: options.httpEnabled === true }) : undefined;
+      ? attachLiveCanvasSockets(server.httpServer, backend.liveCanvas, { agentContextUploadsEnabled: options.httpEnabled === true,
+        canvasWritesEnabled: options.httpEnabled === true }) : undefined;
     server.httpServer?.once("close", () => {
       disposeSockets?.();
       backend.dispose();

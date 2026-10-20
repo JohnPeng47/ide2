@@ -194,6 +194,14 @@ export function saveMappingDiagram(catalog: ProjectRepresentationCatalogRecord, 
       if (existing && stateKey(existing) !== stateKey(revision)) throw new Error('Diagram revision is immutable');
     }
   }
+  return publishMappingDiagram(catalog, projectId, input, environment);
+}
+
+/** Publication after the storage adapter has checked a persisted checkpoint and its baseline. */
+export function publishMappingDiagram(catalog: ProjectRepresentationCatalogRecord, projectId: string, input: SaveProjectDiagramInput, environment: CatalogEnvironment) {
+  const current = input.representationId ? catalog.representations[input.representationId] : undefined;
+  const sourceId = current?.currentRevisionId ?? input.sourceRevisionId;
+  const source = sourceId ? catalog.revisions[sourceId] : undefined;
   const scene = structuredClone(input.scene);
   const { ascii, mappings, evidence } = projectCanvasSnapshot(scene);
   const timestamp = environment.timestamp;

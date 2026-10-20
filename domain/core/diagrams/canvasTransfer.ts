@@ -1,3 +1,5 @@
+import { rebaseDiagramHighlights } from './diagramHighlight';
+import { correspondingNodes } from './diagramRevisionEditor';
 import { placeTransferredGroup } from './canvasTransferPlacement';
 import { z } from 'zod';
 import { CanvasHistory, documentFromHistory, type CanvasHistoryRecord, type ResolvedCanvasDocument } from './canvasHistory';
@@ -57,8 +59,10 @@ export function prepareCanvasTransfer(record: CanvasHistoryRecord, input: Transf
         const created = diagrams.create({ id: next, revision: 0, ascii: old.content.ascii,
           structureKind: old.content.structure.kind, source: old.sourceContext.binding,
           mappings: old.sourceContext.mappings, evidence: old.sourceContext.evidence }).diagram;
-        contents[next] = old.jumps ? diagrams.revise(created.revisionId,
-          { kind: 'jumps', jumps: rebaseDiagramJumps(old.content, created.content, old.jumps) }).diagram : created;
+        const annotated = old.highlights ? diagrams.revise(created.revisionId, { kind: 'highlights',
+          highlights: rebaseDiagramHighlights(old.highlights, correspondingNodes(old, created)) }).diagram : created;
+        contents[next] = old.jumps ? diagrams.revise(annotated.revisionId,
+          { kind: 'jumps', jumps: rebaseDiagramJumps(old.content, created.content, old.jumps) }).diagram : annotated;
       }
       if (before.sections[id]) sections[next] = structuredClone(before.sections[id]);
     }

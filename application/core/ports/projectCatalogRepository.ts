@@ -3,6 +3,7 @@ import { type SaveProjectDiagramInput } from "../../../domain/core/diagrams/proj
 import type { SaveProjectedTreeInput } from '../../../domain/core/representations/catalogCommands';
 import type { ProjectCorpusCompactionCatalogRecord, ProjectFileCompactionInput, ProjectFileCompactionRecord, ProjectRepresentationCatalogRecord, ProjectRepresentationRecord } from "../../../domain/core/representations/projectCatalog";
 export interface ProjectCatalogRepository {
+  publishCheckpoint?(projectId: string, input: import('../../../domain/core/diagrams/checkpointPublication').CheckpointPublication, capture: () => Promise<import('../../../domain/core/diagrams/checkpointPublication').CapturedCheckpoint>): Promise<import('../../../domain/core/diagrams/checkpointPublication').CheckpointReceipt>;
   acceptCanvasChanges(projectId: string, input: import('../../../domain/core/representations/changeAcceptance').AcceptCanvasChangesInput): Promise<import('../../../domain/core/representations/changeAcceptance').ChangeSessionAcceptance>;
   readonly storeRoot: string;
   saveProjection(projectId: string, projection: ProjectProjectionRecord): Promise<{
@@ -24,6 +25,7 @@ export interface ProjectCatalogRepository {
     catalog: ProjectCorpusCompactionCatalogRecord;
     compaction: ProjectFileCompactionRecord;
   }>;
+  loadCurrentRepresentationCatalog?(projectId: string, revisionIds?: string[]): Promise<ProjectRepresentationCatalogRecord>;
   loadRepresentationCatalog(projectId: string, historyValidation?: import('../../../domain/core/diagrams/canvasHistory').HistoryValidation): Promise<ProjectRepresentationCatalogRecord>;
   loadDiagramSourceBindings(projectId: string): Promise<import('../../../domain/core/diagrams/diagram').DiagramSourceBinding[]>;
   loadChangeSessionAcceptances(projectId: string): Promise<NonNullable<ProjectRepresentationCatalogRecord['changeSessionAcceptances']>>;

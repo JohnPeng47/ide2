@@ -141,7 +141,7 @@ try {
     };
     const openMenu = async id => { const b=await box(id); await mouse('mousePressed',{x:b.x,y:b.bottom-3},0,1,'right'); await mouse('mouseReleased',{x:b.x,y:b.bottom-3},0,1,'right'); };
     const transfer = async (mode, name, id='a') => {
-      await openMenu(id); await click('.canvas-paste-menu button', mode+' to canvas');
+      await openMenu(id); await click('.canvas-transfer-menu button', mode+' to canvas');
       await waitForSelector(cdp, '.mapping-floating-pane.is-transfer-target');
       await click('.mapping-transfer-picker button', 'New canvas');
       await waitForSelector(cdp, '[aria-label="Transfer canvas name"]');
@@ -197,14 +197,14 @@ try {
     await drag({x:a.left-4,y:a.top-2},{x:b.right+4,y:b.bottom+4}); await selected(['a','b']);
     await captureScreenshot(cdp,{output:path.join(root,'diagram-selection.png')});
     await click('[aria-label="Minimize explorer"]');
-    await openMenu('a'); await click('.canvas-paste-menu button','Copy to canvas');
+    await openMenu('a'); await click('.canvas-transfer-menu button','Copy to canvas');
     await waitForSelector(cdp, '.mapping-floating-pane.is-transfer-target:not(.is-minimized)');
     assert.equal(await evaluate(cdp, `document.querySelector('[data-project-diagram="representation-overview"]').disabled`),true);
     await captureScreenshot(cdp,{output:process.env.TRANSFER_PICKER_SCREENSHOT || path.join(root,'destination-picker.png')});
     await key('Escape','Escape',27); await selected([]);
     assert.equal(await evaluate(cdp, `!!document.querySelector('.mapping-transfer-picker')`),false);
     await double('a'); await double('b',2);
-    await openMenu('a'); await click('.canvas-paste-menu button','Move to canvas');
+    await openMenu('a'); await click('.canvas-transfer-menu button','Move to canvas');
     await click('.mapping-transfer-picker button','New canvas');
     await key('Escape','Escape',27); await selected([]);
     await double('a'); await double('b',2); await selected(['a','b']);
@@ -219,7 +219,7 @@ try {
       } else void cdp.send('Fetch.continueRequest', { requestId: event.requestId });
     });
     await cdp.send('Fetch.enable', { patterns: [{ urlPattern: '*/api/mapping/workspace/records' }] });
-    await openMenu('a'); await click('.canvas-paste-menu button','Copy to canvas');
+    await openMenu('a'); await click('.canvas-transfer-menu button','Copy to canvas');
     await click('.mapping-transfer-picker button', 'New canvas');
     await click('.mapping-transfer-picker button','Copy diagrams');
     await waitFor(async()=>await evaluate(cdp, `document.querySelector('.mapping-transfer-picker [role=alert]')?.textContent.includes('Test write failure')`));
@@ -326,7 +326,7 @@ try {
     await waitForSelector(cdp, `${visible} [data-grid-box="a"]`);
     // Existing destinations can be chosen before they have been opened.
     await double('a'); await double('b',2); await selected(['a','b']);
-    await openMenu('a'); await click('.canvas-paste-menu button','Copy to canvas');
+    await openMenu('a'); await click('.canvas-transfer-menu button','Copy to canvas');
     await click('[data-project-diagram="representation-existing"]');
     await waitFor(async()=>await evaluate(cdp, `document.querySelector('[aria-label="Diagram name"]').value==='Existing canvas'`));
     let existingWorkspace = await persisted(w => w?.transfers?.at(-1)?.destinationId === 'representation-existing');
@@ -344,7 +344,7 @@ try {
     assert.ok(!existing.hidden); assert.deepEqual(existing.document.scene,persistedExistingScene);
     await waitForSelector(cdp, `${visible} [data-grid-box="c"]`);
     await double('a'); await double('b',2); await selected(['a','b']);
-    await openMenu('a'); await click('.canvas-paste-menu button','Move to canvas');
+    await openMenu('a'); await click('.canvas-transfer-menu button','Move to canvas');
     await click('[data-project-diagram="representation-existing"]');
     await waitFor(async()=>await evaluate(cdp, `document.querySelector('[aria-label="Diagram name"]').value==='Existing canvas'`));
     existingWorkspace = await persisted(w => w?.transfers?.at(-1)?.mode==='move' && w?.transfers?.at(-1)?.destinationCreated===false);

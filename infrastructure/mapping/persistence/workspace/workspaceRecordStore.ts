@@ -44,6 +44,25 @@ export class WorkspaceRecordStore {
     if (Object.keys(records).length) validateRecordUpdate(records, Object.keys(records), projectId, historyValidation);
     return this.cached = { raw, manifest, records, historyValidation };
   }
+  /** Pin immutable references from one manifest; only hydrate the selected current checkpoint. */
+  async capture(projectId: string, documentId: string, checkpointId: string, version: number) {
+    const manifest = JSON.parse(await readFile(this.file, 'utf8')) as Manifest;
+    if (manifest.projectId !== projectId) throw Error('Workspace belongs to another project');
+    const prefix = `document/${encodeURIComponent(documentId)}/`;
+    const read = async (key: string) => {
+      const id = manifest.records[prefix + key];
+      if (!id || !/^[a-f0-9]{64}$/.test(id)) throw Error('WORKSPACE_UNAVAILABLE: checkpoint is not persisted');
+      const text = await readFile(path.join(this.root, 'workspace-records', id + '.json'), 'utf8');
+      if (hash(text) !== id) throw Error('Workspace record integrity failure');
+      return JSON.parse(text);
+    };
+    const [header, metadata, head] = await Promise.all([read('history'), read('metadata'), read('checkpoint/' + checkpointId)]);
+    if (header.headId !== checkpointId || metadata.version !== version) throw Error('VERSION_CONFLICT: canvas changed while saving');
+    const revisions = Object.fromEntries(await Promise.all([...new Set(Object.values(head.diagramBindings) as string[])].map(async id => [id, await read('revision/' + id)])));
+    const refs = (kind: string) => Object.fromEntries(Object.entries(manifest.records).filter(([key]) => key.startsWith(prefix + kind + '/'))
+      .map(([key, id]) => [key.slice((prefix + kind + '/').length), { $diagramRecord: 'workspace', id }]));
+    return { header, head, revisions, metadata, stored: { ...header, workspaceRecords: { checkpoints: refs('checkpoint'), revisions: refs('revision') } } };
+  }
   async load(projectId: string): Promise<MappingWorkspaceSnapshot | undefined> {
     const state = await this.read(projectId); return state ? recordsWorkspace(state.records)! : undefined;
   }

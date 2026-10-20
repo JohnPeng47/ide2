@@ -1,4 +1,8 @@
-import { CanvasTreemapPanel } from './treemap/CanvasTreemapPanel';
+import { currentCanvasRead } from '../../../domain/mapping/agent/currentCanvasRead';
+import { useWindowPanelHotkeys } from './window-panel/windowPanelHotkeys';
+import type { ChatTabCommand } from './agent-chat/chatTabs';
+import { CanvasTreemapContent } from './treemap/CanvasTreemapContent';
+import { ChangeTreemapContent } from './changes/ChangeTreemapContent';
 import { CanvasTreemapColors } from './treemap/CanvasTreemapColors';
 import type { TreemapDiagramColor } from './changes/treemapDiagramColors';
 import type { TreemapCanvasColors } from './changes/treemapDiagramColors';
@@ -31,7 +35,7 @@ import { MappingServicesContext, useMappingServices, type MappingServices } from
 import { reconcileWorkspaceDocument } from '../../../domain/mapping/workspace/reconcileWorkspace';
 import { historyFromRevision, documentFromRevision } from '../../../domain/core/diagrams/projectDiagramCanvas';
 import { UiTestFramework } from "@new-diagram/ui-test-framework";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DiagramSearchService, type SearchDocument } from './search/diagramSearchService';
 import type { DiagramLineSearchResult } from '../../../domain/mapping/search/diagramSearch';
 import { findBox } from '../../../domain/mapping/workspace/canvasDisplayNode';
@@ -59,9 +63,11 @@ import { SourcePaneDocumentActiveContext, SourcePaneDocumentContext, SourcePaneV
 import { SourceWindowPanel } from './source-pane/SourceWindowPanel';
 import { FloatingPane } from "./workspace/FloatingPane";
 import { MappingDiagramExplorer } from "./workspace/MappingDiagramExplorer";
-import { deleteMappingProjectDiagram, saveMappingProjectDiagram } from "./workspace/mappingProjectApi";
+import { deleteMappingProjectDiagram, saveMappingProjectDiagram, publishMappingCheckpoint } from "./workspace/mappingProjectApi";
 import { MappingSubmenu } from "./workspace/MappingSubmenu";
 import { WorkspaceStorage } from './workspace/workspaceStorage';
+
+const AgentChatPanel = lazy(() => import('./agent-chat/AgentChatPanel').then(module => ({ default: module.AgentChatPanel })));
 
 const LOCAL_CHAT_UI_CONTROLS = {
   variant: {
@@ -93,13 +99,14 @@ function MappingWorkspacePage() {
   const [pendingTransfer, setPendingTransfer] = useState<{ sourceId: string; mode: 'copy' | 'move'; selectedIds: string[]; revisionId: string }>();
   const [explorerTab, setExplorerTab] = useState<'diagrams'|'changes'|'llms'>('diagrams');
   const [changeMode, setChangeMode] = useState<DisplayModeChange>();
-  const [canvasTreemapOpen, setCanvasTreemapOpen] = useState(false);
   const [liveTreemapColors, setLiveTreemapColors] = useState<readonly TreemapDiagramColor[]>();
   const [treemapCanvasColors, setTreemapCanvasColors] = useState<TreemapCanvasColors>();
+  const [toolTreemapColors, setToolTreemapColors] = useState<TreemapCanvasColors>();
   const [diffTreeMode, setDiffTreeMode] = useState<DisplayModeChange>();
 
   const selectChangeMode = (mode: DisplayModeChange) => {
-    if (mode.view === 'diff-tree' || mode.view === 'treemaps') { setDiffTreeMode(mode); }
+    if (mode.view === 'diff-tree') { setDiffTreeMode(mode); }
+    if (mode.view === 'treemaps') { setToolTab('treemaps'); setToolsOpen(true); }
     setChangeMode({ ...mode, view: undefined });
   };
   const [workspaceEpoch, setWorkspaceEpoch] = useState(0);
@@ -117,7 +124,10 @@ function MappingWorkspacePage() {
   const carried = useStore(prompts.store, state => state.carried);
   const { entries: llmEntries, activeKey: activeLlm } = useStore(prompts.store);
   const [toolsOpen, setToolsOpen] = useState(false);
-  const [toolTab, setToolTab] = useState<'search' | 'llm'>('search');
+  const [agentChatMounted, setAgentChatMounted] = useState(false);
+  const [toolTab, setToolTab] = useState<'search' | 'llm' | 'chat' | 'treemaps'>('search');
+  const treemapsVisible = toolsOpen && toolTab === 'treemaps' && !pendingTransfer;
+  const reviewTreemapColors = treemapsVisible ? toolTreemapColors : treemapCanvasColors;
   const closeTools = () => {
     setToolsOpen(false);
     document.querySelector<HTMLElement>('.mapping-document-view:not([hidden]) .mapping-poc-graph-stage')?.focus({ preventScroll: true });
@@ -151,6 +161,12 @@ function MappingWorkspacePage() {
   const [newAscii, setNewAscii] = useState("[New diagram]");
   const [copyCurrent, setCopyCurrent] = useState(false);
   const active = activeId ? drafts[activeId] : undefined;
+  const copyChatDiagram = useCallback((ascii: string) => {
+    const draft = activeId ? workspace.store.getState().drafts[activeId] : undefined;
+    if (!draft || draft.hidden) throw new Error('Open a live canvas to paste a diagram.');
+    if (workspaceBusy || transferBusy.current || draft.busy) throw new Error('Wait for the canvas operation to finish, then copy again.');
+    draft.session.cursorCopy.stage(ascii);
+  }, [activeId, workspace, workspaceBusy]);
   const revealedLlmRuns = useRef(new Set<string>());
   useEffect(() => {
     const entry = activeLlm ? llmEntries[activeLlm] : undefined, run = entry?.run;
@@ -188,6 +204,8 @@ function MappingWorkspacePage() {
   const [proposalSearchDocument, setProposalSearchDocument] = useState<SearchDocument>();
   const [proposalSearchFocus, setProposalSearchFocus] = useState<{ documentId: string; focus: DiagramFocus }>();
   const [searchOpenRequest, setSearchOpenRequest] = useState(0);
+  const [projectSearchRequest, setProjectSearchRequest] = useState(0);
+  const [chatTabCommand, setChatTabCommand] = useState<ChatTabCommand>();
   const [searchMatches, setSearchMatches] = useState<readonly DiagramLineSearchResult[]>([]);
   const searchMatchesByDocument = useMemo(() => {
     const grouped = new Map<string, DiagramLineSearchResult[]>();
@@ -225,6 +243,7 @@ function MappingWorkspacePage() {
   }, [drafts, snapshot?.catalog, proposalSearchDocument, proposalSearchId]);
   useEffect(() => { search.sync(searchDocuments); }, [search, searchDocuments]);
   useEffect(() => () => search.dispose(), [search]);
+  const publicationCaptures = useRef(new Map<string, { savedScene: string; savedEdges: string; name: string }>());
   const appliedRequests = useRef(new Map<string, unknown>());
   const [revisionReceiver] = useState(() => new DiagramRevisionReceiver());
   const waitController = async (id: string) => {
@@ -273,8 +292,37 @@ function MappingWorkspacePage() {
       return { version: snapshot.version, name: draft.name, nodes: controller.nodes(), edges: structuredClone(snapshot.document.edges) };
     }
     if (command.method === 'document-state') return { document: controller.getSnapshot().document, name: draft.name };
-    if (command.method === 'snapshot') return { ...structuredClone(controller.getSnapshot()), history: controller.exportHistory(), name: draft.name, repositoryId: draft.repositoryId,
+    const identity = { documentId: id, version: controller.getSnapshot().version, name: draft.name, repositoryId: draft.repositoryId,
       representationId: draft.representationId ?? (id.startsWith('draft-') ? undefined : id), revisionId: draft.revisionId || undefined };
+    if (command.method === 'identity') return identity;
+    if (command.method === 'checkpoint') {
+      const { expectedVersion, requestId } = command.payload as { expectedVersion: number; requestId: string };
+      const state = controller.getSnapshot();
+      if (state.version !== expectedVersion) throw Error('VERSION_CONFLICT: read the canvas again');
+      if (!persistence.current || !storage.records) throw Error('WORKSPACE_UNAVAILABLE');
+      const capture = { savedScene: JSON.stringify(state.document.scene), savedEdges: JSON.stringify(state.document.edges), name: draft.name };
+      persistence.current.sync([id]); await storage.flush();
+      if (controller.getSnapshot().version !== expectedVersion) throw Error('VERSION_CONFLICT: canvas changed while saving');
+      publicationCaptures.current.set(requestId, capture);
+      if (publicationCaptures.current.size > 32) publicationCaptures.current.delete(publicationCaptures.current.keys().next().value!);
+      return { ...identity, checkpointId: state.canvasRevisionId };
+    }
+    if (command.method === 'saved' && (command.payload as { receipt?: unknown }).receipt) {
+      const { receipt, requestId, name } = command.payload as { receipt: import('../../../domain/core/diagrams/checkpointPublication').CheckpointReceipt; requestId: string; name: string };
+      const capture = publicationCaptures.current.get(requestId);
+      if (!capture) throw Error('SAVE_DISPLAY_UNAVAILABLE: captured state expired');
+      setSnapshot(current => current?.catalog ? ({ ...current, catalog: { ...current.catalog, representations: { ...current.catalog.representations, [receipt.representation.id]: receipt.representation } } }) : current);
+      setDrafts(current => ({ ...current, [id]: { ...current[id], ...capture, savedName: name, name: current[id].name === capture.name ? name : current[id].name,
+        representationId: receipt.representation.id, repositoryId: receipt.representation.repositoryId, revisionId: receipt.revisionId } }));
+      return { updated: true };
+    }
+    if (command.method === 'read') return { ...identity, ...currentCanvasRead(controller.getSnapshot(), command.payload as { level: 'small' | 'full'; nodeIds?: string[] }) };
+    if (command.method === 'snapshot') {
+      const options = command.payload as { revisionIds?: string[]; currentRevisions?: boolean } | undefined;
+      const state = controller.getSnapshot();
+      const ids = [...(options?.revisionIds ?? []), ...(options?.currentRevisions ? Object.values(state.document.scene.contents).map(diagram => diagram.revisionId) : [])];
+      return { ...structuredClone(state), ...identity, ...(ids.length ? { revisions: controller.exportRevisions(ids, true) } : {}) };
+    }
     if (command.method === 'apply-diagram-revision') {
       if (workspaceBusy || draft.busy) throw new Error('WORKSPACE_BUSY');
       if (!persistence.current || !storage.records) throw Error('WORKSPACE_UNAVAILABLE: persistence is not ready');
@@ -299,11 +347,12 @@ function MappingWorkspacePage() {
       return result;
     }
     if (command.method === 'apply') {
-      const { requestId, expectedVersion, operations } = command.payload as { requestId: string; expectedVersion: number; operations: DiagramOperation[] };
+      const { requestId, expectedVersion, operations, resultNodeIds } = command.payload as { requestId: string; expectedVersion: number; operations: DiagramOperation[]; resultNodeIds?: string[] };
       const key = `${id}:${requestId}`;
       if (appliedRequests.current.has(key)) return appliedRequests.current.get(key);
       if (draft.busy) throw new Error('DOCUMENT_BUSY');
-      const result = controller.applyUpdate(expectedVersion, operations);
+      const applied = controller.applyUpdate(expectedVersion, operations);
+      const result = { ...applied, nodes: resultNodeIds ? applied.nodes.filter(node => resultNodeIds.includes(node.id)) : applied.nodes };
       appliedRequests.current.set(key, result);
       return result;
     }
@@ -316,7 +365,8 @@ function MappingWorkspacePage() {
     return { updated: true };
   };
   const { canvasId, agentStatus } = useAgentCanvasBridge({ projectId: snapshot?.project?.id, documents: Object.entries(drafts).filter(([, draft]) => !draft.hidden).map(([documentId, draft]) => ({ documentId, name: draft.name, repositoryId: draft.repositoryId,
-    representationId: draft.representationId ?? (documentId.startsWith('draft-') ? undefined : documentId) })) }, handleAgentCommand, workspace);
+    representationId: draft.representationId ?? (documentId.startsWith('draft-') ? undefined : documentId) })) }, handleAgentCommand, workspace,
+    () => !workspaceBusy && !transferBusy.current);
   const draftAliases = new Set(Object.entries(drafts).map(([id, draft]) => draft.representationId ?? id));
   const diagrams = [...Object.values(snapshot?.catalog?.representations ?? {}).filter(diagram => diagram.status === 'settled' && !draftAliases.has(diagram.id)),
     ...Object.entries(drafts).filter(([, draft]) => !draft.hidden).map(([id, draft]) => ({ id: draft.representationId ?? id, name: draft.name, repositoryId: draft.repositoryId }))];
@@ -342,6 +392,21 @@ function MappingWorkspacePage() {
     }
     setError("");
     return id;
+  };
+
+  const jumpToHighlight = async (target: import('../../../domain/mapping/agent-chat/highlightReference').HighlightReference) => {
+    const id = drafts[target.documentId] ? target.documentId : open(target.documentId);
+    if (!id) throw new Error('The highlighted canvas is no longer available.');
+    setChangeMode(undefined); setActiveId(id);
+    const controller = await waitController(id);
+    const node = controller.nodes().find(node => node.id === target.nodeId);
+    const highlight = node?.layout === 'grid' && node.diagram?.highlights?.find(item => item.id === target.highlightId);
+    if (!highlight) throw new Error('This highlight was removed or is no longer available.');
+    if (highlight.contentNodeId && (node?.layout !== 'grid' || !node.contentNodes?.some(item => item.id === highlight.contentNodeId)))
+      throw new Error('The highlighted node changed. Ask the agent to refresh the highlight.');
+    setError('');
+    setDrafts(current => ({ ...current, [id]: { ...current[id], focusBox: { id: target.nodeId.slice(5),
+      contentNodeId: highlight.contentNodeId, serial: (current[id].focusBox?.serial ?? 0) + 1 } } }));
   };
 
   const jumpTo = async (target: DiagramJumpTarget) => {
@@ -652,12 +717,16 @@ function MappingWorkspacePage() {
   const save = async () => {
     if (!activeId || !active || active.busy || savingId || deletingId || workspaceBusy) return;
     const id = activeId;
-    const captured = { ...active, document: documentOf(active), history: active.session.controller.exportHistory() };
+    const captured = { ...active, document: documentOf(active), state: active.session.controller.getSnapshot() };
     setSavingId(id); setError("");
     try {
-      const result = await saveMappingProjectDiagram({ projectId: snapshot?.project?.id, repositoryId: captured.repositoryId, representationId: captured.representationId ?? (id.startsWith('draft-') ? undefined : id),
-        history: captured.history, expectedRevisionId: captured.revisionId, name: captured.name, scene: captured.document.scene, edges: captured.document.edges });
-      setSnapshot(result);
+      if (!persistence.current || !storage.records) throw Error('WORKSPACE_UNAVAILABLE');
+      persistence.current.sync([id]); await storage.flush();
+      if (captured.session.controller.getSnapshot().version !== captured.state.version) throw Error('VERSION_CONFLICT: canvas changed while saving');
+      const result = await publishMappingCheckpoint({ documentId: id, checkpointId: captured.state.canvasRevisionId,
+        expectedVersion: captured.state.version, requestId: crypto.randomUUID(), repositoryId: captured.repositoryId,
+        representationId: captured.representationId ?? (id.startsWith('draft-') ? undefined : id), expectedRevisionId: captured.revisionId, name: captured.name });
+      setSnapshot(current => current?.catalog ? ({ ...current, catalog: { ...current.catalog, representations: { ...current.catalog.representations, [result.representation.id]: result.representation } } }) : current);
       setDrafts((current) => ({ ...current, [id]: { ...current[id], savedName: captured.name.trim(),
         name: current[id].name === captured.name ? captured.name.trim() : current[id].name,
         representationId: result.representation.id, repositoryId: result.representation.repositoryId, savedScene: JSON.stringify(captured.document.scene), savedEdges: JSON.stringify(captured.document.edges), revisionId: result.representation.currentRevisionId } }));
@@ -804,6 +873,33 @@ function MappingWorkspacePage() {
     const node = active.session.controller.nodes().find(node => node.layout === 'grid' && node.kind === 'diagram');
     openComposer(activeId, node?.id ?? 'canvas', 'create-diagram', true);
   };
+  const prefixPending = useWindowPanelHotkeys(command => {
+    if (pendingTransfer || workspaceBusy) return;
+    if (command === 'toggle-panel') {
+      if (toolsOpen) closeTools();
+      else {
+        setToolsOpen(true);
+        if (toolTab === 'chat') setChatTabCommand(previous => ({ serial: (previous?.serial ?? 0) + 1, action: 'focus' }));
+      }
+    } else if (command === 'search-canvas' || command === 'search-project') {
+      setToolsOpen(true); setToolTab('search');
+      if (command === 'search-project') setProjectSearchRequest(value => value + 1);
+      else setSearchOpenRequest(value => value + 1);
+    } else if (command === 'llm') {
+      if (!activeId || !active || changeMode) { setToolsOpen(true); setToolTab('llm'); return; }
+      const item = active.session.controller.getSnapshot().canvas.selection.items.at(-1);
+      if (item) openComposer(activeId, item.displayNodeId, capturedSelection(activeId).subtree ? 'edit-diagram' : 'create-diagram', true);
+      else {
+        const key = prompts.store.getState().activeKey, entry = key && prompts.store.getState().entries[key];
+        if (entry && entry.target.documentId === activeId) { prompts.syncSelections(activeId, capturedSelection(activeId).selections); setToolsOpen(true); setToolTab('llm'); setExplorerTab('llms'); }
+        else newLlm();
+      }
+    } else {
+      setAgentChatMounted(true); setToolsOpen(true); setToolTab('chat');
+      setChatTabCommand(previous => ({ serial: (previous?.serial ?? 0) + 1,
+        action: command === 'new-chat' ? 'new' : command === 'previous-chat' ? 'previous' : command === 'next-chat' ? 'next' : 'focus' }));
+    }
+  });
   /** Copy goes to the clipboard; insert goes into the open composer, or opens an edit prompt for this diagram. */
   const shareReferences = (documentId: string, references: PromptReference[], mode: 'copy' | 'insert', nodeId: string) => {
     const count = `${references.length} reference${references.length === 1 ? '' : 's'}`;
@@ -832,9 +928,8 @@ function MappingWorkspacePage() {
     } catch (error) { setError(error instanceof Error ? error.message : String(error)); }
   } } : undefined, [carried, activeId]);
 
-  return <SourcePaneViewStateContext.Provider value={viewState}><UiTestFramework id="mapping-local-chat" title="Local chat variants" controls={LOCAL_CHAT_UI_CONTROLS}>
-    {(ui) => <main className="mapping-poc-shell" data-local-chat-variant={ui.variant}>
-      <header className="workspace-header mapping-poc-header" inert={!!pendingTransfer}>
+  const workspaceMenu = <>
+      <div className="mapping-menu-content" inert={!!pendingTransfer}>
         {!changeMode && <MappingSubmenu projectName={snapshot?.project?.name ?? "Project"} name={active?.name ?? ""}
           status={savingId ? "Saving…" : active?.busy ? "Editing…" : active ? dirty(active) ? "Unsaved changes" : "Saved" : ""}
           canSave={Boolean(active?.name.trim() && active && dirty(active) && !active.busy && !savingId && !deletingId && !workspaceBusy)}
@@ -848,7 +943,7 @@ function MappingWorkspacePage() {
             {!agentStatus.connected ? 'Agents unavailable' : agentStatus.count
               ? `${agentStatus.count} agent${agentStatus.count === 1 ? '' : 's'} connected` : 'No agents connected'}
           </span>
-          <button disabled={!active} aria-pressed={canvasTreemapOpen} onClick={() => setCanvasTreemapOpen(value => !value)}>Treemaps</button>
+          <button disabled={!active && !changeMode} aria-pressed={treemapsVisible} onClick={() => { setToolTab('treemaps'); setToolsOpen(true); }}>Treemaps</button>
           <button disabled={workspaceBusy || Boolean(deletingId) || !active || Object.values(drafts).some(draft => draft.busy)} onClick={() => void workspaceAction('save')}>Save workspace</button>
           <button disabled={workspaceBusy || Boolean(deletingId) || Object.values(drafts).some(draft => draft.busy)} onClick={() => void workspaceAction('restore')}>Restore workspace</button>
           <button disabled={workspaceBusy || !active} onClick={() => void workspaceAction('export')}>Export</button>
@@ -861,22 +956,18 @@ function MappingWorkspacePage() {
         <nav className="screen-tabs" aria-label="Application pages">
           <button type="button" className="is-active" aria-current="page">MAPPING</button>
         </nav>
-      </header>
+      </div>
+      <p className="mapping-menu-status">{active?.newerRevision ? "A newer saved revision is available. Your local edits were preserved." : workspaceStatus}</p>
+    </>;
+  return <SourcePaneViewStateContext.Provider value={viewState}><UiTestFramework id="mapping-local-chat" title="Menu" triggerLabel="Menu" menuContent={workspaceMenu} controls={LOCAL_CHAT_UI_CONTROLS}>
+    {(ui) => <main className="mapping-poc-shell" data-local-chat-variant={ui.variant}>
       <section className="mapping-poc-workspace">
         <div className="mapping-viewport">
           {Object.entries(drafts).filter(([id]) => mountedDocuments.current.has(id)).map(([id, draft]) => <SourcePaneDocumentContext.Provider key={`${workspaceEpoch}:${id}:${draft.reloadKey ?? ''}`} value={id}><SourcePaneDocumentActiveContext.Provider value={id === activeId && !changeMode}><div className="mapping-document-view" inert={!!pendingTransfer || workspaceBusy} hidden={draft.hidden || id !== activeId || !!changeMode}>
-            <CanvasTreemapColors.Provider value={canvasTreemapOpen && id === activeId && !changeMode ? liveTreemapColors : undefined}>
+            <CanvasTreemapColors.Provider value={treemapsVisible && id === activeId && !changeMode ? liveTreemapColors : undefined}>
             <MappingEditorCanvas session={draft.session} className="mapping-poc-canvas" enabled={id === activeId && !draft.hidden && !changeMode} focusBox={draft.focusBox}
               initialTransform={draft.viewport} onTransformChange={viewport => viewState.setCamera(id, viewport)}>
               <MappingPocSelectionCanvas onUpdateDiagram={nodeId => { openComposer(id, nodeId, capturedSelection(id).subtree ? 'edit-diagram' : 'create-diagram', true); }}
-                onOpenLlm={() => {
-                  const key = prompts.store.getState().activeKey;
-                  const entry = key && prompts.store.getState().entries[key];
-                  if (entry && entry.target.documentId === id) {
-                    prompts.syncSelections(id, capturedSelection(id).selections);
-                    setToolsOpen(true); setToolTab('llm'); setExplorerTab('llms');
-                  } else newLlm();
-                }}
                 onSelectionChange={() => selectionChanged(id)}
                 extension={toolsOpen && toolTab === 'llm' && activeLlm && llmEntries[activeLlm]?.target.documentId === id && llmEntries[activeLlm].target.operation === 'extend-diagram'
                   ? { key: activeLlm, disabled: composerUnsettled(llmEntries[activeLlm]), origin: llmEntries[activeLlm].target.origin, onPlace: point => prompts.setTarget(activeLlm, { origin: point }) } : undefined}
@@ -895,13 +986,8 @@ function MappingWorkspacePage() {
           </div></SourcePaneDocumentActiveContext.Provider></SourcePaneDocumentContext.Provider>)}
           {!active && !changeMode && <div className="mapping-empty"><h1>{snapshot ? "Create a project diagram" : error ? "Could not load project diagrams" : "Loading project diagrams…"}</h1>
             {snapshot && <button type="button" onClick={() => setCreating(true)}>New diagram</button>}</div>}
-          {canvasTreemapOpen && !changeMode && active && activeId && snapshot?.project && <CanvasTreemapPanel key={activeId}
-            documentId={activeId} projectId={snapshot.project.id} name={active.name} session={active.session}
-            onClose={() => setCanvasTreemapOpen(false)} onCanvasColors={setLiveTreemapColors}
-            onNavigate={target => { if (target.displayNodeId?.startsWith('grid:')) setDrafts(current => ({ ...current, [activeId]: { ...current[activeId],
-              focusBox: { id: target.displayNodeId!.slice(5), contentNodeId: target.contentNodeId, serial: Date.now() } } })); }} />}
           {changeMode && <ChangeSessionPreview mode={changeMode} onSelect={selectChangeMode} onOpenAccepted={openAccepted}
-              treemapColors={treemapCanvasColors?.sessionId === changeMode?.sessionId ? treemapCanvasColors?.diagrams : undefined}
+              treemapColors={reviewTreemapColors?.sessionId === changeMode?.sessionId ? reviewTreemapColors?.diagrams : undefined}
               onSearchDocument={onProposalSearchDocument} searchFocus={proposalSearchFocus && proposalSearchFocus.documentId === proposalSearchId ? proposalSearchFocus.focus : undefined}
               searchMatches={proposalSearchId ? searchMatchesByDocument.get(proposalSearchId) : undefined} />}
           {diffTreeMode && <DiffTreePanel key={diffTreeMode.sessionId} mode={diffTreeMode} onCanvasColors={setTreemapCanvasColors}
@@ -909,20 +995,38 @@ function MappingWorkspacePage() {
               revealCanvasSerial={proposalSearchFocus?.documentId === proposalSearchId ? proposalSearchFocus?.focus.serial : undefined}
               onClose={() => { setDiffTreeMode(undefined); }} onNavigate={setChangeMode}
               canvas={changeMode?.documentId ? <ChangeSessionPreview compact mode={changeMode} onSelect={selectChangeMode} onOpenAccepted={openAccepted}
-                treemapColors={treemapCanvasColors?.sessionId === changeMode?.sessionId ? treemapCanvasColors?.diagrams : undefined}
+                treemapColors={reviewTreemapColors?.sessionId === changeMode?.sessionId ? reviewTreemapColors?.diagrams : undefined}
                 searchFocus={proposalSearchFocus?.documentId === proposalSearchId ? proposalSearchFocus?.focus : undefined}
                 searchMatches={proposalSearchId ? searchMatchesByDocument.get(proposalSearchId) : undefined} />
                 : <p className="window-panel-message">Select a canvas in the explorer.</p>} />}
+          {prefixPending && <div className="window-panel-prefix-hint" role="status">Ctrl+B · B Hide/reopen panel · F Search · Shift+F Project · L LLM · A Chat · C New chat · PgUp/PgDn Tabs</div>}
           {!pendingTransfer && <>
             {!toolsOpen && !diffTreeMode && <button className="workspace-tools-open" aria-label="Search diagrams" onClick={() => { setToolTab('search'); setToolsOpen(true); }}>Search</button>}
             <div hidden={!toolsOpen}>
-              <WindowPanel title="Workspace tools" activeTab={toolTab} onTabChange={setToolTab} onClose={closeTools} tabs={[
-                { id: 'search', title: 'Search', content: <DiagramSearchPanel embedded openRequest={searchOpenRequest} visible={toolsOpen && toolTab === 'search'}
+              <WindowPanel title="Workspace tools" sizeStorageKey="workspace-tools" compact={toolTab === 'chat'} activeTab={toolTab} onTabChange={tab => {
+                setToolTab(tab); if (tab === 'chat') setAgentChatMounted(true);
+              }} onClose={closeTools} tabs={[
+                { id: 'search', title: 'Search', content: <DiagramSearchPanel embedded openRequest={searchOpenRequest} openProjectRequest={projectSearchRequest} visible={toolsOpen && toolTab === 'search'}
                   onOpen={() => { setToolTab('search'); setToolsOpen(true); }} onClose={closeTools}
                   service={search} activeDocumentId={proposalSearchId ?? activeId}
                   activeName={changeMode ? proposalSearchDocument?.name : active?.name}
                   onReveal={revealSearchResult} onClear={clearSearchFocus} onMatches={setSearchMatches} /> },
-                { id: 'llm', title: 'LLM', content: <PromptComposer coordinator={prompts} revisions={revisionSource} /> }
+                { id: 'treemaps', title: 'Treemaps', content: treemapsVisible && (changeMode
+                  ? <ChangeTreemapContent key={changeMode.sessionId} mode={changeMode} onNavigate={setChangeMode} onCanvasColors={setToolTreemapColors} />
+                  : active && activeId && snapshot?.project
+                    ? <CanvasTreemapContent key={activeId} documentId={activeId} projectId={snapshot.project.id} session={active.session}
+                      onCanvasColors={setLiveTreemapColors} onNavigate={target => {
+                        if (target.displayNodeId?.startsWith('grid:')) setDrafts(current => ({ ...current, [activeId]: { ...current[activeId],
+                          focusBox: { id: target.displayNodeId!.slice(5), contentNodeId: target.contentNodeId, serial: Date.now() } } }));
+                      }} />
+                    : <p className="window-panel-message">Open a canvas or DiffSession to view treemaps.</p>) },
+                { id: 'llm', title: 'LLM', content: <PromptComposer coordinator={prompts} revisions={revisionSource} /> },
+                { id: 'chat', title: 'Agent Chat', content: agentChatMounted && <Suspense fallback={<p className="window-panel-message">Loading Agent Chat…</p>}>
+                  <AgentChatPanel onHighlightReference={jumpToHighlight} tabCommand={chatTabCommand} open={toolsOpen && toolTab === 'chat'} projectId={snapshot?.project?.id}
+                    referenceCanvas={!changeMode && active && !active.hidden && activeId ? { session: active.session, target: { workspaceInstanceId: canvasId, documentId: activeId }, name: active.name } : undefined}
+                    onCopyDiagram={!changeMode && active && !active.hidden ? copyChatDiagram : undefined}
+                    canvasTarget={!changeMode && active && activeId ? { workspaceInstanceId: canvasId, documentId: activeId } : undefined} />
+                </Suspense> }
               ]} />
             </div>
           </>}
@@ -947,8 +1051,6 @@ function MappingWorkspacePage() {
               [activeId]: { ...current[activeId], focusBox: { id, serial: (current[activeId].focusBox?.serial ?? 0) + 1 } } })); }} /></FloatingPane>
           {workspaceBusy && <div className="mapping-transfer-busy" role="status" aria-live="polite"><div><strong>{transferProgress || 'Saving workspace…'}</strong><p>Keep this page open while the operation finishes.</p></div></div>}
         </div>
-        <footer className="mapping-poc-status"><span>{active?.name ?? "PROJECT DIAGRAMS"}</span>
-          <span>{active?.newerRevision ? 'A newer saved revision is available. Your local edits were preserved.' : workspaceStatus || 'Drag boxes to move · Ctrl-drag selects regions · Space or middle-drag pans · Actions (A) opens selection actions'}</span></footer>
       </section>
       {creating && <div className="mapping-dialog-backdrop"><form className="mapping-create-dialog" role="dialog" aria-modal="true" aria-label="New project diagram"
         onKeyDown={(event) => {

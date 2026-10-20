@@ -1,0 +1,30 @@
+import { expect, it } from 'vitest';
+import { singleDiagramScene } from '../../../../domain/core/diagrams/projectDiagramCanvas';
+import { RevisionedDiagramService } from '../../../../domain/core/diagrams/diagramService';
+import { diagramContentNodes } from '../../../../domain/core/diagrams/diagramContentNodes';
+import { MappingDocumentController } from '../../../../domain/mapping/workspace/mappingDocumentController';
+import { initialCanvasState } from '../../../../domain/mapping/workspace/mappingWorkspace';
+import { regionSelectionItem } from '../../../../domain/mapping/selection/selectionState';
+import { captureChatReferences } from './ChatReferences';
+
+it('captures whole diagrams and exact node membership, omitting holes and stale regions', () => {
+  const ascii = 'Root\n|-- Service\n|   `-- Worker\n`-- Other  ';
+  const scene = singleDiagramScene(ascii);
+  const diagram = new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii, structureKind: 'tree' }).diagram;
+  scene.contents = { ...scene.contents, overview: diagram };
+  const controller = new MappingDocumentController({ scene, edges: [], sections: {} }, initialCanvasState());
+  const target = { workspaceInstanceId: 'workspace', documentId: 'doc' };
+  const capture = () => captureChatReferences(controller.getSnapshot(), target, 'Services');
+  controller.select({ type: 'toggleDiagram', displayNodeId: 'grid:overview' });
+  expect(capture()[0].value).toMatchObject({ canvas: target, displayNodeId: 'grid:overview', reference: { kind: 'diagram', revisionId: diagram.revisionId }, ascii });
+  const region = regionSelectionItem(diagram, 'overview', { startLine: 2, endLine: 3, startColumn: 1, endColumn: 30 });
+  const service = diagramContentNodes(diagram.content).find(node => node.label === 'Service')!;
+  controller.select({ type: 'replace', items: [{ ...region, region: { ...region.region!, contentNodeIds: [service.id] } }] });
+  const pinned = capture()[0].value;
+  expect(pinned.reference).toMatchObject({ kind: 'nodes', nodeIds: [service.id], revisionId: diagram.revisionId });
+  expect(pinned.ascii).toContain('Service'); expect(pinned.ascii).not.toContain('Worker');
+  controller.select({ type: 'replace', items: [{ ...region, region: { ...region.region!, sourceAscii: 'Old content' } }] });
+  expect(capture()).toEqual([]);
+  expect(pinned.ascii).toContain('Service');
+  controller.select({ type: 'clear' }); expect(capture()).toEqual([]);
+});

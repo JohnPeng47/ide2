@@ -1,0 +1,62 @@
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { ChatSession } from '../../../../domain/mapping/agent-chat/agentChat';
+import { ChatStream } from './chatStream';
+const session: ChatSession = { id: 's', threadId: 't', title: '', cwd: '', createdAt: '', updatedAt: '', settings: { model: '', effort: '', sandbox: 'read-only' }, status: 'running', items: [], pending: [], requestIds: [] };
+afterEach(() => vi.useRealTimers());
+describe('chat stream scheduling', () => {
+  it('batches token bursts, immediately flushes completion, and does no publishing while hidden', () => {
+    vi.useFakeTimers();
+    const publish = vi.fn(), stream = new ChatStream(publish);
+    stream.setVisible(true); stream.receive({ type: 'snapshot', session }); publish.mockClear();
+    for (let i = 0; i < 200; i++) stream.receive({ type: 'delta', id: 'a', kind: 'assistant', text: 'x' });
+    expect(publish).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(50);
+    expect(publish).toHaveBeenCalledTimes(1);
+    expect(publish.mock.calls[0][0].items[0].text).toHaveLength(200);
+    stream.setVisible(false); publish.mockClear();
+    for (let i = 0; i < 500; i++) stream.receive({ type: 'delta', id: 'a', kind: 'assistant', text: 'y' });
+    vi.advanceTimersByTime(1000);
+    stream.receive({ type: 'state', patch: { status: 'idle' } });
+    expect(publish).not.toHaveBeenCalled();
+    stream.setVisible(true);
+    expect(publish).toHaveBeenCalledTimes(1);
+    expect(publish.mock.calls[0][0].items[0].text).toHaveLength(700);
+    expect(publish.mock.calls[0][0].status).toBe('idle');
+    stream.dispose();
+  });
+  it('batches tool completion bursts while keeping approvals immediate', () => {
+    vi.useFakeTimers();
+    const publish = vi.fn(), stream = new ChatStream(publish);
+    stream.setVisible(true); stream.receive({ type: 'snapshot', session }); publish.mockClear();
+    for (let i = 0; i < 250; i++) stream.receive({ type: 'item', item: { id: String(i), kind: 'tool', text: 'output', status: 'completed' } });
+    expect(publish).not.toHaveBeenCalled();
+    stream.receive({ type: 'state', patch: { pending: [{ id: 'approval', kind: 'approval', title: 'Allow?', detail: '' }] } });
+    expect(publish).toHaveBeenCalledTimes(1);
+    expect(publish.mock.calls[0][0].items).toHaveLength(250);
+    stream.dispose();
+  });
+  it('publishes multipart snapshots atomically and replaces an incomplete snapshot on reconnect', () => {
+    const publish = vi.fn(), stream = new ChatStream(publish);
+    stream.setVisible(true);
+    stream.receive({ type: 'snapshot', session, partial: true });
+    stream.receive({ type: 'snapshot-part', items: [{ id: 'old', kind: 'assistant', text: 'old', status: 'completed' }], final: false });
+    expect(publish).not.toHaveBeenCalled();
+    stream.receive({ type: 'snapshot', session, partial: true });
+    stream.receive({ type: 'snapshot-part', items: [{ id: 'new', kind: 'assistant', text: 'new', status: 'completed' }], final: true });
+    expect(publish).toHaveBeenCalledTimes(1);
+    expect(publish.mock.calls[0][0].items.map((item: { id: string }) => item.id)).toEqual(['new']);
+    stream.dispose();
+  });
+  it('replaces buffered content on reconnect and cancels delivery after disposal', () => {
+    vi.useFakeTimers();
+    const publish = vi.fn(), stream = new ChatStream(publish);
+    stream.setVisible(true); stream.receive({ type: 'snapshot', session });
+    stream.receive({ type: 'delta', id: 'a', kind: 'assistant', text: 'stale' });
+    stream.receive({ type: 'snapshot', session: { ...session, status: 'idle' } });
+    vi.runAllTimers();
+    expect(publish.mock.calls.at(-1)?.[0].items).toEqual([]);
+    stream.receive({ type: 'delta', id: 'a', kind: 'assistant', text: 'discard' });
+    stream.dispose(); publish.mockClear(); vi.runAllTimers();
+    expect(publish).not.toHaveBeenCalled();
+  });
+});

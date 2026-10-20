@@ -219,11 +219,11 @@ export class ChangeSessionService {
     const context = await this.source.repositories?.resolveContext(input);
     const hunks = context ? await this.captureHunks(context) : [];
     const documents = new Map<string, ChangeSessionDocument>();
-    const catalog = await this.source.projectCatalogs.loadRepresentationCatalog(projectId);
+    const catalog = await (this.source.projectCatalogs.loadCurrentRepresentationCatalog?.(projectId) ?? this.source.projectCatalogs.loadRepresentationCatalog(projectId));
     for (const rep of Object.values(catalog.representations).filter(r => r.status === 'settled' && (!context || r.repositoryId === context.repositoryId))) {
       const revision = catalog.revisions[rep.currentRevisionId];
       const baseline = { document: documentFromRevision(revision), canvas: initialCanvasState() };
-      documents.set(rep.id, { id: rep.id, name: rep.name, repositoryId: rep.repositoryId, representationId: rep.id, savedRevisionId: revision.id, history: this.forkHistory(baseline, historyFromRevision(revision)),
+      documents.set(rep.id, { id: rep.id, name: rep.name, repositoryId: rep.repositoryId, representationId: rep.id, savedRevisionId: revision.id, history: this.forkHistory(baseline),
         baseline, proposed: structuredClone(baseline), version: 0, past: [], future: [] });
     }
     const live = this.bridge.list().filter(c => c.projectId === projectId && (!input.canvasId || c.canvasId === input.canvasId));
@@ -232,12 +232,13 @@ export class ChangeSessionService {
     for (const canvas of live) for (const doc of canvas.documents) {
       const saved = catalog.representations[doc.representationId ?? doc.documentId];
       if (context && (saved?.repositoryId ?? doc.repositoryId) !== context.repositoryId) continue;
-      const snapshot = await this.bridge.dispatch(canvas.canvasId, { method: 'snapshot', documentId: doc.documentId }) as LiveDocumentSnapshot;
+      const snapshot = await this.bridge.dispatch(canvas.canvasId, { method: 'snapshot', documentId: doc.documentId, payload: { currentRevisions: true } }) as LiveDocumentSnapshot;
       if (context && (saved?.repositoryId ?? snapshot.repositoryId ?? doc.repositoryId) !== context.repositoryId) throw Error('Canvas repository changed during capture');
+      for (const revision of snapshot.revisions ?? []) new RevisionedDiagramService().importRevision(revision);
       const baseline = structuredClone({ document: snapshot.document, canvas: snapshot.canvas });
       const key = snapshot.representationId ?? doc.representationId ?? doc.documentId;
       documents.set(key, { id: key, name: snapshot.name, repositoryId: saved?.repositoryId ?? snapshot.repositoryId ?? doc.repositoryId, representationId: snapshot.representationId ?? doc.representationId,
-        history: this.forkHistory(baseline, snapshot.history),
+        history: this.forkHistory(baseline),
         savedRevisionId: snapshot.revisionId, capturedVersion: snapshot.version, baseline, proposed: structuredClone(baseline), version: 0, past: [], future: [] });
     }
     return { projectId, context, hunks, documents: [...documents.values()] };
@@ -266,7 +267,7 @@ export class ChangeSessionService {
   async snapshot(id: string, documentId: string): Promise<LiveDocumentSnapshot> {
     const s = await this.get(id), doc = this.document(s, documentId);
     return { ...structuredClone(doc.proposed), name: doc.name, repositoryId: doc.repositoryId, representationId: doc.representationId, revisionId: doc.savedRevisionId,
-      version: doc.version, history: doc.history, contextId: doc.history?.contextId, canUndo: !!(doc.history?.past.length || doc.past.length), canRedo: !!(doc.history?.future.length || doc.future.length) } as LiveDocumentSnapshot;
+      version: doc.version, contextId: doc.history?.contextId, canUndo: !!(doc.history?.past.length || doc.past.length), canRedo: !!(doc.history?.future.length || doc.future.length) } as LiveDocumentSnapshot;
   }
   private async mutate<T>(id: string, requestId: string, signature: string, fn: (s: DiagramChangeSession) => T) {
     return this.serialize(id, async () => {

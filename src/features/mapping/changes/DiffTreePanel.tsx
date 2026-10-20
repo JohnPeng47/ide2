@@ -94,8 +94,8 @@ export function DiffTreePanel({ mode, canvas, revealCanvasSerial, revealNode, on
     if (destinations.length) jump(destinations[0].target, destinations[0].nodeId);
     else setNavigationError('This hunk has no mapped diagram destination.');
   };
-  return <WindowPanel<'tree' | 'hunks' | 'treemaps'> title={data ? `${data.title} · DiffTree` : 'DiffTree'}
-    actions={<button type="button" aria-label="Search diagrams" title="Find in proposal canvas (Ctrl+F)" onClick={onSearch}>Search</button>}
+  return <WindowPanel<'tree' | 'hunks' | 'treemaps'> title={data ? `${data.title} · DiffTree` : 'DiffTree'} sizeStorageKey={storageKey}
+    actions={<button type="button" aria-label="Search diagrams" title="Find in proposal canvas (Ctrl+B, F)" onClick={onSearch}>Search</button>}
     subtitle={data ? `${data.status} · HEAD ${data.head?.slice(0, 12) ?? 'unknown'} · ${data.commits?.length ?? 0} commits` : undefined}
     notice={(error || navigationError) && <p role="alert" className="window-panel-message">{error || navigationError}</p>}
     canvasId={mode.documentId} state={state} onChange={patch => setState(previous => ({ ...previous, ...patch }))} onClose={onClose} canvas={canvas}

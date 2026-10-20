@@ -66,7 +66,8 @@ try {
       await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key, code, windowsVirtualKeyCode });
     };
     const search = async (text, global = false) => {
-      await key('f', 'KeyF', 70, global ? 10 : 2);
+      await key('b', 'KeyB', 66, 2);
+      await key('f', 'KeyF', 70, global ? 8 : 0);
       await waitForSelector(cdp, '[aria-label="Search diagram text"]');
       await key('a', 'KeyA', 65, 2);
       await cdp.send('Input.insertText', { text });

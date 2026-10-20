@@ -1,3 +1,9 @@
+import { WorkspaceRecordStore } from '../../../infrastructure/mapping/persistence/workspace/workspaceRecordStore';
+import { MappingChatMcpBinding } from '../../../infrastructure/mapping/agent-chat/chatMcpBinding';
+import { AgentChatService } from '../../../application/mapping/agent-chat/agentChatService';
+import { ChatDiagramTools } from '../../../application/mapping/agent-chat/chatDiagramTools';
+import { StdioCodexConnection } from '../../../infrastructure/mapping/agent-chat/codexConnection';
+import { FileChatStore } from '../../../infrastructure/mapping/agent-chat/chatStore';
 import { CanvasApiProjection } from '../../../application/mapping/agent/apiProjection';
 import { AgentContextService } from '../../../application/mapping/agent/agentContextService';
 import { LiveCanvasService } from '../../../application/mapping/agent/liveCanvasService';
@@ -63,7 +69,7 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
   const core = createCoreApplication(store);
   const compactionService = createFileCompactionService(core, fake ? new FakeFileCompactionRuntime() : new PiFileCompactionRuntime(options.piEnabled === true));
   const languageService = options.lspEnabled === true ? new ProjectLanguageService() : undefined;
-  const diagrams = new MappingDiagramService(store, corpusAccess, projectRoot, configuredDomainProfileId);
+  const diagrams = new MappingDiagramService(store, corpusAccess, projectRoot, configuredDomainProfileId, new WorkspaceRecordStore(store.storeRoot));
   const canvasBridge = new CanvasSessionBridge();
   const agentContexts = new AgentContextService();
   const apiProjection = new CanvasApiProjection();
@@ -72,6 +78,7 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
   const changes = new ChangeSessionService(new DiagramChangeSessionStore(store.storeRoot, undefined, true), store, canvasBridge);
   const agent = new AgentDiagrammingSessionService(canvasBridge, diagrams, store, new QuickJsAgentRuntime(),
     changes, new RevisionedDiagramService(diagramEditRuntime), agentContexts, apiProjection);
+  const agentChat = new AgentChatService(new StdioCodexConnection(mappingPocSourceRoot, options.piEnabled === true), new FileChatStore(store.storeRoot), mappingPocSourceRoot, liveCanvas, new ChatDiagramTools(agent), new MappingChatMcpBinding(agent, process.cwd()));
   const diffSessionWorkflows = new DiffSessionWorkflowService(changes, agent, new PiDiffSessionRuntime(options.piEnabled === true),
     new FileDiffSessionRunStore(store.storeRoot), { enabled: options.piEnabled === true, sourceRoot: mappingPocSourceRoot,
       loadPrompts: loadDiffSessionPrompts, sourceReader: capture => createDiffSessionSourceReader(store.repositories, capture) });
@@ -83,7 +90,7 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
     }),
     mapping: createMappingRoutes({
       selection: new SelectionService(store, mappingRuntime, mappingPocSourceRoot),
-      diagrams, agent, liveCanvas, diffSessionWorkflows,
+      diagrams, agent, agentChat, liveCanvas, diffSessionWorkflows,
       workspace: new MappingWorkspaceService(store, new MappingWorkspaceStore(store.storeRoot, store.diagramPersistence)),
       chat: new LocalChatService(store, corpusAccess, chatRuntime, mappingPocSourceRoot),
       compactionService
@@ -91,6 +98,7 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
   };
   return {
     routes, liveCanvas, diffSessionWorkflows, dispose() {
+      agentChat.dispose();
       diffSessionWorkflows.dispose();
       agent.dispose(); diagramEditRuntime.dispose(); canvasBridge.dispose(); languageService?.dispose(); mappingRuntime.dispose(); chatRuntime.dispose(); compactionService.dispose();
     }

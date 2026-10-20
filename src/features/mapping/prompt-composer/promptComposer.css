@@ -69,7 +69,6 @@ body.is-placing-prompt-reference .mapping-viewport { cursor: copy; }
 .prompt-composer-footer { display: flex; align-items: center; gap: var(--space-4); }
 .prompt-composer-footer [type=submit] { margin-left: auto; }
 
-body.has-prompt-composer .mapping-diagram-selection-actions { display: none; }
 /* Narrow panes (minimized or split) stack the rail and list under the main column. */
 @container (max-width: 760px) {
   .prompt-composer-layout, .prompt-revisions { flex-direction: column; }

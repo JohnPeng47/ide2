@@ -14,7 +14,7 @@ import { findBox } from '../../../domain/mapping/workspace/canvasDisplayNode';
 import { diagramSelectionNodes } from '../../../domain/mapping/workspace/mappingDocument';
 
 export interface DiagramEditCanvasPort {
-  snapshot(sessionId: string): Promise<LiveDocumentSnapshot>;
+  snapshot(sessionId: string, revisionIds?: string[]): Promise<LiveDocumentSnapshot>;
   apply(sessionId: string, input: DiagramRevisionApplication): Promise<{ version: number; unresolvedEdgeIds: string[] }>;
   /** Idempotent per requestId. Optional: runtimes without it reject create-diagram. */
   create?(sessionId: string, input: { requestId: string; expectedVersion: number; diagrams: DiagramCreation[] }): Promise<{ version: number }>;
@@ -94,7 +94,7 @@ export class DiagramEditService {
   private install(run: Run) { return run.state.operation !== 'edit-diagram' ? this.place(run) : this.apply(run); }
   private async generate(run: Run) {
     const { input, abort } = run, operation = run.state.operation;
-    const snapshot = await this.canvas.snapshot(input.sessionId);
+    const snapshot = await this.canvas.snapshot(input.sessionId, [...(input.baseRevisionId ? [input.baseRevisionId] : []), ...(input.references ?? []).map(ref => ref.revisionId)]);
     abort.signal.throwIfAborted();
     if (snapshot.version !== input.expectedVersion) throw Error('VERSION_CONFLICT: read the canvas again');
     const box = input.nodeId.startsWith('grid:') && findBox(snapshot.document.scene.root, input.nodeId.slice(5));
@@ -103,9 +103,10 @@ export class DiagramEditService {
     const base = box && box.kind === 'diagram' ? snapshot.document.scene.contents[box.contentId]
       : this.diagrams.create({ id: `context-${randomUUID()}`, revision: 0, ascii: '[New diagram]' }).diagram;
     if (!unanchored && base.revisionId !== input.baseRevisionId) throw Error('VERSION_CONFLICT: diagram base is no longer current');
-    if (!snapshot.history) throw Error('Canvas history is required for diagram generation');
-    // Validated portable history imports the exact browser-issued revision identities.
-    new CanvasHistory(snapshot.document, snapshot.canvas, snapshot.history, 'current');
+    // Import only the exact target/reference revisions, including their logical node identities.
+    for (const revision of snapshot.revisions ?? []) this.diagrams.importRevision(revision);
+    // Compatibility for in-process adapters that still supply a history record.
+    if (!snapshot.revisions && snapshot.history) new CanvasHistory(snapshot.document, snapshot.canvas, snapshot.history, 'current');
     const template = resolvePromptTemplate(input.template ?? defaultTemplateSelection(operation), operation);
     const references = this.resolveReferences(input.references ?? [], snapshot.history);
     const lines = base.content.ascii.split('\n');
@@ -141,10 +142,10 @@ export class DiagramEditService {
     await this.apply(run);
   }
   /** References resolve against the canvas's own revision history first; the service registry covers revisions it issued. */
-  private resolveReferences(references: readonly PromptReference[], history: CanvasHistoryRecord): ResolvedPromptReference[] {
+  private resolveReferences(references: readonly PromptReference[], history?: CanvasHistoryRecord): ResolvedPromptReference[] {
     return references.map((reference, index) => {
       const ref = index + 1;
-      let revision: DiagramRevision | undefined = history.diagramRevisions[reference.revisionId];
+      let revision: DiagramRevision | undefined = history?.diagramRevisions[reference.revisionId];
       if (!revision) try { revision = this.diagrams.getRevision(reference.revisionId); } catch { /* reported below */ }
       if (!revision || revision.diagramId !== reference.diagramId) throw Error(`PROMPT_REFERENCE_NOT_FOUND: [ref ${ref}] ${reference.label} is not available`);
       const common = { ref, label: reference.label, diagramId: reference.diagramId, revisionId: reference.revisionId };

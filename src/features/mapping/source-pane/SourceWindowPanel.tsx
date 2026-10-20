@@ -50,7 +50,7 @@ export function SourceWindowPanel({ session, projectId, active }: { session: Can
   if (!active || !pane) return null;
   return <div className="source-window-host" data-mapping-static-ui data-diagram-canvas-static-ui
     data-display-node={pane.id} data-pane-content={pane.content.kind}>
-    <WindowPanel title={pane.content.kind === 'source-code' ? pane.content.sourceFile : 'Mapped source'} canvasId={documentId}
+    <WindowPanel title={pane.content.kind === 'source-code' ? pane.content.sourceFile : 'Mapped source'} canvasId={documentId} sizeStorageKey={storageKey}
       state={{ ...state, mode: 'full-single', pane: 'tree', focusedPane: 'tree', minimized: false, expandedWidth: state.expandedWidth ?? .45 }}
       onChange={patch => setState(previous => ({ ...previous, ...patch }))} onClose={close} canvas={null}
       panes={[{ id: 'tree', title: 'Source', content: pane.content.kind === 'code-panel' ? <SessionCodePanel key={pane.id} session={session} id={pane.id} />

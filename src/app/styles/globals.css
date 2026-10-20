@@ -429,13 +429,11 @@ select:focus-visible,
 .repository-file-list button[aria-current="page"] { background: var(--surface-selected); color: var(--accent-cyan); }
 .repository-file-explorer button:focus-visible { outline: 1px solid var(--accent-cyan); }
 
-.canvas-paste-menu { position: fixed; z-index: 10000; width: 304px; max-width: calc(100vw - 16px); max-height: calc(100vh - 16px); overflow: auto; padding: var(--space-3); background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-lg); color: var(--fg); box-shadow: 0 8px 24px color-mix(in srgb, var(--shadow-color) 53.333%, transparent); font: var(--text-md) var(--font-mono); }
-.canvas-paste-menu button { width: 100%; text-align: left; padding: 9px; border: 0; border-radius: var(--radius-sm); background: transparent; color: inherit; cursor: pointer; font: inherit; }
-.canvas-paste-menu button:hover,
-.canvas-paste-menu button:focus-visible { background: color-mix(in srgb, var(--text-primary) 8.235%, transparent); }
-.canvas-paste-menu button:disabled { opacity: .5; cursor: default; }
-.canvas-paste-menu textarea { display: block; box-sizing: border-box; width: 100%; margin: 8px 0; background: var(--surface-panel); color: inherit; font: inherit; border: 1px solid var(--border); }
-.canvas-paste-menu p { margin: 8px; color: var(--accent-danger); }
+.canvas-transfer-menu { position: fixed; z-index: 10000; width: 304px; max-width: calc(100vw - 16px); max-height: calc(100vh - 16px); overflow: auto; padding: var(--space-3); background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--radius-lg); color: var(--fg); box-shadow: 0 8px 24px color-mix(in srgb, var(--shadow-color) 53.333%, transparent); font: var(--text-md) var(--font-mono); }
+.canvas-transfer-menu button { width: 100%; text-align: left; padding: 9px; border: 0; border-radius: var(--radius-sm); background: transparent; color: inherit; cursor: pointer; font: inherit; }
+.canvas-transfer-menu button:hover,
+.canvas-transfer-menu button:focus-visible { background: color-mix(in srgb, var(--text-primary) 8.235%, transparent); }
+.canvas-transfer-menu button:disabled { opacity: .5; cursor: default; }
 
 [data-diagram-selected="true"] { outline: 2px solid var(--accent-primary); outline-offset: 3px; }
 .diagram-selection-marquee { position: fixed; border: 1px solid var(--accent-primary); background: color-mix(in srgb, var(--accent-primary) 15.000%, transparent); pointer-events: none; z-index: 1000; }
@@ -454,8 +452,6 @@ select:focus-visible,
 .mapping-transfer-picker p.mapping-transfer-hint { margin: 10px 0 0; color: var(--muted); }
 .mapping-transfer-busy > div { max-width: 480px; padding: 24px; border: 1px solid var(--accent-cyan); border-radius: var(--radius-lg); background: var(--bg); }
 .mapping-transfer-busy p { font-size: var(--text-md); }
-.mapping-diagram-selection-actions { position: fixed; bottom: 38px; left: 50%; transform: translateX(-50%); z-index: 1100; display: flex; flex-wrap: wrap; width: max-content; max-width: calc(100vw - 48px); align-items: center; gap: var(--space-5); padding: var(--space-6); border: 1px solid var(--accent-cyan); border-radius: var(--radius-lg); background: var(--bg); box-shadow: var(--shadow-popup); font: var(--text-md) var(--font-mono); }
-.mapping-diagram-selection-actions button { padding: var(--space-4); background: var(--bg); color: var(--fg); border: 1px solid var(--gutter); border-radius: var(--radius-md); cursor: pointer; }
 
 .code-panel { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 .code-panel-summary, .code-panel-file > header { display: flex; align-items: center; gap: var(--space-5); padding: var(--space-4) var(--space-6); flex-wrap: wrap; }
@@ -471,3 +467,15 @@ select:focus-visible,
 [data-code-panel-highlight=true], [data-panel-node-highlight=true] { background: var(--border-strong) !important; outline: 1px solid var(--accent-info); }
 .source-gap { padding: var(--space-2) var(--space-6); border-block: 1px solid var(--surface-hover); background: var(--surface-control); }
 .source-gap button { width: 100%; color: var(--text-secondary); font: inherit; background: none; border: 0; cursor: pointer; }
+
+/* Workspace chrome lives in the floating Menu; the canvas owns the full viewport. */
+.mapping-poc-shell, .mapping-poc-workspace { grid-template-rows: minmax(0, 1fr); }
+.mapping-menu-content { display: flex; flex-direction: column; gap: 12px; padding: 12px; }
+.mapping-menu-content .mapping-submenu { flex-wrap: wrap; padding: 0; }
+.mapping-menu-content .mapping-submenu > div { width: 100%; }
+.mapping-menu-content .mapping-submenu input { width: 100%; }
+.mapping-menu-content .mapping-submenu small { display: block; }
+.mapping-menu-content .mapping-workspace-actions { flex-wrap: wrap; justify-content: flex-start; }
+.mapping-menu-content .mapping-agent-status { width: 100%; justify-content: flex-start; }
+.mapping-menu-content .screen-tabs { align-self: flex-start; }
+.mapping-menu-status { padding: 0 12px 12px; color: var(--muted); font-size: 10px; overflow-wrap: anywhere; }

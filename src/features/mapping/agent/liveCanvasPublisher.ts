@@ -7,6 +7,8 @@ import { sameDiagramSelection, sameRegion, selectionDelta, type LiveRegion, type
 import type { MappingPocGridRect } from '../../../../domain/mapping/selection/mappingPoc';
 import type { CanvasWorkspace } from '../workspace/canvasWorkspace';
 import type { CanvasSession } from '../workspace/canvasSession';
+import { LiveCanvasPasteReceiver } from './liveCanvasPaste';
+import { LiveCanvasCopyReceiver } from './liveCanvasCopy';
 
 /** Read completed regions only; pointer previews, pane geometry and history are not published. */
 export function observeCanvasSelection(session: CanvasSession, documentId: string, changed: (snapshot: LiveSelection) => void) {
@@ -60,13 +62,15 @@ export function observeCanvasSelection(session: CanvasSession, documentId: strin
 export interface LiveAgentStatus { connected: boolean; count: number }
 
 /** One publisher socket per browser workspace; reconnects with current, bounded snapshots. */
-export function publishLiveCanvasSelections(workspace: CanvasWorkspace, workspaceInstanceId: string, endpoint: string, onAgentStatus?: (status: LiveAgentStatus) => void) {
+export function publishLiveCanvasSelections(workspace: CanvasWorkspace, workspaceInstanceId: string, endpoint: string, onAgentStatus?: (status: LiveAgentStatus) => void, canMutate: () => boolean = () => true) {
   let socket: WebSocket | undefined, ready = false, disposed = false;
   let reconnect: ReturnType<typeof setTimeout> | undefined, drainTimer: ReturnType<typeof setTimeout> | undefined;
   const entries = new Map<string, { session: CanvasSession; observer: ReturnType<typeof observeCanvasSelection> }>();
   const latest = new Map<string, LiveSelection>();
   const sent = new Map<string, LiveSelection>();
   const pending = new Map<string, LiveSelection | { documentId: string; canvasEpoch: string }>();
+  const paste = new LiveCanvasPasteReceiver();
+  const copy = new LiveCanvasCopyReceiver();
   const drain = () => {
     clearTimeout(drainTimer);
     drainTimer = undefined;
@@ -86,6 +90,7 @@ export function publishLiveCanvasSelections(workspace: CanvasWorkspace, workspac
   const refresh = () => {
     const drafts = workspace.store.getState().drafts;
     for (const [id, entry] of entries) if (!drafts[id] || drafts[id].hidden || drafts[id].session !== entry.session) {
+      entry.session.cursorCopy.clear();
       entry.observer.dispose(); entries.delete(id); latest.delete(id);
       pending.set(id, { documentId: id, canvasEpoch: entry.observer.canvasEpoch });
     }
@@ -103,7 +108,7 @@ export function publishLiveCanvasSelections(workspace: CanvasWorkspace, workspac
     if (disposed) return;
     const ws = socket = new WebSocket(endpoint);
     ready = false;
-    ws.onopen = () => ws.send(JSON.stringify({ type: 'publish', protocolVersion: 2, workspaceInstanceId }));
+    ws.onopen = () => ws.send(JSON.stringify({ type: 'publish', protocolVersion: 2, workspaceInstanceId, capabilities: ['diagram.copy'] }));
     ws.onmessage = event => {
       const message = JSON.parse(event.data);
       if (message.type === 'publisher.ready') {
@@ -111,10 +116,21 @@ export function publishLiveCanvasSelections(workspace: CanvasWorkspace, workspac
         ready = true; sent.clear(); pending.clear(); latest.forEach((value, id) => pending.set(id, value)); drain();
       } else if (message.type === 'agents.changed') {
         onAgentStatus?.({ connected: true, count: message.count });
+      } else if (message.type === 'diagram.copy.command' && ready) {
+        const draft = workspace.store.getState().drafts[message.documentId];
+        const entry = entries.get(message.documentId);
+        const epoch = entry?.session === draft?.session ? entry?.observer.canvasEpoch : undefined;
+        ws.send(JSON.stringify(copy.apply(message, draft, epoch, canMutate())));
+      } else if (message.type === 'diagram.paste.command' && ready) {
+        const draft = workspace.store.getState().drafts[message.documentId];
+        const entry = entries.get(message.documentId);
+        const epoch = entry?.session === draft?.session ? entry?.observer.canvasEpoch : undefined;
+        ws.send(JSON.stringify(paste.apply(message, draft, epoch, canMutate())));
       } else if (message.type === 'error') ws.close(); // Registration may be racing this connection; retry with fresh state.
     };
     ws.onerror = () => ws.close();
     ws.onclose = () => {
+      entries.forEach(entry => entry.session.cursorCopy.clear());
       ready = false; clearTimeout(drainTimer);
       if (!disposed) onAgentStatus?.({ connected: false, count: 0 });
       if (!disposed) reconnect = setTimeout(connect, 1000);
@@ -122,6 +138,7 @@ export function publishLiveCanvasSelections(workspace: CanvasWorkspace, workspac
   };
   connect();
   return () => {
+    entries.forEach(entry => entry.session.cursorCopy.clear());
     disposed = true; ready = false; clearTimeout(reconnect); clearTimeout(drainTimer);
     unsubscribe(); entries.forEach(entry => entry.observer.dispose()); entries.clear(); pending.clear(); latest.clear();
     socket?.close();

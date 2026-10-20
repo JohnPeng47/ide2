@@ -56,11 +56,12 @@ export class CanvasApiProjection {
   node(node: CanvasDisplayNode): ApiDisplayNode {
     if (node.layout !== 'grid') return { ...node, apiFormatVersion: canvasApiFormatVersion };
     const { contentNodes: _index, content, diagram, ...rest } = node;
+    const highlights = diagram?.highlights?.map(item => ({ ...item, ...(item.contentNodeId ? { contentNodeId: this.anchorId(item.contentNodeId) } : {}) }));
     const metadata = diagram && (({ content: _content, ...value }) => value)(diagram);
     return { ...rest, apiFormatVersion: canvasApiFormatVersion,
       collapsible: { ...node.collapsible, subtrees: node.collapsible.subtrees.map(item => ({ ...item, contentNodeId: this.anchorId(item.contentNodeId) })) },
       ...(content ? { content: this.content(content) } : {}),
-      ...(metadata ? { diagram: { ...metadata, ...(metadata.jumps ? { jumps: metadata.jumps.map(jump => this.jump(jump)) } : {}) } } : {}) };
+      ...(metadata ? { diagram: { ...metadata, ...(highlights ? { highlights } : {}), ...(metadata.jumps ? { jumps: metadata.jumps.map(jump => this.jump(jump)) } : {}) } } : {}) };
   }
   nodes(nodes: readonly CanvasDisplayNode[]) { return nodes.map(node => this.node(node)); }
   result<T extends { nodes: CanvasDisplayNode[] }>(result: T): Omit<T, 'nodes'> & {

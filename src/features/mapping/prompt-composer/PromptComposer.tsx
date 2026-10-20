@@ -32,7 +32,7 @@ export function PromptComposer({ coordinator, revisions }: { coordinator: Prompt
   const { entries, activeKey, carried } = useStore(coordinator.store);
   const [railOpen, setRailOpen] = useState(false);
   const entry = activeKey ? entries[activeKey] : undefined;
-  if (!entry || !activeKey) return <p className="window-panel-message">Select nodes and choose LLM [L], or start a new LLM in Explorer.</p>;
+  if (!entry || !activeKey) return <p className="window-panel-message">Select nodes and choose LLM [Ctrl+B, L], or start a new LLM in Explorer.</p>;
   const locked = composerUnsettled(entry), list = revisions.list(entry.target);
   return <div className="llm-panel prompt-composer" onKeyDown={event => event.stopPropagation()}>
     <div className="llm-mode">

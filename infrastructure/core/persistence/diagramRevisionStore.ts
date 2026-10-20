@@ -7,7 +7,8 @@ import type { DiagramRecordKind, DiagramRecordStore } from '../../../domain/core
 export class DiagramRevisionStore implements DiagramRecordStore {
   constructor(private readonly root: string) {}
   private file(kind: DiagramRecordKind, id: string) {
-    if (!['diagram', 'revision', 'history'].includes(kind) || !/^[a-f0-9]{64}$/.test(id)) throw new Error('Invalid diagram record identity');
+    if (!['diagram', 'revision', 'history', 'workspace'].includes(kind) || !/^[a-f0-9]{64}$/.test(id)) throw new Error('Invalid diagram record identity');
+    if (kind === 'workspace') return path.join(this.root, 'workspace-records', `${id}.json`);
     return path.join(this.root, 'diagrams', kind, `${id}.json`);
   }
   async put(kind: DiagramRecordKind, data: unknown) {

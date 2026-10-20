@@ -1,14 +1,14 @@
-import { Fragment, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { DiagramSearchService } from './diagramSearchService';
 import type { DiagramLineSearchResult } from '../../../../domain/mapping/search/diagramSearch';
 import { SearchQueryHistory } from './searchQueryHistory';
 import './diagramSearch.css';
 
 const preferenceKey = 'diagram-search-auto-select';
-export function DiagramSearchPanel({ service, activeDocumentId, activeName, onReveal, onClear, onMatches, hideOpenButton, openRequest, embedded, visible, onOpen, onClose }: {
+export function DiagramSearchPanel({ service, activeDocumentId, activeName, onReveal, onClear, onMatches, hideOpenButton, openRequest, openProjectRequest, embedded, visible, onOpen, onClose }: {
   embedded?: boolean; visible?: boolean; onOpen?: () => void; onClose?: () => void;
   service: DiagramSearchService; activeDocumentId?: string; activeName?: string;
-  hideOpenButton?: boolean; openRequest?: number;
+  hideOpenButton?: boolean; openRequest?: number; openProjectRequest?: number;
   onReveal: (result: DiagramLineSearchResult) => Promise<void>;
   onClear: () => void;
   onMatches: (results: readonly DiagramLineSearchResult[]) => void;
@@ -34,17 +34,16 @@ export function DiagramSearchPanel({ service, activeDocumentId, activeName, onRe
     setGlobal(all); setOpened(true); onOpen?.(); setFocusSerial(value => value + 1);
   };
   const close = () => { setOpened(false); onClose?.(); if (!embedded) previousFocus.current?.focus(); };
-  useEffect(() => { if (openRequest) open(false); }, [openRequest]);
+  useLayoutEffect(() => { if (openRequest) open(false); }, [openRequest]);
+  useLayoutEffect(() => { if (openProjectRequest) open(true); }, [openProjectRequest]);
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === 'f') {
-        event.preventDefault(); event.stopPropagation(); open(event.shiftKey);
-      } else if (opened && event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); }
+      if (opened && event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); }
     };
     window.addEventListener('keydown', key, true);
     return () => window.removeEventListener('keydown', key, true);
   }, [opened]);
-  useEffect(() => { if (opened) { input.current?.focus(); input.current?.select(); } }, [opened, focusSerial]);
+  useLayoutEffect(() => { if (opened) { input.current?.focus(); input.current?.select(); } }, [opened, focusSerial]);
   const scopeDocumentId = global ? undefined : activeDocumentId;
   useEffect(() => {
     service.cancel(); onClear(); setSelected(0); lastRevealed.current = -1; setNavigationError('');
@@ -77,7 +76,7 @@ export function DiagramSearchPanel({ service, activeDocumentId, activeName, onRe
     input.current?.focus();
   };
   return <>
-    {!embedded && !opened && !hideOpenButton && <button className="diagram-search-open" aria-label="Search diagrams" title="Find in canvas (Ctrl+F); find in project (Ctrl+Shift+F)" onClick={() => open(global)}>Search</button>}
+    {!embedded && !opened && !hideOpenButton && <button className="diagram-search-open" aria-label="Search diagrams" title="Find in canvas (Ctrl+B, F); find in project (Ctrl+B, Shift+F)" onClick={() => open(global)}>Search</button>}
     {(embedded || opened) && <section className="diagram-search-panel" role="search" aria-label="Diagram search" onKeyDown={event => {
       if (event.nativeEvent.isComposing) return;
       const inInput = event.target === input.current;

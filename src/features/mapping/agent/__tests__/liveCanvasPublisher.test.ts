@@ -125,6 +125,7 @@ it('diffs coalesced publisher updates against the last sent state and resets to 
   const dispose = publishLiveCanvasSelections(workspace, 'workspace', 'ws://test', status);
   try {
     const ws = Socket.all[0]; ws.ready();
+    expect(ws.frames[0]).toEqual({ type: 'publish', protocolVersion: 2, workspaceInstanceId: 'workspace', capabilities: ['diagram.copy'] });
     expect(status.mock.lastCall?.[0]).toEqual({ connected: true, count: 0 });
     ws.onmessage({ data: '{"type":"agents.changed","count":2}' });
     expect(status.mock.lastCall?.[0]).toEqual({ connected: true, count: 2 });
@@ -142,10 +143,21 @@ it('diffs coalesced publisher updates against the last sent state and resets to 
     ws.bufferedAmount = 0; vi.advanceTimersByTime(20);
     expect(ws.frames.at(-1)).toMatchObject({ type: 'selection.delta', baseSequence: 1, sequence: 3, removed: [id],
       upserted: [{ text: 'End\nAssociated Code Entities:' }] });
+    const copyCommand = { type: 'diagram.copy.command', commandId: 'copy', documentId: 'doc',
+      canvasEpoch: ws.frames[1].canvasEpoch, ascii: 'Root\n`-- Copied' };
+    const beforeCopy = controller.getSnapshot();
+    ws.onmessage({ data: JSON.stringify(copyCommand) });
+    expect(ws.frames.at(-1)).toEqual({ type: 'diagram.copy.reply', commandId: 'copy', result: { ok: true } });
+    expect(workspace.store.getState().drafts.doc.session.cursorCopy.store.getState().ascii).toBe(copyCommand.ascii);
+    expect(controller.getSnapshot()).toBe(beforeCopy);
     ws.close();
+    expect(workspace.store.getState().drafts.doc.session.cursorCopy.store.getState().ascii).toBeUndefined();
     expect(status.mock.lastCall?.[0]).toEqual({ connected: false, count: 0 });
     vi.advanceTimersByTime(1000);
     const replacement = Socket.all[1]; replacement.ready();
+    expect(replacement.frames[0]).toMatchObject({ capabilities: ['diagram.copy'] });
+    replacement.onmessage({ data: JSON.stringify(copyCommand) });
+    expect(workspace.store.getState().drafts.doc.session.cursorCopy.store.getState().ascii).toBeUndefined();
     expect(status.mock.lastCall?.[0]).toEqual({ connected: true, count: 0 });
     expect(replacement.frames[1]).toMatchObject({ type: 'selection.snapshot', sequence: 3,
       regions: [{ text: 'End\nAssociated Code Entities:' }] });

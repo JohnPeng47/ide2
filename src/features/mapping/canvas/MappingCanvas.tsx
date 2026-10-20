@@ -13,6 +13,7 @@ import { diagramContentNodes } from '../../../../domain/core/diagrams/diagramCon
 import { handleNodeSelect, DEFAULT_MAPPED_RESOURCE_TYPE } from '../../../../domain/mapping/code-panel/codePanel';
 import { upsertCodePanel } from '../code-panel/codePanelState';
 import { CanvasSelectionLayer } from './CanvasSelectionLayer';
+import { CursorCopyOverlay } from './CursorCopyOverlay';
 import { singleDiagramScene } from '../../../../domain/core/diagrams/projectDiagramCanvas';
 import { useEndpointGeometry } from './useEndpointGeometry';
 import { DiagramText } from '../../../shared/diagrams/DiagramText';
@@ -26,8 +27,7 @@ import { diagramSource } from '../../../../domain/core/diagrams/diagram';
 import { diagramSelectionNodes } from '../../../../domain/mapping/workspace/mappingDocument';
 import { diagramProjection } from '../../../../domain/mapping/workspace/diagramViewState';
 import { DiagramSubtreeControls } from './DiagramSubtreeControls';
-import { CanvasPasteMenu } from "./CanvasPasteMenu";
-import { normalizePastedDiagram } from "./pasteDiagram";
+import { CanvasTransferMenu } from "./CanvasTransferMenu";
 import { LocalChatVerbosityToggle } from "../chat/LocalChatVerbosityToggle";
 import { selectionClipboardText } from "../../../../domain/mapping/workspace/selectionClipboard";
 import { layoutConversationPane } from "../../../../domain/mapping/chat/conversationPaneLayout";
@@ -108,7 +108,6 @@ export function MappingPocSelectionCanvas(props: {
   onSelectionChange?: () => void;
   extension?: { key: string; disabled?: boolean; origin?: { column: number; row: number }; onPlace: (point: { column: number; row: number }) => void };
   onUpdateDiagram?: (nodeId: string) => void;
-  onOpenLlm?: () => void;
   /** References are captured here, at the moment of the action, from the exact displayed revision. */
   onReference?: (references: PromptReference[], mode: 'copy' | 'insert', nodeId: string) => void;
   /** While set, a click on the canvas places something at that grid point instead of selecting. */
@@ -848,18 +847,6 @@ export function MappingPocSelectionCanvas(props: {
     hotkeyHandler.current = (event: globalThis.KeyboardEvent) => {
       if (props.active === false || event.defaultPrevented) return;
       const key = event.key.toLowerCase();
-      if (key === 'l' && !event.ctrlKey && !event.metaKey && !event.altKey
-        && !event.isComposing && !typingTarget(event.target)) {
-        if (event.repeat) return;
-        const item = controller.getSnapshot().canvas.selection.items.at(-1);
-        if (item ? props.onUpdateDiagram : props.onOpenLlm) {
-          event.preventDefault();
-          if (item) props.onUpdateDiagram?.(item.displayNodeId);
-          else props.onOpenLlm?.();
-          setActionsOpen(false);
-        }
-        return;
-      }
       if (event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && !event.isComposing
         && (key === 'z' || key === 'y') && !typingTarget(event.target)) {
         event.preventDefault();
@@ -945,7 +932,6 @@ export function MappingPocSelectionCanvas(props: {
     };
   }, [
     props.active,
-    props.onOpenLlm,
     props.onUpdateDiagram,
     props.onUndo,
     props.canWorkspaceUndo,
@@ -1165,6 +1151,8 @@ export function MappingPocSelectionCanvas(props: {
         setPlacementPreview(null);
       }}
     >
+      <CursorCopyOverlay session={session} stage={stageRef} active={props.active !== false}
+        disabled={isGenerating || !!diagramPlacement || !!movingBoxId || !!props.placement || placingExtension} pointAtClient={scenePointAtClient} />
       <CanvasSelectionLayer stageRef={stageRef} active={props.active !== false && !isGenerating && !diagramPlacement && !movingBoxId}
         diagramIds={boxes.filter(box => box.box.kind === 'diagram').map(box => `grid:${box.box.id}`)} selected={selectedDiagrams}
         onClear={escapeSelection}
@@ -1176,20 +1164,6 @@ export function MappingPocSelectionCanvas(props: {
         runtime={nativeRuntime ?? undefined} resolve={resolveMarquee} onComplete={finishMarquee} onTap={selectHit}
         onSelectDiagram={(id, toggle) => { clearSelectionFocus(); controller.select(toggle
           ? { type: 'toggleDiagram', displayNodeId: id } : { type: 'replace', items: [diagramSelectionItem(id)] }); }} />
-      {props.active !== false && !selection.items.some(item => item.region) && selectedDiagrams.length > 0 && createPortal(
-        <div className="mapping-diagram-selection-actions" role="toolbar" aria-label="Selected diagrams" data-diagram-canvas-static-ui data-mapping-static-ui>
-          <strong role="status">{selectedDiagrams.length} {selectedDiagrams.length === 1 ? 'diagram' : 'diagrams'} selected</strong>
-          {props.onTransfer && <button type="button" disabled={isGenerating || !!diagramPlacement || !!movingBoxId} onClick={() => props.onTransfer?.('copy', selectedDiagrams)}>Copy to canvas…</button>}
-          {props.onTransfer && <button type="button" disabled={isGenerating || !!diagramPlacement || !!movingBoxId} onClick={() => props.onTransfer?.('move', selectedDiagrams)}>Move to canvas…</button>}
-          <button type="button" disabled={isGenerating || !!diagramPlacement || !!movingBoxId}
-            onClick={() => {
-              try {
-                controller.applyUpdate(controller.getSnapshot().version, [{ method: 'delete-diagrams', nodeIds: selectedDiagrams }]);
-                setStatusMessage(`${selectedDiagrams.length === 1 ? 'Diagram' : 'Diagrams'} deleted · Undo to restore`);
-              } catch (error) { setStatusMessage(error instanceof Error ? error.message : String(error)); }
-            }}>Delete {selectedDiagrams.length === 1 ? 'diagram' : 'diagrams'}</button>
-          <button type="button" disabled={isGenerating} aria-keyshortcuts="Escape" onClick={escapeSelection}>Deselect (Esc)</button>
-        </div>, document.body)}
       {props.extension && selection.items.length > 0 && <>
         {!selection.items.some(item => item.region) && <button className="projection-join llm-origin" aria-label="Place new diagram origin"
           disabled={props.extension.disabled} data-mapping-static-ui data-diagram-canvas-static-ui
@@ -1210,19 +1184,21 @@ export function MappingPocSelectionCanvas(props: {
         <button onClick={() => setActionsOpen(value => !value)}>Actions (A)</button>
         {actionsOpen && <div role="menu" aria-label="Selection actions"><button role="menuitem" onClick={() => {
           props.onUpdateDiagram?.(selectedDiagrams[0]); setActionsOpen(false);
-        }}>LLM [L]</button></div>}
+        }}>LLM [Ctrl+B, L]</button>
+          <button role="menuitem" disabled={isGenerating || !!diagramPlacement || !!movingBoxId} onClick={() => {
+            try {
+              controller.applyUpdate(controller.getSnapshot().version, [{ method: 'delete-diagrams', nodeIds: selectedDiagrams }]);
+              setStatusMessage(`${selectedDiagrams.length === 1 ? 'Diagram' : 'Diagrams'} deleted · Undo to restore`);
+              setActionsOpen(false);
+            } catch (error) { setStatusMessage(error instanceof Error ? error.message : String(error)); }
+          }}>Delete {selectedDiagrams.length === 1 ? 'diagram' : 'diagrams'}</button>
+        </div>}
       </div>}
-      {!boxes.some(box => box.contentId) && <p className="mapping-empty-canvas">Empty canvas — right-click to paste a diagram, or Undo to restore.</p>}
-      <CanvasPasteMenu selectionCount={!selectionRect ? selectedDiagrams.length : 0}
+      {!boxes.some(box => box.contentId) && <p className="mapping-empty-canvas">Empty canvas — create a diagram, or Undo to restore.</p>}
+      <CanvasTransferMenu selectionCount={!selectionRect ? selectedDiagrams.length : 0}
         onCancelSelection={() => { clearSelectionFocus(); controller.updateCanvas(deselectCanvas, true); }}
         onTransfer={props.onTransfer ? mode => props.onTransfer!(mode, selectedDiagrams) : undefined} stageRef={stageRef} active={props.active !== false} busy={isGenerating || !!diagramPlacement || !!movingBoxId}
-        toGrid={scenePointAtClient} onPaste={(point, text) => {
-          const id = `diagram-${crypto.randomUUID()}`;
-          controller.applyUpdate(controller.getSnapshot().version, [{ method: 'diagram-create', id, position: point, ascii: normalizePastedDiagram(text) }]);
-          clearSelectionFocus();
-          setActiveBoxId(id);
-          setStatusMessage("Sub-diagram pasted; layout updated");
-        }} />
+        />
       <span ref={probeRef} className="mapping-poc-cell-probe" aria-hidden="true">0000000000</span>
       {nativeRuntime ? <>
         <pre ref={preRef} className="mapping-poc-ascii" aria-hidden="true" style={{ width: resolved.bounds.columns * (cell.width || 8.4), height: 18, visibility: 'hidden' }}> </pre>
@@ -1372,8 +1348,8 @@ export function MappingPocSelectionCanvas(props: {
           </header>
           {!promptOpen && !askOpen ? (
             <div className="mapping-poc-selection-actions">
-              {props.onUpdateDiagram && <button type="button" aria-keyshortcuts="L" disabled={isGenerating || !!diagramPlacement || !!movingBoxId}
-                onClick={() => { if (focusedItem) { props.onUpdateDiagram?.(focusedItem.displayNodeId); setActionsOpen(false); } }}>LLM [L]</button>}
+              {props.onUpdateDiagram && <button type="button" title="Open LLM (Ctrl+B, L)" disabled={isGenerating || !!diagramPlacement || !!movingBoxId}
+                onClick={() => { if (focusedItem) { props.onUpdateDiagram?.(focusedItem.displayNodeId); setActionsOpen(false); } }}>LLM [Ctrl+B, L]</button>}
               {props.onReference && focusedItem && <button type="button" onClick={() => { const reference = focusedReference(); if (reference) props.onReference?.([reference], 'insert', focusedItem.displayNodeId); }}>Add to prompt</button>}
               {props.onReference && focusedItem && <button type="button" onClick={() => { const reference = focusedReference(); if (reference) props.onReference?.([reference], 'copy', focusedItem.displayNodeId); }}>Copy as reference</button>}
               <button type="button" aria-label="Copy ASCII + code refs" title="Copy full selected rows and selected code references (C)" aria-keyshortcuts="C Control+C Meta+C" onClick={() => void copySelection()}>

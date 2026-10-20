@@ -1,3 +1,4 @@
+import { activeDiagramHighlights, highlightColor } from '../../../../domain/core/diagrams/diagramHighlight';
 import { DiagramTreemapTint } from '../treemap/CanvasTreemapColors';
 import { memo, useContext, useMemo } from 'react';
 import { useValue } from 'tldraw';
@@ -8,7 +9,7 @@ import { DiagramText } from '../../../shared/diagrams/DiagramText';
 import { DiagramSubtreeControls } from '../canvas/DiagramSubtreeControls';
 import { useLocalAnchors } from './useLocalAnchors';
 
-const Text = memo(function Text({ model }: { model: Pick<GridModel, 'id' | 'diagram' | 'view' | 'jumps' | 'selectedContent' | 'layoutKey'> }) {
+const Text = memo(function Text({ model }: { model: Pick<GridModel, 'id' | 'diagram' | 'view' | 'jumps' | 'selectedContent' | 'layoutKey' | 'node'> }) {
   const runtime = useContext(CanvasRuntimeContext)!;
   const jump = useValue('diagram jump availability', () => runtime.interaction.get().jumps, [runtime]);
   const register = useLocalAnchors(runtime, model.id, model.layoutKey);
@@ -19,12 +20,21 @@ const Text = memo(function Text({ model }: { model: Pick<GridModel, 'id' | 'diag
       mappings: diagram.sourceContext.mappings, sourceContext: diagram.sourceContext, jumps: [...(diagram.jumps ?? []), ...model.jumps] });
     return projection.ascii.split('\n').map((line, index) => textRow(line, ranges.get(projection.sourceLines[index]) ?? [], projection.sourceLines[index]));
   }, [model.diagram, model.view, model.jumps, model.id]);
-  return <DiagramText className="mapping-poc-ascii" rows={rows} data-graph="A" data-line-count={rows.length}
+  const source = model.node.layout === 'grid' ? model.node.diagram ?? model.diagram! : model.diagram!;
+  const highlights = activeDiagramHighlights(source.content, source.highlights);
+  const whole = highlights.find(item => !item.contentNodeId);
+  return <DiagramText style={whole ? { backgroundColor: `${highlightColor(whole.color)}33`, outline: `2px solid ${highlightColor(whole.color)}` } : undefined}
+    data-highlight-id={whole?.id} className="mapping-poc-ascii" rows={rows} data-graph="A" data-line-count={rows.length}
     data-revision={model.diagram!.revision} registerEndpoint={register}
-    nodeProps={owner => model.selectedContent.includes(owner.contentNodeId!) ? { className: 'is-selected' } : undefined}
+    nodeProps={owner => {
+      const highlight = highlights.find(item => item.contentNodeId === owner.contentNodeId);
+      return { className: model.selectedContent.includes(owner.contentNodeId!) ? 'is-selected' : undefined,
+        ...(highlight ? { 'data-highlight-id': highlight.id, style: { backgroundColor: `${highlightColor(highlight.color)}55`,
+          boxShadow: `inset 0 -2px ${highlightColor(highlight.color)}` } } : {}) };
+    }}
     onJump={jump ? target => runtime.actions?.jump(target) : undefined} />;
 }, (a, b) => a.model.id === b.model.id && a.model.diagram === b.model.diagram && a.model.view === b.model.view
-  && a.model.jumps === b.model.jumps && a.model.selectedContent === b.model.selectedContent && a.model.layoutKey === b.model.layoutKey);
+  && a.model.jumps === b.model.jumps && a.model.selectedContent === b.model.selectedContent && a.model.layoutKey === b.model.layoutKey && a.model.node === b.model.node);
 
 export function DiagramShapeContent({ nodeId }: { nodeId: string }) {
   const runtime = useContext(CanvasRuntimeContext)!;

@@ -49,6 +49,8 @@ export interface CanvasHistoryRecord {
   future: string[];
   snapshots: Record<string, StoredCanvasSnapshot>;
   diagramRevisions: Record<string, DiagramRevision>;
+  /** An initial/current-only baseline pins parent identity without importing its ancestry. */
+  revisionBoundary?: Record<string, string>;
 }
 export type CanvasHistoryNavigation = Pick<CanvasHistoryRecord, 'headId' | 'past' | 'future'> & {
   undoTransactionId?: string; redoTransactionId?: string;
@@ -149,7 +151,10 @@ export class CanvasHistory {
       bindings[diagramId] = issued.id;
       const include = (revision: DiagramRevision) => {
         if (this.record.diagramRevisions[revision.id] || additions[revision.id]) return;
-        if (revision.parentId) include(diagramRevisions.get(revision.parentId));
+        if (revision.parentId) {
+          if (previous) include(diagramRevisions.get(revision.parentId));
+          else (this.record.revisionBoundary ??= {})[revision.parentId] = revision.diagramId;
+        }
         additions[revision.id] = revision;
       };
       include(issued);
@@ -237,8 +242,7 @@ export function validateCanvasHistory(value: CanvasHistoryRecord, changed?: { re
     if (revision.diagram.revisionId !== key || revision.id !== key || revision.diagramId !== revision.diagram.diagramId || !revision.nodeRefs) throw new Error('Invalid diagram history identity');
     validateDiagram(revision.diagram);
     validated.add(revision.diagram);
-    if (revision.parentId && (!Object.hasOwn(value.diagramRevisions, revision.parentId)
-      || value.diagramRevisions[revision.parentId].diagramId !== revision.diagramId)) throw new Error('Invalid diagram revision parent');
+    if (revision.parentId && (value.diagramRevisions[revision.parentId]?.diagramId ?? value.revisionBoundary?.[revision.parentId]) !== revision.diagramId) throw new Error('Invalid diagram revision parent');
     const refs = diagramContentNodes(revision.diagram.content).map(n => revision.nodeRefs[n.id]);
     if (refs.some(ref => typeof ref !== 'string' || !ref) || new Set(refs).size !== refs.length) throw new Error('Invalid logical node identities');
   }

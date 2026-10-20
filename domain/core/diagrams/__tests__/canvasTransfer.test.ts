@@ -161,3 +161,17 @@ it('preserves an existing diagram root and its absolute position when adding inc
   if (p.destination.document.scene.root.kind !== 'container') throw Error();
   expect(p.destination.document.scene.root.children[0]).toEqual(existing.scene.root);
 });
+
+
+it('copies colored highlights onto independent content anchors and preserves them through workspace persistence', () => {
+  const f = setup(), controller = new MappingDocumentController(f.document, initialCanvasState());
+  const anchor = diagramContentNodes(f.document.scene.contents.shared.content)[1];
+  controller.applyUpdate(0, [{ method: 'highlight', nodeId: 'grid:a', contentNodeId: anchor.id, color: 'orange', highlightId: 'saved-highlight' }]);
+  const p = prepareCanvasTransfer(controller.exportHistory(), { ...f.input, mode: 'copy' });
+  const diagram = Object.values(p.destination.document.scene.contents).find(diagram => diagram.highlights?.length)!;
+  const next = diagramContentNodes(diagram.content).find(node => node.label === anchor.label)!;
+  expect(diagram.highlights).toEqual([{ id: 'saved-highlight', contentNodeId: next.id, color: 'orange' }]);
+  expect(next.id).not.toBe(anchor.id);
+  const restored = new MappingDocumentController(p.destination.document, p.destination.view as ReturnType<typeof initialCanvasState>, 0, undefined, undefined, p.destination.history);
+  expect(Object.values(restored.getSnapshot().document.scene.contents).find(diagram => diagram.highlights?.length)?.highlights).toEqual(diagram.highlights);
+});

@@ -17,7 +17,7 @@ it('exposes anchored edge CRUD to agents with immediate edits, partial failures,
   const bridge: CanvasSessionPort = {
     register() {}, list: () => [{ canvasId: 'canvas', documents: [{ documentId: 'doc', name: 'Test' }] }], poll: async () => [], reply() {}, unregister() {}, dispose() {},
     async dispatch(_id, command) {
-      if (command.method === 'snapshot') return { ...controller.getSnapshot(), name: 'Test' };
+      if (command.method === 'snapshot' || command.method === 'identity') return { ...controller.getSnapshot(), name: 'Test' };
       if (command.method === 'apply') { const p = command.payload as { expectedVersion: number; operations: DiagramOperation[] }; return controller.transact(p.expectedVersion, p.operations); }
       throw new Error('Unexpected command');
     }

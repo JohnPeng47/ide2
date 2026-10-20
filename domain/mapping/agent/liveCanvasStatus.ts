@@ -17,11 +17,41 @@ export const liveSelectionDeltaSchema = z.object({ ...metadata, baseSequence: ve
   upserted: z.array(liveRegionSchema).max(1000), removed: z.array(id).max(1000) }).strict();
 export type LiveSelection = z.infer<typeof liveSelectionSchema>;
 export type LiveSelectionDelta = z.infer<typeof liveSelectionDeltaSchema>;
+const pastePosition = z.object({ column: version, row: version }).strict();
+export const livePasteSchema = z.object({ type: z.literal('diagram.paste'), requestId: id,
+  expectedVersion: version, text: z.string().min(1).max(41000), position: pastePosition }).strict();
+export type LivePaste = z.infer<typeof livePasteSchema>;
+export const livePasteCommandSchema = z.object({ type: z.literal('diagram.paste.command'), commandId: id,
+  documentId: id, canvasEpoch: id, expectedVersion: version, ascii: z.string().min(1).max(20000),
+  nodeId: id, position: pastePosition }).strict();
+export type LivePasteCommand = z.infer<typeof livePasteCommandSchema>;
+export const livePasteReplySchema = z.object({ type: z.literal('diagram.paste.reply'), commandId: id,
+  result: z.discriminatedUnion('ok', [
+    z.object({ ok: z.literal(true), version, nodeId: id }).strict(),
+    z.object({ ok: z.literal(false), code: id, error: z.string().max(4000) }).strict()
+  ]) }).strict();
+export type LivePasteReply = z.infer<typeof livePasteReplySchema>;
+/** Copy stages ephemeral text; the user chooses the position/version when pasting. */
+export const liveCopySchema = z.object({ type: z.literal('diagram.copy'), requestId: id,
+  text: z.string().min(1).max(41000) }).strict();
+export type LiveCopy = z.infer<typeof liveCopySchema>;
+export const liveCopyCommandSchema = z.object({ type: z.literal('diagram.copy.command'), commandId: id,
+  documentId: id, canvasEpoch: id, ascii: z.string().min(1).max(20000) }).strict();
+export type LiveCopyCommand = z.infer<typeof liveCopyCommandSchema>;
+export const liveCopyReplySchema = z.object({ type: z.literal('diagram.copy.reply'), commandId: id,
+  result: z.discriminatedUnion('ok', [z.object({ ok: z.literal(true) }).strict(),
+    z.object({ ok: z.literal(false), code: id, error: z.string().max(4000) }).strict()]) }).strict();
+export type LiveCopyReply = z.infer<typeof liveCopyReplySchema>;
 export const liveCanvasMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('attach'), protocolVersion: z.literal(2), workspaceInstanceId: id, documentId: id, includeContext: z.boolean().optional() }).strict(),
   z.object({ type: z.literal('context.get'), requestId: id }).strict(),
+  livePasteSchema,
+  livePasteReplySchema,
+  liveCopySchema,
+  liveCopyReplySchema,
   agentTrajectorySchema.extend({ type: z.literal('agent-context.upload'), requestId: id }),
-  z.object({ type: z.literal('publish'), protocolVersion: z.literal(2), workspaceInstanceId: id }).strict(),
+  z.object({ type: z.literal('publish'), protocolVersion: z.literal(2), workspaceInstanceId: id,
+    capabilities: z.array(id).max(32).optional() }).strict(),
   liveSelectionSchema.extend({ type: z.literal('selection.snapshot') }),
   liveSelectionDeltaSchema.extend({ type: z.literal('selection.delta') }),
   z.object({ type: z.literal('remove'), documentId: id, canvasEpoch: id }).strict()
@@ -39,6 +69,12 @@ export type ApiLiveCanvasContext = Omit<LiveCanvasContext, 'nodes'> & {
   nodes: import('./apiRepresentation').ApiDisplayNode[];
 };
 export type LiveCanvasEvent = ({ type: 'attached'; context?: ApiLiveCanvasContext } & BoundSelection)
+  | LivePasteCommand
+  | LiveCopyCommand
+  | { type: 'diagram.copied'; requestId: string; connectionId: string; workspaceInstanceId: string;
+      documentId: string; canvasEpoch: string }
+  | { type: 'diagram.pasted'; requestId: string; connectionId: string; workspaceInstanceId: string;
+      documentId: string; canvasEpoch: string; nodeId: string; version: number }
   | { type: 'context.snapshot'; requestId: string; connectionId: string; workspaceInstanceId: string; documentId: string; canvasEpoch: string; context: ApiLiveCanvasContext }
   | ({ type: 'selection.delta' } & LiveSelectionDelta & Pick<BoundSelection, 'connectionId' | 'workspaceInstanceId' | 'receivedAt'>)
   | { type: 'canvas.disconnected' | 'canvas.closed' | 'canvas.replaced'; connectionId: string; canvasEpoch: string }

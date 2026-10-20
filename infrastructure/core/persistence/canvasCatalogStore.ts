@@ -1,3 +1,5 @@
+import { documentFromHistory } from '../../../domain/core/diagrams/canvasHistory';
+import { checkpointPublicationSchema, type CheckpointPublication, type CheckpointReceipt, type CapturedCheckpoint } from '../../../domain/core/diagrams/checkpointPublication';
 import { inferRepositoryId } from '../../../domain/core/repositories/repository';
 import type { ProjectRecord } from '../../../domain/core/records/domain';
 import { DefaultCanvasHistoryService } from '../../../domain/core/diagrams/canvasHistoryService';
@@ -61,6 +63,37 @@ export class CanvasCatalogStore {
       const result = rules.saveMappingDiagram(catalog, projectId, { ...input, repositoryId }, catalogEnvironment());
       if (result.catalog !== catalog) await this.saveRepresentationCatalog(result.catalog);
       return result;
+    });
+  }
+
+  publishCheckpoint(projectId: string, raw: CheckpointPublication, captureCheckpoint: () => Promise<CapturedCheckpoint>): Promise<CheckpointReceipt> {
+    const input = checkpointPublicationSchema.parse(raw);
+    return this.serialize(async () => {
+      const started = Date.now();
+      const catalog = await this.readStoredCatalog(projectId) ?? emptyRepresentationCatalog(projectId);
+      const receipts = (catalog as typeof catalog & { checkpointReceipts?: Record<string, { signature: string; receipt: CheckpointReceipt }> }).checkpointReceipts ?? {};
+      const signature = JSON.stringify(input), old = receipts[input.requestId];
+      if (old) { if (old.signature !== signature) throw Error('REQUEST_ID_CONFLICT'); return old.receipt; }
+      const current = input.representationId ? catalog.representations[input.representationId] : undefined;
+      if (input.representationId && (!current || current.status !== 'settled' || current.currentRevisionId !== input.expectedRevisionId))
+        throw Error('VERSION_CONFLICT: published canvas changed; reread before saving');
+      if (current?.repositoryId && input.repositoryId && current.repositoryId !== input.repositoryId) throw Error('Canvas repository ownership cannot change on save');
+      const capture = await captureCheckpoint();
+      const history = { ...capture.header, baselineId: input.checkpointId, headId: input.checkpointId, past: [], future: [],
+        snapshots: { [input.checkpointId]: { ...capture.head, parentId: undefined } }, diagramRevisions: capture.revisions };
+      const document = documentFromHistory(history);
+      const project = await readJsonIfExists<ProjectRecord>(path.join(this.storeRoot, 'project.json'));
+      const repositoryId = input.repositoryId ?? current?.repositoryId ?? capture.metadata.repositoryId ?? inferRepositoryId(document.scene, project?.repositories ?? []);
+      if (repositoryId && !project?.repositories?.some(repo => repo.id === repositoryId)) throw Error('Unknown repositoryId');
+      if (!current && project?.repositories?.length && !repositoryId) throw Error('Specify repositoryId for the new canvas');
+      const result = rules.publishMappingDiagram(catalog, projectId, { ...input, repositoryId, history, scene: document.scene, edges: document.edges }, catalogEnvironment());
+      const revisionId = result.representation.currentRevisionId;
+      // Publish immutable references already committed by autosave; never hydrate old catalog revisions.
+      result.catalog.revisions[revisionId].content = { kind: 'canvas-history', history: capture.stored as import('../../../domain/core/diagrams/canvasHistory').CanvasHistoryRecord };
+      const receipt = { representation: result.representation, revisionId, savedVersion: input.expectedVersion, checkpointId: input.checkpointId };
+      await writeJsonAtomic(this.representationCatalogPath(), { ...result.catalog, checkpointReceipts: { ...receipts, [input.requestId]: { signature, receipt } } });
+      console.debug('canvas-publish', { durationMs: Date.now() - started, receiptBytes: Buffer.byteLength(JSON.stringify(receipt)) });
+      return receipt;
     });
   }
 
@@ -147,6 +180,19 @@ export class CanvasCatalogStore {
       void value.catch(() => { if (this.sourceBindingsCache === entry) this.sourceBindingsCache = undefined; });
     }
     return structuredClone(await this.sourceBindingsCache.value);
+  }
+
+  loadCurrentRepresentationCatalog(projectId: string, revisionIds?: string[]): Promise<ProjectRepresentationCatalogRecord> {
+    return this.serialize(async () => {
+      const catalog = await this.readStoredCatalog(projectId) ?? emptyRepresentationCatalog(projectId);
+      const ids = revisionIds ?? Object.values(catalog.representations).map(rep => rep.currentRevisionId);
+      const revisions = Object.fromEntries(await Promise.all([...new Set(ids)].map(async id => {
+        const revision = catalog.revisions[id];
+        if (!revision || revision.content?.kind !== 'canvas-history') throw Error('Unknown canvas revision');
+        return [id, { ...revision, content: { kind: 'canvas-history', history: await this.diagramPersistence.currentHistory(revision.content.history) } }];
+      })));
+      return { ...catalog, revisions };
+    });
   }
 
   loadRepresentationCatalog(projectId: string, historyValidation: import('../../../domain/core/diagrams/canvasHistory').HistoryValidation = 'all'): Promise<ProjectRepresentationCatalogRecord> {

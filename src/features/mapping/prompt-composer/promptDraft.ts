@@ -1,7 +1,8 @@
+import { normalizePromptBody as normalize, serializePromptBody, type PromptBodyBlock } from './promptBody';
 import type { PromptReference } from '../../../../domain/mapping/agent/diagramEdit';
 import { defaultOptions, defaultTemplateSelection, findPromptTemplate, type PromptOperation, type PromptOptionValue, type PromptTemplateSelection } from '../../../../domain/mapping/agent/promptTemplates';
 
-export type PromptBlock = { kind: 'text'; id: string; text: string } | { kind: 'reference'; id: string; reference: PromptReference };
+export type PromptBlock = PromptBodyBlock<PromptReference>;
 /**
  * The template is a separate field, so nothing can be inserted before it or delete it.
  * The body alternates text and references and always starts and ends with text (possibly empty).
@@ -16,18 +17,6 @@ export function createPromptDraft(operation: PromptOperation): PromptDraft {
   return { template: defaultTemplateSelection(operation), body: [textBlock()], count: 1 };
 }
 
-/** Merge adjacent text and keep a text block between references and at both ends. */
-function normalize(body: readonly PromptBlock[]): PromptBlock[] {
-  const result: PromptBlock[] = [];
-  for (const block of body) {
-    const last = result.at(-1);
-    if (block.kind === 'text' && last?.kind === 'text') result[result.length - 1] = { ...last, text: last.text + block.text };
-    else { if (block.kind === 'reference' && last?.kind !== 'text') result.push(textBlock()); result.push(block); }
-  }
-  if (result.at(-1)?.kind !== 'text') result.push(textBlock());
-  if (result[0]?.kind !== 'text') result.unshift(textBlock());
-  return result;
-}
 export const draftReferences = (draft: PromptDraft) => draft.body.flatMap(block => block.kind === 'reference' ? [block.reference] : []);
 
 /** Insert at the cursor, splitting its text; without a cursor (or a stale one) append at the end. */
@@ -78,11 +67,6 @@ export function referenceSummary(reference: PromptReference) {
 }
 /** Body text with each reference cited in order as [ref N]; references[N-1] is its pinned target. */
 export function serializePromptDraft(draft: PromptDraft): { prompt: string; references: PromptReference[] } {
-  const references: PromptReference[] = [];
-  const prompt = draft.body.map(block => {
-    if (block.kind === 'text') return block.text;
-    references.push(structuredClone(block.reference));
-    return `[ref ${references.length}]`;
-  }).join('').trim();
-  return { prompt, references };
+  const { prompt, references } = serializePromptBody(draft.body);
+  return { prompt: prompt.trim(), references };
 }

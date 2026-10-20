@@ -5,13 +5,12 @@ import type { DiagramJumpTarget } from '../../../../domain/core/diagrams/diagram
 import type { CanvasSession } from '../workspace/canvasSession';
 import type { TreemapDiagramColor } from '../changes/treemapDiagramColors';
 import { useMappingServices } from '../services/MappingServices';
-import { WindowPanel, type WindowPanelLayout } from '../window-panel/WindowPanel';
 import { TreemapContent } from './TreemapContent';
 
 const scopeKey = 'canvas-treemap-scope';
 const format = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 1 });
-export function CanvasTreemapPanel({ session, documentId, projectId, name, onClose, onNavigate, onCanvasColors }: {
-  session: CanvasSession; documentId: string; projectId: string; name: string; onClose: () => void;
+export function CanvasTreemapContent({ session, documentId, projectId, onNavigate, onCanvasColors }: {
+  session: CanvasSession; documentId: string; projectId: string;
   onNavigate: (target: DiagramJumpTarget) => void;
   onCanvasColors: (colors: readonly TreemapDiagramColor[] | undefined) => void;
 }) {
@@ -25,7 +24,6 @@ export function CanvasTreemapPanel({ session, documentId, projectId, name, onClo
   const [scope, setScope] = useState<CanvasTreemapScope>(() => {
     try { return localStorage.getItem(scopeKey) === 'files' ? 'files' : 'mapped'; } catch { return 'mapped'; }
   });
-  const [layout, setLayout] = useState<WindowPanelLayout<'treemaps'>>({ mode: 'full-single', pane: 'treemaps', focusedPane: 'treemaps', minimized: false, ratio: 1, minimizedWidth: .45, expandedWidth: .5 });
   useEffect(() => { try { localStorage.setItem(scopeKey, scope); } catch { /* Optional storage. */ } }, [scope]);
   useEffect(() => {
     const refresh = () => setAttempt(value => value + 1);
@@ -55,9 +53,7 @@ export function CanvasTreemapPanel({ session, documentId, projectId, name, onClo
   const navigate = useCallback((node: Parameters<Parameters<typeof TreemapContent>[0]['onNavigate']>[0]) => {
     if (node.target) onNavigate(node.target);
   }, [onNavigate]);
-  return <WindowPanel className="canvas-treemap-window" title={`${name} · Treemaps`} canvasId={documentId} state={layout}
-    onChange={patch => setLayout(value => ({ ...value, ...patch }))} onClose={onClose} canvas={null}
-    panes={[{ id: 'treemaps', title: 'Treemaps', content: <TreemapContent data={data} metric="source" onNavigate={navigate} onCanvasColors={onCanvasColors}
+  return <TreemapContent data={data} metric="source" onNavigate={navigate} onCanvasColors={onCanvasColors}
       controls={<div className="change-treemap-switch" role="group" aria-label="Treemap scope">
         <label>Scope <select aria-label="Treemap scope" value={scope} onChange={event => setScope(event.target.value as CanvasTreemapScope)}>
           <option value="mapped">Mapped ranges</option><option value="files">Referenced files</option>
@@ -68,5 +64,5 @@ export function CanvasTreemapPanel({ session, documentId, projectId, name, onClo
         <span>{format(data.mapped)} mapped / {format(data.total)} file LOC · {format(data.total ? 100 * data.mapped / data.total : 0)}% coverage</span>
         {data.issues.length > 0 && <details><summary>{data.issues.length} source {data.issues.length === 1 ? 'issue' : 'issues'} · totals exclude unresolved mappings or unavailable files</summary>
           <ul>{data.issues.map((issue, i) => <li key={i}>{issue}</li>)}</ul></details>}
-      </div>} /> }]} />;
+      </div>} />;
 }

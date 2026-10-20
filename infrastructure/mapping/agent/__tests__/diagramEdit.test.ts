@@ -7,6 +7,8 @@ import { MappingDocumentController } from '../../../../domain/mapping/workspace/
 import { mappingDocumentFromScene } from '../../../../domain/mapping/workspace/mappingDocument';
 import { initialCanvasState } from '../../../../domain/mapping/workspace/mappingWorkspace';
 import { DiagramRevisionReceiver } from '../../../../src/features/mapping/agent/diagramRevisionReceiver';
+import { diagramContentNodes } from '../../../../domain/core/diagrams/diagramContentNodes';
+import { validateConnectionAnchor, type ContentNodeAnchor, type DiagramConnection } from '../../../../domain/core/diagrams/diagramConnection';
 
 function fixture(generator: DiagramGenerator = { generate: async () => ({ ascii: 'Edited\n`-- New branch', structureKind: 'tree' }) }) {
   const diagrams = new RevisionedDiagramService(generator);
@@ -16,7 +18,7 @@ function fixture(generator: DiagramGenerator = { generate: async () => ({ ascii:
   const apply = vi.fn(async (_session: string, input: Parameters<DiagramRevisionReceiver['apply']>[1]) =>
     receiver.apply('doc', structuredClone(input), controller, persist));
   const service = new DiagramEditService(diagrams, {
-    snapshot: async () => structuredClone({ ...controller.getSnapshot(), history: controller.exportHistory(), name: 'Test' }), apply
+    snapshot: async (_session, ids) => structuredClone({ ...controller.getSnapshot(), revisions: controller.exportRevisions(ids ?? [], true), name: 'Test' }), apply
   });
   const input = { sessionId: 'session', requestId: 'edit', expectedVersion: 0, baseRevisionId: base.revisionId,
     nodeId: 'grid:overview', prompt: 'Add a branch' };
@@ -164,6 +166,59 @@ it('reports stale content connections while preserving their repairable anchors'
   expect(complete.result!.unresolvedEdgeIds).toEqual(['related']);
   expect(f.controller.getSnapshot().document.edges).toEqual(edges);
   f.controller.undo(); expect(f.controller.getSnapshot().document.edges).toEqual(edges);
+});
+
+it('preserves incoming and outgoing subtree-edit connections across shifted lines, shared instances and durable undo/redo', async () => {
+  const ascii = 'Root\n|-- Edit\n|   `-- Old\n`-- Keep';
+  const generated = 'Root\n|-- Edit\n|   |-- Added\n|   `-- More\n`-- Keep';
+  const f = fixture({ generate: async () => ({ ascii: generated, structureKind: 'tree' }) });
+  f.controller.applyUpdate(0, [
+    { method: 'replace', nodeId: 'grid:overview', ascii, structureKind: 'tree' },
+    { method: 'duplicate-instance', sourceNodeId: 'grid:overview', id: 'copy', position: { column: 30, row: 0 } },
+    { method: 'diagram-create', id: 'other', ascii: 'Keep', position: { column: 60, row: 0 } }
+  ]);
+  const base = f.controller.getSnapshot().document.scene.contents.overview;
+  const anchor = (displayNodeId: string, line: number): ContentNodeAnchor => {
+    const diagram = f.controller.getSnapshot().document.scene.contents[displayNodeId === 'grid:other' ? 'other' : 'overview'];
+    return { kind: 'content-node', displayNodeId, revisionId: diagram.content.revisionId,
+      contentNodeId: diagramContentNodes(diagram.content).find(node => node.line === line)!.id, side: 'right', offset: 0.3 };
+  };
+  const edge = (id: string, source: ContentNodeAnchor, target: DiagramConnection['target']): DiagramConnection => ({
+    id, source, target, appearance: { color: '#88c0d0', lineStyle: 'dashed', label: { text: id, position: { x: 100, y: 200 } } }
+  });
+  const originalEdges = [
+    edge('outgoing', anchor('grid:overview', 1), anchor('grid:other', 1)),
+    edge('incoming', anchor('grid:other', 1), anchor('grid:overview', 4)),
+    edge('shared', anchor('grid:copy', 4), anchor('grid:overview', 1)),
+    edge('box', anchor('grid:other', 1), { kind: 'box', displayNodeId: 'grid:overview', side: 'left' }),
+    edge('replaced', anchor('grid:overview', 3), anchor('grid:other', 1))
+  ];
+  f.controller.applyUpdate(1, originalEdges.map(edge => ({ method: 'edge-create' as const, edge })));
+  const input = { ...f.input, expectedVersion: 2, baseRevisionId: base.revisionId,
+    subtree: { contentNodeId: anchor('grid:overview', 2).contentNodeId, revisionId: base.content.revisionId } };
+  const complete = await settled(f.service, f.service.start(input).runId, 'completed');
+  expect(complete.result!.unresolvedEdgeIds).toEqual(['replaced']);
+  const after = f.controller.getSnapshot();
+  const nextEdges = after.document.edges;
+  expect(nextEdges.map(e => e.id)).toEqual(originalEdges.map(e => e.id));
+  expect(nextEdges.map(e => e.appearance)).toEqual(originalEdges.map(e => e.appearance));
+  expect(nextEdges.find(e => e.id === 'replaced')).toEqual(originalEdges.find(e => e.id === 'replaced'));
+  expect(nextEdges.find(e => e.id === 'box')).toEqual(originalEdges.find(e => e.id === 'box'));
+  expect(nextEdges.find(e => e.id === 'incoming')!.target).toEqual(anchor('grid:overview', 5));
+  expect(nextEdges.find(e => e.id === 'shared')!.source).toEqual(anchor('grid:copy', 5));
+  for (const connection of nextEdges.filter(e => e.id !== 'replaced')) {
+    expect(() => validateConnectionAnchor(after.document.scene, connection.source)).not.toThrow();
+    expect(() => validateConnectionAnchor(after.document.scene, connection.target)).not.toThrow();
+  }
+  const restored = new MappingDocumentController(structuredClone(after.document), after.canvas, 0,
+    undefined, undefined, JSON.parse(JSON.stringify(f.controller.exportHistory())));
+  expect(restored.getSnapshot().document.edges).toEqual(nextEdges);
+  restored.undo();
+  expect(restored.getSnapshot().document.edges).toEqual(originalEdges);
+  restored.undo(true);
+  expect(restored.getSnapshot().document.edges).toEqual(nextEdges);
+  expect(f.service.start(input)).toEqual(complete);
+  expect(f.persist).toHaveBeenCalledOnce();
 });
 
 it('does not report cancellation once application has started and keeps persistence conflicts retryable', async () => {

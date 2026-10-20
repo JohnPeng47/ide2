@@ -151,7 +151,7 @@ it('persists mappings-only MCP proposals, preserves their baseline, and validate
     const changeSessionId = created.changeSessionId;
     const attached = await agent.call('exec',{changeSessionId,requestId:'attach',code:`return canvas.attach({canvasId:${JSON.stringify(changeSessionId)},documentId:${JSON.stringify(saved.representation.id)}});`}) as any;
     await agent.call('set_diagram_source_mappings',{changeSessionId,sessionId:attached.value.sessionId,requestId:'mappings',expectedVersion:0,
-      nodeId:'grid:overview',expectedContentHash:scene.contents.overview.content.asciiSha256,
+      nodeId:'grid:overview',
       mappings:[{id:'m',entityId:'e',sourceRangeIndex:0,line:1,startColumn:1,endColumn:4}],
       evidence:{e:{id:'e',handle:'Root',label:'Root',category:'operation',summary:'Root',sourceRanges:[{id:'r',path:'root.ts',startLine:1,endLine:1,originalLines:['function Root() {}']}]}}});
     const session = await changes.get(changeSessionId);

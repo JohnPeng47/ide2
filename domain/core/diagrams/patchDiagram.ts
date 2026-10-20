@@ -1,3 +1,4 @@
+import { rebaseDiagramHighlights } from './diagramHighlight';
 import { buildDiagramContent } from './diagramContent';
 import { diagramContentNodes } from './diagramContentNodes';
 import { validateDiagram, type Diagram } from './diagram';
@@ -27,6 +28,7 @@ export function patchDiagram(before: Diagram, start: number, end: number, patch:
   }
   const diagram: Diagram = unchanged ? before : {
     ...before, revision: before.revision + 1, content,
+    ...(before.highlights ? { highlights: rebaseDiagramHighlights(before.highlights, nodeIds) } : {}),
     sourceContext: { ...before.sourceContext, contentHash: content.asciiSha256,
       mappings: before.sourceContext.mappings.flatMap(mapping => {
         const line = lineAfter(mapping.line);

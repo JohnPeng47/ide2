@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RevisionedDiagramService } from '../../../core/diagrams/diagramService';
-import { connectionContentNodes, defaultArrowAppearance, type ContentNodeAnchor, type DiagramConnection } from '../../../core/diagrams/diagramConnection';
+import { connectionContentNodes, defaultArrowAppearance, reconcileConnections, type ContentNodeAnchor, type DiagramConnection } from '../../../core/diagrams/diagramConnection';
 import { singleDiagramScene } from '../../../core/diagrams/projectDiagramCanvas';
 import { MappingDocumentController, type DiagramOperation } from '../mappingDocumentController';
 import { mappingDocumentFromScene } from '../mappingDocument';
@@ -26,6 +26,16 @@ function setup() {
 }
 
 describe('document connections', () => {
+  it('does not revive an already-stale endpoint using correspondence for the current revision', () => {
+    const { controller, edge } = setup();
+    const before = controller.getSnapshot().document.scene;
+    const base = before.contents.overview;
+    const next = new RevisionedDiagramService().revise(base.revisionId, { kind: 'patch', start: 4, end: 4, patch: '`-- New leaf' });
+    const after = { ...before, contents: { ...before.contents, overview: next.diagram } };
+    const stale = { ...edge, source: { ...edge.source, revisionId: 'older-content-revision' } };
+    expect(next.nodeIds.has(edge.source.contentNodeId)).toBe(true);
+    expect(reconcileConnections(before, after, [stale], next.nodeIds)).toEqual([stale]);
+  });
   it('creates an independent relationship and derived FloatingBoxArrow without changing any diagram or panel', () => {
     const { controller, edge, apply } = setup();
     const before = structuredClone(controller.getSnapshot());

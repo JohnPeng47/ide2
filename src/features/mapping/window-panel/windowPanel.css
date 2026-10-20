@@ -74,9 +74,11 @@
 .window-panel-resize-corner { bottom: 0; left: 0; width: 14px; height: 14px; cursor: nesw-resize; }
 .window-panel-resize:hover, .window-panel-resize:focus-visible { background: color-mix(in srgb, var(--accent-primary) 50.196%, transparent); }
 
-.window-panel-tabbed { inset: 16px 16px auto auto; width: min(560px, calc(100% - min(348px, 43vw) - 16px)); height: min(680px, calc(100% - 32px)); min-width: 260px; min-height: 240px; max-width: calc(100% - min(348px, 43vw) - 16px); max-height: calc(100% - 32px); resize: both; }
+.window-panel-tabbed { inset: 16px 16px auto auto; width: min(560px, calc(100% - min(348px, 43vw) - 16px)); height: min(680px, calc(100% - 32px)); min-width: 260px; min-height: 240px; max-width: calc(100% - min(348px, 43vw) - 16px); max-height: calc(100% - 32px); overflow: hidden; box-sizing: border-box; }
+.window-panel-tabbed > .window-panel-resize-corner { width: 18px; height: 18px; }
+.window-panel-tabbed > .window-panel-resize-corner::after { content: ''; position: absolute; bottom: 4px; left: 4px; width: 9px; height: 9px; background: repeating-linear-gradient(45deg, var(--text-muted) 0 1px, transparent 1px 4px); clip-path: polygon(0 0, 100% 100%, 0 100%); }
 .window-panel-tab-close { margin-left: auto; }
-.window-panel-tool { display: flex; flex: 1; min-height: 0; overflow: auto; flex-direction: column; }
+.window-panel-tool { display: flex; flex: 1; min-height: 0; min-width: 0; overflow: auto; flex-direction: column; }
 .window-panel-tool[hidden] { display: none; }
 .window-panel-tool .diagram-search-panel { position: static; width: auto; max-height: none; flex: 1; box-shadow: none; border: none; }
 .workspace-tools-open { position: absolute; top: 64px; right: 16px; z-index: 9; }
@@ -96,3 +98,19 @@
 .mapping-whole-actions [role=menu] { display: flex; padding: var(--space-3); background: var(--panel-background); border: 1px solid var(--gutter); }
 
 .workspace-tools-open, .llm-explorer-new, .mapping-whole-actions button { padding: var(--space-3) var(--space-5); border: 1px solid var(--gutter); border-radius: var(--control-radius); color: var(--fg); background: var(--control-background); font: var(--text-md) var(--font-mono); cursor: pointer; }
+
+/* In chat mode, header controls move into a drawer over the canvas. */
+.window-panel-compact { overflow: visible; }
+.window-panel-compact > .window-panel-tool { overflow: hidden; border-radius: inherit; }
+.window-panel button.window-panel-compact-close { position: absolute; top: 2px; right: 6px; z-index: 6; width: 24px; height: 24px; padding: 0; border: 0; background: transparent; color: var(--text-muted); font-size: 18px; line-height: 1; }
+.window-panel button.window-panel-compact-close:hover { background: var(--surface-hover); color: var(--text-primary); }
+.window-panel-compact .agent-chat-tabbar { padding-right: 38px; }
+.window-panel button.window-panel-sidebar-toggle { position: absolute; top: 8px; right: 100%; width: 20px; height: 30px; padding: 0; border-radius: 5px 0 0 5px; z-index: 8; background: var(--surface-panel); }
+.window-panel-sidebar { position: absolute; right: calc(100% + 24px); top: 0; width: 260px; max-width: calc(100vw - 48px); max-height: 100%; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; border: 1px solid var(--gutter); border-radius: var(--panel-radius); background: var(--surface-panel); box-shadow: var(--shadow-panel); z-index: 7; }
+.window-panel-sidebar[hidden] { display: none; }
+.window-panel-sidebar .window-panel-tabs { flex-wrap: wrap; }
+@media (max-width: 600px) {
+  .window-panel-sidebar { right: auto; left: 0; top: 0; width: 100%; }
+}
+
+.window-panel-prefix-hint { position: absolute; z-index: 100; bottom: 16px; left: 50%; transform: translateX(-50%); max-width: calc(100% - 32px); padding: 6px 10px; border: 1px solid var(--border-default); border-radius: 6px; background: var(--surface-panel); color: var(--text-primary); font: 12px/1.5 var(--font-mono); pointer-events: none; }

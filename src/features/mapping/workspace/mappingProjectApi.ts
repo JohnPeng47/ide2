@@ -16,3 +16,9 @@ export async function saveMappingProjectDiagram(input: SaveProjectDiagramInput):
   if (!response.ok) throw await errorFrom(response);
   return response.json();
 }
+
+export async function publishMappingCheckpoint(input: import('../../../../domain/core/diagrams/checkpointPublication').CheckpointPublication): Promise<import('../../../../domain/core/diagrams/checkpointPublication').CheckpointReceipt> {
+  const response = await apiFetch('/api/mapping/diagrams/publish', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(input) });
+  if (!response.ok) throw await errorFrom(response);
+  return response.json();
+}

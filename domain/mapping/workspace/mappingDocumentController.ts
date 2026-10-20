@@ -1,3 +1,5 @@
+import { diagramContentNodes } from '../../core/diagrams/diagramContentNodes';
+import { highlightColorSchema } from '../../core/diagrams/diagramHighlight';
 import { syncSelectionPresentation } from '../selection/selectionPresentation';
 import { importLegacySelection } from '../selection/importLegacySelection';
 import { updateSelection } from '../selection/canvasSelection';
@@ -28,6 +30,8 @@ import { diagramConnectionSchema, reconcileConnections, validateConnectionAnchor
 
 export interface ControllerSnapshot { contextId: string; canvasRevisionId: string; endpointBounds?: EndpointBounds; document: MappingGridDocument; canvas: MappingCanvasState; version: number; canUndo: boolean; canRedo: boolean; cell?: { width: number; height: number } }
 export type DiagramOperation =
+  | { method: 'highlight'; nodeId: string; contentNodeId?: string; color?: string; highlightId: string }
+  | { method: 'removeHighlights'; nodeId: string; highlightIds?: string[] }
   | { method: 'duplicate-instance'; sourceNodeId: string; id: string; position: GridPoint }
   | { method: 'delete-diagrams'; nodeIds: string[] }
   | { method: 'diagram-revision-apply'; nodeId: string; expectedRevisionId: string; revision: DiagramRevision }
@@ -116,6 +120,11 @@ export class MappingDocumentController {
   /** Canonical persistence boundary. Legacy document snapshots are read projections. */
   persistenceChanges(since?: number) { return this.historyService.persistenceChanges(this.context, since); }
   retireTransactions(ids: ReadonlySet<string>) { this.historyService.retireTransactions(this.context, ids); }
+  /** Exact pinned revisions only; never traverse or clone the undo archive. */
+  exportRevisions(ids: readonly string[], allowMissing = false) { return [...new Set(ids)].flatMap(id => {
+    try { return [structuredClone(this.diagrams.getRevision(id))]; }
+    catch (error) { if (allowMissing && error instanceof Error && error.message.startsWith('Unknown diagram revision:')) return []; throw error; }
+  }); }
   exportHistory() { return this.historyService.exportContext(this.context); }
   /** Navigation metadata only: mounting/undo must not clone the content archive. */
   editorHistory(): import('../../core/diagrams/canvasHistory').CanvasHistoryNavigation {
@@ -286,6 +295,24 @@ export class MappingDocumentController {
         });
         document = { ...document, edges, ...(jumps ? { jumps } : {}), sections: { ...document.sections, [before.id]: sections },
           scene: layoutScene({ ...document.scene, contents: { ...document.scene.contents, [before.id]: diagram } }, box.id) };
+      } else if (op.method === 'highlight' || op.method === 'removeHighlights') {
+        const box = findBox(document.scene.root, this.gridId(op.nodeId));
+        if (box?.kind !== 'diagram') throw new Error('Highlights require a diagram GridBox');
+        const diagram = document.scene.contents[box.contentId];
+        let highlights = [...(diagram.highlights ?? [])];
+        if (op.method === 'highlight') {
+          if (op.contentNodeId && !diagramContentNodes(diagram.content).some(node => node.id === op.contentNodeId)) throw new Error('STALE_CONTENT_NODE: read current anchors');
+          const existing = highlights.find(item => item.contentNodeId === op.contentNodeId);
+          const highlight = { id: existing?.id ?? op.highlightId, color: highlightColorSchema.parse(op.color ?? 'yellow'),
+            ...(op.contentNodeId ? { contentNodeId: op.contentNodeId } : {}) };
+          highlights = [...highlights.filter(item => item.id !== highlight.id), highlight];
+        } else {
+          if (op.highlightIds?.some(id => !highlights.some(item => item.id === id))) throw new Error('Unknown highlight ID');
+          highlights = op.highlightIds ? highlights.filter(item => !op.highlightIds!.includes(item.id)) : [];
+        }
+        const prepared = this.prepareDiagramEdit(document, diagram.id, { kind: 'highlights', highlights });
+        this.trackNodes(prepared.nodeIds);
+        document = { ...document, scene: { ...document.scene, contents: { ...document.scene.contents, [box.contentId]: prepared.diagram } } };
       } else if (op.method === 'setJumps' || op.method === 'setSourceMappings') {
         const box = findBox(document.scene.root, this.gridId(op.nodeId));
         if (box?.kind !== 'diagram') throw new Error('Expected diagram GridBox');
@@ -330,7 +357,7 @@ export class MappingDocumentController {
         const prepared = receiveDiagramRevision(op.expectedRevisionId, op.revision);
         this.trackNodes(prepared.nodeIds);
         const scene = layoutScene({ ...document.scene, contents: { ...document.scene.contents, [before.id]: prepared.diagram } }, box.id);
-        document = { ...document, scene, edges: reconcileConnections(document.scene, scene, document.edges) };
+        document = { ...document, scene, edges: reconcileConnections(document.scene, scene, document.edges, prepared.nodeIds) };
       } else if (op.method === 'duplicate-instance') {
         safeId(op.id);
         const source = findBox(document.scene.root, this.gridId(op.sourceNodeId));
