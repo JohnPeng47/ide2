@@ -12,7 +12,11 @@ export type DiagramContent = DeepReadonly<{
 }>;
 export function buildDiagramContent(ascii: string, revisionId: string, kind: 'diagram' | 'tree' = 'diagram', parserVersion: 'ascii-tree-1' | 'ascii-tree-2' = 'ascii-tree-2'): DiagramContent {
   if (!['ascii-tree-1', 'ascii-tree-2'].includes(parserVersion)) throw new Error('Unknown tree parser version');
-  if (!ascii.trim() || ascii.length > 20000 || /[^\x20-\x7e\n]/.test(ascii)) throw new Error('Diagram must contain 1–20000 printable ASCII characters with LF newlines');
+  // A blank rectangular diagram reserves editable canvas space (e.g. a generated-diagram placeholder).
+  const lines = ascii.split('\n');
+  const blankRectangle = kind === 'diagram' && lines.length > 1 && lines[0].length > 0
+    && lines.every(line => line.length === lines[0].length && /^ +$/.test(line));
+  if ((!ascii.trim() && !blankRectangle) || ascii.length > 20000 || /[^\x20-\x7e\n]/.test(ascii)) throw new Error('Diagram must contain 1–20000 printable ASCII characters with LF newlines');
   const content: DiagramContent = { revisionId, ascii, asciiSha256: asciiSha256(ascii), structure: { kind: 'diagram' } };
   if (kind === 'diagram') return content;
   const parsed = parseAsciiTree(ascii, parserVersion);

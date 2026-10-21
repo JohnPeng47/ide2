@@ -107,7 +107,18 @@ export class CanvasHistory {
         diagramRevisions: Object.assign(out.diagramRevisions, change.diagramRevisions) }), { snapshots: {}, diagramRevisions: {} });
     return { sequence: this.changes.length, header: { ...header, past: [...header.past], future: [...header.future] }, ...updates };
   }
-  export(): CanvasHistoryRecord { return structuredClone(this.record); }
+  export(currentOnly = false): CanvasHistoryRecord {
+    if (!currentOnly) return structuredClone(this.record);
+    // Copy operations need current bindings, not the source's entire undo archive.
+    // Keep the real head ID so workspace transfer boundaries still refer to it.
+    const { parentId: _, ...head } = this.record.snapshots[this.record.headId];
+    const revisions = Object.fromEntries([...new Set(Object.values(head.diagramBindings))]
+      .map(id => [id, this.record.diagramRevisions[id]]));
+    const revisionBoundary = Object.fromEntries(Object.values(revisions).flatMap(revision =>
+      revision.parentId && !revisions[revision.parentId] ? [[revision.parentId, revision.diagramId]] : []));
+    return structuredClone({ schemaVersion: 1, contextId: this.record.contextId, baselineId: head.id, headId: head.id,
+      past: [], future: [], snapshots: { [head.id]: head }, diagramRevisions: revisions, revisionBoundary });
+  }
   navigation(): CanvasHistoryNavigation {
     return { headId: this.record.headId, past: [...this.record.past], future: [...this.record.future],
       undoTransactionId: this.navigationTransactionId(), redoTransactionId: this.navigationTransactionId(true) };

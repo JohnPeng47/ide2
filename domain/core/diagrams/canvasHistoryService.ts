@@ -27,7 +27,7 @@ export interface CanvasHistoryService {
   navigate(context: CanvasEditingContext, redo?: boolean): boolean;
   reset(context: CanvasEditingContext): void;
   /** Portable transport adapters; callers must not interpret diagram revision tables. */
-  exportContext(context: CanvasEditingContext): CanvasHistoryRecord;
+  exportContext(context: CanvasEditingContext, currentOnly?: boolean): CanvasHistoryRecord;
   persistenceChanges(context: CanvasEditingContext, since?: number): import("./canvasHistory").HistoryChanges;
   retireTransactions(context: CanvasEditingContext, ids: ReadonlySet<string>): void;
   forkContext(context: CanvasEditingContext, view: unknown): CanvasHistoryRecord;
@@ -79,7 +79,7 @@ export class DefaultCanvasHistoryService implements CanvasHistoryService {
   reset(context: CanvasEditingContext) { this.history(context).reset(); }
   persistenceChanges(context: CanvasEditingContext, since?: number) { return this.history(context).persistenceChanges(since); }
   retireTransactions(context: CanvasEditingContext, ids: ReadonlySet<string>) { this.history(context).retireTransactions(ids); }
-  exportContext(context: CanvasEditingContext) { return this.history(context).export(); }
+  exportContext(context: CanvasEditingContext, currentOnly = false) { return this.history(context).export(currentOnly); }
   navigation(context: CanvasEditingContext) { return this.history(context).navigation(); }
   forkContext(context: CanvasEditingContext, view: unknown) { return this.history(context).fork(view); }
   adopt(context: CanvasEditingContext, proposed: CanvasHistoryRecord) { this.history(context).adopt(proposed); }

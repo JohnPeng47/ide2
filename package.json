@@ -42,6 +42,7 @@
     "check:diagram-edit-ui": "npm run build && node --import tsx tests/browser/mapping/browser-llm-panel-check.mjs",
     "check:diagram-edit": "npm run build && node tests/browser/mapping/browser-diagram-edit-check.mjs",
     "check:diagram-delete": "npm run build && node --import tsx tests/browser/mapping/browser-diagram-delete-check.mjs",
+    "check:highlight-projection": "npm run build && node --import tsx tests/browser/mapping/browser-highlight-projection-check.mjs",
     "check:diagram-transfer": "npm run build && node --import tsx tests/browser/mapping/browser-diagram-transfer-check.mjs",
     "check:tldraw": "npm run build && node --import tsx tests/browser/mapping/browser-tldraw-check.mjs",
     "check:canvas-treemaps": "npm run build && node --import tsx tests/browser/mapping/browser-canvas-treemaps-check.mjs",

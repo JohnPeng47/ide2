@@ -1,4 +1,5 @@
 import { canvasTransferSchema } from '../../core/diagrams/canvasTransfer';
+import { validateCanvasParents } from './canvasParents';
 import { CanvasHistory, currentHistoryChanges, documentFromHistory, validateCanvasHistory, type CanvasHistoryRecord, type HistoryChanges, type HistoryValidation } from '../../core/diagrams/canvasHistory';
 import type { StorageChange } from '../../core/storage/storageService';
 import { deserializeWorkspace } from './mappingWorkspaceCodec';
@@ -89,6 +90,8 @@ export function validateRecordUpdate(records: WorkspaceRecords, keys: string[], 
     const prefix = documentPrefix(id);
     if (!records[prefix + 'metadata'] || !records[prefix + 'baseline'] || !records[prefix + 'history'] || !records[prefix + 'canvas']) throw Error('Incomplete canvas');
   }
+  validateCanvasParents(index.documentIds.map(id => ({ representationId: id,
+    parentCanvasId: (records[documentPrefix(id) + 'metadata'] as MappingDocumentSnapshot).parentCanvasId })));
   for (const id of affected) {
     const prefix = documentPrefix(id), history = recordHistory(records, id);
     const removesHistory = keys.some(k => (k.startsWith(prefix + 'revision/') || k.startsWith(prefix + 'checkpoint/')) && !Object.hasOwn(records, k));

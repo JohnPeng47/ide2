@@ -1,4 +1,6 @@
 import { importLegacySelection } from '../selection/importLegacySelection';
+import { projectionLayoutSchema } from '../../core/diagrams/highlightProjection';
+import { validateCanvasParents } from './canvasParents';
 import { importLegacyCompactionPresentation } from './importLegacyCompactionPresentation';
 import { CanvasHistory } from './canvasHistory';
 import { canvasTransferSchema } from '../../core/diagrams/canvasTransfer';
@@ -66,6 +68,7 @@ export function deserializeWorkspace(json: string | unknown, historyValidation: 
     object(doc); id(doc.representationId); check(!docs.has(doc.representationId), 'duplicate document'); docs.add(doc.representationId);
     if (doc.hidden !== undefined) check(typeof doc.hidden === 'boolean', 'invalid canvas visibility');
     if (doc.repositoryId !== undefined) id(doc.repositoryId);
+    if (doc.parentCanvasId !== undefined) id(doc.parentCanvasId);
     if (doc.savedRepresentationId !== undefined) id(doc.savedRepresentationId);
     if (doc.representationId.startsWith('draft-') && doc.revisionId === '') {} else id(doc.revisionId); string(doc.name); string(doc.savedName); string(doc.savedScene);
     object(doc.document); object(doc.document.scene); object(doc.document.sections);
@@ -84,6 +87,7 @@ export function deserializeWorkspace(json: string | unknown, historyValidation: 
       for (const section of sections) { object(section); id(section.id); string(section.label); number(section.startLine); number(section.endLine); }
     }
     object(doc.canvas); object(doc.canvas.display); object(doc.canvas.display.nodes); strings(doc.canvas.display.rootIds);
+    if (doc.canvas.projectionLayout !== undefined) doc.canvas.projectionLayout = projectionLayoutSchema.parse(doc.canvas.projectionLayout);
     if (doc.canvas.diagramViews !== undefined) {
       object(doc.canvas.diagramViews);
       check(Object.keys(doc.canvas.diagramViews).length <= 2000, 'too many diagram views');
@@ -284,6 +288,7 @@ export function deserializeWorkspace(json: string | unknown, historyValidation: 
     if (c.activeThreadId) check(nodes[c.activeThreadId].kind === 'conversation', 'invalid conversation owner');
     if (doc.viewport) { object(doc.viewport); object(doc.viewport.offset); number(doc.viewport.offset.x); number(doc.viewport.offset.y); check(doc.viewport.scale >= .25 && doc.viewport.scale <= 4, 'invalid zoom'); }
   }
+  validateCanvasParents(value.documents);
   for (const tx of value.transfers ?? []) {
     const source = value.documents.find((doc: any) => doc.representationId === tx.sourceId);
     const destination = value.documents.find((doc: any) => doc.representationId === tx.destinationId);

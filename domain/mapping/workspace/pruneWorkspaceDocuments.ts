@@ -5,6 +5,7 @@ export function pruneWorkspaceDocuments(workspace: MappingWorkspaceSnapshot, kee
   const next = structuredClone(workspace);
   next.documents = next.documents.filter(doc => keep(doc.representationId));
   const ids = new Set(next.documents.map(doc => doc.representationId));
+  for (const doc of next.documents) if (doc.parentCanvasId && !ids.has(doc.parentCanvasId)) delete doc.parentCanvasId;
   const retired = new Set((next.transfers ?? []).filter(tx => !ids.has(tx.sourceId) || !ids.has(tx.destinationId)).map(tx => tx.id));
   next.transfers = next.transfers?.filter(tx => !retired.has(tx.id));
   for (const doc of next.documents) for (const checkpoint of Object.values(doc.history?.snapshots ?? {})) {

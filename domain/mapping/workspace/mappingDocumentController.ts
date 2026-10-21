@@ -125,7 +125,7 @@ export class MappingDocumentController {
     try { return [structuredClone(this.diagrams.getRevision(id))]; }
     catch (error) { if (allowMissing && error instanceof Error && error.message.startsWith('Unknown diagram revision:')) return []; throw error; }
   }); }
-  exportHistory() { return this.historyService.exportContext(this.context); }
+  exportHistory(currentOnly = false) { return this.historyService.exportContext(this.context, currentOnly); }
   /** Navigation metadata only: mounting/undo must not clone the content archive. */
   editorHistory(): import('../../core/diagrams/canvasHistory').CanvasHistoryNavigation {
     if (this.historyService.navigation) return this.historyService.navigation(this.context);
@@ -207,6 +207,13 @@ export class MappingDocumentController {
   }
   select(command: SelectionCommand) { this.updateCanvas(state => updateSelection(state, command), true); }
   commitDocument(document: MappingGridDocument) { this.editorDriver?.settle(); projectCanvasSnapshot(document.scene); this.updateSnapshot({ document, canvas: this.snapshot.canvas }, true); }
+  /** Publish layout and its settings together, guarding asynchronous layout jobs against newer edits. */
+  commitProjectionLayout(expectedVersion: number, document: MappingGridDocument, projectionLayout: NonNullable<MappingCanvasState['projectionLayout']>) {
+    this.editorDriver?.settle();
+    if (this.snapshot.version !== expectedVersion) throw Error('Canvas changed while arranging. Adjust a setting to try again.');
+    projectCanvasSnapshot(document.scene);
+    this.updateSnapshot({ document, canvas: { ...this.snapshot.canvas, projectionLayout } }, true);
+  }
   undo(redo = false) {
     if (this.editorDriver) { this.editorDriver.undo(redo); return; }
     if (!this.historyService.navigate(this.context, redo)) return;

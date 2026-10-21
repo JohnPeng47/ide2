@@ -31,11 +31,12 @@ export interface MappingControls {
 }
 /** A control accessor resolves these values against the active selection's surface. */
 export type MappingControlValues = MappingControls & SelectionSurfaceState;
-export interface MappingCanvasState { selection: SelectionState; diagramViews?: import('./diagramViewState').DiagramViews; display: DisplayState; controls: MappingControls }
+export interface MappingCanvasState { projectionLayout?: import('../../core/diagrams/highlightProjection').ProjectionLayout; selection: SelectionState; diagramViews?: import('./diagramViewState').DiagramViews; display: DisplayState; controls: MappingControls }
 export function initialCanvasState(): MappingCanvasState {
   return { selection: { items: [] }, diagramViews: {}, display: emptyDisplayState(), controls: { activeBoxId: 'overview', selectionFocusId: null, activeThreadId: null, surfaces: { draft: initialSelectionSurface() } } };
 }
 export interface MappingDocumentSnapshot {
+  parentCanvasId?: string;
   hidden?: boolean;
   history?: import('./canvasHistory').CanvasHistoryRecord;
   repositoryId?: string;

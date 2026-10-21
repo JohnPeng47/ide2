@@ -1,3 +1,5 @@
+import { highlightedDiagramIds } from '../../../domain/core/diagrams/highlightProjection';
+import { ProjectionLayoutPanel } from './workspace/ProjectionLayoutPanel';
 import { currentCanvasRead } from '../../../domain/mapping/agent/currentCanvasRead';
 import { useWindowPanelHotkeys } from './window-panel/windowPanelHotkeys';
 import type { ChatTabCommand } from './agent-chat/chatTabs';
@@ -29,7 +31,7 @@ import { CanvasWorkspace, type CanvasDraft as Draft, type CanvasDraftSeed } from
 import { WorkspacePersistence } from './workspace/workspacePersistence';
 import { runWorkspaceTask } from './workspace/runWorkspaceTask';
 import { pruneWorkspaceDocuments } from '../../../domain/mapping/workspace/pruneWorkspaceDocuments';
-import { emptyCanvasDocument, type CanvasTransfer, type TransferState } from '../../../domain/core/diagrams/canvasTransfer';
+import { emptyCanvasDocument, prepareTransferNavigation, type CanvasTransfer, type TransferState } from '../../../domain/core/diagrams/canvasTransfer';
 import { removeDisplayNode } from '../../../domain/mapping/workspace/displayModel';
 import { MappingServicesContext, useMappingServices, type MappingServices } from './services/MappingServices';
 import { reconcileWorkspaceDocument } from '../../../domain/mapping/workspace/reconcileWorkspace';
@@ -97,7 +99,7 @@ function MappingWorkspacePage() {
   const [storage] = useState(() => injectedStorage ?? new WorkspaceStorage());
   const persistence = useRef<WorkspacePersistence | undefined>(undefined);
   const [pendingTransfer, setPendingTransfer] = useState<{ sourceId: string; mode: 'copy' | 'move'; selectedIds: string[]; revisionId: string }>();
-  const [explorerTab, setExplorerTab] = useState<'diagrams'|'changes'|'llms'>('diagrams');
+  const [explorerTab, setExplorerTab] = useState<'diagrams'|'changes'|'canvas'>('diagrams');
   const [changeMode, setChangeMode] = useState<DisplayModeChange>();
   const [liveTreemapColors, setLiveTreemapColors] = useState<readonly TreemapDiagramColor[]>();
   const [treemapCanvasColors, setTreemapCanvasColors] = useState<TreemapCanvasColors>();
@@ -161,6 +163,8 @@ function MappingWorkspacePage() {
   const [newAscii, setNewAscii] = useState("[New diagram]");
   const [copyCurrent, setCopyCurrent] = useState(false);
   const active = activeId ? drafts[activeId] : undefined;
+  const activeScene = active ? documentOf(active).scene : undefined;
+  const highlightedCount = useMemo(() => activeScene ? highlightedDiagramIds(activeScene).length : 0, [activeScene]);
   const copyChatDiagram = useCallback((ascii: string) => {
     const draft = activeId ? workspace.store.getState().drafts[activeId] : undefined;
     if (!draft || draft.hidden) throw new Error('Open a live canvas to paste a diagram.');
@@ -369,7 +373,8 @@ function MappingWorkspacePage() {
     () => !workspaceBusy && !transferBusy.current);
   const draftAliases = new Set(Object.entries(drafts).map(([id, draft]) => draft.representationId ?? id));
   const diagrams = [...Object.values(snapshot?.catalog?.representations ?? {}).filter(diagram => diagram.status === 'settled' && !draftAliases.has(diagram.id)),
-    ...Object.entries(drafts).filter(([, draft]) => !draft.hidden).map(([id, draft]) => ({ id: draft.representationId ?? id, name: draft.name, repositoryId: draft.repositoryId }))];
+    ...Object.entries(drafts).filter(([, draft]) => !draft.hidden).map(([id, draft]) => ({ id: draft.representationId ?? id, name: draft.name, repositoryId: draft.repositoryId,
+      parentCanvasId: draft.parentCanvasId ? drafts[draft.parentCanvasId]?.representationId ?? draft.parentCanvasId : undefined }))];
 
   const open = (id: string, data = snapshot, navigate = true) => {
     const existingId = Object.entries(draftRef.current).find(([key, draft]) => key === id || draft.representationId === id)?.[0];
@@ -531,7 +536,7 @@ function MappingWorkspacePage() {
   const capture = (): MappingWorkspaceSnapshot => {
     if (!snapshot?.project) throw new Error('Project is not initialized');
     return { schemaVersion: 3, projectId: snapshot.project.id, activeDocumentId: activeId, transfers,
-      documents: Object.entries(workspace.store.getState().drafts).map(([representationId, draft]) => ({ representationId, hidden: draft.hidden, savedRepresentationId: draft.representationId, repositoryId: draft.repositoryId, name: draft.name,
+      documents: Object.entries(workspace.store.getState().drafts).map(([representationId, draft]) => ({ representationId, parentCanvasId: draft.parentCanvasId, hidden: draft.hidden, savedRepresentationId: draft.representationId, repositoryId: draft.repositoryId, name: draft.name,
         history: draft.session.controller.exportHistory(), savedName: draft.savedName, savedScene: draft.savedScene, savedEdges: draft.savedEdges, revisionId: draft.revisionId,
         document: documentOf(draft), canvas: { ...(canvasOf(draft)), display: viewState.captureDisplay(representationId, canvasOf(draft).display) },
         viewport: viewState.captureCamera(representationId, draft.viewport) })) };
@@ -611,6 +616,35 @@ function MappingWorkspacePage() {
     } catch (error) { setError(error instanceof Error ? error.message : String(error)); }
     finally { transferBusy.current = false; setWorkspaceBusy(false); setTransferProgress(''); }
   };
+  const projectHighlights = async () => {
+    if (!workspaceLoaded || !activeId || !active || !highlightedCount || transferBusy.current || workspaceBusy || savingId || deletingId || Object.values(drafts).some(draft => draft.busy)) return;
+    transferBusy.current = true; persistence.current?.setPaused(true); setWorkspaceBusy(true); setError('');
+    setTransferProgress('Projecting highlighted diagrams…');
+    try {
+      await paintProgress();
+      const source = active.session.controller;
+      const current = source.getSnapshot(), destinationId = `draft-${crypto.randomUUID()}`;
+      const prepared = await runWorkspaceTask({ type: 'project-highlights', source: source.exportHistory(true), cell: current.cell,
+        input: { sourceId: activeId, sourceAliases: [activeId, active.representationId ?? activeId], destinationId, destinationView: initialCanvasState() } });
+      if (source.getSnapshot().version !== current.version) throw Error('Canvas changed while projecting. Try again.');
+      const base = `${active.name.slice(0, 90)} · Highlights`;
+      let name = base, suffix = 2;
+      while (Object.values(drafts).some(doc => doc.name === name)) name = `${base} ${suffix++}`;
+      const child = { representationId: destinationId, parentCanvasId: activeId, repositoryId: active.repositoryId,
+        name, revisionId: '', savedName: '', savedScene: JSON.stringify(emptyCanvasDocument().scene), savedEdges: '[]',
+        document: prepared.destination.document, canvas: prepared.destination.view as MappingCanvasState, history: prepared.destination.history };
+      const nextTransfers = [...transfers.map(tx => tx.applied ? tx : { ...tx, discarded: true }), prepared.transaction];
+      await storage.saveDocument(child, { projectId: snapshot!.project!.id, documentIds: [...Object.keys(drafts), destinationId],
+        activeDocumentId: destinationId, transfers: nextTransfers }, true);
+      // Retain every existing session and editor; only the child is new.
+      setDrafts(current => ({ ...current, [destinationId]: { ...child, representationId: undefined, busy: false } }));
+      setTransfers(nextTransfers); setActiveId(destinationId);
+      const url = new URL(location.href); url.searchParams.set('diagram', destinationId); history.pushState({}, '', url);
+      setChangeMode(undefined); setExplorerTab('diagrams');
+      setWorkspaceStatus(`Projected ${prepared.selectedIds.length} highlighted diagrams with a blank placeholder. Adjust their layout in the bottom-right panel.`);
+    } catch (error) { setError(error instanceof Error ? error.message : String(error)); }
+    finally { transferBusy.current = false; setWorkspaceBusy(false); setTransferProgress(''); }
+  };
   const undo = async (id: string, redo = false) => {
     if (transferBusy.current || workspaceBusy || savingId || deletingId || Object.values(drafts).some(draft => draft.busy)) return;
     try {
@@ -622,6 +656,28 @@ function MappingWorkspacePage() {
         throw Error('Undo newer transfers involving either canvas first');
       const source = controllers.current.get(tx.sourceId), destination = controllers.current.get(tx.destinationId);
       if (!source || !destination) throw Error('Both canvases must be available to undo or redo this transfer');
+      if (tx.mode === 'copy' && drafts[tx.destinationId]?.parentCanvasId === tx.sourceId) {
+        // Projection navigation changes only the child. Keep the source archive and
+        // all unrelated sessions in place, just as when creating the projection.
+        transferBusy.current = true; persistence.current?.setPaused(true); setWorkspaceBusy(true); setError('');
+        const prepared = prepareTransferNavigation(source.exportHistory(true), destination.exportHistory(), tx, redo);
+        const draft = drafts[tx.destinationId];
+        const child = { representationId: tx.destinationId, savedRepresentationId: draft.representationId,
+          parentCanvasId: draft.parentCanvasId, repositoryId: draft.repositoryId, name: draft.name,
+          savedName: draft.savedName, savedScene: draft.savedScene, savedEdges: draft.savedEdges, revisionId: draft.revisionId,
+          document: prepared.destination.document, canvas: prepared.destination.view as MappingCanvasState,
+          history: prepared.destination.history, hidden: !redo, viewport: viewState.captureCamera(tx.destinationId, draft.viewport) };
+        const nextTransfers = transfers.map(item => item.id === tx.id ? prepared.transaction : item);
+        const nextActiveId = redo ? tx.destinationId : tx.sourceId;
+        await storage.saveDocument(child, { projectId: snapshot!.project!.id, documentIds: Object.keys(drafts),
+          activeDocumentId: nextActiveId, transfers: nextTransfers });
+        setDrafts(current => ({ ...current, [tx.destinationId]: { ...child, representationId: draft.representationId,
+          busy: false, reloadKey: crypto.randomUUID() } }));
+        setTransfers(nextTransfers); setActiveId(nextActiveId);
+        const url = new URL(location.href); url.searchParams.set('diagram', nextActiveId); history.pushState({}, '', url);
+        setWorkspaceStatus(`${redo ? 'Redid' : 'Undid'} projection`);
+        return;
+      }
       const prepared = source.prepareTransferNavigation(destination, tx, redo);
       const workspace = capture();
       workspace.documents = workspace.documents.map(doc => {
@@ -763,7 +819,8 @@ function MappingWorkspacePage() {
       const result = savedId ? await deleteMappingProjectDiagram(savedId) : snapshot!;
       if (savedId) setSnapshot(result);
       for (const [key, controller] of controllers.current) if (key !== draftId && retired.size) controller.retireTransactions(retired);
-      const remaining = Object.fromEntries(Object.entries(workspace.store.getState().drafts).filter(([key]) => key !== draftId));
+      const remaining = Object.fromEntries(Object.entries(workspace.store.getState().drafts).filter(([key]) => key !== draftId)
+        .map(([key, item]) => [key, item.parentCanvasId === draftId ? { ...item, parentCanvasId: draft?.parentCanvasId } : item]));
       const nextTransfers = transfers.filter(tx => !retired.has(tx.id));
       const nextId = activeId === draftId ? Object.entries(remaining).find(([, draft]) => !draft.hidden)?.[0] : activeId;
       setDrafts(remaining); setTransfers(nextTransfers); setActiveId(nextId);
@@ -863,7 +920,7 @@ function MappingWorkspacePage() {
     const key = prompts.open({ operation, canvasId, documentId, nodeId, label: `${draft.name} / ${captured.subtreeLabel ?? title}`,
       subtree: captured.subtree, subtreeLabel: captured.subtreeLabel, sources: captured.sources }, fresh);
     prompts.syncSelections(documentId, captured.selections);
-    setToolsOpen(true); setToolTab('llm'); setExplorerTab('llms');
+    setToolsOpen(true); setToolTab('llm');
     if (nodeId.startsWith('grid:')) setDrafts(current => ({ ...current, [documentId]: { ...current[documentId],
       focusBox: { id: nodeId.slice(5), contentNodeId: captured.subtree?.contentNodeId, serial: Date.now() } } }));
     return key;
@@ -891,7 +948,7 @@ function MappingWorkspacePage() {
       if (item) openComposer(activeId, item.displayNodeId, capturedSelection(activeId).subtree ? 'edit-diagram' : 'create-diagram', true);
       else {
         const key = prompts.store.getState().activeKey, entry = key && prompts.store.getState().entries[key];
-        if (entry && entry.target.documentId === activeId) { prompts.syncSelections(activeId, capturedSelection(activeId).selections); setToolsOpen(true); setToolTab('llm'); setExplorerTab('llms'); }
+        if (entry && entry.target.documentId === activeId) { prompts.syncSelections(activeId, capturedSelection(activeId).selections); setToolsOpen(true); setToolTab('llm'); }
         else newLlm();
       }
     } else {
@@ -1031,14 +1088,9 @@ function MappingWorkspacePage() {
             </div>
           </>}
           <FloatingPane highlighted={!!pendingTransfer}><MappingDiagramExplorer explorerTab={explorerTab}
-            llms={<><button className="llm-explorer-new" disabled={!active} onClick={newLlm}>New LLM</button>
-              <nav aria-label="LLM sessions">{Object.entries(llmEntries).map(([key, entry]) => <div key={key} className="mapping-explorer-row">
-                <button aria-current={activeLlm === key ? 'page' : undefined} className={activeLlm === key ? 'is-active' : undefined}
-                  onClick={() => { prompts.show(key); prompts.syncSelections(entry.target.documentId, capturedSelection(entry.target.documentId).selections, key); setToolTab('llm'); setToolsOpen(true); setChangeMode(undefined); setActiveId(entry.target.documentId); }}>
-                  {entry.target.label} · {entry.run?.status ?? entry.target.operation}
-                </button>
-                <button className="mapping-explorer-delete" aria-label={`Dismiss LLM ${entry.target.label}`} disabled={composerUnsettled(entry)} onClick={() => prompts.dismiss(key)}>×</button>
-              </div>)}</nav></>}
+            canvas={<div className="mapping-canvas-actions"><button type="button" disabled={!workspaceLoaded || !highlightedCount || !!changeMode || workspaceBusy || !!savingId || !!deletingId || Object.values(drafts).some(draft => draft.busy)}
+              onClick={() => void projectHighlights()}>Project Highlights</button>
+              <p>{highlightedCount ? `${highlightedCount} highlighted ${highlightedCount === 1 ? 'diagram' : 'diagrams'} will be copied into a child canvas with a blank placeholder.` : 'Highlight a diagram or some of its content, then project it into a child canvas.'}</p></div>}
             transfer={pendingTransfer ? { mode: pendingTransfer.mode, count: pendingTransfer.selectedIds.length,
               sourceId: drafts[pendingTransfer.sourceId]?.representationId ?? pendingTransfer.sourceId, busy: workspaceBusy, error, progress: transferProgress,
               onCancel: cancelTransfer, onNew: name => void transfer({ name }) } : undefined}
@@ -1049,6 +1101,8 @@ function MappingWorkspacePage() {
             busyIds={Object.keys(drafts).filter(id => drafts[id].busy).map(id => drafts[id].representationId ?? id)}
             onOpen={(id) => { if (pendingTransfer) void transfer({ id }); else { setChangeMode(undefined); open(id); } }} onFocus={(id) => { if (activeId && !drafts[activeId]?.busy) setDrafts((current) => ({ ...current,
               [activeId]: { ...current[activeId], focusBox: { id, serial: (current[activeId].focusBox?.serial ?? 0) + 1 } } })); }} /></FloatingPane>
+          {active && !active.hidden && !changeMode && <ProjectionLayoutPanel key={`${activeId}:${workspaceEpoch}`} session={active.session}
+            disabled={workspaceBusy || !!savingId || !!deletingId || !!pendingTransfer || active.busy} />}
           {workspaceBusy && <div className="mapping-transfer-busy" role="status" aria-live="polite"><div><strong>{transferProgress || 'Saving workspace…'}</strong><p>Keep this page open while the operation finishes.</p></div></div>}
         </div>
       </section>

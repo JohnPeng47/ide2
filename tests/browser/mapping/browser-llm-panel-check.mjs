@@ -151,7 +151,8 @@ try {
     console.log('PASS one reference widget decrements 2 to 1, follows undo/redo, disappears on empty selection and restores once');
     await click('[aria-label="Close Workspace tools"]');
     await nodeClick('Other');
-    await click('[aria-label="LLM sessions"] button[aria-current=page]');
+    // Reopen the existing edit; L deliberately starts a fresh edit for the current selection.
+    await key('b', 2); await key('b');
     assert.equal(await evaluate(cdp, "document.querySelectorAll('.prompt-reference').length"), 2);
     console.log('PASS automatic references from subsequent Ctrl-double-click selections');
     await click('.prompt-body-text'); await cdp.send('Input.insertText', { text: 'Revise branch' });
@@ -252,12 +253,10 @@ try {
     assert.ok(await evaluate(cdp,"innerWidth-document.querySelector('.window-panel').getBoundingClientRect().right<25"), 'Shared tools panel sits at the right edge');
     console.log('PASS shared tabs, preserved search, alignment');
     await click('[aria-label="Close Workspace tools"]');
-    await click('[role=tab]','LLMs');
-    assert.ok(await evaluate(cdp,"document.querySelectorAll('[aria-label=\"LLM sessions\"] .mapping-explorer-row').length>=2"));
-    await click('[aria-label="LLM sessions"] .mapping-explorer-row button');
-    assert.ok(await evaluate(cdp,"document.querySelector('.prompt-body-text').value.includes('Revise branch')"));
-    console.log('PASS Explorer session switching');
-    await click('[aria-label="Close Workspace tools"]');
+    await click('[role=tab]','Canvas');
+    assert.ok(await evaluate(cdp,"!!document.querySelector('.mapping-canvas-actions button')"));
+    assert.equal(await evaluate(cdp,"document.querySelectorAll('[aria-label=\"LLM sessions\"]').length"),0);
+    console.log('PASS Canvas actions replace Explorer LLM sessions');
     await key('Escape'); await key('Escape');
     await select('second');
     await nodeClick('Existing');
@@ -275,20 +274,18 @@ try {
     await click('[role=tab]','Diagrams');
     await key('b', 2); await key('l');
     await waitForSelector(cdp,'.llm-panel .prompt-body-text');
-    assert.ok(await evaluate(cdp,"[...document.querySelectorAll('[role=tab]')].some(e=>e.textContent==='LLMs' && e.getAttribute('aria-selected')==='true')"));
+    assert.ok(await evaluate(cdp,"[...document.querySelectorAll('.window-panel-tabs [role=tab]')].some(e=>e.textContent==='LLM' && e.getAttribute('aria-selected')==='true')"));
     assert.equal(await evaluate(cdp,"document.querySelector('[aria-label=\"LLM mode\"]').value"),'create-diagram');
     assert.equal(await evaluate(cdp,"document.querySelectorAll('.prompt-reference').length"),0);
     await click('.prompt-body-text'); await cdp.send('Input.insertText',{text:'Independent diagram'});
-    const sessionCount=await evaluate(cdp,"document.querySelectorAll('[aria-label=\"LLM sessions\"] .mapping-explorer-row').length");
     await key('b', 2); await key('l');
-    assert.equal(await evaluate(cdp,"document.querySelectorAll('[aria-label=\"LLM sessions\"] .mapping-explorer-row').length"),sessionCount, 'Typing L does not open another session');
+    assert.equal(await evaluate(cdp,"document.querySelector('.prompt-body-text').value"),'Independent diagram', 'Panel shortcut does not create a session while typing');
     await click('[aria-label="Close Workspace tools"]');
     await click('[role=tab]','Diagrams');
     await key('b', 2); await key('l');
     await waitForSelector(cdp,'.llm-panel .prompt-body-text');
-    assert.equal(await evaluate(cdp,"document.querySelectorAll('[aria-label=\"LLM sessions\"] .mapping-explorer-row').length"),sessionCount, 'L reopens the current session without duplicating it');
     assert.equal(await evaluate(cdp,"document.querySelector('.prompt-body-text').value"),'Independent diagram');
-    console.log('PASS L opens LLMs without selection from Explorer, preserves drafts, and ignores text fields');
+    console.log('PASS L opens the LLM tool without selection, preserves drafts, and ignores text fields');
     await click('.llm-panel button[type=submit]');
     await waitForSelector(cdp,'[data-edit-status=completed]',{timeoutMs:15000});
     await waitFor(async()=>(await text()).includes('[created: Independent diagram]'));
@@ -298,7 +295,7 @@ try {
     assert.equal(firstCreate.agentContext, undefined, 'A new panel starts without another panel’s history');
     const firstCreateId = await evaluate(cdp, "document.querySelector('[aria-label=\"Copy agent session ID\"]').title");
     await click('[aria-label="Close Workspace tools"]');
-    await click('[aria-label="LLM sessions"] button[aria-current=page]');
+    await key('b', 2); await key('b');
     await click('.prompt-body-text'); await key('a', 2); await cdp.send('Input.insertText', { text: 'Continue our previous discussion' });
     await click('.llm-panel button[type=submit]');
     await waitForSelector(cdp,'[data-edit-status=completed]',{timeoutMs:15000});
@@ -325,9 +322,8 @@ try {
       await waitFor(async()=>!await evaluate(cdp,`!!document.querySelector('[data-grid-box="${id}"]')`));
     }
     await waitForSelector(cdp,'.mapping-empty-canvas');
-    await click('[role=tab]','LLMs');
-    await click('.llm-explorer-new');
-    await click('.prompt-body-text'); await cdp.send('Input.insertText',{text:'From empty canvas'});
+    await key('b', 2); await key('l');
+    await click('.prompt-body-text'); await key('a', 2); await cdp.send('Input.insertText',{text:'From empty canvas'});
     await click('.llm-panel button[type=submit]');
     await waitForSelector(cdp,'[data-edit-status=completed]',{timeoutMs:15000});
     await waitFor(async()=>(await text()).includes('[created: From empty canvas]'));

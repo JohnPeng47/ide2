@@ -9,6 +9,7 @@ import type { DiagramFocus } from '../search/SearchHighlight';
 import { CanvasSession, readable, type SavedDocumentState } from './canvasSession';
 
 export interface DraftMetadata extends SavedDocumentState {
+  parentCanvasId?: string;
   repositoryId?: string;
   hidden?: boolean; newerRevision?: boolean; reloadKey?: string; representationId?: string;
   revisionId: string; busy: boolean; viewport?: CanvasTransform; focusBox?: DiagramFocus;
@@ -72,7 +73,7 @@ export class CanvasWorkspace {
       } else next[id] = item;
       next[id].session.updateBaseline(next[id]);
       const old = prior[id];
-      if (!old || next[id].session !== old.session || ['name', 'savedName', 'savedScene', 'savedEdges', 'revisionId', 'representationId', 'repositoryId', 'hidden'].some(key =>
+      if (!old || next[id].session !== old.session || ['name', 'savedName', 'savedScene', 'savedEdges', 'revisionId', 'representationId', 'repositoryId', 'parentCanvasId', 'hidden'].some(key =>
         old[key as keyof DraftMetadata] !== next[id][key as keyof DraftMetadata])) { persist = true; changedIds.add(id); }
     }
     for (const [id, old] of Object.entries(prior)) if (next[id]?.session !== old.session) {

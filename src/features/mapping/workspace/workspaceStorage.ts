@@ -1,6 +1,6 @@
 import type { StorageChange } from '../../../../domain/core/storage/storageService';
-import type { MappingWorkspaceSnapshot } from '../../../../domain/mapping/workspace/mappingWorkspace';
-import type { WorkspaceRecordState } from '../../../../domain/mapping/workspace/workspaceRecords';
+import type { MappingDocumentSnapshot, MappingWorkspaceSnapshot } from '../../../../domain/mapping/workspace/mappingWorkspace';
+import { documentRecords, documentPrefix, type WorkspaceIndex, type WorkspaceRecordState } from '../../../../domain/mapping/workspace/workspaceRecords';
 import { RecordStorage } from './recordStorage';
 
 /** One worker per opened workspace; no worker construction in a store() call. */
@@ -44,6 +44,16 @@ export class WorkspaceStorage {
     await this.load(); await this.records!.flush();
     const changes = await this.project(snapshot);
     await this.records!.commit(changes);
+  }
+
+  /** Publish one canvas atomically without exporting/revalidating unrelated histories. */
+  async saveDocument(document: MappingDocumentSnapshot, index: WorkspaceIndex, create = false) {
+    await this.load(); await this.records!.flush();
+    if (create && this.records!.get(documentPrefix(document.representationId) + 'metadata')) throw Error('Canvas already exists');
+    await this.records!.commit([
+      ...Object.entries(documentRecords(document)).map(([key, value]) => ({ key, value })),
+      { key: 'workspace', value: index }
+    ]);
   }
 
   async restore() {

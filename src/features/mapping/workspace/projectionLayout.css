@@ -1,0 +1,25 @@
+.projection-layout-panel { position: absolute; right: 18px; bottom: 76px; z-index: 60; width: min(320px, calc(100% - 36px)); max-height: calc(100% - 94px); overflow: auto; padding: 16px; border: 1px solid var(--gutter); border-radius: 14px; background: var(--surface-panel, var(--surface)); color: var(--fg); box-shadow: 0 10px 35px color-mix(in srgb, var(--shadow-color) 35%, transparent); font-size: 13px; }
+.projection-layout-panel header { display: flex; justify-content: space-between; align-items: start; gap: 12px; margin-bottom: 14px; }
+.projection-layout-panel header strong { display: block; font-size: 15px; }
+.projection-layout-panel small { display: block; margin-top: 5px; color: var(--muted); }
+.projection-layout-panel button, .projection-layout-panel select { border: 1px solid var(--gutter); border-radius: 6px; background: var(--bg); color: var(--fg); padding: 7px; cursor: pointer; }
+.projection-layout-panel header button { width: 28px; padding: 2px; font-size: 20px; }
+.projection-layout-panel fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+.projection-layout-label { color: var(--muted); margin-bottom: 8px; }
+.projection-layout-presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 14px; }
+.projection-layout-presets button { padding: 7px 3px; font-size: 12px; }
+.projection-layout-presets button[aria-pressed=true] { border-color: var(--accent-primary); background: var(--surface-selected); }
+.projection-layout-panel label { display: block; margin-top: 12px; }
+.projection-layout-panel select { width: 100%; margin-top: 6px; }
+.projection-layout-slider span { display: flex; justify-content: space-between; gap: 8px; }
+.projection-layout-slider output { color: var(--muted); font-variant-numeric: tabular-nums; }
+.projection-layout-slider input { display: block; width: 100%; margin: 7px 0 0; accent-color: var(--accent-primary); }
+.projection-layout-hint, .projection-layout-status { font-size: 12px; color: var(--muted); line-height: 1.5; margin: 12px 0 0; }
+.projection-layout-panel [role=alert] { color: var(--accent-danger); line-height: 1.4; }
+.projection-layout-panel.is-minimized { width: auto; padding: 10px 14px; }
+.projection-layout-panel.is-minimized header { margin: 0; align-items: center; }
+.projection-layout-panel :disabled { opacity: .5; cursor: default; }
+.mapping-floating-pane nav ul.mapping-canvas-children { padding-left: 14px; margin-left: 10px; border-left: 1px solid var(--gutter); }
+.mapping-canvas-actions button { width: 100%; padding: 10px; background: var(--surface-selected); border: 1px solid var(--accent-primary); border-radius: 6px; color: var(--fg); cursor: pointer; }
+.mapping-canvas-actions button:disabled { opacity: .5; cursor: default; }
+.mapping-canvas-actions p { color: var(--muted); font-size: 12px; line-height: 1.5; }
