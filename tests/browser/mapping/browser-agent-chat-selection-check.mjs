@@ -53,16 +53,43 @@ try {
       await waitFor(() => evaluate(cdp, `document.querySelector('[aria-label="Message Codex"]')?.isContentEditable === true`));
     };
     await openChat();
+    // Hold the lazy highlighter's requests to exercise selecting completed code
+    // before syntax highlighting arrives, as on a cold cache or slow connection.
+    const highlightingRequests = [];
+    const releaseHighlighting = cdp.on('Fetch.requestPaused', event => highlightingRequests.push(event.requestId));
+    await cdp.send('Fetch.enable', { patterns: [{ urlPattern: '*', resourceType: 'Script', requestStage: 'Request' }] });
     await click('[aria-label="Message Codex"]');
-    await cdp.send('Input.insertText', { text: 'Show markdown' });
+    await cdp.send('Input.insertText', { text: 'copy-highlight' });
     await key('Enter', 'Enter', 13);
     await waitForSelector(cdp, '.agent-message-assistant h1');
     await waitFor(() => evaluate(cdp, 'document.querySelector(".agent-chat").dataset.chatState === "idle"'));
+    await click('.agent-code-block pre code');
+    const codePoints = await evaluate(cdp, `(() => { const el=document.querySelector('.agent-code-block pre code'), r=document.createRange();r.selectNodeContents(el);const b=r.getBoundingClientRect();return {x:b.left+1,y:b.top+b.height/2,end:b.right-1,text:el.textContent}; })()`);
+    await cdp.send('Input.dispatchMouseEvent', {type:'mousePressed',x:codePoints.x,y:codePoints.y,button:'left',buttons:1,clickCount:1});
+    await cdp.send('Input.dispatchMouseEvent', {type:'mouseMoved',x:codePoints.end,y:codePoints.y,button:'left',buttons:1});
+    await cdp.send('Input.dispatchMouseEvent', {type:'mouseReleased',x:codePoints.end,y:codePoints.y,button:'left',buttons:0,clickCount:1});
+    assert.equal(await evaluate(cdp, 'getSelection().toString()'), codePoints.text);
+    await waitFor(() => highlightingRequests.length > 0);
+    releaseHighlighting();
+    await cdp.send('Fetch.disable');
+    await waitForSelector(cdp, '.agent-code-block .shiki');
+    assert.equal(await evaluate(cdp, 'getSelection().toString()'), codePoints.text, 'Syntax highlighting preserves selected code');
+    assert.equal(await evaluate(cdp, '!!document.querySelector(".agent-code-block").querySelector(".shiki")'), false, 'Highlighting waits until the first block is deselected');
+    await key('c','KeyC',67,2);
+    await click('[aria-label="Message Codex"]');
+    await key('a','KeyA',65,2);
+    await key('v','KeyV',86,2);
+    await waitFor(() => evaluate(cdp, `document.querySelector('[aria-label="Message Codex"]').textContent === ${JSON.stringify(codePoints.text)}`), {message:'Ctrl+C copied the selected code after highlighting'});
+    await waitFor(() => evaluate(cdp, 'document.querySelectorAll(".agent-code-block .shiki").length === 2'), {message:'Clearing the selection applies the deferred highlighting'});
     const selector = '.agent-message-assistant h1';
     await click(selector);
     const node = await evaluate(cdp, `(() => { const el = [...document.querySelectorAll('[data-content-node-id][data-display-node-id]')].find(el => el.textContent.trim() === 'Service' && el.getBoundingClientRect().width); const r=el.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}; })()`);
     await mouse(node, 2);
     await waitFor(() => evaluate(cdp, `document.querySelectorAll('.agent-chat-composer .agent-chat-reference').length > 0`));
+    const diagram = await evaluate(cdp, `(() => { const r=document.querySelector('[data-grid-box="overview"]').getBoundingClientRect(); return {x:r.x+2,y:r.bottom-6}; })()`);
+    await cdp.send('Input.dispatchMouseEvent', {type:'mousePressed',...diagram,button:'left',buttons:1,clickCount:2,modifiers:2});
+    await cdp.send('Input.dispatchMouseEvent', {type:'mouseReleased',...diagram,button:'left',buttons:0,clickCount:2,modifiers:2});
+    await waitForSelector(cdp, '[data-grid-box="overview"][data-diagram-selected="true"]');
     const points = await evaluate(cdp, `(() => { const el=document.querySelector('${selector}'), r=document.createRange();r.selectNodeContents(el);const b=r.getBoundingClientRect(); return {x:b.left+1,y:b.top+b.height/2,end:b.right-1,text:el.textContent}; })()`);
     await cdp.send('Input.dispatchMouseEvent', {type:'mousePressed',x:points.x,y:points.y,button:'left',buttons:1,clickCount:1});
     for(let step=1;step<=10;step++) await cdp.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:points.x+(points.end-points.x)*step/10,y:points.y,button:'left',buttons:1});
@@ -73,6 +100,12 @@ try {
     await key('a','KeyA',65,2);
     await key('v','KeyV',86,2);
     await waitFor(() => evaluate(cdp, `document.querySelector('[aria-label="Message Codex"]').textContent === ${JSON.stringify(points.text)}`), {message:'Ctrl+C copied selected output for pasting'});
+    await key('a','KeyA',65,2);
+    await key('x','KeyX',88,2);
+    await waitFor(() => evaluate(cdp, `document.querySelector('[aria-label="Message Codex"]').textContent === ''`));
+    assert.ok(await evaluate(cdp, '!!document.querySelector(\'[data-grid-box="overview"][data-diagram-selected="true"]\')'), 'Cutting chat text leaves the selected diagram intact');
+    await key('v','KeyV',86,2);
+    await waitFor(() => evaluate(cdp, `document.querySelector('[aria-label="Message Codex"]').textContent === ${JSON.stringify(points.text)}`), {message:'Cut chat text pastes back without canvas data'});
     await key('a','KeyA',65,2);
     await cdp.send('Input.insertText', {text:'stream-block'});
     await key('Enter','Enter',13);
@@ -91,7 +124,7 @@ try {
     await waitFor(() => evaluate(cdp, `document.querySelector('[aria-label="Message Codex"]').textContent === 'Root'`), {message:'Selected streaming output was copied'});
     await waitFor(() => evaluate(cdp, `document.querySelector('.agent-diagram-block code').textContent.includes('Last branch')`), {message:'Clearing the selection reveals all buffered output'});
     assert.deepEqual(errors, []);
-    console.log('PASS: completed output and streaming code remain selectable and copyable; buffered output appears when selection clears');
+    console.log('PASS: async highlighting preserves selection and Ctrl+C; selected canvas diagrams do not override text copying; streaming output remains copyable and catches up after deselection');
   });
 } finally {
   if (server && server.exitCode === null) {

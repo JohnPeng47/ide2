@@ -11,7 +11,7 @@ import { ChatFileLink } from '../ChatFileLinks';
 import { CopyButton } from './CopyButton';
 import { CopyToCanvasButton } from '../ChatCanvasCopy';
 import { useTheme, themeDefinitions } from '../../../../shared/theme/theme';
-import { useSelectableStream } from './useSelectableStream';
+import { useSelectableContent, useSelectableStream } from './useSelectableStream';
 
 export const MarkdownActivityContext = createContext(true);
 
@@ -25,6 +25,7 @@ const CodeBlock = memo(function CodeBlock({ code, language }: { code: string; la
   const [collapsed, setCollapsed] = useState(false);
   const lineCount = useMemo(() => code ? code.split('\n').length : 0, [code]);
   const [highlight, setHighlight] = useState<{ code: string; language: string; theme: string; html: string }>();
+  const highlighted = useSelectableContent(highlight?.code === code && highlight.language === language && highlight.theme === theme ? highlight.html : undefined);
   useEffect(() => {
     if (!enabled || diagram || collapsed || (highlight?.code === code && highlight.language === language && highlight.theme === theme)) return;
     let cancelled = false;
@@ -48,7 +49,7 @@ const CodeBlock = memo(function CodeBlock({ code, language }: { code: string; la
     <div className="agent-diagram-actions"><CopyButton text={code} label="Copy code" /><CopyToCanvasButton text={code} enabled={enabled} /></div>
   </div>;
   return <div className="agent-code-block"><header><span>{language || 'text'}</span>{toggle}<CopyButton text={code} label="Copy code" /></header>
-    <div id={contentId} hidden={collapsed}>{!collapsed && (highlight?.code === code && highlight.language === language && highlight.theme === theme ? <div dangerouslySetInnerHTML={{ __html: highlight.html }} /> : <pre><code>{code}</code></pre>)}</div>
+    <div id={contentId} hidden={collapsed} ref={highlighted.root} onPointerDown={highlighted.onPointerDown}>{!collapsed && (highlighted.value ? <div dangerouslySetInnerHTML={{ __html: highlighted.value }} /> : <pre><code>{code}</code></pre>)}</div>
   </div>;
 });
 const components: Components = {

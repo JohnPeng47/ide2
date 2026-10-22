@@ -178,6 +178,10 @@ createInterface({ input: process.stdin }).on('line', line => {
       answer(threadId, turnId, `Received ${references.length} references: ${references.map(ref => ref.reference.label).join(', ')}.\n\n${references.map(ref => ref.ascii).join('\n\n')}`);
       return;
     }
+    if (text === 'copy-highlight') {
+      answer(threadId, turnId, markdown + '\n\n```typescript\nconst ready = true;\n```');
+      return;
+    }
     if (text === 'stream-block') {
       void (async () => {
         const id = `stream-block-${turnId}`;

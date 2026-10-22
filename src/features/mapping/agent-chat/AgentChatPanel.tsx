@@ -252,7 +252,11 @@ export function AgentChatPanel({ open, projectId, canvasTarget, onCopyDiagram, r
           <option value="danger-full-access">Full access (YOLO)</option><option value="workspace-write">Workspace</option><option value="read-only">Read only</option></select></label>
       </div>
   </div>;
-  const content = <div className="agent-chat" style={{ '--agent-transcript-scale': zoom / 100 } as CSSProperties} data-chat-state={running ? 'running' : activeSessionId && !connected ? 'connecting' : session?.status ?? 'idle'} data-mapping-static-ui data-diagram-canvas-static-ui onKeyDown={event => { if (event.key !== 'Escape') event.stopPropagation(); }}>
+  // The canvas SDK listens for clipboard events on document. Keep native text
+  // copying/cutting inside the panel so selected shapes cannot replace its data.
+  const content = <div className="agent-chat" style={{ '--agent-transcript-scale': zoom / 100 } as CSSProperties} data-chat-state={running ? 'running' : activeSessionId && !connected ? 'connecting' : session?.status ?? 'idle'} data-mapping-static-ui data-diagram-canvas-static-ui
+    onCopy={event => event.stopPropagation()} onCut={event => event.stopPropagation()}
+    onKeyDown={event => { if (event.key !== 'Escape') event.stopPropagation(); }}>
     {sidebar.element && createPortal(sidebarContent, sidebar.element)}
     <div className="agent-chat-tabbar">
       <div ref={tabList} className="agent-chat-tabs" role="tablist" aria-label="Agent Chat conversations">

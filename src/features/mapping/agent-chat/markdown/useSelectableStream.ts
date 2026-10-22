@@ -1,15 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-/** Keep the selected DOM intact while tokens arrive; release it when selection ends. */
-export function useSelectableStream(text: string, streaming: boolean) {
+/** Keep selected DOM intact while its content changes, including async highlighting. */
+export function useSelectableContent<T>(value: T) {
   const root = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
   const [held, setHeld] = useState(false);
-  const [display, setDisplay] = useState({ text, streaming });
-  if (!held && (display.text !== text || display.streaming !== streaming)) setDisplay({ text, streaming });
+  const [display, setDisplay] = useState(() => value);
+  if (!held && display !== value) setDisplay(() => value);
 
   useEffect(() => {
-    if (!streaming && !held) return;
     const selected = () => {
       const selection = window.getSelection();
       return !!selection && !selection.isCollapsed && !!root.current
@@ -28,9 +27,14 @@ export function useSelectableStream(text: string, streaming: boolean) {
       window.removeEventListener('pointercancel', released);
       window.removeEventListener('blur', released);
     };
-  }, [streaming, held]);
+  }, []);
 
-  return { root, ...display, onPointerDown: () => {
-    if (streaming) { dragging.current = true; setHeld(true); }
+  return { root, value: display, onPointerDown: () => {
+    dragging.current = true; setHeld(true);
   } };
+}
+
+export function useSelectableStream(text: string, streaming: boolean) {
+  const content = useSelectableContent(useMemo(() => ({ text, streaming }), [text, streaming]));
+  return { ...content, ...content.value };
 }
