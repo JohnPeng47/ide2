@@ -2,12 +2,14 @@ import type { StorageChange, StorageService, StorageStatus } from '../../../../d
 import type { WorkspaceBatch, WorkspaceRecordState } from '../../../../domain/mapping/workspace/workspaceRecords';
 
 export interface RecordTransport { write(batch: WorkspaceBatch): Promise<{ revision: number }> }
-function equalEntry(a: unknown, b: unknown) { return a === b || Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((value, index) => value === b[index]); }
 function same(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
   const left = Object.keys(a), right = Object.keys(b);
-  return left.length === right.length && left.every(key => Object.hasOwn(b, key) && equalEntry((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key]));
+  // History headers and view records contain freshly projected reference maps.
+  // Compare their values so syncing an unchanged workspace does not queue a save.
+  return left.length === right.length && left.every(key => Object.hasOwn(b, key) && same((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key]));
 }
 /** Cheap synchronous submission. Encoding and transport are supplied by a persistent worker. */
 export class RecordStorage implements StorageService {

@@ -142,28 +142,41 @@ export class WorkspaceRecordStore {
       return { revision };
     });
   }
-  private async atomic(file: string, text: string) {
+  private async syncDirectory(directory: string) {
+    const dir = await open(directory, 'r'); try { await dir.sync(); } finally { await dir.close(); }
+  }
+  private async atomic(file: string, text: string, syncDirectory = true) {
     await mkdir(path.dirname(file), { recursive: true });
     const temp = `${file}.${randomUUID()}.tmp`;
     try {
       const handle = await open(temp, 'wx');
       try { await handle.writeFile(text); await handle.sync(); } finally { await handle.close(); }
       await rename(temp, file);
-      const dir = await open(path.dirname(file), 'r'); try { await dir.sync(); } finally { await dir.close(); }
+      if (syncDirectory) await this.syncDirectory(path.dirname(file));
     } finally { await rm(temp, { force: true }); }
   }
   private async publish(manifest: Manifest, records: WorkspaceRecords, keys: string[]) {
-    // Serial writes bound descriptors and memory even during initial migration.
-    for (const key of keys) {
-      if (!Object.hasOwn(records, key)) { delete manifest.records[key]; continue; }
-      const text = JSON.stringify(records[key]), id = hash(text);
-      if (manifest.records[key] !== id) {
-        const file = path.join(this.root, 'workspace-records', id + '.json');
-        try { if (await readFile(file, 'utf8') !== text) throw Error('Workspace record integrity failure'); }
-        catch (e) { if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e; await this.atomic(file, text); }
-        manifest.records[key] = id;
+    const directory = path.join(this.root, 'workspace-records');
+    let cursor = 0;
+    // Bound open files and serialization memory, while overlapping durable writes.
+    // Wait for every writer even on failure: no work may outlive this transaction.
+    const results = await Promise.allSettled(Array.from({ length: Math.min(8, keys.length) }, async () => {
+      while (cursor < keys.length) {
+        const key = keys[cursor++];
+        if (!Object.hasOwn(records, key)) { delete manifest.records[key]; continue; }
+        const text = JSON.stringify(records[key]), id = hash(text);
+        if (manifest.records[key] !== id) {
+          const file = path.join(directory, id + '.json');
+          try { if (await readFile(file, 'utf8') !== text) throw Error('Workspace record integrity failure'); }
+          catch (e) { if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e; await this.atomic(file, text, false); }
+          manifest.records[key] = id;
+        }
       }
-    }
+    }));
+    for (const result of results) if (result.status === 'rejected') throw result.reason;
+    // Make every blob's directory entry durable before publishing references to it.
+    // This also covers blobs left behind by an interrupted earlier attempt.
+    if (keys.some(key => Object.hasOwn(records, key))) await this.syncDirectory(directory);
     const raw = JSON.stringify(manifest);
     await this.atomic(this.file, raw);
     return this.cached = { raw, manifest, records, historyValidation: 'current' };

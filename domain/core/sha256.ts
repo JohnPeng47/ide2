@@ -14,13 +14,13 @@ export function sha256(value: string): string {
     0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
     0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
   ];
-  const bytes = [...new TextEncoder().encode(value)];
-  const bitLength = bytes.length * 8;
-  bytes.push(0x80);
-  while (bytes.length % 64 !== 56) bytes.push(0);
-  for (let shift = 56; shift >= 0; shift -= 8) {
-    bytes.push(shift >= 32 ? 0 : (bitLength >>> shift) & 0xff);
-  }
+  const input = new TextEncoder().encode(value);
+  // Large retained source strings must not expand into boxed-number arrays.
+  const bytes = new Uint8Array(Math.ceil((input.length + 9) / 64) * 64);
+  bytes.set(input); bytes[input.length] = 0x80;
+  const length = new DataView(bytes.buffer), bitLength = input.length * 8;
+  length.setUint32(bytes.length - 8, Math.floor(bitLength / 0x100000000));
+  length.setUint32(bytes.length - 4, bitLength >>> 0);
   const rotateRight = (word: number, bits: number) => (word >>> bits) | (word << (32 - bits));
   for (let offset = 0; offset < bytes.length; offset += 64) {
     const words = new Array<number>(64);

@@ -45,6 +45,31 @@ it('a failed manifest publication exposes the old complete workspace and can be 
   expect((await new WorkspaceRecordStore(root).load('project'))?.documents[0].name).toBe('Alpha');
   expect(await store.apply('project', batch)).toEqual({ revision: 1 });
 });
+it('syncs the record directory once before publishing, including a retry after its sync fails', async () => {
+  const { root, store, state, batch, prefix } = await fixture();
+  batch.changes.push({ key: prefix + 'baseline', value: { ...state.records[prefix + 'baseline'] as object, savedName: 'New baseline' } });
+  const real = await vi.importActual<typeof import('node:fs/promises')>('node:fs/promises');
+  const synced: string[] = [];
+  let failDirectory = true;
+  vi.mocked(open).mockImplementation(async (...args) => {
+    const handle = await real.open(...args), sync = handle.sync.bind(handle);
+    vi.spyOn(handle, 'sync').mockImplementation(async () => {
+      const file = String(args[0]); synced.push(file);
+      if (file === path.join(root, 'workspace-records') && failDirectory) { failDirectory = false; throw Error('directory sync failed'); }
+      await sync();
+    });
+    return handle;
+  });
+  await expect(store.apply('project', batch)).rejects.toThrow('directory sync failed');
+  expect((await new WorkspaceRecordStore(root).load('project'))?.documents[0].name).toBe('Alpha');
+  expect(synced.filter(file => file === path.join(root, 'workspace-records'))).toHaveLength(1);
+  expect(synced.some(file => file.includes('workspace-records.json.'))).toBe(false);
+  synced.length = 0;
+  await store.apply('project', batch);
+  // The already-written immutable blobs still need their directory made durable.
+  expect(synced).toEqual([path.join(root, 'workspace-records'), expect.stringContaining('workspace-records.json.'), root]);
+  expect((await new WorkspaceRecordStore(root).load('project'))?.documents[0].name).toBe('Renamed');
+});
 it('rejects incomplete atomic removals and broken history references without replacing the manifest', async () => {
   const { store, batch, prefix } = await fixture();
   await expect(store.apply('project', { ...batch, changes: [{ key: prefix + 'history', delete: true }] })).rejects.toThrow('Incomplete');
