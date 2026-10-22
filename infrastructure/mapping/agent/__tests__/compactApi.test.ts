@@ -1,3 +1,4 @@
+import { canvasMutationResult } from '../../../../domain/mapping/agent/mutationReceipt';
 import { currentCanvasRead } from '../../../../domain/mapping/agent/currentCanvasRead';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
@@ -29,17 +30,18 @@ function fixture(store = {} as DiagramRepository) {
     ascii: scene.contents.overview.content.ascii, structureKind: 'tree' }).diagram };
   const controller = new MappingDocumentController(mappingDocumentFromScene(scene), initialCanvasState());
   const descriptors = [{ canvasId: 'canvas', documents: [{ documentId: 'doc', name: 'Test' }] }];
-  const receipts = new Map<string, ReturnType<typeof controller.transact>>();
+  const receipts = new Map<string, unknown>();
   let loseNextReply = false;
   const bridge: CanvasSessionPort = {
     register() {}, list: () => descriptors, poll: async () => [], reply() {}, unregister() {}, dispose() {},
     async dispatch(_id, command) {
       if (command.method === 'read') return currentCanvasRead(controller.getSnapshot(), command.payload as any);
       if (command.method === 'snapshot' || command.method === 'identity') return { ...controller.getSnapshot(), name: 'Test' };
-      const p = command.payload as { expectedVersion: number; operations: DiagramOperation[]; requestId: string };
+      const p = command.payload as { expectedVersion: number; operations: DiagramOperation[]; requestId: string; resultFormat?: string };
       const prior = receipts.get(p.requestId);
       if (prior) return prior;
-      const result = controller.transact(p.expectedVersion, p.operations);
+      const applied = controller.transact(p.expectedVersion, p.operations);
+      const result = p.resultFormat === 'receipt' ? canvasMutationResult(command.documentId!, p.operations, applied) : applied;
       receipts.set(p.requestId, result);
       if (loseNextReply) { loseNextReply = false; throw Error('CANVAS_TIMEOUT: lost reply'); }
       return result;
@@ -51,7 +53,7 @@ function fixture(store = {} as DiagramRepository) {
   let request = 0;
   const call = (name: Parameters<typeof agent.call>[0], input: unknown) => agent.call(name, input) as Promise<any>;
   const attach = async () => (await call('exec', { requestId: `attach-${++request}`, code: 'return canvas.attach({canvasId:"canvas",documentId:"doc"});' })).value.sessionId as string;
-  const exec = (sessionId: string, code: string, extra = {}) => call('exec', { sessionId, requestId: `r${++request}`,
+  const exec = (sessionId: string, code: string, extra = {}) => call('exec', { mode: 'immediate', sessionId, requestId: `r${++request}`,
     expectedVersion: controller.getSnapshot().version, code, ...extra });
   return { controller, projection, agent, call, attach, exec, descriptors, loseReply: () => { loseNextReply = true; } };
 }
@@ -131,7 +133,7 @@ it('rejects stale/cross-diagram handles, accepts full IDs, preserves stale edge 
 it('replays compact read results and resolves identical anchors when a mutation acknowledgement is lost', async () => {
   const f = fixture(), session = await f.attach();
   f.loseReply();
-  const input = { requestId: 'retry-anchor', sessionId: session, expectedVersion: 0, code: `const n=${nodeCode}; const a=${rootCode};
+  const input = { mode: 'immediate', requestId: 'retry-anchor', sessionId: session, expectedVersion: 0, code: `const n=${nodeCode}; const a=${rootCode};
     return edges.create({source:{kind:'content-node',displayNodeId:n.id,contentNodeId:a.id,revisionId:n.content.revisionId},target:{kind:'box',displayNodeId:n.id},appearance:{}});` };
   await expect(f.call('exec', input)).rejects.toThrow('CANVAS_TIMEOUT');
   const recovered = await f.call('exec', input);
@@ -242,13 +244,17 @@ it('makes native chat highlight links from saved IDs, supports selected nodes, a
     }] } };
   const input = { reference: 1, color: 'purple', requestId: 'chat-highlight' };
   const result = await tools.call('highlight-node', input, session) as any;
-  expect(result.highlights).toHaveLength(2);
+  expect(result.highlights).toHaveLength(1);
+  expect(f.controller.getSnapshot().document.scene.contents.overview.highlights![0].contentNodeIds).toEqual(ids);
   expect(parseHighlightReference(result.highlights[0].markdownUrl)).toEqual({ documentId: 'doc', nodeId: 'grid:overview', highlightId: result.highlights[0].id });
   const version = f.controller.getSnapshot().version;
   expect(await tools.call('highlight-node', input, session)).toEqual(result);
   expect(f.controller.getSnapshot().version).toBe(version);
   await expect(tools.call('highlight-node', { ...input, color: 'orange' }, session)).rejects.toThrow('REQUEST_ID_CONFLICT');
   await expect(tools.call('highlight-node', { ...input, requestId: 'read-only' }, { ...session, settings: { ...session.settings, sandbox: 'read-only' } })).rejects.toThrow('Workspace access');
+  const explicit = await tools.call('highlight-node', { nodeId: 'grid:overview', contentNodeIds: [...ids].reverse(), color: 'green', requestId: 'explicit-group' }, session) as any;
+  expect(explicit.highlights[0]).toMatchObject({ id: result.highlights[0].id, color: 'green' });
   const removed = await tools.call('remove-highlights', { nodeId: 'grid:overview', highlightIds: [result.highlights[0].id], requestId: 'remove-one' }, session) as any;
-  expect(removed.highlights).toHaveLength(1);
+  expect(removed.highlights).toEqual([]);
+  expect(f.controller.getSnapshot().document.scene.contents.overview.highlights).toEqual([]);
 });

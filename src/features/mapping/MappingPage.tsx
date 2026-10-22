@@ -1,5 +1,7 @@
 import { highlightedDiagramIds } from '../../../domain/core/diagrams/highlightProjection';
 import { ProjectionLayoutPanel } from './workspace/ProjectionLayoutPanel';
+import { highlightNodeIds } from '../../../domain/core/diagrams/diagramHighlight';
+import { canvasMutationResult } from '../../../domain/mapping/agent/mutationReceipt';
 import { currentCanvasRead } from '../../../domain/mapping/agent/currentCanvasRead';
 import { useWindowPanelHotkeys } from './window-panel/windowPanelHotkeys';
 import type { ChatTabCommand } from './agent-chat/chatTabs';
@@ -351,12 +353,13 @@ function MappingWorkspacePage() {
       return result;
     }
     if (command.method === 'apply') {
-      const { requestId, expectedVersion, operations, resultNodeIds } = command.payload as { requestId: string; expectedVersion: number; operations: DiagramOperation[]; resultNodeIds?: string[] };
+      const { requestId, expectedVersion, operations, resultNodeIds, resultFormat } = command.payload as { requestId: string; expectedVersion: number; operations: DiagramOperation[]; resultNodeIds?: string[]; resultFormat?: 'receipt' };
       const key = `${id}:${requestId}`;
       if (appliedRequests.current.has(key)) return appliedRequests.current.get(key);
       if (draft.busy) throw new Error('DOCUMENT_BUSY');
       const applied = controller.applyUpdate(expectedVersion, operations);
-      const result = { ...applied, nodes: resultNodeIds ? applied.nodes.filter(node => resultNodeIds.includes(node.id)) : applied.nodes };
+      const result = resultFormat === 'receipt' ? canvasMutationResult(id, operations, applied)
+        : { ...applied, nodes: resultNodeIds ? applied.nodes.filter(node => resultNodeIds.includes(node.id)) : applied.nodes };
       appliedRequests.current.set(key, result);
       return result;
     }
@@ -407,11 +410,12 @@ function MappingWorkspacePage() {
     const node = controller.nodes().find(node => node.id === target.nodeId);
     const highlight = node?.layout === 'grid' && node.diagram?.highlights?.find(item => item.id === target.highlightId);
     if (!highlight) throw new Error('This highlight was removed or is no longer available.');
-    if (highlight.contentNodeId && (node?.layout !== 'grid' || !node.contentNodes?.some(item => item.id === highlight.contentNodeId)))
-      throw new Error('The highlighted node changed. Ask the agent to refresh the highlight.');
+    const targets = highlightNodeIds(highlight);
+    if (targets.some(targetId => node?.layout !== 'grid' || !node.contentNodes?.some(item => item.id === targetId)))
+      throw new Error('A highlighted node changed. Ask the agent to refresh the highlight.');
     setError('');
     setDrafts(current => ({ ...current, [id]: { ...current[id], focusBox: { id: target.nodeId.slice(5),
-      contentNodeId: highlight.contentNodeId, serial: (current[id].focusBox?.serial ?? 0) + 1 } } }));
+      contentNodeIds: [...targets], serial: (current[id].focusBox?.serial ?? 0) + 1 } } }));
   };
 
   const jumpTo = async (target: DiagramJumpTarget) => {

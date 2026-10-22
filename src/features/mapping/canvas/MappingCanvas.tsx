@@ -417,13 +417,15 @@ export function MappingPocSelectionCanvas(props: {
     };
     const root = expand(scene.root);
     if (JSON.stringify(root) !== JSON.stringify(scene.root)) commit({ ...gridDocument, scene: layoutScene({ ...scene, root }, target) });
-    const focusNode = props.focusBox.contentNodeId;
+    const focusNodes = props.focusBox.contentNodeIds ?? (props.focusBox.contentNodeId ? [props.focusBox.contentNodeId] : []);
     const displayed = controller.nodes().find(node => node.id === `grid:${target}`);
-    if ((focusNode || props.focusBox.search) && displayed?.layout === 'grid' && displayed.content?.structure.kind === 'tree') {
+    if ((focusNodes.length || props.focusBox.search) && displayed?.layout === 'grid' && displayed.content?.structure.kind === 'tree') {
       const content = displayed.content;
       const ancestors = new Set<string>();
-      let node = content.structure.kind === 'tree' && focusNode ? content.structure.nodes[focusNode] : undefined;
-      while (node?.parentId && content.structure.kind === 'tree') { ancestors.add(node.parentId); node = content.structure.nodes[node.parentId]; }
+      for (const focusNode of focusNodes) {
+        let node = content.structure.kind === 'tree' ? content.structure.nodes[focusNode] : undefined;
+        while (node?.parentId && content.structure.kind === 'tree') { ancestors.add(node.parentId); node = content.structure.nodes[node.parentId]; }
+      }
       const line = props.focusBox.search?.line;
       if (line && content.structure.kind === 'tree') for (const node of Object.values(content.structure.nodes))
         if (node.foldRanges.some(range => range.startLine <= line && range.endLine >= line)) ancestors.add(node.id);

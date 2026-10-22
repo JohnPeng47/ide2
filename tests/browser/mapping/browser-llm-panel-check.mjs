@@ -197,7 +197,7 @@ try {
     await waitFor(async()=>await evaluate(cdp,"document.querySelector('.llm-extension-edge path').getAttribute('d')")!==firstEdge);
     assert.ok(await selectionVisible());
     await key('Escape');
-    assert.equal(await evaluate(cdp,"document.querySelectorAll('.llm-extension-edge[data-placing=true]').length"),0);
+    await waitFor(async () => await evaluate(cdp,"document.querySelectorAll('.llm-extension-edge[data-placing=true]').length") === 0);
     assert.ok(await selectionVisible(), 'Escape cancels placement without removing the source selection');
     await click('.selection-root-join.llm-origin');
     // An occupied drop keeps placement active and leaves the original selection untouched.
@@ -210,7 +210,7 @@ try {
     await waitFor(async()=>await evaluate(cdp,"document.querySelector('.llm-mode').textContent.includes('New origin:')"));
     assert.equal(await evaluate(cdp,"document.querySelector('[data-selection-active=true]').dataset.selectionRoot"),sourceSelection);
     assert.ok(await selectionVisible(), 'Second click places the origin and preserves the source rectangle');
-    assert.equal(await evaluate(cdp,"document.querySelectorAll('.llm-extension-edge[data-placing=true]').length"),0);
+    await waitFor(async () => await evaluate(cdp,"document.querySelectorAll('.llm-extension-edge[data-placing=true]').length") === 0);
     const blankPrompt = await evaluate(cdp,"(()=>{const r=document.querySelector('.prompt-body').getBoundingClientRect(); const p={x:r.x+r.width/2,y:r.bottom-24}; return {...p,hit:document.elementFromPoint(p.x,p.y)?.className};})()");
     assert.equal(blankPrompt.hit,'prompt-body', 'Exercise blank prompt space rather than targeting a textarea');
     await mouse('mousePressed',{x:blankPrompt.x,y:blankPrompt.y}); await mouse('mouseReleased',{x:blankPrompt.x,y:blankPrompt.y});

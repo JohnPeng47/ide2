@@ -175,3 +175,18 @@ it('copies colored highlights onto independent content anchors and preserves the
   const restored = new MappingDocumentController(p.destination.document, p.destination.view as ReturnType<typeof initialCanvasState>, 0, undefined, undefined, p.destination.history);
   expect(Object.values(restored.getSnapshot().document.scene.contents).find(diagram => diagram.highlights?.length)?.highlights).toEqual(diagram.highlights);
 });
+
+
+it('copies a multi-node highlight as one saved annotation and round-trips its targets', () => {
+  const f = setup(), controller = new MappingDocumentController(f.document, initialCanvasState());
+  const anchors = diagramContentNodes(f.document.scene.contents.shared.content).slice(0, 2);
+  controller.applyUpdate(0, [{ method: 'highlight', nodeId: 'grid:a', contentNodeIds: anchors.map(node => node.id), color: 'blue', highlightId: 'group-highlight' }]);
+  const p = prepareCanvasTransfer(controller.exportHistory(), { ...f.input, mode: 'copy' });
+  const diagram = Object.values(p.destination.document.scene.contents).find(diagram => diagram.highlights?.length)!;
+  const targets = anchors.map(anchor => diagramContentNodes(diagram.content).find(node => node.label === anchor.label)!.id);
+  expect(targets).not.toEqual(anchors.map(node => node.id));
+  expect(diagram.highlights).toEqual([{ id: 'group-highlight', contentNodeIds: targets, color: 'blue' }]);
+  const saved = JSON.parse(JSON.stringify(p.destination));
+  const restored = new MappingDocumentController(saved.document, saved.view, 0, undefined, undefined, saved.history);
+  expect(Object.values(restored.getSnapshot().document.scene.contents).find(diagram => diagram.highlights?.length)?.highlights).toEqual(diagram.highlights);
+});

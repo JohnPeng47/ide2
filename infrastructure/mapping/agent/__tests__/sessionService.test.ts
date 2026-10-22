@@ -53,7 +53,7 @@ it('routes document copies through the live bridge and retries a lost reply with
   expect(receipts.size).toBe(1);
 });
 
-it('commits each exec edit immediately with distinct versions, undo entries and request deduplication', async () => {
+it('supports explicit immediate mode committing each edit with distinct versions, undo entries and request deduplication', async () => {
   const controller = new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('[Original]')), initialCanvasState(), 7);
   const bridge: CanvasSessionPort = {
     register() {}, list: () => [{canvasId:'canvas',documents:[{documentId:'doc',name:'Test'}]}], poll: async () => [], reply() {}, unregister() {}, dispose() {},
@@ -67,7 +67,7 @@ it('commits each exec edit immediately with distinct versions, undo entries and 
   const attached = await service.call('exec',{requestId:'attach',code:'return canvas.attach({canvasId:"canvas",documentId:"doc"});'}) as {value:{sessionId:string;version:number}};
   const sessionId = attached.value.sessionId;
   expect(attached.value.version).toBe(7);
-  const result = await service.call('exec',{sessionId,requestId:'batch',expectedVersion:7,code:'nodes.draw({ascii:"A"}); const b = nodes.draw({ascii:"B"}); return nodes.get({nodeId:b.id});'}) as {value:{id:string;version:number};transaction:{version:number}};
+  const result = await service.call('exec',{mode:'immediate',sessionId,requestId:'batch',expectedVersion:7,code:'nodes.draw({ascii:"A"}); const b = nodes.draw({ascii:"B"}); return nodes.get({nodeId:b.id});'}) as {value:{id:string;version:number};transaction:{version:number}};
   expect(result.value.version).toBe(9); expect(result.transaction.version).toBe(9);
   const read = await service.call('diagram-search',{operation:'read',sessionId,nodeId:result.value.id}) as {version:number;node:{version:number}};
   expect(read.node.version).toBe(read.version); expect(read.version).toBe(9);
@@ -79,7 +79,7 @@ it('commits each exec edit immediately with distinct versions, undo entries and 
   expect(controller.nodes().filter(node => node.kind === 'diagram')).toHaveLength(2);
   await expect(service.call('draw_diagram',{...input,ascii:'Different'})).rejects.toThrow('REQUEST_ID_CONFLICT');
   const version = controller.getSnapshot().version;
-  await expect(service.call('exec',{sessionId,requestId:'partial',expectedVersion:version,code:'nodes.draw({ascii:"Temporary"}); nodes.move({nodeId:"grid:overview",position:{x:2,y:4}});'})).rejects.toThrow('cell coordinates');
+  await expect(service.call('exec',{mode:'immediate',sessionId,requestId:'partial',expectedVersion:version,code:'nodes.draw({ascii:"Temporary"}); nodes.move({nodeId:"grid:overview",position:{x:2,y:4}});'})).rejects.toThrow('cell coordinates');
   expect(controller.getSnapshot().version).toBe(version + 1);
   expect(controller.nodes().some(node => node.layout === 'grid' && node.content?.ascii === 'Temporary')).toBe(true);
 });
@@ -154,7 +154,7 @@ it('retries a lost acknowledgement without repeating earlier edits or changing g
   };
   const service = new AgentDiagrammingSessionService(bridge, {} as MappingDiagramService, {} as DiagramRepository, new QuickJsAgentRuntime());
   const attached = await service.call('exec',{requestId:'attach',code:'return canvas.attach({canvasId:"canvas",documentId:"doc"});'}) as {value:{sessionId:string}};
-  const input = { sessionId:attached.value.sessionId, expectedVersion:0, requestId:'retry', code:
+  const input = { mode:'immediate', sessionId:attached.value.sessionId, expectedVersion:0, requestId:'retry', code:
     'const a=nodes.draw({ascii:"A"}); const read=nodes.get({nodeId:a.id}); try { nodes.move({nodeId:a.id,position:{column:-1,row:0}}); } catch(e) {} const b=nodes.draw({ascii:"B"}); const c=nodes.draw({ascii:"C"}); return {a,read,b,c};' };
   await expect(service.call('exec',input)).rejects.toThrow('CANVAS_TIMEOUT');
   expect(controller.getSnapshot().version).toBe(2);
@@ -191,11 +191,11 @@ it('keeps committed edits on a later conflict and lets scripts catch individual 
   const service = new AgentDiagrammingSessionService(bridge, {} as MappingDiagramService, {} as DiagramRepository, new QuickJsAgentRuntime());
   const attached = await service.call('exec',{requestId:'attach',code:'return canvas.attach({canvasId:"canvas",documentId:"doc"});'}) as {value:{sessionId:string}};
   const sessionId=attached.value.sessionId;
-  await expect(service.call('exec',{sessionId,requestId:'conflict',expectedVersion:0,code:'nodes.draw({ascii:"A"}); nodes.draw({ascii:"B"});'})).rejects.toThrow('VERSION_CONFLICT');
+  await expect(service.call('exec',{mode:'immediate',sessionId,requestId:'conflict',expectedVersion:0,code:'nodes.draw({ascii:"A"}); nodes.draw({ascii:"B"});'})).rejects.toThrow('VERSION_CONFLICT');
   expect(controller.nodes().filter(n=>n.layout==='grid'&&n.content).map(n=>n.layout==='grid'&&n.content?.ascii)).toEqual(['Original','A','External']);
-  const result=await service.call('exec',{sessionId,requestId:'catch',expectedVersion:2,code:'try { nodes.remove({nodeId:"grid:root"}); } catch(e) {} const c=nodes.draw({ascii:"C"}); return nodes.get({nodeId:c.id});'}) as {value:{version:number}};
+  const result=await service.call('exec',{mode:'immediate',sessionId,requestId:'catch',expectedVersion:2,code:'try { nodes.remove({nodeId:"grid:root"}); } catch(e) {} const c=nodes.draw({ascii:"C"}); return nodes.get({nodeId:c.id});'}) as {value:{version:number}};
   expect(result.value.version).toBe(3);
   const version=controller.getSnapshot().version;
-  await service.call('exec',{sessionId,requestId:'read',code:'return nodes.list();'});
+  await service.call('exec',{mode:'immediate',sessionId,requestId:'read',code:'return nodes.list();'});
   expect(controller.getSnapshot().version).toBe(version);
 });

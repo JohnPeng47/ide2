@@ -1,4 +1,4 @@
-import { activeDiagramHighlights, highlightColor } from '../../../../domain/core/diagrams/diagramHighlight';
+import { activeDiagramHighlights, highlightColor, highlightNodeIds } from '../../../../domain/core/diagrams/diagramHighlight';
 import { DiagramTreemapTint } from '../treemap/CanvasTreemapColors';
 import { memo, useContext, useMemo } from 'react';
 import { useValue } from 'tldraw';
@@ -22,12 +22,15 @@ const Text = memo(function Text({ model }: { model: Pick<GridModel, 'id' | 'diag
   }, [model.diagram, model.view, model.jumps, model.id]);
   const source = model.node.layout === 'grid' ? model.node.diagram ?? model.diagram! : model.diagram!;
   const highlights = activeDiagramHighlights(source.content, source.highlights);
-  const whole = highlights.find(item => !item.contentNodeId);
+  const whole = highlights.find(item => !highlightNodeIds(item).length);
+  const byNode = new Map<string, (typeof highlights)[number]>();
+  for (const highlight of highlights) for (const id of highlightNodeIds(highlight))
+    if (!byNode.has(id)) byNode.set(id, highlight);
   return <DiagramText style={whole ? { backgroundColor: `${highlightColor(whole.color)}33`, outline: `2px solid ${highlightColor(whole.color)}` } : undefined}
     data-highlight-id={whole?.id} className="mapping-poc-ascii" rows={rows} data-graph="A" data-line-count={rows.length}
     data-revision={model.diagram!.revision} registerEndpoint={register}
     nodeProps={owner => {
-      const highlight = highlights.find(item => item.contentNodeId === owner.contentNodeId);
+      const highlight = byNode.get(owner.contentNodeId!);
       return { className: model.selectedContent.includes(owner.contentNodeId!) ? 'is-selected' : undefined,
         ...(highlight ? { 'data-highlight-id': highlight.id, style: { backgroundColor: `${highlightColor(highlight.color)}55`,
           boxShadow: `inset 0 -2px ${highlightColor(highlight.color)}` } } : {}) };

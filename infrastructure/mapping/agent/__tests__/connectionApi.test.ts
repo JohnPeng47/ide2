@@ -26,7 +26,7 @@ it('exposes anchored edge CRUD to agents with immediate edits, partial failures,
   const attached: any = await service.call('exec', { requestId: 'attach', code: 'return canvas.attach({canvasId:"canvas",documentId:"doc"});' });
   const sessionId = attached.value.sessionId;
   let sequence = 0;
-  const exec = (code: string, expectedVersion = controller.getSnapshot().version) => service.call('exec', { sessionId, requestId: `request-${++sequence}`, expectedVersion, code }) as Promise<any>;
+  const exec = (code: string, expectedVersion = controller.getSnapshot().version) => service.call('exec', { mode: 'immediate', sessionId, requestId: `request-${++sequence}`, expectedVersion, code }) as Promise<any>;
   const create = `const n = nodes.get({nodeId:'grid:overview'}); return edges.create({source:{kind:'content-node',displayNodeId:n.id,contentNodeId:Object.values(n.content.structure.nodes)[0].id,revisionId:n.content.revisionId},target:{kind:'box',displayNodeId:n.id},appearance:{}});`;
   const result = await exec(create);
   expect(result.transaction.version).toBe(1);

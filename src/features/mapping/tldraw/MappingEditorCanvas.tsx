@@ -82,15 +82,19 @@ export function MappingEditorCanvas(props: {
     const frame = requestAnimationFrame(() => { inner = requestAnimationFrame(() => {
       const focus = props.focusBox!;
       root.current?.querySelectorAll('[data-jump-focus]').forEach(element => element.removeAttribute('data-jump-focus'));
-      const label = focus.contentNodeId ? [...root.current!.querySelectorAll<HTMLElement>('[data-content-node-id]')]
-        .find(element => element.dataset.contentNodeId === focus.contentNodeId && element.dataset.displayNodeId === `grid:${focus.id}`) : undefined;
-      if (label) label.setAttribute('data-jump-focus', '');
+      const targetIds = new Set(focus.contentNodeIds ?? (focus.contentNodeId ? [focus.contentNodeId] : []));
+      const labels = [...root.current!.querySelectorAll<HTMLElement>('[data-content-node-id]')]
+        .filter(element => targetIds.has(element.dataset.contentNodeId!) && element.dataset.displayNodeId === `grid:${focus.id}`);
+      labels.forEach(label => label.setAttribute('data-jump-focus', ''));
       const search = focus.search && [...root.current!.querySelectorAll<HTMLElement>('[data-search-focus]')]
         .find(element => element.dataset.searchBox === focus.id && element.dataset.searchFocus === String(focus.serial));
-      const target = search || label;
-      const rect = target?.getBoundingClientRect();
+      const rects = (search ? [search] : labels).map(element => element.getBoundingClientRect()).filter(rect => rect.width && rect.height);
+      const rect = rects.length ? {
+        x: Math.min(...rects.map(rect => rect.left)), y: Math.min(...rects.map(rect => rect.top)),
+        right: Math.max(...rects.map(rect => rect.right)), bottom: Math.max(...rects.map(rect => rect.bottom))
+      } : undefined;
       const bounds = editor.getShapePageBounds(mappingShapeId(`grid:${focus.id}`));
-      const point = rect?.width && rect.height ? editor.screenToPage({ x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 })
+      const point = rect ? editor.screenToPage({ x: (rect.x + rect.right) / 2, y: (rect.y + rect.bottom) / 2 })
         : bounds?.center;
       if (point) {
         const viewport = root.current!.getBoundingClientRect();

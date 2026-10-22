@@ -1,5 +1,5 @@
 import { diagramContentNodes } from '../../core/diagrams/diagramContentNodes';
-import { highlightColorSchema } from '../../core/diagrams/diagramHighlight';
+import { highlightColorSchema, highlightTargetsSchema, highlightNodeIds, sameHighlightTargets } from '../../core/diagrams/diagramHighlight';
 import { syncSelectionPresentation } from '../selection/selectionPresentation';
 import { importLegacySelection } from '../selection/importLegacySelection';
 import { updateSelection } from '../selection/canvasSelection';
@@ -30,7 +30,7 @@ import { diagramConnectionSchema, reconcileConnections, validateConnectionAnchor
 
 export interface ControllerSnapshot { contextId: string; canvasRevisionId: string; endpointBounds?: EndpointBounds; document: MappingGridDocument; canvas: MappingCanvasState; version: number; canUndo: boolean; canRedo: boolean; cell?: { width: number; height: number } }
 export type DiagramOperation =
-  | { method: 'highlight'; nodeId: string; contentNodeId?: string; color?: string; highlightId: string }
+  | { method: 'highlight'; nodeId: string; contentNodeId?: string; contentNodeIds?: string[]; color?: string; highlightId: string }
   | { method: 'removeHighlights'; nodeId: string; highlightIds?: string[] }
   | { method: 'duplicate-instance'; sourceNodeId: string; id: string; position: GridPoint }
   | { method: 'delete-diagrams'; nodeIds: string[] }
@@ -239,6 +239,7 @@ export class MappingDocumentController {
   private applyOperations(expectedVersion: number, operations: DiagramOperation[], editorCanvas?: MappingCanvasState) {
     if (expectedVersion !== this.snapshot.version) throw new Error('VERSION_CONFLICT: read the canvas again');
     if (!Array.isArray(operations) || !operations.length || operations.length > (editorCanvas ? 10000 : 100)) throw new Error('Expected 1–100 operations');
+    const highlightIds: Record<string, string> = {};
     let { document, canvas } = structuredClone(this.snapshot);
     if (editorCanvas) canvas = structuredClone(editorCanvas);
     const safeId = (id: string) => { if (typeof id !== 'string' || !/^[a-zA-Z0-9_.:-]{1,180}$/.test(id) || ['__proto__','constructor','prototype'].includes(id)) throw new Error('Invalid node ID'); };
@@ -308,10 +309,13 @@ export class MappingDocumentController {
         const diagram = document.scene.contents[box.contentId];
         let highlights = [...(diagram.highlights ?? [])];
         if (op.method === 'highlight') {
-          if (op.contentNodeId && !diagramContentNodes(diagram.content).some(node => node.id === op.contentNodeId)) throw new Error('STALE_CONTENT_NODE: read current anchors');
-          const existing = highlights.find(item => item.contentNodeId === op.contentNodeId);
+          const targets = highlightTargetsSchema.parse(op);
+          const currentIds = new Set(diagramContentNodes(diagram.content).map(node => node.id));
+          if (highlightNodeIds(targets).some(id => !currentIds.has(id))) throw new Error('STALE_CONTENT_NODE: read current anchors');
+          const existing = highlights.find(item => sameHighlightTargets(item, targets));
           const highlight = { id: existing?.id ?? op.highlightId, color: highlightColorSchema.parse(op.color ?? 'yellow'),
-            ...(op.contentNodeId ? { contentNodeId: op.contentNodeId } : {}) };
+            ...targets };
+          highlightIds[op.highlightId] = highlight.id;
           highlights = [...highlights.filter(item => item.id !== highlight.id), highlight];
         } else {
           if (op.highlightIds?.some(id => !highlights.some(item => item.id === id))) throw new Error('Unknown highlight ID');
@@ -470,7 +474,7 @@ export class MappingDocumentController {
       canvas.controls.activeBoxId = first?.layout === 'grid' ? first.boxId : document.scene.root.id;
     }
     this.updateSnapshot({ document, canvas }, true);
-    return { version: this.snapshot.version, nodes: this.nodes() };
+    return { version: this.snapshot.version, nodes: this.nodes(), ...(Object.keys(highlightIds).length ? { highlightIds } : {}) };
   }
   private gridId(id: string) { if (!id.startsWith('grid:')) throw new Error('Expected GridBox ID'); return id.slice(5); }
 }

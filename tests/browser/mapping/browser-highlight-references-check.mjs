@@ -29,9 +29,9 @@ try {
     cdp.on('Page.javascriptDialogOpening', () => cdp.send('Page.handleJavaScriptDialog', { accept: true }));
     const errors = [];
     cdp.on('Runtime.exceptionThrown', event => errors.push(event.exceptionDetails.exception?.description || event.exceptionDetails.text));
-    const mouse = async (point, modifiers = 0) => {
-      await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', ...point, button: 'left', buttons: 1, clickCount: 1, modifiers });
-      await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...point, button: 'left', buttons: 0, clickCount: 1, modifiers });
+    const mouse = async (point, modifiers = 0, clickCount = 1) => {
+      await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', ...point, button: 'left', buttons: 1, clickCount, modifiers });
+      await cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...point, button: 'left', buttons: 0, clickCount, modifiers });
     };
     const click = async selector => {
       await waitForSelector(cdp, selector);
@@ -56,6 +56,7 @@ try {
       await waitFor(() => evaluate(cdp, "!document.querySelector('.tl-hit-test-blocker:not(.tl-hit-test-blocker__hidden)')"));
       const point = await evaluate(cdp, `(() => { const el = [...document.querySelectorAll('[data-content-node-id][data-display-node-id]')].find(el => el.textContent.trim() === ${JSON.stringify(label)} && el.getBoundingClientRect().width); if(!el) throw Error('Missing node'); const r = el.getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2}; })()`);
       await mouse(point, 2);
+      await mouse(point, 2, 2);
       await waitFor(() => evaluate(cdp, `document.querySelectorAll('.agent-chat-composer .agent-chat-reference').length > 0`));
     };
     const submit = async (text, label) => {
@@ -74,16 +75,19 @@ try {
     await mouse({ x: 900, y: 800 }); await key('Escape', 'Escape', 27);
     await submit('Highlight selected ref pink', 'Other');
     assert.ok((await colors()).some(item => item.text === 'Other' && item.color === 'rgba(244, 114, 182, 0.333)'));
-    const saved = await colors(); assert.equal(new Set(saved.map(item => item.id)).size, 3);
+    const saved = await colors();
+    assert.equal(saved.find(item => item.text === 'Service').id, saved.find(item => item.text === 'Worker').id);
+    assert.equal(new Set(saved.map(item => item.id)).size, 2);
+    await click('[aria-label="Collapse subtree Service"]');
     await click('.agent-highlight-reference');
-    try { await waitFor(() => evaluate(cdp, `document.querySelector('[data-jump-focus]')?.textContent === 'Service'`), { message: 'Marker did not focus its saved target' }); }
+    try { await waitFor(() => evaluate(cdp, `JSON.stringify([...document.querySelectorAll('[data-jump-focus]')].map(el => el.textContent)) === JSON.stringify(['Service','Worker'])`), { message: 'Marker did not focus its saved target' }); }
     catch (error) { console.error(await evaluate(cdp, `({focus:document.querySelector('[data-jump-focus]')?.outerHTML, text:document.body.innerText.slice(-4500), links:[...document.querySelectorAll('.agent-highlight-reference')].map(el=>{const r=el.getBoundingClientRect();return {text:el.textContent,html:el.outerHTML,hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.outerHTML.slice(0,300)};})})`)); throw error; }
     await captureScreenshot(cdp, { output: path.join(fixture, 'highlight-reference.png') });
     await cdp.send('Page.reload'); await openChat();
+    await click('.agent-highlight-reference');
     await waitFor(async () => (await colors()).length === saved.length, { message: 'Highlights did not survive reload' });
     assert.deepEqual(await colors(), saved);
-    await click('.agent-highlight-reference');
-    await waitFor(() => evaluate(cdp, `document.querySelector('[data-jump-focus]')?.textContent === 'Service'`));
+    await waitFor(() => evaluate(cdp, `JSON.stringify([...document.querySelectorAll('[data-jump-focus]')].map(el => el.textContent)) === JSON.stringify(['Service','Worker'])`));
     await mouse({ x: 900, y: 800 }); await key('Escape', 'Escape', 27);
     await submit('Remove current highlights');
     await waitFor(async () => (await colors()).length === 0, { message: 'Removal left rendered highlights' });

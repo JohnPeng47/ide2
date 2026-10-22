@@ -96,7 +96,7 @@ it('isolates shared MCP operations, persists sessions and history, rejects bad r
 
     await expect(call('exec',{sessionId,requestId:'bad',code:'return nodes.list();'})).rejects.toThrow('MISMATCH');
     await expect(call('exec',{sessionId,changeSessionId:'another',requestId:'bad',code:'return nodes.list();'})).rejects.toThrow();
-    const patch={sessionId,changeSessionId,requestId:'patch',expectedVersion:0,code:'return nodes.patchDiagram({nodeId:"grid:overview",start:2,end:2,patch:"|-- Changed"});'};
+    const patch={sessionId,changeSessionId,requestId:'patch',expectedVersion:0,code:'nodes.patchDiagram({nodeId:"grid:overview",start:2,end:2,patch:"|-- Changed"}); return nodes.get({nodeId:"grid:overview"});'};
     const result=await call('exec',patch);
     expect(result.value.content.ascii).toContain('Changed');
     expect(await call('exec',patch)).toEqual(result);
@@ -106,15 +106,15 @@ it('isolates shared MCP operations, persists sessions and history, rejects bad r
     expect(current.changes).toMatchObject([{type:1,nodeId:'grid:overview'}]);
     await expect(call('save_diagram',{sessionId,changeSessionId,requestId:'save',expectedVersion:1,name:'Bad'})).rejects.toThrow('SAVE_FORBIDDEN');
     await expect(exec('nodes.patchDiagram({nodeId:"grid:overview",start:2,end:2,patch:"|-- Changed again"}); nodes.remove({nodeId:"grid:root"});',{sessionId,expectedVersion:1})).rejects.toThrow('protected');
-    expect((await changes.get(changeSessionId)).documents[0].version).toBe(2);
-    expect((await new ChangeSessionService(new DiagramChangeSessionStore(root),store,bridge).get(changeSessionId)).documents[0].proposed.document.scene.contents.overview.content.ascii).toContain('Changed again');
-    const newNode=await exec('return nodes.draw({ascii:"Detail\\n`-- Child",structureKind:"tree",position:{column:40,row:0}});',{sessionId,expectedVersion:2});
+    expect((await changes.get(changeSessionId)).documents[0].version).toBe(1);
+    expect((await new ChangeSessionService(new DiagramChangeSessionStore(root),store,bridge).get(changeSessionId)).documents[0].proposed.document.scene.contents.overview.content.ascii).not.toContain('Changed again');
+    const newNode=await exec('return nodes.draw({ascii:"Detail\\n`-- Child",structureKind:"tree",position:{column:40,row:0}});',{sessionId,expectedVersion:1});
     let session=await changes.get(changeSessionId);
     await expect(call('update_diagram_change_session',{changeSessionId,requestId:'readybad',expectedVersion:session.version,status:'ready'})).rejects.toThrow('needs an edge');
-    const owner = diagramContentNodes(session.documents[0].proposed.document.scene.contents.overview.content).find(n => n.label === 'Changed again')!;
+    const owner = diagramContentNodes(session.documents[0].proposed.document.scene.contents.overview.content).find(n => n.label === 'Changed')!;
     expect(session.documents[0].proposed.nodeOrigins?.[owner.id]).toBeUndefined();
     // Detail attaches directly to the edited owner, without an unrelated baseline-origin edge.
-    await exec(`const source=nodes.get({nodeId:'grid:overview'}); return edges.create({source:{kind:'content-node',displayNodeId:source.id,contentNodeId:Object.values(source.content.structure.nodes).find(n=>n.label==='Changed again').id,revisionId:source.content.revisionId},target:{kind:'box',displayNodeId:${JSON.stringify(newNode.value.id)}},appearance:{}});`,{sessionId,expectedVersion:3});
+    await exec(`const source=nodes.get({nodeId:'grid:overview'}); return edges.create({source:{kind:'content-node',displayNodeId:source.id,contentNodeId:Object.values(source.content.structure.nodes).find(n=>n.label==='Changed').id,revisionId:source.content.revisionId},target:{kind:'box',displayNodeId:${JSON.stringify(newNode.value.id)}},appearance:{}});`,{sessionId,expectedVersion:2});
     session=await changes.get(changeSessionId);
     await call('update_diagram_change_session',{changeSessionId,requestId:'ready',expectedVersion:session.version,status:'ready',changes:session.changes.map(c=>({...c,title:`Review ${c.title}`,type:c.type===1?4:c.type}))});
     expect((await changes.get(changeSessionId)).status).toBe('ready');

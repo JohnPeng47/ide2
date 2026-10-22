@@ -1,3 +1,4 @@
+import { canvasMutationResult, type CanvasMutationResult } from '../../../domain/mapping/agent/mutationReceipt';
 import { ChatCanvasBindings } from './chatBindings';
 import { CanvasReadAliases } from './readAliases';
 import { currentCanvasRead } from '../../../domain/mapping/agent/currentCanvasRead';
@@ -28,6 +29,7 @@ import type { DiagramRepository } from '../../core/ports/diagramRepository';
 
 type EditResult = ReturnType<MappingDocumentController['applyUpdate']>;
 interface ExecStep {
+  operation?: DiagramOperation;
   signature: string;
   execute: () => Promise<unknown>;
   outcome?: { value: unknown } | { error: unknown };
@@ -41,6 +43,7 @@ interface ExecRun {
   lastEdit?: EditResult;
   createdDocument: boolean;
   steps: ExecStep[];
+  batches: Map<number, { indices: number[]; expectedVersion: number; result?: CanvasMutationResult; error?: unknown }>;
 }
 const canvasTimeout = (error: unknown) => error instanceof Error && /CANVAS_TIMEOUT|CANVAS_REPLY_TOO_LARGE|CANVAS_REPLY_REJECTED/.test(error.message);
 
@@ -213,6 +216,15 @@ export class AgentDiagrammingSessionService {
     if (session.changeSessionId) return this.changeService().apply(session.changeSessionId, session.documentId, expectedVersion, operations, requestId);
     return this.bridge.dispatch(session.canvasId, { method: 'apply', documentId: session.documentId, payload: { expectedVersion, operations, requestId, resultNodeIds: operations.flatMap(op => 'nodeId' in op ? [op.nodeId] : op.method === 'diagram-create' ? [`grid:${op.id}`] : []) } });
   }
+  private async applyBatch(sessionId: string, expectedVersion: number, operations: DiagramOperation[], requestId: string, changeSessionId?: string): Promise<CanvasMutationResult> {
+    const session = this.session(sessionId, changeSessionId);
+    if (session.changeSessionId) {
+      const result = await this.changeService().apply(session.changeSessionId, session.documentId, expectedVersion, operations, requestId);
+      return canvasMutationResult(session.documentId, operations, result);
+    }
+    return await this.bridge.dispatch(session.canvasId, { method: 'apply', documentId: session.documentId,
+      payload: { expectedVersion, operations, requestId, resultFormat: 'receipt' } }) as CanvasMutationResult;
+  }
   private async exec(input: ReturnType<typeof agentToolSchemas.exec.parse>, readOnly = false) {
     const key = JSON.stringify([input.changeSessionId, input.sessionId, input.requestId]);
     const signature = JSON.stringify(input);
@@ -223,7 +235,7 @@ export class AgentDiagrammingSessionService {
       const session = input.sessionId && this.session(input.sessionId, input.changeSessionId);
       const snapshot = session ? (input.changeSessionId ? await this.snapshot(input.sessionId!, input.changeSessionId)
         : await this.bridge.dispatch(session.canvasId, { method: 'identity', documentId: session.documentId }) as LiveDocumentSnapshot) : undefined;
-      run = { signature, initialVersion: snapshot?.version, version: snapshot?.version, createdDocument: false, steps: [],
+      run = { signature, initialVersion: snapshot?.version, version: snapshot?.version, createdDocument: false, steps: [], batches: new Map(),
         nodes: snapshot?.document && canvasDisplayNodes(snapshot.document, snapshot.canvas, snapshot.version, snapshot.cell, snapshot.endpointBounds),
         edges: snapshot?.document?.edges };
       this.execRuns.set(key, run);
@@ -233,9 +245,37 @@ export class AgentDiagrammingSessionService {
     // The pending call retains its operation ID, expected version and request ID.
     const requestPrefix = `exec-${createHash('sha256').update(key).digest('hex')}`;
     let cursor = 0;
+    let pending: number[] = [];
+    let uncertain = false;
+    const flush = async () => {
+      if (uncertain) throw Error('CANVAS_TIMEOUT: retry execution with the same requestId');
+      if (!pending.length) return;
+      const indices = pending; pending = [];
+      const first = indices[0];
+      let batch = state.batches.get(first);
+      if (!batch) {
+        batch = { indices, expectedVersion: state.version! };
+        state.batches.set(first, batch);
+      }
+      if (JSON.stringify(batch.indices) !== JSON.stringify(indices)) throw Error('REQUEST_ID_CONFLICT: batch changed during retry');
+      if (batch.error) throw batch.error;
+      if (!batch.result) {
+        try {
+          batch.result = await this.applyBatch(input.sessionId!, batch.expectedVersion,
+            indices.map(index => state.steps[index].operation!), `${requestPrefix}:batch:${first}`, input.changeSessionId);
+          state.version = batch.result.version; state.nodes = undefined; state.edges = undefined;
+        } catch (error) {
+          if (canvasTimeout(error)) uncertain = true;
+          else batch.error = error;
+          throw error;
+        }
+      }
+    };
     try {
       const value = await this.runtime.run(input.code, async (method, args) => {
         if (readOnly && !['canvas.read', 'canvas.list', 'canvas.attach', 'nodes.list', 'nodes.get', 'edges.list'].includes(method)) throw Error('READ_ONLY: canvas mutation requires Workspace access');
+        if (input.mode === 'batched' && (method.startsWith('canvas.') || ['nodes.list', 'nodes.get', 'edges.list', 'nodes.setSourceMappings', 'nodes.setJumps'].includes(method))) await flush();
+        if (uncertain) throw Error('CANVAS_TIMEOUT: retry execution with the same requestId');
         const stepIndex = cursor++, stepSignature = JSON.stringify({ method, args });
         let step = state.steps[stepIndex];
         if (step && step.signature !== stepSignature) throw new Error('REQUEST_ID_CONFLICT: execution changed during retry');
@@ -246,6 +286,7 @@ export class AgentDiagrammingSessionService {
             const resolved = input.sessionId ? this.aliases.resolve(args, this.binding(input.sessionId, input.changeSessionId)) : args;
             const parsed = entry.schema.parse(resolved) as Record<string, any>;
             let execute: () => Promise<unknown>;
+            let queuedOperation: DiagramOperation | undefined;
             if (method === 'canvas.list') execute = async () => input.changeSessionId ? this.changeService().descriptor(input.changeSessionId) : this.bridge.list();
             else if (method === 'canvas.attach') {
               if (input.sessionId) {
@@ -316,7 +357,10 @@ export class AgentDiagrammingSessionService {
                 // Decode before freezing the retry step. Domain state always retains full IDs.
                 if (method === 'edges.create' || method === 'edges.update') Object.assign(parsed, this.projection.resolveEdge(parsed as Omit<import('../../../domain/core/diagrams/diagramConnection').DiagramConnection, 'id'>));
                 if ((method === 'nodes.collapse' || method === 'nodes.highlight') && parsed.contentNodeId) parsed.contentNodeId = this.projection.resolveAnchorId(parsed.contentNodeId);
-                if (method === 'nodes.highlight') parsed.highlightId = `highlight-${randomUUID()}`;
+                if (method === 'nodes.highlight') {
+                  parsed.highlightId = `highlight-${randomUUID()}`;
+                  if (parsed.contentNodeIds) parsed.contentNodeIds = parsed.contentNodeIds.map((id: string) => this.projection.resolveAnchorId(id));
+                }
                 if (method === 'nodes.setSourceMappings') parsed.expectedContentHash = await this.mappingHash(sessionId, input.changeSessionId, parsed.nodeId, state.version);
                 if (method === 'nodes.setJumps') {
                   const node = state.nodes!.find(node => node.id === parsed.nodeId);
@@ -337,7 +381,15 @@ export class AgentDiagrammingSessionService {
                         edge: { ...parsed, id: method === 'edges.create' ? `connection-${randomUUID()}` : parsed.id } }
                   : method === 'nodes.draw' ? { ...parsed, method: 'diagram-create', id: `diagram-${randomUUID()}` }
                     : { ...parsed, method: method.slice(6) }) as DiagramOperation;
-                execute = async () => {
+                if (input.mode === 'batched') {
+                  queuedOperation = operation;
+                  // IDs support dependent writes without pretending a queued mutation has committed.
+                  const handle = 'edge' in operation ? { id: operation.edge.id, edgeId: operation.edge.id }
+                    : 'edgeId' in operation ? { id: operation.edgeId, edgeId: operation.edgeId }
+                    : { id: operation.method === 'diagram-create' ? `grid:${operation.id}` : parsed.nodeId,
+                        nodeId: operation.method === 'diagram-create' ? `grid:${operation.id}` : parsed.nodeId };
+                  execute = async () => ({ ...handle, status: 'queued' });
+                } else execute = async () => {
                   const result = await this.apply(sessionId, expectedVersion, [operation], `${requestPrefix}:${stepIndex}`, input.changeSessionId) as EditResult;
                   state.version = result.version; state.nodes = undefined; state.edges = undefined; state.lastEdit = result;
                   if (method.startsWith('edges.')) return 'edge' in operation ? this.projection.edge(operation.edge) : null;
@@ -347,7 +399,7 @@ export class AgentDiagrammingSessionService {
                 };
               }
             }
-            step = { signature: stepSignature, execute };
+            step = { signature: stepSignature, execute, operation: queuedOperation };
             state.steps[stepIndex] = step;
           } catch (error) {
             state.steps[stepIndex] = { signature: stepSignature, execute: async () => { throw error; }, outcome: { error } };
@@ -359,15 +411,19 @@ export class AgentDiagrammingSessionService {
           catch (error) { if (!canvasTimeout(error)) step.outcome = { error }; throw error; }
         }
         if ('error' in step.outcome) throw step.outcome.error;
+        if (step.operation) pending.push(stepIndex);
         return step.outcome.value;
       });
+      await flush();
       // A script may catch a transport timeout. Keep it retryable until the unknown
       // outcome is acknowledged, rather than reporting a completed execution.
       if (state.steps.some(step => !step.outcome)) throw new Error('CANVAS_TIMEOUT: retry execution with the same requestId');
       this.execRuns.delete(key);
-      // Retain the response shape; transaction describes the last individual edit.
+      if (state.batches.size) return { value, transaction: { version: state.version,
+        receipts: [...state.batches.values()].flatMap(batch => batch.result?.receipts ?? []) } };
       return state.lastEdit ? { value, transaction: this.projection.result(state.lastEdit) } : { value, ...(state.version === undefined ? {} : { version: state.version }) };
     } catch (error) {
+      if (uncertain) throw Error('CANVAS_TIMEOUT: retry execution with the same requestId');
       if (!canvasTimeout(error)) this.execRuns.delete(key);
       throw error;
     }
