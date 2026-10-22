@@ -40,6 +40,7 @@
     "check:change-acceptance": "npm run build && node --import tsx tests/browser/mapping/browser-change-acceptance-check.mjs",
     "check:diagram-search": "npm run build && node --import tsx tests/browser/mapping/browser-diagram-search-check.mjs",
     "check:diagram-edit-ui": "npm run build && node --import tsx tests/browser/mapping/browser-llm-panel-check.mjs",
+    "check:diagram-variants": "npm run build && node --import tsx tests/browser/mapping/browser-diagram-variants-check.mjs",
     "check:diagram-edit": "npm run build && node tests/browser/mapping/browser-diagram-edit-check.mjs",
     "check:diagram-delete": "npm run build && node --import tsx tests/browser/mapping/browser-diagram-delete-check.mjs",
     "check:highlight-projection": "npm run build && node --import tsx tests/browser/mapping/browser-highlight-projection-check.mjs",

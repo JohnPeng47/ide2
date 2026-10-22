@@ -31,8 +31,8 @@ export interface PreparedDiagramEdit {
 }
 export type DiagramEdit =
   | { kind: 'source-mappings'; expectedContentHash: string; mappings: NonNullable<DiagramInput['mappings']>; evidence: NonNullable<DiagramInput['evidence']>; source?: DiagramInput['source'] }
-  | { kind: 'patch'; start: number; end: number; patch: string; mappings?: DiagramInput['mappings'] }
-  | { kind: 'replace'; input: Omit<DiagramInput, 'id' | 'revision'> }
+  | { kind: 'patch'; start: number; end: number; patch: string; mappings?: DiagramInput['mappings']; nodeCorrespondence?: Record<string, number> }
+  | { kind: 'replace'; input: Omit<DiagramInput, 'id' | 'revision'>; nodeCorrespondence?: Record<string, number> }
   | { kind: 'jumps'; jumps: DiagramJump[] }
   | { kind: 'highlights'; highlights: DiagramHighlight[] };
 
@@ -78,7 +78,12 @@ export class DiagramRevisionEditor implements DiagramRevisionOperations {
       return { diagram, nodeIds: correspondingNodes(before, diagram) };
     }
     if (edit.kind === 'patch') {
-      const prepared = patchDiagram(before, edit.start, edit.end, edit.patch);
+      let prepared = patchDiagram(before, edit.start, edit.end, edit.patch);
+      if (edit.nodeCorrespondence) {
+        const nodeIds = this.correspondence(contextId, diagramId, prepared.diagram, prepared.nodeIds, edit.nodeCorrespondence);
+        prepared = { ...prepared, nodeIds, diagram: { ...prepared.diagram,
+          ...(before.highlights ? { highlights: rebaseDiagramHighlights(before.highlights, nodeIds) } : {}) } };
+      }
       if (edit.mappings) {
         const sourceContext = constructDiagram({ id: diagramId, revision: prepared.diagram.revision,
           ascii: prepared.diagram.content.ascii, structureKind: prepared.diagram.content.structure.kind,
@@ -92,11 +97,25 @@ export class DiagramRevisionEditor implements DiagramRevisionOperations {
       : edit.kind === 'jumps'
       ? { ...structuredClone(before), jumps: validateDiagramJumps(before.content, edit.jumps, false) }
       : constructDiagram({ ...edit.input, id: diagramId, revision: before.revision + 1 });
+    const nodeIds = edit.kind === 'replace' ? this.correspondence(contextId, diagramId, diagram, correspondingNodes(before, diagram), edit.nodeCorrespondence) : correspondingNodes(before, diagram);
     const next = edit.kind === 'replace' ? { ...diagram,
       ...(before.jumps ? { jumps: rebaseDiagramJumps(before.content, diagram.content, before.jumps) } : {}),
-      ...(before.highlights ? { highlights: rebaseDiagramHighlights(before.highlights, correspondingNodes(before, diagram)) } : {}) } : diagram;
+      ...(before.highlights ? { highlights: rebaseDiagramHighlights(before.highlights, nodeIds) } : {}) } : diagram;
     validateDiagram(next);
-    return { diagram: next, nodeIds: correspondingNodes(before, next) };
+    return { diagram: next, nodeIds };
+  }
+  private correspondence(contextId: string, diagramId: string, after: Diagram, inferred: ReadonlyMap<string, string>, claims: Record<string, number> = {}) {
+    const base = this.revision(contextId, diagramId), result = new Map(inferred);
+    const oldByRef = new Map(Object.entries(base.nodeRefs).map(([node, ref]) => [ref, node]));
+    const nodes = diagramContentNodes(after.content);
+    for (const [ref, line] of Object.entries(claims)) {
+      const old = oldByRef.get(ref), matches = nodes.filter(node => node.line === line);
+      if (!old || !Number.isInteger(line) || matches.length !== 1) throw Error('CONTINUITY: claim must identify one old and one output node');
+      if (result.has(old) && result.get(old) !== matches[0].id) throw Error('CONTINUITY: claim conflicts with unchanged content');
+      result.set(old, matches[0].id);
+    }
+    if (new Set(result.values()).size !== result.size) throw Error('CONTINUITY: multiple identities claim the same node');
+    return result;
   }
   /** Deliberately conservative until three-way merge is implemented. */
   merge(baseline: Readonly<Record<string, string>>, current: Readonly<Record<string, string>>, proposed: Readonly<Record<string, string>>) {

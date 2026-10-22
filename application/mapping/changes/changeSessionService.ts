@@ -341,6 +341,8 @@ export class ChangeSessionService {
     for (const doc of s.documents) {
       if (!affected.has(doc.id)) { changes.push(...s.changes.filter(change => change.documentId === doc.id)); continue; }
       if (!doc.baseline) { changes.push({ id: `canvas:${doc.id}`, documentId: doc.id, title: doc.name, type: 3, reasons: [], dependsOn: [] }); continue; }
+      if (stateKey(doc.baseline.document.variants ?? {}) !== stateKey(doc.proposed.document.variants ?? {}))
+        changes.push({ id: `variants:${doc.id}`, documentId: doc.id, title: `${doc.name}: subtree variants`, type: 1, reasons: [], dependsOn: [] });
       const before = canvasDisplayNodes(doc.baseline.document, doc.baseline.canvas, 0);
       const after = canvasDisplayNodes(doc.proposed.document, doc.proposed.canvas, 0);
       const candidates = new Map([...before, ...after].filter(n => n.layout === 'grid' && n.kind === 'diagram').map(n => [n.id, n]));

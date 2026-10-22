@@ -26,6 +26,7 @@ const promptFields = {
 };
 export const editDiagramSchema = z.object({
   sessionId: id, nodeId: id, expectedVersion: z.number().int().nonnegative(),
+  variant: z.object({ name: z.string().trim().min(1).max(120), count: z.number().int().min(1).max(4).default(1), variantId: id.optional() }).strict().optional(),
   subtree: z.object({ contentNodeId: z.string().min(1).max(500), revisionId: id }).strict().optional(),
   origin: z.object({ column: z.number().int().nonnegative(), row: z.number().int().nonnegative() }).strict().optional(),
   sources: z.array(contentNodeAnchorSchema).max(500).optional(),
@@ -38,6 +39,7 @@ export const diagramEditRunSchema = z.object({ runId: id }).strict();
 export type EditDiagramInput = z.infer<typeof editDiagramSchema>;
 export type CreateDiagramInput = z.infer<typeof createDiagramSchema>;
 export interface DiagramRevisionApplication {
+  variants?: { variant: import('../../core/diagrams/diagramVariant').DiagramVariant; revision: DiagramRevision }[];
   requestId: string;
   expectedVersion: number;
   nodeId: string;
@@ -51,6 +53,7 @@ export interface DiagramCreation {
   sources?: ContentNodeAnchor[];
 }
 export interface DiagramEditRun {
+  variants?: { id: string; name: string; revisionId: string }[];
   /** Actual runtime session for diagnostics/clipboard; each run may have a new ID. */
   agentSessionId?: string;
   /** Updated conversation, published only after the canvas acknowledges success. */

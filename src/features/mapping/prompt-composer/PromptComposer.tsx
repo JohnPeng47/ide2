@@ -1,3 +1,4 @@
+import { VariantReview, type VariantReviewSource } from './VariantReview';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useStore } from 'zustand';
@@ -28,7 +29,7 @@ function useRevisionTag(source: PromptRevisionSource) {
   return (revisionId: string) => names[revisionId] ?? (source.sequence(revisionId) ? `r${source.sequence(revisionId)}` : revisionId.slice(-6));
 }
 
-export function PromptComposer({ coordinator, revisions }: { coordinator: PromptComposerCoordinator; revisions: PromptRevisionSource }) {
+export function PromptComposer({ coordinator, revisions, variants }: { coordinator: PromptComposerCoordinator; revisions: PromptRevisionSource; variants?: VariantReviewSource }) {
   const { entries, activeKey, carried } = useStore(coordinator.store);
   const [railOpen, setRailOpen] = useState(false);
   const entry = activeKey ? entries[activeKey] : undefined;
@@ -41,11 +42,25 @@ export function PromptComposer({ coordinator, revisions }: { coordinator: Prompt
         <option value="create-diagram">Create diagram</option><option value="edit-diagram">Update subtree</option><option value="extend-diagram">Extend diagram</option>
       </select></label>
       <small>{entry.target.label}</small>
-      <small>{entry.target.operation === 'edit-diagram' ? entry.target.subtree ? `Update ${entry.target.subtreeLabel ?? 'selected node'} and its descendants.` : 'Select a node to choose the subtree to update.'
+      <small>{entry.target.operation === 'edit-diagram' ? entry.target.subtree ? `Update ${entry.target.subtreeLabel ?? 'selected node'} and its descendants.` : entry.target.generateVariants ? 'Generate alternatives for the whole diagram.' : 'Select a node to choose the subtree to update.'
         : entry.target.operation === 'extend-diagram' ? entry.target.origin ? `New origin: column ${entry.target.origin.column}, row ${entry.target.origin.row}` : 'Click the green circle, move to empty canvas, then click to place. Escape cancels.' : 'Create one new diagram from your prompt and references.'}</small>
     </div>
+    {entry.target.operation === 'edit-diagram' && <div className="variant-generation">
+      <label><input type="checkbox" aria-label="Generate variants for review" checked={!!entry.target.generateVariants} disabled={locked}
+        onChange={e => coordinator.setTarget(activeKey, { generateVariants: e.target.checked, variantId: undefined })} /> Generate variants for review</label>
+      {entry.target.generateVariants && <>
+        <label>Variant name <input aria-label="Variant name" maxLength={110} value={entry.target.variantName ?? 'Alternative'} disabled={locked}
+          onChange={e => coordinator.setTarget(activeKey, { variantName: e.target.value })} /></label>
+        <label>Count <select aria-label="Variant count" value={entry.target.variantId ? 1 : entry.target.variantCount ?? 1} disabled={locked || !!entry.target.variantId}
+          onChange={e => coordinator.setTarget(activeKey, { variantCount: Number(e.target.value) })}>{[1,2,3,4].map(n => <option key={n}>{n}</option>)}</select></label>
+        <small>{entry.target.variantId ? 'Refining the saved variant. The live diagram stays unchanged.' : entry.target.subtree ? 'Generate alternatives for the selected subtree.' : 'Generate alternatives for the whole diagram.'}</small>
+        {entry.target.variantId && <button onClick={() => coordinator.setTarget(activeKey, { variantId: undefined })} disabled={locked}>Start new variants</button>}
+        {entry.target.subtree && !entry.target.variantId && <button onClick={() => coordinator.setTarget(activeKey, { subtree: undefined, subtreeLabel: undefined })} disabled={locked}>Use whole diagram</button>}
+      </>}
+    </div>}
     <PromptPane key={activeKey} coordinator={coordinator} entryKey={activeKey} entry={entry} revisions={revisions} list={list}
       railOpen={railOpen} onToggleRail={() => setRailOpen(open => !open)} carrying={!!carried} />
+    {variants && <VariantReview key={entry.target.documentId + entry.target.nodeId} source={variants} target={entry.target} coordinator={coordinator} entryKey={activeKey} locked={locked} />}
     {carried && <CarriedGhost coordinator={coordinator} reference={carried.reference} revisions={revisions} />}
   </div>;
 }
@@ -53,6 +68,7 @@ export function PromptComposer({ coordinator, revisions }: { coordinator: Prompt
 function statusMessage(entry: PromptComposerEntry) {
   const status = entry.run?.status, create = entry.target.operation !== 'edit-diagram';
   const created = entry.run?.created?.nodeIds.length ?? 0;
+  if (status === 'completed' && entry.run?.variants) return `Saved ${entry.run.variants.length} variant(s). Review changes below.`;
   return status === 'completed' ? create ? `Created ${created === 1 ? 'a diagram' : `${created} diagrams`} and saved the workspace. You can undo this change.`
       : 'Diagram updated and workspace saved. You can undo this change.'
     : status === 'conflict' ? 'The canvas changed before the update could be applied. Your prompt is preserved; submit again using the latest diagram.'
@@ -102,9 +118,9 @@ function PromptPane({ coordinator, entryKey, entry, revisions, list, railOpen, o
         {status === 'generating' && <button type="button" disabled={entry.pending} onClick={() => void coordinator.cancel(entryKey)}>{create ? 'Cancel creation' : 'Cancel update'}</button>}
         {(status === 'awaiting-acknowledgement' || entry.error && locked) && <button type="button" disabled={entry.pending}
           onClick={() => void coordinator.retry(entryKey)}>{status === 'awaiting-acknowledgement' ? 'Retry confirmation' : entry.run ? 'Refresh status' : 'Retry request'}</button>}
-        {!locked && <button type="submit" className="prompt-primary" disabled={!prompt || prompt.length > promptLimit || entry.target.operation === 'edit-diagram' && !entry.target.subtree || entry.target.operation === 'extend-diagram' && (!entry.target.sources?.length || !entry.target.origin)}>{create
+        {!locked && <button type="submit" className="prompt-primary" disabled={!prompt || prompt.length > promptLimit || entry.target.operation === 'edit-diagram' && !entry.target.subtree && !entry.target.generateVariants || entry.target.operation === 'extend-diagram' && (!entry.target.sources?.length || !entry.target.origin)}>{create
           ? entry.target.operation === 'extend-diagram' ? 'Extend diagram' : 'Create diagram'
-          : status === 'conflict' ? 'Update latest diagram' : 'Update diagram'}</button>}
+          : entry.target.generateVariants ? entry.target.variantId ? 'Refine variant' : 'Generate variants' : status === 'conflict' ? 'Update latest diagram' : 'Update diagram'}</button>}
       </footer>
     </form>
     {railOpen && <RevisionRail id={`${entryKey}-revisions`} coordinator={coordinator} list={list} />}

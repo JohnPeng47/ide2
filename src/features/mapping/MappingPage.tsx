@@ -1,3 +1,5 @@
+import { reviewVariant } from '../../../domain/core/diagrams/diagramVariant';
+import type { VariantReviewSource } from './prompt-composer/VariantReview';
 import { highlightedDiagramIds } from '../../../domain/core/diagrams/highlightProjection';
 import { ProjectionLayoutPanel } from './workspace/ProjectionLayoutPanel';
 import { highlightNodeIds } from '../../../domain/core/diagrams/diagramHighlight';
@@ -884,6 +886,23 @@ function MappingWorkspacePage() {
     },
     sequence: id => revisionDepth(knownRevisions(), id)
   };
+  const variantSource: VariantReviewSource = {
+    list: target => {
+      const controller = drafts[target.documentId]?.session.controller;
+      const document = controller?.getSnapshot().document;
+      const box = document && findBox(document.scene.root, target.nodeId.slice(5));
+      if (!document || box?.kind !== 'diagram') return [];
+      return Object.values(document.variants ?? {}).filter(variant => variant.contentId === box.contentId).map(variant => ({
+        variant, ...reviewVariant(variant, id => diagramService.getRevision(id))
+      }));
+    },
+    update: async (target, variantId, change) => {
+      const controller = drafts[target.documentId]?.session.controller;
+      if (!controller || workspaceBusy || drafts[target.documentId].busy) throw Error('Canvas unavailable or busy');
+      controller.applyUpdate(controller.getSnapshot().version, [{ method: 'variant-review', variantId, nodeId: target.nodeId, ...change }]);
+      persistence.current?.sync([target.documentId]); await storage.flush();
+    }
+  };
   const capturedSelection = (documentId: string) => {
     const controller = drafts[documentId]?.session.controller;
     const snapshot = controller?.getSnapshot();
@@ -1081,7 +1100,7 @@ function MappingWorkspacePage() {
                           focusBox: { id: target.displayNodeId!.slice(5), contentNodeId: target.contentNodeId, serial: Date.now() } } }));
                       }} />
                     : <p className="window-panel-message">Open a canvas or DiffSession to view treemaps.</p>) },
-                { id: 'llm', title: 'LLM', content: <PromptComposer coordinator={prompts} revisions={revisionSource} /> },
+                { id: 'llm', title: 'LLM', content: <PromptComposer coordinator={prompts} revisions={revisionSource} variants={variantSource} /> },
                 { id: 'chat', title: 'Agent Chat', content: agentChatMounted && <Suspense fallback={<p className="window-panel-message">Loading Agent Chat…</p>}>
                   <AgentChatPanel onHighlightReference={jumpToHighlight} tabCommand={chatTabCommand} open={toolsOpen && toolTab === 'chat'} projectId={snapshot?.project?.id}
                     referenceCanvas={!changeMode && active && !active.hidden && activeId ? { session: active.session, target: { workspaceInstanceId: canvasId, documentId: activeId }, name: active.name } : undefined}

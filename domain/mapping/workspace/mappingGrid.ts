@@ -11,6 +11,7 @@ import { MAPPING_POC_A_NODES, MAPPING_POC_GRAPH_A } from "../selection/mappingPo
 import { MAPPING_POC_A_SECTIONS, type MappingPocASection } from "../selection/mappingPocOverlays";
 
 export interface MappingGridDocument {
+  variants?: Record<string, import('../../core/diagrams/diagramVariant').DiagramVariant>;
   jumps?: import('../../core/diagrams/canvasJump').CanvasJump[];
   scene: LineGridScene;
   edges: import('../../core/diagrams/diagramConnection').DiagramConnection[];

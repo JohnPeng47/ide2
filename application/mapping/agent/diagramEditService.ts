@@ -1,6 +1,7 @@
 import { selectionExcerpt } from '../../../domain/mapping/workspace/selectionClipboard';
 import { diagramContentNodes } from '../../../domain/core/diagrams/diagramContentNodes';
 import { diagramSubtreeRange } from '../../../domain/core/diagrams/diagramSubtreeEdit';
+import { variantRange, variantRevisionIds, validateVariant, type DiagramVariant } from '../../../domain/core/diagrams/diagramVariant';
 import { validateConnectionAnchor } from '../../../domain/core/diagrams/diagramConnection';
 import { AgentContext, type AgentContextSnapshot } from '../../../domain/core/agents/agentContext';
 import { randomUUID } from 'node:crypto';
@@ -20,6 +21,7 @@ export interface DiagramEditCanvasPort {
   create?(sessionId: string, input: { requestId: string; expectedVersion: number; diagrams: DiagramCreation[] }): Promise<{ version: number }>;
 }
 interface Run {
+  variants?: { variant: DiagramVariant; revision: DiagramRevision }[];
   agentContext?: AgentContextSnapshot;
   nextAgentContext?: AgentContextSnapshot;
   input: CreateDiagramInput;
@@ -50,6 +52,8 @@ export class DiagramEditService {
     if (input.agentContextId && !agentContext) throw Error('AGENT_CONTEXT_NOT_FOUND: resolve context before starting the edit');
     if (operation !== 'edit-diagram' && !this.canvas.create) throw Error('Diagram creation UNAVAILABLE in this runtime');
     if (operation === 'edit-diagram' && 'count' in input && input.count !== undefined) throw Error('count applies only to create-diagram');
+    if (input.variant && operation !== 'edit-diagram') throw Error('Variants require edit-diagram');
+    if (input.variant?.variantId && input.variant.count !== 1) throw Error('Refine one existing variant at a time');
     if (operation === 'extend-diagram' && (!input.origin || !input.sources?.length)) throw Error('Extend requires a selection and a canvas origin');
     // Fail fast on an unknown template or invalid options instead of after a model call.
     resolvePromptTemplate(input.template ?? defaultTemplateSelection(operation), operation);
@@ -100,18 +104,28 @@ export class DiagramEditService {
     const box = input.nodeId.startsWith('grid:') && findBox(snapshot.document.scene.root, input.nodeId.slice(5));
     const unanchored = operation === 'create-diagram' && input.nodeId === 'canvas';
     if (!unanchored && (!box || box.kind !== 'diagram')) throw Error('Expected diagram GridBox');
-    const base = box && box.kind === 'diagram' ? snapshot.document.scene.contents[box.contentId]
+    let base = box && box.kind === 'diagram' ? snapshot.document.scene.contents[box.contentId]
       : this.diagrams.create({ id: `context-${randomUUID()}`, revision: 0, ascii: '[New diagram]' }).diagram;
     if (!unanchored && base.revisionId !== input.baseRevisionId) throw Error('VERSION_CONFLICT: diagram base is no longer current');
     // Import only the exact target/reference revisions, including their logical node identities.
     for (const revision of snapshot.revisions ?? []) this.diagrams.importRevision(revision);
     // Compatibility for in-process adapters that still supply a history record.
     if (!snapshot.revisions && snapshot.history) new CanvasHistory(snapshot.document, snapshot.canvas, snapshot.history, 'current');
+    const existing = input.variant?.variantId ? snapshot.document.variants?.[input.variant.variantId] : undefined;
+    if (input.variant?.variantId && !existing) throw Error('Variant not found');
+    if (existing) {
+      if (existing.diagramId !== base.diagramId) throw Error('Variant belongs to another diagram');
+      const retained = await this.canvas.snapshot(input.sessionId, variantRevisionIds(existing));
+      for (const revision of retained.revisions ?? []) this.diagrams.importRevision(revision);
+      if (retained.version !== input.expectedVersion) throw Error('VERSION_CONFLICT: canvas changed');
+      base = this.diagrams.getRevision(existing.headRevisionId).diagram;
+    }
     const template = resolvePromptTemplate(input.template ?? defaultTemplateSelection(operation), operation);
     const references = this.resolveReferences(input.references ?? [], snapshot.history);
     const lines = base.content.ascii.split('\n');
-    if (input.subtree && input.subtree.revisionId !== base.content.revisionId) throw Error('VERSION_CONFLICT: selected subtree changed; select it again');
-    const editRange = operation === 'edit-diagram' && input.subtree ? diagramSubtreeRange(base, input.subtree.contentNodeId) : undefined;
+    if (!existing && input.subtree && input.subtree.revisionId !== base.content.revisionId) throw Error('VERSION_CONFLICT: selected subtree changed; select it again');
+    const editRange = existing ? existing.ownerNodeId === 'root' ? undefined : variantRange(this.diagrams.getRevision(base.revisionId), existing.ownerNodeId)
+      : operation === 'edit-diagram' && input.subtree ? diagramSubtreeRange(base, input.subtree.contentNodeId) : undefined;
     if (operation === 'extend-diagram') for (const source of input.sources!) validateConnectionAnchor(snapshot.document.scene, source);
     const request = { editRange, instruction: input.prompt, agentContext: run.agentContext, llmSessionId: input.llmSessionId,
       prompt: { markdown: template.markdown, options: template.options, parameters: template.definition.parameters, references },
@@ -133,6 +147,27 @@ export class DiagramEditService {
       }
       await this.place(run);
       return;
+    }
+    if (input.variant) {
+      run.variants = [];
+      const ownerNodeId = existing?.ownerNodeId ?? (input.subtree ? this.diagrams.getRevision(base.revisionId).nodeRefs[input.subtree.contentNodeId] : 'root');
+      if (!ownerNodeId) throw Error('STALE_SUBTREE: select a current subtree');
+      for (let index = 0; index < input.variant.count; index++) {
+        options.onProgress(`Generating variant ${index + 1} of ${input.variant.count}…`);
+        const generated = await this.diagrams.generate({ ...request,
+          instruction: input.prompt + (input.variant.count > 1 ? `\nProduce alternative ${index + 1} of ${input.variant.count}; explore a distinct approach.` : ''),
+          baseRevisionId: base.revisionId, input: { id: base.id, structureKind: base.content.structure.kind,
+            source: base.sourceContext.binding, evidence: base.sourceContext.evidence } }, options);
+        abort.signal.throwIfAborted();
+        const variant: DiagramVariant = { ...existing, id: existing?.id ?? `variant-${randomUUID()}`,
+          name: input.variant.name + (input.variant.count > 1 ? ` ${index + 1}` : ''), diagramId: base.diagramId, contentId: base.id,
+          ownerNodeId, baseRevisionId: existing?.baseRevisionId ?? base.revisionId, headRevisionId: generated.revision.id,
+          revisionIds: [...(existing?.revisionIds ?? []), generated.revision.id], prompt: input.prompt, decisions: {} };
+        validateVariant(variant, id => this.diagrams.getRevision(id));
+        run.variants.push({ variant, revision: generated.revision });
+        run.revision = generated;
+      }
+      await this.apply(run); return;
     }
     run.revision = await this.diagrams.generate({ ...request, baseRevisionId: base.revisionId, input: { id: base.id,
       structureKind: base.content.structure.kind, source: base.sourceContext.binding, evidence: base.sourceContext.evidence } }, options);
@@ -167,7 +202,9 @@ export class DiagramEditService {
     const revision = run.revision!.revision, input = run.input;
     // The controller checks both versions at the mutation boundary, after generation.
     const result = await this.canvas.apply(input.sessionId, { requestId: run.state.runId,
-      expectedVersion: input.expectedVersion, nodeId: input.nodeId, baseRevisionId: input.baseRevisionId, revision });
+      expectedVersion: input.expectedVersion, nodeId: input.nodeId, baseRevisionId: input.baseRevisionId, revision,
+      ...(run.variants ? { variants: run.variants } : {}) });
+    if (run.variants) run.state.variants = run.variants.map(({ variant }) => ({ id: variant.id, name: variant.name, revisionId: variant.headRevisionId }));
     run.state.result = { diagramId: revision.diagramId, previousRevisionId: input.baseRevisionId,
       revisionId: revision.id, documentVersion: result.version, unresolvedEdgeIds: result.unresolvedEdgeIds };
     run.state.agentContext = run.nextAgentContext;

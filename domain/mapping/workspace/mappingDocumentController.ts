@@ -1,4 +1,5 @@
 import { diagramContentNodes } from '../../core/diagrams/diagramContentNodes';
+import { applyVariant, validateVariant, variantChanges, type DiagramVariant, type VariantDecision } from '../../core/diagrams/diagramVariant';
 import { highlightColorSchema, highlightTargetsSchema, highlightNodeIds, sameHighlightTargets } from '../../core/diagrams/diagramHighlight';
 import { syncSelectionPresentation } from '../selection/selectionPresentation';
 import { importLegacySelection } from '../selection/importLegacySelection';
@@ -30,6 +31,8 @@ import { diagramConnectionSchema, reconcileConnections, validateConnectionAnchor
 
 export interface ControllerSnapshot { contextId: string; canvasRevisionId: string; endpointBounds?: EndpointBounds; document: MappingGridDocument; canvas: MappingCanvasState; version: number; canUndo: boolean; canRedo: boolean; cell?: { width: number; height: number } }
 export type DiagramOperation =
+  | { method: 'variant-store'; nodeId: string; expectedRevisionId: string; variants: { variant: DiagramVariant; revision: DiagramRevision }[] }
+  | { method: 'variant-review'; variantId: string; decisions?: Record<string, VariantDecision>; name?: string; remove?: boolean; apply?: boolean; nodeId?: string }
   | { method: 'highlight'; nodeId: string; contentNodeId?: string; contentNodeIds?: string[]; color?: string; highlightId: string }
   | { method: 'removeHighlights'; nodeId: string; highlightIds?: string[] }
   | { method: 'duplicate-instance'; sourceNodeId: string; id: string; position: GridPoint }
@@ -244,7 +247,60 @@ export class MappingDocumentController {
     if (editorCanvas) canvas = structuredClone(editorCanvas);
     const safeId = (id: string) => { if (typeof id !== 'string' || !/^[a-zA-Z0-9_.:-]{1,180}$/.test(id) || ['__proto__','constructor','prototype'].includes(id)) throw new Error('Invalid node ID'); };
     for (const op of operations) {
-      if (op.method === 'delete-diagrams') {
+      if (op.method === 'variant-store') {
+        const box = findBox(document.scene.root, this.gridId(op.nodeId));
+        if (box?.kind !== 'diagram') throw Error('Expected diagram GridBox');
+        const current = document.scene.contents[box.contentId];
+        if (current.revisionId !== op.expectedRevisionId) throw Error('VERSION_CONFLICT: diagram changed during generation');
+        if (!op.variants.length || op.variants.length > 4) throw Error('Generate 1–4 variants');
+        document.variants = { ...document.variants };
+        for (const { variant, revision } of op.variants) {
+          const previous = document.variants[variant.id];
+          if (variant.contentId !== current.id || variant.diagramId !== current.diagramId || variant.headRevisionId !== revision.id) throw Error('Variant belongs to another diagram');
+          if (previous && (previous.baseRevisionId !== variant.baseRevisionId || previous.ownerNodeId !== variant.ownerNodeId)) throw Error('Variant owner is immutable');
+          const base = previous?.headRevisionId ?? current.revisionId;
+          if (!previous && variant.baseRevisionId !== base) throw Error('Invalid variant base');
+          receiveDiagramRevision(base, revision);
+          validateVariant(variant, id => this.diagrams.getRevision(id));
+          document.variants[variant.id] = structuredClone(variant);
+        }
+      } else if (op.method === 'variant-review') {
+        const previous = document.variants?.[op.variantId];
+        if (!previous) throw Error('Variant not found');
+        if (op.nodeId) {
+          const box = findBox(document.scene.root, this.gridId(op.nodeId));
+          if (box?.kind !== 'diagram' || box.contentId !== previous.contentId) throw Error('Variant belongs to another diagram');
+        }
+        const variant = structuredClone(previous);
+        if (op.name !== undefined) variant.name = op.name.trim();
+        if (op.decisions) {
+          const changes = variantChanges(this.diagrams.getRevision(variant.baseRevisionId), this.diagrams.getRevision(variant.headRevisionId), variant.ownerNodeId);
+          for (const [id, decision] of Object.entries(op.decisions)) {
+            if (!changes.some(c => c.id === id) || !['accept', 'reject'].includes(decision)) throw Error('Invalid review decision');
+            variant.decisions[id] = decision;
+          }
+        }
+        validateVariant(variant, id => this.diagrams.getRevision(id));
+        if (op.apply) {
+          const box = op.nodeId && findBox(document.scene.root, this.gridId(op.nodeId));
+          if (!box || box.kind !== 'diagram' || box.contentId !== variant.contentId) throw Error('Select a placement of this variant’s diagram');
+          const before = document.scene.contents[box.contentId];
+          const prepared = applyVariant(variant, this.diagrams.getRevision(before.revisionId), this.diagrams);
+          this.trackNodes(prepared.nodeIds);
+          const scene = layoutScene({ ...document.scene, contents: { ...document.scene.contents, [before.id]: prepared.diagram } }, box.id);
+          document = { ...document, scene, edges: reconcileConnections(document.scene, scene, document.edges, prepared.nodeIds) };
+          for (const [id, view] of Object.entries(canvas.diagramViews ?? {})) {
+            const owner = connectionBox(scene, id);
+            if (owner?.kind === 'diagram' && owner.contentId === before.id && view.contentRevisionId === before.content.revisionId)
+              canvas.diagramViews![id] = { contentRevisionId: prepared.diagram.content.revisionId,
+                collapsedContentNodeIds: view.collapsedContentNodeIds.flatMap(id => prepared.nodeIds.has(id) ? [prepared.nodeIds.get(id)!] : []) };
+          }
+          variant.appliedRevisionId = prepared.revision.id;
+          variant.appliedReview = { headRevisionId: variant.headRevisionId, decisions: { ...variant.decisions } };
+        }
+        document.variants = { ...document.variants, [variant.id]: variant };
+        if (op.remove) delete document.variants[variant.id];
+      } else if (op.method === 'delete-diagrams') {
         if (!op.nodeIds.length) throw new Error('Select one or more diagrams to delete');
         const selected = new Set(op.nodeIds);
         for (const id of selected) {
@@ -369,6 +425,12 @@ export class MappingDocumentController {
         this.trackNodes(prepared.nodeIds);
         const scene = layoutScene({ ...document.scene, contents: { ...document.scene.contents, [before.id]: prepared.diagram } }, box.id);
         document = { ...document, scene, edges: reconcileConnections(document.scene, scene, document.edges, prepared.nodeIds) };
+        for (const [id, view] of Object.entries(canvas.diagramViews ?? {})) {
+          const owner = connectionBox(scene, id);
+          if (owner?.kind === 'diagram' && owner.contentId === before.id && view.contentRevisionId === before.content.revisionId)
+            canvas.diagramViews![id] = { contentRevisionId: prepared.diagram.content.revisionId,
+              collapsedContentNodeIds: view.collapsedContentNodeIds.flatMap(id => prepared.nodeIds.has(id) ? [prepared.nodeIds.get(id)!] : []) };
+        }
       } else if (op.method === 'duplicate-instance') {
         safeId(op.id);
         const source = findBox(document.scene.root, this.gridId(op.sourceNodeId));

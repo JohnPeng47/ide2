@@ -14,8 +14,9 @@ export class DiagramRevisionReceiver {
     if (receipt && receipt.signature !== signature) throw Error('REQUEST_ID_CONFLICT: revision application differs');
     if (!receipt) {
       if (this.receipts.size >= 2000) throw Error('Revision receipt capacity reached; reload the workspace');
-      const result = controller.applyUpdate(input.expectedVersion, [{ method: 'diagram-revision-apply', nodeId: input.nodeId,
-        expectedRevisionId: input.baseRevisionId, revision: input.revision }]);
+      const result = controller.applyUpdate(input.expectedVersion, [input.variants
+        ? { method: 'variant-store', nodeId: input.nodeId, expectedRevisionId: input.baseRevisionId, variants: input.variants }
+        : { method: 'diagram-revision-apply', nodeId: input.nodeId, expectedRevisionId: input.baseRevisionId, revision: input.revision }]);
       const document = controller.getSnapshot().document;
       const unresolvedEdgeIds = document.edges.filter(edge => {
         try { validateConnectionAnchor(document.scene, edge.source); validateConnectionAnchor(document.scene, edge.target); return false; }

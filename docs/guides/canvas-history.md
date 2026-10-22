@@ -176,3 +176,89 @@ workspaces retain their drafts and ordinary saved-revision conflict protection.
 The data needed for a future revert is persisted; a dedicated revert command/UI
 is not implemented. Reverting after subsequent edits will need its own conflict
 check. There is still no command-replay engine or partial acceptance.
+
+## Generated variants and node continuity
+
+The prompt composer can generate 1–4 independently retained alternatives for a
+selected subtree or the complete diagram. Generation stores candidates without
+changing live content. The Variants section supports naming, preview, refinement,
+per-node accept/reject, application, and removal. Refinement advances just that
+variant's head and resets its review decisions. Previous generated revisions
+remain retained.
+
+`DiagramVariant` in `domain/core/diagrams/diagramVariant.ts` stores:
+
+- `diagramId`, `contentId`, and `ownerNodeId`: logical ownership; `root` denotes
+  the complete diagram without requiring an extra visible ASCII node.
+- `baseRevisionId`, `headRevisionId`, and `revisionIds`: immutable source,
+  current candidate, and retained generated revisions.
+- `decisions`: accept/reject keyed by stable logical node identity.
+- `appliedRevisionId` and `appliedReview`: the last application and the exact
+  candidate/decisions used, so later review changes can reverse prior changes.
+- `id`, `name`, and `prompt`: the independently editable alternative's metadata.
+
+Variants live in `MappingGridDocument.variants`. The checkpoint codec stores each
+variant under its own `document/variants` record boundary. `checkpointRevisionIds`
+includes variant references as well as current placements, so detached candidates
+survive workspace persistence, checkpoint publication, undo/redo, and ChangeSession
+fork/acceptance. Variant-only proposal edits appear as document changes. Removing
+a variant leaves ordinary retained history available; it does not erase history.
+
+### Continuity protocol
+
+`diagramEditRuntime.ts` supplies the generator with the base revision's `nodeRefs`
+and requests `[[keep:logical-node-id]]` suffixes for retained nodes, including
+renamed or moved nodes. `diagramNodeContinuity.ts` validates and strips these
+annotations before source mapping validation and persistence. Unknown IDs,
+duplicate claims, and claims that do not identify exactly one output node fail.
+The selected subtree root must retain its logical ID. No label-matching heuristic
+establishes identity.
+
+`DiagramRevisionEditor` accepts the validated correspondence for both replacement
+and patch operations. Unchanged lines outside a patch retain their existing
+identities. `DiagramService` issues all revisions and IDs; reviewed application
+uses `derive` to preserve proven identities from the base, candidate, and current
+revision. Controller reconciliation uses that correspondence to retain connections,
+highlights, selection identity, and folded branches during variant application.
+
+### Selective application and rollback
+
+`variantChanges` compares labels, parents, and ordered children by stable node ID.
+Pending and rejected changes retain the base state; accepted changes use the
+candidate state. Additions, deletions, and moves can require matching parent/child
+decisions. The review UI reports inconsistent structural decisions and blocks
+application until they agree.
+
+`applyVariant` performs a three-way merge into the current subtree. Label, parent,
+and child-list fields merge separately. Unrelated edits elsewhere, including
+unrelated fields inside the subtree, are preserved. A competing edit to a field
+being changed raises `VARIANT_CONFLICT`. No-content-conflict applications preserve
+existing formatting when topology is unchanged; structural changes render the
+reviewed subtree using canonical ASCII connectors and leave surrounding lines
+untouched. After applying, change decisions and apply again to reverse selected
+updates, subject to the same conflict checks. Undo/redo includes variant metadata
+and applications.
+
+The generation API's `variant: {name, count, variantId?}` option supports new
+alternatives or refinement of one saved alternative. The canvas API provides
+`nodes.variants({nodeId})` and `nodes.reviewVariant({nodeId, variantId, decisions?,
+name?, remove?, apply?})`. Review mutations use the existing expected-version,
+request deduplication, batching, and persistence mechanisms.
+
+### Current boundaries
+
+Candidates still hold complete diagram revisions with a validated subtree scope;
+shared content is deduplicated by the persistence codec. Per-node review requires
+a tree diagram. Unstructured diagrams support a whole-content review decision.
+Formatting-only changes to a tree are not separate review hunks. Structural
+application refuses layouts containing non-node prose that it cannot safely
+reposition, rather than dropping that text.
+
+Variants are reviewed off-canvas and applied into an existing diagram placement.
+Independent simultaneous placements of different variants still require separate
+binding identities: current placements share `scene.contents[contentId]`. Switching
+between conflicting alternatives requires reversing the prior review first or
+resolving the conflicting live edit. Cross-canvas source/search discovery of
+unplaced candidates and a detailed variant-specific ChangeSession diff UI remain
+follow-ups. Persisted logical IDs are unchanged; shortening them is a separate
+migration.

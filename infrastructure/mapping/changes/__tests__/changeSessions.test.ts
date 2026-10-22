@@ -164,3 +164,32 @@ it('persists mappings-only MCP proposals, preserves their baseline, and validate
     expect(await catalog.loadRepresentationCatalog('project')).toEqual(saved.catalog);
   } finally { await rm(root,{recursive:true,force:true}); }
 });
+
+it('publishes variant-only proposals with retained candidates and unchanged live content', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'variant-proposal-'));
+  try {
+    const diagrams = new RevisionedDiagramService(), catalog = new ProjectCatalogStore(root);
+    const base = diagrams.create({id:'overview',revision:0,ascii:'Root\n`-- Child',structureKind:'tree'}).revision;
+    const scene = singleDiagramScene(base.diagram.content.ascii); scene.contents = {...scene.contents,overview:base.diagram};
+    const saved = await catalog.saveMappingDiagram('project',canvasSaveFixture({name:'Original',scene}));
+    const source = {loadProject:async()=>({id:'project'}),projectCatalogs:catalog} as unknown as DiagramRepository;
+    const bridge: CanvasSessionPort = {register(){},list:()=>[],poll:async()=>[],reply(){},unregister(){},dispose(){},dispatch:async()=>{throw Error('Touched live bridge');}};
+    const changes = new ChangeSessionService(new DiagramChangeSessionStore(root),source,bridge);
+    await changes.create({title:'Alternative only',requestId:'create'});
+    const id = (await changes.list())[0].id;
+    const candidate = diagrams.revise(base.id,{kind:'replace',input:{ascii:'Root\n`-- Alternative',structureKind:'tree'},nodeCorrespondence:Object.fromEntries(diagramContentNodes(base.diagram.content).map(n=>[base.nodeRefs[n.id],n.line]))}).revision;
+    const variant = {id:'alternative',name:'Alternative',diagramId:base.diagramId,contentId:'overview',ownerNodeId:'root',baseRevisionId:base.id,headRevisionId:candidate.id,revisionIds:[candidate.id],prompt:'Alternative',decisions:{}};
+    await changes.apply(id,saved.representation.id,0,[{method:'variant-store',nodeId:'grid:overview',expectedRevisionId:base.id,variants:[{variant,revision:candidate}]}],'store');
+    const session = await changes.get(id);
+    expect(session.changes).toMatchObject([{id:`variants:${saved.representation.id}`,type:1}]);
+    await changes.update({changeSessionId:id,requestId:'ready',expectedVersion:session.version,status:'ready'});
+    await changes.accept({changeSessionId:id,requestId:'accept',expectedVersion:(await changes.get(id)).version});
+    const published = await catalog.loadRepresentationCatalog('project');
+    const revision = published.revisions[published.representations[saved.representation.id].currentRevisionId];
+    if (revision.content?.kind !== 'canvas-history') throw Error('Expected canvas history');
+    const history = revision.content.history;
+    expect(history.snapshots[history.headId].document.variants?.alternative).toEqual(variant);
+    expect(history.diagramRevisions[candidate.id]).toEqual(candidate);
+    expect(history.snapshots[history.headId].diagramBindings.overview).toBe(base.id);
+  } finally { await rm(root,{recursive:true,force:true}); }
+});

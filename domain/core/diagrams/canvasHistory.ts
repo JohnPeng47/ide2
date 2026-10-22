@@ -1,3 +1,4 @@
+import { validateVariant, variantRevisionIds, type DiagramVariant } from './diagramVariant';
 import { deepFreeze } from '../immutability';
 import { CanvasCheckpointEncoder, type CanvasCheckpointRecords } from './canvasCheckpointRecords';
 import { diagramRevisions } from './internal/revisionRegistry';
@@ -6,7 +7,7 @@ import { diagramContentNodes } from './diagramContentNodes';
 import { correspondingNodes, DiagramRevisionEditor, type DiagramRevision } from './diagramRevisionEditor';
 import type { LineGridScene } from './lineGrid';
 import type { DiagramConnection, DiagramAnchor, ContentNodeAnchor } from './diagramConnection';
-export interface ResolvedCanvasDocument { scene: LineGridScene; edges: DiagramConnection[]; jumps?: CanvasJump[]; sections: Readonly<Record<string, readonly {id: string; label: string; startLine: number; endLine: number; anchorToken: string}[]>> }
+export interface ResolvedCanvasDocument { variants?: Record<string, DiagramVariant>; scene: LineGridScene; edges: DiagramConnection[]; jumps?: CanvasJump[]; sections: Readonly<Record<string, readonly {id: string; label: string; startLine: number; endLine: number; anchorToken: string}[]>> }
 import { projectCanvasSnapshot, validateCanvasScene } from './projectDiagramCanvas';
 import { validateConnections } from './diagramConnection';
 import { validateCanvasJumps, type CanvasJump } from './canvasJump';
@@ -18,6 +19,7 @@ export type CanvasConnection = Omit<DiagramConnection, 'source' | 'target'> & {
 };
 /** Canonical canvas state separates diagram bindings from composition. Jump spans retain their source revision for stale-link detection. */
 export interface CanvasDocument {
+  variants?: Record<string, DiagramVariant>;
   jumps?: CanvasJump[];
   scene: Pick<ResolvedCanvasDocument['scene'], 'root'>;
   edges: CanvasConnection[];
@@ -64,7 +66,7 @@ export function currentHistoryChanges(record: CanvasHistoryRecord, snapshotId = 
   return { revisions: checkpointRevisionIds(snapshot), snapshots: [snapshotId] };
 }
 export function checkpointRevisionIds(snapshot: StoredCanvasSnapshot) {
-  return [...new Set([...Object.values(snapshot.diagramBindings)])];
+  return [...new Set([...Object.values(snapshot.diagramBindings), ...Object.values(snapshot.document.variants ?? {}).flatMap(variantRevisionIds)])];
 }
 const id = (kind: string) => `${kind}-${crypto.randomUUID()}`;
 export function stateKey(value: unknown): string {
@@ -177,11 +179,22 @@ export class CanvasHistory {
       };
       include(issued);
     }
+    for (const [key, variant] of Object.entries(document.variants ?? {})) {
+      if (key !== variant.id) throw Error('Invalid variant identity');
+      validateVariant(variant, id => diagramRevisions.get(id));
+      const retain = (id: string): void => {
+        if (this.record.diagramRevisions[id] || additions[id]) return;
+        const revision = diagramRevisions.get(id);
+        if (revision.parentId && !this.record.revisionBoundary?.[revision.parentId]) retain(revision.parentId);
+        additions[id] = revision;
+      };
+      variantRevisionIds(variant).forEach(retain);
+    }
     const unresolvedAnchors: Record<string, ContentNodeAnchor> = {};
     const revisions = { ...this.record.diagramRevisions, ...additions };
     const edges = document.edges.map(edge => ({ ...edge, source: encodeAnchor(edge.source, edge.id + ':source', document.scene, bindings, revisions, unresolvedAnchors) as CanvasNodeAnchor, target: encodeAnchor(edge.target, edge.id + ':target', document.scene, bindings, revisions, unresolvedAnchors) }));
     const snapshot: StoredCanvasSnapshot = { id: id('canvas-revision'), parentId: previous?.id,
-      document: { scene: { root: structuredClone(document.scene.root) }, edges, sections: structuredClone(document.sections), ...(document.jumps ? { jumps: structuredClone(document.jumps) } : {}) },
+      document: { ...(document.variants ? { variants: structuredClone(document.variants) } : {}), scene: { root: structuredClone(document.scene.root) }, edges, sections: structuredClone(document.sections), ...(document.jumps ? { jumps: structuredClone(document.jumps) } : {}) },
       diagramBindings: bindings, unresolvedAnchors, view: structuredClone(view), nodeOrigins: origins };
     // Validation above must complete before any canonical state changes.
     Object.assign(this.record.diagramRevisions, additions);
@@ -273,6 +286,10 @@ export function validateCanvasHistory(value: CanvasHistoryRecord, changed?: { re
       const revision = Object.hasOwn(value.diagramRevisions, revisionId) && value.diagramRevisions[revisionId];
       if (!revision || revision.diagram.id !== diagramId) throw new Error('Invalid diagram binding');
       contents[diagramId] = revision.diagram;
+    }
+    for (const [id, variant] of Object.entries(snapshot.document.variants ?? {})) {
+      if (id !== variant.id) throw Error('Invalid variant identity');
+      validateVariant(variant, id => value.diagramRevisions[id]);
     }
     const scene = { root: snapshot.document.scene.root, contents };
     validateCanvasScene(scene, validated);

@@ -1,3 +1,4 @@
+import { diagramContentNodes } from '../../../../domain/core/diagrams/diagramContentNodes';
 import { subtreeReplacement } from '../../../../domain/core/diagrams/diagramSubtreeEdit';
 import { captureDiagramAgentContext } from './diagramAgentContext';
 import { AgentContext } from '../../../../domain/core/agents/agentContext';
@@ -16,7 +17,8 @@ export function renderDiagramEditPrompt(request: DiagramGenerationRequest) {
     const template = resolvePromptTemplate(defaultTemplateSelection('edit-diagram'), 'edit-diagram');
     return { markdown: template.markdown, options: template.options, parameters: template.definition.parameters, references: [] };
   })();
-  return (request.editRange ? `Only change raw lines ${request.editRange.startLine} through ${request.editRange.endLine} (the selected subtree). Return the complete diagram with every line before and after that range unchanged. Preserve the branch indentation and connectors. Changes outside that range are rejected.\n\n` : '') + renderPromptTemplate(prompt, {
+  const continuity = request.baseRevisionId ? 'Preserve logical node identities: append [[keep:LOGICAL_ID]] to every retained node line, including renamed or moved nodes and the selected subtree root. Use only supplied logical IDs, once each. New nodes have no marker. Markers are stripped before storage; source mapping columns must address the clean text.\nLogical identities: ' + JSON.stringify(diagramContentNodes(request.context.diagram.content).map(node => ({ line: node.line, nodeRef: request.nodeRefs?.[node.id] }))) + '\n\n' : '';
+  return continuity + (request.editRange ? `Only change raw lines ${request.editRange.startLine} through ${request.editRange.endLine} (the selected subtree). Return the complete diagram with every line before and after that range unchanged. Preserve the branch indentation and connectors. Changes outside that range are rejected.\n\n` : '') + renderPromptTemplate(prompt, {
     context: JSON.stringify({ baseRevisionId: request.baseRevisionId ?? null, diagram: request.context.diagram, editableSubtree: request.editRange ?? null, connections: request.context.connections ?? [] }),
     references: JSON.stringify(prompt.references), instruction: JSON.stringify(request.instruction) });
 }
@@ -31,12 +33,12 @@ export class PiDiagramEditRuntime extends PiAgentRuntime implements DiagramGener
     const configured = await this.model();
     const prompt = renderDiagramEditPrompt(request);
     const submission = createValidatedSubmission<GeneratedDiagramEdit>({ toolName: 'submit_diagram_edit',
-      validate: candidate => { try { validateGeneratedDiagramEdit(base, candidate); if (request.editRange) subtreeReplacement(base, candidate.ascii, request.editRange); } catch (error) { return String(error); } },
+      validate: candidate => { try { const clean = validateGeneratedDiagramEdit(base, candidate, request.nodeRefs); if (request.editRange) subtreeReplacement(base, clean.ascii, request.editRange); } catch (error) { return String(error); } },
       acceptedMessage: () => 'Validated diagram edit submitted.' });
     const submit = defineTool({ name: 'submit_diagram_edit', label: 'Submit diagram edit',
       description: 'Submit the complete revised ASCII and mappings into the supplied evidence.',
       promptSnippet: 'Submit a complete revised diagram', promptGuidelines: [submission.promptGuideline],
-      parameters: Type.Object({ ascii: Type.String({ minLength: 1, maxLength: 20000 }),
+      parameters: Type.Object({ ascii: Type.String({ minLength: 1, maxLength: 200000 }),
         structureKind: Type.Union([Type.Literal('diagram'), Type.Literal('tree')]),
         mappings: Type.Array(Type.Object({ id: Type.String(), entityId: Type.String(), sourceRangeIndex: Type.Integer({ minimum: 0 }),
           sourceRangeId: Type.Optional(Type.String()), line: Type.Integer({ minimum: 1 }),
@@ -64,7 +66,7 @@ export class PiDiagramEditRuntime extends PiAgentRuntime implements DiagramGener
       await session.prompt(prompt);
       options.signal?.throwIfAborted();
       if (!submission.value) throw Error('Diagram edit agent finished without a validated submission');
-      const candidate = validateGeneratedDiagramEdit(base, submission.value);
+      const candidate = validateGeneratedDiagramEdit(base, submission.value, request.nodeRefs);
       if (request.llmSessionId) options.onAgentContext?.(captureDiagramAgentContext(request.llmSessionId, session.messages));
       return { ...candidate, source: base.sourceContext.binding, evidence: base.sourceContext.evidence };
     } finally {
@@ -89,7 +91,8 @@ export class FakeDiagramEditRuntime implements DiagramGenerator {
     const lines = base.content.ascii.split('\n');
     if (request.editRange) lines[request.editRange.startLine - 1] += ` [edited: ${instruction}]`;
     else lines.push(`[edited: ${instruction}]`);
-    return { ascii: lines.join('\n'),
+    const nodes = diagramContentNodes(base.content);
+    return { nodeCorrespondence: Object.fromEntries(nodes.filter(node => nodes.filter(other => other.line === node.line).length === 1 && request.nodeRefs?.[node.id]).map(node => [request.nodeRefs![node.id], node.line])), ascii: lines.join('\n'),
       structureKind: base.content.structure.kind, mappings: [...base.sourceContext.mappings],
       source: base.sourceContext.binding, evidence: base.sourceContext.evidence };
   }

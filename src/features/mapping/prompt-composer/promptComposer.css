@@ -141,3 +141,17 @@ body.is-placing-prompt-reference .mapping-viewport { cursor: copy; }
   .prompt-template-columns { grid-template-columns: minmax(0, 1fr); grid-template-rows: 1fr 1fr; }
   .prompt-template-columns > section + section { border-left: 0; border-top: 1px solid var(--gutter); }
 }
+
+.llm-panel.prompt-composer { overflow-y: auto; overscroll-behavior: contain; }
+.llm-panel.prompt-composer > * { flex-shrink: 0; }
+.llm-panel.prompt-composer > .prompt-composer-layout { flex: 0 0 auto; }
+.llm-panel.prompt-composer .prompt-composer-main { overflow: visible; }
+.variant-generation, .variant-review { padding: 12px; border-top: 1px solid var(--gutter); display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 10px; }
+.variant-generation > *, .variant-review > *, .variant-review li { min-width: 0; }
+.variant-generation input:not([type=checkbox]), .variant-review input { min-width: 0; color: var(--fg); background: var(--control-background); border: 1px solid var(--gutter); padding: 5px; }
+.variant-generation label, .variant-review label { display: flex; gap: 8px; align-items: center; }
+.variant-review pre { overflow: auto; max-height: 280px; font-size: 12px; }
+.variant-review ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; max-height: 360px; overflow: auto; }
+.variant-review li { border: 1px solid var(--border-color, #444); padding: 8px; overflow-wrap: anywhere; }
+.variant-review li > div, .variant-review-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.variant-review button[aria-pressed=true] { outline: 2px solid var(--accent, #88c0d0); }

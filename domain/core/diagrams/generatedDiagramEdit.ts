@@ -1,9 +1,12 @@
 import { z } from 'zod';
 import { buildDiagramContent } from './diagramContent';
 import { validateDiagram, type Diagram } from './diagram';
+import { stripNodeContinuity } from './diagramNodeContinuity';
+import { diagramContentNodes } from './diagramContentNodes';
 
 export const generatedDiagramEditSchema = z.object({
-  ascii: z.string().min(1).max(20000),
+  // Identity annotations are removed before enforcing the 20,000-character content limit.
+  ascii: z.string().min(1).max(200000),
   structureKind: z.enum(['diagram', 'tree']),
   mappings: z.array(z.object({ id: z.string().min(1), entityId: z.string().min(1),
     sourceRangeIndex: z.number().int().nonnegative(), sourceRangeId: z.string().optional(),
@@ -13,11 +16,14 @@ export const generatedDiagramEditSchema = z.object({
 export type GeneratedDiagramEdit = z.infer<typeof generatedDiagramEditSchema>;
 
 /** Validate an agent candidate without issuing a revision for rejected submissions. */
-export function validateGeneratedDiagramEdit(base: Diagram, raw: unknown): GeneratedDiagramEdit {
-  const candidate = generatedDiagramEditSchema.parse(raw);
+export function validateGeneratedDiagramEdit(base: Diagram, raw: unknown, nodeRefs: Readonly<Record<string, string>> = {}): GeneratedDiagramEdit & { nodeCorrespondence: Record<string, number> } {
+  const parsed = generatedDiagramEditSchema.parse(raw);
+  const candidate = { ...parsed, ...stripNodeContinuity(parsed.ascii, nodeRefs) };
   if (!candidate.ascii.trim() || candidate.ascii.includes('\r') || candidate.ascii.includes('\t'))
     throw Error('Use nonempty ASCII with LF newlines and spaces, not tabs');
   const content = buildDiagramContent(candidate.ascii, `${base.id}:${base.revision + 1}`, candidate.structureKind);
+  for (const line of Object.values(candidate.nodeCorrespondence)) if (diagramContentNodes(content).filter(node => node.line === line).length !== 1)
+    throw Error('CONTINUITY: marker must identify exactly one output node');
   validateDiagram({ ...base, revision: base.revision + 1, content, jumps: undefined,
     sourceContext: { ...base.sourceContext, contentHash: content.asciiSha256, mappings: candidate.mappings } });
   return candidate;

@@ -251,3 +251,35 @@ it('captures context for generation and binds its hash to retries without regene
   expect(generate).toHaveBeenCalledOnce();
   expect(f.controller.getSnapshot().version).toBe(1);
 });
+
+it('generates multiple retained subtree variants, retries once, and refines one branch independently', async () => {
+  const generate = vi.fn(async (request: DiagramGenerationRequest) => {
+    const nodes = diagramContentNodes(request.context!.diagram.content), lines = request.context!.diagram.content.ascii.split('\n');
+    lines[request.editRange!.startLine - 1] += ' revised';
+    for (const node of nodes) lines[node.line - 1] += ` [[keep:${request.nodeRefs![node.id]}]]`;
+    return { ascii: lines.join('\n'), structureKind: 'tree' as const, mappings: [] };
+  });
+  const f = fixture({ generate });
+  f.controller.applyUpdate(0, [{ method: 'replace', nodeId: 'grid:overview', ascii: 'Shop\n|-- Payment\n|   `-- Capture\n`-- Cart', structureKind: 'tree' }]);
+  const base = f.controller.getSnapshot().document.scene.contents.overview;
+  const payment = diagramContentNodes(base.content).find(n => n.label === 'Payment')!;
+  const input = { ...f.input, expectedVersion: 1, baseRevisionId: base.revisionId,
+    subtree: { contentNodeId: payment.id, revisionId: base.content.revisionId }, variant: { name: 'Payment option', count: 3 } };
+  f.persist.mockRejectedValueOnce(Error('disk unavailable'));
+  const run = f.service.start(input);
+  await settled(f.service, run.runId, 'awaiting-acknowledgement');
+  f.service.start(input);
+  const complete = await settled(f.service, run.runId, 'completed');
+  expect(generate).toHaveBeenCalledTimes(3);
+  expect(complete.variants).toHaveLength(3);
+  expect(f.controller.getSnapshot().document.scene.contents.overview.revisionId).toBe(base.revisionId);
+  expect(Object.keys(f.controller.getSnapshot().document.variants!)).toHaveLength(3);
+  const [a, b] = complete.variants!;
+  const next = f.service.start({ ...input, requestId: 'refine', expectedVersion: 2, variant: { name: 'Refined', count: 1, variantId: a.id } });
+  await settled(f.service, next.runId, 'completed');
+  const variants = f.controller.getSnapshot().document.variants!;
+  expect(variants[a.id].revisionIds).toHaveLength(2);
+  expect(variants[b.id].headRevisionId).toBe(b.revisionId);
+  expect(f.controller.getSnapshot().document.scene.contents.overview.revisionId).toBe(base.revisionId);
+  expect(f.diagrams.getRevision(variants[a.id].headRevisionId).diagram.content.ascii).not.toContain('[[keep:');
+});

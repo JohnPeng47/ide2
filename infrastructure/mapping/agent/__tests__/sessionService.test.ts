@@ -199,3 +199,31 @@ it('keeps committed edits on a later conflict and lets scripts catch individual 
   await service.call('exec',{mode:'immediate',sessionId,requestId:'read',code:'return nodes.list();'});
   expect(controller.getSnapshot().version).toBe(version);
 });
+
+it('reads retained variants and batches per-node review/application through the public canvas API', async () => {
+  const diagrams = new RevisionedDiagramService();
+  const base = diagrams.create({ id: 'overview', revision: 0, ascii: 'Root\n`-- Child', structureKind: 'tree' }).revision;
+  const scene = singleDiagramScene(base.diagram.content.ascii); scene.contents = { ...scene.contents, overview: base.diagram };
+  const controller = new MappingDocumentController(mappingDocumentFromScene(scene), initialCanvasState());
+  const refs = Object.values(base.nodeRefs), changed = diagrams.revise(base.id, { kind: 'replace', input: { ascii: 'Root\n`-- Revised', structureKind: 'tree' }, nodeCorrespondence: { [refs[0]]: 1, [refs[1]]: 2 } }).revision;
+  controller.applyUpdate(0, [{ method: 'variant-store', nodeId: 'grid:overview', expectedRevisionId: base.id, variants: [{ revision: changed, variant: {
+    id: 'candidate', name: 'Alternative', diagramId: base.diagramId, contentId: 'overview', ownerNodeId: 'root', baseRevisionId: base.id, headRevisionId: changed.id, revisionIds: [changed.id], prompt: 'Revise', decisions: {}
+  } }] }]);
+  const bridge: CanvasSessionPort = { register() {}, list: () => [{canvasId:'canvas',documents:[{documentId:'doc',name:'Test'}]}], poll: async () => [], reply() {}, unregister() {}, dispose() {},
+    async dispatch(_id, command) {
+      if (command.method === 'snapshot' || command.method === 'identity') return {...controller.getSnapshot(), history: controller.exportHistory(), name:'Test'};
+      const p = command.payload as {expectedVersion:number;operations:DiagramOperation[]};
+      return controller.transact(p.expectedVersion, p.operations);
+    } };
+  const service = new AgentDiagrammingSessionService(bridge, {} as MappingDiagramService, {} as DiagramRepository, new QuickJsAgentRuntime());
+  const attached = await service.call('exec', {requestId:'attach',code:'return canvas.attach({canvasId:"canvas",documentId:"doc"});'}) as {value:{sessionId:string}};
+  const sessionId = attached.value.sessionId;
+  const read = await service.call('exec', {sessionId,requestId:'read',code:'return nodes.variants({nodeId:"grid:overview"});'}) as {value:{version:number;variants:{variant:{id:string};changes:{id:string}[]}[]}};
+  expect(read.value.version).toBe(1); expect(read.value.variants[0].changes).toHaveLength(1);
+  const request = {sessionId,requestId:'accept',expectedVersion:1,code:`nodes.reviewVariant({nodeId:"grid:overview",variantId:"candidate",decisions:{${JSON.stringify(refs[1])}:"accept"},apply:true}); return nodes.variants({nodeId:"grid:overview"});`};
+  const accepted = await service.call('exec', request) as {value:{version:number}};
+  expect(accepted.value.version).toBe(2);
+  expect(controller.getSnapshot().document.scene.contents.overview.content.ascii).toBe(changed.diagram.content.ascii);
+  expect(await service.call('exec', request)).toEqual(accepted);
+  controller.undo(); expect(controller.getSnapshot().document.scene.contents.overview.content.ascii).toBe(base.diagram.content.ascii);
+});

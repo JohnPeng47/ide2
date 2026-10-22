@@ -1,3 +1,4 @@
+import { reviewVariant, variantRevisionIds } from '../../../domain/core/diagrams/diagramVariant';
 import { canvasMutationResult, type CanvasMutationResult } from '../../../domain/mapping/agent/mutationReceipt';
 import { ChatCanvasBindings } from './chatBindings';
 import { CanvasReadAliases } from './readAliases';
@@ -273,8 +274,8 @@ export class AgentDiagrammingSessionService {
     };
     try {
       const value = await this.runtime.run(input.code, async (method, args) => {
-        if (readOnly && !['canvas.read', 'canvas.list', 'canvas.attach', 'nodes.list', 'nodes.get', 'edges.list'].includes(method)) throw Error('READ_ONLY: canvas mutation requires Workspace access');
-        if (input.mode === 'batched' && (method.startsWith('canvas.') || ['nodes.list', 'nodes.get', 'edges.list', 'nodes.setSourceMappings', 'nodes.setJumps'].includes(method))) await flush();
+        if (readOnly && !['canvas.read', 'canvas.list', 'canvas.attach', 'nodes.list', 'nodes.get', 'nodes.variants', 'edges.list'].includes(method)) throw Error('READ_ONLY: canvas mutation requires Workspace access');
+        if (input.mode === 'batched' && (method.startsWith('canvas.') || ['nodes.list', 'nodes.get', 'nodes.variants', 'edges.list', 'nodes.setSourceMappings', 'nodes.setJumps'].includes(method))) await flush();
         if (uncertain) throw Error('CANVAS_TIMEOUT: retry execution with the same requestId');
         const stepIndex = cursor++, stepSignature = JSON.stringify({ method, args });
         let step = state.steps[stepIndex];
@@ -346,6 +347,17 @@ export class AgentDiagrammingSessionService {
                 }
                 return { version: state.version, edges: state.edges.map(edge => this.projection.edge(edge)) };
               };
+              else if (method === 'nodes.variants') execute = async () => {
+                const snapshot = await this.snapshot(sessionId, input.changeSessionId);
+                if (snapshot.version !== state.version) throw Error('VERSION_CONFLICT: canvas changed during execution');
+                const node = canvasDisplayNodes(snapshot.document, snapshot.canvas, snapshot.version).find(node => node.id === parsed.nodeId);
+                if (node?.layout !== 'grid' || !node.diagram) throw Error('Expected diagram');
+                const variants = Object.values(snapshot.document.variants ?? {}).filter(variant => variant.contentId === node.diagram!.id);
+                const retained = await this.snapshot(sessionId, input.changeSessionId, { revisionIds: variants.flatMap(variantRevisionIds) });
+                if (retained.version !== state.version) throw Error('VERSION_CONFLICT: canvas changed during execution');
+                const revisions = retained.history?.diagramRevisions ?? Object.fromEntries((retained.revisions ?? []).map(revision => [revision.id, revision]));
+                return { version: state.version, variants: variants.map(variant => ({ variant, ...reviewVariant(variant, id => revisions[id]) })) };
+              };
               else if (method === 'nodes.list') execute = async () => ({ version: state.version, nodes: this.projection.nodes(state.nodes!) });
               else if (method === 'nodes.get') execute = async () => {
                 const node = state.nodes!.find(node => node.id === parsed.nodeId);
@@ -379,6 +391,7 @@ export class AgentDiagrammingSessionService {
                   ? method === 'edges.remove' ? { method: 'edge-remove', edgeId: parsed.edgeId }
                     : { method: method === 'edges.create' ? 'edge-create' : 'edge-update',
                         edge: { ...parsed, id: method === 'edges.create' ? `connection-${randomUUID()}` : parsed.id } }
+                  : method === 'nodes.reviewVariant' ? { ...parsed, method: 'variant-review' }
                   : method === 'nodes.draw' ? { ...parsed, method: 'diagram-create', id: `diagram-${randomUUID()}` }
                     : { ...parsed, method: method.slice(6) }) as DiagramOperation;
                 if (input.mode === 'batched') {

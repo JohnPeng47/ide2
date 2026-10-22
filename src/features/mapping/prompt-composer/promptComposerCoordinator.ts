@@ -6,7 +6,7 @@ import type { DiagramEditClient } from './diagramEditClient';
 import { createPromptDraft, insertReferenceWithCursor, removeBlock, serializePromptDraft, type PromptCursor, type PromptDraft } from './promptDraft';
 
 /** The fixed destination: the diagram to revise, or the anchor new diagrams are created beside. */
-export interface PromptComposerTarget { operation: PromptOperation; canvasId: string; documentId: string; nodeId: string; label: string; subtreeLabel?: string; subtree?: CreateDiagramInput['subtree']; sources?: CreateDiagramInput['sources']; origin?: CreateDiagramInput['origin'] }
+export interface PromptComposerTarget { generateVariants?: boolean; variantName?: string; variantCount?: number; variantId?: string; operation: PromptOperation; canvasId: string; documentId: string; nodeId: string; label: string; subtreeLabel?: string; subtree?: CreateDiagramInput['subtree']; sources?: CreateDiagramInput['sources']; origin?: CreateDiagramInput['origin'] }
 export interface PromptComposerEntry {
   llmSessionId: string;
   agentContext?: AgentContextSnapshot;
@@ -148,7 +148,7 @@ export class PromptComposerCoordinator {
     if (entry.target.operation === 'extend-diagram' && (!entry.target.sources?.length || !entry.target.origin)) {
       this.patch(key, { error: 'Select nodes, click the green circle, then click empty canvas to place the origin.' }); return;
     }
-    if (entry.target.operation === 'edit-diagram' && !entry.target.subtree) {
+    if (entry.target.operation === 'edit-diagram' && !entry.target.subtree && !entry.target.generateVariants) {
       this.patch(key, { error: 'Select a tree node to choose the subtree to update.' }); return;
     }
     this.patch(key, { pending: true, error: undefined, run: undefined, request: undefined });
@@ -159,7 +159,8 @@ export class PromptComposerCoordinator {
       const request: CreateDiagramInput = { ...capture, llmSessionId: entry.llmSessionId,
         ...(entry.agentContext ? { agentContext: structuredClone(entry.agentContext) } : {}), nodeId: target.nodeId, prompt, requestId: crypto.randomUUID(),
         template: structuredClone(draft.template),
-        ...(target.operation === 'edit-diagram' ? { subtree: target.subtree } : {}),
+        ...(target.operation === 'edit-diagram' ? { subtree: target.variantId ? undefined : target.subtree,
+          ...(target.generateVariants ? { variant: { name: target.variantName?.trim() || 'Alternative', count: target.variantId ? 1 : target.variantCount ?? 1, variantId: target.variantId } } : {}) } : {}),
         ...(target.operation === 'extend-diagram' ? { origin: target.origin, sources: target.sources } : {}), ...(references.length ? { references } : {}),
         ...(target.operation === 'create-diagram' ? { count: draft.count } : {}) };
       // Retain the exact request before sending: a lost response must never start a second generation.
