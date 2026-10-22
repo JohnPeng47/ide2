@@ -48,6 +48,26 @@ referencing the captured baseline bindings rather than synthesizing new diagrams
 Camera, selection and measured geometry updates do not create content revisions.
 Personal view state is stored separately from each checkpoint's canvas document.
 
+The portable read model remains an expanded checkpoint. Persistence encodes it as
+record diffs using `canvasCheckpointRecords.ts`: grid boxes, edges, sections,
+bindings, display panels, selection items, controls surfaces, and folding state
+are separate records. A panel movement changes that panel's record without
+serializing every other panel's content into the new checkpoint.
+
+Each delta contains added records, updated `[before, after]` references, and
+removed records. References address immutable values by SHA-256. Large strings
+and captured `sourceAscii` are separate shared text values, so stale selections
+keep their exact captured text without duplicating it in every panel/checkpoint.
+This encoding does not change node IDs or infer node correspondence.
+
+There are at most 31 delta dependencies before a complete record map. The history
+header also carries the current head's materialized record map, so publication
+and current-only reads do not require historical checkpoints. Full readers verify
+this index against replayed history. Undo/redo, reset, abandoned branches, and
+cross-canvas transaction IDs retain their existing meanings. View state remains
+undoable; this change does not discard saved selection panes or alter personal
+state restoration policies.
+
 The live page queues automatic workspace saves after checkpoint changes (150 ms
 coalescing). Writes remain asynchronous, and failures appear in the page error
 display. The controller coordinates composition and diagram edits; no separate
@@ -66,9 +86,15 @@ editing context or loading undo history.
 - `diagrams/diagram/<sha256>.json`: immutable diagram content, source context, and jumps.
 - `diagrams/revision/<sha256>.json`: immutable revision metadata, logical node
   identities, and a reference to its diagram record.
-- `diagrams/history/<sha256>.json`: revision-record references and bindings for
-  diagram checkpoints. Canvas snapshots refer to checkpoint IDs rather than
-  carrying diagram bindings or revision tables on disk.
+- `diagrams/history/<sha256>.json`: history indexes and immutable checkpoint value/text
+  records. New history indexes have `format: 2` and reference the items used by
+  record-diff checkpoints; old binding-table indexes remain readable.
+- `workspace-records.json`: the atomic live-workspace manifest and retry receipts.
+  Its document keys include `history`, `checkpoint/<id>`, `revision/<id>`,
+  `item/<sha256>`, and the current `canvas` record map. Values are immutable files
+  under `workspace-records/`. Current view updates reuse the same value/text pool
+  as checkpoint history. Autosave sends previously unseen items and changed
+  checkpoints/header/view records, not all shared items again.
 - Workspace and change-session files use the same references through the diagram persistence adapter.
   Their materialized diagram objects are also externalized. Derived catalog exports
   and legacy saved-scene strings remain compatibility data, not revision storage.
@@ -87,6 +113,17 @@ HTTP responses and explicit workspace exports remain portable expanded documents
 compatibility adapters hydrate references before existing rendering and MCP code
 sees them. Export/import therefore does not depend on the original store directory.
 History bundles remain subject to the existing HTTP request-size limit.
+
+Old expanded checkpoints and current-view records remain readable. Attaching a
+live workspace upgrades its checkpoint encoding in an atomic autosave; the server
+compares decoded checkpoints before allowing this migration. Re-encoding cannot
+change an existing checkpoint's semantic content. Existing immutable files are
+not deleted by migration: other saved catalogs or proposals may still reference
+them. Reclaiming those files requires a separate reachability-aware collector.
+
+The new storage format reduces persisted/transported history. Portable exports
+and the controller's compatibility history are still materialized objects; fully
+lazy in-memory history and a history-retention policy are separate changes.
 
 ## ChangeSessions and merge
 

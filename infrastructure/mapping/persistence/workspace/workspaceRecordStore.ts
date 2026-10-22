@@ -1,9 +1,12 @@
+import { checkpointRevisionIds } from '../../../../domain/core/diagrams/canvasHistory';
 import { createHash, randomUUID } from 'node:crypto';
 import { assertDiagramStorageFormat } from '../../../core/persistence/diagramStorageFormat';
 import { mkdir, readFile, rename, rm, open } from 'node:fs/promises';
 import path from 'node:path';
 import { ApplicationError } from '../../../../application/core/errors';
-import { recordsWorkspace, validateRecordUpdate, workspaceRecords, type WorkspaceBatch, type WorkspaceRecords, type WorkspaceRecordState } from '../../../../domain/mapping/workspace/workspaceRecords';
+import { recordHistory, recordsWorkspace, validateRecordUpdate, workspaceRecords, type WorkspaceBatch, type WorkspaceRecords, type WorkspaceRecordState } from '../../../../domain/mapping/workspace/workspaceRecords';
+import { loadCanvasCheckpoint } from '../../../../domain/core/diagrams/canvasCheckpointRecords';
+import { stateKey } from '../../../../domain/core/diagrams/canvasHistory';
 import type { MappingWorkspaceSnapshot } from '../../../../domain/mapping/workspace/mappingWorkspace';
 import type { HistoryValidation } from '../../../../domain/core/diagrams/canvasHistory';
 
@@ -56,12 +59,13 @@ export class WorkspaceRecordStore {
       if (hash(text) !== id) throw Error('Workspace record integrity failure');
       return JSON.parse(text);
     };
-    const [header, metadata, head] = await Promise.all([read('history'), read('metadata'), read('checkpoint/' + checkpointId)]);
+    const [header, metadata] = await Promise.all([read('history'), read('metadata')]);
     if (header.headId !== checkpointId || metadata.version !== version) throw Error('VERSION_CONFLICT: canvas changed while saving');
-    const revisions = Object.fromEntries(await Promise.all([...new Set(Object.values(head.diagramBindings) as string[])].map(async id => [id, await read('revision/' + id)])));
+    const head = await loadCanvasCheckpoint(checkpointId, id => read('checkpoint/' + id), id => read('item/' + id), header.checkpointHead);
+    const revisions = Object.fromEntries(await Promise.all(checkpointRevisionIds(head).map(async id => [id, await read('revision/' + id)])));
     const refs = (kind: string) => Object.fromEntries(Object.entries(manifest.records).filter(([key]) => key.startsWith(prefix + kind + '/'))
       .map(([key, id]) => [key.slice((prefix + kind + '/').length), { $diagramRecord: 'workspace', id }]));
-    return { header, head, revisions, metadata, stored: { ...header, workspaceRecords: { checkpoints: refs('checkpoint'), revisions: refs('revision') } } };
+    return { header, head, revisions, metadata, stored: { ...header, workspaceRecords: { checkpoints: refs('checkpoint'), revisions: refs('revision'), items: refs('item') } } };
   }
   async load(projectId: string): Promise<MappingWorkspaceSnapshot | undefined> {
     const state = await this.read(projectId); return state ? recordsWorkspace(state.records)! : undefined;
@@ -95,7 +99,7 @@ export class WorkspaceRecordStore {
         return { revision: receipt.revision };
       }
       if (input.expectedRevision !== state.manifest.revision) throw new ApplicationError('conflict', 'VERSION_CONFLICT: workspace changed in another client; reload before saving');
-      const records = { ...state.records }, keys: string[] = [], seen = new Set<string>();
+      const records = { ...state.records }, keys: string[] = [], seen = new Set<string>(), checkpointUpdates: string[] = [];
       for (const change of input.changes) {
         if (!change || typeof change.key !== 'string' || change.key.length > 1000 || Object.keys(change).some(k => !['key', 'value', 'delete'].includes(k))
           || ('delete' in change ? change.delete !== true || 'value' in change : !('value' in change))) throw Error('Invalid record change');
@@ -105,13 +109,25 @@ export class WorkspaceRecordStore {
         if ('delete' in change) delete records[change.key]; else {
           const previous = records[change.key];
           if (previous && change.key.includes('/revision/') && JSON.stringify(previous) !== JSON.stringify(change.value)) throw Error('Immutable diagram revision changed');
+          if (previous && change.key.includes('/item/') && JSON.stringify(previous) !== JSON.stringify(change.value)) throw Error('Immutable canvas item changed');
           if (previous && change.key.includes('/checkpoint/')) {
             const { transactionId: _before, ...before } = previous as Record<string, unknown>;
             const { transactionId: _after, ...after } = change.value as Record<string, unknown>;
-            if (JSON.stringify(before) !== JSON.stringify(after)) throw Error('Immutable canvas checkpoint changed');
+            if (JSON.stringify(before) !== JSON.stringify(after)) checkpointUpdates.push(change.key);
           }
           records[change.key] = change.value;
         }
+      }
+      // Checkpoints may be re-encoded (legacy migration or a new delta base),
+      // but their semantic content is immutable.
+      const migrated = new Map<string, [ReturnType<typeof recordHistory>, ReturnType<typeof recordHistory>]>();
+      for (const key of checkpointUpdates) {
+        const [, encoded, , checkpointId] = key.split('/'), id = decodeURIComponent(encoded);
+        if (!migrated.has(id)) migrated.set(id, [recordHistory(state.records, id), recordHistory(records, id)]);
+        const [beforeHistory, afterHistory] = migrated.get(id)!;
+        const { transactionId: _before, ...before } = beforeHistory.snapshots[checkpointId];
+        const { transactionId: _after, ...after } = afterHistory.snapshots[checkpointId];
+        if (stateKey(before) !== stateKey(after)) throw Error('Immutable canvas checkpoint changed');
       }
       validateRecordUpdate(records, keys, projectId);
       const revision = state.manifest.revision + 1;

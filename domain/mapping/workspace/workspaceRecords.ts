@@ -1,4 +1,7 @@
 import { canvasTransferSchema } from '../../core/diagrams/canvasTransfer';
+import { sha256 } from '../../core/sha256';
+import { CanvasCheckpointEncoder, CanvasValueEncoder, isCanvasViewRecords, readCanvasRecords, restoreCanvasCheckpoints,
+  type CanvasStoredItem, type CanvasViewRecords, type PersistedCanvasCheckpoint } from '../../core/diagrams/canvasCheckpointRecords';
 import { validateCanvasParents } from './canvasParents';
 import { CanvasHistory, currentHistoryChanges, documentFromHistory, validateCanvasHistory, type CanvasHistoryRecord, type HistoryChanges, type HistoryValidation } from '../../core/diagrams/canvasHistory';
 import type { StorageChange } from '../../core/storage/storageService';
@@ -12,11 +15,19 @@ export interface WorkspaceRecordState { revision: number; records: WorkspaceReco
 export const documentPrefix = (id: string) => `document/${encodeURIComponent(id)}/`;
 export function historyChanges(id: string, history: HistoryChanges): StorageChange[] {
   const prefix = documentPrefix(id);
+  const storage = history.storage ?? new CanvasCheckpointEncoder().encode(history.snapshots, true, history.header.headId);
   return [
-    { key: prefix + 'history', value: history.header },
-    ...Object.entries(history.snapshots).map(([key, value]) => ({ key: prefix + 'checkpoint/' + key, value })),
+    { key: prefix + 'history', value: { ...history.header, checkpointHead: storage.head } },
+    ...Object.entries(storage.items).map(([key, value]) => ({ key: prefix + 'item/' + key, value })),
+    ...Object.entries(storage.checkpoints).map(([key, value]) => ({ key: prefix + 'checkpoint/' + key, value })),
     ...Object.entries(history.diagramRevisions).map(([key, value]) => ({ key: prefix + 'revision/' + key, value }))
   ];
+}
+export function canvasViewChanges(id: string, canvas: MappingCanvasState): StorageChange[] {
+  const prefix = documentPrefix(id), encoder = new CanvasValueEncoder();
+  const value: CanvasViewRecords = { format: 'canvas-view-v1', records: encoder.encode({ view: normalizeRecord(prefix + 'canvas', structuredClone(canvas)) }) };
+  return [...Object.entries(encoder.takeItems()).map(([key, value]) => ({ key: prefix + 'item/' + key, value })),
+    { key: prefix + 'canvas', value }];
 }
 export function documentRecords(doc: MappingDocumentSnapshot): WorkspaceRecords {
   const { document, canvas, history, viewport, savedName, savedScene, savedEdges, revisionId, ...metadata } = doc;
@@ -25,7 +36,8 @@ export function documentRecords(doc: MappingDocumentSnapshot): WorkspaceRecords 
   return Object.fromEntries([
     ...historyChanges(doc.representationId, changes).map(change => [change.key, 'value' in change ? change.value : undefined]),
     [prefix + 'metadata', metadata], [prefix + 'baseline', { savedName, savedScene, savedEdges, revisionId }],
-    [prefix + 'canvas', canvas], ...(viewport ? [[prefix + 'viewport', viewport]] : [])
+    ...canvasViewChanges(doc.representationId, canvas).map(change => [change.key, 'value' in change ? change.value : undefined]),
+    ...(viewport ? [[prefix + 'viewport', viewport]] : [])
   ]);
 }
 export function workspaceRecords(workspace: MappingWorkspaceSnapshot): WorkspaceRecords {
@@ -35,16 +47,24 @@ export function workspaceRecords(workspace: MappingWorkspaceSnapshot): Workspace
 }
 export function recordHistory(records: WorkspaceRecords, id: string): CanvasHistoryRecord {
   const prefix = documentPrefix(id);
-  return { ...records[prefix + 'history'] as HistoryChanges['header'],
-    snapshots: Object.fromEntries(Object.entries(records).filter(([key]) => key.startsWith(prefix + 'checkpoint/')).map(([key, value]) => [key.slice((prefix + 'checkpoint/').length), value])),
-    diagramRevisions: Object.fromEntries(Object.entries(records).filter(([key]) => key.startsWith(prefix + 'revision/')).map(([key, value]) => [key.slice((prefix + 'revision/').length), value]))
+  const checkpoints: Record<string, PersistedCanvasCheckpoint> = {}, items: Record<string, CanvasStoredItem> = {}, diagramRevisions: CanvasHistoryRecord['diagramRevisions'] = {};
+  for (const [key, value] of Object.entries(records)) {
+    if (key.startsWith(prefix + 'checkpoint/')) checkpoints[key.slice((prefix + 'checkpoint/').length)] = value as PersistedCanvasCheckpoint;
+    else if (key.startsWith(prefix + 'item/')) items[key.slice((prefix + 'item/').length)] = value as CanvasStoredItem;
+    else if (key.startsWith(prefix + 'revision/')) diagramRevisions[key.slice((prefix + 'revision/').length)] = value as CanvasHistoryRecord['diagramRevisions'][string];
+  }
+  const { checkpointHead, ...header } = records[prefix + 'history'] as HistoryChanges['header'] & { checkpointHead?: import('../../core/diagrams/canvasCheckpointRecords').CanvasCheckpointHead };
+  if (checkpointHead && checkpointHead.id !== header.headId) throw Error('Invalid canvas checkpoint head');
+  return { ...header,
+    snapshots: restoreCanvasCheckpoints(checkpoints, items, checkpointHead, true), diagramRevisions
   } as CanvasHistoryRecord;
 }
 export function recordDocument(records: WorkspaceRecords, id: string): MappingDocumentSnapshot {
   const prefix = documentPrefix(id), history = recordHistory(records, id);
+  const storedCanvas = records[prefix + 'canvas'];
   return { ...records[prefix + 'metadata'] as object, ...records[prefix + 'baseline'] as object,
     representationId: id, document: documentFromHistory(history), history,
-    canvas: records[prefix + 'canvas'] as MappingCanvasState,
+    canvas: isCanvasViewRecords(storedCanvas) ? readCanvasRecords(storedCanvas.records, key => records[prefix + 'item/' + key] as CanvasStoredItem).view : storedCanvas as MappingCanvasState,
     ...(records[prefix + 'viewport'] ? { viewport: records[prefix + 'viewport'] } : {}) } as MappingDocumentSnapshot;
 }
 export function recordsWorkspace(records: WorkspaceRecords): MappingWorkspaceSnapshot | null {
@@ -54,7 +74,7 @@ export function recordsWorkspace(records: WorkspaceRecords): MappingWorkspaceSna
 }
 /** Save projection, separate from full import validation. Called on the worker's copy. */
 export function normalizeRecord(key: string, value: unknown): unknown {
-  if (!key.endsWith('/canvas')) return value;
+  if (!key.endsWith('/canvas') || isCanvasViewRecords(value)) return value;
   const canvas = value as MappingCanvasState;
   for (const node of Object.values(canvas.display.nodes)) if (node.kind === 'conversation') {
     if (node.thread.pending && node.thread.context) node.thread.error = 'Reply interrupted by workspace reload. Retry to continue.';
@@ -79,10 +99,11 @@ export function validateRecordUpdate(records: WorkspaceRecords, keys: string[], 
   const affected = new Set<string>();
   for (const key of keys) {
     if (key === 'workspace') continue;
-    const match = /^document\/([^/]+)\/(metadata|baseline|canvas|viewport|history|checkpoint\/[^/]+|revision\/[^/]+)$/.exec(key);
+    const match = /^document\/([^/]+)\/(metadata|baseline|canvas|viewport|history|checkpoint\/[^/]+|revision\/[^/]+|item\/[a-f0-9]{64})$/.exec(key);
     if (!match) throw Error('Invalid workspace record key');
     const id = decodeURIComponent(match[1]);
     if (!id || match[1] !== encodeURIComponent(id) || ['__proto__', 'constructor', 'prototype'].includes(id)) throw Error('Invalid canvas ID');
+    if (match[2].startsWith('item/') && Object.hasOwn(records, key) && sha256(JSON.stringify(records[key])) !== match[2].slice(5)) throw Error('Canvas item integrity failure');
     if (index.documentIds.includes(id)) affected.add(id);
     else if (Object.hasOwn(records, key)) throw Error('Record belongs to a removed canvas');
   }

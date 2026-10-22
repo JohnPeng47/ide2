@@ -1,16 +1,17 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { mkdtemp, rm, rename, readFile, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm, rename, readFile, writeFile, open } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { WorkspaceRecordStore } from '../workspaceRecordStore';
 import { initialCanvasState } from '../../../../../domain/mapping/workspace/mappingWorkspace';
 import { singleDiagramScene } from '../../../../../domain/core/diagrams/projectDiagramCanvas';
-import { documentPrefix, type WorkspaceBatch, type WorkspaceIndex } from '../../../../../domain/mapping/workspace/workspaceRecords';
+import { documentPrefix, historyChanges, type WorkspaceBatch, type WorkspaceIndex } from '../../../../../domain/mapping/workspace/workspaceRecords';
+import { CanvasCheckpointEncoder } from '../../../../../domain/core/diagrams/canvasCheckpointRecords';
 import { MappingDocumentController } from '../../../../../domain/mapping/workspace/mappingDocumentController';
-vi.mock('node:fs/promises', async importOriginal => { const actual = await importOriginal<typeof import('node:fs/promises')>(); return { ...actual, rename: vi.fn(actual.rename) }; });
+vi.mock('node:fs/promises', async importOriginal => { const actual = await importOriginal<typeof import('node:fs/promises')>(); return { ...actual, rename: vi.fn(actual.rename), open: vi.fn(actual.open) }; });
 const roots: string[] = [];
-afterEach(async () => { vi.mocked(rename).mockClear(); await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true }))); });
+afterEach(async () => { vi.mocked(rename).mockClear(); vi.mocked(open).mockReset(); await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true }))); });
 async function fixture() {
   const root = await mkdtemp(path.join(tmpdir(), 'workspace-records-')); roots.push(root);
   const store = new WorkspaceRecordStore(root), document = { scene: singleDiagramScene('Alpha'), edges: [], sections: {} };
@@ -89,6 +90,14 @@ it('defers historical checkpoint validation on startup without weakening full re
   }] });
   const file = path.join(root, 'workspace-records.json');
   const manifest = JSON.parse(await readFile(file, 'utf8'));
+  // Exercise the pre-diff storage format, which remains readable without a migration.
+  const putLegacy = async (key: string, value: unknown) => {
+    const text = JSON.stringify(value), hash = createHash('sha256').update(text).digest('hex');
+    await writeFile(path.join(root, 'workspace-records', hash + '.json'), text); manifest.records[key] = hash;
+  };
+  for (const [id, snapshot] of Object.entries(history.snapshots)) await putLegacy(prefix + 'checkpoint/' + id, snapshot);
+  const { checkpointHead: _, ...header } = JSON.parse(await readFile(path.join(root, 'workspace-records', manifest.records[prefix + 'history'] + '.json'), 'utf8'));
+  await putLegacy(prefix + 'history', header);
   const key = prefix + 'checkpoint/' + history.past.at(-1);
   const checkpoint = JSON.parse(await readFile(path.join(root, 'workspace-records', manifest.records[key] + '.json'), 'utf8'));
   checkpoint.document.scene.root.kind = 'invalid';
@@ -104,4 +113,38 @@ it('defers historical checkpoint validation on startup without weakening full re
   // Integrity checking is independent of the deferred semantic validation.
   await writeFile(path.join(root, 'workspace-records', hash + '.json'), '{}');
   await expect(new WorkspaceRecordStore(root).state('project', async () => null, 'current')).rejects.toThrow('integrity');
+});
+
+it('migrates legacy checkpoints atomically, accepts equivalent delta bases, and rejects changed history', async () => {
+  const { root, store, prefix } = await fixture();
+  const document = { scene: singleDiagramScene('Before'), edges: [], sections: {} };
+  const controller = new MappingDocumentController(document, initialCanvasState());
+  controller.applyUpdate(0, [{ method: 'replace', nodeId: 'grid:overview', ascii: 'After' }]);
+  const history = controller.exportHistory();
+  const { snapshots, diagramRevisions, ...header } = history;
+  // Seed the previous expanded format through the same atomic record protocol.
+  const state = await store.state('project', async () => null);
+  await store.apply('project', { requestId: 'legacy', expectedRevision: state.revision, changes: [
+    ...Object.keys(state.records).filter(key => key.includes('/checkpoint/') || key.includes('/revision/')).map(key => ({ key, delete: true as const })),
+    { key: prefix + 'history', value: header },
+    ...Object.entries(snapshots).map(([id, value]) => ({ key: prefix + 'checkpoint/' + id, value })),
+    ...Object.entries(diagramRevisions).map(([id, value]) => ({ key: prefix + 'revision/' + id, value }))
+  ] });
+  const migrated = new WorkspaceRecordStore(root), changes = controller.persistenceChanges();
+  await migrated.apply('project', { requestId: 'compact', expectedRevision: state.revision + 1, changes: historyChanges('draft-a', changes) });
+  expect((await new WorkspaceRecordStore(root).load('project'))!.documents[0].history).toEqual(history);
+  // A standalone encoding and a delta encoding represent the same immutable checkpoint.
+  const headId = history.headId, standalone = new CanvasCheckpointEncoder().encode({ [headId]: snapshots[headId] });
+  const encodedChanges = [
+    ...Object.entries(standalone.items).map(([id, value]) => ({ key: prefix + 'item/' + id, value })),
+    { key: prefix + 'checkpoint/' + headId, value: standalone.checkpoints[headId] }
+  ];
+  await migrated.apply('project', { requestId: 'standalone', expectedRevision: state.revision + 2, changes: encodedChanges });
+  expect((await new WorkspaceRecordStore(root).load('project'))!.documents[0].history).toEqual(history);
+  const changed = structuredClone(snapshots[headId]); changed.document.sections = { corrupt: 'Changed' } as any;
+  const manifestBefore = await readFile(path.join(root, 'workspace-records.json'), 'utf8');
+  await expect(migrated.apply('project', { requestId: 'mutate', expectedRevision: state.revision + 3, changes: [
+    { key: prefix + 'checkpoint/' + headId, value: changed }, { key: prefix + 'history', value: header }
+  ] })).rejects.toThrow('Immutable canvas checkpoint changed');
+  expect(await readFile(path.join(root, 'workspace-records.json'), 'utf8')).toBe(manifestBefore);
 });

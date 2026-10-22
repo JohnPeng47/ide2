@@ -1,4 +1,5 @@
 import { deepFreeze } from '../immutability';
+import { CanvasCheckpointEncoder, type CanvasCheckpointRecords } from './canvasCheckpointRecords';
 import { diagramRevisions } from './internal/revisionRegistry';
 import { validateDiagram, type Diagram } from './diagram';
 import { diagramContentNodes } from './diagramContentNodes';
@@ -39,6 +40,7 @@ export interface HistoryChanges {
   header: Omit<CanvasHistoryRecord, "snapshots" | "diagramRevisions">;
   snapshots: CanvasHistoryRecord["snapshots"];
   diagramRevisions: CanvasHistoryRecord["diagramRevisions"];
+  storage?: CanvasCheckpointRecords;
 }
 export interface CanvasHistoryRecord {
   schemaVersion: 1;
@@ -59,7 +61,10 @@ export type HistoryValidation = 'all' | 'current';
 export function currentHistoryChanges(record: CanvasHistoryRecord, snapshotId = record.headId) {
   const snapshot = record.snapshots?.[snapshotId];
   if (!snapshot) throw Error('Unknown canvas checkpoint');
-  return { revisions: [...new Set(Object.values(snapshot.diagramBindings))], snapshots: [snapshotId] };
+  return { revisions: checkpointRevisionIds(snapshot), snapshots: [snapshotId] };
+}
+export function checkpointRevisionIds(snapshot: StoredCanvasSnapshot) {
+  return [...new Set([...Object.values(snapshot.diagramBindings)])];
 }
 const id = (kind: string) => `${kind}-${crypto.randomUUID()}`;
 export function stateKey(value: unknown): string {
@@ -73,6 +78,7 @@ export class CanvasHistory {
   private record: CanvasHistoryRecord;
   private readonly validatedSnapshots = new Set<string>();
   private changes: { snapshots: CanvasHistoryRecord["snapshots"]; diagramRevisions: CanvasHistoryRecord["diagramRevisions"] }[] = [];
+  private checkpointEncoder = new CanvasCheckpointEncoder();
   readonly diagrams: Pick<DiagramRevisionEditor, 'resolve' | 'merge'>;
   constructor(document: ResolvedCanvasDocument, view: unknown, record?: CanvasHistoryRecord, validation: HistoryValidation = 'all') {
     if (record) {
@@ -105,14 +111,15 @@ export class CanvasHistory {
     const updates = since === undefined ? { snapshots: { ...snapshots }, diagramRevisions: { ...diagramRevisions } }
       : this.changes.slice(since).reduce((out, change) => ({ snapshots: Object.assign(out.snapshots, change.snapshots),
         diagramRevisions: Object.assign(out.diagramRevisions, change.diagramRevisions) }), { snapshots: {}, diagramRevisions: {} });
-    return { sequence: this.changes.length, header: { ...header, past: [...header.past], future: [...header.future] }, ...updates };
+    return { sequence: this.changes.length, header: { ...header, past: [...header.past], future: [...header.future] }, ...updates,
+      storage: this.checkpointEncoder.encode(updates.snapshots, since === undefined, header.headId) };
   }
   export(currentOnly = false): CanvasHistoryRecord {
     if (!currentOnly) return structuredClone(this.record);
     // Copy operations need current bindings, not the source's entire undo archive.
     // Keep the real head ID so workspace transfer boundaries still refer to it.
     const { parentId: _, ...head } = this.record.snapshots[this.record.headId];
-    const revisions = Object.fromEntries([...new Set(Object.values(head.diagramBindings))]
+    const revisions = Object.fromEntries(checkpointRevisionIds(head)
       .map(id => [id, this.record.diagramRevisions[id]]));
     const revisionBoundary = Object.fromEntries(Object.values(revisions).flatMap(revision =>
       revision.parentId && !revisions[revision.parentId] ? [[revision.parentId, revision.diagramId]] : []));

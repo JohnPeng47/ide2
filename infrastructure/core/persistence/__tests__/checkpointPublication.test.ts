@@ -19,6 +19,7 @@ it('publishes persisted records without expanding a >100 MiB archive, preserves 
     // Historical presentation data can dwarf the current document. Store it once.
     delta.snapshots = structuredClone(delta.snapshots);
     delta.snapshots[delta.header.baselineId].view = { archive: 'x'.repeat(101 * 1024 * 1024) };
+    delete delta.storage; // Re-encode the deliberately changed test archive.
     const workspace = new WorkspaceRecordStore(root);
     await workspace.state('project', async () => null);
     const prefix = documentPrefix('draft-doc');
@@ -43,13 +44,14 @@ it('publishes persisted records without expanding a >100 MiB archive, preserves 
     const archived = manifest.records[prefix + 'checkpoint/' + delta.header.baselineId];
     // A current read must not open an unrelated archived checkpoint.
     const archivePath = join(root, 'workspace-records', archived + '.json');
+    const archivedText = await readFile(archivePath, 'utf8');
     await writeFile(archivePath, 'unreadable archive');
     const current = await catalog.loadCurrentRepresentationCatalog('project');
     const history = historyFromRevision(current.revisions[receipt.revisionId]);
     expect(Object.keys(history.snapshots)).toEqual([delta.header.headId]);
     expect(history.diagramRevisions[history.snapshots[history.headId].diagramBindings.overview].diagram.highlights).toHaveLength(1);
     // Save references still pin the exact archived record; restore the fixture and verify full-history readers.
-    await writeFile(archivePath, JSON.stringify(delta.snapshots[delta.header.baselineId]));
+    await writeFile(archivePath, archivedText);
     const restored = await catalog.loadRepresentationCatalog('project');
     const full = historyFromRevision(restored.revisions[receipt.revisionId]);
     expect((full.snapshots[full.baselineId].view as { archive: string }).archive.length).toBe(101 * 1024 * 1024);

@@ -37,7 +37,8 @@ it('stores diagram revisions and bindings separately and restores durable undo i
   expect(history.diagramRevisions).toBeUndefined();
   expect(history.diagramHistory.$diagramRecord).toBe('history');
   expect(history.snapshots[history.headId].diagramBindings).toBeUndefined();
-  expect(history.snapshots[history.headId].document.scene.contents).toBeUndefined();
+  expect(history.snapshots[history.headId].format).toBe('canvas-checkpoint-v1');
+  expect(history.snapshots[history.headId].document).toBeUndefined();
   expect((await readdir(path.join(root, 'diagrams/revision'))).length).toBeGreaterThan(1);
   const loaded = await new CanvasCatalogStore(root).loadRepresentationCatalog('project');
   expect(loaded).toEqual(JSON.parse(JSON.stringify(saved.catalog)));

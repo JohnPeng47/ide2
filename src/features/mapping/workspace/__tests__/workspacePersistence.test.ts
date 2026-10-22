@@ -8,6 +8,20 @@ import { singleDiagramScene } from '../../../../../domain/core/diagrams/projectD
 import { documentPrefix, recordsWorkspace, validateRecordUpdate } from '../../../../../domain/mapping/workspace/workspaceRecords';
 import type { WorkspaceBatch } from '../../../../../domain/mapping/workspace/workspaceRecords';
 afterEach(() => vi.useRealTimers());
+it('does not enqueue writes when an unchanged workspace is explicitly synced again', async () => {
+  const write = vi.fn().mockResolvedValue({ revision: 1 });
+  const storage = new RecordStorage({ revision: 0, records: {} }, { write });
+  const workspace = new CanvasWorkspace(), view = new SourcePaneViewState();
+  const document = { scene: singleDiagramScene('Alpha'), edges: [], sections: {} };
+  workspace.setDrafts({ a: { name: 'Alpha', savedName: 'Alpha', savedScene: JSON.stringify(document.scene),
+    revisionId: '', busy: false, document, canvas: initialCanvasState() } });
+  const persistence = new WorkspacePersistence(workspace, storage, 'project', view);
+  try {
+    await storage.flush(); write.mockClear();
+    persistence.update('a', []); persistence.sync(); await storage.flush();
+    expect(write).not.toHaveBeenCalled();
+  } finally { persistence.dispose(); workspace.dispose(); storage.dispose(); }
+});
 it('submits cheaply, coalesces keys, and keeps edits arriving during a write pending', async () => {
   vi.useFakeTimers(); let finish!: (value: { revision: number }) => void;
   const write = vi.fn().mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })).mockResolvedValue({ revision: 2 });

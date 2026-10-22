@@ -1,7 +1,8 @@
 import type { StorageChange } from '../../../../domain/core/storage/storageService';
-import { documentPrefix, historyChanges, type WorkspaceIndex } from '../../../../domain/mapping/workspace/workspaceRecords';
+import { canvasViewChanges, documentPrefix, historyChanges, type WorkspaceIndex } from '../../../../domain/mapping/workspace/workspaceRecords';
 import type { CanvasTransfer } from '../../../../domain/core/diagrams/canvasTransfer';
 import type { StoredCanvasSnapshot } from '../../../../domain/core/diagrams/canvasHistory';
+import { isCheckpointDelta } from '../../../../domain/core/diagrams/canvasCheckpointRecords';
 import type { CanvasDraft, CanvasWorkspace } from './canvasWorkspace';
 import type { CanvasSession } from './canvasSession';
 import type { SourcePaneViewState } from '../source-pane/sourcePaneViewState';
@@ -58,28 +59,36 @@ export class WorkspacePersistence {
         // Revision IDs are immutable; checkpoints may have retired transfer links.
         if (cursor === undefined && 'value' in change && this.storage.get(change.key)) {
           if (change.key.startsWith(prefix + 'revision/')) continue;
-          if (change.key.startsWith(prefix + 'checkpoint/') && this.storage.get<StoredCanvasSnapshot>(change.key)?.transactionId === (change.value as StoredCanvasSnapshot).transactionId) continue;
+          const previous = this.storage.get<StoredCanvasSnapshot>(change.key);
+          if (change.key.startsWith(prefix + 'checkpoint/') && isCheckpointDelta(previous)
+            && JSON.stringify(previous) === JSON.stringify(change.value)) continue;
         }
         changes.push(change);
       }
       this.cursors.set(draft.session, delta.sequence);
       const canvas = draft.session.controller.getSnapshot().canvas;
-      changes.push({ key: prefix + 'canvas', value: { ...canvas, display: this.view.captureDisplay(id, canvas.display) } });
+      changes.push(...canvasViewChanges(id, { ...canvas, display: this.view.captureDisplay(id, canvas.display) }));
       if (prior?.viewport !== draft.viewport || !prior) {
         const viewport = this.view.captureCamera(id, draft.viewport);
         if (viewport) changes.push({ key: prefix + 'viewport', value: viewport });
       }
       this.known.set(id, draft);
     }
-    changes.push(this.index()); this.storage.batch(changes);
+    changes.push(this.index()); this.submit(changes);
   }
   private syncView(id: string) {
     if (this.paused) return;
     const draft = this.workspace.store.getState().drafts[id]; if (!draft) return;
     const prefix = documentPrefix(id), canvas = draft.session.controller.getSnapshot().canvas;
     const viewport = this.view.captureCamera(id, draft.viewport);
-    this.storage.batch([{ key: prefix + 'canvas', value: { ...canvas, display: this.view.captureDisplay(id, canvas.display) } },
+    this.submit([...canvasViewChanges(id, { ...canvas, display: this.view.captureDisplay(id, canvas.display) }),
       ...(viewport ? [{ key: prefix + 'viewport', value: viewport }] : [])]);
+  }
+  private submit(changes: StorageChange[]) {
+    // Content-addressed items are immutable and may be shared by view and history.
+    // Sending them once avoids retransmitting unchanged panels on every gesture.
+    const unique = new Map(changes.map(change => [change.key, change]));
+    this.storage.batch([...unique.values()].filter(change => !change.key.includes('/item/') || 'delete' in change || !this.storage.get(change.key)));
   }
   dispose() { this.subscriptions.forEach(off => off()); }
 }

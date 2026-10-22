@@ -1,7 +1,9 @@
+import { checkpointRevisionIds } from './canvasHistory';
 import { diagramRevisions as revisionRegistry } from './internal/revisionRegistry';
 import { validateDiagram, validateSourceBinding, type Diagram, type DiagramSourceBinding } from './diagram';
 import { currentHistoryChanges, validateCanvasHistory, type CanvasHistoryRecord, type HistoryValidation } from './canvasHistory';
 import type { DiagramRevision } from './diagramRevisionEditor';
+import { CanvasCheckpointEncoder, loadCanvasCheckpoint, restoreCanvasCheckpoints, type CanvasStoredItem, type PersistedCanvasCheckpoint } from './canvasCheckpointRecords';
 
 export type DiagramRecordKind = 'diagram' | 'revision' | 'history' | 'workspace';
 /** Immutable, content-addressed records; the implementation supplies durable atomic writes. */
@@ -12,7 +14,9 @@ export interface DiagramRecordStore {
 interface Reference { $diagramRecord: DiagramRecordKind; id: string }
 interface StoredHistory {
   revisions: Record<string, Reference>;
-  bindings: Record<string, Record<string, string>>;
+  format?: 2;
+  bindings?: Record<string, Record<string, string>>;
+  items?: Record<string, Reference>;
 }
 const object = (value: unknown): value is Record<string, any> => !!value && typeof value === 'object' && !Array.isArray(value);
 const isHistory = (value: Record<string, any>) => value.schemaVersion === 1 && typeof value.contextId === 'string'
@@ -50,13 +54,10 @@ export async function persistDiagramData(value: unknown, store: DiagramRecordSto
       validateCanvasHistory(history);
       const revisions = Object.fromEntries(await Promise.all(Object.entries(history.diagramRevisions).map(async ([id, revision]) =>
         [id, await reference('revision', { ...revision, diagram: await visit(revision.diagram) })])));
-      const bindings = Object.fromEntries(Object.entries(history.snapshots).map(([id, snapshot]) => [id, snapshot.diagramBindings]));
       const { diagramRevisions: _, snapshots, ...rest } = history;
-      return { ...rest, diagramHistory: await reference('history', { revisions, bindings }),
-        snapshots: await visit(Object.fromEntries(Object.entries(snapshots).map(([id, snapshot]) => {
-          const { diagramBindings: _, ...canvas } = snapshot;
-          return [id, { ...canvas, diagramCheckpointId: id }];
-        }))) };
+      const encoded = new CanvasCheckpointEncoder().encode(snapshots, true, history.headId);
+      const items = Object.fromEntries(await Promise.all(Object.entries(encoded.items).map(async ([id, item]) => [id, await reference('history', item)])));
+      return { ...rest, checkpointHead: encoded.head, diagramHistory: await reference('history', { format: 2, revisions, items } satisfies StoredHistory), snapshots: encoded.checkpoints };
     }
     if (isDiagram(value)) { validateDiagram(value as Diagram); return reference('diagram', value); }
     return Object.fromEntries(await Promise.all(Object.entries(value).map(async ([key, item]) => [key, !item || typeof item !== 'object' ? item : await visit(item)])));
@@ -91,8 +92,10 @@ export async function restoreDiagramData(value: unknown, store: DiagramRecordSto
       return structuredClone(restored);
     }
     if (typeof value.contextId === 'string' && value.workspaceRecords) {
-      const { workspaceRecords, ...header } = value;
-      const [snapshots, diagramRevisions] = await Promise.all([visit(workspaceRecords.checkpoints), visit(workspaceRecords.revisions, historyValidation === 'current')]);
+      const { workspaceRecords, checkpointHead, ...header } = value;
+      const [checkpoints, diagramRevisions, items] = await Promise.all([visit(workspaceRecords.checkpoints), visit(workspaceRecords.revisions, historyValidation === 'current'), visit(workspaceRecords.items ?? {})]);
+      if (checkpointHead && checkpointHead.id !== header.headId) throw Error('Invalid canvas checkpoint head');
+      const snapshots = restoreCanvasCheckpoints(checkpoints as Record<string, PersistedCanvasCheckpoint>, items as Record<string, CanvasStoredItem>, checkpointHead);
       const history = { ...header, snapshots, diagramRevisions } as CanvasHistoryRecord;
       validateCanvasHistory(history, historyValidation === 'current' ? currentHistoryChanges(history) : undefined);
       for (const revision of Object.values(history.diagramRevisions)) {
@@ -102,11 +105,14 @@ export async function restoreDiagramData(value: unknown, store: DiagramRecordSto
     }
     if (typeof value.contextId === 'string' && value.snapshots && value.diagramHistory?.$diagramRecord === 'history') {
       const stored = await read(value.diagramHistory) as StoredHistory;
-      const { diagramHistory: _, snapshots, ...rest } = value;
+      const { diagramHistory: _, snapshots, checkpointHead, ...rest } = value;
+      if (checkpointHead && checkpointHead.id !== rest.headId) throw Error('Invalid canvas checkpoint head');
       const diagramRevisions = await visit(stored.revisions, historyValidation === 'current') as Record<string, DiagramRevision>;
-      const restoredSnapshots = Object.fromEntries(await Promise.all(Object.entries(snapshots).map(async ([id, raw]) => {
+      const restoredSnapshots = stored.format === 2
+        ? restoreCanvasCheckpoints(snapshots, await visit(stored.items) as Record<string, CanvasStoredItem>, checkpointHead)
+        : Object.fromEntries(await Promise.all(Object.entries(snapshots).map(async ([id, raw]) => {
         const { diagramCheckpointId, ...canvas } = raw as Record<string, unknown>;
-        if (diagramCheckpointId !== id || !Object.hasOwn(stored.bindings, id)) throw new Error('Unknown diagram checkpoint');
+        if (diagramCheckpointId !== id || !stored.bindings || !Object.hasOwn(stored.bindings, id)) throw new Error('Unknown diagram checkpoint');
         return [id, { ...await visit(canvas) as object, diagramBindings: stored.bindings[id] }];
       })));
       const history = { ...rest, snapshots: restoredSnapshots, diagramRevisions } as CanvasHistoryRecord;
@@ -137,15 +143,9 @@ export class DiagramPersistence {
   async currentHistory(raw: unknown): Promise<CanvasHistoryRecord> {
     if (!object(raw)) throw Error('Missing canvas history');
     const read = async (value: any) => value?.$diagramRecord ? this.store.get(value.$diagramRecord, value.id) : value;
-    let head: any, revisions: Record<string, any>;
-    if (raw.workspaceRecords) {
-      head = await read(raw.workspaceRecords.checkpoints[raw.headId]); revisions = raw.workspaceRecords.revisions;
-    } else if (raw.diagramHistory) {
-      const archive = await read(raw.diagramHistory);
-      head = { ...raw.snapshots[raw.headId], diagramBindings: archive.bindings[raw.headId] }; revisions = archive.revisions;
-    } else { head = raw.snapshots[raw.headId]; revisions = raw.diagramRevisions; }
+    const { head, revisions } = await storedHead(raw, read);
     if (!head) throw Error('Unknown canvas checkpoint');
-    const bound: Record<string, DiagramRevision> = Object.fromEntries(await Promise.all([...new Set(Object.values(head.diagramBindings) as string[])].map(async id => {
+    const bound: Record<string, DiagramRevision> = Object.fromEntries(await Promise.all(checkpointRevisionIds(head).map(async id => {
       const revision = await read(revisions[id]);
       return [id, { ...revision, diagram: await read(revision.diagram) } as DiagramRevision] as const;
     })));
@@ -159,11 +159,11 @@ export class DiagramPersistence {
   /** Read only each published canvas head's source metadata, without restoring its undo history. */
   async sourceBindings(histories: readonly unknown[]): Promise<DiagramSourceBinding[]> {
     const records = new Map<string, Promise<Record<string, any>>>();
-    const read = async (value: unknown, kind: DiagramRecordKind): Promise<Record<string, any>> => {
+    const read = async (value: unknown): Promise<Record<string, any>> => {
       if (!object(value)) throw new Error('Missing diagram source record');
       if (!value.$diagramRecord) return value;
-      if (value.$diagramRecord !== kind && value.$diagramRecord !== 'workspace' || typeof value.id !== 'string' || !/^[a-f0-9]{64}$/.test(value.id)) throw new Error('Invalid diagram record reference');
-      const key = `${kind}:${value.id}`;
+      if (!['diagram', 'revision', 'history', 'workspace'].includes(value.$diagramRecord) || typeof value.id !== 'string' || !/^[a-f0-9]{64}$/.test(value.id)) throw new Error('Invalid diagram record reference');
+      const key = `${value.$diagramRecord}:${value.id}`;
       if (!records.has(key)) records.set(key, this.store.get(value.$diagramRecord, value.id).then(record => {
         if (!object(record)) throw new Error('Invalid diagram source record');
         return record;
@@ -172,22 +172,13 @@ export class DiagramPersistence {
     };
     const bindings = new Map<string, DiagramSourceBinding>();
     for (const raw of histories) {
-      if (object(raw) && raw.workspaceRecords) {
-        const head = await read(raw.workspaceRecords.checkpoints[raw.headId], 'workspace');
-        for (const id of Object.values(head.diagramBindings)) {
-          const revision = await read(raw.workspaceRecords.revisions[id as string], 'workspace');
-          const binding = revision.diagram?.sourceContext?.binding as DiagramSourceBinding | undefined;
-          if (binding) { validateSourceBinding(binding); bindings.set(JSON.stringify(binding), binding); }
-        }
-        continue;
-      }
-      if (!object(raw) || !raw.snapshots?.[raw.headId]) throw new Error('Unknown diagram checkpoint');
-      const stored = raw.diagramHistory ? await read(raw.diagramHistory, 'history') : undefined;
-      const headBindings = stored ? stored.bindings?.[raw.headId] : raw.snapshots[raw.headId].diagramBindings;
+      if (!object(raw)) throw new Error('Unknown diagram checkpoint');
+      const { head, revisions } = await storedHead(raw, read);
+      const headBindings = head.diagramBindings;
       if (!object(headBindings)) throw new Error('Unknown diagram checkpoint');
       for (const revisionId of Object.values(headBindings)) {
-        const revision = await read((stored?.revisions ?? raw.diagramRevisions)?.[revisionId], 'revision');
-        const diagram = await read(revision.diagram, 'diagram');
+        const revision = await read(revisions[revisionId]);
+        const diagram = await read(revision.diagram);
         const binding = diagram.sourceContext?.binding as DiagramSourceBinding | undefined;
         if (binding) {
           validateSourceBinding(binding);
@@ -200,4 +191,19 @@ export class DiagramPersistence {
     return [...bindings.values()];
   }
   async restore<T>(value: unknown, historyValidation: HistoryValidation = 'all'): Promise<T> { return restoreDiagramData(value, this.store, historyValidation) as Promise<T>; }
+}
+
+async function storedHead(raw: Record<string, any>, read: (value: any) => Promise<any>) {
+  if (raw.workspaceRecords) return {
+    head: await loadCanvasCheckpoint(raw.headId, id => read(raw.workspaceRecords.checkpoints[id]), id => read(raw.workspaceRecords.items?.[id]), raw.checkpointHead),
+    revisions: raw.workspaceRecords.revisions
+  };
+  if (raw.diagramHistory) {
+    const archive = await read(raw.diagramHistory);
+    const head = archive.format === 2
+      ? await loadCanvasCheckpoint(raw.headId, async id => raw.snapshots[id], id => read(archive.items?.[id]), raw.checkpointHead)
+      : { ...raw.snapshots[raw.headId], diagramBindings: archive.bindings[raw.headId] };
+    return { head, revisions: archive.revisions };
+  }
+  return { head: raw.snapshots?.[raw.headId], revisions: raw.diagramRevisions };
 }
