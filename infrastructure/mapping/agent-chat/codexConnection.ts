@@ -17,7 +17,15 @@ export class StdioCodexConnection implements CodexConnection {
   private start() {
     requireAiEnabled(this.enabled);
     if (this.starting) return this.starting;
-    const child = spawn(this.command, ['app-server', '--listen', 'stdio://'], { cwd: this.cwd, stdio: 'pipe' });
+    // Keep Agent Chat on threshold-based summarizing compaction, including resumed threads.
+    // Process-local overrides take precedence over user/project config and model defaults.
+    const child = spawn(this.command, [
+      'app-server', '--listen', 'stdio://',
+      '-c', 'model_auto_compact_token_limit_scope="total"',
+      '-c', 'model_post_turn_compact_threshold_percent=0',
+      '-c', 'features.token_budget.enabled=false',
+      '-c', 'features.context_management.experimental_mode=false',
+    ], { cwd: this.cwd, stdio: 'pipe' });
     this.child = child;
     // Drain stderr without exposing local configuration or credentials to the browser.
     child.stderr.resume();
