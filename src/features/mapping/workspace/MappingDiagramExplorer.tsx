@@ -3,7 +3,6 @@ import { RepositoryTreeGroup } from './RepositoryTreeGroup';
 import { ChangeSessionExplorer } from '../changes/ChangeSessionExplorer';
 import type { DisplayModeChange } from '../changes/changeSessionApi';
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import type { GridBox, LineGridScene } from "../../../../domain/core/diagrams/lineGrid";
 import type { ProjectRepresentationRecord } from "../../../../domain/core/representations/projectCatalog";
 export function MappingDiagramExplorer(props: {
   transfer?: { mode: 'copy' | 'move'; count: number; sourceId: string; busy: boolean; error?: string; progress?: string; onCancel: () => void; onNew: (name: string) => void };
@@ -11,7 +10,7 @@ export function MappingDiagramExplorer(props: {
   canvas?: ReactNode;
   changeMode?: DisplayModeChange; onChangeSelect: (mode: DisplayModeChange) => void;
   repositories?: Repository[]; projectName: string; diagrams: (Pick<ProjectRepresentationRecord, 'id' | 'name' | 'repositoryId'> & { parentCanvasId?: string })[]; activeId?: string;
-  scene?: LineGridScene; dirtyIds: string[]; onOpen: (id: string) => void; onFocus: (boxId: string) => void;
+  dirtyIds: string[]; onOpen: (id: string) => void;
   onDelete: (id: string) => void; deletingId?: string; deleteDisabled: boolean; busyIds: string[];
 }) {
   const [query, setQuery] = useState("");
@@ -22,13 +21,6 @@ export function MappingDiagramExplorer(props: {
     setNewCanvas(false); setName('New canvas');
     if (props.transfer) { setQuery(''); picker.current?.focus(); picker.current?.scrollIntoView({ block: 'nearest' }); }
   }, [props.transfer?.mode, props.transfer?.sourceId]);
-  const boxTree = (box: GridBox) => <li key={box.id}>
-    <button type="button" onClick={() => props.onFocus(box.id)} data-explorer-box={box.id}>
-      {box.kind === "container" ? "▸ " : "· "}{box.kind === "diagram"
-        ? props.scene?.contents[box.contentId]?.content.ascii.split("\n")[0].slice(0, 60) || box.id : "Group"}
-    </button>
-    {box.kind === "container" && <ul>{box.children.map(boxTree)}</ul>}
-  </li>;
   type Canvas = typeof props.diagrams[number];
   const matches = (diagram: Canvas, items: Canvas[]): boolean => diagram.name.toLowerCase().includes(query.toLowerCase())
     || items.some(child => child.parentCanvasId === diagram.id && matches(child, items));
@@ -47,8 +39,6 @@ export function MappingDiagramExplorer(props: {
             title={`Delete ${diagram.name}`} disabled={props.deleteDisabled || props.busyIds.includes(diagram.id)}
             onClick={() => props.onDelete(diagram.id)}>{props.deletingId === diagram.id ? "…" : "×"}</button>}
         </div>
-        {!props.transfer && diagram.id === props.activeId && props.scene && <ul>{props.scene.root.kind === "container"
-          ? props.scene.root.children.map(boxTree) : boxTree(props.scene.root)}</ul>}
         {children.length > 0 && <ul className="mapping-canvas-children">{children.map(child => renderDiagram(child, items, includeChildren))}</ul>}
       </li>
     );

@@ -1100,11 +1100,10 @@ function MappingWorkspacePage() {
               onCancel: cancelTransfer, onNew: name => void transfer({ name }) } : undefined}
             onTabChange={tab => { setExplorerTab(tab); if (tab === 'diagrams') setChangeMode(undefined); }}
             changeMode={changeMode} onChangeSelect={selectChangeMode} projectName={snapshot?.project?.name ?? "Project"} repositories={snapshot?.project?.repositories ?? []} diagrams={diagrams}
-            activeId={active?.representationId ?? activeId} scene={active ? documentOf(active).scene : undefined} dirtyIds={Object.keys(drafts).filter((id) => dirty(drafts[id])).map(id => drafts[id].representationId ?? id)}
+            activeId={active?.representationId ?? activeId} dirtyIds={Object.keys(drafts).filter((id) => dirty(drafts[id])).map(id => drafts[id].representationId ?? id)}
             onDelete={id => void remove(id)} deletingId={deletingId} deleteDisabled={Boolean(deletingId || savingId || workspaceBusy)}
             busyIds={Object.keys(drafts).filter(id => drafts[id].busy).map(id => drafts[id].representationId ?? id)}
-            onOpen={(id) => { if (pendingTransfer) void transfer({ id }); else { setChangeMode(undefined); open(id); } }} onFocus={(id) => { if (activeId && !drafts[activeId]?.busy) setDrafts((current) => ({ ...current,
-              [activeId]: { ...current[activeId], focusBox: { id, serial: (current[activeId].focusBox?.serial ?? 0) + 1 } } })); }} /></FloatingPane>
+            onOpen={(id) => { if (pendingTransfer) void transfer({ id }); else { setChangeMode(undefined); open(id); } }} /></FloatingPane>
           {active && !active.hidden && !changeMode && <ProjectionLayoutPanel key={`${activeId}:${workspaceEpoch}`} session={active.session}
             disabled={workspaceBusy || !!savingId || !!deletingId || !!pendingTransfer || active.busy} />}
           {workspaceBusy && <div className="mapping-transfer-busy" role="status" aria-live="polite"><div><strong>{transferProgress || 'Saving workspace…'}</strong><p>Keep this page open while the operation finishes.</p></div></div>}
