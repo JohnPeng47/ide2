@@ -8,18 +8,22 @@ npm run mcp:mapping -- http://127.0.0.1:5173
 
 For an agent host that launches MCP servers directly, use `node`, arguments `--import`, `tsx`, `scripts/mapping/mcp.ts`, and the backend URL, with this repository as the working directory. The adapter writes only MCP messages to stdout. It forwards calls to the existing backend, so catalog writes and live canvas sessions share one backend instance.
 
+Keep that MCP connection open for the conversation. To bind a standalone host to one live document, append `--canvas <canvasId> --document <documentId>` (or set `MAPPING_CANVAS_ID` and `MAPPING_DOCUMENT_ID`). The adapter attaches once on the first scoped call and reuses the session, so subsequent calls omit `sessionId`. Agent Chat already provides a persistent connection bound to the canvas captured for each turn.
+
+Common read and edit method schemas are supplied upfront. Agent Chat selects read or edit capabilities from its access setting; standalone hosts receive them in the `exec` tool description. Use `canvas-api-search` for additional methods rather than rediscovering common operations.
+
 ## Tools
 
 - `diagram-search`: `operation: "search"` accepts `mode: "text" | "node" | "code-reference"`, `query`, `offset`, and `limit`. `operation: "read"` returns full content using a saved `representationId` (optionally `revisionId`) or a live `sessionId` and `nodeId`.
 - `canvas-api-search`: returns matching API descriptions, JSON schemas, and examples. It searches documentation, not drawn objects.
-- `exec`: runs JavaScript with only `canvas` and `nodes` APIs. Calls are synchronous; use `return`, not `await`. No DOM, filesystem, network, Node globals, or module loader is exposed. Execution has memory, instruction, result-size, and API-call limits.
+- `exec`: runs JavaScript with only `canvas`, `nodes`, and `edges` APIs. Calls are synchronous; use `return`, not `await`. No DOM, filesystem, network, Node globals, or module loader is exposed. Execution has memory, instruction, result-size, and API-call limits.
 - `draw_diagram`: takes completed printable ASCII, optional mappings/evidence, a `sessionId`, `requestId`, and `expectedVersion`. Omit `nodeId` to insert; provide it to replace a diagram. Content determines size and the existing grid algorithm resolves collisions.
 - `edit-diagram`: takes a prompt and a live diagram base revision; returns an asynchronous generation run. Poll `edit-diagram-status`, or cancel before application with `cancel-diagram-edit`. See [Prompt-driven diagram edits](#prompt-driven-diagram-edits).
 - `save_diagram`: publishes a confirmed (`settled`) representation. Omit `nodeId` to save the document; provide it to save one diagram independently. Supply `representationId` and `expectedRevisionId` when updating a previously saved independent diagram.
 
 ## Workflow
 
-Each `exec` call needs a unique `requestId`. First discover a live page:
+Each `exec` call needs a unique `requestId`. On an already bound connection, start with `return canvas.read({level:"small"});` and omit `sessionId`. On an unbound connection, first discover a live page:
 
 ```js
 return canvas.list();
@@ -64,9 +68,15 @@ nodes.move({ nodeId: diagram.id, position: { column: 20, row: 5 } });
 return diagram.id;
 ```
 
-Each node or edge mutation commits immediately, advances the document version, and creates its own undo entry. Later calls see earlier committed edits. If execution or validation fails, earlier successful edits remain; only the failing operation is rejected. Supply the initial document version as `expectedVersion`; the service advances its expected version after each successful edit. A concurrent edit causes the next mutation to fail with a version conflict. The response retains `transaction`, which now describes the last individual edit rather than an atomic script-wide batch. Bootstrap operations (`canvas.attach`, `canvas.createDocument`, and `canvas.copyDocument`) establish sessions/documents separately; create or copy one document per unbound call.
+By default, consecutive node and edge mutations form an atomic batch with one version increment and one undo entry. Reads flush pending mutations before fetching committed state. `nodes.setSourceMappings` and `nodes.setJumps` also flush preceding mutations because they resolve current metadata. Successful script completion commits the final batch. An uncaught script error discards pending mutations; a validation or version conflict rejects an entire batch. Previously flushed batches remain committed.
 
-Retries with the same request ID and arguments return the same backend result. After a canvas transport timeout, the backend replays completed API-call results and resends the unacknowledged operation with its original ID and version, avoiding duplicate edits. Retry scripts must reproduce the same API-call sequence; changed calls are rejected. A normal script error is retained for that request ID; read the current canvas and use a new ID for revised work. Reusing an ID with different arguments is rejected; on a version conflict, read again and submit revised work with a new request ID. Backend restart ends sessions and clears request history. The backend currently bounds session/request history; a capacity error explicitly requires a restart rather than silently forgetting duplicate protection.
+Supply the initial document version as `expectedVersion`; the service advances its expected version after each successful batch. In-script mutations return queued handles `{id, nodeId}` or `{id, edgeId}` for dependent edits, rather than full nodes. Read a node when later code needs its committed content. The tool returns `{value, transaction: {version, receipts}}`. Receipts contain operation names and affected IDs; highlights also include their actual saved `highlightId`, color, status and `markdownUrl`. They describe the state at each batch commit, which later batches can supersede. Reuse the returned URL verbatim in Markdown links.
+
+Use `nodes.highlight({nodeId, contentNodeIds: [firstId, secondId], color: "blue"})` to save one highlight spanning multiple nodes within a diagram. It has one ID, color and Markdown link; clicking the link focuses the group, and removing its ID removes every member. `contentNodeId` remains supported for one node; omit both fields for the whole diagram. Empty or duplicate target lists and supplying both fields are rejected. Repeating the same target set in any order recolors the existing highlight without changing its ID. Unchanged anchors rebase through edits; if any member becomes stale, the saved group is stale and is not rendered until refreshed. Agent Chat's `highlight-node` accepts the same target fields, and a selected-nodes reference produces one group.
+
+Set `mode: "immediate"` on `exec` to retain individual commits, full node mutation results, and the legacy `transaction.nodes` response. Bootstrap operations (`canvas.attach`, `canvas.createDocument`, and `canvas.copyDocument`) establish sessions/documents separately; create or copy one document per unbound call. A configured bound adapter stays on its selected document; use an unbound connection for bootstrap operations.
+
+Retries with the same request ID and arguments return the same backend result. After a canvas transport timeout, the backend replays completed API-call results and resends the unacknowledged batch with its original operations, request ID and version, avoiding duplicate edits. Retry scripts must reproduce the same API-call sequence; changed calls are rejected. A normal script error is retained for that request ID; read the current canvas and use a new ID for revised work. Reusing an ID with different arguments is rejected; on a version conflict, read again and submit revised work with a new request ID. Backend restart ends sessions and clears request history. The backend currently bounds session/request history; a capacity error explicitly requires a restart rather than silently forgetting duplicate protection.
 
 ## Compact node responses
 
@@ -87,10 +97,9 @@ short handles: reread before submitting new edits. Unknown handles fail with
 `STALE_CONTENT_NODE`, and normal document-version and anchor validation still apply.
 The bounded registry reports `ANCHOR_CAPACITY` rather than evicting/reusing IDs.
 
-Projection happens before each `exec` method result enters the script, so reads,
-mutations, and subsequent reads use the same format within one script. Mutation
+Read projections happen before results enter the script. Immediate-mode mutation
 `transaction.nodes`, top-level draw/mapping responses, and search DisplayNodes use
-the same projection. Stored documents and controller APIs retain their canonical
+the same projection. Default batched mutations return compact receipts instead. Stored documents and controller APIs retain their canonical
 full IDs. A previously completed proposal request can replay its persisted receipt
 after restart; its old handles are still expired and require a fresh read for edits.
 

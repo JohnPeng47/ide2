@@ -390,3 +390,21 @@ describe('Codex agent chat', () => {
   });
 
 });
+
+it('preloads mode-scoped canvas definitions and refreshes them when access changes', async () => {
+  const {service,connection} = fixture();
+  try {
+    const session = await service.create({sandbox:'read-only'});
+    const readPrompt = String(connection.calls[0].params.developerInstructions);
+    expect(readPrompt).toContain('"name":"canvas.read"');
+    expect(readPrompt).not.toContain('"name":"nodes.highlight"');
+    await service.send(session.id, input());
+    const resumed = connection.calls.find(c => c.method === 'thread/resume')!;
+    expect(resumed.params.developerInstructions).toContain('"name":"nodes.highlight"');
+    expect(resumed.params.developerInstructions).toContain('"inputSchema"');
+    expect(resumed.params.developerInstructions).toContain('transaction');
+    connection.notify({method:'turn/completed',params:{threadId:session.threadId,turn:{id:'turn-1',status:'completed'}}});
+    await service.send(session.id, input());
+    expect(connection.calls.filter(c => c.method === 'thread/resume')).toHaveLength(1);
+  } finally { service.dispose(); }
+});

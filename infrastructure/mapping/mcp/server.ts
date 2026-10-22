@@ -1,12 +1,27 @@
+import { CANVAS_EXEC_DESCRIPTION, canvasAgentInstructions } from '../../../domain/mapping/agent/capabilities';
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { agentToolSchemas } from '../../../domain/mapping/agent/contracts';
-export function createMappingMcpServer(baseUrl: string, binding = process.env.MAPPING_CHAT_BINDING) {
+export function createMappingMcpServer(baseUrl: string, binding = process.env.MAPPING_CHAT_BINDING,
+  target?: { canvasId: string; documentId: string }) {
   const base = new URL(baseUrl);
   if (!['http:', 'https:'].includes(base.protocol)) throw new Error('Expected Mapping backend HTTP URL');
+  let attachment: Promise<string> | undefined;
+  const post = async (name: string, input: unknown) => {
+    const response = await fetch(new URL(`/api/mapping/agent/tools/${name}`, base), { method: 'POST',
+      headers: { 'content-type': 'application/json', ...(binding ? { 'x-canvas-chat-binding': binding } : {}) },
+      body: JSON.stringify(input), signal: AbortSignal.timeout(65000) });
+    return { response, value: await response.json() };
+  };
+  const attachedSession = () => attachment ??= post('exec', { requestId: crypto.randomUUID(), code: `return canvas.attach(${JSON.stringify(target)});` })
+    .then(({ response, value }) => { if (!response.ok) throw Error(value.error ?? 'Canvas attachment failed'); return value.value.sessionId as string; })
+    .catch(error => { attachment = undefined; throw error; });
   const server = new McpServer({ name: 'mapping', version: '0.1.0' }, {
-    instructions: (binding ? 'Agent Chat binds this connection to the browser/document captured for the active turn. Start with exec code return canvas.read({}); sessionId is supplied automatically. Skip the standalone list/attach instructions below. Do not open a replacement browser or attach elsewhere. ' : '') + 'Use diagram-search operation search/read for diagrams. canvas-api-search documents the API. Start with exec code "return canvas.list();", then canvas.attach, canvas.createDocument, or canvas.copyDocument. Create/copy in an unbound exec; copyDocument copies a live document into an independent unsaved draft. Pass the returned sessionId to later calls. exec methods are synchronous JavaScript; use return, not await. Mutations require expectedVersion and a unique requestId; retry the same requestId after transport failures. draw_diagram accepts finished ASCII and runs layout. save_diagram publishes a confirmed representation. Live editing requires an open Mapping page. Change-session editing runs on persisted backend copies and requires changeSessionId on every targeted call. save_diagram cannot publish previews. nodes.patchDiagram patches inclusive raw source lines. Session metadata uses update_diagram_change_session, outside the canvas/nodes/edges APIs. For migration sources removed by edits, diagram-search with changeSessionId, representationId and snapshot: baseline reads original anchors; omit sessionId.'
+    instructions: (binding || target
+      ? 'This persistent connection is bound to a canvas. Start with exec code return canvas.read({}); omit sessionId. Agent Chat captures the document for each turn. Do not attach elsewhere or start another MCP client. '
+      : 'Use this connected MCP server directly. Call exec with return canvas.list(); then canvas.attach and pass its sessionId on later calls. Configure --canvas and --document at server startup to bind automatically. ')
+      + 'Common method definitions are included in exec; use canvas-api-search only for additional APIs. ChangeSession operations require changeSessionId. Each new request needs a unique requestId. Retry uncertain outcomes with identical arguments and requestId. '
   });
   const descriptions = {
     get_repository_diff_hunks: 'Discover immutable Git hunks for repositoryId and selected commits before creating a ChangeSession. Returns pinned full commit SHAs, head, and stable hunk IDs. Each commit compares with its first parent (root commits with empty tree); renames are delete/add. Paginated; reuse returned SHAs on later pages and creation. includePatches false returns metadata only.',
@@ -25,19 +40,27 @@ export function createMappingMcpServer(baseUrl: string, binding = process.env.MA
     update_diagram_change_session: 'Session-specific metadata and history: diffTree replaces the complete hunk mapping list and optionally tree ASCII; existing trees require diffTree.expectedRevisionId plus session expectedVersion. Omission preserves DiffTree. Annotate generated changes with titles, types 1/2/3/4, reasons and dependencies; replace migrations with explicit source/destination revision-bound node or subtree endpoints (destination snapshot must be proposed); omitted migrations preserves them, [] clears them; mark ready or archive; undo/redo/reset a session document. Read session version and changes through diagram-search with changeSessionId. Ready requires valid anchors and connections for added diagrams. Does not accept or publish changes.',
     'diagram-search': 'Search diagrams by text, node, or code reference; operation read returns the complete saved or live diagram. With changeSessionId and no sessionId, snapshot baseline/proposed selects captured/proposed content (default proposed); representationId selects the session document. Returns migration metadata alongside generated changes.',
     'canvas-api-search': 'Search API documentation, schemas, coordinate rules, and examples. Does not search canvas objects.',
-    exec: 'Execute JavaScript using only canvas, nodes, and edges APIs. API calls are synchronous. Each mutation commits immediately with its own version and undo entry. Later calls see earlier edits; failures leave successful edits in place. Retry transport failures with the same requestId.',
+    exec: binding ? CANVAS_EXEC_DESCRIPTION : canvasAgentInstructions('edit'),
     draw_diagram: 'Create or replace a diagram from complete ASCII content. No reserved bounds; existing grid layout places the result.',
     save_diagram: 'Save a live diagram/document as a confirmed representation visible in explorer and search. nodeId saves one diagram independently.'
   };
   for (const name of Object.keys(agentToolSchemas) as (keyof typeof agentToolSchemas)[]) {
-    server.registerTool(name, { description: descriptions[name], inputSchema: binding && 'sessionId' in agentToolSchemas[name].shape ? (agentToolSchemas[name] as z.ZodObject).extend({ sessionId: z.string().optional() }) : agentToolSchemas[name], annotations: { readOnlyHint: name.endsWith('search') || name === 'edit-diagram-status' || name === 'get_repository_diff_hunks' || name === 'read_change_session_diff_tree' || name === 'list_repositories', openWorldHint: false } }, async (input: unknown) => {
+    server.registerTool(name, { description: descriptions[name], inputSchema: (binding || target) && 'sessionId' in agentToolSchemas[name].shape ? (agentToolSchemas[name] as z.ZodObject).extend({ sessionId: z.string().optional() }) : agentToolSchemas[name], annotations: { readOnlyHint: name.endsWith('search') || name === 'edit-diagram-status' || name === 'get_repository_diff_hunks' || name === 'read_change_session_diff_tree' || name === 'list_repositories', openWorldHint: false } }, async (input: unknown) => {
       try {
-        const response = await fetch(new URL(`/api/mapping/agent/tools/${name}`, base), { method: 'POST', headers: { 'content-type': 'application/json', ...(binding ? { 'x-canvas-chat-binding': binding } : {}) }, body: JSON.stringify(input), signal: AbortSignal.timeout(65000) });
-        const value = await response.json();
+        const args = { ...(input as Record<string, unknown>) };
+        if (target && !binding && !args.changeSessionId) {
+          const scoped = ['exec', 'draw_diagram', 'save_diagram', 'set_diagram_source_mappings', 'edit-diagram', 'create-diagram', 'extend-diagram', 'diagram-search'];
+          if (scoped.includes(name) && !(name === 'diagram-search' && args.representationId)) {
+            const sessionId = await attachedSession();
+            if (args.sessionId && args.sessionId !== sessionId) throw Error('BINDING_MISMATCH: omit sessionId on a bound connection');
+            args.sessionId = sessionId;
+          }
+        }
+        const { response, value } = await post(name, args);
         return { content: [{ type: 'text' as const, text: JSON.stringify(value) }], ...(response.ok ? { structuredContent: { result: value } } : { isError: true }) };
       } catch (error) { return { content: [{ type: 'text' as const, text: error instanceof Error ? error.message : String(error) }], isError: true }; }
     });
   }
   return server;
 }
-export async function startMappingMcpServer(baseUrl: string) { await createMappingMcpServer(baseUrl).connect(new StdioServerTransport()); }
+export async function startMappingMcpServer(baseUrl: string, target?: { canvasId: string; documentId: string }) { await createMappingMcpServer(baseUrl, undefined, target).connect(new StdioServerTransport()); }

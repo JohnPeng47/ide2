@@ -6,17 +6,25 @@ Connect to the running application's MCP server:
 node --import tsx scripts/mapping/mcp.ts http://IP:PORT
 ```
 
-Inspect MCP tool schemas for parameters.
-Use `canvas-api-search({query: ""})` to discover canvas methods.
-Search specific methods for parameters and examples.
+Use the host's persistent Mapping MCP connection directly. Common canvas methods
+and result contracts are preloaded; use `canvas-api-search` only for additional methods.
+For standalone hosts, append `--canvas <canvasId> --document <documentId>` to bind
+once at startup, then omit `sessionId`. Agent Chat binds the active document automatically.
 
 ## Usage rules
 
 - Use live canvases unless the user explicitly requests a ChangeSession.
 - Methods inside `exec.code` are synchronous. Use `return`, not `await`.
-- Each document change saves immediately. There is no batch rollback.
+- Consecutive `exec` mutations batch by default: one commit, version increment,
+  and undo entry. Reads and state-dependent setters (`nodes.setSourceMappings`,
+  `nodes.setJumps`) flush preceding edits; successful script completion flushes the rest.
+- Uncaught script errors discard pending edits. Invalid batches apply nothing;
+  earlier flushed batches remain committed.
 - Start document changes with the current document `expectedVersion`.
-  `exec` advances the version for subsequent changes.
+  `exec` advances the version after each batch.
+- Mutation calls return queued ID handles. The tool returns compact
+  `transaction.receipts`, including saved highlight IDs and `markdownUrl` links.
+  Use `mode: "immediate"` only when full per-edit results are required.
 - Use the session version for ChangeSession metadata updates and acceptance.
 - Use a unique `requestId` for each new request.
   After a transport failure, retry the identical request with the same ID.

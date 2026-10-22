@@ -1,4 +1,4 @@
-import { AGENT_CHAT_SYSTEM_PROMPT } from './agentChatPrompt';
+import { agentChatSystemPrompt } from './agentChatPrompt';
 import { ApplicationError } from '../../core/errors';
 import { chatAnswerSchema, chatReadCanvasSchema, chatResumeSchema, chatSendSchema, chatSettingsSchema, findChatItem, reduceChatEvent, type ChatCanvasTarget, type ChatSend, type ChatEvent, type ChatInfo, type ChatItem, type ChatQuestion, type ChatSession, type ChatSessionSummary, type ChatUpdate } from '../../../domain/mapping/agent-chat/agentChat';
 import type { ChatMcpBinding, ChatCanvasReader, ChatStore, ChatTools, CodexConnection, CodexMessage } from './ports';
@@ -67,7 +67,7 @@ export class AgentChatService {
     const settings = chatSettingsSchema.parse(input);
     const chatId = crypto.randomUUID();
     const result = await this.connection.request<{ thread: { id: string }; model: string }>('thread/start', {
-      developerInstructions: AGENT_CHAT_SYSTEM_PROMPT, ...(this.mcp ? { config: this.mcp.config(chatId) } : {}),
+      developerInstructions: agentChatSystemPrompt(settings.sandbox === 'read-only'), ...(this.mcp ? { config: this.mcp.config(chatId) } : {}),
       cwd: this.cwd, model: settings.model || undefined, sandbox: settings.sandbox, approvalPolicy: settings.sandbox === 'danger-full-access' ? 'never' : 'on-request', approvalsReviewer: 'user',
       ...(this.tools ? { dynamicTools: this.tools.definitions } : {})
     });
@@ -135,9 +135,9 @@ export class AgentChatService {
           // Deliver the complete short response to Codex; transcript previews are bounded separately.
           toolOutput = { name: 'read_canvas', namespace: null, output: JSON.stringify(context) };
         }
-        if (!this.resumed.has(session.threadId)) {
+        if (!this.resumed.has(session.threadId) || session.origin !== 'codex' && (session.settings.sandbox === 'read-only') !== (data.sandbox === 'read-only')) {
           await this.connection.request('thread/resume', { threadId: session.threadId,
-            ...(session.origin === 'codex' ? {} : { developerInstructions: AGENT_CHAT_SYSTEM_PROMPT, ...(this.mcp ? { config: this.mcp.config(id) } : {}) }),
+            ...(session.origin === 'codex' ? {} : { developerInstructions: agentChatSystemPrompt(data.sandbox === 'read-only'), ...(this.mcp ? { config: this.mcp.config(id) } : {}) }),
             cwd: session.cwd, sandbox: data.sandbox, approvalPolicy: data.sandbox === 'danger-full-access' ? 'never' : 'on-request', approvalsReviewer: 'user' });
           this.resumed.add(session.threadId);
         }
