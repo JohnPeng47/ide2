@@ -4,7 +4,7 @@ import { CanvasRuntimeContext } from './CanvasRuntimeContext';
 import { nativeEdgeGeometry } from './nativeEdgeGeometry';
 import { PanelConnector } from '../../../shared/diagrams/PanelConnector';
 
-/** Each edge subscribes to its definition, its anchors and native transforms. */
+/** Routes reuse cached paths while their endpoints and nearby obstacles are unchanged. */
 export function NativeConnection({ edgeId }: { edgeId: string }) {
   const runtime = useContext(CanvasRuntimeContext)!;
   const panning = useRef(false);

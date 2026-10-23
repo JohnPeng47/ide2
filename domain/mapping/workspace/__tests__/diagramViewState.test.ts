@@ -2,7 +2,7 @@ import { RevisionedDiagramService } from '../../../core/diagrams/diagramService'
 import { describe, expect, it } from 'vitest';
 import { singleDiagramScene } from '../../../core/diagrams/projectDiagramCanvas';
 import { composeScene, resolveScene, flattenGrid } from '../../../core/diagrams/lineGrid';
-import { diagramProjection } from '../diagramViewState';
+import { diagramProjection, resolveDiagramView } from '../diagramViewState';
 import { MappingDocumentController } from '../mappingDocumentController';
 import { mappingDocumentFromScene } from '../mappingDocument';
 import { initialCanvasState } from '../mappingWorkspace';
@@ -23,13 +23,21 @@ const projection = (controller: MappingDocumentController) => {
   return diagramProjection(document.scene,'overview','overview',canvas.diagramViews);
 };
 describe('diagram subtree view state', () => {
-  it('preserves source and allocated geometry; projects rows and nested expansion through the DisplayNode interface', () => {
+  it('preserves source layout while reducing displayed bounds with nested folds', () => {
     const c = setup(), before = c.getSnapshot().document;
+    const bounds = () => {
+      const node = c.nodes().find(n => n.id === 'grid:overview')!;
+      if (node.layout !== 'grid') throw Error('Expected diagram');
+      return node.geometry.bounds;
+    };
+    const initial = bounds();
     collapse(c,3); collapse(c,2);
     expect(projection(c).sourceLines).toEqual([1,2,6]);
+    expect(bounds()).toEqual({ ...initial, columns: 13, rows: 3 });
     expect(target(c,3)).toMatchObject({expansion:'collapsed',visibleRow:undefined});
     collapse(c,2,false);
     expect(projection(c).sourceLines).toEqual([1,2,3,5,6]);
+    expect(bounds()).toEqual({ ...initial, columns: 15, rows: 5 });
     expect(projection(c).rowForLine(6)).toBe(4);
     expect(projection(c).lineForRow(4)).toBe(6);
     expect(projection(c).rect({startLine:3,endLine:5,startColumn:1,endColumn:4})).toBeUndefined();
@@ -39,8 +47,25 @@ describe('diagram subtree view state', () => {
     expect(rendered.split('\n').length).toBe(ascii.split('\n').length);
     expect(rendered).not.toContain('nodes');
     expect(resolveScene(document.scene)).toEqual(resolveScene(before.scene));
-    c.undo(); expect(projection(c).sourceLines).toEqual([1,2,6]);
-    c.undo(true); expect(projection(c).sourceLines).toEqual([1,2,3,5,6]);
+    c.undo(); expect(projection(c).sourceLines).toEqual([1,2,6]); expect(bounds().rows).toBe(3);
+    c.undo(true); expect(projection(c).sourceLines).toEqual([1,2,3,5,6]); expect(bounds().rows).toBe(5);
+    collapse(c,3,false); expect(bounds()).toEqual(initial);
+  });
+  it('shrinks containing groups and retains reserved extra space without moving siblings', () => {
+    const c = setup();
+    c.transact(0, [{ method: 'group', nodeId: 'grid:overview', id: 'group' },
+      { method: 'diagram-create', id: 'sibling', ascii: 'Sibling', position: { column: 60, row: 0 } }]);
+    const state = c.getSnapshot();
+    const scene = structuredClone(state.document.scene);
+    const diagram = flattenGrid(resolveScene(scene)).find(n => n.box.id === 'overview')!;
+    diagram.box.minimumSize = { columns: diagram.bounds.columns + 5, rows: diagram.bounds.rows + 2 };
+    c.commitDocument({ ...state.document, scene });
+    const expanded = flattenGrid(resolveDiagramView(scene));
+    collapse(c,2);
+    const folded = flattenGrid(resolveDiagramView(scene, c.getSnapshot().canvas.diagramViews));
+    expect(folded.find(n => n.box.id === 'overview')!.bounds).toMatchObject({ columns: 18, rows: 5 });
+    expect(folded.find(n => n.box.id === 'group')!.bounds).toMatchObject({ columns: 18, rows: 5 });
+    expect(folded.find(n => n.box.id === 'sibling')!.bounds).toEqual(expanded.find(n => n.box.id === 'sibling')!.bounds);
   });
   it('rejects stale, leaf, and wrong-owner targets atomically; resets view state on source replacement and restores it on undo', () => {
     const c=setup(); collapse(c,2);

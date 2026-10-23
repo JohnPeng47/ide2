@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import type { CanvasMarqueeSelection, SelectionBounds } from '../../../../domain/mapping/selection/canvasSelection';
 import { SelectionGestureController, type SelectionHit, type SelectionPolicy } from '../../../../domain/mapping/selection/selectionGesture';
 import type { CanvasRuntime } from '../tldraw/CanvasRuntimeContext';
+import { mappingShapeId } from '../tldraw/shapeProjection';
 
 /** DOM supplies precise label identity and pointer type; public native tools gate
  * selection. Touch events always reach tldraw's two-contact pinch recognizer. */
@@ -144,7 +145,7 @@ export function CanvasSelectionLayer(props: { stageRef: RefObject<HTMLDivElement
       if (result?.kind === 'marquee') current.current.onComplete(current.current.resolve(result.bounds, promoted), result.policy);
       else if (result) current.current.onTap(result.hit, result.policy, !result.hit.nodeId);
       else if (gesture?.kind === 'marquee' && !gesture.moved && gesture.start.pointerType === 'mouse'
-        && gesture.start.ctrl && gesture.start.hit?.nodeId) pendingNodeClick = gesture.start.hit;
+        && gesture.start.ctrl && gesture.start.hit) pendingNodeClick = gesture.start.hit;
       if (!editor && viewport.hasPointerCapture(event.pointerId)) viewport.releasePointerCapture(event.pointerId);
       // Native pointer-up still needs its tool. Restore on the next tick, after
       // geometry has settled, rather than ending translation in DOM capture.
@@ -176,7 +177,8 @@ export function CanvasSelectionLayer(props: { stageRef: RefObject<HTMLDivElement
       if (event.key !== 'Escape' || (event.target instanceof Element && event.target.closest('input,textarea,select,[contenteditable=true],[data-display-node],.window-panel'))) return;
       if (escapeGesture()) {
         event.preventDefault(); event.stopImmediatePropagation();
-      } else if (current.current.selected.length) {
+      } else if (current.current.selected.length || editor?.getSelectedShapeIds().length
+        && !current.current.runtime?.controller.getSnapshot().canvas.selection.items.length) {
         event.preventDefault(); event.stopImmediatePropagation();
         bridge?.ownership.claim('application');
         editor?.cancel();
@@ -208,7 +210,12 @@ export function CanvasSelectionLayer(props: { stageRef: RefObject<HTMLDivElement
       if (node && event.button === 0 && event.ctrlKey && !event.metaKey) {
         event.preventDefault(); event.stopPropagation();
         bridge?.ownership.claim('application');
-        current.current.onSelectNode(node, event.detail === 2);
+        if (node.nodeId) current.current.onSelectNode(node, event.detail === 2);
+        else if (editor && bridge) {
+          bridge.ownership.dragDiagramIds = [...new Set([...bridge.ownership.dragDiagramIds, node.diagramId])];
+          const id = mappingShapeId(node.diagramId);
+          if (editor.getShape(id)) editor.run(() => editor.setSelectedShapes([...new Set([...editor.getSelectedShapeIds(), id])]), { history: 'ignore' });
+        }
         return;
       }
       if (event.detail > 0 && bridge && bridge.pointerType !== 'mouse' && !ui(event)) { event.preventDefault(); event.stopPropagation(); }

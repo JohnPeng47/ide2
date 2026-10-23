@@ -64,6 +64,8 @@ export class SelectionGestureController {
  * remains latched until the next intentionally native operation begins. */
 export class NativeSelectionOwnership {
   private owner: 'application' | 'native' = 'application';
+  /** Transient frame handles, separate from semantic diagram/node membership. */
+  dragDiagramIds: readonly string[] = [];
   claim(owner: 'application' | 'native') { this.owner = owner; }
   get captureSelection() { return this.owner === 'native'; }
 }

@@ -12,6 +12,7 @@ import { deselectCanvas, selectCanvasMarquee, updateSelection, type CanvasMarque
 import { diagramContentNodes } from '../../../../domain/core/diagrams/diagramContentNodes';
 import { handleNodeSelect, DEFAULT_MAPPED_RESOURCE_TYPE } from '../../../../domain/mapping/code-panel/codePanel';
 import { upsertCodePanel } from '../code-panel/codePanelState';
+import { CanvasSelectionActions } from './CanvasSelectionActions';
 import { CanvasSelectionLayer } from './CanvasSelectionLayer';
 import { CursorCopyOverlay } from './CursorCopyOverlay';
 import { singleDiagramScene } from '../../../../domain/core/diagrams/projectDiagramCanvas';
@@ -25,7 +26,7 @@ import { DiagramConnections } from './DiagramConnections';
 import { exportedEvidenceId } from '../../../../domain/core/diagrams/projectDiagramCanvas';
 import { diagramSource } from '../../../../domain/core/diagrams/diagram';
 import { diagramSelectionNodes } from '../../../../domain/mapping/workspace/mappingDocument';
-import { diagramProjection } from '../../../../domain/mapping/workspace/diagramViewState';
+import { diagramProjection, resolveDiagramView } from '../../../../domain/mapping/workspace/diagramViewState';
 import { DiagramSubtreeControls } from './DiagramSubtreeControls';
 import { CanvasTransferMenu } from "./CanvasTransferMenu";
 import { LocalChatVerbosityToggle } from "../chat/LocalChatVerbosityToggle";
@@ -212,7 +213,7 @@ export function MappingPocSelectionCanvas(props: {
   }, [controller, cell]);
   const gridDocument = controllerState.document;
   const scene = gridDocument.scene;
-  const resolved = useMemo(() => resolveScene(scene), [scene]);
+  const resolved = useMemo(() => resolveDiagramView(scene, canvasState.diagramViews), [scene, canvasState.diagramViews]);
   const boxes = useMemo(() => flattenGrid(resolved), [resolved]);
   const [activeBoxId, setActiveBoxId] = useControl("activeBoxId", canvasState, setCanvasState);
   const activeBox = boxes.find((node) => node.box.id === activeBoxId && node.contentId)
@@ -717,6 +718,7 @@ export function MappingPocSelectionCanvas(props: {
     if (isGenerating || nativeRuntime?.gestures.escape?.()) return;
     clearSelectionFocus();
     controller.updateCanvas(deselectCanvas, true);
+    nativeRuntime?.clearDragSelection();
     stageRef.current?.focus({ preventScroll: true });
   };
 
@@ -906,6 +908,7 @@ export function MappingPocSelectionCanvas(props: {
         if (item) {
           clearSelectionFocus();
           controller.select({ type: 'remove', id: item.id });
+          nativeRuntime?.clearDragSelection();
         }
         return;
       }
@@ -1195,20 +1198,17 @@ export function MappingPocSelectionCanvas(props: {
             onClick={() => pickExtension(extensionSource ?? fallbackExtensionSource)}>+</button>
         </>}
       </>}
-      {!selectionRect && selectedDiagrams.length > 0 && <div className="mapping-whole-actions" data-mapping-static-ui data-diagram-canvas-static-ui>
-        <button onClick={() => setActionsOpen(value => !value)}>Actions (A)</button>
-        {actionsOpen && <div role="menu" aria-label="Selection actions"><button role="menuitem" onClick={() => {
-          props.onUpdateDiagram?.(selectedDiagrams[0]); setActionsOpen(false);
-        }}>LLM [Ctrl+B, L]</button>
-          <button role="menuitem" disabled={isGenerating || !!diagramPlacement || !!movingBoxId} onClick={() => {
-            try {
-              controller.applyUpdate(controller.getSnapshot().version, [{ method: 'delete-diagrams', nodeIds: selectedDiagrams }]);
-              setStatusMessage(`${selectedDiagrams.length === 1 ? 'Diagram' : 'Diagrams'} deleted · Undo to restore`);
-              setActionsOpen(false);
-            } catch (error) { setStatusMessage(error instanceof Error ? error.message : String(error)); }
-          }}>Delete {selectedDiagrams.length === 1 ? 'diagram' : 'diagrams'}</button>
-        </div>}
-      </div>}
+      {!selectionRect && selectedDiagrams.length > 0 && <CanvasSelectionActions stageRef={stageRef}
+        count={selectedDiagrams.length} open={actionsOpen} onToggle={() => setActionsOpen(value => !value)}
+        disabled={isGenerating || !!diagramPlacement || !!movingBoxId}
+        onGenerate={() => { props.onUpdateDiagram?.(selectedDiagrams[0]); setActionsOpen(false); }}
+        onDelete={() => {
+          try {
+            controller.applyUpdate(controller.getSnapshot().version, [{ method: 'delete-diagrams', nodeIds: selectedDiagrams }]);
+            setStatusMessage(`${selectedDiagrams.length === 1 ? 'Diagram' : 'Diagrams'} deleted · Undo to restore`);
+            setActionsOpen(false);
+          } catch (error) { setStatusMessage(error instanceof Error ? error.message : String(error)); }
+        }} />}
       {!boxes.some(box => box.contentId) && <p className="mapping-empty-canvas">Empty canvas — create a diagram, or Undo to restore.</p>}
       <CanvasTransferMenu selectionCount={!selectionRect ? selectedDiagrams.length : 0}
         onCancelSelection={() => { clearSelectionFocus(); controller.updateCanvas(deselectCanvas, true); }}

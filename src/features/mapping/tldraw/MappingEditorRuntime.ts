@@ -1,8 +1,7 @@
 import { NativeSelectionOwnership } from '../../../../domain/mapping/selection/selectionGesture';
 import { type Editor, type TLShapePartial } from 'tldraw';
 import { flattenGrid, resolveScene } from '../../../../domain/core/diagrams/lineGrid';
-import { updateSelection } from '../../../../domain/mapping/selection/canvasSelection';
-import { selectedDiagramIds, syncNativeDiagramSelection } from '../../../../domain/mapping/selection/selectionState';
+import { selectedDiagramIds } from '../../../../domain/mapping/selection/selectionState';
 import { updateDisplayGeometry } from '../../../../domain/mapping/workspace/displayModel';
 import type { MappingDocumentController, DiagramOperation } from '../../../../domain/mapping/workspace/mappingDocumentController';
 import { DEFAULT_CELL, mappingShapeId, projectMappingShapes } from './shapeProjection';
@@ -55,7 +54,7 @@ export class MappingEditorRuntime {
     const tick = () => {
       if (editor.inputs.getIsPointing() || editor.inputs.getIsDragging() || editor.inputs.getIsPinching()) return;
       // Finish native geometry first, but never overwrite a pending domain selection.
-      if (this.dirty) this.settle(false, !this.pendingProjection);
+      if (this.dirty) this.settle(false, !this.pendingProjection && this.selectionOwnership.captureSelection);
       if (this.pendingProjection) this.publish();
     };
     editor.on('tick', tick);
@@ -104,10 +103,15 @@ export class MappingEditorRuntime {
       const edgeIds = shapes.filter(shape => shape.props?.kind === 'arrow').map(shape => shape.id);
       this.editor.run(() => this.editor.bringToFront(edgeIds), { ignoreShapeLock: true });
       this.projected = new Map(shapes.map(shape => [shape.props!.nodeId!, shape]));
-      const selected = selectedDiagramIds(this.controller.getSnapshot().canvas.selection).map(mappingShapeId).filter(id => this.editor.getShape(id));
+      const selected = this.selectedShapeIds();
       const native = this.editor.getSelectedShapeIds();
       if (native.length !== selected.length || selected.some(id => !native.includes(id))) this.editor.setSelectedShapes(selected);
     }, { history: record ? 'record' : 'ignore' });
+  }
+  private selectedShapeIds() {
+    this.selectionOwnership.dragDiagramIds = this.selectionOwnership.dragDiagramIds.filter(id => this.editor.getShape(mappingShapeId(id)));
+    return [...new Set([...selectedDiagramIds(this.controller.getSnapshot().canvas.selection), ...this.selectionOwnership.dragDiagramIds])]
+      .map(mappingShapeId).filter(id => this.editor.getShape(id));
   }
   private publish(record = true) {
     if (this.syncing || this.disposed) return;
@@ -178,12 +182,13 @@ export class MappingEditorRuntime {
             ...(node.kind === 'conversation' && node.expansion === 'collapsed' ? { canvasAnchor: { x: shape.x, y: shape.y } } : {}) } } };
         }
       }
-      let canvas = display === snapshot.canvas.display ? snapshot.canvas : { ...snapshot.canvas, display };
-      const selection = captureSelection ? syncNativeDiagramSelection(canvas.selection, selected) : canvas.selection;
-      if (selection !== canvas.selection) canvas = updateSelection(canvas, { type: 'replace', items: selection.items });
+      const canvas = display === snapshot.canvas.display ? snapshot.canvas : { ...snapshot.canvas, display };
+      // Native selection only enables dragging. Content membership changes through
+      // explicit application gestures (node selection, marquee, whole-diagram double-click).
+      if (captureSelection) this.selectionOwnership.dragDiagramIds = selected.filter(id => !selectedDiagramIds(canvas.selection).includes(id));
       if (moves.length || canvas !== snapshot.canvas) this.controller.commitEditorGesture(moves, canvas);
       if (!captureSelection) {
-        const ids = selectedDiagramIds(this.controller.getSnapshot().canvas.selection).map(mappingShapeId).filter(id => this.editor.getShape(id));
+        const ids = this.selectedShapeIds();
         this.editor.run(() => this.editor.setSelectedShapes(ids), { history: 'ignore' });
       }
     } finally { this.settling = false; }

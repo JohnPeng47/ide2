@@ -42,6 +42,9 @@ try {
     await waitForSelector(cdp,button(6));
     const geometry=()=>evaluate(cdp,`(()=>{const e=document.querySelector('[data-grid-box="overview"]');return {column:e.dataset.gridColumn,row:e.dataset.gridRow,columns:e.dataset.gridColumns,rows:e.dataset.gridRows};})()`);
     const initial=await geometry();
+    const foldedGeometry=lines=>({ ...initial,
+      columns:String(Number(initial.columns)-Math.max(...ascii.split('\n').map(line=>line.length))+Math.max(...lines.map(line=>ascii.split('\n')[line-1].length))),
+      rows:String(Number(initial.rows)-ascii.split('\n').length+lines.length) });
     // Each trigger occupies the branch junction, including nested indentation.
     for (const [line,column] of [[2,0],[4,4],[6,8]]) {
       const position=await evaluate(cdp,`(()=>{const b=document.querySelector(${JSON.stringify(button(line))}).getBoundingClientRect(),g=document.querySelector('[data-grid-box="overview"]'),r=g.getBoundingClientRect();return {column:(b.left-r.left)/(r.width/Number(g.dataset.gridColumns)),row:(b.top-r.top)/(r.height/Number(g.dataset.gridRows))};})()`);
@@ -52,7 +55,7 @@ try {
     assert.ok(!(await text()).includes('foldRanges'));
     await click(button(4));await waitFor(async()=>!(await evaluate(cdp,`Boolean(document.querySelector(${JSON.stringify(button(6))}))`)));
     await click(button(4));await waitFor(async()=>await expanded(6)==='false');
-    assert.deepEqual(await geometry(),initial);
+    assert.deepEqual(await geometry(),foldedGeometry([1,2,3,4,5,6,9]));
     await click('.mapping-grid-tools button:first-child');await waitFor(async()=>await expanded(4)==='false');
     await click('.mapping-grid-tools button:nth-child(2)');await waitFor(async()=>await expanded(6)==='false');
     // Keyboard activation follows the same operation and doesn't pan/select.
@@ -77,7 +80,7 @@ try {
     await captureScreenshot(cdp,{output:path.join(root,'subtree-collapsed.png')});
     const previousCanvasIds=new Set((await exec({code:'return canvas.list();'})).value.map(c=>c.canvasId));
     await cdp.send('Page.navigate',{url:`${url}/mapping`});await waitFor(async()=>await expanded(2)==='false');
-    assert.deepEqual(await geometry(),initial);
+    assert.deepEqual(await geometry(),foldedGeometry([1,2,9]));
     let canvases;await waitFor(async()=>{canvases=(await exec({code:'return canvas.list();'})).value;return canvases.some(c=>c.documents.length && !previousCanvasIds.has(c.canvasId));});
     const canvas=canvases.find(c=>c.documents.length && !previousCanvasIds.has(c.canvasId));
     const session=(await exec({code:`return canvas.attach(${JSON.stringify({canvasId:canvas.canvasId,documentId:canvas.documents[0].documentId})});`})).value;
@@ -111,6 +114,6 @@ try {
     await click(button(8));await waitFor(async()=>await expanded(8)==='false');
     assert.equal(await evaluate(cdp,'Boolean(document.querySelector("[data-selection-root]"))'),false);
     await click(button(8));await waitForSelector(cdp,'[data-selection-root]');
-    console.log('Branch positions, pointer/keyboard collapse, nested state, undo/redo, stable geometry, source-line selection, retained attachment visibility, workspace reload, and MCP/UI synchronization passed');
+    console.log('Branch positions, pointer/keyboard collapse, nested state, undo/redo, folded geometry, source-line selection, retained attachment visibility, workspace reload, and MCP/UI synchronization passed');
   });
 } finally {await client?.close();server?.kill('SIGTERM');await rm(root,{recursive:true,force:true});}

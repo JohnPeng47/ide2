@@ -94,8 +94,8 @@
 .llm-extension-edge { position: absolute; overflow: visible; pointer-events: none; color: var(--accent-success); z-index: 12; }
 .llm-origin-preview { pointer-events: none; }
 
-.mapping-whole-actions { position: absolute; left: 20px; top: -34px; z-index: 10; }
-.mapping-whole-actions [role=menu] { display: flex; padding: var(--space-3); background: var(--panel-background); border: 1px solid var(--gutter); }
+.mapping-whole-actions { position: absolute; right: 12px; top: 108px; z-index: 10; max-width: calc(100% - 24px); pointer-events: auto; }
+.mapping-whole-actions [role=menu] { display: flex; flex-wrap: wrap; padding: var(--space-3); background: var(--panel-background); border: 1px solid var(--gutter); }
 
 .workspace-tools-open, .llm-explorer-new, .mapping-whole-actions button { padding: var(--space-3) var(--space-5); border: 1px solid var(--gutter); border-radius: var(--control-radius); color: var(--fg); background: var(--control-background); font: var(--text-md) var(--font-mono); cursor: pointer; }
 

@@ -5,7 +5,7 @@ export { diagramContentNodes as connectionContentNodes } from './diagramContentN
 
 const id = z.string().min(1).max(500).refine(value => !['__proto__', 'constructor', 'prototype'].includes(value));
 const offset = z.number().min(0).max(1).optional();
-const side = z.enum(['auto', 'left', 'right', 'top', 'bottom']).default('auto');
+const side = z.enum(['auto', 'horizontal', 'left', 'right', 'top', 'bottom']).default('auto');
 export const contentNodeAnchorSchema = z.object({
   kind: z.literal('content-node'), displayNodeId: id, contentNodeId: id, revisionId: id, side, offset
 }).strict();

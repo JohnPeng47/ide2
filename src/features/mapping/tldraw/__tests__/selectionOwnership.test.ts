@@ -43,15 +43,25 @@ it('native final and delayed camera settlements cannot erase region membership o
   expect(editor.getSelectedShapes()).toEqual([]);
   expect(controller.exportHistory().past).toEqual([]);
 });
-it('an intended native selection imports desktop shapes while preserving selected regions', () => {
-  const { controller, runtime, ownership } = setup();
-  const regions = controller.getSnapshot().canvas.selection.items;
+it('native frame selection enables dragging without selecting content or creating a checkpoint', () => {
+  const { controller, runtime, ownership, editor } = setup();
+  const before = controller.getSnapshot();
   ownership.claim('native'); runtime.settle();
-  expect(controller.getSnapshot().canvas.selection.items).toEqual([...regions, { id: 'grid:overview', displayNodeId: 'grid:overview' }]);
-  expect(controller.exportHistory().past).toHaveLength(1);
+  expect(controller.getSnapshot()).toBe(before);
+  expect(ownership.dragDiagramIds).toEqual(['grid:overview']);
+  expect(editor.getSelectedShapes()).toHaveLength(1);
+  expect(controller.exportHistory().past).toHaveLength(0);
+  // An application node gesture and subsequent camera settlements retain the
+  // handles without converting them into whole-diagram content membership.
+  ownership.claim('application'); runtime.settle(); runtime.settle(true);
+  expect(editor.getSelectedShapes()).toHaveLength(1);
+  expect(controller.getSnapshot()).toBe(before);
+  ownership.dragDiagramIds = []; runtime.settle();
+  expect(editor.getSelectedShapes()).toEqual([]);
 });
 it('native move geometry commits once with application membership retained and undoable', () => {
-  const { controller, runtime, shapes } = setup();
+  const { controller, runtime, shapes, ownership } = setup();
+  ownership.claim('native');
   const before = controller.getSnapshot();
   const diagram = shapes.find(shape => shape.props?.kind === 'diagram')!;
   diagram.x = (diagram.x ?? 0) + 180;

@@ -122,6 +122,14 @@ export function MappingEditorCanvas(props: {
     return () => { cancelAnimationFrame(frame); cancelAnimationFrame(inner); };
   }, [editor, props.enabled, props.focusBox]);
   return <div ref={root} className={`${props.className ?? ''} mapping-editor-canvas`} data-diagram-canvas data-canvas-engine="tldraw"
+    onWheelCapture={event => {
+      if (!props.enabled || !editor) return;
+      const target = event.target as Element;
+      if (!target.closest('.tl-canvas') || target.closest('button,input,textarea,select,[contenteditable=true],.mapping-native-projection,.mapping-native-conversation,.mapping-native-detail')) return;
+      // The SDK ignores wheels until focused. Activate before its bubble listener
+      // handles this first scroll, keeping keyboard focus and panel scrolling intact.
+      editor.focus({ focusContainer: false });
+    }}
     onPasteCapture={event => {
       // Diagram insertion uses the application's ASCII/source-aware paste command.
       if (!(event.target as Element).closest('input,textarea,[contenteditable=true]')) event.stopPropagation();

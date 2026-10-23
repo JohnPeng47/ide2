@@ -1,5 +1,6 @@
 import { createShapeId, type TLShapePartial } from 'tldraw';
-import { flattenGrid, resolveScene } from '../../../../domain/core/diagrams/lineGrid';
+import { flattenGrid } from '../../../../domain/core/diagrams/lineGrid';
+import { resolveDiagramView } from '../../../../domain/mapping/workspace/diagramViewState';
 import { visibleProjectionIds } from '../../../../domain/mapping/workspace/displayModel';
 import type { ControllerSnapshot } from '../../../../domain/mapping/workspace/mappingDocumentController';
 import type { MappingShape } from './MappingShapeUtil';
@@ -10,7 +11,7 @@ export const DEFAULT_CELL = { width: 8.4, height: 18 };
 export function projectMappingShapes(snapshot: ControllerSnapshot): TLShapePartial<MappingShape>[] {
   const { document, canvas } = snapshot;
   const cell = snapshot.cell?.width ? snapshot.cell : DEFAULT_CELL;
-  const boxes = flattenGrid(resolveScene(document.scene));
+  const boxes = flattenGrid(resolveDiagramView(document.scene, canvas.diagramViews));
   const shapes: TLShapePartial<MappingShape>[] = boxes.map(box => {
     const parent = boxes.find(parent => parent.box.id !== document.scene.root.id && parent.children.some(child => child.box.id === box.box.id));
     return ({

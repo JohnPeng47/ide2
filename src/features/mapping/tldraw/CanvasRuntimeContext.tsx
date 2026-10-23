@@ -1,21 +1,23 @@
 import { SelectionToolBridge } from './SelectionTools';
-import { selectionContentNodes } from '../../../../domain/mapping/selection/selectionState';
+import { selectedDiagramIds, selectionContentNodes } from '../../../../domain/mapping/selection/selectionState';
 import { createContext } from 'react';
-import { atom, transact, type Atom, type Editor } from 'tldraw';
+import { atom, computed, transact, type Atom, type Editor } from 'tldraw';
 import type { CanvasSession } from '../workspace/canvasSession';
 import type { DiagramJumpTarget } from '../../../../domain/core/diagrams/diagramJump';
 import type { LocalChatVerbosity } from '../../../../domain/mapping/chat/localChat';
 import type { ProjectRepresentationCatalogRecord } from '../../../../domain/core/representations/projectCatalog';
-import { flattenGrid, resolveScene } from '../../../../domain/core/diagrams/lineGrid';
+import { flattenGrid } from '../../../../domain/core/diagrams/lineGrid';
 import type { Diagram } from '../../../../domain/core/diagrams/diagram';
 import { canvasDisplayNodes, findBox, type CanvasDisplayNode } from '../../../../domain/mapping/workspace/canvasDisplayNode';
-import { diagramProjection, type DiagramViewState } from '../../../../domain/mapping/workspace/diagramViewState';
+import { diagramProjection, resolveDiagramView, type DiagramViewState } from '../../../../domain/mapping/workspace/diagramViewState';
 import type { DisplayState, FloatingPane, SelectionRegion } from '../../../../domain/mapping/workspace/displayModel';
 import type { DiagramAnchor, DiagramConnection } from '../../../../domain/core/diagrams/diagramConnection';
 import { resolveEndpoint } from '../../../../domain/mapping/workspace/connectionLayout';
 import type { ControllerSnapshot } from '../../../../domain/mapping/workspace/mappingDocumentController';
-import { DEFAULT_CELL } from './shapeProjection';
+import { DEFAULT_CELL, mappingShapeId } from './shapeProjection';
 import { LocalAnchorStore } from './LocalAnchorStore';
+import { nativeEdgeInput } from './nativeEdgeGeometry';
+import { NativeRoutingStore } from './NativeRoutingStore';
 
 /** Domain commands may clone a whole document. Preserve equal read-model branches
  * so a selector for diagram A does not change when diagram B is edited. */
@@ -70,9 +72,15 @@ export class CanvasRuntime {
   readonly canEscape = atom('mapping escape available', true);
   readonly controller;
   readonly anchors = new LocalAnchorStore();
+  readonly routing = new NativeRoutingStore(() => this.editor);
   readonly grids = new Models<GridModel>();
   readonly floats = new Models<FloatModel>();
   readonly edges = new Models<EdgeModel>();
+  private readonly edgeIds = atom<string[]>('routing edge IDs', []);
+  readonly routedEdges = computed('canvas edge lanes', () => this.routing.drawAll(this.edgeIds.get().flatMap(id => {
+    const model = this.edges.get(id).get();
+    return model ? [nativeEdgeInput(this, model.edge, model.source, model.target)] : [];
+  })));
   readonly focusedEdge = atom<{ id: string; point: { x: number; y: number } } | undefined>('focused mapping edge', undefined);
   readonly interaction = atom('mapping shape controls', { disabled: false, subtreeDisabled: false, jumps: false });
   readonly catalog = atom<{ catalog?: ProjectRepresentationCatalogRecord; dirtyIds?: string[] }>('mapping projection catalog', {});
@@ -82,6 +90,12 @@ export class CanvasRuntime {
   private registry: CanvasDisplayNode[] = [];
   constructor(readonly session: CanvasSession) { this.controller = session.controller; this.sync(); }
   connect() { this.sync(); return this.controller.subscribe(() => this.sync()); }
+  clearDragSelection() {
+    this.gestures.ownership.dragDiagramIds = [];
+    this.gestures.ownership.claim('application');
+    const ids = selectedDiagramIds(this.controller.getSnapshot().canvas.selection).map(mappingShapeId).filter(id => this.editor?.getShape(id));
+    this.editor?.run(() => this.editor!.setSelectedShapes(ids), { history: 'ignore' });
+  }
   sync() {
     const s = this.controller.getSnapshot(), p = this.previous;
     if (p && s.document === p.document && s.canvas.display === p.canvas.display && s.canvas.diagramViews === p.canvas.diagramViews
@@ -89,8 +103,8 @@ export class CanvasRuntime {
     this.previous = s;
     const cell = s.cell?.width ? s.cell : DEFAULT_CELL;
     if (!p || s.document !== p.document || s.canvas.diagramViews !== p.canvas.diagramViews || s.cell !== p.cell)
-      this.registry = canvasDisplayNodes(s.document, { ...s.canvas, display: { nodes: {}, rootIds: [] } }, 0, cell);
-    const boxes = flattenGrid(resolveScene(s.document.scene));
+      this.registry = canvasDisplayNodes({ ...s.document, edges: [] }, { ...s.canvas, display: { nodes: {}, rootIds: [] } }, 0, cell);
+    const boxes = flattenGrid(resolveDiagramView(s.document.scene, s.canvas.diagramViews));
     const grids = new Map<string, GridModel>();
     for (const box of boxes) {
       const id = `grid:${box.box.id}`, diagram = box.contentId ? s.document.scene.contents[box.contentId] : undefined;
@@ -120,15 +134,17 @@ export class CanvasRuntime {
     }
     transact(() => {
       this.grids.publish(grids); this.floats.publish(floats);
+      this.routing.sync(grids, s.document.edges);
       this.anchors.retain(new Map([...grids].map(([id, model]) => [id, model.layoutKey])));
-      this.edges.publish(new Map(s.document.edges.map(edge => [edge.id, { edge, source: this.resolveAnchor(edge.source), target: this.resolveAnchor(edge.target) }])));
+      this.edges.publish(new Map(s.document.edges.map(edge => [edge.id, { edge, source: this.resolveAnchor(edge.source), target: this.resolveAnchor(edge.target, true) }])));
+      this.edgeIds.set(shareEqual(this.edgeIds.get(), s.document.edges.map(edge => edge.id)));
       const focused = this.focusedEdge.get();
       if (focused && !s.document.edges.some(edge => edge.id === focused.id)) this.focusedEdge.set(undefined);
     });
   }
-  resolveAnchor(anchor: DiagramAnchor): LocalEndpoint | undefined {
+  resolveAnchor(anchor: DiagramAnchor, diagramRoot = false): LocalEndpoint | undefined {
     const s = this.controller.getSnapshot(), cell = s.cell?.width ? s.cell : DEFAULT_CELL;
-    const resolved = resolveEndpoint(s.document.scene, s.canvas.diagramViews, anchor, cell);
+    const resolved = resolveEndpoint(s.document.scene, s.canvas.diagramViews, anchor, cell, diagramRoot);
     const owner = resolved && this.grids.get(resolved.identity.displayNodeId).get();
     return resolved && owner ? { ...resolved, layoutKey: owner.layoutKey, rect: { ...resolved.rect,
       x: resolved.rect.x - owner.frame.bounds.column * cell.width, y: resolved.rect.y - owner.frame.bounds.row * cell.height } } : undefined;

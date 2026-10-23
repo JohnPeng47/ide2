@@ -8,6 +8,7 @@ import { diagramTextRanges, textRow } from '../../../../domain/core/diagrams/dia
 import { DiagramText } from '../../../shared/diagrams/DiagramText';
 import { DiagramSubtreeControls } from '../canvas/DiagramSubtreeControls';
 import { useLocalAnchors } from './useLocalAnchors';
+import { mappingShapeId } from './shapeProjection';
 
 const Text = memo(function Text({ model }: { model: Pick<GridModel, 'id' | 'diagram' | 'view' | 'jumps' | 'selectedContent' | 'layoutKey' | 'node'> }) {
   const runtime = useContext(CanvasRuntimeContext)!;
@@ -44,6 +45,7 @@ export function DiagramShapeContent({ nodeId }: { nodeId: string }) {
   const model = useValue(`diagram ${nodeId}`, () => runtime.grids.get(nodeId).get(), [runtime, nodeId]);
   const interaction = useValue('diagram controls', () => runtime.interaction.get(), [runtime]);
   const zoom = useValue('move handle screen size', () => runtime.editor?.getZoomLevel() ?? 1, [runtime]);
+  const dragSelected = useValue(`diagram drag selection ${nodeId}`, () => runtime.editor?.getSelectedShapeIds().includes(mappingShapeId(nodeId)) ?? false, [runtime, nodeId]);
   if (!model) return null;
   const { frame, cell } = model;
   return <>
@@ -51,10 +53,10 @@ export function DiagramShapeContent({ nodeId }: { nodeId: string }) {
     <DiagramSubtreeControls nodes={[model.node]} visibleBoxIds={new Set([frame.boxId])} cell={cell}
       disabled={interaction.subtreeDisabled} onCollapse={(id, contentId, collapsed) => runtime.actions?.collapse(id, collapsed, contentId)} />
     <div className={`mapping-grid-box${frame.kind === 'container' ? ' is-container' : ''}`}
-      data-grid-box={frame.boxId} data-diagram-selected={frame.selected} data-grid-column={frame.bounds.column} data-grid-row={frame.bounds.row}
+      data-grid-box={frame.boxId} data-diagram-selected={frame.selected} data-diagram-drag-selected={dragSelected} data-grid-column={frame.bounds.column} data-grid-row={frame.bounds.row}
       data-grid-columns={frame.bounds.columns} data-grid-rows={frame.bounds.rows} data-collapsed={frame.collapsed}
       style={{ left: 0, top: 0, width: frame.bounds.columns * cell.width, height: frame.bounds.rows * cell.height }}>
-      {frame.kind === 'diagram' && frame.selected && <button type="button" className="mapping-diagram-move-handle"
+      {frame.kind === 'diagram' && (frame.selected || dragSelected) && <button type="button" className="mapping-diagram-move-handle"
         data-diagram-move-handle={nodeId} aria-label="Move selected diagram" disabled={interaction.disabled}
         style={{ transform: `scale(${1 / zoom}) translate(calc(-100% - 6px), calc(-100% - 6px))` }}
         onClick={event => { if (event.detail === 0) runtime.actions?.move(frame.boxId); }}>↔</button>}

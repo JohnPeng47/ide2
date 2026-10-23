@@ -1,14 +1,15 @@
 import { diagramRevisions } from '../../core/diagrams/internal/revisionRegistry';
-import type { EndpointBounds } from './endpointGeometry';
-import { resolveDiagramContent, projectDiagramContent } from './diagramViewState';
+import { endpointKey, type EndpointBounds } from './endpointGeometry';
+import { resolveDiagramContent, projectDiagramContent, resolveDiagramView } from './diagramViewState';
 export { resolveDiagramContent } from './diagramViewState';
 import { flattenGrid, resolveScene, type GridBounds } from '../../core/diagrams/lineGrid';
 import type { DiagramContent } from '../../core/diagrams/diagramContent';
 import type { FloatingBox, DisplayGeometry } from './displayModel';
 import type { MappingGridDocument } from './mappingGrid';
 import type { MappingCanvasState } from './mappingWorkspace';
-import { drawEdge } from './connectionLayout';
+import { drawEdge, resolveEndpoint, spaceEdgeArrows } from './connectionLayout';
 import { connectionContentNodes } from '../../core/diagrams/diagramConnection';
+import { connectionObstacles, sceneRoutingObstacles } from './routingObstacles';
 export type { FloatingBox };
 
 export type FloatingPlacement =
@@ -36,7 +37,7 @@ export const floatingNodeId = (id: string) => `floating:${id}`;
 
 /** Read-only registry over the two existing stores. Geometry has no second writable copy. */
 export function canvasDisplayNodes(document: MappingGridDocument, canvas: MappingCanvasState, version: number, cell = { width: 8, height: 18 }, endpointBounds?: EndpointBounds): CanvasDisplayNode[] {
-  const visible = new Map(flattenGrid(resolveScene(document.scene)).map(node => [node.box.id, node]));
+  const visible = new Map(flattenGrid(resolveDiagramView(document.scene, canvas.diagramViews)).map(node => [node.box.id, node]));
   const expand = (box: typeof document.scene.root): typeof box => box.kind === 'container'
     ? { ...box, collapsed: false, children: box.children.map(expand) } : { ...box, collapsed: false };
   const expanded = flattenGrid(resolveScene({ ...document.scene, root: expand(document.scene.root) }));
@@ -65,11 +66,18 @@ export function canvasDisplayNodes(document: MappingGridDocument, canvas: Mappin
       childIds: node.childIds.map(floatingNodeId), expansion: node.expansion,
       geometry: { units: 'pixels', position: node.position, bounds: node.bounds, coordinateSpace: node.coordinateSpace }, placement, value: node };
   });
-  const arrows: CanvasDisplayNode[] = (document.edges ?? []).map(edge => {
-    const value = drawEdge(edge, document.scene, canvas.diagramViews, cell, endpointBounds);
+  const obstacles = document.edges?.length ? sceneRoutingObstacles(document.scene, canvas.diagramViews, cell) : [];
+  const spaced = spaceEdgeArrows((document.edges ?? []).map(edge => {
+    const a = resolveEndpoint(document.scene, canvas.diagramViews, edge.source, cell);
+    const b = resolveEndpoint(document.scene, canvas.diagramViews, edge.target, cell, true);
+    return { arrow: drawEdge(edge, document.scene, canvas.diagramViews, cell, endpointBounds, obstacles),
+      obstacles: [...connectionObstacles(obstacles, a?.identity, b?.identity), ...[a, b].flatMap(endpoint => endpoint
+        ? [(!endpoint.labelRect && endpointBounds?.[endpointKey(endpoint.identity)]) || endpoint.rect] : [])] };
+  }));
+  const arrows: CanvasDisplayNode[] = spaced.map(value => {
     return { id: `floating:${value.id}`, version, childIds: [], expansion: 'expanded', collapsible: { self: false, subtrees: [] },
       layout: 'floating', kind: 'arrow', geometry: { units: 'pixels', position: value.position, bounds: value.bounds, coordinateSpace: 'canvas' },
-      placement: { kind: 'connection', edgeId: edge.id }, value };
+      placement: { kind: 'connection', edgeId: value.edgeId }, value };
   });
   return structuredClone([...grid, ...floating, ...arrows]);
 }

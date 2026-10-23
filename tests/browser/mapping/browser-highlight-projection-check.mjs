@@ -96,7 +96,7 @@ try {
     };
     const child = workspace => workspace.documents.find(d => d.parentCanvasId === 'representation-overview');
     const positionsOf = doc => doc.document.scene.root.children.map(b => b.position);
-    await click('.mapping-explorer-tabs button', 'Canvas');
+    await click('[aria-label="Explorer mode"] button', 'Canvas'); await click('[aria-label="Canvas panels"] button', 'Actions');
     assert.equal(await evaluate(cdp, `[...document.querySelectorAll('.mapping-explorer-tabs button')].some(b => b.textContent === 'LLMs')`), false);
     await waitFor(() => evaluate(cdp, `!!document.querySelector('.mapping-canvas-actions button:not(:disabled)')`));
     if (process.env.PROJECTION_MEMORY === '1') await waitFor(() => evaluate(cdp,
@@ -193,7 +193,7 @@ try {
     ws = await persisted(w => child(w)?.canvas.projectionLayout.settings.attraction === .4);
     assert.deepEqual(positionsOf(child(ws)), savedPositions);
     // Project again from the child to prove recursive ancestry rather than a flat parent label.
-    await click('.mapping-explorer-tabs button', 'Canvas'); await click('.mapping-canvas-actions button', 'Project Highlights');
+    await click('[aria-label="Explorer mode"] button', 'Canvas'); await click('[aria-label="Canvas panels"] button', 'Actions'); await click('.mapping-canvas-actions button', 'Project Highlights');
     ws = await persisted(w => w.documents.some(d => d.parentCanvasId === projectedId));
     const grandchild = ws.documents.find(d => d.parentCanvasId === projectedId);
     await waitFor(() => evaluate(cdp, `!!document.querySelector('.mapping-canvas-children .mapping-canvas-children [data-project-diagram="${grandchild.representationId}"]')`));

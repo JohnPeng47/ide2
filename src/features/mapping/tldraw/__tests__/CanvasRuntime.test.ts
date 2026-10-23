@@ -9,6 +9,7 @@ import { singleDiagramScene } from '../../../../../domain/core/diagrams/projectD
 import { mappingDocumentFromScene } from '../../../../../domain/mapping/workspace/mappingDocument';
 import { initialCanvasState } from '../../../../../domain/mapping/workspace/mappingWorkspace';
 import { diagramContentNodes } from '../../../../../domain/core/diagrams/diagramContentNodes';
+import { mappingShapeId, projectMappingShapes } from '../shapeProjection';
 
 function setup() {
   const scene = singleDiagramScene('Root\n|-- Branch\n|   `-- Leaf\n`-- Tail');
@@ -25,6 +26,21 @@ function setup() {
   return { session, controller, runtime, source, dispose: () => { disconnect(); session.dispose(); } };
 }
 describe('native canvas read models and local anchors', () => {
+  it('keeps the rendered frame, native selection shape and box endpoints aligned after folding', () => {
+    const { controller, runtime, dispose } = setup();
+    controller.configureLayout({ width: 8, height: 18 }, { width: 1200, height: 900 });
+    const shape = () => projectMappingShapes(controller.getSnapshot()).find(shape => shape.id === mappingShapeId('grid:overview'))!;
+    const expanded = shape();
+    const branch = diagramContentNodes(controller.getSnapshot().document.scene.contents.overview.content).find(node => node.label === 'Branch')!;
+    controller.applyUpdate(controller.getSnapshot().version, [{ method: 'collapse', nodeId: 'grid:overview', contentNodeId: branch.id, collapsed: true }]);
+    const model = runtime.grids.get('grid:overview').get()!;
+    expect(model.frame.bounds).toMatchObject({ columns: 10, rows: 3 });
+    expect(shape().props).toMatchObject({ w: 80, h: 54 });
+    expect(runtime.resolveAnchor({ kind: 'box', displayNodeId: 'grid:overview', side: 'bottom' })!.rect).toMatchObject({ width: 80, height: 54 });
+    controller.undo(); expect(shape()).toEqual(expanded);
+    controller.undo(true); expect(shape().props).toMatchObject({ w: 80, h: 54 });
+    dispose();
+  });
   it('keeps edge focus out of history and clears it when the edge is removed', () => {
     const { runtime, controller, dispose } = setup();
     const before = controller.getSnapshot();
@@ -134,5 +150,25 @@ it('synchronizes explicit membership, envelopes and history from controller stat
   controller.select({ type: 'clear' });
   expect(runtime.floats.get(item.id).get()!.selected).toBe(false);
   expect(runtime.grids.get('grid:overview').get()!.selectedContent).toEqual([]);
+  dispose();
+});
+
+
+it('shares one lane computation across edges and ignores camera changes', () => {
+  const { runtime, controller, dispose } = setup();
+  const edge = controller.getSnapshot().document.edges[0];
+  controller.applyUpdate(controller.getSnapshot().version, [{ method: 'edge-create', edge: { ...edge, id: 'duplicate' } }]);
+  const camera = atom('test camera', { x: 0, y: 0 }), position = atom('target position', Mat.Translate(480, 180));
+  runtime.editor = { getShape: (id: string) => ({ id }), getShapePageTransform: (shape: string | { id: string }) =>
+    (typeof shape === 'string' ? shape : shape.id) === mappingShapeId('grid:second') ? position.get() : Mat.Identity(),
+    getCamera: () => camera.get() } as unknown as Editor;
+  const draw = vi.spyOn(runtime.routing, 'drawAll');
+  const before = runtime.routedEdges.get();
+  expect(before.size).toBe(2);
+  expect(before.get(edge.id)!.path).not.toBe(before.get('duplicate')!.path);
+  camera.set({ x: 50, y: 80 });
+  expect(runtime.routedEdges.get()).toBe(before); expect(draw).toHaveBeenCalledTimes(1);
+  position.set(Mat.Translate(600, 180));
+  expect(runtime.routedEdges.get()).not.toBe(before); expect(draw).toHaveBeenCalledTimes(2);
   dispose();
 });

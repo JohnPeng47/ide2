@@ -1,5 +1,5 @@
 import { visibleContentLines, type DiagramContent } from '../../core/diagrams/diagramContent';
-import type { Diagram, GridBox, LineGridScene } from '../../core/diagrams/lineGrid';
+import { measureContent, resolveScene, type Diagram, type GridBox, type LineGridScene, type ResolvedGridBox } from '../../core/diagrams/lineGrid';
 import type { MappingPocGridRect } from '../selection/mappingPoc';
 
 /** Presentation of one diagram instance; never part of its source content. */
@@ -34,6 +34,28 @@ export function projectDiagramContent(content: DiagramContent, view?: DiagramVie
 }
 export function diagramProjection(scene: LineGridScene, boxId: string, contentId: string, views?: DiagramViews) {
   return projectDiagramContent(resolveDiagramContent(scene.contents[contentId]), views?.[`grid:${boxId}`]);
+}
+
+/** Folded bounds subtract hidden text cells while retaining any explicitly reserved extra space. */
+export function resolveDiagramView(scene: LineGridScene, views?: DiagramViews): ResolvedGridBox {
+  const resolved = resolveScene(scene);
+  if (!views || !Object.keys(views).length) return resolved;
+  const visit = (node: ResolvedGridBox): ResolvedGridBox => {
+    if (node.box.collapsed) return node;
+    if (node.contentId) {
+      const content = scene.contents[node.contentId].content, view = views[`grid:${node.box.id}`];
+      if (view?.contentRevisionId !== content.revisionId || !view.collapsedContentNodeIds.length) return node;
+      const full = measureContent(content.ascii), visible = measureContent(projectDiagramContent(content, view).ascii);
+      return { ...node, bounds: { ...node.bounds,
+        columns: node.bounds.columns - full.columns + visible.columns,
+        rows: node.bounds.rows - full.rows + visible.rows } };
+    }
+    const children = node.children.map(visit);
+    return { ...node, children, bounds: { ...node.bounds,
+      columns: Math.max(1, node.box.minimumSize?.columns ?? 1, ...children.map(child => child.bounds.column - node.bounds.column + child.bounds.columns)),
+      rows: Math.max(1, node.box.minimumSize?.rows ?? 1, ...children.map(child => child.bounds.row - node.bounds.row + child.bounds.rows)) } };
+  };
+  return visit(resolved);
 }
 /** Prune deleted owners and revision-scoped IDs on every document mutation. */
 export function normalizeDiagramViews(scene: LineGridScene, views?: DiagramViews): DiagramViews | undefined {

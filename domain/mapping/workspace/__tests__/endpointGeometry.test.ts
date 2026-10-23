@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { RevisionedDiagramService } from '../../../core/diagrams/diagramService';
 import { connectionContentNodes, diagramConnectionSchema, defaultArrowAppearance, type DiagramConnection } from '../../../core/diagrams/diagramConnection';
 import { singleDiagramScene } from '../../../core/diagrams/projectDiagramCanvas';
-import { drawEdge } from '../connectionLayout';
+import { drawEdge, drawResolvedEdge, resolveEndpoint } from '../connectionLayout';
 import { endpointKey, type EndpointBounds, type EndpointRect } from '../endpointGeometry';
 import { routeEdge, type EndpointSide } from '../edgeRouting';
 import { MappingDocumentController } from '../mappingDocumentController';
@@ -23,7 +23,7 @@ function fixture() {
     target: { kind: 'box', displayNodeId: 'grid:second', side: 'left', offset: 0.75 }, appearance: defaultArrowAppearance };
   const a = { x: 121.375, y: 80.125, width: 69.4375, height: 14.875 };
   const b = { x: 400.0625, y: 100.3125, width: 135.875, height: 98.625 };
-  const bounds: EndpointBounds = { [endpointKey(edge.source)]: a, [endpointKey(edge.target)]: b };
+  const bounds: EndpointBounds = { [endpointKey(edge.source)]: a, [endpointKey(resolveEndpoint(scene, undefined, edge.target, { width: 8, height: 18 }, true)!.identity)]: b };
   return { scene, content, parent, edge, a, b, bounds };
 }
 
@@ -62,7 +62,8 @@ describe('measured edge attachments', () => {
     const result = drawEdge(edge, scene, undefined, { width: 7.1, height: 18.2 }, bounds);
     expect(result).toMatchObject({ status: 'resolved', geometrySource: 'measured',
       source: { x: a.x + a.width, y: a.y + a.height * 0.25 }, target: { x: b.x, y: b.y + b.height * 0.75 } });
-    expect(drawEdge(edge, scene, undefined, { width: 99, height: 200 }, bounds)).toEqual(result);
+    // Cell estimates now determine other text obstacles, but never move measured attachment points.
+    expect(drawEdge(edge, scene, undefined, { width: 99, height: 200 }, bounds)).toMatchObject({ source: result.source, target: result.target });
     expect(drawEdge(edge, scene, undefined, { width: 8, height: 18 }).geometrySource).toBe('estimated');
   });
 
@@ -85,7 +86,7 @@ describe('measured edge attachments', () => {
     if (scene.root.kind !== 'container') throw new Error();
     scene.root.children = scene.root.children.map(box => box.id === 'overview' ? { ...box, collapsed: true } : box);
     expect(drawEdge(edge, scene, views, { width: 8, height: 18 }, {
-      [endpointKey({ displayNodeId: 'grid:overview' })]: parentRect, [endpointKey(edge.target)]: b
+      [endpointKey({ displayNodeId: 'grid:overview' })]: parentRect, [endpointKey(resolveEndpoint(scene, undefined, edge.target, { width: 8, height: 18 }, true)!.identity)]: b
     })).toMatchObject({ status: 'proxy', source: { x: 150.75, proxy: true } });
   });
 
@@ -121,6 +122,37 @@ describe('measured edge attachments', () => {
 });
 
 describe('routing around endpoint boxes', () => {
+  it('chooses a cheaper left/left route even when the preferred side pair has a valid detour', () => {
+    const { edge } = fixture();
+    const a = { x: 100, y: 0, width: 100, height: 20, proxy: false };
+    const b = { x: 100, y: 120, width: 40, height: 20, proxy: false };
+    const obstacles = [{ x: 100, y: 30, width: 400, height: 80 }];
+    for (const side of ['horizontal', 'auto'] as const) {
+      const flexible = diagramConnectionSchema.parse({ ...edge, source: { ...edge.source, side, offset: 0.5 },
+        target: { ...edge.target, side, offset: 0.5 } });
+      const arrow = drawResolvedEdge(flexible, a, b, 'measured', undefined, obstacles);
+      expect(arrow).toMatchObject({ status: 'resolved', source: { side: 'left' }, target: { side: 'left' } });
+      expect(arrow.path).toBe('M100 10 L84 10 L84 130 L100 130');
+      const fixed = drawResolvedEdge({ ...flexible, target: { ...flexible.target, side: 'right' } }, a, b, 'measured', undefined, obstacles);
+      expect(fixed.status).toBe('resolved');
+      expect(fixed.target?.side).toBe('right');
+      expect(fixed.bounds.width).toBeGreaterThan(arrow.bounds.width);
+    }
+  });
+
+  it('restricts horizontal attachment to left/right even when top/bottom would be shorter', () => {
+    const { edge } = fixture();
+    const a = { x: 100, y: 0, width: 100, height: 20, proxy: false };
+    const b = { ...a, y: 120 };
+    const horizontal = { ...edge, source: { ...edge.source, side: 'horizontal' as const, offset: 0.5 },
+      target: { ...edge.target, side: 'horizontal' as const, offset: 0.5 } };
+    const arrow = drawResolvedEdge(horizontal, a, b);
+    expect(['left', 'right']).toContain(arrow.source?.side);
+    expect(['left', 'right']).toContain(arrow.target?.side);
+    const automatic = drawResolvedEdge({ ...horizontal, source: { ...horizontal.source, side: 'auto' }, target: { ...horizontal.target, side: 'auto' } }, a, b);
+    expect(automatic).toMatchObject({ source: { side: 'bottom' }, target: { side: 'top' }, path: 'M150 20 L150 120' });
+  });
+
   const sides: EndpointSide[] = ['left', 'right', 'top', 'bottom'];
   const anchor = (r: EndpointRect, side: EndpointSide) => ({ side,
     x: side === 'left' ? r.x : side === 'right' ? r.x + r.width : r.x + r.width / 2,
@@ -155,5 +187,34 @@ describe('routing around endpoint boxes', () => {
     expect(routeEdge(anchor(a, 'right'), anchor(b, 'left'), [a, b])).toBeDefined();
     const enclosing = { x: -10, y: -10, width: 100, height: 100 };
     expect(routeEdge(anchor(a, 'right'), anchor(enclosing, 'left'), [a, enclosing])).toBeUndefined();
+  });
+});
+
+
+describe('diagram destination roots', () => {
+  it('resolves the root label while keeping the saved diagram reference and source box semantics', () => {
+    const { scene, edge } = fixture(), saved = structuredClone(edge.target), cell = { width: 8, height: 18 };
+    const target = resolveEndpoint(scene, undefined, edge.target, cell, true)!;
+    expect(target.rect).toMatchObject({ x: 400, y: 36, width: 32, height: 18 });
+    expect(target.identity.contentNodeId).toBeTruthy();
+    expect(resolveEndpoint(scene, undefined, edge.target, cell)!.identity.contentNodeId).toBeUndefined();
+    scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({ id: 'overview', revision: 1,
+      ascii: 'New root\n`-- Descendant', structureKind: 'tree' }).diagram };
+    const next = resolveEndpoint(scene, undefined, edge.target, cell, true)!;
+    expect(next.identity.revisionId).not.toBe(target.identity.revisionId);
+    expect(next.rect.width).toBe(64);
+    expect(edge.target).toEqual(saved);
+  });
+  it('uses the visible summary root when the destination diagram is collapsed', () => {
+    const { scene, edge } = fixture(), cell = { width: 8, height: 18 };
+    scene.contents = { ...scene.contents, summary: new RevisionedDiagramService().create({ id: 'summary', revision: 0,
+      ascii: 'Summary', structureKind: 'tree' }).diagram };
+    if (scene.root.kind !== 'container') throw new Error();
+    scene.root.children = scene.root.children.map(box => box.id === 'second' ? { ...box, collapsed: true, collapsedContentId: 'summary' } : box);
+    const target = resolveEndpoint(scene, undefined, edge.target, cell, true)!;
+    expect(target.rect).toMatchObject({ width: 56, height: 18, proxy: true });
+    expect(target.labelRect).toBe(true);
+    const arrow = drawEdge(edge, scene, undefined, cell);
+    expect(arrow.target).toMatchObject({ x: 400, y: 49.5, proxy: true });
   });
 });
