@@ -1,14 +1,17 @@
+import type { GeneratedDiagramEdit } from '../../../domain/core/diagrams/generatedDiagramEdit';
 import { selectionExcerpt } from '../../../domain/mapping/workspace/selectionClipboard';
 import { diagramContentNodes } from '../../../domain/core/diagrams/diagramContentNodes';
-import { diagramSubtreeRange } from '../../../domain/core/diagrams/diagramSubtreeEdit';
+import { diagramReplacementRanges } from '../../../domain/core/diagrams/diagramSubtreeEdit';
 import { variantRange, variantRevisionIds, validateVariant, type DiagramVariant } from '../../../domain/core/diagrams/diagramVariant';
 import { validateConnectionAnchor } from '../../../domain/core/diagrams/diagramConnection';
 import { AgentContext, type AgentContextSnapshot } from '../../../domain/core/agents/agentContext';
+import { diagramContextSourceFingerprint, loadDiagramAgentContext, type DiagramAgentContextStore } from '../../../domain/core/diagrams/diagramAgentContext';
 import { randomUUID } from 'node:crypto';
 import { CanvasHistory, type CanvasHistoryRecord } from '../../../domain/core/diagrams/canvasHistory';
 import type { DiagramService, DiagramRevisionResult, DiagramRevision } from '../../../domain/core/diagrams/diagramService';
 import type { GridBox } from '../../../domain/core/diagrams/lineGrid';
 import type { LiveDocumentSnapshot } from '../../../domain/mapping/agent/contracts';
+import { editDiagramSchema } from '../../../domain/mapping/agent/diagramEdit';
 import type { CreateDiagramInput, DiagramCreation, DiagramEditRun, DiagramRevisionApplication, EditDiagramInput, PromptReference } from '../../../domain/mapping/agent/diagramEdit';
 import { defaultTemplateSelection, resolvePromptTemplate, type PromptOperation } from '../../../domain/mapping/agent/promptTemplates';
 import { findBox } from '../../../domain/mapping/workspace/canvasDisplayNode';
@@ -22,6 +25,7 @@ export interface DiagramEditCanvasPort {
 }
 interface Run {
   variants?: { variant: DiagramVariant; revision: DiagramRevision }[];
+  submission?: GeneratedDiagramEdit;
   agentContext?: AgentContextSnapshot;
   nextAgentContext?: AgentContextSnapshot;
   input: CreateDiagramInput;
@@ -40,9 +44,12 @@ export type ResolvedPromptReference = { ref: number; kind: PromptReference['kind
 export class DiagramEditService {
   private runs = new Map<string, Run>();
   private requests = new Map<string, string>();
-  constructor(private readonly diagrams: DiagramService, private readonly canvas: DiagramEditCanvasPort) {}
+  constructor(private readonly diagrams: DiagramService, private readonly canvas: DiagramEditCanvasPort,
+    private readonly diagramContexts?: DiagramAgentContextStore) {}
 
-  start(input: EditDiagramInput | CreateDiagramInput, suppliedContext?: AgentContextSnapshot, operation: PromptOperation = 'edit-diagram'): DiagramEditRun {
+  start(input: EditDiagramInput | CreateDiagramInput, suppliedContext?: AgentContextSnapshot, operation: PromptOperation = 'edit-diagram', submission?: GeneratedDiagramEdit): DiagramEditRun {
+    if (operation === 'edit-diagram' && 'count' in input && input.count !== undefined) throw Error('count applies only to create-diagram');
+    if (operation === 'edit-diagram') input = editDiagramSchema.parse(input);
     if (input.agentContext && (input.agentContextId || suppliedContext)) throw Error('Provide only one agent context source');
     if (input.agentContext && !input.llmSessionId) throw Error('Panel context requires llmSessionId');
     const rawContext = input.agentContext ?? suppliedContext;
@@ -51,14 +58,17 @@ export class DiagramEditService {
       throw Error('AGENT_CONTEXT_SESSION_MISMATCH: context belongs to another panel');
     if (input.agentContextId && !agentContext) throw Error('AGENT_CONTEXT_NOT_FOUND: resolve context before starting the edit');
     if (operation !== 'edit-diagram' && !this.canvas.create) throw Error('Diagram creation UNAVAILABLE in this runtime');
-    if (operation === 'edit-diagram' && 'count' in input && input.count !== undefined) throw Error('count applies only to create-diagram');
     if (input.variant && operation !== 'edit-diagram') throw Error('Variants require edit-diagram');
+    if (input['edit-mode'] !== undefined && operation !== 'edit-diagram') throw Error('edit-mode applies only to edit-diagram');
+    if (input['edit-mode'] === 'in-place' && input.variant) throw Error('in-place mode cannot include variant options');
+    if (operation !== 'edit-diagram' && (input['replace-mode'] || input.subtree || input.subtrees)) throw Error('Replacement scope applies only to edit-diagram');
+    if (submission && (input.variant && input.variant.count !== 1 || 'count' in input && input.count && input.count !== 1)) throw Error('Use one batch operation per submitted diagram or variant');
     if (input.variant?.variantId && input.variant.count !== 1) throw Error('Refine one existing variant at a time');
     if (operation === 'extend-diagram' && (!input.origin || !input.sources?.length)) throw Error('Extend requires a selection and a canvas origin');
     // Fail fast on an unknown template or invalid options instead of after a model call.
     resolvePromptTemplate(input.template ?? defaultTemplateSelection(operation), operation);
     const key = JSON.stringify([input.sessionId, input.requestId]);
-    const signature = JSON.stringify({ operation, input, agentContextHash: agentContext?.contentHash });
+    const signature = JSON.stringify({ operation, input, submission, agentContextHash: agentContext?.contentHash });
     const existing = this.requests.get(key);
     if (existing) {
       const run = this.runs.get(existing)!;
@@ -67,13 +77,14 @@ export class DiagramEditService {
       return structuredClone(run.state);
     }
     if (this.runs.size >= 500) throw Error('Diagram edit run capacity reached; restart the backend');
-    const run: Run = { agentContext, input: structuredClone(input), signature, abort: new AbortController(), state: {
+    const run: Run = { submission, agentContext, input: structuredClone(input), signature, abort: new AbortController(), state: {
       runId: `diagram-edit-${randomUUID()}`, operation, status: 'generating', nodeId: input.nodeId, baseRevisionId: input.baseRevisionId
     } };
     this.runs.set(run.state.runId, run); this.requests.set(key, run.state.runId);
     this.launch(run, () => this.generate(run));
     return structuredClone(run.state);
   }
+  async wait(id: string) { const run = this.runs.get(id); if (!run) throw Error('Diagram edit run not found'); await run.pending; return this.get(id); }
   get(id: string) {
     const run = this.runs.get(id); if (!run) throw Error('Diagram edit run not found');
     return structuredClone(run.state);
@@ -98,7 +109,7 @@ export class DiagramEditService {
   private install(run: Run) { return run.state.operation !== 'edit-diagram' ? this.place(run) : this.apply(run); }
   private async generate(run: Run) {
     const { input, abort } = run, operation = run.state.operation;
-    const snapshot = await this.canvas.snapshot(input.sessionId, [...(input.baseRevisionId ? [input.baseRevisionId] : []), ...(input.references ?? []).map(ref => ref.revisionId)]);
+    const snapshot = await this.canvas.snapshot(input.sessionId, [...(input.baseRevisionId && input.baseRevisionId !== 'canvas' ? [input.baseRevisionId] : []), ...(input.references ?? []).map(ref => ref.revisionId)]);
     abort.signal.throwIfAborted();
     if (snapshot.version !== input.expectedVersion) throw Error('VERSION_CONFLICT: read the canvas again');
     const box = input.nodeId.startsWith('grid:') && findBox(snapshot.document.scene.root, input.nodeId.slice(5));
@@ -107,6 +118,11 @@ export class DiagramEditService {
     let base = box && box.kind === 'diagram' ? snapshot.document.scene.contents[box.contentId]
       : this.diagrams.create({ id: `context-${randomUUID()}`, revision: 0, ascii: '[New diagram]' }).diagram;
     if (!unanchored && base.revisionId !== input.baseRevisionId) throw Error('VERSION_CONFLICT: diagram base is no longer current');
+    if (!run.submission && !run.agentContext && operation === 'edit-diagram') {
+      const bound = snapshot.document.diagramContexts?.[base.diagramId];
+      if (bound && bound.sourceFingerprint === diagramContextSourceFingerprint(base))
+        run.agentContext = await loadDiagramAgentContext(bound, this.diagramContexts);
+    }
     // Import only the exact target/reference revisions, including their logical node identities.
     for (const revision of snapshot.revisions ?? []) this.diagrams.importRevision(revision);
     // Compatibility for in-process adapters that still supply a history record.
@@ -123,11 +139,22 @@ export class DiagramEditService {
     const template = resolvePromptTemplate(input.template ?? defaultTemplateSelection(operation), operation);
     const references = this.resolveReferences(input.references ?? [], snapshot.history);
     const lines = base.content.ascii.split('\n');
-    if (!existing && input.subtree && input.subtree.revisionId !== base.content.revisionId) throw Error('VERSION_CONFLICT: selected subtree changed; select it again');
-    const editRange = existing ? existing.ownerNodeId === 'root' ? undefined : variantRange(this.diagrams.getRevision(base.revisionId), existing.ownerNodeId)
-      : operation === 'edit-diagram' && input.subtree ? diagramSubtreeRange(base, input.subtree.contentNodeId) : undefined;
+    const editRanges = operation === 'edit-diagram'
+      ? existing ? (() => {
+        if (input.subtree || input.subtrees) throw Error('Refinement uses the saved variant scope; omit subtree targets');
+        if (existing.replacementScope) {
+          if (input['replace-mode'] !== existing.replacementScope.mode) throw Error('replace-mode must match the saved variant scope');
+          if (existing.replacementScope.ranges.some(range => range.endLine < range.startLine)) throw Error('The saved replacement scope was deleted; select new targets for a new edit');
+          return existing.replacementScope.ranges;
+        }
+        const range = existing.ownerNodeId === 'root' ? undefined : variantRange(this.diagrams.getRevision(base.revisionId), existing.ownerNodeId);
+        if (input['replace-mode'] !== (range ? 'subnode-single' : 'diagram')) throw Error('replace-mode must match the saved variant scope');
+        return range ? [range] : [];
+      })() : diagramReplacementRanges(base, input['replace-mode']!, input.subtree, input.subtrees)
+      : [];
+    const editRange = editRanges.length === 1 ? editRanges[0] : undefined;
     if (operation === 'extend-diagram') for (const source of input.sources!) validateConnectionAnchor(snapshot.document.scene, source);
-    const request = { editRange, instruction: input.prompt, agentContext: run.agentContext, llmSessionId: input.llmSessionId,
+    const request = { operation, sourceMappings: input['source-mappings'] ?? false, editRange, editRanges, instruction: input.prompt, agentContext: run.agentContext, llmSessionId: input.llmSessionId,
       prompt: { markdown: template.markdown, options: template.options, parameters: template.definition.parameters, references },
       context: { diagram: base, selection: { startLine: 1, endLine: lines.length, startColumn: 1,
         endColumn: Math.max(1, ...lines.map(line => line.length)) }, connections: snapshot.document.edges } };
@@ -137,30 +164,36 @@ export class DiagramEditService {
         if (next.source.sourceSessionId !== input.llmSessionId) throw Error('AGENT_CONTEXT_SESSION_MISMATCH');
         run.nextAgentContext = next;
       }, onProgress: (message: string) => { if (run.state.status === 'generating') run.state.message = message; } };
+    const produce = (request: Parameters<DiagramService['generate']>[0], options: Parameters<DiagramService['generate']>[1]) =>
+      run.submission ? Promise.resolve(this.diagrams.submit(request, run.submission)) : this.diagrams.generate(request, options);
     if (operation !== 'edit-diagram') {
       run.created = [];
       for (let index = 0; index < (operation === 'extend-diagram' ? 1 : input.count ?? 1); index++) {
         if (input.count && input.count > 1) options.onProgress(`Generating diagram ${index + 1} of ${input.count}…`);
-        run.created.push(await this.diagrams.generate({ ...request, agentContext: run.nextAgentContext ?? run.agentContext, input: { id: `diagram-${randomUUID()}`, structureKind: base.content.structure.kind,
+        run.created.push(await produce({ ...request, agentContext: run.nextAgentContext ?? run.agentContext, input: { id: `diagram-${randomUUID()}`, structureKind: base.content.structure.kind,
           source: base.sourceContext.binding, evidence: base.sourceContext.evidence } }, options));
         abort.signal.throwIfAborted();
       }
       await this.place(run);
       return;
     }
-    if (input.variant) {
+    // Keep the existing panel's variant creation/refinement contract supported.
+    const variantOptions = input['edit-mode'] === 'variant' ? input.variant ?? { name: 'Alternative', count: 1 } : undefined;
+    if (variantOptions) {
       run.variants = [];
       const ownerNodeId = existing?.ownerNodeId ?? (input.subtree ? this.diagrams.getRevision(base.revisionId).nodeRefs[input.subtree.contentNodeId] : 'root');
       if (!ownerNodeId) throw Error('STALE_SUBTREE: select a current subtree');
-      for (let index = 0; index < input.variant.count; index++) {
-        options.onProgress(`Generating variant ${index + 1} of ${input.variant.count}…`);
-        const generated = await this.diagrams.generate({ ...request,
-          instruction: input.prompt + (input.variant.count > 1 ? `\nProduce alternative ${index + 1} of ${input.variant.count}; explore a distinct approach.` : ''),
+      for (let index = 0; index < variantOptions.count; index++) {
+        options.onProgress(`Generating variant ${index + 1} of ${variantOptions.count}…`);
+        const generated = await produce({ ...request,
+          instruction: input.prompt + (variantOptions.count > 1 ? `\nProduce alternative ${index + 1} of ${variantOptions.count}; explore a distinct approach.` : ''),
           baseRevisionId: base.revisionId, input: { id: base.id, structureKind: base.content.structure.kind,
             source: base.sourceContext.binding, evidence: base.sourceContext.evidence } }, options);
         abort.signal.throwIfAborted();
         const variant: DiagramVariant = { ...existing, id: existing?.id ?? `variant-${randomUUID()}`,
-          name: input.variant.name + (input.variant.count > 1 ? ` ${index + 1}` : ''), diagramId: base.diagramId, contentId: base.id,
+          name: variantOptions.name + (variantOptions.count > 1 ? ` ${index + 1}` : ''), diagramId: base.diagramId, contentId: base.id,
+          ...(input['replace-mode'] === 'multi-contiguous' || input['replace-mode'] === 'multi-disjoint'
+            ? { replacementScope: { mode: input['replace-mode'], ranges: generated.replacementRanges! } } : {}),
           ownerNodeId, baseRevisionId: existing?.baseRevisionId ?? base.revisionId, headRevisionId: generated.revision.id,
           revisionIds: [...(existing?.revisionIds ?? []), generated.revision.id], prompt: input.prompt, decisions: {} };
         validateVariant(variant, id => this.diagrams.getRevision(id));
@@ -169,7 +202,7 @@ export class DiagramEditService {
       }
       await this.apply(run); return;
     }
-    run.revision = await this.diagrams.generate({ ...request, baseRevisionId: base.revisionId, input: { id: base.id,
+    run.revision = await produce({ ...request, baseRevisionId: base.revisionId, input: { id: base.id,
       structureKind: base.content.structure.kind, source: base.sourceContext.binding, evidence: base.sourceContext.evidence } }, options);
     abort.signal.throwIfAborted();
     run.state.generated = { diagramId: run.revision.diagram.diagramId, revisionId: run.revision.revision.id,
@@ -208,7 +241,8 @@ export class DiagramEditService {
     run.state.result = { diagramId: revision.diagramId, previousRevisionId: input.baseRevisionId,
       revisionId: revision.id, documentVersion: result.version, unresolvedEdgeIds: result.unresolvedEdgeIds };
     run.state.agentContext = run.nextAgentContext;
-    run.state.status = 'completed'; run.state.message = 'Diagram revision installed and workspace persisted';
+    run.state.status = 'completed'; run.state.message = run.variants
+      ? 'Diagram variants saved and workspace persisted' : 'Diagram revision installed and workspace persisted';
   }
   /** New diagrams never conflict with canvas edits: placement reads the latest version and sits beside the anchor. */
   private async place(run: Run) {

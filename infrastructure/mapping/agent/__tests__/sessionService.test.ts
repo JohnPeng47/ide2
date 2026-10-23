@@ -10,6 +10,87 @@ import { MappingDocumentController, type DiagramOperation } from '../../../../do
 import { mappingDocumentFromScene } from '../../../../domain/mapping/workspace/mappingDocument';
 import { singleDiagramScene } from '../../../../domain/core/diagrams/projectDiagramCanvas';
 import { initialCanvasState } from '../../../../domain/mapping/workspace/mappingWorkspace';
+import type { DiagramAgentContext } from '../../../../domain/core/diagrams/diagramAgentContext';
+import { CanvasViewReceiver } from '../../../../src/features/mapping/canvas-views/canvasViewReceiver';
+
+it('exposes persisted CanvasView operations with live reads, permission checks and retry safety', async () => {
+  const controller = new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('Original')), initialCanvasState());
+  const receiver = new CanvasViewReceiver();
+  let failSave = true;
+  const bridge: CanvasSessionPort = {
+    register() {}, list: () => [{ canvasId: 'canvas', documents: [{ documentId: 'doc', name: 'Test' }] }],
+    poll: async () => [], reply() {}, unregister() {}, dispose() {},
+    async dispatch(_canvasId, command) {
+      if (command.method === 'identity' || command.method === 'snapshot') return { ...controller.getSnapshot(), name: 'Test' };
+      if (command.method === 'canvas-view') return receiver.apply('doc', command.payload, controller, async () => {
+        if (failSave) { failSave = false; throw Error('disk full'); }
+      });
+      throw Error('Unexpected command');
+    }
+  };
+  const service = new AgentDiagrammingSessionService(bridge, {} as MappingDiagramService, {} as DiagramRepository, new QuickJsAgentRuntime());
+  const attached = await service.call('exec', { requestId: 'attach-view', code: 'return canvas.attach({canvasId:"canvas",documentId:"doc"});' }) as { value: { sessionId: string } };
+  const sessionId = attached.value.sessionId, start = { sessionId, operation: 'start', name: 'A', expectedVersion: 0, requestId: 'start' };
+  await expect(service.call('canvas-view', start, true)).rejects.toThrow('READ_ONLY');
+  await expect(service.call('canvas-view', start)).rejects.toThrow('PERSISTENCE_PENDING');
+  const version = controller.getSnapshot().version;
+  await service.call('canvas-view', start);
+  expect(controller.getSnapshot().version).toBe(version);
+  const read = { sessionId, operation: 'list', requestId: 'list' };
+  expect(await service.call('canvas-view', read, true)).toMatchObject({ recording: { name: 'A' } });
+  await service.call('canvas-view', { sessionId, operation: 'stop', expectedVersion: version, requestId: 'stop' });
+  expect(await service.call('canvas-view', read, true)).not.toHaveProperty('recording');
+  const viewId = Object.keys(controller.canvasViews().saved)[0];
+  await expect(service.call('canvas-view', { sessionId, operation: 'apply', viewId, requestId: 'no-version' })).rejects.toThrow('expectedVersion');
+  await service.call('canvas-view', { sessionId, operation: 'apply', viewId, expectedVersion: controller.getSnapshot().version, requestId: 'apply' });
+  expect(controller.canvasViews().saved[viewId]).toBeDefined();
+});
+
+it('prepares, reads, and deletes a diagram context through one MCP tool with retry safety', async () => {
+  const controller = new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('Original')), initialCanvasState());
+  const backing = new Map<string, unknown>(), recordId = 'a'.repeat(64);
+  const receipts = new Map<string, unknown>();
+  let loseReply = true, mutations = 0;
+  const bridge: CanvasSessionPort = {
+    register() {}, list: () => [{ canvasId: 'canvas', documents: [{ documentId: 'doc', name: 'Test' }] }],
+    poll: async () => [], reply() {}, unregister() {}, dispose() {},
+    async dispatch(_canvasId, command) {
+      if (command.method === 'identity' || command.method === 'snapshot') return { ...controller.getSnapshot(), name: 'Test' };
+      if (command.method !== 'apply-diagram-context') throw Error('Unexpected canvas command');
+      const input = command.payload as { operation: 'prepare' | 'delete'; requestId: string; expectedVersion: number;
+        nodeId: string; expectedRevisionId: string; diagramId: string; context?: DiagramAgentContext };
+      if (!receipts.has(input.requestId)) {
+        if (input.operation === 'prepare') expect(backing.has(input.context!.backingRecordId!)).toBe(true);
+        mutations++;
+        const result = controller.applyUpdate(input.expectedVersion, [input.operation === 'prepare'
+          ? { method: 'diagram-context-set', nodeId: input.nodeId, expectedRevisionId: input.expectedRevisionId, context: input.context! }
+          : { method: 'diagram-context-delete', nodeId: input.nodeId, expectedRevisionId: input.expectedRevisionId }]);
+        receipts.set(input.requestId, { version: result.version, diagramId: input.diagramId, operation: input.operation });
+        if (loseReply) { loseReply = false; throw Error('CANVAS_TIMEOUT: lost acknowledgement'); }
+      }
+      return receipts.get(input.requestId);
+    }
+  };
+  const service = new AgentDiagrammingSessionService(bridge, {} as MappingDiagramService, {} as DiagramRepository,
+    new QuickJsAgentRuntime(), undefined, undefined, undefined, undefined,
+    { put: async snapshot => { backing.set(recordId, snapshot); return recordId; }, get: async id => backing.get(id) });
+  const attached = await service.call('exec', { requestId: 'attach', code: 'return canvas.attach({canvasId:"canvas",documentId:"doc"});' }) as { value: { sessionId: string } };
+  const sessionId = attached.value.sessionId, base = controller.getSnapshot().document.scene.contents.overview;
+  const prepare = { operation: 'prepare' as const, sessionId, nodeId: 'grid:overview', requestId: 'prepare',
+    expectedVersion: 0, expectedRevisionId: base.revisionId };
+  await expect(service.call('diagram-agent-context', prepare)).rejects.toThrow('CANVAS_TIMEOUT');
+  await service.call('diagram-agent-context', prepare);
+  expect(mutations).toBe(1);
+  expect(controller.getSnapshot().document.diagramContexts?.[base.diagramId]).toMatchObject({ backingRecordId: recordId });
+  expect(controller.getSnapshot().document.diagramContexts?.[base.diagramId]).not.toHaveProperty('snapshot');
+  const read = await service.call('diagram-agent-context', { operation: 'read', sessionId, nodeId: 'grid:overview', requestId: 'read' }) as any;
+  expect(read.status).toBe('ready');
+  expect(read.context.snapshot.source.sourceSessionId).toBe(base.diagramId);
+  await expect(service.call('diagram-agent-context', { ...prepare, operation: 'delete', requestId: 'read-only', expectedVersion: 1 }, true)).rejects.toThrow('READ_ONLY');
+  await service.call('diagram-agent-context', { ...prepare, operation: 'delete', requestId: 'delete', expectedVersion: 1 });
+  expect(mutations).toBe(2);
+  expect((await service.call('diagram-agent-context', { operation: 'read', sessionId, nodeId: 'grid:overview', requestId: 'read-again' }) as any).status).toBe('absent');
+});
 
 it('routes document copies through the live bridge and retries a lost reply without duplicating the copy', async () => {
   const source = new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('Unsaved source')), initialCanvasState(), 3);
@@ -226,4 +307,42 @@ it('reads retained variants and batches per-node review/application through the 
   expect(controller.getSnapshot().document.scene.contents.overview.content.ascii).toBe(changed.diagram.content.ascii);
   expect(await service.call('exec', request)).toEqual(accepted);
   controller.undo(); expect(controller.getSnapshot().document.scene.contents.overview.content.ascii).toBe(base.diagram.content.ascii);
+});
+
+it('routes chat-bound diagram tools directly and keeps standalone generation available', async () => {
+  const { vi } = await import('vitest');
+  const { DiagramRevisionReceiver } = await import('../../../../src/features/mapping/agent/diagramRevisionReceiver');
+  const generate = vi.fn(async () => ({ ascii: 'Delegated', structureKind: 'diagram' as const }));
+  const controller = new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('[Original]')), initialCanvasState());
+  const receiver = new DiagramRevisionReceiver(), persist = vi.fn(async () => {});
+  const bridge: CanvasSessionPort = {
+    register() {}, unregister() {}, dispose() {}, reply() {}, poll: async () => [],
+    list: () => [{ canvasId: 'canvas', documents: [{ documentId: 'doc', name: 'Test' }] }],
+    async dispatch(_id, command) {
+      if (command.method === 'snapshot' || command.method === 'identity') return { ...controller.getSnapshot(), revisions: controller.exportRevisions([], true), name: 'Test' };
+      if (command.method === 'apply-diagram-batch') return receiver.batch('doc', command.payload as any, controller, persist);
+      if (command.method === 'apply-diagram-revision') return receiver.apply('doc', command.payload as any, controller, persist);
+      throw Error(`Unexpected command: ${command.method}`);
+    }
+  };
+  const service = new AgentDiagrammingSessionService(bridge, {} as MappingDiagramService, {} as DiagramRepository, new QuickJsAgentRuntime(), undefined, new RevisionedDiagramService({ generate }));
+  const token = service.chatBindings.create();
+  service.chatBindings.bind(token, { workspaceInstanceId: 'canvas', documentId: 'doc' }, false);
+  const base = controller.getSnapshot().document.scene.contents.overview;
+  const input = { requestId: 'direct', expectedVersion: 0, operations: [{ nodeId: 'grid:overview', baseRevisionId: base.revisionId,
+    'edit-mode': 'in-place', 'replace-mode': 'diagram', edit: { ascii: '[Direct]', structureKind: 'diagram' } }] };
+  expect(await service.callBound(token, 'edit-diagram', input)).toMatchObject({ status: 'completed', documentVersion: 1 });
+  expect(generate).not.toHaveBeenCalled(); expect(persist).toHaveBeenCalledOnce();
+  expect(await service.callBound(token, 'edit-diagram', input)).toMatchObject({ status: 'completed', documentVersion: 1 });
+  service.chatBindings.bind(token, { workspaceInstanceId: 'canvas', documentId: 'doc' }, true);
+  await expect(service.callBound(token, 'edit-diagram', input)).rejects.toThrow('READ_ONLY');
+  service.chatBindings.bind(token, { workspaceInstanceId: 'canvas', documentId: 'doc' }, false);
+  const current = controller.getSnapshot().document.scene.contents.overview;
+  const prompt = { nodeId: 'grid:overview', baseRevisionId: current.revisionId, 'edit-mode': 'in-place', 'replace-mode': 'diagram', expectedVersion: 1, requestId: 'generate', prompt: 'Generate' };
+  await expect(service.callBound(token, 'edit-diagram', prompt)).rejects.toThrow();
+  const attached = await service.call('exec', { requestId: 'attach-generation', code: 'return canvas.attach({canvasId:"canvas",documentId:"doc"});' }) as { value: { sessionId: string } };
+  const run = await service.call('edit-diagram', { ...prompt, sessionId: attached.value.sessionId }) as { runId: string };
+  await vi.waitFor(async () => expect(await service.call('edit-diagram-status', { runId: run.runId })).toMatchObject({ status: 'completed' }));
+  expect(generate).toHaveBeenCalledOnce(); expect(controller.getSnapshot().document.scene.contents.overview.content.ascii).toBe('Delegated');
+  service.dispose();
 });

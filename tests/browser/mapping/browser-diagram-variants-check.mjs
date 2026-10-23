@@ -50,6 +50,7 @@ try {
     const open = async () => { await key('b', 2); await key('l'); await waitForSelector(cdp,'.llm-panel .prompt-body-text'); };
     try {
       await waitForSelector(cdp, '[data-grid-box=overview]');
+      assert.equal(await evaluate(cdp,"[...document.querySelectorAll('.mapping-grid-box-tools button')].some(button => button.textContent.trim() === 'Edit')"), false, 'Diagram toolbar has no Edit mode');
       await nodeClick('Payment'); await open();
       await click('[aria-label="Generate variants for review"]');
       await click('[aria-label="Variant count"]'); await key('ArrowDown'); await key('Enter');

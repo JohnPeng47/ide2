@@ -34,7 +34,8 @@ export function shortCanvasContext(context: ApiLiveCanvasContext) {
       const source = node.diagram?.sourceContext;
       const activeJumps = new Set(activeDiagramJumps(content, node.diagram?.jumps).map(jump => jump.id));
       return {
-        ...summary(node), revisionId: content.revisionId, asciiSha256: content.asciiSha256,
+        ...summary(node), baseRevisionId: node.diagram?.revisionId, revisionId: content.revisionId, asciiSha256: content.asciiSha256,
+        logicalNodes: Object.values(content.structure.nodes).map(node => ({ contentNodeId: node.id, line: node.line, nodeRef: node.nodeRef })),
         ascii: content.ascii, structureKind: content.structure.kind,
         ...(node.diagram?.highlights?.length ? { highlights: node.diagram.highlights.map(item => ({ ...item,
           status: highlightNodeIds(item).every(id => content.structure.nodes[id]) ? 'current' as const : 'stale' as const })) } : {}),

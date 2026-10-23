@@ -29,7 +29,7 @@ export function currentCanvasRead(state: State, options: { level: 'small' | 'ful
   const raw = options.level === 'small' ? textNodes(state, selected) : canvasDisplayNodes(state.document, state.canvas, state.version, state.cell, state.endpointBounds);
   const nodes = raw.filter(node => !selected || selected.has(node.id)).map(node => {
     if (node.layout !== 'grid') return node;
-    const { content, contentNodes: _nodes, diagram, geometry, ...rest } = node;
+    const { content, contentNodes: _nodes, nodeRefs, diagram, geometry, ...rest } = node;
     const { asciiSha256: _hash, ...text } = content ?? {};
     const { content: _content, sourceContext: _source, ...metadata } = diagram ?? {};
     const { contentHash: _sourceHash, ...sourceContext } = diagram?.sourceContext ?? {};
@@ -37,7 +37,7 @@ export function currentCanvasRead(state: State, options: { level: 'small' | 'ful
     const activeJumps = new Set(diagram && activeDiagramJumps(diagram.content, diagram.jumps).map(j => j.id));
     return { ...rest, ...(options.level === 'full' ? { geometry } : {}),
       ...(content ? { content: { ...text, structure: { ...content.structure, nodes: Object.fromEntries(diagramContentNodes(content).map(n => [n.id, {
-        ...n, sourceRanges: diagram?.sourceContext.mappings.filter(m => m.line === n.line && m.startColumn <= n.endColumn && m.endColumn >= n.startColumn)
+        ...n, ...(nodeRefs?.[n.id] ? { nodeRef: nodeRefs[n.id] } : {}), sourceRanges: diagram?.sourceContext.mappings.filter(m => m.line === n.line && m.startColumn <= n.endColumn && m.endColumn >= n.startColumn)
           .flatMap(m => { const range = diagram.sourceContext.evidence[m.entityId]?.sourceRanges[m.sourceRangeIndex];
             return range ? [{ path: range.path, startLine: range.startLine, endLine: range.endLine }] : []; }) ?? []
       }])) } } } : {}),

@@ -1,5 +1,7 @@
 import { AgentContext } from '../../../../domain/core/agents/agentContext';
+import { compileDiagramAgentContext, storeDiagramAgentContext, type DiagramAgentContextStore } from '../../../../domain/core/diagrams/diagramAgentContext';
 import { expect, it, vi } from 'vitest';
+import { editDiagramSchema } from '../../../../domain/mapping/agent/diagramEdit';
 import { DiagramEditService } from '../../../../application/mapping/agent/diagramEditService';
 import { RevisionedDiagramService, type DiagramGenerator, type DiagramGenerationRequest, type GenerationOptions } from '../../../../domain/core/diagrams/diagramService';
 import { singleDiagramScene } from '../../../../domain/core/diagrams/projectDiagramCanvas';
@@ -10,7 +12,8 @@ import { DiagramRevisionReceiver } from '../../../../src/features/mapping/agent/
 import { diagramContentNodes } from '../../../../domain/core/diagrams/diagramContentNodes';
 import { validateConnectionAnchor, type ContentNodeAnchor, type DiagramConnection } from '../../../../domain/core/diagrams/diagramConnection';
 
-function fixture(generator: DiagramGenerator = { generate: async () => ({ ascii: 'Edited\n`-- New branch', structureKind: 'tree' }) }) {
+function fixture(generator: DiagramGenerator = { generate: async () => ({ ascii: 'Edited\n`-- New branch', structureKind: 'tree' }) },
+  contextStore?: DiagramAgentContextStore) {
   const diagrams = new RevisionedDiagramService(generator);
   const controller = new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('Original')), initialCanvasState());
   const base = controller.getSnapshot().document.scene.contents.overview;
@@ -19,8 +22,8 @@ function fixture(generator: DiagramGenerator = { generate: async () => ({ ascii:
     receiver.apply('doc', structuredClone(input), controller, persist));
   const service = new DiagramEditService(diagrams, {
     snapshot: async (_session, ids) => structuredClone({ ...controller.getSnapshot(), revisions: controller.exportRevisions(ids ?? [], true), name: 'Test' }), apply
-  });
-  const input = { sessionId: 'session', requestId: 'edit', expectedVersion: 0, baseRevisionId: base.revisionId,
+  }, contextStore);
+  const input = { 'edit-mode': 'in-place' as const, 'replace-mode': 'diagram' as const, sessionId: 'session', requestId: 'edit', expectedVersion: 0, baseRevisionId: base.revisionId,
     nodeId: 'grid:overview', prompt: 'Add a branch' };
   return { diagrams, controller, base, receiver, persist, apply, service, input };
 }
@@ -57,13 +60,44 @@ it('publishes panel context only after persistence and passes it into the next g
   expect(() => f.service.start({ ...input, requestId: 'ambiguous', agentContextId: 'uploaded', agentContext: completed.agentContext })).toThrow('only one agent context');
 });
 
-it('installs exactly the generated revision once and restores its identity through durable undo/redo', async () => {
+it('uses diagram context for diagram edits and lets explicit context take precedence', async () => {
+  const generate = vi.fn(async (_request: DiagramGenerationRequest) => ({ ascii: 'Edited\n`-- New branch', structureKind: 'tree' as const }));
+  const f = fixture({ generate });
+  const bound = compileDiagramAgentContext(f.base);
+  f.controller.applyUpdate(0, [{ method: 'diagram-context-set', nodeId: 'grid:overview', expectedRevisionId: f.base.revisionId, context: bound }]);
+  const input = { ...f.input, requestId: 'context-edit', expectedVersion: 1 };
+  await settled(f.service, f.service.start(input).runId, 'completed');
+  expect(generate.mock.calls[0][0]).toMatchObject({ agentContext: bound.snapshot });
+
+  const other = fixture({ generate });
+  const explicit = AgentContext.fromMessages('panel', [{ role: 'user', content: [{ type: 'text', text: 'Panel direction' }], timestamp: 0 }]).toSnapshot();
+  const compiled = compileDiagramAgentContext(other.base);
+  other.controller.applyUpdate(0, [{ method: 'diagram-context-set', nodeId: 'grid:overview', expectedRevisionId: other.base.revisionId, context: compiled }]);
+  await settled(other.service, other.service.start({ ...other.input, requestId: 'explicit', expectedVersion: 1,
+    llmSessionId: 'panel', agentContext: explicit }).runId, 'completed');
+  expect(generate.mock.calls[1][0].agentContext).toEqual(explicit);
+});
+
+it('loads a diagram context from its backing record for diagram edits', async () => {
+  const saved = new Map<string, unknown>(), recordId = 'b'.repeat(64);
+  const store: DiagramAgentContextStore = { put: async snapshot => { saved.set(recordId, snapshot); return recordId; },
+    get: async id => saved.get(id) };
+  const generate = vi.fn(async (_request: DiagramGenerationRequest) => ({ ascii: 'Edited\n`-- New branch', structureKind: 'tree' as const }));
+  const f = fixture({ generate }, store);
+  const compiled = compileDiagramAgentContext(f.base), bound = await storeDiagramAgentContext(compiled, store);
+  f.controller.applyUpdate(0, [{ method: 'diagram-context-set', nodeId: 'grid:overview', expectedRevisionId: f.base.revisionId, context: bound }]);
+  await settled(f.service, f.service.start({ ...f.input, expectedVersion: 1 }).runId, 'completed');
+  expect(generate.mock.calls[0][0]).toMatchObject({ agentContext: compiled.snapshot });
+});
+
+it.each(['in-place'] as const)('installs exactly the generated revision once with mode %s and restores its identity through durable undo/redo', async mode => {
   const generate = vi.fn(async () => ({ ascii: 'Edited\n`-- New branch', structureKind: 'tree' as const }));
-  const f = fixture({ generate }), run = f.service.start(f.input);
-  expect(f.service.start(f.input).runId).toBe(run.runId);
+  const f = fixture({ generate }), input = { ...f.input, 'edit-mode': mode }, run = f.service.start(input);
+  expect(f.service.start(input).runId).toBe(run.runId);
   const complete = await settled(f.service, run.runId, 'completed');
   expect(generate).toHaveBeenCalledOnce(); expect(f.persist).toHaveBeenCalledOnce();
-  expect(f.service.start(f.input)).toEqual(complete);
+  expect(f.service.start(input)).toEqual(complete);
+  expect(Object.keys(f.controller.getSnapshot().document.variants ?? {})).toHaveLength(0);
   expect(f.controller.getSnapshot().version).toBe(1);
   expect(f.diagrams.listRevisions(f.base.diagramId).map(r => r.id)).toEqual([f.base.revisionId, complete.result!.revisionId]);
   expect(f.diagrams.getRevision(complete.result!.revisionId).parentId).toBe(f.base.revisionId);
@@ -73,6 +107,41 @@ it('installs exactly the generated revision once and restores its identity throu
   restored.undo(); expect(restored.getSnapshot().document.scene.contents.overview.revisionId).toBe(f.base.revisionId);
   restored.undo(true); expect(restored.getSnapshot().document.scene.contents.overview.revisionId).toBe(complete.result!.revisionId);
   expect(() => f.service.start({ ...f.input, prompt: 'different' })).toThrow('REQUEST_ID_CONFLICT');
+});
+
+it('saves variant mode as a new durable alternative, retries persistence once, and supports undo/redo', async () => {
+  const generate = vi.fn(async (request: DiagramGenerationRequest) => ({ ascii: 'Alternative\n`-- Branch', structureKind: request.context!.diagram.content.structure.kind }));
+  const f = fixture({ generate }), input = { ...f.input, 'edit-mode': 'variant' as const };
+  f.persist.mockRejectedValueOnce(Error('Disk unavailable'));
+  const run = f.service.start(input);
+  await settled(f.service, run.runId, 'awaiting-acknowledgement');
+  f.service.start(input);
+  const complete = await settled(f.service, run.runId, 'completed');
+  expect(generate).toHaveBeenCalledOnce();
+  expect(complete.variants).toHaveLength(1);
+  expect(f.controller.getSnapshot().document.scene.contents.overview).toEqual(f.base);
+  const id = complete.variants![0].id, snapshot = f.controller.getSnapshot();
+  expect(snapshot.document.variants![id]).toMatchObject({ ownerNodeId: 'root', baseRevisionId: f.base.revisionId,
+    headRevisionId: complete.variants![0].revisionId, name: 'Alternative' });
+  const restored = new MappingDocumentController(structuredClone(snapshot.document), snapshot.canvas, 0,
+    undefined, undefined, JSON.parse(JSON.stringify(f.controller.exportHistory())));
+  restored.undo(); expect(restored.getSnapshot().document.variants?.[id]).toBeUndefined();
+  restored.undo(true); expect(restored.getSnapshot().document.variants![id]).toEqual(snapshot.document.variants![id]);
+  expect(() => f.service.start({ ...input, 'edit-mode': 'in-place' })).toThrow('REQUEST_ID_CONFLICT');
+  const second = await settled(f.service, f.service.start({ ...input, requestId: 'second', expectedVersion: 1 }).runId, 'completed');
+  expect(second.variants![0].id).not.toBe(id);
+  expect(Object.keys(f.controller.getSnapshot().document.variants!)).toHaveLength(2);
+});
+
+it('validates modes and rejects removed Edit controls and contradictory variant options', () => {
+  const f = fixture();
+  expect(editDiagramSchema.parse({ ...f.input, 'edit-mode': 'variant' })['edit-mode']).toBe('variant');
+  expect(() => editDiagramSchema.parse({ ...f.input, 'edit-mode': 'other' })).toThrow();
+  expect(() => editDiagramSchema.parse({ ...f.input, generationMode: 'single-turn' })).toThrow();
+  expect(() => f.service.start({ ...f.input, 'edit-mode': 'in-place', variant: { name: 'Option', count: 1 } })).toThrow('cannot include variant');
+  expect(() => editDiagramSchema.parse({ ...f.input, 'edit-mode': undefined })).toThrow();
+  expect(() => editDiagramSchema.parse({ ...f.input, 'replace-mode': undefined })).toThrow();
+  expect(() => editDiagramSchema.parse({ ...f.input, mode: 'variant' })).toThrow();
 });
 
 it('retains an off-canvas candidate when a concurrent canvas edit wins', async () => {
@@ -195,7 +264,7 @@ it('preserves incoming and outgoing subtree-edit connections across shifted line
   ];
   f.controller.applyUpdate(1, originalEdges.map(edge => ({ method: 'edge-create' as const, edge })));
   const input = { ...f.input, expectedVersion: 2, baseRevisionId: base.revisionId,
-    subtree: { contentNodeId: anchor('grid:overview', 2).contentNodeId, revisionId: base.content.revisionId } };
+    'replace-mode': 'subnode-single' as const, subtree: { contentNodeId: anchor('grid:overview', 2).contentNodeId, revisionId: base.content.revisionId } };
   const complete = await settled(f.service, f.service.start(input).runId, 'completed');
   expect(complete.result!.unresolvedEdgeIds).toEqual(['replaced']);
   const after = f.controller.getSnapshot();
@@ -263,8 +332,8 @@ it('generates multiple retained subtree variants, retries once, and refines one 
   f.controller.applyUpdate(0, [{ method: 'replace', nodeId: 'grid:overview', ascii: 'Shop\n|-- Payment\n|   `-- Capture\n`-- Cart', structureKind: 'tree' }]);
   const base = f.controller.getSnapshot().document.scene.contents.overview;
   const payment = diagramContentNodes(base.content).find(n => n.label === 'Payment')!;
-  const input = { ...f.input, expectedVersion: 1, baseRevisionId: base.revisionId,
-    subtree: { contentNodeId: payment.id, revisionId: base.content.revisionId }, variant: { name: 'Payment option', count: 3 } };
+  const input = { ...f.input, 'edit-mode': 'variant' as const, expectedVersion: 1, baseRevisionId: base.revisionId,
+    'replace-mode': 'subnode-single' as const, subtree: { contentNodeId: payment.id, revisionId: base.content.revisionId }, variant: { name: 'Payment option', count: 3 } };
   f.persist.mockRejectedValueOnce(Error('disk unavailable'));
   const run = f.service.start(input);
   await settled(f.service, run.runId, 'awaiting-acknowledgement');
@@ -275,11 +344,43 @@ it('generates multiple retained subtree variants, retries once, and refines one 
   expect(f.controller.getSnapshot().document.scene.contents.overview.revisionId).toBe(base.revisionId);
   expect(Object.keys(f.controller.getSnapshot().document.variants!)).toHaveLength(3);
   const [a, b] = complete.variants!;
-  const next = f.service.start({ ...input, requestId: 'refine', expectedVersion: 2, variant: { name: 'Refined', count: 1, variantId: a.id } });
+  const next = f.service.start({ ...input, subtree: undefined, requestId: 'refine', expectedVersion: 2, variant: { name: 'Refined', count: 1, variantId: a.id } });
   await settled(f.service, next.runId, 'completed');
   const variants = f.controller.getSnapshot().document.variants!;
   expect(variants[a.id].revisionIds).toHaveLength(2);
   expect(variants[b.id].headRevisionId).toBe(b.revisionId);
   expect(f.controller.getSnapshot().document.scene.contents.overview.revisionId).toBe(base.revisionId);
   expect(f.diagrams.getRevision(variants[a.id].headRevisionId).diagram.content.ascii).not.toContain('[[keep:');
+});
+
+it.each(['in-place', 'variant'] as const)('generates disjoint edits in one request with %s mode, persists and undoes atomically', async editMode => {
+  const generate = vi.fn(async (request: DiagramGenerationRequest) => {
+    const lines = request.context!.diagram.content.ascii.split('\n');
+    for (const range of request.editRanges!) lines[range.startLine - 1] += ' revised';
+    for (const node of diagramContentNodes(request.context!.diagram.content)) lines[node.line - 1] += ` [[keep:${request.nodeRefs![node.id]}]]`;
+    return { ascii: lines.join('\n'), structureKind: 'tree' as const, replacementRanges: request.editRanges };
+  });
+  const f = fixture({ generate });
+  f.controller.applyUpdate(0, [{ method: 'replace', nodeId: 'grid:overview', ascii: 'Root\n|-- A\n|-- B\n`-- C', structureKind: 'tree' }]);
+  const base = f.controller.getSnapshot().document.scene.contents.overview;
+  const subtrees = diagramContentNodes(base.content).filter(node => ['A', 'C'].includes(node.label)).map(node => ({ contentNodeId: node.id, revisionId: base.content.revisionId }));
+  const request = { ...f.input, expectedVersion: 1, baseRevisionId: base.revisionId, 'edit-mode': editMode, 'replace-mode': 'multi-disjoint' as const, subtrees };
+  const completed = await settled(f.service, f.service.start(request).runId, 'completed');
+  expect(generate).toHaveBeenCalledOnce(); expect(f.persist).toHaveBeenCalledOnce();
+  expect(f.controller.getSnapshot().version).toBe(2);
+  const edited = f.diagrams.getRevision(completed.result!.revisionId);
+  expect(edited.parentId).toBe(base.revisionId);
+  expect(edited.diagram.content.ascii).toBe('Root\n|-- A revised\n|-- B\n`-- C revised');
+  if (editMode === 'variant') {
+    expect(f.controller.getSnapshot().document.scene.contents.overview.revisionId).toBe(base.revisionId);
+    const id = completed.variants![0].id;
+    expect(f.controller.getSnapshot().document.variants![id].replacementScope).toEqual({ mode: 'multi-disjoint', ranges: [{ startLine: 2, endLine: 2 }, { startLine: 4, endLine: 4 }] });
+    const refined = await settled(f.service, f.service.start({ ...request, expectedVersion: 2, requestId: 'refine-multi', subtrees: undefined,
+      variant: { name: 'Refined', count: 1, variantId: id } }).runId, 'completed');
+    expect(f.diagrams.getRevision(refined.result!.revisionId).diagram.content.ascii).toBe('Root\n|-- A revised revised\n|-- B\n`-- C revised revised');
+    f.controller.undo();
+  }
+  f.controller.undo();
+  expect(f.controller.getSnapshot().document.scene.contents.overview.revisionId).toBe(base.revisionId);
+  expect(Object.keys(f.controller.getSnapshot().document.variants ?? {})).toHaveLength(0);
 });

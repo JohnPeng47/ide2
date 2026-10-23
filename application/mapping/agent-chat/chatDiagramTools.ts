@@ -1,19 +1,34 @@
+import { directOperationSchemas, directDiagramInstructions, isDiagramTool, type DiagramTool } from '../../../domain/mapping/agent/diagramBatch';
+import { diagramOutputFormat } from '../../../domain/mapping/agent/promptTemplates';
+import { canvasViewCommandSchema } from '../../../domain/core/diagrams/canvasView';
 import { highlightColorSchema, highlightTargetsSchema, highlightNodeIds } from '../../../domain/core/diagrams/diagramHighlight';
 import type { CanvasMutationResult } from '../../../domain/mapping/agent/mutationReceipt';
 import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
-import type { EditDiagramInput, DiagramEditRun } from '../../../domain/mapping/agent/diagramEdit';
+import type { EditDiagramInput } from '../../../domain/mapping/agent/diagramEdit';
 import type { LiveDocumentSnapshot } from '../../../domain/mapping/agent/contracts';
 import { diagramContentNodes } from '../../../domain/core/diagrams/diagramContentNodes';
-import { diagramSubtreeRange } from '../../../domain/core/diagrams/diagramSubtreeEdit';
+import { diagramReplacementRanges, diagramSubtreeRange } from '../../../domain/core/diagrams/diagramSubtreeEdit';
 import { findBox } from '../../../domain/mapping/workspace/canvasDisplayNode';
 import type { AgentDiagrammingSessionService } from '../agent/sessionService';
 import type { ChatTools, ChatToolSession } from './ports';
 
-const editSchema = z.object({
-  reference: z.number().int().min(1).max(20).optional(), nodeId: z.string().min(1).max(200).optional(),
-  prompt: z.string().trim().min(1).max(20_000), requestId: z.string().min(1).max(200)
-}).strict();
+const targetFields = { reference: z.number().int().min(1).max(20).optional(), nodeId: z.string().min(1).max(200).optional(), baseRevisionId: z.string().min(1).max(200).optional(),
+  contentNodeIds: z.array(z.string().min(1).max(500)).min(1).max(100).optional() };
+const chatOperationSchemas = {
+  'edit-diagram': directOperationSchemas['edit-diagram'].omit({ nodeId: true, baseRevisionId: true, subtree: true, subtrees: true }).extend(targetFields).strict(),
+  'create-diagram': directOperationSchemas['create-diagram'].omit({ nodeId: true, baseRevisionId: true }).extend(targetFields).strict(),
+  'extend-diagram': directOperationSchemas['extend-diagram'].omit({ nodeId: true, baseRevisionId: true }).extend(targetFields).strict()
+};
+const chatSchemas = {
+  'edit-diagram': z.object({ requestId: z.string().min(1).max(200), operations: z.array(chatOperationSchemas['edit-diagram']).min(1).max(20) }).strict(),
+  'create-diagram': z.object({ requestId: z.string().min(1).max(200), operations: z.array(chatOperationSchemas['create-diagram']).min(1).max(20) }).strict(),
+  'extend-diagram': z.object({ requestId: z.string().min(1).max(200), operations: z.array(chatOperationSchemas['extend-diagram']).min(1).max(20) }).strict()
+};
+type ChatDiagramInput = z.infer<typeof chatSchemas[DiagramTool]>;
+const viewSchema = canvasViewCommandSchema.extend({ requestId: z.string().min(1).max(200) }).strict();
+const contextSchema = z.object({ operation: z.enum(['prepare', 'read', 'delete']), reference: z.number().int().min(1).max(20).optional(),
+  nodeId: z.string().min(1).max(200).optional(), requestId: z.string().min(1).max(200) }).strict();
 const runSchema = z.object({ runId: z.string().min(1).max(200) }).strict();
 const highlightTargetFields = { reference: z.number().int().min(1).max(20).optional(), nodeId: z.string().min(1).max(200).optional(), requestId: z.string().min(1).max(200) };
 const highlightSchema = highlightTargetsSchema.safeExtend({ ...highlightTargetFields, color: highlightColorSchema.optional() }).strict();
@@ -24,37 +39,93 @@ export class ChatDiagramTools implements ChatTools {
   definitions: ChatTools['definitions'] = [
     { type: 'function', name: 'highlight-node', description: 'Only when explicitly requested by the user: save a colored highlight on a diagram or selected nodes. Specify either reference ([ref N] from the latest user message) or nodeId from Read Canvas, with optional contentNodeIds for multiple current full-ID anchors or contentNodeId for one. All targets must belong to that diagram. A selected nodes reference saves one highlight spanning all its members. The group shares one saved ID, color, and markdownUrl; removing the ID removes the entire group. Optional color: yellow (default), blue, green, pink, purple, orange or #RRGGBB. Returns saved highlight IDs and markdownUrl destinations for explicitly requested links. Undoable, automatically persisted. Requires Workspace access. Use a unique requestId; retry identical arguments with the same ID.', inputSchema: z.toJSONSchema(highlightSchema) },
     { type: 'function', name: 'remove-highlights', description: 'Remove saved diagram highlights when the user requests it. Specify reference or nodeId, plus optional highlightIds to remove specific annotations. Omit highlightIds to clear all highlights in that diagram. Undoable and automatically persisted. Requires Workspace access. Retry identical arguments with the same requestId.', inputSchema: z.toJSONSchema(removeHighlightsSchema) },
-    { type: 'function', name: 'edit-diagram', description: 'Ask the diagram-edit LLM to revise a live diagram and apply one undoable, persisted revision. Specify either reference (the 1-based [ref N] from the latest user message), or nodeId (diagram id from Read Canvas, in the canvas active when the message was sent). Node references must select one complete subtree; a diagram reference edits the whole diagram. The host captures current versions and rejects stale references. Use a unique requestId; retry identical arguments with the same ID after an uncertain outcome. Returns runId: poll edit-diagram-status until completed, conflict or failed. Requires Workspace access.', inputSchema: z.toJSONSchema(editSchema) },
+    { type: 'function', name: 'canvas-view', description: 'Record and restore named views of the active canvas. operation: start with name, stop to save, cancel to discard recording metadata while keeping edits, list, read with viewId, apply with viewId, or delete with viewId. Records committed canvas changes and diagram revisions/variants. Apply restores the complete saved state as one undoable change, without merging or rerunning generation. Stop recording before applying. Mutations require Workspace access. Use a unique requestId and retry identical arguments after uncertain outcomes.', inputSchema: z.toJSONSchema(viewSchema) },
+    ...(['edit-diagram', 'create-diagram', 'extend-diagram'] as const).map(name => ({ type: 'function' as const, name, description: directDiagramInstructions(name) + diagramOutputFormat(name, 'optional', `${name} using operations[].${name === 'edit-diagram' ? 'edit' : 'diagram'}`), inputSchema: z.toJSONSchema(chatSchemas[name]) })),
+    { type: 'function', name: 'diagram-agent-context', description: 'Prepare, read, or delete a diagram-owned AgentContext. Specify operation and either a selected reference or a diagram nodeId from Read Canvas. A node selection targets its owning diagram. Prepare compiles current source evidence into a dedicated disk record for later diagram edits; read loads the stored context and reports whether its source evidence is current; delete removes the diagram binding. Prepare and delete are undoable and require Workspace access. Retry identical mutation arguments with the same requestId after an uncertain outcome.', inputSchema: z.toJSONSchema(contextSchema) },
     { type: 'function', name: 'edit-diagram-status', description: 'Check a diagram edit started by this conversation. Completed means the browser applied the revision and persisted workspace history. For awaiting-acknowledgement, retry the original edit-diagram arguments and requestId.', inputSchema: z.toJSONSchema(runSchema) },
     { type: 'function', name: 'cancel-diagram-edit', description: 'Cancel a diagram edit from this conversation while it is generating. Application already in progress cannot be undone by cancellation; inspect the returned status.', inputSchema: z.toJSONSchema(runSchema) }
   ];
   private highlightRequests = new Map<string, { signature: string; prepared: Promise<{ input: Record<string, unknown>; documentId: string }> }>();
   private attachments = new Map<string, Promise<string>>();
-  private requests = new Map<string, { signature: string; input: Promise<EditDiagramInput> }>();
+  private requests = new Map<string, { signature: string; input: Promise<unknown> }>();
+  private contextRequests = new Map<string, { signature: string; prepared: Promise<Record<string, unknown>> }>();
+  private viewRequests = new Map<string, { signature: string; prepared: Promise<Record<string, unknown>> }>();
   private owners = new Map<string, string>();
-  constructor(private agent: Pick<AgentDiagrammingSessionService, 'call' | 'bridge'>) {}
+  constructor(private agent: Pick<AgentDiagrammingSessionService, 'call' | 'bridge' | 'submitDirect' | 'projection' | 'resolveDiagramArguments'>) {}
   async call(name: string, raw: unknown, session: ChatToolSession) {
     if (name === 'highlight-node' || name === 'remove-highlights') return this.highlight(name, raw, session);
-    if (name !== 'edit-diagram') {
+    if (name === 'canvas-view') return this.canvasView(raw, session);
+    if (name === 'diagram-agent-context') return this.prepareContext(raw, session);
+    if (!isDiagramTool(name)) {
       if (name !== 'edit-diagram-status' && name !== 'cancel-diagram-edit') throw Error('Unknown diagram tool');
       const input = runSchema.parse(raw);
       if (this.owners.get(input.runId) !== session.id) throw Error('This edit run does not belong to this conversation, or the backend was restarted.');
       return this.agent.call(name, input);
     }
     if (session.settings.sandbox === 'read-only') throw Error('Diagram editing requires Workspace access. Change Agent Chat access from Read only to Workspace.');
-    const input = editSchema.parse(raw);
-    if ((input.reference === undefined) === (input.nodeId === undefined)) throw Error('Specify either reference or nodeId.');
-    const key = JSON.stringify([session.id, input.requestId]), signature = JSON.stringify(input);
+    const input = chatSchemas[name].parse(raw);
+    const key = JSON.stringify([session.id, input.requestId]), signature = JSON.stringify({ name, input });
     let request = this.requests.get(key);
     if (request && request.signature !== signature) throw Error('REQUEST_ID_CONFLICT: edit arguments differ');
     if (!request) {
       if (this.requests.size >= 500) throw Error('Chat edit capacity reached; restart the backend.');
-      request = { signature, input: this.prepare(input, session).catch(error => { this.requests.delete(key); throw error; }) };
+      request = { signature, input: this.prepare(input, session, name).catch(error => { this.requests.delete(key); throw error; }) };
       this.requests.set(key, request);
     }
-    const result = await this.agent.call('edit-diagram', await request.input) as DiagramEditRun;
+    const result = await this.agent.submitDirect(name, await request.input);
     this.owners.set(result.runId, session.id);
     return result;
+  }
+  private async canvasView(raw: unknown, session: ChatToolSession) {
+    const input = viewSchema.parse(raw), read = ['list', 'read'].includes(input.operation);
+    if (!read && session.settings.sandbox === 'read-only') throw Error('CanvasView changes require Workspace access.');
+    const canvas = session.canvasContext?.canvas;
+    if (!canvas) throw Error('Open a live canvas and send another message or use Read Canvas.');
+    const prepare = async () => {
+      const sessionId = await this.attachment(canvas);
+      const state = read ? undefined : await this.agent.bridge.dispatch(canvas.workspaceInstanceId,
+        { method: 'identity', documentId: canvas.documentId }) as { version: number };
+      return { ...input, sessionId, requestId: randomUUID(), ...(state ? { expectedVersion: state.version } : {}) };
+    };
+    if (read) return this.agent.call('canvas-view', await prepare());
+    const key = JSON.stringify([session.id, input.requestId]), signature = JSON.stringify(input);
+    let request = this.viewRequests.get(key);
+    if (request && request.signature !== signature) throw Error('REQUEST_ID_CONFLICT: CanvasView arguments differ');
+    if (!request) {
+      if (this.viewRequests.size >= 500) throw Error('CanvasView request capacity reached; restart the backend.');
+      request = { signature, prepared: prepare().catch(error => { this.viewRequests.delete(key); throw error; }) };
+      this.viewRequests.set(key, request);
+    }
+    return this.agent.call('canvas-view', await request.prepared);
+  }
+  private async prepareContext(raw: unknown, session: ChatToolSession) {
+    const input = contextSchema.parse(raw);
+    if (session.settings.sandbox === 'read-only' && input.operation !== 'read') throw Error('Diagram context changes require Workspace access. Change Agent Chat access from Read only to Workspace.');
+    if ((input.reference === undefined) === (input.nodeId === undefined)) throw Error('Specify either reference or nodeId.');
+    const key = JSON.stringify([session.id, input.requestId]), signature = JSON.stringify(input);
+    let request = this.contextRequests.get(key);
+    if (request && request.signature !== signature) throw Error('REQUEST_ID_CONFLICT: context arguments differ');
+    if (!request) {
+      if (this.contextRequests.size >= 500) throw Error('Chat context preparation capacity reached; restart the backend.');
+      request = { signature, prepared: this.prepareContextInput(input, session).catch(error => { this.contextRequests.delete(key); throw error; }) };
+      this.contextRequests.set(key, request);
+    }
+    return this.agent.call('diagram-agent-context', await request.prepared);
+  }
+  private async prepareContextInput(input: z.infer<typeof contextSchema>, session: ChatToolSession) {
+    const reference = input.reference === undefined ? undefined : session.canvasContext?.references[input.reference - 1];
+    if (input.reference !== undefined && !reference) throw Error('Reference unavailable. Select the diagram and send it with your message.');
+    const canvas = reference?.canvas ?? session.canvasContext?.canvas;
+    if (!canvas) throw Error('Open a live canvas and send another message or use Read Canvas.');
+    const nodeId = reference?.displayNodeId ?? input.nodeId!;
+    const snapshot = await this.agent.bridge.dispatch(canvas.workspaceInstanceId, { method: 'snapshot', documentId: canvas.documentId }) as LiveDocumentSnapshot;
+    const box = nodeId.startsWith('grid:') && findBox(snapshot.document.scene.root, nodeId.slice(5));
+    const diagram = box && box.kind === 'diagram' ? snapshot.document.scene.contents[box.contentId] : undefined;
+    if (!diagram) throw Error('The target diagram is no longer available. Read Canvas again.');
+    if (reference && (reference.reference.diagramId !== diagram.diagramId || reference.reference.revisionId !== diagram.revisionId))
+      throw Error('VERSION_CONFLICT: the referenced diagram changed. Reselect it and send the current reference.');
+    return { operation: input.operation, sessionId: await this.attachment(canvas), requestId: randomUUID(), nodeId,
+      ...(input.operation === 'read' ? {} : { expectedVersion: snapshot.version, expectedRevisionId: diagram.revisionId }) };
   }
   private async highlight(name: 'highlight-node' | 'remove-highlights', raw: unknown, session: ChatToolSession) {
     if (session.settings.sandbox === 'read-only') throw Error('Highlights require Workspace access. Change Agent Chat access from Read only to Workspace.');
@@ -107,29 +178,57 @@ export class ChatDiagramTools implements ChatTools {
     }
     return attachment;
   }
-  private async prepare(input: z.infer<typeof editSchema>, session: ChatToolSession): Promise<EditDiagramInput> {
-    const reference = input.reference === undefined ? undefined : session.canvasContext?.references[input.reference - 1];
-    if (input.reference !== undefined && !reference) throw Error('Reference unavailable. Select the diagram or subtree and send it with your message.');
-    const canvas = reference?.canvas ?? session.canvasContext?.canvas;
-    if (!canvas) throw Error('Open a live canvas and send another message or use Read Canvas.');
-    const nodeId = reference?.displayNodeId ?? input.nodeId!;
-    const snapshot = await this.agent.bridge.dispatch(canvas.workspaceInstanceId, { method: 'snapshot', documentId: canvas.documentId }) as LiveDocumentSnapshot;
-    const box = nodeId.startsWith('grid:') && findBox(snapshot.document.scene.root, nodeId.slice(5));
-    const diagram = box && box.kind === 'diagram' ? snapshot.document.scene.contents[box.contentId] : undefined;
-    if (!diagram) throw Error('The target diagram is no longer available. Read Canvas again.');
-    if (reference && (reference.reference.diagramId !== diagram.diagramId || reference.reference.revisionId !== diagram.revisionId))
-      throw Error('VERSION_CONFLICT: the referenced diagram changed. Reselect it and send the current reference.');
-    let subtree: EditDiagramInput['subtree'];
-    if (reference?.reference.kind === 'nodes') {
-      const ids = new Set(reference.reference.nodeIds), nodes = diagramContentNodes(diagram.content);
-      const roots = nodes.filter(node => ids.has(node.id) && (!node.parentId || !ids.has(node.parentId)));
-      if (roots.length !== 1) throw Error('Select one complete subtree or the whole diagram to edit.');
-      const range = diagramSubtreeRange(diagram, roots[0].id);
-      const members = nodes.filter(node => node.line >= range.startLine && node.line <= range.endLine);
-      if (members.length !== ids.size || members.some(node => !ids.has(node.id))) throw Error('Select one complete subtree without excluded nodes, or the whole diagram to edit.');
-      subtree = { contentNodeId: roots[0].id, revisionId: diagram.content.revisionId };
+  private async prepare(input: ChatDiagramInput, session: ChatToolSession, operation: DiagramTool): Promise<unknown> {
+    const prepared: Record<string, unknown>[] = [];
+    let canvas: { workspaceInstanceId: string; documentId: string } | undefined;
+    let snapshot: LiveDocumentSnapshot | undefined;
+    for (let index = 0; index < input.operations.length; index++) {
+      try {
+        let item = input.operations[index];
+        if ((item.reference === undefined) === (item.nodeId === undefined)) throw Error('Specify either reference or nodeId');
+        const reference = item.reference === undefined ? undefined : session.canvasContext?.references[item.reference - 1];
+        if (item.reference !== undefined && !reference) throw Error('Reference unavailable; select it again');
+        const target = reference?.canvas ?? session.canvasContext?.canvas;
+        if (!target) throw Error('Open a live canvas and read it again');
+        if (canvas && (canvas.workspaceInstanceId !== target.workspaceInstanceId || canvas.documentId !== target.documentId)) throw Error('Batch operations must target one canvas document');
+        canvas = target;
+        item = this.agent.resolveDiagramArguments(await this.attachment(canvas), item);
+        snapshot ??= await this.agent.bridge.dispatch(canvas.workspaceInstanceId, { method: 'snapshot', documentId: canvas.documentId }) as LiveDocumentSnapshot;
+        const nodeId = reference?.displayNodeId ?? item.nodeId!;
+        const box = nodeId.startsWith('grid:') && findBox(snapshot.document.scene.root, nodeId.slice(5));
+        const diagram = box && box.kind === 'diagram' ? snapshot.document.scene.contents[box.contentId] : undefined;
+        const unanchored = operation === 'create-diagram' && nodeId === 'canvas';
+        if (!diagram && !unanchored) throw Error('Target diagram unavailable');
+        const baseRevisionId = reference?.reference.revisionId ?? item.baseRevisionId;
+        if (reference && item.baseRevisionId && item.baseRevisionId !== reference.reference.revisionId) throw Error('VERSION_CONFLICT: baseRevisionId disagrees with the reference');
+        if (!baseRevisionId || diagram && (baseRevisionId !== diagram.revisionId || reference && reference.reference.diagramId !== diagram.diagramId))
+          throw Error('VERSION_CONFLICT: read the current diagram and supply its baseRevisionId');
+        const { reference: _ref, contentNodeIds: _ids, ...fields } = item;
+        let subtree: EditDiagramInput['subtree'], subtrees: EditDiagramInput['subtrees'];
+        if (operation === 'edit-diagram' && 'replace-mode' in item && diagram) {
+          let rootIds = item.contentNodeIds?.map(id => this.agent.projection.resolveAnchorId(id));
+          if (reference?.reference.kind === 'nodes') {
+            if (rootIds) throw Error('Use the reference selection or contentNodeIds, not both');
+            if (item['replace-mode'] === 'diagram') throw Error('A node selection requires a subtree replace-mode');
+            const ids = new Set(reference.reference.nodeIds), nodes = diagramContentNodes(diagram.content);
+            const roots = nodes.filter(node => ids.has(node.id) && (!node.parentId || !ids.has(node.parentId)));
+            const members = new Set(roots.flatMap(root => {
+              const range = diagramSubtreeRange(diagram, root.id);
+              return nodes.filter(node => node.line >= range.startLine && node.line <= range.endLine).map(node => node.id);
+            }));
+            if (!roots.length || members.size !== ids.size || [...members].some(id => !ids.has(id))) throw Error('Select complete subtrees without excluded nodes');
+            rootIds = roots.map(root => root.id);
+          }
+          if (item['replace-mode'] === 'diagram' && rootIds) throw Error('diagram mode cannot include subtree targets');
+          if (item['replace-mode'] === 'subnode-single' && rootIds?.length !== 1 && !(item.variant?.variantId && !rootIds)) throw Error('subnode-single requires one complete subtree');
+          const targets = rootIds?.map(contentNodeId => ({ contentNodeId, revisionId: diagram.content.revisionId }));
+          subtree = item['replace-mode'] === 'subnode-single' ? targets?.[0] : undefined;
+          subtrees = item['replace-mode'].startsWith('multi-') ? targets : undefined;
+          if (!item.variant?.variantId) diagramReplacementRanges(diagram, item['replace-mode'], subtree, subtrees);
+        } else if (item.contentNodeIds) throw Error('contentNodeIds applies only to edit-diagram');
+        prepared.push({ ...fields, nodeId, baseRevisionId, ...(subtree ? { subtree } : {}), ...(subtrees ? { subtrees } : {}) });
+      } catch (error) { throw Error(`operations[${index}]: ${String(error)}`); }
     }
-    return { sessionId: await this.attachment(canvas), expectedVersion: snapshot.version, nodeId, baseRevisionId: diagram.revisionId,
-      prompt: input.prompt, requestId: randomUUID(), references: session.canvasContext?.references.map(value => value.reference), ...(subtree ? { subtree } : {}) };
+    return { sessionId: await this.attachment(canvas!), expectedVersion: snapshot!.version, requestId: randomUUID(), operations: prepared };
   }
 }

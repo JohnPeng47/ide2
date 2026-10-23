@@ -1,3 +1,4 @@
+import { diagramRevisions } from '../../core/diagrams/internal/revisionRegistry';
 import type { EndpointBounds } from './endpointGeometry';
 import { resolveDiagramContent, projectDiagramContent } from './diagramViewState';
 export { resolveDiagramContent } from './diagramViewState';
@@ -28,7 +29,7 @@ export interface DisplayNodeCollapsible {
 export type CanvasDisplayNode = {
   id: string; version: number; childIds: string[]; expansion: 'expanded' | 'collapsed';
   collapsible: DisplayNodeCollapsible;
-} & ({ layout: 'grid'; kind: 'diagram' | 'group'; boxId: string; geometry: { units: 'cells'; bounds: GridBounds }; content?: DiagramContent; contentNodes?: readonly import('../../core/diagrams/diagramContent').DiagramContentNode[]; diagram?: import("../../core/diagrams/diagram").Diagram }
+} & ({ layout: 'grid'; kind: 'diagram' | 'group'; boxId: string; geometry: { units: 'cells'; bounds: GridBounds }; content?: DiagramContent; nodeRefs?: Readonly<Record<string, string>>; contentNodes?: readonly import('../../core/diagrams/diagramContent').DiagramContentNode[]; diagram?: import("../../core/diagrams/diagram").Diagram }
   | { layout: 'floating'; kind: FloatingBox['kind']; geometry: DisplayGeometry & { units: 'pixels' }; placement: FloatingPlacement; value: FloatingBox });
 export const gridNodeId = (id: string) => `grid:${id}`;
 export const floatingNodeId = (id: string) => `floating:${id}`;
@@ -51,7 +52,7 @@ export function canvasDisplayNodes(document: MappingGridDocument, canvas: Mappin
     })) : [] }, id: gridNodeId(box.id), boxId: box.id, version, layout: 'grid', kind: box.kind === 'diagram' ? 'diagram' : 'group',
       childIds: box.kind === 'container' ? box.children.map(child => gridNodeId(child.id)) : [], expansion: box.collapsed ? 'collapsed' : 'expanded',
       geometry: { units: 'cells', bounds: visible.get(box.id)?.bounds ?? node.bounds },
-      ...(content ? { content: resolveDiagramContent(content), contentNodes: connectionContentNodes(content.content), diagram: content } : {}) };
+      ...(content ? { content: resolveDiagramContent(content), contentNodes: connectionContentNodes(content.content), nodeRefs: diagramRevisions.get(content.revisionId).nodeRefs, diagram: content } : {}) };
   });
   const floating: CanvasDisplayNode[] = Object.values(canvas.display.nodes).map(node => {
     const owner = Object.values(canvas.display.nodes).find(parent => parent.childIds.includes(node.id));

@@ -1,3 +1,5 @@
+import { DiagramBatchService } from './diagramBatchService';
+import { isDiagramTool, directBatchSchemas, type DiagramTool, type DiagramBatchApplication } from '../../../domain/mapping/agent/diagramBatch';
 import { reviewVariant, variantRevisionIds } from '../../../domain/core/diagrams/diagramVariant';
 import { canvasMutationResult, type CanvasMutationResult } from '../../../domain/mapping/agent/mutationReceipt';
 import { ChatCanvasBindings } from './chatBindings';
@@ -8,6 +10,8 @@ import { correspondingNodes } from '../../../domain/core/diagrams/diagramRevisio
 import { summarizeChangeSession } from '../../../domain/mapping/changes/diagramChangeSession';
 import { CanvasApiProjection } from './apiProjection';
 import { diagramContentNodes } from '../../../domain/core/diagrams/diagramContentNodes';
+import { compileDiagramAgentContext, diagramContextSourceFingerprint, loadDiagramAgentContext, storeDiagramAgentContext,
+  type DiagramAgentContextStore } from '../../../domain/core/diagrams/diagramAgentContext';
 import type { DiagramJump } from '../../../domain/core/diagrams/diagramJump';
 import type { AgentContextService } from './agentContextService';
 import { DiagramEditService } from './diagramEditService';
@@ -52,30 +56,45 @@ export class AgentDiagrammingSessionService {
   readonly chatBindings = new ChatCanvasBindings();
   private readonly aliases = new CanvasReadAliases();
   private readonly edits?: DiagramEditService;
+  private readonly batches?: DiagramBatchService;
   private sessions = new Map<string, { canvasId: string; documentId: string; changeSessionId?: string }>();
   private saves = new Map<string, Promise<unknown>>();
   private execRuns = new Map<string, ExecRun>();
   private requests = new Map<string, { signature: string; promise: Promise<unknown> }>();
+  private diagramContextMutations = new Map<string, { signature: string; canvasId: string; documentId: string; payload: Record<string, unknown> }>();
   constructor(readonly bridge: CanvasSessionPort, private readonly diagrams: MappingDiagramService,
     private readonly store: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs' | 'repositories'>, private readonly runtime: AgentExecRuntime, readonly changes?: ChangeSessionService,
-    editDiagrams?: DiagramService, private readonly agentContexts?: AgentContextService, readonly projection = new CanvasApiProjection()) {
-    if (editDiagrams) this.edits = new DiagramEditService(editDiagrams, {
-      snapshot: (sessionId, revisionIds) => this.snapshot(sessionId, undefined, { revisionIds }),
-      apply: async (sessionId, input) => {
+    editDiagrams?: DiagramService, private readonly agentContexts?: AgentContextService, readonly projection = new CanvasApiProjection(),
+    private readonly diagramContextStore?: DiagramAgentContextStore) {
+    if (editDiagrams) {
+      const canvas = {
+        snapshot: (sessionId: string, revisionIds?: string[]) => this.snapshot(sessionId, undefined, { revisionIds }),
+        apply: async (sessionId: string, input: import('../../../domain/mapping/agent/diagramEdit').DiagramRevisionApplication) => {
+          const session = this.session(sessionId);
+          return await this.bridge.dispatch(session.canvasId, { method: 'apply-diagram-revision', documentId: session.documentId, payload: input }) as { version: number; unresolvedEdgeIds: string[] };
+        },
+        create: async (sessionId: string, input: { requestId: string; expectedVersion: number; diagrams: import('../../../domain/mapping/agent/diagramEdit').DiagramCreation[] }) => {
+          const session = this.session(sessionId);
+          return await this.bridge.dispatch(session.canvasId, { method: 'create-diagrams', documentId: session.documentId, payload: input }) as { version: number };
+        },
+        batch: async (sessionId: string, input: DiagramBatchApplication) => {
+          const session = this.session(sessionId);
+          return await this.bridge.dispatch(session.canvasId, { method: 'apply-diagram-batch', documentId: session.documentId, payload: input }) as { version: number; unresolvedEdgeIds: string[] };
+        }
+      };
+      this.edits = new DiagramEditService(editDiagrams, canvas, this.diagramContextStore);
+      this.batches = new DiagramBatchService(editDiagrams, canvas, this.diagramContextStore, (sessionId, contextId) => {
         const session = this.session(sessionId);
-        return await this.bridge.dispatch(session.canvasId, { method: 'apply-diagram-revision', documentId: session.documentId, payload: input }) as { version: number; unresolvedEdgeIds: string[] };
-      },
-      create: async (sessionId, input) => {
-        const session = this.session(sessionId);
-        return await this.bridge.dispatch(session.canvasId, { method: 'create-diagrams', documentId: session.documentId, payload: input }) as { version: number };
-      }
-    });
+        if (!this.agentContexts) throw Error('AGENT_CONTEXT_UNAVAILABLE');
+        return this.agentContexts.get({ workspaceInstanceId: session.canvasId, documentId: session.documentId }, contextId);
+      });
+    }
   }
-  dispose() { this.edits?.dispose(); }
+  dispose() { this.edits?.dispose(); this.batches?.dispose(); }
   async callBound(token: string, name: AgentToolName, raw: unknown) {
     const binding = this.chatBindings.capture(token), target = binding.target!;
     const input = { ...(raw as Record<string, unknown>) };
-    const targeted = ['exec', 'draw_diagram', 'save_diagram', 'set_diagram_source_mappings', 'edit-diagram', 'create-diagram', 'extend-diagram'];
+    const targeted = ['exec', 'draw_diagram', 'save_diagram', 'set_diagram_source_mappings', 'edit-diagram', 'create-diagram', 'extend-diagram', 'diagram-agent-context', 'canvas-view'];
     if (name === 'create_diagram_change_session' && !input.canvasId) input.canvasId = target.workspaceInstanceId;
     if ((targeted.includes(name) || name === 'diagram-search' && !input.representationId) && !input.changeSessionId) {
       if (!binding.attachment) binding.attachment = this.attach(target.workspaceInstanceId, target.documentId).then(result => result.sessionId)
@@ -84,25 +103,52 @@ export class AgentDiagrammingSessionService {
       if (input.sessionId && this.binding(input.sessionId as string) !== this.binding(sessionId)) throw Error('CHAT_BINDING_MISMATCH: use the canvas captured for this turn');
       input.sessionId = sessionId;
     }
+    if (isDiagramTool(name)) return this.submitDirect(name, input, binding.readOnly);
     return this.call(name, input, binding.readOnly);
   }
+  resolveDiagramArguments<T>(sessionId: string, raw: T): T {
+    const input = this.aliases.resolve(raw, this.binding(sessionId));
+    const walk = (value: unknown, key = ''): unknown => {
+      if (typeof value === 'string' && (key === 'contentNodeId' || key === 'contentNodeIds')) return this.projection.resolveAnchorId(value);
+      if (Array.isArray(value)) return value.map(item => walk(item, key));
+      if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, walk(v, k)]));
+      return value;
+    };
+    return walk(input) as T;
+  }
+  async submitDirect(name: DiagramTool, raw: unknown, readOnly = false) {
+    if (readOnly) throw Error('READ_ONLY: diagram submission requires Workspace access');
+    if (!this.batches) throw Error('Diagram submission unavailable');
+    const input = directBatchSchemas[name].parse(raw);
+    this.session(input.sessionId);
+    const resolved = this.resolveDiagramArguments(input.sessionId, input);
+    const run = this.batches.start(resolved, name, true);
+    return this.batches.wait(run.runId);
+  }
   async call(name: AgentToolName, raw: unknown, readOnly = false): Promise<unknown> {
-    if (readOnly && !['exec', 'canvas-api-search', 'diagram-search', 'list_repositories', 'edit-diagram-status', 'get_repository_diff_hunks', 'read_change_session_diff_tree'].includes(name)) throw Error('READ_ONLY: canvas mutation requires Workspace access');
+    if (readOnly && !['exec', 'canvas-api-search', 'diagram-search', 'diagram-agent-context', 'canvas-view', 'list_repositories', 'edit-diagram-status', 'get_repository_diff_hunks', 'read_change_session_diff_tree'].includes(name)) throw Error('READ_ONLY: canvas mutation requires Workspace access');
     const schema = agentToolSchemas[name];
     if (!schema) throw new Error('Unknown agent tool');
     const input = schema.parse(raw);
+    if (name === 'canvas-view' && 'operation' in input && ['list', 'read'].includes(input.operation as string)) return this.execute(name, input, readOnly);
+    if (name === 'diagram-agent-context' && 'operation' in input && input.operation === 'read') return this.execute(name, input, readOnly);
     if (name === 'edit-diagram' || name === 'create-diagram' || name === 'extend-diagram' || name === 'edit-diagram-status' || name === 'cancel-diagram-edit') {
       if (!this.edits) throw Error('Diagram editing UNAVAILABLE in this runtime');
       if (name === 'edit-diagram' || name === 'create-diagram' || name === 'extend-diagram') {
         const candidate = input as { sessionId: string };
-        const edit = agentToolSchemas[name].parse(this.aliases.resolve(input, this.binding(candidate.sessionId)));
+        const edit = agentToolSchemas[name].parse(this.resolveDiagramArguments(candidate.sessionId, input));
         const session = this.session(edit.sessionId); // Live attachment only; never creates a proposal.
+        if ('operations' in edit) {
+          if (!this.batches) throw Error('Diagram batches unavailable');
+          return this.batches.start(edit, name, false);
+        }
         if (edit.agentContextId && !this.agentContexts) throw Error('AGENT_CONTEXT_UNAVAILABLE');
         const context = edit.agentContextId ? this.agentContexts!.get({ workspaceInstanceId: session.canvasId,
           documentId: session.documentId }, edit.agentContextId) : undefined;
         return this.edits.start(edit, context, name);
       }
       const { runId } = agentToolSchemas['edit-diagram-status'].parse(input);
+      if (this.batches?.has(runId)) return name === 'edit-diagram-status' ? this.batches.get(runId) : this.batches.cancel(runId);
       return name === 'edit-diagram-status' ? this.edits.get(runId) : this.edits.cancel(runId);
     }
     if ('requestId' in input) {
@@ -119,7 +165,7 @@ export class AgentDiagrammingSessionService {
       const promise = ('changeSessionId' in input && input.changeSessionId && 'sessionId' in input && input.sessionId && name !== 'save_diagram'
         ? this.changeService().request(input.changeSessionId, `${name}:${input.requestId}`, signature, execute) : execute()).catch(error => {
         // The browser deduplicates request IDs too, so a lost acknowledgement can be recovered.
-        if (canvasTimeout(error)) this.requests.delete(key);
+        if (canvasTimeout(error) || ['diagram-agent-context', 'canvas-view'].includes(name) && String(error).includes('PERSISTENCE_PENDING')) this.requests.delete(key);
         throw error;
       });
       this.requests.set(key, { signature, promise });
@@ -155,6 +201,48 @@ export class AgentDiagrammingSessionService {
     }
     if (name === 'canvas-api-search') return canvasApiSpec(agentToolSchemas[name].parse(raw).query);
     if (name === 'diagram-search') return this.search(agentToolSchemas[name].parse(raw));
+    if (name === 'canvas-view') {
+      const input = agentToolSchemas[name].parse(raw), session = this.session(input.sessionId);
+      if (!['list', 'read'].includes(input.operation)) {
+        if (readOnly) throw Error('READ_ONLY: CanvasView changes require Workspace access');
+        if (input.expectedVersion === undefined) throw Error('expectedVersion is required for CanvasView changes');
+      }
+      return this.bridge.dispatch(session.canvasId, { method: 'canvas-view', documentId: session.documentId, payload: input });
+    }
+    if (name === 'diagram-agent-context') {
+      const input = agentToolSchemas[name].parse(raw);
+      if (readOnly && input.operation !== 'read') throw Error('READ_ONLY: canvas mutation requires Workspace access');
+      const session = this.session(input.sessionId);
+      const mutationKey = JSON.stringify([input.sessionId, input.requestId]);
+      const prior = input.operation !== 'read' && this.diagramContextMutations.get(mutationKey);
+      if (prior) {
+        if (prior.signature !== JSON.stringify(input)) throw Error('REQUEST_ID_CONFLICT: diagram context arguments differ');
+        return this.bridge.dispatch(prior.canvasId, { method: 'apply-diagram-context', documentId: prior.documentId, payload: prior.payload });
+      }
+      const snapshot = await this.snapshot(input.sessionId);
+      const box = input.nodeId.startsWith('grid:') ? findBox(snapshot.document.scene.root, input.nodeId.slice(5)) : undefined;
+      const diagram = box?.kind === 'diagram' ? snapshot.document.scene.contents[box.contentId] : undefined;
+      if (!diagram) throw Error('Expected diagram GridBox');
+      const bound = snapshot.document.diagramContexts?.[diagram.diagramId];
+      if (input.operation === 'read') {
+        const materialized = bound ? await loadDiagramAgentContext(bound, this.diagramContextStore) : undefined;
+        return { diagramId: diagram.diagramId, revisionId: diagram.revisionId,
+          version: snapshot.version, status: !bound ? 'absent' : bound.sourceFingerprint === diagramContextSourceFingerprint(diagram) ? 'ready' : 'stale',
+          backingRecordId: bound?.backingRecordId ?? null,
+          context: bound && materialized ? { diagramId: bound.diagramId, compiledFromRevisionId: bound.compiledFromRevisionId,
+            sourceFingerprint: bound.sourceFingerprint, contentHash: materialized.contentHash, snapshot: materialized } : null };
+      }
+      if (input.expectedVersion === undefined || !input.expectedRevisionId) throw Error('Expected version and revision are required for context changes');
+      if (snapshot.version !== input.expectedVersion || diagram.revisionId !== input.expectedRevisionId)
+        throw Error('VERSION_CONFLICT: read the diagram again');
+      if (input.operation === 'prepare' && !this.diagramContextStore) throw Error('AGENT_CONTEXT_STORAGE_UNAVAILABLE');
+      const context = input.operation === 'prepare' ? await storeDiagramAgentContext(compileDiagramAgentContext(diagram), this.diagramContextStore!) : undefined;
+      if (this.diagramContextMutations.size >= 500) throw Error('Diagram context request capacity reached');
+      const payload = { operation: input.operation, requestId: input.requestId, expectedVersion: input.expectedVersion,
+        expectedRevisionId: input.expectedRevisionId, nodeId: input.nodeId, diagramId: diagram.diagramId, ...(context ? { context } : {}) };
+      this.diagramContextMutations.set(mutationKey, { signature: JSON.stringify(input), canvasId: session.canvasId, documentId: session.documentId, payload });
+      return this.bridge.dispatch(session.canvasId, { method: 'apply-diagram-context', documentId: session.documentId, payload });
+    }
     if (name === 'exec') return this.exec(agentToolSchemas[name].parse(raw), readOnly);
     if (name === 'save_diagram') return this.save(agentToolSchemas[name].parse(raw));
     if (name === 'set_diagram_source_mappings') {

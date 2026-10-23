@@ -1,0 +1,10 @@
+.canvas-view-controls { min-width: 0; color: var(--fg); font-size: 12px; }
+.canvas-view-controls h2 { margin: 12px 0 4px; font-size: 15px; }
+.canvas-view-controls p { color: var(--muted); line-height: 1.5; overflow-wrap: anywhere; }
+.canvas-view-controls fieldset { display: flex; flex-direction: column; gap: 8px; border: 0; padding: 0; margin: 16px 0; min-width: 0; }
+.canvas-view-controls label { display: flex; flex-direction: column; gap: 5px; }
+.canvas-view-controls button, .canvas-view-controls input, .canvas-view-controls select { box-sizing: border-box; width: 100%; min-width: 0; padding: 8px; border: 1px solid var(--gutter); border-radius: var(--control-radius); background: var(--control-background); color: var(--fg); font: inherit; }
+.canvas-view-controls button { cursor: pointer; }
+.canvas-view-controls button:disabled { opacity: .5; cursor: default; }
+.canvas-view-controls [role="alert"] { margin-top: 8px; overflow-wrap: anywhere; }
+.canvas-view-controls [aria-pressed="true"] { border-color: var(--accent-primary); }

@@ -41,7 +41,7 @@ try {
     const attachment = await attach();
     const read = async sessionId => (await call('diagram-search', { sessionId, operation: 'read', nodeId: 'grid:overview' }));
     const before = await read(attachment.sessionId);
-    const input = { sessionId: attachment.sessionId, nodeId: 'grid:overview', expectedVersion: before.version,
+    const input = { 'edit-mode': 'in-place', 'replace-mode': 'diagram', sessionId: attachment.sessionId, nodeId: 'grid:overview', expectedVersion: before.version,
       baseRevisionId: before.node.diagram.revisionId, prompt: 'Show the edit flow', requestId: randomUUID() };
     const started = await call('edit-diagram', input);
     assert.equal((await call('edit-diagram', input)).runId, started.runId);

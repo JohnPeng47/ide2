@@ -24,17 +24,28 @@ const promptFields = {
   /** The instruction cites references[N-1] as [ref N]. */
   references: z.array(promptReferenceSchema).max(20).optional()
 };
-export const editDiagramSchema = z.object({
+export const editModeSchema = z.enum(['in-place', 'variant']);
+export const replaceModeSchema = z.enum(['diagram', 'subnode-single', 'multi-contiguous', 'multi-disjoint']);
+const subtreeSchema = z.object({ contentNodeId: z.string().min(1).max(500), revisionId: id }).strict();
+const generationSchema = z.object({
+  'source-mappings': z.boolean().optional().describe('Defaults to false. Enable to supply new source mappings.'),
   sessionId: id, nodeId: id, expectedVersion: z.number().int().nonnegative(),
+  'edit-mode': editModeSchema.optional(),
+  'replace-mode': replaceModeSchema.optional(),
   variant: z.object({ name: z.string().trim().min(1).max(120), count: z.number().int().min(1).max(4).default(1), variantId: id.optional() }).strict().optional(),
-  subtree: z.object({ contentNodeId: z.string().min(1).max(500), revisionId: id }).strict().optional(),
+  subtree: subtreeSchema.optional(),
+  subtrees: z.array(subtreeSchema).min(2).max(100).optional(),
   origin: z.object({ column: z.number().int().nonnegative(), row: z.number().int().nonnegative() }).strict().optional(),
   sources: z.array(contentNodeAnchorSchema).max(500).optional(),
   baseRevisionId: id, agentContextId: id.optional(), prompt: z.string().trim().min(1).max(20000), requestId: id, ...promptFields
 }).strict();
+export const editDiagramSchema = generationSchema.extend({
+  'edit-mode': editModeSchema.describe('Required. in-place applies the edit; variant saves an alternative.'),
+  'replace-mode': replaceModeSchema.describe('Required. diagram: no subtree targets; subnode-single: subtree; multi-contiguous: adjacent subtrees; multi-disjoint: separate subtrees. Supply subtrees for either multi mode.')
+}).strict();
 /** nodeId/baseRevisionId pin the anchor diagram: its revision is the context and new diagrams are placed beside it. */
-export const createDiagramSchema = editDiagramSchema.extend({ count: z.number().int().min(1).max(4).optional() }).strict();
-export const extendDiagramSchema = editDiagramSchema.extend({ origin: editDiagramSchema.shape.origin.unwrap(), sources: z.array(contentNodeAnchorSchema).min(1).max(500) }).strict();
+export const createDiagramSchema = generationSchema.extend({ count: z.number().int().min(1).max(4).optional() }).strict();
+export const extendDiagramSchema = generationSchema.extend({ origin: editDiagramSchema.shape.origin.unwrap(), sources: z.array(contentNodeAnchorSchema).min(1).max(500) }).strict();
 export const diagramEditRunSchema = z.object({ runId: id }).strict();
 export type EditDiagramInput = z.infer<typeof editDiagramSchema>;
 export type CreateDiagramInput = z.infer<typeof createDiagramSchema>;

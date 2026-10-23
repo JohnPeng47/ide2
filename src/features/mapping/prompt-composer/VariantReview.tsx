@@ -25,12 +25,12 @@ export function VariantReview({ source, target, coordinator, entryKey, locked }:
     </select></label>
     <label>Name <input aria-label="Rename variant" key={variant.id + variant.name} defaultValue={variant.name} maxLength={120} disabled={disabled}
       onBlur={e => { if (e.target.value.trim() && e.target.value.trim() !== variant.name) void update({ name: e.target.value }); }} /></label>
-    <p>{variant.ownerNodeId === 'root' ? 'Whole diagram' : `Subtree: ${item.scopeLabel}`} · {variant.revisionIds.length} generated revision(s)</p>
+    <p>{variant.replacementScope ? variant.replacementScope.mode === 'multi-contiguous' ? 'Adjacent subtrees' : 'Separate subtrees' : variant.ownerNodeId === 'root' ? 'Whole diagram' : `Subtree: ${item.scopeLabel}`} · {variant.revisionIds.length} generated revision(s)</p>
     <details><summary>Generated candidate</summary><pre>{item.ascii}</pre></details>
     <div className="variant-review-actions">
       <button disabled={disabled} onClick={() => void update({ decisions: Object.fromEntries(changes.map(c => [c.id, 'accept'])) })}>Accept all</button>
       <button disabled={disabled} onClick={() => void update({ decisions: Object.fromEntries(changes.map(c => [c.id, 'reject'])) })}>Reject all</button>
-      <button disabled={disabled} onClick={() => coordinator.setTarget(entryKey, { operation: 'edit-diagram', generateVariants: true, variantId: variant.id, variantName: variant.name, variantCount: 1 })}>Refine this variant</button>
+      <button disabled={disabled} onClick={() => coordinator.setTarget(entryKey, { operation: 'edit-diagram', generateVariants: true, replaceMode: variant.replacementScope?.mode ?? (variant.ownerNodeId === 'root' ? 'diagram' : 'subnode-single'), variantId: variant.id, variantName: variant.name, variantCount: 1 })}>Refine this variant</button>
     </div>
     <ul>{changes.map(change => <li key={change.id} data-variant-change={change.id}>
       <strong>{change.label}</strong> <small>{change.kind}</small>

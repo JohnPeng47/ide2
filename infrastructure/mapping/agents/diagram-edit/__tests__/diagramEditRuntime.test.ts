@@ -109,3 +109,24 @@ it('seeds uploaded trajectory before the current task and starts a fresh history
   expect(context.toSnapshot().messages).toHaveLength(1);
   f.runtime.dispose();
 });
+
+it.each(['edit-diagram', 'create-diagram', 'extend-diagram'] as const)('ends the condensed %s prompt with the output contract', operation => {
+  const f = fixture();
+  const prompt = renderDiagramEditPrompt({ ...f.request, operation });
+  const output = prompt.slice(prompt.lastIndexOf('# OUTPUT FORMAT'));
+  expect(prompt).toContain('## User instruction (JSON string)');
+  expect(output).toContain('## ASCII and structure');
+  expect(output).toContain('## Source mappings');
+  expect(output).toContain('## Submission');
+  expect(output).toContain('Omit mappings');
+  expect(output).not.toContain('requestId');
+  expect(prompt.endsWith('Never claim success without submitting.')).toBe(true);
+  expect(prompt).not.toContain('Preserve logical node identities: append');
+  const enabled = renderDiagramEditPrompt({ ...f.request, operation, sourceMappings: true });
+  expect(enabled).toContain('complete array');
+  expect(enabled).toContain('Use only supplied evidence IDs');
+  if (operation !== 'edit-diagram') {
+    expect(prompt).toContain('Do not use [[keep:...]]');
+    expect(prompt).not.toContain('You may choose whether to preserve node continuity');
+  }
+});

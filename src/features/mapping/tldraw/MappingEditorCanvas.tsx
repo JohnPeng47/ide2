@@ -64,14 +64,27 @@ export function MappingEditorCanvas(props: {
       editor.setCamera({ x: 360, y: 100, z: 1 });
     }
     let last = '';
+    let checkpoint = props.session.controller.getSnapshot().canvasRevisionId;
+    const unsubscribeCamera = props.session.controller.subscribe(() => {
+      const state = props.session.controller.getSnapshot();
+      if (state.canvasRevisionId === checkpoint) return;
+      checkpoint = state.canvasRevisionId;
+      if (state.canvas.viewport) {
+        props.session.controller.captureViewCamera(state.canvas.viewport);
+        editor.setCamera(restoreMappingCamera(state.canvas.viewport));
+      }
+    });
     const publishCamera = () => {
       setTool(editor.getCurrentToolId());
       const { x, y, z } = editor.getCamera(), key = `${x}:${y}:${z}`;
       if (last === key) return;
-      last = key; transformCallback.current?.(saveMappingCamera({ x, y, z }));
+      last = key;
+      const camera = saveMappingCamera({ x, y, z });
+      props.session.controller.captureViewCamera(camera);
+      transformCallback.current?.(camera);
     };
     editor.on('tick', publishCamera);
-    return () => { document.fonts.removeEventListener('loadingdone', fontsChanged); element.removeEventListener('pointerdown', stopUiPointer, true); runtime.dispose(); selectionTools.delete(editor); editor.off('tick', publishCamera); canvasRuntime.editor = undefined; };
+    return () => { unsubscribeCamera(); document.fonts.removeEventListener('loadingdone', fontsChanged); element.removeEventListener('pointerdown', stopUiPointer, true); runtime.dispose(); selectionTools.delete(editor); editor.off('tick', publishCamera); canvasRuntime.editor = undefined; };
   }, [editor, props.session, canvasRuntime]);
   useEffect(() => {
     if (editor && !props.enabled) editor.blur({ blurContainer: false });

@@ -1,3 +1,5 @@
+import { CanvasViewControls } from './canvas-views/CanvasViewControls';
+import { CanvasViewReceiver } from './canvas-views/canvasViewReceiver';
 import { reviewVariant } from '../../../domain/core/diagrams/diagramVariant';
 import type { VariantReviewSource } from './prompt-composer/VariantReview';
 import { highlightedDiagramIds } from '../../../domain/core/diagrams/highlightProjection';
@@ -126,6 +128,7 @@ function MappingWorkspacePage() {
   const importRef = useRef<HTMLInputElement>(null);
   const [snapshot, setSnapshot] = useState<ProjectRepresentationsSnapshot>();
   const [workspace] = useState(() => new CanvasWorkspace(diagramService, canvasHistory));
+  const [canvasViews] = useState(() => new CanvasViewReceiver());
   const [prompts] = useState(() => new PromptComposerCoordinator(createDiagramEditClient()));
   const carried = useStore(prompts.store, state => state.carried);
   const { entries: llmEntries, activeKey: activeLlm } = useStore(prompts.store);
@@ -294,6 +297,18 @@ function MappingWorkspacePage() {
     const controller = await waitController(id);
     const draft = draftRef.current[id];
     if (!draft || draft.hidden) throw new Error('DOCUMENT_UNAVAILABLE');
+    if (command.method === 'canvas-view') {
+      if (workspaceBusy || draft.busy) throw Error('WORKSPACE_BUSY');
+      if (!persistence.current || !storage.records) throw Error('WORKSPACE_UNAVAILABLE');
+      const operation = (command.payload as { operation: string }).operation;
+      if (operation === 'start' || operation === 'stop') {
+        const canvas = controller.getSnapshot().canvas;
+        controller.updateCanvas({ ...canvas, display: viewState.captureDisplay(id, canvas.display) });
+        const camera = viewState.captureCamera(id, draft.viewport);
+        if (camera) controller.captureViewCamera(camera);
+      }
+      return canvasViews.apply(id, command.payload, controller, async () => { persistence.current!.sync([id]); await storage.flush(); });
+    }
     // Acceptance only compares the current state; exporting all history can make replies enormous.
     if (command.method === 'context') {
       const snapshot = controller.getSnapshot();
@@ -331,6 +346,13 @@ function MappingWorkspacePage() {
       const ids = [...(options?.revisionIds ?? []), ...(options?.currentRevisions ? Object.values(state.document.scene.contents).map(diagram => diagram.revisionId) : [])];
       return { ...structuredClone(state), ...identity, ...(ids.length ? { revisions: controller.exportRevisions(ids, true) } : {}) };
     }
+    if (command.method === 'apply-diagram-batch') {
+      if (workspaceBusy || draft.busy) throw Error('WORKSPACE_BUSY');
+      if (!persistence.current || !storage.records) throw Error('WORKSPACE_UNAVAILABLE: persistence is not ready');
+      return revisionReceiver.batch(id, command.payload as import('../../../domain/mapping/agent/diagramBatch').DiagramBatchApplication, controller, async () => {
+        persistence.current?.sync([id]); await storage.flush();
+      });
+    }
     if (command.method === 'apply-diagram-revision') {
       if (workspaceBusy || draft.busy) throw new Error('WORKSPACE_BUSY');
       if (!persistence.current || !storage.records) throw Error('WORKSPACE_UNAVAILABLE: persistence is not ready');
@@ -338,6 +360,30 @@ function MappingWorkspacePage() {
         persistence.current?.sync([id]);
         await storage.flush();
       });
+    }
+    if (command.method === 'apply-diagram-context') {
+      if (workspaceBusy || draft.busy) throw new Error('WORKSPACE_BUSY');
+      if (!persistence.current || !storage.records) throw Error('WORKSPACE_UNAVAILABLE: persistence is not ready');
+      const { operation, requestId, expectedVersion, nodeId, expectedRevisionId, diagramId, context } = command.payload as {
+        operation: 'prepare' | 'delete'; requestId: string; expectedVersion: number; nodeId: string; expectedRevisionId: string; diagramId: string;
+        context?: import('../../../domain/core/diagrams/diagramAgentContext').DiagramAgentContext
+      };
+      const key = `${id}:apply-diagram-context:${requestId}`;
+      let result = appliedRequests.current.get(key) as { version: number; diagramId: string; contentHash?: string;
+        backingRecordId?: string; operation: 'prepare' | 'delete' } | undefined;
+      if (!result) {
+        if (operation === 'prepare' && !context || operation !== 'prepare' && operation !== 'delete') throw Error('Invalid diagram context operation');
+        const applied = controller.applyUpdate(expectedVersion, [operation === 'prepare'
+          ? { method: 'diagram-context-set', nodeId, expectedRevisionId, context: context! }
+          : { method: 'diagram-context-delete', nodeId, expectedRevisionId }]);
+        result = { version: applied.version, diagramId, operation,
+          ...(context ? { contentHash: context.contentHash ?? context.snapshot?.contentHash,
+            backingRecordId: context.backingRecordId } : {}) };
+        appliedRequests.current.set(key, result);
+      }
+      try { persistence.current.sync([id]); await storage.flush(); }
+      catch (error) { throw Error(`PERSISTENCE_PENDING: diagram context applied; retry the same request to flush: ${String(error)}`); }
+      return result;
     }
     if (command.method === 'create-diagrams') {
       if (workspaceBusy || draft.busy) throw new Error('WORKSPACE_BUSY');
@@ -703,13 +749,23 @@ function MappingWorkspacePage() {
     viewState.flush();
     persistence.current?.setPaused(true); setWorkspaceBusy(true); setError('');
     try {
-      if (imported !== undefined) { restore(deserializeWorkspace(imported)); setWorkspaceStatus('Workspace imported'); }
+      if (imported !== undefined) {
+        const response = await fetch(`${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/mapping/workspace/import-contexts`, {
+          method: 'POST', headers: { 'content-type': 'application/json' }, body: imported });
+        const prepared = await response.json();
+        if (!response.ok) throw Error(prepared.error ?? 'Workspace import failed');
+        restore(deserializeWorkspace(prepared)); setWorkspaceStatus('Workspace imported');
+      }
       else if (action === 'save') { persistence.current?.setPaused(false); viewState.flush(); persistence.current?.update(activeId, transfers); persistence.current?.sync(); await storage.flush(); setWorkspaceStatus('Workspace saved'); }
       else if (action === 'restore') {
         const saved = await storage.restore();
         if (saved) restore(saved); else setWorkspaceStatus('No saved workspace yet');
       } else {
-        const href = URL.createObjectURL(new Blob([serializeWorkspace(capture())], { type: 'application/json' }));
+        const response = await fetch(`${import.meta.env.BASE_URL.replace(/\/$/, '')}/api/mapping/workspace/export`, {
+          method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(capture()) });
+        const exported = await response.json();
+        if (!response.ok) throw Error(exported.error ?? 'Workspace export failed');
+        const href = URL.createObjectURL(new Blob([serializeWorkspace(exported)], { type: 'application/json' }));
         const a = document.createElement('a'); a.href = href; a.download = 'mapping-workspace.json'; a.click(); URL.revokeObjectURL(href);
         setWorkspaceStatus('Workspace exported');
       }
@@ -1111,6 +1167,9 @@ function MappingWorkspacePage() {
             </div>
           </>}
           <FloatingPane highlighted={!!pendingTransfer}><MappingDiagramExplorer explorerTab={explorerTab}
+            canvasViews={active && activeId && !changeMode ? <CanvasViewControls key={`${activeId}:${workspaceEpoch}`} canvasName={active.name}
+              controller={active.session.controller} disabled={workspaceBusy || active.busy || !!pendingTransfer}
+              onCommand={payload => handleAgentCommand({ id: payload.requestId, method: 'canvas-view', documentId: activeId, payload })} /> : undefined}
             canvas={<div className="mapping-canvas-actions"><button type="button" disabled={!workspaceLoaded || !highlightedCount || !!changeMode || workspaceBusy || !!savingId || !!deletingId || Object.values(drafts).some(draft => draft.busy)}
               onClick={() => void projectHighlights()}>Project Highlights</button>
               <p>{highlightedCount ? `${highlightedCount} highlighted ${highlightedCount === 1 ? 'diagram' : 'diagrams'} will be copied into a child canvas with a blank placeholder.` : 'Highlight a diagram or some of its content, then project it into a child canvas.'}</p></div>}

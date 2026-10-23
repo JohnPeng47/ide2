@@ -5,7 +5,7 @@ import type { CanvasDisplayNode } from '../workspace/canvasDisplayNode';
 /** Agent wire format only. Persistence and the canvas continue to use domain objects. */
 export const canvasApiFormatVersion = 1 as const;
 export type ApiDiagramContent = Omit<DiagramContent, 'structure'> & {
-  structure: (DiagramContent['structure']) & { nodes: Readonly<Record<string, DiagramContentNode>> };
+  structure: (DiagramContent['structure']) & { nodes: Readonly<Record<string, DiagramContentNode & { nodeRef?: string }>> };
 };
 export type ApiDisplayNode = { apiFormatVersion: typeof canvasApiFormatVersion } & (
   | (Omit<Extract<CanvasDisplayNode, { layout: 'grid' }>, 'content' | 'contentNodes' | 'diagram'> & {

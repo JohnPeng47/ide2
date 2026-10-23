@@ -37,7 +37,7 @@ it('renders the chosen template and resolves references to their pinned revision
     { kind: 'diagram', label: 'Before', diagramId: pinned.diagramId, revisionId: pinned.revisionId },
     { kind: 'nodes', label: 'Child', diagramId: pinned.diagramId, revisionId: pinned.revisionId, nodeIds: [], range: { startLine: 2, endLine: 2, startColumn: 1, endColumn: 5 } }
   ];
-  const run = f.service.start({ ...f.input, expectedVersion: 1, baseRevisionId: current.revisionId, references,
+  const run = f.service.start({ ...f.input, 'edit-mode': 'in-place', 'replace-mode': 'diagram', expectedVersion: 1, baseRevisionId: current.revisionId, references,
     template: { id: 'edit-diagram/annotate', version: 1, options: { detail: 4 } } });
   await settled(f.service, run.runId, 'completed');
   const request = f.generator.generate.mock.calls[0][0] as DiagramGenerationRequest;
@@ -49,13 +49,13 @@ it('renders the chosen template and resolves references to their pinned revision
 
 it('rejects unknown templates up front and unresolvable references before generation', async () => {
   const f = fixture();
-  expect(() => f.service.start({ ...f.input, template: { id: 'edit-diagram/restructure', version: 1, options: { detail: 9 } } })).toThrow('PROMPT_OPTION_INVALID');
-  expect(() => f.service.start({ ...f.input, template: { id: 'create-diagram/overview', version: 1, options: {} } })).toThrow('PROMPT_TEMPLATE_OPERATION');
-  expect(() => f.service.start({ ...f.input, count: 2 })).toThrow('count applies only to create-diagram');
-  const missing = await settled(f.service, f.service.start({ ...f.input, references: [
+  expect(() => f.service.start({ ...f.input, 'edit-mode': 'in-place', 'replace-mode': 'diagram', template: { id: 'edit-diagram/restructure', version: 1, options: { detail: 9 } } })).toThrow('PROMPT_OPTION_INVALID');
+  expect(() => f.service.start({ ...f.input, 'edit-mode': 'in-place', 'replace-mode': 'diagram', template: { id: 'create-diagram/overview', version: 1, options: {} } })).toThrow('PROMPT_TEMPLATE_OPERATION');
+  expect(() => f.service.start({ ...f.input, 'edit-mode': 'in-place', 'replace-mode': 'diagram', count: 2 })).toThrow('count applies only to create-diagram');
+  const missing = await settled(f.service, f.service.start({ ...f.input, 'edit-mode': 'in-place', 'replace-mode': 'diagram', references: [
     { kind: 'diagram', label: 'Gone', diagramId: f.base.diagramId, revisionId: 'diagram-revision-gone' }] }).runId, 'failed');
   expect(missing.error).toContain('PROMPT_REFERENCE_NOT_FOUND: [ref 1]');
-  const invalid = await settled(f.service, f.service.start({ ...f.input, requestId: 'nodes', references: [{ kind: 'nodes', label: 'Bad',
+  const invalid = await settled(f.service, f.service.start({ ...f.input, 'edit-mode': 'in-place', 'replace-mode': 'diagram', requestId: 'nodes', references: [{ kind: 'nodes', label: 'Bad',
     diagramId: f.base.diagramId, revisionId: f.base.revisionId, nodeIds: ['invented'], range: { startLine: 1, endLine: 1, startColumn: 1, endColumn: 3 } }] }).runId, 'failed');
   expect(invalid.error).toContain('node invented is not in its revision');
   expect(f.generator.generate).not.toHaveBeenCalled();
@@ -97,7 +97,7 @@ it('places created diagrams on the latest canvas version even when it changed du
 it('rejects generated changes outside the selected subtree before mutating the canvas', async () => {
   const f = fixture(async () => ({ ascii: 'Unexpected root\n+-- Changed' }));
   const child = diagramContentNodes(f.base.content).find(node => node.label === 'Child')!;
-  const run = f.service.start({ ...f.input, subtree: { contentNodeId: child.id, revisionId: f.base.content.revisionId } });
+  const run = f.service.start({ ...f.input, 'edit-mode': 'in-place', 'replace-mode': 'subnode-single', subtree: { contentNodeId: child.id, revisionId: f.base.content.revisionId } });
   const result = await settled(f.service, run.runId, 'failed');
   expect(result.error).toContain('SUBTREE_SCOPE');
   expect(f.controller.getSnapshot().document.scene.contents.overview.content.ascii).toBe('Original\n+-- Child');
@@ -109,7 +109,7 @@ it('patches a selected subtree and preserves the identity of its unaffected pare
   const child = diagramContentNodes(f.base.content).find(node => node.label === 'Child')!;
   const parent = diagramContentNodes(f.base.content).find(node => node.label === 'Original')!;
   const before = f.controller.exportHistory().diagramRevisions[f.base.revisionId].nodeRefs[parent.id];
-  const run = f.service.start({ ...f.input, subtree: { contentNodeId: child.id, revisionId: f.base.content.revisionId } });
+  const run = f.service.start({ ...f.input, 'edit-mode': 'in-place', 'replace-mode': 'subnode-single', subtree: { contentNodeId: child.id, revisionId: f.base.content.revisionId } });
   await settled(f.service, run.runId, 'completed');
   const next = f.controller.getSnapshot().document.scene.contents.overview;
   const nextParent = diagramContentNodes(next.content).find(node => node.label === 'Original')!;

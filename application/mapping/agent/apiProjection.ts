@@ -41,13 +41,13 @@ export class CanvasApiProjection {
     return id; // Existing full-ID callers remain valid.
   }
 
-  content(content: DiagramContent): ApiDiagramContent {
+  content(content: DiagramContent, refs?: Readonly<Record<string, string>>): ApiDiagramContent {
     const nodes = diagramContentNodes(content);
     return { ...content, structure: { ...content.structure,
       ...(content.structure.kind === 'tree' ? { rootIds: content.structure.rootIds.map(id => this.anchorId(id)) } : {}),
       nodes: Object.fromEntries(nodes.map(node => {
         const id = this.anchorId(node.id);
-        return [id, { ...node, id, ...(node.parentId ? { parentId: this.anchorId(node.parentId) } : {}),
+        return [id, { ...node, id, ...(refs?.[node.id] ? { nodeRef: refs[node.id] } : {}), ...(node.parentId ? { parentId: this.anchorId(node.parentId) } : {}),
           childIds: node.childIds.map(child => this.anchorId(child)) }];
       }))
     } };
@@ -55,12 +55,12 @@ export class CanvasApiProjection {
 
   node(node: CanvasDisplayNode): ApiDisplayNode {
     if (node.layout !== 'grid') return { ...node, apiFormatVersion: canvasApiFormatVersion };
-    const { contentNodes: _index, content, diagram, ...rest } = node;
+    const { contentNodes: _index, nodeRefs, content, diagram, ...rest } = node;
     const highlights = diagram?.highlights?.map(item => ({ ...item, ...(item.contentNodeId ? { contentNodeId: this.anchorId(item.contentNodeId) } : {}), ...(item.contentNodeIds ? { contentNodeIds: item.contentNodeIds.map(id => this.anchorId(id)) } : {}) }));
     const metadata = diagram && (({ content: _content, ...value }) => value)(diagram);
     return { ...rest, apiFormatVersion: canvasApiFormatVersion,
       collapsible: { ...node.collapsible, subtrees: node.collapsible.subtrees.map(item => ({ ...item, contentNodeId: this.anchorId(item.contentNodeId) })) },
-      ...(content ? { content: this.content(content) } : {}),
+      ...(content ? { content: this.content(content, nodeRefs) } : {}),
       ...(metadata ? { diagram: { ...metadata, ...(highlights ? { highlights } : {}), ...(metadata.jumps ? { jumps: metadata.jumps.map(jump => this.jump(jump)) } : {}) } } : {}) };
   }
   nodes(nodes: readonly CanvasDisplayNode[]) { return nodes.map(node => this.node(node)); }

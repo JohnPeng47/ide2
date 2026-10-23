@@ -167,8 +167,30 @@ createInterface({ input: process.stdin }).on('line', line => {
     if (text === 'Remove current highlights') {
       diagramTool(threadId, turnId, 'remove-highlights', { nodeId: 'grid:overview', requestId: `remove-highlights-${turnId}` }); return;
     }
+    if (['Create diagram batch', 'Edit diagram batch', 'Extend diagram batch'].includes(text)) {
+      const context = canvasContexts.get(threadId);
+      if (!context?.diagrams.length) throw Error('Read Canvas before the batch fixture');
+      const tool = text.startsWith('Create') ? 'create-diagram' : text.startsWith('Extend') ? 'extend-diagram' : 'edit-diagram';
+      const diagrams = tool === 'edit-diagram' ? context.diagrams.slice(-2) : [context.diagrams[0], context.diagrams[0]];
+      const operations = diagrams.map((base, index) => ({ nodeId: base.id, baseRevisionId: base.baseRevisionId,
+        ...(tool === 'edit-diagram' ? { 'edit-mode': 'in-place', 'replace-mode': 'diagram', edit: { ascii: `Updated ${index + 1}\n\`-- Child`, structureKind: 'tree' } }
+          : { diagram: { ascii: `${tool === 'create-diagram' ? 'Created' : 'Extended'} ${index + 1}\n\`-- Child`, structureKind: 'tree' } }),
+        ...(tool === 'extend-diagram' ? { origin: { column: 80 + index * 30, row: 10 }, sources: [{ kind: 'content-node', displayNodeId: base.id, contentNodeId: base.logicalNodes[0].contentNodeId, revisionId: base.revisionId }] } : {})
+      }));
+      diagramTool(threadId, turnId, tool, { requestId: `batch-${turnId}`, operations }); return;
+    }
     if (text?.startsWith('Edit selected ref') || text === 'Edit current diagram') {
-      diagramTool(threadId, turnId, 'edit-diagram', { ...(text?.startsWith('Edit selected ref') ? { reference: 1 } : { nodeId: 'grid:overview' }), prompt: 'chat edit', requestId: `edit-${turnId}` });
+      const selected = p.input.find(item => item.text?.startsWith('Selected canvas references'))?.text;
+      const reference = selected ? JSON.parse(selected.slice(selected.indexOf('\n') + 1))[0] : undefined;
+      const context = canvasContexts.get(threadId)?.diagrams.find(diagram => diagram.id === 'grid:overview');
+      const ascii = reference?.ascii ?? context?.ascii ?? 'Root';
+      const lines = ascii.split('\n');
+      lines[0] += ' [edited: chat edit]';
+      diagramTool(threadId, turnId, 'edit-diagram', { requestId: `edit-${turnId}`, operations: [{
+        'edit-mode': 'in-place', 'replace-mode': reference?.reference.kind === 'nodes' ? 'subnode-single' : 'diagram',
+        ...(reference ? { reference: 1 } : { nodeId: 'grid:overview', baseRevisionId: context?.baseRevisionId ?? 'unread' }),
+        edit: { ascii: lines.join('\n'), structureKind: context?.structureKind ?? 'tree' }
+      }] });
       return;
     }
     if (text?.startsWith('Explain selected refs')) {

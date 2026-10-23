@@ -6,7 +6,7 @@ import type { DiagramEditClient } from './diagramEditClient';
 import { createPromptDraft, insertReferenceWithCursor, removeBlock, serializePromptDraft, type PromptCursor, type PromptDraft } from './promptDraft';
 
 /** The fixed destination: the diagram to revise, or the anchor new diagrams are created beside. */
-export interface PromptComposerTarget { generateVariants?: boolean; variantName?: string; variantCount?: number; variantId?: string; operation: PromptOperation; canvasId: string; documentId: string; nodeId: string; label: string; subtreeLabel?: string; subtree?: CreateDiagramInput['subtree']; sources?: CreateDiagramInput['sources']; origin?: CreateDiagramInput['origin'] }
+export interface PromptComposerTarget { replaceMode?: import('../../../../domain/mapping/agent/diagramEdit').EditDiagramInput['replace-mode']; generateVariants?: boolean; variantName?: string; variantCount?: number; variantId?: string; operation: PromptOperation; canvasId: string; documentId: string; nodeId: string; label: string; subtreeLabel?: string; subtree?: CreateDiagramInput['subtree']; sources?: CreateDiagramInput['sources']; origin?: CreateDiagramInput['origin'] }
 export interface PromptComposerEntry {
   llmSessionId: string;
   agentContext?: AgentContextSnapshot;
@@ -159,7 +159,8 @@ export class PromptComposerCoordinator {
       const request: CreateDiagramInput = { ...capture, llmSessionId: entry.llmSessionId,
         ...(entry.agentContext ? { agentContext: structuredClone(entry.agentContext) } : {}), nodeId: target.nodeId, prompt, requestId: crypto.randomUUID(),
         template: structuredClone(draft.template),
-        ...(target.operation === 'edit-diagram' ? { subtree: target.variantId ? undefined : target.subtree,
+        ...(target.operation === 'edit-diagram' ? { 'edit-mode': target.generateVariants ? 'variant' as const : 'in-place' as const,
+          'replace-mode': target.variantId ? target.replaceMode ?? (target.subtree ? 'subnode-single' as const : 'diagram' as const) : target.subtree ? 'subnode-single' as const : 'diagram' as const, subtree: target.variantId ? undefined : target.subtree,
           ...(target.generateVariants ? { variant: { name: target.variantName?.trim() || 'Alternative', count: target.variantId ? 1 : target.variantCount ?? 1, variantId: target.variantId } } : {}) } : {}),
         ...(target.operation === 'extend-diagram' ? { origin: target.origin, sources: target.sources } : {}), ...(references.length ? { references } : {}),
         ...(target.operation === 'create-diagram' ? { count: draft.count } : {}) };
