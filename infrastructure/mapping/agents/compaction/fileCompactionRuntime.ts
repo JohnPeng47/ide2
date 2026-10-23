@@ -1,10 +1,10 @@
 import { Type } from "@earendil-works/pi-ai";
-import { createAgentSession, DefaultResourceLoader, defineTool, getAgentDir, SessionManager, SettingsManager } from "@earendil-works/pi-coding-agent";
+import { createAgentSession, DefaultResourceLoader, defineTool, getAgentDir, SettingsManager } from "@earendil-works/pi-coding-agent";
 import type { FileCompactionContext, FileCompactionRuntime, FileCompactionSession } from "../../../../application/mapping/compaction/agent";
 import { validateFileCompactionDraft } from "../../../../domain/mapping/compaction/validation";
 
 import type { FileCompactionDraft } from "../../../../domain/mapping/compaction/fileCompaction";
-import { PiAgentRuntime, progressFor } from "../../../core/agents/agentRuntime";
+import { createPersistedAgentSessionManager, PiAgentRuntime, progressFor } from "../../../core/agents/agentRuntime";
 import { createValidatedSubmission } from "../../../core/agents/validatedSubmission";
 export type { FileCompactionContext, FileCompactionRuntime, FileCompactionSession } from "../../../../application/mapping/compaction/agent";
 
@@ -57,7 +57,7 @@ export class PiFileCompactionRuntime extends PiAgentRuntime implements FileCompa
     const { session } = await createAgentSession({
       cwd: context.sourceRoot, modelRuntime: configured.runtime, model: configured.model,
       thinkingLevel: context.agent.thinkingLevel, tools: ["submit_file_compaction"], customTools: [submit],
-      resourceLoader, settingsManager, sessionManager: SessionManager.inMemory(context.sourceRoot)
+      resourceLoader, settingsManager, sessionManager: createPersistedAgentSessionManager(context.sourceRoot)
     });
     const model = `${configured.provider}/${configured.modelId}`;
     let onProgress: ((message: string) => void) | undefined;

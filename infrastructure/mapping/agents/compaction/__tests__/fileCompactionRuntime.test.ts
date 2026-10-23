@@ -20,7 +20,7 @@ vi.mock("@earendil-works/pi-coding-agent", () => ({
   },
   DefaultResourceLoader: class { constructor(options: unknown) { harness.resources(options); } async reload() { } },
   getAgentDir: () => "/tmp",
-  SessionManager: { inMemory: () => ({}) },
+  SessionManager: { create: () => ({}) },
   SettingsManager: { inMemory: () => ({}) },
   defineTool: (tool: unknown) => tool,
   createAgentSession: async (options: { customTools: SubmissionTool[] }) => {

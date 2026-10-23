@@ -18,6 +18,11 @@ export function progressFor(event: AgentSessionEvent, model: string, sessionId: 
   }
   return undefined;
 }
+export function createPersistedAgentSessionManager(cwd: string): SessionManager {
+  // Keep Pi sessions on disk so prompts, tool calls, and usage remain auditable.
+  // Do not switch back to in-memory sessions without explicit user approval.
+  return SessionManager.create(cwd);
+}
 export class PiAgentRuntime {
   constructor(private readonly enabled = false) {}
 
@@ -29,7 +34,7 @@ export class PiAgentRuntime {
 
   protected async createSession(configuration: Omit<CreateAgentSessionOptions, 'sessionManager'>, context?: AgentContext) {
     this.requireEnabled();
-    const sessionManager = SessionManager.inMemory(configuration.cwd);
+    const sessionManager = createPersistedAgentSessionManager(configuration.cwd ?? process.cwd());
     for (const message of context?.toPiMessages() ?? []) sessionManager.appendMessage(message);
     const result = await createAgentSession({ ...configuration, sessionManager });
     this.sessions.add(result.session);

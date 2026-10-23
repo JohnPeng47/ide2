@@ -4,7 +4,6 @@ import {
   DefaultResourceLoader,
   defineTool,
   getAgentDir,
-  SessionManager,
   SettingsManager
 } from "@earendil-works/pi-coding-agent";
 import { randomUUID } from "node:crypto";
@@ -23,7 +22,7 @@ import {
   type MappingPocPromptRequest,
   type MappingPocPromptResult
 } from "../../../../domain/mapping/selection/mappingPocPrompt";
-import { PiAgentRuntime, progressFor } from "../../../core/agents/agentRuntime";
+import { createPersistedAgentSessionManager, PiAgentRuntime, progressFor } from "../../../core/agents/agentRuntime";
 import { corpusProvider } from '../../../core/corpus/corpus';
 export type { MappingAgentRuntime } from "../../../../application/mapping/selection/agent";
 
@@ -192,7 +191,7 @@ export class PiMappingAgentRuntime extends PiAgentRuntime implements MappingAgen
       customTools: [submit],
       resourceLoader,
       settingsManager,
-      sessionManager: SessionManager.inMemory(request.sourceRoot)
+      sessionManager: createPersistedAgentSessionManager(request.sourceRoot)
     });
     const modelName = `${configured.provider}/${configured.modelId}`;
     state = {

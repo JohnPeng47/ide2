@@ -3,7 +3,7 @@ const harness = vi.hoisted(() => ({ create: vi.fn(), model: vi.fn(), actions: []
 vi.mock('@earendil-works/pi-coding-agent', () => ({
   ModelRuntime: { create: async () => ({ getModel: (provider: string, id: string) => { harness.model(provider, id); return { id }; }, hasConfiguredAuth: () => true }) },
   DefaultResourceLoader: class { async reload() {} }, getAgentDir: () => '/tmp',
-  SessionManager: { inMemory: () => ({}) }, SettingsManager: { inMemory: () => ({}) }, defineTool: (tool: unknown) => tool,
+  SessionManager: { create: () => ({}) }, SettingsManager: { inMemory: () => ({}) }, defineTool: (tool: unknown) => tool,
   createAgentSession: async (options: any) => {
     const entries: any[] = [];
     const session = { setAutoCompactionEnabled: vi.fn(), subscribe: vi.fn(() => () => {}), sessionManager: { getEntries: () => entries }, sessionId: 'one-conversation', messages: [] as any[], abort: vi.fn(async () => {}), dispose: vi.fn(),

@@ -10,7 +10,7 @@ const harness = vi.hoisted(() => ({
 vi.mock('@earendil-works/pi-coding-agent', () => ({
   ModelRuntime: { create: async () => ({ getModel: (_provider: string, id: string) => ({ id }), hasConfiguredAuth: () => true }) },
   DefaultResourceLoader: class { async reload() {} }, getAgentDir: () => '/tmp',
-  SessionManager: { inMemory: () => ({ messages: [] as unknown[], appendMessage(message: unknown) { this.messages.push(message); } }) }, SettingsManager: { inMemory: () => ({}) }, defineTool: (tool: unknown) => tool,
+  SessionManager: { create: () => ({ messages: [] as unknown[], appendMessage(message: unknown) { this.messages.push(message); } }) }, SettingsManager: { inMemory: () => ({}) }, defineTool: (tool: unknown) => tool,
   createAgentSession: async (options: { customTools: Tool[]; sessionManager: { messages: unknown[] } }) => {
     const chat = { history: structuredClone(options.sessionManager.messages), prompts: [] as string[], abort: vi.fn(async () => {}), dispose: vi.fn() };
     const messages = structuredClone(chat.history);
