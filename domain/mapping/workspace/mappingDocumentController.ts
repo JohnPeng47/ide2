@@ -1,3 +1,4 @@
+import { variantSelectionKey, validateVariantSelections } from '../../core/diagrams/diagramVariantSelection';
 import { diagramContentNodes } from '../../core/diagrams/diagramContentNodes';
 import { applyVariant, validateVariant, variantChanges, type DiagramVariant, type VariantDecision } from '../../core/diagrams/diagramVariant';
 import { highlightColorSchema, highlightTargetsSchema, highlightNodeIds, sameHighlightTargets } from '../../core/diagrams/diagramHighlight';
@@ -7,6 +8,7 @@ import { updateSelection } from '../selection/canvasSelection';
 import type { SelectionCommand } from '../selection/selectionState';
 import { receiveDiagramRevision } from '../../core/diagrams/diagramRevisionTransfer';
 import type { DiagramRevision } from '../../core/diagrams/diagramRevisionEditor';
+import { diagramContextSourceFingerprint, validateDiagramAgentContext, type DiagramAgentContext } from '../../core/diagrams/diagramAgentContext';
 import { DefaultCanvasHistoryService, type CanvasHistoryService, type CanvasEditingContext } from '../../core/diagrams/canvasHistoryService';
 import { equalEndpointBounds, type EndpointBounds } from './endpointGeometry';
 import type { CanvasHistoryRecord } from './canvasHistory';
@@ -31,7 +33,10 @@ import { diagramConnectionSchema, reconcileConnections, validateConnectionAnchor
 
 export interface ControllerSnapshot { contextId: string; canvasRevisionId: string; endpointBounds?: EndpointBounds; document: MappingGridDocument; canvas: MappingCanvasState; version: number; canUndo: boolean; canRedo: boolean; cell?: { width: number; height: number } }
 export type DiagramOperation =
-  | { method: 'variant-store'; nodeId: string; expectedRevisionId: string; variants: { variant: DiagramVariant; revision: DiagramRevision }[] }
+  | { method: 'diagram-context-set'; nodeId: string; expectedRevisionId: string; context: DiagramAgentContext }
+  | { method: 'diagram-context-delete'; nodeId: string; expectedRevisionId: string }
+  | { method: 'variant-select'; nodeId: string; ownerNodeId: string; contextVariantId: string | null; variantId: string | null }
+  | { method: 'variant-store'; selectFirst?: boolean; nodeId: string; expectedRevisionId: string; variants: { variant: DiagramVariant; revision: DiagramRevision }[] }
   | { method: 'variant-review'; variantId: string; decisions?: Record<string, VariantDecision>; name?: string; remove?: boolean; apply?: boolean; nodeId?: string }
   | { method: 'highlight'; nodeId: string; contentNodeId?: string; contentNodeIds?: string[]; color?: string; highlightId: string }
   | { method: 'removeHighlights'; nodeId: string; highlightIds?: string[] }
@@ -138,6 +143,20 @@ export class MappingDocumentController {
       redoTransactionId: record.snapshots[record.future.at(-1)!]?.transactionId };
   }
   forkHistory(view = this.snapshot.canvas) { return this.historyService.forkContext(this.context, view); }
+  canvasViews() { return this.historyService.canvasViews(this.context); }
+  settlePendingGesture() { this.editorDriver?.settle(); }
+  private viewCamera?: import('../../core/diagrams/diagramCanvas').CanvasTransform;
+  captureViewCamera(viewport: import('../../core/diagrams/diagramCanvas').CanvasTransform) { this.viewCamera = viewport; }
+  canvasView(expectedVersion: number, input: import('../../core/diagrams/canvasView').CanvasViewCommand) {
+    if (input.operation === 'list' || input.operation === 'read')
+      return { version: this.snapshot.version, ...this.historyService.canvasView(this.context, input) };
+    this.editorDriver?.settle();
+    if (expectedVersion !== this.snapshot.version) throw Error('VERSION_CONFLICT: read the canvas again');
+    const result = this.historyService.canvasView(this.context, input,
+      this.viewCamera ? { ...this.snapshot.canvas, viewport: this.viewCamera } : this.snapshot.canvas);
+    this.updateSnapshot({ document: this.historyService.document(this.context), canvas: this.historyService.state(this.context).view as MappingCanvasState }, false);
+    return { version: this.snapshot.version, ...result };
+  }
   resolveDiagram(diagramId: string) { return this.historyService.resolve(this.context, diagramId); }
   getCanvasSnapshot() { return this.historyService.state(this.context).document; }
   private prepareDiagramEdit(document: MappingGridDocument, diagramId: string, edit: DiagramEdit) {
@@ -155,6 +174,8 @@ export class MappingDocumentController {
     return structuredClone(this.nodeCache.nodes);
   }
   private updateSnapshot(next: State, record: boolean, increment = true) {
+    if (record && this.viewCamera) next = { ...next, canvas: { ...next.canvas, viewport: this.viewCamera } };
+    else if (increment && next.canvas.viewport) this.viewCamera = next.canvas.viewport;
     next = { ...next, canvas: syncSelectionPresentation(importLegacySelection(next.canvas, next.document.scene)) };
     if (next.document.scene !== this.snapshot.document.scene || next.canvas.selection !== this.snapshot.canvas.selection
       || next.canvas.controls.selectionFocusId !== this.snapshot.canvas.controls.selectionFocusId) {
@@ -247,7 +268,32 @@ export class MappingDocumentController {
     if (editorCanvas) canvas = structuredClone(editorCanvas);
     const safeId = (id: string) => { if (typeof id !== 'string' || !/^[a-zA-Z0-9_.:-]{1,180}$/.test(id) || ['__proto__','constructor','prototype'].includes(id)) throw new Error('Invalid node ID'); };
     for (const op of operations) {
-      if (op.method === 'variant-store') {
+      if (op.method === 'diagram-context-set') {
+        const box = findBox(document.scene.root, this.gridId(op.nodeId));
+        if (box?.kind !== 'diagram') throw Error('Expected diagram GridBox');
+        const diagram = document.scene.contents[box.contentId];
+        if (diagram.revisionId !== op.expectedRevisionId) throw Error('VERSION_CONFLICT: diagram changed during context compilation');
+        validateDiagramAgentContext(op.context);
+        if (op.context.diagramId !== diagram.diagramId || op.context.compiledFromRevisionId !== diagram.revisionId
+          || op.context.sourceFingerprint !== diagramContextSourceFingerprint(diagram)) throw Error('DIAGRAM_CONTEXT_MISMATCH');
+        document.diagramContexts = { ...document.diagramContexts, [diagram.diagramId]: structuredClone(op.context) };
+      } else if (op.method === 'diagram-context-delete') {
+        const box = findBox(document.scene.root, this.gridId(op.nodeId));
+        if (box?.kind !== 'diagram') throw Error('Expected diagram GridBox');
+        const diagram = document.scene.contents[box.contentId];
+        if (diagram.revisionId !== op.expectedRevisionId) throw Error('VERSION_CONFLICT: diagram changed during context removal');
+        document.diagramContexts = { ...document.diagramContexts };
+        delete document.diagramContexts[diagram.diagramId];
+      } else if (op.method === 'variant-select') {
+        const box = findBox(document.scene.root, this.gridId(op.nodeId));
+        if (box?.kind !== 'diagram') throw Error('Expected diagram GridBox');
+        const key = variantSelectionKey(box.contentId, op.ownerNodeId, op.contextVariantId);
+        document.variantSelections = { ...document.variantSelections };
+        if (op.variantId) document.variantSelections[key] = { contentId: box.contentId, ownerNodeId: op.ownerNodeId,
+          contextVariantId: op.contextVariantId, activeVariantId: op.variantId };
+        else delete document.variantSelections[key];
+        validateVariantSelections(document);
+      } else if (op.method === 'variant-store') {
         const box = findBox(document.scene.root, this.gridId(op.nodeId));
         if (box?.kind !== 'diagram') throw Error('Expected diagram GridBox');
         const current = document.scene.contents[box.contentId];
@@ -257,12 +303,18 @@ export class MappingDocumentController {
         for (const { variant, revision } of op.variants) {
           const previous = document.variants[variant.id];
           if (variant.contentId !== current.id || variant.diagramId !== current.diagramId || variant.headRevisionId !== revision.id) throw Error('Variant belongs to another diagram');
-          if (previous && (previous.baseRevisionId !== variant.baseRevisionId || previous.ownerNodeId !== variant.ownerNodeId)) throw Error('Variant owner is immutable');
-          const base = previous?.headRevisionId ?? current.revisionId;
+          if (previous && (previous.baseRevisionId !== variant.baseRevisionId || previous.ownerNodeId !== variant.ownerNodeId || previous.contextVariantId !== variant.contextVariantId)) throw Error('Variant owner is immutable');
+          const base = previous?.headRevisionId ?? (Object.values(document.variants).some(v => v.contentId === current.id && v.headRevisionId === variant.baseRevisionId) ? variant.baseRevisionId : current.revisionId);
           if (!previous && variant.baseRevisionId !== base) throw Error('Invalid variant base');
           receiveDiagramRevision(base, revision);
           validateVariant(variant, id => this.diagrams.getRevision(id));
           document.variants[variant.id] = structuredClone(variant);
+        }
+        if (op.selectFirst) {
+          const variant = op.variants[0].variant, contextVariantId = variant.contextVariantId ?? null;
+          const key = variantSelectionKey(variant.contentId, variant.ownerNodeId, contextVariantId);
+          document.variantSelections = { ...document.variantSelections, [key]: { contentId: variant.contentId,
+            ownerNodeId: variant.ownerNodeId, contextVariantId, activeVariantId: variant.id } };
         }
       } else if (op.method === 'variant-review') {
         const previous = document.variants?.[op.variantId];
@@ -299,7 +351,11 @@ export class MappingDocumentController {
           variant.appliedReview = { headRevisionId: variant.headRevisionId, decisions: { ...variant.decisions } };
         }
         document.variants = { ...document.variants, [variant.id]: variant };
-        if (op.remove) delete document.variants[variant.id];
+        if (op.remove) {
+          if (Object.values(document.variants).some(v => v.contextVariantId === variant.id)) throw Error('Remove nested variants first');
+          delete document.variants[variant.id];
+          document.variantSelections = Object.fromEntries(Object.entries(document.variantSelections ?? {}).filter(([, s]) => s.activeVariantId !== variant.id));
+        }
       } else if (op.method === 'delete-diagrams') {
         if (!op.nodeIds.length) throw new Error('Select one or more diagrams to delete');
         const selected = new Set(op.nodeIds);
@@ -527,6 +583,17 @@ export class MappingDocumentController {
     }
     if (editorCanvas && operations.some(op => op.method === 'move' && op.nodeId.startsWith('grid:')))
       document = { ...document, scene: layoutScene(document.scene, document.scene.root.id) };
+    if (document.diagramContexts) {
+      const live = new Set<string>();
+      const visit = (box: GridBox): void => {
+        if (box.kind === 'diagram') {
+          const diagram = document.scene.contents[box.contentId];
+          if (diagram) live.add(diagram.diagramId);
+        } else box.children.forEach(visit);
+      };
+      visit(document.scene.root);
+      document.diagramContexts = Object.fromEntries(Object.entries(document.diagramContexts).filter(([id]) => live.has(id)));
+    }
     projectCanvasSnapshot(document.scene);
     if (operations.some(op => op.method === 'remove') && !flattenGrid(resolveScene(document.scene)).some(node => node.contentId))
       throw Error('Canvas must contain a visible diagram; use a transfer to move the last diagram');

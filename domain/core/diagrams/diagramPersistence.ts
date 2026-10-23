@@ -142,6 +142,10 @@ export class DiagramPersistence {
   /** Hydrate one checkpoint and its exact bound revisions, preserving logical IDs. */
   async currentHistory(raw: unknown): Promise<CanvasHistoryRecord> {
     if (!object(raw)) throw Error('Missing canvas history');
+    // A named view can reference any archived checkpoint, including revisions
+    // no longer present at the current head. Keep that graph when opening a canvas.
+    if (raw.canvasViews && (raw.canvasViews.recording || Object.keys(raw.canvasViews.saved ?? {}).length))
+      return await restoreDiagramData(raw, this.store, 'current') as CanvasHistoryRecord;
     const read = async (value: any) => value?.$diagramRecord ? this.store.get(value.$diagramRecord, value.id) : value;
     const { head, revisions } = await storedHead(raw, read);
     if (!head) throw Error('Unknown canvas checkpoint');

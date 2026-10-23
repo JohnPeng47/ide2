@@ -27,6 +27,17 @@ async function setup() {
   controller.applyUpdate(0, [{ method: 'replace', nodeId: 'grid:overview', ascii: 'Changed' }]);
   return { root, records, service, controller, canvas };
 }
+it('retains named CanvasViews when opening a saved canvas through the current-history loader', async () => {
+  const { controller, service } = await setup();
+  const recording = controller.canvasView(controller.getSnapshot().version, { operation: 'start', name: 'Earlier state' }).recording!;
+  controller.canvasView(controller.getSnapshot().version, { operation: 'stop' });
+  controller.applyUpdate(controller.getSnapshot().version, [{ method: 'replace', nodeId: 'grid:overview', ascii: 'Latest state' }]);
+  const stored = await service.persist(controller.exportHistory());
+  const history = await service.currentHistory(stored);
+  const restored = new MappingDocumentController(documentFromHistory(history), initialCanvasState(), 0, undefined, undefined, history);
+  restored.canvasView(0, { operation: 'apply', viewId: recording.id });
+  expect(restored.getSnapshot().document.scene.contents.overview.content.ascii).toBe('Changed');
+});
 
 it('stores diagram revisions and bindings separately and restores durable undo in a new process', async () => {
   const { root, service, controller } = await setup();

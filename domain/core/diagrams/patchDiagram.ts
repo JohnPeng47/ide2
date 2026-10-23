@@ -5,17 +5,33 @@ import { validateDiagram, type Diagram } from './diagram';
 
 /** Replace whole, 1-based inclusive lines. Empty patch deletes the range. */
 export function patchDiagram(before: Diagram, start: number, end: number, patch: string) {
+  return patchDiagramRanges(before, [{ start, end, patch }]);
+}
+
+/** Apply nonoverlapping ranges from one base snapshot, parsing and issuing content only once. */
+export function patchDiagramRanges(before: Diagram, input: readonly { start: number; end: number; patch: string | readonly string[] }[]) {
   const lines = before.content.ascii.split('\n');
-  if (!Number.isInteger(start) || !Number.isInteger(end) || start < 1 || end < start || end > lines.length) {
-    throw new Error('INVALID_PATCH_RANGE: use existing 1-based inclusive lines');
-  }
-  if (typeof patch !== 'string' || patch.length > 20000) throw new Error('Invalid patch text');
-  const normalized = patch.replace(/\r\n?/g, '\n');
-  const inserted = normalized === '' ? [] : normalized.split('\n');
-  const ascii = [...lines.slice(0, start - 1), ...inserted, ...lines.slice(end)].join('\n');
-  const unchanged = ascii === before.content.ascii;
-  const lineAfter = (line: number): number | undefined => unchanged || line < start ? line
-    : line > end ? line + inserted.length - (end - start + 1) : undefined;
+  const patches = [...input].sort((a, b) => a.start - b.start).map(({ start, end, patch }, i, sorted) => {
+    if (!Number.isInteger(start) || !Number.isInteger(end) || start < 1 || end < start || end > lines.length || i > 0 && start <= sorted[i - 1].end)
+      throw Error('INVALID_PATCH_RANGE: use nonoverlapping existing 1-based inclusive lines');
+    if (typeof patch !== 'string' && (!Array.isArray(patch) || patch.some(line => typeof line !== 'string' || /[\r\n]/.test(line)))) throw Error('Invalid patch lines');
+    const normalized = typeof patch === 'string' ? patch.replace(/\r\n?/g, '\n') : patch.join('\n');
+    if (normalized.length > 20000) throw Error('Invalid patch text');
+    const inserted = typeof patch === 'string' ? normalized === '' ? [] : normalized.split('\n') : [...patch];
+    return { start, end, inserted, unchanged: inserted.length === end - start + 1 && inserted.every((line, i) => line === lines[start - 1 + i]) };
+  });
+  const nextLines = [...lines];
+  for (const { start, end, inserted } of [...patches].reverse()) nextLines.splice(start - 1, end - start + 1, ...inserted);
+  const ascii = nextLines.join('\n'), unchanged = ascii === before.content.ascii;
+  const lineAfter = (line: number): number | undefined => {
+    let delta = 0;
+    for (const patch of patches) {
+      if (line < patch.start) break;
+      if (line <= patch.end) return patch.unchanged ? line + delta : undefined;
+      delta += patch.inserted.length - (patch.end - patch.start + 1);
+    }
+    return line + delta;
+  };
   const content = unchanged ? before.content : buildDiagramContent(ascii, `${before.id}:${before.revision + 1}`,
     before.content.structure.kind, before.content.structure.kind === 'tree' ? before.content.structure.parserVersion : undefined);
   const afterNodes = diagramContentNodes(content);

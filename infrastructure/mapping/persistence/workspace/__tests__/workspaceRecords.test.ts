@@ -6,7 +6,7 @@ import path from 'node:path';
 import { WorkspaceRecordStore } from '../workspaceRecordStore';
 import { initialCanvasState } from '../../../../../domain/mapping/workspace/mappingWorkspace';
 import { singleDiagramScene } from '../../../../../domain/core/diagrams/projectDiagramCanvas';
-import { documentPrefix, historyChanges, type WorkspaceBatch, type WorkspaceIndex } from '../../../../../domain/mapping/workspace/workspaceRecords';
+import { documentPrefix, historyChanges, canvasViewChanges, type WorkspaceBatch, type WorkspaceIndex } from '../../../../../domain/mapping/workspace/workspaceRecords';
 import { CanvasCheckpointEncoder } from '../../../../../domain/core/diagrams/canvasCheckpointRecords';
 import { MappingDocumentController } from '../../../../../domain/mapping/workspace/mappingDocumentController';
 vi.mock('node:fs/promises', async importOriginal => { const actual = await importOriginal<typeof import('node:fs/promises')>(); return { ...actual, rename: vi.fn(actual.rename), open: vi.fn(actual.open) }; });
@@ -29,6 +29,29 @@ it('migrates once and persists a changed record without rewriting existing histo
   const loaded = await new WorkspaceRecordStore(root).load('project');
   expect(loaded?.documents[0].name).toBe('Renamed');
   expect(Object.keys((await store.state('project', async () => null)).records)).toEqual(Object.keys(state.records));
+});
+it('persists CanvasViews as checkpoint references and restores their revisions after a disk reload', async () => {
+  const { root, store, state, prefix } = await fixture();
+  const doc = (await store.load('project'))!.documents[0];
+  const controller = new MappingDocumentController(doc.document, doc.canvas, 0, undefined, undefined, doc.history);
+  const cursor = controller.persistenceChanges().sequence;
+  const start = controller.canvasView(0, { operation: 'start', name: 'Saved layout' });
+  controller.applyUpdate(start.version, [{ method: 'replace', nodeId: 'grid:overview', ascii: 'Recorded revision' }]);
+  controller.canvasView(controller.getSnapshot().version, { operation: 'stop' });
+  const viewId = Object.keys(controller.canvasViews().saved)[0];
+  controller.applyUpdate(controller.getSnapshot().version, [{ method: 'replace', nodeId: 'grid:overview', ascii: 'Current revision' }]);
+  await store.apply('project', { requestId: 'save-views', expectedRevision: 0, changes: [
+    ...historyChanges('draft-a', controller.persistenceChanges(cursor)),
+    ...canvasViewChanges('draft-a', controller.getSnapshot().canvas),
+    { key: prefix + 'metadata', value: { ...state.records[prefix + 'metadata'] as object, version: controller.getSnapshot().version } }
+  ] });
+  const loaded = (await new WorkspaceRecordStore(root).load('project'))!.documents[0];
+  const restored = new MappingDocumentController(loaded.document, loaded.canvas, 0, undefined, undefined, loaded.history);
+  expect(restored.getSnapshot().document.scene.contents.overview.content.ascii).toBe('Current revision');
+  restored.canvasView(0, { operation: 'apply', viewId });
+  expect(restored.getSnapshot().document.scene.contents.overview.content.ascii).toBe('Recorded revision');
+  restored.undo(); expect(restored.getSnapshot().document.scene.contents.overview.content.ascii).toBe('Current revision');
+  expect(JSON.stringify(loaded.history!.canvasViews)).not.toContain('Recorded revision');
 });
 it('recognizes identical retries after restart and rejects changed IDs and stale clients', async () => {
   const { root, store, batch } = await fixture(); await store.apply('project', batch);

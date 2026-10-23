@@ -1,3 +1,4 @@
+import { resolveVariantLines, variantSelectionKey } from '../diagramVariantSelection';
 import { expect, it } from 'vitest';
 import { RevisionedDiagramService } from '../diagramService';
 import { diagramContentNodes } from '../diagramContentNodes';
@@ -123,4 +124,51 @@ it('rejects structural application that would discard non-node prose', () => {
   Object.assign(variant,{ownerNodeId:'root',baseRevisionId:withNotes.id,headRevisionId:candidate.id,revisionIds:[candidate.id]});
   variant.decisions=Object.fromEntries(variantChanges(withNotes,candidate,'root').map(c=>[c.id,'accept']));
   expect(()=>applyVariant(variant,withNotes,service)).toThrow('VARIANT_LAYOUT');
+});
+
+it('cycles saved alternatives without accepting them, preserves outside edits, and restores selection after persistence and undo', () => {
+  const { controller, service, base, next, logical, variant } = fixture();
+  const update = (operations: Parameters<typeof controller.applyUpdate>[1]) => controller.applyUpdate(controller.getSnapshot().version, operations);
+  update([{ method: 'variant-store', nodeId: 'grid:shop', expectedRevisionId: base.id, variants: [{ variant, revision: next }] }]);
+  update([{ method: 'patchDiagram', nodeId: 'grid:shop', start: 5, end: 5, patch: '`-- Cart updated elsewhere' }]);
+  const selection = { method: 'variant-select' as const, nodeId: 'grid:shop', ownerNodeId: logical.Payment, contextVariantId: null, variantId: variant.id };
+  update([selection]);
+  const render = (document = controller.getSnapshot().document) => resolveVariantLines(service.getRevision(document.scene.contents.shop.revisionId), document, id => service.getRevision(id)).map(l => l.revision.diagram.content.ascii.split('\n')[l.sourceLine - 1]).join('\n');
+  expect(render()).toContain('Authorize asynchronously');
+  expect(render()).toContain('Cart updated elsewhere');
+  expect(controller.getSnapshot().document.variants![variant.id].decisions).toEqual({});
+  update([{ ...selection, variantId: null }]);
+  expect(render()).not.toContain('asynchronously');
+  controller.undo(); expect(render()).toContain('asynchronously');
+  const snapshot = controller.getSnapshot();
+  const restored = new MappingDocumentController(snapshot.document, snapshot.canvas, 0, undefined, undefined, JSON.parse(JSON.stringify(controller.exportHistory())));
+  expect(render(restored.getSnapshot().document)).toBe(render());
+});
+it('scopes nested selections to their parent variant and remembers them when switching back', () => {
+  const { controller, service, base, next, logical, variant } = fixture();
+  const nested = service.revise(next.id, { kind: 'replace', input: { ascii: next.diagram.content.ascii.replace('Authorize asynchronously', 'Authorize with retry'), structureKind: 'tree' },
+    nodeCorrespondence: Object.fromEntries(diagramContentNodes(next.diagram.content).map(n => [next.nodeRefs[n.id], n.line])) }).revision;
+  const child = { ...variant, id: 'child', contextVariantId: variant.id, ownerNodeId: logical.Authorize, baseRevisionId: next.id, headRevisionId: nested.id, revisionIds: [nested.id] };
+  controller.applyUpdate(0, [{ method: 'variant-store', nodeId: 'grid:shop', expectedRevisionId: base.id, variants: [{ variant, revision: next }, { variant: child, revision: nested }] }]);
+  const select = (ownerNodeId: string, contextVariantId: string | null, variantId: string | null) => controller.applyUpdate(controller.getSnapshot().version, [{ method: 'variant-select', nodeId: 'grid:shop', ownerNodeId, contextVariantId, variantId }]);
+  select(logical.Payment, null, variant.id); select(logical.Authorize, variant.id, child.id);
+  const text = () => resolveVariantLines(base, controller.getSnapshot().document, id => service.getRevision(id)).map(l => l.revision.diagram.content.ascii.split('\n')[l.sourceLine - 1]).join('\n');
+  expect(text()).toContain('Authorize with retry');
+  select(logical.Payment, null, null); expect(text()).not.toContain('with retry');
+  select(logical.Payment, null, variant.id); expect(text()).toContain('Authorize with retry');
+  expect(controller.getSnapshot().document.variantSelections![variantSelectionKey('shop', logical.Authorize, variant.id)].activeVariantId).toBe(child.id);
+  expect(() => select(logical.Authorize, null, child.id)).toThrow('Invalid branch');
+});
+
+it('stores and selects generated variants in a single undo step', () => {
+  const { controller, service, base, next, variant } = fixture();
+  controller.applyUpdate(0, [{ method: 'variant-store', nodeId: 'grid:shop', expectedRevisionId: base.id, variants: [{ variant, revision: next }], selectFirst: true }]);
+  const selected = controller.getSnapshot();
+  expect(selected.document.variantSelections![variantSelectionKey('shop', variant.ownerNodeId, null)].activeVariantId).toBe(variant.id);
+  expect(resolveVariantLines(base, selected.document, id => service.getRevision(id)).some(l => l.variantId === variant.id)).toBe(true);
+  controller.undo();
+  expect(controller.getSnapshot().document.variants).toBeUndefined();
+  expect(controller.getSnapshot().document.variantSelections).toBeUndefined();
+  controller.undo(true);
+  expect(controller.getSnapshot().document.variantSelections).toEqual(selected.document.variantSelections);
 });

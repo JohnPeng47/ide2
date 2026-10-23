@@ -2,6 +2,8 @@ import { expect, it } from 'vitest';
 import { CanvasCheckpointEncoder, MAX_CHECKPOINT_DELTA_DEPTH, applyCanvasRecordDiff, loadCanvasCheckpoint, restoreCanvasCheckpoints,
   type CanvasCheckpointRecords } from '../canvasCheckpointRecords';
 import type { StoredCanvasSnapshot } from '../canvasHistory';
+import { compileDiagramAgentContext } from '../diagramAgentContext';
+import { singleDiagramScene } from '../projectDiagramCanvas';
 
 const ascii = 'Tree\n' + '|-- shared source\n'.repeat(150);
 function snapshot(id: string, parentId?: string, x = 0): StoredCanvasSnapshot {
@@ -29,6 +31,26 @@ it('stores a panel move as one changed record and retains shared text once', () 
   const a = applyCanvasRecordDiff({}, storage.checkpoints.a.changes);
   const b = applyCanvasRecordDiff(a, storage.checkpoints.b.changes);
   expect(applyCanvasRecordDiff(b, storage.checkpoints.b.changes, true)).toEqual(a);
+});
+
+it('persists a diagram context as its own record across later canvas checkpoints', () => {
+  const encoder = new CanvasCheckpointEncoder(), first = snapshot('a');
+  const diagram = singleDiagramScene('Source').contents.overview;
+  const compiled = compileDiagramAgentContext(diagram);
+  const context = { diagramId: compiled.diagramId, compiledFromRevisionId: compiled.compiledFromRevisionId,
+    sourceFingerprint: compiled.sourceFingerprint, contentHash: compiled.snapshot!.contentHash,
+    backingRecordId: 'a'.repeat(64) };
+  first.document.diagramContexts = { [diagram.diagramId]: context };
+  const initial = encoder.encode({ a: first });
+  const second = structuredClone(first);
+  second.id = 'b'; second.parentId = 'a';
+  (second.view as any).display.nodes['0'].position.x = 10;
+  const next = encoder.encode({ b: second });
+  expect(Object.keys(initial.checkpoints.a.changes.added)).toContain(JSON.stringify(['document', 'diagramContexts', diagram.diagramId]));
+  expect(Object.keys(next.checkpoints.b.changes.updated)).toEqual([JSON.stringify(['view', 'display', 'nodes', '0'])]);
+  merge(initial, next);
+  expect(restoreCanvasCheckpoints(initial.checkpoints, initial.items).b.document.diagramContexts?.[diagram.diagramId]).toEqual(context);
+  expect(JSON.stringify(initial)).not.toContain('Source evidence for diagram');
 });
 
 it('preserves forks, deletions, transaction metadata, unicode, and portable full exports', () => {

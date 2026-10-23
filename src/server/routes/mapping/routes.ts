@@ -48,6 +48,14 @@ export function createMappingRoutes({ selection, diagrams, workspace, chat, comp
       if (request.method === 'POST') return sendJson(response, 200, await workspace.applyBatch(await readBody(request, 64 * 1024 * 1024) as WorkspaceBatch));
       return sendJson(response, 405, { error: 'method not allowed' });
     }
+    if (url.pathname === '/api/mapping/workspace/export') {
+      if (request.method !== 'POST') return sendJson(response, 405, { error: 'method not allowed' });
+      return sendJson(response, 200, await workspace.portableExport(await readBody(request, 64 * 1024 * 1024)));
+    }
+    if (url.pathname === '/api/mapping/workspace/import-contexts') {
+      if (request.method !== 'POST') return sendJson(response, 405, { error: 'method not allowed' });
+      return sendJson(response, 200, await workspace.prepareImport(await readBody(request, 64 * 1024 * 1024)));
+    }
     if (url.pathname === '/api/mapping/workspace') {
       if (request.method === 'GET') return sendJson(response, 200, await workspace.load());
       if (request.method !== 'PUT') return sendJson(response, 405, { error: 'method not allowed' });

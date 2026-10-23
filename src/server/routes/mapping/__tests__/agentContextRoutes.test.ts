@@ -83,7 +83,7 @@ it('uploads over a bound WebSocket and uses that immutable context in an HTTP di
     const apiAttach = async (documentId: string) => (await tool('exec', { requestId: `attach-${documentId}`,
       code: `return canvas.attach({canvasId:"workspace",documentId:${JSON.stringify(documentId)}});` })).data.value;
     const wrong = await apiAttach('other');
-    const edit = { nodeId: 'grid:overview', expectedVersion: 0, baseRevisionId: base.revisionId,
+    const edit = { 'edit-mode': 'in-place', 'replace-mode': 'diagram', nodeId: 'grid:overview', expectedVersion: 0, baseRevisionId: base.revisionId,
       prompt: 'Reflect the ownership change', requestId: 'edit', agentContextId: receipt.agentContextId };
     expect((await tool('edit-diagram', { ...edit, sessionId: wrong.sessionId })).status).toBe(400);
     expect(generate).not.toHaveBeenCalled();

@@ -1,13 +1,14 @@
-import { subtreeReplacement, type SubtreeRange } from './diagramSubtreeEdit';
+import { constructDiagram } from './internal/constructDiagram';
+import { scopedReplacements, type SubtreeRange } from './diagramSubtreeEdit';
 import type { AgentContextSnapshot } from '../agents/agentContext';
 import type { Diagram, DiagramInput } from './diagram';
 import { DiagramRevisionEditor, type DiagramEdit, type DiagramRevision, type PreparedDiagramEdit } from './diagramRevisionEditor';
 import { diagramContentNodes } from './diagramContentNodes';
 import { diagramRevisions } from './internal/revisionRegistry';
-import { stripNodeContinuity } from './diagramNodeContinuity';
+import { validateGeneratedDiagramEdit, type GeneratedDiagramEdit } from './generatedDiagramEdit';
 
 export type { DiagramEdit, DiagramRevision, DiagramRevisionId } from './diagramRevisionEditor';
-export interface DiagramRevisionResult extends PreparedDiagramEdit { readonly revision: DiagramRevision }
+export interface DiagramRevisionResult extends PreparedDiagramEdit { readonly revision: DiagramRevision; replacementRanges?: SubtreeRange[] }
 export type DiagramRevisionSummary = Readonly<Pick<DiagramRevision, 'id' | 'diagramId' | 'parentId'>>;
 /** The parts of a template parameter that rendering needs. */
 export type GenerationPromptParameter =
@@ -28,7 +29,10 @@ export interface DiagramGenerationRequest {
     references: readonly unknown[];
   };
   baseRevisionId?: string;
+  operation?: 'edit-diagram' | 'create-diagram' | 'extend-diagram';
+  sourceMappings?: boolean;
   editRange?: SubtreeRange;
+  editRanges?: SubtreeRange[];
   context?: {
     diagram: Diagram;
     connections?: readonly import('./diagramConnection').DiagramConnection[];
@@ -42,7 +46,7 @@ export interface GenerationOptions {
   onAgentContext?: (context: AgentContextSnapshot) => void;
 }
 export interface DiagramGenerator {
-  generate(request: DiagramGenerationRequest, options: GenerationOptions): Promise<Omit<DiagramInput, 'id' | 'revision'> & { nodeCorrespondence?: Record<string, number> }>;
+  generate(request: DiagramGenerationRequest, options: GenerationOptions): Promise<Omit<DiagramInput, 'id' | 'revision'> & { nodeCorrespondence?: Record<string, number>; replacementRanges?: SubtreeRange[] }>;
 }
 
 /** Sole content writer. Local revisions are synchronous; durable adapters flush issued records before publishing canvases. */
@@ -55,6 +59,7 @@ export interface DiagramService {
   revise(baseRevisionId: string, edit: DiagramEdit): DiagramRevisionResult;
   /** Compose a reviewed revision using identities proven by retained source revisions. */
   derive(baseRevisionId: string, input: Omit<DiagramInput, 'id' | 'revision'>, refs: Record<string, number>, sources: readonly string[]): DiagramRevisionResult;
+  submit(request: DiagramGenerationRequest, candidate: GeneratedDiagramEdit): DiagramRevisionResult;
   generate(request: DiagramGenerationRequest, options?: GenerationOptions): Promise<DiagramRevisionResult>;
 }
 
@@ -116,24 +121,36 @@ export class RevisionedDiagramService implements DiagramService {
       throw Error('Generation base belongs to another diagram');
     const raw = await this.generator.generate(structuredClone({ ...request,
       nodeRefs: request.baseRevisionId ? this.getRevision(request.baseRevisionId).nodeRefs : {} }), options);
-    const stripped = stripNodeContinuity(raw.ascii, request.baseRevisionId ? this.getRevision(request.baseRevisionId).nodeRefs : {});
-    const generated = { ...raw, ascii: stripped.ascii, nodeCorrespondence: { ...raw.nodeCorrespondence, ...stripped.nodeCorrespondence } };
     options.signal?.throwIfAborted();
-    if (request.baseRevisionId && request.editRange) {
+    return this.submit(request, { ascii: raw.ascii, structureKind: raw.structureKind ?? request.input.structureKind ?? 'diagram',
+      mappings: raw.mappings ? [...raw.mappings] : undefined, replacementRanges: raw.replacementRanges }, raw.nodeCorrespondence);
+  }
+  submit(request: DiagramGenerationRequest, raw: GeneratedDiagramEdit, correspondence?: Record<string, number>): DiagramRevisionResult {
+    const base = request.baseRevisionId ? this.getRevision(request.baseRevisionId) : undefined;
+    if (base && base.diagram.id !== request.input.id) throw Error('Generation base belongs to another diagram');
+    if (!base && raw.replacementRanges) throw Error('REPLACEMENT_SCOPE: new diagrams cannot include replacementRanges');
+    const context = base?.diagram ?? request.context?.diagram ?? constructDiagram({ ...request.input, revision: 0, ascii: '[New diagram]', mappings: [] });
+    const clean = validateGeneratedDiagramEdit(context, raw, base?.nodeRefs, request.sourceMappings);
+    const generated = { ...clean, nodeCorrespondence: { ...correspondence, ...clean.nodeCorrespondence },
+      source: context.sourceContext.binding, evidence: context.sourceContext.evidence };
+    const ranges = request.editRanges?.length ? request.editRanges : request.editRange ? [request.editRange] : [];
+    if (request.baseRevisionId && ranges.length) {
       const base = this.getRevision(request.baseRevisionId).diagram;
-      const patch = subtreeReplacement(base, generated.ascii, request.editRange);
-      // patchDiagram rebases untouched mappings and logical identities. Only accept generated mappings inside the replacement.
-      const inserted = patch ? patch.split('\n').length : 0;
-      const delta = inserted - (request.editRange.endLine - request.editRange.startLine + 1);
-      const retained = base.sourceContext.mappings.filter(m => m.line < request.editRange!.startLine || m.line > request.editRange!.endLine)
-        .map(m => ({ ...m, line: m.line > request.editRange!.endLine ? m.line + delta : m.line }));
-      const retainedIds = new Set(retained.map(m => m.id));
-      const mappings = [...retained, ...(generated.mappings ?? []).filter(m => m.line >= request.editRange!.startLine
-        && m.line < request.editRange!.startLine + inserted && !retainedIds.has(m.id))];
-      return this.revise(request.baseRevisionId, { kind: 'patch', start: request.editRange.startLine, end: request.editRange.endLine, patch, mappings, nodeCorrespondence: generated.nodeCorrespondence });
+      if (generated.structureKind && generated.structureKind !== base.content.structure.kind) throw Error('REPLACEMENT_SCOPE: preserve the diagram structure kind');
+      const { patches, outputRanges } = scopedReplacements(base, generated.ascii, ranges, generated.replacementRanges);
+      const retained = base.sourceContext.mappings.flatMap(mapping => {
+        if (ranges.some(range => mapping.line >= range.startLine && mapping.line <= range.endLine)) return [];
+        const delta = ranges.reduce((sum, range, i) => sum + (mapping.line > range.endLine
+          ? outputRanges[i].endLine - outputRanges[i].startLine - (range.endLine - range.startLine) : 0), 0);
+        return [{ ...mapping, line: mapping.line + delta }];
+      });
+      const retainedIds = new Set(retained.map(mapping => mapping.id));
+      const mappings = [...retained, ...(generated.mappings ?? []).filter(mapping => !retainedIds.has(mapping.id)
+        && outputRanges.some(range => mapping.line >= range.startLine && mapping.line <= range.endLine))];
+      return { ...this.revise(request.baseRevisionId, { kind: 'patches', retainMappings: !request.sourceMappings, patches, mappings, nodeCorrespondence: generated.nodeCorrespondence }), replacementRanges: outputRanges };
     }
     return request.baseRevisionId
-      ? this.revise(request.baseRevisionId, { kind: 'replace', input: generated, nodeCorrespondence: generated.nodeCorrespondence })
+      ? this.revise(request.baseRevisionId, { kind: 'replace', retainMappings: !request.sourceMappings, input: generated, nodeCorrespondence: generated.nodeCorrespondence })
       : this.create({ ...request.input, ...generated, id: request.input.id, revision: 0 });
   }
 }

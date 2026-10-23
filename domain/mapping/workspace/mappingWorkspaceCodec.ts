@@ -286,7 +286,7 @@ export function deserializeWorkspace(json: string | unknown, historyValidation: 
     check(focusId === null || selection.items.some((item: any) => item.id === focusId && item.region), 'missing selection focus');
     if (c.activeThreadId !== null) check(Object.hasOwn(nodes, c.activeThreadId), 'missing control owner');
     if (c.activeThreadId) check(nodes[c.activeThreadId].kind === 'conversation', 'invalid conversation owner');
-    if (doc.viewport) { object(doc.viewport); object(doc.viewport.offset); number(doc.viewport.offset.x); number(doc.viewport.offset.y); check(doc.viewport.scale >= .25 && doc.viewport.scale <= 4, 'invalid zoom'); }
+    for (const viewport of [doc.viewport, doc.canvas.viewport]) if (viewport) { object(viewport); object(viewport.offset); number(viewport.offset.x); number(viewport.offset.y); check(viewport.scale >= .25 && viewport.scale <= 4, 'invalid zoom'); }
   }
   validateCanvasParents(value.documents);
   for (const tx of value.transfers ?? []) {

@@ -15,6 +15,8 @@ export interface CanvasContextState {
 
 /** Canvas controllers coordinate edits; this boundary owns history and its storage. */
 export interface CanvasHistoryService {
+  canvasViews(context: CanvasEditingContext): import('./canvasView').CanvasViews;
+  canvasView(context: CanvasEditingContext, input: import('./canvasView').CanvasViewCommand, view?: unknown): import('./canvasView').CanvasViews;
   navigation?(context: CanvasEditingContext): import('./canvasHistory').CanvasHistoryNavigation;
   prepareTransfer(context: CanvasEditingContext, input: TransferInput, destination?: CanvasEditingContext): PreparedCanvasTransfer;
   transferBoundary(context: CanvasEditingContext, transaction: CanvasTransfer, canvasId: string, redo?: boolean): boolean;
@@ -35,6 +37,8 @@ export interface CanvasHistoryService {
 }
 
 export class DefaultCanvasHistoryService implements CanvasHistoryService {
+  canvasViews(context: CanvasEditingContext) { return this.history(context).canvasViews(); }
+  canvasView(context: CanvasEditingContext, input: import('./canvasView').CanvasViewCommand, view?: unknown) { return this.history(context).canvasView(input, view); }
   constructor(private readonly validation: import('./canvasHistory').HistoryValidation = 'all') {}
   // Object handles isolate two viewers of the same persisted context, and allow GC on close.
   private readonly contexts = new WeakMap<CanvasEditingContext, CanvasHistory>();

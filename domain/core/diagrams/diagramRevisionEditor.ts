@@ -1,7 +1,8 @@
 import { validateDiagramHighlights, rebaseDiagramHighlights, type DiagramHighlight } from './diagramHighlight';
 import { validateDiagram, type Diagram, type DiagramInput } from './diagram';
 import { constructDiagram } from './internal/constructDiagram';
-import { patchDiagram } from './patchDiagram';
+import { patchDiagramRanges } from './patchDiagram';
+import { retainSourceMappings } from './retainSourceMappings';
 import { diagramContentNodes } from './diagramContentNodes';
 import { activeDiagramJumps, rebaseDiagramJumps, validateDiagramJumps, type DiagramJump } from './diagramJump';
 
@@ -32,7 +33,8 @@ export interface PreparedDiagramEdit {
 export type DiagramEdit =
   | { kind: 'source-mappings'; expectedContentHash: string; mappings: NonNullable<DiagramInput['mappings']>; evidence: NonNullable<DiagramInput['evidence']>; source?: DiagramInput['source'] }
   | { kind: 'patch'; start: number; end: number; patch: string; mappings?: DiagramInput['mappings']; nodeCorrespondence?: Record<string, number> }
-  | { kind: 'replace'; input: Omit<DiagramInput, 'id' | 'revision'>; nodeCorrespondence?: Record<string, number> }
+  | { kind: 'patches'; retainMappings?: boolean; patches: { start: number; end: number; patch: string[] }[]; mappings?: DiagramInput['mappings']; nodeCorrespondence?: Record<string, number> }
+  | { kind: 'replace'; retainMappings?: boolean; input: Omit<DiagramInput, 'id' | 'revision'>; nodeCorrespondence?: Record<string, number> }
   | { kind: 'jumps'; jumps: DiagramJump[] }
   | { kind: 'highlights'; highlights: DiagramHighlight[] };
 
@@ -77,14 +79,16 @@ export class DiagramRevisionEditor implements DiagramRevisionOperations {
       validateDiagram(diagram);
       return { diagram, nodeIds: correspondingNodes(before, diagram) };
     }
-    if (edit.kind === 'patch') {
-      let prepared = patchDiagram(before, edit.start, edit.end, edit.patch);
+    if (edit.kind === 'patch' || edit.kind === 'patches') {
+      let prepared = patchDiagramRanges(before, edit.kind === 'patch' ? [edit] : edit.patches);
       if (edit.nodeCorrespondence) {
         const nodeIds = this.correspondence(contextId, diagramId, prepared.diagram, prepared.nodeIds, edit.nodeCorrespondence);
         prepared = { ...prepared, nodeIds, diagram: { ...prepared.diagram,
           ...(before.highlights ? { highlights: rebaseDiagramHighlights(before.highlights, nodeIds) } : {}) } };
       }
-      if (edit.mappings) {
+      if (edit.kind === 'patches' && edit.retainMappings) prepared = { ...prepared, diagram: { ...prepared.diagram, sourceContext: { ...prepared.diagram.sourceContext,
+        mappings: retainSourceMappings(before, prepared.diagram, prepared.nodeIds, prepared.lineAfter) } } };
+      if (edit.mappings && !(edit.kind === 'patches' && edit.retainMappings)) {
         const sourceContext = constructDiagram({ id: diagramId, revision: prepared.diagram.revision,
           ascii: prepared.diagram.content.ascii, structureKind: prepared.diagram.content.structure.kind,
           source: before.sourceContext.binding, evidence: before.sourceContext.evidence, mappings: edit.mappings }).sourceContext;
@@ -98,9 +102,10 @@ export class DiagramRevisionEditor implements DiagramRevisionOperations {
       ? { ...structuredClone(before), jumps: validateDiagramJumps(before.content, edit.jumps, false) }
       : constructDiagram({ ...edit.input, id: diagramId, revision: before.revision + 1 });
     const nodeIds = edit.kind === 'replace' ? this.correspondence(contextId, diagramId, diagram, correspondingNodes(before, diagram), edit.nodeCorrespondence) : correspondingNodes(before, diagram);
-    const next = edit.kind === 'replace' ? { ...diagram,
+    let next = edit.kind === 'replace' ? { ...diagram,
       ...(before.jumps ? { jumps: rebaseDiagramJumps(before.content, diagram.content, before.jumps) } : {}),
       ...(before.highlights ? { highlights: rebaseDiagramHighlights(before.highlights, nodeIds) } : {}) } : diagram;
+    if (edit.kind === 'replace' && edit.retainMappings) next = { ...next, sourceContext: { ...next.sourceContext, mappings: retainSourceMappings(before, next, nodeIds) } };
     validateDiagram(next);
     return { diagram: next, nodeIds };
   }

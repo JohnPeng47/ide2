@@ -7,6 +7,9 @@ const id = z.string().min(1).max(500).refine(value => !['__proto__', 'constructo
 export const diagramVariantSchema = z.object({
   id, name: z.string().trim().min(1).max(120), diagramId: id, contentId: id,
   /** 'root' is the synthetic owner of the complete diagram. */
+  contextVariantId: id.optional(),
+  replacementScope: z.object({ mode: z.enum(['multi-contiguous', 'multi-disjoint']),
+    ranges: z.array(z.object({ startLine: z.number().int().positive(), endLine: z.number().int().nonnegative() }).strict()).min(1).max(100) }).strict().optional(),
   ownerNodeId: id, baseRevisionId: id, headRevisionId: id,
   revisionIds: z.array(id).min(1).max(1000),
   prompt: z.string().max(20000),
@@ -29,6 +32,11 @@ export function variantRevisionIds(variant: DiagramVariant) {
 export function validateVariant(variant: DiagramVariant, get: (id: string) => DiagramRevision) {
   diagramVariantSchema.parse(variant);
   if (!variant.revisionIds.includes(variant.headRevisionId)) throw Error('Variant head is not retained');
+  if (variant.replacementScope) {
+    const ranges = variant.replacementScope.ranges, length = get(variant.headRevisionId).diagram.content.ascii.split('\n').length;
+    if (ranges.some((range, i) => range.startLine > length + 1 || range.endLine > length || range.endLine < range.startLine - 1
+      || i > 0 && range.startLine <= ranges[i - 1].endLine)) throw Error('Invalid variant replacement scope');
+  }
   const base = get(variant.baseRevisionId);
   for (const id of variantRevisionIds(variant)) {
     const revision = get(id);
