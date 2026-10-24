@@ -174,7 +174,7 @@ for the creation/copy/save API rules.
 A session owns its review tree as a normal `Diagram` revision, with typed
 node-to-hunk mappings and immutable captured Git hunks. New repository-scoped
 sessions initialize this data; legacy sessions remain readable without it.
-`DiagramService` owns tree creation/replacement, logical node identities and
+`diagramRevision.ts` owns tree creation/replacement, logical node identities and
 content validation. Source-code panels and DiffTree share node-selection and
 ancestor-resolution logic.
 
@@ -228,10 +228,10 @@ Reuse returned full SHAs between discovery pages and creation.
 
 `update_diagram_change_session` accepts
 `diffTree: {expectedRevisionId, ascii?, mappings}` and session `expectedVersion`.
-The revision ID is the Diagram service revision, not its content revision.
+The revision ID is the immutable Diagram revision, not its content revision.
 Mappings replace the entire list, using either raw ASCII `{line}` or logical
 `{nodeId}` from the scoped read. Omitted ASCII preserves the Diagram revision;
-replacement uses the normal Diagram revision service and conservative identity
+replacement uses the normal Diagram revision operations and conservative identity
 rules. Explicit line mappings identify the new nodes after replacement.
 Omitted DiffTree data is preserved. Invalid mappings and failed writes publish
 nothing; completed request receipts survive restart.

@@ -176,7 +176,7 @@ corrected in the same run. No canvas edits occur during generation. Model/auth
 configuration is shared with the existing runtime (`NEW_DIAGRAM_MODEL`);
 `NEW_DIAGRAM_AGENT=fake` selects the deterministic test generator.
 
-DiagramService issues one child revision with the same diagram identity. The
+The Diagram domain operation issues one child revision with the same diagram identity. The
 browser validates and installs that exact revision into its canvas history,
 checks both the document version and base revision again, and acknowledges
 workspace persistence. Installation creates one undo step. Undo, redo, and

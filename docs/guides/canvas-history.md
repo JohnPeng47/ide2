@@ -12,10 +12,10 @@ isolated.
 
 ## Boundaries
 
-- `domain/core/diagrams/diagramService.ts`: the injected `DiagramService` owns
-  immutable diagram revisions through `create`, `getRevision`, `listRevisions`,
-  `revise`, and `generate`. Canvas readers receive the complete, deeply readonly
-  and frozen `Diagram`. Content edits and construction go through this service.
+- `domain/core/diagrams/diagramRevision.ts`: immutable content operations with
+  explicit revision inputs. `diagramRevisionStore.ts` retains and retrieves them;
+  generation orchestration lives in application/browser workflows. See the
+  [Node/Diagram boundaries](../architecture/diagram-service.md).
 - `domain/core/diagrams/canvasHistoryService.ts`: `CanvasHistoryService` owns editing
   contexts, checkpoints, undo/redo/reset, fork/adopt, and transfer coordination.
   `openContext` returns an opaque runtime handle. Handles isolate viewers even
@@ -30,13 +30,12 @@ isolated.
   and validation, and appends one coordinated checkpoint before notifying readers.
   Prompt edits, generation, paste and grouping also enter through `applyUpdate`.
   `commitDocument` is the compatibility entry point for remaining layout document
-  producers and uses the same checkpoint path. `transact` remains a compatibility alias for `applyUpdate`. MCP `exec` calls
-  apply each mutation separately, creating one checkpoint per successful edit.
+  producers and uses the same checkpoint path. `transact` remains a compatibility alias for `applyUpdate`. Consecutive MCP `exec` mutations batch into a single checkpoint; reads flush pending edits.
 
 `getCanvasSnapshot()` and `resolveDiagram()` expose canvas bindings and derived views.
 Rendering, source-selection and MCP consumers can also read the full diagram through
 `getSnapshot().document` / `nodes()`. Layout edits use canvas commands; changing
-content requires a service-issued revision. A modified clone is rejected at commit.
+content requires an issued immutable revision. A modified clone is rejected at commit.
 
 ## Checkpoints and persistence
 
@@ -73,8 +72,8 @@ coalescing). Writes remain asynchronous, and failures appear in the page error
 display. The controller coordinates composition and diagram edits; no separate
 CanvasService is introduced.
 
-The app injects `RevisionedDiagramService` into live canvas controllers and the
-existing generation UI. Each controller owns a context through `CanvasHistoryService`.
+Controllers use explicit revision operations and storage. The generation UI receives
+a generator. Each controller owns a context through `CanvasHistoryService`.
 Read-only proposal previews and searches use display projections without opening an
 editing context or loading undo history.
 
@@ -186,7 +185,7 @@ per-node accept/reject, application, and removal. Refinement advances just that
 variant's head and resets its review decisions. Previous generated revisions
 remain retained.
 
-`DiagramVariant` in `domain/core/diagrams/diagramVariant.ts` stores:
+`DiagramRevisionReview` in `domain/core/diagrams/diagramRevisionReview.ts` stores optional review metadata:
 
 - `diagramId`, `contentId`, and `ownerNodeId`: logical ownership; `root` denotes
   the complete diagram without requiring an extra visible ASCII node.
@@ -197,9 +196,9 @@ remain retained.
   candidate/decisions used, so later review changes can reverse prior changes.
 - `id`, `name`, and `prompt`: the independently editable alternative's metadata.
 
-Variants live in `MappingGridDocument.variants`. The checkpoint codec stores each
-variant under its own `document/variants` record boundary. `checkpointRevisionIds`
-includes variant references as well as current placements, so detached candidates
+Reviews live in `MappingGridDocument.revisionReviews`; independent presentation choices
+live in `revisionSelections`. Both have per-entry checkpoint record boundaries.
+`checkpointRevisionIds` includes selected/reviewed revisions as well as current placements, so detached candidates
 survive workspace persistence, checkpoint publication, undo/redo, and ChangeSession
 fork/acceptance. Variant-only proposal edits appear as document changes. Removing
 a variant leaves ordinary retained history available; it does not erase history.
@@ -216,20 +215,20 @@ establishes identity.
 
 `DiagramRevisionEditor` accepts the validated correspondence for both replacement
 and patch operations. Unchanged lines outside a patch retain their existing
-identities. `DiagramService` issues all revisions and IDs; reviewed application
-uses `derive` to preserve proven identities from the base, candidate, and current
+identities. `createDiagram`/`reviseDiagram` issue revisions and IDs; reviewed application
+uses `deriveDiagram` to preserve proven identities from the base, candidate, and current
 revision. Controller reconciliation uses that correspondence to retain connections,
 highlights, selection identity, and folded branches during variant application.
 
 ### Selective application and rollback
 
-`variantChanges` compares labels, parents, and ordered children by stable node ID.
+`revisionChanges` compares labels, parents, and ordered children by stable node ID.
 Pending and rejected changes retain the base state; accepted changes use the
 candidate state. Additions, deletions, and moves can require matching parent/child
 decisions. The review UI reports inconsistent structural decisions and blocks
 application until they agree.
 
-`applyVariant` performs a three-way merge into the current subtree. Label, parent,
+`applyRevisionReview` performs a three-way merge into the current subtree. Label, parent,
 and child-list fields merge separately. Unrelated edits elsewhere, including
 unrelated fields inside the subtree, are preserved. A competing edit to a field
 being changed raises `VARIANT_CONFLICT`. No-content-conflict applications preserve
@@ -254,11 +253,32 @@ Formatting-only changes to a tree are not separate review hunks. Structural
 application refuses layouts containing non-node prose that it cannot safely
 reposition, rather than dropping that text.
 
-Variants are reviewed off-canvas and applied into an existing diagram placement.
-Independent simultaneous placements of different variants still require separate
-binding identities: current placements share `scene.contents[contentId]`. Switching
-between conflicting alternatives requires reversing the prior review first or
-resolving the conflicting live edit. Cross-canvas source/search discovery of
-unplaced candidates and a detailed variant-specific ChangeSession diff UI remain
-follow-ups. Persisted logical IDs are unchanged; shortening them is a separate
-migration.
+Revision selections display retained alternatives directly, including nested subtree
+choices, without applying a review. Current selections are scoped to the canvas
+content key; separate placements sharing that key share the choice. Applying a
+review to live content still performs three-way conflict checks. The existing
+variant-named API commands remain compatibility entry points for review metadata;
+`nodes.selectRevision` works without that metadata.
+
+### Saved CanvasView diagram diffs
+
+In **Canvas → Views**, select a saved view and enable **Show diagram diff**.
+The preview compares the recording's start and final checkpoints, using the same
+added/removed/modified/moved styling as ChangeSessions. It shows the net changes;
+edits undone before the recording ends do not appear. Later live edits do not
+change this comparison. The preview starts from the saved final positions
+(deleted diagrams use their original positions), measures fully expanded diff
+rows, and runs layout once before freezing the preview. This prevents overlaps;
+folding, expanding, and each diagram’s **Regular / Diff** toggle keep those positions fixed. Opening the preview
+preserves the live camera and does not alter the saved canvas layout.
+
+Selected revisions (including nested subtree choices) are resolved at each
+checkpoint. Preserved logical node references provide explicit correspondence,
+including renamed nodes; nodes without that correspondence use the existing
+rendering-only matcher. Deleted diagrams remain visible as removed preview boxes.
+The result is computed locally and deterministically, without an LLM call.
+
+Switching saved views updates the preview. Disable the toggle or choose **Close
+diff** to return to the live canvas. Preview folds and navigation are local to the
+viewer; opening a diff does not apply a view, issue diagram revisions, or create
+an undo entry. **Apply view** retains its existing restore behavior.
