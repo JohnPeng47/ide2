@@ -2,7 +2,7 @@ import { resolveNodeResources } from '../../core/diagrams/diagramResourceMapping
 import { diagramSource, type Diagram } from '../../core/diagrams/diagram';
 import type { DiagramContentNode } from '../../core/diagrams/diagramContent';
 import { diagramContentNodes } from '../../core/diagrams/diagramContentNodes';
-import { mappingContentNodeId } from '../../core/diagrams/diagramText';
+import { mappingContentNodeId } from '../../core/presentation/diagramText';
 import { sha256 } from '../../core/sha256';
 import type { CodeRepoReference } from '../../core/source/codeRepoService';
 

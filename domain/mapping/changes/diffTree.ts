@@ -1,8 +1,9 @@
+import { importDiagramRevision, reviseStoredDiagram, createStoredDiagram } from '../../core/diagrams/diagramRevisionStore';
 import { z } from 'zod';
 import { diagramJumpSchema, type DiagramJumpTarget } from '../../core/diagrams/diagramJump';
 import { validateDiagram } from '../../core/diagrams/diagram';
 import { diagramContentNodes } from '../../core/diagrams/diagramContentNodes';
-import type { DiagramRevision, DiagramService } from '../../core/diagrams/diagramService';
+import type { DiagramRevision } from '../../core/diagrams/diagramRevision';
 import { resolveNodeResources } from '../../core/diagrams/diagramResourceMappings';
 import { gitDiffHunkSchema, type GitDiffHunk } from '../../core/diffs/gitDiffHunk';
 
@@ -53,15 +54,15 @@ export function validateDiffTree(tree: ChangeSessionDiffTree): void {
   }
 }
 /** Full mapping replacement is atomic with a tree replacement. No text-label guessing. */
-export function writeDiffTree(diagrams: DiagramService, input: DiffTreeInput, hunks: GitDiffHunk[], previous?: ChangeSessionDiffTree): ChangeSessionDiffTree {
+export function writeDiffTree(input: DiffTreeInput, hunks: GitDiffHunk[], previous?: ChangeSessionDiffTree): ChangeSessionDiffTree {
   input = diffTreeInputSchema.parse(input);
   if (previous && input.expectedRevisionId !== previous.revision.id) throw Error('VERSION_CONFLICT: reread DiffTree revision');
   if (!previous && input.expectedRevisionId) throw Error('VERSION_CONFLICT: DiffTree does not exist');
   if (!previous && !input.ascii) throw Error('ascii is required to initialize a DiffTree');
-  if (previous) diagrams.importRevision(previous.revision);
+  if (previous) importDiagramRevision(previous.revision);
   const revision = previous
-    ? input.ascii === undefined ? previous.revision : diagrams.revise(previous.revision.id, { kind: 'replace', input: { ascii: input.ascii, structureKind: 'tree' } }).revision
-    : diagrams.create({ id: 'diff-tree', revision: 0, ascii: input.ascii!, structureKind: 'tree' }).revision;
+    ? input.ascii === undefined ? previous.revision : reviseStoredDiagram(previous.revision.id, { kind: 'replace', input: { ascii: input.ascii, structureKind: 'tree' } }).revision
+    : createStoredDiagram({ id: 'diff-tree', revision: 0, ascii: input.ascii!, structureKind: 'tree' }).revision;
   const nodes = diagramContentNodes(revision.diagram.content);
   const mappings = input.mappings.map(mapping => {
     const source = mapping.source;
@@ -71,13 +72,13 @@ export function writeDiffTree(diagrams: DiagramService, input: DiffTreeInput, hu
   });
   const tree = { revision, mappings, hunks }; validateDiffTree(tree); return tree;
 }
-export function defaultDiffTree(diagrams: DiagramService, hunks: GitDiffHunk[]) {
+export function defaultDiffTree(hunks: GitDiffHunk[]) {
   // One mapped node per commit keeps the initial tree within the Diagram size limit.
   const commits = [...new Set(hunks.map(hunk => hunk.commit))];
-  if (!commits.length) return writeDiffTree(diagrams, { ascii: 'Changes\n`-- No captured hunks', mappings: [] }, hunks);
+  if (!commits.length) return writeDiffTree({ ascii: 'Changes\n`-- No captured hunks', mappings: [] }, hunks);
   const ascii = ['Changes', ...commits.map((commit, index) => `${index === commits.length - 1 ? '`--' : '|--'} ${commit.slice(0, 12)}`)].join('\n');
-  if (ascii.length > 20000) return writeDiffTree(diagrams, { ascii: 'Changes\n`-- Selected commits', mappings: [{ id: 'all-changes', source: { line: 2 }, targets: hunks.map(hunk => ({ kind: 'diff-hunk', hunkId: hunk.id })) }] }, hunks);
-  return writeDiffTree(diagrams, { ascii, mappings: commits.map((commit, index) => ({ id: `commit-${commit}`, source: { line: index + 2 },
+  if (ascii.length > 20000) return writeDiffTree({ ascii: 'Changes\n`-- Selected commits', mappings: [{ id: 'all-changes', source: { line: 2 }, targets: hunks.map(hunk => ({ kind: 'diff-hunk', hunkId: hunk.id })) }] }, hunks);
+  return writeDiffTree({ ascii, mappings: commits.map((commit, index) => ({ id: `commit-${commit}`, source: { line: index + 2 },
     targets: hunks.filter(hunk => hunk.commit === commit).map(hunk => ({ kind: 'diff-hunk' as const, hunkId: hunk.id })) })) }, hunks);
 }
 export function resolveDiffTreeHunks(tree: ChangeSessionDiffTree, nodeIds: string[]) {

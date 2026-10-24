@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { buildDiagramContent, type DiagramContentNode } from '../../../core/diagrams/diagramContent';
 import { diagramContentNodes } from '../../../core/diagrams/diagramContentNodes';
-import { matchDiagramNodes, MAX_LABEL_ALIGNMENT_NODES } from '../diagramNodeMatcher';
-import { diffDiagramContent } from '../diagramContentDiff';
+import { matchDiagramNodes, MAX_LABEL_ALIGNMENT_NODES } from '../../../core/diagrams/diagramNodeMatcher';
+import { diffDiagramContent } from '../../../core/diagrams/diagramContentDiff';
 
 type Tree = { label: string; children: Tree[] };
 const t = (label: string, ...children: Tree[]): Tree => ({ label, children });

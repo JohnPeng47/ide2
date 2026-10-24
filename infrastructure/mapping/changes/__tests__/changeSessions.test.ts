@@ -11,7 +11,7 @@ import { ProjectCatalogStore } from '../../../core/persistence/projectCatalogSto
 import type { CanvasSessionPort } from '../../../../application/mapping/agent/ports';
 import type { DiagramRepository } from '../../../../application/core/ports/diagramRepository';
 import type { MappingDiagramService } from '../../../../application/mapping/diagrams/diagramService';
-import { RevisionedDiagramService } from '../../../../domain/core/diagrams/diagramService';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { diagramContentNodes } from '../../../../domain/core/diagrams/diagramContentNodes';
 import { singleDiagramScene } from '../../../../domain/core/diagrams/projectDiagramCanvas';
 import { diffChangeDocument } from '../../../../domain/mapping/changes/changeDocumentDiff';
@@ -21,7 +21,7 @@ it('recomputes inferred correspondence after cumulative patches, undo, redo and 
   const root = await mkdtemp(path.join(tmpdir(), 'change-session-matching-'));
   try {
     const catalog = new ProjectCatalogStore(root), scene = singleDiagramScene(floatingBefore);
-    scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii: floatingBefore, structureKind: 'tree' }).diagram };
+    scene.contents = { ...scene.contents, overview: revisionFixture().create({ id: 'overview', revision: 0, ascii: floatingBefore, structureKind: 'tree' }).diagram };
     const saved = await catalog.saveMappingDiagram('project', canvasSaveFixture({ name: 'Floating', scene }));
     const source = { loadProject: async () => ({ id: 'project' }), projectCatalogs: catalog } as unknown as DiagramRepository;
     const bridge: CanvasSessionPort = { register() {}, list: () => [], poll: async () => [], reply() {}, unregister() {}, dispose() {}, dispatch: async () => { throw Error('Touched live bridge'); } };
@@ -66,7 +66,7 @@ it('isolates shared MCP operations, persists sessions and history, rejects bad r
   const root = await mkdtemp(path.join(tmpdir(),'change-sessions-'));
   try {
     const catalog = new ProjectCatalogStore(root), scene = singleDiagramScene('Root\n|-- Old\n`-- Keep');
-    scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({id:'overview',revision:0,ascii:scene.contents.overview.content.ascii,structureKind:'tree'}).diagram };
+    scene.contents = { ...scene.contents, overview: revisionFixture().create({id:'overview',revision:0,ascii:scene.contents.overview.content.ascii,structureKind:'tree'}).diagram };
     const saved = await catalog.saveMappingDiagram('project',canvasSaveFixture({name:'Original',scene}));
     const store = { loadProject: async()=>({id:'project'}), projectCatalogs:catalog } as unknown as DiagramRepository;
     const bridge: CanvasSessionPort = {register(){},list:()=>[],poll:async()=>[],reply(){},unregister(){},dispose(){},dispatch:async()=>{throw Error('Touched live bridge');}};
@@ -168,7 +168,7 @@ it('persists mappings-only MCP proposals, preserves their baseline, and validate
 it('publishes variant-only proposals with retained candidates and unchanged live content', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'variant-proposal-'));
   try {
-    const diagrams = new RevisionedDiagramService(), catalog = new ProjectCatalogStore(root);
+    const diagrams = revisionFixture(), catalog = new ProjectCatalogStore(root);
     const base = diagrams.create({id:'overview',revision:0,ascii:'Root\n`-- Child',structureKind:'tree'}).revision;
     const scene = singleDiagramScene(base.diagram.content.ascii); scene.contents = {...scene.contents,overview:base.diagram};
     const saved = await catalog.saveMappingDiagram('project',canvasSaveFixture({name:'Original',scene}));
@@ -188,7 +188,7 @@ it('publishes variant-only proposals with retained candidates and unchanged live
     const revision = published.revisions[published.representations[saved.representation.id].currentRevisionId];
     if (revision.content?.kind !== 'canvas-history') throw Error('Expected canvas history');
     const history = revision.content.history;
-    expect(history.snapshots[history.headId].document.variants?.alternative).toEqual(variant);
+    expect(history.snapshots[history.headId].document.revisionReviews?.alternative).toEqual(variant);
     expect(history.diagramRevisions[candidate.id]).toEqual(candidate);
     expect(history.snapshots[history.headId].diagramBindings.overview).toBe(base.id);
   } finally { await rm(root,{recursive:true,force:true}); }

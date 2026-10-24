@@ -1,3 +1,4 @@
+import { generateDiagram } from '../services/diagramGenerator';
 import { completeMarquee } from '../../../../domain/mapping/selection/completeMarquee';
 import type { SelectionHit, SelectionPolicy } from '../../../../domain/mapping/selection/selectionGesture';
 import { shareEqual, CanvasRuntimeContext } from '../tldraw/CanvasRuntimeContext';
@@ -765,7 +766,7 @@ export function MappingPocSelectionCanvas(props: {
     }
   };
 
-  const { diagrams: diagramService } = useMappingServices();
+  const { diagramGenerator } = useMappingServices();
   const generateAt = async (start: ScenePoint, end: ScenePoint) => {
     const owner = operationOwnerRef.current;
     if (!diagramPlacement || !selectionRect) return;
@@ -782,7 +783,7 @@ export function MappingPocSelectionCanvas(props: {
     const expectedVersion = controller.getSnapshot().version;
     try {
       const id = `diagram-${crypto.randomUUID()}`;
-      const result = await diagramService.generate({ input: { id },
+      const result = await generateDiagram(diagramGenerator, { input: { id },
         context: { ...props.projectContext, diagram: content, selection: selectionRect },
         instruction: `${diagramPlacement}\nAim for ${minimumSize.columns} columns by ${minimumSize.rows} rows; the canvas can grow if needed.`
       }, { onProgress: message => updateSurface(owner, { statusMessage: message }) });

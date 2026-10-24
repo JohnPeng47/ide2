@@ -10,7 +10,7 @@ import { GitPushSource } from '../../../infrastructure/core/integrations/gitPush
 import { CanvasApiProjection } from '../../../application/mapping/agent/apiProjection';
 import { AgentContextService } from '../../../application/mapping/agent/agentContextService';
 import { LiveCanvasService } from '../../../application/mapping/agent/liveCanvasService';
-import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService';
+
 import { FakeDiagramEditRuntime, PiDiagramEditRuntime } from '../../../infrastructure/mapping/agents/diagram-edit/diagramEditRuntime';
 import { CoreApplication } from "../../../application/core/application";
 import { AgentDiagrammingSessionService } from '../../../application/mapping/agent/sessionService';
@@ -82,7 +82,7 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
     await canvasBridge.dispatch(workspaceInstanceId, { method: 'context', documentId }) as import('../../../domain/mapping/agent/liveCanvasStatus').LiveCanvasContext, agentContexts, apiProjection);
   const changes = new ChangeSessionService(new DiagramChangeSessionStore(store.storeRoot, undefined, true), store, canvasBridge);
   const agent = new AgentDiagrammingSessionService(canvasBridge, diagrams, store, new QuickJsAgentRuntime(),
-    changes, new RevisionedDiagramService(diagramEditRuntime), agentContexts, apiProjection, diagramContextStore);
+    changes, diagramEditRuntime, agentContexts, apiProjection, diagramContextStore);
   const agentChat = new AgentChatService(new StdioCodexConnection(mappingPocSourceRoot, options.piEnabled === true), new FileChatStore(store.storeRoot), mappingPocSourceRoot, liveCanvas, new ChatDiagramTools(agent), new MappingChatMcpBinding(agent, process.cwd()));
   const diffSessionWorkflows = new DiffSessionWorkflowService(changes, agent, new PiDiffSessionRuntime(options.piEnabled === true),
     new FileDiffSessionRunStore(store.storeRoot), { enabled: options.piEnabled === true, sourceRoot: mappingPocSourceRoot,

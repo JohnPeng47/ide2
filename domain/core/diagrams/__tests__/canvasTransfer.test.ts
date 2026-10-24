@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { CanvasHistory, documentFromHistory } from '../canvasHistory';
-import { RevisionedDiagramService } from '../diagramService';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { diagramContentNodes } from '../diagramContentNodes';
 import { defaultArrowAppearance, type ContentNodeAnchor } from '../diagramConnection';
 import { emptyCanvasDocument, prepareCanvasTransfer, prepareTransferNavigation } from '../canvasTransfer';
@@ -11,7 +11,7 @@ import { diagramSceneText } from '../../../mapping/workspace/diagramSceneText';
 
 function setup() {
   const document = emptyCanvasDocument();
-  document.scene.contents = { shared: new RevisionedDiagramService().create({ id: 'shared', revision: 0, ascii: 'Root\n|-- Branch\n`-- Tail', structureKind: 'tree' }).diagram };
+  document.scene.contents = { shared: revisionFixture().create({ id: 'shared', revision: 0, ascii: 'Root\n|-- Branch\n`-- Tail', structureKind: 'tree' }).diagram };
   if (document.scene.root.kind !== 'container') throw Error();
   document.scene.root.children = ['a', 'b', 'c'].map((id, i) => ({ id, kind: 'diagram', contentId: 'shared', collapsed: false, position: { column: i * 24, row: i } }));
   const content = document.scene.contents.shared.content;
@@ -111,7 +111,7 @@ it('rebases copied source jumps, internal targets and edge anchors to independen
   const link = { id: 'local', source: { revisionId: diagram.content.revisionId, contentHash: diagram.content.asciiSha256,
     line: node.line, startColumn: node.startColumn, endColumn: node.endColumn, contentNodeId: node.id },
     target: { representationId: 'source', displayNodeId: 'grid:a', contentNodeId: node.id } };
-  document.scene.contents = { ...document.scene.contents, shared: new RevisionedDiagramService().revise(diagram.revisionId, { kind: 'jumps', jumps: [link] }).diagram };
+  document.scene.contents = { ...document.scene.contents, shared: revisionFixture().revise(diagram.revisionId, { kind: 'jumps', jumps: [link] }).diagram };
   document.jumps = [{ ...link, id: 'placement', sourceDisplayNodeId: 'grid:b' }];
   const original = new CanvasHistory(document, initialCanvasState()).export();
   const p = prepareCanvasTransfer(original, { ...input, mode: 'copy', selectedIds: ['grid:a', 'grid:b'] });
@@ -127,7 +127,7 @@ it('rebases copied source jumps, internal targets and edge anchors to independen
 it.each(['copy','move'] as const)('%s appends to an existing canvas without moving its diagrams and restores both histories', mode => {
   const { history, input } = setup();
   const existing = emptyCanvasDocument();
-  existing.scene.contents = { shared: new RevisionedDiagramService().create({ id: 'shared', revision: 0, ascii: 'Existing\n`-- Keep', structureKind: 'tree' }).diagram };
+  existing.scene.contents = { shared: revisionFixture().create({ id: 'shared', revision: 0, ascii: 'Existing\n`-- Keep', structureKind: 'tree' }).diagram };
   if (existing.scene.root.kind !== 'container') throw Error();
   // Both placement and content IDs collide with the incoming group.
   existing.scene.root.children = [{ id: 'a', kind: 'diagram', contentId: 'shared', collapsed: false, position: { column: 60, row: 8 } }];
@@ -153,7 +153,7 @@ it.each(['copy','move'] as const)('%s appends to an existing canvas without movi
 it('preserves an existing diagram root and its absolute position when adding incoming diagrams', () => {
   const { history, input } = setup();
   const existing = emptyCanvasDocument();
-  existing.scene.contents = { single: new RevisionedDiagramService().create({ id: 'single', revision: 0, ascii: 'Single' }).diagram };
+  existing.scene.contents = { single: revisionFixture().create({ id: 'single', revision: 0, ascii: 'Single' }).diagram };
   existing.scene.root = { id: 'single', kind: 'diagram', contentId: 'single', collapsed: false, position: { column: 20, row: 4 } };
   const destination = new CanvasHistory(existing, initialCanvasState()).export();
   const p = prepareCanvasTransfer(history, { ...input, mode: 'copy' }, destination);
@@ -168,12 +168,12 @@ it('copies colored highlights onto independent content anchors and preserves the
   const anchor = diagramContentNodes(f.document.scene.contents.shared.content)[1];
   controller.applyUpdate(0, [{ method: 'highlight', nodeId: 'grid:a', contentNodeId: anchor.id, color: 'orange', highlightId: 'saved-highlight' }]);
   const p = prepareCanvasTransfer(controller.exportHistory(), { ...f.input, mode: 'copy' });
-  const diagram = Object.values(p.destination.document.scene.contents).find(diagram => diagram.highlights?.length)!;
+  const diagram = Object.values(p.destination.document.scene.contents).find(diagram => p.destination.document.diagramPresentations?.[diagram.id]?.highlights?.length)!;
   const next = diagramContentNodes(diagram.content).find(node => node.label === anchor.label)!;
-  expect(diagram.highlights).toEqual([{ id: 'saved-highlight', contentNodeId: next.id, color: 'orange' }]);
+  expect(p.destination.document.diagramPresentations?.[diagram.id]?.highlights).toMatchObject([{ id: 'saved-highlight', contentNodeId: next.id, color: 'orange' }]);
   expect(next.id).not.toBe(anchor.id);
   const restored = new MappingDocumentController(p.destination.document, p.destination.view as ReturnType<typeof initialCanvasState>, 0, undefined, undefined, p.destination.history);
-  expect(Object.values(restored.getSnapshot().document.scene.contents).find(diagram => diagram.highlights?.length)?.highlights).toEqual(diagram.highlights);
+  expect(restored.getSnapshot().document.diagramPresentations?.[diagram.id]?.highlights).toEqual(p.destination.document.diagramPresentations?.[diagram.id]?.highlights);
 });
 
 
@@ -182,11 +182,11 @@ it('copies a multi-node highlight as one saved annotation and round-trips its ta
   const anchors = diagramContentNodes(f.document.scene.contents.shared.content).slice(0, 2);
   controller.applyUpdate(0, [{ method: 'highlight', nodeId: 'grid:a', contentNodeIds: anchors.map(node => node.id), color: 'blue', highlightId: 'group-highlight' }]);
   const p = prepareCanvasTransfer(controller.exportHistory(), { ...f.input, mode: 'copy' });
-  const diagram = Object.values(p.destination.document.scene.contents).find(diagram => diagram.highlights?.length)!;
+  const diagram = Object.values(p.destination.document.scene.contents).find(diagram => p.destination.document.diagramPresentations?.[diagram.id]?.highlights?.length)!;
   const targets = anchors.map(anchor => diagramContentNodes(diagram.content).find(node => node.label === anchor.label)!.id);
   expect(targets).not.toEqual(anchors.map(node => node.id));
-  expect(diagram.highlights).toEqual([{ id: 'group-highlight', contentNodeIds: targets, color: 'blue' }]);
+  expect(p.destination.document.diagramPresentations?.[diagram.id]?.highlights).toMatchObject([{ id: 'group-highlight', contentNodeIds: targets, color: 'blue' }]);
   const saved = JSON.parse(JSON.stringify(p.destination));
   const restored = new MappingDocumentController(saved.document, saved.view, 0, undefined, undefined, saved.history);
-  expect(Object.values(restored.getSnapshot().document.scene.contents).find(diagram => diagram.highlights?.length)?.highlights).toEqual(diagram.highlights);
+  expect(restored.getSnapshot().document.diagramPresentations?.[diagram.id]?.highlights).toEqual(p.destination.document.diagramPresentations?.[diagram.id]?.highlights);
 });

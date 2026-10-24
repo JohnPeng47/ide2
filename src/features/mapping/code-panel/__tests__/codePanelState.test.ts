@@ -1,14 +1,14 @@
 import { expect, it } from 'vitest';
 import { upsertCodePanel } from '../codePanelState';
 import { handleNodeSelect } from '../../../../../domain/mapping/code-panel/codePanel';
-import { RevisionedDiagramService } from '../../../../../domain/core/diagrams/diagramService';
+import { revisionFixture } from '../../../../../tests/support/diagramRevisions';
 import { diagramContentNodes } from '../../../../../domain/core/diagrams/diagramContentNodes';
 import { emptyDisplayState, displayGeometry, setExpansion, type DisplayState, type ProjectedPane, type SelectionRegion } from '../../../../../domain/mapping/workspace/displayModel';
 import { initialCanvasState, type MappingWorkspaceSnapshot } from '../../../../../domain/mapping/workspace/mappingWorkspace';
 import { initialMappingGrid } from '../../../../../domain/mapping/workspace/mappingGrid';
 import { deserializeWorkspace, serializeWorkspace } from '../../../../../domain/mapping/workspace/mappingWorkspaceCodec';
 
-const diagram = new RevisionedDiagramService().create({id:'diagram',revision:1,ascii:'Root\n`-- Child',structureKind:'tree'}).diagram;
+const diagram = revisionFixture().create({id:'diagram',revision:1,ascii:'Root\n`-- Child',structureKind:'tree'}).diagram;
 const nodes = diagramContentNodes(diagram.content);
 const content = handleNodeSelect({diagram,projectId:'project'}, [nodes[1]]);
 const root: SelectionRegion = { ...displayGeometry(), id:'selection', kind:'selection', sourceBoxId:'overview',sourceContentId:diagram.id,

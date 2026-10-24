@@ -1,5 +1,6 @@
+import { createStoredDiagram } from '../../../domain/core/diagrams/diagramRevisionStore';
 import { type DiagramSourceContext } from '../../../domain/core/diagrams/diagram';
-import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService';
+
 import type { DiagramElementMapping } from '../../../domain/core/records/domain';
 import { ProjectDiagramConflict } from '../../../domain/core/representations/errors';
 import type { ProjectRepresentationEvidenceRecord } from '../../../domain/core/representations/projectCatalog';
@@ -63,7 +64,7 @@ export class SelectionService {
       if (!representation || representation.status === "archived"
         || representation.currentRevisionId !== body.baseRevisionId) throw new ProjectDiagramConflict("Diagram revision has changed; reopen it before prompting");
       const context = body.sourceContext as DiagramSourceContext | undefined;
-      const live = context && new RevisionedDiagramService().create({ id: String(body.contentId), revision: diagramRevision, ascii: diagramAscii,
+      const live = context && createStoredDiagram({ id: String(body.contentId), revision: diagramRevision, ascii: diagramAscii,
         source: context.binding, mappings: context.mappings, evidence: context.evidence }).diagram;
       if (live && context!.contentHash !== live.content.asciiSha256) throw new Error('Diagram source context does not match content');
       const resolved = await resolveDiagramSource(this.projects, {projectId: project.id, representationId: representation.id,

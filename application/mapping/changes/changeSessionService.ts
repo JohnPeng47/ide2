@@ -1,3 +1,4 @@
+import { importDiagramRevision } from '../../../domain/core/diagrams/diagramRevisionStore';
 import { buildChangeTreemaps } from '../../../domain/mapping/changes/changeTreemap';
 import { defaultDiffTree, diffTreeSummary, diffTreeNodes, resolveDiffTreeHunks, validateDiffTree, writeDiffTree, type DiffTreeInput } from '../../../domain/mapping/changes/diffTree';
 import type { RepositoryContext } from '../../../domain/core/repositories/repository';
@@ -5,7 +6,6 @@ import type { GitDiffHunk } from '../../../domain/core/diffs/gitDiffHunk';
 import { migrationIssues, type DiagramMigration } from '../../../domain/mapping/changes/diagramMigration';
 import { canvasDisplayNodes } from '../../../domain/mapping/workspace/canvasDisplayNode';
 import { DefaultCanvasHistoryService } from '../../../domain/core/diagrams/canvasHistoryService';
-import { RevisionedDiagramService, type DiagramService } from '../../../domain/core/diagrams/diagramService';
 import { historyFromRevision, documentFromRevision } from '../../../domain/core/diagrams/projectDiagramCanvas';
 import { diagramContentNodes } from '../../../domain/core/diagrams/diagramContentNodes';
 import { createHash, randomUUID } from 'node:crypto';
@@ -34,7 +34,7 @@ export class ChangeSessionService {
   private readonly historyService = new DefaultCanvasHistoryService();
   private queues = new Map<string, Promise<unknown>>();
   constructor(private readonly repository: DiagramChangeSessionRepository,
-    private readonly source: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs' | 'repositories'>, private readonly bridge: CanvasSessionPort, private readonly diagrams: DiagramService = new RevisionedDiagramService()) {}
+    private readonly source: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs' | 'repositories'>, private readonly bridge: CanvasSessionPort) {}
   private async projectId() { const p = await this.source.loadProject(); if (!p) throw new Error('Project is not initialized'); return p.id; }
   private serialize<T>(id: string, fn: () => Promise<T>): Promise<T> {
     const next = (this.queues.get(id) ?? Promise.resolve()).catch(() => {}).then(fn);
@@ -188,7 +188,7 @@ export class ChangeSessionService {
       if (capture.projectId !== projectId) throw Error('Captured context belongs to another project');
       const { context, hunks } = capture;
       if (input.diffTree && !context) throw Error('DiffTree requires pinned repository context');
-      const diffTree = context ? input.diffTree ? writeDiffTree(this.diagrams, input.diffTree, hunks) : defaultDiffTree(this.diagrams, hunks) : undefined;
+      const diffTree = context ? input.diffTree ? writeDiffTree(input.diffTree, hunks) : defaultDiffTree(hunks) : undefined;
       const documents = new Map(capture.documents.map(doc => [doc.id, structuredClone(doc)]));
       const result = { ...context, ...(diffTree ? { diffTree: diffTreeSummary(diffTree) } : {}), changeSessionId: id, canvasId: id, version: 0, documents: [...documents.values()].map(d => ({ documentId: d.id, name: d.name })) };
       const now = new Date().toISOString();
@@ -234,7 +234,7 @@ export class ChangeSessionService {
       if (context && (saved?.repositoryId ?? doc.repositoryId) !== context.repositoryId) continue;
       const snapshot = await this.bridge.dispatch(canvas.canvasId, { method: 'snapshot', documentId: doc.documentId, payload: { currentRevisions: true } }) as LiveDocumentSnapshot;
       if (context && (saved?.repositoryId ?? snapshot.repositoryId ?? doc.repositoryId) !== context.repositoryId) throw Error('Canvas repository changed during capture');
-      for (const revision of snapshot.revisions ?? []) new RevisionedDiagramService().importRevision(revision);
+      for (const revision of snapshot.revisions ?? []) importDiagramRevision(revision);
       const baseline = structuredClone({ document: snapshot.document, canvas: snapshot.canvas });
       const key = snapshot.representationId ?? doc.representationId ?? doc.documentId;
       documents.set(key, { id: key, name: snapshot.name, repositoryId: saved?.repositoryId ?? snapshot.repositoryId ?? doc.repositoryId, representationId: snapshot.representationId ?? doc.representationId,
@@ -316,7 +316,7 @@ export class ChangeSessionService {
       migrated.future = ids.slice(doc.past.length + 1).reverse();
       doc.history = migrated;
     }
-    return new MappingDocumentController(doc.proposed.document, doc.proposed.canvas, doc.version, undefined, undefined, doc.history, this.diagrams, this.historyService);
+    return new MappingDocumentController(doc.proposed.document, doc.proposed.canvas, doc.version, undefined, undefined, doc.history, this.historyService);
   }
   private record(doc: ChangeSessionDocument, controller: MappingDocumentController) {
     const snapshot = controller.getSnapshot();
@@ -341,7 +341,7 @@ export class ChangeSessionService {
     for (const doc of s.documents) {
       if (!affected.has(doc.id)) { changes.push(...s.changes.filter(change => change.documentId === doc.id)); continue; }
       if (!doc.baseline) { changes.push({ id: `canvas:${doc.id}`, documentId: doc.id, title: doc.name, type: 3, reasons: [], dependsOn: [] }); continue; }
-      if (stateKey([doc.baseline.document.variants ?? {}, doc.baseline.document.variantSelections ?? {}]) !== stateKey([doc.proposed.document.variants ?? {}, doc.proposed.document.variantSelections ?? {}]))
+      if (stateKey([doc.baseline.document.revisionReviews ?? {}, doc.baseline.document.revisionSelections ?? {}]) !== stateKey([doc.proposed.document.revisionReviews ?? {}, doc.proposed.document.revisionSelections ?? {}]))
         changes.push({ id: `variants:${doc.id}`, documentId: doc.id, title: `${doc.name}: subtree variants`, type: 1, reasons: [], dependsOn: [] });
       const before = canvasDisplayNodes(doc.baseline.document, doc.baseline.canvas, 0);
       const after = canvasDisplayNodes(doc.proposed.document, doc.proposed.canvas, 0);
@@ -388,7 +388,7 @@ export class ChangeSessionService {
         this.refreshChanges(s, new Set([doc.id])); s.status = 'draft';
       }
       if (input.diffTree) {
-        s.diffTree = writeDiffTree(this.diagrams, input.diffTree, s.diffTree?.hunks ?? captured!, s.diffTree);
+        s.diffTree = writeDiffTree(input.diffTree, s.diffTree?.hunks ?? captured!, s.diffTree);
         s.status = 'draft';
       }
       if (input.title) s.title = input.title;

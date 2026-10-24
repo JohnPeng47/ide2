@@ -8,14 +8,14 @@ import { CanvasWorkspace } from '../../workspace/canvasWorkspace';
 import { CanvasSession } from '../../workspace/canvasSession';
 import { singleDiagramScene } from '../../../../../domain/core/diagrams/projectDiagramCanvas';
 import { initialCanvasState } from '../../../../../domain/mapping/workspace/mappingWorkspace';
-import { RevisionedDiagramService } from '../../../../../domain/core/diagrams/diagramService';
+import { revisionFixture } from '../../../../../tests/support/diagramRevisions';
 import { addDisplayNode, displayGeometry, type SelectionRegion } from '../../../../../domain/mapping/workspace/displayModel';
 import { selectionDelta } from '../../../../../domain/mapping/agent/liveCanvasStatus';
 import { selectionClipboardText } from '../../../../../domain/mapping/workspace/selectionClipboard';
 
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
 it('preserves complete rows, blank lines and deduplicated references in the shared copy payload', () => {
-  const diagram = new RevisionedDiagramService().create({ id: 'test', revision: 0, ascii: ' AB\n\nEnd', evidence: {
+  const diagram = revisionFixture().create({ id: 'test', revision: 0, ascii: ' AB\n\nEnd', evidence: {
     source: { id: 'source', handle: 'source', label: 'Example', category: 'operation', summary: 'Example',
       sourceRanges: [{ id: 'range', path: 'file.ts', startLine: 4, endLine: 6, originalLines: ['a', 'b', 'c'] }] }
   }, mappings: ['a', 'b'].map((id, i) => ({ id, entityId: 'source', sourceRangeIndex: 0, line: 1, startColumn: i + 2, endColumn: i + 2 })) }).diagram;
@@ -56,7 +56,7 @@ it('enumerates retained regions across diagrams, deduplicates the active one, an
   const base = singleDiagramScene('Root\nEnd');
   if (base.root.kind !== 'container') throw new Error('Expected a container fixture');
   const scene = { ...base, contents: { ...base.contents,
-    other: new RevisionedDiagramService().create({ id: 'other', revision: 0, ascii: 'Other' }).diagram },
+    other: revisionFixture().create({ id: 'other', revision: 0, ascii: 'Other' }).diagram },
     root: { ...base.root, children: [...base.root.children, { id: 'other-box', kind: 'diagram' as const,
       contentId: 'other', position: { column: 20, row: 0 }, collapsed: false }] } };
   const session = new CanvasSession({ name: 'Test', savedName: 'Test', savedScene: JSON.stringify(scene),
@@ -172,7 +172,7 @@ it('publishes whole diagrams by nodes.list IDs only, keeps all regions unchanged
   const { deselectCanvas } = await import('../../../../../domain/mapping/selection/canvasSelection');
   const scene = singleDiagramScene('Root\nEnd');
   if (scene.root.kind !== 'container') throw Error('Expected container');
-  scene.contents = { ...scene.contents, other: new RevisionedDiagramService().create({ id: 'other', revision: 0, ascii: 'Other' }).diagram };
+  scene.contents = { ...scene.contents, other: revisionFixture().create({ id: 'other', revision: 0, ascii: 'Other' }).diagram };
   scene.root.children = [...scene.root.children, { id: 'other-box', kind: 'diagram', contentId: 'other', position: { column: 20, row: 0 }, collapsed: false }];
   const session = new CanvasSession({ name: 'Test', savedName: 'Test', savedScene: JSON.stringify(scene),
     document: { scene, edges: [], sections: {} }, canvas: initialCanvasState() });
@@ -207,7 +207,7 @@ it('publishes whole diagrams by nodes.list IDs only, keeps all regions unchanged
 it('publishes changed membership and prompt references even when the selection rectangle is unchanged', () => {
   vi.useFakeTimers();
   const scene = singleDiagramScene('Root\n+-- Branch\n|   `-- Leaf\n`-- Sibling');
-  scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({ id: 'overview', revision: 0,
+  scene.contents = { ...scene.contents, overview: revisionFixture().create({ id: 'overview', revision: 0,
     ascii: scene.contents.overview.content.ascii, structureKind: 'tree' }).diagram };
   const session = new CanvasSession({ name: 'Test', savedName: 'Test', savedScene: JSON.stringify(scene),
     document: { scene, edges: [], sections: {} }, canvas: initialCanvasState() });

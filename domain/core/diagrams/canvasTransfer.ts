@@ -1,10 +1,13 @@
+import { presentationHighlights } from '../presentation/diagramPresentation';
+import { getDiagramRevision } from './diagramRevisionStore';
+import { createStoredDiagram, reviseStoredDiagram } from './diagramRevisionStore';
 import { rebaseDiagramHighlights } from './diagramHighlight';
 import { correspondingNodes } from './diagramRevisionEditor';
 import { placeTransferredGroup } from './canvasTransferPlacement';
 import { z } from 'zod';
 import { CanvasHistory, documentFromHistory, type CanvasHistoryRecord, type ResolvedCanvasDocument } from './canvasHistory';
 import { rebaseDiagramJumps, type DiagramJumpTarget } from './diagramJump';
-import { RevisionedDiagramService } from './diagramService';
+
 import { diagramContentNodes } from './diagramContentNodes';
 import { connectionBox, getArrowLabel, validateConnectionAnchor } from './diagramConnection';
 import { flattenGrid, resolveScene, type GridBox, type LineGridScene } from './lineGrid';
@@ -32,7 +35,6 @@ const state = (history: CanvasHistory): TransferState => ({ document: history.do
 /** Preparation operates on isolated histories. Publication belongs to the workspace transaction. */
 export function prepareCanvasTransfer(record: CanvasHistoryRecord, input: TransferInput, destinationRecord?: CanvasHistoryRecord): PreparedCanvasTransfer {
   if (input.sourceId === input.destinationId) throw Error('Choose another canvas as the destination');
-  const diagrams = new RevisionedDiagramService();
   const original = new CanvasHistory(documentFromHistory(record), {}, record), before = original.document();
   if (!input.selectedIds.length || new Set(input.selectedIds).size !== input.selectedIds.length) throw Error('Select one or more diagrams');
   const existing = destinationRecord ? documentFromHistory(destinationRecord) : emptyCanvasDocument();
@@ -56,13 +58,21 @@ export function prepareCanvasTransfer(record: CanvasHistoryRecord, input: Transf
       const old = before.scene.contents[id];
       if (next === id) contents[next] = old;
       else {
-        const created = diagrams.create({ id: next, revision: 0, ascii: old.content.ascii,
+        const created = createStoredDiagram({ id: next, revision: 0, ascii: old.content.ascii,
           structureKind: old.content.structure.kind, source: old.sourceContext.binding,
           mappings: old.sourceContext.mappings, evidence: old.sourceContext.evidence }).diagram;
-        const annotated = old.highlights ? diagrams.revise(created.revisionId, { kind: 'highlights',
-          highlights: rebaseDiagramHighlights(old.highlights, correspondingNodes(old, created)) }).diagram : created;
-        contents[next] = old.jumps ? diagrams.revise(annotated.revisionId,
-          { kind: 'jumps', jumps: rebaseDiagramJumps(old.content, created.content, old.jumps) }).diagram : annotated;
+        const annotated = created;
+        contents[next] = old.jumps ? reviseStoredDiagram(annotated.revisionId, { kind: 'jumps', jumps: rebaseDiagramJumps(old.content, created.content, old.jumps) }).diagram : annotated;
+      }
+      const settings = before.diagramPresentations?.[id];
+      const highlights = presentationHighlights(old, settings, getDiagramRevision(old.revisionId).nodeRefs);
+      if (settings || highlights.length) {
+        const output = contents[next], correspondence = correspondingNodes(old, output);
+        const refs = getDiagramRevision(output.revisionId).nodeRefs;
+        const copied = rebaseDiagramHighlights(highlights, correspondence).map(item => ({ ...item,
+          nodeRefs: (item.contentNodeIds ?? (item.contentNodeId ? [item.contentNodeId] : [])).map(id => refs[id] ?? `stale:${id}`),
+          ...(item.textRange ? { revisionId: item.revisionId === old.revisionId ? output.revisionId : item.revisionId } : {}) }));
+        (target.diagramPresentations ??= {})[next] = { ...settings, highlights: copied };
       }
       if (before.sections[id]) sections[next] = structuredClone(before.sections[id]);
     }
@@ -88,8 +98,14 @@ export function prepareCanvasTransfer(record: CanvasHistoryRecord, input: Transf
     ? { ...jump, representationId: input.destinationId, displayNodeId: `grid:${boxIds.get(jump.displayNodeId.slice(5))}`,
       ...(jump.contentNodeId ? { contentNodeId: remapNode(jump.displayNodeId, jump.contentNodeId) } : {}) } : jump;
   const remapJumps = (diagram: LineGridScene['contents'][string]) => diagram.jumps
-    ? diagrams.revise(diagram.revisionId, { kind: 'jumps', jumps: diagram.jumps.map(jump => ({ ...jump, target: remapTarget(jump.target) })) }).diagram : diagram;
-  for (const [id, diagram] of Object.entries(contents)) contents[id] = remapJumps(diagram);
+    ? reviseStoredDiagram(diagram.revisionId, { kind: 'jumps', jumps: diagram.jumps.map(jump => ({ ...jump, target: remapTarget(jump.target) })) }).diagram : diagram;
+  for (const [id, diagram] of Object.entries(contents)) {
+    contents[id] = remapJumps(diagram);
+    const settings = target.diagramPresentations?.[id];
+    if (settings?.highlights && contents[id].revisionId !== diagram.revisionId)
+      settings.highlights = settings.highlights.map(item => item.textRange && item.revisionId === diagram.revisionId
+        ? { ...item, revisionId: contents[id].revisionId } : item);
+  }
   const targetJumps: CanvasJump[] = [], sourceJumps: CanvasJump[] = [];
   for (const jump of before.jumps ?? []) {
     if (selected.has(jump.sourceDisplayNodeId)) {
@@ -166,6 +182,7 @@ export function prepareCanvasTransfer(record: CanvasHistoryRecord, input: Transf
     target.edges = [...existing.edges, ...target.edges];
     target.jumps = [...(existing.jumps ?? []).map(jump => input.mode === 'move' ? { ...jump, target: remapTarget(jump.target) } : jump), ...targetJumps];
     target.sections = { ...existing.sections, ...sections };
+    target.diagramPresentations = { ...existing.diagramPresentations, ...target.diagramPresentations };
   }
   const transaction: CanvasTransfer = { id: fresh('transfer'), mode: input.mode, applied: true, destinationCreated: !destinationRecord,
     sourceId: input.sourceId, destinationId: input.destinationId, sourceBefore: record.headId, sourceAfter: original.head.id,

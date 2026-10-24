@@ -1,6 +1,6 @@
 import { expect, it, vi } from 'vitest';
 import type { Diagram } from '../diagram';
-import { RevisionedDiagramService } from '../diagramService';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { singleDiagramScene } from '../projectDiagramCanvas';
 import { MappingDocumentController } from '../../../mapping/workspace/mappingDocumentController';
 import { mappingDocumentFromScene } from '../../../mapping/workspace/mappingDocument';
@@ -32,7 +32,7 @@ it('publishes frozen revisions and rejects a modified transport copy while allow
   const copy = structuredClone(controller.getSnapshot().document);
   copy.scene.contents = { ...copy.scene.contents, overview: { ...diagram, sourceContext: { ...diagram.sourceContext,
     evidence: { extra: { id: 'extra', handle: 'extra', label: 'Extra', category: 'operation', summary: '', sourceRanges: [] } } } } };
-  expect(() => controller.commitDocument(copy)).toThrow('through DiagramService');
+  expect(() => controller.commitDocument(copy)).toThrow('issued immutable revision');
   expect(controller.exportHistory()).toEqual(before);
   const layout = structuredClone(controller.getSnapshot().document);
   layout.scene.root.position.column = 10;
@@ -45,7 +45,7 @@ it('publishes frozen revisions and rejects a modified transport copy while allow
 });
 
 it('revises an explicit base without mutating it and keeps node references through a patch', () => {
-  const service = new RevisionedDiagramService();
+  const service = revisionFixture();
   const base = service.create({ id: crypto.randomUUID(), revision: 0, ascii: 'Root\n|-- Edit\n`-- Keep', structureKind: 'tree' });
   const next = service.revise(base.revision.id, { kind: 'patch', start: 2, end: 2, patch: '|-- Changed\n|-- Extra' });
   expect(next.revision.parentId).toBe(base.revision.id);
@@ -58,14 +58,14 @@ it('revises an explicit base without mutating it and keeps node references throu
 
 it('validates agent output and inserts the generated revision itself into canvas history', async () => {
   const generator = { generate: vi.fn(async () => ({ ascii: 'Generated\n`-- Child', structureKind: 'tree' as const })) };
-  const service = new RevisionedDiagramService(generator), id = crypto.randomUUID();
+  const service = revisionFixture(generator), id = crypto.randomUUID();
   const generated = await service.generate({ input: { id }, instruction: 'Describe the feature' });
-  const controller = new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('Source')), initialCanvasState(), 0, undefined, undefined, undefined, service);
+  const controller = new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('Source')), initialCanvasState(), 0, undefined, undefined, undefined);
   controller.applyUpdate(0, [{ method: 'diagram-insert', id, revisionId: generated.revision.id }]);
   expect(controller.getSnapshot().document.scene.contents[id]).toBe(generated.diagram);
   controller.undo(); expect(controller.getSnapshot().document.scene.contents[id]).toBeUndefined();
   controller.undo(true); expect(controller.getSnapshot().document.scene.contents[id].revisionId).toBe(generated.revision.id);
-  const invalid = new RevisionedDiagramService({ generate: async () => ({ ascii: '' }) });
+  const invalid = revisionFixture({ generate: async () => ({ ascii: '' }) });
   const beforeInvalid = invalid.listRevisions(generated.diagram.diagramId);
   await expect(invalid.generate({ input: { id }, baseRevisionId: generated.revision.id, instruction: 'invalid' })).rejects.toThrow();
   expect(invalid.listRevisions(generated.diagram.diagramId)).toEqual(beforeInvalid);
@@ -73,7 +73,7 @@ it('validates agent output and inserts the generated revision itself into canvas
 
 it('does not issue a revision when generation is cancelled or fails', async () => {
   const abort = new AbortController(), id = crypto.randomUUID();
-  const service = new RevisionedDiagramService({ generate: async (_request, options) => {
+  const service = revisionFixture({ generate: async (_request, options) => {
     expect(options.signal).toBe(abort.signal); abort.abort(); return { ascii: 'Too late' };
   } });
   const base = service.create({ id, revision: 0, ascii: 'Before' });
@@ -81,13 +81,13 @@ it('does not issue a revision when generation is cancelled or fails', async () =
   const request = { input: { id }, baseRevisionId: base.revision.id, instruction: 'Generate' };
   await expect(service.generate(request, { signal: abort.signal })).rejects.toThrow();
   expect(service.listRevisions(base.diagram.diagramId)).toEqual(before);
-  const failed = new RevisionedDiagramService({ generate: async () => { throw Error('Agent failed'); } });
+  const failed = revisionFixture({ generate: async () => { throw Error('Agent failed'); } });
   await expect(failed.generate(request)).rejects.toThrow('Agent failed');
   expect(failed.listRevisions(base.diagram.diagramId)).toEqual(before);
 });
 
 it('keeps separate diagram identities when two canvases use the same local content key', () => {
-  const service = new RevisionedDiagramService();
+  const service = revisionFixture();
   const first = service.create({ id: 'overview', revision: 0, ascii: 'First' });
   const second = service.create({ id: 'overview', revision: 0, ascii: 'Second' });
   const edit = service.revise(first.revision.id, { kind: 'replace', input: { ascii: 'Edited first' } });
@@ -99,9 +99,8 @@ it('keeps separate diagram identities when two canvases use the same local conte
 
 it('copies between editing controllers through their shared canvas history service', async () => {
   const { DefaultCanvasHistoryService } = await import('../canvasHistoryService');
-  const service = new RevisionedDiagramService(), histories = new DefaultCanvasHistoryService();
-  const controller = (ascii: string) => new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene(ascii)),
-    initialCanvasState(), 0, undefined, undefined, undefined, service, histories);
+  const service = revisionFixture(), histories = new DefaultCanvasHistoryService();
+  const controller = (ascii: string) => new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene(ascii)), initialCanvasState(), 0, undefined, undefined, undefined, histories);
   const source = controller('Source'), destination = controller('Destination');
   const prepared = source.prepareTransfer({ mode: 'copy', sourceId: 'source', sourceAliases: ['source'], destinationId: 'destination',
     selectedIds: ['grid:overview'], destinationView: initialCanvasState() }, destination);

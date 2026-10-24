@@ -1,14 +1,17 @@
+import { generateDiagram } from '../../core/diagrams/generateDiagram';
+import { createStoredDiagram, importDiagramRevision, getDiagramRevision, submitStoredDiagramEdit } from '../../../domain/core/diagrams/diagramRevisionStore';
 import type { GeneratedDiagramEdit } from '../../../domain/core/diagrams/generatedDiagramEdit';
 import { selectionExcerpt } from '../../../domain/mapping/workspace/selectionClipboard';
 import { diagramContentNodes } from '../../../domain/core/diagrams/diagramContentNodes';
 import { diagramReplacementRanges } from '../../../domain/core/diagrams/diagramSubtreeEdit';
-import { variantRange, variantRevisionIds, validateVariant, type DiagramVariant } from '../../../domain/core/diagrams/diagramVariant';
+import { revisionScope, reviewRevisionIds, validateRevisionReview, type DiagramRevisionReview } from '../../../domain/core/diagrams/diagramRevisionReview';
 import { validateConnectionAnchor } from '../../../domain/core/diagrams/diagramConnection';
 import { AgentContext, type AgentContextSnapshot } from '../../../domain/core/agents/agentContext';
 import { diagramContextSourceFingerprint, loadDiagramAgentContext, type DiagramAgentContextStore } from '../../../domain/core/diagrams/diagramAgentContext';
 import { randomUUID } from 'node:crypto';
 import { CanvasHistory, type CanvasHistoryRecord } from '../../../domain/core/diagrams/canvasHistory';
-import type { DiagramService, DiagramRevisionResult, DiagramRevision } from '../../../domain/core/diagrams/diagramService';
+import type { DiagramGenerator } from '../../../domain/core/diagrams/diagramGeneration';
+import type { DiagramRevisionResult, DiagramRevision } from '../../../domain/core/diagrams/diagramRevision';
 import type { GridBox } from '../../../domain/core/diagrams/lineGrid';
 import type { LiveDocumentSnapshot } from '../../../domain/mapping/agent/contracts';
 import { editDiagramSchema } from '../../../domain/mapping/agent/diagramEdit';
@@ -24,7 +27,7 @@ export interface DiagramEditCanvasPort {
   create?(sessionId: string, input: { requestId: string; expectedVersion: number; diagrams: DiagramCreation[] }): Promise<{ version: number }>;
 }
 interface Run {
-  variants?: { variant: DiagramVariant; revision: DiagramRevision }[];
+  variants?: { variant: DiagramRevisionReview; revision: DiagramRevision }[];
   submission?: GeneratedDiagramEdit;
   agentContext?: AgentContextSnapshot;
   nextAgentContext?: AgentContextSnapshot;
@@ -44,7 +47,7 @@ export type ResolvedPromptReference = { ref: number; kind: PromptReference['kind
 export class DiagramEditService {
   private runs = new Map<string, Run>();
   private requests = new Map<string, string>();
-  constructor(private readonly diagrams: DiagramService, private readonly canvas: DiagramEditCanvasPort,
+  constructor(private readonly diagrams: DiagramGenerator, private readonly canvas: DiagramEditCanvasPort,
     private readonly diagramContexts?: DiagramAgentContextStore) {}
 
   start(input: EditDiagramInput | CreateDiagramInput, suppliedContext?: AgentContextSnapshot, operation: PromptOperation = 'edit-diagram', submission?: GeneratedDiagramEdit): DiagramEditRun {
@@ -116,7 +119,7 @@ export class DiagramEditService {
     const unanchored = operation === 'create-diagram' && input.nodeId === 'canvas';
     if (!unanchored && (!box || box.kind !== 'diagram')) throw Error('Expected diagram GridBox');
     let base = box && box.kind === 'diagram' ? snapshot.document.scene.contents[box.contentId]
-      : this.diagrams.create({ id: `context-${randomUUID()}`, revision: 0, ascii: '[New diagram]' }).diagram;
+      : createStoredDiagram({ id: `context-${randomUUID()}`, revision: 0, ascii: '[New diagram]' }).diagram;
     if (!unanchored && base.revisionId !== input.baseRevisionId) throw Error('VERSION_CONFLICT: diagram base is no longer current');
     if (!run.submission && !run.agentContext && operation === 'edit-diagram') {
       const bound = snapshot.document.diagramContexts?.[base.diagramId];
@@ -124,17 +127,17 @@ export class DiagramEditService {
         run.agentContext = await loadDiagramAgentContext(bound, this.diagramContexts);
     }
     // Import only the exact target/reference revisions, including their logical node identities.
-    for (const revision of snapshot.revisions ?? []) this.diagrams.importRevision(revision);
+    for (const revision of snapshot.revisions ?? []) importDiagramRevision(revision);
     // Compatibility for in-process adapters that still supply a history record.
     if (!snapshot.revisions && snapshot.history) new CanvasHistory(snapshot.document, snapshot.canvas, snapshot.history, 'current');
-    const existing = input.variant?.variantId ? snapshot.document.variants?.[input.variant.variantId] : undefined;
+    const existing = input.variant?.variantId ? snapshot.document.revisionReviews?.[input.variant.variantId] : undefined;
     if (input.variant?.variantId && !existing) throw Error('Variant not found');
     if (existing) {
       if (existing.diagramId !== base.diagramId) throw Error('Variant belongs to another diagram');
-      const retained = await this.canvas.snapshot(input.sessionId, variantRevisionIds(existing));
-      for (const revision of retained.revisions ?? []) this.diagrams.importRevision(revision);
+      const retained = await this.canvas.snapshot(input.sessionId, reviewRevisionIds(existing));
+      for (const revision of retained.revisions ?? []) importDiagramRevision(revision);
       if (retained.version !== input.expectedVersion) throw Error('VERSION_CONFLICT: canvas changed');
-      base = this.diagrams.getRevision(existing.headRevisionId).diagram;
+      base = getDiagramRevision(existing.headRevisionId).diagram;
     }
     const template = resolvePromptTemplate(input.template ?? defaultTemplateSelection(operation), operation);
     const references = this.resolveReferences(input.references ?? [], snapshot.history);
@@ -147,7 +150,7 @@ export class DiagramEditService {
           if (existing.replacementScope.ranges.some(range => range.endLine < range.startLine)) throw Error('The saved replacement scope was deleted; select new targets for a new edit');
           return existing.replacementScope.ranges;
         }
-        const range = existing.ownerNodeId === 'root' ? undefined : variantRange(this.diagrams.getRevision(base.revisionId), existing.ownerNodeId);
+        const range = existing.ownerNodeId === 'root' ? undefined : revisionScope(getDiagramRevision(base.revisionId), existing.ownerNodeId);
         if (input['replace-mode'] !== (range ? 'subnode-single' : 'diagram')) throw Error('replace-mode must match the saved variant scope');
         return range ? [range] : [];
       })() : diagramReplacementRanges(base, input['replace-mode']!, input.subtree, input.subtrees)
@@ -164,8 +167,8 @@ export class DiagramEditService {
         if (next.source.sourceSessionId !== input.llmSessionId) throw Error('AGENT_CONTEXT_SESSION_MISMATCH');
         run.nextAgentContext = next;
       }, onProgress: (message: string) => { if (run.state.status === 'generating') run.state.message = message; } };
-    const produce = (request: Parameters<DiagramService['generate']>[0], options: Parameters<DiagramService['generate']>[1]) =>
-      run.submission ? Promise.resolve(this.diagrams.submit(request, run.submission)) : this.diagrams.generate(request, options);
+    const produce = (request: Parameters<DiagramGenerator['generate']>[0], options: Parameters<DiagramGenerator['generate']>[1]) =>
+      run.submission ? Promise.resolve(submitStoredDiagramEdit(request, run.submission)) : generateDiagram(this.diagrams, request, options);
     if (operation !== 'edit-diagram') {
       run.created = [];
       for (let index = 0; index < (operation === 'extend-diagram' ? 1 : input.count ?? 1); index++) {
@@ -181,7 +184,7 @@ export class DiagramEditService {
     const variantOptions = input['edit-mode'] === 'variant' ? input.variant ?? { name: 'Alternative', count: 1 } : undefined;
     if (variantOptions) {
       run.variants = [];
-      const ownerNodeId = existing?.ownerNodeId ?? (input.subtree ? this.diagrams.getRevision(base.revisionId).nodeRefs[input.subtree.contentNodeId] : 'root');
+      const ownerNodeId = existing?.ownerNodeId ?? (input.subtree ? getDiagramRevision(base.revisionId).nodeRefs[input.subtree.contentNodeId] : 'root');
       if (!ownerNodeId) throw Error('STALE_SUBTREE: select a current subtree');
       for (let index = 0; index < variantOptions.count; index++) {
         options.onProgress(`Generating variant ${index + 1} of ${variantOptions.count}…`);
@@ -190,13 +193,13 @@ export class DiagramEditService {
           baseRevisionId: base.revisionId, input: { id: base.id, structureKind: base.content.structure.kind,
             source: base.sourceContext.binding, evidence: base.sourceContext.evidence } }, options);
         abort.signal.throwIfAborted();
-        const variant: DiagramVariant = { ...existing, id: existing?.id ?? `variant-${randomUUID()}`,
+        const variant: DiagramRevisionReview = { ...existing, id: existing?.id ?? `variant-${randomUUID()}`,
           name: variantOptions.name + (variantOptions.count > 1 ? ` ${index + 1}` : ''), diagramId: base.diagramId, contentId: base.id,
           ...(input['replace-mode'] === 'multi-contiguous' || input['replace-mode'] === 'multi-disjoint'
             ? { replacementScope: { mode: input['replace-mode'], ranges: generated.replacementRanges! } } : {}),
           ownerNodeId, baseRevisionId: existing?.baseRevisionId ?? base.revisionId, headRevisionId: generated.revision.id,
           revisionIds: [...(existing?.revisionIds ?? []), generated.revision.id], prompt: input.prompt, decisions: {} };
-        validateVariant(variant, id => this.diagrams.getRevision(id));
+        validateRevisionReview(variant, id => getDiagramRevision(id));
         run.variants.push({ variant, revision: generated.revision });
         run.revision = generated;
       }
@@ -214,7 +217,7 @@ export class DiagramEditService {
     return references.map((reference, index) => {
       const ref = index + 1;
       let revision: DiagramRevision | undefined = history?.diagramRevisions[reference.revisionId];
-      if (!revision) try { revision = this.diagrams.getRevision(reference.revisionId); } catch { /* reported below */ }
+      if (!revision) try { revision = getDiagramRevision(reference.revisionId); } catch { /* reported below */ }
       if (!revision || revision.diagramId !== reference.diagramId) throw Error(`PROMPT_REFERENCE_NOT_FOUND: [ref ${ref}] ${reference.label} is not available`);
       const common = { ref, label: reference.label, diagramId: reference.diagramId, revisionId: reference.revisionId };
       if (reference.kind === 'diagram') return { ...common, kind: 'diagram', ascii: revision.diagram.content.ascii };

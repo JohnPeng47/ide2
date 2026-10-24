@@ -1,6 +1,7 @@
+import { createStoredDiagram } from './diagramRevisionStore';
 import { documentFromHistory, type CanvasHistoryRecord } from './canvasHistory';
 import { validateDiagram, diagramSource, type Diagram, type DiagramSourceBinding } from './diagram';
-import { RevisionedDiagramService } from './diagramService';
+
 import {
   composeScene,
   flattenGrid,
@@ -25,8 +26,8 @@ export interface SaveProjectDiagramInput {
 
 export function singleDiagramScene(ascii: string, source?: DiagramSourceBinding): LineGridScene {
   return { contents: {
-    overview: new RevisionedDiagramService().create({ id: "overview", revision: 0, ascii, source }).diagram,
-    "overview-summary": new RevisionedDiagramService().create({ id: "overview-summary", revision: 0, ascii: "[Diagram]" }).diagram
+    overview: createStoredDiagram({ id: "overview", revision: 0, ascii, source }).diagram,
+    "overview-summary": createStoredDiagram({ id: "overview-summary", revision: 0, ascii: "[Diagram]" }).diagram
   }, root: { id: "root", kind: "container", position: { column: 0, row: 0 }, collapsed: false,
     layout: { collisionPolicy: "push-right", gap: 3 }, children: [
       { id: "overview", kind: "diagram", position: { column: 0, row: 0 }, collapsed: false,

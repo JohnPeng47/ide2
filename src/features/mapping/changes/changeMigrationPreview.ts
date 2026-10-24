@@ -1,14 +1,14 @@
+import { migrationMarkKey, type MigrationMark } from '../../../../domain/mapping/changes/migrationDecoration';
+export { migrationMarkKey, type MigrationMark } from '../../../../domain/mapping/changes/migrationDecoration';
 import { resolveMigrationEndpoint, type DiagramMigration, type MigrationRole, type MigrationEndpoint } from '../../../../domain/mapping/changes/diagramMigration';
 import type { ChangePreviewDocument } from '../../../../domain/mapping/changes/diagramChangeSession';
 import { diagramContentNodes } from '../../../../domain/core/diagrams/diagramContentNodes';
 import { findBox } from '../../../../domain/mapping/workspace/canvasDisplayNode';
 
-export interface MigrationMark { id: string; role: MigrationRole; title: string }
 interface PreviewEndpoint {
   migration: DiagramMigration; role: MigrationRole; endpoint: MigrationEndpoint;
   resolved?: ReturnType<typeof resolveMigrationEndpoint>; focusContentNodeId?: string; error?: string;
 }
-export const migrationMarkKey = (displayNodeId: string, contentNodeId: string) => JSON.stringify([displayNodeId, contentNodeId]);
 export function changeMigrationPreview(doc: ChangePreviewDocument, migrations: readonly DiagramMigration[]) {
   const proposed = new Map<string, MigrationMark[]>(), baseline = new Map<string, MigrationMark[]>();
   const endpoints = migrations.flatMap(migration => (['source', 'destination'] as const).flatMap<PreviewEndpoint>(role => {

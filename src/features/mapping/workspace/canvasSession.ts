@@ -6,7 +6,6 @@ import type { MappingGridDocument } from '../../../../domain/mapping/workspace/m
 import type { MappingCanvasState } from '../../../../domain/mapping/workspace/mappingWorkspace';
 import type { CanvasHistoryRecord } from '../../../../domain/core/diagrams/canvasHistory';
 import { stateKey } from '../../../../domain/core/diagrams/canvasHistory';
-import type { DiagramService } from '../../../../domain/core/diagrams/diagramService';
 import { CanvasCursorCopy } from '../canvas/cursorCopy';
 
 /** Consumers can select and subscribe; mutations stay behind session commands. */
@@ -45,11 +44,11 @@ export class CanvasSession {
   private unsubscribe: () => void;
   private commitListeners = new Set<() => void>();
 
-  constructor(input: SavedDocumentState & { document: MappingGridDocument; canvas: MappingCanvasState; history?: CanvasHistoryRecord }, diagrams?: DiagramService, history?: CanvasHistoryService) {
+  constructor(input: SavedDocumentState & { document: MappingGridDocument; canvas: MappingCanvasState; history?: CanvasHistoryRecord }, history?: CanvasHistoryService) {
     this.baseline = { name: input.name, savedName: input.savedName, savedScene: input.savedScene, savedEdges: input.savedEdges };
     // Native anchors are renderer-local. Headless registry reads use estimated
     // layout until a legacy renderer explicitly supplies measured endpoints.
-    this.controller = new MappingDocumentController(input.document, input.canvas, 0, undefined, undefined, input.history, diagrams, history);
+    this.controller = new MappingDocumentController(input.document, input.canvas, 0, undefined, undefined, input.history, history);
     const snapshot = this.controller.getSnapshot();
     this.scene = snapshot.document.scene; this.edges = snapshot.document.edges;
     this.sceneKey = stateKey(this.scene); this.edgesKey = stateKey(this.edges);

@@ -2,7 +2,8 @@ import { generatedDiagramOperations } from '../../../../domain/mapping/workspace
 import { diagramContentNodes } from '../../../../domain/core/diagrams/diagramContentNodes';
 import { expect, it, vi } from 'vitest';
 import { DiagramEditService } from '../../../../application/mapping/agent/diagramEditService';
-import { RevisionedDiagramService, type DiagramGenerationRequest, type DiagramGenerator } from '../../../../domain/core/diagrams/diagramService';
+import type { DiagramGenerationRequest, DiagramGenerator } from '../../../../domain/core/diagrams/diagramGeneration';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { singleDiagramScene } from '../../../../domain/core/diagrams/projectDiagramCanvas';
 import type { DiagramCreation, PromptReference } from '../../../../domain/mapping/agent/diagramEdit';
 import { findBox } from '../../../../domain/mapping/workspace/canvasDisplayNode';
@@ -17,7 +18,7 @@ function fixture(generate: DiagramGenerator['generate'] = async () => ({ ascii: 
   const base = controller.getSnapshot().document.scene.contents.overview, receiver = new DiagramRevisionReceiver();
   const create = vi.fn(async (_session: string, input: { requestId: string; expectedVersion: number; diagrams: DiagramCreation[] }) =>
     ({ version: controller.applyUpdate(input.expectedVersion, generatedDiagramOperations(input.diagrams)).version }));
-  const service = new DiagramEditService(new RevisionedDiagramService(generator), {
+  const service = new DiagramEditService((revisionFixture(generator)).generator, {
     snapshot: async () => structuredClone({ ...controller.getSnapshot(), history: controller.exportHistory(), name: 'Test' }),
     apply: async (_session, input) => receiver.apply('doc', structuredClone(input), controller, async () => {}), create
   });

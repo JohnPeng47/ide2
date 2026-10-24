@@ -1,3 +1,5 @@
+import { DiagramDisplayToggle } from '../../../shared/diagrams/DiagramDisplayToggle';
+import type { CanvasTransform } from '../../../../domain/core/diagrams/diagramCanvas';
 import { useTreemapRegionSelection } from '../treemap/useTreemapRegionSelection';
 import { treemapCanvasTiles, treemapCanvasRegions } from './treemapCanvasTiles';
 import { diagramColorStyle, type TreemapDiagramColor } from './treemapDiagramColors';
@@ -15,7 +17,7 @@ import { PanelConnector } from '../../../shared/diagrams/PanelConnector';
 import { DiagramSubtreeControls } from '../canvas/DiagramSubtreeControls';
 import { useEndpointGeometry } from '../canvas/useEndpointGeometry';
 import { acceptChangeSession, readChangeSession, type DisplayModeChange } from './changeSessionApi';
-import { changePreviewText, type PreviewTextRun } from './changePreviewText';
+import { projectDiagramComparisons, layoutDiagramComparisons, type PreviewTextRun } from '../../../../domain/mapping/workspace/diagramDiffProjection';
 import type { SearchDocument } from '../search/diagramSearchService';
 import { SearchHighlight, type DiagramFocus } from '../search/SearchHighlight';
 import type { DiagramLineSearchResult } from '../../../../domain/mapping/search/diagramSearch';
@@ -89,7 +91,7 @@ export function ChangeSessionPreview(props: { treemapColors?: readonly TreemapDi
     </div>}
     {error && <p className="change-preview-message" role="alert">{error}</p>}
     {doc
-      ? <PreviewCanvas key={`${session!.id}:${doc.id}:${doc.version}:${props.mode.migrationId ? props.mode.serial : ''}`} doc={doc}
+      ? <DiagramDiffCanvas key={`${session!.id}:${doc.id}:${doc.version}:${props.mode.migrationId ? props.mode.serial : ''}`} doc={doc}
           compact={props.compact} coverage={coverage} treemapColors={props.treemapColors} searchFocus={props.searchFocus}
           searchMatches={props.searchMatches}
           diff={diff!} modifiedDiagramIds={modifiedDiagramIds} migrations={migrations!} focusContentNodeId={props.mode.contentNodeId ?? selectedEndpoint?.focusContentNodeId}
@@ -118,18 +120,18 @@ function previewFocusBounds(viewport: HTMLElement) {
   return { left, top, width: Math.max(0, right - left), height: Math.max(0, bounds.bottom - top) };
 }
 
-function PreviewCanvas({ treemapColors, coverage, compact, doc, focusId, focusContentNodeId, serial, onJump, diff, modifiedDiagramIds, migrations, searchFocus, searchMatches }: { treemapColors?: readonly TreemapDiagramColor[]; coverage?: DiffCoverage; compact?: boolean; doc: ChangePreviewDocument; focusId?: string; focusContentNodeId?: string; migrations: MigrationPreview; serial: number; searchFocus?: DiagramFocus;
+export function DiagramDiffCanvas({ initialTransform, onTransformChange, removedDiagramIds, highlightAdded = false, treemapColors, coverage, compact, doc, focusId, focusContentNodeId, serial, onJump, diff, modifiedDiagramIds, migrations, searchFocus, searchMatches }: { initialTransform?: CanvasTransform; onTransformChange?: (value: CanvasTransform) => void; removedDiagramIds?: ReadonlySet<string>; highlightAdded?: boolean; treemapColors?: readonly TreemapDiagramColor[]; coverage?: DiffCoverage; compact?: boolean; doc: ChangePreviewDocument; focusId?: string; focusContentNodeId?: string; migrations: MigrationPreview; serial: number; searchFocus?: DiagramFocus;
   searchMatches?: readonly DiagramLineSearchResult[];
   diff: ReturnType<typeof diffChangeDocument>; modifiedDiagramIds: ReadonlySet<string>;
   onJump: NonNullable<Parameters<typeof DiagramText>[0]['onJump']> }) {
   const controller = useMemo(() => {
     const state = structuredClone(doc.proposed);
-    // Preview folds are local to this viewer; opening a change starts with visible content.
-    const expand = (box: typeof state.document.scene.root): typeof box => box.kind === 'container'
-      ? { ...box, collapsed: false, children: box.children.map(expand) } : { ...box, collapsed: false };
-    state.document.scene.root = expand(state.document.scene.root); state.canvas.diagramViews = {};
+    // Lay out fully expanded diff bounds before freezing. Subsequent local folds
+    // retain these positions, and routing reads this same prepared scene.
+    state.document.scene = layoutDiagramComparisons(state.document.scene, diff.diagrams, modifiedDiagramIds);
+    state.canvas.diagramViews = {};
     return new ChangePreviewState(state, doc.version);
-  }, [doc.id, doc.version]);
+  }, [doc.id, doc.version, diff, modifiedDiagramIds]);
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
   useEffect(() => {
     if (!searchMatches?.length) return;
@@ -175,8 +177,12 @@ function PreviewCanvas({ treemapColors, coverage, compact, doc, focusId, focusCo
     return ids;
   }, [doc.baseline]);
   const scene = state.document.scene;
-  const text = useMemo(() => changePreviewText(scene, state.canvas.diagramViews, diff.diagrams, modifiedDiagramIds, state.document.jumps, migrations.baseline),
-    [scene, state.canvas.diagramViews, diff, modifiedDiagramIds, state.document.jumps, migrations]);
+  const diffEnabled = (id: string) => state.canvas.diagramViews?.[id]?.display !== 'regular';
+  const visibleDiffIds = useMemo(() => new Set([...modifiedDiagramIds].filter(id => state.canvas.diagramViews?.[id]?.display !== 'regular')),
+    [modifiedDiagramIds, state.canvas.diagramViews]);
+
+  const text = useMemo(() => projectDiagramComparisons(scene, state.canvas.diagramViews, diff.diagrams, visibleDiffIds, state.document.jumps, migrations.baseline, true, state.document.diagramPresentations, doc.baseline?.document),
+    [scene, state.canvas.diagramViews, diff, visibleDiffIds, state.document.jumps, migrations, doc.baseline]);
   const { resolved, boxes } = text;
   const coverageFor = useMemo(() => coverage ? diagramCoverage(doc, coverage) : undefined, [doc, coverage]);
   const nodes = controller.nodes();
@@ -203,8 +209,36 @@ function PreviewCanvas({ treemapColors, coverage, compact, doc, focusId, focusCo
     ].map(tile => ({ ...tile, column: tile.column + bounds.column, row: tile.row + bounds.row }));
   }), [boxes, text.projections, scene, treemapColors, doc.id, doc.representationId]);
   const focusBox = useMemo(() => searchFocus ?? (focusId?.startsWith('grid:') ? { id: focusId.slice(5), contentNodeId: focusContentNodeId, serial } : undefined), [focusId, focusContentNodeId, serial, searchFocus]);
+  const renderText = (rows: Parameters<typeof DiagramText>[0]['rows'], measure = false) => (
+    <DiagramText ref={measure ? pre : undefined} className="mapping-poc-ascii" rows={rows} registerEndpoint={geometry.registerEndpoint} onJump={onJump}
+        renderRun={(run, highlightedText) => (run as PreviewTextRun).migrations?.length
+          ? <span className={`migration-source${(run as PreviewTextRun).diffVersion ? ' migration-with-edit change-diff-modified' : ''}`}
+              data-diff-status={(run as PreviewTextRun).diffVersion ? 'modified' : 'removed'} data-diff-version={(run as PreviewTextRun).diffVersion}
+              data-migration-id={(run as PreviewTextRun).migrations!.map(m => m.id).join(' ')} title="Migration source · original text">{highlightedText}</span>
+          : (run as PreviewTextRun).diffStatus === 'removed'
+          ? <span className="change-diff-removed" data-diff-status="removed">{highlightedText}</span>
+          : (run as PreviewTextRun).diffVersion
+          ? <span className="change-diff-modified" data-diff-status="modified" data-diff-version={(run as PreviewTextRun).diffVersion}>{highlightedText}</span>
+          : highlightedText}
+        nodeProps={owner => {
+          if (!diffEnabled(owner.displayNodeId)) return;
+          const marks = owner.contentNodeId ? migrations.proposed.get(migrationMarkKey(owner.displayNodeId, owner.contentNodeId)) : undefined;
+          const migrationClass = [...new Set(marks?.map(mark => `migration-${mark.role}`))].join(' ');
+          const side = modifiedDiagramIds.has(owner.displayNodeId) ? diff.diagrams.get(owner.displayNodeId)?.proposed : undefined;
+          const change = owner.contentNodeId ? side?.nodes.get(owner.contentNodeId) : undefined;
+          const status = removedDiagramIds?.has(owner.displayNodeId) ? 'removed' : !baselineDiagramIds.has(owner.displayNodeId.slice(5)) ? (highlightAdded ? 'added' : undefined) : owner.contentNodeId ? change?.status : side?.lines.get(owner.sourceLine);
+          if (!status && !change?.moved && !change?.containsChanges && !marks?.length) return;
+          return { className: [migrationClass, marks?.length && status && 'migration-with-edit', status && `change-diff-${status}`, change?.moved && 'change-diff-moved',
+            change?.containsChanges && !status && !change.moved && 'change-diff-descendants'].filter(Boolean).join(' '),
+            'data-migration-id': marks?.map(mark => mark.id).join(' '), 'data-migration-role': marks?.map(mark => mark.role).join(' '),
+            'data-diff-status': status, 'data-diff-moved': change?.moved || undefined, 'data-diff-descendants': change?.containsChanges || undefined,
+            'data-diff-version': status === 'modified' ? 'current' : undefined,
+            title: [...(marks?.map(mark => `${mark.id} · ${mark.role}: ${mark.title}`) ?? []), status && `${status[0].toUpperCase()}${status.slice(1)}`, change?.moved && 'Moved or reparented',
+              change?.containsChanges && 'Changes inside subtree'].filter(Boolean).join(' · ') };
+        }} />
+  );
   return <DraggableDiagramCanvas enabled resetKey={doc.id} className="mapping-poc-canvas" leftInset={compact ? 0 : 340}
-    focusBox={focusBox} getFocusBounds={previewFocusBounds}>
+    focusBox={focusBox} getFocusBounds={previewFocusBounds} initialTransform={initialTransform} onTransformChange={onTransformChange}>
     <div className="change-preview-stage" style={{ position: 'relative', marginLeft: coverageFor ? 175 : 0, width: resolved.bounds.columns * cell.width, height: resolved.bounds.rows * cell.height }}>
       {canvasTiles.map(({ identity, column, row, columns, rows, outline }, index) => <div ref={index === 0 ? tintRef : undefined} data-treemap-region={outline ? undefined : identity.nodeId}
         key={`${outline}:${identity.position}:${column}:${row}`} className={outline ? "treemap-canvas-hover" : "change-preview-treemap-tint"} aria-hidden="true"
@@ -235,34 +269,21 @@ function PreviewCanvas({ treemapColors, coverage, compact, doc, focusId, focusCo
             title={coverageTitle(stats)} style={{ left: bounds.column * cell.width - 175, top: (bounds.row + row) * cell.height }}>{coverageLabel(stats)}</span>;
         });
       })}
-      <DiagramText ref={pre} className="mapping-poc-ascii" rows={text.rows} registerEndpoint={geometry.registerEndpoint} onJump={onJump}
-        renderRun={(run, highlightedText) => (run as PreviewTextRun).migrations?.length
-          ? <span className={`migration-source${(run as PreviewTextRun).diffVersion ? ' migration-with-edit change-diff-modified' : ''}`}
-              data-diff-status={(run as PreviewTextRun).diffVersion ? 'modified' : 'removed'} data-diff-version={(run as PreviewTextRun).diffVersion}
-              data-migration-id={(run as PreviewTextRun).migrations!.map(m => m.id).join(' ')} title="Migration source · original text">{highlightedText}</span>
-          : (run as PreviewTextRun).diffStatus === 'removed'
-          ? <span className="change-diff-removed" data-diff-status="removed">{highlightedText}</span>
-          : (run as PreviewTextRun).diffVersion
-          ? <span className="change-diff-modified" data-diff-status="modified" data-diff-version={(run as PreviewTextRun).diffVersion}>{highlightedText}</span>
-          : highlightedText}
-        nodeProps={owner => {
-          const marks = owner.contentNodeId ? migrations.proposed.get(migrationMarkKey(owner.displayNodeId, owner.contentNodeId)) : undefined;
-          const migrationClass = [...new Set(marks?.map(mark => `migration-${mark.role}`))].join(' ');
-          const side = modifiedDiagramIds.has(owner.displayNodeId) ? diff.diagrams.get(owner.displayNodeId)?.proposed : undefined;
-          const change = owner.contentNodeId ? side?.nodes.get(owner.contentNodeId) : undefined;
-          const status = !baselineDiagramIds.has(owner.displayNodeId.slice(5)) ? undefined : owner.contentNodeId ? change?.status : side?.lines.get(owner.sourceLine);
-          if (!status && !change?.moved && !change?.containsChanges && !marks?.length) return;
-          return { className: [migrationClass, marks?.length && status && 'migration-with-edit', status && `change-diff-${status}`, change?.moved && 'change-diff-moved',
-            change?.containsChanges && !status && !change.moved && 'change-diff-descendants'].filter(Boolean).join(' '),
-            'data-migration-id': marks?.map(mark => mark.id).join(' '), 'data-migration-role': marks?.map(mark => mark.role).join(' '),
-            'data-diff-status': status, 'data-diff-moved': change?.moved || undefined, 'data-diff-descendants': change?.containsChanges || undefined,
-            'data-diff-version': status === 'modified' ? 'current' : undefined,
-            title: [...(marks?.map(mark => `${mark.id} · ${mark.role}: ${mark.title}`) ?? []), status && `${status[0].toUpperCase()}${status.slice(1)}`, change?.moved && 'Moved or reparented',
-              change?.containsChanges && 'Changes inside subtree'].filter(Boolean).join(' · ') };
-        }} />
+      {boxes.filter(({ box }) => box.kind === 'diagram').map(({ box, bounds }, index) =>
+        <div key={box.id} data-diff-diagram={box.id} style={{ position: 'absolute', left: bounds.column * cell.width, top: bounds.row * cell.height }}>
+          {renderText(text.projections.get(`grid:${box.id}`)!.rows, index === 0)}
+          <div style={{ position: 'absolute', left: '100%', top: 0, marginLeft: 8 }}>
+            <DiagramDisplayToggle mode={diffEnabled(`grid:${box.id}`) ? 'diff' : 'regular'} onChange={display => controller.updateCanvas(canvas => ({
+              ...canvas, diagramViews: { ...canvas.diagramViews, [`grid:${box.id}`]: {
+                contentRevisionId: scene.contents[(box as Extract<typeof box, { kind: 'diagram' }>).contentId].content.revisionId, collapsedContentNodeIds: [],
+                ...canvas.diagramViews?.[`grid:${box.id}`], display
+              } }
+            }))} />
+          </div>
+        </div>)}
       {boxes.map(({ box, bounds }) => <div key={box.id} data-grid-box={box.id}
         ref={element => geometry.registerEndpoint({ displayNodeId: `grid:${box.id}` }, element)}
-        className={`change-preview-box${box.kind === 'diagram' && !baselineDiagramIds.has(box.id) ? ' is-added-diagram' : ''}${focusId === `grid:${box.id}` ? ' is-change-target' : ''}`}
+        className={`change-preview-box${removedDiagramIds?.has(`grid:${box.id}`) ? ' is-removed-diagram' : ''}${box.kind === 'diagram' && !baselineDiagramIds.has(box.id) ? ' is-added-diagram' : ''}${focusId === `grid:${box.id}` ? ' is-change-target' : ''}`}
         style={{ left: bounds.column * cell.width, top: bounds.row * cell.height, width: bounds.columns * cell.width, height: bounds.rows * cell.height }} />)}
       <DiagramSubtreeControls nodes={controlNodes} visibleBoxIds={new Set(boxes.map(b => b.box.id))} cell={cell} disabled={false}
         onCollapse={(nodeId, contentNodeId, collapsed) => controller.collapse(nodeId, contentNodeId, collapsed)} />

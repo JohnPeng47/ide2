@@ -1,10 +1,11 @@
+import { analyzeDiagramSyntax } from '../../../../domain/core/diagrams/diagramSyntaxAnalysis';
 import { activeDiagramHighlights, highlightColor, highlightNodeIds } from '../../../../domain/core/diagrams/diagramHighlight';
 import { DiagramTreemapTint } from '../treemap/CanvasTreemapColors';
-import { memo, useContext, useMemo } from 'react';
+import { memo, useCallback, useContext, useMemo } from 'react';
 import { useValue } from 'tldraw';
 import { CanvasRuntimeContext, type GridModel } from './CanvasRuntimeContext';
 import { projectDiagramContent } from '../../../../domain/mapping/workspace/diagramViewState';
-import { diagramTextRanges, textRow } from '../../../../domain/core/diagrams/diagramText';
+import { diagramTextRanges, textRow, type DiagramTextOwner } from '../../../../domain/core/presentation/diagramText';
 import { DiagramText } from '../../../shared/diagrams/DiagramText';
 import { DiagramSubtreeControls } from '../canvas/DiagramSubtreeControls';
 import { useLocalAnchors } from './useLocalAnchors';
@@ -14,22 +15,30 @@ const Text = memo(function Text({ model }: { model: Pick<GridModel, 'id' | 'diag
   const runtime = useContext(CanvasRuntimeContext)!;
   const jump = useValue('diagram jump availability', () => runtime.interaction.get().jumps, [runtime]);
   const register = useLocalAnchors(runtime, model.id, model.layoutKey);
+  const registerDisplayed = useCallback((owner: DiagramTextOwner, element: Element | null) => {
+    if (owner.nodeRef && model.node.layout === 'grid') {
+      const id = Object.entries(model.node.nodeRefs ?? {}).find(([, ref]) => ref === owner.nodeRef)?.[0];
+      if (id) register({ displayNodeId: owner.displayNodeId, contentNodeId: id, revisionId: model.diagram!.content.revisionId }, element);
+    } else register(owner, element);
+  }, [register, model.node, model.diagram]);
   const rows = useMemo(() => {
+    if (model.node.textRows) return model.node.textRows;
     const diagram = model.diagram!;
     const projection = projectDiagramContent(diagram.content, model.view);
-    const ranges = diagramTextRanges({ ascii: diagram.content.ascii, content: diagram.content, displayNodeId: model.id,
+    const settings = model.node.presentationSettings;
+    const ranges = diagramTextRanges({ revisionId: diagram.revisionId, syntax: analyzeDiagramSyntax(diagram, settings?.markerRules), presentation: settings, highlights: model.node.presentation?.view.highlights, ascii: diagram.content.ascii, content: diagram.content, displayNodeId: model.id,
       mappings: diagram.sourceContext.mappings, sourceContext: diagram.sourceContext, jumps: [...(diagram.jumps ?? []), ...model.jumps] });
     return projection.ascii.split('\n').map((line, index) => textRow(line, ranges.get(projection.sourceLines[index]) ?? [], projection.sourceLines[index]));
-  }, [model.diagram, model.view, model.jumps, model.id]);
+  }, [model.diagram, model.view, model.jumps, model.id, model.node]);
   const source = model.node.layout === 'grid' ? model.node.diagram ?? model.diagram! : model.diagram!;
-  const highlights = activeDiagramHighlights(source.content, source.highlights);
-  const whole = highlights.find(item => !highlightNodeIds(item).length);
+  const highlights = activeDiagramHighlights(source.content, source.highlights, source.revisionId);
+  const whole = highlights.find(item => !item.textRange && !highlightNodeIds(item).length);
   const byNode = new Map<string, (typeof highlights)[number]>();
   for (const highlight of highlights) for (const id of highlightNodeIds(highlight))
     if (!byNode.has(id)) byNode.set(id, highlight);
   return <DiagramText style={whole ? { backgroundColor: `${highlightColor(whole.color)}33`, outline: `2px solid ${highlightColor(whole.color)}` } : undefined}
     data-highlight-id={whole?.id} className="mapping-poc-ascii" rows={rows} data-graph="A" data-line-count={rows.length}
-    data-revision={model.diagram!.revision} registerEndpoint={register}
+    data-revision={model.diagram!.revision} registerEndpoint={registerDisplayed}
     nodeProps={owner => {
       const highlight = byNode.get(owner.contentNodeId!);
       return { className: model.selectedContent.includes(owner.contentNodeId!) ? 'is-selected' : undefined,

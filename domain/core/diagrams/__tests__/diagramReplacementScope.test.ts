@@ -1,12 +1,13 @@
 import { expect, it } from 'vitest';
-import { RevisionedDiagramService, type DiagramGenerationRequest } from '../diagramService';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
+import { type DiagramGenerationRequest } from '../diagramGeneration';
 import { diagramContentNodes } from '../diagramContentNodes';
 import { diagramReplacementRanges, scopedReplacements } from '../diagramSubtreeEdit';
 import { renderDiagramEditPrompt } from '../../../../infrastructure/mapping/agents/diagram-edit/diagramEditRuntime';
 
 const ascii = 'Root\n|-- A\n|   `-- Child\n|-- B\n|-- C\n`-- D';
 function fixture() {
-  const service = new RevisionedDiagramService();
+  const service = revisionFixture();
   const base = service.create({ id: 'scope', ascii, revision: 0, structureKind: 'tree' }).revision;
   const nodes = diagramContentNodes(base.diagram.content);
   const target = (label: string) => ({ contentNodeId: nodes.find(node => node.label === label)!.id, revisionId: base.diagram.content.revisionId });
@@ -45,7 +46,7 @@ it('issues one child revision while preserving identities and highlights across 
   const { base: original, target, service } = fixture();
   const base = service.revise(original.id, { kind: 'highlights', highlights: [{ id: 'b', color: 'blue', contentNodeId: target('B').contentNodeId }] }).revision;
   const refA = base.nodeRefs[target('A').contentNodeId];
-  const generator = new RevisionedDiagramService({ generate: async () => ({
+  const generator = revisionFixture({ generate: async () => ({
     ascii: `Root\n|-- Renamed A [[keep:${refA}]]\n|   |-- Added\n|   \`-- Added too\n|-- B\n\`-- D`, structureKind: 'tree',
     replacementRanges: [{ startLine: 2, endLine: 4 }, { startLine: 6, endLine: 5 }]
   }) });
@@ -71,7 +72,7 @@ it('issues one child revision while preserving identities and highlights across 
 it('distinguishes a blank replacement line from deleting the range', async () => {
   const { base, target } = fixture();
   const output = 'Root\n\n|-- B\n|-- C\n`-- D';
-  const service = new RevisionedDiagramService({ generate: async () => ({ ascii: output, structureKind: 'tree' }) });
+  const service = revisionFixture({ generate: async () => ({ ascii: output, structureKind: 'tree' }) });
   const next = await service.generate({ input: { id: base.diagram.id }, baseRevisionId: base.id, instruction: 'Clear A',
     editRanges: diagramReplacementRanges(base.diagram, 'subnode-single', target('A')) });
   expect(next.diagram.content.ascii).toBe(output);

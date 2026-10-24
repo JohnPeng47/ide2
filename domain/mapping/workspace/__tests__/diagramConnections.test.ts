@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RevisionedDiagramService } from '../../../core/diagrams/diagramService';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { connectionContentNodes, defaultArrowAppearance, reconcileConnections, type ContentNodeAnchor, type DiagramConnection } from '../../../core/diagrams/diagramConnection';
 import { singleDiagramScene } from '../../../core/diagrams/projectDiagramCanvas';
 import { MappingDocumentController, type DiagramOperation } from '../mappingDocumentController';
@@ -10,7 +10,7 @@ import { drawEdge } from '../connectionLayout';
 
 function setup() {
   const scene = singleDiagramScene('Root\n+-- Branch\n|   `-- Leaf\n`-- Leaf');
-  scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii: scene.contents.overview.content.ascii, structureKind: 'tree' }).diagram };
+  scene.contents = { ...scene.contents, overview: revisionFixture().create({ id: 'overview', revision: 0, ascii: scene.contents.overview.content.ascii, structureKind: 'tree' }).diagram };
   if (scene.root.kind === 'container') scene.root.children = [...scene.root.children, {
     id: 'second', kind: 'diagram', contentId: 'overview', position: { column: 40, row: 2 }, collapsed: false
   }];
@@ -30,7 +30,7 @@ describe('document connections', () => {
     const { controller, edge } = setup();
     const before = controller.getSnapshot().document.scene;
     const base = before.contents.overview;
-    const next = new RevisionedDiagramService().revise(base.revisionId, { kind: 'patch', start: 4, end: 4, patch: '`-- New leaf' });
+    const next = revisionFixture().revise(base.revisionId, { kind: 'patch', start: 4, end: 4, patch: '`-- New leaf' });
     const after = { ...before, contents: { ...before.contents, overview: next.diagram } };
     const stale = { ...edge, source: { ...edge.source, revisionId: 'older-content-revision' } };
     expect(next.nodeIds.has(edge.source.contentNodeId)).toBe(true);
@@ -120,7 +120,7 @@ describe('document connections', () => {
     controller.undo(); expect(controller.getSnapshot().document.edges).toEqual([edge]);
   });
   it('indexes graph labels without converting or editing the diagram', () => {
-    const content = new RevisionedDiagramService().create({ id: 'graph', revision: 0, ascii: '[Alpha] ---> [Beta]', structureKind: 'diagram' }).diagram.content;
+    const content = revisionFixture().create({ id: 'graph', revision: 0, ascii: '[Alpha] ---> [Beta]', structureKind: 'diagram' }).diagram.content;
     const before = structuredClone(content);
     expect(connectionContentNodes(content).map(node => node.label)).toEqual(['[Alpha]', '[Beta]']);
     expect(content).toEqual(before);

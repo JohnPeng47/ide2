@@ -9,6 +9,13 @@ export const canvasViewSchema = z.object({
 }).strict();
 export type CanvasView = z.infer<typeof canvasViewSchema>;
 export interface CanvasViews { saved: Record<string, CanvasView>; recording?: CanvasView }
+export interface CanvasViewSnapshot {
+  checkpointId: string;
+  document: import('./canvasHistory').ResolvedCanvasDocument;
+  view: unknown;
+  revisions: Record<string, import('./diagramRevision').DiagramRevision>;
+}
+export interface CanvasViewComparison { view: CanvasView; baseline: CanvasViewSnapshot; proposed: CanvasViewSnapshot }
 export const canvasViewCommandSchema = z.object({
   operation: z.enum(['start', 'stop', 'list', 'read', 'apply', 'delete', 'cancel']),
   name: z.string().trim().min(1).max(120).optional(), viewId: id.optional()

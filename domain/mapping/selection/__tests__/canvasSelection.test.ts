@@ -3,7 +3,7 @@ import { updateSelection } from '../canvasSelection';
 import { expect, it } from 'vitest';
 import { deselectCanvas, enclosesDiagram, selectCanvasMarquee, selectWholeDiagrams } from '../canvasSelection';
 import { singleDiagramScene } from '../../../core/diagrams/projectDiagramCanvas';
-import { RevisionedDiagramService } from '../../../core/diagrams/diagramService';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { initialCanvasState } from '../../workspace/mappingWorkspace';
 import { displayGeometry, type SelectionRegion } from '../../workspace/displayModel';
 
@@ -21,7 +21,7 @@ it('selects partial regions across diagrams, promotes whole diagrams, and preser
     { id: 'a', kind: 'diagram', contentId: 'overview', position: { column: 0, row: 0 }, collapsed: false },
     { id: 'b', kind: 'diagram', contentId: 'b', position: { column: 10, row: 0 }, collapsed: false }
   ];
-  scene.contents = { ...scene.contents, b: new RevisionedDiagramService().create({ id: 'b', revision: 0, ascii: 'Other\nEnd' }).diagram };
+  scene.contents = { ...scene.contents, b: revisionFixture().create({ id: 'b', revision: 0, ascii: 'Other\nEnd' }).diagram };
   const partial = selectCanvasMarquee(scene, undefined, { left: -.2, top: -.2, right: 12.2, bottom: .2 });
   expect(partial.diagramIds).toEqual([]);
   expect(partial.regions).toEqual([
@@ -38,7 +38,7 @@ it('selects partial regions across diagrams, promotes whole diagrams, and preser
 it('rejects a region crossing folded lines, but still allows selecting the whole folded diagram', () => {
   const ascii = 'Root\n|-- Parent\n|   `-- Child\n`-- End';
   const scene = singleDiagramScene(ascii);
-  scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii, structureKind: 'tree' }).diagram };
+  scene.contents = { ...scene.contents, overview: revisionFixture().create({ id: 'overview', revision: 0, ascii, structureKind: 'tree' }).diagram };
   const content = scene.contents.overview.content;
   if (content.structure.kind !== 'tree') throw Error('Expected tree');
   const parent = Object.values(content.structure.nodes).find(node => node.line === 2)!;

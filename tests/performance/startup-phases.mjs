@@ -53,7 +53,7 @@ try {
     const refreshed = !(restored.transfers ?? []).some(tx => tx.sourceId === doc.representationId || tx.destinationId === doc.representationId) ? reconcileWorkspaceDocument(doc, catalog) : { document: doc, newerRevision: false };
     return [doc.representationId, { ...refreshed.document, newerRevision: refreshed.newerRevision, representationId: doc.savedRepresentationId, busy: false }];
   })));
-  const registry = new CanvasWorkspace(undefined, new DefaultCanvasHistoryService(historyValidation));
+  const registry = new CanvasWorkspace(new DefaultCanvasHistoryService(historyValidation));
   await phase('page-create-sessions', () => registry.setDrafts(drafts));
   registry.dispose();
   await writeFile(path.join(output, `phases${profiling ? '-profile' : ''}.json`), JSON.stringify(report, null, 2));

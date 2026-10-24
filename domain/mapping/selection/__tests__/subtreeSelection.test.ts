@@ -1,10 +1,10 @@
 import { expect, it } from 'vitest';
-import { RevisionedDiagramService } from '../../../core/diagrams/diagramService';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { diagramContentNodes } from '../../../core/diagrams/diagramContentNodes';
 import { diagramSelectionItem, regionSelectionItem, selectionContentNodes, syncNativeDiagramSelection, type SelectionState } from '../selectionState';
 import { toggleNodeSelection, toggleSubtreeSelection } from '../subtreeSelection';
 
-const diagram = new RevisionedDiagramService().create({ id: 'tree', revision: 0,
+const diagram = revisionFixture().create({ id: 'tree', revision: 0,
   ascii: 'Root\n+-- Branch\n|   +-- Leaf\n|   `-- Peer\n`-- Sibling', structureKind: 'tree' }).diagram;
 const nodes = diagramContentNodes(diagram.content);
 const node = (label: string) => nodes.find(node => node.label === label)!;

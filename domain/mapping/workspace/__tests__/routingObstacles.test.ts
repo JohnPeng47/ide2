@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { RevisionedDiagramService } from '../../../core/diagrams/diagramService';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { diagramContentNodes } from '../../../core/diagrams/diagramContentNodes';
 import { connectionObstacles, diagramRoutingObstacles } from '../routingObstacles';
 import { routeCost, routeEdge, type RoutePoint, type RouteObstacle } from '../edgeRouting';
@@ -18,7 +18,7 @@ function avoids(points: RoutePoint[], rectangles: EndpointRect[]) {
   }
 }
 it('caches coarse text obstacles and retains guides when an endpoint label is excluded', () => {
-  const diagram = new RevisionedDiagramService().create({ id: 'test', revision: 0, structureKind: 'tree',
+  const diagram = revisionFixture().create({ id: 'test', revision: 0, structureKind: 'tree',
     ascii: 'Root\n|-- Parent\n|   `-- Child\n`-- Tail' }).diagram;
   const nodes = diagramContentNodes(diagram.content), parent = nodes.find(n => n.label === 'Parent')!, child = nodes.find(n => n.label === 'Child')!;
   const obstacles = diagramRoutingObstacles('grid:test', diagram.content, undefined, { width: 8, height: 18 });
@@ -43,7 +43,7 @@ it('avoids hard text rectangles using a short orthogonal detour', () => {
   expect(points.length).toBeLessThanOrEqual(6);
 });
 it('keeps unparsed notes and punctuation labels hard while allowing guide-only rows', () => {
-  const diagram = new RevisionedDiagramService().create({ id: 'test', revision: 0, structureKind: 'tree',
+  const diagram = revisionFixture().create({ id: 'test', revision: 0, structureKind: 'tree',
     ascii: 'Root\n|\n|-- +\n`-- Tail\nUnparsed note' }).diagram;
   const obstacles = diagramRoutingObstacles('grid:test', diagram.content, undefined, { width: 8, height: 18 });
   expect(obstacles.find(r => r.y === 15)).toMatchObject({ kind: 'guide' });

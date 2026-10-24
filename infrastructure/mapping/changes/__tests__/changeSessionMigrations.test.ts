@@ -11,7 +11,7 @@ import { ProjectCatalogStore } from '../../../core/persistence/projectCatalogSto
 import type { CanvasSessionPort } from '../../../../application/mapping/agent/ports';
 import type { DiagramRepository } from '../../../../application/core/ports/diagramRepository';
 import type { MappingDiagramService } from '../../../../application/mapping/diagrams/diagramService';
-import { RevisionedDiagramService } from '../../../../domain/core/diagrams/diagramService';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { singleDiagramScene } from '../../../../domain/core/diagrams/projectDiagramCanvas';
 import type { DiagramMigration } from '../../../../domain/mapping/changes/diagramMigration';
 
@@ -21,7 +21,7 @@ it('authors paired migrations through the public API, validates stale endpoints 
     const catalog = new ProjectCatalogStore(root);
     const save = async (name: string, ascii: string) => {
       const scene = singleDiagramScene(ascii);
-      scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii, structureKind: 'tree' }).diagram };
+      scene.contents = { ...scene.contents, overview: revisionFixture().create({ id: 'overview', revision: 0, ascii, structureKind: 'tree' }).diagram };
       return (await catalog.saveMappingDiagram('project', canvasSaveFixture({ name, scene }))).representation.id;
     };
     const sourceId = await save('Controller', 'Controller\n|-- undo / redo\n`-- checkpoints');

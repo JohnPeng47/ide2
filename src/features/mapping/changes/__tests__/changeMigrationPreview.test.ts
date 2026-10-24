@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { RevisionedDiagramService } from '../../../../../domain/core/diagrams/diagramService';
+import { revisionFixture } from '../../../../../tests/support/diagramRevisions';
 import { diagramContentNodes } from '../../../../../domain/core/diagrams/diagramContentNodes';
 import { singleDiagramScene } from '../../../../../domain/core/diagrams/projectDiagramCanvas';
 import { mappingDocumentFromScene } from '../../../../../domain/mapping/workspace/mappingDocument';
@@ -8,12 +8,12 @@ import type { ChangePreviewDocument } from '../../../../../domain/mapping/change
 import { resolveMigrationEndpoint, type DiagramMigration } from '../../../../../domain/mapping/changes/diagramMigration';
 import { diffChangeDocument } from '../../../../../domain/mapping/changes/changeDocumentDiff';
 import { changeMigrationPreview, migrationMarkKey } from '../changeMigrationPreview';
-import { changePreviewText } from '../changePreviewText';
+import { projectDiagramComparisons } from '../../../../../domain/mapping/workspace/diagramDiffProjection';
 
 function fixture() {
   const state = (ascii: string, revision: number) => {
     const scene = singleDiagramScene(ascii);
-    scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({ id: 'overview', revision, ascii, structureKind: 'tree' }).diagram };
+    scene.contents = { ...scene.contents, overview: revisionFixture().create({ id: 'overview', revision, ascii, structureKind: 'tree' }).diagram };
     return { document: mappingDocumentFromScene(scene), canvas: initialCanvasState() };
   };
   const doc: ChangePreviewDocument = { id: 'doc', name: 'Canvas', version: 1,
@@ -32,7 +32,7 @@ it('decorates removed source subtrees and unchanged destinations without creatin
   expect(preview.baseline.size).toBe(2);
   expect(preview.proposed.get(migrationMarkKey('grid:overview', migration.destination.contentNodeId))).toMatchObject([{ role: 'destination' }]);
   const diff = diffChangeDocument(doc);
-  const text = changePreviewText(doc.proposed.document.scene, undefined, diff.diagrams, new Set(['grid:overview']), [], preview.baseline);
+  const text = projectDiagramComparisons(doc.proposed.document.scene, undefined, diff.diagrams, new Set(['grid:overview']), [], preview.baseline);
   const runs = text.rows.flatMap(row => row.runs).filter(run => run.migrations?.length);
   expect(runs.map(run => run.text)).toEqual(['Source', 'Child']);
   expect(runs.every(run => !run.owner)).toBe(true);
@@ -70,12 +70,12 @@ it('marks surviving source nodes through explicit origins and flags stale propos
 it('keeps an edited baseline source on the previous row, with no false current anchor', () => {
   const { doc, migration } = fixture();
   const scene = singleDiagramScene('Root\n|-- Delegates undo\n|   `-- Child\n`-- Destination');
-  scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({ id: 'overview', revision: 1,
+  scene.contents = { ...scene.contents, overview: revisionFixture().create({ id: 'overview', revision: 1,
     ascii: 'Root\n|-- Delegates undo\n|   `-- Child\n`-- Destination', structureKind: 'tree' }).diagram };
   doc.proposed.document = mappingDocumentFromScene(scene);
   const preview = changeMigrationPreview(doc, [migration]);
   const diff = diffChangeDocument(doc);
-  const text = changePreviewText(scene, undefined, diff.diagrams, new Set(['grid:overview']), [], preview.baseline);
+  const text = projectDiagramComparisons(scene, undefined, diff.diagrams, new Set(['grid:overview']), [], preview.baseline);
   const previous = text.rows.flatMap(row => row.runs).find(run => run.text === 'Source');
   expect(previous).toMatchObject({ diffVersion: 'previous', migrations: [{ id: 'U', role: 'source' }] });
   expect(previous?.owner).toBeUndefined();

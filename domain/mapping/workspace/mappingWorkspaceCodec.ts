@@ -95,6 +95,12 @@ export function deserializeWorkspace(json: string | unknown, historyValidation: 
         id(owner); object(view); id(view.contentRevisionId); strings(view.collapsedContentNodeIds);
         check(view.collapsedContentNodeIds.length <= 20000, 'too many collapsed nodes');
         check(new Set(view.collapsedContentNodeIds).size === view.collapsedContentNodeIds.length, 'duplicate collapsed node');
+        if (view.collapsedNodeRefs !== undefined) {
+          strings(view.collapsedNodeRefs);
+          check(view.collapsedNodeRefs.length <= 20000 && new Set(view.collapsedNodeRefs).size === view.collapsedNodeRefs.length, 'invalid collapsed nodeRefs');
+        }
+        if (view.display !== undefined) check(view.display === 'regular' || view.display === 'diff', 'invalid diagram display');
+        if (view.baseRevisionId !== undefined) id(view.baseRevisionId);
       }
       const normalized = normalizeDiagramViews(doc.document.scene as unknown as LineGridScene, doc.canvas.diagramViews);
       check(JSON.stringify(normalized) === JSON.stringify(doc.canvas.diagramViews), 'stale diagram view or content node');

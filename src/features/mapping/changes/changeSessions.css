@@ -45,3 +45,7 @@ nav[aria-label="Diagram changes"] small { color: var(--muted); }
 /* Subtree tints partition the resolved diagram, including whitespace and diff rows. */
 .change-preview-stage { isolation: isolate; }
 .change-preview-treemap-tint { position: absolute; z-index: -1; pointer-events: none; box-sizing: border-box; background: color-mix(in srgb, var(--treemap-diagram-color) var(--canvas-identity-opacity), transparent); }
+
+.diagram-display-toggle { display: flex; gap: 3px; white-space: nowrap; position: relative; z-index: 5; }
+.diagram-display-toggle button { font-size: 11px; padding: 3px 6px; color: #cbd5e1; background: #111820; border: 1px solid #475569; border-radius: 3px; cursor: pointer; }
+.diagram-display-toggle button[aria-pressed="true"] { background: #29434f; border-color: #88c0d0; }

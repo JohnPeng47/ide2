@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { seedMappingFixture } from '../../browser/support/browser-mapping-fixture.mjs';
 import { canvasSaveFixture } from '../../support/mappingDiagram';
 import { singleDiagramScene } from '../../../domain/core/diagrams/projectDiagramCanvas';
-import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService';
+import { revisionFixture } from '../../support/diagramRevisions';
 import { diagramContentNodes } from '../../../domain/core/diagrams/diagramContentNodes';
 import { defaultArrowAppearance, type DiagramConnection } from '../../../domain/core/diagrams/diagramConnection';
 
@@ -33,7 +33,7 @@ export async function resetFixture(size: 'normal') {
     const catalog = JSON.parse(await readFile(catalogPath, 'utf8'));
     const scene = singleDiagramScene('F02 fixture');
     const ids = ['d1', 'd2', 'd3', 'd4', 'd5', 'd6'];
-    const service = new RevisionedDiagramService();
+    const service = revisionFixture();
     scene.contents = Object.fromEntries(ids.map(id => [id, service.create({ id, revision: 0, structureKind: 'tree',
       ascii: `${id.toUpperCase()}\n\n|-- ${id} branch\n|   \x60-- ${id} leaf\n\x60-- ${id} tail\n`,
     }).diagram]));

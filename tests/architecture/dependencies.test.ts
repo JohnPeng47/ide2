@@ -82,7 +82,7 @@ it("preserves feature ownership and HTTP/application/infrastructure/domain bound
   expect(violations).toEqual([]);
 });
 
-it('keeps diagram construction and prepared content edits behind DiagramService', () => {
+it('keeps diagram construction and prepared content edits inside the Diagram domain model', () => {
   const violations: string[] = [];
   for (const runtime of ['domain', 'application', 'infrastructure', 'src']) for (const file of files(path.join(root, runtime))) {
     if (file.includes('/__tests__/')) continue;
@@ -91,8 +91,8 @@ it('keeps diagram construction and prepared content edits behind DiagramService'
     const walk = (node: ts.Node) => {
       if (ts.isCallExpression(node)) {
         const name = ts.isPropertyAccessExpression(node.expression) ? node.expression.name.text : node.expression.getText(source);
-        if (name === 'constructDiagram' && relative !== 'domain/core/diagrams/diagramRevisionEditor.ts'
-          || ['prepareCreate', 'prepareEdit'].includes(name) && relative !== 'domain/core/diagrams/diagramService.ts')
+        if (name === 'constructDiagram' && !['domain/core/diagrams/diagramRevisionEditor.ts', 'domain/core/diagrams/submitDiagramEdit.ts'].includes(relative)
+          || ['prepareCreate', 'prepareEdit'].includes(name) && relative !== 'domain/core/diagrams/diagramRevision.ts')
           violations.push(`${relative}: ${name}`);
       }
       ts.forEachChild(node, walk);

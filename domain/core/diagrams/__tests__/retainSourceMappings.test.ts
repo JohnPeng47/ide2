@@ -1,9 +1,9 @@
 import { expect, it } from 'vitest';
-import { RevisionedDiagramService } from '../diagramService';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { diagramContentNodes } from '../diagramContentNodes';
 
 function fixture() {
-  const service = new RevisionedDiagramService();
+  const service = revisionFixture();
   const base = service.create({ id: 'mapping-test', revision: 0, ascii: 'Parent\n`-- Child', structureKind: 'tree',
     evidence: { e: { id: 'e', handle: 'e', label: 'Evidence', category: 'operation', summary: '', sourceRanges: [{ id: 'range', path: 'x.ts', startLine: 1, endLine: 1, originalLines: ['x'] }] } },
     mappings: [{ id: 'parent', entityId: 'e', sourceRangeIndex: 0, line: 1, startColumn: 1, endColumn: 6 },

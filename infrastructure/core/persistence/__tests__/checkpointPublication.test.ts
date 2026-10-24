@@ -49,7 +49,7 @@ it('publishes persisted records without expanding a >100 MiB archive, preserves 
     const current = await catalog.loadCurrentRepresentationCatalog('project');
     const history = historyFromRevision(current.revisions[receipt.revisionId]);
     expect(Object.keys(history.snapshots)).toEqual([delta.header.headId]);
-    expect(history.diagramRevisions[history.snapshots[history.headId].diagramBindings.overview].diagram.highlights).toHaveLength(1);
+    expect(history.snapshots[history.headId].document.diagramPresentations?.overview.highlights).toHaveLength(1);
     // Save references still pin the exact archived record; restore the fixture and verify full-history readers.
     await writeFile(archivePath, archivedText);
     const restored = await catalog.loadRepresentationCatalog('project');

@@ -1,6 +1,6 @@
 import type { Diagram } from './diagram';
 import { diagramContentNodes } from './diagramContentNodes';
-import { mappingContentNodeId } from './diagramText';
+import { mappingContentNodeId } from '../presentation/diagramText';
 
 /** Identity establishes ownership; an exact, unambiguous text span establishes coordinates. */
 export function retainSourceMappings(before: Diagram, after: Diagram, nodeIds: ReadonlyMap<string, string>, lineAfter?: (line: number) => number | undefined) {

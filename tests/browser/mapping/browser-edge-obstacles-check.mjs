@@ -9,7 +9,7 @@ import { pathToFileURL } from 'node:url';
 import { seedMappingFixture } from '../support/browser-mapping-fixture.mjs';
 import { canvasSaveFixture } from '../../support/mappingDiagram.ts';
 import { singleDiagramScene } from '../../../domain/core/diagrams/projectDiagramCanvas.ts';
-import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService.ts';
+import { revisionFixture } from '../../support/diagramRevisions.ts';
 import { diagramContentNodes } from '../../../domain/core/diagrams/diagramContentNodes.ts';
 import { defaultArrowAppearance } from '../../../domain/core/diagrams/diagramConnection.ts';
 const { evaluate, waitFor, waitForSelector, withHeadlessBrowser, captureScreenshot } = await import(pathToFileURL(path.join(homedir(), '.codex/skills/front-end/browser-test.mjs')).href);
@@ -25,7 +25,7 @@ try {
     laneSource: 'Lane source\n`-- Exit', laneTarget: 'Lane target\n|-- One\n`-- Two',
     gutterSource: 'Outside\n`-- From', gutter: 'Gutter\n' + '|\n'.repeat(7) + '|-- Destination\n' + '|\n'.repeat(7) + '`-- Tail'
   };
-  scene.contents = Object.fromEntries(Object.entries(contents).map(([id, ascii]) => [id, new RevisionedDiagramService().create({ id, revision: 0, ascii, structureKind: 'tree' }).diagram]));
+  scene.contents = Object.fromEntries(Object.entries(contents).map(([id, ascii]) => [id, revisionFixture().create({ id, revision: 0, ascii, structureKind: 'tree' }).diagram]));
   scene.root.children = Object.keys(contents).map(id => ({ id, kind: 'diagram', contentId: id, collapsed: false,
     position: { column: { source: 0, blocker: 25, target: 70, ports: 0, gutterSource: 45, gutter: 65, laneSource: 45, laneTarget: 75 }[id],
       row: { ports: 15, gutterSource: 31, gutter: 24, laneSource: 21, laneTarget: 21 }[id] ?? 0 } }));

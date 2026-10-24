@@ -1,12 +1,12 @@
 import { expect, it } from 'vitest';
 import { revealSearchMatches } from '../revealSearchMatches';
-import { RevisionedDiagramService } from '../../../../../domain/core/diagrams/diagramService';
+import { revisionFixture } from '../../../../../tests/support/diagramRevisions';
 import { singleDiagramScene } from '../../../../../domain/core/diagrams/projectDiagramCanvas';
 import { DiagramSearchIndex } from '../../../../../domain/mapping/search/diagramSearch';
 
 function fixture() {
   const scene = singleDiagramScene('Root');
-  const diagram = new RevisionedDiagramService().create({ id: 'overview', revision: 0,
+  const diagram = revisionFixture().create({ id: 'overview', revision: 0,
     ascii: 'Root\n|-- Branch\n|   `-- Needle\n`-- Other\n    `-- Keep folded', structureKind: 'tree' }).diagram;
   scene.contents = { ...scene.contents, overview: diagram };
   if (scene.root.kind !== 'container') throw Error('Expected container');

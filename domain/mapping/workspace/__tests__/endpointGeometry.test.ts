@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { RevisionedDiagramService } from '../../../core/diagrams/diagramService';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { connectionContentNodes, diagramConnectionSchema, defaultArrowAppearance, type DiagramConnection } from '../../../core/diagrams/diagramConnection';
 import { singleDiagramScene } from '../../../core/diagrams/projectDiagramCanvas';
 import { drawEdge, drawResolvedEdge, resolveEndpoint } from '../connectionLayout';
@@ -11,7 +11,7 @@ import { initialCanvasState } from '../mappingWorkspace';
 
 function fixture() {
   const scene = singleDiagramScene('Root\n|-- Parent\n|   `-- Child');
-  scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({ id: 'overview', revision: 0,
+  scene.contents = { ...scene.contents, overview: revisionFixture().create({ id: 'overview', revision: 0,
     ascii: scene.contents.overview.content.ascii, structureKind: 'tree' }).diagram };
   if (scene.root.kind !== 'container') throw new Error();
   scene.root.children = [...scene.root.children, { ...scene.root.children[0], id: 'second', position: { column: 50, row: 2 } }];
@@ -198,7 +198,7 @@ describe('diagram destination roots', () => {
     expect(target.rect).toMatchObject({ x: 400, y: 36, width: 32, height: 18 });
     expect(target.identity.contentNodeId).toBeTruthy();
     expect(resolveEndpoint(scene, undefined, edge.target, cell)!.identity.contentNodeId).toBeUndefined();
-    scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({ id: 'overview', revision: 1,
+    scene.contents = { ...scene.contents, overview: revisionFixture().create({ id: 'overview', revision: 1,
       ascii: 'New root\n`-- Descendant', structureKind: 'tree' }).diagram };
     const next = resolveEndpoint(scene, undefined, edge.target, cell, true)!;
     expect(next.identity.revisionId).not.toBe(target.identity.revisionId);
@@ -207,7 +207,7 @@ describe('diagram destination roots', () => {
   });
   it('uses the visible summary root when the destination diagram is collapsed', () => {
     const { scene, edge } = fixture(), cell = { width: 8, height: 18 };
-    scene.contents = { ...scene.contents, summary: new RevisionedDiagramService().create({ id: 'summary', revision: 0,
+    scene.contents = { ...scene.contents, summary: revisionFixture().create({ id: 'summary', revision: 0,
       ascii: 'Summary', structureKind: 'tree' }).diagram };
     if (scene.root.kind !== 'container') throw new Error();
     scene.root.children = scene.root.children.map(box => box.id === 'second' ? { ...box, collapsed: true, collapsedContentId: 'summary' } : box);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CanvasHistory, documentFromHistory, validateCanvasHistory } from '../canvasHistory';
 import { emptyCanvasDocument, prepareTransferNavigation } from '../canvasTransfer';
-import { RevisionedDiagramService } from '../diagramService';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { diagramContentNodes } from '../diagramContentNodes';
 import { defaultArrowAppearance, validateConnections } from '../diagramConnection';
 import { composeScene, flattenGrid, resolveScene } from '../lineGrid';
@@ -12,7 +12,7 @@ import { serializeWorkspace, deserializeWorkspace } from '../../../mapping/works
 import { recordsWorkspace, workspaceRecords, validateRecordUpdate } from '../../../mapping/workspace/workspaceRecords';
 
 function fixture() {
-  const document = emptyCanvasDocument(), service = new RevisionedDiagramService();
+  const document = emptyCanvasDocument(), service = revisionFixture();
   const contents = Object.fromEntries(['a', 'b', 'c', 'excluded', 'stale'].map((id, i) => {
     let diagram = service.create({ id, revision: 0, ascii: `${id} root${' '.repeat(i * 3)}\n|-- branch\n\x60-- tail`, structureKind: 'tree' }).diagram;
     if (id !== 'excluded') diagram = service.revise(diagram.revisionId, { kind: 'highlights', highlights: [
@@ -87,7 +87,7 @@ describe('highlight projection', () => {
     expect(() => composeScene(prepared.destination.document.scene)).not.toThrow();
     const centered = layoutHighlightProjection(prepared.destination.document, projection, { ...projection.settings, centroid: 'placeholder' });
     expect(() => composeScene(centered.scene)).not.toThrow();
-    const updated = new RevisionedDiagramService().revise(placeholder.revisionId, { kind: 'replace', input: { ascii: 'Generated diagram', structureKind: 'diagram' } }).diagram;
+    const updated = revisionFixture().revise(placeholder.revisionId, { kind: 'replace', input: { ascii: 'Generated diagram', structureKind: 'diagram' } }).diagram;
     expect(updated.diagramId).toBe(placeholder.diagramId);
     expect(updated.content.ascii).toBe('Generated diagram');
     const next = prepareHighlightProjection(prepared.destination.history, { sourceId: 'draft-child', sourceAliases: ['draft-child'], destinationId: 'draft-grandchild', destinationView: initialCanvasState() });

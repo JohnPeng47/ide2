@@ -8,7 +8,7 @@ import { createServer } from 'node:net';
 import { pathToFileURL } from 'node:url';
 import { seedMappingFixture } from '../support/browser-mapping-fixture.mjs';
 import { DiagramStore } from '../../../infrastructure/core/persistence/store.ts';
-import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService.ts';
+import { revisionFixture } from '../../support/diagramRevisions.ts';
 import { singleDiagramScene } from '../../../domain/core/diagrams/projectDiagramCanvas.ts';
 import { canvasSaveFixture } from '../../support/mappingDiagram.ts';
 const { evaluate, waitFor, waitForSelector, withHeadlessBrowser, captureScreenshot } = await import(pathToFileURL(path.join(homedir(), '.codex/skills/front-end/browser-test.mjs')).href);
@@ -22,7 +22,7 @@ try {
   const source = { sourceId: 'fixture-source', repositoryIdentity: path.join(root, '.git'), corpus: { kind: 'git-worktree', root }, domainProfileId: 'source-code' };
   const ascii = 'Root\n`-- Parent\n    `-- Child', scene = singleDiagramScene(ascii, source);
   scene.root.children[0].position = { column: 7, row: 3 };
-  scene.contents.overview = new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii, structureKind: 'tree', source,
+  scene.contents.overview = revisionFixture().create({ id: 'overview', revision: 0, ascii, structureKind: 'tree', source,
     evidence: { parent: { id: 'parent', label: 'Parent', handle: 'parent', category: 'operation', summary: 'Parent', sourceRanges: [{ id: 'p', path: 'src/a.ts', startLine: 1, endLine: 4, originalLines: ['a', 'b', 'c', 'd'] }] },
       child: { id: 'child', label: 'Child', handle: 'child', category: 'operation', summary: 'Child', sourceRanges: [{ id: 'c', path: 'src/a.ts', startLine: 3, endLine: 5, originalLines: ['c', 'd', 'e'] }] } },
     mappings: [{ id: 'parent', entityId: 'parent', sourceRangeIndex: 0, line: 2, startColumn: 5, endColumn: 10 },

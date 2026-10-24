@@ -1,6 +1,8 @@
+import { getDiagramRevision, listDiagramRevisions } from '../../../domain/core/diagrams/diagramRevisionStore';
+import { CanvasViewDiffPreview } from './canvas-views/CanvasViewDiffPreview';
 import { CanvasViewControls } from './canvas-views/CanvasViewControls';
 import { CanvasViewReceiver } from './canvas-views/canvasViewReceiver';
-import { reviewVariant } from '../../../domain/core/diagrams/diagramVariant';
+import { reviewRevision } from '../../../domain/core/diagrams/diagramRevisionReview';
 import type { VariantReviewSource } from './prompt-composer/VariantReview';
 import { highlightedDiagramIds } from '../../../domain/core/diagrams/highlightProjection';
 import { ProjectionLayoutPanel } from './workspace/ProjectionLayoutPanel';
@@ -25,7 +27,7 @@ import { PromptComposer, type PromptRevision, type PromptRevisionSource } from '
 import { PromptComposerCoordinator, composerUnsettled } from './prompt-composer/promptComposerCoordinator';
 import { createDiagramEditClient } from './prompt-composer/diagramEditClient';
 import { copyPromptReferences, diagramTitle, diagramReference, nodesReference } from './prompt-composer/promptReferences';
-import type { DiagramRevision } from '../../../domain/core/diagrams/diagramService';
+import type { DiagramRevision } from '../../../domain/core/diagrams/diagramRevision';
 import type { CanvasHistoryRecord } from '../../../domain/core/diagrams/canvasHistory';
 import type { PromptOperation } from '../../../domain/mapping/agent/promptTemplates';
 import { deselectCanvas } from '../../../domain/mapping/selection/canvasSelection';
@@ -101,12 +103,13 @@ export function MappingPocPage({ services }: { services: MappingServices }) {
 }
 
 function MappingWorkspacePage() {
-  const { diagrams: diagramService, canvasHistory, workspaceStorage: injectedStorage } = useMappingServices();
+  const { canvasHistory, workspaceStorage: injectedStorage } = useMappingServices();
   const [storage] = useState(() => injectedStorage ?? new WorkspaceStorage());
   const persistence = useRef<WorkspacePersistence | undefined>(undefined);
   const [pendingTransfer, setPendingTransfer] = useState<{ sourceId: string; mode: 'copy' | 'move'; selectedIds: string[]; revisionId: string }>();
   const [explorerTab, setExplorerTab] = useState<'diagrams'|'changes'|'canvas'>('diagrams');
   const [changeMode, setChangeMode] = useState<DisplayModeChange>();
+  const [viewDiffSelection, setViewDiffSelection] = useState<{ documentId: string; epoch: number; viewId: string }>();
   const [liveTreemapColors, setLiveTreemapColors] = useState<readonly TreemapDiagramColor[]>();
   const [treemapCanvasColors, setTreemapCanvasColors] = useState<TreemapCanvasColors>();
   const [toolTreemapColors, setToolTreemapColors] = useState<TreemapCanvasColors>();
@@ -127,7 +130,7 @@ function MappingWorkspacePage() {
   const [workspaceLoaded, setWorkspaceLoaded] = useState(false);
   const importRef = useRef<HTMLInputElement>(null);
   const [snapshot, setSnapshot] = useState<ProjectRepresentationsSnapshot>();
-  const [workspace] = useState(() => new CanvasWorkspace(diagramService, canvasHistory));
+  const [workspace] = useState(() => new CanvasWorkspace(canvasHistory));
   const [canvasViews] = useState(() => new CanvasViewReceiver());
   const [prompts] = useState(() => new PromptComposerCoordinator(createDiagramEditClient()));
   const carried = useStore(prompts.store, state => state.carried);
@@ -171,7 +174,10 @@ function MappingWorkspacePage() {
   const [copyCurrent, setCopyCurrent] = useState(false);
   const active = activeId ? drafts[activeId] : undefined;
   const activeScene = active ? documentOf(active).scene : undefined;
-  const highlightedCount = useMemo(() => activeScene ? highlightedDiagramIds(activeScene).length : 0, [activeScene]);
+  const viewDiffId = !changeMode && viewDiffSelection?.documentId === activeId && viewDiffSelection?.epoch === workspaceEpoch
+    && active?.session.controller.canvasViews().saved[viewDiffSelection.viewId] ? viewDiffSelection.viewId : undefined;
+  useEffect(() => { setViewDiffSelection(undefined); }, [activeId, workspaceEpoch, changeMode]);
+  const highlightedCount = useMemo(() => activeScene ? highlightedDiagramIds(activeScene, active ? documentOf(active).diagramPresentations : undefined).length : 0, [activeScene, active]);
   const copyChatDiagram = useCallback((ascii: string) => {
     const draft = activeId ? workspace.store.getState().drafts[activeId] : undefined;
     if (!draft || draft.hidden) throw new Error('Open a live canvas to paste a diagram.');
@@ -638,8 +644,7 @@ function MappingWorkspacePage() {
       const destinationId = destinationDoc?.representationId ?? `draft-${crypto.randomUUID()}`;
       const name = destinationDoc?.name ?? ('name' in destinationChoice ? destinationChoice.name.trim() : '');
       if (!name || name.length > 120) throw Error('Enter a canvas name (up to 120 characters)');
-      const destination = destinationDoc ? controllers.current.get(destinationId) ?? new MappingDocumentController(destinationDoc.document,
-        destinationDoc.canvas, 0, undefined, undefined, destinationDoc.history, diagramService, canvasHistory) : undefined;
+      const destination = destinationDoc ? controllers.current.get(destinationId) ?? new MappingDocumentController(destinationDoc.document, destinationDoc.canvas, 0, undefined, undefined, destinationDoc.history, canvasHistory) : undefined;
       const sourceView = structuredClone(source.getSnapshot().canvas);
       for (const node of Object.values(sourceView.display.nodes)) if (node.kind === 'selection' && selectedIds.includes(`grid:${node.sourceBoxId}`))
         sourceView.display = removeDisplayNode(sourceView.display, node.id);
@@ -925,7 +930,7 @@ function MappingWorkspacePage() {
   const findRevision = (id: string) => {
     const known = knownRevisions().get(id);
     if (known) return known;
-    try { return diagramService.getRevision(id); } catch { return undefined; }
+    try { return getDiagramRevision(id); } catch { return undefined; }
   };
   const revisionSource: PromptRevisionSource = {
     list: target => {
@@ -933,8 +938,8 @@ function MappingWorkspacePage() {
       const diagram = node?.layout === 'grid' ? node.diagram : undefined;
       if (!diagram) return [];
       const revisions = knownRevisions();
-      for (const summary of diagramService.listRevisions(diagram.diagramId))
-        if (!revisions.has(summary.id)) try { revisions.set(summary.id, diagramService.getRevision(summary.id)); } catch { /* Not hydrated in this tab. */ }
+      for (const summary of listDiagramRevisions(diagram.diagramId))
+        if (!revisions.has(summary.id)) try { revisions.set(summary.id, getDiagramRevision(summary.id)); } catch { /* Not hydrated in this tab. */ }
       return [...revisions.values()].filter(revision => revision.diagramId === diagram.diagramId).map((revision): PromptRevision => ({
         id: revision.id, diagramId: revision.diagramId, sequence: revisionDepth(revisions, revision.id) ?? 1, current: revision.id === diagram.revisionId,
         title: diagramTitle(revision.diagram), ascii: revision.diagram.content.ascii
@@ -948,8 +953,8 @@ function MappingWorkspacePage() {
       const document = controller?.getSnapshot().document;
       const box = document && findBox(document.scene.root, target.nodeId.slice(5));
       if (!document || box?.kind !== 'diagram') return [];
-      return Object.values(document.variants ?? {}).filter(variant => variant.contentId === box.contentId).map(variant => ({
-        variant, ...reviewVariant(variant, id => diagramService.getRevision(id))
+      return Object.values(document.revisionReviews ?? {}).filter(variant => variant.contentId === box.contentId).map(variant => ({
+        variant, ...reviewRevision(variant, id => getDiagramRevision(id))
       }));
     },
     update: async (target, variantId, change) => {
@@ -1099,9 +1104,9 @@ function MappingWorkspacePage() {
     {(ui) => <main className="mapping-poc-shell" data-local-chat-variant={ui.variant}>
       <section className="mapping-poc-workspace">
         <div className="mapping-viewport">
-          {Object.entries(drafts).filter(([id]) => mountedDocuments.current.has(id)).map(([id, draft]) => <SourcePaneDocumentContext.Provider key={`${workspaceEpoch}:${id}:${draft.reloadKey ?? ''}`} value={id}><SourcePaneDocumentActiveContext.Provider value={id === activeId && !changeMode}><div className="mapping-document-view" inert={!!pendingTransfer || workspaceBusy} hidden={draft.hidden || id !== activeId || !!changeMode}>
+          {Object.entries(drafts).filter(([id]) => mountedDocuments.current.has(id)).map(([id, draft]) => <SourcePaneDocumentContext.Provider key={`${workspaceEpoch}:${id}:${draft.reloadKey ?? ''}`} value={id}><SourcePaneDocumentActiveContext.Provider value={id === activeId && !changeMode && !viewDiffId}><div className="mapping-document-view" inert={!!pendingTransfer || workspaceBusy} hidden={draft.hidden || id !== activeId || !!changeMode || !!viewDiffId}>
             <CanvasTreemapColors.Provider value={treemapsVisible && id === activeId && !changeMode ? liveTreemapColors : undefined}>
-            <MappingEditorCanvas session={draft.session} className="mapping-poc-canvas" enabled={id === activeId && !draft.hidden && !changeMode} focusBox={draft.focusBox}
+            <MappingEditorCanvas session={draft.session} className="mapping-poc-canvas" enabled={id === activeId && !draft.hidden && !changeMode && !viewDiffId} focusBox={draft.focusBox}
               initialTransform={draft.viewport} onTransformChange={viewport => viewState.setCamera(id, viewport)}>
               <MappingPocSelectionCanvas onUpdateDiagram={nodeId => { openComposer(id, nodeId, capturedSelection(id).subtree ? 'edit-diagram' : 'create-diagram', true); }}
                 onSelectionChange={() => selectionChanged(id)}
@@ -1109,7 +1114,7 @@ function MappingWorkspacePage() {
                   ? { key: activeLlm, disabled: composerUnsettled(llmEntries[activeLlm]), origin: llmEntries[activeLlm].target.origin, onPlace: point => prompts.setTarget(activeLlm, { origin: point }) } : undefined}
                 onReference={(references, mode, nodeId) => shareReferences(id, references, mode, nodeId)}
                 placement={id === activeId ? placement : undefined} onTransfer={(mode, selected) => beginTransfer(id, mode, selected)}
-                onUndo={redo => void undo(id, redo)} canWorkspaceUndo={!!boundary(id)} canWorkspaceRedo={!!boundary(id, true)} onJump={target => void jumpTo(target)} session={draft.session} active={id === activeId && !draft.hidden && !workspaceBusy && !pendingTransfer && !creating && !changeMode} focusBox={draft.focusBox} searchMatches={searchMatchesByDocument.get(id)}
+                onUndo={redo => void undo(id, redo)} canWorkspaceUndo={!!boundary(id)} canWorkspaceRedo={!!boundary(id, true)} onJump={target => void jumpTo(target)} session={draft.session} active={id === activeId && !draft.hidden && !workspaceBusy && !pendingTransfer && !creating && !changeMode && !viewDiffId} focusBox={draft.focusBox} searchMatches={searchMatchesByDocument.get(id)}
                 projectContext={draft.revisionId ? { projectId: snapshot!.project!.id, representationId: draft.representationId ?? id, baseRevisionId: draft.revisionId } : undefined}
                 projectionCatalog={snapshot?.catalog ?? undefined}
                 dirtyRepresentationIds={dirtySceneIds}
@@ -1118,10 +1123,13 @@ function MappingWorkspacePage() {
             </MappingEditorCanvas>
             </CanvasTreemapColors.Provider>
             <SourceWindowPanel session={draft.session} projectId={snapshot?.project?.id}
-              active={id === activeId && !draft.hidden && !changeMode} />
+              active={id === activeId && !draft.hidden && !changeMode && !viewDiffId} />
           </div></SourcePaneDocumentActiveContext.Provider></SourcePaneDocumentContext.Provider>)}
           {!active && !changeMode && <div className="mapping-empty"><h1>{snapshot ? "Create a project diagram" : error ? "Could not load project diagrams" : "Loading project diagrams…"}</h1>
             {snapshot && <button type="button" onClick={() => setCreating(true)}>New diagram</button>}</div>}
+          {active && viewDiffId && <CanvasViewDiffPreview controller={active.session.controller} viewId={viewDiffId}
+            camera={viewState.captureCamera(activeId!, active.viewport)}
+            onClose={() => setViewDiffSelection(undefined)} />}
           {changeMode && <ChangeSessionPreview mode={changeMode} onSelect={selectChangeMode} onOpenAccepted={openAccepted}
               treemapColors={reviewTreemapColors?.sessionId === changeMode?.sessionId ? reviewTreemapColors?.diagrams : undefined}
               onSearchDocument={onProposalSearchDocument} searchFocus={proposalSearchFocus && proposalSearchFocus.documentId === proposalSearchId ? proposalSearchFocus.focus : undefined}
@@ -1169,6 +1177,7 @@ function MappingWorkspacePage() {
           <FloatingPane highlighted={!!pendingTransfer}><MappingDiagramExplorer explorerTab={explorerTab}
             canvasViews={active && activeId && !changeMode ? <CanvasViewControls key={`${activeId}:${workspaceEpoch}`} canvasName={active.name}
               controller={active.session.controller} disabled={workspaceBusy || active.busy || !!pendingTransfer}
+              previewViewId={viewDiffId} onPreview={viewId => setViewDiffSelection(viewId ? { documentId: activeId, epoch: workspaceEpoch, viewId } : undefined)}
               onCommand={payload => handleAgentCommand({ id: payload.requestId, method: 'canvas-view', documentId: activeId, payload })} /> : undefined}
             canvas={<div className="mapping-canvas-actions"><button type="button" disabled={!workspaceLoaded || !highlightedCount || !!changeMode || workspaceBusy || !!savingId || !!deletingId || Object.values(drafts).some(draft => draft.busy)}
               onClick={() => void projectHighlights()}>Project Highlights</button>
@@ -1182,7 +1191,7 @@ function MappingWorkspacePage() {
             onDelete={id => void remove(id)} deletingId={deletingId} deleteDisabled={Boolean(deletingId || savingId || workspaceBusy)}
             busyIds={Object.keys(drafts).filter(id => drafts[id].busy).map(id => drafts[id].representationId ?? id)}
             onOpen={(id) => { if (pendingTransfer) void transfer({ id }); else { setChangeMode(undefined); open(id); } }} /></FloatingPane>
-          {active && !active.hidden && !changeMode && <ProjectionLayoutPanel key={`${activeId}:${workspaceEpoch}`} session={active.session}
+          {active && !active.hidden && !changeMode && !viewDiffId && <ProjectionLayoutPanel key={`${activeId}:${workspaceEpoch}`} session={active.session}
             disabled={workspaceBusy || !!savingId || !!deletingId || !!pendingTransfer || active.busy} />}
           {workspaceBusy && <div className="mapping-transfer-busy" role="status" aria-live="polite"><div><strong>{transferProgress || 'Saving workspace…'}</strong><p>Keep this page open while the operation finishes.</p></div></div>}
         </div>

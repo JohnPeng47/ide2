@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { diagramSyntaxLine } from '../diagramSyntax';
 import { buildDiagramContent } from '../diagramContent';
-import { diagramTextRanges, textRow } from '../diagramText';
+import { diagramTextRanges, textRow } from '../../presentation/diagramText';
 import type { DiagramSourceContext } from '../diagram';
 
 const tokens = (text: string) => diagramSyntaxLine(text, 'diagram').map(r => ({ text: text.slice(r.start, r.end), ...r.syntax }));

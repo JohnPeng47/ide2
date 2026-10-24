@@ -1,12 +1,12 @@
 import { expect, it } from 'vitest';
 import { ChangePreviewState } from '../changePreviewState';
-import { RevisionedDiagramService } from '../../../../../domain/core/diagrams/diagramService';
+import { revisionFixture } from '../../../../../tests/support/diagramRevisions';
 import { singleDiagramScene } from '../../../../../domain/core/diagrams/projectDiagramCanvas';
 import { diagramContentNodes } from '../../../../../domain/core/diagrams/diagramContentNodes';
 import { initialCanvasState } from '../../../../../domain/mapping/workspace/mappingWorkspace';
 
 it('folds a transported preview without creating revisions or modifying its diagram', () => {
-  const service = new RevisionedDiagramService();
+  const service = revisionFixture();
   const diagram = service.create({ id: 'overview', revision: 0, ascii: 'Root\n`-- Child', structureKind: 'tree' }).diagram;
   const scene = singleDiagramScene(diagram.content.ascii);
   scene.contents = { ...scene.contents, overview: diagram };

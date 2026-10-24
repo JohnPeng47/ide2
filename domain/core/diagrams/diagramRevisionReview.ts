@@ -1,10 +1,12 @@
+import { deriveDiagram } from './diagramRevision';
 import { z } from 'zod';
 import { diagramContentNodes } from './diagramContentNodes';
 import { diagramSubtreeRange, subtreeReplacement } from './diagramSubtreeEdit';
-import type { DiagramRevision, DiagramService } from './diagramService';
+import type { DiagramRevision } from './diagramRevision';
 
 const id = z.string().min(1).max(500).refine(value => !['__proto__', 'constructor', 'prototype'].includes(value));
-export const diagramVariantSchema = z.object({
+/** Review workflow metadata over revisions; presentation does not require this record. */
+export const diagramRevisionReviewSchema = z.object({
   id, name: z.string().trim().min(1).max(120), diagramId: id, contentId: id,
   /** 'root' is the synthetic owner of the complete diagram. */
   contextVariantId: id.optional(),
@@ -12,25 +14,25 @@ export const diagramVariantSchema = z.object({
     ranges: z.array(z.object({ startLine: z.number().int().positive(), endLine: z.number().int().nonnegative() }).strict()).min(1).max(100) }).strict().optional(),
   ownerNodeId: id, baseRevisionId: id, headRevisionId: id,
   revisionIds: z.array(id).min(1).max(1000),
-  prompt: z.string().max(20000),
+  prompt: z.string().max(20000).optional(),
   decisions: z.record(id, z.enum(['accept', 'reject'])),
   /** Last installation, used as the three-way base when changing review decisions. */
   appliedRevisionId: id.optional(),
   appliedReview: z.object({ headRevisionId: id, decisions: z.record(id, z.enum(['accept', 'reject'])) }).strict().optional()
 }).strict();
-export type DiagramVariant = z.infer<typeof diagramVariantSchema>;
-export type VariantDecision = 'accept' | 'reject';
+export type DiagramRevisionReview = z.infer<typeof diagramRevisionReviewSchema>;
+export type RevisionDecision = 'accept' | 'reject';
 interface NodeState { label: string; parentId?: string; childIds: string[] }
 type Tree = Record<string, NodeState>;
-export interface VariantChange { id: string; label: string; kind: 'added' | 'removed' | 'updated'; before?: NodeState; after?: NodeState }
+export interface RevisionChange { id: string; label: string; kind: 'added' | 'removed' | 'updated'; before?: NodeState; after?: NodeState }
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const rootId = '$root';
 
-export function variantRevisionIds(variant: DiagramVariant) {
+export function reviewRevisionIds(variant: DiagramRevisionReview) {
   return [...new Set([variant.baseRevisionId, variant.headRevisionId, ...variant.revisionIds, ...(variant.appliedRevisionId ? [variant.appliedRevisionId] : []), ...(variant.appliedReview ? [variant.appliedReview.headRevisionId] : [])])];
 }
-export function validateVariant(variant: DiagramVariant, get: (id: string) => DiagramRevision) {
-  diagramVariantSchema.parse(variant);
+export function validateRevisionReview(variant: DiagramRevisionReview, get: (id: string) => DiagramRevision) {
+  diagramRevisionReviewSchema.parse(variant);
   if (!variant.revisionIds.includes(variant.headRevisionId)) throw Error('Variant head is not retained');
   if (variant.replacementScope) {
     const ranges = variant.replacementScope.ranges, length = get(variant.headRevisionId).diagram.content.ascii.split('\n').length;
@@ -38,18 +40,18 @@ export function validateVariant(variant: DiagramVariant, get: (id: string) => Di
       || i > 0 && range.startLine <= ranges[i - 1].endLine)) throw Error('Invalid variant replacement scope');
   }
   const base = get(variant.baseRevisionId);
-  for (const id of variantRevisionIds(variant)) {
+  for (const id of reviewRevisionIds(variant)) {
     const revision = get(id);
     if (!revision || revision.diagramId !== variant.diagramId || revision.diagram.id !== variant.contentId) throw Error('Invalid variant revision');
     scopedTree(revision, variant.ownerNodeId);
     if (variant.ownerNodeId !== 'root' && variant.revisionIds.includes(id))
-      subtreeReplacement(base.diagram, revision.diagram.content.ascii, variantRange(base, variant.ownerNodeId));
+      subtreeReplacement(base.diagram, revision.diagram.content.ascii, revisionScope(base, variant.ownerNodeId));
   }
-  const changes = variantChanges(get(variant.baseRevisionId), get(variant.headRevisionId), variant.ownerNodeId);
+  const changes = revisionChanges(get(variant.baseRevisionId), get(variant.headRevisionId), variant.ownerNodeId);
   if (Object.keys(variant.decisions).some(id => !changes.some(change => change.id === id))) throw Error('Unknown variant review change');
   if (variant.appliedReview) approvedTree({ ...variant, ...variant.appliedReview }, base, get(variant.appliedReview.headRevisionId));
 }
-export function variantRange(revision: DiagramRevision, owner: string) {
+export function revisionScope(revision: DiagramRevision, owner: string) {
   if (owner === 'root') return { startLine: 1, endLine: revision.diagram.content.ascii.split('\n').length };
   const parsed = Object.entries(revision.nodeRefs).find(([, ref]) => ref === owner)?.[0];
   if (!parsed) throw Error('VARIANT_SCOPE: subtree owner no longer exists');
@@ -74,7 +76,7 @@ function scopedTree(revision: DiagramRevision, owner: string): Tree {
   start.forEach(id => visit(id, rootId, 0));
   return out;
 }
-export function variantChanges(base: DiagramRevision, candidate: DiagramRevision, owner: string): VariantChange[] {
+export function revisionChanges(base: DiagramRevision, candidate: DiagramRevision, owner: string): RevisionChange[] {
   if (base.diagramId !== candidate.diagramId || base.diagram.content.structure.kind !== candidate.diagram.content.structure.kind) throw Error('Variant must preserve diagram identity and structure kind');
   const before = scopedTree(base, owner), after = scopedTree(candidate, owner);
   return [...new Set([...Object.keys(before), ...Object.keys(after)])].filter(id => !same(before[id], after[id])).map(id => ({
@@ -92,16 +94,16 @@ function checkTree(tree: Tree) {
   visit(rootId);
   if (visited.size !== Object.keys(tree).length) throw Error('REVIEW_DEPENDENCY: a retained node would be disconnected; review its parent change');
 }
-function approvedTree(variant: DiagramVariant, base: DiagramRevision, candidate: DiagramRevision) {
+function approvedTree(variant: DiagramRevisionReview, base: DiagramRevision, candidate: DiagramRevision) {
   const result = structuredClone(scopedTree(base, variant.ownerNodeId));
-  for (const change of variantChanges(base, candidate, variant.ownerNodeId)) if (variant.decisions[change.id] === 'accept') {
+  for (const change of revisionChanges(base, candidate, variant.ownerNodeId)) if (variant.decisions[change.id] === 'accept') {
     if (change.after) result[change.id] = structuredClone(change.after); else delete result[change.id];
   }
   checkTree(result); return result;
 }
-export function reviewVariant(variant: DiagramVariant, get: (id: string) => DiagramRevision) {
+export function reviewRevision(variant: DiagramRevisionReview, get: (id: string) => DiagramRevision) {
   const base = get(variant.baseRevisionId), candidate = get(variant.headRevisionId);
-  const changes = variantChanges(base, candidate, variant.ownerNodeId);
+  const changes = revisionChanges(base, candidate, variant.ownerNodeId);
   let error: string | undefined;
   try { approvedTree(variant, base, candidate); } catch (e) { error = String(e instanceof Error ? e.message : e); }
   const scopeLabel = variant.ownerNodeId === 'root' ? 'Whole diagram'
@@ -110,12 +112,12 @@ export function reviewVariant(variant: DiagramVariant, get: (id: string) => Diag
 }
 
 /** Three-way application touches only changed logical nodes in the chosen subtree. */
-export function applyVariant(variant: DiagramVariant, current: DiagramRevision, diagrams: DiagramService) {
-  validateVariant(variant, id => diagrams.getRevision(id));
+export function applyRevisionReview(variant: DiagramRevisionReview, current: DiagramRevision, get: (id: string) => DiagramRevision) {
+  validateRevisionReview(variant, id => get(id));
   if (current.diagramId !== variant.diagramId || current.diagram.id !== variant.contentId) throw Error('Variant belongs to another diagram');
-  const base = diagrams.getRevision(variant.baseRevisionId), candidate = diagrams.getRevision(variant.headRevisionId);
+  const base = get(variant.baseRevisionId), candidate = get(variant.headRevisionId);
   const desired = approvedTree(variant, base, candidate);
-  const before = variant.appliedReview ? approvedTree({ ...variant, ...variant.appliedReview }, base, diagrams.getRevision(variant.appliedReview.headRevisionId)) : scopedTree(base, variant.ownerNodeId);
+  const before = variant.appliedReview ? approvedTree({ ...variant, ...variant.appliedReview }, base, get(variant.appliedReview.headRevisionId)) : scopedTree(base, variant.ownerNodeId);
   const live = scopedTree(current, variant.ownerNodeId), merged = structuredClone(live);
   for (const id of new Set([...Object.keys(before), ...Object.keys(desired)])) {
     if (same(before[id], desired[id])) continue;
@@ -133,7 +135,7 @@ export function applyVariant(variant: DiagramVariant, current: DiagramRevision, 
   }
   checkTree(merged);
   if (same(merged, live)) return { diagram: current.diagram, revision: current, nodeIds: new Map(Object.keys(current.nodeRefs).map(id => [id, id])) };
-  const range = variantRange(current, variant.ownerNodeId), oldLines = current.diagram.content.ascii.split('\n');
+  const range = revisionScope(current, variant.ownerNodeId), oldLines = current.diagram.content.ascii.split('\n');
   const lines: string[] = [], refs: Record<string, number> = {};
   const sameTopology = Object.keys(merged).length === Object.keys(live).length && Object.entries(merged).every(([id, node]) =>
     live[id] && node.parentId === live[id].parentId && same(node.childIds, live[id].childIds));
@@ -184,9 +186,8 @@ export function applyVariant(variant: DiagramVariant, current: DiagramRevision, 
       ids.add(mapping.id); mappings.push({ ...mapping, line, startColumn, endColumn });
     }
   }
-  const result = diagrams.derive(current.id, { ascii, structureKind: current.diagram.content.structure.kind,
-    source: current.diagram.sourceContext.binding, evidence: { ...base.diagram.sourceContext.evidence, ...candidate.diagram.sourceContext.evidence, ...current.diagram.sourceContext.evidence }, mappings },
-    refs, [current.id, base.id, candidate.id]);
+  const result = deriveDiagram(current, { ascii, structureKind: current.diagram.content.structure.kind,
+    source: current.diagram.sourceContext.binding, evidence: { ...base.diagram.sourceContext.evidence, ...candidate.diagram.sourceContext.evidence, ...current.diagram.sourceContext.evidence }, mappings }, refs, [current, base, candidate]);
   const rendered = scopedTree(result.revision, variant.ownerNodeId);
   if (Object.keys(rendered).length !== Object.keys(merged).length || Object.entries(merged).some(([id, node]) => !same(node, rendered[id])))
     throw Error('VARIANT_LAYOUT: the reviewed structure cannot be represented safely in this diagram');

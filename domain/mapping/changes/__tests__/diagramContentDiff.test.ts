@@ -2,12 +2,12 @@ import { mutableFixture } from '../../../../tests/support/mappingDiagram';
 import { expect, it } from 'vitest';
 import { buildDiagramContent, type DiagramContent } from '../../../core/diagrams/diagramContent';
 import { diagramContentNodes } from '../../../core/diagrams/diagramContentNodes';
-import { RevisionedDiagramService } from '../../../core/diagrams/diagramService';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { patchDiagram } from '../../../core/diagrams/patchDiagram';
 import { singleDiagramScene } from '../../../core/diagrams/projectDiagramCanvas';
 import { mappingDocumentFromScene } from '../../workspace/mappingDocument';
 import { initialCanvasState } from '../../workspace/mappingWorkspace';
-import { diffDiagramContent, type DiagramDiffSide } from '../diagramContentDiff';
+import { diffDiagramContent, type DiagramDiffSide } from '../../../core/diagrams/diagramContentDiff';
 import { diffChangeDocument } from '../changeDocumentDiff';
 import { controllerBefore, controllerPatch, expectedAddedLabels, expectedUnchangedLabels } from './controllerDiffFixture';
 import { floatingBefore, floatingAfter } from './floatingPaneDiffFixture';
@@ -37,7 +37,7 @@ it('recovers several edited field labels without treating unrelated replacements
 });
 
 it('highlights the expected text in the actual controller/session demo', () => {
-  const before = new RevisionedDiagramService().create({ id: 'controller', revision: 0, ascii: controllerBefore, structureKind: 'tree' }).diagram;
+  const before = revisionFixture().create({ id: 'controller', revision: 0, ascii: controllerBefore, structureKind: 'tree' }).diagram;
   const patch = patchDiagram(before, 9, 23, controllerPatch);
   const after = patch.diagram.content;
   const diff = diffDiagramContent(before.content, after, Object.fromEntries([...patch.nodeIds].map(([a, b]) => [b, a])));
@@ -106,7 +106,7 @@ it('preserves equal repeated siblings when another label changes', () => {
 });
 
 it('uses exact patch provenance to disambiguate surviving repeated nodes', () => {
-  const original = new RevisionedDiagramService().create({ id: 'd', revision: 0, ascii: 'Root\n|-- Same\n|-- Same\n`-- Keep', structureKind: 'tree' }).diagram;
+  const original = revisionFixture().create({ id: 'd', revision: 0, ascii: 'Root\n|-- Same\n|-- Same\n`-- Keep', structureKind: 'tree' }).diagram;
   const patched = patchDiagram(original, 2, 2, '');
   const origins = Object.fromEntries([...patched.nodeIds].map(([old, next]) => [next, old]));
   const diff = diffDiagramContent(original.content, patched.diagram.content, origins);
@@ -114,7 +114,7 @@ it('uses exact patch provenance to disambiguate surviving repeated nodes', () =>
 });
 
 it('compares cumulative edits against baseline and clears highlights on revert', () => {
-  const original = new RevisionedDiagramService().create({ id: 'd', revision: 0, ascii: 'Root\n|-- A\n`-- B', structureKind: 'tree' }).diagram;
+  const original = revisionFixture().create({ id: 'd', revision: 0, ascii: 'Root\n|-- A\n`-- B', structureKind: 'tree' }).diagram;
   const one = patchDiagram(original, 2, 2, '|-- X').diagram;
   const two = patchDiagram(one, 3, 3, '`-- Y').diagram;
   expect(diffDiagramContent(original.content, two.content).counts.modified).toBe(0); // multi-label gap is ambiguous
@@ -133,7 +133,7 @@ it('compares unparsed notes without leaking highlighting into another diagram', 
   expect([...diff.original.lines]).toEqual([[2, 'modified']]);
   expect([...diff.proposed.lines]).toEqual([[2, 'modified']]);
   const scene = singleDiagramScene(a.ascii);
-  scene.contents = { overview: new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii: a.ascii }).diagram };
+  scene.contents = { overview: revisionFixture().create({ id: 'overview', revision: 0, ascii: a.ascii }).diagram };
   scene.contents = { ...scene.contents, overview: { ...scene.contents.overview, content: a } };
   const baseline = { document: mappingDocumentFromScene(scene), canvas: initialCanvasState() };
   const proposed = structuredClone(baseline); proposed.document.scene.contents = { ...proposed.document.scene.contents, overview: { ...proposed.document.scene.contents.overview, content: b } };
@@ -141,7 +141,7 @@ it('compares unparsed notes without leaking highlighting into another diagram', 
   proposed.document.scene.root.children = [...proposed.document.scene.root.children,
     { id: 'added', kind: 'diagram', contentId: 'added', collapsed: false, position: { column: 40, row: 0 } }];
   proposed.document.scene.contents = { ...proposed.document.scene.contents,
-    added: new RevisionedDiagramService().create({ id: 'added', revision: 0, ascii: 'Added\n`-- Child', structureKind: 'tree' }).diagram };
+    added: revisionFixture().create({ id: 'added', revision: 0, ascii: 'Added\n`-- Child', structureKind: 'tree' }).diagram };
   const doc = { id: 'doc', name: 'Canvas', baseline, proposed, version: 1, past: [], future: [] };
   const both = diffChangeDocument(doc);
   expect(both.diagrams.get('grid:overview')?.proposed.lines.get(2)).toBe('modified');
@@ -159,8 +159,8 @@ it('marks every node in a new or removed diagram and supports a renamed parent w
 
 it('shows independent modifications on two diagrams in the same canvas', () => {
   const scene = singleDiagramScene('First\n`-- Before');
-  scene.contents = { overview: new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii: 'First\n`-- Before', structureKind: 'tree' }).diagram,
-    second: new RevisionedDiagramService().create({ id: 'second', revision: 0, ascii: 'Second\n`-- Before', structureKind: 'tree' }).diagram };
+  scene.contents = { overview: revisionFixture().create({ id: 'overview', revision: 0, ascii: 'First\n`-- Before', structureKind: 'tree' }).diagram,
+    second: revisionFixture().create({ id: 'second', revision: 0, ascii: 'Second\n`-- Before', structureKind: 'tree' }).diagram };
   if (scene.root.kind !== 'container') throw Error();
   scene.root.children = [...scene.root.children, { id: 'second', kind: 'diagram', contentId: 'second', position: { column: 30, row: 0 }, collapsed: false }];
   const baseline = { document: mappingDocumentFromScene(scene), canvas: initialCanvasState() }, proposed = structuredClone(baseline);

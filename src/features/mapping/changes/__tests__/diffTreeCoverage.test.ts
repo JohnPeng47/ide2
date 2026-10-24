@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { RevisionedDiagramService } from '../../../../../domain/core/diagrams/diagramService';
+import { revisionFixture } from '../../../../../tests/support/diagramRevisions';
 import { diffTreeNodes, diffTreeSummary, writeDiffTree } from '../../../../../domain/mapping/changes/diffTree';
 import { identifyHunk } from '../../../../../domain/core/diffs/gitDiffHunk';
 import { diffTreeCoverage, diagramDiffTreeNodes } from '../diffTreeCoverage';
@@ -11,7 +11,7 @@ it('unions parent/child hunks once, excludes non-application code, and inherits 
   const make = (path: string) => identifyHunk({ repositoryId: 'repo', commit: 'a'.repeat(40), parent: null, path, status: 'M', kind: 'text', oldStart: 1, oldLines: 1, newStart: 1, newLines: 1, patch: '@@ -1 +1 @@\n-old\n+new\n' });
   const hunks = [make('src/app.ts'), make('src/other.ts'), make('src/__tests__/app.test.ts'), make('package-lock.json')];
   const target = { representationId: 'canvas', displayNodeId: 'grid:overview', contentNodeId: 'editor' };
-  const tree = writeDiffTree(new RevisionedDiagramService(), { ascii: 'Root\n|-- Parent\n|   |-- Child\n|   `-- Inherited\n`-- Unmapped', mappings: [
+  const tree = writeDiffTree({ ascii: 'Root\n|-- Parent\n|   |-- Child\n|   `-- Inherited\n`-- Unmapped', mappings: [
     { id: 'parent', source: { line: 2 }, targets: [hunks[0], hunks[2]].map(h => ({ kind: 'diff-hunk', hunkId: h.id })), diagramTargets: [target] },
     { id: 'child', source: { line: 3 }, targets: [hunks[0], hunks[1]].map(h => ({ kind: 'diff-hunk', hunkId: h.id })) }
   ] }, hunks);
@@ -29,7 +29,7 @@ it('unions parent/child hunks once, excludes non-application code, and inherits 
 
 it('keeps nested diagram destinations and unmapped outline sections visible', () => {
   const target = { representationId: 'canvas', displayNodeId: 'grid:detail' };
-  const tree = writeDiffTree(new RevisionedDiagramService(), {
+  const tree = writeDiffTree({
     ascii: 'Review\n|-- Section\n|   `-- Nested diagram\n|       `-- Code detail\n`-- Notes',
     mappings: [2, 3].map(line => ({ id: String(line), source: { line }, targets: [], diagramTargets: [target] }))
   }, []);
@@ -43,14 +43,14 @@ it('keeps nested diagram destinations and unmapped outline sections visible', ()
 });
 
 it('reverses section mappings without confusing exact, enclosing, unrelated or stale destinations', () => {
-  const service = new RevisionedDiagramService();
+  const service = revisionFixture();
   const ascii = 'Diagram\n|-- Section\n|   |-- Exact\n|   `-- Inherited\n`-- Unmapped';
   const scene = singleDiagramScene(ascii);
   scene.contents = { ...scene.contents, overview: service.create({ id: 'overview', revision: 0, ascii, structureKind: 'tree' }).diagram };
   const raw = diagramContentNodes(scene.contents.overview.content);
   const content = (label: string) => raw.find(node => node.label === label)!.id;
   const destination = (label: string) => ({ representationId: 'saved-canvas', displayNodeId: 'grid:overview', contentNodeId: content(label) });
-  const tree = writeDiffTree(service, { ascii: 'Review\n|-- Section implementation\n|-- Exact implementation\n|-- Design note\n`-- Invalid', mappings: [
+  const tree = writeDiffTree({ ascii: 'Review\n|-- Section implementation\n|-- Exact implementation\n|-- Design note\n`-- Invalid', mappings: [
     { id: 'section', source: { line: 2 }, targets: [], diagramTargets: [destination('Section')] },
     { id: 'exact', source: { line: 3 }, targets: [], diagramTargets: [destination('Exact'), destination('Exact')] },
     { id: 'design', source: { line: 4 }, targets: [], diagramTargets: [destination('Exact')] },

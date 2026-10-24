@@ -1,4 +1,4 @@
-import { RevisionedDiagramService } from '../../../../domain/core/diagrams/diagramService';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { defaultArrowAppearance } from '../../../../domain/core/diagrams/diagramConnection';
 import { expect, it } from 'vitest';
 import { AgentDiagrammingSessionService } from '../../../../application/mapping/agent/sessionService';
@@ -167,7 +167,7 @@ it('supports explicit immediate mode committing each edit with distinct versions
 
 it('sets source mappings through MCP with atomic validation, stable anchors, history and live reads', async () => {
   const scene = singleDiagramScene('Root\n`-- Child');
-  scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii: 'Root\n`-- Child', structureKind: 'tree' }).diagram };
+  scene.contents = { ...scene.contents, overview: revisionFixture().create({ id: 'overview', revision: 0, ascii: 'Root\n`-- Child', structureKind: 'tree' }).diagram };
   const controller = new MappingDocumentController(mappingDocumentFromScene(scene), initialCanvasState());
   const node = controller.nodes().find(n => n.id === 'grid:overview')!;
   if (node.layout !== 'grid') throw Error('Expected grid');
@@ -282,7 +282,7 @@ it('keeps committed edits on a later conflict and lets scripts catch individual 
 });
 
 it('reads retained variants and batches per-node review/application through the public canvas API', async () => {
-  const diagrams = new RevisionedDiagramService();
+  const diagrams = revisionFixture();
   const base = diagrams.create({ id: 'overview', revision: 0, ascii: 'Root\n`-- Child', structureKind: 'tree' }).revision;
   const scene = singleDiagramScene(base.diagram.content.ascii); scene.contents = { ...scene.contents, overview: base.diagram };
   const controller = new MappingDocumentController(mappingDocumentFromScene(scene), initialCanvasState());
@@ -325,7 +325,7 @@ it('routes chat-bound diagram tools directly and keeps standalone generation ava
       throw Error(`Unexpected command: ${command.method}`);
     }
   };
-  const service = new AgentDiagrammingSessionService(bridge, {} as MappingDiagramService, {} as DiagramRepository, new QuickJsAgentRuntime(), undefined, new RevisionedDiagramService({ generate }));
+  const service = new AgentDiagrammingSessionService(bridge, {} as MappingDiagramService, {} as DiagramRepository, new QuickJsAgentRuntime(), undefined, (revisionFixture({ generate })).generator);
   const token = service.chatBindings.create();
   service.chatBindings.bind(token, { workspaceInstanceId: 'canvas', documentId: 'doc' }, false);
   const base = controller.getSnapshot().document.scene.contents.overview;

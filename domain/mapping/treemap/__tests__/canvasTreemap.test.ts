@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { RevisionedDiagramService } from '../../../core/diagrams/diagramService';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { singleDiagramScene } from '../../../core/diagrams/projectDiagramCanvas';
 import { canvasTreemapInput, buildCanvasTreemaps, sourceLines } from '../canvasTreemap';
 import type { ChangeTreemapNode } from '../../changes/changeTreemap';
@@ -8,7 +8,7 @@ function fixture() {
   const ascii = 'Root\n`-- Parent\n    `-- Child';
   const source = { sourceId: 'source-fixture', repositoryIdentity: 'fixture', corpus: { kind: 'git-worktree' as const, root: '/fixture' }, domainProfileId: 'source-code' as const };
   const scene = singleDiagramScene(ascii, source);
-  scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii, structureKind: 'tree', source,
+  scene.contents = { ...scene.contents, overview: revisionFixture().create({ id: 'overview', revision: 0, ascii, structureKind: 'tree', source,
     evidence: { parent: { id: 'parent', label: 'Parent', handle: 'parent', category: 'operation', summary: 'Parent', sourceRanges: [{ id: 'p', path: 'src/a.ts', startLine: 1, endLine: 4, originalLines: ['a', 'b', 'c', 'd'] }] },
       child: { id: 'child', label: 'Child', handle: 'child', category: 'operation', summary: 'Child', sourceRanges: [{ id: 'c', path: 'src/a.ts', startLine: 3, endLine: 5, originalLines: ['c', 'd', 'e'] }] } },
     mappings: [{ id: 'parent', entityId: 'parent', sourceRangeIndex: 0, line: 2, startColumn: 5, endColumn: 10 },

@@ -29,7 +29,7 @@ export class ChangePreviewState {
     this.updateCanvas(canvas => {
       const ids = new Set(canvas.diagramViews?.[nodeId]?.collapsedContentNodeIds ?? []);
       if (collapsed) ids.add(contentNodeId); else ids.delete(contentNodeId);
-      return { ...canvas, diagramViews: { ...canvas.diagramViews, [nodeId]: { contentRevisionId: content.revisionId, collapsedContentNodeIds: [...ids] } } };
+      return { ...canvas, diagramViews: { ...canvas.diagramViews, [nodeId]: { ...canvas.diagramViews?.[nodeId], contentRevisionId: content.revisionId, collapsedContentNodeIds: [...ids] } } };
     });
   }
 }

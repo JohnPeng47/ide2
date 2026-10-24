@@ -2,7 +2,7 @@ import { expect, it, vi } from 'vitest';
 import { MappingDocumentController, type DiagramOperation } from '../../../mapping/workspace/mappingDocumentController';
 import { initialCanvasState } from '../../../mapping/workspace/mappingWorkspace';
 import { singleDiagramScene } from '../projectDiagramCanvas';
-import { RevisionedDiagramService } from '../diagramService';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { validateCanvasHistory } from '../canvasHistory';
 import type { CanvasViewCommand } from '../canvasView';
 import { CanvasViewReceiver } from '../../../../src/features/mapping/canvas-views/canvasViewReceiver';
@@ -41,7 +41,7 @@ it('records edits and undo/redo in order, pins intermediate revisions, and resto
 });
 
 it('freezes diagram and variant revisions together with composition and camera while retaining multiple views', () => {
-  const { controller: c, command, edit } = fixture(), diagrams = new RevisionedDiagramService();
+  const { controller: c, command, edit } = fixture(), diagrams = revisionFixture();
   c.captureViewCamera({ scale: 2, offset: { x: 100, y: 200 } });
   const a = command({ operation: 'start', name: 'A' }).recording!.id;
   const base = c.getSnapshot().document.scene.contents.overview;

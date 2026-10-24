@@ -1,5 +1,5 @@
 import { canvasSaveFixture } from '../../../../../tests/support/mappingDiagram';
-import { RevisionedDiagramService } from '../../../../../domain/core/diagrams/diagramService';
+import { revisionFixture } from '../../../../../tests/support/diagramRevisions';
 import { LocalChatService } from '../../../../../application/mapping/chat/chatService';
 import { corpusAccess } from '../../../../../src/server/app/bootstrap';
 import {
@@ -135,7 +135,7 @@ it("resolves project source snapshots, accepts historical revisions and freezes 
         loadRepresentationCatalog: async () => ({
           representations: { "representation-one": { id:"representation-one", currentRevisionId: "revision-two", revisionIds:["revision-one","revision-two"] } },
           revisions: { "revision-one": { representationId: "representation-one", evidence, content:{kind:"canvas-history",history:canvasSaveFixture({name:"Chat",scene:{
-            contents:{"child-diagram":new RevisionedDiagramService().create({id:"child-diagram",revision:3,ascii:"[Worker]",mappings:input().context.mappings,evidence,
+            contents:{"child-diagram":revisionFixture().create({id:"child-diagram",revision:3,ascii:"[Worker]",mappings:input().context.mappings,evidence,
               source:{sourceId:"worker-source",repositoryIdentity:"worker",domainProfileId:"source-code",corpus:{kind:"git-worktree",root:"/project/source"}}}).diagram},root:{id:"root",kind:"diagram",contentId:"child-diagram",collapsed:false,position:{column:0,row:0}}}}).history} } }
         })
       }

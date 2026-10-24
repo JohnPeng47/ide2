@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { DiagramText, JumpChoices } from '../../../shared/diagrams/DiagramText';
-import { diagramTextRanges, textRow } from '../../../../domain/core/diagrams/diagramText';
+import { diagramTextRanges, textRow } from '../../../../domain/core/presentation/diagramText';
 import { visibleContentLines } from '../../../../domain/core/diagrams/diagramContent';
 import { usePanelScroll } from '../window-panel/windowPanelState';
 import type { DiffTreeRead } from './changeSessionApi';

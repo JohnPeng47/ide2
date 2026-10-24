@@ -1,11 +1,11 @@
 import { Fragment, useMemo, useEffect, useRef, useState, type ComponentPropsWithRef, type ReactNode, type HTMLAttributes } from 'react';
-import type { DiagramTextRow, DiagramTextRun, DiagramTextOwner } from '../../../domain/core/diagrams/diagramText';
+import type { DiagramTextRow, DiagramTextRun, DiagramTextOwner } from '../../../domain/core/presentation/diagramText';
 import type { DiagramJumpTarget } from '../../../domain/core/diagrams/diagramJump';
 import './diagramText.css';
 
 type Props = Omit<ComponentPropsWithRef<'pre'>, 'children'> & {
   rows: readonly DiagramTextRow[];
-  registerEndpoint?: (identity: Pick<DiagramTextOwner, 'displayNodeId' | 'contentNodeId' | 'revisionId'>, element: Element | null) => void;
+  registerEndpoint?: (identity: DiagramTextOwner, element: Element | null) => void;
   onJump?: (target: DiagramJumpTarget) => void;
   renderRun?: (run: DiagramTextRun, highlightedText: ReactNode) => ReactNode;
   rowProps?: (row: DiagramTextRow) => HTMLAttributes<HTMLSpanElement>;
@@ -32,7 +32,7 @@ export function DiagramText({ rows, onJump, renderRun, rowProps, nodeProps, node
   const refFor = (owner: DiagramTextOwner) => {
     const key = JSON.stringify([owner.displayNodeId, owner.contentNodeId, owner.revisionId]);
     let ref = endpointRefs.get(key);
-    if (!ref) { ref = element => registerEndpoint?.({ displayNodeId: owner.displayNodeId, contentNodeId: owner.contentNodeId, revisionId: owner.revisionId }, element); endpointRefs.set(key, ref); }
+    if (!ref) { ref = element => registerEndpoint?.(owner, element); endpointRefs.set(key, ref); }
     return ref;
   };
   const render = (run: DiagramTextRun) => renderRun ? renderRun(run, <DiagramSyntaxText run={run} />) : <DiagramSyntaxText run={run} />;
@@ -68,10 +68,10 @@ export function DiagramText({ rows, onJump, renderRun, rowProps, nodeProps, node
       });
       return <Fragment key={first.start}><span
         {...decoration}
-        ref={owner?.contentNodeId && registerEndpoint ? refFor(owner) : undefined}
+        ref={owner?.contentNodeId && owner.side !== 'before' && registerEndpoint ? refFor(owner) : undefined}
         className={[owner?.contentNodeId ? 'diagram-content-node' : '', decoration?.className].filter(Boolean).join(' ') || undefined}
         data-display-node-id={owner?.displayNodeId} data-content-node-id={owner?.contentNodeId}
-        data-content-revision={owner?.revisionId} data-source-line={owner?.sourceLine}
+        data-source-side={owner?.side} data-content-revision={owner?.revisionId} data-source-line={owner?.sourceLine}
         data-source-start-column={owner ? first.start - owner.columnOffset + 1 : undefined}
         data-source-end-column={owner ? group.at(-1)!.end - owner.columnOffset : undefined}
         data-node-mapping-ids={owner?.contentNodeId ? [...new Set(group.flatMap(run => run.mappings)
@@ -84,10 +84,10 @@ export function DiagramText({ rows, onJump, renderRun, rowProps, nodeProps, node
 }
 
 export function DiagramSyntaxText({ run }: { run: DiagramTextRun }) {
-  if (!run.syntax) return run.text;
+  if (!run.syntax) return run.decoration ? <span style={run.decoration} data-marker-rule={run.markerRuleId}>{run.text}</span> : run.text;
   const { kind, role, symbol, title } = run.syntax;
   return <span className={`diagram-syntax syntax-${kind}${role === 'definition' ? ' syntax-definition' : ''}`}
-    data-syntax-kind={kind} data-syntax-role={role} data-diagram-symbol={symbol} title={title}>{run.text}</span>;
+    style={run.decoration} data-marker-rule={run.markerRuleId} data-syntax-kind={kind} data-syntax-role={role} data-diagram-symbol={symbol} title={title}>{run.text}</span>;
 }
 
 export function JumpChoices({ run, onJump, text, children }: { run: DiagramTextRun; text: string; children?: ReactNode; onJump: (target: DiagramJumpTarget) => void }) {

@@ -8,7 +8,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { seedMappingFixture } from '../support/browser-mapping-fixture.mjs';
 import { canvasSaveFixture } from '../../support/mappingDiagram.ts';
-import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService.ts';
+import { revisionFixture } from '../../support/diagramRevisions.ts';
 import { connectionContentNodes, defaultArrowAppearance } from '../../../domain/core/diagrams/diagramConnection.ts';
 import { singleDiagramScene } from '../../../domain/core/diagrams/projectDiagramCanvas.ts';
 const { evaluate, waitFor, waitForSelector, withHeadlessBrowser, captureScreenshot } = await import(pathToFileURL(path.join(homedir(), '.codex/skills/front-end/browser-test.mjs')).href);
@@ -19,7 +19,7 @@ try {
   await seedMappingFixture(root, { ascii, nodes: [] });
   const catalogPath = path.join(root, '.diagrams/representations/catalog.json');
   const catalog = JSON.parse(await readFile(catalogPath, 'utf8')), scene = singleDiagramScene(ascii);
-  scene.contents.overview = new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii, structureKind: 'tree' }).diagram;
+  scene.contents.overview = revisionFixture().create({ id: 'overview', revision: 0, ascii, structureKind: 'tree' }).diagram;
   scene.root.children[0].position = { column: 8, row: 8 };
   scene.root.children.push({ ...scene.root.children[0], id: 'second', position: { column: 65, row: 16 } });
   const content = scene.contents.overview.content;

@@ -50,7 +50,7 @@ export const diagramEditRunSchema = z.object({ runId: id }).strict();
 export type EditDiagramInput = z.infer<typeof editDiagramSchema>;
 export type CreateDiagramInput = z.infer<typeof createDiagramSchema>;
 export interface DiagramRevisionApplication {
-  variants?: { variant: import('../../core/diagrams/diagramVariant').DiagramVariant; revision: DiagramRevision }[];
+  variants?: { variant: import('../../core/diagrams/diagramRevisionReview').DiagramRevisionReview; revision: DiagramRevision }[];
   requestId: string;
   expectedVersion: number;
   nodeId: string;

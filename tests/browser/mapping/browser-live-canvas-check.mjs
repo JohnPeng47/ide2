@@ -10,7 +10,7 @@ import { WebSocket } from 'ws';
 import { seedMappingFixture } from '../support/browser-mapping-fixture.mjs';
 const { evaluate, waitFor, waitForSelector, withHeadlessBrowser, captureScreenshot } = await import(pathToFileURL(path.join(homedir(), '.codex/skills/front-end/browser-test.mjs')).href);
 import { sceneFromRevision } from '../../../domain/core/diagrams/projectDiagramCanvas.ts';
-import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService.ts';
+import { revisionFixture } from '../../support/diagramRevisions.ts';
 import { canvasSaveFixture } from '../../support/mappingDiagram.ts';
 const root = await mkdtemp(path.join(tmpdir(), 'live-canvas-'));
 let server, socket, secondSocket;
@@ -20,11 +20,11 @@ try {
   const catalogPath = path.join(root, '.diagrams/representations/catalog.json');
   const catalog = JSON.parse(await readFile(catalogPath, 'utf8'));
   const scene = sceneFromRevision(catalog.revisions['revision-overview']);
-  const diagrams = new RevisionedDiagramService();
+  const diagrams = revisionFixture();
   scene.contents = Object.fromEntries(Object.entries(scene.contents).map(([id, diagram]) => [id, diagrams.create({ id, revision: 0,
     ascii: diagram.content.ascii, structureKind: diagram.content.structure.kind, source: diagram.sourceContext.binding,
     evidence: diagram.sourceContext.evidence, mappings: diagram.sourceContext.mappings }).diagram]));
-  scene.contents.other = new RevisionedDiagramService().create({ id: 'other', revision: 0, ascii: 'Other diagram\n|-- Worker\n`-- Tail', structureKind: 'tree' }).diagram;
+  scene.contents.other = revisionFixture().create({ id: 'other', revision: 0, ascii: 'Other diagram\n|-- Worker\n`-- Tail', structureKind: 'tree' }).diagram;
   scene.root.children.push({ id: 'other', kind: 'diagram', contentId: 'other', collapsed: false, position: { column: 30, row: 0 } });
   catalog.revisions['revision-overview'].content = { kind: 'canvas-history', history: canvasSaveFixture({ name: 'Fixture', scene, edges: [] }).history };
   await writeFile(catalogPath, JSON.stringify(catalog));

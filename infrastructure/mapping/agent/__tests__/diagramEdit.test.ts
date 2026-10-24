@@ -3,7 +3,8 @@ import { compileDiagramAgentContext, storeDiagramAgentContext, type DiagramAgent
 import { expect, it, vi } from 'vitest';
 import { editDiagramSchema } from '../../../../domain/mapping/agent/diagramEdit';
 import { DiagramEditService } from '../../../../application/mapping/agent/diagramEditService';
-import { RevisionedDiagramService, type DiagramGenerator, type DiagramGenerationRequest, type GenerationOptions } from '../../../../domain/core/diagrams/diagramService';
+import type { DiagramGenerator, DiagramGenerationRequest, GenerationOptions } from '../../../../domain/core/diagrams/diagramGeneration';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { singleDiagramScene } from '../../../../domain/core/diagrams/projectDiagramCanvas';
 import { MappingDocumentController } from '../../../../domain/mapping/workspace/mappingDocumentController';
 import { mappingDocumentFromScene } from '../../../../domain/mapping/workspace/mappingDocument';
@@ -14,13 +15,13 @@ import { validateConnectionAnchor, type ContentNodeAnchor, type DiagramConnectio
 
 function fixture(generator: DiagramGenerator = { generate: async () => ({ ascii: 'Edited\n`-- New branch', structureKind: 'tree' }) },
   contextStore?: DiagramAgentContextStore) {
-  const diagrams = new RevisionedDiagramService(generator);
+  const diagrams = revisionFixture(generator);
   const controller = new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('Original')), initialCanvasState());
   const base = controller.getSnapshot().document.scene.contents.overview;
   const receiver = new DiagramRevisionReceiver(), persist = vi.fn(async () => {});
   const apply = vi.fn(async (_session: string, input: Parameters<DiagramRevisionReceiver['apply']>[1]) =>
     receiver.apply('doc', structuredClone(input), controller, persist));
-  const service = new DiagramEditService(diagrams, {
+  const service = new DiagramEditService((diagrams).generator, {
     snapshot: async (_session, ids) => structuredClone({ ...controller.getSnapshot(), revisions: controller.exportRevisions(ids ?? [], true), name: 'Test' }), apply
   }, contextStore);
   const input = { 'edit-mode': 'in-place' as const, 'replace-mode': 'diagram' as const, sessionId: 'session', requestId: 'edit', expectedVersion: 0, baseRevisionId: base.revisionId,
@@ -97,7 +98,7 @@ it.each(['in-place'] as const)('installs exactly the generated revision once wit
   const complete = await settled(f.service, run.runId, 'completed');
   expect(generate).toHaveBeenCalledOnce(); expect(f.persist).toHaveBeenCalledOnce();
   expect(f.service.start(input)).toEqual(complete);
-  expect(Object.keys(f.controller.getSnapshot().document.variants ?? {})).toHaveLength(0);
+  expect(Object.keys(f.controller.getSnapshot().document.revisionReviews ?? {})).toHaveLength(0);
   expect(f.controller.getSnapshot().version).toBe(1);
   expect(f.diagrams.listRevisions(f.base.diagramId).map(r => r.id)).toEqual([f.base.revisionId, complete.result!.revisionId]);
   expect(f.diagrams.getRevision(complete.result!.revisionId).parentId).toBe(f.base.revisionId);
@@ -121,16 +122,16 @@ it('saves variant mode as a new durable alternative, retries persistence once, a
   expect(complete.variants).toHaveLength(1);
   expect(f.controller.getSnapshot().document.scene.contents.overview).toEqual(f.base);
   const id = complete.variants![0].id, snapshot = f.controller.getSnapshot();
-  expect(snapshot.document.variants![id]).toMatchObject({ ownerNodeId: 'root', baseRevisionId: f.base.revisionId,
+  expect(snapshot.document.revisionReviews![id]).toMatchObject({ ownerNodeId: 'root', baseRevisionId: f.base.revisionId,
     headRevisionId: complete.variants![0].revisionId, name: 'Alternative' });
   const restored = new MappingDocumentController(structuredClone(snapshot.document), snapshot.canvas, 0,
     undefined, undefined, JSON.parse(JSON.stringify(f.controller.exportHistory())));
-  restored.undo(); expect(restored.getSnapshot().document.variants?.[id]).toBeUndefined();
-  restored.undo(true); expect(restored.getSnapshot().document.variants![id]).toEqual(snapshot.document.variants![id]);
+  restored.undo(); expect(restored.getSnapshot().document.revisionReviews?.[id]).toBeUndefined();
+  restored.undo(true); expect(restored.getSnapshot().document.revisionReviews![id]).toEqual(snapshot.document.revisionReviews![id]);
   expect(() => f.service.start({ ...input, 'edit-mode': 'in-place' })).toThrow('REQUEST_ID_CONFLICT');
   const second = await settled(f.service, f.service.start({ ...input, requestId: 'second', expectedVersion: 1 }).runId, 'completed');
   expect(second.variants![0].id).not.toBe(id);
-  expect(Object.keys(f.controller.getSnapshot().document.variants!)).toHaveLength(2);
+  expect(Object.keys(f.controller.getSnapshot().document.revisionReviews!)).toHaveLength(2);
 });
 
 it('validates modes and rejects removed Edit controls and contradictory variant options', () => {
@@ -342,11 +343,11 @@ it('generates multiple retained subtree variants, retries once, and refines one 
   expect(generate).toHaveBeenCalledTimes(3);
   expect(complete.variants).toHaveLength(3);
   expect(f.controller.getSnapshot().document.scene.contents.overview.revisionId).toBe(base.revisionId);
-  expect(Object.keys(f.controller.getSnapshot().document.variants!)).toHaveLength(3);
+  expect(Object.keys(f.controller.getSnapshot().document.revisionReviews!)).toHaveLength(3);
   const [a, b] = complete.variants!;
   const next = f.service.start({ ...input, subtree: undefined, requestId: 'refine', expectedVersion: 2, variant: { name: 'Refined', count: 1, variantId: a.id } });
   await settled(f.service, next.runId, 'completed');
-  const variants = f.controller.getSnapshot().document.variants!;
+  const variants = f.controller.getSnapshot().document.revisionReviews!;
   expect(variants[a.id].revisionIds).toHaveLength(2);
   expect(variants[b.id].headRevisionId).toBe(b.revisionId);
   expect(f.controller.getSnapshot().document.scene.contents.overview.revisionId).toBe(base.revisionId);
@@ -374,7 +375,7 @@ it.each(['in-place', 'variant'] as const)('generates disjoint edits in one reque
   if (editMode === 'variant') {
     expect(f.controller.getSnapshot().document.scene.contents.overview.revisionId).toBe(base.revisionId);
     const id = completed.variants![0].id;
-    expect(f.controller.getSnapshot().document.variants![id].replacementScope).toEqual({ mode: 'multi-disjoint', ranges: [{ startLine: 2, endLine: 2 }, { startLine: 4, endLine: 4 }] });
+    expect(f.controller.getSnapshot().document.revisionReviews![id].replacementScope).toEqual({ mode: 'multi-disjoint', ranges: [{ startLine: 2, endLine: 2 }, { startLine: 4, endLine: 4 }] });
     const refined = await settled(f.service, f.service.start({ ...request, expectedVersion: 2, requestId: 'refine-multi', subtrees: undefined,
       variant: { name: 'Refined', count: 1, variantId: id } }).runId, 'completed');
     expect(f.diagrams.getRevision(refined.result!.revisionId).diagram.content.ascii).toBe('Root\n|-- A revised revised\n|-- B\n`-- C revised revised');
@@ -382,5 +383,5 @@ it.each(['in-place', 'variant'] as const)('generates disjoint edits in one reque
   }
   f.controller.undo();
   expect(f.controller.getSnapshot().document.scene.contents.overview.revisionId).toBe(base.revisionId);
-  expect(Object.keys(f.controller.getSnapshot().document.variants ?? {})).toHaveLength(0);
+  expect(Object.keys(f.controller.getSnapshot().document.revisionReviews ?? {})).toHaveLength(0);
 });

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { GenerationPromptParameter } from '../../core/diagrams/diagramService';
+import type { GenerationPromptParameter } from '../../core/diagrams/diagramGeneration';
 
 /** Prompt operations a template can drive. Each dispatches to its own backend lifecycle. */
 export type PromptOperation = 'create-diagram' | 'edit-diagram' | 'extend-diagram';

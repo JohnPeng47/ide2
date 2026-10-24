@@ -1,4 +1,5 @@
-import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService';
+import { createStoredDiagram } from '../../../domain/core/diagrams/diagramRevisionStore';
+
 import { mappingsForSelection } from '../../../domain/core/diagrams/diagramSelection';
 import type { ProjectRepresentationEvidenceRecord } from '../../../domain/core/representations/projectCatalog';
 import { validateLocalChatRequest } from '../../../domain/mapping/chat/localChatPrompt';
@@ -24,7 +25,7 @@ export class LocalChatService {
       // Historical revisions remain valid: existing chats retain their original selection.
       if (!revision || revision.representationId !== context.representationId) throw new Error("Diagram revision does not belong to this representation");
       const captured = context.sourceContext;
-      const live = captured && new RevisionedDiagramService().create({id: context.contentId, revision: context.diagramRevision, ascii: context.diagramAscii,
+      const live = captured && createStoredDiagram({id: context.contentId, revision: context.diagramRevision, ascii: context.diagramAscii,
         source: captured.binding, mappings: captured.mappings, evidence: captured.evidence}).diagram;
       if (live && captured!.contentHash !== live.content.asciiSha256) throw new Error('Diagram source context does not match content');
       const resolved = await resolveDiagramSource(this.projects, {projectId: project.id, representationId: context.representationId,

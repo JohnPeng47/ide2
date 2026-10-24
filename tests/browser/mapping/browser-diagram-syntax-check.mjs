@@ -9,7 +9,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { seedMappingFixture } from '../support/browser-mapping-fixture.mjs';
 import { DiagramStore } from '../../../infrastructure/core/persistence/store.ts';
-import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService.ts';
+import { revisionFixture } from '../../support/diagramRevisions.ts';
 import { singleDiagramScene } from '../../../domain/core/diagrams/projectDiagramCanvas.ts';
 import { diagramContentNodes } from '../../../domain/core/diagrams/diagramContentNodes.ts';
 import { canvasSaveFixture } from '../../support/mappingDiagram.ts';
@@ -26,7 +26,7 @@ try {
   const store = new DiagramStore(root), project = await store.loadProject();
   const source = { sourceId: 'fixture-source', repositoryIdentity: path.join(root, '.git'), domainProfileId: 'source-code', corpus: { kind: 'git-worktree', root } };
   const ascii = 'interface CanvasSession\n|-- controller: CanvasSession\n|   `-- applyUpdate(expectedVersion, operations)\n|-- kind: "grid"\n|-- schemaVersion: 3\n|-- History: owned by SessionManager\n`-- CanvasSession [D3]';
-  const scene = singleDiagramScene(ascii, source), diagrams = new RevisionedDiagramService();
+  const scene = singleDiagramScene(ascii, source), diagrams = revisionFixture();
   const target = diagrams.create({ id: 'target', revision: 0, ascii: 'TargetCanvas\n`-- ready: true', structureKind: 'tree' }).diagram;
   const targetNode = diagramContentNodes(target.content).find(n => n.label === 'TargetCanvas').id;
   const mappings = ascii.split('\n').flatMap((line, i) => [...line.matchAll(/CanvasSession/g)].map(m => ({
@@ -56,9 +56,9 @@ try {
     await cdp.send('Runtime.enable'); cdp.on('Runtime.exceptionThrown', e => errors.push(e.exceptionDetails.text));
     await cdp.send('Page.enable'); cdp.on('Page.javascriptDialogOpening', () => void cdp.send('Page.handleJavaScriptDialog', { accept: true }));
     const pointFor = (selector, text) => evaluate(cdp, `(() => { const e=[...document.querySelectorAll(${JSON.stringify(selector)})].find(e=>!e.disabled && e.getBoundingClientRect().width && (!${JSON.stringify(text)} || e.textContent.trim()===${JSON.stringify(text)})); if(!e)return null;const r=e.getBoundingClientRect(),p={x:r.x+r.width/2,y:r.y+r.height/2};return e.contains(document.elementFromPoint(p.x,p.y))?p:null; })()`);
-    const click = async (selector, text) => {
+    const click = async (selector, text, modifiers = 0) => {
       let point; await waitFor(async () => (point = await pointFor(selector, text)));
-      for (const type of ['mousePressed', 'mouseReleased']) await cdp.send('Input.dispatchMouseEvent', { type, ...point, button: 'left', buttons: type === 'mousePressed' ? 1 : 0, clickCount: 1 });
+      for (const type of ['mousePressed', 'mouseReleased']) await cdp.send('Input.dispatchMouseEvent', { type, ...point, modifiers, button: 'left', buttons: type === 'mousePressed' ? 1 : 0, clickCount: 1 });
     };
     const native = '.mapping-document-view:not([hidden]) [data-native-node="grid:overview"]';
     const pre = `${native} pre`;
@@ -87,8 +87,8 @@ try {
       const { copyFile } = await import('node:fs/promises');
       for (const name of ['syntax-dark.png', 'syntax-light.png']) await copyFile(path.join(root, name), path.join(process.env.DIAGRAM_SYNTAX_SCREENSHOT_DIR, name));
     }
-    // Nested token elements still participate in the normal node selection gesture.
-    await click(`${pre} .syntax-function`, 'applyUpdate');
+    // Nested token elements still participate in the Ctrl-click node selection gesture.
+    await click(`${pre} .syntax-function`, 'applyUpdate', 2);
     await waitForSelector(cdp, `${pre} .diagram-content-node.is-selected`);
     await click('[aria-label="Collapse subtree controller: CanvasSession"]');
     await waitFor(async () => !(await rendered()).includes('applyUpdate'));

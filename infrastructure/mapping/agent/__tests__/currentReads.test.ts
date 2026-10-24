@@ -1,4 +1,4 @@
-import { RevisionedDiagramService } from '../../../../domain/core/diagrams/diagramService';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { canvasMutationResult, type CanvasMutationResult } from '../../../../domain/mapping/agent/mutationReceipt';
 import { parseHighlightReference } from '../../../../domain/mapping/agent-chat/highlightReference';
 import { expect, it, vi } from 'vitest';
@@ -59,7 +59,7 @@ it('measures full UTF8 reply and settles oversized commands without waiting for 
 function liveFixture() {
   const ascii = 'Service\n|-- [A] Alpha\n|-- [B] Beta\n`-- [C] Gamma';
   const scene = singleDiagramScene(ascii);
-  scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({id:'overview', revision:0, ascii, structureKind:'tree'}).diagram };
+  scene.contents = { ...scene.contents, overview: revisionFixture().create({id:'overview', revision:0, ascii, structureKind:'tree'}).diagram };
   const controller = new MappingDocumentController(mappingDocumentFromScene(scene), initialCanvasState());
   const commands: string[] = [];
   const receipts = new Map<string, unknown>();
@@ -99,7 +99,7 @@ it('uses small read aliases for highlight and move, checks stale versions, and r
   const result = await agent.callBound(token, 'exec', input);
   expect(await agent.callBound(token, 'exec', input)).toEqual(result);
   expect(controller.getSnapshot().version).toBe(1);
-  expect(controller.getSnapshot().document.scene.contents.overview.highlights).toHaveLength(1);
+  expect(controller.getSnapshot().document.diagramPresentations?.overview.highlights).toHaveLength(1);
   await expect(agent.callBound(token, 'exec', { ...input, requestId: 'stale' })).rejects.toThrow('VERSION_CONFLICT');
   await agent.callBound(token, 'exec', { requestId: 'move', expectedVersion: 1, code: `return nodes.move({nodeId:${JSON.stringify(node.id)},position:{column:5,row:2}});` });
   expect(commands).not.toContain('snapshot');
@@ -145,7 +145,7 @@ it('batches ordinary highlight calls into one commit with compact links, one und
   expect(f.batches).toHaveLength(1);
   expect(f.batches[0].operations).toHaveLength(3);
   expect(result.transaction).toMatchObject({ version: 1, receipts: Array.from({ length: 3 }, () => ({ method: 'highlight', nodeId: 'grid:overview', color: 'blue', status: 'active' })) });
-  const highlights = f.controller.getSnapshot().document.scene.contents.overview.highlights!;
+  const highlights = f.controller.getSnapshot().document.diagramPresentations?.overview.highlights!;
   expect(result.transaction.receipts.map(receipt => parseHighlightReference(receipt.markdownUrl!)))
     .toEqual(highlights.map(h => ({ documentId: 'doc', nodeId: 'grid:overview', highlightId: h.id })));
   expect(JSON.stringify(result).length).toBeLessThan(4096);
@@ -154,9 +154,9 @@ it('batches ordinary highlight calls into one commit with compact links, one und
   const updated = await f.exec(f.code.replaceAll('blue', 'pink'));
   expect(updated.transaction.receipts.map(r => r.highlightId)).toEqual(highlights.map(h => h.id));
   f.controller.undo();
-  expect(f.controller.getSnapshot().document.scene.contents.overview.highlights).toEqual(highlights);
+  expect(f.controller.getSnapshot().document.diagramPresentations?.overview.highlights).toEqual(highlights);
   f.controller.undo();
-  expect(f.controller.getSnapshot().document.scene.contents.overview.highlights ?? []).toEqual([]);
+  expect(f.controller.getSnapshot().document.diagramPresentations?.overview.highlights ?? []).toEqual([]);
 });
 
 it('discards pending edits on script errors and rejects an invalid batch without committing valid siblings', async () => {
@@ -179,7 +179,7 @@ it('flushes before reads and preserves already committed batches after a later f
   expect(result.transaction.receipts).toHaveLength(4);
   await expect(f.exec(`nodes.removeHighlights({nodeId:'grid:overview'}); canvas.read({}); nodes.highlight({nodeId:'grid:missing'});`)).rejects.toThrow();
   expect(f.controller.getSnapshot().version).toBe(3);
-  expect(f.controller.getSnapshot().document.scene.contents.overview.highlights).toEqual([]);
+  expect(f.controller.getSnapshot().document.diagramPresentations?.overview.highlights).toEqual([]);
 });
 
 it('retries a lost batch reply with identical IDs and version, including a caught timeout', async () => {
@@ -215,7 +215,7 @@ it('rejects a concurrent edit at the batch boundary without applying any queued 
     return original(canvas, command);
   };
   await expect(f.exec(f.code)).rejects.toThrow('VERSION_CONFLICT');
-  expect(f.controller.getSnapshot().document.scene.contents.overview.highlights).toEqual([{id:'user-highlight',color:'green'}]);
+  expect(f.controller.getSnapshot().document.diagramPresentations?.overview.highlights).toEqual([{id:'user-highlight',color:'green'}]);
 });
 
 it('keeps saved highlight links when later operations rebase anchors in the same batch', async () => {
@@ -231,7 +231,7 @@ it('saves an explicit node set as one highlight, reuses its ID regardless of ord
   const f = await boundFixture();
   const target = { nodeId: f.targets[0].nodeId, contentNodeIds: f.targets.map(t => t.contentNodeId), color: 'blue' };
   const result = await f.exec(`nodes.highlight(${JSON.stringify(target)});`);
-  const saved = f.controller.getSnapshot().document.scene.contents.overview.highlights!;
+  const saved = f.controller.getSnapshot().document.diagramPresentations?.overview.highlights!;
   expect(saved).toHaveLength(1);
   expect(saved[0]).toMatchObject({ color: 'blue', contentNodeIds: f.batches[0].operations[0].contentNodeIds });
   expect(saved[0].contentNodeIds).toHaveLength(3);
@@ -247,9 +247,9 @@ it('saves an explicit node set as one highlight, reuses its ID regardless of ord
   const fromRead = await f.exec(`nodes.highlight(${JSON.stringify({ nodeId: read.value.nodes[0].id, contentNodeIds: group.contentNodeIds, color: 'green' })});`);
   expect(fromRead.transaction.receipts[0].highlightId).toBe(saved[0].id);
   await f.exec(`nodes.removeHighlights({nodeId:'grid:overview',highlightIds:['${saved[0].id}']});`);
-  expect(f.controller.getSnapshot().document.scene.contents.overview.highlights).toEqual([]);
+  expect(f.controller.getSnapshot().document.diagramPresentations?.overview.highlights).toEqual([]);
   f.controller.undo();
-  expect(f.controller.getSnapshot().document.scene.contents.overview.highlights).toHaveLength(1);
+  expect(f.controller.getSnapshot().document.diagramPresentations?.overview.highlights).toHaveLength(1);
 });
 
 it('rejects empty, duplicate, ambiguous, and stale highlight groups without saving any targets', async () => {
@@ -273,9 +273,9 @@ it('rebases group members together and marks the whole saved highlight stale whe
   const read = await f.exec('return canvas.read({});');
   expect(read.value.nodes[0].diagram.highlights).toHaveLength(1);
   expect(read.value.nodes[0].diagram.highlights[0]).toMatchObject({ status: 'active' });
-  expect(f.controller.getSnapshot().document.scene.contents.overview.highlights![0].id).toBe(id);
+  expect(f.controller.getSnapshot().document.diagramPresentations?.overview.highlights![0].id).toBe(id);
   await f.exec(`nodes.patchDiagram({nodeId:'grid:overview',start:2,end:2,patch:'|-- Changed'});`);
   const stale = await f.exec('return canvas.read({});');
   expect(stale.value.nodes[0].diagram.highlights[0]).toMatchObject({ status: 'stale' });
-  expect(f.controller.getSnapshot().document.scene.contents.overview.highlights![0]).toMatchObject({ id, contentNodeIds: expect.any(Array) });
+  expect(f.controller.getSnapshot().document.diagramPresentations?.overview.highlights![0]).toMatchObject({ id, contentNodeIds: expect.any(Array) });
 });

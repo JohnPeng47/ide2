@@ -1,22 +1,20 @@
 import { DefaultCanvasHistoryService } from '../canvasHistoryService';
 import { expect, it, vi } from 'vitest';
-import { RevisionedDiagramService } from '../diagramService';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { singleDiagramScene } from '../projectDiagramCanvas';
 import { documentFromHistory } from '../canvasHistory';
 import { MappingDocumentController } from '../../../mapping/workspace/mappingDocumentController';
 import { mappingDocumentFromScene } from '../../../mapping/workspace/mappingDocument';
 import { initialCanvasState } from '../../../mapping/workspace/mappingWorkspace';
 
-it('injects one service into independent canvases with the same local diagram IDs', () => {
-  const service = new RevisionedDiagramService();
+it('keeps independent canvas revision bindings for the same local diagram IDs', () => {
+  const service = revisionFixture();
   const histories = new DefaultCanvasHistoryService();
-  const open = vi.spyOn(histories, 'openContext'), edits = vi.spyOn(service, 'revise');
-  const controller = (ascii: string) => new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene(ascii)),
-    initialCanvasState(), 0, undefined, undefined, undefined, service, histories);
+  const open = vi.spyOn(histories, 'openContext');
+  const controller = (ascii: string) => new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene(ascii)), initialCanvasState(), 0, undefined, undefined, undefined, histories);
   const first = controller('First'), second = controller('Second');
   expect(open).toHaveBeenCalledTimes(2);
   first.applyUpdate(0, [{ method: 'replace', nodeId: 'grid:overview', ascii: 'Changed' }]);
-  expect(edits).toHaveBeenCalledTimes(1);
   expect(first.resolveDiagram('overview').ascii).toBe('Changed');
   expect(second.resolveDiagram('overview').ascii).toBe('Second');
   first.undo(); expect(first.resolveDiagram('overview').ascii).toBe('First');
@@ -24,10 +22,10 @@ it('injects one service into independent canvases with the same local diagram ID
 });
 
 it('isolates restored viewers of the same context and stages batches without publishing failures', () => {
-  const service = new RevisionedDiagramService();
-  const original = new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('A\nB')), initialCanvasState(), 0, undefined, undefined, undefined, service);
+  const service = revisionFixture();
+  const original = new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('A\nB')), initialCanvasState(), 0, undefined, undefined, undefined);
   const history = original.exportHistory();
-  const restored = new MappingDocumentController(documentFromHistory(history), initialCanvasState(), 0, undefined, undefined, history, service);
+  const restored = new MappingDocumentController(documentFromHistory(history), initialCanvasState(), 0, undefined, undefined, history);
   expect(original.getSnapshot().contextId).toBe(restored.getSnapshot().contextId);
   restored.applyUpdate(0, [
     { method: 'patchDiagram', nodeId: 'grid:overview', start: 2, end: 2, patch: 'C\nD' },

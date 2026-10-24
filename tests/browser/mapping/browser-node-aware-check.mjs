@@ -8,7 +8,7 @@ import { createServer } from 'node:net';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { seedMappingFixture } from '../support/browser-mapping-fixture.mjs';
-import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService.ts';
+import { revisionFixture } from '../../support/diagramRevisions.ts';
 import { projectCanvasSnapshot, singleDiagramScene } from '../../../domain/core/diagrams/projectDiagramCanvas.ts';
 import { asciiSha256 } from '../../../domain/core/diagrams/asciiSha256.ts';
 const { evaluate, waitFor, waitForSelector, withHeadlessBrowser, captureScreenshot } = await import(pathToFileURL(path.join(homedir(), '.codex/skills/front-end/browser-test.mjs')).href);
@@ -20,11 +20,11 @@ try {
   const catalogPath = path.join(root, '.diagrams/representations/catalog.json');
   const catalog = JSON.parse(await readFile(catalogPath, 'utf8'));
   const source = singleDiagramScene(ascii);
-  source.contents.overview = new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii, structureKind: 'tree' }).diagram;
+  source.contents.overview = revisionFixture().create({ id: 'overview', revision: 0, ascii, structureKind: 'tree' }).diagram;
   source.root.children.push({ ...source.root.children[0], id: 'second', position: { column: 35, row: 1 } });
   const targetAscii = 'Node-aware rendering\n|-- Shared renderer\n|   `-- DOM labels\n`-- Coordinates';
   const target = singleDiagramScene(targetAscii);
-  target.contents.overview = new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii: targetAscii, structureKind: 'tree' }).diagram;
+  target.contents.overview = revisionFixture().create({ id: 'overview', revision: 0, ascii: targetAscii, structureKind: 'tree' }).diagram;
   const targetNode = Object.values(target.contents.overview.content.structure.nodes).find(node => node.label === 'DOM labels');
   const content = source.contents.overview.content;
   const from = (line, startColumn) => ({ revisionId: content.revisionId, contentHash: content.asciiSha256,

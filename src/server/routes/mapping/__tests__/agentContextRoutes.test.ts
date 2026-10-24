@@ -8,7 +8,8 @@ import { AgentDiagrammingSessionService } from '../../../../../application/mappi
 import type { CanvasSessionPort } from '../../../../../application/mapping/agent/ports';
 import type { MappingDiagramService } from '../../../../../application/mapping/diagrams/diagramService';
 import type { DiagramRepository } from '../../../../../application/core/ports/diagramRepository';
-import { RevisionedDiagramService, type DiagramGenerationRequest } from '../../../../../domain/core/diagrams/diagramService';
+import type { DiagramGenerationRequest } from '../../../../../domain/core/diagrams/diagramGeneration';
+import { revisionFixture } from '../../../../../tests/support/diagramRevisions';
 import { singleDiagramScene } from '../../../../../domain/core/diagrams/projectDiagramCanvas';
 import { MappingDocumentController } from '../../../../../domain/mapping/workspace/mappingDocumentController';
 import { mappingDocumentFromScene } from '../../../../../domain/mapping/workspace/mappingDocument';
@@ -35,8 +36,7 @@ it('uploads over a bound WebSocket and uses that immutable context in an HTTP di
     }
   };
   const generate = vi.fn(async (_request: DiagramGenerationRequest) => ({ ascii: 'Workspace\n`-- Cache', structureKind: 'tree' as const }));
-  const agent = new AgentDiagrammingSessionService(bridge, {} as MappingDiagramService, {} as DiagramRepository,
-    new QuickJsAgentRuntime(), undefined, new RevisionedDiagramService({ generate }), contexts);
+  const agent = new AgentDiagrammingSessionService(bridge, {} as MappingDiagramService, {} as DiagramRepository, new QuickJsAgentRuntime(), undefined, (revisionFixture({ generate })).generator, contexts);
   const live = new LiveCanvasService(() => bridge.list(), undefined, contexts), owner = {};
   live.publish(owner, 'workspace');
   live.update(owner, 'workspace', { documentId: 'doc', canvasEpoch: 'epoch', documentVersion: 0, sequence: 0, regions: [] });

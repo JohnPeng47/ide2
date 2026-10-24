@@ -5,7 +5,7 @@ import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { performance } from 'node:perf_hooks';
 import { DiagramChangeSessionStore } from '../../infrastructure/mapping/changes/diagramChangeSessionStore.ts';
-import { RevisionedDiagramService } from '../../domain/core/diagrams/diagramService.ts';
+import { revisionFixture } from '../support/diagramRevisions.ts';
 import { DiagramRevisionStore } from '../../infrastructure/core/persistence/diagramRevisionStore.ts';
 import { validateChangeSession } from '../../domain/mapping/changes/diagramChangeSession.ts';
 const source = process.env.CHANGE_BENCH_STORE, projectId = process.env.CHANGE_BENCH_PROJECT, id = process.env.CHANGE_BENCH_SESSION;
@@ -17,7 +17,7 @@ try {
   for(const dir of ['diagrams','mapping-change-sessions']) await cp(path.join(source,dir),path.join(root,dir),{recursive:true,
     filter:file=>!file.endsWith('.manifest.json')&&!file.endsWith('.summary.json')});
   const raw=JSON.parse(await readFile(path.join(root,'mapping-change-sessions',projectId,id+'.json'),'utf8'));
-  const diagrams = new RevisionedDiagramService(new DiagramRevisionStore(root));
+  const diagrams = revisionFixture(new DiagramRevisionStore(root));
   const full=await measure('legacy full preview',async()=>{const {receipts,...body}=validateChangeSession(await diagrams.restore(raw));return body;});
   const store=new DiagramChangeSessionStore(root,undefined,true);
   await measure('legacy cold summary index',()=>store.listSummaries(projectId));

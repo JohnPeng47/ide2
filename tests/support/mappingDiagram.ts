@@ -1,7 +1,7 @@
 import { DefaultCanvasHistoryService } from '../../domain/core/diagrams/canvasHistoryService';
 import type { SaveProjectDiagramInput } from '../../domain/core/diagrams/projectDiagramCanvas';
 import { type DiagramSourceBinding } from '../../domain/core/diagrams/diagram';
-import { RevisionedDiagramService } from '../../domain/core/diagrams/diagramService';
+import { revisionFixture } from './diagramRevisions';
 import { singleDiagramScene } from '../../domain/core/diagrams/projectDiagramCanvas';
 import type { ProjectRepresentationEvidenceRecord, ProjectRepresentationMappingRecord } from '../../domain/core/representations/projectCatalog';
 import type { ProjectCatalogRepository } from '../../application/core/ports/projectCatalogRepository';
@@ -22,7 +22,7 @@ export interface MappingDiagramFixture {
 export function saveDiagramFixture(store: ProjectCatalogRepository, input: MappingDiagramFixture) {
   const evidence = input.evidence ?? {};
   const scene = singleDiagramScene(input.ascii);
-  scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({
+  scene.contents = { ...scene.contents, overview: revisionFixture().create({
     id: 'overview', revision: 0, ascii: input.ascii, source: input.source,
     structureKind: input.representationKind ?? 'diagram', evidence,
     mappings: (input.mappings ?? []).map(m => ({
@@ -51,7 +51,7 @@ export function mutableFixture<T>(value: T): MutableFixture<T> {
 /** Build a current canvas fixture from an ASCII/evidence specimen. */
 export function revisionCanvasFixture(revision: import('../../domain/core/representations/projectCatalog').ProjectRepresentationRevisionRecord) {
   const scene = singleDiagramScene(revision.ascii);
-  scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({ id: 'overview', revision: 0,
+  scene.contents = { ...scene.contents, overview: revisionFixture().create({ id: 'overview', revision: 0,
     ascii: revision.ascii, structureKind: revision.representationKind, source: revision.source, evidence: revision.evidence,
     mappings: revision.mappings.map(m => ({ id: m.id, entityId: m.evidenceId, sourceRangeId: m.sourceRangeId,
       sourceRangeIndex: revision.evidence[m.evidenceId].sourceRanges.findIndex(r => r.id === m.sourceRangeId),

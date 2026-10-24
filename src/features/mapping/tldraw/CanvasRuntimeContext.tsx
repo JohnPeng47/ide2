@@ -9,7 +9,7 @@ import type { ProjectRepresentationCatalogRecord } from '../../../../domain/core
 import { flattenGrid } from '../../../../domain/core/diagrams/lineGrid';
 import type { Diagram } from '../../../../domain/core/diagrams/diagram';
 import { canvasDisplayNodes, findBox, type CanvasDisplayNode } from '../../../../domain/mapping/workspace/canvasDisplayNode';
-import { diagramProjection, resolveDiagramView, type DiagramViewState } from '../../../../domain/mapping/workspace/diagramViewState';
+import { presentationScene, diagramProjection, resolveDiagramView, type DiagramViewState } from '../../../../domain/mapping/workspace/diagramViewState';
 import type { DisplayState, FloatingPane, SelectionRegion } from '../../../../domain/mapping/workspace/displayModel';
 import type { DiagramAnchor, DiagramConnection } from '../../../../domain/core/diagrams/diagramConnection';
 import { resolveEndpoint } from '../../../../domain/mapping/workspace/connectionLayout';
@@ -104,7 +104,7 @@ export class CanvasRuntime {
     const cell = s.cell?.width ? s.cell : DEFAULT_CELL;
     if (!p || s.document !== p.document || s.canvas.diagramViews !== p.canvas.diagramViews || s.cell !== p.cell)
       this.registry = canvasDisplayNodes({ ...s.document, edges: [] }, { ...s.canvas, display: { nodes: {}, rootIds: [] } }, 0, cell);
-    const boxes = flattenGrid(resolveDiagramView(s.document.scene, s.canvas.diagramViews));
+    const boxes = flattenGrid(resolveDiagramView(presentationScene(s.document), s.canvas.diagramViews));
     const grids = new Map<string, GridModel>();
     for (const box of boxes) {
       const id = `grid:${box.box.id}`, diagram = box.contentId ? s.document.scene.contents[box.contentId] : undefined;
@@ -144,7 +144,7 @@ export class CanvasRuntime {
   }
   resolveAnchor(anchor: DiagramAnchor, diagramRoot = false): LocalEndpoint | undefined {
     const s = this.controller.getSnapshot(), cell = s.cell?.width ? s.cell : DEFAULT_CELL;
-    const resolved = resolveEndpoint(s.document.scene, s.canvas.diagramViews, anchor, cell, diagramRoot);
+    const resolved = resolveEndpoint(presentationScene(s.document), s.canvas.diagramViews, anchor, cell, diagramRoot);
     const owner = resolved && this.grids.get(resolved.identity.displayNodeId).get();
     return resolved && owner ? { ...resolved, layoutKey: owner.layoutKey, rect: { ...resolved.rect,
       x: resolved.rect.x - owner.frame.bounds.column * cell.width, y: resolved.rect.y - owner.frame.bounds.row * cell.height } } : undefined;

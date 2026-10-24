@@ -27,7 +27,7 @@ export function canvasMutationResult(documentId: string, operations: DiagramOper
         ?? diagram?.highlights?.find(item => sameHighlightTargets(item, op));
       if (!diagram || !highlight) return { ...receipt, status: 'removed' };
       return { ...receipt, highlightId: highlight.id, color: highlight.color,
-        status: activeDiagramHighlights(diagram.content, [highlight]).length ? 'active' : 'stale',
+        status: activeDiagramHighlights(diagram.content, [highlight], diagram.revisionId).length ? 'active' : 'stale',
         markdownUrl: highlightReferenceUrl({ documentId, nodeId: op.nodeId, highlightId: highlight.id }) };
     }
     return receipt;

@@ -1,6 +1,7 @@
 import { expect, it, vi } from 'vitest';
 import { DiagramBatchService } from './diagramBatchService';
-import { RevisionedDiagramService, type DiagramGenerationRequest } from '../../../domain/core/diagrams/diagramService';
+import type { DiagramGenerationRequest } from '../../../domain/core/diagrams/diagramGeneration';
+import { revisionFixture } from '../../../tests/support/diagramRevisions';
 import { singleDiagramScene } from '../../../domain/core/diagrams/projectDiagramCanvas';
 import { diagramContentNodes } from '../../../domain/core/diagrams/diagramContentNodes';
 import { MappingDocumentController } from '../../../domain/mapping/workspace/mappingDocumentController';
@@ -11,13 +12,13 @@ import type { DiagramBatchApplication, DiagramTool } from '../../../domain/mappi
 
 function fixture() {
   const generate = vi.fn(async (_request: DiagramGenerationRequest) => ({ ascii: 'Generated', structureKind: 'tree' as const }));
-  const diagrams = new RevisionedDiagramService({ generate });
+  const diagrams = revisionFixture({ generate });
   const controller = new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('Original\n`-- Child')), initialCanvasState());
   controller.applyUpdate(0, [{ method: 'diagram-create', id: 'second', position: { column: 50, row: 0 }, ascii: 'Second\n`-- Child', structureKind: 'tree' }]);
   const bases = ['overview', 'second'].map(id => controller.getSnapshot().document.scene.contents[id]);
   const receiver = new DiagramRevisionReceiver(), persist = vi.fn(async () => {});
   const batch = vi.fn(async (_session: string, input: DiagramBatchApplication) => receiver.batch('doc', structuredClone(input), controller, persist));
-  const service = new DiagramBatchService(diagrams, {
+  const service = new DiagramBatchService((diagrams).generator, {
     snapshot: async (_id, ids) => structuredClone({ ...controller.getSnapshot(), name: 'Test', revisions: controller.exportRevisions(ids ?? [], true) }),
     apply: async () => { throw Error('Unexpected individual apply'); }, batch
   });
@@ -79,10 +80,10 @@ it('stores variants as one transaction without changing current diagrams', async
   const result = await f.service.wait(f.service.start(input, 'edit-diagram', true).runId);
   expect(result.error).toBeUndefined(); expect(result.status).toBe('completed'); expect(result.results.every(item => item.variants?.length === 1)).toBe(true);
   const snapshot = f.controller.getSnapshot();
-  expect(snapshot.document.scene).toEqual(before); expect(Object.keys(snapshot.document.variants!)).toHaveLength(2);
+  expect(snapshot.document.scene).toEqual(before); expect(Object.keys(snapshot.document.revisionReviews!)).toHaveLength(2);
   const restored = new MappingDocumentController(structuredClone(snapshot.document), snapshot.canvas, 0, undefined, undefined, JSON.parse(JSON.stringify(f.controller.exportHistory())));
-  restored.undo(); expect(Object.keys(restored.getSnapshot().document.variants ?? {})).toHaveLength(0);
-  restored.undo(true); expect(restored.getSnapshot().document.variants).toEqual(snapshot.document.variants);
+  restored.undo(); expect(Object.keys(restored.getSnapshot().document.revisionReviews ?? {})).toHaveLength(0);
+  restored.undo(true); expect(restored.getSnapshot().document.revisionReviews).toEqual(snapshot.document.revisionReviews);
 });
 it('rejects overlapping diagram targets and stale snapshots', async () => {
   const f = fixture(), item = { ...f.targets[0], ...modes, edit };

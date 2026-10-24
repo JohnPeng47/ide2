@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { performance } from 'node:perf_hooks';
 import { buildDiagramContent } from '../../domain/core/diagrams/diagramContent.ts';
-import { diffDiagramContent } from '../../domain/mapping/changes/diagramContentDiff.ts';
+import { diffDiagramContent } from '../../domain/core/diagrams/diagramContentDiff.ts';
 
 const wide = labels => ['Root', ...labels.map((label, i) => `${i === labels.length - 1 ? '`' : '|'}-- ${label}`)].join('\n');
 const chain = suffix => ['Root', ...Array.from({ length: 85 }, (_, i) => `${'    '.repeat(i)}\x60-- Level ${i} ${suffix}`), `${'    '.repeat(85)}\x60-- Leaf`].join('\n');

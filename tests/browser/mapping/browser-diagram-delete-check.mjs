@@ -10,7 +10,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { seedMappingFixture } from '../support/browser-mapping-fixture.mjs';
 import { singleDiagramScene } from '../../../domain/core/diagrams/projectDiagramCanvas.ts';
-import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService.ts';
+import { revisionFixture } from '../../support/diagramRevisions.ts';
 import { DiagramStore } from '../../../infrastructure/core/persistence/store.ts';
 const { evaluate, waitFor, waitForSelector, withHeadlessBrowser, captureScreenshot } = await import(pathToFileURL(path.join(homedir(), '.codex/skills/front-end/browser-test.mjs')).href);
 const root = await mkdtemp(path.join(tmpdir(), 'diagram-delete-browser-'));
@@ -21,7 +21,7 @@ try {
   const catalogPath = path.join(root, '.diagrams/representations/catalog.json');
   const catalog = JSON.parse(await readFile(catalogPath, 'utf8'));
   const scene = singleDiagramScene(ascii);
-  scene.contents = Object.fromEntries(['a','b','c'].map((id, i) => [id, new RevisionedDiagramService().create({ id, revision: 0,
+  scene.contents = Object.fromEntries(['a','b','c'].map((id, i) => [id, revisionFixture().create({ id, revision: 0,
     ascii: `${['Alpha','Beta','Gamma'][i]}\n|-- ${id.toUpperCase()} branch\n\x60-- ${id.toUpperCase()} tail`, structureKind: 'tree' }).diagram]));
   scene.root.children = ['a','b','c'].map((id, i) => ({ id, kind: 'diagram', contentId: id, collapsed: false, position: { column: i * 25, row: 5 } }));
   const edges = [['a','b'],['b','a'],['a','a'],['b','c']].map(([a,b], i) => ({ id: `edge${i}`,

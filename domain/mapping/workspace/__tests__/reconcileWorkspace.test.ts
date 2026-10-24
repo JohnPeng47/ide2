@@ -1,4 +1,4 @@
-import { RevisionedDiagramService } from '../../../core/diagrams/diagramService';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { expect, it } from 'vitest';
 import { reconcileWorkspaceDocument } from '../reconcileWorkspace';
 import { mappingDocumentFromScene } from '../mappingDocument';
@@ -13,7 +13,7 @@ function fixture() {
     savedScene: JSON.stringify(document.scene), savedEdges: '[]', document, canvas: initialCanvasState(),
     history: new CanvasHistory(document, initialCanvasState()).export(), viewport: { offset: { x: 10, y: 20 }, scale: 1 } };
   const latest = structuredClone(document);
-  latest.scene.contents = { ...latest.scene.contents, overview: new RevisionedDiagramService().revise(latest.scene.contents.overview.revisionId, { kind: 'source-mappings', expectedContentHash: latest.scene.contents.overview.content.asciiSha256,
+  latest.scene.contents = { ...latest.scene.contents, overview: revisionFixture().revise(latest.scene.contents.overview.revisionId, { kind: 'source-mappings', expectedContentHash: latest.scene.contents.overview.content.asciiSha256,
     mappings: [{id:'m',entityId:'e',sourceRangeIndex:0,line:1,startColumn:1,endColumn:4}],
     evidence: {e:{id:'e',handle:'Root',label:'Root',category:'operation',summary:'Root',sourceRanges:[{id:'r',path:'root.ts',startLine:1,endLine:1,originalLines:['function Root() {}']}]}} }).diagram };
   const catalog = { representations: {rep:{id:'rep',status:'settled',name:'Latest',currentRevisionId:'new'}}, revisions: {

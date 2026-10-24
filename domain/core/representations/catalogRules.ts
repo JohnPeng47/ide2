@@ -1,4 +1,5 @@
-import { RevisionedDiagramService } from '../diagrams/diagramService';
+import { createStoredDiagram } from '../diagrams/diagramRevisionStore';
+
 import { DefaultCanvasHistoryService } from '../diagrams/canvasHistoryService';
 import { DiagramRevisionEditor } from '../diagrams/diagramRevisionEditor';
 import { documentFromHistory, validateCanvasHistory, stateKey } from '../diagrams/canvasHistory';
@@ -102,9 +103,9 @@ export function saveProjectedTree(catalog: ProjectRepresentationCatalogRecord, p
     });
     return { sourceEvidenceIds: [...new Set(link.sourceEvidenceIds)], targetNodeIds: [...new Set(targetNodeIds)] };
   });
-  const diagrams = new RevisionedDiagramService(), histories = new DefaultCanvasHistoryService();
+  const histories = new DefaultCanvasHistoryService();
   const scene = singleDiagramScene(revision.ascii);
-  scene.contents = { ...scene.contents, overview: diagrams.create({ id: 'overview', revision: 0,
+  scene.contents = { ...scene.contents, overview: createStoredDiagram({ id: 'overview', revision: 0,
     ascii: revision.ascii, structureKind: 'tree', source: diagramSource, evidence: revision.evidence,
     mappings: revision.mappings.map(mapping => ({ id: mapping.id, entityId: mapping.evidenceId,
       sourceRangeId: mapping.sourceRangeId, sourceRangeIndex: revision.evidence[mapping.evidenceId].sourceRanges.findIndex(range => range.id === mapping.sourceRangeId),

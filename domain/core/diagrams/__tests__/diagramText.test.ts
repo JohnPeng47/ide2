@@ -1,10 +1,10 @@
 import { mutableFixture } from '../../../../tests/support/mappingDiagram';
 import { describe, expect, it } from 'vitest';
 import { validateDiagram } from '../diagram';
-import { RevisionedDiagramService } from '../diagramService';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { buildDiagramContent } from '../diagramContent';
 import { parseAsciiTree, hiddenAsciiTreeLines } from '../asciiTree';
-import { diagramTextRanges, textRow, mappingContentNodeId } from '../diagramText';
+import { diagramTextRanges, textRow, mappingContentNodeId } from '../../presentation/diagramText';
 import { diagramSceneText } from '../../../mapping/workspace/diagramSceneText';
 import { singleDiagramScene } from '../projectDiagramCanvas';
 import { composeScene } from '../lineGrid';
@@ -25,7 +25,7 @@ describe('node-aware text and compatibility', () => {
   });
 
   it('keeps old saved structures valid without silently reparsing or migrating them', () => {
-    const diagram = mutableFixture(new RevisionedDiagramService().create({ id: 'old', revision: 0, ascii, structureKind: 'tree' }).diagram);
+    const diagram = mutableFixture(revisionFixture().create({ id: 'old', revision: 0, ascii, structureKind: 'tree' }).diagram);
     diagram.content = mutableFixture(buildDiagramContent(ascii, 'old:0', 'tree', 'ascii-tree-1'));
     const before = JSON.stringify(diagram);
     expect(() => validateDiagram(diagram)).not.toThrow();
@@ -61,7 +61,7 @@ describe('node-aware text and compatibility', () => {
 
   it('preserves scene painting, repeated instance identity and source coordinates after folding', () => {
     const scene = singleDiagramScene(ascii);
-    scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii, structureKind: 'tree' }).diagram };
+    scene.contents = { ...scene.contents, overview: revisionFixture().create({ id: 'overview', revision: 0, ascii, structureKind: 'tree' }).diagram };
     if (scene.root.kind !== 'container') throw new Error();
     scene.root.children = [...scene.root.children, { ...scene.root.children[0], id: 'second', position: { column: 30, row: 2 } }];
     const content = scene.contents.overview.content;

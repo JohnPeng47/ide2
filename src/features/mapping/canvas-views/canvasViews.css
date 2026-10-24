@@ -8,3 +8,6 @@
 .canvas-view-controls button:disabled { opacity: .5; cursor: default; }
 .canvas-view-controls [role="alert"] { margin-top: 8px; overflow-wrap: anywhere; }
 .canvas-view-controls [aria-pressed="true"] { border-color: var(--accent-primary); }
+.canvas-view-controls .canvas-view-diff-toggle { flex-direction: row; align-items: center; gap: 8px; }
+.canvas-view-controls .canvas-view-diff-toggle input { width: auto; }
+.canvas-view-diff-preview .change-preview-box.is-removed-diagram { border: 2px dashed var(--diff-deleted-text); }

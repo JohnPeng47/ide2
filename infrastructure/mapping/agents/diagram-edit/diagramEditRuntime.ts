@@ -4,7 +4,7 @@ import { captureDiagramAgentContext } from './diagramAgentContext';
 import { AgentContext } from '../../../../domain/core/agents/agentContext';
 import { Type } from '@earendil-works/pi-ai';
 import { DefaultResourceLoader, defineTool, getAgentDir, SettingsManager } from '@earendil-works/pi-coding-agent';
-import type { DiagramGenerationRequest, DiagramGenerator, GenerationOptions } from '../../../../domain/core/diagrams/diagramService';
+import type { DiagramGenerationRequest, DiagramGenerator, GenerationOptions } from '../../../../domain/core/diagrams/diagramGeneration';
 import { validateGeneratedDiagramEdit, type GeneratedDiagramEdit } from '../../../../domain/core/diagrams/generatedDiagramEdit';
 import { diagramOutputFormat, defaultTemplateSelection, renderPromptTemplate, resolvePromptTemplate } from '../../../../domain/mapping/agent/promptTemplates';
 import { PiAgentRuntime, progressFor } from '../../../core/agents/agentRuntime';

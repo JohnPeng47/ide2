@@ -6,7 +6,7 @@ import path from 'node:path';
 import { afterEach, expect, it, vi } from 'vitest';
 import { CanvasCatalogStore } from '../canvasCatalogStore';
 import { DiagramRevisionStore } from '../diagramRevisionStore';
-import { RevisionedDiagramService } from '../../../../domain/core/diagrams/diagramService';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { sourceBindingFromLocation } from '../../../../domain/core/diagrams/diagram';
 import { singleDiagramScene } from '../../../../domain/core/diagrams/projectDiagramCanvas';
 import { documentFromHistory } from '../../../../domain/core/diagrams/canvasHistory';
@@ -23,7 +23,7 @@ async function setup() {
   const root = await mkdtemp(path.join(tmpdir(), 'diagram-records-')); roots.push(root);
   const records = new DiagramRevisionStore(root), service = new DiagramPersistence(records);
   const canvas = initialCanvasState();
-  const controller = new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('Original')), canvas, 0, undefined, undefined, undefined, new RevisionedDiagramService());
+  const controller = new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('Original')), canvas, 0, undefined, undefined, undefined);
   controller.applyUpdate(0, [{ method: 'replace', nodeId: 'grid:overview', ascii: 'Changed' }]);
   return { root, records, service, controller, canvas };
 }

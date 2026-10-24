@@ -1,6 +1,9 @@
+import { getDiagramRevision } from '../../../domain/core/diagrams/diagramRevisionStore';
+import { presentationHighlights } from '../../../domain/core/presentation/diagramPresentation';
+import { createStoredDiagram, reviseStoredDiagram } from '../../../domain/core/diagrams/diagramRevisionStore';
 import { DiagramBatchService } from './diagramBatchService';
 import { isDiagramTool, directBatchSchemas, type DiagramTool, type DiagramBatchApplication } from '../../../domain/mapping/agent/diagramBatch';
-import { reviewVariant, variantRevisionIds } from '../../../domain/core/diagrams/diagramVariant';
+import { reviewRevision, reviewRevisionIds } from '../../../domain/core/diagrams/diagramRevisionReview';
 import { canvasMutationResult, type CanvasMutationResult } from '../../../domain/mapping/agent/mutationReceipt';
 import { ChatCanvasBindings } from './chatBindings';
 import { CanvasReadAliases } from './readAliases';
@@ -20,7 +23,7 @@ import { documentFromRevision } from '../../../domain/core/diagrams/projectDiagr
 import type { ChangeSessionService } from '../changes/changeSessionService';
 import { rebaseDiagramJumps } from '../../../domain/core/diagrams/diagramJump';
 import { diagramSource, type Diagram, type DiagramSourceBinding } from '../../../domain/core/diagrams/diagram';
-import { RevisionedDiagramService, type DiagramService } from '../../../domain/core/diagrams/diagramService';
+import type { DiagramGenerator } from '../../../domain/core/diagrams/diagramGeneration';
 import { createHash, randomUUID } from 'node:crypto';
 import type { CanvasSessionPort, AgentExecRuntime } from './ports';
 import { agentToolSchemas, canvasApiSpec, canvasMethods, type AgentToolName, type LiveDocumentSnapshot } from '../../../domain/mapping/agent/contracts';
@@ -64,7 +67,7 @@ export class AgentDiagrammingSessionService {
   private diagramContextMutations = new Map<string, { signature: string; canvasId: string; documentId: string; payload: Record<string, unknown> }>();
   constructor(readonly bridge: CanvasSessionPort, private readonly diagrams: MappingDiagramService,
     private readonly store: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs' | 'repositories'>, private readonly runtime: AgentExecRuntime, readonly changes?: ChangeSessionService,
-    editDiagrams?: DiagramService, private readonly agentContexts?: AgentContextService, readonly projection = new CanvasApiProjection(),
+    editDiagrams?: DiagramGenerator, private readonly agentContexts?: AgentContextService, readonly projection = new CanvasApiProjection(),
     private readonly diagramContextStore?: DiagramAgentContextStore) {
     if (editDiagrams) {
       const canvas = {
@@ -440,11 +443,11 @@ export class AgentDiagrammingSessionService {
                 if (snapshot.version !== state.version) throw Error('VERSION_CONFLICT: canvas changed during execution');
                 const node = canvasDisplayNodes(snapshot.document, snapshot.canvas, snapshot.version).find(node => node.id === parsed.nodeId);
                 if (node?.layout !== 'grid' || !node.diagram) throw Error('Expected diagram');
-                const variants = Object.values(snapshot.document.variants ?? {}).filter(variant => variant.contentId === node.diagram!.id);
-                const retained = await this.snapshot(sessionId, input.changeSessionId, { revisionIds: variants.flatMap(variantRevisionIds) });
+                const variants = Object.values(snapshot.document.revisionReviews ?? {}).filter(variant => variant.contentId === node.diagram!.id);
+                const retained = await this.snapshot(sessionId, input.changeSessionId, { revisionIds: variants.flatMap(reviewRevisionIds) });
                 if (retained.version !== state.version) throw Error('VERSION_CONFLICT: canvas changed during execution');
                 const revisions = retained.history?.diagramRevisions ?? Object.fromEntries((retained.revisions ?? []).map(revision => [revision.id, revision]));
-                return { version: state.version, variants: variants.map(variant => ({ variant, ...reviewVariant(variant, id => revisions[id]) })) };
+                return { version: state.version, variants: variants.map(variant => ({ variant, ...reviewRevision(variant, id => revisions[id]) })) };
               };
               else if (method === 'nodes.list') execute = async () => ({ version: state.version, nodes: this.projection.nodes(state.nodes!) });
               else if (method === 'nodes.get') execute = async () => {
@@ -460,6 +463,11 @@ export class AgentDiagrammingSessionService {
                 if (method === 'nodes.highlight') {
                   parsed.highlightId = `highlight-${randomUUID()}`;
                   if (parsed.contentNodeIds) parsed.contentNodeIds = parsed.contentNodeIds.map((id: string) => this.projection.resolveAnchorId(id));
+                }
+                if (method === 'nodes.setPresentation' && parsed.settings.highlights) {
+                  parsed.settings.highlights = parsed.settings.highlights.map((item: any) => ({ ...item,
+                    ...(item.contentNodeId ? { contentNodeId: this.projection.resolveAnchorId(item.contentNodeId) } : {}),
+                    ...(item.contentNodeIds ? { contentNodeIds: item.contentNodeIds.map((id: string) => this.projection.resolveAnchorId(id)) } : {}) }));
                 }
                 if (method === 'nodes.setSourceMappings') parsed.expectedContentHash = await this.mappingHash(sessionId, input.changeSessionId, parsed.nodeId, state.version);
                 if (method === 'nodes.setJumps') {
@@ -479,6 +487,7 @@ export class AgentDiagrammingSessionService {
                   ? method === 'edges.remove' ? { method: 'edge-remove', edgeId: parsed.edgeId }
                     : { method: method === 'edges.create' ? 'edge-create' : 'edge-update',
                         edge: { ...parsed, id: method === 'edges.create' ? `connection-${randomUUID()}` : parsed.id } }
+                  : method === 'nodes.selectRevision' ? { ...parsed, method: 'revision-select' }
                   : method === 'nodes.reviewVariant' ? { ...parsed, method: 'variant-review' }
                   : method === 'nodes.draw' ? { ...parsed, method: 'diagram-create', id: `diagram-${randomUUID()}` }
                     : { ...parsed, method: method.slice(6) }) as DiagramOperation;
@@ -659,13 +668,16 @@ export class AgentDiagrammingSessionService {
       if (box.kind !== 'diagram') throw new Error('Expected diagram');
       const content = scene.contents[box.contentId];
       const isolated = singleDiagramScene(content.content.ascii);
-      scene = { ...isolated, contents: { ...isolated.contents, overview: new RevisionedDiagramService().create({id:'overview', revision:content.revision, ascii:content.content.ascii, structureKind:content.content.structure.kind, source:content.sourceContext.binding, evidence:content.sourceContext.evidence, mappings:content.sourceContext.mappings}).diagram } };
-      if (content.jumps) scene = { ...scene, contents: { ...scene.contents, overview: new RevisionedDiagramService().revise(
-        scene.contents.overview.revisionId, { kind: 'jumps', jumps: rebaseDiagramJumps(content.content, scene.contents.overview.content, content.jumps) }).diagram } };
-      if (content.highlights) scene = { ...scene, contents: { ...scene.contents, overview: new RevisionedDiagramService().revise(
-        scene.contents.overview.revisionId, { kind: 'highlights', highlights: rebaseDiagramHighlights(content.highlights, correspondingNodes(content, scene.contents.overview)) }).diagram } };
+      scene = { ...isolated, contents: { ...isolated.contents, overview: createStoredDiagram({id:'overview', revision:content.revision, ascii:content.content.ascii, structureKind:content.content.structure.kind, source:content.sourceContext.binding, evidence:content.sourceContext.evidence, mappings:content.sourceContext.mappings}).diagram } };
+      if (content.jumps) scene = { ...scene, contents: { ...scene.contents, overview: reviseStoredDiagram(scene.contents.overview.revisionId, { kind: 'jumps', jumps: rebaseDiagramJumps(content.content, scene.contents.overview.content, content.jumps) }).diagram } };
+      const settings = snapshot.document.diagramPresentations?.[box.contentId];
+      const originalHighlights = presentationHighlights(content, settings, getDiagramRevision(content.revisionId).nodeRefs);
+      const output = scene.contents.overview, refs = getDiagramRevision(output.revisionId).nodeRefs;
+      const highlights = rebaseDiagramHighlights(originalHighlights, correspondingNodes(content, output)).map(item => ({ ...item,
+        nodeRefs: (item.contentNodeIds ?? (item.contentNodeId ? [item.contentNodeId] : [])).map(id => refs[id] ?? `stale:${id}`),
+        ...(item.textRange && item.revisionId === content.revisionId ? { revisionId: output.revisionId } : {}) }));
       const histories = new DefaultCanvasHistoryService();
-      history = histories.exportContext(histories.openContext({ scene, edges: [], sections: {} }, snapshot.canvas));
+      history = histories.exportContext(histories.openContext({ scene, edges: [], sections: {}, ...(settings || highlights.length ? { diagramPresentations: { overview: { ...settings, highlights } } } : {}) }, snapshot.canvas));
     }
     const representationId = input.representationId ?? (!input.nodeId ? snapshot.representationId : undefined);
     if (!history) throw new Error('Canvas history is required to save');

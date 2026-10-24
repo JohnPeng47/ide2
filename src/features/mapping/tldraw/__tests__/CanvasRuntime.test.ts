@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { atom, computed, Mat, type Editor } from 'tldraw';
 import { CanvasRuntime } from '../CanvasRuntimeContext';
 import { nativeEndpointRect } from '../nativeEdgeGeometry';
-import { RevisionedDiagramService } from '../../../../../domain/core/diagrams/diagramService';
+import { revisionFixture } from '../../../../../tests/support/diagramRevisions';
 import { CanvasSession } from '../../workspace/canvasSession';
 import { singleDiagramScene } from '../../../../../domain/core/diagrams/projectDiagramCanvas';
 import { mappingDocumentFromScene } from '../../../../../domain/mapping/workspace/mappingDocument';
@@ -13,7 +13,7 @@ import { mappingShapeId, projectMappingShapes } from '../shapeProjection';
 
 function setup() {
   const scene = singleDiagramScene('Root\n|-- Branch\n|   `-- Leaf\n`-- Tail');
-  scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii: scene.contents.overview.content.ascii, structureKind: 'tree' }).diagram };
+  scene.contents = { ...scene.contents, overview: revisionFixture().create({ id: 'overview', revision: 0, ascii: scene.contents.overview.content.ascii, structureKind: 'tree' }).diagram };
   const document = mappingDocumentFromScene(scene);
   const session = new CanvasSession({ name: 'Test', savedName: 'Test', savedScene: JSON.stringify(document.scene), document, canvas: initialCanvasState() });
   const controller = session.controller;

@@ -8,7 +8,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { seedMappingFixture } from '../support/browser-mapping-fixture.mjs';
 import { singleDiagramScene } from '../../../domain/core/diagrams/projectDiagramCanvas.ts';
-import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService.ts';
+import { revisionFixture } from '../../support/diagramRevisions.ts';
 import { DiagramStore } from '../../../infrastructure/core/persistence/store.ts';
 import { DiagramChangeSessionStore } from '../../../infrastructure/mapping/changes/diagramChangeSessionStore.ts';
 import { ChangeSessionService } from '../../../application/mapping/changes/changeSessionService.ts';
@@ -21,7 +21,7 @@ try {
   const catalogPath = path.join(root, '.diagrams/representations/catalog.json');
   const catalog = JSON.parse(await readFile(catalogPath, 'utf8'));
   const scene = singleDiagramScene(ascii);
-  scene.contents.overview = new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii, structureKind: 'tree' }).diagram;
+  scene.contents.overview = revisionFixture().create({ id: 'overview', revision: 0, ascii, structureKind: 'tree' }).diagram;
   catalog.revisions['revision-overview'].content = { kind: 'canvas-history', history: canvasSaveFixture({ name: 'Fixture', scene, edges: [] }).history };
   const remoteRevision = { ...catalog.revisions['revision-overview'], id: 'revision-remote', representationId: 'representation-remote',
     ascii: 'Remote\n`-- needle remote', content: { kind: 'canvas-history', history: canvasSaveFixture({ name: 'Fixture', scene: singleDiagramScene('Remote\n`-- needle remote'), edges: [] }).history } };

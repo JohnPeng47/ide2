@@ -7,7 +7,7 @@ import { initialCanvasState } from '../../../mapping/workspace/mappingWorkspace'
 import { deserializeWorkspace } from '../../../mapping/workspace/mappingWorkspaceCodec';
 import { singleDiagramScene } from '../projectDiagramCanvas';
 import { DiagramPersistence } from '../diagramPersistence';
-import { RevisionedDiagramService } from '../diagramService';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 
 afterEach(() => vi.restoreAllMocks());
 function fixture() {
@@ -35,7 +35,7 @@ it('preserves complete history while deferring validation of older checkpoints u
 });
 it('keeps undo/redo and editing functional after an on-demand restore', () => {
   const { controller, history } = fixture();
-  const reopened = new MappingDocumentController(controller.getSnapshot().document, controller.getSnapshot().canvas, 0, undefined, undefined, history, undefined, new DefaultCanvasHistoryService('current'));
+  const reopened = new MappingDocumentController(controller.getSnapshot().document, controller.getSnapshot().canvas, 0, undefined, undefined, history, new DefaultCanvasHistoryService('current'));
   for (let i = 0; i < 9; i++) reopened.undo();
   expect(reopened.resolveDiagram('overview').ascii).toBe('Before');
   reopened.undo(true);
@@ -55,7 +55,7 @@ it('still fully validates imported workspaces and rejects a bad current checkpoi
   expect(() => new CanvasHistory(documentFromHistory(history), initialCanvasState(), history, 'current')).toThrow('Invalid canvas box kind');
 });
 
-it('validates deferred diagram revisions when accessed through DiagramService', async () => {
+it('validates deferred diagram revisions when accessed through DiagramGenerator', async () => {
   const { history } = fixture();
   const original = Object.values(history.diagramRevisions)[0];
   const id = `diagram-revision-${crypto.randomUUID()}`;
@@ -64,7 +64,7 @@ it('validates deferred diagram revisions when accessed through DiagramService', 
   history.diagramRevisions[id] = invalid;
   const persistence = new DiagramPersistence({ get: async () => { throw Error('Unexpected record read'); }, put: async () => { throw Error('Unexpected write'); } });
   await persistence.restore(history, 'current');
-  const service = new RevisionedDiagramService();
+  const service = revisionFixture();
   expect(service.listRevisions(invalid.diagramId).some(r => r.id === id)).toBe(true);
   expect(() => service.getRevision(id)).toThrow('Invalid diagram content');
   expect(() => service.getRevision(id)).toThrow('Invalid diagram content');

@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { singleDiagramScene } from '../../../../domain/core/diagrams/projectDiagramCanvas';
-import { RevisionedDiagramService } from '../../../../domain/core/diagrams/diagramService';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { diagramContentNodes } from '../../../../domain/core/diagrams/diagramContentNodes';
 import { MappingDocumentController } from '../../../../domain/mapping/workspace/mappingDocumentController';
 import { initialCanvasState } from '../../../../domain/mapping/workspace/mappingWorkspace';
@@ -10,7 +10,7 @@ import { captureChatReferences } from './ChatReferences';
 it('captures whole diagrams and exact node membership, omitting holes and stale regions', () => {
   const ascii = 'Root\n|-- Service\n|   `-- Worker\n`-- Other  ';
   const scene = singleDiagramScene(ascii);
-  const diagram = new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii, structureKind: 'tree' }).diagram;
+  const diagram = revisionFixture().create({ id: 'overview', revision: 0, ascii, structureKind: 'tree' }).diagram;
   scene.contents = { ...scene.contents, overview: diagram };
   const controller = new MappingDocumentController({ scene, edges: [], sections: {} }, initialCanvasState());
   const target = { workspaceInstanceId: 'workspace', documentId: 'doc' };

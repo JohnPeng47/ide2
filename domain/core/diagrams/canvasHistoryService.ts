@@ -15,6 +15,7 @@ export interface CanvasContextState {
 
 /** Canvas controllers coordinate edits; this boundary owns history and its storage. */
 export interface CanvasHistoryService {
+  canvasViewComparison(context: CanvasEditingContext, viewId: string): import('./canvasView').CanvasViewComparison;
   canvasViews(context: CanvasEditingContext): import('./canvasView').CanvasViews;
   canvasView(context: CanvasEditingContext, input: import('./canvasView').CanvasViewCommand, view?: unknown): import('./canvasView').CanvasViews;
   navigation?(context: CanvasEditingContext): import('./canvasHistory').CanvasHistoryNavigation;
@@ -37,6 +38,7 @@ export interface CanvasHistoryService {
 }
 
 export class DefaultCanvasHistoryService implements CanvasHistoryService {
+  canvasViewComparison(context: CanvasEditingContext, viewId: string) { return this.history(context).canvasViewComparison(viewId); }
   canvasViews(context: CanvasEditingContext) { return this.history(context).canvasViews(); }
   canvasView(context: CanvasEditingContext, input: import('./canvasView').CanvasViewCommand, view?: unknown) { return this.history(context).canvasView(input, view); }
   constructor(private readonly validation: import('./canvasHistory').HistoryValidation = 'all') {}

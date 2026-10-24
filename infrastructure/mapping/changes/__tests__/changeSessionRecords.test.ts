@@ -117,11 +117,11 @@ it('migrates embedded legacy data without altering its original file or losing h
 
 it('publishes DiffTree data and summary together, preserving the prior review after a failed write', async () => {
   const { defaultDiffTree } = await import('../../../../domain/mapping/changes/diffTree');
-  const { RevisionedDiagramService } = await import('../../../../domain/core/diagrams/diagramService');
+  const { revisionFixture } = await import('../../../../tests/support/diagramRevisions');
   const f = await fixture(), before = await f.manifest();
   const session = await f.store.read('project', 'proposal');
   session.repositoryId = 'repo-test'; session.commits = []; session.head = 'a'.repeat(40);
-  session.diffTree = defaultDiffTree(new RevisionedDiagramService(), []); session.version++;
+  session.diffTree = defaultDiffTree([]); session.version++;
   vi.mocked(rename).mockRejectedValueOnce(Error('disk failure'));
   await expect(f.store.write(session, { documents: [], receipts: [], diffTree: true })).rejects.toThrow('disk failure');
   expect(await f.manifest()).toEqual(before);

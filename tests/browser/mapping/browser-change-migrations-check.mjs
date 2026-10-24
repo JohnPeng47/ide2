@@ -11,7 +11,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { seedMappingFixture } from '../support/browser-mapping-fixture.mjs';
 import { canvasSaveFixture } from '../../support/mappingDiagram.ts';
-import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService.ts';
+import { revisionFixture } from '../../support/diagramRevisions.ts';
 import { singleDiagramScene } from '../../../domain/core/diagrams/projectDiagramCanvas.ts';
 const { evaluate, waitFor, waitForSelector, withHeadlessBrowser, captureScreenshot } = await import(pathToFileURL(path.join(homedir(), '.codex/skills/front-end/browser-test.mjs')).href);
 const root = await mkdtemp(path.join(tmpdir(), 'change-migrations-browser-'));
@@ -22,7 +22,7 @@ try {
   const catalog = JSON.parse(await readFile(catalogPath, 'utf8'));
   for (const [id, name, ascii] of [['overview', 'Controller', 'Controller\n|-- undo / redo\n`-- checkpoints'], ['editor', 'Editor', 'Editor\n`-- HistoryManager\n    `-- undo / redo']]) {
     const scene = singleDiagramScene(ascii);
-    scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({ id: 'overview', revision: 0, ascii, structureKind: 'tree' }).diagram };
+    scene.contents = { ...scene.contents, overview: revisionFixture().create({ id: 'overview', revision: 0, ascii, structureKind: 'tree' }).diagram };
     catalog.representations[`representation-${id}`] = { ...catalog.representations['representation-overview'], id: `representation-${id}`, name, handle: id, currentRevisionId: `revision-${id}`, revisionIds: [`revision-${id}`] };
     catalog.revisions[`revision-${id}`] = { ...catalog.revisions['revision-overview'], id: `revision-${id}`, representationId: `representation-${id}`, ascii, asciiSha256: createHash('sha256').update(ascii).digest('hex'),
       content: { kind: 'canvas-history', history: canvasSaveFixture({ name, scene, edges: [] }).history } };

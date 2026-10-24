@@ -1,4 +1,4 @@
-import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService';
+import { revisionFixture } from '../../../tests/support/diagramRevisions';
 import { canvasSaveFixture } from '../../../tests/support/mappingDiagram';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -18,7 +18,7 @@ it.each(['Uses', { text: 'Uses', position: { x: 250.5, y: -10.25 } }])('persists
     const content = scene.contents.overview.content;
     const edge: DiagramConnection = { id: 'edge-1', source: { kind: 'content-node', displayNodeId: 'grid:overview', revisionId: content.revisionId,
       contentNodeId: connectionContentNodes(content)[0].id, side: 'right' }, target: { kind: 'box', displayNodeId: 'grid:second', side: 'left' }, appearance: { ...defaultArrowAppearance, label } };
-    scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().revise(scene.contents.overview.revisionId, { kind: 'jumps', jumps: [{ id: 'jump', source: { revisionId: content.revisionId, contentHash: content.asciiSha256,
+    scene.contents = { ...scene.contents, overview: revisionFixture().revise(scene.contents.overview.revisionId, { kind: 'jumps', jumps: [{ id: 'jump', source: { revisionId: content.revisionId, contentHash: content.asciiSha256,
       line: 1, startColumn: 1, endColumn: 7 }, target: { representationId: 'another-saved-canvas', displayNodeId: 'grid:overview' } }] }).diagram };
     const created = await store.saveMappingDiagram('project-one', canvasSaveFixture({ name: 'Connections', scene, edges: [edge] }));
     const reopened = await new ProjectCatalogStore(root).loadRepresentationCatalog('project-one');

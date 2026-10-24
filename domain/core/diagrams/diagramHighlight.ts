@@ -11,8 +11,14 @@ export const highlightTargetsSchema = z.object({
     .refine(ids => new Set(ids).size === ids.length, 'Duplicate highlight target').optional()
 }).refine(target => !(target.contentNodeId && target.contentNodeIds), 'Use contentNodeId or contentNodeIds, not both');
 export const diagramHighlightSchema = highlightTargetsSchema.safeExtend({
-  id: z.string().min(1).max(200), color: highlightColorSchema
-}).strict();
+  id: z.string().min(1).max(200), color: highlightColorSchema,
+  nodeRefs: z.array(z.string().min(1)).max(2000).optional(),
+  revisionId: z.string().optional(),
+  textRange: z.object({ startLine: z.number().int().positive(), endLine: z.number().int().positive(), startColumn: z.number().int().positive(), endColumn: z.number().int().positive() }).optional()
+}).strict().refine(item => !item.textRange || (!!item.revisionId && !highlightNodeIds(item).length
+  && item.textRange.endLine >= item.textRange.startLine
+  && (item.textRange.startLine !== item.textRange.endLine || item.textRange.endColumn >= item.textRange.startColumn)),
+  'Text highlights require a revision and an ordered text range, without node targets');
 export function highlightNodeIds(target: { contentNodeId?: string; contentNodeIds?: readonly string[] }): readonly string[] {
   return target.contentNodeIds ?? (target.contentNodeId ? [target.contentNodeId] : []);
 }
@@ -22,9 +28,9 @@ export function sameHighlightTargets(a: Parameters<typeof highlightNodeIds>[0], 
 }
 export type DiagramHighlight = DeepReadonly<z.infer<typeof diagramHighlightSchema>>;
 export function highlightColor(color: string) { return highlightColors[color as keyof typeof highlightColors] ?? color; }
-export function activeDiagramHighlights(content: DiagramContent, highlights: readonly DiagramHighlight[] = []) {
+export function activeDiagramHighlights(content: DiagramContent, highlights: readonly DiagramHighlight[] = [], revisionId = content.revisionId) {
   const ids = new Set(diagramContentNodes(content).map(node => node.id));
-  return highlights.filter(item => highlightNodeIds(item).every(id => ids.has(id)));
+  return highlights.filter(item => (!item.textRange || item.revisionId === revisionId) && highlightNodeIds(item).every(id => ids.has(id)));
 }
 export function validateDiagramHighlights(input: unknown) {
   const highlights = z.array(diagramHighlightSchema).max(2000).parse(input ?? []);

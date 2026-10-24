@@ -5,12 +5,12 @@ import path from 'node:path';
 import { IdentityMigration, prepareMigration, publishMigration, verifyMigration } from '../../../../scripts/migrations/migrate-diagram-identities';
 import { CanvasHistory, documentFromHistory, validateCanvasHistory } from '../../../../domain/core/diagrams/canvasHistory';
 import { singleDiagramScene } from '../../../../domain/core/diagrams/projectDiagramCanvas';
-import { RevisionedDiagramService } from '../../../../domain/core/diagrams/diagramService';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { initialCanvasState } from '../../../../domain/mapping/workspace/mappingWorkspace';
 import { CanvasCatalogStore } from '../canvasCatalogStore';
 
 function oldHistory() {
-  const service = new RevisionedDiagramService();
+  const service = revisionFixture();
   const document = { scene: singleDiagramScene('Before'), edges: [], sections: {} };
   const h = new CanvasHistory(document, initialCanvasState());
   const next = service.revise(document.scene.contents.overview.revisionId, { kind: 'replace', input: { ascii: 'After' } });

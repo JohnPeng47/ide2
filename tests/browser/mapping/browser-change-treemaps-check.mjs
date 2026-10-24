@@ -10,7 +10,7 @@ import { seedMappingFixture } from '../support/browser-mapping-fixture.mjs';
 import { DiagramStore } from '../../../infrastructure/core/persistence/store.ts';
 import { DiagramChangeSessionStore } from '../../../infrastructure/mapping/changes/diagramChangeSessionStore.ts';
 import { ChangeSessionService } from '../../../application/mapping/changes/changeSessionService.ts';
-import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService.ts';
+import { revisionFixture } from '../../support/diagramRevisions.ts';
 import { canvasSaveFixture } from '../../support/mappingDiagram.ts';
 import { singleDiagramScene } from '../../../domain/core/diagrams/projectDiagramCanvas.ts';
 import { diagramContentNodes } from '../../../domain/core/diagrams/diagramContentNodes.ts';
@@ -30,7 +30,7 @@ try {
   await writeFile(path.join(root, 'binary.dat'), Buffer.from([0, 1, 0, 2]));
   const head = commit('Captured changes');
   const store = new DiagramStore(root), project = await store.loadProject(), repositoryId = project.repositories[0].id;
-  const diagrams = new RevisionedDiagramService();
+  const diagrams = revisionFixture();
   for (const [name, ascii] of [['Authentication', 'Authentication\n`-- Sign-in\n    `-- Create session'], ['Storage', 'Storage\n`-- Persist']]) {
     const scene = singleDiagramScene(ascii);
     scene.root.position = { column: 7, row: 3 };

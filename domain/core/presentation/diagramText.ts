@@ -1,14 +1,20 @@
-import { asciiSha256 } from './asciiSha256';
-import type { DiagramContent } from './diagramContent';
-import { diagramContentNodes } from './diagramContentNodes';
-import { activeDiagramJumps, type DiagramJump } from './diagramJump';
+import type { DiagramLineSyntax } from '../diagrams/diagramSyntaxAnalysis';
+import type { DiagramPresentationSettings } from './diagramPresentation';
+import { activeDiagramHighlights, highlightColor, highlightNodeIds } from '../diagrams/diagramHighlight';
+import type { DiagramHighlight } from '../diagrams/diagramHighlight';
+import { asciiSha256 } from '../diagrams/asciiSha256';
+import type { DiagramContent } from '../diagrams/diagramContent';
+import { diagramContentNodes } from '../diagrams/diagramContentNodes';
+import { activeDiagramJumps, type DiagramJump } from '../diagrams/diagramJump';
 import type { DiagramElementMapping } from '../records/domain';
-import type { DiagramSourceContext } from './diagram';
-import { diagramSyntaxLine, mappedDiagramSyntax, type DiagramSyntax } from './diagramSyntax';
+import type { DiagramSourceContext } from '../diagrams/diagram';
+import { diagramSyntaxLine, mappedDiagramSyntax, type DiagramSyntax } from '../diagrams/diagramSyntax';
 
 export interface DiagramTextOwner {
   displayNodeId: string;
+  side?: 'before' | 'after';
   contentNodeId?: string;
+  nodeRef?: string;
   revisionId?: string;
   sourceLine: number;
   /** Zero-based offset from source columns to composed columns. */
@@ -19,12 +25,16 @@ export interface DiagramTextRange {
   mapping?: DiagramElementMapping; jump?: DiagramJump;
   syntax?: DiagramSyntax;
   semantic?: boolean;
+  markerRuleId?: string;
+  decoration?: { color?: string; backgroundColor?: string; textDecoration?: string };
 }
 export interface DiagramTextRun {
   jumps?: readonly DiagramJump[];
   start: number; end: number; text: string; owner?: DiagramTextOwner;
   mappings: readonly DiagramElementMapping[]; jump?: DiagramJump;
   syntax?: DiagramSyntax;
+  markerRuleId?: string;
+  decoration?: { color?: string; backgroundColor?: string; textDecoration?: string };
 }
 export interface DiagramTextRow { text: string; sourceLine?: number; runs: DiagramTextRun[] }
 
@@ -48,6 +58,8 @@ export function textRow(text: string, ranges: readonly DiagramTextRange[], sourc
     runs.push({ start, end, text: text.slice(start, end), owner,
       mappings: covering.flatMap(range => range.mapping ? [range.mapping] : []),
       ...(syntax ? { syntax } : {}),
+      ...(covering.some(range => range.markerRuleId) ? { markerRuleId: covering.find(range => range.markerRuleId)!.markerRuleId } : {}),
+      ...(covering.some(range => range.decoration) ? { decoration: Object.assign({}, ...covering.map(range => range.decoration)) } : {}),
       ...(jumps.length ? { jump: jumps[0], jumps } : {}) });
   }
   return { text, sourceLine, runs };
@@ -55,9 +67,12 @@ export function textRow(text: string, ranges: readonly DiagramTextRange[], sourc
 
 /** No loose/prose representation-index entries are promoted to structural nodes. */
 export function diagramTextRanges(input: {
-  ascii: string; content?: DiagramContent; displayNodeId: string;
+  ascii: string; content?: DiagramContent; revisionId?: string; displayNodeId: string;
   mappings?: readonly DiagramElementMapping[]; jumps?: readonly DiagramJump[];
   sourceContext?: DiagramSourceContext;
+  syntax?: ReadonlyMap<number, DiagramLineSyntax>;
+  presentation?: DiagramPresentationSettings;
+  highlights?: readonly DiagramHighlight[];
 }): Map<number, DiagramTextRange[]> {
   const lines = input.ascii.split('\n');
   const current = input.content?.ascii === input.ascii && input.content.asciiSha256 === asciiSha256(input.ascii)
@@ -79,10 +94,25 @@ export function diagramTextRanges(input: {
   if (current) {
     const source = input.sourceContext?.contentHash === current.asciiSha256 ? input.sourceContext : undefined;
     lines.forEach((line, index) => {
-      const syntax = diagramSyntaxLine(line, JSON.stringify([input.displayNodeId, current.revisionId]));
+      const analyzed = input.syntax?.get(index + 1);
+      const syntax = analyzed?.lexical ?? diagramSyntaxLine(line, JSON.stringify([input.displayNodeId, current.revisionId]));
       result.get(index + 1)!.push(...syntax);
-      if (source) result.get(index + 1)!.push(...mappedDiagramSyntax(line, index + 1, source, syntax).map(range => ({ ...range, semantic: true })));
+      if (source) result.get(index + 1)!.push(...(analyzed?.semantic ?? mappedDiagramSyntax(line, index + 1, source, syntax)).map(range => ({ ...range, semantic: true })));
+      for (const marker of analyzed?.markers ?? []) {
+        const style = input.presentation?.markerStyles?.[marker.markerRuleId];
+        result.get(index + 1)!.push({ ...marker, decoration: { color: style?.color ? highlightColor(style.color) : 'var(--diagram-marker-color, #ebcb8b)', ...(style?.underline ? { textDecoration: 'underline' } : {}) } });
+      }
     });
+  }
+  if (current) for (const highlight of activeDiagramHighlights(current, input.highlights, input.revisionId)) {
+    const targets = highlightNodeIds(highlight);
+    const selected = targets.length ? nodes.filter(node => targets.includes(node.id)) : [];
+    const spans = highlight.textRange ? lines.flatMap((line, index) => {
+      const n = index + 1, range = highlight.textRange!;
+      return n < range.startLine || n > range.endLine ? [] : [{ line: n, start: n === range.startLine ? range.startColumn - 1 : 0, end: n === range.endLine ? range.endColumn : line.length }];
+    }) : targets.length ? selected.map(node => ({ line: node.line, start: node.startColumn - 1, end: node.endColumn }))
+      : lines.map((line, index) => ({ line: index + 1, start: 0, end: line.length }));
+    for (const span of spans) result.get(span.line)?.push({ start: span.start, end: span.end, decoration: { backgroundColor: `${highlightColor(highlight.color)}55` } });
   }
   return result;
 }

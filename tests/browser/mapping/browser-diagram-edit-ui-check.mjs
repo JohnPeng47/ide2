@@ -8,7 +8,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { seedMappingFixture } from '../support/browser-mapping-fixture.mjs';
 import { canvasSaveFixture } from '../../support/mappingDiagram.ts';
-import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService.ts';
+import { revisionFixture } from '../../support/diagramRevisions.ts';
 import { singleDiagramScene, projectCanvasSnapshot } from '../../../domain/core/diagrams/projectDiagramCanvas.ts';
 import { asciiSha256 } from '../../../domain/core/diagrams/asciiSha256.ts';
 const { evaluate, waitFor, waitForSelector, withHeadlessBrowser, captureScreenshot } = await import(pathToFileURL(path.join(homedir(), '.codex/skills/front-end/browser-test.mjs')).href);
@@ -19,7 +19,7 @@ try {
   const catalogPath = path.join(root, '.diagrams/representations/catalog.json');
   const catalog = JSON.parse(await readFile(catalogPath, 'utf8'));
   const scene = singleDiagramScene('First\n`-- Existing');
-  const diagrams = new RevisionedDiagramService();
+  const diagrams = revisionFixture();
   scene.contents = { ...scene.contents,
     overview: diagrams.create({ id: 'overview', revision: 0, ascii: 'First\n`-- Existing', structureKind: 'tree' }).diagram,
     second: diagrams.create({ id: 'second', revision: 0, ascii: 'Second\n`-- Other', structureKind: 'tree' }).diagram };

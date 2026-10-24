@@ -8,7 +8,7 @@ import { pathToFileURL } from 'node:url';
 import { seedMappingFixture } from '../support/browser-mapping-fixture.mjs';
 import { canvasSaveFixture } from '../../support/mappingDiagram.ts';
 import { emptyCanvasDocument } from '../../../domain/core/diagrams/canvasTransfer.ts';
-import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService.ts';
+import { revisionFixture } from '../../support/diagramRevisions.ts';
 import { diagramContentNodes } from '../../../domain/core/diagrams/diagramContentNodes.ts';
 import { defaultArrowAppearance } from '../../../domain/core/diagrams/diagramConnection.ts';
 import { DiagramStore } from '../../../infrastructure/core/persistence/store.ts';
@@ -20,7 +20,7 @@ try {
   await seedMappingFixture(root, { ascii: 'Projection fixture', nodes: [] });
   const catalogPath = path.join(root, '.diagrams/representations/catalog.json');
   const catalog = JSON.parse(await readFile(catalogPath, 'utf8'));
-  const document = emptyCanvasDocument(), service = new RevisionedDiagramService();
+  const document = emptyCanvasDocument(), service = revisionFixture();
   const positions = [[0, 0], [55, 5], [18, 26], [80, 40]];
   const names = ['API gateway', 'Worker service', 'Database', 'Not highlighted'];
   document.scene.contents = Object.fromEntries(names.map((name, i) => {

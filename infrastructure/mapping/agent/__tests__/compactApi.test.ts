@@ -15,7 +15,7 @@ import type { CanvasSessionPort } from '../../../../application/mapping/agent/po
 import type { MappingDiagramService } from '../../../../application/mapping/diagrams/diagramService';
 import type { DiagramRepository } from '../../../../application/core/ports/diagramRepository';
 import { QuickJsAgentRuntime } from '../execRuntime';
-import { RevisionedDiagramService } from '../../../../domain/core/diagrams/diagramService';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { MappingDocumentController, type DiagramOperation } from '../../../../domain/mapping/workspace/mappingDocumentController';
 import { mappingDocumentFromScene } from '../../../../domain/mapping/workspace/mappingDocument';
 import { singleDiagramScene } from '../../../../domain/core/diagrams/projectDiagramCanvas';
@@ -26,7 +26,7 @@ import { canvasSaveFixture } from '../../../../tests/support/mappingDiagram';
 
 function fixture(store = {} as DiagramRepository) {
   const scene = singleDiagramScene('Root\n|-- Same\n|   `-- Leaf\n`-- Same');
-  scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({ id: 'overview', revision: 0,
+  scene.contents = { ...scene.contents, overview: revisionFixture().create({ id: 'overview', revision: 0,
     ascii: scene.contents.overview.content.ascii, structureKind: 'tree' }).diagram };
   const controller = new MappingDocumentController(mappingDocumentFromScene(scene), initialCanvasState());
   const descriptors = [{ canvasId: 'canvas', documents: [{ documentId: 'doc', name: 'Test' }] }];
@@ -193,12 +193,12 @@ it('persists multiple colored node highlights, updates targets in place, and res
   const restored = new MappingDocumentController(snapshot.document, snapshot.canvas, snapshot.version, undefined, undefined, f.controller.exportHistory());
   expect(restored.nodes().find(n => n.layout === 'grid' && n.id === before.id)).toMatchObject({ diagram: { highlights: expect.arrayContaining([expect.objectContaining({ id: first })]) } });
   await f.exec(session, `return nodes.removeHighlights({nodeId:'grid:overview',highlightIds:[${JSON.stringify(first)}]});`);
-  expect(f.controller.getSnapshot().document.scene.contents.overview.highlights).toHaveLength(1);
+  expect(f.controller.getSnapshot().document.diagramPresentations?.overview.highlights).toHaveLength(1);
   f.controller.undo();
-  expect(f.controller.getSnapshot().document.scene.contents.overview.highlights).toHaveLength(2);
+  expect(f.controller.getSnapshot().document.diagramPresentations?.overview.highlights).toHaveLength(2);
   f.controller.undo(true);
   await f.exec(session, "return nodes.removeHighlights({nodeId:'grid:overview'});");
-  expect(f.controller.getSnapshot().document.scene.contents.overview.highlights).toEqual([]);
+  expect(f.controller.getSnapshot().document.diagramPresentations?.overview.highlights).toEqual([]);
   await expect(highlight(0, 'expression(alert(1))')).rejects.toThrow();
   await expect(f.exec(session, "nodes.removeHighlights({nodeId:'grid:overview',highlightIds:['missing']});")).rejects.toThrow('Unknown highlight');
   const version = f.controller.getSnapshot().version;
@@ -212,7 +212,7 @@ it('rebases untouched highlights on patches, retains stale targets without rende
   const anchors = Object.values(node.content.structure.nodes) as { id: string; line: number }[];
   const first = anchors.find(n => n.line === 1)!, last = anchors.find(n => n.line === 4)!;
   await f.exec(session, `nodes.highlight({nodeId:'grid:overview',contentNodeId:${JSON.stringify(first.id)},color:'green'}); nodes.highlight({nodeId:'grid:overview',contentNodeId:${JSON.stringify(last.id)},color:'pink'});`);
-  const old = f.controller.getSnapshot().document.scene.contents.overview.highlights!;
+  const old = f.controller.getSnapshot().document.diagramPresentations?.overview.highlights!;
   await f.exec(session, "nodes.patchDiagram({nodeId:'grid:overview',start:2,end:2,patch:'|-- Updated\\n|-- Inserted'});");
   const updated = (await f.exec(session, `return ${nodeCode};`)).value;
   expect(updated.diagram.highlights).toHaveLength(2);
@@ -220,12 +220,13 @@ it('rebases untouched highlights on patches, retains stale targets without rende
   expect(updated.content.structure.nodes[lastHighlight.contentNodeId].line).toBe(5);
   await expect(f.exec(session, `nodes.highlight({nodeId:'grid:overview',contentNodeId:${JSON.stringify(first.id)}});`)).rejects.toThrow('STALE_CONTENT_NODE');
   await f.exec(session, "nodes.replace({nodeId:'grid:overview',ascii:'Entirely new'});");
-  const diagram = f.controller.getSnapshot().document.scene.contents.overview;
+  const currentNode = f.controller.nodes().find(n => n.layout === 'grid' && n.id === 'grid:overview')!;
+  const diagram = currentNode.layout === 'grid' ? currentNode.diagram! : undefined!;
   const { activeDiagramHighlights } = await import('../../../../domain/core/diagrams/diagramHighlight');
   expect(diagram.highlights).toHaveLength(2);
   expect(activeDiagramHighlights(diagram.content, diagram.highlights)).toEqual([]);
   await f.exec(session, `nodes.removeHighlights({nodeId:'grid:overview',highlightIds:${JSON.stringify(old.map(h => h.id))}});`);
-  expect(f.controller.getSnapshot().document.scene.contents.overview.highlights).toEqual([]);
+  expect(f.controller.getSnapshot().document.diagramPresentations?.overview.highlights).toEqual([]);
 });
 
 it('makes native chat highlight links from saved IDs, supports selected nodes, and retries without adding history', async () => {
@@ -245,7 +246,7 @@ it('makes native chat highlight links from saved IDs, supports selected nodes, a
   const input = { reference: 1, color: 'purple', requestId: 'chat-highlight' };
   const result = await tools.call('highlight-node', input, session) as any;
   expect(result.highlights).toHaveLength(1);
-  expect(f.controller.getSnapshot().document.scene.contents.overview.highlights![0].contentNodeIds).toEqual(ids);
+  expect(f.controller.getSnapshot().document.diagramPresentations?.overview.highlights![0].contentNodeIds).toEqual(ids);
   expect(parseHighlightReference(result.highlights[0].markdownUrl)).toEqual({ documentId: 'doc', nodeId: 'grid:overview', highlightId: result.highlights[0].id });
   const version = f.controller.getSnapshot().version;
   expect(await tools.call('highlight-node', input, session)).toEqual(result);
@@ -256,5 +257,22 @@ it('makes native chat highlight links from saved IDs, supports selected nodes, a
   expect(explicit.highlights[0]).toMatchObject({ id: result.highlights[0].id, color: 'green' });
   const removed = await tools.call('remove-highlights', { nodeId: 'grid:overview', highlightIds: [result.highlights[0].id], requestId: 'remove-one' }, session) as any;
   expect(removed.highlights).toEqual([]);
-  expect(f.controller.getSnapshot().document.scene.contents.overview.highlights).toEqual([]);
+  expect(f.controller.getSnapshot().document.diagramPresentations?.overview.highlights).toEqual([]);
+});
+
+it('updates presentation settings through compact node aliases without issuing content revisions', async () => {
+  const f = fixture(), session = await f.attach();
+  const before = f.controller.getSnapshot().document.scene.contents.overview.revisionId;
+  await f.exec(session, `const n=${nodeCode}; const root=${rootCode}; return nodes.setPresentation({nodeId:n.id,settings:{
+    markerRules:[{id:'review',marker:'!!'}], markerStyles:{review:{color:'blue',underline:true}},
+    highlights:[{id:'annotation',color:'yellow',contentNodeId:root.id}]
+  }});`);
+  const state = f.controller.getSnapshot();
+  expect(state.document.scene.contents.overview.revisionId).toBe(before);
+  expect(state.document.diagramPresentations?.overview.highlights?.[0].nodeRefs).toHaveLength(1);
+  expect(state.document.diagramPresentations?.overview.markerRules).toEqual([{ id: 'review', marker: '!!' }]);
+  const read = await f.exec(session, `return ${nodeCode};`);
+  expect(read.value.diagram.highlights).toContainEqual(expect.objectContaining({ id: 'annotation' }));
+  f.controller.undo();
+  expect(f.controller.getSnapshot().document.diagramPresentations).toBeUndefined();
 });

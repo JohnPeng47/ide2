@@ -2,14 +2,14 @@ import { expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
 import { sha256 } from '../../../core/sha256';
 import { asciiSha256 } from '../../../core/diagrams/asciiSha256';
-import { RevisionedDiagramService } from '../../../core/diagrams/diagramService';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { diagramContentNodes } from '../../../core/diagrams/diagramContentNodes';
 import { handleNodeSelect, buildSourceRangeDisplayModel, type ResolvedMapping } from '../codePanel';
 
 function fixture() {
-  const diagram = new RevisionedDiagramService().create({ id: 'diagram', revision: 1, ascii: 'Root\n|-- Parent\n|   |-- Child\n|   `-- Sibling\n`-- Other', structureKind: 'tree' }).diagram;
+  const diagram = revisionFixture().create({ id: 'diagram', revision: 1, ascii: 'Root\n|-- Parent\n|   |-- Child\n|   `-- Sibling\n`-- Other', structureKind: 'tree' }).diagram;
   const context = { diagram, projectId: 'project' };
-  const service = new RevisionedDiagramService();
+  const service = revisionFixture();
   const nodes = diagramContentNodes(diagram.content);
   const mapped = (line: number, startLine: number, endLine = startLine) => {
     const node = nodes.find(node => node.line === line)!;
@@ -89,7 +89,7 @@ it('hashes Unicode evidence as UTF-8 without changing ASCII artifact identities'
   expect(() => asciiSha256('é')).toThrow(/ASCII/);
   const { context, nodes, mapped } = fixture(); mapped(2, 10); mapped(3, 20);
   const evidence = context.diagram.sourceContext.evidence['mapping-2-10'];
-  context.diagram = new RevisionedDiagramService().revise(context.diagram.revisionId, { kind: 'source-mappings', expectedContentHash: context.diagram.content.asciiSha256, mappings: context.diagram.sourceContext.mappings,
+  context.diagram = revisionFixture().revise(context.diagram.revisionId, { kind: 'source-mappings', expectedContentHash: context.diagram.content.asciiSha256, mappings: context.diagram.sourceContext.mappings,
     evidence: { ...context.diagram.sourceContext.evidence, [evidence.id]: { ...evidence, sourceRanges: [{ ...evidence.sourceRanges[0], originalLines: ['// café → 🧭'] }] } } }).diagram;
   // Another node's Unicode evidence must not prevent opening an ASCII-only range.
   expect(handleNodeSelect(context, [nodes[2]]).items).toHaveLength(1);

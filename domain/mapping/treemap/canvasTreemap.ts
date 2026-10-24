@@ -1,6 +1,6 @@
 import { diagramSource, type DiagramSourceBinding } from '../../core/diagrams/diagram';
 import { diagramContentNodes } from '../../core/diagrams/diagramContentNodes';
-import { mappingContentNodeId } from '../../core/diagrams/diagramText';
+import { mappingContentNodeId } from '../../core/presentation/diagramText';
 import type { GridBox, LineGridScene } from '../../core/diagrams/lineGrid';
 import type { SourceRange } from '../../core/records/domain';
 import type { DeepReadonly } from '../../core/immutability';

@@ -1,9 +1,12 @@
+import { presentationHighlights, type DiagramPresentations } from '../presentation/diagramPresentation';
+import { getDiagramRevision } from './diagramRevisionStore';
+import { createStoredDiagram } from './diagramRevisionStore';
 import { z } from 'zod';
 import { activeDiagramHighlights } from './diagramHighlight';
 import { CanvasHistory, documentFromHistory, type CanvasHistoryRecord, type ResolvedCanvasDocument } from './canvasHistory';
 import { emptyCanvasDocument, prepareCanvasTransfer, type TransferInput } from './canvasTransfer';
 import { flattenGrid, resolveScene, type GridBox, type LineGridScene } from './lineGrid';
-import { RevisionedDiagramService } from './diagramService';
+
 
 export const projectionSettingsSchema = z.object({
   mode: z.enum(['original', 'compact']), centroid: z.enum(['mean', 'area', 'diagram', 'placeholder']),
@@ -31,18 +34,18 @@ export const projectionLayoutSchema = z.object({
 export type ProjectionLayout = z.infer<typeof projectionLayoutSchema>;
 
 const expand = (box: GridBox): GridBox => box.kind === 'container' ? { ...box, collapsed: false, children: box.children.map(expand) } : box;
-export function highlightedDiagramIds(scene: LineGridScene): string[] {
+export function highlightedDiagramIds(scene: LineGridScene, presentations?: DiagramPresentations): string[] {
   return flattenGrid(resolveScene({ ...scene, root: expand(scene.root) })).filter(({ box }) => {
     if (box.kind !== 'diagram') return false;
     const diagram = scene.contents[box.contentId];
-    return activeDiagramHighlights(diagram.content, diagram.highlights).length > 0;
+    return activeDiagramHighlights(diagram.content, presentationHighlights(diagram, presentations?.[box.contentId], getDiagramRevision(diagram.revisionId).nodeRefs), diagram.revisionId).length > 0;
   }).map(({ box }) => `grid:${box.id}`);
 }
 
 /** Reuse copy's anchor/content remapping, then publish one checkpoint containing its layout provenance. */
 export function prepareHighlightProjection(record: CanvasHistoryRecord, input: Omit<TransferInput, 'mode' | 'selectedIds'>,
   cell = { width: 8.4, height: 18 }) {
-  const source = documentFromHistory(record), selectedIds = highlightedDiagramIds(source.scene);
+  const source = documentFromHistory(record), selectedIds = highlightedDiagramIds(source.scene, source.diagramPresentations);
   if (!selectedIds.length) throw Error('Highlight at least one diagram before projecting.');
   const selected = new Set(selectedIds);
   const originals = flattenGrid(resolveScene({ ...source.scene, root: expand(source.scene.root) })).filter(({ box }) => selected.has(`grid:${box.id}`));
@@ -55,7 +58,7 @@ export function prepareHighlightProjection(record: CanvasHistoryRecord, input: O
       label: box.kind === 'diagram' ? target.scene.contents[box.contentId].content.ascii.split('\n')[0].slice(0, 80) || `Diagram ${i + 1}` : box.id
     })) };
   const placeholderId = `diagram-${crypto.randomUUID()}`;
-  const placeholder = new RevisionedDiagramService().create({ id: placeholderId, revision: 0,
+  const placeholder = createStoredDiagram({ id: placeholderId, revision: 0,
     ascii: Array.from({ length: 35 }, () => ' '.repeat(65)).join('\n'), structureKind: 'diagram' }).diagram;
   const center = {
     column: projectionLayout.nodes.reduce((sum, node) => sum + node.column + node.columns / 2, 0) / boxes.length,

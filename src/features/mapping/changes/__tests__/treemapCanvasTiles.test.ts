@@ -1,16 +1,16 @@
 import { expect, it } from 'vitest';
-import { RevisionedDiagramService } from '../../../../../domain/core/diagrams/diagramService';
+import { revisionFixture } from '../../../../../tests/support/diagramRevisions';
 import { diagramContentNodes } from '../../../../../domain/core/diagrams/diagramContentNodes';
 import { singleDiagramScene } from '../../../../../domain/core/diagrams/projectDiagramCanvas';
-import { diffDiagramContent } from '../../../../../domain/mapping/changes/diagramContentDiff';
-import { changePreviewText } from '../changePreviewText';
+import { diffDiagramContent } from '../../../../../domain/core/diagrams/diagramContentDiff';
+import { projectDiagramComparisons } from '../../../../../domain/mapping/workspace/diagramDiffProjection';
 import { treemapCanvasTiles } from '../treemapCanvasTiles';
 import { treemapLocColor, type TreemapDiagramColor } from '../treemapDiagramColors';
 
 it('tiles full subtree ranges, preserving siblings and both diff rows without overlapping fills', () => {
   const before = 'Root\n|-- Parent\n|   `-- Old\n`-- Sibling';
   const after = 'Root\n|-- Parent\n|   `-- New\n`-- Sibling';
-  const service = new RevisionedDiagramService();
+  const service = revisionFixture();
   const old = service.create({ id: 'overview', revision: 0, ascii: before, structureKind: 'tree' }).diagram;
   const next = service.create({ id: 'overview', revision: 1, ascii: after, structureKind: 'tree' }).diagram;
   const scene = singleDiagramScene(after);
@@ -20,11 +20,11 @@ it('tiles full subtree ranges, preserving siblings and both diff rows without ov
     contentNodeId: nodes.find(node => node.label === label)?.id, position, color: treemapLocColor(position, 4) });
   const colors = [identity(0), identity(1, 'Parent'), identity(2, 'New'), identity(3, 'Sibling')];
   const diffs = new Map([['grid:overview', diffDiagramContent(old.content, next.content)]]);
-  const text = changePreviewText(scene, undefined, diffs, new Set(['grid:overview']));
+  const text = projectDiagramComparisons(scene, undefined, diffs, new Set(['grid:overview']));
   const projection = text.projections.get('grid:overview')!;
   const bounds = text.boxes.find(box => box.box.id === 'overview')!.bounds;
-  const check = (active: TreemapDiagramColor[], views?: Parameters<typeof changePreviewText>[1]) => {
-    const result = views ? changePreviewText(scene, views, diffs, new Set(['grid:overview'])) : text;
+  const check = (active: TreemapDiagramColor[], views?: Parameters<typeof projectDiagramComparisons>[1]) => {
+    const result = views ? projectDiagramComparisons(scene, views, diffs, new Set(['grid:overview'])) : text;
     const p = result.projections.get('grid:overview')!, b = result.boxes.find(box => box.box.id === 'overview')!.bounds;
     // Scene bounds carry a nonzero origin; partitioning must use only their size.
     const positionedBounds = { ...b, column: 17, row: 9 };

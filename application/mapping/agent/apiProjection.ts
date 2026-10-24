@@ -55,7 +55,7 @@ export class CanvasApiProjection {
 
   node(node: CanvasDisplayNode): ApiDisplayNode {
     if (node.layout !== 'grid') return { ...node, apiFormatVersion: canvasApiFormatVersion };
-    const { contentNodes: _index, nodeRefs, content, diagram, ...rest } = node;
+    const { textRows: _rows, presentation: _presentation, presentationSettings: _settings, domainNode: _domain, contentNodes: _index, nodeRefs, content, diagram, ...rest } = node;
     const highlights = diagram?.highlights?.map(item => ({ ...item, ...(item.contentNodeId ? { contentNodeId: this.anchorId(item.contentNodeId) } : {}), ...(item.contentNodeIds ? { contentNodeIds: item.contentNodeIds.map(id => this.anchorId(id)) } : {}) }));
     const metadata = diagram && (({ content: _content, ...value }) => value)(diagram);
     return { ...rest, apiFormatVersion: canvasApiFormatVersion,

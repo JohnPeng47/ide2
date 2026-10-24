@@ -4,7 +4,7 @@ import { expect, it } from 'vitest';
 import { DiagramText } from '../DiagramText';
 import { PanelConnector } from '../PanelConnector';
 import { buildDiagramContent } from '../../../../domain/core/diagrams/diagramContent';
-import { diagramTextRanges, textRow } from '../../../../domain/core/diagrams/diagramText';
+import { diagramTextRanges, textRow } from '../../../../domain/core/presentation/diagramText';
 
 it('renders exact text with one node outline across mapping boundaries and a separately addressable jump', () => {
   const ascii = 'Root\n|-- [*] Rendering  \n';

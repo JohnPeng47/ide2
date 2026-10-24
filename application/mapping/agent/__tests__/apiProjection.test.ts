@@ -2,7 +2,7 @@ import { expect, it } from 'vitest';
 import { CanvasApiProjection } from '../apiProjection';
 import { buildDiagramContent } from '../../../../domain/core/diagrams/diagramContent';
 import { diagramContentNodes } from '../../../../domain/core/diagrams/diagramContentNodes';
-import { RevisionedDiagramService } from '../../../../domain/core/diagrams/diagramService';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { singleDiagramScene } from '../../../../domain/core/diagrams/projectDiagramCanvas';
 import { mappingDocumentFromScene } from '../../../../domain/mapping/workspace/mappingDocument';
 import { initialCanvasState } from '../../../../domain/mapping/workspace/mappingWorkspace';
@@ -28,7 +28,7 @@ it.each(['tree', 'diagram'] as const)('retains every %s anchor and exactly recon
 
 it('removes only redundant content and preserves source evidence, whitespace, metadata, layout and revision guards', () => {
   const ascii = 'Root  \n\n`-- Child\n', scene = singleDiagramScene(ascii);
-  scene.contents = { ...scene.contents, overview: new RevisionedDiagramService().create({ id: 'overview', revision: 1, ascii, structureKind: 'tree',
+  scene.contents = { ...scene.contents, overview: revisionFixture().create({ id: 'overview', revision: 1, ascii, structureKind: 'tree',
     evidence: { e: { id: 'e', handle: 'Root', label: 'Root', category: 'operation', summary: 'Original evidence',
       sourceRanges: [{ id: 'range', path: 'file.ts', startLine: 1, endLine: 1, originalLines: ['const raw = "@not-an-anchor";'] }] } },
     mappings: [{ id: 'm', entityId: 'e', sourceRangeIndex: 0, line: 1, startColumn: 1, endColumn: 4 }] }).diagram };

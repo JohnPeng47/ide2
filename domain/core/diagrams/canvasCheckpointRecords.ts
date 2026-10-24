@@ -42,7 +42,7 @@ function recordBoundary(path: Path): boolean {
   return path.join('/') === 'document/scene/root' || path.join('/') === 'nodeOrigins'
     || path.join('/') === 'unresolvedAnchors'
     || path[0] === 'document' && path[1] === 'scene' && path.at(-2) === 'children'
-    || ['document/edges', 'document/jumps', 'document/sections', 'document/variants', 'document/variantSelections', 'document/diagramContexts', 'diagramBindings',
+    || ['document/edges', 'document/jumps', 'document/sections', 'document/variants', 'document/revisionReviews', 'document/revisionSelections', 'document/diagramPresentations', 'document/diagramContexts', 'diagramBindings',
       'view/display/nodes', 'view/diagramViews', 'view/controls/surfaces', 'view/selection/items'].includes(joined);
 }
 function splitRecords(value: unknown): Record<string, unknown> {

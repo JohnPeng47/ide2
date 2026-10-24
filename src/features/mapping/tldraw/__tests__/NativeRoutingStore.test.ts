@@ -1,12 +1,12 @@
 import { expect, it } from 'vitest';
 import { atom, Mat, type Editor } from 'tldraw';
 import { NativeRoutingStore } from '../NativeRoutingStore';
-import { RevisionedDiagramService } from '../../../../../domain/core/diagrams/diagramService';
+import { revisionFixture } from '../../../../../tests/support/diagramRevisions';
 import { defaultArrowAppearance, type DiagramConnection } from '../../../../../domain/core/diagrams/diagramConnection';
 import { diagramContentNodes } from '../../../../../domain/core/diagrams/diagramContentNodes';
 
 it('reuses routes for unrelated movement and updates routes when a blocker moves, folds, or disappears', () => {
-  const diagram = new RevisionedDiagramService().create({ id: 'blocker', revision: 0, ascii: 'Blocker\n`-- Child', structureKind: 'tree' }).diagram;
+  const diagram = revisionFixture().create({ id: 'blocker', revision: 0, ascii: 'Blocker\n`-- Child', structureKind: 'tree' }).diagram;
   const transform = atom('blocker transform', Mat.Translate(1000, 0));
   const editor = { getShape: () => ({ id: 'blocker' }), getShapePageTransform: () => transform.get() } as unknown as Editor;
   const store = new NativeRoutingStore(() => editor);
@@ -31,7 +31,7 @@ it('reuses routes for unrelated movement and updates routes when a blocker moves
 });
 
 it('invalidates a cached route when a guide becomes text at the same coordinates', () => {
-  const create = (middle: string) => new RevisionedDiagramService().create({ id: 'blocker', revision: 0,
+  const create = (middle: string) => revisionFixture().create({ id: 'blocker', revision: 0,
     ascii: `Root\n${middle}\n\`-- Tail`, structureKind: 'tree' }).diagram;
   const editor = { getShape: () => ({ id: 'blocker' }), getShapePageTransform: () => Mat.Translate(120, 0) } as unknown as Editor;
   const store = new NativeRoutingStore(() => editor);

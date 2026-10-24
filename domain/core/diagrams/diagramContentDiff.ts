@@ -1,5 +1,5 @@
-import type { DiagramContent } from '../../core/diagrams/diagramContent';
-import { diagramContentNodes } from '../../core/diagrams/diagramContentNodes';
+import type { DiagramContent } from './diagramContent';
+import { diagramContentNodes } from './diagramContentNodes';
 import { matchDiagramNodes } from './diagramNodeMatcher';
 import { orderedIndices } from './orderedIndices';
 
@@ -14,14 +14,14 @@ export interface DiagramContentDiff {
   original: DiagramDiffSide; proposed: DiagramDiffSide;
   modifications: { original: ModifiedText; proposed: ModifiedText }[];
   /** Baseline-only text inserted before a proposed source line, without live anchors. */
-  removals: { text: string; beforeLine: number; ancestorIds: string[]; spans: { start: number; end: number; contentNodeId?: string }[] }[];
+  removals: { text: string; sourceLine?: number; beforeLine: number; ancestorIds: string[]; spans: { start: number; end: number; contentNodeId?: string }[] }[];
   counts: { added: number; removed: number; modified: number; moved: number };
 }
 export interface ModifiedText { contentNodeId?: string; sourceLine: number; text: string }
 
 /** Rendering-only correspondence. Never use these heuristic matches for edge anchors. */
 export function diffDiagramContent(before: DiagramContent | undefined, after: DiagramContent | undefined,
-  origins: Readonly<Record<string, string>> = {}): DiagramContentDiff {
+  origins: Readonly<Record<string, string>> = {}, correspondence: Readonly<Record<string, string>> = {}): DiagramContentDiff {
   const result: DiagramContentDiff = { original: { nodes: new Map(), lines: new Map() },
     proposed: { nodes: new Map(), lines: new Map() }, modifications: [], removals: [], counts: { added: 0, removed: 0, modified: 0, moved: 0 } };
   if (before?.ascii === after?.ascii) return result;
@@ -32,7 +32,7 @@ export function diffDiagramContent(before: DiagramContent | undefined, after: Di
     return { lines, nodes, byId: new Map(nodes.map(n => [n.id, n])) };
   };
   const a = index(before), b = index(after);
-  const { forward, reverse } = matchDiagramNodes(a.nodes, b.nodes, origins);
+  const { forward, reverse } = matchDiagramNodes(a.nodes, b.nodes, origins, correspondence);
   const children = (side: typeof a, parent?: string) => parent
     ? (side.byId.get(parent)?.childIds ?? []).flatMap(id => side.byId.has(id) ? [side.byId.get(id)!] : [])
     : side.nodes.filter(n => !n.parentId || !side.byId.has(n.parentId));
@@ -142,7 +142,7 @@ export function diffDiagramContent(before: DiagramContent | undefined, after: Di
     const text = chars.join('').trimEnd();
     const spans = removed.length ? removed.map(node => ({ start: node.startColumn - 1, end: node.endColumn, contentNodeId: node.id }))
       : [{ start: text.length - text.trimStart().length, end: text.length }];
-    result.removals.push({ text, beforeLine, ancestorIds, spans });
+    result.removals.push({ text, sourceLine: line, beforeLine, ancestorIds, spans });
   }
   return result;
 }

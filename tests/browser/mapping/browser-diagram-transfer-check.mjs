@@ -10,7 +10,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { seedMappingFixture } from '../support/browser-mapping-fixture.mjs';
 import { singleDiagramScene } from '../../../domain/core/diagrams/projectDiagramCanvas.ts';
-import { RevisionedDiagramService } from '../../../domain/core/diagrams/diagramService.ts';
+import { revisionFixture } from '../../support/diagramRevisions.ts';
 import { DiagramStore } from '../../../infrastructure/core/persistence/store.ts';
 const { evaluate, waitFor, waitForSelector, withHeadlessBrowser, captureScreenshot } = await import(pathToFileURL(path.join(homedir(), '.codex/skills/front-end/browser-test.mjs')).href);
 const root = await mkdtemp(path.join(tmpdir(), 'diagram-transfer-browser-'));
@@ -21,7 +21,7 @@ try {
   const catalogPath = path.join(root, '.diagrams/representations/catalog.json');
   const catalog = JSON.parse(await readFile(catalogPath, 'utf8'));
   const scene = singleDiagramScene(ascii);
-  scene.contents = Object.fromEntries(['a','b','c'].map((id, i) => [id, new RevisionedDiagramService().create({ id, revision: 0,
+  scene.contents = Object.fromEntries(['a','b','c'].map((id, i) => [id, revisionFixture().create({ id, revision: 0,
     ascii: `${['Alpha','Beta','Gamma'][i]}\n|-- ${id.toUpperCase()} branch\n\x60-- ${id.toUpperCase()} tail`, structureKind: 'tree' }).diagram]));
   scene.root.children = ['a','b','c'].map((id, i) => ({ id, kind: 'diagram', contentId: id, collapsed: false, position: { column: i * 25, row: 5 } }));
   if (process.env.TRANSFER_LARGE_FIXTURE) {
@@ -36,8 +36,8 @@ try {
   catalog.revisions['revision-overview'].content = { kind: 'canvas-history', history: canvasSaveFixture({ name: 'Fixture', scene, edges }).history };
   const existingScene = singleDiagramScene('Destination');
   existingScene.contents = {
-    a: new RevisionedDiagramService().create({id:'a',revision:0,ascii:'Existing large diagram\n|-- Keep here\n|-- Still here\n`-- Fixed',structureKind:'tree'}).diagram,
-    b: new RevisionedDiagramService().create({id:'b',revision:0,ascii:'Small\n`-- Keep',structureKind:'tree'}).diagram
+    a: revisionFixture().create({id:'a',revision:0,ascii:'Existing large diagram\n|-- Keep here\n|-- Still here\n`-- Fixed',structureKind:'tree'}).diagram,
+    b: revisionFixture().create({id:'b',revision:0,ascii:'Small\n`-- Keep',structureKind:'tree'}).diagram
   };
   existingScene.root.children = [{id:'a',kind:'diagram',contentId:'a',collapsed:false,position:{column:50,row:10}},
     {id:'b',kind:'diagram',contentId:'b',collapsed:false,position:{column:100,row:12}}];

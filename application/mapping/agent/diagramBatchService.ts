@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { DiagramService } from '../../../domain/core/diagrams/diagramService';
+import type { DiagramGenerator } from '../../../domain/core/diagrams/diagramGeneration';
 import type { DiagramAgentContextStore } from '../../../domain/core/diagrams/diagramAgentContext';
 import { DiagramEditService, type DiagramEditCanvasPort } from './diagramEditService';
 import { directBatchSchemas, generationBatchSchemas, type DiagramBatchApplication, type DiagramBatchRun, type DiagramTool } from '../../../domain/mapping/agent/diagramBatch';
@@ -9,7 +9,7 @@ interface Batch { signature: string; state: DiagramBatchRun; pending?: Promise<v
 export class DiagramBatchService {
   private runs = new Map<string, Batch>();
   private requests = new Map<string, string>();
-  constructor(private diagrams: DiagramService, private canvas: DiagramEditCanvasPort & {
+  constructor(private diagrams: DiagramGenerator, private canvas: DiagramEditCanvasPort & {
     batch(sessionId: string, input: DiagramBatchApplication): Promise<{ version: number; unresolvedEdgeIds: string[] }>
   }, private contexts?: DiagramAgentContextStore, private contextFor?: (sessionId: string, contextId: string) => import('../../../domain/core/agents/agentContext').AgentContextSnapshot) {}
   has(id: string) { return this.runs.has(id); }

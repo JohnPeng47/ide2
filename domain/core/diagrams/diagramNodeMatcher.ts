@@ -1,4 +1,4 @@
-import type { DiagramContentNode } from '../../core/diagrams/diagramContent';
+import type { DiagramContentNode } from './diagramContent';
 import { orderedIndices } from './orderedIndices';
 
 type Node = DiagramContentNode;
@@ -64,7 +64,8 @@ function labelSimilarity(a: Label, b: Label): number {
  * docs/research/gumtree-change-session-diff.md; no upstream source is copied.
  * Inferred matches must never be used to rebase real anchors or patch provenance.
  */
-export function matchDiagramNodes(before: readonly Node[], after: readonly Node[], origins: Readonly<Record<string, string>> = {}) {
+export function matchDiagramNodes(before: readonly Node[], after: readonly Node[], origins: Readonly<Record<string, string>> = {},
+  correspondence: Readonly<Record<string, string>> = {}) {
   const shapes = new Map<string, number>(), a = index(before, shapes), b = index(after, shapes);
   const forward = new Map<string, string>(), reverse = new Map<string, string>();
   const compatible = (old: Node, next: Node) => (!forward.has(old.id) || forward.get(old.id) === next.id)
@@ -89,6 +90,16 @@ export function matchDiagramNodes(before: readonly Node[], after: readonly Node[
     const l = group(left, leftKey), r = group(right, rightKey);
     for (const [key, nodes] of l) if (nodes.length === 1 && r.get(key)?.length === 1) accept(nodes[0], r.get(key)![0]);
   };
+
+  // Proven logical identities can establish continuity even when labels change.
+  const claims = new Map<string, number>();
+  for (const next of b.nodes) if (Object.hasOwn(correspondence, next.id)) {
+    const oldId = correspondence[next.id]; claims.set(oldId, (claims.get(oldId) ?? 0) + 1);
+  }
+  for (const next of b.nodes) {
+    const oldId = correspondence[next.id], old = a.byId.get(oldId);
+    if (old && claims.get(oldId) === 1) pair(old, next);
+  }
 
   // Invalid/conflicting hints provide no evidence; do not select a survivor by
   // object iteration order when two proposed nodes claim the same old occurrence.

@@ -8,7 +8,7 @@ import { createServer } from 'node:net';
 import { pathToFileURL } from 'node:url';
 import { seedMappingFixture } from '../browser/support/browser-mapping-fixture.mjs';
 import { singleDiagramScene } from '../../domain/core/diagrams/projectDiagramCanvas.ts';
-import { RevisionedDiagramService } from '../../domain/core/diagrams/diagramService.ts';
+import { revisionFixture } from '../support/diagramRevisions.ts';
 import { CanvasHistory } from '../../domain/core/diagrams/canvasHistory.ts';
 import { initialCanvasState } from '../../domain/mapping/workspace/mappingWorkspace.ts';
 const { evaluate, waitFor, withHeadlessBrowser } = await import(pathToFileURL(path.join(homedir(), '.codex/skills/front-end/browser-test.mjs')).href);
@@ -22,7 +22,7 @@ try {
   const workspace = { schemaVersion: 3, projectId: catalog.projectId, activeDocumentId: 'draft-0', documents: [] };
   for (let i = 0; i < 3; i++) {
     const canvas = initialCanvasState();
-    const make = revision => ({ scene: { ...singleDiagramScene('Fixture'), contents: { ...singleDiagramScene('Fixture').contents, overview: new RevisionedDiagramService().create({ id: 'overview', revision,
+    const make = revision => ({ scene: { ...singleDiagramScene('Fixture'), contents: { ...singleDiagramScene('Fixture').contents, overview: revisionFixture().create({ id: 'overview', revision,
       ascii: `Fixture ${i} revision ${revision}\n|-- One\n\x60-- Two`, structureKind: 'tree', evidence: {
         source: { id: 'source', label: 'Captured source', category: 'operation', sourceRanges: [{ id: 'range', path: 'fixture.ts', startLine: 1, endLine: 1, originalLines: ['x'.repeat(65536)] }] }
       } }).diagram } }, edges: [], sections: {} });

@@ -1,6 +1,7 @@
 import { AgentContext } from '../../../../../domain/core/agents/agentContext';
 import { afterEach, expect, it, vi } from 'vitest';
-import { RevisionedDiagramService, type DiagramGenerationRequest } from '../../../../../domain/core/diagrams/diagramService';
+import type { DiagramGenerationRequest } from '../../../../../domain/core/diagrams/diagramGeneration';
+import { revisionFixture } from '../../../../../tests/support/diagramRevisions';
 
 type Tool = { execute(id: string, candidate: unknown): Promise<{ details: { accepted: boolean } }> };
 const harness = vi.hoisted(() => ({
@@ -29,7 +30,7 @@ vi.mock('@earendil-works/pi-coding-agent', () => ({
 import { PiDiagramEditRuntime, renderDiagramEditPrompt } from '../diagramEditRuntime';
 afterEach(() => { harness.actions.length = 0; harness.chats.length = 0; vi.clearAllMocks(); });
 function fixture() {
-  const runtime = new PiDiagramEditRuntime('/tmp', true), service = new RevisionedDiagramService(runtime);
+  const runtime = new PiDiagramEditRuntime('/tmp', true), service = revisionFixture(runtime);
   const base = service.create({ id: crypto.randomUUID(), revision: 0, ascii: 'Original' });
   const request: DiagramGenerationRequest = { input: { id: base.diagram.id }, instruction: 'Add a child', baseRevisionId: base.revision.id,
     context: { diagram: base.diagram, selection: { startLine: 1, endLine: 1, startColumn: 1, endColumn: 8 } } };

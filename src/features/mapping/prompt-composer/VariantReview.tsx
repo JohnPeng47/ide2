@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import type { DiagramVariant, VariantDecision, VariantChange } from '../../../../domain/core/diagrams/diagramVariant';
+import type { DiagramRevisionReview, RevisionDecision, RevisionChange } from '../../../../domain/core/diagrams/diagramRevisionReview';
 import type { PromptComposerCoordinator, PromptComposerTarget } from './promptComposerCoordinator';
 export interface VariantReviewSource {
-  list(target: PromptComposerTarget): { variant: DiagramVariant; changes: VariantChange[]; ascii: string; scopeLabel: string; error?: string }[];
-  update(target: PromptComposerTarget, id: string, change: { decisions?: Record<string, VariantDecision>; name?: string; remove?: boolean; apply?: boolean }): Promise<void>;
+  list(target: PromptComposerTarget): { variant: DiagramRevisionReview; changes: RevisionChange[]; ascii: string; scopeLabel: string; error?: string }[];
+  update(target: PromptComposerTarget, id: string, change: { decisions?: Record<string, RevisionDecision>; name?: string; remove?: boolean; apply?: boolean }): Promise<void>;
 }
 export function VariantReview({ source, target, coordinator, entryKey, locked }: {
   source: VariantReviewSource; target: PromptComposerTarget; coordinator: PromptComposerCoordinator; entryKey: string; locked: boolean;

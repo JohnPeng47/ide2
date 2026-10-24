@@ -1,5 +1,5 @@
 import { composeScene, flattenGrid, resolveScene, type LineGridScene } from '../../core/diagrams/lineGrid';
-import { diagramTextRanges, textRow, type DiagramTextRange } from '../../core/diagrams/diagramText';
+import { diagramTextRanges, textRow, type DiagramTextRange } from '../../core/presentation/diagramText';
 import { projectDiagramContent, type DiagramViews } from './diagramViewState';
 import type { CanvasJump } from '../../core/diagrams/canvasJump';
 

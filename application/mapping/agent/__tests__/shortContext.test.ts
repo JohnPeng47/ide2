@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import { CanvasApiProjection } from '../apiProjection';
 import { shortCanvasContext } from '../../../../domain/mapping/agent/shortContext';
-import { RevisionedDiagramService } from '../../../../domain/core/diagrams/diagramService';
+import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { singleDiagramScene } from '../../../../domain/core/diagrams/projectDiagramCanvas';
 import { mappingDocumentFromScene } from '../../../../domain/mapping/workspace/mappingDocument';
 import { initialCanvasState } from '../../../../domain/mapping/workspace/mappingWorkspace';
@@ -13,7 +13,7 @@ import { asciiSha256 } from '../../../../domain/core/diagrams/asciiSha256';
 function fixture(kind: 'tree' | 'diagram' = 'tree') {
   const ascii = kind === 'tree' ? 'Root\n|-- Child  \n|   `-- Leaf\n\n`-- Last\n' : '[Left] --> [Right]\n';
   const scene = singleDiagramScene(ascii);
-  const diagram = new RevisionedDiagramService().create({ id: 'overview', revision: 1, ascii, structureKind: kind,
+  const diagram = revisionFixture().create({ id: 'overview', revision: 1, ascii, structureKind: kind,
     source: { sourceId: 'repo', repositoryIdentity: 'test-repo', domainProfileId: 'source-code',
       corpus: { kind: 'git-worktree', root: '/test/repo', revision: 'abc123' } },
     evidence: { e: { id: 'e', sourceId: 'repo', handle: 'src/file.ts', label: 'Root', category: 'operation', summary: 'Evidence',

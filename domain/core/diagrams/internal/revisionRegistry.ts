@@ -40,7 +40,7 @@ class RevisionRegistry {
   assert(diagram: Diagram): DiagramRevision {
     const record = this.get(diagram.revisionId);
     if (record.diagram !== diagram && JSON.stringify(record.diagram) !== JSON.stringify(diagram))
-      throw Error('Diagram content must be changed through DiagramService');
+      throw Error('Diagram content must be an issued immutable revision');
     return record;
   }
   list(diagramId: string) { return [...this.records.values()].filter(record => record.diagramId === diagramId); }
