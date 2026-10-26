@@ -101,7 +101,7 @@ export class MappingEditorRuntime {
       if (update.length) this.editor.updateShapes(update);
       // Edges stay above diagram shapes, including after creation and history replay.
       const edgeIds = shapes.filter(shape => shape.props?.kind === 'arrow').map(shape => shape.id);
-      this.editor.run(() => this.editor.bringToFront(edgeIds), { ignoreShapeLock: true });
+      this.editor.run(() => this.editor.bringToFront([...edgeIds, ...this.editor.getCurrentPageShapes().filter(shape => shape.type === 'mapping-box' && (shape as MappingShape).props.kind === 'diagram-side-panel').map(shape => shape.id)]), { ignoreShapeLock: true });
       this.projected = new Map(shapes.map(shape => [shape.props!.nodeId!, shape]));
       const selected = this.selectedShapeIds();
       const native = this.editor.getSelectedShapeIds();

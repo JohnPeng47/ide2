@@ -4,7 +4,7 @@ import { CanvasViewControls } from './canvas-views/CanvasViewControls';
 import { CanvasViewReceiver } from './canvas-views/canvasViewReceiver';
 import { reviewRevision } from '../../../domain/core/diagrams/diagramRevisionReview';
 import type { VariantReviewSource } from './prompt-composer/VariantReview';
-import { highlightedDiagramIds } from '../../../domain/core/diagrams/highlightProjection';
+import { highlightedDiagramIds, projectDiagramsCommandSchema } from '../../../domain/core/diagrams/highlightProjection';
 import { ProjectionLayoutPanel } from './workspace/ProjectionLayoutPanel';
 import { highlightNodeIds } from '../../../domain/core/diagrams/diagramHighlight';
 import { canvasMutationResult } from '../../../domain/mapping/agent/mutationReceipt';
@@ -303,17 +303,47 @@ function MappingWorkspacePage() {
     const controller = await waitController(id);
     const draft = draftRef.current[id];
     if (!draft || draft.hidden) throw new Error('DOCUMENT_UNAVAILABLE');
+    if (command.method === 'canvas-generation') {
+      if (workspaceBusy || draft.busy || !persistence.current || !storage.records) throw Error('WORKSPACE_UNAVAILABLE');
+      const input = command.payload as { operation: 'start' | 'update'; requestId: string; expectedVersion: number; viewId: string;
+        candidates: { id: string; name: string; generation: import('../../../domain/core/diagrams/canvasGeneration').CanvasGeneration }[];
+        generation: import('../../../domain/core/diagrams/canvasGeneration').CanvasGeneration; history?: import('../../../domain/core/diagrams/canvasHistory').CanvasHistoryRecord };
+      const key = `generation:${id}:${input.requestId}`, signature = JSON.stringify(input);
+      let receipt = appliedRequests.current.get(key) as { signature: string; value: unknown } | undefined;
+      if (receipt && receipt.signature !== signature) throw Error('REQUEST_ID_CONFLICT');
+      if (!receipt) {
+        const value = input.operation === 'start' ? controller.startGeneration(input.expectedVersion, input.viewId, input.candidates)
+          : controller.updateGeneration(input.viewId, input.generation, input.history);
+        receipt = { signature, value: value ?? { updated: true } }; appliedRequests.current.set(key, receipt);
+      }
+      persistence.current.sync([id]); await storage.flush();
+      return receipt.value;
+    }
+    if (command.method === 'project-diagrams') {
+      const input = projectDiagramsCommandSchema.parse(command.payload);
+      const key = `project:${id}:${input.requestId}`, signature = JSON.stringify(input);
+      const previous = appliedRequests.current.get(key) as { signature: string; result: unknown } | undefined;
+      if (previous) {
+        if (previous.signature !== signature) throw Error('REQUEST_ID_CONFLICT: projection arguments differ');
+        return previous.result;
+      }
+      const result = await projectDiagrams(id, input.diagramIds, input.expectedVersion);
+      appliedRequests.current.set(key, { signature, result });
+      return result;
+    }
     if (command.method === 'canvas-view') {
       if (workspaceBusy || draft.busy) throw Error('WORKSPACE_BUSY');
       if (!persistence.current || !storage.records) throw Error('WORKSPACE_UNAVAILABLE');
       const operation = (command.payload as { operation: string }).operation;
-      if (operation === 'start' || operation === 'stop') {
+      if (['start', 'stop', 'create', 'save', 'open', 'fork', 'keep', 'discard'].includes(operation)) {
         const canvas = controller.getSnapshot().canvas;
         controller.updateCanvas({ ...canvas, display: viewState.captureDisplay(id, canvas.display) });
         const camera = viewState.captureCamera(id, draft.viewport);
         if (camera) controller.captureViewCamera(camera);
       }
-      return canvasViews.apply(id, command.payload, controller, async () => { persistence.current!.sync([id]); await storage.flush(); });
+      const result = await canvasViews.apply(id, command.payload, controller, async () => { persistence.current!.sync([id]); await storage.flush(); });
+      if (!['read', 'list'].includes(operation)) setViewDiffSelection(undefined);
+      return result;
     }
     // Acceptance only compares the current state; exporting all history can make replies enormous.
     if (command.method === 'context') {
@@ -673,21 +703,25 @@ function MappingWorkspacePage() {
     } catch (error) { setError(error instanceof Error ? error.message : String(error)); }
     finally { transferBusy.current = false; setWorkspaceBusy(false); setTransferProgress(''); }
   };
-  const projectHighlights = async () => {
-    if (!workspaceLoaded || !activeId || !active || !highlightedCount || transferBusy.current || workspaceBusy || savingId || deletingId || Object.values(drafts).some(draft => draft.busy)) return;
+  const projectDiagrams = async (sourceId: string, diagramIds: string[], expectedVersion?: number, label = 'Projection') => {
+    const sourceDraft = draftRef.current[sourceId];
+    if (!sourceDraft || sourceDraft.hidden) throw Error('DOCUMENT_UNAVAILABLE');
+    if (!workspaceLoaded || !snapshot?.project || transferBusy.current || workspaceBusy || savingId || deletingId || Object.values(draftRef.current).some(draft => draft.busy)) throw Error('WORKSPACE_BUSY');
+    const source = sourceDraft.session.controller;
+    const current = source.getSnapshot();
+    if (expectedVersion !== undefined && current.version !== expectedVersion) throw Error('VERSION_CONFLICT: read the canvas again');
     transferBusy.current = true; persistence.current?.setPaused(true); setWorkspaceBusy(true); setError('');
-    setTransferProgress('Projecting highlighted diagrams…');
+    setTransferProgress('Projecting diagrams…');
     try {
       await paintProgress();
-      const source = active.session.controller;
-      const current = source.getSnapshot(), destinationId = `draft-${crypto.randomUUID()}`;
-      const prepared = await runWorkspaceTask({ type: 'project-highlights', source: source.exportHistory(true), cell: current.cell,
-        input: { sourceId: activeId, sourceAliases: [activeId, active.representationId ?? activeId], destinationId, destinationView: initialCanvasState() } });
-      if (source.getSnapshot().version !== current.version) throw Error('Canvas changed while projecting. Try again.');
-      const base = `${active.name.slice(0, 90)} · Highlights`;
+      const destinationId = `draft-${crypto.randomUUID()}`;
+      const prepared = await runWorkspaceTask({ type: 'project-diagrams', source: source.exportHistory(true), cell: current.cell,
+        input: { sourceId, sourceAliases: [sourceId, sourceDraft.representationId ?? sourceId], selectedIds: diagramIds, destinationId, destinationView: initialCanvasState() } });
+      if (source.getSnapshot().version !== current.version) throw Error('VERSION_CONFLICT: canvas changed while projecting. Read the canvas again.');
+      const base = `${sourceDraft.name.slice(0, 90)} · ${label}`;
       let name = base, suffix = 2;
       while (Object.values(drafts).some(doc => doc.name === name)) name = `${base} ${suffix++}`;
-      const child = { representationId: destinationId, parentCanvasId: activeId, repositoryId: active.repositoryId,
+      const child = { representationId: destinationId, parentCanvasId: sourceId, repositoryId: sourceDraft.repositoryId,
         name, revisionId: '', savedName: '', savedScene: JSON.stringify(emptyCanvasDocument().scene), savedEdges: '[]',
         document: prepared.destination.document, canvas: prepared.destination.view as MappingCanvasState, history: prepared.destination.history };
       const nextTransfers = [...transfers.map(tx => tx.applied ? tx : { ...tx, discarded: true }), prepared.transaction];
@@ -698,9 +732,20 @@ function MappingWorkspacePage() {
       setTransfers(nextTransfers); setActiveId(destinationId);
       const url = new URL(location.href); url.searchParams.set('diagram', destinationId); history.pushState({}, '', url);
       setChangeMode(undefined); setExplorerTab('diagrams');
-      setWorkspaceStatus(`Projected ${prepared.selectedIds.length} highlighted diagrams with a blank placeholder. Adjust their layout in the bottom-right panel.`);
-    } catch (error) { setError(error instanceof Error ? error.message : String(error)); }
+      setWorkspaceStatus(`Projected ${prepared.selectedIds.length} diagrams with a blank placeholder. Adjust their layout in the bottom-right panel.`);
+      return { documentId: destinationId, name, sourceDocumentId: sourceId,
+        diagramIds: prepared.destination.document.scene.root.kind === 'container'
+          ? prepared.destination.document.scene.root.children.map(box => `grid:${box.id}`) : [],
+        placeholderId: `grid:${(prepared.destination.view as MappingCanvasState).projectionLayout!.placeholderId}` };
+    }
     finally { transferBusy.current = false; setWorkspaceBusy(false); setTransferProgress(''); }
+  };
+  const projectHighlights = async () => {
+    if (!activeId || !active) return;
+    const current = active.session.controller.getSnapshot();
+    try {
+      await projectDiagrams(activeId, highlightedDiagramIds(current.document.scene, current.document.diagramPresentations), current.version, 'Highlights');
+    } catch (error) { setError(error instanceof Error ? error.message : String(error)); }
   };
   const undo = async (id: string, redo = false) => {
     if (transferBusy.current || workspaceBusy || savingId || deletingId || Object.values(drafts).some(draft => draft.busy)) return;
@@ -1177,11 +1222,11 @@ function MappingWorkspacePage() {
           <FloatingPane highlighted={!!pendingTransfer}><MappingDiagramExplorer explorerTab={explorerTab}
             canvasViews={active && activeId && !changeMode ? <CanvasViewControls key={`${activeId}:${workspaceEpoch}`} canvasName={active.name}
               controller={active.session.controller} disabled={workspaceBusy || active.busy || !!pendingTransfer}
+              canvasTarget={{ workspaceInstanceId: canvasId, documentId: activeId }}
+              onOpenChat={sessionId => { setAgentChatMounted(true); setToolsOpen(true); setToolTab('chat');
+                setChatTabCommand(previous => ({ serial: (previous?.serial ?? 0) + 1, action: 'open', sessionId })); }}
               previewViewId={viewDiffId} onPreview={viewId => setViewDiffSelection(viewId ? { documentId: activeId, epoch: workspaceEpoch, viewId } : undefined)}
               onCommand={payload => handleAgentCommand({ id: payload.requestId, method: 'canvas-view', documentId: activeId, payload })} /> : undefined}
-            canvas={<div className="mapping-canvas-actions"><button type="button" disabled={!workspaceLoaded || !highlightedCount || !!changeMode || workspaceBusy || !!savingId || !!deletingId || Object.values(drafts).some(draft => draft.busy)}
-              onClick={() => void projectHighlights()}>Project Highlights</button>
-              <p>{highlightedCount ? `${highlightedCount} highlighted ${highlightedCount === 1 ? 'diagram' : 'diagrams'} will be copied into a child canvas with a blank placeholder.` : 'Highlight a diagram or some of its content, then project it into a child canvas.'}</p></div>}
             transfer={pendingTransfer ? { mode: pendingTransfer.mode, count: pendingTransfer.selectedIds.length,
               sourceId: drafts[pendingTransfer.sourceId]?.representationId ?? pendingTransfer.sourceId, busy: workspaceBusy, error, progress: transferProgress,
               onCancel: cancelTransfer, onNew: name => void transfer({ name }) } : undefined}

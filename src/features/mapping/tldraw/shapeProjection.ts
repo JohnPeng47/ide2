@@ -1,3 +1,4 @@
+import { projectSidePanels } from '../../../../domain/mapping/workspace/diagramSidePanelLayout';
 import { createShapeId, type TLShapePartial } from 'tldraw';
 import { flattenGrid } from '../../../../domain/core/diagrams/lineGrid';
 import { presentationScene, resolveDiagramView } from '../../../../domain/mapping/workspace/diagramViewState';
@@ -43,5 +44,11 @@ export function projectMappingShapes(snapshot: ControllerSnapshot): TLShapeParti
   }
   for (const edge of document.edges) shapes.push({ id: mappingShapeId(`floating:edge:${edge.id}`), type: 'mapping-box', x: 0, y: 0, isLocked: true,
     props: { nodeId: `floating:edge:${edge.id}`, kind: 'arrow', revisionId: '', w: 1, h: 1 } });
+  for (const panel of projectSidePanels(document, resolveDiagramView(presentationScene(document), canvas.diagramViews), canvas.diagramViews)) {
+    shapes.push({ id: mappingShapeId(panel.panel.id), type: 'mapping-box', isLocked: true,
+      x: panel.bounds.column * cell.width, y: panel.bounds.row * cell.height,
+      props: { nodeId: panel.panel.id, kind: 'diagram-side-panel', revisionId: document.alternatives!.items[panel.panel.alternativeId].parts[panel.panel.partIndex].source.revisionId,
+        w: panel.bounds.columns * cell.width, h: panel.bounds.rows * cell.height } });
+  }
   return shapes;
 }

@@ -1,3 +1,4 @@
+import { DiagramSidePanelContent } from './DiagramSidePanelContent';
 import { useContext, useLayoutEffect, useRef } from 'react';
 import { BaseBoxShapeUtil, Rectangle2d, HTMLContainer, T, resizeBox, type TLBaseShape, type TLResizeInfo } from 'tldraw';
 import { connectionBox } from '../../../../domain/core/diagrams/diagramConnection';
@@ -34,7 +35,7 @@ function Body({ shape }: { shape: MappingShape }) {
   }
   return <HTMLContainer className={`mapping-native-shape mapping-native-${shape.props.kind}`}>
     {shape.props.kind === 'arrow' && <NativeConnection edgeId={shape.props.nodeId.slice('floating:edge:'.length)} />}
-    <div ref={bodyRef} className="mapping-native-body" data-native-node={shape.props.nodeId}>{shape.props.kind !== 'arrow' && (shape.props.nodeId.startsWith('grid:')
+    <div ref={bodyRef} className="mapping-native-body" data-native-node={shape.props.nodeId}>{shape.props.kind !== 'arrow' && (shape.props.kind === 'diagram-side-panel' ? <DiagramSidePanelContent nodeId={shape.props.nodeId} /> : shape.props.nodeId.startsWith('grid:')
       ? <DiagramShapeContent nodeId={shape.props.nodeId} /> : <FloatingShapeContent nodeId={shape.props.nodeId} />)}</div>
   </HTMLContainer>;
 }

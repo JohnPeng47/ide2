@@ -14,6 +14,8 @@ import { defaultArrowAppearance } from '../../../domain/core/diagrams/diagramCon
 import { DiagramStore } from '../../../infrastructure/core/persistence/store.ts';
 import { initialCanvasState } from '../../../domain/mapping/workspace/mappingWorkspace.ts';
 const { evaluate, waitFor, withHeadlessBrowser, captureScreenshot } = await import(pathToFileURL(path.join(homedir(), '.codex/skills/front-end/browser-test.mjs')).href);
+const throughChat = process.env.PROJECTION_CHAT === '1';
+const reloadTools = process.env.CHAT_RELOAD_FIXTURE === '1';
 const root = await mkdtemp(path.join(tmpdir(), 'highlight-projection-browser-'));
 let server;
 try {
@@ -60,8 +62,8 @@ try {
   await writeFile(catalogPath, JSON.stringify(catalog));
   const port = await new Promise(resolve => { const socket = createServer(); socket.listen(0, '127.0.0.1', () => { const { port } = socket.address(); socket.close(() => resolve(port)); }); });
   const url = `http://127.0.0.1:${port}`;
-  server = spawn(process.execPath, ['scripts/dev/start-server.mjs', '--http', 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
-    cwd: process.cwd(), env: { ...process.env, NEW_DIAGRAM_PROJECT_ROOT: root, NEW_DIAGRAMS_DIR: new DiagramStore(root).storeRoot, NEW_DIAGRAM_AGENT: 'fake' }, stdio: ['ignore', 'ignore', 'pipe']
+  server = spawn(process.execPath, ['scripts/dev/start-server.mjs', '--http', 'preview', ...(throughChat ? ['--pi'] : []), '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
+    cwd: process.cwd(), env: { ...process.env, NEW_DIAGRAM_PROJECT_ROOT: root, NEW_DIAGRAMS_DIR: new DiagramStore(root).storeRoot, NEW_DIAGRAM_AGENT: 'fake', NEW_DIAGRAM_CODEX_BIN: path.resolve('tests/support/codex-app-server.mjs') }, stdio: ['ignore', 'ignore', 'pipe']
   });
   let errors = ''; server.stderr.on('data', chunk => { errors += chunk; });
   await waitFor(async () => (await fetch(url).catch(() => null))?.ok, { timeoutMs: 25000 }).catch(error => { throw Error(`${error}\n${errors}`); });
@@ -96,7 +98,7 @@ try {
     };
     const child = workspace => workspace.documents.find(d => d.parentCanvasId === 'representation-overview');
     const positionsOf = doc => doc.document.scene.root.children.map(b => b.position);
-    await click('[aria-label="Explorer mode"] button', 'Canvas'); await click('[aria-label="Canvas panels"] button', 'Actions');
+    await click('[aria-label="Explorer mode"] button', 'Canvas');
     assert.equal(await evaluate(cdp, `[...document.querySelectorAll('.mapping-explorer-tabs button')].some(b => b.textContent === 'LLMs')`), false);
     await waitFor(() => evaluate(cdp, `!!document.querySelector('.mapping-canvas-actions button:not(:disabled)')`));
     if (process.env.PROJECTION_MEMORY === '1') await waitFor(() => evaluate(cdp,
@@ -114,7 +116,32 @@ try {
     }, 50);
     let ws;
     try {
-    await click('.mapping-canvas-actions button', 'Project Highlights');
+    if (throughChat) {
+      await click('[aria-label="Search diagrams"]');
+      await click('[role="tab"][id$="-chat"]');
+      await waitFor(() => evaluate(cdp, `document.querySelector('[aria-label="Message Codex"]')?.isContentEditable`));
+      if (reloadTools) {
+        await click('[aria-label="Message Codex"]');
+        await cdp.send('Input.insertText', { text: 'What canvas did you read?' });
+        await click('.agent-chat-send');
+        await waitFor(() => evaluate(cdp, `document.querySelector('.agent-chat')?.innerText.includes('No canvas context in this thread.') && document.querySelector('.agent-chat-send')?.textContent.includes('Send')`));
+        const chatsBefore = await fetch(url + '/api/mapping/agent-chat/sessions').then(r => r.json());
+        const originalChat = await fetch(url + '/api/mapping/agent-chat/sessions/' + chatsBefore[0].id).then(r => r.json());
+        await click('[aria-label="Chat menu"]');
+        await click('.agent-chat-tool-reload button', 'Reload tools');
+        await waitFor(() => evaluate(cdp, `document.querySelector('.agent-chat-tool-reload [role="status"]')?.textContent.includes('Tools reloaded')`));
+        const refreshed = await fetch(url + '/api/mapping/agent-chat/sessions/' + originalChat.id).then(r => r.json());
+        assert.equal(refreshed.threadId, originalChat.threadId, 'Reload keeps the original Codex thread');
+        assert.deepEqual(refreshed.items, originalChat.items, 'Reload preserves the transcript');
+        assert.ok(refreshed.toolsReloadedAt);
+        await click('[aria-label="Chat menu"]');
+      }
+      await click('[aria-label="Message Codex"]');
+      await cdp.send('Input.insertText', { text: 'Project arbitrary diagrams' });
+      await click('.agent-chat-send');
+    } else {
+      await click('.mapping-canvas-actions button', 'Project Highlights');
+    }
     ws = await persisted(w => w?.documents?.some(d => d.parentCanvasId === 'representation-overview'));
     await waitFor(() => evaluate(cdp, `!!document.querySelector('.projection-layout-panel')`));
     } finally { clearInterval(heapTimer); }
@@ -131,6 +158,15 @@ try {
     assert.deepEqual(child(ws).document.scene.contents[layout.placeholderId].content.ascii.split('\n'), Array.from({ length: 35 }, () => ' '.repeat(65)));
     assert.equal(child(ws).document.scene.root.children.length, 4);
     assert.equal(child(ws).document.edges.length, 2);
+    if (throughChat) {
+      assert.deepEqual(layout.nodes.flatMap(node => node.sourceId ? [node.sourceId] : []), ['d0', 'd1', 'd3']);
+      assert.ok(Object.values(child(ws).document.scene.contents).some(d => d.content.ascii.startsWith('Not highlighted')));
+      await waitFor(() => evaluate(cdp, `document.querySelector('.agent-chat')?.innerText.includes('Projection created:')`));
+      const retried = await persisted(w => w.documents.filter(d => d.parentCanvasId === 'representation-overview').length === 1);
+      assert.equal(retried.documents.filter(d => d.parentCanvasId === 'representation-overview').length, 1);
+      // Close the tool panel before exercising the canvas layout controls.
+      await click('[aria-label="Close Agent Chat"]');
+    }
     assert.deepEqual(ws.documents.find(d => d.representationId === 'representation-overview').document.scene, JSON.parse(JSON.stringify(document.scene)));
     if (process.env.PROJECTION_MEMORY === '1') {
       const archive = ws.documents.find(d => d.representationId === 'representation-overview').history;
@@ -141,7 +177,7 @@ try {
     await click('.mapping-document-view:not([hidden]) [title="Reset zoom and center diagram"]');
     await captureScreenshot(cdp, { output: process.env.PROJECTION_SCREENSHOT || path.join(root, 'projection-default.png') });
     await click('[aria-label="Filter diagrams"]');
-    await cdp.send('Input.insertText', { text: 'Highlights' });
+    await cdp.send('Input.insertText', { text: throughChat ? 'Projection' : 'Highlights' });
     assert.ok(await evaluate(cdp, `!!document.querySelector('[data-project-diagram="representation-overview"]') && !!document.querySelector('.mapping-canvas-children [data-project-diagram="${projectedId}"]')`), 'Filtering a child retains its ancestor');
     await key('a', 'KeyA', 65, 2); await key('Backspace', 'Backspace', 8);
     const rendered = () => evaluate(cdp, `[...document.querySelectorAll('.mapping-document-view:not([hidden]) [data-grid-box]')].filter(e => e.dataset.gridBox !== 'root').map(el => {const r=el.getBoundingClientRect();return {id:el.dataset.gridBox,x:r.x,y:r.y,w:r.width,h:r.height}})`);
@@ -193,11 +229,11 @@ try {
     ws = await persisted(w => child(w)?.canvas.projectionLayout.settings.attraction === .4);
     assert.deepEqual(positionsOf(child(ws)), savedPositions);
     // Project again from the child to prove recursive ancestry rather than a flat parent label.
-    await click('[aria-label="Explorer mode"] button', 'Canvas'); await click('[aria-label="Canvas panels"] button', 'Actions'); await click('.mapping-canvas-actions button', 'Project Highlights');
+    await click('[aria-label="Explorer mode"] button', 'Canvas'); await click('.mapping-canvas-actions button', 'Project Highlights');
     ws = await persisted(w => w.documents.some(d => d.parentCanvasId === projectedId));
     const grandchild = ws.documents.find(d => d.parentCanvasId === projectedId);
     await waitFor(() => evaluate(cdp, `!!document.querySelector('.mapping-canvas-children .mapping-canvas-children [data-project-diagram="${grandchild.representationId}"]')`));
-    assert.equal(grandchild.document.scene.root.children.length, 4, 'Reprojection adds one fresh placeholder');
+    assert.equal(grandchild.document.scene.root.children.length, throughChat ? 3 : 4, 'Reprojection adds one fresh placeholder');
     await click('.mapping-document-view:not([hidden]) [title="Reset zoom and center diagram"]');
     await key('z', 'KeyZ', 90, 2);
     await persisted(w => w.activeDocumentId === projectedId && w.documents.find(d => d.representationId === grandchild.representationId)?.hidden);
@@ -205,7 +241,8 @@ try {
     await persisted(w => w.activeDocumentId === grandchild.representationId && !w.documents.find(d => d.representationId === grandchild.representationId)?.hidden);
     await waitFor(() => evaluate(cdp, `!!document.querySelector('.projection-layout-panel')`));
     assert.deepEqual(exceptions, []);
-    console.log('PASS: exact highlighted subset, internal edges, recursive Explorer ancestry, live presets and sliders, rendered nonoverlap, original reset, persistence, reload, undo/redo, and minimization.');
+    console.log(reloadTools ? 'PASS: Reload tools retains the open thread and transcript; a new tool executes through refreshed MCP definitions.' : throughChat ? 'PASS: Agent Chat projects arbitrary IDs including an unhighlighted diagram; repeated tool delivery creates only one child.' : 'PASS: exact highlighted subset.');
+    console.log('PASS: internal edges, recursive Explorer ancestry, live presets and sliders, rendered nonoverlap, original reset, persistence, reload, undo/redo, and minimization.');
   });
 } finally {
   server?.kill('SIGTERM');

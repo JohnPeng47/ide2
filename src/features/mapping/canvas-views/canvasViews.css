@@ -1,13 +1,86 @@
-.canvas-view-controls { min-width: 0; color: var(--fg); font-size: 12px; }
-.canvas-view-controls h2 { margin: 12px 0 4px; font-size: 15px; }
-.canvas-view-controls p { color: var(--muted); line-height: 1.5; overflow-wrap: anywhere; }
-.canvas-view-controls fieldset { display: flex; flex-direction: column; gap: 8px; border: 0; padding: 0; margin: 16px 0; min-width: 0; }
-.canvas-view-controls label { display: flex; flex-direction: column; gap: 5px; }
-.canvas-view-controls button, .canvas-view-controls input, .canvas-view-controls select { box-sizing: border-box; width: 100%; min-width: 0; padding: 8px; border: 1px solid var(--gutter); border-radius: var(--control-radius); background: var(--control-background); color: var(--fg); font: inherit; }
-.canvas-view-controls button { cursor: pointer; }
+/* Canvas explorer: VS Code-style stacked panes with a compact tree. */
+.canvas-explorer { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; margin: 0 calc(-1 * var(--space-7)); border-top: 1px solid var(--gutter); }
+.canvas-explorer-empty { padding: 4px 20px 8px; margin: 0; }
+.canvas-view-controls { display: contents; color: var(--fg); font-size: 12px; }
+
+.explorer-section { border-bottom: 1px solid var(--gutter); }
+.explorer-section-header { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; height: 22px; padding-right: 4px; background: var(--surface-panel); }
+.explorer-section-header .explorer-section-title { display: flex; align-items: center; gap: 2px; flex: 1; min-width: 0; height: 100%; padding: 0 2px; border: 0; background: transparent; color: var(--fg); font: 700 11px/1 var(--font-mono); letter-spacing: .04em; text-transform: uppercase; text-align: left; cursor: pointer; }
+.explorer-section-title:focus-visible { outline: 1px solid var(--accent-primary); outline-offset: -1px; }
+.explorer-section-title .explorer-icon { transition: transform .1s; }
+.explorer-section.is-open > .explorer-section-header .explorer-section-title .explorer-icon { transform: rotate(90deg); }
+.explorer-section-actions { display: flex; gap: 2px; opacity: .55; transition: opacity .1s; }
+.explorer-section-header:hover .explorer-section-actions, .explorer-section-header:focus-within .explorer-section-actions { opacity: 1; }
+.explorer-section-body { padding-bottom: 6px; }
+/* The tree takes the free height and scrolls; the footer stays pinned to the bottom. */
+.canvas-explorer > .explorer-section, .canvas-view-controls > .explorer-section { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.canvas-explorer .explorer-section-body { flex: 1; min-height: 0; overflow: auto; }
+
+.explorer-icon { width: 16px; height: 16px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
+.explorer-icon.is-view { color: var(--accent-primary); }
+.explorer-icon-button { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; flex-shrink: 0; padding: 0; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--muted); cursor: pointer; }
+.explorer-icon-button:hover:not(:disabled), .explorer-icon-button:focus-visible { background: var(--control-background); color: var(--fg); outline: none; }
+.explorer-icon-button:disabled { opacity: .35; cursor: default; }
+.explorer-icon-button.is-dirty { color: var(--accent-primary); }
+.explorer-icon-button.is-danger:hover:not(:disabled) { color: var(--accent-danger); }
+
+.canvas-view-controls fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.canvas-view-controls p { margin: 0; color: var(--muted); line-height: 1.5; overflow-wrap: anywhere; }
+.canvas-view-canvas { padding: 0 12px 2px 20px; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal !important; }
+
+.canvas-view-tree, .canvas-view-tree ul, .mapping-floating-pane .canvas-view-tree ul { list-style: none; padding: 0; margin: 0; border: 0; }
+.canvas-view-tree { font-size: 13px; }
+.canvas-view-tree li { outline: none; }
+.canvas-view-row { display: flex; align-items: center; gap: 4px; height: 22px; padding: 0 4px 0 8px; cursor: pointer; border: 1px solid transparent; }
+.canvas-view-row:hover { background: color-mix(in srgb, var(--fg) 6%, transparent); }
+.canvas-view-row.is-active { background: color-mix(in srgb, var(--accent-primary) 18%, transparent); }
+.canvas-view-tree li:focus > .canvas-view-row { border-color: var(--accent-primary); }
+.canvas-view-tree [aria-disabled="true"] > .canvas-view-row { cursor: default; }
+.canvas-view-tree [aria-disabled="true"] > .canvas-view-row .canvas-view-name { opacity: .7; }
+/* One guide per depth level; guides brighten while hovering the tree, like VS Code. */
+.canvas-view-guide { align-self: stretch; width: 12px; flex-shrink: 0; margin-left: 2px; box-sizing: border-box; border-left: 1px solid transparent; transition: border-color .1s; }
+.canvas-view-guide:first-child { margin-left: 5px; }
+.canvas-view-tree:hover .canvas-view-guide { border-left-color: color-mix(in srgb, var(--muted) 40%, transparent); }
+.canvas-view-controls .canvas-view-chevron { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; padding: 0; border: 0; background: transparent; color: var(--muted); cursor: pointer; flex-shrink: 0; }
+.canvas-view-chevron[aria-label^="Collapse"] .explorer-icon { transform: rotate(90deg); }
+.canvas-view-chevron-spacer { width: 16px; flex-shrink: 0; }
+.canvas-view-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.canvas-view-dirty { width: 8px; height: 8px; margin: 0 4px; flex-shrink: 0; border-radius: 50%; background: var(--fg); }
+.canvas-view-row-actions { display: flex; flex-shrink: 0; }
+
+.canvas-view-row.is-editing { cursor: default; background: transparent; }
+.canvas-view-row.is-editing input { flex: 1; min-width: 0; height: 20px; padding: 0 4px; border: 1px solid var(--accent-primary); border-radius: 0; background: var(--bg); color: var(--fg); font: inherit; outline: none; }
+.canvas-view-draft-count { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; color: var(--muted); font-size: 12px; }
+.canvas-view-draft-count input { flex: 0 0 52px !important; }
+.canvas-view-hint { padding: 2px 8px 4px; font-size: 11px; }
+
+.canvas-view-footer { flex-shrink: 0; display: flex; flex-direction: column; gap: 6px; padding: 6px var(--space-7) 0; border-top: 1px solid var(--gutter); }
+.canvas-view-status { display: flex; align-items: center; gap: 6px; min-height: 22px; }
+.canvas-view-controls .canvas-view-current { flex: 1; min-width: 0; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; }
+.canvas-view-current strong { color: var(--fg); font-weight: 600; }
+.canvas-view-cycle { display: flex; align-items: center; flex-shrink: 0; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.canvas-view-empty { display: flex; flex-direction: column; gap: 8px; padding: 4px 20px 6px; }
+
+.canvas-view-controls .canvas-view-notice, .canvas-view-error { margin: 6px 12px 0 20px; font-size: 11px; overflow-wrap: anywhere; }
+.canvas-view-error { color: var(--accent-danger); }
+.canvas-view-controls .canvas-view-empty button, .canvas-view-retry { box-sizing: border-box; width: 100%; min-width: 0; padding: 5px 8px; border: 1px solid var(--gutter); border-radius: var(--control-radius); background: var(--control-background); color: var(--fg); font: inherit; cursor: pointer; }
+.canvas-view-retry { margin: 6px 12px 0 20px; width: calc(100% - 32px); }
+.canvas-view-controls .canvas-view-save { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 7px 10px; border: 1px solid var(--gutter); border-radius: var(--control-radius); background: var(--control-background); color: var(--fg); font: 600 12px var(--font-mono); cursor: pointer; }
+.canvas-view-save.is-dirty { border-color: var(--accent-primary); background: color-mix(in srgb, var(--accent-primary) 18%, var(--control-background)); }
+.canvas-view-save:hover:not(:disabled) { border-color: var(--accent-primary); }
+.canvas-view-save kbd { margin-left: auto; padding: 1px 5px; border: 1px solid var(--gutter); border-radius: 3px; color: var(--muted); font: 10px var(--font-mono); }
 .canvas-view-controls button:disabled { opacity: .5; cursor: default; }
-.canvas-view-controls [role="alert"] { margin-top: 8px; overflow-wrap: anywhere; }
-.canvas-view-controls [aria-pressed="true"] { border-color: var(--accent-primary); }
-.canvas-view-controls .canvas-view-diff-toggle { flex-direction: row; align-items: center; gap: 8px; }
-.canvas-view-controls .canvas-view-diff-toggle input { width: auto; }
 .canvas-view-diff-preview .change-preview-box.is-removed-diagram { border: 2px dashed var(--diff-deleted-text); }
+.canvas-generation-form, .canvas-generation-details { padding: 10px; display: grid; gap: 8px; font-size: 12px; }
+.canvas-generation-form label { display: grid; gap: 4px; }
+.canvas-generation-form input, .canvas-generation-form textarea, .canvas-generation-form select { width: 100%; box-sizing: border-box; background: var(--control-background); color: var(--fg); border: 1px solid var(--gutter); border-radius: 3px; font: inherit; padding: 6px; }
+.canvas-generation-form textarea { min-height: 70px; resize: vertical; }
+.canvas-generation-candidate { display: grid; gap: 6px; padding-top: 8px; border-top: 1px solid var(--gutter); }
+.canvas-generation-details pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 160px; overflow: auto; }
+.canvas-generation-badge { margin-left: auto; font-size: 10px; color: var(--muted); white-space: nowrap; }
+.canvas-generation-badge[data-generation-status="generating"], .canvas-generation-badge[data-generation-status="queued"] { color: var(--accent-primary); }
+.canvas-generation-badge[data-generation-status="failed"] { color: var(--accent-danger); }
+
+.canvas-generation-form button, .canvas-generation-details button { padding: 6px 8px; border: 1px solid var(--gutter); border-radius: var(--control-radius); background: var(--control-background); color: var(--fg); font: inherit; cursor: pointer; }
+.canvas-generation-form button:hover:not(:disabled), .canvas-generation-details button:hover:not(:disabled) { border-color: var(--accent-primary); }
+.canvas-generation-details summary { cursor: pointer; }

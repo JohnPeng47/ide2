@@ -47,6 +47,11 @@ export function CanvasSelectionLayer(props: { stageRef: RefObject<HTMLDivElement
       });
     const ui = (event: MouseEvent) => {
       const target = event.target as Element;
+      // Side-panel text belongs to the panel, but navigation must still reach
+      // gesture recognition (including finger-to-Hand and clearing suppression).
+      if (target.closest('[data-side-panel]') && !target.closest('button,input,textarea,select,a,[contenteditable=true]')
+        && (event.button === 1 || editor?.inputs.getIsPanning() || editor?.getCurrentToolId() === 'hand'
+          || 'pointerType' in event && event.pointerType === 'touch')) return false;
       if (target.closest('[data-diagram-move-handle]')) return false;
       if (target.closest('[data-diagram-jump-id]') && (event.ctrlKey || ('pointerType' in event ? event.pointerType !== 'mouse' : bridge?.pointerType !== 'mouse'))) return false;
       if (event.ctrlKey && target.closest('.retained-selection-controls, .mapping-whole-actions') && nodeAtPoint(event)) return false;
@@ -146,6 +151,11 @@ export function CanvasSelectionLayer(props: { stageRef: RefObject<HTMLDivElement
       else if (result) current.current.onTap(result.hit, result.policy, !result.hit.nodeId);
       else if (gesture?.kind === 'marquee' && !gesture.moved && gesture.start.pointerType === 'mouse'
         && gesture.start.ctrl && gesture.start.hit) pendingNodeClick = gesture.start.hit;
+      else if (gesture?.kind === 'node' && !gesture.moved && gesture.start.pointerType === 'mouse'
+        && editor?.getCurrentToolId() !== 'hand') {
+        const node = gesture.start.hit;
+        if (node?.nodeId && node.revision) current.current.runtime?.focusNode(node.diagramId, node.nodeId, node.revision);
+      }
       if (!editor && viewport.hasPointerCapture(event.pointerId)) viewport.releasePointerCapture(event.pointerId);
       // Native pointer-up still needs its tool. Restore on the next tick, after
       // geometry has settled, rather than ending translation in DOM capture.

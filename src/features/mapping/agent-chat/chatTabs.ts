@@ -27,4 +27,4 @@ export function closeChatTab(tabs: ChatTabs, id: string): ChatTabs {
 export function cycleChatTab(tabs: ChatTabs, direction: -1 | 1): ChatTabs {
   return { ...tabs, selected: tabs.ids[(tabs.ids.indexOf(tabs.selected) + direction + tabs.ids.length) % tabs.ids.length] };
 }
-export type ChatTabCommand = { serial: number; action: 'focus' | 'new' | 'previous' | 'next' };
+export type ChatTabCommand = { serial: number; action: 'focus' | 'new' | 'previous' | 'next' | 'open'; sessionId?: string };

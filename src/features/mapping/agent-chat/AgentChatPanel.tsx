@@ -83,6 +83,13 @@ export function AgentChatPanel({ open, projectId, canvasTarget, onCopyDiagram, r
     setSettings(tabSettings.current[id] ?? settings);
     setTabs(current => activateChatTab(current, id)); setError('');
   };
+  const reloadTools = async () => {
+    if (!activeSessionId || running || busy) return;
+    setBusy(true); setError('');
+    try { await chatRequest(`/sessions/${activeSessionId}/reload-tools`, {}); }
+    catch (error) { setError(error instanceof Error ? error.message : String(error)); }
+    finally { setBusy(false); }
+  };
   const newTab = () => {
     const id = newChatTab();
     tabSettings.current[id] = { ...settings, sandbox: defaults.sandbox };
@@ -101,7 +108,8 @@ export function AgentChatPanel({ open, projectId, canvasTarget, onCopyDiagram, r
   useEffect(() => {
     if (!open || !info || busy || !tabCommand || consumedCommand.current >= tabCommand.serial) return;
     consumedCommand.current = tabCommand.serial;
-    if (tabCommand.action === 'new') newTab();
+    if (tabCommand.action === 'open' && tabCommand.sessionId) activate(tabCommand.sessionId);
+    else if (tabCommand.action === 'new') newTab();
     else if (tabCommand.action === 'next' || tabCommand.action === 'previous') activate(cycleChatTab(tabs, tabCommand.action === 'next' ? 1 : -1).selected);
     requestAnimationFrame(() => document.querySelector<HTMLElement>('.agent-chat-prompt')?.focus({ preventScroll: true }));
   }, [tabCommand, info, open, busy]);
@@ -167,7 +175,7 @@ export function AgentChatPanel({ open, projectId, canvasTarget, onCopyDiagram, r
     return () => { cancelled = true; clearInterval(timer); };
   }, [open, backgroundRunning, activeSessionId]);
   const send = async () => {
-    if (!text.trim() || referenceError || busy || running || !info || (activeSessionId && (!session || !connected))) return;
+    if (session?.generation || !text.trim() || referenceError || busy || running || !info || (activeSessionId && (!session || !connected))) return;
     setBusy(true); setError('');
     let id = activeSessionId;
     try {
@@ -187,7 +195,7 @@ export function AgentChatPanel({ open, projectId, canvasTarget, onCopyDiagram, r
     finally { setBusy(false); }
   };
   const readCanvas = async () => {
-    if (!canvasTarget || busy || running || !info || (activeSessionId && (!session || !connected))) return;
+    if (session?.generation || !canvasTarget || busy || running || !info || (activeSessionId && (!session || !connected))) return;
     setBusy(true); setError('');
     let id = activeSessionId;
     try {
@@ -244,11 +252,16 @@ export function AgentChatPanel({ open, projectId, canvasTarget, onCopyDiagram, r
       {resumeError && <small className="agent-chat-reference-error" role="alert">{resumeError}</small>}
       {session && <small className="agent-chat-session-location" title={session.threadId}>{session.cwd}</small>}
     </form>
-      <div className="agent-chat-controls"><label>Model<select aria-label="Codex model" disabled={running || busy} value={settings.model} onChange={event => chooseModel(event.target.value)}>
+      {session && <div className="agent-chat-tool-reload">
+        <button type="button" disabled={busy || running || !connected} onClick={() => void reloadTools()}
+          title={running ? 'Wait for the current turn to finish' : 'Refresh available tools while keeping this conversation'}>Reload tools</button>
+        {session.toolsReloadedAt && <small role="status">Tools reloaded. Ready for your next message.</small>}
+      </div>}
+      <div className="agent-chat-controls"><label>Model<select aria-label="Codex model" disabled={running || busy || !!session?.generation} value={settings.model} onChange={event => chooseModel(event.target.value)}>
         <option value="">Codex default</option>{settings.model && !model && <option value={settings.model}>{settings.model}</option>}{info?.models.map(model => <option key={model.id} value={model.id}>{model.name}</option>)}</select></label>
-        <label>Effort<select aria-label="Reasoning effort" disabled={running || busy} value={settings.effort} onChange={event => setSettings(current => ({ ...current, effort: event.target.value as ChatSettings['effort'] }))}>
+        <label>Effort<select aria-label="Reasoning effort" disabled={running || busy || !!session?.generation} value={settings.effort} onChange={event => setSettings(current => ({ ...current, effort: event.target.value as ChatSettings['effort'] }))}>
           <option value="">Default</option>{model?.efforts.map(effort => <option key={effort} value={effort}>{effort}</option>)}</select></label>
-        <label>Access<select aria-label="Codex access" disabled={running || busy} value={settings.sandbox} onChange={event => setSettings(current => ({ ...current, sandbox: event.target.value as ChatSettings['sandbox'] }))}>
+        <label>Access<select aria-label="Codex access" disabled={running || busy || !!session?.generation} value={settings.sandbox} onChange={event => setSettings(current => ({ ...current, sandbox: event.target.value as ChatSettings['sandbox'] }))}>
           <option value="danger-full-access">Full access (YOLO)</option><option value="workspace-write">Workspace</option><option value="read-only">Read only</option></select></label>
       </div>
   </div>;
@@ -282,16 +295,17 @@ export function AgentChatPanel({ open, projectId, canvasTarget, onCopyDiagram, r
     {error && <div className="agent-chat-error" role="alert">{error}{!info && <button onClick={() => setAttempt(value => value + 1)}>Retry connection</button>}</div>}
     {session?.items.length ? <ChatTranscript key={session.id} session={session} open={open} zoom={zoom} onZoomChange={setZoom} /> : <div className="agent-chat-timeline"><div className="agent-chat-empty"><span>CODEX</span><h2>What would you like to work on?</h2><p>Ask about your project, explore code, or make a change.</p>{info && <code>{info.cwd}</code>}</div></div>}
     <div className="agent-chat-requests">{session?.pending.map(request => <PendingRequest key={request.id} request={request} onAnswer={answer => chatRequest(`/sessions/${selected}/answer/${request.id}`, answer)} />)}</div>
+    <div>{session?.generation && <p className="agent-chat-context">Generation chat · {session.generation.metadata.status}. Start another generation from the canvas to iterate.</p>}</div>
     <form className="agent-chat-composer" onSubmit={event => { event.preventDefault(); void send(); }}>
       {running && <ChatWorking key={session.id} startedAt={session.turnStartedAt} open={open} waiting={session.pending.length > 0} activity={session.activity} />}
       {session && !session.canvasTools && <small className="agent-chat-tool-hint">Start a new chat to enable diagram editing tools.</small>}
       {referenceError && <small className="agent-chat-reference-error" role="alert">{referenceError}</small>}
-      <ChatPromptEditor value={draft} draftKey={selected} selectedReferences={selectedReferences} open={open} disabled={!info || busy}
+      <ChatPromptEditor value={draft} draftKey={selected} selectedReferences={selectedReferences} open={open} disabled={!info || busy || !!session?.generation}
         onChange={value => setDrafts(current => ({ ...current, [selected]: value }))} onSend={() => void send()} />
       <div className="agent-chat-composer-actions">
-      <button type="button" className="agent-chat-read-canvas" disabled={!canvasTarget || busy || running || !info || (!!activeSessionId && (!session || !connected))}
+      <button type="button" className="agent-chat-read-canvas" disabled={!!session?.generation || !canvasTarget || busy || running || !info || (!!activeSessionId && (!session || !connected))}
         title={canvasTarget ? 'Send the current canvas to the agent' : 'Open a live canvas to read it'} onClick={() => void readCanvas()}>Read Canvas</button>
-        {running ? <button type="button" className="agent-chat-send" disabled={busy} onClick={() => void stop()}>Stop</button> : <button className="agent-chat-send" disabled={busy || !!referenceError || !text.trim() || !info || (!!activeSessionId && (!session || !connected))}>{busy ? 'Starting…' : 'Send ↑'}</button>}
+        {running ? <button type="button" className="agent-chat-send" disabled={busy} onClick={() => void stop()}>Stop</button> : <button className="agent-chat-send" disabled={!!session?.generation || busy || !!referenceError || !text.trim() || !info || (!!activeSessionId && (!session || !connected))}>{busy ? 'Starting…' : 'Send ↑'}</button>}
       </div>
     </form>
     </div>

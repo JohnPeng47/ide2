@@ -530,8 +530,11 @@ export function MappingPocSelectionCanvas(props: {
     }
     if (diagram.content.revisionId !== hit.revision) return;
     const node = diagramContentNodes(diagram.content).find(node => node.id === hit.nodeId);
-    if (node) finishMarquee({ diagramIds: [], regions: [{ boxId: box!.box.id,
-      rect: { startLine: node.line, endLine: node.line, startColumn: node.startColumn, endColumn: node.endColumn } }] }, policy, baseline);
+    if (node) {
+      finishMarquee({ diagramIds: [], regions: [{ boxId: box!.box.id,
+        rect: { startLine: node.line, endLine: node.line, startColumn: node.startColumn, endColumn: node.endColumn } }] }, policy, baseline);
+      nativeRuntime?.focusNode(hit.diagramId, node.id, hit.revision);
+    }
   };
 
   // A carried reference drops where the user clicks; the pointer never reaches selection or panning.
@@ -717,6 +720,7 @@ export function MappingPocSelectionCanvas(props: {
   };
   const escapeSelection = () => {
     if (isGenerating || nativeRuntime?.gestures.escape?.()) return;
+    nativeRuntime?.clearConnectionFocus();
     clearSelectionFocus();
     controller.updateCanvas(deselectCanvas, true);
     nativeRuntime?.clearDragSelection();
@@ -1178,6 +1182,9 @@ export function MappingPocSelectionCanvas(props: {
               return after;
             });
             if (nodeClick.current) nodeClick.current.after = controller.getSnapshot().canvas.selection;
+            const model = nativeRuntime?.grids.get(hit.diagramId).get();
+            if (model?.frame.selected || model?.selectedContent.includes(hit.nodeId)) nativeRuntime?.focusNode(hit.diagramId, hit.nodeId, hit.revision);
+            else nativeRuntime?.clearConnectionFocus();
           }
         }}
         runtime={nativeRuntime ?? undefined} resolve={resolveMarquee} onComplete={finishMarquee} onTap={selectHit}

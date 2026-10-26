@@ -1,3 +1,4 @@
+import { DiagramAlternativeControls } from './DiagramAlternativeControls';
 import { analyzeDiagramSyntax } from '../../../../domain/core/diagrams/diagramSyntaxAnalysis';
 import { activeDiagramHighlights, highlightColor, highlightNodeIds } from '../../../../domain/core/diagrams/diagramHighlight';
 import { DiagramTreemapTint } from '../treemap/CanvasTreemapColors';
@@ -59,6 +60,7 @@ export function DiagramShapeContent({ nodeId }: { nodeId: string }) {
   const { frame, cell } = model;
   return <>
     {model.diagram && <><DiagramTreemapTint model={model} /><Text model={model} /></>}
+    {model.diagram && (frame.selected || dragSelected) && <DiagramAlternativeControls model={model} disabled={interaction.disabled} />}
     <DiagramSubtreeControls nodes={[model.node]} visibleBoxIds={new Set([frame.boxId])} cell={cell}
       disabled={interaction.subtreeDisabled} onCollapse={(id, contentId, collapsed) => runtime.actions?.collapse(id, collapsed, contentId)} />
     <div className={`mapping-grid-box${frame.kind === 'container' ? ' is-container' : ''}`}

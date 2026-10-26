@@ -67,6 +67,14 @@ try {
     cdp.on('Runtime.exceptionThrown', event => browserErrors.push(event.exceptionDetails));
     cdp.on('Page.javascriptDialogOpening', () => void cdp.send('Page.handleJavaScriptDialog', { accept: true }));
     const click = async (selector, text) => {
+      const panelExpression = `(() => { const e=[...document.querySelectorAll(${JSON.stringify(selector)})].find(e=>!${JSON.stringify(text)} || e.textContent.trim()===${JSON.stringify(text)}); let panel=e?.parentElement; while(panel && !(panel.scrollHeight>panel.clientHeight && /auto|scroll/.test(getComputedStyle(panel).overflowY))) panel=panel.parentElement; return panel; })()`;
+      for (let attempt = 0; attempt < 15; attempt++) {
+        const scroll = await evaluate(cdp, `(() => { const e=[...document.querySelectorAll(${JSON.stringify(selector)})].find(e=>!${JSON.stringify(text)} || e.textContent.trim()===${JSON.stringify(text)}); const panel=${panelExpression}; if(!e || !panel) return null; const r=e.getBoundingClientRect(), p=panel.getBoundingClientRect(); if(r.top>=p.top && r.bottom<=p.bottom) return null; return {x:p.right-20,y:Math.max(0,p.top)+40,deltaY:r.top<p.top?-300:300,deltaX:0}; })()`);
+        if (!scroll) break;
+        const before = await evaluate(cdp,`(${panelExpression})?.scrollTop`);
+        await cdp.send('Input.dispatchMouseEvent',{type:'mouseWheel',...scroll});
+        await waitFor(async()=>await evaluate(cdp,`(${panelExpression})?.scrollTop`)!==before);
+      }
       const point = await evaluate(cdp, `(() => { const e=[...document.querySelectorAll(${JSON.stringify(selector)})].find(e=>!${JSON.stringify(text)} || e.textContent.trim()===${JSON.stringify(text)});
         if(!e || e.disabled) throw Error('Unavailable '+${JSON.stringify(text ?? selector)}); const r=e.getBoundingClientRect(), p={x:r.x+r.width/2,y:r.y+r.height/2};
         if(!e.contains(document.elementFromPoint(p.x,p.y))) throw Error('Occluded '+${JSON.stringify(text ?? selector)}); return p; })()`);
@@ -77,7 +85,7 @@ try {
     const live = () => evaluate(cdp, "[...document.querySelectorAll('[data-native-node] .mapping-poc-ascii')].map(e=>e.textContent).join('\\n')");
     const preview = () => evaluate(cdp, "document.querySelector('[data-canvas-view-diff]')?.textContent ?? ''");
     const toggle = '.canvas-view-diff-toggle input';
-    const open = async () => { await waitForSelector(cdp, '[aria-label="Explorer mode"]'); await click('[aria-label="Explorer mode"] button', 'Canvas'); await waitForSelector(cdp, toggle); };
+    const open = async () => { await waitForSelector(cdp, '[aria-label="Explorer mode"]'); await click('[aria-label="Explorer mode"] button', 'Canvas'); await waitForSelector(cdp, '.canvas-view-recording summary'); await click('.canvas-view-recording summary'); await waitForSelector(cdp, toggle); };
     await open();
     await waitFor(async () => (await live()).includes('Live content stays here'));
     const original = await live();

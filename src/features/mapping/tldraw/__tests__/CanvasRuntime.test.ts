@@ -1,4 +1,4 @@
-import { toggleSubtreeSelection } from '../../../../../domain/mapping/selection/subtreeSelection';
+import { toggleNodeSelection, toggleSubtreeSelection } from '../../../../../domain/mapping/selection/subtreeSelection';
 import { describe, expect, it, vi } from 'vitest';
 import { atom, computed, Mat, type Editor } from 'tldraw';
 import { CanvasRuntime } from '../CanvasRuntimeContext';
@@ -48,6 +48,33 @@ describe('native canvas read models and local anchors', () => {
     expect(controller.getSnapshot()).toBe(before);
     controller.applyUpdate(before.version, [{ method: 'edge-remove', edgeId: 'edge' }]);
     expect(runtime.focusedEdge.get()).toBeUndefined();
+    dispose();
+  });
+  it('focuses incoming and outgoing connections of the clicked instance and clears focus on deselection', () => {
+    const { runtime, controller, source, dispose } = setup();
+    const edge = controller.getSnapshot().document.edges[0];
+    const second = runtime.edges.get(edge.id).get()!.target!.identity;
+    controller.applyUpdate(controller.getSnapshot().version, [{ method: 'edge-create', edge: {
+      ...edge, id: 'incoming', source: { ...source, displayNodeId: second.displayNodeId,
+        contentNodeId: second.contentNodeId!, revisionId: second.revisionId! }, target: source,
+    } }]);
+    const diagram = controller.getSnapshot().document.scene.contents.overview;
+    const toggle = () => controller.select({ type: 'replace', items: toggleNodeSelection(
+      controller.getSnapshot().canvas.selection, diagram, 'overview', source.contentNodeId).items });
+    const before = controller.getSnapshot();
+    runtime.focusNode(source.displayNodeId, source.contentNodeId, source.revisionId);
+    expect(runtime.nodeConnections.get()).toEqual([
+      { id: 'edge', incoming: false, outgoing: true }, { id: 'incoming', incoming: true, outgoing: false },
+    ]);
+    expect(controller.getSnapshot()).toBe(before);
+    expect(before.canvas.selection.items).toEqual([]);
+    runtime.focusNode('grid:second', source.contentNodeId, source.revisionId);
+    expect(runtime.nodeConnections.get()).toEqual([]);
+    toggle();
+    runtime.focusNode(source.displayNodeId, source.contentNodeId, source.revisionId);
+    toggle();
+    expect(runtime.focusedNode.get()).toBeUndefined();
+    expect(runtime.nodeConnections.get()).toEqual([]);
     dispose();
   });
   it('isolates anchor updates from the document, shape content, other anchors, and history', () => {

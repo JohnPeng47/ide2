@@ -8,14 +8,19 @@ import { PanelConnector } from '../../../shared/diagrams/PanelConnector';
 export function NativeConnection({ edgeId }: { edgeId: string }) {
   const runtime = useContext(CanvasRuntimeContext)!;
   const panning = useRef(false);
-  const focused = useValue(`connection focus ${edgeId}`, () => runtime.focusedEdge.get()?.id === edgeId, [runtime, edgeId]);
+  const focused = useValue(`connection focus ${edgeId}`, () => runtime.focusedEdge.get()?.id === edgeId
+    || runtime.nodeConnections.get().some(edge => edge.id === edgeId), [runtime, edgeId]);
   const disabled = useValue('connection interaction', () => runtime.interaction.get().subtreeDisabled, [runtime]);
   const model = useValue(`connection ${edgeId}`, () => runtime.edges.get(edgeId).get(), [runtime, edgeId]);
   const edge = model?.edge;
   const arrow = useValue(`connection geometry ${edgeId}`, () => model && nativeEdgeGeometry(runtime, model.edge, model.source, model.target), [runtime, model]);
   if (!edge || !arrow?.path || !arrow.target) return null;
   const toggle = (point: { x: number; y: number }) => {
-    if (!disabled) runtime.focusedEdge.set(focused ? undefined : { id: edgeId, point });
+    if (!disabled) {
+      const wasFocused = runtime.focusedEdge.get()?.id === edgeId;
+      runtime.focusedNode.set(undefined);
+      runtime.focusedEdge.set(wasFocused ? undefined : { id: edgeId, point });
+    }
   };
   return <svg className="diagram-connections mapping-native-connection" style={{ width: 1, height: 1, color: focused ? 'var(--accent-cyan)' : edge.appearance.color, overflow: 'visible' }}>
     <g data-connection-id={edge.id} data-connection-status={arrow.status} data-geometry-source={arrow.geometrySource} data-edge-focused={focused || undefined}>

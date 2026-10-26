@@ -1,3 +1,4 @@
+import { projectSidePanels, type SidePanelProjection } from '../../../../domain/mapping/workspace/diagramSidePanelLayout';
 import { SelectionToolBridge } from './SelectionTools';
 import { selectedDiagramIds, selectionContentNodes } from '../../../../domain/mapping/selection/selectionState';
 import { createContext } from 'react';
@@ -8,6 +9,7 @@ import type { LocalChatVerbosity } from '../../../../domain/mapping/chat/localCh
 import type { ProjectRepresentationCatalogRecord } from '../../../../domain/core/representations/projectCatalog';
 import { flattenGrid } from '../../../../domain/core/diagrams/lineGrid';
 import type { Diagram } from '../../../../domain/core/diagrams/diagram';
+import { diagramContentNodes } from '../../../../domain/core/diagrams/diagramContentNodes';
 import { canvasDisplayNodes, findBox, type CanvasDisplayNode } from '../../../../domain/mapping/workspace/canvasDisplayNode';
 import { presentationScene, diagramProjection, resolveDiagramView, type DiagramViewState } from '../../../../domain/mapping/workspace/diagramViewState';
 import type { DisplayState, FloatingPane, SelectionRegion } from '../../../../domain/mapping/workspace/displayModel';
@@ -74,6 +76,8 @@ export class CanvasRuntime {
   readonly anchors = new LocalAnchorStore();
   readonly routing = new NativeRoutingStore(() => this.editor);
   readonly grids = new Models<GridModel>();
+  readonly panels = new Models<SidePanelProjection & { cell: { width: number; height: number } }>();
+  readonly alternativeState = atom<ControllerSnapshot['document']['alternatives']>('diagram alternatives', undefined);
   readonly floats = new Models<FloatModel>();
   readonly edges = new Models<EdgeModel>();
   private readonly edgeIds = atom<string[]>('routing edge IDs', []);
@@ -82,6 +86,18 @@ export class CanvasRuntime {
     return model ? [nativeEdgeInput(this, model.edge, model.source, model.target)] : [];
   })));
   readonly focusedEdge = atom<{ id: string; point: { x: number; y: number } } | undefined>('focused mapping edge', undefined);
+  readonly focusedNode = atom<{ displayNodeId: string; contentNodeId: string; revisionId: string } | undefined>('focused mapping node', undefined);
+  readonly nodeConnections = computed('focused node connections', () => {
+    const node = this.focusedNode.get();
+    if (!node) return [];
+    const matches = (endpoint?: LocalEndpoint) => endpoint?.identity.displayNodeId === node.displayNodeId
+      && endpoint.identity.contentNodeId === node.contentNodeId && endpoint.identity.revisionId === node.revisionId;
+    return this.edgeIds.get().flatMap(id => {
+      const model = this.edges.get(id).get();
+      const incoming = matches(model?.target), outgoing = matches(model?.source);
+      return incoming || outgoing ? [{ id, incoming, outgoing }] : [];
+    });
+  });
   readonly interaction = atom('mapping shape controls', { disabled: false, subtreeDisabled: false, jumps: false });
   readonly catalog = atom<{ catalog?: ProjectRepresentationCatalogRecord; dirtyIds?: string[] }>('mapping projection catalog', {});
   // Stable service object; callbacks are installed by the application command UI.
@@ -90,6 +106,14 @@ export class CanvasRuntime {
   private registry: CanvasDisplayNode[] = [];
   constructor(readonly session: CanvasSession) { this.controller = session.controller; this.sync(); }
   connect() { this.sync(); return this.controller.subscribe(() => this.sync()); }
+  clearConnectionFocus() { this.focusedEdge.set(undefined); this.focusedNode.set(undefined); }
+  focusNode(displayNodeId: string, contentNodeId: string, revisionId: string) {
+    this.focusedEdge.set(undefined);
+    const model = this.grids.get(displayNodeId).get();
+    this.focusedNode.set(model?.diagram?.content.revisionId === revisionId
+      && diagramContentNodes(model.diagram.content).some(node => node.id === contentNodeId)
+      ? { displayNodeId, contentNodeId, revisionId } : undefined);
+  }
   clearDragSelection() {
     this.gestures.ownership.dragDiagramIds = [];
     this.gestures.ownership.claim('application');
@@ -115,7 +139,7 @@ export class CanvasRuntime {
         bounds: box.bounds, selected: s.canvas.selection.items.some(item => item.displayNodeId === id && !item.region) },
         diagram, view, node: this.registry.find(node => node.id === id)!, cell, selectedContent,
         jumps: (s.document.jumps ?? []).filter(jump => jump.sourceDisplayNodeId === id),
-        layoutKey: JSON.stringify([diagram?.content.revisionId, diagram?.content.asciiSha256, view, cell, box.box.collapsed]) });
+        layoutKey: JSON.stringify([diagram?.content.revisionId, diagram?.content.asciiSha256, view, cell, box.box.collapsed, s.document.alternatives?.selected[id]]) });
     }
     const floats = new Map<string, FloatModel>(), nodes = Object.values(s.canvas.display.nodes);
     for (const node of nodes) {
@@ -133,6 +157,8 @@ export class CanvasRuntime {
         selected: s.canvas.selection.items.some(item => item.id === node.id), sourceRevisionId: content?.revisionId });
     }
     transact(() => {
+      this.panels.publish(new Map(projectSidePanels(s.document, resolveDiagramView(presentationScene(s.document), s.canvas.diagramViews), s.canvas.diagramViews).map(panel => [panel.panel.id, { ...panel, cell }])));
+      this.alternativeState.set(shareEqual(this.alternativeState.get(), s.document.alternatives));
       this.grids.publish(grids); this.floats.publish(floats);
       this.routing.sync(grids, s.document.edges);
       this.anchors.retain(new Map([...grids].map(([id, model]) => [id, model.layoutKey])));
@@ -140,6 +166,9 @@ export class CanvasRuntime {
       this.edgeIds.set(shareEqual(this.edgeIds.get(), s.document.edges.map(edge => edge.id)));
       const focused = this.focusedEdge.get();
       if (focused && !s.document.edges.some(edge => edge.id === focused.id)) this.focusedEdge.set(undefined);
+      const node = this.focusedNode.get(), model = node && grids.get(node.displayNodeId);
+      if (node && (model?.diagram?.content.revisionId !== node.revisionId
+        || p && p.canvas.selection !== s.canvas.selection)) this.focusedNode.set(undefined);
     });
   }
   resolveAnchor(anchor: DiagramAnchor, diagramRoot = false): LocalEndpoint | undefined {

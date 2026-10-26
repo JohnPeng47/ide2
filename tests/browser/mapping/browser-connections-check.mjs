@@ -12,6 +12,7 @@ import { revisionFixture } from '../../support/diagramRevisions.ts';
 import { connectionContentNodes, defaultArrowAppearance } from '../../../domain/core/diagrams/diagramConnection.ts';
 import { singleDiagramScene } from '../../../domain/core/diagrams/projectDiagramCanvas.ts';
 const { evaluate, waitFor, waitForSelector, withHeadlessBrowser, captureScreenshot } = await import(pathToFileURL(path.join(homedir(), '.codex/skills/front-end/browser-test.mjs')).href);
+async function checkConnections(nodeFocus) {
 const root = await mkdtemp(path.join(tmpdir(), 'edge-focus-'));
 let server;
 try {
@@ -26,7 +27,9 @@ try {
   const leaf = connectionContentNodes(content).find(n => n.label === 'Leaf');
   const anchor = (box, side) => ({kind:'content-node',displayNodeId:`grid:${box}`,contentNodeId:leaf.id,revisionId:content.revisionId,side});
   const edge = {id:'route',source:anchor('overview','right'),target:anchor('second','left'),appearance:{...defaultArrowAppearance,label:'Uses'}};
-  catalog.revisions['revision-overview'].content = {kind:'canvas-history',history:canvasSaveFixture({name:'Fixture',scene,edges:[edge]}).history};
+  const incoming = { ...edge, id: 'incoming', source: { ...anchor('second', 'left'), contentNodeId: connectionContentNodes(content).find(n => n.label === 'Branch').id }, target: anchor('overview', 'right') };
+  const outgoing = { ...edge, id: 'outgoing', target: { ...anchor('second', 'left'), contentNodeId: connectionContentNodes(content).find(n => n.label === 'Footer').id } };
+  catalog.revisions['revision-overview'].content = {kind:'canvas-history',history:canvasSaveFixture({name:'Fixture',scene,edges:nodeFocus ? [edge,incoming,outgoing] : [edge]}).history};
   const original = JSON.stringify(catalog); await writeFile(catalogPath, original);
   const port = await new Promise(resolve=>{const s=createServer();s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(()=>resolve(p));});});
   const url=`http://127.0.0.1:${port}`;
@@ -44,9 +47,9 @@ try {
     const camera=()=>read('document.querySelector(".diagram-canvas__surface").style.transform');
     const stableCamera=async()=>{let previous;await waitFor(async()=>{const value=await camera(),same=value===previous;previous=value;return same;});};
     const settle=()=>read('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
-    const edgePoint=orientation=>read(`(()=>{const p=document.querySelector('.diagram-connection-hit'),m=p.getScreenCTM();const points=[...p.getAttribute('d').matchAll(/[ML]([^ML]+)/g)].map(v=>{const [x,y]=v[1].trim().split(/\\s+/).map(Number);return{x,y}});return points.slice(1).map((b,i)=>({a:points[i],b})).filter(({a,b})=>Math.hypot(a.x-b.x,a.y-b.y)>15&&(${JSON.stringify(orientation)}==='horizontal'?a.y===b.y:a.x===b.x)).sort((a,b)=>Math.hypot(b.a.x-b.b.x,b.a.y-b.b.y)-Math.hypot(a.a.x-a.b.x,a.a.y-a.b.y)).map(({a,b})=>new DOMPoint((a.x+b.x)/2,(a.y+b.y)/2).matrixTransform(m)).filter(q=>document.elementFromPoint(q.x,q.y)===p).map(q=>({x:q.x,y:q.y}))[0]})()`);
+    const edgePoint=orientation=>read(`(()=>{const p=document.querySelector('[data-connection-id=route] .diagram-connection-hit'),m=p.getScreenCTM();const points=[...p.getAttribute('d').matchAll(/[ML]([^ML]+)/g)].map(v=>{const [x,y]=v[1].trim().split(/\\s+/).map(Number);return{x,y}});return points.slice(1).map((b,i)=>({a:points[i],b})).filter(({a,b})=>Math.hypot(a.x-b.x,a.y-b.y)>15&&(${JSON.stringify(orientation)}==='horizontal'?a.y===b.y:a.x===b.x)).sort((a,b)=>Math.hypot(b.a.x-b.b.x,b.a.y-b.b.y)-Math.hypot(a.a.x-a.b.x,a.a.y-a.b.y)).map(({a,b})=>new DOMPoint((a.x+b.x)/2,(a.y+b.y)/2).matrixTransform(m)).filter(q=>document.elementFromPoint(q.x,q.y)===p).map(q=>({x:q.x,y:q.y}))[0]})()`);
     const focused=()=>read('!!document.querySelector("[data-edge-focused=true]")');
-    const centered=box=>read(`(()=>{const n=document.querySelector('[data-native-node="grid:${box}"] [data-content-node-id][data-source-line="3"]').getBoundingClientRect(),v=document.querySelector('.mapping-editor-canvas').getBoundingClientRect();return Math.abs(n.x+n.width/2-v.x-v.width/2)<2&&Math.abs(n.y+n.height/2-v.y-v.height/2)<2})()`);
+    const centered=(box,line=3)=>read(`(()=>{const n=document.querySelector('[data-native-node="grid:${box}"] [data-content-node-id][data-source-line="${line}"]').getBoundingClientRect(),v=document.querySelector('.mapping-editor-canvas').getBoundingClientRect();return Math.abs(n.x+n.width/2-v.x-v.width/2)<2&&Math.abs(n.y+n.height/2-v.y-v.height/2)<2})()`);
     await waitForSelector(cdp,'.diagram-connection-hit');
     await waitFor(async()=>!!await edgePoint('horizontal'));
     assert.ok(await read(`(()=>{
@@ -55,6 +58,7 @@ try {
       return diagrams.length>0&&diagrams.every(node=>Number(getComputedStyle(edge).zIndex)>Number(getComputedStyle(node).zIndex));
     })()`),'Edges must render above diagram shapes');
     assert.equal(await read('!!document.querySelector(".diagram-connections-panel")||[...document.querySelectorAll(".mapping-grid-tools button")].some(b=>b.textContent.startsWith("Connections"))'),false);
+    if (!nodeFocus) {
     const before=await camera();await key('[','BracketLeft',219);await settle();assert.equal(await camera(),before,'Unfocused brackets moved the canvas');
     const horizontal=await edgePoint('horizontal');assert.ok(horizontal);await clickAt(horizontal);
     await waitFor(focused);await waitForSelector(cdp,'.edge-focus-hint');
@@ -112,12 +116,43 @@ try {
     await key('Enter','Enter',13);await waitFor(focused);
     await key('Enter','Enter',13);await waitFor(async()=>!await focused());
     await clickAt(vertical);await waitFor(focused);
-    await click('.mapping-submenu input');await waitFor(async()=>!await focused());
+    await click('[aria-label="Filter diagrams"]');await waitFor(async()=>!await focused());
     const beforeTyping=await camera();await key('[','BracketLeft',219);await key(']','BracketRight',221);await settle();
     assert.equal(await camera(),beforeTyping,'Typing brackets moved the canvas');
-    assert.ok(await read('document.querySelector(".mapping-submenu input").value.includes("[]")'));
+    assert.ok(await read(`document.querySelector('[aria-label="Filter diagrams"]').value.includes('[]')`));
+    }
+    if (nodeFocus) {
+    await click('[title="Reset zoom and center diagram"]');await stableCamera();
+    const leafSelector = '[data-native-node="grid:overview"] [data-content-node-id][data-source-line="3"]';
+    await click(leafSelector);
+    await waitFor(async()=>await read('document.querySelectorAll("[data-edge-focused=true]").length')===3);
+    assert.equal(await read('document.querySelectorAll(".edge-focus-hint").length'),3,'Node click must expose all connected edge controls');
+    assert.ok(await read(`(()=>{const hints=[...document.querySelectorAll('.edge-focus-hint')].map(node=>node.getBoundingClientRect());
+      return hints.every((a,i)=>hints.slice(i+1).every(b=>a.right<=b.left||b.right<=a.left||a.bottom<=b.top||b.bottom<=a.top));})()`),
+      'Connected edge controls must not overlap');
+    if(process.env.EDGE_SCREENSHOT)await captureScreenshot(cdp,{output:process.env.EDGE_SCREENSHOT.replace('.png','-node.png')});
+    const nodeZoom=await read('document.querySelector(".diagram-connection-hit").getScreenCTM().a');
+    await key(']','BracketRight',221);await waitFor(()=>centered('second',3));
+    await key(']','BracketRight',221);await waitFor(()=>centered('second',4));
+    await key(']','BracketRight',221);await waitFor(()=>centered('second',3));
+    await key('[','BracketLeft',219);await waitFor(()=>centered('second',2));
+    assert.equal(await read('document.querySelector(".diagram-connection-hit").getScreenCTM().a'),nodeZoom);
+    await click('[data-focused-edge="route"] [aria-label="Focus source node"]');await waitFor(()=>centered('overview'));
+    await stableCamera();
+    await click(leafSelector);await waitFor(focused);
+    // Clicking another label with no connections clears the previous highlights.
+    await click('[data-native-node="grid:overview"] [data-content-node-id][data-source-line="4"]');
+    await waitFor(async()=>!await focused());
+    await click(leafSelector);await waitFor(focused);
+    await key('Escape','Escape',27);await waitFor(async()=>!await focused());
+    assert.equal(await read('document.querySelectorAll(".edge-focus-hint,[data-edge-endpoint]").length'),0);
+    }
     assert.equal(await readFile(catalogPath,'utf8'),original,'Edge focus changed the saved diagram');
     assert.deepEqual(errors,[]);
-    console.log('PASS: edge focus survives wheel, middle-button, Space-drag and Pan-tool gestures; Escape clears it. Edge toggle, endpoint hints, bracket navigation, text input and unchanged diagram also passed.');
+    console.log(nodeFocus ? 'PASS: plain node clicks highlight incoming/outgoing edges and cycle bracket jumps; click-away and Escape clear focus without saving changes.' : 'PASS: edge toggle, endpoint hints, panning, bracket navigation, text input and unchanged diagram.');
   });
 }finally{if(server&&server.exitCode===null){server.kill('SIGTERM');await new Promise(resolve=>server.once('exit',resolve));}await rm(root,{recursive:true,force:true});}
+
+}
+await checkConnections(false);
+await checkConnections(true);

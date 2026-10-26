@@ -32,22 +32,70 @@ Canvas commits still reject altered copies of issued revisions.
 
 ## Revisions, selections, and review
 
-`DiagramRevisionSelection` pins a revision for the diagram root or a logical
-subtree. Nested selections are scoped by their enclosing revision ID. Displaying
-an alternative requires no variant object, mutable branch head, or review record.
-`nodes.selectRevision` selects or clears a retained revision through the Canvas API.
+`DiagramAlternative` (in `domain/core/presentation/diagramAlternative.ts`) promotes
+one or more pinned revision scopes into a named presentation choice. Each part has
+an explicit target scope, source revision/scope, and base revision. Parts target
+disjoint subtrees of one base snapshot; sources may come from different revisions.
+Immutable revisions retain their real ancestry. Grouping does not invent a shared
+parent revision or rewrite history.
 
-`DiagramRevisionReview` holds optional naming, generation provenance, decisions,
-and three-way application metadata over revisions. It is independent of content
-and selection. Existing `variant` API operation names remain compatibility entry
-points to this review workflow. Removing a review does not erase a revision or an
-independent selection. Old checkpoint `variants` and `variantSelections` fields
-are decoded into review metadata and pinned selections on read. The old records
-are not rewritten in place.
+`document.alternatives` has its own `schemaVersion: 1`, item table, selected IDs per
+Diagram placement, and attached SidePanel records. Choosing an alternative swaps
+all parts atomically, without modifying the bound Diagram revision. Nested choices
+are scoped to a parent alternative. Overlapping choices must be explicitly replaced.
+Selections for two placements of the same Diagram are independent.
 
-Canvas history retains selected, comparison, context, and reviewed revisions as
-well as ordinary content bindings. Undo/redo and CanvasView recording operate on
-the complete document checkpoint.
+`DiagramRevisionSelection` remains an internal composition adapter and legacy API
+contract. `nodes.selectRevision` promotes/selects a pinned revision for its target
+placement. New clients can use `nodes.alternatives`, `nodes.promoteAlternative`,
+`nodes.selectAlternative`, `nodes.removeAlternative`, and `nodes.sidePanel`.
+These methods share the usual version checking, batched transactions and undo.
+
+`DiagramRevisionReview` retains optional generation provenance, decisions, and
+three-way application metadata. An alternative can reference a review; review and
+selection remain separate. Ordinary content revisions are never automatically
+promoted. `edit-diagram` accepts `"presentation-alternative": {"name": "Choice",
+"select": false}` with `"edit-mode": "variant"`, for both direct AgentChat payloads
+and delegated generation, including batches. Omit the parameter to retain the
+existing review-only behavior. Only the first candidate is selected when generating
+several alternatives with `select: true`.
+
+On Diagram selection, each visible alternative target shows inline swap and
+SidePanel icons. A panel pins a particular part and attaches to the target logical
+nodeRef. Its first line follows the live attachment row. Missing/folded attachments
+hide the panel without erasing it. Panel controls offer regular/diff display,
+flow/overlay placement, automatic side selection, part switching, and close.
+Opening compares overlap area, collision count and connector crossings; right wins
+ties. The persisted side stays fixed until explicitly auto-placed or reopened.
+Flow panels reserve layout space; overlays leave neighboring geometry unchanged.
+Panel syntax, evidence and annotations use the shared Diagram presentation projection.
+
+Canvas history pins alternative source/base revisions and persists items, choices
+and panels in independently addressed records. Undo/redo and CanvasViews restore
+that complete checkpoint. CanvasView diffs compose selections per placement.
+
+### Migration
+
+Legacy `variants` / `variantSelections` and `revisionReviews` / `revisionSelections`
+are decoded on read. Named candidates become alternatives, anonymous selected
+revisions get deterministic fallback records, and content-scoped choices expand
+per placement. IDs are stable across checkpoints. Existing immutable records stay
+readable and are never rewritten in place.
+
+To materialize the migration across a complete on-disk store (including old undo
+checkpoints and saved CanvasViews), use the offline command:
+
+```sh
+npx tsx scripts/migrations/migrate-diagram-alternatives.ts prepare /path/to/store /path/to/stage
+npx tsx scripts/migrations/migrate-diagram-alternatives.ts verify /path/to/stage
+# Stop the application before publishing. The command retains a backup directory.
+npx tsx scripts/migrations/migrate-diagram-alternatives.ts publish /path/to/stage
+```
+
+Preparation writes new hash-addressed records and updates references only in the
+staged copy. Verification reloads through persistence adapters and checks revision,
+checkpoint and alternative references. Publication checks that both source and
+verified stage are unchanged, then swaps directories with rollback on failure.
 
 ## Syntax and highlights
 
@@ -125,3 +173,53 @@ this separation does not imply that generating a new diff has zero cost.
 `CanvasHistoryService` continues to own canvas checkpoints, navigation,
 fork/adopt, and transfer coordination. Historical pre-identity stores still need
 the [offline storage migration](../guides/diagram-storage-migration.md).
+
+### Saved CanvasView ancestry
+
+CanvasViews have stable IDs and immutable checkpoint references. `create` saves
+the current canvas immediately; `save` advances the active view's saved endpoint
+while retaining earlier checkpoint references. `fork` creates and opens a child
+with `parentViewId` and a pinned `forkCheckpointId`. The explorer presents those
+parent/child relationships as a collapsible tree; individual checkpoint history
+is not exposed in the UI.
+
+`gen-alternatives` is the AgentChat generation tool. It accepts `viewId`, a shared
+`prompt`, `alternatives: [{name, prompt}]` (1–8), and a unique `requestId`.
+The Canvas explorer's Generate alternatives form exposes the same operation,
+with a source AgentChat selector. The older `canvas-view` operation
+`alternatives` remains available for creating empty copies without generation.
+
+Generation pins one saved parent checkpoint and runs managed child AgentChat
+threads in parallel. Native thread forks inherit prior conversation context,
+model, reasoning effort, and tools; each child receives its own canvas and MCP
+binding. The calling agent only invokes `gen-alternatives`. Child goals are
+cleared so each candidate ends with its managed turn. Nested generation is
+blocked. Finished results become saved child views without changing the live
+canvas. Generated chats remain available for review.
+
+Each view records the source/child chats, triggering/shared/candidate prompts,
+model, reasoning effort, status, elapsed duration, and attributed token usage.
+Explorer badges distinguish queued, generating, finished, failed, and cancelled;
+details link to chats and support cancellation. Results are retained server-side
+if the source browser disconnects and published when it reconnects. Server
+restarts mark interrupted work failed rather than silently spending more tokens.
+Retrying the same request does not launch another group.
+
+`open` retains the outgoing view's working checkpoint and resumes the incoming
+view's unfinished edits while preserving the camera. Both working copies and
+the active view survive workspace reloads. Generating views are locked against
+manual edits and group removal until completion or cancellation.
+
+`keep` saves the chosen candidate and archives its group siblings and their
+descendants, preserving the parent and unrelated forks. `discard` archives a
+view and its descendants. Archived views retain their checkpoint references
+and ancestry but are omitted from the explorer. These metadata changes follow
+the existing CanvasView persistence semantics outside canvas undo. The same
+versioned, retry-safe operations are exposed through AgentChat and Mapping MCP.
+Legacy recording and diagram-diff controls remain under “Record changes.”
+
+### CanvasView diff alternatives
+
+`canvas-view` with `operation: "promote-diffs"` pins each matching diagram placement's recorded baseline and final revisions as an unselected root alternative (`display: "diff"`). Inline swap and SidePanel use the same diff row projection; regular-view folds do not truncate the comparison. Unchanged diagrams get an empty comparison. Added/removed placements without a revision pair are not promoted.
+
+Promotion updates the live document in one undoable checkpoint and appends a new saved CanvasView endpoint containing the alternatives. Original checkpoints and content revisions remain immutable. Applying the saved view or reloading retains the alternatives. Deterministic IDs make repeat promotion idempotent; existing content alternatives remain separate. CanvasView metadata follows its existing persistence semantics outside undo.
