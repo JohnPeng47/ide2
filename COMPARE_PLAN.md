@@ -3,23 +3,26 @@
   > **Question — comparison tree:** Does the tree organize comparison topics (feature → relationships → specific nodes), candidate ancestry, or winners advancing through comparisons? I suggest deciding this first; each implies a different navigation and data model.
   > **A**: ignore the deciding winners, for now we are just focused on generating this comparison view
 [Task]
-Read the following instruction to build a new CompareView feature              
+Read the following instruction to build a new CompareView feature
   - we will introduce a new page, called Evals
     - this page will let you select from a list of List[CompareView]
-  - its main persistent snapshot type is going to be ComparePageView
+  - its main persistent snapshot type is going to be ComparePageSession
     > **Comment — reproducibility:** Pin each side to a saved checkpoint (or a diagram revision), and keep judgments separate from the generated comparison definition. In the current working tree, CanvasView already references checkpoints; a view ID alone would allow later saves to change what an evaluation means.
+    > **A**: no judgements for now, but we shud have a side panel that displays different ComparePageSession
     > **Question — retention:** Should an evaluation remain readable after its source view is archived or deleted? I recommend retaining the referenced snapshots for as long as the evaluation exists.
+    > **A**: yes, lets make a copy of the CanvasView for each page here
+  - there
   - a CompareView can be generated over canvases or individual diagrams
     - ui/ux:
       - structs:
-          ->  CameraViewport
+          ->  CanvasViewport
                 // use our existing Camera API for these fields
                 zoom: CameraZoom
                 pan: CameraPan
-                > **Comment — naming:** CameraViewport is called CanvasViewport below. Use one name for the resolved camera state; represent the intended focus separately as node/diagram IDs or bounds plus padding.
 
       - we will use a shared split-screen panel UI that will start by default with two equal size panes, using the traditional presentation style of source code editors such as vscode/tmux
         > **Question — interaction:** Can users pan/zoom each pane independently, with a Reset focus action for the current comparison point? I recommend independent exploration by default; synchronized movement needs an explicit correspondence between the two layouts. Resizing should refit the initial focus using the actual pane dimensions.
+        > **A**: yes to resizing
       - upon this shared UI basis, our presentation for canvas vs. diagrams will diverge
         - [DiagramPane] the diagram compare view will use traditional linear document presentation for each panes
           > **Question — scope:** Is this the separate mode for comparing two individual diagram revisions, while diagram-focused comparisons inside a canvas still use CanvasPane? Should this document mode ship in the first version, or should we complete canvas pairs first?
@@ -34,10 +37,11 @@ Read the following instruction to build a new CompareView feature
         - structs
           ->  gen_compare(generated_canvas: List[Dict[ComparePrompt:List[CanvasView]]]) -> List[CompareView]
             > **Question — pairing:** Does the caller choose the exact A/B pair, or does the agent choose pairs from all supplied candidates? For n=2, I suggest explicit pairs and inputs containing prompt IDs, exact prompt text, and pinned candidate references; this avoids an implicit all-pairs expansion.
+            > **A**: all supplied candidates. tbc, the agent is choosing between 2 views, each from a different CanvasView to construct CompareView
 
           ->  ComparePane = DiagramPane | CanvasPane
 
-          ->  ComparePageView:
+          ->  ComparePageSession:
                 compares: List[CompareView]
 
           ->  CompareView:
@@ -54,7 +58,7 @@ Read the following instruction to build a new CompareView feature
           ->  CameraView:
                 type: Enum["DiagramFocused" | "CanvasFocused"]
                 camera_model: decl(subclass(CompareModel))
-                > **Comment — type structure:** DiagramFocused and CanvasFocused describe the focus target, whereas DiagramPane and CanvasPane describe rendering. Keep those as separate tagged unions. A CameraView should not need its own subclass of the whole comparison model. 
+                > **Comment — type structure:** DiagramFocused and CanvasFocused describe the focus target, whereas DiagramPane and CanvasPane describe rendering. Keep those as separate tagged unions. A CameraView should not need its own subclass of the whole comparison model.
 
           ->  CanvasFocused:
                 canvas_focused_model: subclass(CompareModel)
@@ -62,7 +66,7 @@ Read the following instruction to build a new CompareView feature
           ->  ComparePrompts:
                 prompt: str
 
-      - goal: to do pairwise comparisons of two canvases 
+      - goal: to do pairwise comparisons of two canvases
       - introduce a new presentation view ontop of CanvasView
         - camera-view -> camera zoom / pan on a canvas
         - lets the LLM generate areas on the diagram that we should direct our attention to
@@ -82,11 +86,10 @@ Read the following instruction to build a new CompareView feature
       """
       [INTRO] -> into CanvasView, CompareView .. etc.
       Okay so I have a bunch of canvases that are generated by some AI agents that are used to depict a codebase
-      
+
       You have been given a series of CanvasViews mapped to the prompts that generated them
       Your task is to generate a series of CompareViews demonstrate the differences in the CanvasViews that are attributable to differences in their prompts
         > **Comment — attribution:** A single pair can show observable differences, but cannot establish that the prompts caused them; model randomness and source context can also differ. Ask the agent to distinguish observations from hypotheses about prompt influence, and retain generation provenance for later comparisons.
-      The goal in constructing these CanvasViews is so that the user can more easily compare these differences 
+      The goal in constructing these CanvasViews is so that the user can more easily compare these differences
         > **Comment — prompt output:** This should say CompareViews. Ask for neutral comparison questions, concrete evidence from both sides, and coverage of similarities as well as differences; avoid preselecting a winner in the framing.
       """
-
