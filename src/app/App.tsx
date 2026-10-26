@@ -1,10 +1,12 @@
 import { ThemeToggle } from '../shared/theme/ThemeToggle';
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { createMappingServices } from './services';
 import { MappingPocPage } from "../features/mapping/MappingPage";
 
-/** Every entry path opens the Mapping workspace, including old bookmarks. */
+const EvalsPage = lazy(() => import('../features/mapping/evals/EvalsPage').then(module => ({ default: module.EvalsPage })));
+/** Unknown legacy entry paths continue to open Mapping. */
 export function App() {
   const [services] = useState(createMappingServices);
-  return <><MappingPocPage services={services} /><ThemeToggle /></>;
+  const evals = typeof window !== 'undefined' && window.location.pathname.replace(/\/$/, '') === `${import.meta.env.BASE_URL}evals`.replace(/\/$/, '');
+  return <>{evals ? <Suspense fallback={<p>Loading Evals…</p>}><EvalsPage /></Suspense> : <MappingPocPage services={services} />}<ThemeToggle /></>;
 }

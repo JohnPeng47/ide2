@@ -1141,6 +1141,7 @@ function MappingWorkspacePage() {
         </div>}
         <nav className="screen-tabs" aria-label="Application pages">
           <button type="button" className="is-active" aria-current="page">MAPPING</button>
+          <a href={`${import.meta.env.BASE_URL}evals`}>EVALS</a>
         </nav>
       </div>
       <p className="mapping-menu-status">{active?.newerRevision ? "A newer saved revision is available. Your local edits were preserved." : workspaceStatus}</p>

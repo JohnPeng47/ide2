@@ -19,6 +19,18 @@ The server uses this checkout as its project root and
 The eight current canvases are included in the repository; generated workspace
 records stay local.
 
+Open **Menu → Evals** (or `/evals`) to create a comparison session from saved
+CanvasViews or current saved canvases. Add one or more pairs, then create the
+session. Each side opens with its saved/default Mapping camera; pan and zoom
+independently, resize the divider, or reset the camera. Previous/Next traverses
+the pairs, and the sidebar switches sessions. Sessions retain private checkpoint
+copies in `compare-sessions/` under the diagram store, so later source edits or
+deletion do not change an existing comparison. This initial version does not
+generate comparisons with an agent.
+
+Run `npm run check:compare-sessions` for the browser lifecycle check (requires
+Playwright Chromium and its system libraries).
+
 
 The app works without flags: loading, editing, saving, autosave/history snapshots,
 deleting diagrams, accepting changes, and live canvas synchronization remain available.

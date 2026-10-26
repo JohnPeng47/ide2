@@ -7,6 +7,7 @@
     "packages/*"
   ],
   "scripts": {
+    "check:compare-sessions": "npm run build && node --import tsx tests/browser/mapping/browser-compare-sessions-check.mjs",
     "test:perf:f02": "npm run build && playwright test --config tests/perf/playwright.config.ts && node tests/perf/summarize.mjs",
     "typecheck:perf": "tsc --project tests/perf/tsconfig.json",
     "benchmark": "node benchmarks/runner.mjs",

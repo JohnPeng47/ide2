@@ -1,4 +1,6 @@
 import { GenerationCanvasBridge } from '../../../application/mapping/agent-chat/generationCanvasBridge';
+import { CompareSessionService } from '../../../application/mapping/compare/compareSessionService';
+import { FileCompareSessionStore } from '../../../infrastructure/mapping/compare/fileCompareSessionStore';
 import { WorkspaceRecordStore } from '../../../infrastructure/mapping/persistence/workspace/workspaceRecordStore';
 import { MappingChatMcpBinding } from '../../../infrastructure/mapping/agent-chat/chatMcpBinding';
 import { AgentChatService } from '../../../application/mapping/agent-chat/agentChatService';
@@ -90,6 +92,8 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
       loadPrompts: loadDiffSessionPrompts, sourceReader: capture => createDiffSessionSourceReader(store.repositories, capture) });
   const pushIntegrations = new PushIntegrationService(new FilePushIntegrationStore(store.storeRoot),
     new GitPushSource(store.repositories), diffSessionWorkflows, options.piEnabled === true);
+  const workspace = new MappingWorkspaceService(store, new MappingWorkspaceStore(store.storeRoot, store.diagramPersistence), diagramContextStore);
+  const compareSessions = new CompareSessionService(workspace, new FileCompareSessionStore(store.storeRoot));
   const routes = {
     core: createCoreRoutes({
       application: core,
@@ -99,7 +103,7 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
     mapping: createMappingRoutes({
       selection: new SelectionService(store, mappingRuntime, mappingPocSourceRoot),
       diagrams, agent, agentChat, liveCanvas, diffSessionWorkflows, pushIntegrations, pushToken: process.env.NEW_DIAGRAM_PUSH_TOKEN,
-      workspace: new MappingWorkspaceService(store, new MappingWorkspaceStore(store.storeRoot, store.diagramPersistence), diagramContextStore),
+      workspace, compareSessions,
       chat: new LocalChatService(store, corpusAccess, chatRuntime, mappingPocSourceRoot),
       compactionService
     })

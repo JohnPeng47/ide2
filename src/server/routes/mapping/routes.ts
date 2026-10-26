@@ -1,4 +1,6 @@
 import type { AgentChatService } from '../../../../application/mapping/agent-chat/agentChatService';
+import type { CompareSessionService } from '../../../../application/mapping/compare/compareSessionService';
+import { handleCompareRoutes } from './compare/compareRoutes';
 import { handleAgentChat } from './agent-chat/agentChatRoutes';
 import type { PushIntegrationService } from '../../../../application/core/integrations/pushIntegrationService';
 import { handlePushIntegration } from './integrations/pushIntegrationRoutes';
@@ -22,7 +24,8 @@ import { handleFileCompaction } from './compaction/fileCompactionRoutes';
 import type { DiffSessionWorkflowService } from '../../../../application/mapping/changes/diffSessionWorkflowService';
 import { handleDiffSessionWorkflow } from './changes/diffSessionWorkflowRoutes';
 
-export function createMappingRoutes({ selection, diagrams, workspace, chat, compactionService, agent, agentChat, liveCanvas, diffSessionWorkflows, pushIntegrations, pushToken }: {
+export function createMappingRoutes({ selection, diagrams, workspace, chat, compactionService, agent, agentChat, liveCanvas, diffSessionWorkflows, pushIntegrations, pushToken, compareSessions }: {
+  compareSessions?: CompareSessionService;
   agentChat?: AgentChatService;
   diffSessionWorkflows?: DiffSessionWorkflowService;
   pushIntegrations?: PushIntegrationService; pushToken?: string;
@@ -31,6 +34,8 @@ export function createMappingRoutes({ selection, diagrams, workspace, chat, comp
   chat: LocalChatService; compactionService: FileCompactionService;
 }) {
   return async (request: Connect.IncomingMessage, response: ServerResponse, url: URL): Promise<void> => {
+    if ((url.pathname === '/api/mapping/compare-sessions' || url.pathname.startsWith('/api/mapping/compare-sessions/')) && compareSessions)
+      return handleCompareRoutes(request, response, url, compareSessions);
     if (url.pathname.startsWith('/api/mapping/agent-chat/') && agentChat) return handleAgentChat(request, response, url, agentChat);
     if (url.pathname.startsWith('/api/mapping/integrations/') && pushIntegrations)
       return handlePushIntegration(request, response, url, pushIntegrations, pushToken);
