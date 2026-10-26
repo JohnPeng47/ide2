@@ -1,4 +1,4 @@
-# Track the canvas export, Proposal 2, and their required project files.
+# Track the canvas export, projection workspace and history, Proposal 2, and required project files.
 **
 !.gitignore
 !canvas-domain-model/
@@ -13,3 +13,8 @@
 !canvas-domain-model/mapping-change-sessions/
 !canvas-domain-model/mapping-change-sessions/project-4971c06b-83d5-49eb-998d-043d5fc2dca4/
 !canvas-domain-model/mapping-change-sessions/project-4971c06b-83d5-49eb-998d-043d5fc2dca4/change-055f3a0d4998baac78e013e4f7929bb9.manifest.json
+!canvas-domain-model/workspace-records.json
+!canvas-domain-model/workspace-records/
+!canvas-domain-model/workspace-records/*.json
+!canvas-domain-model/diagram-agent-contexts/
+!canvas-domain-model/diagram-agent-contexts/*.json
