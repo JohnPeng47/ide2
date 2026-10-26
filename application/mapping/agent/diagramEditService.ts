@@ -1,3 +1,4 @@
+import { ownerScope } from '../../../domain/core/presentation/diagramAlternative';
 import { generateDiagram } from '../../core/diagrams/generateDiagram';
 import { createStoredDiagram, importDiagramRevision, getDiagramRevision, submitStoredDiagramEdit } from '../../../domain/core/diagrams/diagramRevisionStore';
 import type { GeneratedDiagramEdit } from '../../../domain/core/diagrams/generatedDiagramEdit';
@@ -27,7 +28,7 @@ export interface DiagramEditCanvasPort {
   create?(sessionId: string, input: { requestId: string; expectedVersion: number; diagrams: DiagramCreation[] }): Promise<{ version: number }>;
 }
 interface Run {
-  variants?: { variant: DiagramRevisionReview; revision: DiagramRevision }[];
+  variants?: DiagramRevisionApplication['variants'];
   submission?: GeneratedDiagramEdit;
   agentContext?: AgentContextSnapshot;
   nextAgentContext?: AgentContextSnapshot;
@@ -51,6 +52,7 @@ export class DiagramEditService {
     private readonly diagramContexts?: DiagramAgentContextStore) {}
 
   start(input: EditDiagramInput | CreateDiagramInput, suppliedContext?: AgentContextSnapshot, operation: PromptOperation = 'edit-diagram', submission?: GeneratedDiagramEdit): DiagramEditRun {
+    if (input['presentation-alternative'] && (operation !== 'edit-diagram' || input['edit-mode'] !== 'variant')) throw Error('presentation-alternative requires edit-diagram with edit-mode variant');
     if (operation === 'edit-diagram' && 'count' in input && input.count !== undefined) throw Error('count applies only to create-diagram');
     if (operation === 'edit-diagram') input = editDiagramSchema.parse(input);
     if (input.agentContext && (input.agentContextId || suppliedContext)) throw Error('Provide only one agent context source');
@@ -200,7 +202,14 @@ export class DiagramEditService {
           ownerNodeId, baseRevisionId: existing?.baseRevisionId ?? base.revisionId, headRevisionId: generated.revision.id,
           revisionIds: [...(existing?.revisionIds ?? []), generated.revision.id], prompt: input.prompt, decisions: {} };
         validateRevisionReview(variant, id => getDiagramRevision(id));
-        run.variants.push({ variant, revision: generated.revision });
+        const promotion = input['presentation-alternative'];
+        const targets = input.subtrees ?? (input.subtree ? [input.subtree] : []);
+        const owners = targets.length ? targets.map(target => getDiagramRevision(base.revisionId).nodeRefs[target.contentNodeId]) : ['root'];
+        run.variants.push({ variant, revision: generated.revision, ...(promotion ? {
+          alternative: { id: `alternative-${randomUUID()}`, name: promotion.name + (variantOptions.count > 1 ? ` ${index + 1}` : ''),
+            diagramId: base.diagramId, presentationId: input.nodeId, reviewId: variant.id,
+            parts: owners.map(owner => ({ target: ownerScope(owner), source: { revisionId: generated.revision.id, scope: ownerScope(owner) }, baseRevisionId: base.revisionId })) },
+          selectAlternative: promotion.select && index === 0 } : {}) });
         run.revision = generated;
       }
       await this.apply(run); return;
@@ -240,7 +249,7 @@ export class DiagramEditService {
     const result = await this.canvas.apply(input.sessionId, { requestId: run.state.runId,
       expectedVersion: input.expectedVersion, nodeId: input.nodeId, baseRevisionId: input.baseRevisionId, revision,
       ...(run.variants ? { variants: run.variants } : {}) });
-    if (run.variants) run.state.variants = run.variants.map(({ variant }) => ({ id: variant.id, name: variant.name, revisionId: variant.headRevisionId }));
+    if (run.variants) run.state.variants = run.variants.map(({ variant, alternative }) => ({ id: variant.id, name: variant.name, revisionId: variant.headRevisionId, ...(alternative ? { alternativeId: alternative.id } : {}) }));
     run.state.result = { diagramId: revision.diagramId, previousRevisionId: input.baseRevisionId,
       revisionId: revision.id, documentVersion: result.version, unresolvedEdgeIds: result.unresolvedEdgeIds };
     run.state.agentContext = run.nextAgentContext;

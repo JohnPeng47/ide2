@@ -11,7 +11,7 @@ import { DiagramRevisionReceiver } from '../../../src/features/mapping/agent/dia
 import type { DiagramBatchApplication, DiagramTool } from '../../../domain/mapping/agent/diagramBatch';
 
 function fixture() {
-  const generate = vi.fn(async (_request: DiagramGenerationRequest) => ({ ascii: 'Generated', structureKind: 'tree' as const }));
+  const generate = vi.fn(async (_request: DiagramGenerationRequest) => ({ ascii: 'Generated', structureKind: 'tree' as 'tree' | 'diagram' }));
   const diagrams = revisionFixture({ generate });
   const controller = new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('Original\n`-- Child')), initialCanvasState());
   controller.applyUpdate(0, [{ method: 'diagram-create', id: 'second', position: { column: 50, row: 0 }, ascii: 'Second\n`-- Child', structureKind: 'tree' }]);
@@ -123,4 +123,18 @@ it('cancels a batch during preparation without applying its staged operations', 
   f.service.cancel(run.runId); release();
   expect((await f.service.wait(run.runId)).status).toBe('cancelled');
   expect(f.batch).not.toHaveBeenCalled(); expect(f.controller.getSnapshot().version).toBe(1);
+});
+
+it.each([true, false])('promotes optional presentation alternatives in direct=%s batches', async direct => {
+  const f = fixture();
+  f.generate.mockImplementation(async request => ({ ascii: 'Generated', structureKind: request.context!.diagram.content.structure.kind }));
+  const input = { ...f.envelope, operations: f.targets.map((target, index) => ({ ...target, 'edit-mode': 'variant', 'replace-mode': 'diagram',
+    'presentation-alternative': { name: `Choice ${index}`, select: true },
+    ...(direct ? { edit: { ...edit, structureKind: f.bases[index].content.structure.kind } } : { prompt: 'Generate' }) })) };
+  const result = await f.service.wait(f.service.start(input, 'edit-diagram', direct).runId);
+  expect(result.error).toBeUndefined(); expect(result.status).toBe('completed');
+  const state = f.controller.getSnapshot().document.alternatives!;
+  expect(Object.values(state.items).map(a => a.name).sort()).toEqual(['Choice 0', 'Choice 1']);
+  expect(Object.values(state.selected).flat()).toHaveLength(2);
+  expect(f.controller.getSnapshot().document.scene.contents.overview).toEqual(f.bases[0]);
 });

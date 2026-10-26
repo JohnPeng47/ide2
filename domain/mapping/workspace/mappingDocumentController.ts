@@ -1,3 +1,6 @@
+import { projectSidePanels, choosePanelSide } from './diagramSidePanelLayout';
+import { emptyDiagramAlternatives, type DiagramAlternative } from '../../core/presentation/diagramAlternative';
+import { applyAlternativeOperation, selectLegacyRevision, alternativeSelections, type AlternativeOperation } from './diagramAlternatives';
 import { retainDiagramRevision } from '../../core/diagrams/diagramRevisionStore';
 import { presentationHighlights, diagramPresentationSettingsSchema, type DiagramPresentationSettings } from '../../core/presentation/diagramPresentation';
 import { getDiagramRevision, reviseStoredDiagram, createStoredDiagram } from '../../core/diagrams/diagramRevisionStore';
@@ -18,7 +21,7 @@ import type { CanvasHistoryRecord } from './canvasHistory';
 import type { DiagramEdit } from '../../core/diagrams/diagramRevision';
 import { connectionBox, type DiagramAnchor } from '../../core/diagrams/diagramConnection';
 import { activeDiagramJumps, rebaseDiagramJumps, type DiagramJump } from '../../core/diagrams/diagramJump';
-import { normalizeDiagramViews, resolveDiagramContent, projectDiagramContent } from './diagramViewState';
+import { presentationScene, resolveDiagramView, normalizeDiagramViews, resolveDiagramContent, projectDiagramContent } from './diagramViewState';
 import { layoutFloatingSelections } from './floatingBoxLayout';
 import { layoutConversationPane } from '../chat/conversationPaneLayout';
 import { emptyCanvasDocument } from '../../core/diagrams/canvasTransfer';
@@ -35,12 +38,13 @@ import type { MappingCanvasState } from './mappingWorkspace';
 import { diagramConnectionSchema, reconcileConnections, validateConnectionAnchor, validateConnections, type DiagramConnection } from '../../core/diagrams/diagramConnection';
 
 export interface ControllerSnapshot { contextId: string; canvasRevisionId: string; endpointBounds?: EndpointBounds; document: MappingGridDocument; canvas: MappingCanvasState; version: number; canUndo: boolean; canRedo: boolean; cell?: { width: number; height: number } }
-export type DiagramOperation =
+export type DiagramOperation = AlternativeOperation
+
   | { method: 'diagram-context-set'; nodeId: string; expectedRevisionId: string; context: DiagramAgentContext }
   | { method: 'diagram-context-delete'; nodeId: string; expectedRevisionId: string }
   | { method: 'revision-select'; nodeId: string; ownerNodeId: string; contextRevisionId: string | null; revisionId: string | null; baseRevisionId?: string }
   | { method: 'variant-select'; nodeId: string; ownerNodeId: string; contextVariantId: string | null; variantId: string | null }
-  | { method: 'variant-store'; selectFirst?: boolean; nodeId: string; expectedRevisionId: string; variants: { variant: DiagramRevisionReview; revision: DiagramRevision }[] }
+  | { method: 'variant-store'; selectFirst?: boolean; nodeId: string; expectedRevisionId: string; variants: { variant: DiagramRevisionReview; revision: DiagramRevision; alternative?: DiagramAlternative; selectAlternative?: boolean }[] }
   | { method: 'variant-review'; variantId: string; decisions?: Record<string, RevisionDecision>; name?: string; remove?: boolean; apply?: boolean; nodeId?: string }
   | { method: 'setPresentation'; nodeId: string; settings: DiagramPresentationSettings }
   | { method: 'highlight'; nodeId: string; contentNodeId?: string; contentNodeIds?: string[]; color?: string; highlightId: string }
@@ -148,6 +152,17 @@ export class MappingDocumentController {
       redoTransactionId: record.snapshots[record.future.at(-1)!]?.transactionId };
   }
   forkHistory(view = this.snapshot.canvas) { return this.historyService.forkContext(this.context, view); }
+  startGeneration(expectedVersion: number, parentId: string, candidates: { id: string; name: string; generation: import('../../core/diagrams/canvasGeneration').CanvasGeneration }[]) {
+    this.settlePendingGesture();
+    if (this.snapshot.version !== expectedVersion) throw Error('VERSION_CONFLICT: read the canvas again');
+    const history = this.historyService.startGeneration(this.context, parentId, candidates);
+    this.updateSnapshot({ document: this.snapshot.document, canvas: this.snapshot.canvas }, false);
+    return history;
+  }
+  updateGeneration(viewId: string, generation: import('../../core/diagrams/canvasGeneration').CanvasGeneration, history?: CanvasHistoryRecord) {
+    this.historyService.updateGeneration(this.context, viewId, generation, history);
+    this.updateSnapshot({ document: this.snapshot.document, canvas: this.snapshot.canvas }, false);
+  }
   canvasViews() { return this.historyService.canvasViews(this.context); }
   canvasViewComparison(viewId: string) { return this.historyService.canvasViewComparison(this.context, viewId); }
   settlePendingGesture() { this.editorDriver?.settle(); }
@@ -274,7 +289,24 @@ export class MappingDocumentController {
     if (editorCanvas) canvas = structuredClone(editorCanvas);
     const safeId = (id: string) => { if (typeof id !== 'string' || !/^[a-zA-Z0-9_.:-]{1,180}$/.test(id) || ['__proto__','constructor','prototype'].includes(id)) throw new Error('Invalid node ID'); };
     for (const op of operations) {
-      if (op.method === 'diagram-context-set') {
+      if (op.method === 'alternative-promote' || op.method === 'alternative-select' || op.method === 'alternative-remove' || op.method === 'side-panel') {
+        const before = op.method === 'side-panel' ? resolveDiagramView(presentationScene({ ...document }), canvas.diagramViews) : undefined;
+        const existing = op.method === 'side-panel' && document.alternatives?.panels[`panel:${op.alternativeId}:${op.partIndex}`];
+        applyAlternativeOperation(document, op);
+        if (op.method === 'side-panel' && !op.close && !op.side && (!existing || op.autoPlace)) {
+          const panels = projectSidePanels(document, before!, canvas.diagramViews), panel = panels.find(p => p.panel.id === `panel:${op.alternativeId}:${op.partIndex}`);
+          const boxes = flattenGrid(before!), owner = boxes.find(b => `grid:${b.box.id}` === op.nodeId);
+          if (panel && owner) {
+            const obstacles = [...boxes.filter(b => b.contentId && b !== owner).map(b => b.bounds), ...panels.filter(p => p !== panel).map(p => p.bounds),
+              ...Object.values(canvas.display.nodes).filter(n => n.coordinateSpace === 'canvas').map(n => ({ column: n.position.x / (this.snapshot.cell?.width ?? 8.4), row: n.position.y / (this.snapshot.cell?.height ?? 18), columns: n.bounds.width / (this.snapshot.cell?.width ?? 8.4), rows: n.bounds.height / (this.snapshot.cell?.height ?? 18) }))];
+            const connectors = document.edges.flatMap(edge => {
+              const a = boxes.find(b => `grid:${b.box.id}` === edge.source.displayNodeId), b = boxes.find(b => `grid:${b.box.id}` === edge.target.displayNodeId);
+              return a && b ? [{ from: a.bounds, to: b.bounds }] : [];
+            });
+            document.alternatives!.panels[panel.panel.id].side = choosePanelSide(owner.bounds, panel.bounds, panel.bounds.row, obstacles, connectors);
+          }
+        }
+      } else if (op.method === 'diagram-context-set') {
         const box = findBox(document.scene.root, this.gridId(op.nodeId));
         if (box?.kind !== 'diagram') throw Error('Expected diagram GridBox');
         const diagram = document.scene.contents[box.contentId];
@@ -307,14 +339,17 @@ export class MappingDocumentController {
           contextRevisionId, revisionId, baseRevisionId: op.method === 'revision-select' ? op.baseRevisionId : review?.baseRevisionId };
         else delete document.revisionSelections[key];
         validateRevisionSelections(document, getDiagramRevision);
+        selectLegacyRevision(document, op.nodeId, box.contentId, op.ownerNodeId, contextRevisionId, revisionId,
+          (op.method === 'revision-select' ? op.baseRevisionId : review?.baseRevisionId) ?? contextRevisionId ?? document.scene.contents[box.contentId].revisionId, review?.id);
       } else if (op.method === 'variant-store') {
         const box = findBox(document.scene.root, this.gridId(op.nodeId));
         if (box?.kind !== 'diagram') throw Error('Expected diagram GridBox');
         const current = document.scene.contents[box.contentId];
         if (current.revisionId !== op.expectedRevisionId) throw Error('VERSION_CONFLICT: diagram changed during generation');
         if (!op.variants.length || op.variants.length > 4) throw Error('Generate 1–4 variants');
+        document.alternatives ??= emptyDiagramAlternatives();
         document.revisionReviews = { ...document.revisionReviews };
-        for (const { variant, revision } of op.variants) {
+        for (const { variant, revision, alternative, selectAlternative } of op.variants) {
           const previous = document.revisionReviews[variant.id];
           if (variant.contentId !== current.id || variant.diagramId !== current.diagramId || variant.headRevisionId !== revision.id) throw Error('Variant belongs to another diagram');
           if (previous && (previous.baseRevisionId !== variant.baseRevisionId || previous.ownerNodeId !== variant.ownerNodeId || previous.contextVariantId !== variant.contextVariantId)) throw Error('Variant owner is immutable');
@@ -323,8 +358,13 @@ export class MappingDocumentController {
           receiveDiagramRevision(base, revision);
           validateRevisionReview(variant, id => getDiagramRevision(id));
           document.revisionReviews[variant.id] = structuredClone(variant);
+          if (alternative) applyAlternativeOperation(document, { method: 'alternative-promote', nodeId: op.nodeId,
+            alternativeId: alternative.id, name: alternative.name, parts: alternative.parts, parentAlternativeId: alternative.parentAlternativeId,
+            reviewId: variant.id, select: selectAlternative });
         }
         if (op.selectFirst) {
+          const first = op.variants[0].variant;
+          selectLegacyRevision(document, op.nodeId, box.contentId, first.ownerNodeId, first.contextVariantId ? document.revisionReviews[first.contextVariantId].headRevisionId : null, first.headRevisionId, first.baseRevisionId, first.id);
           const variant = op.variants[0].variant, contextRevisionId = variant.contextVariantId ? document.revisionReviews[variant.contextVariantId]?.headRevisionId ?? null : null;
           const key = revisionSelectionKey(variant.contentId, variant.ownerNodeId, contextRevisionId);
           document.revisionSelections = { ...document.revisionSelections, [key]: { contentId: variant.contentId,
@@ -492,7 +532,7 @@ export class MappingDocumentController {
         if (box?.kind !== 'diagram') throw new Error('Subtree collapse requires a diagram DisplayNode');
         const content = resolveDiagramContent(document.scene.contents[box.contentId]);
         const base = getDiagramRevision(document.scene.contents[box.contentId].revisionId);
-        const source = resolveRevisionLines(base, document, getDiagramRevision).find(line =>
+        const source = resolveRevisionLines(base, alternativeSelections(document, op.nodeId, box.contentId, base), getDiagramRevision).find(line =>
           diagramContentNodes(line.revision.diagram.content).some(node => node.id === op.contentNodeId && node.line === line.sourceLine));
         const target = source && diagramContentNodes(source.revision.diagram.content).find(node => node.id === op.contentNodeId);
         if (!target) throw new Error('STALE_CONTENT_NODE');
@@ -628,6 +668,12 @@ export class MappingDocumentController {
       };
       visit(document.scene.root);
       document.diagramContexts = Object.fromEntries(Object.entries(document.diagramContexts).filter(([id]) => live.has(id)));
+    }
+    if (document.alternatives) {
+      const state = document.alternatives;
+      for (const item of Object.values(state.items)) if (!findBox(document.scene.root, item.presentationId.slice(5))) delete state.items[item.id];
+      for (const owner of Object.keys(state.selected)) state.selected[owner] = state.selected[owner].filter(id => !!state.items[id]);
+      for (const panel of Object.values(state.panels)) if (!state.items[panel.alternativeId]) delete state.panels[panel.id];
     }
     projectCanvasSnapshot(document.scene);
     if (operations.some(op => op.method === 'remove') && !flattenGrid(resolveScene(document.scene)).some(node => node.contentId))

@@ -1,3 +1,4 @@
+import { canvasViewInstructions } from '../../../domain/core/diagrams/canvasView';
 import { generationSchemas, generationBatchSchemas, directBatchSchemas, directDiagramInstructions, isDiagramTool } from '../../../domain/mapping/agent/diagramBatch';
 import { diagramOutputFormat } from '../../../domain/mapping/agent/promptTemplates';
 import { CANVAS_EXEC_DESCRIPTION, canvasAgentInstructions } from '../../../domain/mapping/agent/capabilities';
@@ -32,7 +33,7 @@ export function createMappingMcpServer(baseUrl: string, binding = process.env.MA
     list_repositories: 'List registered repositories, stable IDs, names and available checkout roots. Worktrees share one repository identity.',
     register_repository: 'Register a local Git repository/worktree in this project. The same Git common directory resolves to the same repository ID. Does not move canvases or change Git history.',
     'diagram-agent-context': 'Prepare, read, or delete a reusable AgentContext bound to a live diagram. Read loads the disk-backed context and returns ready/stale status. Prepare compiles source evidence into a dedicated immutable file; delete removes the binding. Prepare/delete require expectedVersion and expectedRevisionId from a current canvas read, are undoable and persisted. Retry mutations with the same requestId.',
-    'canvas-view': 'Record and restore named views of this live canvas. operation: start (requires name), stop (save recording), cancel (discard recording metadata, keep edits), list, read (requires viewId), apply (requires viewId), delete (requires viewId). Recording captures committed canvas edits, diagram revisions, variants and undo/redo. Apply restores the complete saved state as one undoable change; it does not merge edits or rerun LLM calls. Stop recording before applying. Mutations require current expectedVersion and a unique requestId; retry identical arguments after uncertain outcomes. Views are persisted with the canvas. Cross-canvas transfer results are captured locally; applying a view does not move objects in other canvases.',
+    'canvas-view': canvasViewInstructions,
     'edit-diagram': 'Start an asynchronous prompt-driven edit of one live diagram. Requires sessionId, nodeId, current document expectedVersion, diagram.revisionId as baseRevisionId, prompt and requestId. Optional agentContextId uses a trajectory uploaded over the connected-agent WebSocket for this workspace/document. Returns runId; poll edit-diagram-status. Required edit-mode: in-place applies one immutable child revision; variant saves the edit in a new variant without changing the live diagram. Required replace-mode (no default): diagram (omit subtree targets), subnode-single (supply subtree {contentNodeId, revisionId}), multi-contiguous (supply subtrees: at least two adjacent roots), or multi-disjoint (supply subtrees: at least two separate roots). Target revisionId is content.revisionId; use current parsed content node IDs. Each target includes its descendants. Overlaps, stale targets, and edits outside the selected ranges are rejected. Both edit modes create one undo checkpoint and flush workspace persistence. Repeat the identical request to retry an awaiting-acknowledgement run; it never regenerates. Runs and retry receipts are in memory until backend restart. Optional template and references work as in create-diagram.',
     'extend-diagram': 'Create a connected diagram at the chosen canvas origin from selected source nodes.',
   'create-diagram': 'Start an asynchronous prompt-driven creation of 1–4 new diagrams beside one live anchor diagram. Uses target, prompt, context and reference fields plus optional count; omit edit-mode, replace-mode, and subtree targets; nodeId and baseRevisionId pin the anchor whose revision and evidence are the context. Optional template {id, version, options, markdown?} and references (diagram or node ranges pinned to revisionIds, cited in the prompt as [ref N]). Poll edit-diagram-status; created.nodeIds lists the placed diagrams. Repeat the identical request to retry; it never regenerates.',
@@ -82,4 +83,29 @@ export function createMappingMcpServer(baseUrl: string, binding = process.env.MA
   }
   return server;
 }
-export async function startMappingMcpServer(baseUrl: string, target?: { canvasId: string; documentId: string }) { await createMappingMcpServer(baseUrl, undefined, target).connect(new StdioServerTransport()); }
+/** Fetch definitions from the running host so a restarted MCP connection never uses a stale bundle. */
+export async function registerChatMcpTools(server: McpServer, baseUrl: string, binding: string) {
+  const headers = { 'content-type': 'application/json', 'x-canvas-chat-binding': binding };
+  const response = await fetch(new URL('/api/mapping/agent-chat/tools', baseUrl), { headers, signal: AbortSignal.timeout(15000) });
+  if (!response.ok) throw Error('Could not load Agent Chat tool definitions.');
+  const definitions = await response.json() as import('../../../application/mapping/agent-chat/ports').ChatTools['definitions'];
+  for (const tool of definitions) {
+    const schema = z.fromJSONSchema(tool.inputSchema);
+    if (!(schema instanceof z.ZodObject)) throw Error(`Expected an object schema for ${tool.name}`);
+    server.registerTool(`chat_${tool.name}`, { description: tool.description, inputSchema: schema }, async (input: unknown, extra) => {
+      try {
+        const result = await fetch(new URL(`/api/mapping/agent-chat/tools/${tool.name}`, baseUrl), { method: 'POST', headers,
+          body: JSON.stringify({ input, callId: `mcp:${extra.requestId}` }), signal: AbortSignal.timeout(65000) });
+        const value = await result.json();
+        return { content: [{ type: 'text' as const, text: JSON.stringify(value) }],
+          ...(result.ok ? { structuredContent: { result: value } } : { isError: true }) };
+      } catch (error) { return { content: [{ type: 'text' as const, text: String(error) }], isError: true }; }
+    });
+  }
+}
+export async function startMappingMcpServer(baseUrl: string, target?: { canvasId: string; documentId: string }) {
+  const binding = process.env.MAPPING_CHAT_BINDING;
+  const server = createMappingMcpServer(baseUrl, binding, target);
+  if (binding) await registerChatMcpTools(server, baseUrl, binding);
+  await server.connect(new StdioServerTransport());
+}

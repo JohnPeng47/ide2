@@ -1,7 +1,10 @@
+import { migrateDiagramAlternatives, alternativeRevisionIds, validateDiagramAlternatives, type DiagramAlternatives } from '../presentation/diagramAlternative';
+import { canvasViewAlternatives, withCanvasViewAlternatives } from '../presentation/canvasViewAlternatives';
 import { diagramPresentationSettingsSchema } from '../presentation/diagramPresentation';
 import type { DiagramPresentations } from '../presentation/diagramPresentation';
 import { migrateRevisionSelections, validateRevisionSelections, type DiagramRevisionSelection } from './diagramRevisionSelection';
-import { canvasViewCommandSchema, validateCanvasViews, type CanvasViewCommand, type CanvasViews } from './canvasView';
+import { canvasViewCommandSchema, validateCanvasViews, type CanvasViewCommand, type CanvasViews, type CanvasViewState } from './canvasView';
+import { canvasGenerationSchema, generationRunning, type CanvasGeneration } from './canvasGeneration';
 import { validateRevisionReview, reviewRevisionIds, type DiagramRevisionReview } from './diagramRevisionReview';
 import { deepFreeze } from '../immutability';
 import { CanvasCheckpointEncoder, type CanvasCheckpointRecords } from './canvasCheckpointRecords';
@@ -12,7 +15,7 @@ import { diagramContentNodes } from './diagramContentNodes';
 import { correspondingNodes, DiagramRevisionEditor, type DiagramRevision } from './diagramRevisionEditor';
 import type { LineGridScene } from './lineGrid';
 import type { DiagramConnection, DiagramAnchor, ContentNodeAnchor } from './diagramConnection';
-export interface ResolvedCanvasDocument { diagramPresentations?: DiagramPresentations; diagramContexts?: Record<string, DiagramAgentContext>; revisionSelections?: Record<string, DiagramRevisionSelection>; revisionReviews?: Record<string, DiagramRevisionReview>; scene: LineGridScene; edges: DiagramConnection[]; jumps?: CanvasJump[]; sections: Readonly<Record<string, readonly {id: string; label: string; startLine: number; endLine: number; anchorToken: string}[]>> }
+export interface ResolvedCanvasDocument { alternatives?: DiagramAlternatives; diagramPresentations?: DiagramPresentations; diagramContexts?: Record<string, DiagramAgentContext>; revisionSelections?: Record<string, DiagramRevisionSelection>; revisionReviews?: Record<string, DiagramRevisionReview>; scene: LineGridScene; edges: DiagramConnection[]; jumps?: CanvasJump[]; sections: Readonly<Record<string, readonly {id: string; label: string; startLine: number; endLine: number; anchorToken: string}[]>> }
 import { projectCanvasSnapshot, validateCanvasScene } from './projectDiagramCanvas';
 import { validateConnections } from './diagramConnection';
 import { validateCanvasJumps, type CanvasJump } from './canvasJump';
@@ -24,6 +27,7 @@ export type CanvasConnection = Omit<DiagramConnection, 'source' | 'target'> & {
 };
 /** Canonical canvas state separates diagram bindings from composition. Jump spans retain their source revision for stale-link detection. */
 export interface CanvasDocument {
+  alternatives?: DiagramAlternatives;
   diagramPresentations?: DiagramPresentations;
   diagramContexts?: Record<string, DiagramAgentContext>;
   revisionSelections?: Record<string, DiagramRevisionSelection>;
@@ -77,7 +81,7 @@ export function currentHistoryChanges(record: CanvasHistoryRecord, snapshotId = 
 }
 export function checkpointRevisionIds(snapshot: StoredCanvasSnapshot) {
   const document = migrateRevisionSelections(snapshot.document);
-  return [...new Set([...Object.values(snapshot.diagramBindings), ...Object.values(document.revisionReviews ?? {}).flatMap(reviewRevisionIds),
+  return [...new Set([...Object.values(snapshot.diagramBindings), ...alternativeRevisionIds(document.alternatives), ...Object.values(document.revisionReviews ?? {}).flatMap(reviewRevisionIds),
     ...Object.values(document.revisionSelections ?? {}).flatMap(selection => [selection.revisionId, selection.baseRevisionId, selection.contextRevisionId].filter((id): id is string => !!id))])];
 }
 const id = (kind: string) => `${kind}-${crypto.randomUUID()}`;
@@ -103,6 +107,7 @@ export class CanvasHistory {
       }
       for (const key of validation === 'current' ? [record.headId] : Object.keys(record.snapshots)) this.validatedSnapshots.add(key);
       this.record = structuredClone(record);
+      document = migrateDiagramAlternatives(document, id => diagramRevisions.get(id), record.snapshots[record.headId].diagramBindings);
       if (!equal(this.document(), document)) throw new Error('Canvas history does not match document');
     } else {
       this.record = { schemaVersion: 1, contextId: id('context'), baselineId: '', headId: '', past: [], future: [], snapshots: {}, diagramRevisions: {} };
@@ -212,6 +217,7 @@ export class CanvasHistory {
       };
       include(issued);
     }
+    document = migrateDiagramAlternatives(document, id => diagramRevisions.get(id), bindings);
     validateRevisionSelections(document);
     for (const [key, variant] of Object.entries(document.revisionReviews ?? {})) {
       if (key !== variant.id) throw Error('Invalid variant identity');
@@ -233,11 +239,13 @@ export class CanvasHistory {
     };
     for (const selection of Object.values(document.revisionSelections ?? {}))
       for (const id of [selection.revisionId, selection.baseRevisionId, selection.contextRevisionId]) if (id) retainSelection(id);
+    if (document.alternatives) validateDiagramAlternatives(document.alternatives, id => diagramRevisions.get(id));
+    alternativeRevisionIds(document.alternatives).forEach(retainSelection);
     const unresolvedAnchors: Record<string, ContentNodeAnchor> = {};
     const revisions = { ...this.record.diagramRevisions, ...additions };
     const edges = document.edges.map(edge => ({ ...edge, source: encodeAnchor(edge.source, edge.id + ':source', document.scene, bindings, revisions, unresolvedAnchors) as CanvasNodeAnchor, target: encodeAnchor(edge.target, edge.id + ':target', document.scene, bindings, revisions, unresolvedAnchors) }));
     const snapshot: StoredCanvasSnapshot = { id: id('canvas-revision'), parentId: previous?.id,
-      document: { ...(document.diagramPresentations ? { diagramPresentations: structuredClone(document.diagramPresentations) } : {}), ...(document.diagramContexts ? { diagramContexts: structuredClone(document.diagramContexts) } : {}), ...(document.revisionSelections ? { revisionSelections: structuredClone(document.revisionSelections) } : {}), ...(document.revisionReviews ? { revisionReviews: structuredClone(document.revisionReviews) } : {}), scene: { root: structuredClone(document.scene.root) }, edges, sections: structuredClone(document.sections), ...(document.jumps ? { jumps: structuredClone(document.jumps) } : {}) },
+      document: { ...(document.alternatives ? { alternatives: structuredClone(document.alternatives) } : {}), ...(document.diagramPresentations ? { diagramPresentations: structuredClone(document.diagramPresentations) } : {}), ...(document.diagramContexts ? { diagramContexts: structuredClone(document.diagramContexts) } : {}), ...(document.revisionSelections ? { revisionSelections: structuredClone(document.revisionSelections) } : {}), ...(document.revisionReviews ? { revisionReviews: structuredClone(document.revisionReviews) } : {}), scene: { root: structuredClone(document.scene.root) }, edges, sections: structuredClone(document.sections), ...(document.jumps ? { jumps: structuredClone(document.jumps) } : {}) },
       diagramBindings: bindings, unresolvedAnchors, view: structuredClone(view), nodeOrigins: origins };
     // Validation above must complete before any canonical state changes.
     Object.assign(this.record.diagramRevisions, additions);
@@ -250,19 +258,107 @@ export class CanvasHistory {
     this.recordViewStep();
     return this.head;
   }
-  canvasViews(): CanvasViews { return structuredClone(this.record.canvasViews ?? { saved: {} }); }
+  canvasViews(): CanvasViewState {
+    const views = structuredClone(this.record.canvasViews ?? { saved: {} });
+    const active = views.activeViewId && views.saved[views.activeViewId];
+    if (!active) return views;
+    const saved = this.record.snapshots[active.finalCheckpointId!], current = this.head;
+    const contentView = (view: unknown) => {
+      if (!view || typeof view !== 'object') return view;
+      const { viewport: _, selection: __, ...content } = view as Record<string, unknown>;
+      return content;
+    };
+    return { ...views, dirty: !equal(saved.document, current.document) || !equal(saved.diagramBindings, current.diagramBindings)
+      || !equal(contentView(saved.view), contentView(current.view)) };
+  }
+  private stashCanvasView(views: CanvasViews, view: unknown) {
+    if (!equal(this.head.view, view)) this.append(this.document(), view);
+    if (views.activeViewId) (views.workingCopies ??= {})[views.activeViewId] = this.headId;
+  }
+  private openCanvasView(views: CanvasViews, viewId: string, view: unknown) {
+    if (views.activeViewId === viewId) { this.stashCanvasView(views, view); return; }
+    const saved = views.saved[viewId];
+    const checkpointId = views.workingCopies?.[viewId] ?? saved.finalCheckpointId!;
+    this.validateCheckpoint(checkpointId);
+    this.stashCanvasView(views, view);
+    const { transactionId: _, ...target } = this.record.snapshots[checkpointId];
+    // Navigation retains the current camera so alternatives stay visually aligned.
+    const snapshot = structuredClone({ ...target, id: id('canvas-revision'), parentId: this.headId });
+    if (snapshot.view && typeof snapshot.view === 'object' && view && typeof view === 'object' && 'viewport' in view)
+      snapshot.view = { ...snapshot.view, viewport: view.viewport };
+    this.record.snapshots[snapshot.id] = snapshot;
+    this.changes.push({ snapshots: { [snapshot.id]: snapshot }, diagramRevisions: {} });
+    this.record.past.push(this.headId); this.record.headId = snapshot.id; this.record.future = [];
+    views.activeViewId = viewId;
+  }
   private recordViewStep() {
     const recording = this.record.canvasViews?.recording;
     if (recording && recording.checkpointIds.at(-1) !== this.record.headId) recording.checkpointIds.push(this.record.headId);
   }
-  canvasView(raw: CanvasViewCommand, view = this.head.view): CanvasViews {
+  startGeneration(parentId: string, candidates: { id: string; name: string; generation: CanvasGeneration }[]) {
+    const views = this.record.canvasViews, parent = views?.saved[parentId];
+    if (!parent || parent.archivedAt || views!.recording || generationRunning(parent.generation)) throw Error('Saved parent view is unavailable');
+    if (!candidates.length || candidates.length > 8 || new Set(candidates.map(item => item.id)).size !== candidates.length) throw Error('Invalid candidates');
+    for (const candidate of candidates) {
+      canvasGenerationSchema.parse(candidate.generation);
+      if (!candidate.id || views!.saved[candidate.id]) throw Error('Candidate already exists');
+    }
+    const checkpointId = parent.finalCheckpointId!, now = new Date().toISOString();
+    // Export only this saved state and its revision dependencies, not the live head.
+    const record = { ...this.export(), headId: checkpointId, baselineId: checkpointId, past: [], future: [] };
+    delete record.canvasViews;
+    const history = new CanvasHistory(this.document(checkpointId), this.record.snapshots[checkpointId].view, record).export(true);
+    for (const item of candidates) views!.saved[item.id] = { id: item.id, name: item.name, createdAt: now, savedAt: now,
+      parentViewId: parentId, forkCheckpointId: checkpointId, alternativeGroupId: item.generation.runId,
+      startCheckpointId: checkpointId, finalCheckpointId: checkpointId, checkpointIds: [checkpointId], generation: item.generation };
+    return history;
+  }
+  updateGeneration(viewId: string, generation: CanvasGeneration, proposed?: CanvasHistoryRecord) {
+    canvasGenerationSchema.parse(generation);
+    const saved = this.record.canvasViews?.saved[viewId];
+    if (!saved || saved.archivedAt || saved.generation?.runId !== generation.runId || saved.generation.chatId !== generation.chatId) throw Error('Generation target is unavailable');
+    if (!generationRunning(saved.generation)) {
+      if (equal(saved.generation, generation)) return;
+      throw Error('Generation has already settled');
+    }
+    if (proposed) {
+      if (generation.status !== 'finished') throw Error('Only completed generation can publish a view');
+      validateCanvasHistory(proposed);
+      const snapshot = structuredClone({ ...proposed.snapshots[proposed.headId], id: id('canvas-revision'), parentId: saved.finalCheckpointId });
+      delete snapshot.transactionId;
+      for (const [key, revision] of Object.entries(proposed.diagramRevisions)) {
+        if (this.record.diagramRevisions[key] && !equal(this.record.diagramRevisions[key], revision)) throw Error('Diagram revision is immutable');
+      }
+      const next = { ...this.record, snapshots: { ...this.record.snapshots, [snapshot.id]: snapshot },
+        diagramRevisions: { ...this.record.diagramRevisions, ...proposed.diagramRevisions },
+        revisionBoundary: { ...proposed.revisionBoundary, ...this.record.revisionBoundary } };
+      validateCanvasHistory(next);
+      for (const revision of Object.values(proposed.diagramRevisions)) diagramRevisions.register(revision);
+      Object.assign(this.record.diagramRevisions, proposed.diagramRevisions);
+      this.record.snapshots[snapshot.id] = snapshot;
+      this.record.revisionBoundary = next.revisionBoundary;
+      this.changes.push({ snapshots: { [snapshot.id]: snapshot }, diagramRevisions: proposed.diagramRevisions });
+      saved.finalCheckpointId = snapshot.id; saved.checkpointIds.push(snapshot.id); saved.savedAt = generation.completedAt;
+    }
+    saved.generation = structuredClone(generation);
+  }
+  canvasView(raw: CanvasViewCommand, view = this.head.view): CanvasViewState {
     const input = canvasViewCommandSchema.parse(raw);
     if (input.operation === 'list' || input.operation === 'read') {
       if (input.operation === 'read' && (!input.viewId || !this.record.canvasViews?.saved[input.viewId])) throw Error('CanvasView not found');
       return this.canvasViews();
     }
     const views = this.record.canvasViews ?? { saved: {} };
-    if (input.operation === 'start') {
+    if (views.recording && ['create', 'open', 'fork', 'save', 'alternatives', 'keep', 'discard'].includes(input.operation))
+      throw Error('Stop recording before editing saved CanvasViews');
+    if (input.operation === 'create') {
+      if (!input.name) throw Error('CanvasView name is required');
+      this.stashCanvasView(views, view);
+      const viewId = id('canvas-view'), now = new Date().toISOString();
+      views.saved[viewId] = { id: viewId, name: input.name, createdAt: now, savedAt: now,
+        startCheckpointId: this.headId, finalCheckpointId: this.headId, checkpointIds: [this.headId] };
+      views.activeViewId = viewId;
+    } else if (input.operation === 'start') {
       if (views.recording) throw Error('A CanvasView is already recording');
       if (!input.name) throw Error('CanvasView name is required');
       if (!equal(this.head.view, view)) this.append(this.document(), view);
@@ -274,16 +370,95 @@ export class CanvasHistory {
       this.recordViewStep();
       const saved = { ...views.recording, finalCheckpointId: this.headId, savedAt: new Date().toISOString() };
       views.saved[saved.id] = saved;
+      views.activeViewId = saved.id;
       delete views.recording;
     } else if (input.operation === 'cancel') {
       if (!views.recording) throw Error('No CanvasView is recording');
       delete views.recording;
     } else {
-      const saved = input.viewId && views.saved[input.viewId];
+      const targetId = input.viewId ?? (input.operation === 'save' ? views.activeViewId : undefined);
+      const saved = targetId && views.saved[targetId];
       if (!saved) throw Error('CanvasView not found');
-      if (input.operation === 'delete') delete views.saved[saved.id];
+      if (generationRunning(saved.generation)) throw Error('This view is still generating; cancel generation before editing it');
+      if (['keep', 'discard', 'delete'].includes(input.operation) && Object.values(views.saved).some(item => {
+        if (!generationRunning(item.generation)) return false;
+        if (input.operation === 'keep' && item.alternativeGroupId === saved.alternativeGroupId) return true;
+        let parent = item.parentViewId;
+        while (parent) { if (parent === saved.id) return true; parent = views.saved[parent]?.parentViewId; }
+        return false;
+      })) throw Error('Wait for generation to finish or cancel it first');
+      if (saved.archivedAt) throw Error('CanvasView is archived');
+      if (input.operation === 'fork' || input.operation === 'alternatives') {
+        const names = input.operation === 'fork' ? input.name && [input.name] : input.names;
+        if (!names) throw Error(input.operation === 'fork' ? 'CanvasView name is required' : 'Alternative names are required');
+        const groupId = input.operation === 'alternatives' ? id('view-alternatives') : undefined;
+        const children = names.map(name => {
+          const viewId = id('canvas-view'), now = new Date().toISOString(), checkpointId = saved.finalCheckpointId!;
+          return { id: viewId, name, createdAt: now, savedAt: now, parentViewId: saved.id, forkCheckpointId: checkpointId,
+            ...(groupId ? { alternativeGroupId: groupId } : {}),
+            startCheckpointId: checkpointId, finalCheckpointId: checkpointId, checkpointIds: [checkpointId] };
+        });
+        for (const child of children) views.saved[child.id] = child;
+        if (input.operation === 'fork') this.openCanvasView(views, children[0].id, view);
+      } else if (input.operation === 'open') {
+        this.openCanvasView(views, saved.id, view);
+      } else if (input.operation === 'keep' || input.operation === 'discard') {
+        if (input.operation === 'keep' && !saved.alternativeGroupId) throw Error('CanvasView is not part of an alternative group');
+        const archived = new Set(input.operation === 'discard' ? [saved.id] : Object.values(views.saved)
+          .filter(item => item.id !== saved.id && item.alternativeGroupId === saved.alternativeGroupId).map(item => item.id));
+        let changed = true;
+        while (changed) {
+          changed = false;
+          for (const item of Object.values(views.saved)) if (item.parentViewId && archived.has(item.parentViewId) && !archived.has(item.id)) {
+            archived.add(item.id); changed = true;
+          }
+        }
+        if (input.operation === 'keep') {
+          if (views.activeViewId !== saved.id) this.openCanvasView(views, saved.id, view);
+          else this.stashCanvasView(views, view);
+          views.saved[saved.id] = { ...saved, finalCheckpointId: this.headId, savedAt: new Date().toISOString(),
+            checkpointIds: saved.checkpointIds.at(-1) === this.headId ? saved.checkpointIds : [...saved.checkpointIds, this.headId] };
+          if (views.workingCopies) delete views.workingCopies[saved.id];
+        } else if (views.activeViewId && archived.has(views.activeViewId)) {
+          if (saved.parentViewId && !views.saved[saved.parentViewId].archivedAt) this.openCanvasView(views, saved.parentViewId, view);
+          else { this.stashCanvasView(views, view); delete views.activeViewId; }
+        }
+        for (const viewId of archived) views.saved[viewId] = { ...views.saved[viewId], archivedAt: new Date().toISOString() };
+      } else if (input.operation === 'promote-diffs') {
+        if (views.recording) throw Error('Stop recording before promoting CanvasView diffs');
+        const comparison = this.canvasViewComparison(saved.id);
+        const items = canvasViewAlternatives(comparison);
+        const current = withCanvasViewAlternatives(this.document(), items);
+        const targetDocument = withCanvasViewAlternatives(comparison.proposed.document, items);
+        validateDiagramAlternatives(current.alternatives!, revisionId => diagramRevisions.get(revisionId));
+        validateDiagramAlternatives(targetDocument.alternatives!, revisionId => diagramRevisions.get(revisionId));
+        // Append a new saved endpoint; retain the original immutable checkpoints and comparison base.
+        const target = this.record.snapshots[saved.finalCheckpointId!];
+        if (!equal(target.document.alternatives, targetDocument.alternatives)) {
+          const snapshot = structuredClone({ ...target, id: id('canvas-revision'), parentId: target.id,
+            document: { ...target.document, alternatives: targetDocument.alternatives } });
+          delete snapshot.transactionId;
+          this.record.snapshots[snapshot.id] = snapshot;
+          this.changes.push({ snapshots: { [snapshot.id]: snapshot }, diagramRevisions: {} });
+          views.saved[saved.id] = { ...saved, checkpointIds: [...saved.checkpointIds, snapshot.id],
+            finalCheckpointId: snapshot.id, savedAt: new Date().toISOString() };
+        }
+        if (!equal(current.alternatives, this.document().alternatives)) this.append(current, view);
+      } else if (input.operation === 'save') {
+        if (views.activeViewId && views.activeViewId !== saved.id) throw Error('Open the CanvasView before saving changes to it');
+        if (!equal(this.head.view, view)) this.append(this.document(), view);
+        views.saved[saved.id] = { ...saved, finalCheckpointId: this.headId, savedAt: new Date().toISOString(),
+          checkpointIds: saved.checkpointIds.at(-1) === this.headId ? saved.checkpointIds : [...saved.checkpointIds, this.headId] };
+        views.activeViewId = saved.id;
+        if (views.workingCopies) delete views.workingCopies[saved.id];
+      } else if (input.operation === 'delete') {
+        if (Object.values(views.saved).some(item => item.parentViewId === saved.id)) throw Error('Use discard to archive a CanvasView with children');
+        delete views.saved[saved.id];
+        if (views.workingCopies) delete views.workingCopies[saved.id];
+        if (views.activeViewId === saved.id) delete views.activeViewId;
+      }
       else {
-        if (views.recording) throw Error('Stop recording before applying a CanvasView');
+        if (views.recording) throw Error('Stop recording before applying or forking a CanvasView');
         this.validateCheckpoint(saved.finalCheckpointId!);
         // Restore the exact saved state as a fresh checkpoint. Transfer transaction links
         // describe the original operation and must not be replayed by this local restore.
@@ -292,6 +467,8 @@ export class CanvasHistory {
         this.record.snapshots[snapshot.id] = snapshot;
         this.changes.push({ snapshots: { [snapshot.id]: snapshot }, diagramRevisions: {} });
         this.record.past.push(this.headId); this.record.headId = snapshot.id; this.record.future = [];
+        views.activeViewId = saved.id;
+        if (views.workingCopies) delete views.workingCopies[saved.id];
       }
     }
     this.record.canvasViews = views;
@@ -383,6 +560,7 @@ export function validateCanvasHistory(value: CanvasHistoryRecord, changed?: { re
       contents[diagramId] = revision.diagram;
     }
     for (const settings of Object.values(snapshot.document.diagramPresentations ?? {})) diagramPresentationSettingsSchema.parse(settings);
+    if (snapshot.document.alternatives) validateDiagramAlternatives(snapshot.document.alternatives, id => value.diagramRevisions[id]);
     validateRevisionSelections(migrateRevisionSelections(snapshot.document), id => value.diagramRevisions[id]);
     for (const [id, variant] of Object.entries(migrateRevisionSelections(snapshot.document).revisionReviews ?? {})) {
       if (id !== variant.id) throw Error('Invalid variant identity');
@@ -416,7 +594,7 @@ export function documentFromHistory(record: CanvasHistoryRecord, snapshotId = re
     if (!revision || !contentNodeId) throw new Error('Unresolvable canonical anchor');
     return { ...anchor, contentNodeId, revisionId: revision.diagram.content.revisionId };
   };
-  const result = structuredClone({ ...migrateRevisionSelections(snapshot.document), scene, edges: snapshot.document.edges.map(edge => ({ ...edge,
+  const result = structuredClone({ ...migrateDiagramAlternatives(snapshot.document, id => record.diagramRevisions[id], snapshot.diagramBindings), scene, edges: snapshot.document.edges.map(edge => ({ ...edge,
     source: decode(edge.source, edge.id + ':source') as ContentNodeAnchor, target: decode(edge.target, edge.id + ':target') })) });
   Object.values(result.scene.contents).forEach(deepFreeze);
   return result;

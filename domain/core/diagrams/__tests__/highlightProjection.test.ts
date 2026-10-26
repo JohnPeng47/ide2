@@ -5,7 +5,7 @@ import { revisionFixture } from '../../../../tests/support/diagramRevisions';
 import { diagramContentNodes } from '../diagramContentNodes';
 import { defaultArrowAppearance, validateConnections } from '../diagramConnection';
 import { composeScene, flattenGrid, resolveScene } from '../lineGrid';
-import { highlightedDiagramIds, prepareHighlightProjection, layoutHighlightProjection, projectionPresets, projectionGeometry, calculateProjectionPositions, applyProjectionPositions } from '../highlightProjection';
+import { highlightedDiagramIds, prepareDiagramProjection, prepareHighlightProjection, layoutHighlightProjection, projectionPresets, projectionGeometry, calculateProjectionPositions, applyProjectionPositions } from '../highlightProjection';
 import { initialCanvasState, type MappingCanvasState, type MappingWorkspaceSnapshot } from '../../../mapping/workspace/mappingWorkspace';
 import { MappingDocumentController } from '../../../mapping/workspace/mappingDocumentController';
 import { serializeWorkspace, deserializeWorkspace } from '../../../mapping/workspace/mappingWorkspaceCodec';
@@ -33,6 +33,37 @@ function fixture() {
 }
 
 describe('highlight projection', () => {
+  it('projects an explicit set including unhighlighted diagrams, preserving source order and internal connections', () => {
+    const { history, input, document } = fixture();
+    const prepared = prepareDiagramProjection(history, { ...input, selectedIds: ['grid:excluded', 'grid:b'] });
+    const projection = (prepared.destination.view as MappingCanvasState).projectionLayout!;
+    expect(projection.nodes.flatMap(node => node.sourceId ? [node.sourceId] : [])).toEqual(['b', 'excluded']);
+    expect(prepared.destination.document.edges.map(edge => edge.appearance.label)).toEqual(['b → excluded']);
+    expect(Object.values(prepared.destination.document.scene.contents).map(d => d.content.ascii))
+      .toContain(document.scene.contents.excluded.content.ascii);
+    expect(prepared.source.history).toEqual(history);
+    validateConnections(prepared.destination.document.scene, prepared.destination.document.edges);
+    const undone = prepareTransferNavigation(history, prepared.destination.history, prepared.transaction);
+    expect(undone.destination.document.scene).toEqual(emptyCanvasDocument().scene);
+  });
+
+  it('rejects empty, duplicate, unknown and non-diagram IDs without changing the source', () => {
+    const { history, input } = fixture(), before = structuredClone(history);
+    for (const selectedIds of [[], ['grid:a', 'grid:a'], ['grid:a', 'grid:missing'], ['grid:root'], ['a']]) {
+      expect(() => prepareDiagramProjection(history, { ...input, selectedIds })).toThrow();
+      expect(history).toEqual(before);
+    }
+  });
+
+  it('projects an unhighlighted diagram inside a collapsed container', () => {
+    const { document, input } = fixture();
+    document.scene.root.collapsed = true;
+    document.scene.root.collapsedContentId = 'excluded';
+    const prepared = prepareDiagramProjection(new CanvasHistory(document, {}).export(), { ...input, selectedIds: ['grid:excluded'] });
+    expect((prepared.destination.view as MappingCanvasState).projectionLayout!.nodes.map(node => node.sourceId))
+      .toEqual(['excluded', undefined]);
+  });
+
   it('projects from only the current checkpoint while retaining the source undo archive and transfer boundary', () => {
     const { document, input } = fixture();
     const archive = new CanvasHistory(document, { archivedText: 'x'.repeat(1_000_000) });

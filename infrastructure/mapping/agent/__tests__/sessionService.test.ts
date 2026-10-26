@@ -346,3 +346,21 @@ it('routes chat-bound diagram tools directly and keeps standalone generation ava
   expect(generate).toHaveBeenCalledOnce(); expect(controller.getSnapshot().document.scene.contents.overview.content.ascii).toBe('Delegated');
   service.dispose();
 });
+
+it('promotes and selects a retained revision through the batched alternatives API', async () => {
+  const scene = singleDiagramScene('Original'), controller = new MappingDocumentController(mappingDocumentFromScene(scene), initialCanvasState());
+  const base = scene.contents.overview, candidate = revisionFixture().revise(base.revisionId, { kind: 'replace', input: { ascii: 'Candidate' } }).revision;
+  const bridge: CanvasSessionPort = { register() {}, list: () => [{ canvasId: 'canvas', documents: [{ documentId: 'doc', name: 'Test' }] }], poll: async () => [], reply() {}, unregister() {}, dispose() {},
+    async dispatch(_id, command) {
+      if (command.method === 'snapshot' || command.method === 'identity') return { ...controller.getSnapshot(), history: controller.exportHistory(), name: 'Test' };
+      const input = command.payload as { expectedVersion: number; operations: DiagramOperation[] }; return controller.transact(input.expectedVersion, input.operations);
+    } };
+  const service = new AgentDiagrammingSessionService(bridge, {} as MappingDiagramService, {} as DiagramRepository, new QuickJsAgentRuntime());
+  const attached = await service.call('exec', { requestId: 'attach-alt', code: 'return canvas.attach({canvasId:"canvas",documentId:"doc"});' }) as { value: { sessionId: string } };
+  const request = { sessionId: attached.value.sessionId, requestId: 'promote', expectedVersion: 0,
+    code: `nodes.promoteAlternative({nodeId:"grid:overview",alternativeId:"choice",name:"Choice",parts:[{target:{kind:"diagram"},source:{revisionId:${JSON.stringify(candidate.id)},scope:{kind:"diagram"}},baseRevisionId:${JSON.stringify(base.revisionId)}}]}); nodes.selectAlternative({nodeId:"grid:overview",alternativeId:"choice",selected:true}); nodes.sidePanel({nodeId:"grid:overview",alternativeId:"choice"}); return nodes.alternatives({nodeId:"grid:overview"});` };
+  const result = await service.call('exec', request) as { value: { version: number; selected: string[]; panels: unknown[] } };
+  expect(result.value).toMatchObject({ version: 1, selected: ['choice'] }); expect(result.value.panels).toHaveLength(1);
+  expect(await service.call('exec', request)).toEqual(result);
+  controller.undo(); expect(controller.getSnapshot().document.alternatives).toBeUndefined();
+});

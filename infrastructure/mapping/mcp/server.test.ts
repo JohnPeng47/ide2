@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { expect, it } from 'vitest';
-import { createMappingMcpServer } from './server';
+import { createMappingMcpServer, registerChatMcpTools } from './server';
 
 it('keeps one automatic attachment across direct MCP calls and supplies common methods upfront', async () => {
   const calls: { name: string; input: Record<string, any> }[] = [];
@@ -45,10 +45,18 @@ it('keeps one automatic attachment across direct MCP calls and supplies common m
     expect(edit.isError).not.toBe(true);
     expect(calls.at(-1)).toMatchObject({ name: 'edit-diagram', input: { sessionId: 'attached', 'edit-mode': 'variant' } });
     const viewTool = (await client.listTools()).tools.find(tool => tool.name === 'canvas-view')!;
-    expect(viewTool.inputSchema.properties?.operation).toMatchObject({ enum: ['start', 'stop', 'list', 'read', 'apply', 'delete', 'cancel'] });
+    expect(viewTool.inputSchema.properties?.operation).toMatchObject({ enum: expect.arrayContaining(['start', 'stop', 'list', 'read', 'apply', 'delete', 'cancel']) });
     const view = await client.callTool({ name: 'canvas-view', arguments: { operation: 'start', name: 'A', expectedVersion: 0, requestId: 'view-start' } });
     expect(view.isError).not.toBe(true);
     expect(calls.at(-1)).toMatchObject({ name: 'canvas-view', input: { sessionId: 'attached', operation: 'start', name: 'A' } });
+    const group = await client.callTool({ name: 'canvas-view', arguments: {
+      operation: 'alternatives', viewId: 'A', names: ['A.1', 'A.2', 'A.3'], expectedVersion: 1, requestId: 'group' } });
+    expect(group.isError).not.toBe(true);
+    expect(calls.at(-1)).toMatchObject({ name: 'canvas-view', input: {
+      sessionId: 'attached', operation: 'alternatives', viewId: 'A', names: ['A.1', 'A.2', 'A.3'] } });
+    const keep = await client.callTool({ name: 'canvas-view', arguments: { operation: 'keep', viewId: 'A.1', expectedVersion: 2, requestId: 'keep' } });
+    expect(keep.isError).not.toBe(true);
+    expect(calls.at(-1)).toMatchObject({ name: 'canvas-view', input: { sessionId: 'attached', operation: 'keep', viewId: 'A.1' } });
   } finally {
     await client.close(); await server.close();
     await new Promise<void>((resolve,reject) => http.close(error => error ? reject(error) : resolve()));
@@ -81,4 +89,43 @@ it('exposes direct payloads on chat-bound MCP and rejects the prompt-only contra
     const rejected = await client.callTool({ name: 'edit-diagram', arguments: { nodeId: 'grid:overview', baseRevisionId: 'revision', 'edit-mode': 'in-place', 'replace-mode': 'diagram', prompt: 'Generate', expectedVersion: 0, requestId: 'old' } });
     expect(rejected.isError).toBe(true); expect(calls).toHaveLength(1);
   } finally { await client.close(); await server.close(); await new Promise<void>(resolve => http.close(() => resolve())); }
+});
+
+
+it('loads current chat definitions from the host and dispatches through the authenticated chat session', async () => {
+  let definition = { type: 'function', name: 'project-diagrams', description: 'Current projection',
+    inputSchema: { type: 'object', properties: { diagramIds: { type: 'array', items: { type: 'string' }, minItems: 1 } }, required: ['diagramIds'], additionalProperties: false } };
+  const calls: any[] = [];
+  const http = createServer(async (req, res) => {
+    expect(req.headers['x-canvas-chat-binding']).toBe('bound');
+    res.setHeader('content-type', 'application/json');
+    if (req.method === 'GET') { res.end(JSON.stringify([definition])); return; }
+    let body = ''; for await (const chunk of req) body += chunk;
+    calls.push({ path: req.url, ...JSON.parse(body) });
+    res.end(JSON.stringify({ documentId: 'child' }));
+  });
+  await new Promise<void>(resolve => http.listen(0, '127.0.0.1', resolve));
+  const base = `http://127.0.0.1:${(http.address() as { port: number }).port}`;
+  try {
+    for (const description of ['Current projection', 'Updated projection definition']) {
+      definition = { ...definition, description };
+      const server = createMappingMcpServer(base, 'bound');
+      const client = new Client({ name: 'reload-tools-test', version: '1' });
+      const [a, b] = InMemoryTransport.createLinkedPair();
+      try {
+        await registerChatMcpTools(server, base, 'bound');
+        await Promise.all([server.connect(a), client.connect(b)]);
+        const exposed = (await client.listTools()).tools.find(tool => tool.name === 'chat_project-diagrams')!;
+        expect(exposed.description).toBe(description);
+        expect(exposed.inputSchema.required).toEqual(['diagramIds']);
+        const result = await client.callTool({ name: exposed.name, arguments: { diagramIds: ['grid:a'] } });
+        expect(result.structuredContent).toEqual({ result: { documentId: 'child' } });
+        expect(calls.at(-1)).toMatchObject({ path: '/api/mapping/agent-chat/tools/project-diagrams',
+          input: { diagramIds: ['grid:a'] }, callId: expect.any(String) });
+        const rejected = await client.callTool({ name: exposed.name, arguments: { diagramIds: [] } });
+        expect(rejected.isError).toBe(true);
+      } finally { await client.close(); await server.close(); }
+    }
+    expect(calls).toHaveLength(2);
+  } finally { await new Promise<void>(resolve => http.close(() => resolve())); }
 });

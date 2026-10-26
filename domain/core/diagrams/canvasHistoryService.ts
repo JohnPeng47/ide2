@@ -15,9 +15,12 @@ export interface CanvasContextState {
 
 /** Canvas controllers coordinate edits; this boundary owns history and its storage. */
 export interface CanvasHistoryService {
+  startGeneration(context: CanvasEditingContext, parentId: string, candidates: { id: string; name: string; generation: import('./canvasGeneration').CanvasGeneration }[]): CanvasHistoryRecord;
+  updateGeneration(context: CanvasEditingContext, viewId: string, generation: import('./canvasGeneration').CanvasGeneration, proposed?: CanvasHistoryRecord): void;
+
   canvasViewComparison(context: CanvasEditingContext, viewId: string): import('./canvasView').CanvasViewComparison;
-  canvasViews(context: CanvasEditingContext): import('./canvasView').CanvasViews;
-  canvasView(context: CanvasEditingContext, input: import('./canvasView').CanvasViewCommand, view?: unknown): import('./canvasView').CanvasViews;
+  canvasViews(context: CanvasEditingContext): import('./canvasView').CanvasViewState;
+  canvasView(context: CanvasEditingContext, input: import('./canvasView').CanvasViewCommand, view?: unknown): import('./canvasView').CanvasViewState;
   navigation?(context: CanvasEditingContext): import('./canvasHistory').CanvasHistoryNavigation;
   prepareTransfer(context: CanvasEditingContext, input: TransferInput, destination?: CanvasEditingContext): PreparedCanvasTransfer;
   transferBoundary(context: CanvasEditingContext, transaction: CanvasTransfer, canvasId: string, redo?: boolean): boolean;
@@ -39,6 +42,8 @@ export interface CanvasHistoryService {
 
 export class DefaultCanvasHistoryService implements CanvasHistoryService {
   canvasViewComparison(context: CanvasEditingContext, viewId: string) { return this.history(context).canvasViewComparison(viewId); }
+  startGeneration(context: CanvasEditingContext, parentId: string, candidates: { id: string; name: string; generation: import('./canvasGeneration').CanvasGeneration }[]) { return this.history(context).startGeneration(parentId, candidates); }
+  updateGeneration(context: CanvasEditingContext, viewId: string, generation: import('./canvasGeneration').CanvasGeneration, proposed?: CanvasHistoryRecord) { this.history(context).updateGeneration(viewId, generation, proposed); }
   canvasViews(context: CanvasEditingContext) { return this.history(context).canvasViews(); }
   canvasView(context: CanvasEditingContext, input: import('./canvasView').CanvasViewCommand, view?: unknown) { return this.history(context).canvasView(input, view); }
   constructor(private readonly validation: import('./canvasHistory').HistoryValidation = 'all') {}

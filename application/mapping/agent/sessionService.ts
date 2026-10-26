@@ -365,8 +365,8 @@ export class AgentDiagrammingSessionService {
     };
     try {
       const value = await this.runtime.run(input.code, async (method, args) => {
-        if (readOnly && !['canvas.read', 'canvas.list', 'canvas.attach', 'nodes.list', 'nodes.get', 'nodes.variants', 'edges.list'].includes(method)) throw Error('READ_ONLY: canvas mutation requires Workspace access');
-        if (input.mode === 'batched' && (method.startsWith('canvas.') || ['nodes.list', 'nodes.get', 'nodes.variants', 'edges.list', 'nodes.setSourceMappings', 'nodes.setJumps'].includes(method))) await flush();
+        if (readOnly && !['canvas.read', 'canvas.list', 'canvas.attach', 'nodes.list', 'nodes.get', 'nodes.variants', 'nodes.alternatives', 'edges.list'].includes(method)) throw Error('READ_ONLY: canvas mutation requires Workspace access');
+        if (input.mode === 'batched' && (method.startsWith('canvas.') || ['nodes.list', 'nodes.get', 'nodes.variants', 'nodes.alternatives', 'edges.list', 'nodes.setSourceMappings', 'nodes.setJumps'].includes(method))) await flush();
         if (uncertain) throw Error('CANVAS_TIMEOUT: retry execution with the same requestId');
         const stepIndex = cursor++, stepSignature = JSON.stringify({ method, args });
         let step = state.steps[stepIndex];
@@ -438,6 +438,13 @@ export class AgentDiagrammingSessionService {
                 }
                 return { version: state.version, edges: state.edges.map(edge => this.projection.edge(edge)) };
               };
+              else if (method === 'nodes.alternatives') execute = async () => {
+                const snapshot = await this.snapshot(sessionId, input.changeSessionId);
+                if (snapshot.version !== state.version) throw Error('VERSION_CONFLICT: canvas changed during execution');
+                const alternatives = snapshot.document.alternatives;
+                return { version: state.version, alternatives: Object.values(alternatives?.items ?? {}).filter(item => item.presentationId === parsed.nodeId),
+                  selected: alternatives?.selected[parsed.nodeId] ?? [], panels: Object.values(alternatives?.panels ?? {}).filter(panel => panel.attachment.diagramPresentationId === parsed.nodeId) };
+              };
               else if (method === 'nodes.variants') execute = async () => {
                 const snapshot = await this.snapshot(sessionId, input.changeSessionId);
                 if (snapshot.version !== state.version) throw Error('VERSION_CONFLICT: canvas changed during execution');
@@ -487,6 +494,10 @@ export class AgentDiagrammingSessionService {
                   ? method === 'edges.remove' ? { method: 'edge-remove', edgeId: parsed.edgeId }
                     : { method: method === 'edges.create' ? 'edge-create' : 'edge-update',
                         edge: { ...parsed, id: method === 'edges.create' ? `connection-${randomUUID()}` : parsed.id } }
+                  : method === 'nodes.promoteAlternative' ? { ...parsed, method: 'alternative-promote' }
+                  : method === 'nodes.selectAlternative' ? { ...parsed, method: 'alternative-select' }
+                  : method === 'nodes.removeAlternative' ? { ...parsed, method: 'alternative-remove' }
+                  : method === 'nodes.sidePanel' ? { ...parsed, method: 'side-panel' }
                   : method === 'nodes.selectRevision' ? { ...parsed, method: 'revision-select' }
                   : method === 'nodes.reviewVariant' ? { ...parsed, method: 'variant-review' }
                   : method === 'nodes.draw' ? { ...parsed, method: 'diagram-create', id: `diagram-${randomUUID()}` }

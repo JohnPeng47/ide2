@@ -28,6 +28,7 @@ export const editModeSchema = z.enum(['in-place', 'variant']);
 export const replaceModeSchema = z.enum(['diagram', 'subnode-single', 'multi-contiguous', 'multi-disjoint']);
 const subtreeSchema = z.object({ contentNodeId: z.string().min(1).max(500), revisionId: id }).strict();
 const generationSchema = z.object({
+  'presentation-alternative': z.object({ name: z.string().trim().min(1).max(120), select: z.boolean().default(false) }).strict().optional().describe('Promote this variant as a named presentation alternative. Requires edit-mode variant. select defaults to false.'),
   'source-mappings': z.boolean().optional().describe('Defaults to false. Enable to supply new source mappings.'),
   sessionId: id, nodeId: id, expectedVersion: z.number().int().nonnegative(),
   'edit-mode': editModeSchema.optional(),
@@ -50,7 +51,7 @@ export const diagramEditRunSchema = z.object({ runId: id }).strict();
 export type EditDiagramInput = z.infer<typeof editDiagramSchema>;
 export type CreateDiagramInput = z.infer<typeof createDiagramSchema>;
 export interface DiagramRevisionApplication {
-  variants?: { variant: import('../../core/diagrams/diagramRevisionReview').DiagramRevisionReview; revision: DiagramRevision }[];
+  variants?: { variant: import('../../core/diagrams/diagramRevisionReview').DiagramRevisionReview; revision: DiagramRevision; alternative?: import('../../core/presentation/diagramAlternative').DiagramAlternative; selectAlternative?: boolean }[];
   requestId: string;
   expectedVersion: number;
   nodeId: string;
@@ -64,7 +65,7 @@ export interface DiagramCreation {
   sources?: ContentNodeAnchor[];
 }
 export interface DiagramEditRun {
-  variants?: { id: string; name: string; revisionId: string }[];
+  variants?: { id: string; name: string; revisionId: string; alternativeId?: string }[];
   /** Actual runtime session for diagnostics/clipboard; each run may have a new ID. */
   agentSessionId?: string;
   /** Updated conversation, published only after the canvas acknowledges success. */

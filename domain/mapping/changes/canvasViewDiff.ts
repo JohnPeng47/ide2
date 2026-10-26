@@ -1,3 +1,4 @@
+import { alternativeSelections, emptyDiagramAlternatives } from '../../core/presentation/diagramAlternative';
 import { presentationHighlights } from '../../core/presentation/diagramPresentation';
 import { rebaseDiagramHighlights, type DiagramHighlight } from '../../core/diagrams/diagramHighlight';
 import type { CanvasViewComparison, CanvasViewSnapshot } from '../../core/diagrams/canvasView';
@@ -20,12 +21,21 @@ function project(snapshot: CanvasViewSnapshot) {
   const document = structuredClone(snapshot.document);
   const identities = new Map<string, Map<string, string>>();
   const replacements = new Map<string, string>();
-  for (const [contentId, diagram] of Object.entries(document.scene.contents)) {
+  const placements = diagramBoxes(document.scene.root);
+  const rename = new Map<string, string>();
+  for (const box of placements) {
+    const originalContentId = box.contentId;
+    const contentId = placements.filter(other => other.contentId === originalContentId).length > 1 ? `placement:${box.id}:${originalContentId}` : originalContentId;
+    const diagram = { ...snapshot.document.scene.contents[originalContentId], id: contentId };
+    rename.set(box.id, contentId);
+    document.scene.contents = { ...document.scene.contents, [contentId]: diagram };
+    if (document.diagramPresentations?.[originalContentId]) document.diagramPresentations[contentId] = document.diagramPresentations[originalContentId];
+    const choices = alternativeSelections(document, `grid:${box.id}`, originalContentId, snapshot.revisions[diagram.revisionId]);
     const revision = snapshot.revisions[diagram.revisionId];
-    const hasSelection = Object.values(document.revisionSelections ?? {}).some(selection => selection.contentId === contentId);
+    const hasSelection = Object.values(choices.revisionSelections ?? {}).some(selection => selection.contentId === originalContentId);
     let refs: Record<string, string> = { ...revision.nodeRefs };
     if (hasSelection) {
-      const rows = resolveRevisionLines(revision, document, id => snapshot.revisions[id]);
+      const rows = resolveRevisionLines(revision, choices, id => snapshot.revisions[id]);
       const ascii = rows.map(row => row.revision.diagram.content.ascii.split('\n')[row.sourceLine - 1]).join('\n');
       const structure = rows[0]?.revision.diagram.content.structure ?? diagram.content.structure;
       const content = buildDiagramContent(ascii, diagram.content.revisionId, structure.kind,
@@ -71,13 +81,15 @@ function project(snapshot: CanvasViewSnapshot) {
     const byRef = new Map(Object.entries(refs).map(([id, ref]) => [ref, id]));
     identities.set(contentId, byRef);
     for (const [id, ref] of Object.entries(revision.nodeRefs)) {
-      const target = byRef.get(ref); if (target) replacements.set(id, target);
+      const target = byRef.get(ref); if (target) replacements.set(`grid:${box.id}:${id}`, target);
     }
   }
+  const rebind = (box: GridBox): GridBox => box.kind === 'container' ? { ...box, children: box.children.map(rebind) } : { ...box, contentId: rename.get(box.id)! };
+  document.scene.root = rebind(document.scene.root);
   const boxes = new Map(diagramBoxes(document.scene.root).map(box => [`grid:${box.id}`, box]));
   const anchor = (value: DiagramAnchor): DiagramAnchor | undefined => {
     if (value.kind === 'box') return value;
-    const box = boxes.get(value.displayNodeId), contentNodeId = replacements.get(value.contentNodeId);
+    const box = boxes.get(value.displayNodeId), contentNodeId = replacements.get(`${value.displayNodeId}:${value.contentNodeId}`);
     if (!box || !contentNodeId) return undefined;
     return { ...value, contentNodeId, revisionId: document.scene.contents[box.contentId].content.revisionId };
   };
@@ -86,7 +98,7 @@ function project(snapshot: CanvasViewSnapshot) {
     return source?.kind === 'content-node' && target ? [{ ...edge, source, target }] : [];
   });
   // These are already represented by the projected rows. Preview does not offer live navigation.
-  document.revisionSelections = {}; document.jumps = [];
+  document.alternatives = emptyDiagramAlternatives(); document.revisionSelections = {}; document.jumps = [];
   return { state: { document, canvas: structuredClone(snapshot.view) as MappingCanvasState } satisfies ChangeDocumentState, identities };
 }
 

@@ -12,6 +12,7 @@ import { MAPPING_POC_A_NODES, MAPPING_POC_GRAPH_A } from "../selection/mappingPo
 import { MAPPING_POC_A_SECTIONS, type MappingPocASection } from "../selection/mappingPocOverlays";
 
 export interface MappingGridDocument {
+  alternatives?: import('../../core/presentation/diagramAlternative').DiagramAlternatives;
   diagramPresentations?: DiagramPresentations;
   diagramContexts?: Record<string, import('../../core/diagrams/diagramAgentContext').DiagramAgentContext>;
   revisionSelections?: Record<string, import('../../core/diagrams/diagramRevisionSelection').DiagramRevisionSelection>;

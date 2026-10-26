@@ -6,15 +6,20 @@ import type { ChatMcpBinding } from '../../../application/mapping/agent-chat/por
 export class MappingChatMcpBinding implements ChatMcpBinding {
   private tokens = new Map<string, string>();
   private origin?: string;
+  private toolGenerations = new Map<string, string>();
   constructor(private agent: AgentDiagrammingSessionService, private appRoot: string) {}
   setOrigin(origin: string) { this.origin = origin; }
-  config(chatId: string) {
+  chatId(token: string) { return [...this.tokens].find(([, value]) => value === token)?.[0]; }
+  config(chatId: string, refreshTools = false) {
     if (!this.origin) throw Error('MCP_UNAVAILABLE: application address is not initialized');
     let token = this.tokens.get(chatId);
     if (!token) { token = this.agent.chatBindings.create(); this.tokens.set(chatId, token); }
+    // A new runtime configuration also bypasses app-server's cached tool catalog.
+    if (refreshTools) this.toolGenerations.set(chatId, crypto.randomUUID());
+    const generation = this.toolGenerations.get(chatId);
     return { 'mcp_servers.mapping': { command: process.execPath,
       args: ['--import', 'tsx', path.join(this.appRoot, 'scripts/mapping/mcp.ts'), this.origin], cwd: this.appRoot,
-      env: { MAPPING_CHAT_BINDING: token }, enabled: true } };
+      env: { MAPPING_CHAT_BINDING: token, ...(generation ? { MAPPING_TOOLS_GENERATION: generation } : {}) }, enabled: true } };
   }
   bind(chatId: string, target: ChatCanvasTarget | undefined, readOnly: boolean) {
     const token = this.tokens.get(chatId); if (!token) throw Error('CHAT_BINDING_UNAVAILABLE');

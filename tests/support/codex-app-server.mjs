@@ -10,17 +10,21 @@ const pending = new Map();
 const canvasContexts = new Map();
 const threadTools = new Map();
 const threadMcp = new Map(), mcpClients = new Map();
+async function canvasMcpClient(threadId) {
+  let client = mcpClients.get(threadId);
+  if (!client) {
+    const config = threadMcp.get(threadId)?.['mcp_servers.mapping'];
+    if (!config?.env?.MAPPING_CHAT_BINDING) throw Error('Missing host MCP binding');
+    client = new Client({ name: 'canvas-fixture', version: '1' });
+    await client.connect(new StdioClientTransport({ command: config.command, args: config.args, cwd: config.cwd,
+      env: { ...process.env, ...config.env }, stderr: 'pipe' }));
+    mcpClients.set(threadId, client);
+  }
+  return client;
+}
 async function canvasMcpTurn(threadId, turnId, publish) {
   try {
-    let client = mcpClients.get(threadId);
-    if (!client) {
-      const config = threadMcp.get(threadId)?.['mcp_servers.mapping'];
-      if (!config?.env?.MAPPING_CHAT_BINDING) throw Error('Missing host MCP binding');
-      client = new Client({ name: 'canvas-fixture', version: '1' });
-      await client.connect(new StdioClientTransport({ command: config.command, args: config.args, cwd: config.cwd,
-        env: { ...process.env, ...config.env }, stderr: 'pipe' }));
-      mcpClients.set(threadId, client);
-    }
+    const client = await canvasMcpClient(threadId);
     const call = async (name, args) => {
       const result = await client.callTool({ name, arguments: args });
       if (result.isError) throw Error(JSON.stringify(result.content));
@@ -102,6 +106,19 @@ createInterface({ input: process.stdin }).on('line', line => {
       if (response.success && task.item.tool === 'highlight-node') {
         answer(task.threadId, task.turnId, result.highlights.map((item, i) => `[Highlighted reference ${i + 1}](${item.markdownUrl})`).join('\n\n')); return;
       }
+      if (response.success && task.item.tool === 'project-diagrams') {
+        if (!task.projectedDocumentId) {
+          // Redeliver the same tool call with a fresh wire ID, as after a lost acknowledgement.
+          const retryId = id + '-retry';
+          pending.set(retryId, { ...task, projectedDocumentId: result.documentId });
+          output({ id: retryId, method: 'item/tool/call', params: { threadId: task.threadId, turnId: task.turnId,
+            callId: task.item.id, namespace: null, tool: task.item.tool, arguments: task.item.arguments } });
+        } else {
+          if (result.documentId !== task.projectedDocumentId) throw Error('Projection retry created a duplicate canvas');
+          answer(task.threadId, task.turnId, 'Projection created: ' + result.documentId);
+        }
+        return;
+      }
       if (response.success && task.item.tool === 'remove-highlights') { answer(task.threadId, task.turnId, 'Removed highlights.'); return; }
       if (response.success && ['generating', 'applying'].includes(result.status) && task.polls < 200) {
         setTimeout(() => diagramTool(task.threadId, task.turnId, 'edit-diagram-status', { runId: result.runId }, task.polls + 1), 50);
@@ -118,8 +135,13 @@ createInterface({ input: process.stdin }).on('line', line => {
   ], nextCursor: null } });
   if (method === 'account/read') return output({ id, result: { account: { type: 'chatgpt', email: 'fixture@example.test' } } });
   if (method === 'thread/start') {
-    const threadId = `thread-${++nextThread}`; threadMcp.set(threadId, p.config); threadTools.set(threadId, p.dynamicTools ?? []);
+    const threadId = `thread-${++nextThread}`; threadMcp.set(threadId, p.config); threadTools.set(threadId, (p.dynamicTools ?? []).filter(tool => !process.env.CHAT_RELOAD_FIXTURE || tool.name !== 'project-diagrams'));
     return output({ id, result: { thread: { id: threadId }, model: p.model || 'fixture-codex' } });
+  }
+  if (method === 'thread/fork') {
+    const threadId = `thread-${++nextThread}`;
+    threadTools.set(threadId, threadTools.get(p.threadId)); threadMcp.set(threadId, p.config);
+    return output({ id, result: { thread: { id: threadId }, model: p.model || 'fixture-codex', reasoningEffort: p.config?.model_reasoning_effort || 'high' } });
   }
   if (method === 'thread/resume') {
     if (p.threadId === '019a0000-0000-7000-8000-000000000001') {
@@ -138,11 +160,47 @@ createInterface({ input: process.stdin }).on('line', line => {
     if (p.config) threadMcp.set(p.threadId, p.config);
     return output({ id, result: { thread: { id: p.threadId } } });
   }
+  if (method === 'thread/unsubscribe' || method === 'thread/inject_items' || method === 'thread/goal/clear') return output({ id, result: {} });
+  if (method === 'config/mcpServer/reload') {
+    void (async () => {
+      await Promise.all([...mcpClients.values()].map(client => client.close())); mcpClients.clear();
+      output({ id, result: {} });
+    })().catch(error => output({ id, error: { code: -32603, message: String(error) } }));
+    return;
+  }
+  if (method === 'mcpServerStatus/list') {
+    void (async () => {
+      const client = await canvasMcpClient(p.threadId);
+      const { tools } = await client.listTools();
+      output({ id, result: { data: [{ name: 'mapping', tools: Object.fromEntries(tools.map(tool => [tool.name, tool])) }] } });
+    })().catch(error => output({ id, error: { code: -32603, message: String(error) } }));
+    return;
+  }
   if (method === 'turn/interrupt') { output({ id, result: {} }); finish(p.threadId, p.turnId, 'interrupted'); return; }
   if (method === 'turn/start') {
     const threadId = p.threadId, turnId = `turn-${++nextTurn}`, text = p.input[0]?.text;
     output({ id, result: { turn: { id: turnId } } });
     notification('turn/started', { threadId, turn: { id: turnId } });
+    if (text?.startsWith('Generate this single canvas alternative.')) {
+      void (async () => {
+        const client = await canvasMcpClient(threadId);
+        const call = async (name, args) => {
+          const result = await client.callTool({ name, arguments: args });
+          if (result.isError) throw Error(JSON.stringify(result.content));
+          return result.structuredContent?.result ?? JSON.parse(result.content[0].text);
+        };
+        const read = (await call('exec', { requestId: `generation-read-${turnId}`, code: 'return canvas.read({level:"small"});' })).value;
+        await new Promise(resolve => setTimeout(resolve, 1800));
+        const name = text.match(/Candidate ([^:]+):/)?.[1] || 'candidate';
+        await call('exec', { requestId: `generation-edit-${turnId}`, expectedVersion: read.version,
+          code: `return nodes.replace(${JSON.stringify({ nodeId: read.nodes[0].id, ascii: `Generated ${name}\n|-- Payment\n|   |-- Authorize\n|   \`-- Capture\n\`-- Cart` })});` });
+        notification('thread/tokenUsage/updated', { threadId, turnId, tokenUsage: {
+          total: { totalTokens: 140, inputTokens: 100, cachedInputTokens: 20, outputTokens: 40, reasoningOutputTokens: 10 },
+          last: { totalTokens: 140, inputTokens: 100, cachedInputTokens: 20, outputTokens: 40, reasoningOutputTokens: 10 } } });
+        answer(threadId, turnId, `Generated ${name}`);
+      })().catch(error => { notification('turn/completed', { threadId, turn: { id: turnId, status: 'failed', error: { message: String(error) } } }); });
+      return;
+    }
     if (text === 'Highlight canvas through MCP' || text === 'Publish canvas through MCP') {
       void canvasMcpTurn(threadId, turnId, text.startsWith('Publish')); return;
     }
@@ -161,6 +219,20 @@ createInterface({ input: process.stdin }).on('line', line => {
       return;
     }
     if (text === 'wait') return;
+    if (text === 'Project arbitrary diagrams') {
+      if (process.env.CHAT_RELOAD_FIXTURE) {
+        void (async () => {
+          if (threadTools.get(threadId)?.some(tool => tool.name === 'project-diagrams')) throw Error('Fixture requires stale native tools');
+          const client = await canvasMcpClient(threadId);
+          const result = await client.callTool({ name: 'chat_project-diagrams', arguments: { diagramIds: ['grid:d3', 'grid:d0', 'grid:d1'] } });
+          if (result.isError) throw Error(JSON.stringify(result.content));
+          answer(threadId, turnId, 'Projection created: ' + (result.structuredContent?.result ?? JSON.parse(result.content[0].text)).documentId);
+        })().catch(error => answer(threadId, turnId, 'Projection failed: ' + String(error)));
+        return;
+      }
+      diagramTool(threadId, turnId, 'project-diagrams', { diagramIds: ['grid:d3', 'grid:d0', 'grid:d1'] }); return;
+    }
+
     if (text?.startsWith('Highlight selected ref ')) {
       diagramTool(threadId, turnId, 'highlight-node', { reference: 1, color: /^Highlight selected ref ([a-z]+)/.exec(text)[1], requestId: `highlight-${turnId}` }); return;
     }

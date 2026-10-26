@@ -43,12 +43,25 @@ export interface ChatItem {
 }
 export interface ChatQuestion { id: string; header: string; question: string; isSecret?: boolean; options?: { label: string; description: string }[] | null }
 export interface ChatApproval { id: string; kind: 'approval' | 'input' | 'permissions'; title: string; detail: string; questions?: ChatQuestion[]; turnId?: string }
+export interface ChatGeneration {
+  metadata: import('../../core/diagrams/canvasGeneration').CanvasGeneration;
+  source: ChatCanvasTarget; stableWorkspaceId?: string; viewId: string; parentViewId: string;
+  history?: import('../../core/diagrams/canvasHistory').CanvasHistoryRecord;
+  usageBaseline?: import('../../core/diagrams/canvasGeneration').CanvasGeneration['usage'];
+}
+export interface ChatGenerationRequest { error?: string; requestId: string; signature: string; runId: string; candidates: { viewId: string; chatId: string; name: string }[] }
 export interface ChatSession {
-  /** Imported native threads must not receive Agent Chat's prompt or tool overrides. */
+  generation?: ChatGeneration;
+  generationRequests?: ChatGenerationRequest[];
+  toolDefinitions?: { type: 'function'; name: string; description: string; inputSchema: Record<string, unknown> }[];
+  tokenUsage?: import('../../core/diagrams/canvasGeneration').CanvasGeneration['usage'];
+
+  /** Imported native threads retain their prompt and tools; Reload tools explicitly adds Agent Chat's MCP tools. */
   origin?: 'codex';
   /** Marks imports that have adopted Agent Chat's default rather than native access. */
   accessDefaultApplied?: true;
   canvasTools?: boolean;
+  toolsReloadedAt?: string;
   canvasContext?: { canvas?: ChatCanvasTarget; references: ChatReference[] };
   id: string; threadId: string; title: string; cwd: string; createdAt: string; updatedAt: string;
   settings: ChatSettings; status: 'idle' | 'running' | 'interrupted' | 'failed'; turnId?: string | null;
@@ -59,13 +72,13 @@ export interface ChatSession {
   turnStartedAt?: string;
   completedAt?: string | null;
 }
-export type ChatSessionSummary = Pick<ChatSession, 'id' | 'title' | 'cwd' | 'updatedAt' | 'status'>;
+export type ChatSessionSummary = Pick<ChatSession, 'id' | 'title' | 'cwd' | 'updatedAt' | 'status'> & { parentChatId?: string; settings?: ChatSettings };
 export interface ChatModel { id: string; name: string; efforts: string[]; defaultEffort: string; isDefault: boolean }
 export interface ChatInfo { cwd: string; models: ChatModel[]; account: string }
 export type ChatUpdate =
   | { type: 'item'; item: ChatItem }
   | { type: 'delta'; id: string; kind: ChatItem['kind']; text: string; turnId?: string; sourceType?: string }
-  | { type: 'state'; patch: Partial<Pick<ChatSession, 'status' | 'turnId' | 'pending' | 'error' | 'usage' | 'updatedAt' | 'settings' | 'title' | 'activity' | 'turnStartedAt' | 'completedAt'>> };
+  | { type: 'state'; patch: Partial<Pick<ChatSession, 'status' | 'turnId' | 'pending' | 'error' | 'usage' | 'updatedAt' | 'settings' | 'title' | 'activity' | 'turnStartedAt' | 'completedAt' | 'toolsReloadedAt' | 'canvasTools' | 'tokenUsage' | 'generation'>> };
 export type ChatEvent = ChatUpdate | { type: 'snapshot'; session: ChatSession; partial?: boolean }
   | { type: 'snapshot-part'; items: ChatItem[]; final: boolean } | { type: 'batch'; events: ChatUpdate[] };
 

@@ -5,6 +5,9 @@ import type { DiagramHighlight } from './diagramHighlight';
 export type DiagramNode = Node<'diagram', { readonly diagramId: string; readonly revisionId: string }>;
 
 export interface DiagramPresentationState {
+  readonly alternativeIds?: readonly string[];
+  readonly selectedAlternativeIds?: readonly string[];
+  readonly sidePanelIds?: readonly string[];
   readonly display: 'regular' | 'diff';
   readonly collapsed: boolean;
   readonly collapsedNodeRefs: readonly string[];

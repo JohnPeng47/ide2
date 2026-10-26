@@ -1,3 +1,5 @@
+import { panelRows } from './diagramSidePanelLayout';
+import { alternativeSelections } from '../../core/presentation/diagramAlternative';
 import { getDiagramRevision } from '../../core/diagrams/diagramRevisionStore';
 import { projectSelectedDiagramRows } from '../../core/presentation/diagramRevisionProjection';
 import type { MappingGridDocument } from './mappingGrid';
@@ -87,18 +89,45 @@ const selectedScenes = new WeakMap<MappingGridDocument, LineGridScene>();
 const selectedSceneContents = new WeakMap<LineGridScene, ReadonlySet<string>>();
 /** Reserve composition bounds without changing the canvas document or its content bindings. */
 export function presentationScene(document: MappingGridDocument): LineGridScene {
-  if (!Object.keys(document.revisionSelections ?? {}).length) return document.scene;
+  if (!Object.keys(document.revisionSelections ?? {}).length && !Object.keys(document.alternatives?.items ?? {}).length) return document.scene;
   const cached = selectedScenes.get(document); if (cached) return cached;
   const selectedIds = new Set(Object.values(document.revisionSelections ?? {}).map(selection => selection.contentId));
   const resize = (box: GridBox): GridBox => {
     if (box.kind === 'container') return { ...box, children: box.children.map(resize) };
     const diagram = document.scene.contents[box.contentId];
-    if (!selectedIds.has(box.contentId)) return box;
+    if (!Object.keys(alternativeSelections(document, `grid:${box.id}`, box.contentId, getDiagramRevision(diagram.revisionId)).revisionSelections ?? {}).length) return box;
+    selectedIds.add(box.contentId);
     const rows = projectSelectedDiagramRows(getDiagramRevision(diagram.revisionId), document, `grid:${box.id}`, getDiagramRevision, document.diagramPresentations?.[box.contentId]);
     const bounds = measureContent(rows.map(row => row.text).join('\n'));
     return { ...box, minimumSize: { columns: Math.max(box.minimumSize?.columns ?? 0, bounds.columns), rows: Math.max(box.minimumSize?.rows ?? 0, bounds.rows) } };
   };
-  const scene = layoutScene({ ...document.scene, root: resize(document.scene.root) }, document.scene.root.id);
+  // Temporary envelopes reserve flow space; they are not persisted or exposed as domain nodes.
+  const unwrap = new Set<string>();
+  const reserve = (box: GridBox): GridBox => {
+    if (box.kind === 'container') return { ...box, children: box.children.map(reserve) };
+    const panels = Object.values(document.alternatives?.panels ?? {}).filter(p => p.placement === 'flow' && p.attachment.diagramPresentationId === `grid:${box.id}`);
+    if (!panels.length || box.collapsed) return box;
+    let left = 0, right = 0, rows = 0;
+    for (const panel of panels) {
+      const size = measureContent(panelRows(document, panel).map(row => row.text).join('\n'));
+      const width = Math.max(38, size.columns + 2) + 6;
+      if (panel.side === 'left') left += width; else right += width;
+      rows = Math.max(rows, size.rows + 1);
+    }
+    const size = resolveScene({ ...document.scene, root: { ...box, position: { column: 0, row: 0 } } }).bounds;
+    const id = `panel-envelope:${box.id}`; unwrap.add(id);
+    return { id, kind: 'container', position: box.position, collapsed: false, layout: { collisionPolicy: 'push-right', gap: 0 },
+      minimumSize: { columns: left + size.columns + right, rows: size.rows + rows },
+      children: [{ ...box, position: { column: left, row: 0 } }] };
+  };
+  const reserved = reserve(resize(document.scene.root));
+  const laidOut = layoutScene({ ...document.scene, root: reserved }, reserved.id);
+  const release = (box: GridBox): GridBox => {
+    if (box.kind !== 'container') return box;
+    if (unwrap.has(box.id)) { const child = box.children[0]; return { ...child, position: { column: box.position.column + child.position.column, row: box.position.row + child.position.row } }; }
+    return { ...box, children: box.children.map(release) };
+  };
+  const scene = { ...laidOut, root: release(laidOut.root) };
   selectedSceneContents.set(scene, selectedIds);
   selectedScenes.set(document, scene); return scene;
 }

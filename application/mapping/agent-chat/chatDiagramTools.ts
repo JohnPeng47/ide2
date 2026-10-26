@@ -1,6 +1,8 @@
+import { genAlternativesSchema, genAlternativesDescription } from '../../../domain/core/diagrams/canvasGeneration';
 import { directOperationSchemas, directDiagramInstructions, isDiagramTool, type DiagramTool } from '../../../domain/mapping/agent/diagramBatch';
 import { diagramOutputFormat } from '../../../domain/mapping/agent/promptTemplates';
-import { canvasViewCommandSchema } from '../../../domain/core/diagrams/canvasView';
+import { canvasViewCommandSchema, canvasViewInstructions } from '../../../domain/core/diagrams/canvasView';
+import { projectDiagramsSchema } from '../../../domain/core/diagrams/highlightProjection';
 import { highlightColorSchema, highlightTargetsSchema, highlightNodeIds } from '../../../domain/core/diagrams/diagramHighlight';
 import type { CanvasMutationResult } from '../../../domain/mapping/agent/mutationReceipt';
 import { z } from 'zod';
@@ -37,9 +39,11 @@ const removeHighlightsSchema = z.object({ ...highlightTargetFields, highlightIds
 /** Bind native chat tools to the same live revision workflow as the LLM panel. */
 export class ChatDiagramTools implements ChatTools {
   definitions: ChatTools['definitions'] = [
+    { type: 'function', name: 'gen-alternatives', description: genAlternativesDescription, inputSchema: z.toJSONSchema(genAlternativesSchema) },
+    { type: 'function', name: 'project-diagrams', description: 'Copy any specified diagrams from the current canvas into a new child canvas and open it. Pass only diagramIds: the diagram display IDs from Read Canvas (grid:… or current read aliases), not content or revision IDs. Highlights are not required. Preserves internal connections and copied source mappings, adds a blank 65 × 35 diagram, and arranges the group with adjustable Projection layout controls. The source is unchanged. Automatically persisted and undoable. Requires Workspace access.', inputSchema: z.toJSONSchema(projectDiagramsSchema) },
     { type: 'function', name: 'highlight-node', description: 'Only when explicitly requested by the user: save a colored highlight on a diagram or selected nodes. Specify either reference ([ref N] from the latest user message) or nodeId from Read Canvas, with optional contentNodeIds for multiple current full-ID anchors or contentNodeId for one. All targets must belong to that diagram. A selected nodes reference saves one highlight spanning all its members. The group shares one saved ID, color, and markdownUrl; removing the ID removes the entire group. Optional color: yellow (default), blue, green, pink, purple, orange or #RRGGBB. Returns saved highlight IDs and markdownUrl destinations for explicitly requested links. Undoable, automatically persisted. Requires Workspace access. Use a unique requestId; retry identical arguments with the same ID.', inputSchema: z.toJSONSchema(highlightSchema) },
     { type: 'function', name: 'remove-highlights', description: 'Remove saved diagram highlights when the user requests it. Specify reference or nodeId, plus optional highlightIds to remove specific annotations. Omit highlightIds to clear all highlights in that diagram. Undoable and automatically persisted. Requires Workspace access. Retry identical arguments with the same requestId.', inputSchema: z.toJSONSchema(removeHighlightsSchema) },
-    { type: 'function', name: 'canvas-view', description: 'Record and restore named views of the active canvas. operation: start with name, stop to save, cancel to discard recording metadata while keeping edits, list, read with viewId, apply with viewId, or delete with viewId. Records committed canvas changes and diagram revisions/variants. Apply restores the complete saved state as one undoable change, without merging or rerunning generation. Stop recording before applying. Mutations require Workspace access. Use a unique requestId and retry identical arguments after uncertain outcomes.', inputSchema: z.toJSONSchema(viewSchema) },
+    { type: 'function', name: 'canvas-view', description: canvasViewInstructions, inputSchema: z.toJSONSchema(viewSchema) },
     ...(['edit-diagram', 'create-diagram', 'extend-diagram'] as const).map(name => ({ type: 'function' as const, name, description: directDiagramInstructions(name) + diagramOutputFormat(name, 'optional', `${name} using operations[].${name === 'edit-diagram' ? 'edit' : 'diagram'}`), inputSchema: z.toJSONSchema(chatSchemas[name]) })),
     { type: 'function', name: 'diagram-agent-context', description: 'Prepare, read, or delete a diagram-owned AgentContext. Specify operation and either a selected reference or a diagram nodeId from Read Canvas. A node selection targets its owning diagram. Prepare compiles current source evidence into a dedicated disk record for later diagram edits; read loads the stored context and reports whether its source evidence is current; delete removes the diagram binding. Prepare and delete are undoable and require Workspace access. Retry identical mutation arguments with the same requestId after an uncertain outcome.', inputSchema: z.toJSONSchema(contextSchema) },
     { type: 'function', name: 'edit-diagram-status', description: 'Check a diagram edit started by this conversation. Completed means the browser applied the revision and persisted workspace history. For awaiting-acknowledgement, retry the original edit-diagram arguments and requestId.', inputSchema: z.toJSONSchema(runSchema) },
@@ -51,8 +55,10 @@ export class ChatDiagramTools implements ChatTools {
   private contextRequests = new Map<string, { signature: string; prepared: Promise<Record<string, unknown>> }>();
   private viewRequests = new Map<string, { signature: string; prepared: Promise<Record<string, unknown>> }>();
   private owners = new Map<string, string>();
+  private projectionRequests = new Map<string, { signature: string; prepared: Promise<{ workspaceInstanceId: string; documentId: string; payload: { diagramIds: string[]; expectedVersion: number; requestId: string } }> }>();
   constructor(private agent: Pick<AgentDiagrammingSessionService, 'call' | 'bridge' | 'submitDirect' | 'projection' | 'resolveDiagramArguments'>) {}
   async call(name: string, raw: unknown, session: ChatToolSession) {
+    if (name === 'project-diagrams') return this.projectDiagrams(raw, session);
     if (name === 'highlight-node' || name === 'remove-highlights') return this.highlight(name, raw, session);
     if (name === 'canvas-view') return this.canvasView(raw, session);
     if (name === 'diagram-agent-context') return this.prepareContext(raw, session);
@@ -75,6 +81,31 @@ export class ChatDiagramTools implements ChatTools {
     const result = await this.agent.submitDirect(name, await request.input);
     this.owners.set(result.runId, session.id);
     return result;
+  }
+  private async projectDiagrams(raw: unknown, session: ChatToolSession) {
+    const input = projectDiagramsSchema.parse(raw);
+    if (session.settings.sandbox === 'read-only') throw Error('Projecting diagrams requires Workspace access.');
+    const canvas = session.canvasContext?.canvas;
+    if (!canvas) throw Error('Open a live canvas and send another message or use Read Canvas.');
+    // The transport supplies retry identity, keeping the agent-facing arguments to just IDs.
+    const key = JSON.stringify([session.id, session.toolCallId ?? randomUUID()]), signature = JSON.stringify(input);
+    let request = this.projectionRequests.get(key);
+    if (request && request.signature !== signature) throw Error('REQUEST_ID_CONFLICT: projection arguments differ');
+    if (!request) {
+      if (this.projectionRequests.size >= 500) throw Error('Projection request capacity reached; restart the backend.');
+      const prepare = async () => {
+        const sessionId = await this.attachment(canvas);
+        const resolved = this.agent.resolveDiagramArguments(sessionId, input);
+        const state = await this.agent.bridge.dispatch(canvas.workspaceInstanceId,
+          { method: 'identity', documentId: canvas.documentId }) as { version: number };
+        return { ...canvas, payload: { ...resolved, expectedVersion: state.version, requestId: randomUUID() } };
+      };
+      request = { signature, prepared: prepare().catch(error => { this.projectionRequests.delete(key); throw error; }) };
+      this.projectionRequests.set(key, request);
+    }
+    const prepared = await request.prepared;
+    return this.agent.bridge.dispatch(prepared.workspaceInstanceId,
+      { method: 'project-diagrams', documentId: prepared.documentId, payload: prepared.payload });
   }
   private async canvasView(raw: unknown, session: ChatToolSession) {
     const input = viewSchema.parse(raw), read = ['list', 'read'].includes(input.operation);

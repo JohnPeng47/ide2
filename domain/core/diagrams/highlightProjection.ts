@@ -34,6 +34,14 @@ export const projectionLayoutSchema = z.object({
 export type ProjectionLayout = z.infer<typeof projectionLayoutSchema>;
 
 const expand = (box: GridBox): GridBox => box.kind === 'container' ? { ...box, collapsed: false, children: box.children.map(expand) } : box;
+export const projectDiagramsSchema = z.object({
+  diagramIds: z.array(z.string().min(1).max(200)).min(1).max(1999)
+    .refine(ids => new Set(ids).size === ids.length, 'Diagram IDs must be unique')
+}).strict();
+export const projectDiagramsCommandSchema = projectDiagramsSchema.extend({
+  expectedVersion: z.number().int().nonnegative(), requestId: z.string().min(1).max(200)
+}).strict();
+
 export function highlightedDiagramIds(scene: LineGridScene, presentations?: DiagramPresentations): string[] {
   return flattenGrid(resolveScene({ ...scene, root: expand(scene.root) })).filter(({ box }) => {
     if (box.kind !== 'diagram') return false;
@@ -47,6 +55,14 @@ export function prepareHighlightProjection(record: CanvasHistoryRecord, input: O
   cell = { width: 8.4, height: 18 }) {
   const source = documentFromHistory(record), selectedIds = highlightedDiagramIds(source.scene, source.diagramPresentations);
   if (!selectedIds.length) throw Error('Highlight at least one diagram before projecting.');
+  return prepareDiagramProjection(record, { ...input, selectedIds }, cell);
+}
+
+/** Project explicit diagram placements, regardless of their highlight state. */
+export function prepareDiagramProjection(record: CanvasHistoryRecord, input: Omit<TransferInput, 'mode'>,
+  cell = { width: 8.4, height: 18 }) {
+  const source = documentFromHistory(record);
+  const { diagramIds: selectedIds } = projectDiagramsSchema.parse({ diagramIds: input.selectedIds });
   const selected = new Set(selectedIds);
   const originals = flattenGrid(resolveScene({ ...source.scene, root: expand(source.scene.root) })).filter(({ box }) => selected.has(`grid:${box.id}`));
   const prepared = prepareCanvasTransfer(record, { ...input, mode: 'copy', selectedIds });
@@ -99,7 +115,7 @@ export function projectionGeometry(document: ResolvedCanvasDocument, projection:
   const root = document.scene.root;
   const ids = new Set(projection.nodes.map(node => node.id));
   if (root.kind !== 'container' || root.children.length !== ids.size || root.children.some(box => box.kind !== 'diagram' || !ids.has(box.id)))
-    throw Error('The diagram membership changed. Project highlights again to create a new layout baseline.');
+    throw Error('The diagram membership changed. Project the diagrams again to create a new layout baseline.');
   return {
     sizes: flattenGrid(resolveScene(document.scene)).filter(node => ids.has(node.box.id))
       .map(node => ({ id: node.box.id, columns: node.bounds.columns, rows: node.bounds.rows })),
@@ -109,7 +125,7 @@ export function projectionGeometry(document: ResolvedCanvasDocument, projection:
 export function applyProjectionPositions(document: ResolvedCanvasDocument, positions: ProjectionPosition[]): ResolvedCanvasDocument {
   const root = document.scene.root, byId = new Map(positions.map(({ id, ...point }) => [id, point]));
   if (root.kind !== 'container' || root.children.length !== byId.size || root.children.some(box => !byId.has(box.id)))
-    throw Error('The diagram membership changed. Project highlights again to create a new layout baseline.');
+    throw Error('The diagram membership changed. Project the diagrams again to create a new layout baseline.');
   const scene = { ...document.scene, root: { ...root, position: { column: 0, row: 0 },
     children: root.children.map(box => ({ ...box, position: byId.get(box.id)! })) } };
   resolveScene(scene);

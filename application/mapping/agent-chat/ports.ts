@@ -16,15 +16,16 @@ export interface CodexConnection {
   dispose(): void;
 }
 export interface ChatStore { list(): Promise<ChatSession[]>; save(session: ChatSession): Promise<void> }
-export type ChatToolSession = Pick<ChatSession, 'id' | 'settings' | 'canvasContext'>;
+export type ChatToolSession = Pick<ChatSession, 'id' | 'settings' | 'canvasContext'> & { toolCallId?: string };
 export interface ChatTools {
   definitions: { type: 'function'; name: string; description: string; inputSchema: Record<string, unknown> }[];
   call(name: string, input: unknown, session: ChatToolSession): Promise<unknown>;
 }
 
 export interface ChatMcpBinding {
+  chatId(token: string): string | undefined;
   setOrigin(origin: string): void;
-  config(chatId: string): Record<string, unknown>;
+  config(chatId: string, refreshTools?: boolean): Record<string, unknown>;
   bind(chatId: string, target: import('../../../domain/mapping/agent-chat/agentChat').ChatCanvasTarget | undefined, readOnly: boolean): void;
   clear(chatId: string): void;
 }

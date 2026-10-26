@@ -109,3 +109,53 @@ it.each(['create-diagram', 'extend-diagram'] as const)('exposes direct batched p
   expect(definition.description).toContain('operations[].diagram');
   await expect(f.tools.call(name, { requestId: 'bad', operations: [{ reference: 1, prompt: 'Generate for me' }] }, f.session)).rejects.toThrow();
 });
+
+
+it('projects explicit IDs with automatic version and retry identity, pinned to the source canvas', async () => {
+  const f = fixture(), session = { ...f.session, toolCallId: 'projection-call' };
+  const request = { diagramIds: ['grid:overview'] };
+  await f.tools.call('project-diagrams', request, session);
+  const sent = f.dispatch.mock.calls.at(-1);
+  expect(sent).toEqual(['workspace', { method: 'project-diagrams', documentId: 'doc',
+    payload: { diagramIds: ['grid:overview'], expectedVersion: 7, requestId: expect.any(String) } }]);
+  f.snapshot.version++;
+  session.canvasContext = { canvas: { workspaceInstanceId: 'workspace', documentId: 'child' }, references: [] };
+  await f.tools.call('project-diagrams', request, session);
+  expect(f.dispatch.mock.calls.at(-1)).toEqual(sent);
+  expect(f.dispatch).toHaveBeenCalledTimes(3);
+  await expect(f.tools.call('project-diagrams', { diagramIds: ['grid:other'] }, session)).rejects.toThrow('REQUEST_ID_CONFLICT');
+  await f.tools.call('project-diagrams', request, { ...session, toolCallId: 'another-call' });
+  expect(f.dispatch.mock.calls.at(-1)).toEqual(['workspace', expect.objectContaining({ documentId: 'child' })]);
+});
+
+it('exposes only diagramIds and rejects invalid projection input, read-only access and missing canvas', async () => {
+  const f = fixture();
+  const schema = f.tools.definitions.find(tool => tool.name === 'project-diagrams')!.inputSchema;
+  expect(Object.keys(schema.properties as object)).toEqual(['diagramIds']);
+  for (const request of [{ diagramIds: [] }, { diagramIds: ['a', 'a'] }, { diagramIds: ['a'], requestId: 'extra' }])
+    await expect(f.tools.call('project-diagrams', request, f.session)).rejects.toThrow();
+  await expect(f.tools.call('project-diagrams', { diagramIds: ['grid:overview'] },
+    { ...f.session, settings: { ...f.session.settings, sandbox: 'read-only' } })).rejects.toThrow('Workspace access');
+  await expect(f.tools.call('project-diagrams', { diagramIds: ['grid:overview'] },
+    { ...f.session, canvasContext: undefined })).rejects.toThrow('Open a live canvas');
+  expect(f.dispatch).not.toHaveBeenCalled();
+});
+
+it('exposes view ancestry operations to AgentChat and preserves a group request across retries', async () => {
+  const f = fixture();
+  const definition = f.tools.definitions.find(tool => tool.name === 'canvas-view')!;
+  const schema = definition.inputSchema as { properties: { operation: { enum: string[] } } };
+  expect(schema.properties.operation.enum).toEqual(expect.arrayContaining(['create', 'save', 'fork', 'alternatives', 'open', 'keep', 'discard']));
+  const request = { operation: 'alternatives', viewId: 'view-a', names: ['A.1', 'A.2', 'A.3'], requestId: 'group' };
+  await f.tools.call('canvas-view', request, f.session);
+  const sent = f.call.mock.calls.at(-1)![1];
+  expect(sent).toMatchObject({ operation: 'alternatives', viewId: 'view-a', names: request.names, sessionId: 'attachment', expectedVersion: 7 });
+  f.snapshot.version++;
+  await f.tools.call('canvas-view', request, f.session);
+  expect(f.call.mock.calls.at(-1)![1]).toEqual(sent);
+  await expect(f.tools.call('canvas-view', { ...request, names: ['different'] }, f.session)).rejects.toThrow('REQUEST_ID_CONFLICT');
+  f.session.settings.sandbox = 'read-only';
+  for (const operation of ['create', 'save', 'fork', 'alternatives', 'open', 'keep', 'discard']) {
+    await expect(f.tools.call('canvas-view', { ...request, operation, requestId: operation }, f.session)).rejects.toThrow('Workspace access');
+  }
+});

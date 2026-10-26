@@ -9,6 +9,7 @@ export interface DiagramRevisionSelection {
   ownerNodeId: string;
   contextRevisionId: string | null;
   revisionId: string;
+  sourceOwnerNodeId?: string;
   baseRevisionId?: string;
 }
 export const revisionSelectionKey = (contentId: string, ownerNodeId: string, contextRevisionId: string | null) =>
@@ -45,7 +46,7 @@ export function validateRevisionSelections(document: RevisionSelections, get?: (
     if (get) {
       const revision = get(selection.revisionId);
       if (!revision || revision.diagram.id !== selection.contentId) throw Error('Revision selection belongs to another diagram');
-      revisionScope(revision, selection.ownerNodeId);
+      revisionScope(revision, selection.sourceOwnerNodeId ?? selection.ownerNodeId);
       for (const id of [selection.contextRevisionId, selection.baseRevisionId]) if (id && get(id).diagramId !== revision.diagramId)
         throw Error('Revision selection context belongs to another diagram');
     }
@@ -77,16 +78,16 @@ export function resolveRevisionLines(base: DiagramRevision, document: RevisionSe
     if (alternative) {
       const next = get(alternative.revisionId);
       if (next.diagramId !== base.diagramId) throw Error('Revision selection belongs to another diagram');
-      const rows = render(next, owner, next.id, depth + 1, false);
+      const rows = render(next, alternative.sourceOwnerNodeId ?? owner, next.id, depth + 1, false);
       if (rows[0]) rows[0] = { ...rows[0], ownerNodeId: owner, contextRevisionId: context };
-      return rows;
+      return collapsedNodeRefs.has(owner) ? rows.slice(0, 1) : rows;
     }
     const range = revisionScope(revision, owner), nodes = diagramContentNodes(revision.diagram.content);
     const byLine = new Map(nodes.map(node => [node.line, node]));
     const rows: ResolvedRevisionLine[] = [];
     for (let line = range.startLine; line <= range.endLine; line++) {
       const node = byLine.get(line), ref = node && revision.nodeRefs[node.id];
-      if (ref && ref !== owner && !(owner === 'root' && line === range.startLine) && selected(ref, context)) {
+      if (ref && ref !== owner && selected(ref, context)) {
         rows.push(...render(revision, ref, context, depth + 1));
         line = revisionScope(revision, ref).endLine;
       } else {

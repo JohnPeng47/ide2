@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { AgentChatService } from './agentChatService';
-import type { ChatCanvasReader, ChatStore, ChatTools, CodexConnection, CodexMessage } from './ports';
+import type { ChatCanvasReader, ChatMcpBinding, ChatStore, ChatTools, CodexConnection, CodexMessage } from './ports';
 import { reduceChatEvent, type ChatEvent, type ChatSession } from '../../../domain/mapping/agent-chat/agentChat';
 
 class Connection implements CodexConnection {
@@ -28,11 +28,11 @@ class Connection implements CodexConnection {
   subscribe(notify: typeof this.notify, exit: typeof this.exit) { this.notify = notify; this.exit = exit; return () => {}; }
   dispose() {}
 }
-function fixture(initial: ChatSession[] = [], canvasReader?: ChatCanvasReader, tools?: ChatTools) {
+function fixture(initial: ChatSession[] = [], canvasReader?: ChatCanvasReader, tools?: ChatTools, mcp?: ChatMcpBinding) {
   const connection = new Connection();
   const saved = new Map(initial.map(session => [session.id, structuredClone(session)]));
   const store: ChatStore = { list: async () => [...saved.values()], save: async session => { saved.set(session.id, structuredClone(session)); } };
-  const service = new AgentChatService(connection, store, '/workspace', canvasReader, tools);
+  const service = new AgentChatService(connection, store, '/workspace', canvasReader, tools, mcp);
   return { connection, service, saved, store };
 }
 const input = (text = 'Hello') => ({ text, requestId: crypto.randomUUID(), model: 'test-model', effort: 'high', sandbox: 'workspace-write' });
@@ -80,7 +80,7 @@ describe('Codex agent chat', () => {
     const session = await service.resume({ sessionId: nativeThreadId });
     service.dispose();
     const next = new Connection();
-    const mcp = { config: vi.fn(() => ({ custom: true })), bind: vi.fn(() => { throw Error('No Agent Chat binding for a native session'); }), clear: vi.fn(), setOrigin: vi.fn() };
+    const mcp = { chatId: vi.fn(), config: vi.fn(() => ({ custom: true })), bind: vi.fn(() => { throw Error('No Agent Chat binding for a native session'); }), clear: vi.fn(), setOrigin: vi.fn() };
     const restored = new AgentChatService(next, store, '/workspace', undefined, undefined, mcp);
     try {
       await restored.send(session.id, { ...input('Continue'), ...session.settings });
@@ -186,7 +186,7 @@ describe('Codex agent chat', () => {
     const params = { threadId: session.threadId, turnId: 'turn-1', callId: 'call-1', namespace: null, tool: 'edit-diagram', arguments: { reference: 1, prompt: 'Edit', requestId: 'r' } };
     connection.notify({ method: 'item/tool/call', id: 'native-1', params });
     await expect.poll(() => connection.replies.length).toBe(1);
-    expect(call).toHaveBeenCalledWith('edit-diagram', params.arguments, expect.objectContaining({ id: session.id, canvasContext: { canvas, references: [] } }));
+    expect(call).toHaveBeenCalledWith('edit-diagram', params.arguments, expect.objectContaining({ id: session.id, canvasContext: { canvas, references: [] }, toolCallId: JSON.stringify(['turn-1', 'call-1']) }));
     expect(connection.replies[0]).toEqual({ id: 'native-1', result: { success: true, contentItems: [{ type: 'inputText', text: JSON.stringify({ runId: 'edit-1', status: 'generating' }) }] } });
     connection.notify({ method: 'item/tool/call', id: 'native-2', params: { ...params, tool: 'unregistered' } });
     await expect.poll(() => connection.replies.length).toBe(2);
@@ -407,4 +407,113 @@ it('preloads mode-scoped canvas definitions and refreshes them when access chang
     await service.send(session.id, input());
     expect(connection.calls.filter(c => c.method === 'thread/resume')).toHaveLength(1);
   } finally { service.dispose(); }
+});
+
+
+describe('Agent Chat tool reload', () => {
+  const tool = { type: 'function' as const, name: 'project-diagrams', description: 'Current projection tool',
+    inputSchema: { type: 'object', properties: { diagramIds: { type: 'array', items: { type: 'string' } } }, required: ['diagramIds'] } };
+  function reloadFixture() {
+    const tools = { definitions: [tool], call: vi.fn(async () => ({ ok: true })) };
+    let chatId = '';
+    const mcp: ChatMcpBinding = { chatId: token => token === 'bound' ? chatId : undefined,
+      config: id => { chatId = id; return { 'mcp_servers.mapping': { enabled: true } }; }, bind: vi.fn(), clear: vi.fn(), setOrigin: vi.fn() };
+    const f = fixture([], undefined, tools, mcp);
+    const original = f.connection.request.bind(f.connection);
+    vi.spyOn(f.connection, 'request').mockImplementation(async (method, params) => {
+      if (method === 'mcpServerStatus/list') {
+        f.connection.calls.push({ method, params });
+        return { data: [{ name: 'mapping', tools: { 'chat_project-diagrams': tool } }] } as any;
+      }
+      return original(method, params);
+    });
+    return { ...f, tools, mcp };
+  }
+  it('reloads an existing thread, retains history and settings, and persists the success', async () => {
+    const f = reloadFixture();
+    try {
+      const session = await f.service.create({ sandbox: 'read-only', model: 'test-model' });
+      f.connection.completeBeforeReply = true;
+      await f.service.send(session.id, { ...input('Keep this message'), sandbox: 'read-only' });
+      const before = structuredClone(await f.service.get(session.id));
+      const events: ChatEvent[] = [];
+      await f.service.subscribe(session.id, event => events.push(event));
+      await f.service.reloadTools(session.id);
+      const after = await f.service.get(session.id);
+      expect(after).toMatchObject({ threadId: before.threadId, items: before.items, settings: before.settings, status: before.status });
+      expect(after.toolsReloadedAt).toEqual(expect.any(String));
+      expect(f.saved.get(session.id)?.toolsReloadedAt).toBe(after.toolsReloadedAt);
+      expect(f.connection.calls.slice(-5).map(call => call.method)).toEqual([
+        'thread/unsubscribe', 'thread/resume', 'config/mcpServer/reload', 'mcpServerStatus/list', 'thread/inject_items'
+      ]);
+      expect(f.connection.calls.at(-4)?.params).toMatchObject({ threadId: before.threadId, sandbox: 'read-only', config: { 'mcp_servers.mapping': { enabled: true } } });
+      expect(f.connection.calls.at(-4)?.params).not.toHaveProperty('dynamicTools');
+      expect(f.connection.calls.filter(call => call.method === 'thread/start')).toHaveLength(1);
+      expect(events.at(-1)).toMatchObject({ type: 'state', patch: { toolsReloadedAt: after.toolsReloadedAt } });
+    } finally { f.service.dispose(); }
+  });
+  it('can explicitly add refreshed tools to an imported thread without replacing its prompt', async () => {
+    const f = reloadFixture();
+    try {
+      vi.mocked(f.connection.request).mockResolvedValueOnce({ thread: { id: '019a0000-0000-7000-8000-000000000001',
+        name: 'Imported', cwd: '/original', createdAt: 1700000000, turns: [] }, model: 'native-model' });
+      const session = await f.service.resume({ sessionId: '019a0000-0000-7000-8000-000000000001' });
+      await f.service.reloadTools(session.id);
+      const resumed = f.connection.calls.find(call => call.method === 'thread/resume');
+      expect(resumed?.params).toMatchObject({ threadId: session.threadId, cwd: '/original' });
+      expect(resumed?.params).not.toHaveProperty('developerInstructions');
+      expect(resumed?.params).not.toHaveProperty('dynamicTools');
+      expect((await f.service.get(session.id)).canvasTools).toBe(true);
+      await f.service.send(session.id, { ...input(), canvas: { workspaceInstanceId: 'w', documentId: 'd' } });
+      expect(f.mcp.bind).toHaveBeenCalledWith(session.id, { workspaceInstanceId: 'w', documentId: 'd' }, false);
+    } finally { f.service.dispose(); }
+  });
+  it('rejects running turns and blocks sends while coalescing concurrent reloads', async () => {
+    const f = reloadFixture();
+    try {
+      const session = await f.service.create({});
+      await f.service.send(session.id, input());
+      await expect(f.service.reloadTools(session.id)).rejects.toThrow('current turn');
+      f.connection.notify({ method: 'turn/completed', params: { threadId: session.threadId, turn: { id: 'turn-1', status: 'completed' } } });
+      let release!: (value: unknown) => void;
+      vi.mocked(f.connection.request).mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
+      const first = f.service.reloadTools(session.id);
+      await vi.waitFor(() => expect(release).toBeTypeOf('function'));
+      const second = f.service.reloadTools(session.id);
+      await expect(f.service.send(session.id, input())).rejects.toThrow('active turn');
+      release({});
+      await Promise.all([first, second]);
+      expect(f.connection.calls.filter(call => call.method === 'config/mcpServer/reload')).toHaveLength(1);
+    } finally { f.service.dispose(); }
+  });
+  it('reports unavailable refreshed tools without marking success and permits retry', async () => {
+    const f = reloadFixture();
+    try {
+      const session = await f.service.create({});
+      const rpc = vi.spyOn(f.connection, 'request');
+      // Keep a separate implementation because the spy already wraps this method.
+      rpc.mockImplementationOnce(async () => ({})).mockImplementationOnce(async () => ({}))
+        .mockImplementationOnce(async () => ({})).mockImplementationOnce(async () => ({ data: [] }));
+      await expect(f.service.reloadTools(session.id)).rejects.toThrow('not available yet');
+      expect((await f.service.get(session.id)).toolsReloadedAt).toBeUndefined();
+      await f.service.reloadTools(session.id);
+      expect((await f.service.get(session.id)).toolsReloadedAt).toBeTruthy();
+    } finally { f.service.dispose(); }
+  });
+  it('authenticates MCP tools and routes them using the current turn context', async () => {
+    const f = reloadFixture();
+    try {
+      const session = await f.service.create({});
+      expect(await f.service.toolDefinitions('bound')).toEqual([tool]);
+      await expect(f.service.toolDefinitions('wrong')).rejects.toThrow('Invalid');
+      await expect(f.service.callBoundTool('bound', tool.name, {}, 'call')).rejects.toThrow('active');
+      const canvas = { workspaceInstanceId: 'workspace', documentId: 'doc' };
+      await f.service.send(session.id, { ...input(), canvas });
+      await f.service.callBoundTool('bound', tool.name, { diagramIds: ['grid:a'] }, 'call');
+      expect(f.tools.call).toHaveBeenCalledWith(tool.name, { diagramIds: ['grid:a'] },
+        expect.objectContaining({ id: session.id, settings: expect.objectContaining({ sandbox: 'workspace-write' }),
+          canvasContext: { canvas, references: [] }, toolCallId: JSON.stringify(['turn-1', 'call']) }));
+      await expect(f.service.callBoundTool('bound', 'missing', {}, 'call')).rejects.toThrow('Unknown');
+    } finally { f.service.dispose(); }
+  });
 });

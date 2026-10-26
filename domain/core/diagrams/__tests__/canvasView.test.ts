@@ -114,3 +114,97 @@ it('retries failed persistence without starting or applying twice and rejects ch
   expect(c.getSnapshot().version).toBe(version); expect(c.canvasViews().recording).toEqual(recording);
   await expect(receiver.apply('doc', { ...request, name: 'B' }, c, persist)).rejects.toThrow('REQUEST_ID_CONFLICT');
 });
+
+it('saves successive checkpoints and forks children from the saved endpoint while preserving unfinished edits', () => {
+  const { controller: c, command, edit } = fixture();
+  const a = command({ operation: 'create', name: 'A' }).activeViewId!;
+  const first = c.canvasViews().saved[a].finalCheckpointId!;
+  edit({ method: 'replace', nodeId: 'grid:overview', ascii: 'Saved A' });
+  expect(c.canvasViews().dirty).toBe(true);
+  command({ operation: 'save' });
+  const base = c.canvasViews().saved[a];
+  expect(base.checkpointIds).toEqual([first, base.finalCheckpointId]);
+  expect(c.canvasViews().dirty).toBe(false);
+  edit({ method: 'replace', nodeId: 'grid:overview', ascii: 'Unfinished A' });
+  const fork = command({ operation: 'fork', viewId: a, name: 'A.1' });
+  const child = fork.activeViewId!;
+  expect(fork.saved[child]).toMatchObject({ parentViewId: a, forkCheckpointId: base.finalCheckpointId });
+  expect(c.getSnapshot().document.scene.contents.overview.content.ascii).toBe('Saved A');
+  edit({ method: 'replace', nodeId: 'grid:overview', ascii: 'Unfinished child' });
+  command({ operation: 'open', viewId: child }); // Opening the active view must not revert it.
+  expect(c.getSnapshot().document.scene.contents.overview.content.ascii).toBe('Unfinished child');
+  command({ operation: 'open', viewId: a });
+  expect(c.getSnapshot().document.scene.contents.overview.content.ascii).toBe('Unfinished A');
+  expect(() => command({ operation: 'save', viewId: child })).toThrow('Open');
+  command({ operation: 'open', viewId: child });
+  expect(c.getSnapshot().document.scene.contents.overview.content.ascii).toBe('Unfinished child');
+  command({ operation: 'save' });
+  expect(c.canvasViews().saved[a]).toEqual(base);
+  expect(c.exportHistory().snapshots[first]).toBeDefined();
+  validateCanvasHistory(c.exportHistory());
+});
+
+it('creates alternatives from one pinned parent, keeps only the chosen group, and retains ancestry across reload', () => {
+  const { controller: c, command, edit, document } = fixture();
+  const a = command({ operation: 'create', name: 'A' }).activeViewId!;
+  const base = c.canvasViews().saved[a].finalCheckpointId!;
+  const group = command({ operation: 'alternatives', viewId: a, names: ['A.1', 'A.2', 'A.3'] });
+  const candidates = Object.values(group.saved).filter(view => view.parentViewId === a);
+  expect(candidates).toHaveLength(3);
+  expect(new Set(candidates.map(view => view.alternativeGroupId)).size).toBe(1);
+  expect(candidates.every(view => view.forkCheckpointId === base)).toBe(true);
+  expect(group.activeViewId).toBe(a);
+  const unrelated = command({ operation: 'fork', viewId: a, name: 'Unrelated' }).activeViewId!;
+  command({ operation: 'open', viewId: candidates[1].id });
+  const descendant = command({ operation: 'fork', viewId: candidates[1].id, name: 'Nested' }).activeViewId!;
+  command({ operation: 'open', viewId: candidates[0].id });
+  edit({ method: 'replace', nodeId: 'grid:overview', ascii: 'Chosen edits' });
+  command({ operation: 'open', viewId: candidates[2].id });
+  expect(c.getSnapshot().document.scene.contents.overview.content.ascii).toBe('Original');
+  command({ operation: 'keep', viewId: candidates[0].id });
+  expect(c.getSnapshot().document.scene.contents.overview.content.ascii).toBe('Chosen edits');
+  const kept = c.canvasViews();
+  expect(kept.dirty).toBe(false);
+  expect(kept.saved[unrelated].archivedAt).toBeUndefined();
+  expect(kept.saved[a].finalCheckpointId).toBe(base);
+  for (const id of [candidates[1].id, candidates[2].id, descendant]) expect(kept.saved[id].archivedAt).toBeDefined();
+  expect(() => command({ operation: 'open', viewId: candidates[1].id })).toThrow('archived');
+  const state = c.getSnapshot();
+  const workspace = { schemaVersion: 3 as const, projectId: 'project', documents: [{ representationId: 'draft-a', name: 'Test', revisionId: '',
+    savedName: '', savedScene: JSON.stringify(document.scene), document: state.document, canvas: state.canvas, history: c.exportHistory(true) }] };
+  const records = workspaceRecords(workspace);
+  validateRecordUpdate(records, Object.keys(records), 'project');
+  const loaded = deserializeWorkspace(serializeWorkspace(recordsWorkspace(records)!)).documents[0];
+  const restored = new MappingDocumentController(loaded.document, loaded.canvas, 0, undefined, undefined, loaded.history);
+  expect(restored.canvasViews()).toEqual(kept);
+  restored.canvasView(0, { operation: 'discard', viewId: a });
+  expect(restored.canvasViews().activeViewId).toBeUndefined();
+  expect(Object.values(restored.canvasViews().saved).every(view => view.archivedAt)).toBe(true);
+  validateCanvasHistory(restored.exportHistory());
+});
+
+it('validates ancestry and rejects malformed or stale group requests without changing history', () => {
+  const { controller: c, command } = fixture();
+  const a = command({ operation: 'create', name: 'A' }).activeViewId!;
+  const before = c.exportHistory();
+  expect(() => command({ operation: 'alternatives', viewId: a, names: ['same', 'same'] })).toThrow();
+  expect(() => command({ operation: 'fork', viewId: a })).toThrow('name');
+  expect(() => c.canvasView(0, { operation: 'alternatives', viewId: a, names: ['A.1'] })).toThrow('VERSION_CONFLICT');
+  expect(c.exportHistory()).toEqual(before);
+  const child = command({ operation: 'fork', viewId: a, name: 'Child' }).activeViewId!;
+  const bad = c.exportHistory(); bad.canvasViews!.saved[a].parentViewId = child;
+  expect(() => validateCanvasHistory(bad)).toThrow('ancestry');
+  expect(() => command({ operation: 'delete', viewId: a })).toThrow('discard');
+});
+
+it('retries alternative creation after persistence failure without duplicating the group', async () => {
+  const { controller: c, command } = fixture(), receiver = new CanvasViewReceiver();
+  const a = command({ operation: 'create', name: 'A' }).activeViewId!;
+  const request = { operation: 'alternatives', viewId: a, names: ['A.1', 'A.2', 'A.3'], requestId: 'alternatives', expectedVersion: c.getSnapshot().version };
+  const persist = vi.fn().mockRejectedValueOnce(Error('disk full')).mockResolvedValue(undefined);
+  await expect(receiver.apply('doc', request, c, persist)).rejects.toThrow('PERSISTENCE_PENDING');
+  const after = c.canvasViews();
+  await receiver.apply('doc', request, c, persist);
+  expect(c.canvasViews()).toEqual(after);
+  expect(Object.keys(after.saved)).toHaveLength(4);
+});
