@@ -13,9 +13,9 @@ export class ChatCanvasBindings {
     this.channels.set(token, { target: target && structuredClone(target), active: true, readOnly,
       ...(JSON.stringify(previous?.target) === JSON.stringify(target) ? { attachment: previous?.attachment } : {}) });
   }
-  capture(token: string) {
+  capture(token: string, requireCanvas = true) {
     const binding = this.channels.get(token);
-    if (!binding?.active || !binding.target) throw Error('CHAT_BINDING_UNAVAILABLE: no active canvas turn; send a new message from the canvas');
+    if (!binding?.active || requireCanvas && !binding.target) throw Error('CHAT_BINDING_UNAVAILABLE: no active canvas turn; send a new message from the canvas');
     return binding;
   }
   clear(token: string) { const binding = this.channels.get(token); if (binding) this.channels.set(token, { ...binding, active: false }); }

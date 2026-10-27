@@ -1,3 +1,4 @@
+import { AgentContext, type AgentContextSnapshot } from '../../../domain/core/agents/agentContext';
 import { expect, it, vi } from 'vitest';
 import { DiagramBatchService } from './diagramBatchService';
 import type { DiagramGenerationRequest } from '../../../domain/core/diagrams/diagramGeneration';
@@ -10,7 +11,7 @@ import { initialCanvasState } from '../../../domain/mapping/workspace/mappingWor
 import { DiagramRevisionReceiver } from '../../../src/features/mapping/agent/diagramRevisionReceiver';
 import type { DiagramBatchApplication, DiagramTool } from '../../../domain/mapping/agent/diagramBatch';
 
-function fixture() {
+function fixture(contextFor?: ConstructorParameters<typeof DiagramBatchService>[3]) {
   const generate = vi.fn(async (_request: DiagramGenerationRequest) => ({ ascii: 'Generated', structureKind: 'tree' as 'tree' | 'diagram' }));
   const diagrams = revisionFixture({ generate });
   const controller = new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('Original\n`-- Child')), initialCanvasState());
@@ -21,7 +22,7 @@ function fixture() {
   const service = new DiagramBatchService((diagrams).generator, {
     snapshot: async (_id, ids) => structuredClone({ ...controller.getSnapshot(), name: 'Test', revisions: controller.exportRevisions(ids ?? [], true) }),
     apply: async () => { throw Error('Unexpected individual apply'); }, batch
-  });
+  }, undefined, contextFor);
   const envelope = { sessionId: 'session', requestId: 'request', expectedVersion: 1 };
   const targets = bases.map(base => ({ nodeId: `grid:${base.id}`, baseRevisionId: base.revisionId }));
   return { service, controller, persist, batch, generate, diagrams, envelope, targets, bases };
@@ -137,4 +138,16 @@ it.each([true, false])('promotes optional presentation alternatives in direct=%s
   expect(Object.values(state.items).map(a => a.name).sort()).toEqual(['Choice 0', 'Choice 1']);
   expect(Object.values(state.selected).flat()).toHaveLength(2);
   expect(f.controller.getSnapshot().document.scene.contents.overview).toEqual(f.bases[0]);
+});
+
+it('does not spend tokens when cancelled while resolving a saved context', async () => {
+  let release!: (snapshot: AgentContextSnapshot) => void;
+  const pending = new Promise<AgentContextSnapshot>(resolve => { release = resolve; });
+  const resolve = vi.fn(() => pending), f = fixture(resolve);
+  const run = f.service.start({ ...f.envelope, operations: [{ ...f.targets[0], ...modes, prompt: 'Generate', agentContextId: `saved-agent-context-${crypto.randomUUID()}` }] }, 'edit-diagram', false);
+  await vi.waitFor(() => expect(resolve).toHaveBeenCalledOnce());
+  f.service.cancel(run.runId);
+  release(AgentContext.fromMessages('saved', [{ role: 'user', content: [{ type: 'text', text: 'Facts' }], timestamp: 0 }]).toSnapshot());
+  expect((await f.service.wait(run.runId)).status).toBe('cancelled');
+  expect(f.generate).not.toHaveBeenCalled(); expect(f.batch).not.toHaveBeenCalled();
 });

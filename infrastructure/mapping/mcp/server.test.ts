@@ -20,6 +20,11 @@ it('keeps one automatic attachment across direct MCP calls and supplies common m
   const [a,b] = InMemoryTransport.createLinkedPair();
   try {
     await Promise.all([server.connect(a),client.connect(b)]);
+    const definitions = (await client.listTools()).tools;
+    expect(definitions.find(tool => tool.name === 'create-agent-context')?.inputSchema.required).toEqual(expect.arrayContaining(['requestId', 'name', 'context']));
+    expect(definitions.find(tool => tool.name === 'list-agent-contexts')?.annotations?.readOnlyHint).toBe(true);
+    expect(definitions.find(tool => tool.name === 'read-agent-context')?.annotations?.readOnlyHint).toBe(true);
+    expect(definitions.find(tool => tool.name === 'create-agent-context')?.annotations?.readOnlyHint).toBe(false);
     const tool = (await client.listTools()).tools.find(tool => tool.name === 'exec')!;
     expect(tool.description).toContain('"name":"nodes.highlight"');
     expect(tool.description).toContain('markdownUrl');

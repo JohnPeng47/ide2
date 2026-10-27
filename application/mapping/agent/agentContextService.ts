@@ -1,3 +1,4 @@
+import type { AgentContextLibrary } from './agentContextLibrary';
 import { randomUUID } from 'node:crypto';
 import { AgentContext, type AgentContextSnapshot } from '../../../domain/core/agents/agentContext';
 
@@ -14,7 +15,7 @@ export class AgentContextService {
   private records = new Map<string, { scope: string; context: AgentContext; receipt: AgentContextReceipt }>();
   private requests = new Map<string, string>();
   private bytes = 0;
-  constructor(private readonly limits = { count: 100, bytes: 32 * 1024 * 1024 }) {}
+  constructor(private readonly limits = { count: 100, bytes: 32 * 1024 * 1024 }, readonly library?: AgentContextLibrary) {}
 
   upload(scope: AgentContextScope, requestId: string, trajectory: unknown): AgentContextReceipt {
     const context = AgentContext.fromTrajectory(trajectory), scopeKey = this.scopeKey(scope);
@@ -41,6 +42,11 @@ export class AgentContextService {
     if (!record || record.scope !== this.scopeKey(scope))
       throw new AgentContextError('AGENT_CONTEXT_NOT_FOUND', 'Context is unavailable for this workspace and document');
     return record.context.toSnapshot();
+  }
+  async resolve(scope: AgentContextScope, id: string): Promise<AgentContextSnapshot> {
+    if (!id.startsWith('saved-agent-context-')) return this.get(scope, id);
+    if (!this.library) throw Error('AGENT_CONTEXT_UNAVAILABLE: saved context library is unavailable');
+    return (await this.library.read(id)).snapshot;
   }
   private scopeKey(scope: AgentContextScope) { return JSON.stringify([scope.workspaceInstanceId, scope.documentId]); }
 }

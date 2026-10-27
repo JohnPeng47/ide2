@@ -1,3 +1,5 @@
+import { AgentContextLibrary } from '../../../application/mapping/agent/agentContextLibrary';
+import { FileAgentContextRepository } from '../../../infrastructure/core/persistence/fileAgentContextRepository';
 import { GenerationCanvasBridge } from '../../../application/mapping/agent-chat/generationCanvasBridge';
 import { CompareSessionService } from '../../../application/mapping/compare/compareSessionService';
 import { FileCompareSessionStore } from '../../../infrastructure/mapping/compare/fileCompareSessionStore';
@@ -78,7 +80,8 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
   const languageService = options.lspEnabled === true ? new ProjectLanguageService() : undefined;
   const diagrams = new MappingDiagramService(store, corpusAccess, projectRoot, configuredDomainProfileId, new WorkspaceRecordStore(store.storeRoot));
   const canvasBridge = new GenerationCanvasBridge(new CanvasSessionBridge());
-  const agentContexts = new AgentContextService();
+  const contextLibrary = new AgentContextLibrary(new FileAgentContextRepository(store.storeRoot));
+  const agentContexts = new AgentContextService(undefined, contextLibrary);
   const diagramContextStore = new FileDiagramAgentContextStore(store.storeRoot);
   const apiProjection = new CanvasApiProjection();
   const liveCanvas = new LiveCanvasService(() => canvasBridge.list(), async (workspaceInstanceId, documentId) =>
@@ -86,7 +89,7 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
   const changes = new ChangeSessionService(new DiagramChangeSessionStore(store.storeRoot, undefined, true), store, canvasBridge);
   const agent = new AgentDiagrammingSessionService(canvasBridge, diagrams, store, new QuickJsAgentRuntime(),
     changes, diagramEditRuntime, agentContexts, apiProjection, diagramContextStore);
-  const agentChat = new AgentChatService(new StdioCodexConnection(mappingPocSourceRoot, options.piEnabled === true), new FileChatStore(store.storeRoot), mappingPocSourceRoot, liveCanvas, new ChatDiagramTools(agent), new MappingChatMcpBinding(agent, process.cwd()), canvasBridge);
+  const agentChat = new AgentChatService(new StdioCodexConnection(mappingPocSourceRoot, options.piEnabled === true), new FileChatStore(store.storeRoot), mappingPocSourceRoot, liveCanvas, new ChatDiagramTools(agent), new MappingChatMcpBinding(agent, process.cwd()), canvasBridge, contextLibrary);
   const diffSessionWorkflows = new DiffSessionWorkflowService(changes, agent, new PiDiffSessionRuntime(options.piEnabled === true),
     new FileDiffSessionRunStore(store.storeRoot), { enabled: options.piEnabled === true, sourceRoot: mappingPocSourceRoot,
       loadPrompts: loadDiffSessionPrompts, sourceReader: capture => createDiffSessionSourceReader(store.repositories, capture) });

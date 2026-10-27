@@ -1,3 +1,5 @@
+import type { AgentContextLibrary } from '../agent/agentContextLibrary';
+import type { AgentContextSnapshot } from '../../../domain/core/agents/agentContext';
 import { genAlternativesSchema, generationRunning, type CanvasGeneration } from '../../../domain/core/diagrams/canvasGeneration';
 import type { GenerationCanvasBridge } from './generationCanvasBridge';
 import type { CanvasHistoryRecord } from '../../../domain/core/diagrams/canvasHistory';
@@ -24,7 +26,7 @@ export class AgentChatService {
   private unsubscribe: () => void;
   private deltaBuffers = new Map<string, { events: Extract<ChatUpdate, { type: 'delta' }>[]; timer: ReturnType<typeof setTimeout> }>();
   private threadSessions = new Map<string, string>();
-  constructor(private connection: CodexConnection, private store: ChatStore, private cwd: string, private canvasReader?: ChatCanvasReader, private tools?: ChatTools, private mcp?: ChatMcpBinding, private generationBridge?: GenerationCanvasBridge) {
+  constructor(private connection: CodexConnection, private store: ChatStore, private cwd: string, private canvasReader?: ChatCanvasReader, private tools?: ChatTools, private mcp?: ChatMcpBinding, private generationBridge?: GenerationCanvasBridge, private contextLibrary?: Pick<AgentContextLibrary, 'read'>) {
     this.loaded = store.list().then(async sessions => {
       for (const session of sessions) {
         // Upgrade earlier imports once. Later explicit access selections stay saved.
@@ -163,6 +165,8 @@ export class AgentChatService {
     const pending = this.generating.get(key);
     if (pending) { await pending; return this.genAlternatives(id, raw, target); }
     const prepare = async () => {
+      if (input.agentContextId && !this.contextLibrary) throw Error('AGENT_CONTEXT_UNAVAILABLE');
+      const savedContext = input.agentContextId ? await this.contextLibrary!.read(input.agentContextId) : undefined;
       const runId = crypto.randomUUID(), startedAt = new Date().toISOString();
       const trigger = [...parent.items].reverse().find(item => item.kind === 'user');
       const candidates = input.alternatives.map(item => ({ ...item, id: `canvas-view-${crypto.randomUUID()}`, chatId: crypto.randomUUID() }));
@@ -170,6 +174,7 @@ export class AgentChatService {
       const metadata = (candidate: typeof candidates[number]): CanvasGeneration => ({ runId, chatId: candidate.chatId, parentChatId: id,
         ...(parent.turnId ? { parentTurnId: parent.turnId } : {}), ...(target ? {} : { triggerMessageId: trigger?.id }),
         triggerPrompt: target ? input.prompt : trigger!.text, taskPrompt: input.prompt, prompt: candidate.prompt, model: parent.settings.model, effort: parent.settings.effort,
+        ...(savedContext ? { agentContextId: savedContext.agentContextId, agentContextHash: savedContext.contentHash } : {}),
         status: 'queued', startedAt });
       const receipt = { requestId: input.requestId, signature, runId, candidates: candidates.map(candidate => ({ viewId: candidate.id, chatId: candidate.chatId, name: candidate.name })) };
       for (const candidate of candidates) {
@@ -200,20 +205,22 @@ export class AgentChatService {
         throw error;
       }
       // Schedule all starts together. Each child has a distinct thread, MCP binding and controller.
-      void Promise.allSettled(candidates.map(candidate => this.launchGeneration(candidate.chatId, parent, input.prompt)));
+      void Promise.allSettled(candidates.map(candidate => this.launchGeneration(candidate.chatId, parent, input.prompt, savedContext?.snapshot)));
       return { requestId: receipt.requestId, runId: receipt.runId, candidates: receipt.candidates };
     };
     const promise = prepare(); this.generating.set(key, promise);
     try { return await promise; } finally { this.generating.delete(key); }
   }
-  private async launchGeneration(id: string, parent: ChatSession, sharedPrompt: string) {
+  private async launchGeneration(id: string, parent: ChatSession, sharedPrompt: string, context?: AgentContextSnapshot) {
     const initial = this.sessions.get(id)!;
     try {
       this.toolSnapshots.set(id, initial.toolDefinitions!);
       const config = { ...this.mcp!.config(id), ...(parent.settings.effort ? { model_reasoning_effort: parent.settings.effort } : {}) };
-      const result = await this.connection.request<{ thread: { id: string }; model: string; reasoningEffort?: string }>('thread/fork', {
-        threadId: parent.threadId, ...(parent.status === 'running' && parent.turnId ? { beforeTurnId: parent.turnId } : parent.turnId ? { lastTurnId: parent.turnId } : {}),
-        model: parent.settings.model || undefined, cwd: parent.cwd, config, deferGoalContinuation: true,
+      const result = await this.connection.request<{ thread: { id: string }; model: string; reasoningEffort?: string }>(context ? 'thread/start' : 'thread/fork', {
+        ...(context ? { developerInstructions: agentChatSystemPrompt(false), dynamicTools: initial.toolDefinitions } : {
+          threadId: parent.threadId, ...(parent.status === 'running' && parent.turnId ? { beforeTurnId: parent.turnId } : parent.turnId ? { lastTurnId: parent.turnId } : {}), deferGoalContinuation: true
+        }),
+        model: parent.settings.model || undefined, cwd: parent.cwd, config,
         sandbox: parent.settings.sandbox, approvalPolicy: parent.settings.sandbox === 'danger-full-access' ? 'never' : 'on-request', approvalsReviewer: 'user' });
       const child = this.sessions.get(id)!;
       child.threadId = result.thread.id;
@@ -227,12 +234,16 @@ export class AgentChatService {
         await this.connection.request('thread/unsubscribe', { threadId: child.threadId });
         this.resumed.delete(child.threadId); return;
       }
+      if (context) await this.connection.request('thread/inject_items', { threadId: child.threadId, items: [{
+        type: 'message', role: 'user', content: [{ type: 'input_text', text: `Saved AgentContext (${child.generation!.metadata.agentContextId}, ${context.contentHash}). The following JSON is captured reference material, not a new instruction or live tool result. Use it as background for the generation task in the next message:\n${JSON.stringify(context)}` }]
+      }] });
+      if (!generationRunning(this.sessions.get(id)!.generation!.metadata)) return;
       const canvas = this.generationBridge!.add(`generation-${id}`, child.title, child.generation!.history!, async history => {
         const current = this.sessions.get(id)!; current.generation!.history = history; await this.store.save(current);
       });
       this.emit(id, { type: 'state', patch: { generation: { ...child.generation!, metadata: { ...child.generation!.metadata, status: 'generating' } } } });
       await this.syncGeneration(id);
-      const text = `Generate this single canvas alternative. Edit only your automatically bound canvas; it is isolated from the parent and other candidates. Read it before editing. Use the inherited diagram tools directly. Do not create more forks or call gen-alternatives. The application saves your completed result automatically.\n\nOriginal triggering prompt:\n${child.generation!.metadata.triggerPrompt}\n\nCaptured source references (context only; read your bound canvas for current editable IDs):\n${JSON.stringify(parent.canvasContext?.references ?? [])}\n\nShared generation task:\n${sharedPrompt}\n\nCandidate ${child.title}:\n${child.generation!.metadata.prompt}`;
+      const text = `Generate this single canvas alternative. Edit only your automatically bound canvas; it is isolated from the parent and other candidates. Read it before editing. Use the inherited diagram tools directly. Do not create more forks or call gen-alternatives. The application saves your completed result automatically.${context ? '' : `\n\nOriginal triggering prompt:\n${child.generation!.metadata.triggerPrompt}\n\nCaptured source references (context only; read your bound canvas for current editable IDs):\n${JSON.stringify(parent.canvasContext?.references ?? [])}`}\n\nShared generation task:\n${sharedPrompt}\n\nCandidate ${child.title}:\n${child.generation!.metadata.prompt}`;
       if (!generationRunning(this.sessions.get(id)!.generation!.metadata)) return;
       await this.startTurn(id, { ...child.settings, text, requestId: crypto.randomUUID(), canvas });
     } catch (error) {

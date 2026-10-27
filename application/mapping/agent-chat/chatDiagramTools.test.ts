@@ -159,3 +159,17 @@ it('exposes view ancestry operations to AgentChat and preserves a group request 
     await expect(f.tools.call('canvas-view', { ...request, operation, requestId: operation }, f.session)).rejects.toThrow('Workspace access');
   }
 });
+it('exposes saved-context tools without requiring canvas references and forwards access mode', async () => {
+  const f = fixture(); delete f.session.canvasContext;
+  for (const name of ['create-agent-context', 'list-agent-contexts', 'read-agent-context']) {
+    expect(f.tools.definitions.find(tool => tool.name === name)).toBeDefined();
+    const input = name === 'create-agent-context' ? { requestId: crypto.randomUUID(), name: 'Facts', context: 'Background' } : name === 'list-agent-contexts' ? {} : { agentContextId: `saved-agent-context-${crypto.randomUUID()}` };
+    await f.tools.call(name, input, f.session);
+    expect(f.call).toHaveBeenLastCalledWith(name, input, false);
+    f.session.settings.sandbox = 'read-only';
+    await f.tools.call(name, input, f.session);
+    expect(f.call).toHaveBeenLastCalledWith(name, input, true);
+    f.session.settings.sandbox = 'workspace-write';
+  }
+  expect(f.dispatch).not.toHaveBeenCalled();
+});

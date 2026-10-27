@@ -33,7 +33,7 @@ export interface DiagramBatchApplication {
 export interface DiagramBatchRun {
   runId: string; operation: DiagramTool;
   status: DiagramEditRun['status']; error?: string; operationIndex?: number; documentVersion?: number;
-  results: { operationIndex: number; result?: DiagramEditRun['result']; created?: DiagramEditRun['created']; variants?: DiagramEditRun['variants'] }[];
+  results: { operationIndex: number; agentContextId?: string; agentContextHash?: string; result?: DiagramEditRun['result']; created?: DiagramEditRun['created']; variants?: DiagramEditRun['variants'] }[];
 }
 export function isDiagramTool(name: string): name is DiagramTool { return Object.hasOwn(generationSchemas, name); }
 

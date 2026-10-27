@@ -1,3 +1,4 @@
+import { AgentContext } from '../../../domain/core/agents/agentContext';
 import { expect, it, vi } from 'vitest';
 import { AgentChatService } from './agentChatService';
 import { GenerationCanvasBridge } from './generationCanvasBridge';
@@ -9,7 +10,7 @@ import { initialCanvasState } from '../../../domain/mapping/workspace/mappingWor
 import { singleDiagramScene } from '../../../domain/core/diagrams/projectDiagramCanvas';
 import { documentFromHistory, validateCanvasHistory } from '../../../domain/core/diagrams/canvasHistory';
 
-async function fixture() {
+async function fixture(contextLibrary?: ConstructorParameters<typeof AgentChatService>[7]) {
   const c = new MappingDocumentController({ scene: singleDiagramScene('Original'), edges: [], sections: {} }, initialCanvasState());
   const viewId = c.canvasView(0, { operation: 'create', name: 'A' }).activeViewId!;
   const receipts = new Map<string, unknown>();
@@ -35,7 +36,7 @@ async function fixture() {
   }, respond: (_id, result) => replies.push(result), reject() {}, subscribe(listener) { notify = listener; return () => {}; }, dispose() {} };
   const tools: ChatTools = { definitions: [{ type: 'function', name: 'gen-alternatives', description: 'Generate', inputSchema: {} }, { type: 'function', name: 'edit-diagram', description: 'Edit', inputSchema: {} }], call: vi.fn() };
   const mcp: ChatMcpBinding = { chatId: token => token, setOrigin() {}, config: id => ({ binding: id }), bind: vi.fn(), clear: vi.fn() };
-  const service = new AgentChatService(connection, store, '/workspace', undefined, tools, mcp, bridge);
+  const service = new AgentChatService(connection, store, '/workspace', undefined, tools, mcp, bridge, contextLibrary);
   const parent = await service.create({ model: 'model-x', effort: 'high', sandbox: 'workspace-write' });
   await service.send(parent.id, { text: 'Try three different layouts exactly as described.', model: 'model-x', effort: 'high', sandbox: 'workspace-write', requestId: crypto.randomUUID(), canvas: { workspaceInstanceId: 'live', documentId: 'doc' } });
   const input = { viewId, prompt: 'Explore layouts', alternatives: [1, 2, 3].map(i => ({ name: `A.${i}`, prompt: `Layout ${i}` })), requestId: 'generation' };
@@ -157,4 +158,74 @@ it('marks interrupted generations failed on server restart without launching rep
     expect(f.c.canvasViews().saved[group.candidates[0].viewId].generation?.status).toBe('failed');
     expect(f.requests.filter(r => r.method === 'turn/start')).toHaveLength(2);
   } finally { restarted?.dispose(); f.service.dispose(); }
+});
+
+it('uses an explicit saved context in fresh parallel threads with caller tools/settings and pins provenance', async () => {
+  const snapshot = AgentContext.fromMessages('saved-session', [{ role: 'user', content: [{ type: 'text', text: 'Reusable codebase facts' }], timestamp: 0 }]).toSnapshot();
+  const agentContextId = `saved-agent-context-${crypto.randomUUID()}`;
+  const read = vi.fn(async () => ({ agentContextId, snapshot, contentHash: snapshot.contentHash, name: 'Facts', description: '', createdAt: new Date().toISOString(), messageCount: 1, source: snapshot.source }));
+  const f = await fixture({ read });
+  try {
+    // Definitions added after the parent started must not leak into its children.
+    const inheritedTools = structuredClone(f.tools.definitions);
+    f.tools.definitions.push({ type: 'function', name: 'later-tool', description: 'New', inputSchema: {} });
+    const input = { ...f.input, agentContextId };
+    const group = await f.service.genAlternatives(f.parent.id, input);
+    await vi.waitFor(() => expect(f.requests.filter(r => r.method === 'turn/start')).toHaveLength(4));
+    expect(f.requests.filter(r => r.method === 'thread/fork')).toHaveLength(0);
+    const starts = f.requests.filter(r => r.method === 'thread/start').slice(1);
+    expect(starts).toHaveLength(3);
+    for (const { params } of starts) expect(params).toMatchObject({ model: 'model-x', config: { model_reasoning_effort: 'high' }, dynamicTools: inheritedTools });
+    const seeds = f.requests.filter(r => r.method === 'thread/inject_items');
+    expect(seeds).toHaveLength(3);
+    for (const { params } of seeds) {
+      expect(JSON.stringify(params)).toContain('Reusable codebase facts');
+      expect(JSON.stringify(params)).not.toContain('Try three different layouts exactly as described.');
+    }
+    for (const candidate of group.candidates) {
+      const child = await f.service.get(candidate.chatId);
+      expect(child.items.find(item => item.kind === 'user')!.text).not.toContain('Try three different layouts exactly as described.');
+      expect(child.items.find(item => item.kind === 'user')!.text).toContain('Explore layouts');
+      expect(child.generation!.metadata).toMatchObject({ agentContextId, agentContextHash: snapshot.contentHash });
+      expect(f.c.canvasViews().saved[candidate.viewId].generation).toMatchObject({ agentContextId, agentContextHash: snapshot.contentHash });
+      expect(await f.service.toolDefinitions(child.id)).toEqual(inheritedTools);
+    }
+    expect(await f.service.genAlternatives(f.parent.id, input)).toEqual(group);
+    expect(read).toHaveBeenCalledOnce();
+    expect(f.requests.filter(r => r.method === 'thread/start')).toHaveLength(4);
+    await f.service.interrupt(f.parent.id);
+  } finally { f.service.dispose(); }
+});
+it('rejects a missing saved context before creating candidates or launching models', async () => {
+  const f = await fixture({ read: async () => { throw Error('AGENT_CONTEXT_NOT_FOUND'); } });
+  try {
+    const before = f.c.exportHistory();
+    await expect(f.service.genAlternatives(f.parent.id, { ...f.input, agentContextId: `saved-agent-context-${crypto.randomUUID()}` })).rejects.toThrow('AGENT_CONTEXT_NOT_FOUND');
+    expect(f.c.exportHistory()).toEqual(before);
+    expect(await f.service.list()).toHaveLength(1);
+    expect(f.requests.filter(r => r.method === 'thread/start')).toHaveLength(1);
+    expect(f.requests.filter(r => r.method === 'thread/fork')).toHaveLength(0);
+  } finally { f.service.dispose(); }
+});
+it('does not launch a turn when cancelled while saved context is being injected', async () => {
+  const snapshot = AgentContext.fromMessages('saved-session', [{ role: 'user', content: [{ type: 'text', text: 'Facts' }], timestamp: 0 }]).toSnapshot();
+  const agentContextId = `saved-agent-context-${crypto.randomUUID()}`;
+  const f = await fixture({ read: async () => ({ agentContextId, snapshot, contentHash: snapshot.contentHash, name: 'Facts', description: '', createdAt: new Date().toISOString(), messageCount: 1, source: snapshot.source }) });
+  const request = f.connection.request.bind(f.connection);
+  let release!: () => void, injecting = false;
+  const pending = new Promise<void>(resolve => { release = resolve; });
+  f.connection.request = async <T>(method: string, params: Record<string, unknown>) => {
+    if (method === 'thread/inject_items') { injecting = true; await pending; }
+    return request<T>(method, params);
+  };
+  try {
+    const group = await f.service.genAlternatives(f.parent.id, { ...f.input, alternatives: [f.input.alternatives[0]], agentContextId });
+    await vi.waitFor(() => expect(injecting).toBe(true));
+    await f.service.cancelGeneration(group.candidates[0].chatId);
+    release();
+    await vi.waitFor(() => expect(f.requests.some(r => r.method === 'thread/inject_items')).toBe(true));
+    expect(f.requests.filter(r => r.method === 'turn/start')).toHaveLength(1);
+    expect((await f.service.get(group.candidates[0].chatId)).generation!.metadata.status).toBe('cancelled');
+    expect(f.c.canvasViews().saved[group.candidates[0].viewId].generation!.status).toBe('cancelled');
+  } finally { release(); f.service.dispose(); }
 });

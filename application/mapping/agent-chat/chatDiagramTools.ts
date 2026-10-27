@@ -1,3 +1,4 @@
+import { agentContextToolDefinitions } from '../../../domain/core/agents/savedAgentContext';
 import { genAlternativesSchema, genAlternativesDescription } from '../../../domain/core/diagrams/canvasGeneration';
 import { directOperationSchemas, directDiagramInstructions, isDiagramTool, type DiagramTool } from '../../../domain/mapping/agent/diagramBatch';
 import { diagramOutputFormat } from '../../../domain/mapping/agent/promptTemplates';
@@ -39,6 +40,7 @@ const removeHighlightsSchema = z.object({ ...highlightTargetFields, highlightIds
 /** Bind native chat tools to the same live revision workflow as the LLM panel. */
 export class ChatDiagramTools implements ChatTools {
   definitions: ChatTools['definitions'] = [
+    ...agentContextToolDefinitions.map(({ name, schema, description }) => ({ type: 'function' as const, name, description, inputSchema: z.toJSONSchema(schema) })),
     { type: 'function', name: 'gen-alternatives', description: genAlternativesDescription, inputSchema: z.toJSONSchema(genAlternativesSchema) },
     { type: 'function', name: 'project-diagrams', description: 'Copy any specified diagrams from the current canvas into a new child canvas and open it. Pass only diagramIds: the diagram display IDs from Read Canvas (grid:… or current read aliases), not content or revision IDs. Highlights are not required. Preserves internal connections and copied source mappings, adds a blank 65 × 35 diagram, and arranges the group with adjustable Projection layout controls. The source is unchanged. Automatically persisted and undoable. Requires Workspace access.', inputSchema: z.toJSONSchema(projectDiagramsSchema) },
     { type: 'function', name: 'highlight-node', description: 'Only when explicitly requested by the user: save a colored highlight on a diagram or selected nodes. Specify either reference ([ref N] from the latest user message) or nodeId from Read Canvas, with optional contentNodeIds for multiple current full-ID anchors or contentNodeId for one. All targets must belong to that diagram. A selected nodes reference saves one highlight spanning all its members. The group shares one saved ID, color, and markdownUrl; removing the ID removes the entire group. Optional color: yellow (default), blue, green, pink, purple, orange or #RRGGBB. Returns saved highlight IDs and markdownUrl destinations for explicitly requested links. Undoable, automatically persisted. Requires Workspace access. Use a unique requestId; retry identical arguments with the same ID.', inputSchema: z.toJSONSchema(highlightSchema) },
@@ -58,6 +60,8 @@ export class ChatDiagramTools implements ChatTools {
   private projectionRequests = new Map<string, { signature: string; prepared: Promise<{ workspaceInstanceId: string; documentId: string; payload: { diagramIds: string[]; expectedVersion: number; requestId: string } }> }>();
   constructor(private agent: Pick<AgentDiagrammingSessionService, 'call' | 'bridge' | 'submitDirect' | 'projection' | 'resolveDiagramArguments'>) {}
   async call(name: string, raw: unknown, session: ChatToolSession) {
+    if (name === 'create-agent-context' || name === 'list-agent-contexts' || name === 'read-agent-context')
+      return this.agent.call(name, raw, session.settings.sandbox === 'read-only');
     if (name === 'project-diagrams') return this.projectDiagrams(raw, session);
     if (name === 'highlight-node' || name === 'remove-highlights') return this.highlight(name, raw, session);
     if (name === 'canvas-view') return this.canvasView(raw, session);

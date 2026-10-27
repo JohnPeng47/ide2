@@ -38,7 +38,7 @@ const generationSchema = z.object({
   subtrees: z.array(subtreeSchema).min(2).max(100).optional(),
   origin: z.object({ column: z.number().int().nonnegative(), row: z.number().int().nonnegative() }).strict().optional(),
   sources: z.array(contentNodeAnchorSchema).max(500).optional(),
-  baseRevisionId: id, agentContextId: id.optional(), prompt: z.string().trim().min(1).max(20000), requestId: id, ...promptFields
+  baseRevisionId: id, agentContextId: id.optional().describe('Saved global ID from create-agent-context, or a legacy upload ID scoped to this canvas. Kept separate from the generation prompt.'), prompt: z.string().trim().min(1).max(20000), requestId: id, ...promptFields
 }).strict();
 export const editDiagramSchema = generationSchema.extend({
   'edit-mode': editModeSchema.describe('Required. in-place applies the edit; variant saves an alternative.'),
@@ -65,6 +65,7 @@ export interface DiagramCreation {
   sources?: ContentNodeAnchor[];
 }
 export interface DiagramEditRun {
+  agentContextId?: string; agentContextHash?: string;
   variants?: { id: string; name: string; revisionId: string; alternativeId?: string }[];
   /** Actual runtime session for diagnostics/clipboard; each run may have a new ID. */
   agentSessionId?: string;

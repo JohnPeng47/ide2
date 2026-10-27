@@ -89,13 +89,13 @@ export class AgentDiagrammingSessionService {
       this.batches = new DiagramBatchService(editDiagrams, canvas, this.diagramContextStore, (sessionId, contextId) => {
         const session = this.session(sessionId);
         if (!this.agentContexts) throw Error('AGENT_CONTEXT_UNAVAILABLE');
-        return this.agentContexts.get({ workspaceInstanceId: session.canvasId, documentId: session.documentId }, contextId);
+        return this.agentContexts.resolve({ workspaceInstanceId: session.canvasId, documentId: session.documentId }, contextId);
       });
     }
   }
   dispose() { this.edits?.dispose(); this.batches?.dispose(); }
   async callBound(token: string, name: AgentToolName, raw: unknown) {
-    const binding = this.chatBindings.capture(token), target = binding.target!;
+    const binding = this.chatBindings.capture(token, !['create-agent-context', 'list-agent-contexts', 'read-agent-context'].includes(name)), target = binding.target!;
     const input = { ...(raw as Record<string, unknown>) };
     const targeted = ['exec', 'draw_diagram', 'save_diagram', 'set_diagram_source_mappings', 'edit-diagram', 'create-diagram', 'extend-diagram', 'diagram-agent-context', 'canvas-view'];
     if (name === 'create_diagram_change_session' && !input.canvasId) input.canvasId = target.workspaceInstanceId;
@@ -129,10 +129,17 @@ export class AgentDiagrammingSessionService {
     return this.batches.wait(run.runId);
   }
   async call(name: AgentToolName, raw: unknown, readOnly = false): Promise<unknown> {
-    if (readOnly && !['exec', 'canvas-api-search', 'diagram-search', 'diagram-agent-context', 'canvas-view', 'list_repositories', 'edit-diagram-status', 'get_repository_diff_hunks', 'read_change_session_diff_tree'].includes(name)) throw Error('READ_ONLY: canvas mutation requires Workspace access');
+    if (readOnly && !['list-agent-contexts', 'read-agent-context', 'exec', 'canvas-api-search', 'diagram-search', 'diagram-agent-context', 'canvas-view', 'list_repositories', 'edit-diagram-status', 'get_repository_diff_hunks', 'read_change_session_diff_tree'].includes(name)) throw Error('READ_ONLY: canvas mutation requires Workspace access');
     const schema = agentToolSchemas[name];
     if (!schema) throw new Error('Unknown agent tool');
     const input = schema.parse(raw);
+    if (name === 'create-agent-context' || name === 'read-agent-context' || name === 'list-agent-contexts') {
+      const library = this.agentContexts?.library;
+      if (!library) throw Error('AGENT_CONTEXT_UNAVAILABLE: saved context library is unavailable');
+      if (name === 'create-agent-context') return library.create(input);
+      if (name === 'list-agent-contexts') return library.list(input);
+      return library.read(agentToolSchemas['read-agent-context'].parse(input).agentContextId);
+    }
     if (name === 'canvas-view' && 'operation' in input && ['list', 'read'].includes(input.operation as string)) return this.execute(name, input, readOnly);
     if (name === 'diagram-agent-context' && 'operation' in input && input.operation === 'read') return this.execute(name, input, readOnly);
     if (name === 'edit-diagram' || name === 'create-diagram' || name === 'extend-diagram' || name === 'edit-diagram-status' || name === 'cancel-diagram-edit') {
@@ -146,7 +153,7 @@ export class AgentDiagrammingSessionService {
           return this.batches.start(edit, name, false);
         }
         if (edit.agentContextId && !this.agentContexts) throw Error('AGENT_CONTEXT_UNAVAILABLE');
-        const context = edit.agentContextId ? this.agentContexts!.get({ workspaceInstanceId: session.canvasId,
+        const context = edit.agentContextId ? await this.agentContexts!.resolve({ workspaceInstanceId: session.canvasId,
           documentId: session.documentId }, edit.agentContextId) : undefined;
         return this.edits.start(edit, context, name);
       }

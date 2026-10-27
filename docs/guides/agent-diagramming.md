@@ -275,3 +275,67 @@ before launching the run and passes it through `DiagramGenerationRequest` as
 `PiAgentRuntime.createSession()` helper to seed Pi's `SessionManager` before
 session creation and the current edit prompt. Revision issuance, application,
 undo and persistence continue through the existing flow.
+
+
+### Reusable saved AgentContexts
+
+Use `create-agent-context` from AgentChat or Mapping MCP to save explicit background
+text (or a validated `AgentContextSnapshot`) to disk:
+
+```json
+{
+  "name": "Codebase baseline",
+  "description": "Shared facts for prompt experiments",
+  "context": "The API layer delegates to application services; storage adapters implement domain ports.",
+  "requestId": "b2d5a0a8-83a4-4e37-bd8e-642799c951ea"
+}
+```
+
+The receipt contains `agentContextId`, `contentHash`, and summary metadata.
+`list-agent-contexts({query?, offset?, limit?})` returns summaries and `nextOffset`;
+`read-agent-context({agentContextId})` returns the complete snapshot. Creation
+requires Workspace access; listing and reading work with Read only access. None
+requires an attached canvas. Repeat identical arguments and the UUID request ID
+to recover the same receipt, including after a restart. Different content or
+metadata with that request ID fails. Saved contexts are immutable; create a new ID
+to change one. This does not implicitly capture the current chat.
+
+IDs beginning `saved-agent-context-` work across chats and canvases sharing the
+application store. Records live under `<storeRoot>/agent-contexts/` and survive
+restart. Legacy `agent-context-` uploads remain transient and canvas scoped.
+
+Both generation workflows accept an optional `agentContextId`:
+
+- Prompt-driven `create-diagram`, `edit-diagram`, and `extend-diagram` accept it
+  on the single request or each batch operation. The Pi worker receives the saved
+  messages plus the new prompt, with its existing configured model and tools.
+  AgentChat's direct content-submission diagram tools still submit content themselves.
+- AgentChat `gen-alternatives` accepts it alongside `viewId`, shared `prompt`,
+  `alternatives: [{name, prompt}]`, and `requestId`. Candidates run concurrently
+  in fresh native threads using the saved snapshot as reference material instead
+  of the parent's conversation, triggering text, or selected references. Each
+  inherits the parent's model, reasoning effort, access settings, and exact tool
+  definitions. Without the ID, native conversation forking stays unchanged.
+
+For example, after creating a saved context, call `gen-alternatives`:
+
+```json
+{
+  "viewId": "<saved canvas view ID>",
+  "agentContextId": "saved-agent-context-b2d5a0a8-83a4-4e37-bd8e-642799c951ea",
+  "prompt": "Depict this codebase using the supplied background.",
+  "alternatives": [
+    { "name": "Layers", "prompt": "Organize by architectural layer." },
+    { "name": "Flow", "prompt": "Organize by request flow." }
+  ],
+  "requestId": "prompt-experiment-1"
+}
+```
+
+Generation records include `agentContextId` and `agentContextHash`, keeping
+background identity separate from task prompts. Saved contexts may contain past
+prompts as ordinary captured messages; there is no separate execution prompt
+field on AgentContext. Reuse the ID with new prompts/request IDs for subsequent
+experiments. Alternative generation still needs a saved parent view, a source
+AgentChat with a user message, and a live canvas. This enables repeatable
+candidate generation; it does not add automated comparison generation or judging.

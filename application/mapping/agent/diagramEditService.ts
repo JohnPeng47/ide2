@@ -59,7 +59,7 @@ export class DiagramEditService {
     if (input.agentContext && !input.llmSessionId) throw Error('Panel context requires llmSessionId');
     const rawContext = input.agentContext ?? suppliedContext;
     const agentContext = rawContext ? AgentContext.fromSnapshot(rawContext).toSnapshot() : undefined;
-    if (input.llmSessionId && agentContext && agentContext.source.sourceSessionId !== input.llmSessionId)
+    if (input.llmSessionId && agentContext && !input.agentContextId?.startsWith('saved-agent-context-') && agentContext.source.sourceSessionId !== input.llmSessionId)
       throw Error('AGENT_CONTEXT_SESSION_MISMATCH: context belongs to another panel');
     if (input.agentContextId && !agentContext) throw Error('AGENT_CONTEXT_NOT_FOUND: resolve context before starting the edit');
     if (operation !== 'edit-diagram' && !this.canvas.create) throw Error('Diagram creation UNAVAILABLE in this runtime');
@@ -83,6 +83,7 @@ export class DiagramEditService {
     }
     if (this.runs.size >= 500) throw Error('Diagram edit run capacity reached; restart the backend');
     const run: Run = { submission, agentContext, input: structuredClone(input), signature, abort: new AbortController(), state: {
+      ...(input.agentContextId ? { agentContextId: input.agentContextId, agentContextHash: agentContext!.contentHash } : {}),
       runId: `diagram-edit-${randomUUID()}`, operation, status: 'generating', nodeId: input.nodeId, baseRevisionId: input.baseRevisionId
     } };
     this.runs.set(run.state.runId, run); this.requests.set(key, run.state.runId);

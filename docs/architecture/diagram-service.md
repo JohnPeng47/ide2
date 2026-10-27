@@ -184,7 +184,8 @@ parent/child relationships as a collapsible tree; individual checkpoint history
 is not exposed in the UI.
 
 `gen-alternatives` is the AgentChat generation tool. It accepts `viewId`, a shared
-`prompt`, `alternatives: [{name, prompt}]` (1–8), and a unique `requestId`.
+`prompt`, `alternatives: [{name, prompt}]` (1–8), a unique `requestId`, and optional
+`agentContextId` from the saved context library.
 The Canvas explorer's Generate alternatives form exposes the same operation,
 with a source AgentChat selector. The older `canvas-view` operation
 `alternatives` remains available for creating empty copies without generation.
@@ -223,3 +224,15 @@ Legacy recording and diagram-diff controls remain under “Record changes.”
 `canvas-view` with `operation: "promote-diffs"` pins each matching diagram placement's recorded baseline and final revisions as an unselected root alternative (`display: "diff"`). Inline swap and SidePanel use the same diff row projection; regular-view folds do not truncate the comparison. Unchanged diagrams get an empty comparison. Added/removed placements without a revision pair are not promoted.
 
 Promotion updates the live document in one undoable checkpoint and appends a new saved CanvasView endpoint containing the alternatives. Original checkpoints and content revisions remain immutable. Applying the saved view or reloading retains the alternatives. Deterministic IDs make repeat promotion idempotent; existing content alternatives remain separate. CanvasView metadata follows its existing persistence semantics outside undo.
+
+
+Saved AgentContexts are immutable application-store records, addressed globally
+within that store by `saved-agent-context-<request UUID>`. `AgentContextLibrary`
+validates snapshots and exposes create/list/read; `FileAgentContextRepository`
+atomically publishes files with exclusive links, preserving retry identity across
+processes and restarts. Legacy reader uploads retain their original scoped lifetime.
+Prompt-driven diagram runs resolve either ID before generation. Alternative runs
+resolve saved IDs before candidate creation and retain their ID/hash in each view
+and child chat. With an explicit saved context, children use fresh native threads
+with the parent's effective tools/settings and an injected reference transcript;
+without one they fork the parent conversation. Generation prompts remain separate.

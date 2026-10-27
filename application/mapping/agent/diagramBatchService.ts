@@ -11,7 +11,7 @@ export class DiagramBatchService {
   private requests = new Map<string, string>();
   constructor(private diagrams: DiagramGenerator, private canvas: DiagramEditCanvasPort & {
     batch(sessionId: string, input: DiagramBatchApplication): Promise<{ version: number; unresolvedEdgeIds: string[] }>
-  }, private contexts?: DiagramAgentContextStore, private contextFor?: (sessionId: string, contextId: string) => import('../../../domain/core/agents/agentContext').AgentContextSnapshot) {}
+  }, private contexts?: DiagramAgentContextStore, private contextFor?: (sessionId: string, contextId: string) => import('../../../domain/core/agents/agentContext').AgentContextSnapshot | Promise<import('../../../domain/core/agents/agentContext').AgentContextSnapshot>) {}
   has(id: string) { return this.runs.has(id); }
   get(id: string) { const batch = this.runs.get(id); if (!batch) throw Error('Batch not found'); return structuredClone(batch.state); }
   async wait(id: string) { await this.runs.get(id)?.pending; return this.get(id); }
@@ -73,13 +73,15 @@ export class DiagramBatchService {
         }, this.contexts);
         batch.child = child;
         const { edit, diagram, ...fields } = item as typeof item & { edit?: import('../../../domain/core/diagrams/generatedDiagramEdit').GeneratedDiagramEdit; diagram?: import('../../../domain/core/diagrams/generatedDiagramEdit').GeneratedDiagramEdit };
+        const context = 'agentContextId' in fields && fields.agentContextId ? await this.contextFor?.(input.sessionId, fields.agentContextId) : undefined;
+        if (this.get(runId).status === 'cancelled') return;
         const childRun = child.start({ ...fields, prompt: 'prompt' in fields ? fields.prompt : 'Apply supplied diagram',
-          sessionId: input.sessionId, expectedVersion: snapshot.version, requestId: `${runId}:${index}` }, 'agentContextId' in fields && fields.agentContextId ? this.contextFor?.(input.sessionId, fields.agentContextId) : undefined, operation, direct ? edit ?? diagram : undefined);
+          sessionId: input.sessionId, expectedVersion: snapshot.version, requestId: `${runId}:${index}` }, context, operation, direct ? edit ?? diagram : undefined);
         batch.childRunId = childRun.runId;
         const result = await child.wait(childRun.runId);
         if (this.get(runId).status === 'cancelled') return;
         if (result.status !== 'completed') throw Error(result.error ?? `Operation ${index} ${result.status}`);
-        batch.state.results.push({ operationIndex: index, result: result.result, variants: result.variants, created: result.created });
+        batch.state.results.push({ operationIndex: index, ...(result.agentContextId ? { agentContextId: result.agentContextId, agentContextHash: result.agentContextHash } : {}), result: result.result, variants: result.variants, created: result.created });
       }
       batch.child = undefined; batch.childRunId = undefined; delete batch.state.operationIndex;
       batch.application = application;
