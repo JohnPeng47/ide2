@@ -229,3 +229,23 @@ it('does not launch a turn when cancelled while saved context is being injected'
     expect(f.c.canvasViews().saved[group.candidates[0].viewId].generation!.status).toBe('cancelled');
   } finally { release(); f.service.dispose(); }
 });
+
+it('injects resolved source text while pinning the compact saved-context hash in generation metadata', async () => {
+  const snapshot = AgentContext.fromMessages('source-context', [{ role: 'user', timestamp: 0, content: [{
+    type: 'sourceRange', sourceId: 'source', path: 'code.ts', startLine: 1, endLine: 1,
+    version: { kind: 'snapshot', contentHash: 'a'.repeat(64) }
+  }] }]).toSnapshot();
+  const resolvedSnapshot = (await AgentContext.fromSnapshot(snapshot).resolveSources(async () => 'code.ts:1-1\nconst pinned = 42;')).toSnapshot();
+  const agentContextId = `saved-agent-context-${crypto.randomUUID()}`;
+  const f = await fixture({ read: async () => ({ agentContextId, snapshot, resolvedSnapshot, contentHash: snapshot.contentHash,
+    name: 'Source', description: '', createdAt: new Date().toISOString(), messageCount: 1, source: snapshot.source }) });
+  try {
+    const group = await f.service.genAlternatives(f.parent.id, { ...f.input, alternatives: [f.input.alternatives[0]], agentContextId });
+    await vi.waitFor(() => expect(f.requests.filter(r => r.method === 'thread/inject_items')).toHaveLength(1));
+    const injected = JSON.stringify(f.requests.find(r => r.method === 'thread/inject_items')!.params);
+    expect(injected).toContain('const pinned = 42;');
+    expect(injected).toContain(snapshot.contentHash);
+    expect(injected).not.toContain('sourceRange');
+    expect((await f.service.get(group.candidates[0].chatId)).generation!.metadata.agentContextHash).toBe(snapshot.contentHash);
+  } finally { f.service.dispose(); }
+});

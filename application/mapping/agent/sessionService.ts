@@ -236,11 +236,13 @@ export class AgentDiagrammingSessionService {
       const bound = snapshot.document.diagramContexts?.[diagram.diagramId];
       if (input.operation === 'read') {
         const materialized = bound ? await loadDiagramAgentContext(bound, this.diagramContextStore) : undefined;
+        const resolvedSnapshot = materialized && this.diagramContextStore?.resolve
+          ? await this.diagramContextStore.resolve(materialized) : undefined;
         return { diagramId: diagram.diagramId, revisionId: diagram.revisionId,
           version: snapshot.version, status: !bound ? 'absent' : bound.sourceFingerprint === diagramContextSourceFingerprint(diagram) ? 'ready' : 'stale',
           backingRecordId: bound?.backingRecordId ?? null,
           context: bound && materialized ? { diagramId: bound.diagramId, compiledFromRevisionId: bound.compiledFromRevisionId,
-            sourceFingerprint: bound.sourceFingerprint, contentHash: materialized.contentHash, snapshot: materialized } : null };
+            sourceFingerprint: bound.sourceFingerprint, contentHash: materialized.contentHash, snapshot: materialized, ...(resolvedSnapshot ? { resolvedSnapshot } : {}) } : null };
       }
       if (input.expectedVersion === undefined || !input.expectedRevisionId) throw Error('Expected version and revision are required for context changes');
       if (snapshot.version !== input.expectedVersion || diagram.revisionId !== input.expectedRevisionId)

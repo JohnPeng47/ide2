@@ -40,7 +40,9 @@ export class MappingWorkspaceService {
       return Object.fromEntries(await Promise.all(Object.entries(values).map(async ([id, value]) => {
         const key = value.backingRecordId ?? value.snapshot?.contentHash ?? id;
         let snapshot = expanded.get(key);
-        if (!snapshot) { snapshot = await loadDiagramAgentContext(value, this.diagramContexts); expanded.set(key, snapshot); }
+        if (!snapshot) { snapshot = await loadDiagramAgentContext(value, this.diagramContexts);
+          if (this.diagramContexts?.portable) snapshot = await this.diagramContexts.portable(snapshot);
+          expanded.set(key, snapshot); }
         return [id, { diagramId: value.diagramId, compiledFromRevisionId: value.compiledFromRevisionId,
           sourceFingerprint: value.sourceFingerprint, contentHash: snapshot.contentHash, snapshot } satisfies DiagramAgentContext];
       })));

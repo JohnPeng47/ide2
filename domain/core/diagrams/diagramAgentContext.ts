@@ -1,10 +1,13 @@
 import { AgentContext, type AgentContextSnapshot } from '../agents/agentContext';
+import { sourceFileHash, type AgentContextSourceFile, type AgentContextSourceRange } from '../agents/agentContextSource';
 import { sha256 } from '../sha256';
 import type { Diagram } from './diagram';
 
 export interface DiagramAgentContextStore {
   put(snapshot: AgentContextSnapshot): Promise<string>;
   get(recordId: string): Promise<unknown>;
+  portable?(snapshot: AgentContextSnapshot): Promise<AgentContextSnapshot>;
+  resolve?(snapshot: AgentContextSnapshot): Promise<AgentContextSnapshot>;
 }
 
 interface DiagramAgentContextIdentity {
@@ -29,11 +32,23 @@ export function diagramContextSourceFingerprint(diagram: Diagram): string {
 /** Capture stable source evidence once; the current diagram is supplied by each later generation request. */
 export function compileDiagramAgentContext(diagram: Diagram): InlineDiagramAgentContext {
   const sourceFingerprint = diagramContextSourceFingerprint(diagram);
+  const sourceFiles: Record<string, AgentContextSourceFile> = {};
+  const references: AgentContextSourceRange[] = [];
+  const evidence = Object.fromEntries(Object.entries(diagram.sourceContext.evidence).map(([id, entry]) => [id, {
+    ...entry, sourceRanges: entry.sourceRanges.map(({ originalLines, ...range }) => {
+      const file = { startLine: range.startLine, lines: [...originalLines] }, contentHash = sourceFileHash(file);
+      sourceFiles[contentHash] = file;
+      const reference: AgentContextSourceRange = { type: 'sourceRange', sourceId: entry.sourceId ?? diagram.sourceContext.binding?.sourceId ?? diagram.diagramId,
+        path: range.path, startLine: range.startLine, endLine: range.endLine, version: { kind: 'snapshot', contentHash } };
+      references.push(reference);
+      return { ...range, source: reference };
+    })
+  }]));
   const context = AgentContext.fromTrajectory({ agentType: 'diagram-context', sourceSessionId: diagram.diagramId,
     format: 'messages-v1', fromEntryId: 'source', throughEntryId: 'source', entries: [{ id: 'source', parentId: null,
-      message: { role: 'user', timestamp: 0, content: [{ type: 'text', text: `Source evidence for diagram ${diagram.diagramId}. This is background captured at revision ${diagram.revisionId}; use the current diagram supplied with each edit request as the authoritative content.\n${JSON.stringify({ binding: diagram.sourceContext.binding ?? null, evidence: diagram.sourceContext.evidence })}` }] } }] });
+      message: { role: 'user', timestamp: 0, content: [{ type: 'text', text: `Source evidence for diagram ${diagram.diagramId}. This is background captured at revision ${diagram.revisionId}; use the current diagram supplied with each edit request as the authoritative content.\n${JSON.stringify({ binding: diagram.sourceContext.binding ?? null, evidence })}` }, ...references] } }] });
   return { diagramId: diagram.diagramId, compiledFromRevisionId: diagram.revisionId, sourceFingerprint,
-    contentHash: context.contentHash, snapshot: context.toSnapshot() };
+    contentHash: context.contentHash, snapshot: AgentContext.fromSnapshot({ ...context.toSnapshot(), ...(references.length ? { sourceFiles } : {}) }).toSnapshot() };
 }
 
 export async function storeDiagramAgentContext(value: DiagramAgentContext, store: DiagramAgentContextStore): Promise<StoredDiagramAgentContext> {

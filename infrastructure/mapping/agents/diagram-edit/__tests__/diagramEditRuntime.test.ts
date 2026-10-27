@@ -131,3 +131,42 @@ it.each(['edit-diagram', 'create-diagram', 'extend-diagram'] as const)('ends the
     expect(prompt).not.toContain('You may choose whether to preserve node continuity');
   }
 });
+
+it('resolves source references for the model and preserves descriptors when capturing the next context', async () => {
+  const f = fixture(), captured = vi.fn();
+  const reference = { type: 'sourceRange' as const, sourceId: 'source', path: 'code.ts', startLine: 2, endLine: 2,
+    version: { kind: 'snapshot' as const, contentHash: 'a'.repeat(64) } };
+  const original = AgentContext.fromMessages('panel', [{ role: 'user', timestamp: 0, content: [reference] }]).toSnapshot();
+  const read = vi.fn(async () => 'code.ts:2-2\nconst pinned = 42;');
+  const runtime = new PiDiagramEditRuntime('/tmp', true, { read, capture: vi.fn(), persist: vi.fn(), portable: vi.fn() });
+  harness.actions.push(async tool => { await tool.execute('first', { ascii: 'First', structureKind: 'tree', mappings: [] }); });
+  await runtime.generate({ ...f.request, llmSessionId: 'panel', agentContext: original }, { onAgentContext: captured });
+  expect(read).toHaveBeenCalledWith(reference);
+  expect(harness.chats[0].history[0]).toMatchObject({ content: [{ type: 'text', text: 'code.ts:2-2\nconst pinned = 42;' }] });
+  const next = captured.mock.calls[0][0];
+  expect(next.messages[0]).toEqual(original.messages[0]);
+  expect(JSON.stringify(next)).not.toContain('const pinned');
+  expect(next.version).toBe(2);
+  harness.actions.push(async tool => { await tool.execute('second', { ascii: 'Second', structureKind: 'tree', mappings: [] }); });
+  await runtime.generate({ ...f.request, llmSessionId: 'panel', agentContext: next }, { onAgentContext: captured });
+  expect(captured.mock.calls[1][0].messages[0]).toEqual(original.messages[0]);
+  expect(JSON.stringify(captured.mock.calls[1][0])).not.toContain('const pinned');
+  runtime.dispose(); f.runtime.dispose();
+});
+
+it('does not create a model session when cancelled during lazy source resolution', async () => {
+  const f = fixture(), abort = new AbortController();
+  const snapshot = AgentContext.fromMessages('panel', [{ role: 'user', timestamp: 0, content: [{ type: 'sourceRange',
+    sourceId: 'source', path: 'code.ts', startLine: 1, endLine: 1, version: { kind: 'snapshot', contentHash: 'a'.repeat(64) } }] }]).toSnapshot();
+  let release!: (text: string) => void;
+  const pending = new Promise<string>(resolve => { release = resolve; });
+  const read = vi.fn(() => pending);
+  const runtime = new PiDiagramEditRuntime('/tmp', true, { read, capture: vi.fn(), persist: vi.fn(), portable: vi.fn() });
+  const run = runtime.generate({ ...f.request, agentContext: snapshot }, { signal: abort.signal });
+  const rejected = expect(run).rejects.toThrow('cancelled');
+  await vi.waitFor(() => expect(read).toHaveBeenCalledOnce());
+  abort.abort(Error('cancelled')); release('source text');
+  await rejected;
+  expect(harness.chats).toHaveLength(0);
+  runtime.dispose(); f.runtime.dispose();
+});

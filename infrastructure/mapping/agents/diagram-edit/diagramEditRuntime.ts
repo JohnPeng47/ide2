@@ -1,6 +1,7 @@
 import { diagramContentNodes } from '../../../../domain/core/diagrams/diagramContentNodes';
 import { scopedReplacements } from '../../../../domain/core/diagrams/diagramSubtreeEdit';
 import { captureDiagramAgentContext } from './diagramAgentContext';
+import type { AgentContextSources } from '../../../../application/core/ports/agentContextSources';
 import { AgentContext } from '../../../../domain/core/agents/agentContext';
 import { Type } from '@earendil-works/pi-ai';
 import { DefaultResourceLoader, defineTool, getAgentDir, SettingsManager } from '@earendil-works/pi-coding-agent';
@@ -28,7 +29,7 @@ export function renderDiagramEditPrompt(request: DiagramGenerationRequest) {
 }
 
 export class PiDiagramEditRuntime extends PiAgentRuntime implements DiagramGenerator {
-  constructor(private readonly sourceRoot: string, enabled = false) { super(enabled); }
+  constructor(private readonly sourceRoot: string, enabled = false, private readonly sources?: AgentContextSources) { super(enabled); }
   async generate(request: DiagramGenerationRequest, options: GenerationOptions) {
     this.requireEnabled();
     const base = request.context?.diagram;
@@ -67,7 +68,9 @@ export class PiDiagramEditRuntime extends PiAgentRuntime implements DiagramGener
       systemPrompt: 'You create and edit ASCII diagrams using captured context. Follow the specification and finish with a validated submit_diagram_edit tool call.'
     });
     await resourceLoader.reload(); options.signal?.throwIfAborted();
-    const agentContext = request.agentContext ? AgentContext.fromSnapshot(request.agentContext) : undefined;
+    const imported = request.agentContext ? AgentContext.fromSnapshot(request.agentContext) : undefined;
+    const agentContext = imported ? await imported.resolveSources(this.sources ? ref => this.sources!.read(ref) : undefined) : undefined;
+    options.signal?.throwIfAborted();
     const { session } = await this.createSession({
       cwd: this.sourceRoot, modelRuntime: configured.runtime, model: configured.model,
       thinkingLevel: 'medium', tools: ['submit_diagram_edit'], customTools: [submit], resourceLoader, settingsManager
@@ -85,7 +88,7 @@ export class PiDiagramEditRuntime extends PiAgentRuntime implements DiagramGener
       options.signal?.throwIfAborted();
       if (!submission.value) throw Error('Diagram edit agent finished without a validated submission');
       const candidate = validateGeneratedDiagramEdit(base, submission.value, request.nodeRefs, request.sourceMappings);
-      if (request.llmSessionId) options.onAgentContext?.(captureDiagramAgentContext(request.llmSessionId, session.messages));
+      if (request.llmSessionId) options.onAgentContext?.(captureDiagramAgentContext(request.llmSessionId, session.messages, imported && agentContext ? { original: imported, resolved: agentContext } : undefined));
       return { ...candidate, source: base.sourceContext.binding, evidence: base.sourceContext.evidence };
     } finally {
       options.signal?.removeEventListener('abort', abort); unsubscribe(); session.dispose(); this.sessions.delete(session);

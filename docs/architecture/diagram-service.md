@@ -236,3 +236,16 @@ resolve saved IDs before candidate creation and retain their ID/hash in each vie
 and child chat. With an explicit saved context, children use fresh native threads
 with the parent's effective tools/settings and an injected reference transcript;
 without one they fork the parent conversation. Generation prompts remain separate.
+
+
+AgentContext version 2 adds typed immutable `sourceRange` constituents. The
+context hash covers descriptors and message order, while optional portable
+`sourceFiles` attachments are independently content-addressed. `AgentContextSources`
+is the application port for capture, lazy retrieval, compact persistence and
+portable export. `FileAgentContextSources` resolves registered source identities,
+uses pinned Git commits for matching committed files, and shares dirty/non-Git
+file snapshots under `agent-context-sources`. Both the saved-context library and
+diagram-context store use this backing store. Model conversion rejects unresolved
+references; runtime adapters materialize them at the model boundary and preserve
+descriptors when capturing an unchanged imported conversation prefix. Source
+resolution never substitutes the current working file for a missing pinned version.

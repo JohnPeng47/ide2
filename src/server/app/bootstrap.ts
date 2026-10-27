@@ -1,3 +1,5 @@
+import { resolveDiagramSource } from '../../../application/core/source/diagramSource';
+import { FileAgentContextSources } from '../../../infrastructure/core/persistence/fileAgentContextSources';
 import { AgentContextLibrary } from '../../../application/mapping/agent/agentContextLibrary';
 import { FileAgentContextRepository } from '../../../infrastructure/core/persistence/fileAgentContextRepository';
 import { GenerationCanvasBridge } from '../../../application/mapping/agent-chat/generationCanvasBridge';
@@ -73,16 +75,25 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
   const fake = process.env.NEW_DIAGRAM_AGENT === "fake";
   const chatRuntime = fake ? new FakeLocalChatRuntime() : new CodexLocalChatRuntime(options.piEnabled === true);
   const mappingRuntime = fake ? new FakeMappingAgentRuntime() : new PiMappingAgentRuntime(options.piEnabled === true);
-  const diagramEditRuntime = fake ? new FakeDiagramEditRuntime() : new PiDiagramEditRuntime(mappingPocSourceRoot, options.piEnabled === true);
   const store = new DiagramStore(projectRoot, diagramsDirectory);
+  const contextSources = new FileAgentContextSources(store.storeRoot, async sourceId => {
+    if (sourceId.startsWith('repo-')) {
+      const repository = (await store.repositories.list()).find(repository => repository.id === sourceId);
+      if (repository?.checkoutRoots[0]) return { kind: 'git-worktree', root: repository.checkoutRoots[0] };
+    }
+    const project = await store.loadProject();
+    if (!project) throw Error('AGENT_CONTEXT_SOURCE_UNAVAILABLE: project is not initialized');
+    return (await resolveDiagramSource(store, { projectId: project.id, sourceId })).binding().corpus;
+  });
+  const diagramEditRuntime = fake ? new FakeDiagramEditRuntime() : new PiDiagramEditRuntime(mappingPocSourceRoot, options.piEnabled === true, contextSources);
   const core = createCoreApplication(store);
   const compactionService = createFileCompactionService(core, fake ? new FakeFileCompactionRuntime() : new PiFileCompactionRuntime(options.piEnabled === true));
   const languageService = options.lspEnabled === true ? new ProjectLanguageService() : undefined;
   const diagrams = new MappingDiagramService(store, corpusAccess, projectRoot, configuredDomainProfileId, new WorkspaceRecordStore(store.storeRoot));
   const canvasBridge = new GenerationCanvasBridge(new CanvasSessionBridge());
-  const contextLibrary = new AgentContextLibrary(new FileAgentContextRepository(store.storeRoot));
+  const contextLibrary = new AgentContextLibrary(new FileAgentContextRepository(store.storeRoot), contextSources);
   const agentContexts = new AgentContextService(undefined, contextLibrary);
-  const diagramContextStore = new FileDiagramAgentContextStore(store.storeRoot);
+  const diagramContextStore = new FileDiagramAgentContextStore(store.storeRoot, contextSources);
   const apiProjection = new CanvasApiProjection();
   const liveCanvas = new LiveCanvasService(() => canvasBridge.list(), async (workspaceInstanceId, documentId) =>
     await canvasBridge.dispatch(workspaceInstanceId, { method: 'context', documentId }) as import('../../../domain/mapping/agent/liveCanvasStatus').LiveCanvasContext, agentContexts, apiProjection);

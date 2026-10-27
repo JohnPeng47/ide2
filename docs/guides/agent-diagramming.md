@@ -339,3 +339,64 @@ field on AgentContext. Reuse the ID with new prompts/request IDs for subsequent
 experiments. Alternative generation still needs a saved parent view, a source
 AgentChat with a user message, and a live canvas. This enables repeatable
 candidate generation; it does not add automated comparison generation or judging.
+
+
+### Source files in saved AgentContexts
+
+Use typed constituents to include source without embedding another copy of its
+text in each saved context:
+
+```json
+{
+  "requestId": "b2d5a0a8-83a4-4e37-bd8e-642799c951eb",
+  "name": "Save implementation",
+  "context": [
+    { "type": "text", "text": "Use this implementation as background." },
+    {
+      "type": "sourceFile",
+      "sourceId": "<registered source ID or repository ID>",
+      "path": "src/save.ts",
+      "startLine": 20,
+      "endLine": 80
+    }
+  ]
+}
+```
+
+`sourceId` resolves through the application's registered project sources or
+repository registry. Paths are relative to that source; traversal and symbolic
+link files are rejected. Lines are 1-based and inclusive. Omit the range for the
+whole file, or supply `revision` to capture a particular Git commit/ref. A ref is
+resolved to its full commit SHA at creation. Without `revision`, creation captures
+the working file: if its text matches HEAD it stores a Git reference; otherwise
+it stores a shared immutable source blob. Non-Git files use the same blob store.
+
+The saved version-2 snapshot contains `sourceRange` blocks with the path, source
+identity, range and pinned version. Git content is read from that commit when
+needed, with no separate copied source file. Dirty/non-Git contents live once in
+`<storeRoot>/agent-context-sources/`, shared across contexts and ranges. Files
+are limited to 2 MiB; expanded contexts retain the existing 2 MiB context limit.
+Missing Git objects or unavailable repositories fail retrieval rather than
+silently reading a different version. Editing the working file does not change a
+saved context. Retrying an identical creation request returns its original
+receipt even if the working file has since changed or disappeared.
+
+Listing contexts reads metadata without resolving sources. `read-agent-context`
+returns the compact `snapshot` and, for source-bearing contexts, a separate
+`resolvedSnapshot` containing the selected source text. `contentHash` identifies
+the compact immutable snapshot; `resolvedSnapshot.contentHash` identifies the
+materialized messages. Pi resolves ranges before constructing model input;
+AgentChat injects the resolved snapshot while recording the saved context's
+original ID/hash. Composer recapture preserves source references in an unchanged
+imported prefix instead of saving the expanded source text again.
+
+New diagram-owned contexts also separate captured evidence ranges into shared
+source blobs. These preserve the diagram's original evidence, even when the
+current working file differs. Workspace export includes the selected ranges as
+`sourceFiles` attachments, deduplicated within each context; import publishes
+those blobs before saving compact references. Converting a Git/file reference
+to a portable range snapshot gives the exported context a new descriptor hash. Version-1 contexts and plain text
+remain supported. Existing opaque text/tool transcripts are not automatically
+rewritten into source references. Native model transcripts still retain the
+expanded input for auditing; this change reduces AgentContext storage, not the
+model's token usage or its own transcript files.

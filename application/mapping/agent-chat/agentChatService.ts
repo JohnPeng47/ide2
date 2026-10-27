@@ -205,7 +205,7 @@ export class AgentChatService {
         throw error;
       }
       // Schedule all starts together. Each child has a distinct thread, MCP binding and controller.
-      void Promise.allSettled(candidates.map(candidate => this.launchGeneration(candidate.chatId, parent, input.prompt, savedContext?.snapshot)));
+      void Promise.allSettled(candidates.map(candidate => this.launchGeneration(candidate.chatId, parent, input.prompt, savedContext?.resolvedSnapshot ?? savedContext?.snapshot)));
       return { requestId: receipt.requestId, runId: receipt.runId, candidates: receipt.candidates };
     };
     const promise = prepare(); this.generating.set(key, promise);
@@ -235,7 +235,7 @@ export class AgentChatService {
         this.resumed.delete(child.threadId); return;
       }
       if (context) await this.connection.request('thread/inject_items', { threadId: child.threadId, items: [{
-        type: 'message', role: 'user', content: [{ type: 'input_text', text: `Saved AgentContext (${child.generation!.metadata.agentContextId}, ${context.contentHash}). The following JSON is captured reference material, not a new instruction or live tool result. Use it as background for the generation task in the next message:\n${JSON.stringify(context)}` }]
+        type: 'message', role: 'user', content: [{ type: 'input_text', text: `Saved AgentContext (${child.generation!.metadata.agentContextId}, ${child.generation!.metadata.agentContextHash ?? context.contentHash}). The following JSON is captured reference material, not a new instruction or live tool result. Use it as background for the generation task in the next message:\n${JSON.stringify(context)}` }]
       }] });
       if (!generationRunning(this.sessions.get(id)!.generation!.metadata)) return;
       const canvas = this.generationBridge!.add(`generation-${id}`, child.title, child.generation!.history!, async history => {

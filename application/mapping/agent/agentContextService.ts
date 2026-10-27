@@ -46,7 +46,7 @@ export class AgentContextService {
   async resolve(scope: AgentContextScope, id: string): Promise<AgentContextSnapshot> {
     if (!id.startsWith('saved-agent-context-')) return this.get(scope, id);
     if (!this.library) throw Error('AGENT_CONTEXT_UNAVAILABLE: saved context library is unavailable');
-    return (await this.library.read(id)).snapshot;
+    return (await this.library.read(id, false)).snapshot;
   }
   private scopeKey(scope: AgentContextScope) { return JSON.stringify([scope.workspaceInstanceId, scope.documentId]); }
 }
