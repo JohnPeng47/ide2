@@ -208,3 +208,20 @@ it('retries alternative creation after persistence failure without duplicating t
   expect(c.canvasViews()).toEqual(after);
   expect(Object.keys(after.saved)).toHaveLength(4);
 });
+
+it('replays a pinned generation after its parent view is gone without changing the live canvas or resurrecting the parent', () => {
+  const { controller: c, edit } = fixture(), pinned = c.exportHistory(true);
+  edit({ method: 'replace', nodeId: 'grid:overview', ascii: 'Edited later' });
+  const before = c.getSnapshot().canvasRevisionId;
+  const candidates = [{ id: 'replayed-view', name: 'Replay', generation: { runId: 'run', chatId: 'child', parentChatId: 'parent',
+    triggerPrompt: 'Trigger', taskPrompt: 'Shared', prompt: 'Candidate', model: 'inherited', effort: 'high', status: 'queued' as const, startedAt: new Date().toISOString() } }];
+  expect(() => c.startGeneration(c.getSnapshot().version, 'deleted-parent', candidates)).toThrow('Saved parent view is unavailable');
+  const result = c.startGeneration(c.getSnapshot().version, 'deleted-parent', candidates, pinned);
+  expect(result.headId).toBe(pinned.headId);
+  expect(c.getSnapshot().canvasRevisionId).toBe(before);
+  expect(c.getSnapshot().document.scene.contents.overview.content.ascii).toBe('Edited later');
+  expect(c.canvasViews().saved['replayed-view']).toMatchObject({ forkCheckpointId: pinned.headId, finalCheckpointId: pinned.headId });
+  expect(c.canvasViews().saved['replayed-view'].parentViewId).toBeUndefined();
+  expect(c.canvasViews().saved['deleted-parent']).toBeUndefined();
+  validateCanvasHistory(c.exportHistory());
+});

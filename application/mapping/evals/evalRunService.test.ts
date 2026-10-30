@@ -13,8 +13,10 @@ import { FileCompareSessionStore } from '../../../infrastructure/mapping/compare
 import { FileRollUpRunStore } from '../../../infrastructure/mapping/rollup/fileRollUpRunStore';
 import { JsonDirectoryStore } from '../../../infrastructure/mapping/evals/jsonDirectoryStore';
 import { FakeEvalRuntime } from '../../../infrastructure/mapping/evals/evalRuntime';
-import { workspaceRecords } from '../../../domain/mapping/workspace/workspaceRecords';
+import { documentRecords, recordDocument, type WorkspaceIndex, workspaceRecords } from '../../../domain/mapping/workspace/workspaceRecords';
 import { compareWorkspaceFixture } from '../../../tests/support/compareWorkspace';
+import { MappingDocumentController } from '../../../domain/mapping/workspace/mappingDocumentController';
+import { initialCanvasState } from '../../../domain/mapping/workspace/mappingWorkspace';
 import { documentFromHistory } from '../../../domain/core/diagrams/canvasHistory';
 import type { EvalPrompt } from '../../../domain/mapping/evals/evalPrompt';
 import type { EvalRun } from '../../../domain/mapping/evals/evalRun';
@@ -36,11 +38,12 @@ async function fixture() {
   const prompts = new EvalPromptService(new JsonDirectoryStore<EvalPrompt>(root, 'eval-prompts'), projects);
   const runtime = new FakeEvalRuntime();
   const service = new EvalRunService(comparisons, workspace, projects, contexts, prompts, canvases, new JsonDirectoryStore<EvalRun>(root, 'eval-runs'), runtime, new FileRollUpRunStore(root));
+  canvases.snapshot = (id, checkpoint) => service.outputSnapshot(id, checkpoint);
   const sources = (await comparisons.candidates()).filter(c => c.viewId).map(({ documentId, viewId, checkpointId }) => ({ documentId, viewId, checkpointId }));
   const strict = await prompts.save({ requestId: crypto.randomUUID(), workflow: 'roll-up', name: 'Strict', stages: { r2: 'Strict r2 for {{child}} pass {{pass}}', g2: 'Strict g2 into {{parent}}' } });
   const rollUp = (extra = {}) => ({ requestId: crypto.randomUUID(), workflow: 'roll-up', inputs: { child: sources[0], parent: sources[1] }, passes: 2,
     prompts: [{ promptId: 'builtin-roll-up', version: 1 }, { promptId: strict.id, version: 1 }], ...extra });
-  return { root, service, prompts, comparisons, catalogs, contexts, runtime, records, sources, strict, rollUp };
+  return { root, service, prompts, comparisons, catalogs, contexts, runtime, records, sources, strict, rollUp, projects, workspace, canvases };
 }
 const settle = (f: Awaited<ReturnType<typeof fixture>>, id: string) => expect.poll(async () => (await f.service.read(id)).status, { timeout: 10000 }).not.toMatch(/queued|generating/);
 
@@ -92,7 +95,7 @@ it('renders templates into the locked prompt and isolates failing cells', async 
   await settle(f, run.id);
   const result = await f.service.read(run.id);
   expect(result.cells.map(c => c.status)).toEqual(['finished', 'finished', 'finished', 'failed']);
-  expect(result.status).toBe('finished');
+  expect(result.status).toBe('partial');
   expect(attempts).toBe(3);
   const strict = prompts.find(text => text.includes('Strict r2'))!;
   expect(strict).toContain('Strict r2 for "First view" pass 1');
@@ -198,4 +201,122 @@ it('files reruns under the original run and its context, and deletes them with i
   await f.service.deleteRun(run.id);
   expect(await f.service.list()).toHaveLength(0);
   expect(await f.service.generated()).toHaveLength(0);
+});
+
+it('retains generated metadata after Open in Mapping and pins previews/comparisons after edits or deletion', async () => {
+  const f = await fixture(), started = await f.service.start(f.rollUp({ passes: 1 })); await settle(f, started.id);
+  const run = await f.service.read(started.id), cell = run.cells[0], original = await f.service.canvas(cell.canvasId!);
+  const base = recordDocument(f.records, f.sources[0].documentId);
+  Object.assign(f.records, documentRecords({ ...base, representationId: original.id, name: original.name, type: 'generated',
+    history: original.history, document: documentFromHistory(original.history), canvas: initialCanvasState() }));
+  (f.records.workspace as WorkspaceIndex).documentIds.push(original.id);
+  expect((await f.comparisons.candidates()).find(c => c.documentId === original.id)?.generated).toEqual(original.generated);
+  // Opening generated canvases must preserve their ordinary saved-view choices too.
+  const opened = recordDocument(f.records, original.id);
+  const viewId = 'opened-view';
+  opened.history!.canvasViews = { saved: { [viewId]: { id: viewId, name: 'Saved generated view', createdAt: run.createdAt, savedAt: run.createdAt,
+    startCheckpointId: original.history.headId, finalCheckpointId: original.history.headId, checkpointIds: [original.history.headId] } } };
+  Object.assign(f.records, documentRecords(opened));
+  const candidate = (await f.comparisons.candidates()).find(c => c.documentId === original.id && c.viewId === viewId)!;
+  expect(candidate.generated).toEqual(original.generated);
+  expect((await f.comparisons.capture([candidate])).canvases[0].generated).toEqual(original.generated);
+  const controller = new MappingDocumentController(documentFromHistory(original.history), initialCanvasState(), 0, undefined, undefined, original.history);
+  controller.applyUpdate(0, [{ method: 'diagram-create', id: 'later', ascii: 'Later edit', position: { column: 150, row: 0 } }]);
+  const changed = controller.exportHistory(), document = documentFromHistory(changed);
+  await f.catalogs.saveMappingDiagram(run.projectId, { representationId: original.id, expectedRevisionId: (await f.catalogs.loadRepresentationCatalog(run.projectId)).representations[original.id].currentRevisionId, name: original.name, type: 'generated', history: changed,
+    scene: document.scene, edges: document.edges, generated: original.generated });
+  expect((await f.service.canvas(original.id)).history.headId).not.toBe(cell.checkpointId);
+  expect((await f.service.canvas(original.id, cell.checkpointId)).history).toEqual(run.outputSnapshots![original.id].history);
+  const source = { documentId: original.id, checkpointId: cell.checkpointId! };
+  const session = await f.comparisons.create({ requestId: crypto.randomUUID(), title: 'Pinned', pairs: [{ A: source, B: source }] });
+  expect(session.canvases[0].generated?.promptStages).toEqual(run.prompts[0].stages);
+  await f.service.deleteCanvas(original.id);
+  expect((await f.comparisons.candidates()).some(candidate => candidate.documentId === original.id)).toBe(false);
+  expect((await f.comparisons.capture([source])).canvases[0].history.headId).toBe(cell.checkpointId);
+  expect((await f.comparisons.read(session.id)).canvases).toEqual(session.canvases);
+});
+
+it('reruns durable source copies after a view is saved again or the source is deleted, including reruns of reruns', async () => {
+  const f = await fixture(), request = f.rollUp({ passes: 1 });
+  const started = await f.service.start(request); await settle(f, started.id);
+  const original = await f.service.read(started.id), doc = recordDocument(f.records, f.sources[0].documentId);
+  doc.history!.canvasViews!.saved[f.sources[0].viewId!].finalCheckpointId = f.sources[1].checkpointId;
+  doc.history!.canvasViews!.saved[f.sources[0].viewId!].checkpointIds.push(f.sources[1].checkpointId);
+  Object.assign(f.records, documentRecords(doc));
+  await expect(f.comparisons.capture([f.sources[0]])).rejects.toThrow('selected view changed');
+  const rerun = await f.service.start({ ...request, requestId: crypto.randomUUID(), parentRunId: original.id }); await settle(f, rerun.id);
+  expect((await f.service.read(rerun.id)).inputs).toEqual(original.inputs);
+  (f.records.workspace as WorkspaceIndex).documentIds = [];
+  const again = await f.service.start({ ...request, requestId: crypto.randomUUID(), parentRunId: rerun.id }); await settle(f, again.id);
+  expect((await f.service.read(again.id)).inputs).toEqual(original.inputs);
+});
+
+it('pins earlier alternatives across deletion and rejects unrelated workflow/context inputs', async () => {
+  const f = await fixture(), ctx = await f.contexts.create({ requestId: crypto.randomUUID(), name: 'One', context: 'Context' });
+  const input = { workflow: 'alternatives', inputs: { context: { agentContextId: ctx.agentContextId } }, task: 'Task', passes: 1, prompts: [{ promptId: 'builtin-alternatives', version: 1 }] };
+  const first = await f.service.start({ ...input, requestId: crypto.randomUUID() }); await settle(f, first.id);
+  const id = (await f.service.read(first.id)).cells[0].canvasId!;
+  const follow = await f.service.start({ ...input, requestId: crypto.randomUUID(), previous: [id] }); await settle(f, follow.id);
+  const captured = (await f.service.read(follow.id)).previous;
+  const other = await f.contexts.create({ requestId: crypto.randomUUID(), name: 'One', context: 'Other context' });
+  await expect(f.service.start({ ...input, requestId: crypto.randomUUID(), inputs: { context: { agentContextId: other.agentContextId } }, previous: [id] })).rejects.toThrow('selected AgentContext');
+  const roll = await f.service.start(f.rollUp({ passes: 1 })); await settle(f, roll.id);
+  await expect(f.service.start({ ...input, requestId: crypto.randomUUID(), previous: [(await f.service.read(roll.id)).cells[0].canvasId] })).rejects.toThrow('Alternatives workflow');
+  await f.service.deleteCanvas(id);
+  const rerun = await f.service.start({ ...input, requestId: crypto.randomUUID(), previous: [id], parentRunId: follow.id }); await settle(f, rerun.id);
+  expect((await f.service.read(rerun.id)).previous).toEqual(captured);
+  expect(rerun.previousInputs?.[0].source.documentId).toBe(id);
+});
+
+it('imports failed and cancelled legacy views as run cells without selectable parent placeholders', async () => {
+  const f = await fixture(), doc = recordDocument(f.records, f.sources[0].documentId);
+  const views = Object.values(doc.history!.canvasViews!.saved);
+  views[0].generation!.status = 'failed'; views[1].generation!.status = 'cancelled';
+  Object.assign(f.records, documentRecords(doc));
+  expect(await f.service.migrate()).toEqual({ migrated: 0 });
+  expect(await f.service.generated()).toEqual([]);
+  const [run] = await f.service.list();
+  expect(run.cells.map(cell => cell.status)).toEqual(['failed', 'cancelled']);
+  expect(run.cells.map(cell => cell.candidateName)).toEqual(views.map(view => view.name));
+  expect(run.prompts).toEqual([]); expect(run.cells.every(cell => !cell.canvasId)).toBe(true);
+  expect((await f.comparisons.candidates()).filter(c => c.viewId)).toEqual([]);
+  await f.service.migrate(); expect(await f.service.list()).toHaveLength(1);
+});
+
+it('keeps run numbers after deletion and exposes roll-up defaults with four outputs for two passes', async () => {
+  const f = await fixture(), input = { requestId: crypto.randomUUID(), child: f.sources[0], parent: f.sources[1] };
+  const one = await f.service.startRollUp(input); await settle(f, one.id);
+  expect(one.request.passes).toBe(1); expect((await f.service.read(one.id)).cells).toHaveLength(2);
+  const two = await f.service.startRollUp({ ...input, requestId: crypto.randomUUID(), passes: 2 }); await settle(f, two.id);
+  expect((await f.service.read(two.id)).cells.filter(c => c.status === 'finished')).toHaveLength(4);
+  await f.service.deleteRun(one.id);
+  expect((await f.service.list())[0].number).toBe(two.number);
+  const three = await f.service.startRollUp({ ...input, requestId: crypto.randomUUID() }); await settle(f, three.id);
+  expect(three.number).toBe(two.number! + 1);
+});
+
+it('recovers interrupted historical roll-ups without inventing prompt versions or losing completed cells', async () => {
+  const f = await fixture(), started = await f.service.start(f.rollUp({ passes: 1 })); await settle(f, started.id);
+  const run = await f.service.read(started.id), legacy = new FileRollUpRunStore(f.root), id = crypto.randomUUID();
+  await legacy.save({ id, requestHash: 'original', request: { requestId: id, child: f.sources[0], parent: f.sources[1], passes: 2, model: 'old-model', effort: 'high' },
+    projectId: run.projectId, agentContextId: run.agentContextId, contextName: run.contextName, child: run.inputs.child, parent: run.inputs.parent,
+    createdAt: run.createdAt, status: 'generating', outputs: [{ pass: 1, stage: 'r2', canvasId: run.cells[0].canvasId!, explanation: 'Finished before restart' }] });
+  const restarted = new EvalRunService(f.comparisons, f.workspace, f.projects, f.contexts, f.prompts, f.canvases,
+    new JsonDirectoryStore<EvalRun>(f.root, 'eval-runs'), f.runtime, legacy);
+  const recovered = await restarted.read(id);
+  expect(recovered.status).toBe('partial'); expect(recovered.prompts).toEqual([]); expect(recovered.request.prompts).toEqual([]);
+  expect(recovered.cells.map(cell => cell.status)).toEqual(['finished', 'failed', 'failed', 'failed']);
+  expect(recovered.cells[1].error).toContain('restarted'); expect(recovered.cells[0].canvasId).toBe(run.cells[0].canvasId);
+  expect((await restarted.read(run.id)).number).toBe(run.number);
+});
+
+it('does not resurrect archived migration outputs or import their keys a second time', async () => {
+  const f = await fixture(); await f.service.migrate();
+  const generated = await f.service.generated();
+  for (const canvas of generated) await f.service.deleteCanvas(canvas.id);
+  // Simulate an existing pre-adapter catalog with no Evals record yet.
+  await new JsonDirectoryStore<EvalRun>(f.root, 'eval-runs').delete('legacy-run');
+  expect(await f.service.migrate()).toEqual({ migrated: 0 }); expect(await f.service.generated()).toEqual([]);
+  const run = (await f.service.list())[0]; expect(run.cells.every(cell => cell.deleted)).toBe(true);
+  expect(new Set(run.cells.map(cell => cell.canvasId))).toEqual(new Set(generated.map(canvas => canvas.id)));
 });

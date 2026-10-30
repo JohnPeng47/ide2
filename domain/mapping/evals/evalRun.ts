@@ -25,17 +25,23 @@ export const renameEvalRunSchema = z.object({ name: z.string().trim().max(120) }
 export const evalEfforts = ['low', 'medium', 'high', 'xhigh'] as const;
 
 /** Prompt text is pinned into the run; later prompt edits never change what a run means. */
-export interface EvalRunPrompt { promptId: string; version: number; name: string; stages: Record<string, string> }
-export type EvalCellStatus = 'queued' | 'generating' | 'finished' | 'failed' | 'skipped';
+export interface EvalRunPrompt { promptId: string; version?: number; name: string; stages: Record<string, string> }
+export type EvalCellStatus = 'queued' | 'generating' | 'finished' | 'failed' | 'skipped' | 'cancelled';
 export interface EvalRunCell {
+  candidateName?: string;
   key: string; promptId?: string; promptVersion?: number; promptName?: string; pass: number; stage: string;
   status: EvalCellStatus; canvasId?: string; checkpointId?: string; explanation?: string; error?: string;
   usage?: Record<string, number>; startedAt?: string; completedAt?: string;
   /** Set on summaries when the output canvas was deleted. */
   deleted?: boolean;
 }
-export type EvalRunStatus = 'queued' | 'generating' | 'finished' | 'failed';
+export type EvalRunStatus = 'queued' | 'generating' | 'finished' | 'failed' | 'partial' | 'cancelled';
 export interface EvalRun {
+  number?: number;
+  deletedAt?: string;
+  outputSnapshots?: Record<string, import('../../core/diagrams/generatedCanvas').GeneratedCanvasRecord>;
+  /** Compatibility records retain their original request and child chat identities. */
+  compatibility?: { kind: 'chat-alternatives'; requestId?: string; parentChatId: string; candidates: { viewId: string; chatId: string; name: string }[] };
   schemaVersion: 1; id: string; requestHash: string; request: EvalRunRequest; projectId: string; workflow: EvalWorkflowId;
   agentContextId: string; contextName: string; prompts: EvalRunPrompt[]; inputs: Record<string, CompareCanvasCopy>;
   /** AgentContext inputs, recorded with the hash they had when the run started. */
@@ -51,17 +57,19 @@ export interface EvalRun {
   legacy?: boolean;
 }
 export interface EvalRunContext { agentContextId: string; name: string; contentHash: string }
-export interface EvalRunInputSummary { source: CompareSource; name: string; canvasName: string }
-export type EvalRunSummary = Omit<EvalRun, 'inputs' | 'previous' | 'requestHash'> & { inputs: Record<string, EvalRunInputSummary>; previousNames?: string[] };
+export interface EvalRunInputSummary { source: CompareSource; name: string; canvasName: string; generated?: import('../../core/diagrams/generatedCanvas').GeneratedCanvas }
+export type EvalRunSummary = Omit<EvalRun, 'inputs' | 'previous' | 'requestHash' | 'outputSnapshots'> & { inputs: Record<string, EvalRunInputSummary>; previousNames?: string[]; previousInputs?: EvalRunInputSummary[] };
 
 export const cellKey = (promptId: string | undefined, pass: number, stage: string) => `${promptId ?? 'unknown'}:${pass}:${stage}`;
-export function summarizeEvalRun({ inputs, previous, requestHash: _, ...run }: EvalRun): EvalRunSummary {
-  return { ...run, ...(previous?.length ? { previousNames: previous.map(copy => copy.view.name) } : {}), inputs: Object.fromEntries(Object.entries(inputs).map(([name, copy]) => [name, { source: copy.source, name: copy.view.name, canvasName: copy.canvasName }])) };
+export function summarizeEvalRun({ inputs, previous, outputSnapshots: _snapshots, requestHash: _, ...run }: EvalRun): EvalRunSummary {
+  return { ...run, ...(previous?.length ? { previousNames: previous.map(copy => copy.view.name), previousInputs: previous.map(copy => ({ source: copy.source, name: copy.view.name, canvasName: copy.canvasName, ...(copy.generated ? { generated: copy.generated } : {}) })) } : {}), inputs: Object.fromEntries(Object.entries(inputs).map(([name, copy]) => [name, { source: copy.source, name: copy.view.name, canvasName: copy.canvasName }])) };
 }
 export function runStatus(cells: EvalRunCell[]): EvalRunStatus {
   if (cells.some(cell => cell.status === 'generating')) return 'generating';
   if (cells.some(cell => cell.status === 'queued')) return cells.some(cell => cell.status !== 'queued') ? 'generating' : 'queued';
-  return cells.some(cell => cell.status === 'finished') ? 'finished' : 'failed';
+  if (cells.every(cell => cell.status === 'finished')) return 'finished';
+  if (cells.some(cell => cell.status === 'finished')) return 'partial';
+  return !cells.some(cell => cell.status === 'failed') && cells.some(cell => cell.status === 'cancelled') ? 'cancelled' : 'failed';
 }
 
 export function legacyRollUpRun(run: RollUpRun): EvalRun {
@@ -74,7 +82,7 @@ export function legacyRollUpRun(run: RollUpRun): EvalRun {
       ...(!output && run.status === 'failed' ? { error: run.error } : {}) });
   }
   return { schemaVersion: 1, id: run.id, requestHash: run.requestHash, projectId: run.projectId, workflow: 'roll-up', legacy: true,
-    request: { requestId: run.id, workflow: 'roll-up', prompts: [{ promptId: 'unknown', version: 1 }], inputs: { child: run.request.child, parent: run.request.parent },
+    request: { requestId: run.id, workflow: 'roll-up', prompts: [], inputs: { child: run.request.child, parent: run.request.parent },
       passes, model: run.request.model, effort: run.request.effort as EvalRunRequest['effort'] },
     agentContextId: run.agentContextId, contextName: run.contextName, prompts: [], inputs: { child: run.child, parent: run.parent },
     status: run.status, createdAt: run.createdAt, completedAt: run.completedAt, error: run.error, cells };

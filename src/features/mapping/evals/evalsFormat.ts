@@ -1,24 +1,24 @@
 import type { GeneratedCanvas } from '../../../../domain/core/diagrams/generatedCanvas';
-import type { EvalCellStatus, EvalRunSummary } from '../../../../domain/mapping/evals/evalRun';
+import type { EvalCellStatus, EvalRunStatus, EvalRunSummary } from '../../../../domain/mapping/evals/evalRun';
 import { evalWorkflows } from '../../../../domain/mapping/evals/evalWorkflows';
 
 export const errorMessage = (error: unknown) => error instanceof Error ? error.message : String(error);
 export const UNKNOWN_PROMPT = 'Unknown prompt';
 
-/** Runs are numbered oldest-first so a number never changes as new runs arrive. */
+/** Runs are numbered oldest-first so persisted identities survive deletion of earlier runs. */
 export function runNumbers(runs: EvalRunSummary[]) {
-  return new Map([...runs].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).map((run, i) => [run.id, i + 1]));
+  return new Map([...runs].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).map((run, i) => [run.id, run.number ?? i + 1]));
 }
 export const runTitle = (run: EvalRunSummary, number?: number) => `Run #${number ?? '?'} · ${evalWorkflows[run.workflow].label}`;
 export const runProgress = (run: EvalRunSummary) => `${run.cells.filter(cell => cell.status === 'finished').length}/${run.cells.length}`;
 export const runActive = (run: EvalRunSummary) => run.status === 'queued' || run.status === 'generating';
 
-export const statusLabel: Record<EvalCellStatus | 'finished' | 'failed', string> = {
-  queued: 'Queued', generating: 'Generating', finished: 'Finished', failed: 'Failed', skipped: 'Skipped'
+export const statusLabel: Record<EvalCellStatus | EvalRunStatus, string> = {
+  queued: 'Queued', generating: 'Generating', finished: 'Finished', failed: 'Failed', skipped: 'Skipped', partial: 'Partially completed', cancelled: 'Cancelled'
 };
 
-export function promptLabel(prompt?: { name: string; version: number }) {
-  return prompt ? `${prompt.name} v${prompt.version}` : UNKNOWN_PROMPT;
+export function promptLabel(prompt?: { name: string; version?: number }) {
+  return prompt ? prompt.version === undefined ? `${prompt.name} · captured prompt` : `${prompt.name} v${prompt.version}` : UNKNOWN_PROMPT;
 }
 /** One-line provenance shown on preview and comparison panes. */
 export function provenance(generated?: GeneratedCanvas) {
@@ -37,4 +37,4 @@ export function relativeTime(iso: string) {
   if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
   return new Date(iso).toLocaleDateString();
 }
-export const tokens = (usage?: Record<string, number>) => usage?.total_tokens ?? (usage ? (usage.input_tokens ?? 0) + (usage.output_tokens ?? 0) : undefined);
+export const tokens = (usage?: Record<string, number>) => usage?.totalTokens ?? usage?.total_tokens ?? (usage ? (usage.input_tokens ?? 0) + (usage.output_tokens ?? 0) : undefined);

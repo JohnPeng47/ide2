@@ -44,6 +44,10 @@ export interface ChatItem {
 export interface ChatQuestion { id: string; header: string; question: string; isSecret?: boolean; options?: { label: string; description: string }[] | null }
 export interface ChatApproval { id: string; kind: 'approval' | 'input' | 'permissions'; title: string; detail: string; questions?: ChatQuestion[]; turnId?: string }
 export interface ChatGeneration {
+  /** Immutable generation input; working history may be compacted to a later endpoint. */
+  inputHistory?: import('../../core/diagrams/canvasHistory').CanvasHistoryRecord;
+  evalParentRunId?: string;
+  evalAgentContextId?: string;
   metadata: import('../../core/diagrams/canvasGeneration').CanvasGeneration;
   source: ChatCanvasTarget; stableWorkspaceId?: string; viewId: string; parentViewId: string;
   history?: import('../../core/diagrams/canvasHistory').CanvasHistoryRecord;

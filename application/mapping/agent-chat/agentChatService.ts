@@ -57,6 +57,19 @@ export class AgentChatService {
       }
     });
   }
+  private generationObserver?: (children: ChatSession[], parent?: ChatSession, historical?: boolean) => Promise<void>;
+  async observeGenerations(observer: NonNullable<AgentChatService['generationObserver']>) {
+    this.generationObserver = observer;
+    await this.loaded;
+    const runs = new Set([...this.sessions.values()].flatMap(s => s.generation ? [s.generation.metadata.runId] : []));
+    for (const runId of runs) await this.publishGeneration(runId, true);
+  }
+  private publishGeneration(runId: string, historical = false) {
+    const children = [...this.sessions.values()].filter(s => s.generation?.metadata.runId === runId);
+    return this.generationObserver?.(children, this.sessions.get(children[0]?.generation?.metadata.parentChatId ?? ''), historical).catch(error => {
+      console.error('Evals generation reconciliation failed; child chat and view are retained for retry', error);
+    }) ?? Promise.resolve();
+  }
   setMcpOrigin(origin: string) { this.mcp?.setOrigin(origin); }
   async info(): Promise<ChatInfo> {
     const models: ChatInfo['models'] = [];
@@ -147,15 +160,15 @@ export class AgentChatService {
     if (name === 'gen-alternatives') return this.genAlternatives(session.id, input);
     return this.tools!.call(name, input, context);
   }
-  async genAlternatives(id: string, raw: unknown, target?: ChatCanvasTarget): Promise<Pick<import('../../../domain/mapping/agent-chat/agentChat').ChatGenerationRequest, 'requestId' | 'runId' | 'candidates'>> {
-    const parent = structuredClone(await this.get(id)), input = genAlternativesSchema.parse(raw);
+  async genAlternatives(id: string, raw: unknown, target?: ChatCanvasTarget, replay?: { history: CanvasHistoryRecord; parent: ChatSession; parentRunId: string; agentContextId: string }): Promise<Pick<import('../../../domain/mapping/agent-chat/agentChat').ChatGenerationRequest, 'requestId' | 'runId' | 'candidates'>> {
+    const parent = structuredClone(replay?.parent ?? await this.get(id)), input = genAlternativesSchema.parse(raw);
     if (parent.generation) throw Error('Generate alternatives from the parent chat; nested generation is not enabled');
     if (parent.settings.sandbox === 'read-only') throw Error('Generation requires Workspace access');
     if (!this.generationBridge || !this.mcp || !this.tools || !parent.canvasTools) throw Error('Generation tools are unavailable; reload this chat’s tools');
     if (!parent.items.some(item => item.kind === 'user')) throw Error('Send a message in the source AgentChat before generating alternatives');
     const source = target ?? parent.canvasContext?.canvas;
     if (!source) throw Error('Open a canvas and send a message before generating alternatives');
-    const signature = JSON.stringify({ input, source }), prior = parent.generationRequests?.find(request => request.requestId === input.requestId);
+    const signature = JSON.stringify({ input, source, ...(replay ? { parentRunId: replay.parentRunId, checkpointId: replay.history.headId } : {}) }), prior = this.sessions.get(id)?.generationRequests?.find(request => request.requestId === input.requestId);
     if (prior) {
       if (prior.signature !== signature) throw Error('REQUEST_ID_CONFLICT: generation arguments differ');
       if (prior.error) throw Error(prior.error);
@@ -163,7 +176,7 @@ export class AgentChatService {
     }
     const key = `${id}:${input.requestId}`;
     const pending = this.generating.get(key);
-    if (pending) { await pending; return this.genAlternatives(id, raw, target); }
+    if (pending) { await pending; return this.genAlternatives(id, raw, target, replay); }
     const prepare = async () => {
       if (input.agentContextId && !this.contextLibrary) throw Error('AGENT_CONTEXT_UNAVAILABLE');
       const savedContext = input.agentContextId ? await this.contextLibrary!.read(input.agentContextId) : undefined;
@@ -181,7 +194,7 @@ export class AgentChatService {
         const child: ChatSession = { schemaVersion: 2, id: candidate.chatId, threadId: `pending-${candidate.chatId}`, origin: 'codex', canvasTools: true,
           title: candidate.name, cwd: parent.cwd, createdAt: startedAt, updatedAt: startedAt, settings: { ...parent.settings }, status: 'idle',
           items: [], pending: [], requestIds: [], toolDefinitions: structuredClone(parent.toolDefinitions ?? this.tools!.definitions),
-          generation: { metadata: metadata(candidate), source, stableWorkspaceId: this.generationBridge!.list().find(canvas => canvas.canvasId === source.workspaceInstanceId)?.stableWorkspaceId, viewId: candidate.id, parentViewId: input.viewId } };
+          generation: { metadata: metadata(candidate), source, ...(replay ? { evalParentRunId: replay.parentRunId, evalAgentContextId: replay.agentContextId } : {}), stableWorkspaceId: this.generationBridge!.list().find(canvas => canvas.canvasId === source.workspaceInstanceId)?.stableWorkspaceId, viewId: candidate.id, parentViewId: input.viewId } };
         this.sessions.set(child.id, child); await this.store.save(child);
       }
       const current = this.sessions.get(id)!;
@@ -189,11 +202,12 @@ export class AgentChatService {
       let history: CanvasHistoryRecord;
       try {
         history = await this.generationBridge!.dispatch(source.workspaceInstanceId, { method: 'canvas-generation', documentId: source.documentId,
-        payload: { operation: 'start', requestId: `generation:${runId}`, expectedVersion: identity.version, viewId: input.viewId,
+        payload: { operation: 'start', requestId: `generation:${runId}`, expectedVersion: identity.version, viewId: input.viewId, ...(replay ? { history: replay.history } : {}),
           candidates: candidates.map(candidate => ({ id: candidate.id, name: candidate.name, generation: metadata(candidate) })) } }) as CanvasHistoryRecord;
         for (const candidate of candidates) {
           const child = this.sessions.get(candidate.chatId)!;
-          child.generation!.history = history; await this.store.save(child);
+          child.generation!.history = replay?.history ?? history;
+          child.generation!.inputHistory = structuredClone(child.generation!.history); await this.store.save(child);
         }
       } catch (error) {
         (receipt as import('../../../domain/mapping/agent-chat/agentChat').ChatGenerationRequest).error = String(error);
@@ -204,12 +218,34 @@ export class AgentChatService {
         }));
         throw error;
       }
+      await this.publishGeneration(runId);
       // Schedule all starts together. Each child has a distinct thread, MCP binding and controller.
       void Promise.allSettled(candidates.map(candidate => this.launchGeneration(candidate.chatId, parent, input.prompt, savedContext?.resolvedSnapshot ?? savedContext?.snapshot)));
       return { requestId: receipt.requestId, runId: receipt.runId, candidates: receipt.candidates };
     };
     const promise = prepare(); this.generating.set(key, promise);
     try { return await promise; } finally { this.generating.delete(key); }
+  }
+  /** Replays through the same child-chat executor using the run's captured saved view. */
+  async rerunAlternatives(run: import('../../../domain/mapping/evals/evalRun').EvalRun, requestId: string) {
+    if (!run.compatibility || !run.inputs.source) throw Error('This run has no retained chat generation input.');
+    const original = await this.get(run.compatibility.candidates[0].chatId);
+    const parent = structuredClone(await this.get(run.compatibility.parentChatId));
+    parent.settings = structuredClone(original.settings); parent.toolDefinitions = structuredClone(original.toolDefinitions);
+    parent.turnId = original.generation!.metadata.parentTurnId;
+    const source = original.generation!.source;
+    const canvases = this.generationBridge!.list();
+    if (!canvases.some(canvas => canvas.canvasId === source.workspaceInstanceId)) {
+      const match = canvases.find(canvas => canvas.stableWorkspaceId === original.generation!.stableWorkspaceId && canvas.documents.some(doc => doc.documentId === source.documentId));
+      if (!match) throw Error('Reopen the source canvas in Mapping to rerun its child chats.');
+      source.workspaceInstanceId = match.canvasId;
+    }
+    const result = await this.genAlternatives(parent.id, { viewId: original.generation!.parentViewId, requestId,
+      prompt: original.generation!.metadata.taskPrompt ?? run.request.task ?? original.generation!.metadata.triggerPrompt,
+      alternatives: run.prompts.map(prompt => ({ name: prompt.name, prompt: prompt.stages.alternative })),
+      ...(original.generation!.metadata.agentContextId ? { agentContextId: original.generation!.metadata.agentContextId } : {}) }, source,
+      { history: run.inputs.source.history, parent, parentRunId: run.parentRunId ?? run.id, agentContextId: run.agentContextId });
+    return result.runId;
   }
   private async launchGeneration(id: string, parent: ChatSession, sharedPrompt: string, context?: AgentContextSnapshot) {
     const initial = this.sessions.get(id)!;
@@ -255,6 +291,7 @@ export class AgentChatService {
   }
   private async syncGeneration(id: string, history?: CanvasHistoryRecord) {
     const child = this.sessions.get(id)!, generation = structuredClone(child.generation!);
+    await this.publishGeneration(generation.metadata.runId);
     if (generation.stableWorkspaceId && !this.generationBridge!.list().some(canvas => canvas.canvasId === generation.source.workspaceInstanceId)) {
       const matches = this.generationBridge!.list().filter(canvas => canvas.stableWorkspaceId === generation.stableWorkspaceId && canvas.documents.some(doc => doc.documentId === generation.source.documentId));
       if (matches.length !== 1) throw Error('Reopen the source canvas to save generation results');

@@ -123,7 +123,12 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
   const evalPrompts = new EvalPromptService(new JsonDirectoryStore<EvalPrompt>(store.storeRoot, 'eval-prompts'), store);
   const evalRuns = new EvalRunService(compareSessions, workspace, store, contextLibrary, evalPrompts, generatedCanvases,
     new JsonDirectoryStore<EvalRun>(store.storeRoot, 'eval-runs'), fake ? new FakeEvalRuntime() : new CodexEvalRuntime(options.piEnabled === true), new FileRollUpRunStore(store.storeRoot));
+  evalRuns.replayLegacy = (run, requestId) => agentChat.rerunAlternatives(run, requestId);
+  evalRuns.cancelLegacy = id => agentChat.cancelGeneration(id);
+  void agentChat.observeGenerations((children, parent, historical) => evalRuns.recordLegacy(children, parent, historical)).catch(error => console.error('Generation reconciliation failed', error));
+  generatedCanvases.snapshot = (id, checkpoint) => evalRuns.outputSnapshot(id, checkpoint);
   const comparisonRuns = new ComparisonGenerationService(compareSessions, new FileComparisonRunStore(store.storeRoot), fake ? new FakeComparisonRuntime() : new CodexComparisonRuntime(options.piEnabled === true));
+  evalRuns.deleteContextComparisons = (id, workflow) => comparisonRuns.deleteContextOutputs(id, workflow);
   const routes = {
     core: createCoreRoutes({
       application: core,

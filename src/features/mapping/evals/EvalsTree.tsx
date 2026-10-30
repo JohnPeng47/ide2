@@ -15,7 +15,7 @@ export interface TreeActions {
   deleteContext: (context: { id: string; name: string; workflow: EvalWorkflowId; outputs: number }) => void;
   deleteSession: (session: CompareSessionSummary) => void;
   deleteComparisonRun: (run: ComparisonRunSummary) => void;
-  contextMenu: (context: { id: string; name: string; workflow: EvalWorkflowId; runs: EvalRunSummary[] }, at: { x: number; y: number }) => void;
+  contextMenu: (context: { id: string; name: string; workflow: EvalWorkflowId; outputs: number; runs: EvalRunSummary[] }, at: { x: number; y: number }) => void;
   runMenu: (run: EvalRunSummary, at: { x: number; y: number }) => void;
   /** An empty name restores the default label. */
   renameRun: (run: EvalRunSummary, name: string) => void;
@@ -36,7 +36,7 @@ export interface PickedOutput { canvasId: string; checkpointId?: string; label: 
 const WORKFLOWS: { id: EvalWorkflowId; label: string }[] = [{ id: 'alternatives', label: 'Alternatives' }, { id: 'roll-up', label: 'Roll-ups' }];
 const STORAGE = 'evals-tree-toggled';
 const cellLabel = (cell: EvalRunCell, workflow: EvalWorkflowId) =>
-  [cell.promptName ? `${cell.promptName} v${cell.promptVersion}` : UNKNOWN_PROMPT, `pass ${cell.pass}`, workflow === 'roll-up' ? cell.stage : ''].filter(Boolean).join(' · ');
+  [cell.promptName ? promptLabel({ name: cell.promptName, version: cell.promptVersion }) : cell.candidateName ?? UNKNOWN_PROMPT, `pass ${cell.pass}`, workflow === 'roll-up' ? cell.stage : ''].filter(Boolean).join(' · ');
 
 /** Outputs by workflow, then AgentContext: runs with their canvases, loose (migrated) canvases, and comparisons. */
 export function EvalsTree({ runs, generated, sessions, comparisons, selection, actions, picked, onPick, renaming, onRenameEnd }: {
@@ -55,8 +55,8 @@ export function EvalsTree({ runs, generated, sessions, comparisons, selection, a
     const canvasOwner = new Map(generated.map(canvas => [canvas.id, canvas.generated!]));
     const inRuns = new Set(runs.flatMap(run => run.cells.flatMap(cell => cell.canvasId ? [cell.canvasId] : [])));
     const placed = new Set<string>();
-    const ownerOf = (canvasIds: string[]) => canvasIds.map(id => canvasOwner.get(id)).find(Boolean);
-    const sessionNode = (session: CompareSessionSummary): NavNode => ({ id: `session:${session.id}`, label: session.title, meta: String(session.compareCount),
+    const ownerOf = (canvasIds: string[]) => { const owners = canvasIds.map(id => canvasOwner.get(id)); return owners.every(owner => owner && owner.agentContextId === owners[0]?.agentContextId && generatedWorkflow(owner) === generatedWorkflow(owners[0]!)) ? owners[0] : undefined; };
+    const sessionNode = (session: CompareSessionSummary): NavNode => ({ id: `session:${session.id}`, label: session.title, meta: String(session.compareCount), title: session.origins.map(origin => `${origin.contextName} (${origin.agentContextId})`).join('\n'),
       current: selection?.kind === 'session' && selection.id === session.id, onOpen: () => actions.open({ kind: 'session', id: session.id }),
       onDelete: { label: `Delete comparison ${session.title}`, run: () => actions.deleteSession(session) } });
     const pendingNode = (run: ComparisonRunSummary): NavNode => ({ id: `pending:${run.id}`, label: run.request.title, status: run.status, muted: true, title: run.error,
@@ -70,7 +70,7 @@ export function EvalsTree({ runs, generated, sessions, comparisons, selection, a
         const contextRuns = runs.filter(run => run.workflow === workflow.id && run.agentContextId === contextId);
         const loose = generated.filter(canvas => canvas.generated!.agentContextId === contextId && generatedWorkflow(canvas.generated!) === workflow.id && !inRuns.has(canvas.id));
         const outputs = contextRuns.reduce((sum, run) => sum + run.cells.filter(cell => cell.canvasId && !cell.deleted).length, 0) + loose.length;
-        const contextSessions = sessions.filter(session => session.origins[0]?.agentContextId === contextId && session.origins[0].workflow === workflow.id);
+        const contextSessions = sessions.filter(session => !session.mixedOrigins && session.origins.length > 0 && session.origins.every(origin => origin.agentContextId === contextId && origin.workflow === workflow.id));
         contextSessions.forEach(session => placed.add(session.id));
         const contextPending = pending.filter(run => { const owner = ownerOf(run.request.sources.map(source => source.documentId));
           return owner?.agentContextId === contextId && generatedWorkflow(owner) === workflow.id; });
@@ -78,7 +78,7 @@ export function EvalsTree({ runs, generated, sessions, comparisons, selection, a
         const comparisonsNode: NavNode[] = contextSessions.length || contextPending.length ? [{ id: `comparisons:${workflow.id}:${contextId}`, label: 'Comparisons',
           meta: String(contextSessions.length + contextPending.length), children: [...contextPending.map(pendingNode), ...contextSessions.map(sessionNode)] }] : [];
         return { id: `context:${workflow.id}:${contextId}`, label: contextName, meta: `${outputs} output${outputs === 1 ? '' : 's'}`,
-          onContextMenu: at => actions.contextMenu({ id: contextId, name: contextName, workflow: workflow.id, runs: contextRuns }, at),
+          onContextMenu: at => actions.contextMenu({ id: contextId, name: contextName, workflow: workflow.id, outputs, runs: contextRuns }, at),
           onDelete: { label: `Delete everything generated from ${contextName}`, run: () => actions.deleteContext({ id: contextId, name: contextName, workflow: workflow.id, outputs }) },
           children: [
             ...contextRuns.filter(run => !run.parentRunId || !contextRuns.some(root => root.id === run.parentRunId)).map(function runNode(run): NavNode {
@@ -122,7 +122,7 @@ export function EvalsTree({ runs, generated, sessions, comparisons, selection, a
       return { id: `workflow:${workflow.id}`, label: workflow.label, meta: children.length ? undefined : 'no outputs yet', children };
     });
     const other = [...pending.filter(run => !placed.has(run.id)).map(pendingNode), ...sessions.filter(session => !placed.has(session.id)).map(sessionNode)];
-    if (other.length) roots.push({ id: 'other', label: 'Other comparisons', meta: String(other.length), children: other });
+    if (other.length) roots.push({ id: 'other', label: 'Cross-context and other comparisons', meta: String(other.length), children: other });
     return roots;
   }, [runs, generated, sessions, comparisons, selection, numbers]);
   const pickedIds = new Set(picked.map(item => item.canvasId));

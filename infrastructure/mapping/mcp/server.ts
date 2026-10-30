@@ -1,3 +1,4 @@
+import { rollUpRequestSchema } from '../../../domain/mapping/rollup/rollUp';
 import { generateComparisonSchema } from '../../../domain/mapping/compare/comparisonGeneration';
 import { agentContextToolDefinitions } from '../../../domain/core/agents/savedAgentContext';
 import { canvasViewInstructions } from '../../../domain/core/diagrams/canvasView';
@@ -85,13 +86,15 @@ export function createMappingMcpServer(baseUrl: string, binding = process.env.MA
     });
   }
   for (const tool of [
+    { name: 'generate-roll-up', schema: rollUpRequestSchema, route: '/api/mapping/evals/roll-ups', method: 'POST', description: 'Generate a roll-up from pinned child and parent canvases. Each pass makes r2 (one diagram), then g2 (an attached copy of the parent). Defaults to one pass; two passes produce four canvases. Returns an Evals run; poll read-eval-run. Retry identical arguments and requestId.' },
+    { name: 'read-eval-run', schema: z.object({ runId: z.string().uuid() }).strict(), route: '/api/mapping/evals/runs', method: 'GET', description: 'Read an Evals run and its cells, generated canvas/checkpoint IDs, errors and prompt provenance.' },
     { name: 'generate-diagram-comparisons', schema: generateComparisonSchema, route: '/api/mapping/comparison-runs', method: 'POST', description: 'Compare selected saved views using only linked ASCII diagrams. Supply sources from list-compare-candidates, title, and a unique requestId. Defaults to gpt-6-sol high. Returns run ID immediately; poll read-diagram-comparison-run for status and the saved comparison URL. Retries with the same arguments/requestId are idempotent.' },
     { name: 'read-diagram-comparison-run', schema: z.object({ runId: z.string().uuid() }).strict(), route: '/api/mapping/comparison-runs', method: 'GET', description: 'Read comparison generation status, errors, and the finished session URL.' },
     { name: 'list-compare-candidates', schema: z.object({}).strict(), route: '/api/mapping/compare-sessions/candidates', method: 'GET', description: 'List saved canvas views and their pinned checkpoints for comparison generation.' }
   ]) server.registerTool(tool.name, { description: tool.description, inputSchema: tool.schema, annotations: { readOnlyHint: tool.method === 'GET', openWorldHint: false } }, async input => {
     try {
       const args = input as Record<string, unknown>;
-      const route = tool.route + (tool.name === 'read-diagram-comparison-run' ? `/${encodeURIComponent(String(args.runId))}` : '');
+      const route = tool.route + (['read-diagram-comparison-run', 'read-eval-run'].includes(tool.name) ? `/${encodeURIComponent(String(args.runId))}` : '');
       const response = await fetch(new URL(route, base), { method: tool.method, headers: { 'content-type': 'application/json' },
         ...(tool.method === 'POST' ? { body: JSON.stringify(input) } : {}), signal: AbortSignal.timeout(65000) });
       const result = await response.json();

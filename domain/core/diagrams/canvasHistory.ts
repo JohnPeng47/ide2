@@ -295,15 +295,31 @@ export class CanvasHistory {
     const recording = this.record.canvasViews?.recording;
     if (recording && recording.checkpointIds.at(-1) !== this.record.headId) recording.checkpointIds.push(this.record.headId);
   }
-  startGeneration(parentId: string, candidates: { id: string; name: string; generation: CanvasGeneration }[]) {
+  startGeneration(parentId: string, candidates: { id: string; name: string; generation: CanvasGeneration }[], pinned?: CanvasHistoryRecord) {
     const views = this.record.canvasViews, parent = views?.saved[parentId];
-    if (!parent || parent.archivedAt || views!.recording || generationRunning(parent.generation)) throw Error('Saved parent view is unavailable');
+    if (views?.recording || !pinned && (!parent || parent.archivedAt || generationRunning(parent.generation))) throw Error('Saved parent view is unavailable');
     if (!candidates.length || candidates.length > 8 || new Set(candidates.map(item => item.id)).size !== candidates.length) throw Error('Invalid candidates');
     for (const candidate of candidates) {
       canvasGenerationSchema.parse(candidate.generation);
-      if (!candidate.id || views!.saved[candidate.id]) throw Error('Candidate already exists');
+      if (!candidate.id || views?.saved[candidate.id]) throw Error('Candidate already exists');
     }
-    const checkpointId = parent.finalCheckpointId!, now = new Date().toISOString();
+    if (pinned) {
+      validateCanvasHistory(pinned);
+      // Internal Evals replay: retain its endpoint even when the original view was edited or deleted.
+      const checkpoint = pinned.snapshots[pinned.headId], existing = this.record.snapshots[pinned.headId];
+      if (existing && (!equal(existing.document, checkpoint.document) || !equal(existing.diagramBindings, checkpoint.diagramBindings))) throw Error('Checkpoint is immutable');
+      for (const [key, revision] of Object.entries(pinned.diagramRevisions))
+        if (this.record.diagramRevisions[key] && !equal(this.record.diagramRevisions[key], revision)) throw Error('Diagram revision is immutable');
+      this.record.snapshots[pinned.headId] ??= structuredClone(checkpoint);
+      Object.assign(this.record.diagramRevisions, structuredClone(pinned.diagramRevisions));
+      this.record.revisionBoundary = { ...pinned.revisionBoundary, ...this.record.revisionBoundary };
+      const target = this.record.canvasViews ??= { saved: {} }, now = new Date().toISOString();
+      for (const item of candidates) target.saved[item.id] = { id: item.id, name: item.name, createdAt: now, savedAt: now,
+        ...(parent ? { parentViewId: parentId } : {}), forkCheckpointId: pinned.headId, alternativeGroupId: item.generation.runId,
+        startCheckpointId: pinned.headId, finalCheckpointId: pinned.headId, checkpointIds: [pinned.headId], generation: item.generation };
+      return structuredClone(pinned);
+    }
+    const checkpointId = parent!.finalCheckpointId!, now = new Date().toISOString();
     // Export only this saved state and its revision dependencies, not the live head.
     const record = { ...this.export(), headId: checkpointId, baselineId: checkpointId, past: [], future: [] };
     delete record.canvasViews;

@@ -76,3 +76,32 @@ it('marks interrupted runs failed on restart and retains their input snapshots',
   expect(run.status).toBe('failed'); expect(run.error).toContain('restarted'); expect(run.diagrams).toHaveLength(6);
   f.service.dispose();
 });
+
+it('deleting a pending comparison aborts it and cannot recreate the run or session when its runtime completes', async () => {
+  const f = await fixture(); await f.service.start(f.request); await expect.poll(() => f.calls).toBe(1);
+  await f.service.delete(f.request.requestId);
+  expect(f.received!.signal.aborted).toBe(true);
+  await expect(f.finish()).rejects.toThrow('Comparison run not found');
+  await new Promise<void>(resolve => setImmediate(resolve));
+  expect(await f.store.read(f.request.requestId)).toBeNull();
+  expect(await f.comparisons.list()).toEqual([]);
+});
+
+it('context deletion cancels owned comparison runs while keeping mixed-context comparisons', async () => {
+  const f = await fixture(), capture = f.comparisons.capture.bind(f.comparisons);
+  let mixed = false;
+  f.comparisons.capture = async sources => {
+    const result = await capture(sources);
+    result.canvases.forEach((copy, i) => { copy.generated = { key: copy.id, agentContextId: mixed && i === 1 ? 'other' : 'owner', contextName: 'Context', stage: 'alternative' }; });
+    return result;
+  };
+  await f.service.start(f.request); await expect.poll(() => f.calls).toBe(1);
+  const ownedSignal = f.received!.signal;
+  mixed = true;
+  const other = await f.service.start({ ...f.request, requestId: crypto.randomUUID() }); await expect.poll(() => f.calls).toBe(2);
+  const mixedSignal = f.received!.signal;
+  await f.service.deleteContextOutputs('owner', 'alternatives');
+  expect(ownedSignal.aborted).toBe(true); expect(mixedSignal.aborted).toBe(false);
+  expect(await f.store.read(f.request.requestId)).toBeNull(); expect((await f.service.read(other.id)).status).toBe('generating');
+  f.service.dispose();
+});

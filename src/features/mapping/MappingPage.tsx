@@ -318,7 +318,7 @@ function MappingWorkspacePage() {
       let receipt = appliedRequests.current.get(key) as { signature: string; value: unknown } | undefined;
       if (receipt && receipt.signature !== signature) throw Error('REQUEST_ID_CONFLICT');
       if (!receipt) {
-        const value = input.operation === 'start' ? controller.startGeneration(input.expectedVersion, input.viewId, input.candidates)
+        const value = input.operation === 'start' ? controller.startGeneration(input.expectedVersion, input.viewId, input.candidates, input.history)
           : controller.updateGeneration(input.viewId, input.generation, input.history);
         receipt = { signature, value: value ?? { updated: true } }; appliedRequests.current.set(key, receipt);
       }

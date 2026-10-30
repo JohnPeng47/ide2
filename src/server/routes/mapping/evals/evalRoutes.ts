@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import type { ServerResponse } from 'node:http';
 import type { Connect } from 'vite';
 import type { EvalPromptService } from '../../../../../application/mapping/evals/evalPromptService';
@@ -17,6 +18,7 @@ export async function handleEvalRoutes(request: Connect.IncomingMessage, respons
   if (match && method === 'GET') return sendJson(response, 200, await prompts.read(match[1]));
   match = route.match(new RegExp(`^/prompts/${segment}/archive$`));
   if (match && method === 'POST') return sendJson(response, 200, await prompts.setArchived(match[1], archiveEvalPromptSchema.parse(await readBody(request)).archived));
+  if (route === '/roll-ups' && method === 'POST') return sendJson(response, 202, await runs.startRollUp(await readBody(request)));
   if (route === '/runs') {
     if (method === 'GET') return sendJson(response, 200, await runs.list());
     if (method === 'POST') return sendJson(response, 202, await runs.start(await readBody(request)));
@@ -24,14 +26,17 @@ export async function handleEvalRoutes(request: Connect.IncomingMessage, respons
   match = route.match(new RegExp(`^/runs/${segment}$`));
   if (match && method === 'GET') return sendJson(response, 200, summarizeEvalRun(await runs.read(match[1])));
   if (match && method === 'DELETE') { await runs.deleteRun(match[1]); return sendJson(response, 200, { deleted: true }); }
+  match = route.match(new RegExp(`^/runs/${segment}/rerun-chat$`));
+  if (match && method === 'POST') { const input = z.object({ requestId: z.string().min(1).max(200) }).strict().parse(await readBody(request));
+    return sendJson(response, 202, await runs.rerunLegacy(match[1], input.requestId)); }
   match = route.match(new RegExp(`^/runs/${segment}/rename$`));
   if (match && method === 'POST') return sendJson(response, 200, await runs.rename(match[1], renameEvalRunSchema.parse(await readBody(request)).name));
   match = route.match(new RegExp(`^/runs/${segment}/cancel$`));
-  if (match && method === 'POST') { runs.cancel(match[1]); return sendJson(response, 202, { cancelled: true }); }
-  if (route === '/contexts' && method === 'GET') return sendJson(response, 200, await runs.listContexts(url.searchParams.get('query') ?? ''));
+  if (match && method === 'POST') { await runs.cancel(match[1]); return sendJson(response, 202, { cancelled: true }); }
+  if (route === '/contexts' && method === 'GET') return sendJson(response, 200, await runs.listContexts(url.searchParams.get('query') ?? '', Number(url.searchParams.get('offset') ?? 0)));
   if (route === '/canvases' && method === 'GET') return sendJson(response, 200, await runs.generated());
   match = route.match(new RegExp(`^/canvases/${segment}$`));
-  if (match && method === 'GET') return sendJson(response, 200, await runs.canvas(match[1]));
+  if (match && method === 'GET') return sendJson(response, 200, await runs.canvas(match[1], url.searchParams.get('checkpoint') ?? undefined));
   if (match && method === 'DELETE') { await runs.deleteCanvas(match[1]); return sendJson(response, 200, { deleted: true }); }
   match = route.match(new RegExp(`^/contexts/${segment}/outputs$`));
   if (match && method === 'DELETE') {

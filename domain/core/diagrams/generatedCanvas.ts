@@ -8,7 +8,9 @@ export interface GeneratedCanvas {
   stage: 'r2' | 'g2' | 'alternative' | 'legacy';
   workflow?: 'roll-up' | 'alternatives';
   /** Absent for legacy canvases: their prompt is unknown. */
-  prompt?: { id: string; version: number; name: string };
+  prompt?: { id: string; version?: number; name: string };
+  /** Immutable text captured at generation time, independent of the prompt library. */
+  promptStages?: Record<string, string>;
   runId?: string;
   pass?: number;
   source?: { documentId: string; viewId?: string; checkpointId: string };

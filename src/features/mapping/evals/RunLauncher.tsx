@@ -22,11 +22,21 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
   prompts: EvalPrompt[]; runs: EvalRunSummary[]; initial: RunLaunch; onClose: () => void; onStarted: (run: EvalRunSummary) => void;
 }) {
   const rerun = initial.rerun, request = rerun?.request;
+  // A run is the authority for its pinned text even while the prompt catalog refreshes.
+  prompts = [...prompts];
+  for (const pinned of rerun?.prompts ?? []) {
+    if (pinned.version === undefined) continue;
+    const index = prompts.findIndex(prompt => prompt.id === pinned.promptId);
+    const version = { version: pinned.version, stages: pinned.stages, createdAt: rerun!.createdAt };
+    if (index < 0) prompts.push({ schemaVersion: 1, id: pinned.promptId, projectId: rerun!.projectId, workflow: rerun!.workflow,
+      name: pinned.name, createdAt: rerun!.createdAt, updatedAt: rerun!.createdAt, versions: [version] });
+    else if (!prompts[index].versions.some(v => v.version === pinned.version)) prompts[index] = { ...prompts[index], versions: [...prompts[index].versions, version] };
+  }
   const [workflowId, setWorkflowId] = useState(rerun?.workflow ?? initial.workflow);
   const workflow = evalWorkflows[workflowId];
   // A rerun keeps the exact prompt versions it used, even if a prompt was archived since.
   const [selected, setSelected] = useState<Record<string, number>>(() => rerun
-    ? Object.fromEntries(rerun.prompts.filter(pinned => prompts.some(prompt => prompt.id === pinned.promptId)).map(pinned => [pinned.promptId, pinned.version]))
+    ? Object.fromEntries(rerun.prompts.filter(pinned => pinned.version !== undefined && prompts.some(prompt => prompt.id === pinned.promptId)).map(pinned => [pinned.promptId, pinned.version!]))
     : Object.fromEntries(prompts.filter(prompt => initial.promptIds?.includes(prompt.id)).map(prompt => [prompt.id, latestVersion(prompt).version])));
   const available = prompts.filter(prompt => prompt.workflow === workflowId && (!prompt.archivedAt || selected[prompt.id] !== undefined));
   /** A rerun's canvas inputs, which may be older checkpoints than the canvases now offer. */
@@ -56,7 +66,7 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
       if (closed) return;
       setGenerated(items);
       // Deleted earlier alternatives can't be attached again.
-      setPrevious(current => current.filter(id => items.some(item => item.id === id)));
+      setPrevious(current => current.filter(id => rerun?.previousInputs?.some(input => input.source.documentId === id) || items.some(item => item.id === id)));
     }).catch(fail);
     return () => { closed = true; };
   }, []);
@@ -85,30 +95,32 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
         }) }] : []),
       ...[...new Set(saved.map(candidate => candidate.canvasName))].map(name => ({ id: `canvas:${name}`, label: name, meta: 'canvas',
         children: saved.filter(candidate => candidate.canvasName === name).map(node) })),
-      ...[...new Set(made.map(candidate => candidate.generated!.contextName))].map(name => ({ id: `generated:${name}`, label: name, meta: 'generated',
-        children: made.filter(candidate => candidate.generated!.contextName === name).map(node) }))
+      ...[...new Set(made.map(candidate => candidate.generated!.agentContextId))].map(id => ({ id: `generated:${id}`, label: made.find(candidate => candidate.generated!.agentContextId === id)!.generated!.contextName, meta: 'generated',
+        children: made.filter(candidate => candidate.generated!.agentContextId === id).map(node) }))
     ];
   }, [candidates, picked, pinned, numbers, rerun]);
   const alternativesTree = useMemo<TreeNode[]>(() => {
     if (!contexts || !generated) return [];
     const full = previous.length >= MAX_PREVIOUS;
-    return contexts.map(context => {
+    const pinnedPrevious: TreeNode[] = (rerun?.previousInputs ?? []).filter(input => !generated.some(canvas => canvas.id === input.source.documentId)).map(input => ({
+      id: `alt:${input.source.documentId}`, label: input.name, detail: `${input.generated?.contextName ?? input.canvasName} · pinned checkpoint`, selectable: true, disabled: full && !previous.includes(input.source.documentId) }));
+    return [...(pinnedPrevious.length ? [{ id: 'pinned-previous', label: 'Pinned earlier inputs', children: pinnedPrevious }] : []), ...contexts.map(context => {
       const outputs = generated.filter(canvas => canvas.generated?.agentContextId === context.agentContextId && ['alternative', 'legacy'].includes(canvas.generated.stage));
       const groups = [...new Set(outputs.map(canvas => canvas.generated!.runId ?? 'migrated'))];
       return { id: `ctx:${context.agentContextId}`, label: context.name, detail: context.description || undefined, selectable: true,
         meta: `${context.messageCount} msg${context.messageCount === 1 ? '' : 's'} · ${relativeTime(context.createdAt)}`,
         children: groups.map(runId => {
           const items = outputs.filter(canvas => (canvas.generated!.runId ?? 'migrated') === runId);
-          const label = runId === 'migrated' ? 'Migrated alternatives' : `Run #${numbers.get(runId) ?? '?'} · ${promptLabel(items[0].generated!.prompt)}`;
+          const label = runId === 'migrated' ? 'Migrated alternatives' : `Run #${numbers.get(runId) ?? '?'}`;
           return { id: `run:${context.agentContextId}:${runId}`, label, group: true, meta: `${items.length} canvas${items.length === 1 ? '' : 'es'}`,
-            children: items.map(canvas => ({ id: `alt:${canvas.id}`, label: canvas.generated!.pass ? `pass ${canvas.generated!.pass}` : canvas.name,
+            children: items.map(canvas => ({ id: `alt:${canvas.id}`, label: canvas.generated!.pass && canvas.generated!.prompt ? `${promptLabel(canvas.generated!.prompt)} · pass ${canvas.generated!.pass}` : canvas.name,
               detail: canvas.generated!.pass ? undefined : promptLabel(canvas.generated!.prompt), selectable: true,
               disabled: full && !previous.includes(canvas.id), meta: relativeTime(canvas.createdAt) })) };
         }) };
-    });
-  }, [contexts, generated, previous, numbers]);
+    })];
+  }, [contexts, generated, previous, numbers, rerun]);
 
-  const contextOf = (canvasId: string) => generated?.find(canvas => canvas.id === canvasId)?.generated?.agentContextId;
+  const contextOf = (canvasId: string) => generated?.find(canvas => canvas.id === canvasId)?.generated?.agentContextId ?? rerun?.previousInputs?.find(input => input.source.documentId === canvasId)?.generated?.agentContextId;
   const toggleRollUp = (node: TreeNode, on: boolean) => setPicked(current => on ? [...current, node.id].slice(0, 2) : current.filter(key => key !== node.id));
   const toggleAlternative = (node: TreeNode, on: boolean) => {
     if (node.id.startsWith('ctx:')) {
@@ -127,7 +139,7 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
     [workflowId, picked, contextId, previous]);
 
   const chosen = available.filter(prompt => selected[prompt.id] !== undefined);
-  const uses = (name: string) => chosen.some(prompt => Object.values(prompt.versions.find(item => item.version === selected[prompt.id])!.stages)
+  const uses = (name: string) => chosen.some(prompt => Object.values(prompt.versions.find(item => item.version === selected[prompt.id])?.stages ?? {})
     .some(body => templateVariables(body).includes(name)));
   const usesTask = uses('task');
   const candidate = (key: string) => candidates?.find(item => candidateKey(item) === key) ?? (pinned.has(key) ? { ...pinned.get(key)!.source, name: pinned.get(key)!.name, canvasName: pinned.get(key)!.canvasName } : undefined);
@@ -153,7 +165,7 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
     catch (error) { setError(errorMessage(error)); } finally { setBusy(false); }
   };
   const loading = workflowId === 'roll-up' ? !candidates : !contexts || !generated;
-  const name = (id: string) => generated?.find(canvas => canvas.id === id)?.name ?? id;
+  const name = (id: string) => generated?.find(canvas => canvas.id === id)?.name ?? rerun?.previousInputs?.find(input => input.source.documentId === id)?.name ?? id;
 
   return <Drawer title={rerun ? `Rerun #${numbers.get(rerun.id) ?? '?'}` : 'New run'} wide onClose={onClose}>
     <form className="evals-form run-launcher" onSubmit={event => { event.preventDefault(); if (!problems.length) void submit(); }}>
@@ -189,7 +201,7 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
                 <div className="prompt-context-slot"><code>{'{{previous}}'}</code>
                   {previous.length ? <span>{previous.length} earlier alternative{previous.length === 1 ? '' : 's'}</span> : <span className="evals-muted">none</span>}</div>
                 {previous.length > 0 && <ul className="prompt-context-files">{previous.map((id, i) => <li key={id}>
-                  <code>previous-{i + 1}.json</code><span>{name(id)}</span>
+                  <code>previous-{i + 1}.json</code><span>{name(id)}{rerun?.previousInputs?.some(input => input.source.documentId === id) ? ' · pinned' : ''}</span>
                   <button type="button" className="evals-link" aria-label={`Remove ${name(id)}`} onClick={() => setPrevious(current => current.filter(item => item !== id))}>×</button></li>)}</ul>}
                 {previous.length > 0 && chosen.length > 0 && !uses('previous') && <p className="evals-warning">The selected prompts don't use {'{{previous}}'}; the files are still attached.</p>}
               </>}

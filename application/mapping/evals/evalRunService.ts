@@ -1,3 +1,4 @@
+import { LegacyGenerationAdapter, legacyEvalRunId } from './legacyGenerationAdapter';
 import type { z } from 'zod';
 import { sha256 } from '../../../domain/core/sha256';
 import { documentFromHistory, type CanvasHistoryRecord } from '../../../domain/core/diagrams/canvasHistory';
@@ -10,7 +11,7 @@ import type { MappingWorkspaceService } from '../workspace/workspaceService';
 import type { AgentContextLibrary } from '../agent/agentContextLibrary';
 import { ApplicationError } from '../../core/errors';
 import { copyCompareHistory, type CompareSessionService } from '../compare/compareSessionService';
-import { attachOutputSchema, canvasContext, rollUpOutputSchema, type RollUpRun } from '../../../domain/mapping/rollup/rollUp';
+import { attachOutputSchema, canvasContext, rollUpRequestSchema, rollUpOutputSchema, type RollUpRun } from '../../../domain/mapping/rollup/rollUp';
 import { alternativeOutputSchema } from '../../../domain/mapping/evals/alternatives';
 import { composePrompt, evalWorkflows, promptHasErrors, validatePromptStages, type EvalWorkflowId } from '../../../domain/mapping/evals/evalWorkflows';
 import { templateVariables } from '../../../domain/mapping/evals/promptTemplate';
@@ -29,6 +30,11 @@ type Generation = Omit<Parameters<EvalRuntime['generate']>[0], 'prompt'> & { bod
 
 export class EvalRunService {
   private ready: Promise<void>;
+  readonly legacyGenerations: LegacyGenerationAdapter;
+  deleteContextComparisons?: (id: string, workflow: EvalWorkflowId) => Promise<void>;
+  replayLegacy?: (run: EvalRun, requestId: string) => Promise<string>;
+  cancelLegacy?: (chatId: string) => Promise<void>;
+  private nextNumber = 1;
   private starts = new Map<string, Promise<EvalRun>>();
   private running = new Map<string, AbortController>();
   private saves = new Map<string, Promise<void>>();
@@ -41,25 +47,47 @@ export class EvalRunService {
     private projects: Pick<DiagramRepository, 'loadProject' | 'projectCatalogs'>, private contexts: AgentContextLibrary,
     private prompts: EvalPromptService, private canvases: GeneratedCanvasSource, private store: EvalRunStore, private runtime: EvalRuntime,
     private legacy?: LegacyRollUpStore, private concurrency = 3) {
-    this.ready = store.list().then(async runs => {
-      for (const run of runs) if (run.status === 'queued' || run.status === 'generating') {
-        for (const cell of run.cells) if (cell.status === 'queued' || cell.status === 'generating')
-          Object.assign(cell, { status: 'failed', error: 'Server restarted during generation. Completed canvases are retained.' });
-        await store.save({ ...run, status: runStatus(run.cells), completedAt: new Date().toISOString() });
+    this.legacyGenerations = new LegacyGenerationAdapter(store, projects, contexts, this.deleted, () => this.nextNumber++);
+    this.ready = store.list().then(async saved => {
+      const imported = (await legacy?.list() ?? []).filter(old => !saved.some(run => run.id === old.id)).map(legacyRollUpRun);
+      const runs = [...saved, ...imported].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      this.nextNumber = Math.max(0, ...runs.map(run => run.number ?? 0)) + 1;
+      for (const run of runs) {
+        run.number ??= this.nextNumber++;
+        if (run.deletedAt) this.deleted.add(run.id);
+        if (run.status === 'queued' || run.status === 'generating') {
+          for (const cell of run.cells) if (cell.status === 'queued' || cell.status === 'generating')
+            Object.assign(cell, { status: 'failed', error: 'Server restarted during generation. Completed canvases are retained.' });
+          run.status = runStatus(run.cells); run.completedAt = new Date().toISOString();
+        }
+        run.status = runStatus(run.cells);
+        await store.save(run);
       }
     });
     void this.ready.catch(() => {});
   }
+  async outputSnapshot(id: string, checkpointId: string) {
+    await this.ready;
+    for (const run of await this.store.list()) {
+      const output = run.outputSnapshots?.[id];
+      if (output?.history.headId === checkpointId) return structuredClone(output);
+    }
+    return null;
+  }
+  async recordLegacy(children: import('../../../domain/mapping/agent-chat/agentChat').ChatSession[], parent?: import('../../../domain/mapping/agent-chat/agentChat').ChatSession, historical = false) {
+    await this.ready;
+    return this.legacyGenerations.update(children, parent, historical);
+  }
   generated() { return this.canvases.list(); }
-  listContexts(query = '') { return this.contexts.list({ query, limit: 100 }); }
-  async canvas(id: string) {
-    const canvas = await this.canvases.read(id);
+  listContexts(query = '', offset = 0) { return this.contexts.list({ query, offset, limit: 100 }); }
+  async canvas(id: string, checkpointId?: string) {
+    const canvas = await this.canvases.read(id, checkpointId);
     if (!canvas) throw new ApplicationError('invalid-input', 'Generated canvas not found.');
     return canvas;
   }
   async list() {
     await this.ready;
-    const runs = [...await this.store.list(), ...(await this.legacy?.list() ?? []).map(legacyRollUpRun)];
+    const runs = (await this.store.list()).filter(run => !run.deletedAt);
     const live = new Set((await this.canvases.list()).map(canvas => canvas.id));
     return runs.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map(run => {
       const summary = summarizeEvalRun(run);
@@ -69,12 +97,24 @@ export class EvalRunService {
   async read(id: string) {
     await this.ready;
     const run = await this.store.read(id) ?? await this.legacy?.read(id).then(run => run && legacyRollUpRun(run)).catch(() => null);
-    if (!run) throw new ApplicationError('invalid-input', 'Run not found.');
+    if (!run || run.deletedAt) throw new ApplicationError('invalid-input', 'Run not found.');
     return run;
   }
-  async start(raw: unknown) {
+  /** Additive exposure of the retained child/parent contract; old tool schemas are unchanged. */
+  async startRollUp(raw: unknown) {
+    const input = rollUpRequestSchema.parse(raw);
+    return this.startRequest({ requestId: input.requestId, workflow: 'roll-up', inputs: { child: input.child, parent: input.parent },
+      prompts: [{ promptId: 'builtin-roll-up', version: 1 }], passes: input.passes, model: input.model, effort: input.effort as EvalRun['request']['effort'] });
+  }
+  async rerunLegacy(id: string, requestId: string) {
+    const run = await this.read(id);
+    if (!run.compatibility || !this.replayLegacy) throw new ApplicationError('invalid-input', 'This run has no retained chat executor.');
+    return summarizeEvalRun(await this.read(await this.replayLegacy(run, requestId)));
+  }
+  async start(raw: unknown) { return this.startRequest(evalRunRequestSchema.parse(raw)); }
+  private async startRequest(request: EvalRun['request']) {
     await this.ready;
-    const request = evalRunRequestSchema.parse(raw), hash = sha256(JSON.stringify(request));
+    const hash = sha256(JSON.stringify(request));
     let pending = this.starts.get(request.requestId);
     if (!pending) {
       pending = (async () => (await this.store.read(request.requestId)) ?? this.prepare(request, hash))();
@@ -82,6 +122,7 @@ export class EvalRunService {
     }
     try {
       const run = await pending;
+      if (run.deletedAt) throw new ApplicationError('conflict', 'This run was deleted. Use a new request ID.');
       if (run.requestHash !== hash) throw new ApplicationError('conflict', 'Request ID already used for another run.');
       return summarizeEvalRun(run);
     } finally { if (this.starts.get(request.requestId) === pending) this.starts.delete(request.requestId); }
@@ -90,12 +131,15 @@ export class EvalRunService {
   async rename(id: string, name: string) {
     await this.ready;
     const run = this.live.get(id) ?? await this.store.read(id);
-    if (!run) throw new ApplicationError('invalid-input', (await this.legacy?.read(id).catch(() => null)) ? 'Legacy runs cannot be renamed.' : 'Run not found.');
+    if (!run || run.deletedAt) throw new ApplicationError('invalid-input', (await this.legacy?.read(id).catch(() => null)) ? 'Legacy runs cannot be renamed.' : 'Run not found.');
+    if (run.compatibility) { await this.legacyGenerations.rename(id, name); return summarizeEvalRun(await this.read(id)); }
     if (name) run.name = name; else delete run.name;
     await this.persist(run);
     return summarizeEvalRun(run);
   }
-  cancel(id: string) {
+  async cancel(id: string) {
+    const run = await this.read(id);
+    if (run.compatibility && this.cancelLegacy) { await Promise.all(run.compatibility.candidates.map(c => this.cancelLegacy!(c.chatId))); return; }
     const abort = this.running.get(id);
     if (!abort) throw new ApplicationError('invalid-input', 'This run is not running.');
     abort.abort();
@@ -103,9 +147,11 @@ export class EvalRunService {
   private async prepare(request: ReturnType<typeof evalRunRequestSchema.parse>, requestHash: string) {
     const workflow = evalWorkflows[request.workflow];
     // A rerun of a rerun is filed under the same original run.
+    const rerun = request.parentRunId ? await this.read(request.parentRunId) : undefined;
+    if (rerun?.compatibility) throw new ApplicationError('invalid-input', 'Rerun this generation through its original chat executor.');
     const parent = request.parentRunId ? await this.read(request.parentRunId).then(run => run.parentRunId ? this.read(run.parentRunId) : run) : undefined;
     if (parent && parent.workflow !== request.workflow) throw new ApplicationError('invalid-input', 'A rerun must use the same workflow as its run.');
-    const prompts = await Promise.all(request.prompts.map(item => this.prompts.resolve(item.promptId, item.version, request.workflow)));
+    const prompts = await Promise.all(request.prompts.map(item => Promise.resolve(rerun?.prompts.find(p => p.promptId === item.promptId && p.version === item.version) ?? this.prompts.resolve(item.promptId, item.version, request.workflow))));
     const invalid = prompts.find(prompt => promptHasErrors(validatePromptStages(workflow, prompt.stages)));
     if (invalid) throw new ApplicationError('invalid-input', `${invalid.name} v${invalid.version} has template errors for this workflow. Save a corrected version.`);
     const canvasInputs = workflow.inputs.filter(input => input.type === 'canvas'), contextInputs = workflow.inputs.filter(input => input.type === 'agent-context');
@@ -131,14 +177,20 @@ export class EvalRunService {
     }
     const previousIds = [...new Set(request.previous ?? [])];
     if (previousIds.length && request.workflow !== 'alternatives') throw new ApplicationError('invalid-input', 'Only Alternatives runs take earlier alternatives.');
-    const previousSources = await Promise.all(previousIds.map(async id => {
+    const previous = await Promise.all(previousIds.map(async id => {
+      const pinned = rerun?.previous?.find(copy => copy.source.documentId === id);
+      if (pinned) return structuredClone(pinned);
       const canvas = await this.canvases.read(id);
       if (!canvas) throw new ApplicationError('invalid-input', 'An earlier alternative is no longer available.');
-      return { documentId: id, checkpointId: canvas.history.headId };
+      if (generatedWorkflow(canvas.generated) !== 'alternatives' || canvas.generated.agentContextId !== contexts.context?.agentContextId)
+        throw new ApplicationError('invalid-input', 'Earlier alternatives must belong to the selected AgentContext and Alternatives workflow.');
+      return (await this.comparisons.capture([{ documentId: id, checkpointId: canvas.history.headId }])).canvases[0];
     }));
-    const previous = previousSources.length ? (await this.comparisons.capture(previousSources)).canvases : [];
-    const captured = canvasInputs.length ? await this.comparisons.capture(canvasInputs.map(input => canvasSource(input.name)))
-      : { projectId: (await this.projects.loadProject())?.id, canvases: [] as CompareCanvasCopy[] };
+    const captured = { projectId: (await this.projects.loadProject())?.id, canvases: await Promise.all(canvasInputs.map(async input => {
+      const source = canvasSource(input.name);
+      const pinned = Object.values(rerun?.inputs ?? {}).find(copy => JSON.stringify(copy.source) === JSON.stringify(source));
+      return pinned ? structuredClone(pinned) : (await this.comparisons.capture([source])).canvases[0];
+    })) };
     if (!captured.projectId) throw new ApplicationError('invalid-input', 'Open a project first.');
     const inputs = Object.fromEntries(canvasInputs.map(input => [input.name, captured.canvases.find(copy => JSON.stringify(copy.source) === JSON.stringify(canvasSource(input.name)))!]));
     if (Object.values(inputs).some(copy => copy.view.generation && copy.view.generation.status !== 'finished'))
@@ -156,7 +208,7 @@ export class EvalRunService {
     const cells: EvalRunCell[] = prompts.flatMap(prompt => Array.from({ length: request.passes }, (_, i) => workflow.stages.map(stage => ({
       key: cellKey(prompt.promptId, i + 1, stage.id), promptId: prompt.promptId, promptVersion: prompt.version, promptName: prompt.name,
       pass: i + 1, stage: stage.id, status: 'queued' as const })))).flat();
-    const run: EvalRun = { schemaVersion: 1, id: request.requestId, requestHash, request, projectId: captured.projectId, workflow: workflow.id,
+    const run: EvalRun = { schemaVersion: 1, number: this.nextNumber++, id: request.requestId, requestHash, request, projectId: captured.projectId, workflow: workflow.id,
       agentContextId, contextName, prompts, inputs, ...(contextInputs.length ? { contexts } : {}), ...(previous.length ? { previous } : {}), status: 'queued', createdAt: new Date().toISOString(), cells,
       ...(parent ? { parentRunId: parent.id } : {}) };
     await this.store.save(run);
@@ -201,12 +253,14 @@ export class EvalRunService {
         scene: document.scene, edges: document.edges, repositoryId, generated: { ...generated, key: cell.key + ':' + run.id, agentContextId: run.agentContextId,
           contextName: run.contextName, runId: run.id, pass: cell.pass, stage: cell.stage as GeneratedCanvas['stage'], workflow: run.workflow,
           ...(result.viewId ? { storageViewId: result.viewId } : {}) } });
+      if (this.deleted.has(run.id)) { await this.projects.projectCatalogs.archiveRepresentation(run.projectId, saved.representation.id); signal.throwIfAborted(); }
+      (run.outputSnapshots ??= {})[saved.representation.id] = { id: saved.representation.id, name, generated: saved.representation.generated!, history: copyCompareHistory(result.history, result.history.headId) };
       Object.assign(cell, { status: 'finished', canvasId: saved.representation.id, checkpointId: result.history.headId,
         explanation: result.output.explanation, usage, completedAt: new Date().toISOString() });
       await this.persist(run);
       return result;
     } catch (error) {
-      Object.assign(cell, { status: 'failed', error: signal.aborted ? 'Cancelled.' : error instanceof Error ? error.message : String(error), completedAt: new Date().toISOString() });
+      Object.assign(cell, { status: signal.aborted ? 'cancelled' : 'failed', error: signal.aborted ? 'Cancelled.' : error instanceof Error ? error.message : String(error), completedAt: new Date().toISOString() });
       await this.persist(run);
       throw error;
     }
@@ -218,7 +272,7 @@ export class EvalRunService {
       task: run.request.task ?? '', pass: String(pass), passes: String(run.request.passes),
       previous: run.previous?.length ? run.previous.map((copy, i) => `previous-${i + 1}.json (${JSON.stringify(copy.view.name)})`).join(', ') : 'none' };
     const common = { workflow: run.workflow, model: run.request.model, effort: run.request.effort, signal, values };
-    const provenance = { prompt: { id: prompt.promptId, version: prompt.version, name: prompt.name } };
+    const provenance = { prompt: { id: prompt.promptId, version: prompt.version, name: prompt.name }, promptStages: structuredClone(prompt.stages) };
     const title = `${prompt.name} v${prompt.version} · pass ${pass}`;
     if (run.workflow === 'alternatives') {
       const context = run.contexts!.context, cell = this.cell(run, prompt, pass, 'alternative');
@@ -274,28 +328,41 @@ export class EvalRunService {
   private async migrateLegacy() {
     const { records } = await this.workspace.loadRecords('current'), index = records.workspace as WorkspaceIndex | undefined;
     if (!index) return { migrated: 0 };
-    const existing = new Set((await this.generated()).map(c => c.generated?.key));
-    const project = await this.projects.loadProject(); let migrated = 0;
+    const project = await this.projects.loadProject(); if (!project) return { migrated: 0 };
+    const catalog = await (this.projects.projectCatalogs.loadCurrentRepresentationCatalog?.(project.id, []) ?? this.projects.projectCatalogs.loadRepresentationCatalog(project.id));
+    // Archived keys also count: promotion must not resurrect a deleted output.
+    const existing = new Set(Object.values(catalog.representations).map(c => c.generated?.key));
+    for (const canvas of Object.values(catalog.representations)) if (canvas.status === 'settled' && canvas.generated?.generation && canvas.generated.generation.status !== 'finished')
+      await this.projects.projectCatalogs.archiveRepresentation(project.id, canvas.id);
+    let migrated = 0;
     for (const documentId of index.documentIds) {
       const metadata = records[documentPrefix(documentId) + 'metadata'] as MappingDocumentSnapshot;
       if (metadata.type === 'generated') continue;
       const history = recordHistory(records, documentId);
+      const generatedViews = Object.values(history.canvasViews?.saved ?? {}).filter(view => view.generation && !view.archivedAt);
+      for (const runId of new Set(generatedViews.map(view => view.generation!.runId))) {
+        // Chat lifecycle records win; migration must never overwrite their pinned source or prompt text.
+        if (await this.store.read(legacyEvalRunId(runId))) continue;
+        // The chat observer owns active generations, including the interval before its first save.
+        if (generatedViews.some(view => view.generation!.runId === runId && ['queued', 'generating'].includes(view.generation!.status))) continue;
+        const children = generatedViews.filter(view => view.generation!.runId === runId).map(view => ({
+          id: view.generation!.chatId, title: view.name,
+          generation: { metadata: view.generation!, viewId: view.id, parentViewId: view.parentViewId ?? '', source: { documentId, workspaceInstanceId: 'migration' },
+            ...(view.finalCheckpointId ? { history: { ...structuredClone(history), headId: view.finalCheckpointId, baselineId: view.forkCheckpointId ?? view.startCheckpointId } } : {}) }
+        } as import('../../../domain/mapping/agent-chat/agentChat').ChatSession));
+        await this.recordLegacy(children, undefined, true);
+        migrated += children.filter(child => child.generation!.metadata.status === 'finished' && child.generation!.history && !existing.has(`legacy:${documentId}:${child.generation!.viewId}`)).length;
+      }
       for (const view of Object.values(history.canvasViews?.saved ?? {})) {
         const key = `legacy:${documentId}:${view.id}`;
-        if ((!view.generation && !view.alternativeGroupId) || view.archivedAt || !view.finalCheckpointId || existing.has(key) ||
-          view.generation && ['queued', 'generating'].includes(view.generation.status)) continue;
-        let agentContextId = view.generation?.agentContextId, contextName: string;
-        if (agentContextId) contextName = (await this.contexts.read(agentContextId, false)).name;
-        else {
-          // Stable UUID gives every old generation run one durable context root.
-          const group = view.generation?.runId ?? view.alternativeGroupId ?? view.id;
-          const hex = sha256(`${documentId}:${group}`).slice(0, 32);
-          const requestId = `${hex.slice(0,8)}-${hex.slice(8,12)}-4${hex.slice(13,16)}-8${hex.slice(17,20)}-${hex.slice(20)}`;
-          contextName = `Migrated generation · ${metadata.name}`.slice(0,120);
-          const context = await this.contexts.create({ requestId, name: contextName, context: JSON.stringify({ sourceDocumentId: documentId, generationRunId: group,
-            triggerPrompt: view.generation?.triggerPrompt ?? '', taskPrompt: view.generation?.taskPrompt ?? '', parentChatId: view.generation?.parentChatId ?? '' }) });
-          agentContextId = context.agentContextId;
-        }
+        if (view.generation) continue;
+        if (!view.alternativeGroupId || view.archivedAt || !view.finalCheckpointId || existing.has(key)) continue;
+        const group = view.alternativeGroupId;
+        const hex = sha256(`${documentId}:${group}`).slice(0, 32);
+        const requestId = `${hex.slice(0,8)}-${hex.slice(8,12)}-4${hex.slice(13,16)}-8${hex.slice(17,20)}-${hex.slice(20)}`;
+        const contextName = `Migrated generation · ${metadata.name}`.slice(0,120);
+        const { agentContextId } = await this.contexts.create({ requestId, name: contextName,
+          context: JSON.stringify({ sourceDocumentId: documentId, generationRunId: group }) });
         const copy = copyCompareHistory(history, view.finalCheckpointId), document = documentFromHistory(copy);
         await this.projects.projectCatalogs.saveMappingDiagram(index.projectId, { name: view.name.slice(0, 120), type: 'generated', history: copy, scene: document.scene, edges: document.edges,
           repositoryId: metadata.repositoryId ?? (project?.repositories?.length === 1 ? project.repositories[0].id : undefined),
@@ -315,21 +382,26 @@ export class EvalRunService {
   /** Cancels the run if needed, archives its canvases and removes the record, along with its reruns. */
   async deleteRun(id: string) {
     const run = await this.read(id);
-    for (const rerun of await this.store.list()) if (rerun.parentRunId === id) await this.deleteRun(rerun.id);
-    this.deleted.add(id); this.running.get(id)?.abort();
+    for (const rerun of await this.store.list()) if (!rerun.deletedAt && rerun.parentRunId === id) await this.deleteRun(rerun.id);
+    this.deleted.add(id);
+    if (run.compatibility && this.cancelLegacy) await Promise.all(run.compatibility.candidates.map(c => this.cancelLegacy!(c.chatId)));
+    this.running.get(id)?.abort();
+    await this.legacyGenerations.drain();
     await this.saves.get(id);
     const live = new Set((await this.canvases.list()).map(canvas => canvas.id));
     for (const cell of run.cells) if (cell.canvasId && live.has(cell.canvasId)) await this.deleteCanvas(cell.canvasId);
-    if (run.legacy) await this.legacy?.delete(id); else await this.store.delete(id);
+    await this.store.save({ ...run, deletedAt: new Date().toISOString() });
+    if (run.legacy) await this.legacy?.delete(id).catch(() => {});
   }
   /** Removes everything one workflow generated from an AgentContext. The context itself is kept. */
   async deleteContextOutputs(agentContextId: string, workflow: EvalWorkflowId) {
+    await this.deleteContextComparisons?.(agentContextId, workflow);
     // Reruns go with their original run.
     for (const run of await this.list()) if (run.agentContextId === agentContextId && run.workflow === workflow && !run.parentRunId) await this.deleteRun(run.id);
     for (const canvas of await this.canvases.list())
       if (canvas.generated?.agentContextId === agentContextId && generatedWorkflow(canvas.generated) === workflow) await this.deleteCanvas(canvas.id);
     for (const session of await this.comparisons.list())
-      if (session.origins.length && session.origins.every(origin => origin.agentContextId === agentContextId && origin.workflow === workflow)) await this.comparisons.delete(session.id);
+      if ((await this.comparisons.read(session.id)).canvases.every(copy => copy.generated?.agentContextId === agentContextId && generatedWorkflow(copy.generated) === workflow)) await this.comparisons.delete(session.id);
   }
   dispose() { for (const abort of this.running.values()) abort.abort(); }
 }

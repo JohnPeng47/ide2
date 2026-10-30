@@ -21,7 +21,7 @@ async function fixture(contextLibrary?: ConstructorParameters<typeof AgentChatSe
       const p = command.payload as any;
       if (command.method !== 'canvas-generation') throw Error('Unexpected command');
       if (receipts.has(p.requestId)) return receipts.get(p.requestId);
-      const result = p.operation === 'start' ? c.startGeneration(p.expectedVersion, p.viewId, p.candidates) : c.updateGeneration(p.viewId, p.generation, p.history);
+      const result = p.operation === 'start' ? c.startGeneration(p.expectedVersion, p.viewId, p.candidates, p.history) : c.updateGeneration(p.viewId, p.generation, p.history);
       receipts.set(p.requestId, result); return result;
     } };
   const bridge = new GenerationCanvasBridge(live), saved = new Map<string, ChatSession>();
@@ -248,4 +248,59 @@ it('injects resolved source text while pinning the compact saved-context hash in
     expect(injected).not.toContain('sourceRange');
     expect((await f.service.get(group.candidates[0].chatId)).generation!.metadata.agentContextHash).toBe(snapshot.contentHash);
   } finally { f.service.dispose(); }
+});
+
+it('adapts all eight legacy candidates and 50k prompts into Evals without changing inherited execution or retry IDs', async () => {
+  const { mkdtemp, rm } = await import('node:fs/promises');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { LegacyGenerationAdapter } = await import('../evals/legacyGenerationAdapter');
+  const { AgentContextLibrary } = await import('../agent/agentContextLibrary');
+  const { FileAgentContextRepository } = await import('../../../infrastructure/core/persistence/fileAgentContextRepository');
+  const { CanvasCatalogStore } = await import('../../../infrastructure/core/persistence/canvasCatalogStore');
+  const root = await mkdtemp(join(tmpdir(), 'legacy-evals-')), f = await fixture();
+  const records = new Map<string, import('../../../domain/mapping/evals/evalRun').EvalRun>();
+  const store = { list: async () => [...records.values()], read: async (id: string) => records.get(id) ?? null,
+    save: async (run: import('../../../domain/mapping/evals/evalRun').EvalRun) => { records.set(run.id, structuredClone(run)); }, delete: async (id: string) => { records.delete(id); } };
+  const contexts = new AgentContextLibrary(new FileAgentContextRepository(root)), catalogs = new CanvasCatalogStore(root);
+  const projects = { loadProject: async () => ({ id: 'test', repositories: [] }), projectCatalogs: catalogs } as unknown as ConstructorParameters<typeof LegacyGenerationAdapter>[1];
+  const adapter = new LegacyGenerationAdapter(store, projects, contexts, new Set(), () => records.size + 1);
+  try {
+    await f.service.observeGenerations((children, parent) => adapter.update(children, parent));
+    const input = { ...f.input, requestId: 'retry / arbitrary non-UUID', prompt: 'S'.repeat(50000),
+      alternatives: Array.from({ length: 8 }, (_, i) => ({ name: `Candidate ${i}`, prompt: String(i).repeat(50000) })) };
+    const receipt = await f.service.genAlternatives(f.parent.id, input);
+    expect(await f.service.genAlternatives(f.parent.id, input)).toEqual(receipt);
+    await vi.waitFor(() => expect(f.requests.filter(r => r.method === 'thread/fork')).toHaveLength(8));
+    await vi.waitFor(() => expect(f.requests.filter(r => r.method === 'turn/start')).toHaveLength(9));
+    const run = records.get(receipt.runId)!;
+    expect(run.compatibility).toMatchObject({ requestId: input.requestId, candidates: receipt.candidates });
+    expect(run.prompts).toHaveLength(8); expect(run.prompts[7].stages.alternative).toHaveLength(50000);
+    expect(run.prompts[0].stages.shared).toBe(input.prompt);
+    expect(run.inputs.source.history.headId).toBe(f.c.canvasViews().saved[f.viewId].finalCheckpointId);
+    const context = await contexts.read(run.agentContextId);
+    expect(JSON.stringify(context.snapshot)).toContain('Try three different layouts exactly as described.');
+    const child = await f.service.get(receipt.candidates[0].chatId);
+    f.notify({ method: 'turn/completed', params: { threadId: child.threadId, turn: { id: child.turnId, status: 'completed' } } });
+    await vi.waitFor(() => expect(records.get(run.id)!.cells[0].canvasId).toBeTruthy());
+    for (const candidate of receipt.candidates.slice(1)) await f.service.cancelGeneration(candidate.chatId);
+    await vi.waitFor(() => expect(records.get(run.id)!.status).toBe('partial'));
+    const final = records.get(run.id)!;
+    expect(final.cells.filter(cell => cell.canvasId)).toHaveLength(1);
+    expect(final.cells.filter(cell => cell.status === 'cancelled')).toHaveLength(7);
+    expect(final.agentContextId).toBe(run.agentContextId);
+    expect(Object.values(final.outputSnapshots!)[0].generated.promptStages).toEqual(run.prompts[0].stages);
+    expect(f.c.canvasViews().saved[receipt.candidates[0].viewId].generation?.status).toBe('finished');
+    expect(f.requests.filter(r => r.method === 'thread/start')).toHaveLength(1); // Original parent only.
+    f.c.applyUpdate(f.c.getSnapshot().version, [{ method: 'replace', nodeId: 'grid:overview', ascii: 'Saved later' }]);
+    f.c.canvasView(f.c.getSnapshot().version, { operation: 'save', viewId: f.viewId });
+    const replayId = await f.service.rerunAlternatives(final, 'rerun / arbitrary');
+    const replay = records.get(replayId)!;
+    expect(replay.parentRunId).toBe(final.id); expect(replay.agentContextId).toBe(final.agentContextId);
+    expect(documentFromHistory(replay.inputs.source.history).scene.contents.overview.content.ascii).toBe('Original');
+    expect(replay.inputs.source.source.checkpointId).toBe(final.inputs.source.source.checkpointId);
+    expect(f.c.canvasViews().saved[replay.compatibility!.candidates[0].viewId].forkCheckpointId).toBe(final.inputs.source.source.checkpointId);
+    for (const candidate of replay.compatibility!.candidates) await f.service.cancelGeneration(candidate.chatId);
+    for (const request of f.requests.filter(r => r.method === 'thread/fork')) expect(request.params.model).toBe('model-x');
+  } finally { f.service.dispose(); await rm(root, { recursive: true, force: true }); }
 });

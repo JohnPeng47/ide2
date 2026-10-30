@@ -1,3 +1,4 @@
+import { generatedWorkflow } from '../../../domain/core/diagrams/generatedCanvas';
 import { ApplicationError } from '../../core/errors';
 import { sha256 } from '../../../domain/core/sha256';
 import { generateComparisonSchema, generatedComparisonsSchema, summarizeComparisonRun, type ComparisonRun, type ComparisonInputDiagram, type GenerateComparison } from '../../../domain/mapping/compare/comparisonGeneration';
@@ -10,10 +11,13 @@ export interface ComparisonRuntime {
   generate(input: { diagrams: ComparisonInputDiagram[]; model: string; effort: string; signal: AbortSignal }): Promise<{ output: unknown; usage?: Record<string, number> }>;
 }
 export class ComparisonGenerationService {
+  private deleted = new Set<string>();
+  private saves = new Map<string, Promise<void>>();
   private ready: Promise<void>;
   private starts = new Map<string, Promise<ComparisonRun>>();
   private running = new Map<string, AbortController>();
   constructor(private comparisons: CompareSessionService, private store: ComparisonRunStore, private runtime: ComparisonRuntime) {
+    comparisons.onDelete = id => this.deleteRecord(id);
     this.ready = store.list().then(async runs => {
       for (const run of runs) if (run.status === 'queued' || run.status === 'generating') {
         // A crash after publishing the session must not lose the successful result.
@@ -38,6 +42,7 @@ export class ComparisonGenerationService {
   async start(raw: unknown) {
     await this.ready;
     const input = generateComparisonSchema.parse(raw), hash = sha256(JSON.stringify(input));
+    if (this.deleted.has(input.requestId)) throw new ApplicationError('conflict', 'This comparison was deleted. Use a new request ID.');
     let pending = this.starts.get(input.requestId);
     if (!pending) {
       pending = (async () => {
@@ -71,9 +76,19 @@ export class ComparisonGenerationService {
     void this.execute(structuredClone(run), abort.signal).finally(() => this.running.delete(run.id)).catch(() => {});
     return run;
   }
+  private persist(run: ComparisonRun) {
+    const copy = structuredClone(run);
+    const pending = (this.saves.get(run.id) ?? Promise.resolve()).then(async () => { if (!this.deleted.has(run.id)) await this.store.save(copy); });
+    this.saves.set(run.id, pending.catch(() => {})); return pending;
+  }
+  async deleteContextOutputs(agentContextId: string, workflow: string) {
+    await this.ready;
+    for (const run of await this.store.list()) if (run.canvases.length && run.canvases.every(copy =>
+      copy.generated?.agentContextId === agentContextId && generatedWorkflow(copy.generated) === workflow)) await this.delete(run.id);
+  }
   private async execute(run: ComparisonRun, signal: AbortSignal) {
     try {
-      run.status = 'generating'; await this.store.save(run);
+      run.status = 'generating'; await this.persist(run);
       const result = await this.runtime.generate({ diagrams: run.diagrams, model: run.request.model, effort: run.request.effort, signal });
       signal.throwIfAborted();
       const output = generatedComparisonsSchema.parse(result.output), used = new Set<string>();
@@ -92,16 +107,21 @@ export class ComparisonGenerationService {
       });
       if (used.size !== run.canvases.length) throw Error('The comparison omitted a selected alternative.');
       const session = await this.comparisons.createPinned({ requestId: run.id, title: run.request.title, pairs }, run);
+      if (this.deleted.has(run.id)) { await this.comparisons.delete(session.id); return; }
       run.status = 'finished'; run.sessionId = session.id; run.usage = result.usage;
     } catch (error) { run.status = 'failed'; run.error = error instanceof Error ? error.message : String(error); }
-    run.completedAt = new Date().toISOString(); await this.store.save(run);
+    run.completedAt = new Date().toISOString(); await this.persist(run);
   }
   /** Removes a comparison run and the session it published, if any. */
   async delete(id: string) {
-    await this.ready;
-    this.running.get(id)?.abort();
-    await this.store.delete(id);
+    await this.deleteRecord(id);
     await this.comparisons.delete(id).catch(() => {});
+  }
+  private async deleteRecord(id: string) {
+    await this.ready;
+    this.deleted.add(id); this.running.get(id)?.abort();
+    await this.saves.get(id);
+    await this.store.delete(id);
   }
   dispose() { for (const abort of this.running.values()) abort.abort(); }
 }

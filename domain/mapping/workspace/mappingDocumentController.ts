@@ -152,10 +152,10 @@ export class MappingDocumentController {
       redoTransactionId: record.snapshots[record.future.at(-1)!]?.transactionId };
   }
   forkHistory(view = this.snapshot.canvas) { return this.historyService.forkContext(this.context, view); }
-  startGeneration(expectedVersion: number, parentId: string, candidates: { id: string; name: string; generation: import('../../core/diagrams/canvasGeneration').CanvasGeneration }[]) {
+  startGeneration(expectedVersion: number, parentId: string, candidates: { id: string; name: string; generation: import('../../core/diagrams/canvasGeneration').CanvasGeneration }[], pinned?: CanvasHistoryRecord) {
     this.settlePendingGesture();
     if (this.snapshot.version !== expectedVersion) throw Error('VERSION_CONFLICT: read the canvas again');
-    const history = this.historyService.startGeneration(this.context, parentId, candidates);
+    const history = this.historyService.startGeneration(this.context, parentId, candidates, pinned);
     this.updateSnapshot({ document: this.snapshot.document, canvas: this.snapshot.canvas }, false);
     return history;
   }

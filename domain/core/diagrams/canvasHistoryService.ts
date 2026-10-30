@@ -15,7 +15,7 @@ export interface CanvasContextState {
 
 /** Canvas controllers coordinate edits; this boundary owns history and its storage. */
 export interface CanvasHistoryService {
-  startGeneration(context: CanvasEditingContext, parentId: string, candidates: { id: string; name: string; generation: import('./canvasGeneration').CanvasGeneration }[]): CanvasHistoryRecord;
+  startGeneration(context: CanvasEditingContext, parentId: string, candidates: { id: string; name: string; generation: import('./canvasGeneration').CanvasGeneration }[], pinned?: CanvasHistoryRecord): CanvasHistoryRecord;
   updateGeneration(context: CanvasEditingContext, viewId: string, generation: import('./canvasGeneration').CanvasGeneration, proposed?: CanvasHistoryRecord): void;
 
   canvasViewComparison(context: CanvasEditingContext, viewId: string): import('./canvasView').CanvasViewComparison;
@@ -42,7 +42,7 @@ export interface CanvasHistoryService {
 
 export class DefaultCanvasHistoryService implements CanvasHistoryService {
   canvasViewComparison(context: CanvasEditingContext, viewId: string) { return this.history(context).canvasViewComparison(viewId); }
-  startGeneration(context: CanvasEditingContext, parentId: string, candidates: { id: string; name: string; generation: import('./canvasGeneration').CanvasGeneration }[]) { return this.history(context).startGeneration(parentId, candidates); }
+  startGeneration(context: CanvasEditingContext, parentId: string, candidates: { id: string; name: string; generation: import('./canvasGeneration').CanvasGeneration }[], pinned?: CanvasHistoryRecord) { return this.history(context).startGeneration(parentId, candidates, pinned); }
   updateGeneration(context: CanvasEditingContext, viewId: string, generation: import('./canvasGeneration').CanvasGeneration, proposed?: CanvasHistoryRecord) { this.history(context).updateGeneration(viewId, generation, proposed); }
   canvasViews(context: CanvasEditingContext) { return this.history(context).canvasViews(); }
   canvasView(context: CanvasEditingContext, input: import('./canvasView').CanvasViewCommand, view?: unknown) { return this.history(context).canvasView(input, view); }

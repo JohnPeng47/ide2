@@ -119,7 +119,7 @@ try {
   await expect(runRow('Run #1 ·')).toContainText('4/4', { timeout: 30000 });
   const stageLeaf = (group, stage) => tree.getByRole('treeitem').filter({ hasText: group }).last().getByRole('button', { name: stage, exact: true });
   await stageLeaf('Terse roll-up v2 · pass 1', 'g2').click();
-  // The output view is only the canvas, with floating tools.
+  // The output includes collapsible generation details and native canvas tools.
   const output = page.getByRole('region', { name: 'Canvas Terse roll-up v2 · pass 1 · g2' });
   const node = output.locator('[data-native-node]').first();
   await expect(node).toBeVisible({ timeout: 15000 });
@@ -160,7 +160,7 @@ try {
   const contexts = next.getByRole('tree', { name: 'AgentContexts' });
   await expect(contexts.getByRole('button', { name: 'Collapse Roll-up: First view' })).toBeVisible();
   await contexts.getByRole('button', { name: /Expand Run #2/ }).click();
-  await contexts.getByRole('checkbox', { name: /^pass 1/ }).check();
+  await contexts.getByRole('checkbox', { name: /^Default alternative v1 · pass 1/ }).check();
   await expect(contexts.getByRole('checkbox', { name: /^Roll-up: First view/ })).toBeChecked();
   await expect(next.getByRole('region', { name: 'Prompt context' })).toContainText('previous-1.json');
   await shot(page, '06-alternatives-tree');
@@ -251,6 +251,20 @@ try {
   await page.getByRole('menuitem', { name: 'Rename' }).click();
   await page.keyboard.press('Escape');
   await expect(tree.getByRole('button', { name: 'Rerun #3 · Layered retry', exact: true })).toBeVisible();
+
+  // Cross-workflow prompt diffs include B's alternative stage and survive reload.
+  await tree.getByRole('checkbox', { name: 'Select Default roll-up v1 · pass 1 · r2 for comparison' }).check();
+  await tree.getByRole('checkbox', { name: 'Select Default alternative v1 · pass 1 for comparison' }).first().check();
+  await nav.getByRole('region', { name: 'Compare selected outputs' }).getByRole('button', { name: 'Side by side' }).click();
+  await page.getByRole('button', { name: 'Prompt diff A ↔ B' }).click();
+  for (const stage of ['r2', 'g2', 'alternative']) await expect(page.getByRole('region', { name: `Stage ${stage} diff`, exact: true })).toBeVisible();
+  await shot(page, '09c-cross-workflow-diff');
+  await page.keyboard.press('Escape');
+  await page.reload();
+  await page.getByRole('button', { name: 'Prompt diff A ↔ B' }).click();
+  await expect(page.getByRole('region', { name: 'Stage alternative diff', exact: true })).toContainText('Earlier alternatives');
+  await page.keyboard.press('Escape');
+  await expect(tree.getByRole('button', { name: 'Cross-context and other comparisons', exact: true })).toBeVisible();
 
   // Manual comparisons can pick generated canvases; Mapping links to Evals.
   await page.getByRole('button', { name: 'New comparison', exact: true }).click();

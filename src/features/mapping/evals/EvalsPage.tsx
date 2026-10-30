@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { generatedWorkflow } from '../../../../domain/core/diagrams/generatedCanvas';
 import type { ComparePageSession } from '../../../../domain/mapping/compare/comparePageSession';
 import type { ComparisonRunSummary } from '../../../../domain/mapping/compare/comparisonGeneration';
 import { latestVersion, type EvalPrompt } from '../../../../domain/mapping/evals/evalPrompt';
 import type { EvalRunSummary } from '../../../../domain/mapping/evals/evalRun';
 import { evalWorkflowIds, evalWorkflows, type EvalWorkflowId } from '../../../../domain/mapping/evals/evalWorkflows';
 import { comparisonRuns, deleteCompareSession, deleteComparisonRun, listCompareSessions, readCompareSession } from './compareApi';
-import { cancelRun, renameRun, deleteContextOutputs, deleteGenerated, deleteRun, listGenerated, listPrompts, listRuns, migrateGenerated } from './evalsApi';
+import { readPrompt, rerunChat, cancelRun, renameRun, deleteContextOutputs, deleteGenerated, deleteRun, listGenerated, listPrompts, listRuns, migrateGenerated } from './evalsApi';
 import { errorMessage, relativeTime, runActive, runNumbers, runProgress, runTitle, statusLabel } from './evalsFormat';
 import { EvalsTree, type EvalsSelection, type PickedOutput, type TreeActions } from './EvalsTree';
 import { PopoverMenu, type MenuSection } from './PopoverMenu';
@@ -80,7 +81,19 @@ export function EvalsPage() {
   const setDirty = useCallback((value: boolean) => { dirty.current = value; }, []);
   const numbers = useMemo(() => runNumbers(runs ?? []), [runs]);
 
-  useEffect(() => { void listPrompts().then(setPrompts).catch(onError); void migrateGenerated().catch(() => {}); }, [onError]);
+  const [polledPrompts] = usePolled(listPrompts, () => false, onError);
+  useEffect(() => { if (polledPrompts && !dirty.current) setPrompts(polledPrompts); }, [polledPrompts]);
+  useEffect(() => { void migrateGenerated().then(() => refreshAll()).catch(onError); }, []);
+  const promptRouteId = route.kind === 'prompt' ? route.id : undefined;
+  const promptRouteVersion = route.kind === 'prompt' ? route.version : undefined;
+  useEffect(() => {
+    if (!promptRouteId) return;
+    let closed = false;
+    void readPrompt(promptRouteId).then(prompt => {
+      if (!closed && !dirty.current) setPrompts(current => [...(current ?? []).filter(item => item.id !== prompt.id), prompt]);
+    }).catch(error => { if (!closed) onError(error); });
+    return () => { closed = true; };
+  }, [promptRouteId, promptRouteVersion, onError]);
   useEffect(() => {
     const back = () => { setRoute(readRoute()); dirty.current = false; };
     window.addEventListener('popstate', back); return () => window.removeEventListener('popstate', back);
@@ -149,15 +162,17 @@ export function EvalsPage() {
     },
     deleteCanvas: (id, name) => void remove(`Delete output “${name}”?`, () => deleteGenerated(id), current => current.kind === 'canvas' && current.id === id),
     deleteContext: context => void remove(`Delete all ${context.outputs} outputs, runs and comparisons generated from “${context.name}” (${context.workflow === 'roll-up' ? 'roll-ups' : 'alternatives'})? The AgentContext itself is kept.`,
-      () => deleteContextOutputs(context.id, context.workflow), current => current.kind === 'run' && runs?.find(item => item.id === current.id)?.agentContextId === context.id),
-    deleteSession: item => void remove(`Delete comparison “${item.title}”?`, () => deleteCompareSession(item.id), current => current.kind === 'session' && current.id === item.id),
-    deleteComparisonRun: item => void remove(`Delete comparison “${item.request.title}”?`, () => deleteComparisonRun(item.id), () => false),
+      () => deleteContextOutputs(context.id, context.workflow), current => current.kind === 'run' ? runs?.some(item => item.id === current.id && item.agentContextId === context.id && item.workflow === context.workflow) === true
+        : current.kind === 'canvas' ? generated?.some(item => item.id === current.id && item.generated?.agentContextId === context.id && generatedWorkflow(item.generated) === context.workflow) === true
+        : current.kind === 'session' && sessions?.some(item => item.id === current.id && !item.mixedOrigins && item.origins.length > 0 && item.origins.every(origin => origin.agentContextId === context.id && origin.workflow === context.workflow)) === true),
+    deleteSession: item => void remove(`Delete comparison “${item.title}”?`, () => comparisons?.some(run => run.id === item.id) ? deleteComparisonRun(item.id) : deleteCompareSession(item.id), current => current.kind === 'session' && current.id === item.id),
+    deleteComparisonRun: item => void remove(`Delete comparison “${item.request.title}”?`, () => deleteComparisonRun(item.id), current => current.kind === 'session' && current.id === item.id),
     runMenu: (item, at) => setMenu({ label: `Run #${numbers.get(item.id)}`, at, sections: [{ label: `Run #${numbers.get(item.id)} · ${item.contextName}`, items: [
       // Opens the exact version the run pinned; prompts deleted or unknown (legacy runs) are skipped.
       ...item.prompts.filter(pinned => prompts?.some(prompt => prompt.id === pinned.promptId)).map(pinned => ({
         label: item.prompts.length > 1 ? `Edit prompt “${pinned.name}”` : 'Edit prompt', detail: `v${pinned.version}`,
         onSelect: () => go({ kind: 'prompt', id: pinned.promptId, version: pinned.version }) })),
-      { label: 'Rerun…', onSelect: () => setLaunch({ workflow: item.workflow, rerun: item }) },
+      ...(item.compatibility ? [{ label: 'Rerun with original chat settings', onSelect: () => void rerunChat(item.id, crypto.randomUUID()).then(started).catch(onError) }] : [{ label: 'Rerun…', onSelect: () => setLaunch({ workflow: item.workflow, rerun: item }) }]),
       ...(item.legacy ? [] : [{ label: 'Rename', onSelect: () => setRenaming(item.id) }]),
       ...(runActive(item) && !item.legacy ? [{ label: 'Cancel run', onSelect: () => void cancelRun(item.id).then(() => refreshRuns()).catch(onError) }] : []),
       { label: 'Delete run…', danger: true, onSelect: () => treeActions.deleteRun(item) }
@@ -168,10 +183,10 @@ export function EvalsPage() {
         if (context.workflow === 'alternatives') { setLaunch({ workflow: 'alternatives', contextId: context.id }); return; }
         // Roll-ups reuse the latest run's child and parent canvases.
         const latest = context.runs[0];
-        setLaunch({ workflow: 'roll-up', canvasKeys: latest ? ['child', 'parent'].flatMap(name => latest.inputs[name] ? [candidateKey(latest.inputs[name].source)] : []) : [] });
+        setLaunch({ workflow: 'roll-up', ...(latest ? { rerun: latest } : {}) });
       } },
       { label: 'Delete outputs…', danger: true, onSelect: () => treeActions.deleteContext({ id: context.id, name: context.name, workflow: context.workflow,
-        outputs: context.runs.reduce((sum, item) => sum + item.cells.filter(cell => cell.canvasId && !cell.deleted).length, 0) }) }
+        outputs: context.outputs }) }
     ] }] }),
   };
   const promptsMenu = (at: { x: number; y: number }) => setMenu({ label: 'Prompts', at, sections: evalWorkflowIds.map(id => ({ label: evalWorkflows[id].label, items: [
@@ -182,6 +197,8 @@ export function EvalsPage() {
   const canvas = route.kind === 'canvas' ? generated?.find(item => item.id === route.id) : undefined;
 
   const content = () => {
+    if (route.kind === 'prompt' && current && route.version && !current.versions.some(version => version.version === route.version))
+      return <p className="evals-message">Prompt v{route.version} is not available in the current catalog. Its captured text remains in the run details.</p>;
     if (route.kind === 'prompt') return current ? <PromptEditor key={`${current.id}:${latestVersion(current).version}:${route.version ?? ''}`} prompt={current} version={route.version} onSaved={savedPrompt} onDirty={setDirty}
       onRun={prompt => setLaunch({ workflow: prompt.workflow, promptIds: [prompt.id] })} onDuplicate={prompt => go({ kind: 'new-prompt', workflow: prompt.workflow, from: prompt.id })} />
       : prompts && <p className="evals-message">Prompt not found.</p>;
@@ -196,7 +213,7 @@ export function EvalsPage() {
     if (route.kind === 'run') {
       if (!runs) return null;
       if (!run) return <p className="evals-message">Run not found.</p>;
-      return <OutputView key={`${run.id}:${shownCell!.key}`} cell={shownCell!} />;
+      return <OutputView key={`${run.id}:${shownCell!.key}`} cell={shownCell!} run={run} />;
     }
     if (route.kind === 'session') return session ? <ComparisonView key={session.id} session={session} prompts={prompts ?? []} />
       : !error && <p role="status" className="evals-message">Loading comparison…</p>;

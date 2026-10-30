@@ -343,3 +343,9 @@
 .evals-page .compare-pane-tools > * { font-size: 12px; padding: 4px 8px; background: var(--surface-raised); box-shadow: var(--shadow-popup); }
 .output-view { position: relative; }
 .output-view .canvas-preview { min-height: 0; }
+
+.output-details { padding: 8px 16px; max-height: 30vh; overflow: auto; border-bottom: 1px solid var(--evals-border, #ddd); }
+.output-details p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.evals-dot[data-status="partial"], .evals-dot[data-status="cancelled"] { background: #d69a32; }
+
+.canvas-preview:has(> .output-details) { flex-direction: column; }

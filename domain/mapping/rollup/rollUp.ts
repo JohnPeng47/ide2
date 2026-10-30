@@ -1,9 +1,12 @@
 import { z } from 'zod';
-import type { CompareCanvasCopy, CompareSource } from '../compare/comparePageSession';
+import { compareSourceSchema, type CompareCanvasCopy, type CompareSource } from '../compare/comparePageSession';
 import { documentFromHistory } from '../../core/diagrams/canvasHistory';
 import { flattenGrid, resolveScene } from '../../core/diagrams/lineGrid';
 
-/** Legacy pre-Evals request shape; runs on disk are read-only now. */
+/** The retained child/parent request contract, exposed additively by Evals. */
+export const rollUpRequestSchema = z.object({ requestId: z.string().uuid(), child: compareSourceSchema, parent: compareSourceSchema,
+  passes: z.number().int().min(1).max(4).default(1), model: z.string().trim().min(1).max(100).default('gpt-6-sol'),
+  effort: z.string().trim().min(1).max(100).default('high') }).strict();
 export interface RollUpRequest { requestId: string; child: CompareSource; parent: CompareSource; passes: number; model: string; effort: string }
 export const gridOutputId = z.string().regex(/^[A-Za-z][A-Za-z0-9_-]{0,80}$/);
 export const gridPosition = z.object({ column: z.number().int().min(0).max(20000), row: z.number().int().min(0).max(20000) }).strict();

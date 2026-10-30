@@ -96,10 +96,10 @@ export function ComparisonView({ session, prompts }: { session: ComparePageSessi
   </div>;
 }
 
-function PromptDiff({ A, B, prompts, onClose }: { A: CompareCanvasCopy; B: CompareCanvasCopy; prompts: EvalPrompt[]; onClose: () => void }) {
-  const text = (copy: CompareCanvasCopy) => prompts.find(prompt => prompt.id === copy.generated!.prompt!.id)?.versions.find(item => item.version === copy.generated!.prompt!.version)?.stages;
+export function PromptDiff({ A, B, prompts, onClose }: { A: CompareCanvasCopy; B: CompareCanvasCopy; prompts: EvalPrompt[]; onClose: () => void }) {
+  const text = (copy: CompareCanvasCopy) => copy.generated?.promptStages ?? prompts.find(prompt => prompt.id === copy.generated?.prompt?.id)?.versions.find(item => item.version === copy.generated?.prompt?.version)?.stages;
   const a = text(A), b = text(B), workflow = A.generated?.workflow ? evalWorkflows[A.generated.workflow] : undefined;
-  const stages = workflow?.stages.map(stage => stage.id) ?? [...new Set([...Object.keys(a ?? {}), ...Object.keys(b ?? {})])];
+  const stages = [...new Set([...Object.keys(a ?? {}), ...Object.keys(b ?? {})])];
   return <Drawer title="Prompt diff" wide onClose={onClose}>
     <p className="prompt-diff-legend"><span className="is-removed">− A · {promptLabel(A.generated!.prompt)}</span><span className="is-added">+ B · {promptLabel(B.generated!.prompt)}</span></p>
     {!a || !b ? <p className="evals-muted">One of these prompt versions is no longer available.</p> : stages.map(stage => {

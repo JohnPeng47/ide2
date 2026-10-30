@@ -42,6 +42,7 @@ export function copyCompareHistory(history: CanvasHistoryRecord, checkpointId: s
 }
 
 export class CompareSessionService {
+  onDelete?: (id: string) => Promise<void>;
   constructor(private readonly workspace: Pick<MappingWorkspaceService, 'loadRecords'>, private readonly store: CompareSessionRepository,
     private readonly generated?: GeneratedCanvasSource) {}
   private async workspaceState() {
@@ -52,19 +53,22 @@ export class CompareSessionService {
   }
   async candidates(): Promise<CompareCandidate[]> {
     const { records, index } = await this.workspaceState();
-    const generated = await Promise.all((await this.generated?.list() ?? []).filter(record => !index.documentIds.includes(record.id))
+    const generated = await Promise.all((await this.generated?.list() ?? [])
       .map(record => this.generated!.read(record.id)));
-    const workspace = index.documentIds.flatMap(documentId => {
+    const generatedById = new Map(generated.flatMap(canvas => canvas ? [[canvas.id, canvas] as const] : []));
+    const workspace: CompareCandidate[] = index.documentIds.flatMap(documentId => {
       const prefix = documentPrefix(documentId), metadata = records[prefix + 'metadata'] as MappingDocumentSnapshot;
-      if (metadata.hidden) return [];
+      const provenance = generatedById.get(documentId)?.generated;
+      if (metadata.hidden || metadata.type === 'generated' && !provenance) return [];
+      const origin = provenance ? { generated: provenance } : {};
       const history = recordHistory(records, documentId);
-      return [{ documentId, checkpointId: history.headId, name: 'Current saved canvas', canvasName: metadata.name, diagrams: diagramTargets(history) },
-        ...Object.values(history.canvasViews?.saved ?? {}).filter(view => !view.archivedAt && view.finalCheckpointId).map(view => ({
+      return [{ documentId, checkpointId: history.headId, name: provenance ? `${metadata.name} · Current saved canvas` : 'Current saved canvas', canvasName: metadata.name, diagrams: diagramTargets(history), ...origin },
+        ...Object.values(history.canvasViews?.saved ?? {}).filter(view => !view.archivedAt && view.finalCheckpointId && (!view.generation || view.generation.status === 'finished')).map(view => ({
           documentId, viewId: view.id, checkpointId: view.finalCheckpointId!, name: view.name, canvasName: metadata.name,
-          diagrams: diagramTargets(history, view.finalCheckpointId!)
+          diagrams: diagramTargets(history, view.finalCheckpointId!), ...origin
         }))];
     });
-    return [...workspace, ...generated.flatMap(canvas => canvas ? [{ documentId: canvas.id, checkpointId: canvas.history.headId, name: canvas.name,
+    return [...workspace, ...generated.flatMap(canvas => canvas && !workspace.some(item => item.documentId === canvas.id && !item.viewId && item.checkpointId === canvas.history.headId) ? [{ documentId: canvas.id, checkpointId: canvas.history.headId, name: canvas.name,
       canvasName: canvas.generated.contextName, diagrams: diagramTargets(canvas.history), generated: canvas.generated }] : [])];
   }
   async list() { const { index } = await this.workspaceState(); return this.store.list(index.projectId); }
@@ -73,7 +77,7 @@ export class CompareSessionService {
     if (!session) throw new ApplicationError('invalid-input', 'Comparison session not found.');
     return session;
   }
-  async delete(id: string) { await this.read(id); await this.store.delete(id); }
+  async delete(id: string) { await this.read(id); await this.store.delete(id); await this.onDelete?.(id); }
   async create(input: unknown): Promise<ComparePageSession> {
     const request = createCompareSessionSchema.parse(input), requestHash = sha256(JSON.stringify(request));
     const existing = await this.store.read(request.requestId);
@@ -88,15 +92,15 @@ export class CompareSessionService {
     const { records, index } = await this.workspaceState();
     const copies = new Map<string, CompareCanvasCopy>(), histories = new Map<string, CanvasHistoryRecord>();
     const createdAt = new Date().toISOString();
-    const catalog = new Map((await Promise.all([...new Set(sources.map(source => source.documentId))].filter(id => !index.documentIds.includes(id))
-      .map(async id => [id, await this.generated?.read(id)] as const))).flatMap(([id, canvas]) => canvas ? [[id, canvas]] : []));
+    const catalog = new Map(await Promise.all(sources.map(async source =>
+      [JSON.stringify({ documentId: source.documentId, ...(source.viewId ? { viewId: source.viewId } : {}), checkpointId: source.checkpointId }),
+        await this.generated?.read(source.documentId, source.checkpointId)] as const)));
     const capture = ({ documentId, viewId, checkpointId }: CompareSource) => {
       const source = { documentId, ...(viewId ? { viewId } : {}), checkpointId };
       const key = JSON.stringify(source);
       const previous = copies.get(key); if (previous) return previous;
-      const generated = catalog.get(source.documentId);
-      if (generated) {
-        if (source.viewId || generated.history.headId !== source.checkpointId) throw new ApplicationError('conflict', 'The generated canvas changed. Refresh and try again.');
+      const generated = catalog.get(key);
+      if (generated && !source.viewId && generated.history.snapshots[source.checkpointId]) {
         const history = copyCompareHistory(generated.history, source.checkpointId);
         history.snapshots[source.checkpointId].view ??= initialCanvasState();
         const copy: CompareCanvasCopy = { id: randomUUID(), source, canvasName: generated.generated.contextName, history, generated: structuredClone(generated.generated),
@@ -106,6 +110,7 @@ export class CompareSessionService {
       }
       if (!index.documentIds.includes(source.documentId)) throw new ApplicationError('invalid-input', 'Unknown canvas.');
       const prefix = documentPrefix(source.documentId), metadata = records[prefix + 'metadata'] as MappingDocumentSnapshot;
+      if (metadata.type === 'generated' && !generated) throw new ApplicationError('invalid-input', 'The generated snapshot is unavailable.');
       let history = histories.get(source.documentId);
       if (!history) { history = recordHistory(records, source.documentId); histories.set(source.documentId, history); }
       const view = source.viewId ? history.canvasViews?.saved[source.viewId] : undefined;
@@ -123,7 +128,8 @@ export class CompareSessionService {
         representationId: source.documentId, name: metadata.name, revisionId: 'compare-snapshot', savedName: metadata.name,
         savedScene: JSON.stringify(document.scene), savedEdges: JSON.stringify(document.edges), document, canvas
       }] });
-      const copy: CompareCanvasCopy = { id: randomUUID(), source, canvasName: metadata.name, history: copiedHistory,
+      const copy: CompareCanvasCopy = { id: randomUUID(), source, canvasName: generated?.generated.contextName ?? metadata.name, history: copiedHistory,
+        ...(generated ? { generated: structuredClone(generated.generated) } : {}),
         view: { id: randomUUID(), name: view?.name ?? metadata.name, createdAt, savedAt: createdAt,
           startCheckpointId: source.checkpointId, finalCheckpointId: source.checkpointId, checkpointIds: [source.checkpointId],
           ...(view?.generation ? { generation: structuredClone(view.generation) } : {}) } };

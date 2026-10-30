@@ -66,9 +66,9 @@ export function compareDiagramLabels(session: ComparePageSession) {
 }
 export interface CompareSessionOrigin { agentContextId: string; contextName: string; workflow: 'roll-up' | 'alternatives'; runId?: string; canvasId: string }
 /** `origins` lists the generated canvases compared, so sessions can be filed under their AgentContext. */
-export type CompareSessionSummary = Pick<ComparePageSession, 'id' | 'title' | 'createdAt'> & { compareCount: number; origins: CompareSessionOrigin[] };
+export type CompareSessionSummary = Pick<ComparePageSession, 'id' | 'title' | 'createdAt'> & { compareCount: number; mixedOrigins?: boolean; origins: CompareSessionOrigin[] };
 export function compareSessionSummary(session: ComparePageSession): CompareSessionSummary {
   const origins = session.canvases.flatMap(copy => copy.generated ? [{ agentContextId: copy.generated.agentContextId, contextName: copy.generated.contextName,
     workflow: generatedWorkflow(copy.generated), ...(copy.generated.runId ? { runId: copy.generated.runId } : {}), canvasId: copy.source.documentId }] : []);
-  return { id: session.id, title: session.title, createdAt: session.createdAt, compareCount: session.compares.length, origins };
+  return { id: session.id, title: session.title, createdAt: session.createdAt, compareCount: session.compares.length, mixedOrigins: origins.length !== session.canvases.length, origins };
 }

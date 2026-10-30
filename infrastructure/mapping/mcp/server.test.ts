@@ -134,3 +134,42 @@ it('loads current chat definitions from the host and dispatches through the auth
     expect(calls).toHaveLength(2);
   } finally { await new Promise<void>(resolve => http.close(() => resolve())); }
 });
+
+it('keeps the legacy chat generation schema and payload while adding roll-up and Evals polling tools', async () => {
+  const { z } = await import('zod');
+  const { genAlternativesSchema, genAlternativesDescription } = await import('../../../domain/core/diagrams/canvasGeneration');
+  const calls: { path: string; body: any }[] = [];
+  const receipt = { requestId: 'old / arbitrary', runId: crypto.randomUUID(), candidates: [{ viewId: 'view-result', chatId: 'chat-result', name: 'First' }] };
+  const http = createServer(async (req, res) => {
+    res.setHeader('content-type', 'application/json');
+    if (req.url === '/api/mapping/agent-chat/tools') {
+      res.end(JSON.stringify([{ name: 'gen-alternatives', description: genAlternativesDescription, inputSchema: z.toJSONSchema(genAlternativesSchema) }])); return;
+    }
+    let body = ''; for await (const chunk of req) body += chunk;
+    calls.push({ path: req.url!, body: body ? JSON.parse(body) : undefined });
+    res.end(JSON.stringify(receipt));
+  });
+  await new Promise<void>(resolve => http.listen(0, '127.0.0.1', resolve));
+  const base = `http://127.0.0.1:${(http.address() as { port: number }).port}`;
+  const server = createMappingMcpServer(base, 'bound'), client = new Client({ name: 'compatibility-test', version: '1' });
+  const [a, b] = InMemoryTransport.createLinkedPair();
+  try {
+    await registerChatMcpTools(server, base, 'bound'); await Promise.all([server.connect(a), client.connect(b)]);
+    const definitions = (await client.listTools()).tools;
+    const old = definitions.find(tool => tool.name === 'chat_gen-alternatives')!;
+    expect(old.inputSchema.properties?.alternatives).toMatchObject({ maxItems: 8 });
+    expect(old.inputSchema.properties?.prompt).toMatchObject({ maxLength: 50000 });
+    expect(old.inputSchema.properties?.requestId).not.toHaveProperty('format');
+    expect(definitions.some(tool => tool.name === 'generate-diagram-comparisons')).toBe(true);
+    const input = { viewId: 'saved-view', prompt: 's'.repeat(50000), requestId: receipt.requestId,
+      alternatives: Array.from({ length: 8 }, (_, i) => ({ name: `Candidate ${i}`, prompt: 'p'.repeat(50000) })) };
+    const result = await client.callTool({ name: 'chat_gen-alternatives', arguments: input });
+    expect(result.isError).not.toBe(true); expect(calls.at(-1)?.body.input).toEqual(input);
+    expect((result.structuredContent as { result: unknown }).result).toEqual(receipt);
+    const roll = await client.callTool({ name: 'generate-roll-up', arguments: { requestId: crypto.randomUUID(),
+      child: { documentId: 'child', checkpointId: 'c' }, parent: { documentId: 'parent', checkpointId: 'p' }, passes: 2 } });
+    expect(roll.isError).not.toBe(true); expect(calls.at(-1)).toMatchObject({ path: '/api/mapping/evals/roll-ups', body: { passes: 2 } });
+    await client.callTool({ name: 'read-eval-run', arguments: { runId: receipt.runId } });
+    expect(calls.at(-1)?.path).toBe(`/api/mapping/evals/runs/${receipt.runId}`);
+  } finally { await client.close(); await server.close(); await new Promise<void>(resolve => http.close(() => resolve())); }
+});
