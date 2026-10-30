@@ -1,6 +1,6 @@
 import { importLegacySelection } from '../selection/importLegacySelection';
 import { projectionLayoutSchema } from '../../core/diagrams/highlightProjection';
-import { validateCanvasParents } from './canvasParents';
+import { canvasTypeOf } from '../../core/diagrams/canvasType';
 import { importLegacyCompactionPresentation } from './importLegacyCompactionPresentation';
 import { CanvasHistory } from './canvasHistory';
 import { canvasTransferSchema } from '../../core/diagrams/canvasTransfer';
@@ -68,7 +68,8 @@ export function deserializeWorkspace(json: string | unknown, historyValidation: 
     object(doc); id(doc.representationId); check(!docs.has(doc.representationId), 'duplicate document'); docs.add(doc.representationId);
     if (doc.hidden !== undefined) check(typeof doc.hidden === 'boolean', 'invalid canvas visibility');
     if (doc.repositoryId !== undefined) id(doc.repositoryId);
-    if (doc.parentCanvasId !== undefined) id(doc.parentCanvasId);
+    doc.type = canvasTypeOf(doc);
+    delete doc.parentCanvasId;
     if (doc.savedRepresentationId !== undefined) id(doc.savedRepresentationId);
     if (doc.representationId.startsWith('draft-') && doc.revisionId === '') {} else id(doc.revisionId); string(doc.name); string(doc.savedName); string(doc.savedScene);
     object(doc.document); object(doc.document.scene); object(doc.document.sections);
@@ -294,7 +295,6 @@ export function deserializeWorkspace(json: string | unknown, historyValidation: 
     if (c.activeThreadId) check(nodes[c.activeThreadId].kind === 'conversation', 'invalid conversation owner');
     for (const viewport of [doc.viewport, doc.canvas.viewport]) if (viewport) { object(viewport); object(viewport.offset); number(viewport.offset.x); number(viewport.offset.y); check(viewport.scale >= .25 && viewport.scale <= 4, 'invalid zoom'); }
   }
-  validateCanvasParents(value.documents);
   for (const tx of value.transfers ?? []) {
     const source = value.documents.find((doc: any) => doc.representationId === tx.sourceId);
     const destination = value.documents.find((doc: any) => doc.representationId === tx.destinationId);

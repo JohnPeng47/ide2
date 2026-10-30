@@ -1,3 +1,4 @@
+import { generateComparisonSchema } from '../../../domain/mapping/compare/comparisonGeneration';
 import { agentContextToolDefinitions } from '../../../domain/core/agents/savedAgentContext';
 import { canvasViewInstructions } from '../../../domain/core/diagrams/canvasView';
 import { generationSchemas, generationBatchSchemas, directBatchSchemas, directDiagramInstructions, isDiagramTool } from '../../../domain/mapping/agent/diagramBatch';
@@ -28,7 +29,7 @@ export function createMappingMcpServer(baseUrl: string, binding = process.env.MA
       + 'Common method definitions are included in exec; use canvas-api-search only for additional APIs. ChangeSession operations require changeSessionId. Each new request needs a unique requestId. Retry uncertain outcomes with identical arguments and requestId. '
   });
   const descriptions = {
-    ...Object.fromEntries(agentContextToolDefinitions.map(tool => [tool.name, tool.description])) as Record<'create-agent-context' | 'list-agent-contexts' | 'read-agent-context', string>,
+    ...Object.fromEntries(agentContextToolDefinitions.map(tool => [tool.name, tool.description])) as Record<typeof agentContextToolDefinitions[number]['name'], string>,
     get_repository_diff_hunks: 'Discover immutable Git hunks for repositoryId and selected commits before creating a ChangeSession. Returns pinned full commit SHAs, head, and stable hunk IDs. Each commit compares with its first parent (root commits with empty tree); renames are delete/add. Paginated; reuse returned SHAs on later pages and creation. includePatches false returns metadata only.',
     read_change_session_diff_tree: 'Read a ChangeSession DiffTree Diagram, stable logical nodes and mappings, plus paginated captured hunks. nodeIds resolves selected tree nodes with ancestor fallback; hunkIds selects hunks directly. Uses persisted content without rereading Git or loading canvas histories. Legacy sessions return diffTree null.',
 
@@ -83,6 +84,20 @@ export function createMappingMcpServer(baseUrl: string, binding = process.env.MA
       } catch (error) { return { content: [{ type: 'text' as const, text: error instanceof Error ? error.message : String(error) }], isError: true }; }
     });
   }
+  for (const tool of [
+    { name: 'generate-diagram-comparisons', schema: generateComparisonSchema, route: '/api/mapping/comparison-runs', method: 'POST', description: 'Compare selected saved views using only linked ASCII diagrams. Supply sources from list-compare-candidates, title, and a unique requestId. Defaults to gpt-6-sol high. Returns run ID immediately; poll read-diagram-comparison-run for status and the saved comparison URL. Retries with the same arguments/requestId are idempotent.' },
+    { name: 'read-diagram-comparison-run', schema: z.object({ runId: z.string().uuid() }).strict(), route: '/api/mapping/comparison-runs', method: 'GET', description: 'Read comparison generation status, errors, and the finished session URL.' },
+    { name: 'list-compare-candidates', schema: z.object({}).strict(), route: '/api/mapping/compare-sessions/candidates', method: 'GET', description: 'List saved canvas views and their pinned checkpoints for comparison generation.' }
+  ]) server.registerTool(tool.name, { description: tool.description, inputSchema: tool.schema, annotations: { readOnlyHint: tool.method === 'GET', openWorldHint: false } }, async input => {
+    try {
+      const args = input as Record<string, unknown>;
+      const route = tool.route + (tool.name === 'read-diagram-comparison-run' ? `/${encodeURIComponent(String(args.runId))}` : '');
+      const response = await fetch(new URL(route, base), { method: tool.method, headers: { 'content-type': 'application/json' },
+        ...(tool.method === 'POST' ? { body: JSON.stringify(input) } : {}), signal: AbortSignal.timeout(65000) });
+      const result = await response.json();
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result) }], ...(response.ok ? { structuredContent: { result } } : { isError: true }) };
+    } catch (error) { return { content: [{ type: 'text' as const, text: String(error) }], isError: true }; }
+  });
   return server;
 }
 /** Fetch definitions from the running host so a restarted MCP connection never uses a stale bundle. */

@@ -25,11 +25,12 @@ try {
   });
   let serverLog = ''; server.stdout.on('data', chunk => { serverLog += chunk; }); server.stderr.on('data', chunk => { serverLog += chunk; });
   await expect.poll(async () => (await fetch(url).catch(() => null))?.status, { timeout: 30000 }).toBe(200);
-  browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
+  browser = await chromium.launch({ headless: true, ...(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {}), args: ['--no-sandbox'] });
   const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
   const errors = []; page.on('pageerror', error => errors.push(error.message));
   await page.goto(`${url}/evals`);
-  await expect(page.getByRole('heading', { name: 'New comparison session' })).toBeVisible();
+  await page.getByRole('button', { name: 'New comparison', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'New comparison' })).toBeVisible();
   await page.getByLabel('View A', { exact: true }).selectOption({ label: 'CanvasDomain — First view' });
   await page.getByLabel('View B', { exact: true }).selectOption({ label: 'CanvasDomain — Second view' });
   await page.getByRole('button', { name: 'Add pair to session' }).click();
@@ -61,16 +62,93 @@ try {
   await expect(paneA.locator('[data-native-node="grid:overview"]')).toContainText('First implementation');
   const sessionId = new URL(page.url()).searchParams.get('session'); assert.ok(sessionId);
   assert.equal(await readFile(path.join(storeRoot, 'workspace-records.json'), 'utf8'), manifest, 'Evals must not write to the Mapping workspace');
+  // Same saved view in both panes: three explicit, ordered camera focuses.
+  await page.getByRole('button', { name: 'New comparison', exact: true }).click();
+  await page.getByLabel('Session name').fill('Three diagram tour');
+  await page.getByLabel('View A', { exact: true }).selectOption({ label: 'CanvasDomain — First view' });
+  await page.getByLabel('View B', { exact: true }).selectOption({ label: 'CanvasDomain — First view' });
+  await page.getByRole('button', { name: 'Create session', exact: true }).click();
+  const focused = async (id) => {
+    await expect(paneA).toHaveAttribute('data-focus-diagram', id);
+    await expect(paneB).toHaveAttribute('data-focus-diagram', id);
+    for (const pane of [paneA, paneB]) {
+      await expect.poll(async () => {
+        const viewport = await pane.boundingBox(), target = await pane.locator(`[data-native-node="${id}"]`).boundingBox();
+        return !!target && target.x >= viewport.x + 20 && target.y >= viewport.y + 20
+          && target.x + target.width <= viewport.x + viewport.width - 20 && target.y + target.height <= viewport.y + viewport.height - 20;
+      }).toBe(true);
+    }
+  };
+  await focused('grid:overview');
+  await paneA.click({ position: { x: 40, y: 40 } });
+  await page.keyboard.press('ArrowRight'); await focused('grid:relationships');
+  await page.keyboard.press('ArrowLeft'); await focused('grid:overview');
+  await page.keyboard.press('ArrowLeft'); await focused('grid:overview'); // Stop at the first step.
+  await paneB.click({ position: { x: 40, y: 40 } });
+  await page.keyboard.press('ArrowRight'); await focused('grid:relationships');
+  await page.keyboard.press('ArrowRight'); await focused('grid:persistence');
+  await page.keyboard.press('ArrowRight'); await focused('grid:persistence'); // Stop at the final step.
+  await page.keyboard.press('ArrowLeft'); await focused('grid:relationships');
+  await page.keyboard.press('ArrowLeft'); await focused('grid:overview');
+  await page.getByRole('button', { name: 'Next', exact: true }).click(); await focused('grid:relationships');
+  await page.getByRole('button', { name: 'Next', exact: true }).click(); await focused('grid:persistence');
+  await expect(page.getByRole('button', { name: 'Next', exact: true })).toBeDisabled();
+  const relativeGeometry = async (id) => Promise.all([paneA, paneB].map(pane => pane.evaluate((element, id) => {
+    const viewport = element.getBoundingClientRect(), target = element.querySelector(`[data-native-node="${id}"]`).getBoundingClientRect();
+    return [target.x - viewport.x, target.y - viewport.y, target.width, target.height];
+  }, id)));
+  const unchangedCamera = async (id, before) => {
+    await expect.poll(async () => {
+      const after = await relativeGeometry(id);
+      return Math.max(...after.flatMap((pane, i) => pane.map((value, j) => Math.abs(value - before[i][j]))));
+    }).toBeLessThan(0.75);
+  };
+  const resizeBefore = await relativeGeometry('grid:persistence');
+  await divider.focus(); await page.keyboard.press('ArrowLeft'); await page.keyboard.press('ArrowLeft');
+  await unchangedCamera('grid:persistence', resizeBefore);
+  // Resizing changes the visible area without changing either pane's pan or zoom.
+  const handle = await divider.boundingBox();
+  await page.mouse.move(handle.x + handle.width / 2, handle.y + 100); await page.mouse.down();
+  await page.mouse.move(handle.x - 130, handle.y + 100, { steps: 8 }); await page.mouse.up();
+  await unchangedCamera('grid:persistence', resizeBefore);
+  await page.getByRole('button', { name: 'Previous', exact: true }).click(); await focused('grid:relationships');
+  const focusedBefore = await paneA.locator('[data-native-node="grid:relationships"]').boundingBox();
+  const focusedB = await paneB.locator('[data-native-node="grid:relationships"]').boundingBox();
+  const canvasArea = await paneA.boundingBox();
+  await page.mouse.move(canvasArea.x + canvasArea.width / 2, canvasArea.y + canvasArea.height / 2);
+  await page.mouse.down(); await page.mouse.move(canvasArea.x + canvasArea.width / 2 + 90, canvasArea.y + canvasArea.height / 2 + 50, { steps: 8 }); await page.mouse.up();
+  await expect.poll(async () => (await paneA.locator('[data-native-node="grid:relationships"]').boundingBox()).x).not.toBe(focusedBefore.x);
+  assert.equal((await paneB.locator('[data-native-node="grid:relationships"]').boundingBox()).x, focusedB.x);
+  // Let the hand tool's inertial pan finish before measuring a resize.
+  let previousPan = '', stablePanSamples = 0;
+  await expect.poll(async () => {
+    const current = JSON.stringify((await relativeGeometry('grid:relationships')).flat().map(value => Math.round(value * 100)));
+    stablePanSamples = current === previousPan ? stablePanSamples + 1 : 0; previousPan = current;
+    return stablePanSamples;
+  }).toBeGreaterThanOrEqual(2);
+  const pannedBeforeResize = await relativeGeometry('grid:relationships');
+  await page.setViewportSize({ width: 1740, height: 1060 });
+  await unchangedCamera('grid:relationships', pannedBeforeResize);
+  await page.getByRole('region', { name: 'Comparison pane A', exact: true }).getByRole('button', { name: 'Reset focus' }).click();
+  await focused('grid:relationships');
+  if (process.env.COMPARE_SCREENSHOT_PATH) await page.screenshot({ path: process.env.COMPARE_SCREENSHOT_PATH });
+  const tourId = new URL(page.url()).searchParams.get('session');
+  const tour = await (await fetch(`${url}/api/mapping/compare-sessions/${tourId}`)).json();
+  assert.equal(tour.compares[0].points.length, 3);
+  assert.equal(tour.canvases[0].view.cameraViews.length, 3);
+  assert.equal(await readFile(path.join(storeRoot, 'workspace-records.json'), 'utf8'), manifest);
   // Reload after source deletion: only the session's copies can supply these diagrams.
   await new WorkspaceRecordStore(storeRoot).replace(projectId, { schemaVersion: 3, projectId, documents: [] });
   await page.reload();
   await expect(paneA.locator('[data-native-node="grid:overview"]')).toContainText('First implementation');
-  await expect(paneB.locator('[data-native-node="grid:overview"]')).toContainText('Second implementation');
+  await expect(paneB.locator('[data-native-node="grid:overview"]')).toContainText('First implementation');
+  await focused('grid:overview');
+  await page.getByRole('button', { name: 'Next', exact: true }).click(); await focused('grid:relationships');
   const sessions = await (await fetch(`${url}/api/mapping/compare-sessions`)).json();
-  assert.equal(sessions.length, 1); assert.equal(sessions[0].compareCount, 2);
+  assert.equal(sessions.length, 2); assert.equal(sessions.find(session => session.id === sessionId).compareCount, 2);
   assert.deepEqual(errors, []);
   if (process.env.COMPARE_SCREENSHOT_PATH) await page.screenshot({ path: process.env.COMPARE_SCREENSHOT_PATH });
-  console.log('Compare sessions: creation, rendering, navigation, resizing, independent pan, reload and source deletion passed.');
+  console.log('Compare sessions: creation, three target cameras, framing, cycling, pointer/keyboard resizing, independent pan/reset, reload and source deletion passed.');
 } finally {
   await browser?.close();
   if (server) { const closed = new Promise(resolve => server.once('exit', resolve)); server.kill('SIGTERM'); await closed; }

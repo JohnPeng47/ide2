@@ -2,7 +2,7 @@ import { canvasTransferSchema } from '../../core/diagrams/canvasTransfer';
 import { sha256 } from '../../core/sha256';
 import { CanvasCheckpointEncoder, CanvasValueEncoder, isCanvasViewRecords, readCanvasRecords, restoreCanvasCheckpoints,
   type CanvasStoredItem, type CanvasViewRecords, type PersistedCanvasCheckpoint } from '../../core/diagrams/canvasCheckpointRecords';
-import { validateCanvasParents } from './canvasParents';
+import { canvasTypeOf } from '../../core/diagrams/canvasType';
 import { CanvasHistory, currentHistoryChanges, documentFromHistory, validateCanvasHistory, type CanvasHistoryRecord, type HistoryChanges, type HistoryValidation } from '../../core/diagrams/canvasHistory';
 import type { StorageChange } from '../../core/storage/storageService';
 import { deserializeWorkspace } from './mappingWorkspaceCodec';
@@ -29,13 +29,17 @@ export function canvasViewChanges(id: string, canvas: MappingCanvasState): Stora
   return [...Object.entries(encoder.takeItems()).map(([key, value]) => ({ key: prefix + 'item/' + key, value })),
     { key: prefix + 'canvas', value }];
 }
+function canvasMetadata(metadata: object, canvas?: MappingCanvasState) {
+  const { parentCanvasId, ...rest } = metadata as { parentCanvasId?: string; type?: unknown };
+  return { ...rest, type: canvasTypeOf({ ...rest, parentCanvasId, canvas }) };
+}
 export function documentRecords(doc: MappingDocumentSnapshot): WorkspaceRecords {
   const { document, canvas, history, viewport, savedName, savedScene, savedEdges, revisionId, ...metadata } = doc;
   const changes = new CanvasHistory(document, canvas, history).persistenceChanges();
   const prefix = documentPrefix(doc.representationId);
   return Object.fromEntries([
     ...historyChanges(doc.representationId, changes).map(change => [change.key, 'value' in change ? change.value : undefined]),
-    [prefix + 'metadata', metadata], [prefix + 'baseline', { savedName, savedScene, savedEdges, revisionId }],
+    [prefix + 'metadata', canvasMetadata(metadata, canvas)], [prefix + 'baseline', { savedName, savedScene, savedEdges, revisionId }],
     ...canvasViewChanges(doc.representationId, canvas).map(change => [change.key, 'value' in change ? change.value : undefined]),
     ...(viewport ? [[prefix + 'viewport', viewport]] : [])
   ]);
@@ -62,9 +66,10 @@ export function recordHistory(records: WorkspaceRecords, id: string): CanvasHist
 export function recordDocument(records: WorkspaceRecords, id: string): MappingDocumentSnapshot {
   const prefix = documentPrefix(id), history = recordHistory(records, id);
   const storedCanvas = records[prefix + 'canvas'];
-  return { ...records[prefix + 'metadata'] as object, ...records[prefix + 'baseline'] as object,
+  const canvas = (isCanvasViewRecords(storedCanvas) ? readCanvasRecords(storedCanvas.records, key => records[prefix + 'item/' + key] as CanvasStoredItem).view : storedCanvas) as MappingCanvasState;
+  return { ...canvasMetadata(records[prefix + 'metadata'] as object, canvas), ...records[prefix + 'baseline'] as object,
     representationId: id, document: documentFromHistory(history), history,
-    canvas: isCanvasViewRecords(storedCanvas) ? readCanvasRecords(storedCanvas.records, key => records[prefix + 'item/' + key] as CanvasStoredItem).view : storedCanvas as MappingCanvasState,
+    canvas,
     ...(records[prefix + 'viewport'] ? { viewport: records[prefix + 'viewport'] } : {}) } as MappingDocumentSnapshot;
 }
 export function recordsWorkspace(records: WorkspaceRecords): MappingWorkspaceSnapshot | null {
@@ -111,8 +116,6 @@ export function validateRecordUpdate(records: WorkspaceRecords, keys: string[], 
     const prefix = documentPrefix(id);
     if (!records[prefix + 'metadata'] || !records[prefix + 'baseline'] || !records[prefix + 'history'] || !records[prefix + 'canvas']) throw Error('Incomplete canvas');
   }
-  validateCanvasParents(index.documentIds.map(id => ({ representationId: id,
-    parentCanvasId: (records[documentPrefix(id) + 'metadata'] as MappingDocumentSnapshot).parentCanvasId })));
   for (const id of affected) {
     const prefix = documentPrefix(id), history = recordHistory(records, id);
     const removesHistory = keys.some(k => (k.startsWith(prefix + 'revision/') || k.startsWith(prefix + 'checkpoint/')) && !Object.hasOwn(records, k));

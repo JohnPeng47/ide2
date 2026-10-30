@@ -13,6 +13,8 @@ import type { ProjectRepresentationEvidenceRecord, ProjectRepresentationMappingR
 
 export type ProjectDiagramContent = { kind: "canvas-history"; history: CanvasHistoryRecord };
 export interface SaveProjectDiagramInput {
+  generated?: import('./generatedCanvas').GeneratedCanvas;
+  type?: import('./canvasType').CanvasType;
   repositoryId?: string;
   history: CanvasHistoryRecord;
   projectId?: string;

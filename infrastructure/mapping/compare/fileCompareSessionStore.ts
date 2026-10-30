@@ -24,6 +24,10 @@ export class FileCompareSessionStore implements CompareSessionRepository {
     return sessions.filter((session): session is ComparePageSession => !!session && session.projectId === projectId)
       .map(compareSessionSummary).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
+  delete(id: string): Promise<void> {
+    const task = this.queue.then(() => rm(this.file(id), { force: true }));
+    this.queue = task.then(() => {}, () => {}); return task;
+  }
   create(session: ComparePageSession): Promise<ComparePageSession> {
     const task = this.queue.then(async () => {
       const existing = await this.read(session.id);

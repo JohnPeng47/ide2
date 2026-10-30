@@ -1,3 +1,6 @@
+import { flattenGrid, resolveScene } from '../../../domain/core/diagrams/lineGrid';
+import type { GridBox } from '../../../domain/core/diagrams/lineGrid';
+import { revisionScope } from '../../../domain/core/diagrams/diagramRevisionReview';
 import { randomUUID } from 'node:crypto';
 import { ApplicationError } from '../../core/errors';
 import { sha256 } from '../../../domain/core/sha256';
@@ -5,13 +8,24 @@ import { checkpointRevisionIds, documentFromHistory, validateCanvasHistory, type
 import { documentPrefix, recordHistory, type WorkspaceIndex } from '../../../domain/mapping/workspace/workspaceRecords';
 import { deserializeWorkspace } from '../../../domain/mapping/workspace/mappingWorkspaceCodec';
 import { initialCanvasState, type MappingCanvasState, type MappingDocumentSnapshot } from '../../../domain/mapping/workspace/mappingWorkspace';
-import { createCompareSessionSchema, type CompareCandidate, type CompareCanvasCopy, type ComparePageSession, type CompareSource, type CompareSessionSummary } from '../../../domain/mapping/compare/comparePageSession';
+import { createCompareSessionSchema, type CompareCandidate, type CompareCanvasCopy, type ComparePageSession, type CompareSource, type CompareSessionSummary, type CompareDiagramTarget, type CompareDiagramPaneSpec, type CreateCompareSession } from '../../../domain/mapping/compare/comparePageSession';
 import type { MappingWorkspaceService } from '../workspace/workspaceService';
+import type { GeneratedCanvasSource } from '../evals/generatedCanvasCatalog';
 
 export interface CompareSessionRepository {
   list(projectId: string): Promise<CompareSessionSummary[]>;
   read(id: string): Promise<ComparePageSession | null>;
   create(session: ComparePageSession): Promise<ComparePageSession>;
+  delete(id: string): Promise<void>;
+}
+
+export function diagramTargets(history: CanvasHistoryRecord, checkpointId = history.headId): CompareDiagramTarget[] {
+  const { scene } = documentFromHistory(history, checkpointId);
+  const visit = (box: GridBox): CompareDiagramTarget[] => box.kind === 'container' ? box.children.flatMap(visit) : [{
+    diagramId: `grid:${box.id}`, revisionId: scene.contents[box.contentId].revisionId,
+    name: scene.contents[box.contentId].content.ascii.split('\n').find(line => line.trim())?.slice(0, 200) || box.id
+  }];
+  return visit(scene.root);
 }
 
 /** Capture only the selected endpoint and its rendering dependencies, never the undo archive. */
@@ -28,7 +42,8 @@ export function copyCompareHistory(history: CanvasHistoryRecord, checkpointId: s
 }
 
 export class CompareSessionService {
-  constructor(private readonly workspace: Pick<MappingWorkspaceService, 'loadRecords'>, private readonly store: CompareSessionRepository) {}
+  constructor(private readonly workspace: Pick<MappingWorkspaceService, 'loadRecords'>, private readonly store: CompareSessionRepository,
+    private readonly generated?: GeneratedCanvasSource) {}
   private async workspaceState() {
     const { records } = await this.workspace.loadRecords('current');
     const index = records.workspace as WorkspaceIndex | undefined;
@@ -37,15 +52,20 @@ export class CompareSessionService {
   }
   async candidates(): Promise<CompareCandidate[]> {
     const { records, index } = await this.workspaceState();
-    return index.documentIds.flatMap(documentId => {
+    const generated = await Promise.all((await this.generated?.list() ?? []).filter(record => !index.documentIds.includes(record.id))
+      .map(record => this.generated!.read(record.id)));
+    const workspace = index.documentIds.flatMap(documentId => {
       const prefix = documentPrefix(documentId), metadata = records[prefix + 'metadata'] as MappingDocumentSnapshot;
       if (metadata.hidden) return [];
-      const history = records[prefix + 'history'] as CanvasHistoryRecord;
-      return [{ documentId, checkpointId: history.headId, name: 'Current saved canvas', canvasName: metadata.name },
+      const history = recordHistory(records, documentId);
+      return [{ documentId, checkpointId: history.headId, name: 'Current saved canvas', canvasName: metadata.name, diagrams: diagramTargets(history) },
         ...Object.values(history.canvasViews?.saved ?? {}).filter(view => !view.archivedAt && view.finalCheckpointId).map(view => ({
-          documentId, viewId: view.id, checkpointId: view.finalCheckpointId!, name: view.name, canvasName: metadata.name
+          documentId, viewId: view.id, checkpointId: view.finalCheckpointId!, name: view.name, canvasName: metadata.name,
+          diagrams: diagramTargets(history, view.finalCheckpointId!)
         }))];
     });
+    return [...workspace, ...generated.flatMap(canvas => canvas ? [{ documentId: canvas.id, checkpointId: canvas.history.headId, name: canvas.name,
+      canvasName: canvas.generated.contextName, diagrams: diagramTargets(canvas.history), generated: canvas.generated }] : [])];
   }
   async list() { const { index } = await this.workspaceState(); return this.store.list(index.projectId); }
   async read(id: string) {
@@ -53,6 +73,7 @@ export class CompareSessionService {
     if (!session) throw new ApplicationError('invalid-input', 'Comparison session not found.');
     return session;
   }
+  async delete(id: string) { await this.read(id); await this.store.delete(id); }
   async create(input: unknown): Promise<ComparePageSession> {
     const request = createCompareSessionSchema.parse(input), requestHash = sha256(JSON.stringify(request));
     const existing = await this.store.read(request.requestId);
@@ -60,12 +81,29 @@ export class CompareSessionService {
       if (existing.requestHash !== requestHash) throw new ApplicationError('conflict', 'Request ID already used for another comparison.');
       return existing;
     }
+    const captured = await this.capture(request.pairs.flatMap(pair => [pair.A, pair.B]));
+    return this.createPinned(request, captured);
+  }
+  async capture(sources: CompareSource[]) {
     const { records, index } = await this.workspaceState();
     const copies = new Map<string, CompareCanvasCopy>(), histories = new Map<string, CanvasHistoryRecord>();
     const createdAt = new Date().toISOString();
-    const capture = (source: CompareSource) => {
+    const catalog = new Map((await Promise.all([...new Set(sources.map(source => source.documentId))].filter(id => !index.documentIds.includes(id))
+      .map(async id => [id, await this.generated?.read(id)] as const))).flatMap(([id, canvas]) => canvas ? [[id, canvas]] : []));
+    const capture = ({ documentId, viewId, checkpointId }: CompareSource) => {
+      const source = { documentId, ...(viewId ? { viewId } : {}), checkpointId };
       const key = JSON.stringify(source);
       const previous = copies.get(key); if (previous) return previous;
+      const generated = catalog.get(source.documentId);
+      if (generated) {
+        if (source.viewId || generated.history.headId !== source.checkpointId) throw new ApplicationError('conflict', 'The generated canvas changed. Refresh and try again.');
+        const history = copyCompareHistory(generated.history, source.checkpointId);
+        history.snapshots[source.checkpointId].view ??= initialCanvasState();
+        const copy: CompareCanvasCopy = { id: randomUUID(), source, canvasName: generated.generated.contextName, history, generated: structuredClone(generated.generated),
+          view: { id: randomUUID(), name: generated.name, createdAt, savedAt: createdAt,
+            startCheckpointId: source.checkpointId, finalCheckpointId: source.checkpointId, checkpointIds: [source.checkpointId] } };
+        copies.set(key, copy); return copy;
+      }
       if (!index.documentIds.includes(source.documentId)) throw new ApplicationError('invalid-input', 'Unknown canvas.');
       const prefix = documentPrefix(source.documentId), metadata = records[prefix + 'metadata'] as MappingDocumentSnapshot;
       let history = histories.get(source.documentId);
@@ -91,17 +129,63 @@ export class CompareSessionService {
           ...(view?.generation ? { generation: structuredClone(view.generation) } : {}) } };
       copies.set(key, copy); return copy;
     };
+    sources.forEach(capture);
+    return { projectId: index.projectId, canvases: [...copies.values()] };
+  }
+  async createPinned(input: unknown, captured: { projectId: string; canvases: CompareCanvasCopy[] }): Promise<ComparePageSession> {
+    const request = createCompareSessionSchema.parse(input), requestHash = sha256(JSON.stringify(request));
+    const copies = new Map(captured.canvases.map(copy => [JSON.stringify(copy.source), structuredClone(copy)]));
+    const capture = ({ documentId, viewId, checkpointId }: CompareSource) => {
+      const copy = copies.get(JSON.stringify({ documentId, ...(viewId ? { viewId } : {}), checkpointId }));
+      if (!copy) throw new ApplicationError('invalid-input', 'Comparison source was not captured.');
+      return copy;
+    };
+    const createdAt = new Date().toISOString();
     const pane = (copy: CompareCanvasCopy) => {
       const canvas = copy.history.snapshots[copy.history.headId].view as MappingCanvasState;
       // Same default as Mapping's native camera (360, 100, 1), in persisted coordinates.
       return { canvasCopyId: copy.id, camera: { transform: structuredClone(canvas?.viewport ?? { offset: { x: 170, y: 36 }, scale: 1 }) } };
     };
     const compares = request.pairs.map(pair => {
-      if (JSON.stringify(pair.A) === JSON.stringify(pair.B)) throw new ApplicationError('invalid-input', 'Choose two different views.');
       const A = capture(pair.A), B = capture(pair.B);
-      return { id: randomUUID(), title: `${A.view.name} / ${B.view.name}`, A: pane(A), B: pane(B) };
+      if (pair.A.diagram && pair.B.diagram) {
+        const diagramPane = (copy: CompareCanvasCopy, target: NonNullable<CreateCompareSession['pairs'][number]['A']['diagram']>): CompareDiagramPaneSpec => {
+          const pinned = diagramTargets(copy.history).find(item => item.diagramId === target.diagramId);
+          if (!pinned) throw new ApplicationError('invalid-input', `Unknown diagram: ${target.diagramId}`);
+          if (pinned.revisionId !== target.revisionId) throw new ApplicationError('conflict', 'The selected diagram revision does not match this snapshot. Refresh the views.');
+          if (target.ranges?.some(range => range.endLine > copy.history.diagramRevisions[target.revisionId].diagram.content.ascii.split('\n').length))
+            throw new ApplicationError('invalid-input', 'Comparison slice is outside the diagram.');
+          if (target.nodeRef) {
+            try { revisionScope(copy.history.diagramRevisions[target.revisionId], target.nodeRef); }
+            catch { throw new ApplicationError('invalid-input', 'The selected subtree does not exist in this revision.'); }
+          }
+          return { kind: 'diagram', canvasCopyId: copy.id, ...target };
+        };
+        return { id: randomUUID(), title: pair.title ?? `${A.view.name} / ${B.view.name}`, ...(pair.explanation ? { explanation: pair.explanation } : {}), A: diagramPane(A, pair.A.diagram), B: diagramPane(B, pair.B.diagram) };
+      }
+      const diagrams = (copy: CompareCanvasCopy) => {
+        const document = documentFromHistory(copy.history);
+        return flattenGrid(resolveScene(document.scene)).filter(box => box.box.kind === 'diagram' && box.contentId)
+          .sort((a, b) => a.bounds.row - b.bounds.row || a.bounds.column - b.bounds.column || a.box.id.localeCompare(b.box.id))
+          .map(box => ({ id: `grid:${box.box.id}`, title: document.scene.contents[box.contentId!].content.ascii.split('\n').find(line => line.trim())?.slice(0, 200) || 'Diagram' }));
+      };
+      const targetsA = diagrams(A), targetsB = diagrams(B);
+      // A self-comparison is the manual smoke-test tour, with explicit identical targets.
+      const focusPairs = pair.focusPairs ?? (A.id === B.id ? targetsA.slice(0, 3).map(target => ({ title: target.title, A: target.id, B: target.id })) : []);
+      const camera = (copy: CompareCanvasCopy, target: string, title: string, targets: typeof targetsA) => {
+        if (!targets.some(item => item.id === target)) throw new ApplicationError('invalid-input', `Unknown diagram focus: ${target}`);
+        const cameras = copy.view.cameraViews ??= [];
+        const existing = cameras.find(camera => camera.focus.type === 'DiagramFocused' && camera.focus.diagramId === target);
+        if (existing) return existing.id;
+        const id = randomUUID(); cameras.push({ id, title, focus: { type: 'DiagramFocused', diagramId: target } });
+        copy.view.defaultCameraViewId ??= id;
+        return id;
+      };
+      const points = focusPairs.map(point => ({ id: randomUUID(), title: point.title,
+        A: camera(A, point.A, point.title, targetsA), B: camera(B, point.B, point.title, targetsB) }));
+      return { id: randomUUID(), title: A.id === B.id ? A.view.name : `${A.view.name} / ${B.view.name}`, A: pane(A), B: pane(B), ...(points.length ? { points } : {}) };
     });
-    return this.store.create({ schemaVersion: 1, id: request.requestId, projectId: index.projectId, title: request.title,
+    return this.store.create({ schemaVersion: 1, id: request.requestId, projectId: captured.projectId, title: request.title,
       createdAt, requestHash, canvases: [...copies.values()], compares });
   }
 }

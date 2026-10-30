@@ -1,3 +1,8 @@
+import type { EvalRunService } from '../../../../application/mapping/evals/evalRunService';
+import type { EvalPromptService } from '../../../../application/mapping/evals/evalPromptService';
+import { handleEvalRoutes, handleGeneratedCanvasRoutes } from './evals/evalRoutes';
+import type { ComparisonGenerationService } from '../../../../application/mapping/compare/comparisonGenerationService';
+import { handleComparisonGenerationRoutes } from './compare/comparisonGenerationRoutes';
 import type { AgentChatService } from '../../../../application/mapping/agent-chat/agentChatService';
 import type { CompareSessionService } from '../../../../application/mapping/compare/compareSessionService';
 import { handleCompareRoutes } from './compare/compareRoutes';
@@ -24,8 +29,10 @@ import { handleFileCompaction } from './compaction/fileCompactionRoutes';
 import type { DiffSessionWorkflowService } from '../../../../application/mapping/changes/diffSessionWorkflowService';
 import { handleDiffSessionWorkflow } from './changes/diffSessionWorkflowRoutes';
 
-export function createMappingRoutes({ selection, diagrams, workspace, chat, compactionService, agent, agentChat, liveCanvas, diffSessionWorkflows, pushIntegrations, pushToken, compareSessions }: {
+export function createMappingRoutes({ selection, diagrams, workspace, chat, compactionService, agent, agentChat, liveCanvas, diffSessionWorkflows, pushIntegrations, pushToken, compareSessions, comparisonRuns, evalRuns, evalPrompts }: {
+  evalRuns?: EvalRunService; evalPrompts?: EvalPromptService;
   compareSessions?: CompareSessionService;
+  comparisonRuns?: ComparisonGenerationService;
   agentChat?: AgentChatService;
   diffSessionWorkflows?: DiffSessionWorkflowService;
   pushIntegrations?: PushIntegrationService; pushToken?: string;
@@ -34,6 +41,11 @@ export function createMappingRoutes({ selection, diagrams, workspace, chat, comp
   chat: LocalChatService; compactionService: FileCompactionService;
 }) {
   return async (request: Connect.IncomingMessage, response: ServerResponse, url: URL): Promise<void> => {
+    if ((url.pathname === '/api/mapping/generated-canvases' || url.pathname.startsWith('/api/mapping/generated-canvases/')) && evalRuns)
+      return handleGeneratedCanvasRoutes(request, response, url, evalRuns);
+    if (url.pathname.startsWith('/api/mapping/evals/') && evalRuns && evalPrompts) return handleEvalRoutes(request, response, url, evalPrompts, evalRuns);
+    if ((url.pathname === '/api/mapping/comparison-runs' || url.pathname.startsWith('/api/mapping/comparison-runs/')) && comparisonRuns)
+      return handleComparisonGenerationRoutes(request, response, url, comparisonRuns);
     if ((url.pathname === '/api/mapping/compare-sessions' || url.pathname.startsWith('/api/mapping/compare-sessions/')) && compareSessions)
       return handleCompareRoutes(request, response, url, compareSessions);
     if (url.pathname.startsWith('/api/mapping/agent-chat/') && agentChat) return handleAgentChat(request, response, url, agentChat);

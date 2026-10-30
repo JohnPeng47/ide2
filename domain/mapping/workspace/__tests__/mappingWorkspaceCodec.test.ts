@@ -4,7 +4,7 @@ import { deserializeWorkspace, serializeWorkspace } from '../mappingWorkspaceCod
 import { initialCanvasState, type MappingWorkspaceSnapshot } from '../mappingWorkspace';
 import { initialMappingGrid } from '../mappingGrid';
 import { diagramSelectionItem, regionSelectionItem } from '../../selection/selectionState';
-function snapshot(): MappingWorkspaceSnapshot { const document = initialMappingGrid(); return { schemaVersion: 3, projectId: 'project', activeDocumentId: 'diagram', documents: [{ representationId: 'diagram', revisionId: 'revision', name: 'Diagram', savedName: 'Diagram', savedScene: JSON.stringify(document.scene), document, canvas: initialCanvasState(), viewport: { offset: { x: 42, y: 51 }, scale: .8 } }] }; }
+function snapshot(): MappingWorkspaceSnapshot { const document = initialMappingGrid(); return { schemaVersion: 3, projectId: 'project', activeDocumentId: 'diagram', documents: [{ type: 'standard', representationId: 'diagram', revisionId: 'revision', name: 'Diagram', savedName: 'Diagram', savedScene: JSON.stringify(document.scene), document, canvas: initialCanvasState(), viewport: { offset: { x: 42, y: 51 }, scale: .8 } }] }; }
 describe('workspace codec', () => {
   it('round trips the canonical collection independently of panels, including mixed node and diagram membership', () => {
     const input = snapshot(), doc = input.documents[0];

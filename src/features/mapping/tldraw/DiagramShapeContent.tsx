@@ -8,6 +8,7 @@ import { CanvasRuntimeContext, type GridModel } from './CanvasRuntimeContext';
 import { projectDiagramContent } from '../../../../domain/mapping/workspace/diagramViewState';
 import { diagramTextRanges, textRow, type DiagramTextOwner } from '../../../../domain/core/presentation/diagramText';
 import { DiagramText } from '../../../shared/diagrams/DiagramText';
+import { CopyDiagramAsciiButton } from '../../../shared/diagrams/CopyDiagramAsciiButton';
 import { DiagramSubtreeControls } from '../canvas/DiagramSubtreeControls';
 import { useLocalAnchors } from './useLocalAnchors';
 import { mappingShapeId } from './shapeProjection';
@@ -76,6 +77,7 @@ export function DiagramShapeContent({ nodeId }: { nodeId: string }) {
           onClick={() => runtime.actions?.collapse(nodeId, !frame.collapsed)}>{frame.collapsed ? 'Expand' : 'Collapse'}</button>
         <button type="button" disabled={interaction.disabled} onClick={() => runtime.actions?.move(frame.boxId)}>Move</button>
         <button type="button" disabled={interaction.disabled} onClick={() => runtime.actions?.group(frame.boxId)}>Group</button>
+        {model.node.layout === 'grid' && model.node.content && <CopyDiagramAsciiButton ascii={model.node.content.ascii} />}
       </div>}
     </div>
   </>;

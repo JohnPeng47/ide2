@@ -122,6 +122,37 @@ export function drawResolvedEdge(edge: DiagramConnection, ar: Rect | undefined, 
     bounds: { width: Math.max(...xs) - Math.min(...xs) + 12, height: Math.max(...ys) - Math.min(...ys) + 12 } };
 }
 
+/** During a pointer drag, keep the settled route's bends and lanes and move its
+ * endpoints with the shapes. Obstacle search runs again when the gesture ends.
+ * This path is bounded by the number of bends, not the canvas's text obstacles. */
+export function previewEdge(edge: DiagramConnection, ar: Rect | undefined, br: Rect | undefined,
+  previous: FloatingBoxArrow | undefined, geometrySource: FloatingBoxArrow['geometrySource']): FloatingBoxArrow {
+  if (!ar || !br) return { kind: 'arrow', id: `edge:${edge.id}`, edgeId: edge.id, coordinateSpace: 'canvas',
+    geometrySource, position: { x: 0, y: 0 }, bounds: { width: 1, height: 1 }, status: 'stale' };
+  const source = point(ar, br, previous?.source?.side ?? edge.source.side, edge.source.offset);
+  const target = point(br, ar, previous?.target?.side ?? edge.target.side, edge.target.offset);
+  if (previous?.path && previous.source?.x === source.x && previous.source.y === source.y
+    && previous.target?.x === target.x && previous.target.y === target.y && previous.geometrySource === geometrySource) return previous;
+  const horizontal = (p: AnchorPoint) => p.side === 'left' || p.side === 'right';
+  let points: RoutePoint[];
+  if (previous?.points && previous.points.length >= 3) {
+    points = previous.points.map(p => ({ ...p }));
+    points[0] = source; points[points.length - 1] = target;
+    if (horizontal(source)) points[1].y = source.y; else points[1].x = source.x;
+    if (horizontal(target)) points[points.length - 2].y = target.y; else points[points.length - 2].x = target.x;
+  } else if (horizontal(source) === horizontal(target)) {
+    const mid = horizontal(source) ? (source.x + target.x) / 2 : (source.y + target.y) / 2;
+    points = horizontal(source) ? [source, { x: mid, y: source.y }, { x: mid, y: target.y }, target]
+      : [source, { x: source.x, y: mid }, { x: target.x, y: mid }, target];
+  } else points = [source, horizontal(source) ? { x: target.x, y: source.y } : { x: source.x, y: target.y }, target];
+  const xs = points.map(p => p.x), ys = points.map(p => p.y), label = getArrowLabel(edge.appearance);
+  return { kind: 'arrow', id: `edge:${edge.id}`, edgeId: edge.id, coordinateSpace: 'canvas', geometrySource,
+    source, target, points, path: routePath(points), status: ar.proxy || br.proxy ? 'proxy' : 'resolved',
+    label: { text: label.text, position: label.position ?? { x: (source.x + target.x) / 2, y: (source.y + target.y) / 2 - 8 } },
+    position: { x: Math.min(...xs) - 6, y: Math.min(...ys) - 6 },
+    bounds: { width: Math.max(...xs) - Math.min(...xs) + 12, height: Math.max(...ys) - Math.min(...ys) + 12 } };
+}
+
 /** Apply the shared-segment pass to an entire canvas, preserving untouched arrow objects. */
 export function spaceEdgeArrows(entries: readonly { arrow: FloatingBoxArrow; obstacles: readonly RouteObstacle[] }[]): FloatingBoxArrow[] {
   const lanes = separateEdgeLanes(entries.filter(({ arrow }) => arrow.points && arrow.points.length > 1)

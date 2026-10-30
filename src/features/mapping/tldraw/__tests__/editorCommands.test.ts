@@ -4,8 +4,28 @@ import { mappingDocumentFromScene } from '../../../../../domain/mapping/workspac
 import { initialCanvasState } from '../../../../../domain/mapping/workspace/mappingWorkspace';
 import { MappingDocumentController } from '../../../../../domain/mapping/workspace/mappingDocumentController';
 import { diagramSelectionItem } from '../../../../../domain/mapping/selection/selectionState';
+import * as routing from '../../../../../domain/mapping/workspace/connectionLayout';
+import { defaultArrowAppearance } from '../../../../../domain/core/diagrams/diagramConnection';
+import { diagramContentNodes } from '../../../../../domain/core/diagrams/diagramContentNodes';
 
 const setup = () => new MappingDocumentController(mappingDocumentFromScene(singleDiagramScene('Root\n\n`-- Child\n')), initialCanvasState());
+it('commits native movement without computing unused edge routes, while API reads retain full geometry', () => {
+  const document = setup().getSnapshot().document;
+  const content = document.scene.contents.overview.content;
+  document.edges = [{ id: 'self', source: { kind: 'content-node', displayNodeId: 'grid:overview', side: 'right',
+    contentNodeId: diagramContentNodes(content)[0].id, revisionId: content.revisionId },
+    target: { kind: 'box', displayNodeId: 'grid:overview', side: 'left' }, appearance: defaultArrowAppearance }];
+  const controller = new MappingDocumentController(document, initialCanvasState());
+  const route = vi.spyOn(routing, 'drawEdge');
+  try {
+    controller.commitEditorGesture([{ method: 'move', nodeId: 'grid:overview', position: { column: 14, row: 8 } }], controller.getSnapshot().canvas);
+    expect(route).not.toHaveBeenCalled();
+    const result = controller.applyUpdate(controller.getSnapshot().version,
+      [{ method: 'move', nodeId: 'grid:overview', position: { column: 18, row: 8 } }]);
+    expect(route).toHaveBeenCalledOnce();
+    expect(result.nodes.find(node => node.id === 'floating:edge:self')?.kind).toBe('arrow');
+  } finally { route.mockRestore(); }
+});
 it('stores movement and its selection consequence as one checkpoint, and restores both without editing content', () => {
   const controller = setup(), before = controller.getSnapshot(), revision = before.document.scene.contents.overview.revisionId;
   controller.commitEditorGesture([{ method: 'move', nodeId: 'grid:overview', position: { column: 14, row: 8 } }],

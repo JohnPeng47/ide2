@@ -36,7 +36,8 @@ export function initialCanvasState(): MappingCanvasState {
   return { selection: { items: [] }, diagramViews: {}, display: emptyDisplayState(), controls: { activeBoxId: 'overview', selectionFocusId: null, activeThreadId: null, surfaces: { draft: initialSelectionSurface() } } };
 }
 export interface MappingDocumentSnapshot {
-  parentCanvasId?: string;
+  /** Missing on legacy snapshots; normalized to standard or projection on read. */
+  type?: import('../../core/diagrams/canvasType').CanvasType;
   hidden?: boolean;
   history?: import('./canvasHistory').CanvasHistoryRecord;
   repositoryId?: string;

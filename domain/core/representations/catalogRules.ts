@@ -1,3 +1,4 @@
+import { canvasTypeOf } from '../diagrams/canvasType';
 import { createStoredDiagram } from '../diagrams/diagramRevisionStore';
 
 import { DefaultCanvasHistoryService } from '../diagrams/canvasHistoryService';
@@ -222,6 +223,8 @@ export function publishMappingDiagram(catalog: ProjectRepresentationCatalogRecor
   };
   const representation: ProjectRepresentationRecord = {
     schemaVersion: 1, id, projectId, repositoryId: input.repositoryId ?? current?.repositoryId ?? (source ? catalog.representations[source.representationId]?.repositoryId : undefined), handle: current?.handle ?? id, name: input.name.trim(),
+    type: canvasTypeOf({ type: input.type ?? current?.type, canvas: history.snapshots[history.headId].view as { projectionLayout?: unknown } }),
+    ...(input.generated ?? current?.generated ? { generated: input.generated ?? current?.generated } : {}),
     viewKind: current?.viewKind ?? "diagram", representationKind: revision.representationKind,
     status: "settled", currentRevisionId: revisionId, revisionIds: [...(current?.revisionIds ?? []), revisionId],
     createdAt: current?.createdAt ?? timestamp, updatedAt: timestamp

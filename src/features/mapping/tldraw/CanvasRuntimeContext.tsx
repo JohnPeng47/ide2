@@ -68,7 +68,7 @@ export interface CanvasActions {
 export class CanvasRuntime {
   private readonly editorState = atom<Editor | undefined>('mapping editor', undefined);
   get editor() { return this.editorState.get(); }
-  set editor(value: Editor | undefined) { this.editorState.set(value); }
+  set editor(value: Editor | undefined) { this.editorState.set(value); if (!value) this.routing.dispose(); }
   readonly gestures = new SelectionToolBridge();
   readonly canUndo = atom('mapping undo available', false);
   readonly canEscape = atom('mapping escape available', true);

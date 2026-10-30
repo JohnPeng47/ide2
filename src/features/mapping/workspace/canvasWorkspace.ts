@@ -1,3 +1,4 @@
+import { canvasTypeOf, type CanvasType } from '../../../../domain/core/diagrams/canvasType';
 import { DefaultCanvasHistoryService, type CanvasHistoryService } from '../../../../domain/core/diagrams/canvasHistoryService';
 import { createStore } from 'zustand/vanilla';
 import type { CanvasTransform } from '../../../../domain/core/diagrams/diagramCanvas';
@@ -8,7 +9,7 @@ import type { DiagramFocus } from '../search/SearchHighlight';
 import { CanvasSession, readable, type SavedDocumentState } from './canvasSession';
 
 export interface DraftMetadata extends SavedDocumentState {
-  parentCanvasId?: string;
+  type?: CanvasType;
   repositoryId?: string;
   hidden?: boolean; newerRevision?: boolean; reloadKey?: string; representationId?: string;
   revisionId: string; busy: boolean; viewport?: CanvasTransform; focusBox?: DiagramFocus;
@@ -51,7 +52,7 @@ export class CanvasWorkspace {
     for (const node of Object.values(canvas.display.nodes)) if (node.kind === 'conversation') node.thread.pending = false;
     const documentId = `draft-${crypto.randomUUID()}`;
     this.setDrafts(current => ({ ...current, [documentId]: {
-      name, repositoryId: input.repositoryId ?? source.repositoryId, savedName: '', revisionId: '', busy: false, document: snapshot.document, canvas,
+      type: source.type, name, repositoryId: input.repositoryId ?? source.repositoryId, savedName: '', revisionId: '', busy: false, document: snapshot.document, canvas,
       history: controller.forkHistory(canvas), viewport: structuredClone(input.viewport ?? source.viewport),
       savedScene: JSON.stringify(snapshot.document.scene), savedEdges: JSON.stringify(snapshot.document.edges)
     } }));
@@ -68,11 +69,11 @@ export class CanvasWorkspace {
       if (item === prior[id]) { next[id] = prior[id]; continue; }
       if ('document' in item) {
         const { document, canvas, history, ...metadata } = item;
-        next[id] = { ...metadata, session: new CanvasSession({ ...metadata, document, canvas, history }, this.history) };
+        next[id] = { ...metadata, type: canvasTypeOf({ ...metadata, canvas }), session: new CanvasSession({ ...metadata, document, canvas, history }, this.history) };
       } else next[id] = item;
       next[id].session.updateBaseline(next[id]);
       const old = prior[id];
-      if (!old || next[id].session !== old.session || ['name', 'savedName', 'savedScene', 'savedEdges', 'revisionId', 'representationId', 'repositoryId', 'parentCanvasId', 'hidden'].some(key =>
+      if (!old || next[id].session !== old.session || ['name', 'savedName', 'savedScene', 'savedEdges', 'revisionId', 'representationId', 'repositoryId', 'type', 'hidden'].some(key =>
         old[key as keyof DraftMetadata] !== next[id][key as keyof DraftMetadata])) { persist = true; changedIds.add(id); }
     }
     for (const [id, old] of Object.entries(prior)) if (next[id]?.session !== old.session) {

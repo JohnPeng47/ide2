@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir, readFile, readdir, open, link, rm } from 'node:fs/promises';
+import { mkdir, readFile, readdir, open, link, rename, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { AgentContext } from '../../../domain/core/agents/agentContext';
-import { savedAgentContextIdSchema, savedAgentContextSchema, summarizeAgentContext, type SavedAgentContext } from '../../../domain/core/agents/savedAgentContext';
+import { savedAgentContextIdSchema, savedAgentContextSchema, summarizeAgentContext, updateAgentContextSchema, type SavedAgentContext } from '../../../domain/core/agents/savedAgentContext';
 import type { AgentContextRepository } from '../../../application/core/ports/agentContextRepository';
 
 /** Globally addressable within this application store; no canvas or chat binding. */
@@ -33,6 +33,22 @@ export class FileAgentContextRepository implements AgentContextRepository {
       const saved = (await this.read(record.agentContextId))!;
       if (saved.requestHash !== record.requestHash) throw Error('REQUEST_ID_CONFLICT: this UUID identifies a different saved context');
       return saved;
+    } finally { await rm(temp, { force: true }); }
+  }
+  async updateGroup(id: string, group: string | null) {
+    const input = updateAgentContextSchema.parse({ agentContextId: id, group });
+    const record = await this.read(id);
+    if (!record) throw Error('AGENT_CONTEXT_NOT_FOUND: saved context is unavailable');
+    if (input.group === null) delete record.group;
+    else record.group = input.group;
+    const temp = path.join(this.directory, `.${randomUUID()}.tmp`);
+    try {
+      const handle = await open(temp, 'wx', 0o600);
+      try { await handle.writeFile(JSON.stringify(record)); await handle.sync(); } finally { await handle.close(); }
+      await rename(temp, this.file(id));
+      const directory = await open(this.directory, 'r');
+      try { await directory.sync(); } finally { await directory.close(); }
+      return record;
     } finally { await rm(temp, { force: true }); }
   }
   async summaries() {

@@ -1,3 +1,14 @@
+import { EvalRunService } from '../../../application/mapping/evals/evalRunService';
+import { EvalPromptService } from '../../../application/mapping/evals/evalPromptService';
+import { GeneratedCanvasCatalog } from '../../../application/mapping/evals/generatedCanvasCatalog';
+import { FileRollUpRunStore } from '../../../infrastructure/mapping/rollup/fileRollUpRunStore';
+import { JsonDirectoryStore } from '../../../infrastructure/mapping/evals/jsonDirectoryStore';
+import { CodexEvalRuntime, FakeEvalRuntime } from '../../../infrastructure/mapping/evals/evalRuntime';
+import type { EvalPrompt } from '../../../domain/mapping/evals/evalPrompt';
+import type { EvalRun } from '../../../domain/mapping/evals/evalRun';
+import { ComparisonGenerationService } from '../../../application/mapping/compare/comparisonGenerationService';
+import { FileComparisonRunStore } from '../../../infrastructure/mapping/compare/fileComparisonRunStore';
+import { CodexComparisonRuntime, FakeComparisonRuntime } from '../../../infrastructure/mapping/compare/comparisonRuntime';
 import { resolveDiagramSource } from '../../../application/core/source/diagramSource';
 import { FileAgentContextSources } from '../../../infrastructure/core/persistence/fileAgentContextSources';
 import { AgentContextLibrary } from '../../../application/mapping/agent/agentContextLibrary';
@@ -107,7 +118,12 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
   const pushIntegrations = new PushIntegrationService(new FilePushIntegrationStore(store.storeRoot),
     new GitPushSource(store.repositories), diffSessionWorkflows, options.piEnabled === true);
   const workspace = new MappingWorkspaceService(store, new MappingWorkspaceStore(store.storeRoot, store.diagramPersistence), diagramContextStore);
-  const compareSessions = new CompareSessionService(workspace, new FileCompareSessionStore(store.storeRoot));
+  const generatedCanvases = new GeneratedCanvasCatalog(store);
+  const compareSessions = new CompareSessionService(workspace, new FileCompareSessionStore(store.storeRoot), generatedCanvases);
+  const evalPrompts = new EvalPromptService(new JsonDirectoryStore<EvalPrompt>(store.storeRoot, 'eval-prompts'), store);
+  const evalRuns = new EvalRunService(compareSessions, workspace, store, contextLibrary, evalPrompts, generatedCanvases,
+    new JsonDirectoryStore<EvalRun>(store.storeRoot, 'eval-runs'), fake ? new FakeEvalRuntime() : new CodexEvalRuntime(options.piEnabled === true), new FileRollUpRunStore(store.storeRoot));
+  const comparisonRuns = new ComparisonGenerationService(compareSessions, new FileComparisonRunStore(store.storeRoot), fake ? new FakeComparisonRuntime() : new CodexComparisonRuntime(options.piEnabled === true));
   const routes = {
     core: createCoreRoutes({
       application: core,
@@ -117,13 +133,15 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
     mapping: createMappingRoutes({
       selection: new SelectionService(store, mappingRuntime, mappingPocSourceRoot),
       diagrams, agent, agentChat, liveCanvas, diffSessionWorkflows, pushIntegrations, pushToken: process.env.NEW_DIAGRAM_PUSH_TOKEN,
-      workspace, compareSessions,
+      workspace, compareSessions, comparisonRuns, evalRuns, evalPrompts,
       chat: new LocalChatService(store, corpusAccess, chatRuntime, mappingPocSourceRoot),
       compactionService
     })
   };
   return {
     routes, liveCanvas, diffSessionWorkflows, pushIntegrations, dispose() {
+      comparisonRuns.dispose();
+      evalRuns.dispose();
       agentChat.dispose();
       diffSessionWorkflows.dispose();
       agent.dispose(); diagramEditRuntime.dispose(); canvasBridge.dispose(); languageService?.dispose(); mappingRuntime.dispose(); chatRuntime.dispose(); compactionService.dispose();

@@ -1,24 +1,31 @@
 import { atom, computed, type Computed, type Editor } from 'tldraw';
-import { diagramRoutingObstacles, connectionObstacles, type RoutingObstacle } from '../../../../domain/mapping/workspace/routingObstacles';
-import type { EndpointIdentity, EndpointRect } from '../../../../domain/mapping/workspace/endpointGeometry';
-import { overlapsRoute } from '../../../../domain/mapping/workspace/edgeRouting';
-import { drawResolvedEdge, spaceEdgeArrows, type FloatingBoxArrow } from '../../../../domain/mapping/workspace/connectionLayout';
+import { diagramRoutingObstacles, type RoutingObstacle } from '../../../../domain/mapping/workspace/routingObstacles';
+import { ConnectionRouter, type RoutingInput } from '../../../../domain/mapping/workspace/connectionRouter';
+import { previewEdge, type FloatingBoxArrow } from '../../../../domain/mapping/workspace/connectionLayout';
 import type { DiagramConnection } from '../../../../domain/core/diagrams/diagramConnection';
 import type { Diagram } from '../../../../domain/core/diagrams/diagram';
 import type { DiagramViewState } from '../../../../domain/mapping/workspace/diagramViewState';
 import { mappingShapeId } from './shapeProjection';
 
 interface Owner { id: string; layoutKey: string; world: Computed<RoutingObstacle[]> }
-interface CachedRoute { key: string; region?: EndpointRect; obstacles: string; result: FloatingBoxArrow }
+interface RoutingJob { id: number; key: string; inputs: readonly RoutingInput[]; obstacles: RoutingObstacle[] }
 interface RoutingDiagram { layoutKey: string; diagram?: Diagram; view?: DiagramViewState; cell: { width: number; height: number } }
 
 /** Transient routing geometry. No DOM reads or document writes; camera changes are not dependencies. */
 export class NativeRoutingStore {
   private readonly owners = atom<Owner[]>('routing obstacle owners', []);
-  private laneCache?: { key: string; arrows: Map<string, FloatingBoxArrow> };
-  private readonly routes = new Map<string, CachedRoute>();
+  private readonly router = new ConnectionRouter();
+  private settled = new Map<string, FloatingBoxArrow>();
+  private readonly completed = atom<{ key: string; arrows: Map<string, FloatingBoxArrow> } | undefined>('completed canvas routing', undefined);
+  private worker?: Worker;
+  private inFlight?: RoutingJob;
+  private pending?: RoutingJob;
+  private requested?: string;
+  private serial = 0;
   readonly obstacles = computed('canvas routing obstacles', () => this.owners.get().flatMap(owner => owner.world.get()));
-  constructor(private readonly editor: () => Editor | undefined) {}
+  constructor(private readonly editor: () => Editor | undefined,
+    private createWorker: (() => Worker) | undefined = typeof Worker === 'undefined' ? undefined
+      : () => new Worker(new URL('./routing.worker.ts', import.meta.url), { type: 'module' })) {}
 
   sync(grids: ReadonlyMap<string, RoutingDiagram>, edges: readonly DiagramConnection[]) {
     const prior = this.owners.get(), byId = new Map(prior.map(owner => [owner.id, owner]));
@@ -41,35 +48,57 @@ export class NativeRoutingStore {
       }) });
     }
     if (owners.length !== prior.length || owners.some((owner, index) => owner !== prior[index])) this.owners.set(owners);
-    const live = new Set(edges.map(edge => edge.id));
-    for (const id of this.routes.keys()) if (!live.has(id)) this.routes.delete(id);
+    this.router.retain(edges);
   }
 
-  drawAll(inputs: readonly Readonly<Parameters<NativeRoutingStore['draw']>>[]) {
+  drawAll(inputs: readonly RoutingInput[]) {
+    // This reactive flag invalidates on pointer-up/cancel even without another move.
+    if (this.editor()?.inputs?.getIsDragging()) return this.preview(inputs);
     const obstacles = this.obstacles.get();
-    const entries = inputs.map(input => ({ arrow: this.draw(...input),
-      obstacles: [...connectionObstacles(obstacles, input[3], input[4]), ...[input[1], input[2]].filter(rect => !!rect)] }));
-    const key = JSON.stringify([entries.map(entry => entry.arrow), inputs.map(input => input.slice(1, 5)), obstacles]);
-    if (this.laneCache?.key === key) return this.laneCache.arrows;
-    const arrows = new Map(spaceEdgeArrows(entries).map(arrow => {
-      const previous = this.laneCache?.arrows.get(arrow.edgeId);
-      return [arrow.edgeId, previous && JSON.stringify(previous) === JSON.stringify(arrow) ? previous : arrow];
-    }));
-    this.laneCache = { key, arrows };
-    return arrows;
+    if (!this.createWorker) return this.settled = this.router.drawAll(inputs, obstacles);
+    const key = JSON.stringify([inputs, obstacles]), completed = this.completed.get();
+    if (completed?.key === key) return this.settled = completed.arrows;
+    if (this.requested !== key) {
+      this.requested = key;
+      this.pending = { id: ++this.serial, key, inputs, obstacles };
+      this.dispatch();
+    }
+    return this.preview(inputs);
   }
-
-  draw(edge: DiagramConnection, source: Parameters<typeof drawResolvedEdge>[1], target: Parameters<typeof drawResolvedEdge>[2],
-    sourceIdentity: EndpointIdentity | undefined, targetIdentity: EndpointIdentity | undefined, geometrySource: FloatingBoxArrow['geometrySource']) {
-    const obstacles = connectionObstacles(this.obstacles.get(), sourceIdentity, targetIdentity);
-    const key = JSON.stringify([edge, source, target, geometrySource]), previous = this.routes.get(edge.id);
-    const nearby = (region?: EndpointRect) => JSON.stringify((region ? obstacles.filter(rect => overlapsRoute(rect, region)) : obstacles)
-      .map(rect => [rect.x, rect.y, rect.width, rect.height, rect.kind]));
-    // A moved obstacle outside the existing route's bounding rectangle cannot intersect that route.
-    if (previous?.key === key && previous.obstacles === nearby(previous.region)) return previous.result;
-    const result = drawResolvedEdge(edge, source, target, geometrySource, undefined, obstacles);
-    const region = result.path ? { x: result.position.x, y: result.position.y, ...result.bounds } : undefined;
-    this.routes.set(edge.id, { key, region, obstacles: nearby(region), result });
-    return result;
+  private preview(inputs: readonly RoutingInput[]) {
+    return new Map(inputs.map(([edge, source, target, , , geometry]) => [edge.id,
+      previewEdge(edge, source, target, this.settled.get(edge.id), geometry)]));
   }
+  private dispatch() {
+    if (this.inFlight || !this.pending || !this.createWorker) return;
+    try {
+      if (!this.worker) {
+        const worker = this.worker = this.createWorker();
+        worker.onmessage = (event: MessageEvent<{ id: number; arrows: Map<string, FloatingBoxArrow>; error?: string }>) => {
+          if (this.worker !== worker || event.data.id !== this.inFlight?.id) return;
+          if (event.data.error) { this.failWorker(); return; }
+          const job = this.inFlight; this.inFlight = undefined;
+          // A worker can finish after newer geometry is requested. Never publish
+          // that stale result; retain only the newest pending request.
+          if (job.key === this.requested) this.completed.set({ key: job.key, arrows: event.data.arrows });
+          this.dispatch();
+        };
+        worker.onerror = () => { if (this.worker === worker) this.failWorker(); };
+      }
+      const job = this.inFlight = this.pending; this.pending = undefined;
+      this.worker.postMessage({ id: job.id, inputs: job.inputs, obstacles: job.obstacles });
+    } catch { this.failWorker(); }
+  }
+  private failWorker() {
+    this.worker?.terminate(); this.worker = undefined; this.createWorker = undefined;
+    this.inFlight = this.pending = undefined; this.requested = undefined;
+    // Publish on a later task: construction/postMessage can fail while a
+    // computed read is running, where reactive writes are not allowed.
+    queueMicrotask(() => this.completed.set({ key: 'worker-failed', arrows: new Map() }));
+  }
+  dispose() {
+    this.worker?.terminate(); this.worker = undefined; this.inFlight = this.pending = undefined;
+    this.requested = undefined; this.completed.set(undefined); this.settled = new Map();
+  }
+  draw(...input: RoutingInput) { return this.router.draw(input, this.obstacles.get()); }
 }

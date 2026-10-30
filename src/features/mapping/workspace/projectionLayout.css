@@ -19,7 +19,6 @@
 .projection-layout-panel.is-minimized { width: auto; padding: 10px 14px; }
 .projection-layout-panel.is-minimized header { margin: 0; align-items: center; }
 .projection-layout-panel :disabled { opacity: .5; cursor: default; }
-.mapping-floating-pane nav ul.mapping-canvas-children { padding-left: 14px; margin-left: 10px; border-left: 1px solid var(--gutter); }
 .mapping-canvas-actions button { width: 100%; padding: 10px; background: var(--surface-selected); border: 1px solid var(--accent-primary); border-radius: 6px; color: var(--fg); cursor: pointer; }
 .mapping-canvas-actions button:disabled { opacity: .5; cursor: default; }
 .mapping-canvas-actions p { color: var(--muted); font-size: 12px; line-height: 1.5; }

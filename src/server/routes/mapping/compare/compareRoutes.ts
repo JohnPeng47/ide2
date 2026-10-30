@@ -13,6 +13,7 @@ export async function handleCompareRoutes(request: Connect.IncomingMessage, resp
   }
   const id = url.pathname.slice(base.length + 1);
   if (/^[a-f0-9-]{36}$/i.test(id)) {
+    if (request.method === 'DELETE') { await service.delete(id); return sendJson(response, 200, { deleted: true }); }
     if (request.method !== 'GET') return sendJson(response, 405, { error: 'method not allowed' });
     return sendJson(response, 200, await service.read(id));
   }

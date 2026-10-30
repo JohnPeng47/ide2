@@ -272,7 +272,7 @@ export class MappingDocumentController {
   applyUpdate(expectedVersion: number, operations: DiagramOperation[]) {
     this.editorDriver?.settle();
     this.pendingNodeIds.clear();
-    try { return this.applyOperations(expectedVersion, operations); }
+    try { return { ...this.applyOperations(expectedVersion, operations), nodes: this.nodes() }; }
     finally { this.pendingNodeIds.clear(); }
   }
   transact(expectedVersion: number, operations: DiagramOperation[]) { return this.applyUpdate(expectedVersion, operations); }
@@ -612,7 +612,8 @@ export class MappingDocumentController {
         if (!box || id === document.scene.root.id && !(editorCanvas && op.method === 'move' && box.kind === 'diagram')) throw new Error('Unknown or protected GridBox');
         if (op.method === 'move') {
           if (!('column' in op.position) || !('row' in op.position)) throw new Error('GridBoxes require cell coordinates');
-          const absolute = canvasDisplayNodes(document, canvas, 0).find(node => node.id === op.nodeId)!;
+          // Moving a box only needs its grid geometry, never routed connections.
+          const absolute = canvasDisplayNodes({ ...document, edges: [] }, canvas, 0).find(node => node.id === op.nodeId)!;
           if (absolute.layout !== 'grid') throw new Error('Expected GridBox');
           const position = { column: op.position.column - (absolute.geometry.bounds.column - box.position.column), row: op.position.row - (absolute.geometry.bounds.row - box.position.row) };
           const scene = updateGridBox(document.scene, id, item => ({ ...item, position }));
@@ -680,11 +681,12 @@ export class MappingDocumentController {
       throw Error('Canvas must contain a visible diagram; use a transfer to move the last diagram');
     const active = findBox(document.scene.root, canvas.controls.activeBoxId);
     if (!active) {
-      const first = canvasDisplayNodes(document, canvas, 0).find(node => node.layout === 'grid' && node.kind === 'diagram');
+      const first = canvasDisplayNodes({ ...document, edges: [] }, canvas, 0).find(node => node.layout === 'grid' && node.kind === 'diagram');
       canvas.controls.activeBoxId = first?.layout === 'grid' ? first.boxId : document.scene.root.id;
     }
     this.updateSnapshot({ document, canvas }, true);
-    return { version: this.snapshot.version, nodes: this.nodes(), ...(Object.keys(highlightIds).length ? { highlightIds } : {}) };
+    // Native gestures consume the snapshot; only API callers need the routed node registry.
+    return { version: this.snapshot.version, ...(Object.keys(highlightIds).length ? { highlightIds } : {}) };
   }
   private gridId(id: string) { if (!id.startsWith('grid:')) throw new Error('Expected GridBox ID'); return id.slice(5); }
 }

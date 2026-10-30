@@ -1,3 +1,4 @@
+import { canvasCameraViewSchema } from './canvasCameraView';
 import { canvasGenerationSchema } from './canvasGeneration';
 import { z } from 'zod';
 import type { StoredCanvasSnapshot } from './canvasHistory';
@@ -8,6 +9,7 @@ export const canvasViewSchema = z.object({
   startCheckpointId: id, checkpointIds: z.array(id).min(1).max(100000),
   finalCheckpointId: id.optional(), savedAt: z.string().datetime().optional(),
   parentViewId: id.optional(), forkCheckpointId: id.optional(), alternativeGroupId: id.optional(),
+  cameraViews: z.array(canvasCameraViewSchema).max(100).optional(), defaultCameraViewId: id.optional(),
   archivedAt: z.string().datetime().optional(), generation: canvasGenerationSchema.optional()
 }).strict();
 export type CanvasView = z.infer<typeof canvasViewSchema>;

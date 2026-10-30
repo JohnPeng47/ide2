@@ -13,7 +13,7 @@ export function windowPanelCommand(key: string, shift: boolean): WindowPanelComm
   }
 }
 
-/** One global capture listener routes an explicitly armed sequence before editors/canvas shortcuts. */
+/** One global capture listener routes search shortcuts and armed sequences before editors/canvas shortcuts. */
 export function useWindowPanelHotkeys(dispatch: (command: WindowPanelCommand) => void) {
   const handler = useRef(dispatch); handler.current = dispatch;
   const [pending, setPending] = useState(false);
@@ -25,6 +25,11 @@ export function useWindowPanelHotkeys(dispatch: (command: WindowPanelCommand) =>
       if (event.code === 'ControlRight') rightControl = true;
       if (event.isComposing || event.key === 'Process') { cancel(); return; }
       if (event.code === 'ControlLeft') rightControl = false;
+      if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === 'f') {
+        consume(event); cancel();
+        if (!event.repeat) handler.current(event.shiftKey ? 'search-project' : 'search-canvas');
+        return;
+      }
       const prefix = event.ctrlKey && !rightControl && !event.metaKey && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'b';
       if (prefix) {
         consume(event);

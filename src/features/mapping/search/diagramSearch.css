@@ -10,7 +10,8 @@
 .diagram-search-panel small, .diagram-search-panel p { color: var(--muted); margin: 0; }
 .diagram-search-results { overflow: auto; min-height: 0; }
 .diagram-search-results h3 { font: var(--text-md) var(--font-mono); color: var(--accent-cyan); margin: 14px 0 6px; overflow-wrap: anywhere; }
-.diagram-search-results h3 span { display: block; color: var(--muted); font-size: var(--text-xs); margin-top: 4px; }
+.diagram-search-results h4 { color: var(--muted); font: var(--text-xs) var(--font-mono); margin: 10px 0 4px; overflow-wrap: anywhere; }
+.diagram-search-results h3 + h4 { margin-top: 4px; }
 .diagram-search-results button { display: flex; gap: var(--space-5); width: 100%; border: 0; padding: var(--space-3); text-align: left; cursor: pointer; background: transparent; }
 .diagram-search-results button:hover, .diagram-search-results button.is-current { background: var(--surface-hover); }
 .diagram-search-results code { white-space: pre-wrap; overflow-wrap: anywhere; min-width: 0; font: inherit; }

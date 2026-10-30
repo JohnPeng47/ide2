@@ -1,14 +1,16 @@
 import type { AgentContextSources } from '../../core/ports/agentContextSources';
 import type { AgentContextRepository } from '../../core/ports/agentContextRepository';
 import { AgentContext } from '../../../domain/core/agents/agentContext';
-import { createAgentContextSchema, listAgentContextsSchema, readAgentContextSchema, summarizeAgentContext } from '../../../domain/core/agents/savedAgentContext';
+import { createAgentContextSchema, listAgentContextsSchema, readAgentContextSchema, updateAgentContextSchema, summarizeAgentContext } from '../../../domain/core/agents/savedAgentContext';
 import { sha256 } from '../../../domain/core/sha256';
 
 export class AgentContextLibrary {
   constructor(private readonly store: AgentContextRepository, private readonly sources?: AgentContextSources) {}
   async create(raw: unknown) {
     const input = createAgentContextSchema.parse(raw);
-    const constituentRequestHash = Array.isArray(input.context) ? sha256(JSON.stringify([input.name, input.description, input.context])) : undefined;
+    // Preserve legacy creation hashes when no group was supplied. Metadata updates never rewrite this receipt.
+    const groupHashInput = input.group === undefined ? [] : [input.group];
+    const constituentRequestHash = Array.isArray(input.context) ? sha256(JSON.stringify([input.name, input.description, input.context, ...groupHashInput])) : undefined;
     if (constituentRequestHash) {
       const previous = await this.store.read(`saved-agent-context-${input.requestId}`);
       if (previous) {
@@ -33,7 +35,7 @@ export class AgentContextLibrary {
       agentType: 'saved-context', sourceSessionId: input.requestId, format: 'messages-v1', fromEntryId: 'context', throughEntryId: 'context',
       entries: [{ id: 'context', parentId: null, message: { role: 'user', content, timestamp: 0 } }]
     }) : AgentContext.fromSnapshot(input.context);
-    const requestHash = constituentRequestHash ?? sha256(JSON.stringify([input.name, input.description, context.contentHash]));
+    const requestHash = constituentRequestHash ?? sha256(JSON.stringify([input.name, input.description, context.contentHash, ...groupHashInput]));
     if (!constituentRequestHash) {
       const previous = await this.store.read(`saved-agent-context-${input.requestId}`);
       if (previous) {
@@ -43,9 +45,13 @@ export class AgentContextLibrary {
     }
     const snapshot = this.sources ? await this.sources.persist(context.toSnapshot()) : context.toSnapshot();
     const record = await this.store.create({ schemaVersion: 1, agentContextId: `saved-agent-context-${input.requestId}`,
-      name: input.name, description: input.description, createdAt: new Date().toISOString(), snapshot,
+      name: input.name, description: input.description, ...(input.group !== undefined ? { group: input.group } : {}), createdAt: new Date().toISOString(), snapshot,
       requestHash });
     return summarizeAgentContext(record);
+  }
+  async update(raw: unknown) {
+    const { agentContextId, group } = updateAgentContextSchema.parse(raw);
+    return summarizeAgentContext(await this.store.updateGroup(agentContextId, group));
   }
   async read(id: string, resolveSources = true) {
     readAgentContextSchema.parse({ agentContextId: id });

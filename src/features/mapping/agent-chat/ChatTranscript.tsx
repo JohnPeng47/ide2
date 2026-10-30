@@ -7,6 +7,11 @@ import { CopyButton } from './markdown/CopyButton';
 import { ChatReferenceDetails } from './ChatReferences';
 import { useTranscriptZoom } from './useTranscriptZoom';
 
+function formatTurnDuration(startedAt: string, completedAt: string): string {
+  const seconds = Math.max(0, Math.round((Date.parse(completedAt) - Date.parse(startedAt)) / 1000));
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
 function Disclosure({ label = 'Show details', expanded, children }: { label?: string; expanded: boolean; children: () => ReactNode }) {
   const [local, setLocal] = useState<boolean>();
   const open = local ?? expanded;
@@ -166,7 +171,7 @@ export const ChatTranscript = memo(function ChatTranscript({ session, open, zoom
       {blocks.slice(start.current).map(block => <div key={block.id} data-transcript-row={block.id}><TranscriptRow block={block}
         active={session.status === 'running' && block.activeCount > 0 && (!block.items[0].turnId || block.items[0].turnId === session.turnId)} expanded={expanded} /></div>)}
       {session.error && <p className="agent-chat-error" role="alert">{session.error}</p>}
-      {session.completedAt && <div className="agent-completion">{session.status === 'interrupted' ? 'Stopped' : session.status === 'failed' ? 'Turn failed' : 'Completed'}{session.turnStartedAt && ` · ${Math.max(0, Math.round((Date.parse(session.completedAt) - Date.parse(session.turnStartedAt)) / 1000))}s`}</div>}
+      {session.completedAt && <div className="agent-completion">{session.status === 'interrupted' ? 'Stopped' : session.status === 'failed' ? 'Turn failed' : 'Completed'}{session.turnStartedAt && ` · ${formatTurnDuration(session.turnStartedAt, session.completedAt)}`}</div>}
     </div></div>
     {!following && <button className="agent-chat-latest" onClick={() => { userScrollUntil.current = 0; follow.current = true; setFollowing(true); viewport.current?.scrollTo({ top: viewport.current.scrollHeight }); }}>Jump to latest ↓</button>}
   </ActivitySession.Provider>;

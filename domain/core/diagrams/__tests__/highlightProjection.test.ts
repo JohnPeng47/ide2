@@ -156,7 +156,7 @@ describe('highlight projection', () => {
     expect(layoutHighlightProjection(compact, projection, projectionPresets.Original).scene).toEqual(original.scene);
   });
 
-  it('persists ancestry and baseline through workspace records; settings and geometry undo together', () => {
+  it('persists canvas type and baseline through workspace records; settings and geometry undo together', () => {
     const { prepared, projection, view } = fixture();
     const controller = new MappingDocumentController(prepared.destination.document, view, 0, undefined, undefined, prepared.destination.history);
     const compact = layoutHighlightProjection(controller.getSnapshot().document, projection, projectionPresets.Tight);
@@ -169,15 +169,27 @@ describe('highlight projection', () => {
     expect(() => controller.commitProjectionLayout(0, compact, projection)).toThrow('Canvas changed');
     const workspace: MappingWorkspaceSnapshot = { schemaVersion: 3, projectId: 'project', activeDocumentId: 'draft-child', transfers: [prepared.transaction], documents: [
       { representationId: 'source', name: 'Source', revisionId: 'revision', savedName: 'Source', savedScene: JSON.stringify(prepared.source.document.scene), document: prepared.source.document, canvas: initialCanvasState(), history: prepared.source.history },
-      { representationId: 'draft-child', parentCanvasId: 'source', name: 'Child', revisionId: '', savedName: '', savedScene: JSON.stringify(emptyCanvasDocument().scene), document: compact, canvas: controller.getSnapshot().canvas, history: controller.exportHistory() }
+      { representationId: 'draft-child', type: 'projection', name: 'Child', revisionId: '', savedName: '', savedScene: JSON.stringify(emptyCanvasDocument().scene), document: compact, canvas: controller.getSnapshot().canvas, history: controller.exportHistory() }
     ] };
     const reloaded = deserializeWorkspace(serializeWorkspace(workspace));
     const records = workspaceRecords(reloaded);
     validateRecordUpdate(records, Object.keys(records), 'project');
-    expect(recordsWorkspace(records)?.documents[1].parentCanvasId).toBe('source');
+    expect(recordsWorkspace(records)?.documents[1].type).toBe('projection');
     expect(recordsWorkspace(records)?.documents[1].canvas.projectionLayout).toEqual({ ...projection, settings: projectionPresets.Tight });
-    const bad = structuredClone(workspace); bad.documents[0].parentCanvasId = 'draft-child';
-    expect(() => serializeWorkspace(bad)).toThrow('cycle');
+    const legacy = structuredClone(workspace);
+    delete legacy.documents[1].type;
+    Object.assign(legacy.documents[1], { parentCanvasId: 'source' });
+    const migrated = deserializeWorkspace(legacy);
+    expect(migrated.documents[0].type).toBe('standard');
+    expect(migrated.documents[1].type).toBe('projection');
+    expect(migrated.documents[1]).not.toHaveProperty('parentCanvasId');
+    // Record readers also migrate old metadata without a full workspace import.
+    const metadataKey = 'document/draft-child/metadata';
+    Object.assign(records[metadataKey] as object, { type: undefined, parentCanvasId: 'source' });
+    expect(recordsWorkspace(records)?.documents[1].type).toBe('projection');
+    expect(recordsWorkspace(records)?.documents[1]).not.toHaveProperty('parentCanvasId');
+    Object.assign(legacy.documents[1], { type: 'unknown' });
+    expect(() => deserializeWorkspace(legacy)).toThrow();
     const undone = prepareTransferNavigation(prepared.source.history, prepared.destination.history, prepared.transaction);
     expect(undone.destination.document.scene).toEqual(emptyCanvasDocument().scene);
     expect((prepareTransferNavigation(undone.source.history, undone.destination.history, undone.transaction, true).destination.view as MappingCanvasState).projectionLayout).toEqual(projection);

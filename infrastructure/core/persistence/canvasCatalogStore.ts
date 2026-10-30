@@ -1,3 +1,4 @@
+import { canvasTypeOf } from '../../../domain/core/diagrams/canvasType';
 import { documentFromHistory } from '../../../domain/core/diagrams/canvasHistory';
 import { checkpointPublicationSchema, type CheckpointPublication, type CheckpointReceipt, type CapturedCheckpoint } from '../../../domain/core/diagrams/checkpointPublication';
 import { inferRepositoryId } from '../../../domain/core/repositories/repository';
@@ -54,6 +55,11 @@ export class CanvasCatalogStore {
   saveMappingDiagram(projectId: string, input: SaveProjectDiagramInput) {
     return this.serialize(async () => {
       const catalog = await this.readRepresentationCatalog(projectId);
+      // Generation publication is retryable, including after a process restart.
+      if (input.generated && !input.representationId) {
+        const prior = Object.values(catalog.representations).find(item => item.generated?.key === input.generated!.key);
+        if (prior) return { catalog, representation: prior };
+      }
       const project = await readJsonIfExists<ProjectRecord>(path.join(this.storeRoot, 'project.json'));
       const current = input.representationId ? catalog.representations[input.representationId] : undefined;
       const copied = input.sourceRevisionId ? catalog.representations[catalog.revisions[input.sourceRevisionId]?.representationId]?.repositoryId : undefined;
@@ -86,7 +92,7 @@ export class CanvasCatalogStore {
       const repositoryId = input.repositoryId ?? current?.repositoryId ?? capture.metadata.repositoryId ?? inferRepositoryId(document.scene, project?.repositories ?? []);
       if (repositoryId && !project?.repositories?.some(repo => repo.id === repositoryId)) throw Error('Unknown repositoryId');
       if (!current && project?.repositories?.length && !repositoryId) throw Error('Specify repositoryId for the new canvas');
-      const result = rules.publishMappingDiagram(catalog, projectId, { ...input, repositoryId, history, scene: document.scene, edges: document.edges }, catalogEnvironment());
+      const result = rules.publishMappingDiagram(catalog, projectId, { ...input, type: capture.metadata.type, repositoryId, history, scene: document.scene, edges: document.edges }, catalogEnvironment());
       const revisionId = result.representation.currentRevisionId;
       // Publish immutable references already committed by autosave; never hydrate old catalog revisions.
       result.catalog.revisions[revisionId].content = { kind: 'canvas-history', history: capture.stored as import('../../../domain/core/diagrams/canvasHistory').CanvasHistoryRecord };
@@ -191,7 +197,9 @@ export class CanvasCatalogStore {
         if (!revision || revision.content?.kind !== 'canvas-history') throw Error('Unknown canvas revision');
         return [id, { ...revision, content: { kind: 'canvas-history', history: await this.diagramPersistence.currentHistory(revision.content.history) } }];
       })));
-      return { ...catalog, revisions };
+      const result: ProjectRepresentationCatalogRecord = { ...catalog, revisions };
+      this.normalizeCanvasTypes(result);
+      return result;
     });
   }
 
@@ -209,6 +217,7 @@ export class CanvasCatalogStore {
     }
     for (const revision of Object.values(stored.revisions)) if (revision.content?.kind !== 'canvas-history')
       throw new Error('Unsupported legacy diagram content: canvas history is required');
+    this.normalizeCanvasTypes(stored);
     if (!stored.repositoryOwnershipVersion && Object.keys(stored.representations).length) {
       const project = await readJsonIfExists<ProjectRecord>(path.join(this.storeRoot, 'project.json'));
       if (project?.repositories?.length) {
@@ -221,6 +230,17 @@ export class CanvasCatalogStore {
       }
     }
     return stored;
+  }
+
+  /** Infer legacy catalog types from already restored heads; never load extra history. */
+  private normalizeCanvasTypes(catalog: ProjectRepresentationCatalogRecord) {
+    for (const representation of Object.values(catalog.representations)) {
+      const revision = catalog.revisions[representation.currentRevisionId];
+      if (!revision && representation.type === undefined) continue;
+      const history = revision?.content?.kind === 'canvas-history' ? revision.content.history : undefined;
+      representation.type = canvasTypeOf({ type: representation.type,
+        canvas: history?.snapshots[history.headId]?.view as { projectionLayout?: unknown } | undefined });
+    }
   }
 
   async saveRepresentationCatalog(catalog: ProjectRepresentationCatalogRecord): Promise<void> {

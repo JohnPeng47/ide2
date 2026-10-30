@@ -1,4 +1,4 @@
-import { GenerateAlternatives, GenerationDetails, generationLabel, useGenerations } from './GenerateAlternatives';
+import { GenerationDetails, generationLabel, useGenerations } from './generationStatus';
 import { generationRunning } from '../../../../domain/core/diagrams/canvasGeneration';
 import type { ChatCanvasTarget } from '../../../../domain/mapping/agent-chat/agentChat';
 import { useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent, type ReactNode } from 'react';
@@ -9,20 +9,21 @@ import { ExplorerSection, Icon, IconButton } from './ExplorerSection';
 import './canvasViews.css';
 
 /** An inline editor row in the tree, like VS Code's "New File" input. */
-type Draft = { kind: 'create' | 'fork'; name: string } | { kind: 'alternatives'; count: number };
+type Draft = { kind: 'create' | 'fork'; name: string };
 
-export function CanvasViewControls({ controller, onCommand, disabled, canvasName, onPreview, canvasTarget, onOpenChat }: {
+export function CanvasViewControls({ controller, onCommand, disabled, canvasName, onPreview, canvasTarget, onOpenChat, hiddenViewIds = [] }: {
+  hiddenViewIds?: string[];
   canvasTarget?: ChatCanvasTarget; onOpenChat?: (id: string) => void;
   controller: MappingDocumentController; canvasName: string; disabled?: boolean; onCommand: (request: CanvasViewRequest) => Promise<unknown>;
   previewViewId?: string; onPreview: (viewId?: string) => void;
 }) {
   useSyncExternalStore(controller.subscribe, controller.getSnapshot);
   const { saved, recording, activeViewId, dirty } = controller.canvasViews();
-  const views = Object.values(saved).filter(view => !view.archivedAt), active = activeViewId ? saved[activeViewId] : undefined;
+  const views = Object.values(saved).filter(view => !view.archivedAt && !hiddenViewIds.includes(view.id)), active = activeViewId && !hiddenViewIds.includes(activeViewId) ? saved[activeViewId] : undefined;
   const statuses = useGenerations(canvasTarget, views.some(view => !!view.generation));
   const [generationSelection, setGenerationSelection] = useState<string>();
   const generationFor = (view: CanvasView) => statuses.find(status => status.viewId === view.id) ?? (view.generation ? { ...view.generation, viewId: view.id } : undefined);
-  const selectedGeneration = generationSelection && saved[generationSelection] ? generationFor(saved[generationSelection]) : active ? generationFor(active) : undefined;
+  const selectedGeneration = generationSelection && saved[generationSelection] && !hiddenViewIds.includes(generationSelection) ? generationFor(saved[generationSelection]) : active ? generationFor(active) : undefined;
   const [draft, setDraft] = useState<Draft>();
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set()), [focused, setFocused] = useState('');
   const rows = useRef(new Map<string, HTMLLIElement>());
@@ -57,7 +58,12 @@ export function CanvasViewControls({ controller, onCommand, disabled, canvasName
     controller.settlePendingGesture();
     void send({ ...input, requestId: crypto.randomUUID(), expectedVersion: controller.getSnapshot().version });
   };
-  const children = (parent?: string) => views.filter(view => view.parentViewId === parent);
+  const parentOf = (view: CanvasView) => {
+    let parent = view.parentViewId;
+    while (parent && hiddenViewIds.includes(parent)) parent = saved[parent]?.parentViewId;
+    return parent;
+  };
+  const children = (parent?: string) => views.filter(view => parentOf(view) === parent);
   const visible: CanvasView[] = [];
   const collect = (parent?: string) => { for (const view of children(parent)) { visible.push(view); if (!collapsed.has(view.id)) collect(view.id); } };
   collect();
@@ -78,14 +84,6 @@ export function CanvasViewControls({ controller, onCommand, disabled, canvasName
   const startDraft = (next: Draft) => {
     setError(''); setNotice(''); setDraft(next);
     if (next.kind !== 'create' && activeViewId) setCollapsed(previous => { const set = new Set(previous); set.delete(activeViewId); return set; });
-  };
-  const alternativeNames = (count: number) => {
-    const used = new Set(views.map(view => view.name)), names: string[] = [];
-    for (let i = 1; names.length < count; i++) {
-      const name = `${active!.name.slice(0, 108)}.${i}`;
-      if (!used.has(name)) names.push(name);
-    }
-    return names;
   };
   const submitDraft = () => {
     if (!draft || locked || recording) return;
@@ -113,9 +111,6 @@ export function CanvasViewControls({ controller, onCommand, disabled, canvasName
       if (event.key === 'Escape') { event.preventDefault(); setDraft(undefined); focus(activeViewId); }
       event.stopPropagation();
     };
-    if (draft.kind === 'alternatives') return <li role="none">{canvasTarget && activeViewId ?
-      <GenerateAlternatives canvas={canvasTarget} viewId={activeViewId} names={alternativeNames(draft.count)} onCancel={() => setDraft(undefined)}
-        onDone={() => { setDraft(undefined); setNotice(''); }} /> : <p>Connect a live canvas to generate alternatives.</p>}</li>;
     const label = draft.kind === 'create' ? 'Save as view' : 'Fork view';
     return <li role="none" className="canvas-view-draft">
       <div className="canvas-view-row is-editing">
@@ -149,7 +144,6 @@ export function CanvasViewControls({ controller, onCommand, disabled, canvasName
         {current && dirty && <span className="canvas-view-dirty" title="Unsaved changes" aria-label="Unsaved changes" />}
         {current && <span className="canvas-view-row-actions" onClick={event => event.stopPropagation()}>
           <IconButton icon="fork" label="Fork view…" disabled={locked || !!recording} onClick={() => startDraft({ kind: 'fork', name: `${view.name.slice(0, 115)} copy` })} />
-          <IconButton icon="alternatives" label="Generate alternatives…" disabled={locked || !!recording} onClick={() => startDraft({ kind: 'alternatives', count: 3 })} />
           {view.alternativeGroupId && <IconButton icon="keep" label="Keep this alternative" disabled={locked || !!recording} onClick={() => command({ operation: 'keep', viewId: activeViewId })} />}
           <IconButton icon="discard" label="Discard view" className="is-danger" disabled={locked || !!recording} onClick={() => command({ operation: 'discard', viewId: activeViewId })} />
         </span>}

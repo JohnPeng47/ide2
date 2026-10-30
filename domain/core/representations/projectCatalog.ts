@@ -112,6 +112,8 @@ export interface ProjectRepresentationRevisionRecord {
 }
 
 export interface ProjectRepresentationRecord {
+  generated?: import('../diagrams/generatedCanvas').GeneratedCanvas;
+  type?: import('../diagrams/canvasType').CanvasType;
   repositoryId?: string;
   schemaVersion: 1;
   id: string;

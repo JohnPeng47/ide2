@@ -96,7 +96,7 @@ try {
       });
       return workspace;
     };
-    const child = workspace => workspace.documents.find(d => d.parentCanvasId === 'representation-overview');
+    const child = workspace => workspace.documents.find(d => d.type === 'projection' && d.canvas.projectionLayout?.sourceCanvasId === 'representation-overview');
     const positionsOf = doc => doc.document.scene.root.children.map(b => b.position);
     await click('[aria-label="Explorer mode"] button', 'Canvas');
     assert.equal(await evaluate(cdp, `[...document.querySelectorAll('.mapping-explorer-tabs button')].some(b => b.textContent === 'LLMs')`), false);
@@ -142,7 +142,7 @@ try {
     } else {
       await click('.mapping-canvas-actions button', 'Project Highlights');
     }
-    ws = await persisted(w => w?.documents?.some(d => d.parentCanvasId === 'representation-overview'));
+    ws = await persisted(w => w?.documents?.some(d => d.type === 'projection' && d.canvas.projectionLayout?.sourceCanvasId === 'representation-overview'));
     await waitFor(() => evaluate(cdp, `!!document.querySelector('.projection-layout-panel')`));
     } finally { clearInterval(heapTimer); }
     const retainedSource = await evaluate(cdp, 'window.__projectionSourceView.isConnected');
@@ -152,6 +152,9 @@ try {
       heapAfterMB: (await cdp.send('Runtime.getHeapUsage')).usedSize / 1e6, retainedSource }));
     assert.equal(retainedSource, true, 'Projection retains the source editor/session');
     const projectedId = child(ws).representationId;
+    assert.equal(child(ws).type, 'projection');
+    assert.equal(child(ws).parentCanvasId, undefined);
+    assert.equal(ws.documents.find(d => d.representationId === 'representation-overview').type, 'standard');
     const initial = positionsOf(child(ws));
     const layout = child(ws).canvas.projectionLayout;
     assert.deepEqual(layout.settings, { mode: 'compact', centroid: 'mean', attraction: 1, neighbors: 1, fidelity: 1, gap: 8 });
@@ -162,8 +165,8 @@ try {
       assert.deepEqual(layout.nodes.flatMap(node => node.sourceId ? [node.sourceId] : []), ['d0', 'd1', 'd3']);
       assert.ok(Object.values(child(ws).document.scene.contents).some(d => d.content.ascii.startsWith('Not highlighted')));
       await waitFor(() => evaluate(cdp, `document.querySelector('.agent-chat')?.innerText.includes('Projection created:')`));
-      const retried = await persisted(w => w.documents.filter(d => d.parentCanvasId === 'representation-overview').length === 1);
-      assert.equal(retried.documents.filter(d => d.parentCanvasId === 'representation-overview').length, 1);
+      const retried = await persisted(w => w.documents.filter(d => d.type === 'projection' && d.canvas.projectionLayout?.sourceCanvasId === 'representation-overview').length === 1);
+      assert.equal(retried.documents.filter(d => d.type === 'projection' && d.canvas.projectionLayout?.sourceCanvasId === 'representation-overview').length, 1);
       // Close the tool panel before exercising the canvas layout controls.
       await click('[aria-label="Close Agent Chat"]');
     }
@@ -173,12 +176,12 @@ try {
       assert.equal(archive.snapshots['archived-0'].view.memoryFixture.length, 'archived conversation '.length * 50_000 + 2);
       assert.ok(archive.past.includes('archived-23'), 'Source undo archive remains available');
     }
-    await waitFor(() => evaluate(cdp, `!!document.querySelector('.mapping-canvas-children [data-project-diagram="${projectedId}"]') && !!document.querySelector('.projection-layout-panel')`));
+    await waitFor(() => evaluate(cdp, `!!document.querySelector('[data-repository-group="canvas-projections"] [data-project-diagram="${projectedId}"]') && !!document.querySelector('.projection-layout-panel')`));
     await click('.mapping-document-view:not([hidden]) [title="Reset zoom and center diagram"]');
     await captureScreenshot(cdp, { output: process.env.PROJECTION_SCREENSHOT || path.join(root, 'projection-default.png') });
     await click('[aria-label="Filter diagrams"]');
     await cdp.send('Input.insertText', { text: throughChat ? 'Projection' : 'Highlights' });
-    assert.ok(await evaluate(cdp, `!!document.querySelector('[data-project-diagram="representation-overview"]') && !!document.querySelector('.mapping-canvas-children [data-project-diagram="${projectedId}"]')`), 'Filtering a child retains its ancestor');
+    assert.ok(await evaluate(cdp, `!document.querySelector('[data-project-diagram="representation-overview"]') && !!document.querySelector('[data-repository-group="canvas-projections"] [data-project-diagram="${projectedId}"]')`), 'Filtering a projection shows its folder without the source canvas');
     await key('a', 'KeyA', 65, 2); await key('Backspace', 'Backspace', 8);
     const rendered = () => evaluate(cdp, `[...document.querySelectorAll('.mapping-document-view:not([hidden]) [data-grid-box]')].filter(e => e.dataset.gridBox !== 'root').map(el => {const r=el.getBoundingClientRect();return {id:el.dataset.gridBox,x:r.x,y:r.y,w:r.width,h:r.height}})`);
     const before = await rendered();
@@ -217,7 +220,7 @@ try {
     assert.equal(await evaluate(cdp, 'document.querySelector(\'.projection-layout-panel input[aria-label="Closeness to centroid"]\').value'), '0.4');
     ws = await persisted(w => child(w)?.canvas.projectionLayout.settings.attraction === .4);
     assert.deepEqual(positionsOf(child(ws)), savedPositions);
-    assert.ok(await evaluate(cdp, `!!document.querySelector('.mapping-canvas-children [data-project-diagram="${projectedId}"]')`));
+    assert.ok(await evaluate(cdp, `!!document.querySelector('[data-repository-group="canvas-projections"] [data-project-diagram="${projectedId}"]')`));
     await click('[aria-label="Minimize layout settings"]');
     await waitFor(() => evaluate(cdp, `!!document.querySelector('.projection-layout-panel.is-minimized')`));
     await click('[aria-label="Expand layout settings"]');
@@ -228,11 +231,13 @@ try {
     await key('y', 'KeyY', 89, 2);
     ws = await persisted(w => child(w)?.canvas.projectionLayout.settings.attraction === .4);
     assert.deepEqual(positionsOf(child(ws)), savedPositions);
-    // Project again from the child to prove recursive ancestry rather than a flat parent label.
+    // Project again from a projection; both canvases must remain peers in the Projections folder.
     await click('[aria-label="Explorer mode"] button', 'Canvas'); await click('.mapping-canvas-actions button', 'Project Highlights');
-    ws = await persisted(w => w.documents.some(d => d.parentCanvasId === projectedId));
-    const grandchild = ws.documents.find(d => d.parentCanvasId === projectedId);
-    await waitFor(() => evaluate(cdp, `!!document.querySelector('.mapping-canvas-children .mapping-canvas-children [data-project-diagram="${grandchild.representationId}"]')`));
+    ws = await persisted(w => w.documents.some(d => d.type === 'projection' && d.canvas.projectionLayout?.sourceCanvasId === projectedId));
+    const grandchild = ws.documents.find(d => d.type === 'projection' && d.canvas.projectionLayout?.sourceCanvasId === projectedId);
+    await waitFor(() => evaluate(cdp, `!!document.querySelector('[data-repository-group="canvas-projections"] [data-project-diagram="${grandchild.representationId}"]')`));
+    assert.equal(await evaluate(cdp, `document.querySelectorAll('[data-repository-group="canvas-projections"] > details > ul > li').length`), 2);
+    assert.equal(grandchild.parentCanvasId, undefined);
     assert.equal(grandchild.document.scene.root.children.length, throughChat ? 3 : 4, 'Reprojection adds one fresh placeholder');
     await click('.mapping-document-view:not([hidden]) [title="Reset zoom and center diagram"]');
     await key('z', 'KeyZ', 90, 2);
@@ -242,7 +247,7 @@ try {
     await waitFor(() => evaluate(cdp, `!!document.querySelector('.projection-layout-panel')`));
     assert.deepEqual(exceptions, []);
     console.log(reloadTools ? 'PASS: Reload tools retains the open thread and transcript; a new tool executes through refreshed MCP definitions.' : throughChat ? 'PASS: Agent Chat projects arbitrary IDs including an unhighlighted diagram; repeated tool delivery creates only one child.' : 'PASS: exact highlighted subset.');
-    console.log('PASS: internal edges, recursive Explorer ancestry, live presets and sliders, rendered nonoverlap, original reset, persistence, reload, undo/redo, and minimization.');
+    console.log('PASS: internal edges, flat Projections folder, live presets and sliders, rendered nonoverlap, original reset, persistence, reload, undo/redo, and minimization.');
   });
 } finally {
   server?.kill('SIGTERM');

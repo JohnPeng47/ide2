@@ -1,3 +1,4 @@
+import type { CanvasType } from '../../../../domain/core/diagrams/canvasType';
 import { repositoryGroups, type Repository } from '../../../../domain/core/repositories/repository';
 import { RepositoryTreeGroup } from './RepositoryTreeGroup';
 import { ExplorerSection } from '../canvas-views/ExplorerSection';
@@ -10,7 +11,7 @@ export function MappingDiagramExplorer(props: {
   explorerTab: 'diagrams'|'changes'|'canvas'; onTabChange: (tab: 'diagrams'|'changes'|'canvas') => void;
   canvasViews?: ReactNode;
   changeMode?: DisplayModeChange; onChangeSelect: (mode: DisplayModeChange) => void;
-  repositories?: Repository[]; projectName: string; diagrams: (Pick<ProjectRepresentationRecord, 'id' | 'name' | 'repositoryId'> & { parentCanvasId?: string })[]; activeId?: string;
+  repositories?: Repository[]; projectName: string; diagrams: (Pick<ProjectRepresentationRecord, 'id' | 'name' | 'repositoryId'> & { type?: CanvasType })[]; activeId?: string;
   dirtyIds: string[]; onOpen: (id: string) => void;
   onDelete: (id: string) => void; deletingId?: string; deleteDisabled: boolean; busyIds: string[];
 }) {
@@ -23,11 +24,8 @@ export function MappingDiagramExplorer(props: {
     if (props.transfer) { setQuery(''); picker.current?.focus(); picker.current?.scrollIntoView({ block: 'nearest' }); }
   }, [props.transfer?.mode, props.transfer?.sourceId]);
   type Canvas = typeof props.diagrams[number];
-  const matches = (diagram: Canvas, items: Canvas[]): boolean => diagram.name.toLowerCase().includes(query.toLowerCase())
-    || items.some(child => child.parentCanvasId === diagram.id && matches(child, items));
-  const renderDiagram = (diagram: Canvas, items: Canvas[], showAll = false): ReactNode => {
-    const includeChildren = showAll || diagram.name.toLowerCase().includes(query.toLowerCase());
-    const children = items.filter(child => child.parentCanvasId === diagram.id && (includeChildren || matches(child, items)));
+  const matches = (diagram: Canvas) => diagram.name.toLowerCase().includes(query.toLowerCase());
+  const renderDiagram = (diagram: Canvas): ReactNode => {
     return (
       <li key={diagram.id}>
         <div className="mapping-explorer-row">
@@ -40,7 +38,6 @@ export function MappingDiagramExplorer(props: {
             title={`Delete ${diagram.name}`} disabled={props.deleteDisabled || props.busyIds.includes(diagram.id)}
             onClick={() => props.onDelete(diagram.id)}>{props.deletingId === diagram.id ? "…" : "×"}</button>}
         </div>
-        {children.length > 0 && <ul className="mapping-canvas-children">{children.map(child => renderDiagram(child, items, includeChildren))}</ul>}
       </li>
     );
   };
@@ -64,14 +61,18 @@ export function MappingDiagramExplorer(props: {
       {!props.transfer.busy && <p className="mapping-transfer-hint">Esc cancels and clears the selection.</p>}
     </div>}
     <input type="search" aria-label="Filter diagrams" placeholder="Find a diagram…" value={query} onChange={(event) => setQuery(event.target.value)} />
-    <nav aria-label="Project diagrams"><ul>{repositoryGroups(props.repositories ?? [], props.diagrams).map(group => {
+    <nav aria-label="Project diagrams"><ul>{repositoryGroups(props.repositories ?? [], props.diagrams.filter(diagram => diagram.type !== 'projection' && diagram.type !== 'generated')).map(group => {
       const groupMatches = group.name.toLowerCase().includes(query.toLowerCase());
       const items = group.items;
-      const roots = items.filter(diagram => !items.some(parent => parent.id === diagram.parentCanvasId))
-        .filter(diagram => groupMatches || matches(diagram, items));
-      return roots.length ? <RepositoryTreeGroup key={group.id} id={group.id} name={group.name}
-        reveal={!!query || items.some(diagram => diagram.id === props.activeId)}>{roots.map(diagram => renderDiagram(diagram, items, groupMatches))}</RepositoryTreeGroup> : null;
-    })}</ul></nav>
+      const visible = items.filter(diagram => groupMatches || matches(diagram));
+      return visible.length ? <RepositoryTreeGroup key={group.id} id={group.id} name={group.name}
+        reveal={!!query || items.some(diagram => diagram.id === props.activeId)}>{visible.map(renderDiagram)}</RepositoryTreeGroup> : null;
+    })}
+    {props.diagrams.some(diagram => diagram.type === 'projection' && (matches(diagram) || 'projections'.includes(query.toLowerCase()))) &&
+      <RepositoryTreeGroup id="canvas-projections" name="Projections" reveal={!!query || props.diagrams.some(diagram => diagram.type === 'projection' && diagram.id === props.activeId)}>
+        {props.diagrams.filter(diagram => diagram.type === 'projection' && (matches(diagram) || 'projections'.includes(query.toLowerCase()))).map(renderDiagram)}
+      </RepositoryTreeGroup>}
+    </ul></nav>
     {!props.diagrams.length && <p>No project diagrams yet. Create one with New.</p>}
     </>}
   </>;

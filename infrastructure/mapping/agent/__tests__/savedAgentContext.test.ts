@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, expect, it, vi } from 'vitest';
 import { AgentContext } from '../../../../domain/core/agents/agentContext';
+import { sha256 } from '../../../../domain/core/sha256';
 import { AgentContextLibrary } from '../../../../application/mapping/agent/agentContextLibrary';
 import { AgentContextService } from '../../../../application/mapping/agent/agentContextService';
 import { FileAgentContextRepository } from '../../../core/persistence/fileAgentContextRepository';
@@ -47,6 +48,33 @@ it('persists immutable, discoverable context across restarts with concurrent ret
   await writeFile(file, JSON.stringify(corrupt));
   await expect(other.read(a.agentContextId)).rejects.toThrow();
 });
+it('updates group metadata across restarts without changing legacy context content or creation receipts', async () => {
+  const f = await library();
+  const input = { requestId: crypto.randomUUID(), name: 'Legacy', context: 'Original evidence' };
+  const created = await f.library.create(input);
+  const file = path.join(f.root, 'agent-contexts', `${created.agentContextId}.json`);
+  const before = JSON.parse(await readFile(file, 'utf8'));
+  expect(before.requestHash).toBe(sha256(JSON.stringify([input.name, '', created.contentHash])));
+  expect(before).not.toHaveProperty('group');
+  await f.library.update({ agentContextId: created.agentContextId, group: ' YC Demo Group ' });
+  const restarted = new AgentContextLibrary(new FileAgentContextRepository(f.root));
+  expect(await restarted.read(created.agentContextId)).toMatchObject({ group: 'YC Demo Group', contentHash: created.contentHash, snapshot: before.snapshot });
+  expect((await restarted.list()).items).toEqual([{ ...created, group: 'YC Demo Group' }]);
+  expect(JSON.parse(await readFile(file, 'utf8'))).toEqual({ ...before, group: 'YC Demo Group' });
+  expect(await restarted.create(input)).toEqual({ ...created, group: 'YC Demo Group' });
+  await expect(restarted.update({ agentContextId: created.agentContextId, group: ' ' })).rejects.toThrow();
+  await expect(restarted.update({ agentContextId: `saved-agent-context-${crypto.randomUUID()}`, group: 'Demo' })).rejects.toThrow('AGENT_CONTEXT_NOT_FOUND');
+  await restarted.update({ agentContextId: created.agentContextId, group: null });
+  expect(JSON.parse(await readFile(file, 'utf8'))).toEqual(before);
+});
+it.each(['plain text', [{ type: 'text', text: 'constituent text' }]])('includes initial group in creation retry identity for %j', async context => {
+  const f = await library();
+  const input = { requestId: crypto.randomUUID(), name: 'Grouped', group: 'YC Demo Group', context };
+  const receipt = await f.library.create(input);
+  expect(receipt.group).toBe('YC Demo Group');
+  expect(await f.library.create(input)).toEqual(receipt);
+  await expect(f.library.create({ ...input, group: 'Other' })).rejects.toThrow('REQUEST_ID_CONFLICT');
+});
 it('validates supplied snapshots and keeps legacy uploads scoped while saved IDs are global', async () => {
   const f = await library();
   const snapshot = AgentContext.fromMessages('original-chat', [{ role: 'user', content: [{ type: 'text', text: 'Facts' }], timestamp: 0 }]).toSnapshot();
@@ -76,10 +104,13 @@ it('creates and reads through tools without a canvas, then reuses the ID in sing
   const input = { requestId: crypto.randomUUID(), name: 'Reusable', context: 'Facts shared across eval prompts' };
   const token = first.chatBindings.create(); first.chatBindings.bind(token, undefined, false);
   const receipt = await first.callBound(token, 'create-agent-context', input) as { agentContextId: string; contentHash: string };
+  const metadata = { agentContextId: receipt.agentContextId, group: 'YC Demo Group' };
+  expect(await first.callBound(token, 'update-agent-context', metadata)).toMatchObject({ ...receipt, group: metadata.group });
   expect(dispatch).not.toHaveBeenCalled();
   first.chatBindings.bind(token, undefined, true);
   expect(await first.callBound(token, 'list-agent-contexts', {})).toMatchObject({ items: [receipt] });
   await expect(first.callBound(token, 'create-agent-context', input)).rejects.toThrow('READ_ONLY');
+  await expect(first.callBound(token, 'update-agent-context', metadata)).rejects.toThrow('READ_ONLY');
   first.chatBindings.clear(token);
   await expect(first.callBound(token, 'read-agent-context', { agentContextId: receipt.agentContextId })).rejects.toThrow('CHAT_BINDING_UNAVAILABLE');
   first.dispose();

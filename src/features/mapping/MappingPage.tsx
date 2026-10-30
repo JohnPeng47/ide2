@@ -1,3 +1,4 @@
+import { GeneratedCanvases } from './canvas-views/GeneratedCanvases';
 import { getDiagramRevision, listDiagramRevisions } from '../../../domain/core/diagrams/diagramRevisionStore';
 import { CanvasViewDiffPreview } from './canvas-views/CanvasViewDiffPreview';
 import { CanvasViewControls } from './canvas-views/CanvasViewControls';
@@ -50,6 +51,7 @@ import { DiagramSearchService, type SearchDocument } from './search/diagramSearc
 import type { DiagramLineSearchResult } from '../../../domain/mapping/search/diagramSearch';
 import { findBox } from '../../../domain/mapping/workspace/canvasDisplayNode';
 import { DiagramSearchPanel } from './search/DiagramSearchPanel';
+import { useDiagramSymbolSearch } from './search/useDiagramSymbolSearch';
 import type { DiagramFocus } from './search/SearchHighlight';
 import type { DiagramJumpTarget } from '../../../domain/core/diagrams/diagramJump';
 import { singleDiagramScene } from "../../../domain/core/diagrams/projectDiagramCanvas";
@@ -107,6 +109,7 @@ function MappingWorkspacePage() {
   const [storage] = useState(() => injectedStorage ?? new WorkspaceStorage());
   const persistence = useRef<WorkspacePersistence | undefined>(undefined);
   const [pendingTransfer, setPendingTransfer] = useState<{ sourceId: string; mode: 'copy' | 'move'; selectedIds: string[]; revisionId: string }>();
+  const [generatedSources, setGeneratedSources] = useState<{ documentId: string; viewId: string }[]>([]);
   const [explorerTab, setExplorerTab] = useState<'diagrams'|'changes'|'canvas'>('diagrams');
   const [changeMode, setChangeMode] = useState<DisplayModeChange>();
   const [viewDiffSelection, setViewDiffSelection] = useState<{ documentId: string; epoch: number; viewId: string }>();
@@ -222,6 +225,9 @@ function MappingWorkspacePage() {
   const [proposalSearchFocus, setProposalSearchFocus] = useState<{ documentId: string; focus: DiagramFocus }>();
   const [searchOpenRequest, setSearchOpenRequest] = useState(0);
   const [projectSearchRequest, setProjectSearchRequest] = useState(0);
+  const [projectQueryRequest, setProjectQueryRequest] = useState<{ text: string; serial: number }>();
+  const symbolSearchHandlers = useDiagramSymbolSearch(toolsOpen && toolTab === 'search' && !pendingTransfer && !workspaceBusy,
+    text => setProjectQueryRequest(previous => ({ text, serial: (previous?.serial ?? 0) + 1 })));
   const [chatTabCommand, setChatTabCommand] = useState<ChatTabCommand>();
   const [searchMatches, setSearchMatches] = useState<readonly DiagramLineSearchResult[]>([]);
   const searchMatchesByDocument = useMemo(() => {
@@ -461,7 +467,7 @@ function MappingWorkspacePage() {
   const draftAliases = new Set(Object.entries(drafts).map(([id, draft]) => draft.representationId ?? id));
   const diagrams = [...Object.values(snapshot?.catalog?.representations ?? {}).filter(diagram => diagram.status === 'settled' && !draftAliases.has(diagram.id)),
     ...Object.entries(drafts).filter(([, draft]) => !draft.hidden).map(([id, draft]) => ({ id: draft.representationId ?? id, name: draft.name, repositoryId: draft.repositoryId,
-      parentCanvasId: draft.parentCanvasId ? drafts[draft.parentCanvasId]?.representationId ?? draft.parentCanvasId : undefined }))];
+      type: draft.type }))];
 
   const open = (id: string, data = snapshot, navigate = true) => {
     const existingId = Object.entries(draftRef.current).find(([key, draft]) => key === id || draft.representationId === id)?.[0];
@@ -475,7 +481,7 @@ function MappingWorkspacePage() {
     const revision = representation && data?.catalog?.revisions[representation.currentRevisionId];
     if (!representation || representation.status !== 'settled' || !revision) { setError('Project diagram was not found'); return; }
     const document = documentFromRevision(revision);
-    setDrafts((current) => current[id] ? current : { ...current, [id]: { name: representation.name, repositoryId: representation.repositoryId,
+    setDrafts((current) => current[id] ? current : { ...current, [id]: { type: representation.type, name: representation.name, repositoryId: representation.repositoryId,
       history: historyFromRevision(revision), document, savedEdges: JSON.stringify(document.edges), savedScene: JSON.stringify(document.scene), savedName: representation.name, revisionId: revision.id, busy: false, canvas: initialCanvasState() } });
     setActiveId(id);
     if (navigate) {
@@ -484,6 +490,18 @@ function MappingWorkspacePage() {
     }
     setError("");
     return id;
+  };
+
+  const openGenerated = async (id: string) => {
+    // The generation list can discover a new canvas after startup, but ordinary
+    // navigation must not download and rehydrate the entire project again.
+    const loaded = Object.entries(draftRef.current).some(([key, draft]) => key === id || draft.representationId === id);
+    const saved = snapshot?.catalog?.representations[id];
+    if (loaded || saved && snapshot?.catalog?.revisions[saved.currentRevisionId]) {
+      setChangeMode(undefined); open(id); return;
+    }
+    const data = await loadProjectRepresentations();
+    setSnapshot(data); setChangeMode(undefined); open(id, data);
   };
 
   const jumpToHighlight = async (target: import('../../../domain/mapping/agent-chat/highlightReference').HighlightReference) => {
@@ -567,7 +585,7 @@ function MappingWorkspacePage() {
       }
       const document = documentFromRevision(revision), history = historyFromRevision(revision);
       const view = history?.snapshots[history.headId].view as MappingCanvasState | undefined;
-      next[key] = { ...previous, representationId: representation.id, repositoryId: representation.repositoryId, name: representation.name, document, history,
+      next[key] = { ...previous, representationId: representation.id, type: representation.type ?? previous?.type, repositoryId: representation.repositoryId, name: representation.name, document, history,
         canvas: view?.display ? view : initialCanvasState(), revisionId: revision.id, savedName: representation.name,
         savedScene: JSON.stringify(document.scene), savedEdges: JSON.stringify(document.edges), busy: false, reloadKey: revision.id };
     }
@@ -585,7 +603,7 @@ function MappingWorkspacePage() {
           return;
         }
         const document = documentFromRevision(revision);
-        next[selectedId] = { representationId: representation.id, repositoryId: representation.repositoryId, name: representation.name, document, history: historyFromRevision(revision),
+        next[selectedId] = { representationId: representation.id, type: representation.type, repositoryId: representation.repositoryId, name: representation.name, document, history: historyFromRevision(revision),
           canvas: initialCanvasState(), revisionId: revision.id, savedName: representation.name,
           savedScene: JSON.stringify(document.scene), savedEdges: JSON.stringify(document.edges), busy: false };
       }
@@ -624,7 +642,7 @@ function MappingWorkspacePage() {
   const capture = (): MappingWorkspaceSnapshot => {
     if (!snapshot?.project) throw new Error('Project is not initialized');
     return { schemaVersion: 3, projectId: snapshot.project.id, activeDocumentId: activeId, transfers,
-      documents: Object.entries(workspace.store.getState().drafts).map(([representationId, draft]) => ({ representationId, parentCanvasId: draft.parentCanvasId, hidden: draft.hidden, savedRepresentationId: draft.representationId, repositoryId: draft.repositoryId, name: draft.name,
+      documents: Object.entries(workspace.store.getState().drafts).map(([representationId, draft]) => ({ representationId, type: draft.type, hidden: draft.hidden, savedRepresentationId: draft.representationId, repositoryId: draft.repositoryId, name: draft.name,
         history: draft.session.controller.exportHistory(), savedName: draft.savedName, savedScene: draft.savedScene, savedEdges: draft.savedEdges, revisionId: draft.revisionId,
         document: documentOf(draft), canvas: { ...(canvasOf(draft)), display: viewState.captureDisplay(representationId, canvasOf(draft).display) },
         viewport: viewState.captureCamera(representationId, draft.viewport) })) };
@@ -666,7 +684,7 @@ function MappingWorkspacePage() {
         const revision = representation && snapshot?.catalog?.revisions[representation.currentRevisionId];
         if (!representation || representation.status !== 'settled' || !revision) throw Error('Destination canvas is unavailable');
         const document = documentFromRevision(revision);
-        destinationDoc = { representationId: representation.id, repositoryId: representation.repositoryId, name: representation.name, savedName: representation.name, revisionId: revision.id,
+        destinationDoc = { representationId: representation.id, type: representation.type, repositoryId: representation.repositoryId, name: representation.name, savedName: representation.name, revisionId: revision.id,
           savedScene: JSON.stringify(document.scene), savedEdges: JSON.stringify(document.edges), document, canvas: initialCanvasState(), history: historyFromRevision(revision) };
         workspace.documents.push(destinationDoc);
       }
@@ -721,7 +739,7 @@ function MappingWorkspacePage() {
       const base = `${sourceDraft.name.slice(0, 90)} · ${label}`;
       let name = base, suffix = 2;
       while (Object.values(drafts).some(doc => doc.name === name)) name = `${base} ${suffix++}`;
-      const child = { representationId: destinationId, parentCanvasId: sourceId, repositoryId: sourceDraft.repositoryId,
+      const child = { representationId: destinationId, type: 'projection' as const, repositoryId: sourceDraft.repositoryId,
         name, revisionId: '', savedName: '', savedScene: JSON.stringify(emptyCanvasDocument().scene), savedEdges: '[]',
         document: prepared.destination.document, canvas: prepared.destination.view as MappingCanvasState, history: prepared.destination.history };
       const nextTransfers = [...transfers.map(tx => tx.applied ? tx : { ...tx, discarded: true }), prepared.transaction];
@@ -758,14 +776,14 @@ function MappingWorkspacePage() {
         throw Error('Undo newer transfers involving either canvas first');
       const source = controllers.current.get(tx.sourceId), destination = controllers.current.get(tx.destinationId);
       if (!source || !destination) throw Error('Both canvases must be available to undo or redo this transfer');
-      if (tx.mode === 'copy' && drafts[tx.destinationId]?.parentCanvasId === tx.sourceId) {
+      if (tx.mode === 'copy' && tx.destinationCreated !== false && drafts[tx.destinationId]?.type === 'projection') {
         // Projection navigation changes only the child. Keep the source archive and
         // all unrelated sessions in place, just as when creating the projection.
         transferBusy.current = true; persistence.current?.setPaused(true); setWorkspaceBusy(true); setError('');
         const prepared = prepareTransferNavigation(source.exportHistory(true), destination.exportHistory(), tx, redo);
         const draft = drafts[tx.destinationId];
         const child = { representationId: tx.destinationId, savedRepresentationId: draft.representationId,
-          parentCanvasId: draft.parentCanvasId, repositoryId: draft.repositoryId, name: draft.name,
+          type: draft.type, repositoryId: draft.repositoryId, name: draft.name,
           savedName: draft.savedName, savedScene: draft.savedScene, savedEdges: draft.savedEdges, revisionId: draft.revisionId,
           document: prepared.destination.document, canvas: prepared.destination.view as MappingCanvasState,
           history: prepared.destination.history, hidden: !redo, viewport: viewState.captureCamera(tx.destinationId, draft.viewport) };
@@ -910,7 +928,7 @@ function MappingWorkspacePage() {
       const context = histories.openContext(document, initialCanvasState(), copyCurrent && active ? active.session.controller.exportHistory() : undefined);
       const history = copyCurrent && active ? histories.forkContext(context, initialCanvasState()) : histories.exportContext(context);
       const result = await saveMappingProjectDiagram({ projectId: snapshot?.project?.id, repositoryId: newRepositoryId || active?.repositoryId || (snapshot?.project?.repositories?.length === 1 ? snapshot.project.repositories[0].id : undefined), name: newName,
-        history, scene: document.scene, edges: document.edges,
+        type: copyCurrent ? active?.type : 'standard', history, scene: document.scene, edges: document.edges,
         ...(copyCurrent && active ? { sourceRevisionId: active.revisionId } : {}) });
       setSnapshot(result); setCreating(false); open(result.representation.id, result);
     } catch (error) { setError(error instanceof Error ? error.message : "Could not create diagram"); }
@@ -931,8 +949,7 @@ function MappingWorkspacePage() {
       const result = savedId ? await deleteMappingProjectDiagram(savedId) : snapshot!;
       if (savedId) setSnapshot(result);
       for (const [key, controller] of controllers.current) if (key !== draftId && retired.size) controller.retireTransactions(retired);
-      const remaining = Object.fromEntries(Object.entries(workspace.store.getState().drafts).filter(([key]) => key !== draftId)
-        .map(([key, item]) => [key, item.parentCanvasId === draftId ? { ...item, parentCanvasId: draft?.parentCanvasId } : item]));
+      const remaining = Object.fromEntries(Object.entries(workspace.store.getState().drafts).filter(([key]) => key !== draftId));
       const nextTransfers = transfers.filter(tx => !retired.has(tx.id));
       const nextId = activeId === draftId ? Object.entries(remaining).find(([, draft]) => !draft.hidden)?.[0] : activeId;
       setDrafts(remaining); setTransfers(nextTransfers); setActiveId(nextId);
@@ -1149,7 +1166,7 @@ function MappingWorkspacePage() {
   return <SourcePaneViewStateContext.Provider value={viewState}><UiTestFramework id="mapping-local-chat" title="Menu" triggerLabel="Menu" menuContent={workspaceMenu} controls={LOCAL_CHAT_UI_CONTROLS}>
     {(ui) => <main className="mapping-poc-shell" data-local-chat-variant={ui.variant}>
       <section className="mapping-poc-workspace">
-        <div className="mapping-viewport">
+        <div className="mapping-viewport" {...symbolSearchHandlers}>
           {Object.entries(drafts).filter(([id]) => mountedDocuments.current.has(id)).map(([id, draft]) => <SourcePaneDocumentContext.Provider key={`${workspaceEpoch}:${id}:${draft.reloadKey ?? ''}`} value={id}><SourcePaneDocumentActiveContext.Provider value={id === activeId && !changeMode && !viewDiffId}><div className="mapping-document-view" inert={!!pendingTransfer || workspaceBusy} hidden={draft.hidden || id !== activeId || !!changeMode || !!viewDiffId}>
             <CanvasTreemapColors.Provider value={treemapsVisible && id === activeId && !changeMode ? liveTreemapColors : undefined}>
             <MappingEditorCanvas session={draft.session} className="mapping-poc-canvas" enabled={id === activeId && !draft.hidden && !changeMode && !viewDiffId} focusBox={draft.focusBox}
@@ -1196,7 +1213,7 @@ function MappingWorkspacePage() {
               <WindowPanel title="Workspace tools" sizeStorageKey="workspace-tools" compact={toolTab === 'chat'} activeTab={toolTab} onTabChange={tab => {
                 setToolTab(tab); if (tab === 'chat') setAgentChatMounted(true);
               }} onClose={closeTools} tabs={[
-                { id: 'search', title: 'Search', content: <DiagramSearchPanel embedded openRequest={searchOpenRequest} openProjectRequest={projectSearchRequest} visible={toolsOpen && toolTab === 'search'}
+                { id: 'search', title: 'Search', content: <DiagramSearchPanel embedded openRequest={searchOpenRequest} openProjectRequest={projectSearchRequest} projectQueryRequest={projectQueryRequest} visible={toolsOpen && toolTab === 'search'}
                   onOpen={() => { setToolTab('search'); setToolsOpen(true); }} onClose={closeTools}
                   service={search} activeDocumentId={proposalSearchId ?? activeId}
                   activeName={changeMode ? proposalSearchDocument?.name : active?.name}
@@ -1221,13 +1238,18 @@ function MappingWorkspacePage() {
             </div>
           </>}
           <FloatingPane highlighted={!!pendingTransfer}><MappingDiagramExplorer explorerTab={explorerTab}
-            canvasViews={active && activeId && !changeMode ? <CanvasViewControls key={`${activeId}:${workspaceEpoch}`} canvasName={active.name}
+            canvasViews={<><GeneratedCanvases activeId={active?.representationId ?? activeId}
+              onOpen={openGenerated}
+              onMigrated={items => { const next = items.flatMap(item => item.generated?.source?.viewId ? [{ documentId: item.generated.source.documentId, viewId: item.generated.source.viewId }] : []);
+                setGeneratedSources(previous => JSON.stringify(previous) === JSON.stringify(next) ? previous : next); }} />
+              {active && activeId && !changeMode && active.type !== 'generated' ? <CanvasViewControls key={`${activeId}:${workspaceEpoch}`} canvasName={active.name}
+              hiddenViewIds={generatedSources.filter(source => source.documentId === activeId).map(source => source.viewId)}
               controller={active.session.controller} disabled={workspaceBusy || active.busy || !!pendingTransfer}
               canvasTarget={{ workspaceInstanceId: canvasId, documentId: activeId }}
               onOpenChat={sessionId => { setAgentChatMounted(true); setToolsOpen(true); setToolTab('chat');
                 setChatTabCommand(previous => ({ serial: (previous?.serial ?? 0) + 1, action: 'open', sessionId })); }}
               previewViewId={viewDiffId} onPreview={viewId => setViewDiffSelection(viewId ? { documentId: activeId, epoch: workspaceEpoch, viewId } : undefined)}
-              onCommand={payload => handleAgentCommand({ id: payload.requestId, method: 'canvas-view', documentId: activeId, payload })} /> : undefined}
+              onCommand={payload => handleAgentCommand({ id: payload.requestId, method: 'canvas-view', documentId: activeId, payload })} /> : undefined}</>}
             transfer={pendingTransfer ? { mode: pendingTransfer.mode, count: pendingTransfer.selectedIds.length,
               sourceId: drafts[pendingTransfer.sourceId]?.representationId ?? pendingTransfer.sourceId, busy: workspaceBusy, error, progress: transferProgress,
               onCancel: cancelTransfer, onNew: name => void transfer({ name }) } : undefined}

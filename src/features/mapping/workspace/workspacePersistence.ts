@@ -42,8 +42,8 @@ export class WorkspacePersistence {
         for (const key of this.storage.keys()) if (key.startsWith(prefix)) changes.push({ key, delete: true });
         this.known.delete(id); continue;
       }
-      const { representationId: savedRepresentationId, name, hidden, repositoryId, parentCanvasId, savedName, savedScene, savedEdges, revisionId } = draft;
-      changes.push({ key: prefix + 'metadata', value: { representationId: id, savedRepresentationId, repositoryId, parentCanvasId, name, hidden, version: draft.session.controller.getSnapshot().version } },
+      const { representationId: savedRepresentationId, name, hidden, repositoryId, type, savedName, savedScene, savedEdges, revisionId } = draft;
+      changes.push({ key: prefix + 'metadata', value: { representationId: id, savedRepresentationId, repositoryId, type, name, hidden, version: draft.session.controller.getSnapshot().version } },
         { key: prefix + 'baseline', value: { savedName, savedScene, savedEdges, revisionId } });
       const cursor = this.cursors.get(draft.session), delta = draft.session.controller.persistenceChanges(cursor);
       if (cursor === undefined) {

@@ -5,10 +5,11 @@ import { SearchQueryHistory } from './searchQueryHistory';
 import './diagramSearch.css';
 
 const preferenceKey = 'diagram-search-auto-select';
-export function DiagramSearchPanel({ service, activeDocumentId, activeName, onReveal, onClear, onMatches, hideOpenButton, openRequest, openProjectRequest, embedded, visible, onOpen, onClose }: {
+export function DiagramSearchPanel({ service, activeDocumentId, activeName, onReveal, onClear, onMatches, hideOpenButton, openRequest, openProjectRequest, projectQueryRequest, embedded, visible, onOpen, onClose }: {
   embedded?: boolean; visible?: boolean; onOpen?: () => void; onClose?: () => void;
   service: DiagramSearchService; activeDocumentId?: string; activeName?: string;
   hideOpenButton?: boolean; openRequest?: number; openProjectRequest?: number;
+  projectQueryRequest?: { text: string; serial: number };
   onReveal: (result: DiagramLineSearchResult) => Promise<void>;
   onClear: () => void;
   onMatches: (results: readonly DiagramLineSearchResult[]) => void;
@@ -36,6 +37,10 @@ export function DiagramSearchPanel({ service, activeDocumentId, activeName, onRe
   const close = () => { setOpened(false); onClose?.(); if (!embedded) previousFocus.current?.focus(); };
   useLayoutEffect(() => { if (openRequest) open(false); }, [openRequest]);
   useLayoutEffect(() => { if (openProjectRequest) open(true); }, [openProjectRequest]);
+  useLayoutEffect(() => {
+    if (!projectQueryRequest) return;
+    setQuery(projectQueryRequest.text); queryHistory.submit(projectQueryRequest.text); open(true);
+  }, [projectQueryRequest]);
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
       if (opened && event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); }
@@ -51,7 +56,7 @@ export function DiagramSearchPanel({ service, activeDocumentId, activeName, onRe
     const timer = searchTimer.current = setTimeout(() => service.search({ text: query, caseSensitive,
       scope: global ? { kind: 'global' } : { kind: 'canvas', documentId: scopeDocumentId! } }), 120);
     return () => clearTimeout(timer);
-  }, [service, global, scopeDocumentId, query, caseSensitive, onClear]);
+  }, [service, global, scopeDocumentId, query, caseSensitive, onClear, projectQueryRequest]);
   useEffect(() => {
     if (!autoSelect || !query || state.searching || state.error) { onMatches([]); return; }
     // Wait for a completed result set and a short typing pause before selecting.
@@ -76,19 +81,18 @@ export function DiagramSearchPanel({ service, activeDocumentId, activeName, onRe
     input.current?.focus();
   };
   return <>
-    {!embedded && !opened && !hideOpenButton && <button className="diagram-search-open" aria-label="Search diagrams" title="Find in canvas (Ctrl+B, F); find in project (Ctrl+B, Shift+F)" onClick={() => open(global)}>Search</button>}
+    {!embedded && !opened && !hideOpenButton && <button className="diagram-search-open" aria-label="Search diagrams" title="Find in canvas (Ctrl+F); find in project (Ctrl+Shift+F)" onClick={() => open(global)}>Search</button>}
     {(embedded || opened) && <section className="diagram-search-panel" role="search" aria-label="Diagram search" onKeyDown={event => {
       if (event.nativeEvent.isComposing) return;
       const inInput = event.target === input.current;
       const navigatingResults = event.target instanceof Element && !!event.target.closest('.diagram-search-results');
-      if (inInput && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
-        event.preventDefault();
+      if (inInput && !event.altKey && !event.ctrlKey && !event.metaKey && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+        event.preventDefault(); event.stopPropagation();
         const next = event.key === 'ArrowUp' ? queryHistory.previous(query) : queryHistory.next(query);
         if (next !== query) changeQuery(next);
-      } else if (navigatingResults && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
-        event.preventDefault();
-        const next = Math.max(0, Math.min(state.results.length - 1, current + (event.key === 'ArrowDown' ? 1 : -1)));
-        setSelected(next); lastRevealed.current = -1; list.current?.querySelectorAll('button')[next]?.scrollIntoView({ block: 'nearest' });
+      } else if (event.key === 'Enter' && navigatingResults) {
+        event.preventDefault(); event.stopPropagation();
+        if (state.results[current] && !state.searching) void reveal(state.results[current], current);
       } else if (event.key === 'Enter' && inInput) {
         event.preventDefault();
         queryHistory.submit(query);
@@ -114,7 +118,7 @@ export function DiagramSearchPanel({ service, activeDocumentId, activeName, onRe
           onChange={event => { queryHistory.edited(); changeQuery(event.target.value); }} />
         <button type="button" aria-label="Run diagram search" disabled={!query.trim()} onClick={runSearch}>Search</button>
       </div>
-      <small id="diagram-search-history-help">↑/↓ query history · Enter next result · Shift+Enter previous</small>
+      <small id="diagram-search-history-help">↑/↓ query history · Enter open/next result · Shift+Enter previous</small>
       <small>{global ? 'Current project diagrams · includes unsaved edits' : activeName ?? 'No active canvas'}</small>
       <p role="status">{state.error || navigationError || (!query ? 'Enter text to search.' : state.searching ? `Searching… ${state.results.length} lines` : `${state.results.length}${state.truncated ? '+' : ''} matching ${state.results.length === 1 ? 'line' : 'lines'}`)}
         {state.truncated && ' · Refine your search to see more.'}</p>
@@ -127,12 +131,14 @@ export function DiagramSearchPanel({ service, activeDocumentId, activeName, onRe
             return [before, <mark key={j}>{result.text.slice(match.startColumn - 1, match.endColumn)}</mark>];
           });
           return <Fragment key={`${result.canvasDocumentId}:${result.displayNodeId}:${result.line}`}>
+            {previous?.canvasDocumentId !== result.canvasDocumentId && <h3>{result.canvasName}</h3>}
             {(previous?.canvasDocumentId !== result.canvasDocumentId || previous.displayNodeId !== result.displayNodeId) &&
-              <h3>{result.canvasName}<span>{result.diagramName || result.diagramId}</span></h3>}
+              <h4>{result.diagramName || result.diagramId}</h4>}
             <button className={i === current ? 'is-current' : ''} data-search-result-line={result.line}
               data-search-result-canvas={result.canvasDocumentId} data-search-result-node={result.displayNodeId}
               title={`${result.canvasName} · ${result.diagramName} · line ${result.line}`}
               aria-current={i === current ? 'true' : undefined}
+              onFocus={() => { setSelected(i); lastRevealed.current = -1; }}
               onClick={() => { setSelected(i); void reveal(result, i); }}>
               <span className="diagram-search-line-number">{result.line}</span><code>{pieces}{result.text.slice(cursor)}</code>
             </button>

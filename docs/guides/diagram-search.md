@@ -3,8 +3,13 @@
 Use **Ctrl/Cmd+F** to find text in the active canvas, or **Ctrl/Cmd+Shift+F** to
 search the entire loaded project. The **Search** button opens the same panel.
 Use the scope selector to switch between them. Searches are literal substrings;
-**Match case** enables case-sensitive matching. Arrow keys select a result,
-Enter opens it, and Escape closes the panel.
+**Match case** enables case-sensitive matching. **Up/Down** in the search input
+browses submitted query history. Enter opens or advances through results,
+Shift+Enter moves backward through results, and Escape closes the panel.
+The existing **Ctrl+B, F** and **Ctrl+B, Shift+F** sequences also remain available.
+While the Search tab is visible, left-clicking a recognized type, variable, or
+function token fills the query and searches the entire project. Dragging and
+modified clicks keep their existing canvas behavior.
 
 Results contain full diagram lines with matching columns highlighted, grouped by
 canvas and diagram. Clicking a result opens its canvas, expands containing groups
@@ -37,8 +42,3 @@ and index generations prevent stale responses from appearing. Results are capped
 at 1,000 matching lines, with an explicit prompt to refine the search if more exist.
 Nothing is persisted by search itself; revealing a collapsed diagram uses the
 existing canvas expansion behavior.
-
-Validation: `npm run check:diagram-search` builds the app and runs a disposable
-browser fixture covering shortcuts, worker execution, folded navigation, match
-highlighting, unopened canvases, unsaved edits, undo/redo, reload, and proposal
-isolation. Set `CHROME_PATH` to the test browser when required.

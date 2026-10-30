@@ -95,7 +95,7 @@ export class AgentDiagrammingSessionService {
   }
   dispose() { this.edits?.dispose(); this.batches?.dispose(); }
   async callBound(token: string, name: AgentToolName, raw: unknown) {
-    const binding = this.chatBindings.capture(token, !['create-agent-context', 'list-agent-contexts', 'read-agent-context'].includes(name)), target = binding.target!;
+    const binding = this.chatBindings.capture(token, !['create-agent-context', 'update-agent-context', 'list-agent-contexts', 'read-agent-context'].includes(name)), target = binding.target!;
     const input = { ...(raw as Record<string, unknown>) };
     const targeted = ['exec', 'draw_diagram', 'save_diagram', 'set_diagram_source_mappings', 'edit-diagram', 'create-diagram', 'extend-diagram', 'diagram-agent-context', 'canvas-view'];
     if (name === 'create_diagram_change_session' && !input.canvasId) input.canvasId = target.workspaceInstanceId;
@@ -133,10 +133,11 @@ export class AgentDiagrammingSessionService {
     const schema = agentToolSchemas[name];
     if (!schema) throw new Error('Unknown agent tool');
     const input = schema.parse(raw);
-    if (name === 'create-agent-context' || name === 'read-agent-context' || name === 'list-agent-contexts') {
+    if (name === 'create-agent-context' || name === 'update-agent-context' || name === 'read-agent-context' || name === 'list-agent-contexts') {
       const library = this.agentContexts?.library;
       if (!library) throw Error('AGENT_CONTEXT_UNAVAILABLE: saved context library is unavailable');
       if (name === 'create-agent-context') return library.create(input);
+      if (name === 'update-agent-context') return library.update(input);
       if (name === 'list-agent-contexts') return library.list(input);
       return library.read(agentToolSchemas['read-agent-context'].parse(input).agentContextId);
     }

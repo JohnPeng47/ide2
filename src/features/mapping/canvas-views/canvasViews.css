@@ -71,16 +71,24 @@
 .canvas-view-save kbd { margin-left: auto; padding: 1px 5px; border: 1px solid var(--gutter); border-radius: 3px; color: var(--muted); font: 10px var(--font-mono); }
 .canvas-view-controls button:disabled { opacity: .5; cursor: default; }
 .canvas-view-diff-preview .change-preview-box.is-removed-diagram { border: 2px dashed var(--diff-deleted-text); }
-.canvas-generation-form, .canvas-generation-details { padding: 10px; display: grid; gap: 8px; font-size: 12px; }
-.canvas-generation-form label { display: grid; gap: 4px; }
-.canvas-generation-form input, .canvas-generation-form textarea, .canvas-generation-form select { width: 100%; box-sizing: border-box; background: var(--control-background); color: var(--fg); border: 1px solid var(--gutter); border-radius: 3px; font: inherit; padding: 6px; }
-.canvas-generation-form textarea { min-height: 70px; resize: vertical; }
+.canvas-generation-details { padding: 10px; display: grid; gap: 8px; font-size: 12px; }
 .canvas-generation-candidate { display: grid; gap: 6px; padding-top: 8px; border-top: 1px solid var(--gutter); }
 .canvas-generation-details pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 160px; overflow: auto; }
 .canvas-generation-badge { margin-left: auto; font-size: 10px; color: var(--muted); white-space: nowrap; }
 .canvas-generation-badge[data-generation-status="generating"], .canvas-generation-badge[data-generation-status="queued"] { color: var(--accent-primary); }
 .canvas-generation-badge[data-generation-status="failed"] { color: var(--accent-danger); }
 
-.canvas-generation-form button, .canvas-generation-details button { padding: 6px 8px; border: 1px solid var(--gutter); border-radius: var(--control-radius); background: var(--control-background); color: var(--fg); font: inherit; cursor: pointer; }
-.canvas-generation-form button:hover:not(:disabled), .canvas-generation-details button:hover:not(:disabled) { border-color: var(--accent-primary); }
+.canvas-generation-details button { padding: 6px 8px; border: 1px solid var(--gutter); border-radius: var(--control-radius); background: var(--control-background); color: var(--fg); font: inherit; cursor: pointer; }
+.canvas-generation-details button:hover:not(:disabled) { border-color: var(--accent-primary); }
 .canvas-generation-details summary { cursor: pointer; }
+
+
+.generated-canvases { padding: 8px 6px; }
+.generated-canvases-evals { display: block; margin: 0 2px 8px; padding: 6px 8px; border: 1px solid var(--border-default); border-radius: 4px; color: var(--accent-primary); text-decoration: none; font-size: 12px; }
+.generated-canvases-evals:hover { border-color: var(--accent-primary); }
+.generated-canvases a.canvas-view-hint { color: var(--accent-primary); }
+.generated-canvases .canvas-view-row { width: 100%; text-align: left; border: 0; }
+.generated-canvases .canvas-generation-details { overflow-wrap: anywhere; }
+.generated-canvases button { color: inherit; background: transparent; cursor: pointer; }
+.generated-canvases button:hover { background: #202f38; }
+.generated-canvases button:focus-visible { outline: 1px solid #88c0d0; outline-offset: -1px; }

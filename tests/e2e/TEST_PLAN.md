@@ -273,8 +273,7 @@ messages/bytes, main-thread time, and obsolete-query work when observable.
 visible after navigation. Explorer filtering belongs to F01; source search is not
 part of the diagram search feature.
 
-**Reuse:** [Diagram search workflow](../browser/mapping/browser-diagram-search-check.mjs)
-and [search architecture](../../docs/guides/diagram-search.md).
+**Reuse:** [Search architecture](../../docs/guides/diagram-search.md).
 
 ### F06 — Request an AI diagram update
 

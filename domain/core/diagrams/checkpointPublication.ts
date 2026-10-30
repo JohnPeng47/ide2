@@ -13,6 +13,6 @@ export interface CapturedCheckpoint {
   header: import('./canvasHistory').HistoryChanges['header'];
   head: import('./canvasHistory').StoredCanvasSnapshot;
   revisions: Record<string, import('./diagramRevisionEditor').DiagramRevision>;
-  metadata: { repositoryId?: string };
+  metadata: { repositoryId?: string; type?: import('./canvasType').CanvasType };
   stored: unknown;
 }

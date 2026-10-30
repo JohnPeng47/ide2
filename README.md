@@ -21,12 +21,19 @@ records stay local.
 
 Open **Menu → Evals** (or `/evals`) to create a comparison session from saved
 CanvasViews or current saved canvases. Add one or more pairs, then create the
-session. Each side opens with its saved/default Mapping camera; pan and zoom
-independently, resize the divider, or reset the camera. Previous/Next traverses
-the pairs, and the sidebar switches sessions. Sessions retain private checkpoint
-copies in `compare-sessions/` under the diagram store, so later source edits or
-deletion do not change an existing comparison. This initial version does not
-generate comparisons with an agent.
+session. Selecting the same source on both sides creates a camera tour of its
+first three visible diagrams, ordered top to bottom then left to right. Focus
+targets are stored as an ordered `cameraViews` sequence on the copied CanvasView;
+each comparison point explicitly links one camera on each side. Previous/Next
+(or the Left/Right arrow keys) visits all points in a pair before advancing to the next pair. The sidebar also
+lets you jump directly to any point or session.
+
+Each pane supports independent pan/zoom and Reset focus. Target framing uses the
+actual pane dimensions, with padding, when selecting a step or resetting focus.
+Resizing the divider or browser preserves each pane’s current pan and zoom. Comparisons without targets retain their saved Mapping cameras. Sessions
+keep private checkpoint copies in `compare-sessions/` under the diagram store,
+so later source edits or deletion do not change an existing comparison. This
+version does not generate comparisons with an agent.
 
 Run `npm run check:compare-sessions` for the browser lifecycle check (requires
 Playwright Chromium and its system libraries).

@@ -1,6 +1,12 @@
 import type { CompareCandidate, ComparePageSession, CompareSessionSummary, CreateCompareSession } from '../../../../domain/mapping/compare/comparePageSession';
+import type { GenerateComparison, ComparisonRunSummary } from '../../../../domain/mapping/compare/comparisonGeneration';
 
 const base = `${import.meta.env.BASE_URL}api/mapping/compare-sessions`;
+const runs = `${import.meta.env.BASE_URL}api/mapping/comparison-runs`;
+export const comparisonRuns = (documentId?: string) => request<ComparisonRunSummary[]>(documentId ? `${runs}?${new URLSearchParams({ documentId })}` : runs);
+export const generateComparison = (input: GenerateComparison) => request<ComparisonRunSummary>(runs, {
+  method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(input)
+});
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, options), value = await response.json();
   if (!response.ok) throw Error(value.error ?? 'Comparison request failed');
@@ -12,3 +18,5 @@ export const readCompareSession = (id: string) => request<ComparePageSession>(`$
 export const createCompareSession = (input: CreateCompareSession) => request<ComparePageSession>(base, {
   method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(input)
 });
+export const deleteCompareSession = (id: string) => request<{ deleted: true }>(`${base}/${encodeURIComponent(id)}`, { method: 'DELETE' });
+export const deleteComparisonRun = (id: string) => request<{ deleted: true }>(`${runs}/${encodeURIComponent(id)}`, { method: 'DELETE' });

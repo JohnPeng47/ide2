@@ -1,4 +1,5 @@
 import { generateDiagram } from '../services/diagramGenerator';
+import { CopyDiagramAsciiButton } from '../../../shared/diagrams/CopyDiagramAsciiButton';
 import { completeMarquee } from '../../../../domain/mapping/selection/completeMarquee';
 import type { SelectionHit, SelectionPolicy } from '../../../../domain/mapping/selection/selectionGesture';
 import { shareEqual, CanvasRuntimeContext } from '../tldraw/CanvasRuntimeContext';
@@ -227,8 +228,9 @@ export function MappingPocSelectionCanvas(props: {
   const contentProjections = useMemo(() => new Map(boxes.filter(box => box.contentId).map(box => [box.box.id,
     diagramProjection(scene, box.box.id, box.contentId!, box.box.collapsed ? undefined : canvasState.diagramViews)])), [boxes, scene, canvasState.diagramViews]);
   const activeProjection = contentProjections.get(activeBox.box.id) ?? diagramProjection(emptySelectionScene, emptySelectionBox.box.id, emptySelectionBox.contentId!);
-  // Selection controls do not change the display-node registry.
-  const displayNodes = useMemo(() => controller.nodes(), [controller, gridDocument, display,
+  // Native shapes own their geometry; the legacy registry would reroute every edge
+  // on the UI thread even though its connections and subtree controls are hidden.
+  const displayNodes = useMemo(() => nativeRuntime ? [] : controller.nodes(), [nativeRuntime, controller, gridDocument, display,
     canvasState.diagramViews, controllerState.version, controllerState.cell, controllerState.endpointBounds]);
   const endpointGeometry = useEndpointGeometry(controller, props.active !== false && !nativeRuntime);
   const composedText = useMemo(() => nativeRuntime ? { ascii: '', rows: [] } : diagramSceneText(scene, canvasState.diagramViews, gridDocument.jumps), [scene, canvasState.diagramViews, gridDocument.jumps]);
@@ -1268,6 +1270,7 @@ export function MappingPocSelectionCanvas(props: {
             </button>
             <button type="button" disabled={isGenerating || !!diagramPlacement} onClick={() => { clearSelectionFocus(); setMovingBoxId(node.box.id); }}>Move</button>
             <button type="button" disabled={isGenerating || !!diagramPlacement} onClick={() => wrapInGroup(node.box.id)}>Group</button>
+            {node.box.kind === 'diagram' && <CopyDiagramAsciiButton ascii={scene.contents[node.box.contentId].content.ascii} />}
           </div>}
         </div>
       ))}
