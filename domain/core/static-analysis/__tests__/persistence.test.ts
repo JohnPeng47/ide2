@@ -1,9 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { parseAnalysisArtifact, serializeAnalysisArtifact, validateAnalysisArtifact } from '../persistence';
+import { analysisArtifactChunks, parseAnalysisArtifact, serializeAnalysisArtifact, validateAnalysisArtifact, verifyCanonicalAnalysisStream } from '../persistence';
 import type { AnalysisArtifact, AnalysisMetricReport } from '../schema';
 import { contractFixture, contractText } from './contractFixture';
 
 describe('static analysis persistence boundary', () => {
+  it('verifies record streaming across arbitrary chunk boundaries without dropping records', () => {
+    const artifact = contractFixture(), json = serializeAnalysisArtifact(artifact);
+    expect(verifyCanonicalAnalysisStream(analysisArtifactChunks(artifact))).toMatchObject({ entities: 3, relations: 2 });
+    expect(verifyCanonicalAnalysisStream([...json])).toMatchObject({ entities: 3, relations: 2 });
+    expect(() => verifyCanonicalAnalysisStream([json.slice(0, -3)])).toThrow();
+    expect(() => verifyCanonicalAnalysisStream([json + '{}'])).toThrow('data after');
+    expect(() => verifyCanonicalAnalysisStream([json.replace('"schemaVersion":1', '"schemaVersion":2')])).toThrow();
+  });
   it('round trips hand-authored facts independently of record insertion order', () => {
     const original = contractFixture(), shuffled = structuredClone(original);
     shuffled.entities.reverse(); shuffled.relations.reverse(); shuffled.coverage.views.reverse();

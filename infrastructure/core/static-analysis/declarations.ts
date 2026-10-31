@@ -3,6 +3,8 @@ import { AnalysisContext, callable, sha } from './context';
 import type { AnalysisEntity } from '../../../domain/core/static-analysis/schema';
 
 export class Declarations {
+  readonly resolvedValues = new WeakMap<ts.Node, string | undefined>();
+  readonly resolvedCallables = new WeakMap<ts.Node, string | undefined>();
   readonly receivers = new Map<ts.Node, string>();
   readonly declarationOwners = new Map<string, ts.Node>();
   readonly scopeBindings = new Map<string, Map<string, string>>();
@@ -73,6 +75,11 @@ export class Declarations {
     return symbol;
   }
   resolve(node: ts.Node, preferCallable = false): string | undefined {
+    const cache = preferCallable ? this.resolvedCallables : this.resolvedValues;
+    if (cache.has(node)) return cache.get(node);
+    const result = this.resolveUncached(node, preferCallable); cache.set(node, result); return result;
+  }
+  private resolveUncached(node: ts.Node, preferCallable = false): string | undefined {
     if (ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isNonNullExpression(node) || ts.isTypeAssertionExpression(node)) return this.resolve(node.expression, preferCallable);
     if (node.kind === ts.SyntaxKind.ThisKeyword) return this.receiver(node);
     const local = this.local(node);
@@ -90,6 +97,16 @@ export class Declarations {
       return this.ensure(declaration, node);
     }
     return this.ctx.nodeEntities.get(node);
+  }
+  /** Resolve data-flow inputs while compiler caches are live, then retain only IDs. */
+  prepareDataflow() {
+    const visit = (node: ts.Node) => {
+      if (ts.isTypeNode(node)) return;
+      if (ts.isPropertyAccessExpression(node)) this.resolve(node);
+      if (ts.isVariableDeclaration(node) && ts.isObjectBindingPattern(node.name) && node.initializer) this.resolve(node.initializer);
+      ts.forEachChild(node, visit);
+    };
+    this.ctx.selected.forEach(visit);
   }
   /** Local binding lookup needs no library types; imports/member dispatch still use TypeChecker. */
   local(node: ts.Node): string | undefined {

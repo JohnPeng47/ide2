@@ -11,6 +11,7 @@ function variation(a: AnalysisPartition, b?: AnalysisPartition): AnalysisMetricV
   const universe = new Set(a.universeEntityIds);
   if (universe.size !== b.universeEntityIds.length || b.universeEntityIds.some(id => !universe.has(id))) return na('incompatible-universe');
   if (!universe.size) return na('empty-universe');
+  if (a === b && a.memberships.every(member => member.primaryGroupId !== null)) return ok(0);
   const labels = new Map(b.memberships.map(member => [member.entityId, member.primaryGroupId]));
   const countsA = new Map<string, number>(), countsB = new Map<string, number>(), joint = new Map<string, { a: string; b: string; count: number }>();
   for (const member of a.memberships) {
@@ -57,7 +58,7 @@ function lineCoverage(artifact: AnalysisArtifact, partition: AnalysisPartition) 
 }
 
 export function evaluatePartition(artifact: AnalysisArtifact, partitionId: string, layerId: string,
-  options: MetricOptions): AnalysisMetricReport {
+  options: MetricOptions, coverage?: AnalysisMetricReport['coverage']): AnalysisMetricReport {
   const partition = artifact.derived.partitions.find(item => item.id === partitionId), layer = artifact.layers.find(item => item.id === layerId);
   if (!partition || !layer) throw new Error('Unknown partition or dependency layer');
   if (!Number.isInteger(options.shuffleSamples) || options.shuffleSamples < 0) throw new Error('Expected a nonnegative shuffle sample count');
@@ -83,26 +84,36 @@ export function evaluatePartition(artifact: AnalysisArtifact, partitionId: strin
   const coveredCohesion = ratio(mass.internal, mass.internal + mass.between);
   let mean: AnalysisMetricValue = na('not-requested'), standardDeviation = mean, excessCohesion = mean;
   if (options.shuffleSamples && coveredCohesion.status === 'ok') {
+    const groupCount = new Set(labels.filter(label => label !== null)).size;
+    if (groupCount === 1) {
+      mean = ok(1); standardDeviation = ok(0); excessCohesion = ok(coveredCohesion.value - 1);
+    } else {
     let state = options.shuffleSeed >>> 0;
     const random = () => { state = (state + 0x6d2b79f5) >>> 0; let value = state;
       value = Math.imul(value ^ value >>> 15, value | 1); value ^= value + Math.imul(value ^ value >>> 7, value | 61);
       return ((value ^ value >>> 14) >>> 0) / 4294967296; };
     const covered = members.map((member, i) => member.primaryGroupId === null ? -1 : i).filter(index => index !== -1);
-    const original = covered.map(index => labels[index]); let average = 0, m2 = 0;
+    const groupNumbers = new Map<string, number>();
+    for (const label of labels) if (label !== null && !groupNumbers.has(label)) groupNumbers.set(label, groupNumbers.size);
+    const numericLabels = Int32Array.from(labels.map(label => label === null ? -1 : groupNumbers.get(label)!));
+    const original = Int32Array.from(covered.map(index => numericLabels[index]));
+    const shuffled = new Int32Array(original.length), assigned = new Int32Array(numericLabels.length);
+    let average = 0, m2 = 0;
     for (let sample = 0; sample < options.shuffleSamples; sample++) {
-      const shuffled = [...original], assigned = [...labels];
+      shuffled.set(original); assigned.set(numericLabels);
       for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(random() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; }
       covered.forEach((index, i) => { assigned[index] = shuffled[i]; });
       let internal = 0;
-      for (const edge of edges) if (assigned[edge.from] !== null && assigned[edge.from] === assigned[edge.to]) internal += edge.weight;
+      for (const edge of edges) if (assigned[edge.from] !== -1 && assigned[edge.from] === assigned[edge.to]) internal += edge.weight;
       const value = internal / (mass.internal + mass.between), delta = value - average;
       average += delta / (sample + 1); m2 += delta * (value - average);
     }
     mean = ok(average); standardDeviation = ok(Math.sqrt(Math.max(0, m2 / options.shuffleSamples))); excessCohesion = ok(coveredCohesion.value - average);
+    }
   } else if (options.shuffleSamples) mean = standardDeviation = excessCohesion = na('zero-denominator');
   return { id: `metric:${partitionId}:${layerId}:${options.comparisonPartitionId ?? 'none'}`, partitionId, layerId,
     ...(options.comparisonPartitionId ? { comparisonPartitionId: options.comparisonPartitionId } : {}),
-    coverage: lineCoverage(artifact, partition), edgeMass: mass, internalFraction: ratio(mass.internal, mass.total), coveredCohesion,
+    coverage: coverage ?? lineCoverage(artifact, partition), edgeMass: mass, internalFraction: ratio(mass.internal, mass.total), coveredCohesion,
     variationOfInformation: variation(partition, artifact.derived.partitions.find(item => item.id === options.comparisonPartitionId)),
     baseline: { seed: options.shuffleSeed, samples: options.shuffleSamples, preserves: 'primary-group-sizes-and-covered-set', mean, standardDeviation, excessCohesion } };
 }

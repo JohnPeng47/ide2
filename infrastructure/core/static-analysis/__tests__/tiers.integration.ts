@@ -75,11 +75,16 @@ describe('Tier 3: whole repository', () => {
     const paths = parsed.fileNames.filter(file => /\.tsx?$/.test(file) && !file.endsWith('.d.ts'))
       .map(file => path.relative(repositoryRoot, file).replaceAll(path.sep, '/')).sort();
     expect(paths.length).toBeGreaterThan(500); // Discover current corpus; never freeze the historical 711 estimate.
-    const request = requestFor(repositoryRoot, paths), result = await runAnalyzer(request);
-    const { artifact } = await assertPipeline(result, repositoryRoot);
-    expect(artifact.snapshot.files.filter(file => file.role === 'analyzed').map(file => file.path).sort()).toEqual(paths);
-    expect(serializeAnalysisArtifact((await runAnalyzer(request)).artifact)).toBe(serializeAnalysisArtifact(artifact));
-    expect(result.measurements.elapsedMs, 'Tier 3 cold-run budget').toBeLessThan(60_000);
-    expect(result.measurements.peakRssBytes, 'Tier 3 process peak RSS budget').toBeLessThan(2 * 1024 ** 3);
+    const request = requestFor(repositoryRoot, paths);
+    const analyzeAndCheck = async () => {
+      const result = await runAnalyzer(request);
+      const { artifact, fingerprint } = await assertPipeline(result, repositoryRoot, true);
+      expect(artifact.snapshot.files.filter(file => file.role === 'analyzed').map(file => file.path).sort()).toEqual(paths);
+      expect(result.measurements.elapsedMs, 'Tier 3 extraction budget').toBeLessThan(60_000);
+      // Include persistence verification in the memory bound, not just extraction.
+      expect(process.resourceUsage().maxRSS * 1024, 'Tier 3 process peak RSS budget').toBeLessThan(2 * 1024 ** 3);
+      return fingerprint;
+    };
+    expect(await analyzeAndCheck()).toBe(await analyzeAndCheck());
   }, 180_000);
 });

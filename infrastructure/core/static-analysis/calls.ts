@@ -40,12 +40,12 @@ export function extractCalls(ctx: AnalysisContext, declarations: Declarations): 
         ctx.issue('calls', 'computed-key', node, [caller, target], 'Computed call key has no finite resolved target set.');
       } else {
         if (ts.isPropertyAccessExpression(expression)) {
-          const receiverType = ctx.checker.getTypeAtLocation(expression.expression);
-          if (receiverType.isUnion()) {
-            for (const type of receiverType.types) {
-              const property = type.getProperty(expression.name.text), declaration = property?.valueDeclaration ?? property?.declarations?.[0];
-              if (declaration) targets.push(callable(declaration) ? declarations.ensure(declaration, expression) : callableTarget(declarations, expression) ?? declarations.ensure(declaration, expression));
-            }
+          // A union member symbol carries its constituent declarations. Avoid materializing
+          // every receiver's full generic type (notably test matchers and schema builders).
+          const symbol = declarations.symbol(expression.name);
+          const implementations = symbol?.declarations?.filter(declaration => callable(declaration) || ts.isMethodSignature(declaration)) ?? [];
+          if (implementations.length > 1) {
+            for (const declaration of implementations) targets.push(declarations.ensure(declaration, expression));
             if (targets.length > 1) { inferred = true; dispatch = 'union'; }
           }
         }

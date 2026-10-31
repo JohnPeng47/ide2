@@ -14,14 +14,34 @@ function ratio(value: AnalysisMetricValue, numerator: number, denominator: numbe
 
 /** Structural validation is not extraction. Optional texts verify exact UTF-16 coordinates. */
 export function validateAnalysisArtifact(input: unknown, texts?: ReadonlyMap<string, string>): AnalysisArtifact {
-  const artifact = analysisArtifactSchema.parse(input);
+  // Validate records individually so Zod never retains a second complete repository graph.
+  check(input && typeof input === 'object', 'expected object');
+  const candidate = input as Record<string, unknown>;
+  check(candidate.derived && typeof candidate.derived === 'object', 'expected derived object');
+  const derivedInput = candidate.derived as Record<string, unknown>;
+  const shape = analysisArtifactSchema.shape, derivedShape = shape.derived.shape;
+  const topArrays = ['entities', 'relations', 'uncertainties', 'layers'] as const;
+  const derivedArrays = ['sccs', 'trees', 'partitions', 'metrics', 'sourceJoins', 'findings'] as const;
+  analysisArtifactSchema.parse({ ...candidate, ...Object.fromEntries(topArrays.map(key => [key, []])),
+    derived: { ...derivedInput, ...Object.fromEntries(derivedArrays.map(key => [key, []])) } });
+  for (const key of topArrays) {
+    const records = candidate[key]; check(Array.isArray(records), `expected ${key} array`);
+    for (const record of records) shape[key].element.parse(record);
+  }
+  for (const key of derivedArrays) {
+    const records = derivedInput[key]; check(Array.isArray(records), `expected ${key} array`);
+    for (const record of records) derivedShape[key].element.parse(record);
+  }
+  const artifact = input as AnalysisArtifact;
   const { snapshot, entities, relations, uncertainties, layers, derived } = artifact;
   unique(snapshot.files.map(file => file.path), 'snapshot path');
   unique(snapshot.dirtyFiles.map(file => file.path), 'dirty path');
   unique(snapshot.tsconfigs.map(file => file.path), 'tsconfig path');
   const files = new Map(snapshot.files.map(file => [file.path, file]));
+  const lineStarts = new Map<string, number[]>();
   const entityIds = new Set(entities.map(entity => entity.id));
   const relationIds = new Set(relations.map(relation => relation.id));
+  const relationById = new Map(relations.map(relation => [relation.id, relation]));
   const layerIds = new Set(layers.map(layer => layer.id));
   const partitionIds = new Set(derived.partitions.map(partition => partition.id));
   const allRecords = [...entities, ...relations, ...uncertainties, ...layers, ...derived.sccs, ...derived.trees,
@@ -39,8 +59,10 @@ export function validateAnalysisArtifact(input: unknown, texts?: ReadonlyMap<str
     const text = texts?.get(value.path);
     if (text !== undefined) for (const position of [value.start, value.end]) {
       check(text.length === file.utf16Length, `text length differs ${value.path}`);
-      const prefix = text.slice(0, position.offset), lastNewline = prefix.lastIndexOf('\n');
-      check(position.line === prefix.split('\n').length && position.column === position.offset - lastNewline,
+      let starts = lineStarts.get(value.path);
+      if (!starts) { starts = [0]; for (let index = 0; index < text.length; index++) if (text[index] === '\n') starts.push(index + 1); lineStarts.set(value.path, starts); }
+      const start = starts[position.line - 1], end = starts[position.line] ?? text.length + 1;
+      check(start !== undefined && position.offset >= start && position.offset < end && position.column === position.offset - start + 1,
         `coordinates disagree ${value.path}`);
     }
   }
@@ -132,7 +154,8 @@ export function validateAnalysisArtifact(input: unknown, texts?: ReadonlyMap<str
     unique(scc.components.map(component => component.id), 'SCC component');
     const members = scc.components.flatMap(component => component.entityIds);
     unique(members, 'SCC membership'); members.forEach(requireEntity);
-    check(members.length === scc.universeEntityIds.length && members.every(member => scc.universeEntityIds.includes(member)), 'SCC universe differs');
+    const universe = new Set(scc.universeEntityIds);
+    check(members.length === universe.size && members.every(member => universe.has(member)), 'SCC universe differs');
     const componentIds = new Set(scc.components.map(component => component.id));
     const componentFor = new Map(scc.components.flatMap(component => component.entityIds.map(entityId => [entityId, component.id] as const)));
     const outgoing = new Map([...componentIds].map(component => [component, new Set<string>()]));
@@ -141,7 +164,7 @@ export function validateAnalysisArtifact(input: unknown, texts?: ReadonlyMap<str
       check(componentIds.has(edge.from) && componentIds.has(edge.to) && edge.from !== edge.to, 'invalid SCC edge');
       edge.relationIds.forEach(requireRelation);
       for (const relationId of edge.relationIds) {
-        const relation = relations.find(relation => relation.id === relationId)!;
+        const relation = relationById.get(relationId)!;
         check(componentFor.get(relation.from) === edge.from && componentFor.get(relation.to) === edge.to, 'SCC edge provenance differs from component endpoints');
       }
       if (!outgoing.get(edge.from)!.has(edge.to)) {
@@ -202,20 +225,105 @@ export function validateAnalysisArtifact(input: unknown, texts?: ReadonlyMap<str
 }
 
 function compare(a: string, b: string) { return a < b ? -1 : a > b ? 1 : 0; }
+function orderKey(value: unknown): string {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    const record = value as Record<string, unknown>;
+    if (typeof record.id === 'string') return record.id;
+    if (typeof record.entityId === 'string') return record.entityId;
+  }
+  return JSON.stringify(value);
+}
 /** All arrays in v1 are sets except propertyPath (which is ordered). */
 function canonical(value: unknown, key = ''): unknown {
   if (Array.isArray(value)) {
     const items = value.map(item => canonical(item));
-    return key === 'propertyPath' ? items : items.sort((a, b) => compare(JSON.stringify(a), JSON.stringify(b)));
+    return key === 'propertyPath' ? items : items.map(item => ({ item, key: orderKey(item) }))
+      .sort((a, b) => compare(a.key, b.key)).map(entry => entry.item);
   }
   if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value)
     .sort(([a], [b]) => compare(a, b)).map(([name, item]) => [name, canonical(item, name)]));
   return value;
 }
 
+/** Record-at-a-time canonical JSON avoids duplicating the entire graph during persistence. */
+export function* analysisArtifactChunks(input: AnalysisArtifact, texts?: ReadonlyMap<string, string>): Generator<string> {
+  validateAnalysisArtifact(input, texts);
+  function* object(value: Record<string, unknown>): Generator<string> {
+    yield '{\n';
+    const entries = Object.entries(value).sort(([a], [b]) => compare(a, b));
+    for (let index = 0; index < entries.length; index++) {
+      const [key, item] = entries[index];
+      yield `${JSON.stringify(key)}:`;
+      if (Array.isArray(item)) {
+        yield '[\n';
+        const records = item.map(record => ({ record, key: orderKey(canonicalOrderKey(record)) }));
+        records.sort((a, b) => compare(a.key, b.key));
+        for (let i = 0; i < records.length; i++) yield JSON.stringify(canonical(records[i].record)) + (i + 1 < records.length ? ',\n' : '\n');
+        yield ']';
+      } else if (key === 'derived') yield* object(item as Record<string, unknown>);
+      else yield JSON.stringify(canonical(item));
+      yield index + 1 < entries.length ? ',\n' : '\n';
+    }
+    yield '}';
+  }
+  yield* object(input as unknown as Record<string, unknown>); yield '\n';
+}
+function canonicalOrderKey(value: unknown): unknown {
+  if (value && typeof value === 'object' && 'id' in value) return { id: value.id };
+  return canonical(value);
+}
 export function serializeAnalysisArtifact(input: AnalysisArtifact): string {
-  return JSON.stringify(canonical(validateAnalysisArtifact(input)), null, 2) + '\n';
+  return [...analysisArtifactChunks(input)].join('');
 }
 export function parseAnalysisArtifact(json: string): AnalysisArtifact {
   return validateAnalysisArtifact(JSON.parse(json));
+}
+
+/** Verify the record-at-a-time wire format without constructing a second graph.
+ * Cross-record invariants are checked by validateAnalysisArtifact before emission.
+ * Each record is parsed, schema checked and re-encoded byte-for-byte here.
+ */
+export function verifyCanonicalAnalysisStream(chunks: Iterable<string>): Record<string, number> {
+  const shape = analysisArtifactSchema.shape, derivedShape = shape.derived.shape;
+  const counts: Record<string, number> = {}, fields = new Set<string>();
+  let container = '', array = '', started = false, ended = false;
+  const parts: string[] = [];
+  function line(raw: string) {
+    if (!raw) return;
+    check(!ended, 'data after streamed document');
+    if (!started) { check(raw === '{', 'expected streamed object'); started = true; return; }
+    const text = raw.endsWith(',') ? raw.slice(0, -1) : raw;
+    if (array) {
+      if (text === ']') { array = ''; return; }
+      const value: unknown = JSON.parse(text);
+      const schema = container ? derivedShape[array as keyof typeof derivedShape] : shape[array as 'entities' | 'relations' | 'uncertainties' | 'layers'];
+      check(schema && 'element' in schema, 'unknown streamed array'); schema.element.parse(value);
+      check(JSON.stringify(canonical(value)) === text, 'noncanonical streamed record'); counts[`${container}${array}`]++;
+      return;
+    }
+    if (text === '}') { if (container) container = ''; else ended = true; return; }
+    const match = /^"([A-Za-z]+)":(.*)$/.exec(text); check(match, 'invalid streamed property');
+    const [, key, content] = match, field = `${container}${key}`;
+    check(!fields.has(field), 'duplicate streamed field'); fields.add(field);
+    if (key === 'derived' && !container) { check(content === '{', 'invalid derived container'); container = 'derived.'; return; }
+    if (content === '[') {
+      const allowed = container ? Object.keys(derivedShape) : ['entities', 'relations', 'uncertainties', 'layers'];
+      check(allowed.includes(key), 'unknown streamed array'); array = key; counts[field] = 0; return;
+    }
+    check(!container && ['schemaVersion', 'snapshot', 'coverage'].includes(key), 'unknown streamed field');
+    const value: unknown = JSON.parse(content); shape[key as 'schemaVersion' | 'snapshot' | 'coverage'].parse(value);
+    check(JSON.stringify(canonical(value)) === content, 'noncanonical streamed header');
+  }
+  for (const chunk of chunks) {
+    let start = 0;
+    for (let end = chunk.indexOf('\n'); end !== -1; end = chunk.indexOf('\n', start)) {
+      parts.push(chunk.slice(start, end)); line(parts.join('')); parts.length = 0; start = end + 1;
+    }
+    if (start < chunk.length) parts.push(chunk.slice(start));
+  }
+  if (parts.length) line(parts.join(''));
+  check(started && ended && !container && !array, 'truncated streamed document');
+  for (const key of Object.keys(shape)) check(fields.has(key), `missing streamed field ${key}`);
+  for (const key of Object.keys(derivedShape)) check(fields.has(`derived.${key}`), `missing streamed field derived.${key}`);
+  return counts;
 }

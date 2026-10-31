@@ -14,7 +14,7 @@ export interface StaticAnalysisRequest {
 /** Wall time, RSS and timestamps are deliberately outside deterministic persisted facts. */
 export interface StaticAnalysisResult {
   artifact: AnalysisArtifact;
-  measurements: { elapsedMs: number; peakRssBytes: number };
+  measurements: { elapsedMs: number; peakRssBytes: number; phasesMs?: Record<string, number> };
 }
 export interface StaticAnalyzer {
   analyze(request: StaticAnalysisRequest): Promise<StaticAnalysisResult>;

@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect } from 'vitest';
 import type { StaticAnalysisRequest, StaticAnalysisResult } from '../../../../application/core/static-analysis/ports';
-import { parseAnalysisArtifact, serializeAnalysisArtifact, validateAnalysisArtifact } from '../../../../domain/core/static-analysis/persistence';
+import { analysisArtifactChunks, parseAnalysisArtifact, serializeAnalysisArtifact, validateAnalysisArtifact, verifyCanonicalAnalysisStream } from '../../../../domain/core/static-analysis/persistence';
 import type { AnalysisArtifact, AnalysisEntity, AnalysisRange, AnalysisRelation, AnalysisView } from '../../../../domain/core/static-analysis/schema';
 import type { EntitySelector, ExpectedFact, Oracle } from './oracle';
 import { staticAnalyzer } from '../analyzer';
@@ -33,7 +33,7 @@ export async function prepareFixture(name: string): Promise<{ root: string; path
     await writeFile(destination, await readFile(original)); paths.push(relative);
   }
   await writeFile(path.join(root, 'frameworks.d.ts'), await readFile(path.join(testRoot, 'fixtures/frameworks.d.ts.txt')));
-  await writeFile(path.join(root, 'tsconfig.json'), JSON.stringify({ compilerOptions: { strict: true, target: 'ES2022',
+  await writeFile(path.join(root, 'tsconfig.json'), JSON.stringify({ compilerOptions: { strict: true, target: 'ES2022', lib: ['ES2022'],
     module: 'ESNext', moduleResolution: 'Bundler', jsx: 'preserve', noEmit: true, skipLibCheck: true }, include: ['**/*.ts', '**/*.tsx'] }));
   return { root, paths };
 }
@@ -100,12 +100,25 @@ export function assertOracle(artifact: AnalysisArtifact, oracle: Oracle, texts: 
 export async function readOracle(name: string): Promise<Oracle> {
   return JSON.parse(await readFile(path.join(testRoot, 'goldens', name), 'utf8')) as Oracle;
 }
-export async function assertPipeline(result: StaticAnalysisResult, root: string): Promise<{ artifact: AnalysisArtifact; texts: Map<string, string> }> {
-  const json = serializeAnalysisArtifact(result.artifact), artifact = parseAnalysisArtifact(json);
+export function artifactFingerprint(artifact: AnalysisArtifact) {
+  const hash = createHash('sha256'); for (const chunk of analysisArtifactChunks(artifact)) hash.update(chunk); return hash.digest('hex');
+}
+export async function assertPipeline(result: StaticAnalysisResult, root: string, stream = false): Promise<{ artifact: AnalysisArtifact; texts: Map<string, string>; fingerprint?: string }> {
+  // A whole graph exceeds V8's 512 MiB string ceiling. Verify every serialized record
+  // and its canonical parse/re-encode instead of retaining duplicate giant strings.
+  const json = stream ? undefined : serializeAnalysisArtifact(result.artifact);
+  const artifact = json === undefined ? result.artifact : parseAnalysisArtifact(json);
   const texts = await sourceTexts(artifact, root);
-  validateAnalysisArtifact(artifact, texts);
+  let fingerprint: string | undefined;
+  if (stream) {
+    const hash = createHash('sha256');
+    function* hashedChunks() { for (const chunk of analysisArtifactChunks(artifact, texts)) { hash.update(chunk); yield chunk; } }
+    expect(verifyCanonicalAnalysisStream(hashedChunks())).toMatchObject({ entities: artifact.entities.length, relations: artifact.relations.length,
+      uncertainties: artifact.uncertainties.length, 'derived.findings': artifact.derived.findings.length });
+    fingerprint = hash.digest('hex');
+  } else validateAnalysisArtifact(artifact, texts);
   for (const file of artifact.snapshot.files) expect(createHash('sha256').update(texts.get(file.path)!).digest('hex'), file.path).toBe(file.contentHash);
-  expect(serializeAnalysisArtifact(artifact)).toBe(json);
+  if (json !== undefined) expect(serializeAnalysisArtifact(artifact)).toBe(json);
   expect(artifact.entities.some(entity => ['runtime-instance', 'execution-event', 'value-version'].includes(entity.kind))).toBe(false);
   expect([...artifact.entities, ...artifact.relations, ...artifact.uncertainties, ...artifact.derived.findings]
     .some(fact => fact.provenance.status === 'observed')).toBe(false);
@@ -122,5 +135,5 @@ export async function assertPipeline(result: StaticAnalysisResult, root: string)
     if (selectedViews().includes(view.view)) expect(['complete', 'partial'], `${view.view} stage status`).toContain(view.status);
     else expect(view.status, `${view.view} unrequested stage`).toBe('not-run');
   }
-  return { artifact, texts };
+  return { artifact, texts, fingerprint };
 }

@@ -7,8 +7,11 @@ import type { CallSite } from './calls';
 export function extractFrameworks(ctx: AnalysisContext, declarations: Declarations, resources: Resources, sites: CallSite[]) {
   for (const { node, caller, targets } of sites) {
     const expression = node.expression, args = node.arguments ?? [], name = resources.calleeName(node);
-    const library = resources.library(expression), receiver = ts.isPropertyAccessExpression(expression) ? expression.expression : undefined;
-    const resource = receiver && resources.resource(receiver), mechanism = receiver ? resources.mechanism(receiver) : library ?? 'language';
+    const library = ['useEffect', 'useLayoutEffect', 'useInsertionEffect', 'useMemo', 'useCallback', 'useStore', 'computed'].includes(name) ? resources.library(expression) : undefined;
+    const receiver = ts.isPropertyAccessExpression(expression) ? expression.expression : undefined;
+    const summarizedReceiver = ['subscribe', 'onCommit', 'setState', 'getState', 'set', 'get', 'dispose', 'unsubscribe', 'close', 'abort', 'add', 'delete', 'clear', 'push', 'pop', 'splice'].includes(name);
+    const resource = receiver && summarizedReceiver ? resources.resource(receiver) : undefined;
+    const mechanism = receiver && summarizedReceiver ? resources.mechanism(receiver) : library ?? 'language';
     const call = (kind: 'registers' | 'schedules', target: string) => ctx.edge('calls', kind, caller, target, node, { dispatch: 'callback' }, 'framework-summary', 'inferred');
     if (receiver && resource) {
       if (['subscribe', 'onCommit'].includes(name) && mechanism !== 'language') {

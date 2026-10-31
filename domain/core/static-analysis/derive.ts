@@ -1,5 +1,6 @@
 import type { AnalysisArtifact, AnalysisEntity } from './schema';
 import { evaluatePartition } from './metrics';
+import { deriveFindings } from './findings';
 
 export function deriveAnalysis(artifact: AnalysisArtifact, input: { partitions: readonly ('directory' | 'layer' | 'single-group')[]; shuffleSeed: number; shuffleSamples: number },
   identify: (text: string) => string) {
@@ -27,19 +28,22 @@ export function deriveAnalysis(artifact: AnalysisArtifact, input: { partitions: 
     { id: 'layer:reactive', view: 'dependencies', relationKinds: ['reactive', 'selects', 'prop-flow', 'context-read', 'effect-dependency'], statuses: ['resolved', 'inferred'], weighting: 'unit-per-relation', excludeSelfEdges: true },
   ];
   artifact.layers = layers.filter(layer => active.has(layer.view));
+  const coverageByPartition = new Map<string, AnalysisArtifact['derived']['metrics'][number]['coverage']>();
   for (const partition of artifact.derived.partitions) for (const layer of artifact.layers) {
-    artifact.derived.metrics.push(evaluatePartition(artifact, partition.id, layer.id, { ...input,
-      comparisonPartitionId: artifact.derived.partitions.some(item => item.id === 'partition:directory') ? 'partition:directory' : undefined }));
+    const metric = evaluatePartition(artifact, partition.id, layer.id, { ...input,
+      comparisonPartitionId: artifact.derived.partitions.some(item => item.id === 'partition:directory') ? 'partition:directory' : undefined }, coverageByPartition.get(partition.id));
+    artifact.derived.metrics.push(metric); coverageByPartition.set(partition.id, metric.coverage);
   }
   for (const layer of artifact.layers) {
     const kinds = new Set(layer.relationKinds);
     const edges = artifact.relations.filter(edge => edge.view === layer.view && kinds.has(edge.kind)
       && layer.statuses.includes(edge.provenance.status) && byId.has(edge.from) && byId.has(edge.to));
-    const adjacency = new Map(ids.map(id => [id, [] as string[]])), reverse = new Map(ids.map(id => [id, [] as string[]]));
+    const participating = [...new Set(edges.flatMap(edge => [edge.from, edge.to]))].sort();
+    const adjacency = new Map(participating.map(id => [id, [] as string[]])), reverse = new Map(participating.map(id => [id, [] as string[]]));
     for (const edge of edges) { adjacency.get(edge.from)!.push(edge.to); reverse.get(edge.to)!.push(edge.from); }
     const seen = new Set<string>(), order: string[] = [];
     // Iterative Kosaraju avoids exhausting the JS call stack on deep repository graphs.
-    for (const start of ids) if (!seen.has(start)) {
+    for (const start of participating) if (!seen.has(start)) {
       seen.add(start); const stack: { id: string; next: number }[] = [{ id: start, next: 0 }];
       while (stack.length) {
         const frame = stack[stack.length - 1], next = adjacency.get(frame.id)!;
@@ -59,8 +63,9 @@ export function deriveAnalysis(artifact: AnalysisArtifact, input: { partitions: 
       const from = componentFor.get(edge.from)!, to = componentFor.get(edge.to)!; if (from === to) continue;
       const key = `${from}:${to}`, entry = condensed.get(key) ?? { from, to, relationIds: [] }; entry.relationIds.push(edge.id); condensed.set(key, entry);
     }
-    artifact.derived.sccs.push({ id: `scc:${layer.id}`, layerId: layer.id, universeEntityIds: ids, components, edges: [...condensed.values()] });
+    artifact.derived.sccs.push({ id: `scc:${layer.id}`, layerId: layer.id, universeEntityIds: participating, components, edges: [...condensed.values()] });
   }
+  deriveFindings(artifact, identify);
   const containment = artifact.relations.filter(edge => edge.view === 'containment' && edge.kind === 'contains');
   const parent = new Map(containment.map(edge => [edge.to, edge.from]));
   const root = artifact.entities.find(entity => entity.kind === 'repository')!;

@@ -12,11 +12,13 @@ export class Resources {
     if (ts.isIdentifier(expression)) return this.declarations.symbol(expression)?.name ?? expression.text;
     return ts.isPropertyAccessExpression(expression) ? expression.name.text : '';
   }
-  library(expression: ts.Expression): 'react' | 'zustand' | 'tldraw' | undefined {
+  library(expression: ts.Expression, seen = new Set<ts.Node>()): 'react' | 'zustand' | 'tldraw' | undefined {
+    if (seen.has(expression)) return undefined;
+    seen.add(expression);
     const local = this.declarations.local(expression);
     if (local) {
       const declaration = this.ctx.entityNodes.get(local)!;
-      if (ts.isVariableDeclaration(declaration) && declaration.initializer && ts.isIdentifier(declaration.initializer)) return this.library(declaration.initializer);
+      if (ts.isVariableDeclaration(declaration) && declaration.initializer && ts.isIdentifier(declaration.initializer)) return this.library(declaration.initializer, seen);
       return undefined;
     }
     const symbol = this.declarations.symbol(ts.isPropertyAccessExpression(expression) ? expression.name : expression);
@@ -25,7 +27,7 @@ export class Resources {
     const file = declaration.getSourceFile().fileName.replaceAll('\\', '/');
     let moduleName = file.includes('/node_modules/') ? file.split('/node_modules/').pop()! : '';
     for (let node: ts.Node | undefined = declaration; node; node = node.parent) if (ts.isModuleDeclaration(node) && ts.isStringLiteral(node.name)) { moduleName = node.name.text; break; }
-    if (/^react(?:\/|$)/.test(moduleName)) return 'react';
+    if (/^(?:@types\/)?react(?:\/|$)/.test(moduleName)) return 'react';
     if (/^zustand(?:\/|$)/.test(moduleName)) return 'zustand';
     if (/^(?:@tldraw|tldraw)(?:\/|$)/.test(moduleName)) return 'tldraw';
     return undefined;
@@ -35,6 +37,7 @@ export class Resources {
     if (ts.isNewExpression(initializer)) return ['Map', 'Set', 'WeakMap', 'WeakSet'].includes(initializer.expression.getText()) ? 'collection' : initializer.expression.getText().includes('Controller') ? 'controller' : 'object';
     if (!ts.isCallExpression(initializer)) return undefined;
     const name = this.calleeName(initializer);
+    if (!['createStore', 'atom', 'computed', 'useState', 'useReducer', 'useRef'].includes(name)) return undefined;
     const library = this.library(initializer.expression);
     if (name === 'createStore' && library === 'zustand' && this.ctx.request.frameworks.includes('zustand')) return 'zustand-store';
     if (['atom', 'computed'].includes(name) && library === 'tldraw' && this.ctx.request.frameworks.includes('tldraw')) return name === 'atom' ? 'tldraw-atom' : 'tldraw-computed';
@@ -64,7 +67,17 @@ export class Resources {
       if (kind) this.mark(id, kind);
       if (ts.isIdentifier(initializer) || ts.isPropertyAccessExpression(initializer)) {
         const target = this.declarations.resolve(initializer);
-        if (target && target !== id) { this.ctx.aliases.set(id, target); this.ctx.edge('ownership', 'aliases', id, target, declaration, {}, 'local-alias'); }
+        if (target && target !== id) {
+          const targetNode = this.ctx.entityNodes.get(target);
+          const targetInitializer = targetNode && (ts.isVariableDeclaration(targetNode) || ts.isPropertyDeclaration(targetNode)) ? targetNode.initializer : undefined;
+          const primitive = targetInitializer && (ts.isStringLiteralLike(targetInitializer) || ts.isNumericLiteral(targetInitializer)
+            || [ts.SyntaxKind.TrueKeyword, ts.SyntaxKind.FalseKeyword, ts.SyntaxKind.NullKeyword].includes(targetInitializer.kind));
+          const knownResource = this.ctx.resourceKinds.has(this.ctx.canonical(target));
+          if (!primitive) {
+            if (knownResource) this.ctx.aliases.set(id, target);
+            this.ctx.edge('ownership', 'aliases', id, target, declaration, {}, 'local-alias', knownResource ? 'resolved' : 'inferred');
+          }
+        }
       }
       if (ts.isNewExpression(initializer) || ts.isObjectLiteralExpression(initializer) || ts.isArrayLiteralExpression(initializer)
         || kind && ts.isCallExpression(initializer)) {

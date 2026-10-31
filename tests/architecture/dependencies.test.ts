@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
+import { sourceClassification } from "../../domain/core/static-analysis/classification";
 import { expect, it } from "vitest";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
@@ -17,16 +18,7 @@ function files(directory: string): string[] {
 }
 
 function location(file: string) {
-  const segments = path.relative(root, file).split(path.sep);
-  // src/server is a backend layer even though it shares the source root with React.
-  const [runtime, area, feature] = segments[0] === "src" && segments[1] === "server"
-    ? segments.slice(1)
-    : segments;
-  const composition = runtime === "src" && (area === "app" || area === "main.tsx")
-    || runtime === "server" && area === "app";
-  const owner = ["domain", "application", "infrastructure"].includes(runtime) ? area
-    : area === "features" || area === "routes" ? feature : "core";
-  return { runtime, owner, composition, bootstrap: runtime === "server" && area === "app" && feature === "bootstrap.ts" };
+  return sourceClassification(path.relative(root, file).split(path.sep).join('/'));
 }
 
 it("preserves feature ownership and HTTP/application/infrastructure/domain boundaries", () => {

@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import ts from 'typescript';
+import { sourceClassification } from '../../../domain/core/static-analysis/classification';
 import type { StaticAnalysisRequest } from '../../../application/core/static-analysis/ports';
 import type { AnalysisArtifact, AnalysisEntity, AnalysisProvenance, AnalysisRange, AnalysisRelation, AnalysisView } from '../../../domain/core/static-analysis/schema';
 
@@ -14,20 +15,30 @@ export const views: AnalysisView[] = ['containment', 'lexical', 'calls', 'owners
 let previousProgram: ts.Program | undefined;
 
 export function classify(relative: string): AnalysisEntity['metadata'] {
-  const parts = relative.split('/'), runtime = parts[0] === 'src' && parts[1] === 'server' ? 'server' : parts[0];
-  const segments = runtime === 'server' ? parts.slice(1) : parts;
+  const { runtime, owner, composition } = sourceClassification(relative);
   const layer = relative.includes('/__tests__/') || /\.(?:test|integration)\.tsx?$/.test(relative) ? 'test'
     : ({ src: 'ui', domain: 'domain', application: 'application', infrastructure: 'infrastructure', server: 'server', packages: 'package' } as const)[runtime as 'src'] ?? 'other';
-  const feature = ['domain', 'application', 'infrastructure'].includes(runtime) ? segments[1]
-    : ['features', 'routes'].includes(segments[1]) ? segments[2] : 'core';
-  return { layer, feature, compositionRoot: runtime === 'src' && (segments[1] === 'app' || segments[1] === 'main.tsx') || runtime === 'server' && segments[1] === 'app' };
+  return { layer, feature: owner, compositionRoot: composition };
 }
 
 export class AnalysisContext {
   readonly root: string;
-  readonly program: ts.Program;
+  private activeProgram?: ts.Program;
+  get program(): ts.Program { if (!this.activeProgram) throw new Error('Analysis compiler context has been released'); return this.activeProgram; }
   private typeChecker?: ts.TypeChecker;
-  get checker() { return this.typeChecker ??= this.program.getTypeChecker(); }
+  private semanticReady = false;
+  private compilerOptions!: ts.CompilerOptions;
+  private compilerRoots!: string[];
+  private compilerHost!: ts.CompilerHost;
+  get checker() {
+    if (!this.semanticReady) {
+      const syntax = this.program, host = this.compilerHost;
+      const semanticHost = { ...host, getSourceFile: (...args: Parameters<ts.CompilerHost['getSourceFile']>) => syntax.getSourceFile(args[0]) ?? host.getSourceFile(...args) };
+      this.activeProgram = ts.createProgram({ rootNames: this.compilerRoots, options: this.compilerOptions, host: semanticHost, oldProgram: previousProgram });
+      previousProgram = this.activeProgram; this.semanticReady = true;
+    }
+    return this.typeChecker ??= this.program.getTypeChecker();
+  }
   readonly selected: ts.SourceFile[];
   readonly selectedPaths: Set<string>;
   readonly artifact: AnalysisArtifact;
@@ -42,6 +53,12 @@ export class AnalysisContext {
   readonly callableNodes: ts.FunctionLikeDeclaration[] = [];
   readonly files = new Map<string, { source: ts.SourceFile; hash: string }>();
   readonly duplicates = new Map<string, number>();
+  readonly ranges = new Map<ts.Node, AnalysisRange>();
+  readonly relativePaths = new Map<string, string>();
+  readonly sites = new Map<ts.Node, string>();
+  readonly syntaxProvenance = new WeakMap<ts.Node, AnalysisProvenance>();
+  readonly emptyIds: string[] = [];
+  readonly issueIds = new Set<string>();
   readonly siteKeys = new Map<ts.Node, string>();
   readonly siteCounts = new Map<string, number>();
   readonly resourceKinds = new Map<string, NonNullable<AnalysisEntity['metadata']['resourceKind']>>();
@@ -66,8 +83,10 @@ export class AnalysisContext {
     };
     const roots = [...this.selectedPaths].sort().map(file => path.join(this.root, file));
     roots.push(...parsed.fileNames.filter(file => file.endsWith('.d.ts')));
-    this.program = ts.createProgram({ rootNames: [...new Set(roots)], options: parsed.options, host, oldProgram: previousProgram });
-    previousProgram = this.program;
+    this.compilerOptions = parsed.options; this.compilerRoots = [...new Set(roots)]; this.compilerHost = host;
+    // Syntax and locally resolved facts do not need to parse/bind the standard library.
+    // Build the complete, original project lazily on the first symbol/type query.
+    this.activeProgram = ts.createProgram({ rootNames: this.compilerRoots, options: { ...parsed.options, noLib: true, noResolve: true, types: [] }, host });
     this.selected = [...this.selectedPaths].sort().map(file => {
       const source = this.program.getSourceFile(path.join(this.root, file)); if (!source) throw new Error(`Missing source ${file}`); return source;
     });
@@ -89,7 +108,11 @@ export class AnalysisContext {
     }
     this.rootId = this.addEntity('repository', request.repositoryId, this.selected[0], undefined, 'repository', 'synthetic');
   }
-  relative(absolute: string) { return path.relative(this.root, absolute).replaceAll(path.sep, '/'); }
+  relative(absolute: string) {
+    let relative = this.relativePaths.get(absolute);
+    if (relative === undefined) { relative = path.relative(this.root, absolute); if (path.sep !== '/') relative = relative.replaceAll(path.sep, '/'); this.relativePaths.set(absolute, relative); }
+    return relative;
+  }
   inside(node: ts.Node) { const file = this.relative(node.getSourceFile().fileName); return !file.startsWith('../') && !file.includes('node_modules/') && !path.isAbsolute(file); }
   active(view: AnalysisView) { return this.request.views.includes(view); }
   lineCount(text: string) { return text.length ? text.split('\n').length - (text.endsWith('\n') ? 1 : 0) : 0; }
@@ -101,14 +124,21 @@ export class AnalysisContext {
       role: this.selectedPaths.has(relative) ? 'analyzed' : 'resolution-only', language: relative.endsWith('.tsx') ? 'tsx' : 'ts' });
   }
   range(node: ts.Node): AnalysisRange {
+    const cached = this.ranges.get(node); if (cached) return cached;
     const source = node.getSourceFile(); this.trackFile(source);
     const start = node.getStart(source), end = node.getEnd(), a = source.getLineAndCharacterOfPosition(start), b = source.getLineAndCharacterOfPosition(end);
     const relative = this.relative(source.fileName);
-    return { snapshotId: 'pending', path: relative, fileHash: this.files.get(relative)!.hash,
+    const result = { snapshotId: 'pending', path: relative, fileHash: this.files.get(relative)!.hash,
       start: { offset: start, line: a.line + 1, column: a.character + 1 }, end: { offset: end, line: b.line + 1, column: b.character + 1 } };
+    this.ranges.set(node, result); return result;
   }
   provenance(node: ts.Node, method: AnalysisProvenance['method'] = 'syntax', status: AnalysisProvenance['status'] = 'resolved', explanation = ''): AnalysisProvenance {
-    return { status, method, rule: `${method}:v1`, locations: [this.range(node)], supportingRelationIds: [], explanation };
+    if (method === 'syntax' && status === 'resolved' && !explanation) {
+      const existing = this.syntaxProvenance.get(node); if (existing) return existing;
+      const provenance = { status, method, rule: 'syntax:v1', locations: [this.range(node)], supportingRelationIds: this.emptyIds, explanation };
+      this.syntaxProvenance.set(node, provenance); return provenance;
+    }
+    return { status, method, rule: `${method}:v1`, locations: [this.range(node)], supportingRelationIds: this.emptyIds, explanation };
   }
   addEntity(kind: AnalysisEntity['kind'], name: string, node: ts.Node, parent: string | undefined,
     role = kind as string, origin: AnalysisEntity['identity']['origin'] = 'source', structural = false): string {
@@ -143,13 +173,17 @@ export class AnalysisContext {
     }
     const id = this.addEntity('module', relative, source, parent); this.nodeEntities.set(source, id); return id;
   }
-  site(node: ts.Node) { return `${this.relative(node.getSourceFile().fileName)}:${node.pos}:${node.end}`; }
+  site(node: ts.Node) {
+    let site = this.sites.get(node);
+    if (!site) { site = `${this.relative(node.getSourceFile().fileName)}:${node.pos}:${node.end}`; this.sites.set(node, site); }
+    return site;
+  }
   stableSite(node: ts.Node): string {
     const known = this.siteKeys.get(node); if (known) return known;
     const owner = ts.isSourceFile(node) ? node : this.owner(node);
-    const key = JSON.stringify([this.relative(node.getSourceFile().fileName), this.nodeEntities.get(owner) ?? 'module', node.kind, sha(node.getText().replace(/\s+/g, ' '))]);
+    const key = sha(JSON.stringify([this.relative(node.getSourceFile().fileName), this.nodeEntities.get(owner) ?? 'module', node.kind, sha(node.getText().replace(/\s+/g, ' '))]));
     const ordinal = this.siteCounts.get(key) ?? 0; this.siteCounts.set(key, ordinal + 1);
-    const result = `${sha(key)}:${ordinal}`; this.siteKeys.set(node, result); return result;
+    const result = `${key}:${ordinal}`; this.siteKeys.set(node, result); return result;
   }
   edge(view: AnalysisView, kind: AnalysisRelation['kind'], from: string, to: string, node: ts.Node,
     attributes: Record<string, unknown> = {}, method: AnalysisProvenance['method'] = 'syntax', status: AnalysisProvenance['status'] = 'resolved'): string {
@@ -166,8 +200,8 @@ export class AnalysisContext {
     entityIds: string[] = [], explanation = '', kind: AnalysisArtifact['uncertainties'][number]['kind'] = 'unresolved') {
     if (!this.active(view)) return;
     const id = `issue:${sha(JSON.stringify([view, reason, this.site(node), entityIds]))}`;
-    if (!this.artifact.uncertainties.some(issue => issue.id === id)) this.artifact.uncertainties.push({ id, kind, view, reason, entityIds,
-      relationIds: [], candidateEntityIds: [], provenance: this.provenance(node, 'syntax', 'unresolved', explanation) });
+    if (!this.issueIds.has(id)) { this.issueIds.add(id); this.artifact.uncertainties.push({ id, kind, view, reason, entityIds,
+      relationIds: [], candidateEntityIds: [], provenance: this.provenance(node, 'syntax', 'unresolved', explanation) }); }
     this.siteSets.get(view)!.unresolved.add(this.site(node));
   }
   canonical(id: string): string { const seen = new Set<string>(); while (this.aliases.has(id) && !seen.has(id)) { seen.add(id); id = this.aliases.get(id)!; } return id; }
@@ -175,17 +209,32 @@ export class AnalysisContext {
     let current = node.parent; while (current && !callable(current) && !ts.isSourceFile(current)) current = current.parent;
     return current as ts.FunctionLikeDeclaration | ts.SourceFile;
   }
+  releaseCompiler() {
+    if (this.selected.length > 100 && previousProgram === this.activeProgram) previousProgram = undefined;
+    this.activeProgram = undefined; this.typeChecker = undefined;
+  }
+  release() {
+    this.releaseCompiler(); this.selected.length = 0; this.files.clear();
+    this.entities.clear(); this.entityNodes.clear(); this.nodeEntities.clear(); this.scopes.clear(); this.bindingScopes.clear();
+    this.aliases.clear(); this.setters.clear(); this.relationMap.clear(); this.callableNodes.length = 0;
+    this.ranges.clear(); this.sites.clear(); this.siteKeys.clear(); this.siteCounts.clear(); this.siteSets.clear(); this.duplicates.clear(); this.issueIds.clear();
+  }
   finish() {
     const artifact = this.artifact;
     artifact.entities = [...this.entities.values()]; artifact.relations = [...this.relationMap.values()];
     artifact.snapshot.files.sort((a, b) => compare(a.path, b.path));
     try {
       artifact.snapshot.commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: this.root, stdio: ['ignore', 'pipe', 'ignore'], encoding: 'utf8' }).trim();
-      const tracked = new Set(execFileSync('git', ['ls-files', '-z'], { cwd: this.root, encoding: 'utf8' }).split('\0'));
-      const changed = new Set(execFileSync('git', ['diff', 'HEAD', '--name-only', '-z'], { cwd: this.root, encoding: 'utf8' }).split('\0'));
+    } catch { /* Non-Git corpora have a null commit; content hashes still pin their inputs. */ }
+    if (artifact.snapshot.commit) {
+      // Scope Git reads to pinned inputs; large unrelated diagram stores can exceed maxBuffer.
+      const paths = artifact.snapshot.files.map(file => file.path);
+      const options = { cwd: this.root, encoding: 'utf8' as const, maxBuffer: 16 * 1024 * 1024 };
+      const tracked = new Set(execFileSync('git', ['ls-files', '-z', '--', ...paths], options).split('\0'));
+      const changed = new Set(execFileSync('git', ['diff', 'HEAD', '--name-only', '-z', '--', ...paths], options).split('\0'));
       artifact.snapshot.dirtyFiles = artifact.snapshot.files.filter(file => changed.has(file.path) || !tracked.has(file.path))
         .map(file => ({ path: file.path, status: tracked.has(file.path) ? 'modified' as const : 'untracked' as const, contentHash: file.contentHash }));
-    } catch { /* Non-Git corpora have a null commit; content hashes still pin their inputs. */ }
+    }
     artifact.snapshot.id = `snapshot:${sha(JSON.stringify({ ...artifact.snapshot, id: undefined }))}`;
     for (const fact of [...artifact.entities, ...artifact.relations, ...artifact.uncertainties]) for (const range of fact.provenance.locations) range.snapshotId = artifact.snapshot.id;
     artifact.coverage.analyzedFiles = artifact.snapshot.files.filter(file => file.role === 'analyzed').length;
