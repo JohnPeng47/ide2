@@ -27,7 +27,7 @@ export const staticAnalyzer: StaticAnalyzer = {
       if (request.views.some(view => ['ownership', 'dependencies'].includes(view))) {
         declarations.prepareDataflow(); phase('flow-symbols');
         context.releaseCompiler();
-        extractDataflow(context, declarations, resources, references);
+        extractDataflow(context, declarations, resources, references, sites);
       }
       phase('dataflow');
     }

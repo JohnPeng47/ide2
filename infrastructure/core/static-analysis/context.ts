@@ -56,6 +56,7 @@ export class AnalysisContext {
   readonly ranges = new Map<ts.Node, AnalysisRange>();
   readonly relativePaths = new Map<string, string>();
   readonly sites = new Map<ts.Node, string>();
+  readonly fingerprints = new Map<ts.Node, string>();
   readonly syntaxProvenance = new WeakMap<ts.Node, AnalysisProvenance>();
   readonly emptyIds: string[] = [];
   readonly issueIds = new Set<string>();
@@ -140,22 +141,37 @@ export class AnalysisContext {
     }
     return { status, method, rule: `${method}:v1`, locations: [this.range(node)], supportingRelationIds: this.emptyIds, explanation };
   }
+  /** AST structure ignores trivia while retaining literal/JSX text exactly. */
+  fingerprint(node: ts.Node): string {
+    const existing = this.fingerprints.get(node); if (existing) return existing;
+    const parts: string[] = [];
+    const visit = (child: ts.Node) => {
+      parts.push(String(child.kind), '('); let children = 0;
+      ts.forEachChild(child, item => { children++; visit(item); });
+      if (!children) parts.push(JSON.stringify(ts.isJsxText(child) ? child.getSourceFile().text.slice(child.pos, child.end) : child.getText()));
+      parts.push(')');
+    };
+    visit(node); const result = sha(parts.join('')); this.fingerprints.set(node, result); return result;
+  }
   addEntity(kind: AnalysisEntity['kind'], name: string, node: ts.Node, parent: string | undefined,
     role = kind as string, origin: AnalysisEntity['identity']['origin'] = 'source', structural = false): string {
     const ownerKey = parent ?? this.request.repositoryId;
-    const fingerprint = structural ? sha(node.getText().replace(/\s+/g, ' ')).slice(0, 20) : name;
+    const fingerprint = structural ? this.fingerprint(node).slice(0, 20) : name;
     let key = JSON.stringify([this.request.repositoryId, this.relative(node.getSourceFile().fileName), ownerKey, kind, fingerprint, role]);
     // Source-file owners already encode their path; synthetic repository identity is path-independent.
     if (kind === 'repository') key = JSON.stringify([this.request.repositoryId, 'repository']);
     let id = `entity:${sha(key)}`;
+    let collision: AnalysisEntity | undefined;
     if (this.entities.has(id)) {
       if (this.entityNodes.get(id) === node || ['directory', 'module', 'repository'].includes(kind)) return id;
+      collision = this.entities.get(id)!; collision.identity.stability = 'ambiguous';
       const duplicate = (this.duplicates.get(key) ?? 0) + 1; this.duplicates.set(key, duplicate); key += `#${duplicate}`; id = `entity:${sha(key)}`;
     }
-    const entity: AnalysisEntity = { id, kind, name, identity: { key, stability: structural ? 'structural' : 'named', origin },
+    const entity: AnalysisEntity = { id, kind, name, identity: { key, stability: collision ? 'ambiguous' : structural ? 'structural' : 'named', origin },
       provenance: this.provenance(node), metadata: classify(this.relative(node.getSourceFile().fileName)) };
     this.entities.set(id, entity); this.entityNodes.set(id, node);
     if (parent) this.edge('containment', 'contains', parent, id, node);
+    if (collision) this.issue('containment', 'identity-collision', node, [collision.id, id], 'Indistinguishable declaration anchors require an occurrence ordinal; insertion of another identical anchor can change correspondence.', 'ambiguous-identity');
     return id;
   }
   module(source: ts.SourceFile): string {
@@ -181,7 +197,7 @@ export class AnalysisContext {
   stableSite(node: ts.Node): string {
     const known = this.siteKeys.get(node); if (known) return known;
     const owner = ts.isSourceFile(node) ? node : this.owner(node);
-    const key = sha(JSON.stringify([this.relative(node.getSourceFile().fileName), this.nodeEntities.get(owner) ?? 'module', node.kind, sha(node.getText().replace(/\s+/g, ' '))]));
+    const key = sha(JSON.stringify([this.relative(node.getSourceFile().fileName), this.nodeEntities.get(owner) ?? 'module', node.kind, this.fingerprint(node)]));
     const ordinal = this.siteCounts.get(key) ?? 0; this.siteCounts.set(key, ordinal + 1);
     const result = `${key}:${ordinal}`; this.siteKeys.set(node, result); return result;
   }
@@ -217,7 +233,7 @@ export class AnalysisContext {
     this.releaseCompiler(); this.selected.length = 0; this.files.clear();
     this.entities.clear(); this.entityNodes.clear(); this.nodeEntities.clear(); this.scopes.clear(); this.bindingScopes.clear();
     this.aliases.clear(); this.setters.clear(); this.relationMap.clear(); this.callableNodes.length = 0;
-    this.ranges.clear(); this.sites.clear(); this.siteKeys.clear(); this.siteCounts.clear(); this.siteSets.clear(); this.duplicates.clear(); this.issueIds.clear();
+    this.ranges.clear(); this.sites.clear(); this.fingerprints.clear(); this.siteKeys.clear(); this.siteCounts.clear(); this.siteSets.clear(); this.duplicates.clear(); this.issueIds.clear();
   }
   finish() {
     const artifact = this.artifact;

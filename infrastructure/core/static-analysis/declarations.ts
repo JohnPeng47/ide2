@@ -1,5 +1,5 @@
 import ts from 'typescript';
-import { AnalysisContext, callable, sha } from './context';
+import { AnalysisContext, callable } from './context';
 import type { AnalysisEntity } from '../../../domain/core/static-analysis/schema';
 
 export class Declarations {
@@ -17,7 +17,7 @@ export class Declarations {
     if (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) {
       const parent = node.parent;
       if ((ts.isVariableDeclaration(parent) || ts.isPropertyDeclaration(parent) || ts.isPropertyAssignment(parent)) && ts.isIdentifier(parent.name)) return parent.name.text;
-      return `<callback:${sha(node.getText().replace(/\s+/g, ' ')).slice(0, 12)}>`;
+      return `<callback:${this.ctx.fingerprint(node).slice(0, 12)}>`;
     }
     return ts.SyntaxKind[node.kind];
   }

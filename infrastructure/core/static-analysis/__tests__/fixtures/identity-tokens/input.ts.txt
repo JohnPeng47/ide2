@@ -1,0 +1,2 @@
+export const callbacks = [() => 'a b', () => 'a  b'];
+export const duplicates = [() => 1, () => 1];

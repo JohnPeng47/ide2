@@ -74,8 +74,10 @@ export class Resources {
             || [ts.SyntaxKind.TrueKeyword, ts.SyntaxKind.FalseKeyword, ts.SyntaxKind.NullKeyword].includes(targetInitializer.kind));
           const knownResource = this.ctx.resourceKinds.has(this.ctx.canonical(target));
           if (!primitive) {
-            if (knownResource) this.ctx.aliases.set(id, target);
-            this.ctx.edge('ownership', 'aliases', id, target, declaration, {}, 'local-alias', knownResource ? 'resolved' : 'inferred');
+            const stable = knownResource && this.ctx.entities.get(id)?.metadata.bindingKind === 'const';
+            if (stable) this.ctx.aliases.set(id, target);
+            this.ctx.edge('ownership', 'aliases', id, target, declaration, {}, 'local-alias', stable ? 'resolved' : 'inferred');
+            if (knownResource && !stable) this.ctx.issue('ownership', 'unknown-alias', declaration, [id, target], 'A reassignable alias is not globally unified with its initial target.', 'unresolved');
           }
         }
       }

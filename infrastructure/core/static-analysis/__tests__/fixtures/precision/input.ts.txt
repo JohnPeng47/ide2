@@ -1,0 +1,36 @@
+export function early(flag: boolean) {
+  let value = 1;
+  if (flag) { value = 2; return value; }
+  return value;
+  value = 3;
+}
+export function conditional(flag: boolean) {
+  let chosen = 0;
+  flag ? chosen = 1 : chosen = 2;
+  return chosen;
+}
+export function shortCircuit(flag: boolean) {
+  let chosen = 0;
+  flag && (chosen = 1);
+  return chosen;
+}
+export function aliasReassign() {
+  const first = { value: 0 };
+  let alias = first;
+  alias = { value: 1 };
+  alias.value = 2;
+  return first.value;
+}
+export function scalarCopy() {
+  const original = 1;
+  let copy = original;
+  copy = 2;
+  return original;
+}
+export function inc(value: number) { return value + 1; }
+export function entry(seed: number) {
+  const computed = inc(seed);
+  return computed;
+}
+declare function load(): Promise<number>;
+export async function asyncValue() { const value = await load(); return value; }
