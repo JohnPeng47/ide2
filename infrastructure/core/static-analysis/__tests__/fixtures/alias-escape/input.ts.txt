@@ -1,0 +1,10 @@
+declare function opaque(value: object): void;
+export function aliases() {
+  const state = { count: 0 };
+  const alias = state;
+  const write = () => { alias.count = 2; };
+  const invoke = write;
+  invoke();
+  opaque(alias);
+  return write;
+}

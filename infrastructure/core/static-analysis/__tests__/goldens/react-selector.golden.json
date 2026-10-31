@@ -1,0 +1,20 @@
+{
+  "verification": {
+    "method": "manual-source-inspection",
+    "author": "Codex (independent source reasoning, not human-reviewed)",
+    "date": "2026-10-31",
+    "rationale": "CursorCopyOverlay subscribes with state => state.ascii. Its first effect captures stable refs including latest, but its declared array is [session, stage]. This is not automatically an effect bug. CanvasCursorCopy.store exposes no setState method."
+  },
+  "mustContain": [
+    { "label": "overlay belongs to its module", "view": "containment", "kind": "contains", "from": { "kind": "module", "path": "src/features/mapping/canvas/CursorCopyOverlay.tsx" }, "to": { "name": "CursorCopyOverlay", "kind": "function" } },
+    { "label": "selector consumes clipboard store", "view": "dependencies", "kind": "selects", "from": { "name": "store", "path": "src/features/mapping/canvas/cursorCopy.ts" }, "to": { "kind": "function", "anchor": "state => state.ascii" }, "mechanism": "zustand" },
+    { "label": "first effect captures latest ref", "view": "lexical", "kind": "captures", "from": { "kind": "function", "anchor": "window.addEventListener('pointermove'" }, "to": { "name": "latest" }, "access": ["read"] },
+    { "label": "first effect lists session dependency", "view": "dependencies", "kind": "effect-dependency", "from": { "name": "session", "path": "src/features/mapping/canvas/CursorCopyOverlay.tsx" }, "to": { "kind": "function", "anchor": "window.addEventListener('pointermove'" }, "mechanism": "react" },
+    { "label": "stage writes the clipboard store", "view": "dependencies", "kind": "writes", "from": { "name": "stage", "path": "src/features/mapping/canvas/cursorCopy.ts" }, "to": { "name": "state", "path": "src/features/mapping/canvas/cursorCopy.ts" }, "mechanism": "zustand" }
+  ],
+  "mustNotContain": [
+    { "label": "capture latest is not a listed effect dependency", "view": "dependencies", "kind": "effect-dependency", "from": { "name": "latest" }, "to": { "kind": "function", "anchor": "window.addEventListener('pointermove'" } },
+    { "label": "selector does not write store", "view": "dependencies", "kind": "writes", "from": { "kind": "function", "anchor": "state => state.ascii" }, "to": { "name": "state", "path": "src/features/mapping/canvas/cursorCopy.ts" } }
+  ],
+  "uncertainties": []
+}

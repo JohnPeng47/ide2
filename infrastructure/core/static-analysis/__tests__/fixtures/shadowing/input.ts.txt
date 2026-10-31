@@ -1,0 +1,9 @@
+const value = 1;
+export function outer() {
+  const readOuter = () => value;
+  {
+    const value = 2;
+    const readInner = () => value;
+    return [readOuter(), readInner()];
+  }
+}

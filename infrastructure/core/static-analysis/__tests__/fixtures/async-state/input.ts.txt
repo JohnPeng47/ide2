@@ -1,0 +1,8 @@
+declare function load(): Promise<number>;
+declare function subscribe(callback: (value: number) => void): () => void;
+export async function refresh(state: { value: number }) {
+  const next = await load();
+  state.value = next;
+  const off = subscribe(value => { state.value = value; });
+  return () => off();
+}

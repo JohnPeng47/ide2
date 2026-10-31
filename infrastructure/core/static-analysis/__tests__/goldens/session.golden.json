@@ -1,0 +1,20 @@
+{
+  "verification": {
+    "method": "manual-source-inspection",
+    "author": "Codex (independent source reasoning, not human-reviewed)",
+    "date": "2026-10-31",
+    "rationale": "readable returns getState/getInitialState/subscribe but does not freeze nested values. The constructor subscriber closes over previous and reassigns it after publication. These expectations were written before any extractor exists."
+  },
+  "mustContain": [
+    { "label": "session class contains dispose method", "view": "containment", "kind": "contains", "from": { "name": "CanvasSession", "kind": "class" }, "to": { "name": "dispose", "kind": "method" } },
+    { "label": "readable exposes a shallow read API", "view": "ownership", "kind": "exposes-read-api", "from": { "name": "readable" }, "to": { "name": "store", "kind": "parameter" }, "depth": "shallow" },
+    { "label": "subscription callback reads and reassigns previous", "view": "lexical", "kind": "captures", "from": { "kind": "function", "anchor": "previous = next;" }, "to": { "name": "previous", "kind": "binding" }, "access": ["read", "reassign"] },
+    { "label": "constructor creates controller", "view": "calls", "kind": "constructs", "from": { "kind": "constructor", "anchor": "new MappingDocumentController" }, "to": { "name": "MappingDocumentController" } },
+    { "label": "subscription callback writes document store", "view": "dependencies", "kind": "writes", "from": { "kind": "function", "anchor": "previous = next;" }, "to": { "name": "documentState" }, "mechanism": "zustand" }
+  ],
+  "mustNotContain": [
+    { "label": "readable does not establish deep immutability", "view": "ownership", "kind": "exposes-read-api", "from": { "name": "readable" }, "to": { "name": "store" }, "depth": "deep" },
+    { "label": "status calculation is not a document-store writer", "view": "dependencies", "kind": "writes", "from": { "name": "statusOf" }, "to": { "name": "documentState" } }
+  ],
+  "uncertainties": []
+}

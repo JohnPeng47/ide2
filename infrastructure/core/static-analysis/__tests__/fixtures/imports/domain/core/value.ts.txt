@@ -1,0 +1,3 @@
+export interface Shape { count: number }
+export const state: Shape = { count: 0 };
+export function increment() { state.count += 1; return state.count; }

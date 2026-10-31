@@ -1,0 +1,5 @@
+export function hoisted(flag: boolean) {
+  if (flag) { var shared = 1; let local = 2; void local; }
+  const read = () => shared;
+  return read;
+}

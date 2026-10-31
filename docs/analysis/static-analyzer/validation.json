@@ -1,0 +1,54 @@
+{
+  "baseline": {
+    "command": "npm test -- --reporter=dot",
+    "exitCode": 1,
+    "failedFiles": 11,
+    "passedFiles": 181,
+    "failedTests": 15,
+    "passedTests": 1112,
+    "durationSeconds": 76.79,
+    "failures": [
+      "application/mapping/evals/evalRunService.test.ts > files reruns under the original run and its context, and deletes them with it",
+      "domain/mapping/workspace/__tests__/diagramConnections.test.ts > document connections > round-trips saved and unsaved edges and migrates old workspaces to an empty edge array",
+      "infrastructure/core/diagrams/__tests__/projectProjection.test.ts > persists the regenerated two-hop projection and retains all seven source-backed snapshots",
+      "infrastructure/core/diagrams/__tests__/projectProjection.test.ts > regenerates in place with a new revision, keeping old tree and projection history",
+      "infrastructure/core/language-services/__tests__/lspStartup.test.ts > default CLI startup ignores inherited opt-ins and blocks requests without spawning a language server",
+      "infrastructure/core/language-services/__tests__/lspStartup.test.ts > explicit --lsp starts lazily, shares the session, resolves definitions, and stops child processes with the server",
+      "infrastructure/core/persistence/__tests__/checkpointPublication.test.ts > publishes persisted records without expanding a >100 MiB archive, preserves it on restore, and deduplicates receipts",
+      "infrastructure/core/persistence/__tests__/diagramPersistence.test.ts > externalizes workspace and change-session diagrams while keeping their public exports portable",
+      "infrastructure/mapping/changes/__tests__/changeSessions.test.ts > isolates shared MCP operations, persists sessions and history, rejects bad routing, and validates proposal readiness",
+      "infrastructure/mapping/changes/__tests__/changeSessions.test.ts > persists mappings-only MCP proposals, preserves their baseline, and validates ready",
+      "infrastructure/mapping/changes/__tests__/changeSessions.test.ts > recomputes inferred correspondence after cumulative patches, undo, redo and reset without persisting it as provenance",
+      "infrastructure/mapping/changes/__tests__/diffSessionWorkflow.test.ts > recreates Proposal 2 inputs from originals, isolates all writes, and replays creation without duplicating",
+      "src/features/mapping/code-panel/__tests__/codePanelState.test.ts > persists CodePanel and rejects unsupported resource types",
+      "src/features/mapping/source-pane/__tests__/sourceCodePane.test.ts > navigates repository files without a compaction parent and persists source navigation state",
+      "src/server/routes/core/__tests__/projectProjectionHttp.test.ts > Project projection HTTP API > persists a target tree and OR links visible through the diagrams endpoint"
+    ]
+  },
+  "phase1FullSuite": {
+    "command": "npm test -- --reporter=dot --maxWorkers=2",
+    "exitCode": 1,
+    "failedFiles": 7,
+    "passedFiles": 187,
+    "failedTests": 8,
+    "passedTests": 1148,
+    "durationSeconds": 91.5,
+    "failures": [
+      "domain/mapping/workspace/__tests__/diagramConnections.test.ts > document connections > round-trips saved and unsaved edges and migrates old workspaces to an empty edge array",
+      "infrastructure/core/diagrams/__tests__/projectProjection.test.ts > regenerates in place with a new revision, keeping old tree and projection history",
+      "infrastructure/core/language-services/__tests__/lspStartup.test.ts > default CLI startup ignores inherited opt-ins and blocks requests without spawning a language server",
+      "infrastructure/core/language-services/__tests__/lspStartup.test.ts > explicit --lsp starts lazily, shares the session, resolves definitions, and stops child processes with the server",
+      "infrastructure/core/persistence/__tests__/diagramPersistence.test.ts > externalizes workspace and change-session diagrams while keeping their public exports portable",
+      "src/features/mapping/code-panel/__tests__/codePanelState.test.ts > persists CodePanel and rejects unsupported resource types",
+      "src/features/mapping/source-pane/__tests__/sourceCodePane.test.ts > navigates repository files without a compaction parent and persists source navigation state",
+      "src/server/routes/core/__tests__/projectProjectionHttp.test.ts > Project projection HTTP API > persists a target tree and OR links visible through the diagrams endpoint"
+    ]
+  },
+  "newFailingTestNames": [],
+  "notes": [
+    "Baseline collected before schema/corpus changes.",
+    "Reduced concurrency removed several timing failures; this is not an analyzer improvement.",
+    "All remaining failures were present in baseline.",
+    "Extractor integration tests are separately and intentionally red in Phase 1."
+  ]
+}

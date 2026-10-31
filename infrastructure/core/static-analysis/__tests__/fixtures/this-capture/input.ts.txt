@@ -1,0 +1,10 @@
+declare function register(callback: () => number): void;
+export class Counter {
+  value = 0;
+  start() {
+    const arrow = () => ++this.value;
+    const ordinary = function(this: { value: number }) { return ++this.value; };
+    register(arrow);
+    return ordinary;
+  }
+}

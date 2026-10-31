@@ -1,0 +1,20 @@
+{
+  "verification": {
+    "method": "manual-source-inspection",
+    "author": "Codex (independent source reasoning, not human-reviewed)",
+    "date": "2026-10-31",
+    "rationale": "Cross-file graph: workspace creates session; session constructs controller; clipboard issues controller commands; React editor constructs a runtime and registers its connection. Each edge is asserted separately; event ordering is not invented."
+  },
+  "mustContain": [
+    { "label": "workspace to session", "view": "calls", "kind": "constructs", "from": { "name": "setDrafts", "path": "src/features/mapping/workspace/canvasWorkspace.ts" }, "to": { "name": "CanvasSession", "kind": "class" } },
+    { "label": "session to controller", "view": "calls", "kind": "constructs", "from": { "kind": "constructor", "path": "src/features/mapping/workspace/canvasSession.ts" }, "to": { "name": "MappingDocumentController", "kind": "class" } },
+    { "label": "clipboard to controller command", "view": "calls", "kind": "calls", "from": { "name": "paste", "path": "src/features/mapping/canvas/cursorCopy.ts" }, "to": { "name": "applyUpdate", "path": "domain/mapping/workspace/mappingDocumentController.ts" } },
+    { "label": "React memo constructs runtime", "view": "calls", "kind": "constructs", "from": { "kind": "function", "anchor": "() => new CanvasRuntime(props.session)" }, "to": { "name": "CanvasRuntime", "kind": "class" } },
+    { "label": "React layout effect connects runtime", "view": "calls", "kind": "calls", "from": { "kind": "function", "anchor": "() => canvasRuntime.connect()" }, "to": { "name": "connect", "path": "src/features/mapping/tldraw/CanvasRuntimeContext.tsx" } },
+    { "label": "controller subscription writes document state", "view": "dependencies", "kind": "writes", "from": { "kind": "function", "anchor": "previous = next;", "path": "src/features/mapping/workspace/canvasSession.ts" }, "to": { "name": "documentState" }, "mechanism": "zustand" }
+  ],
+  "mustNotContain": [
+    { "label": "controller source does not directly call React component", "view": "calls", "kind": "calls", "from": { "name": "applyUpdate" }, "to": { "name": "MappingEditorCanvas" }, "status": "resolved" }
+  ],
+  "uncertainties": []
+}

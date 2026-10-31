@@ -1,0 +1,3 @@
+export function even(n: number): boolean { return n === 0 || odd(n - 1); }
+export function odd(n: number): boolean { return n !== 0 && even(n - 1); }
+export function countdown(n: number): number { return n ? countdown(n - 1) : 0; }

@@ -1,0 +1,36 @@
+import type { AnalysisView } from '../../../../domain/core/static-analysis/schema';
+
+export type HardFeature = 'aliasing' | 'async' | 'callbacks-through-props' | 'cycles' | 'cross-layer' | 'unresolved-externals';
+export interface CoverageCell { feature: HardFeature; view: AnalysisView; fixture: string; assertion: string; issue?: boolean }
+export const coverageMatrix: CoverageCell[] = [
+  { feature: 'aliasing', view: 'containment', fixture: 'alias-escape', assertion: 'module contains feature entry point' },
+  { feature: 'aliasing', view: 'lexical', fixture: 'alias-escape', assertion: 'closure captures alias' },
+  { feature: 'aliasing', view: 'calls', fixture: 'alias-escape', assertion: 'call through local function alias' },
+  { feature: 'aliasing', view: 'ownership', fixture: 'alias-escape', assertion: 'writer can mutate aliased state' },
+  { feature: 'aliasing', view: 'dependencies', fixture: 'alias-escape', assertion: 'write propagates through alias' },
+  { feature: 'async', view: 'containment', fixture: 'async-state', assertion: 'module contains feature entry point' },
+  { feature: 'async', view: 'lexical', fixture: 'async-state', assertion: 'callback mutates captured parameter' },
+  { feature: 'async', view: 'calls', fixture: 'async-state', assertion: 'awaited loader' },
+  { feature: 'async', view: 'ownership', fixture: 'async-state', assertion: 'async callback retains mutation capability' },
+  { feature: 'async', view: 'dependencies', fixture: 'async-state', assertion: 'parameter write' },
+  { feature: 'callbacks-through-props', view: 'containment', fixture: 'react-props', assertion: 'JSX composition' },
+  { feature: 'callbacks-through-props', view: 'lexical', fixture: 'react-props', assertion: 'handler closes over parent callback' },
+  { feature: 'callbacks-through-props', view: 'calls', fixture: 'react-props', assertion: 'unknown callback invocation retains explicit target' },
+  { feature: 'callbacks-through-props', view: 'ownership', fixture: 'react-props', assertion: 'state setter grants mutation capability' },
+  { feature: 'callbacks-through-props', view: 'dependencies', fixture: 'react-props', assertion: 'prop carries handler' },
+  { feature: 'cycles', view: 'containment', fixture: 'reactive-cycle', assertion: 'module contains feature entry point' },
+  { feature: 'cycles', view: 'lexical', fixture: 'reactive-cycle', assertion: 'cyclic subscriber captures store' },
+  { feature: 'cycles', view: 'calls', fixture: 'recursion', assertion: 'even to odd' },
+  { feature: 'cycles', view: 'ownership', fixture: 'reactive-cycle', assertion: 'cyclic subscriber can mutate store' },
+  { feature: 'cycles', view: 'dependencies', fixture: 'reactive-cycle', assertion: 'callback writes store' },
+  { feature: 'cross-layer', view: 'containment', fixture: 'cross-layer', assertion: 'module contains feature entry point' },
+  { feature: 'cross-layer', view: 'lexical', fixture: 'cross-layer', assertion: 'imported state capture' },
+  { feature: 'cross-layer', view: 'calls', fixture: 'cross-layer', assertion: 'cross-layer direct call' },
+  { feature: 'cross-layer', view: 'ownership', fixture: 'cross-layer', assertion: 'application mutates imported listener collection' },
+  { feature: 'cross-layer', view: 'dependencies', fixture: 'cross-layer', assertion: 'cross-layer data read' },
+  { feature: 'unresolved-externals', view: 'containment', fixture: 'dispatch', assertion: 'module contains feature entry point' },
+  { feature: 'unresolved-externals', view: 'lexical', fixture: 'alias-escape', assertion: 'closure captures alias' },
+  { feature: 'unresolved-externals', view: 'calls', fixture: 'dispatch', assertion: 'dynamic-dispatch', issue: true },
+  { feature: 'unresolved-externals', view: 'ownership', fixture: 'alias-escape', assertion: 'escaped-reference', issue: true },
+  { feature: 'unresolved-externals', view: 'dependencies', fixture: 'async-state', assertion: 'parameter write' },
+];

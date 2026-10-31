@@ -1,0 +1,3 @@
+import { advance, state } from '../../domain/core/barrel';
+import type { Shape } from '../../domain/core/barrel';
+export function use(): Shape { advance(); return state; }

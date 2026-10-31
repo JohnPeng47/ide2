@@ -1,0 +1,19 @@
+// Small declared library contracts for micro fixtures; real seeds use installed packages.
+declare namespace JSX { interface IntrinsicElements { button: { onClick?: () => void; children?: unknown } } }
+declare module 'react' {
+  export function useState<T>(initial: T): [T, (next: T) => void];
+  export function useRef<T>(initial: T): { current: T };
+  export function useEffect(setup: () => void | (() => void), dependencies: readonly unknown[]): void;
+}
+declare module 'zustand/vanilla' {
+  export interface Store<T> {
+    getState(): T;
+    setState(next: Partial<T>): void;
+    subscribe(callback: (state: T) => void): () => void;
+  }
+  export function createStore<T>(initializer: () => T): Store<T>;
+}
+declare module 'tldraw' {
+  export function atom<T>(name: string, initial: T): { get(): T; set(next: T): void };
+  export function computed<T>(name: string, calculate: () => T): { get(): T };
+}

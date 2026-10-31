@@ -7,6 +7,10 @@
     "packages/*"
   ],
   "scripts": {
+    "analysis:schema": "tsx scripts/analysis/export-schema.ts",
+    "analysis:schema:check": "tsx scripts/analysis/export-schema.ts --check",
+    "test:analysis:contract": "vitest run domain/core/static-analysis infrastructure/core/static-analysis --reporter=dot",
+    "test:analysis:integration": "vitest run --config infrastructure/core/static-analysis/__tests__/vitest.integration.config.ts",
     "check:compare-sessions": "npm run build && node --import tsx tests/browser/mapping/browser-compare-sessions-check.mjs",
     "check:evals": "npm run build && node --import tsx tests/browser/mapping/browser-evals-check.mjs",
     "test:perf:f02": "npm run build && playwright test --config tests/perf/playwright.config.ts && node tests/perf/summarize.mjs",

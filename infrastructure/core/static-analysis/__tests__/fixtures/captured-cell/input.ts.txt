@@ -1,0 +1,7 @@
+export function counter() {
+  let previous = 0;
+  const state = { count: 0 };
+  const tick = () => { previous += 1; state.count += 1; return previous; };
+  const read = () => state.count;
+  return { tick, read };
+}

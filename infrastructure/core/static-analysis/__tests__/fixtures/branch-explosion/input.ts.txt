@@ -1,0 +1,25 @@
+export function diamonds(flags: readonly boolean[], seed: number) {
+  let value = seed;
+  if (flags[0]) value += 1;
+  if (flags[1]) value += 2;
+  if (flags[2]) value += 3;
+  if (flags[3]) value += 4;
+  if (flags[4]) value += 5;
+  if (flags[5]) value += 6;
+  if (flags[6]) value += 7;
+  if (flags[7]) value += 8;
+  if (flags[8]) value += 9;
+  if (flags[9]) value += 10;
+  if (flags[10]) value += 11;
+  if (flags[11]) value += 12;
+  if (flags[12]) value += 13;
+  if (flags[13]) value += 14;
+  if (flags[14]) value += 15;
+  if (flags[15]) value += 16;
+  if (flags[16]) value += 17;
+  if (flags[17]) value += 18;
+  if (flags[18]) value += 19;
+  if (flags[19]) value += 20;
+  const read = () => value;
+  return read();
+}

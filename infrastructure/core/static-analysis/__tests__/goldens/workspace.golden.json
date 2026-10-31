@@ -1,0 +1,21 @@
+{
+  "verification": {
+    "method": "manual-source-inspection",
+    "author": "Codex (independent source reasoning, not human-reviewed)",
+    "date": "2026-10-31",
+    "rationale": "setDrafts constructs a CanvasSession in the document branch and calls old.session.dispose on replacement/removal. Reusing an existing draft does not create a session."
+  },
+  "mustContain": [
+    { "label": "workspace module contains class", "view": "containment", "kind": "contains", "from": { "kind": "module", "path": "src/features/mapping/workspace/canvasWorkspace.ts" }, "to": { "name": "CanvasWorkspace", "kind": "class" } },
+    { "label": "setDrafts constructs a session", "view": "calls", "kind": "constructs", "from": { "name": "setDrafts" }, "to": { "name": "CanvasSession", "kind": "class" } },
+    { "label": "setDrafts creates a session allocation", "view": "ownership", "kind": "creates", "from": { "name": "setDrafts" }, "to": { "kind": "allocation", "anchor": "new CanvasSession" } },
+    { "label": "replaced session disposal", "view": "calls", "kind": "calls", "from": { "name": "setDrafts" }, "to": { "name": "dispose", "path": "src/features/mapping/workspace/canvasSession.ts" }, "at": "old.session.dispose()" },
+    { "label": "workspace is responsible for replaced session teardown", "view": "ownership", "kind": "disposes", "from": { "name": "setDrafts" }, "to": { "name": "old.session", "kind": "state-resource" }, "status": "inferred", "at": "old.session.dispose()" },
+    { "label": "workspace publishes drafts", "view": "dependencies", "kind": "writes", "from": { "name": "setDrafts" }, "to": { "name": "storeState", "path": "src/features/mapping/workspace/canvasWorkspace.ts" }, "mechanism": "zustand" },
+    { "label": "document subscription captures session", "view": "lexical", "kind": "captures", "from": { "kind": "function", "anchor": "current[id]?.session === session" }, "to": { "name": "session", "kind": "binding", "path": "src/features/mapping/workspace/canvasWorkspace.ts" }, "access": ["read"] }
+  ],
+  "mustNotContain": [
+    { "label": "change counter does not dispose sessions", "view": "ownership", "kind": "disposes", "from": { "name": "changed" }, "to": { "name": "session" } }
+  ],
+  "uncertainties": []
+}

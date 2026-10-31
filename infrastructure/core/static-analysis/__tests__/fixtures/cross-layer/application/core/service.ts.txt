@@ -1,0 +1,7 @@
+import { listeners, state, write } from '../../domain/core/model';
+export function service(onValue: (value: number) => void) {
+  const callback = () => onValue(state.value);
+  listeners.add(callback);
+  write(1);
+  return () => listeners.delete(callback);
+}

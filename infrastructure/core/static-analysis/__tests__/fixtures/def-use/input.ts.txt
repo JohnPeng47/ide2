@@ -1,0 +1,14 @@
+export function overwritten() {
+  let value = 1;
+  value = 2;
+  return value;
+}
+export function branched(flag: boolean) {
+  let chosen = 1;
+  if (flag) chosen = 2;
+  return chosen;
+}
+export function destructured(input: { left: number; right: number }) {
+  const { left: renamed } = input;
+  return renamed;
+}

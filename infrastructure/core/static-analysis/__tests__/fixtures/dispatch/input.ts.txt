@@ -1,0 +1,10 @@
+interface Runner { run(): number }
+class A implements Runner { run() { return 1; } }
+class B implements Runner { run() { return 2; } }
+declare const unknown: Runner;
+declare const callbacks: Record<string, () => number>;
+export function dispatch(flag: boolean, key: string) {
+  const target: A | B = flag ? new A() : new B();
+  const known = target.run();
+  return known + unknown.run() + callbacks[key]();
+}

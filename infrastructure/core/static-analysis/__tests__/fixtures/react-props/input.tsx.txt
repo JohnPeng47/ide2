@@ -1,0 +1,13 @@
+import { useEffect, useRef, useState } from 'react';
+function Button({ onPress }: { onPress: () => void }) {
+  const click = () => onPress();
+  return <button onClick={click}>Go</button>;
+}
+export function Panel({ initial, onChange }: { initial: number; onChange: (n: number) => void }) {
+  const [value, setValue] = useState(initial);
+  const latest = useRef(value);
+  latest.current = value;
+  const press = () => { setValue(value + 1); onChange(latest.current); };
+  useEffect(() => { onChange(latest.current); }, [onChange]);
+  return <Button onPress={press} />;
+}

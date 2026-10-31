@@ -1,0 +1,12 @@
+import { createStore } from 'zustand/vanilla';
+import { atom, computed } from 'tldraw';
+const store = createStore(() => ({ count: 0 }));
+const mirror = atom('mirror', 0);
+const doubled = computed('doubled', () => mirror.get() * 2);
+export function connect() {
+  return store.subscribe(state => {
+    mirror.set(state.count);
+    if (doubled.get() < 4) store.setState({ count: doubled.get() });
+  });
+}
+export function selectCount() { return store.getState().count; }

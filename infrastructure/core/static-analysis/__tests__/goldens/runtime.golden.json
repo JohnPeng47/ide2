@@ -1,0 +1,19 @@
+{
+  "verification": {
+    "method": "manual-source-inspection",
+    "author": "Codex (independent source reasoning, not human-reviewed)",
+    "date": "2026-10-31",
+    "rationale": "connect synchronously calls sync once, then registers an arrow that calls sync on controller notification. focusedEdge and focusedNode are tldraw atoms."
+  },
+  "mustContain": [
+    { "label": "runtime class contains connect", "view": "containment", "kind": "contains", "from": { "name": "CanvasRuntime", "kind": "class" }, "to": { "name": "connect", "kind": "method" } },
+    { "label": "connect initially synchronizes", "view": "calls", "kind": "calls", "from": { "name": "connect" }, "to": { "name": "sync", "path": "src/features/mapping/tldraw/CanvasRuntimeContext.tsx" } },
+    { "label": "connect registers later synchronization", "view": "calls", "kind": "registers", "from": { "name": "connect" }, "to": { "kind": "function", "anchor": "() => this.sync()" } },
+    { "label": "notification callback captures this", "view": "lexical", "kind": "captures-this", "from": { "kind": "function", "anchor": "() => this.sync()" }, "to": { "name": "this" } },
+    { "label": "focus clearing writes an atom", "view": "dependencies", "kind": "writes", "from": { "name": "clearConnectionFocus" }, "to": { "name": "focusedEdge" }, "mechanism": "tldraw" }
+  ],
+  "mustNotContain": [
+    { "label": "registering the arrow is not directly calling it", "view": "calls", "kind": "calls", "from": { "name": "connect" }, "to": { "kind": "function", "anchor": "() => this.sync()" }, "status": "resolved" }
+  ],
+  "uncertainties": []
+}
