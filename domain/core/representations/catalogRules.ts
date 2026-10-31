@@ -115,7 +115,7 @@ export function saveProjectedTree(catalog: ProjectRepresentationCatalogRecord, p
   delete revision.source;
   const representation: ProjectRepresentationRecord = {
     schemaVersion: 1, id: targetId, projectId, repositoryId: source.repositoryId, handle: targetId, name: input.name.trim(),
-    viewKind: "call-graph", representationKind: "tree", status: "settled", currentRevisionId: revisionId,
+    viewKind: "call-graph", representationKind: "tree", type: existingTarget?.type ?? "standard", status: "settled", currentRevisionId: revisionId,
     revisionIds: [...new Set([...(existingTarget?.revisionIds ?? []), revisionId])],
     createdAt: existingTarget?.createdAt ?? timestamp, updatedAt: timestamp
   };

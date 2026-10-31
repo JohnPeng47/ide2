@@ -90,7 +90,7 @@ it('does not publish a canvas if diagram persistence fails', async () => {
 it('externalizes workspace and change-session diagrams while keeping their public exports portable', async () => {
   const { root, service, controller, canvas } = await setup();
   const document = controller.getSnapshot().document, history = controller.exportHistory();
-  const workspace = { schemaVersion: 3 as const, projectId: 'project', documents: [{ representationId: 'draft-test',
+  const workspace = { schemaVersion: 3 as const, projectId: 'project', documents: [{ type: 'standard' as const, representationId: 'draft-test',
     name: 'Draft', savedName: '', revisionId: '', document, canvas, history, savedScene: JSON.stringify(document.scene) }] };
   const workspaces = new MappingWorkspaceStore(root, service);
   await workspaces.save('project', workspace);

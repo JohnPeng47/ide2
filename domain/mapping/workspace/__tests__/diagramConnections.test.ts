@@ -129,7 +129,7 @@ describe('document connections', () => {
     const { controller, edge, apply } = setup();
     apply({ method: 'edge-create', edge });
     const { document, canvas } = controller.getSnapshot();
-    const workspace = { schemaVersion: 3 as const, projectId: 'project', documents: [{ representationId: 'diagram', revisionId: 'revision', name: 'Test', savedName: 'Test',
+    const workspace = { schemaVersion: 3 as const, projectId: 'project', documents: [{ type: 'standard' as const, representationId: 'diagram', revisionId: 'revision', name: 'Test', savedName: 'Test',
       savedScene: JSON.stringify(document.scene), savedEdges: '[]', document, canvas }] };
     expect(deserializeWorkspace(serializeWorkspace(workspace))).toEqual(workspace);
     const old: any = structuredClone(workspace); delete old.documents[0].document.edges; delete old.documents[0].savedEdges;

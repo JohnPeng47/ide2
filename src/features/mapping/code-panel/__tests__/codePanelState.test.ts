@@ -28,7 +28,7 @@ it('reuses panel and selection ownership while restoring collapsed geometry and 
 });
 it('persists CodePanel and rejects unsupported resource types',()=>{
   const document=initialMappingGrid(),canvas=initialCanvasState();canvas.display=upsertCodePanel(emptyDisplayState(),root,content);
-  const snapshot:MappingWorkspaceSnapshot={schemaVersion:3,projectId:'project',documents:[{representationId:'diagram',name:'Diagram',revisionId:'revision',savedName:'Diagram',savedScene:JSON.stringify(document.scene),document,canvas}]};
+  const snapshot:MappingWorkspaceSnapshot={schemaVersion:3,projectId:'project',documents:[{type:'standard',representationId:'diagram',name:'Diagram',revisionId:'revision',savedName:'Diagram',savedScene:JSON.stringify(document.scene),document,canvas}]};
   expect(deserializeWorkspace(serializeWorkspace(snapshot))).toEqual(snapshot);
   const bad=structuredClone(snapshot);const pane=Object.values(bad.documents[0].canvas.display.nodes).find(node=>node.kind==='projection') as ProjectedPane;
   if(pane.content.kind!=='code-panel')throw Error();

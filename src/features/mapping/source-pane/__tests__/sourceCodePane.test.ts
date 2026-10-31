@@ -10,7 +10,7 @@ function fixture() {
     content: { kind: 'source-code', projectId: 'project', sourceFile: 'a.ts', files: [], showCompactions: false, rangeIndex: 0 } };
   const document = initialMappingGrid(), canvas = initialCanvasState();
   canvas.display = addDisplayNode(emptyDisplayState(), pane);
-  const snapshot: MappingWorkspaceSnapshot = { schemaVersion: 3, projectId: 'project', documents: [{ representationId: 'diagram',
+  const snapshot: MappingWorkspaceSnapshot = { schemaVersion: 3, projectId: 'project', documents: [{ type: 'standard' as const, representationId: 'diagram',
     name: 'Diagram', revisionId: 'revision', savedName: 'Diagram', savedScene: JSON.stringify(document.scene), document, canvas }] };
   return snapshot;
 }
