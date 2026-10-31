@@ -29,6 +29,7 @@ export function callableTarget(declarations: Declarations, expression: ts.Node, 
 export function extractCalls(ctx: AnalysisContext, declarations: Declarations): CallSite[] {
   const sites: CallSite[] = [];
   const visit = (node: ts.Node) => {
+    if (ts.isTypeNode(node) && !ts.isExpressionWithTypeArguments(node)) return;
     if (ts.isCallExpression(node) || ts.isNewExpression(node)) {
       const caller = declarations.ensure(ctx.owner(node)), expression = node.expression;
       const targets: string[] = [];
@@ -43,7 +44,12 @@ export function extractCalls(ctx: AnalysisContext, declarations: Declarations): 
           // A union member symbol carries its constituent declarations. Avoid materializing
           // every receiver's full generic type (notably test matchers and schema builders).
           const symbol = declarations.symbol(expression.name);
-          const implementations = symbol?.declarations?.filter(declaration => callable(declaration) || ts.isMethodSignature(declaration)) ?? [];
+          const candidates = symbol?.declarations?.filter(declaration => callable(declaration) || ts.isMethodSignature(declaration)) ?? [];
+          // Overload signatures share one runtime body. Union members with distinct
+          // bodies remain separate candidates; bodyless contracts retain uncertainty.
+          const bodies = candidates.filter(declaration => callable(declaration) && !!declaration.body);
+          const implementations = bodies.length ? candidates.filter(declaration => bodies.includes(declaration)
+            || !bodies.some(body => body.parent === declaration.parent)) : candidates;
           if (implementations.length > 1) {
             for (const declaration of implementations) targets.push(declarations.ensure(declaration, expression));
             if (targets.length > 1) { inferred = true; dispatch = 'union'; }
@@ -64,8 +70,8 @@ export function extractCalls(ctx: AnalysisContext, declarations: Declarations): 
         let targetDispatch: Dispatch = dispatch, status: 'resolved' | 'inferred' = inferred ? 'inferred' : 'resolved';
         if (declaration && (ts.isMethodSignature(declaration) || ts.isCallSignatureDeclaration(declaration))) {
           targetDispatch = 'virtual'; status = 'inferred'; ctx.issue('calls', 'dynamic-dispatch', node, [caller, target], 'A signature specifies a callable shape, not a concrete runtime implementation.');
-        } else if (entity.kind === 'parameter') {
-          targetDispatch = 'callback'; status = 'inferred'; ctx.issue('calls', 'dynamic-dispatch', node, [caller, target], 'A function parameter may receive several callbacks.');
+        } else if (['parameter', 'binding', 'field'].includes(entity.kind)) {
+          targetDispatch = 'callback'; status = 'inferred'; ctx.issue('calls', 'dynamic-dispatch', node, [caller, target], 'The callable value has no single resolved implementation.');
         } else if (entity.identity.origin === 'external' || declaration && ts.isFunctionDeclaration(declaration) && !declaration.body) {
           targetDispatch = 'external'; ctx.issue('calls', 'external-body', node, [caller, target], 'Declaration resolves; dependency implementation is outside the analyzed body scope.');
         } else if (declaration && (ts.isMethodDeclaration(declaration) || ts.isPropertyAccessExpression(expression)) && dispatch === 'direct') {

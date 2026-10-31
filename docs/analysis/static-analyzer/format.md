@@ -25,14 +25,15 @@ will never need a migration.
   declared input scope, with previous paths for renames. Exclude generated analysis
   output from inputs to prevent self-invalidating snapshots. Persist the actual source
   snapshot or retain retrievable Git/blob evidence if cross-machine navigation is needed.
-- Named entity key: canonical JSON tuple `[repositoryId, normalizedPath, lexicalOwnerKey,
-  namespace, syntaxKind, declarationName, role]`. ID: `entity:sha256(key)`.
+- Named entity key: canonical JSON tuple `[repositoryId, normalizedPath, parentEntityId,
+  entityKind, declarationName, role]`. ID: `entity:sha256(key)`.
   Do not include snapshot hash, line, offset, body text, or unrelated sibling ordinal.
   A file move or declaration rename may change identity; no fuzzy correspondence is
   implied. Methods and their callable initializer have distinct `role` values.
 - Anonymous functions, allocation sites, blocks, definitions and merge sites use a
-  named owner plus normalized token fingerprint and syntax role. Unrelated declarations
-  and whitespace do not change their identity. Indistinguishable repeated anchors
+  named owner plus normalized token fingerprint and syntax role. Unrelated declarations and trivia do not change their identity. The AST fingerprint
+  retains literal and JSX text exactly, including meaningful whitespace inside strings.
+  An edit inside an anonymous construct can change its fingerprint and descendant IDs. Indistinguishable repeated anchors
   require a disambiguator and `ambiguous` stability plus an `ambiguous-identity` issue.
   Do not claim stable identity after inserting another identical anonymous construct.
 - Relation ID hashes its view, kind, endpoint IDs, stable call/reference site key,
@@ -190,7 +191,11 @@ and explicit tolerance. Never call finite fixture success whole-repo precision/r
 ## Deterministic JSON
 
 Object keys use code-unit sort. Arrays in v1 are set-like and canonically sorted by
-their canonical JSON encoding, except `propertyPath`, whose segment order is meaningful.
+source path and starting offset followed by ID for provenance-bearing records;
+other identified records sort by ID, and remaining values by canonical JSON encoding.
+`propertyPath` preserves its segment order. Grouping evidence by source improves gzip
+compression without dropping facts. The streaming writer emits one complete JSON
+record per line inside arrays; the complete output remains ordinary JSON.
 No runtime timing or timestamps enter the artifact. A run's measurements are returned
 separately by `StaticAnalysisResult`; persist performance/iteration logs as sidecars.
 Two runs of the same snapshot, rules, configuration and shuffle seed must be byte-identical.

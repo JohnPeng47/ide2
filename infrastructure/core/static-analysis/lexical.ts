@@ -49,6 +49,7 @@ export function extractLexical(ctx: AnalysisContext, declarations: Declarations)
   const references: Reference[] = [];
   const captures = new Map<string, { from: string; to: string; node: ts.Node; nodes: ts.Node[]; accesses: Set<Reference['access'][number]>; receiver: boolean; direct: boolean }>();
   const visit = (node: ts.Node) => {
+    if (ts.isTypeNode(node) && !ts.isExpressionWithTypeArguments(node)) return;
     if (ts.isIdentifier(node) && isValueReference(node) || node.kind === ts.SyntaxKind.ThisKeyword) {
       const target = declarations.resolve(node);
       if (target) {

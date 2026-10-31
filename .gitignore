@@ -13,3 +13,7 @@ tests/perf/.results/
 .DS_Store
 
 /softwarez/
+
+# Reproducible static-analysis graphs are large; retain local artifacts and commit run manifests.
+docs/analysis/artifacts/*.json.gz
+docs/analysis/artifacts/*.tmp

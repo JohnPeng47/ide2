@@ -7,12 +7,14 @@ import type { CallSite } from './calls';
 export function extractFrameworks(ctx: AnalysisContext, declarations: Declarations, resources: Resources, sites: CallSite[]) {
   for (const { node, caller, targets } of sites) {
     const expression = node.expression, args = node.arguments ?? [], name = resources.calleeName(node);
-    const library = ['useEffect', 'useLayoutEffect', 'useInsertionEffect', 'useMemo', 'useCallback', 'useStore', 'computed'].includes(name) ? resources.library(expression) : undefined;
+    const library = ['useEffect', 'useLayoutEffect', 'useInsertionEffect', 'useMemo', 'useCallback', 'useStore', 'computed', 'useContext'].includes(name) ? resources.library(expression) : undefined;
     const receiver = ts.isPropertyAccessExpression(expression) ? expression.expression : undefined;
     const summarizedReceiver = ['subscribe', 'onCommit', 'setState', 'getState', 'set', 'get', 'dispose', 'unsubscribe', 'close', 'abort', 'add', 'delete', 'clear', 'push', 'pop', 'splice'].includes(name);
     const resource = receiver && summarizedReceiver ? resources.resource(receiver) : undefined;
     const mechanism = receiver && summarizedReceiver ? resources.mechanism(receiver) : library ?? 'language';
     const call = (kind: 'registers' | 'schedules', target: string) => ctx.edge('calls', kind, caller, target, node, { dispatch: 'callback' }, 'framework-summary', 'inferred');
+    const callee = declarations.resolve(expression), subscribed = callee && resources.subscriptions.get(callee);
+    if (subscribed) ctx.edge('ownership', 'unsubscribes', caller, subscribed, node, { capability: 'dispose' }, 'framework-summary', 'inferred');
     if (receiver && resource) {
       if (['subscribe', 'onCommit'].includes(name) && mechanism !== 'language') {
         const callback = args[0] && resources.callback(args[0]);
@@ -22,6 +24,8 @@ export function extractFrameworks(ctx: AnalysisContext, declarations: Declaratio
           ctx.edge('ownership', 'retains', resource, callback, node, {}, 'framework-summary', 'inferred');
         }
         ctx.edge('ownership', 'subscribes', caller, resource, node, { capability: 'subscribe' }, 'framework-summary', 'inferred');
+        const binding = resources.resultBinding(node);
+        if (binding) { resources.subscriptions.set(binding, resource); resources.mark(binding, 'subscription'); }
       }
       const writes = mechanism === 'zustand' && name === 'setState' || mechanism === 'tldraw' && name === 'set'
         || ['add', 'delete', 'clear', 'push', 'pop', 'splice', 'set'].includes(name) && ctx.resourceKinds.get(resource) === 'collection';
@@ -30,13 +34,17 @@ export function extractFrameworks(ctx: AnalysisContext, declarations: Declaratio
         ctx.edge('ownership', 'can-mutate', caller, resource, node, { capability: 'write' }, 'framework-summary', 'inferred');
       }
       if (mechanism === 'zustand' && name === 'getState' || mechanism === 'tldraw' && name === 'get') ctx.edge('dependencies', 'reads', resource, caller, node, { mechanism }, 'framework-summary', 'inferred');
-      if (['dispose', 'unsubscribe', 'close', 'abort'].includes(name)) {
+      if (['dispose', 'unsubscribe', 'close', 'abort'].includes(name) && !subscribed) {
         const symbolic = ts.isPropertyAccessExpression(receiver) && !['this', 'super'].includes(receiver.expression.getText())
           ? ctx.addEntity('state-resource', receiver.getText(), receiver, caller, 'access-resource', 'source', true) : resource;
         ctx.edge('ownership', name === 'unsubscribe' ? 'unsubscribes' : 'disposes', caller, symbolic, node, { capability: 'dispose' }, 'framework-summary', 'inferred');
       }
     }
     if (library === 'react' && ctx.request.frameworks.includes('react')) {
+      if (name === 'useContext' && args[0]) {
+        const context = declarations.resolve(args[0]);
+        if (context) ctx.edge('dependencies', 'context-read', context, caller, node, { mechanism: 'react' }, 'framework-summary', 'inferred');
+      }
       if (['useEffect', 'useLayoutEffect', 'useInsertionEffect', 'useMemo', 'useCallback'].includes(name) && args[0]) {
         const callback = resources.callback(args[0]);
         if (callback) {
@@ -80,9 +88,23 @@ export function extractFrameworks(ctx: AnalysisContext, declarations: Declaratio
       }
     }
   }
+  // Method declaration order is not execution order; constructors may appear after dispose().
+  for (const { node, caller } of sites) {
+    const callee = declarations.resolve(node.expression), resource = callee && resources.subscriptions.get(callee);
+    if (resource) ctx.edge('ownership', 'unsubscribes', caller, resource, node, { capability: 'dispose' }, 'framework-summary', 'inferred');
+  }
   if (ctx.request.frameworks.includes('react')) {
     const visit = (node: ts.Node) => {
       if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
+        if (ts.isPropertyAccessExpression(node.tagName) && node.tagName.name.text === 'Provider') {
+          const context = declarations.resolve(node.tagName.expression);
+          const attribute = node.attributes.properties.find(property => ts.isJsxAttribute(property) && property.name.getText() === 'value');
+          if (context && resources.isContext(context) && attribute && ts.isJsxAttribute(attribute) && attribute.initializer
+            && ts.isJsxExpression(attribute.initializer) && attribute.initializer.expression) {
+            const source = declarations.resolve(attribute.initializer.expression);
+            if (source) ctx.edge('dependencies', 'prop-flow', source, context, attribute, { mechanism: 'react', propertyPath: ['value'] }, 'framework-summary', 'inferred');
+          }
+        }
         const target = declarations.resolve(node.tagName, true), declaration = target && ctx.entityNodes.get(target);
         if (declaration && callable(declaration)) {
           const parameter = declaration.parameters[0];

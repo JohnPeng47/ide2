@@ -11,6 +11,15 @@ describe('static analysis persistence boundary', () => {
     expect(() => verifyCanonicalAnalysisStream([json.slice(0, -3)])).toThrow();
     expect(() => verifyCanonicalAnalysisStream([json + '{}'])).toThrow('data after');
     expect(() => verifyCanonicalAnalysisStream([json.replace('"schemaVersion":1', '"schemaVersion":2')])).toThrow();
+    const reordered = json.replace('"column":1,"line":1,"offset":0', '"line":1,"column":1,"offset":0');
+    expect(reordered).not.toBe(json);
+    expect(() => verifyCanonicalAnalysisStream([reordered])).toThrow('noncanonical');
+    const lines = json.split('\n');
+    const first = lines.findIndex(line => line.includes('"id":"binding:x"'));
+    const second = lines.findIndex(line => line.includes('"id":"module:source"'));
+    const swap = (content: string, original: string) => content.replace(/,$/, '') + (original.endsWith(',') ? ',' : '');
+    [lines[first], lines[second]] = [swap(lines[second], lines[first]), swap(lines[first], lines[second])];
+    expect(() => verifyCanonicalAnalysisStream([lines.join('\n')])).toThrow('array order');
   });
   it('round trips hand-authored facts independently of record insertion order', () => {
     const original = contractFixture(), shuffled = structuredClone(original);
@@ -56,6 +65,7 @@ describe('static analysis persistence boundary', () => {
       propertyPath: ['z', 'a'], weight: 1, provenance: artifact.entities[0].provenance });
     const relation = parseAnalysisArtifact(serializeAnalysisArtifact(artifact)).relations.find(edge => edge.id === 'read');
     expect(relation?.view === 'dependencies' && relation.propertyPath).toEqual(['z', 'a']);
+    expect(() => verifyCanonicalAnalysisStream(analysisArtifactChunks(artifact))).not.toThrow();
   });
   it('represents a shared entity as two occurrences without merging their parents', () => {
     const artifact = contractFixture();

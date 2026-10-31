@@ -52,3 +52,17 @@ The full-repo tier checks emitted coverage and invariants without an impossible
 hand-authored oracle for every statement. Its unresolved rate is diagnostic, not
 an accuracy guarantee. Missing dependency bodies must remain explicit even when
 the surrounding local analysis is precise.
+
+## Phase 2 precision regressions
+
+These cases were added from source reasoning, then observed to fail before their
+fixes. They supplement the original matrix and goldens rather than replacing them.
+
+| Fixture | Additional combination |
+| --- | --- |
+| precision | Early-return reachability, ternary/short-circuit joins, reassigned object aliases, scalar copies, actual/formal arguments, call results, await initializers |
+| identity-tokens | Literal whitespace versus trivia, comment-stable anonymous IDs, explicitly ambiguous repeated anchors |
+| framework-lifecycle | Constructor-assigned stores, shallow wrapper facades, cleanup declared before construction, React context provider/consumer flow |
+| callback-forwarding | Worklist propagation through arguments and returned closures; callable identities kept distinct from returned values |
+
+| Source coordinates | BOM, CRLF, CR, Unicode separators and surrogate pairs | Exact source hashes, UTF-16 offsets and line/column round trip |

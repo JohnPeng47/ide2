@@ -104,6 +104,7 @@ export function artifactFingerprint(artifact: AnalysisArtifact) {
   const hash = createHash('sha256'); for (const chunk of analysisArtifactChunks(artifact)) hash.update(chunk); return hash.digest('hex');
 }
 export async function assertPipeline(result: StaticAnalysisResult, root: string, stream = false): Promise<{ artifact: AnalysisArtifact; texts: Map<string, string>; fingerprint?: string }> {
+  const verificationStarted = performance.now();
   // A whole graph exceeds V8's 512 MiB string ceiling. Verify every serialized record
   // and its canonical parse/re-encode instead of retaining duplicate giant strings.
   const json = stream ? undefined : serializeAnalysisArtifact(result.artifact);
@@ -135,5 +136,6 @@ export async function assertPipeline(result: StaticAnalysisResult, root: string,
     if (selectedViews().includes(view.view)) expect(['complete', 'partial'], `${view.view} stage status`).toContain(view.status);
     else expect(view.status, `${view.view} unrequested stage`).toBe('not-run');
   }
+  if (stream && process.env.STATIC_ANALYSIS_PROFILE) console.error(JSON.stringify({ phase: 'verify-stream', elapsedMs: performance.now() - verificationStarted, rss: process.memoryUsage().rss }));
   return { artifact, texts, fingerprint };
 }

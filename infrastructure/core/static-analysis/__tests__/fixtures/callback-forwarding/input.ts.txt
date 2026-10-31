@@ -1,0 +1,5 @@
+function invoke(callback: () => number) { return callback(); }
+export function start() { const work = () => 1; return invoke(work); }
+function factory() { return () => 2; }
+export function returned() { const callback = factory(); return callback(); }
+export function numeric() { const value = start(); return value; }

@@ -16,6 +16,7 @@ export function architectureReport(artifact: AnalysisArtifact, artifactLink: str
     '# Repository architectural analysis', '',
     `Static source snapshot \`${artifact.snapshot.id}\`, based on commit \`${artifact.snapshot.commit ?? 'non-Git corpus'}\`.`, '',
     `[Persisted analysis JSON](${artifactLink}) contains every entity, relation, source range, uncertainty, partition and finding. Gzip is lossless; decompress it before using the JSON schema.`, '',
+    '[Architectural interpretation and review priorities](architecture-notes.md) distinguish source inspection from judgments about these measurements.', '',
     `Analyzed **${artifact.coverage.analyzedFiles} files**, with **${artifact.coverage.resolutionOnlyFiles} resolution-only files**, **${artifact.entities.length} entities** and **${artifact.relations.length} relations**. The snapshot records ${artifact.snapshot.dirtyFiles.length} dirty inputs with content hashes.`, '',
     '## What these measurements mean', '',
     'This is a static possibility graph. Calls are not an execution trace; source-level ownership means aliases, mutation capabilities and lifecycle evidence, not exclusive ownership. A crossing is a candidate for investigation, not a defect. No observed/runtime evidence is emitted.', '',
@@ -35,6 +36,18 @@ export function architectureReport(artifact: AnalysisArtifact, artifactLink: str
     const metric = artifact.derived.metrics.find(item => item.partitionId === partition.id);
     if (metric) lines.push('', `**${partition.basis}**: ${partition.groups.length} groups; line coverage ${value(metric.coverage.fraction, true)}, overlap ${value(metric.coverage.overlapFraction, true)}; baseline ${metric.baseline.samples} shuffles, seed ${metric.baseline.seed}.`);
   }
+  lines.push('', '### Edges outside the scoring universe', '',
+    'These counts exclude self-edges first, then show edges whose endpoints are outside the declared source universe (including external signatures and unknown targets). Excluded edges do not become internal by omission.', '',
+    '| Edge layer | Eligible non-self relations | Outside universe |', '|---|---:|---:|');
+  const universe = new Set(artifact.derived.partitions[0]?.universeEntityIds ?? []);
+  for (const layer of artifact.layers) {
+    let eligible = 0, excluded = 0;
+    for (const edge of artifact.relations) if (edge.view === layer.view && layer.relationKinds.includes(edge.kind)
+      && layer.statuses.includes(edge.provenance.status) && (!layer.excludeSelfEdges || edge.from !== edge.to)) {
+      eligible++; if (!universe.has(edge.from) || !universe.has(edge.to)) excluded++;
+    }
+    lines.push(`| ${layer.id} | ${eligible} | ${excluded} |`);
+  }
   lines.push('', '## Cross-view boundary evidence', '',
     'The mismatch rule compares directory containment with architectural-layer membership: an edge can stay within a layer while crossing directory groups. Mutable captures and ownership relations provide additional views of the same endpoints. This is a concrete pair of partitions, not a claim that every possible tree mismatch has been found.');
   const names = { 'cross-view-boundary': 'Edges local to a layer but crossing directory groups', 'cross-boundary-write': 'Cross-directory writes', 'mutable-capture': 'Mutable captures', 'shared-state': 'Widely shared state' } as const;
@@ -46,7 +59,7 @@ export function architectureReport(artifact: AnalysisArtifact, artifactLink: str
     if (!findings.length) lines.push('No finding matched this rule in the selected corpus.');
   }
   lines.push('', '## Cycles', '', '| Layer | Nontrivial SCCs | Largest component |', '|---|---:|---:|');
-  for (const scc of artifact.derived.sccs) lines.push(`| ${scc.layerId} | ${scc.components.filter(component => component.entityIds.length > 1).length} | ${Math.max(0, ...scc.components.map(component => component.entityIds.length))} |`);
+  for (const scc of artifact.derived.sccs) lines.push(`| ${scc.layerId} | ${scc.components.filter(component => component.entityIds.length > 1).length} | ${scc.components.reduce((largest, component) => Math.max(largest, component.entityIds.length), 0)} |`);
   const counts = new Map<string, number>();
   for (const issue of artifact.uncertainties) { const key = `${issue.view} / ${issue.kind} / ${issue.reason}`; counts.set(key, (counts.get(key) ?? 0) + 1); }
   lines.push('', '## Uncertainty and limitations', '', `${artifact.coverage.unresolvedCount} unresolved/unsupported/ambiguous records, plus separately classified escape and diagnostic records. All retain source evidence in the artifact.`, '', '| View / classification / reason | Count |', '|---|---:|');

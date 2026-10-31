@@ -7,6 +7,7 @@ import { Resources } from './resources';
 import { extractCalls } from './calls';
 import { extractFrameworks } from './frameworks';
 import { extractDataflow } from './dataflow';
+import { connectCallbackCandidates } from './callbacks';
 
 export const staticAnalyzer: StaticAnalyzer = {
   async analyze(request) {
@@ -28,6 +29,7 @@ export const staticAnalyzer: StaticAnalyzer = {
         declarations.prepareDataflow(); phase('flow-symbols');
         context.releaseCompiler();
         extractDataflow(context, declarations, resources, references, sites);
+        connectCallbackCandidates(context, declarations, sites);
       }
       phase('dataflow');
     }

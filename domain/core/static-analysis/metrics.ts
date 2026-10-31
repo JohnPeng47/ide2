@@ -58,7 +58,7 @@ function lineCoverage(artifact: AnalysisArtifact, partition: AnalysisPartition) 
 }
 
 export function evaluatePartition(artifact: AnalysisArtifact, partitionId: string, layerId: string,
-  options: MetricOptions, coverage?: AnalysisMetricReport['coverage']): AnalysisMetricReport {
+  options: MetricOptions, coverage?: AnalysisMetricReport['coverage'], agreement?: AnalysisMetricValue): AnalysisMetricReport {
   const partition = artifact.derived.partitions.find(item => item.id === partitionId), layer = artifact.layers.find(item => item.id === layerId);
   if (!partition || !layer) throw new Error('Unknown partition or dependency layer');
   if (!Number.isInteger(options.shuffleSamples) || options.shuffleSamples < 0) throw new Error('Expected a nonnegative shuffle sample count');
@@ -114,6 +114,6 @@ export function evaluatePartition(artifact: AnalysisArtifact, partitionId: strin
   return { id: `metric:${partitionId}:${layerId}:${options.comparisonPartitionId ?? 'none'}`, partitionId, layerId,
     ...(options.comparisonPartitionId ? { comparisonPartitionId: options.comparisonPartitionId } : {}),
     coverage: coverage ?? lineCoverage(artifact, partition), edgeMass: mass, internalFraction: ratio(mass.internal, mass.total), coveredCohesion,
-    variationOfInformation: variation(partition, artifact.derived.partitions.find(item => item.id === options.comparisonPartitionId)),
+    variationOfInformation: agreement ?? variation(partition, artifact.derived.partitions.find(item => item.id === options.comparisonPartitionId)),
     baseline: { seed: options.shuffleSeed, samples: options.shuffleSamples, preserves: 'primary-group-sizes-and-covered-set', mean, standardDeviation, excessCohesion } };
 }

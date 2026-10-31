@@ -1,0 +1,21 @@
+import { createContext, useContext } from 'react';
+import { createStore, type Store } from 'zustand/vanilla';
+function readable(store: Store<{ count: number }>) {
+  return { getState: store.getState, subscribe: store.subscribe };
+}
+export class Session {
+  private state: Store<{ count: number }>;
+  readonly store: ReturnType<typeof readable>;
+  private off: () => void;
+  dispose() { this.off(); }
+  constructor() {
+    this.state = createStore(() => ({ count: 0 }));
+    this.store = readable(this.state);
+    this.off = this.state.subscribe(() => this.state.getState());
+  }
+}
+export const Theme = createContext(0);
+export function Consumer() { const theme = useContext(Theme); return <button>{theme}</button>; }
+export function Provider({ value }: { value: number }) {
+  return <Theme.Provider value={value}><Consumer /></Theme.Provider>;
+}

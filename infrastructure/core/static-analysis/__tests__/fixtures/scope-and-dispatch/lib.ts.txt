@@ -1,0 +1,5 @@
+export interface Shape { value: number }
+export function choose(value: string): string;
+export function choose(value: number): number;
+export function choose(value: string | number) { return value; }
+export const worker = { run(value: number) { return value + 1; } };

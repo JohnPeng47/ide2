@@ -3,6 +3,44 @@ import path from 'node:path';
 import { expect, it } from 'vitest';
 import { assertOracle, assertPipeline, prepareFixture, requestFor, runAnalyzer } from './harness';
 import { manual, type Oracle } from './oracle';
+import { createHash } from 'node:crypto';
+
+it('pins BOMs, Unicode and every JavaScript line terminator without shifting source coordinates', async () => {
+  const fixture = await prepareFixture('empty');
+  try {
+    const text = '\uFEFFexport const face = "😀";\r\nexport const cr = face;\rexport const ls = cr;\u2028export const ps = ls;\u2029';
+    await writeFile(path.join(fixture.root, 'input.ts'), text);
+    const result = await runAnalyzer(requestFor(fixture.root, ['input.ts']));
+    const { artifact } = await assertPipeline(result, fixture.root);
+    const file = artifact.snapshot.files.find(file => file.path === 'input.ts')!;
+    expect(file.contentHash).toBe(createHash('sha256').update(text).digest('hex'));
+    expect(file.utf16Length).toBe(text.length); expect(file.lineCount).toBe(4);
+    for (const [name, line] of [['face', 1], ['cr', 2], ['ls', 3], ['ps', 4]] as const) {
+      const range = artifact.entities.find(entity => entity.kind === 'binding' && entity.name === name)!.provenance.locations[0];
+      expect(range.start.line).toBe(line); expect(text.slice(range.start.offset, range.end.offset)).toContain(name);
+    }
+  } finally { await rm(fixture.root, { recursive: true, force: true }); }
+});
+
+it('keeps loop bindings local and resolves overload bodies, literal members and type-only specifiers', async () => {
+  const fixture = await prepareFixture('scope-and-dispatch');
+  try {
+    const { artifact, texts } = await assertPipeline(await runAnalyzer(requestFor(fixture.root, fixture.paths)), fixture.root);
+    assertOracle(artifact, {
+      verification: manual('The returned closure sees the outer const index after each for header scope ends. The imported overload has one concrete implementation; run has a literal computed property name. Every named specifier in the first import and re-export is type-only.'),
+      mustContain: [
+        { label: 'closure after loops retains outer binding', view: 'lexical', kind: 'captures', from: { kind: 'function', anchor: '() => index', path: 'input.ts' }, to: { kind: 'binding', anchor: 'index = 7' }, at: 'index' },
+        { label: 'imported overload resolves implementation body', view: 'calls', kind: 'calls', from: { name: 'invoke' }, to: { name: 'choose', kind: 'function', anchor: '{ return value; }' } },
+        { label: 'literal member call resolves method', view: 'calls', kind: 'calls', from: { name: 'invoke' }, to: { name: 'run', kind: 'method' } },
+        { label: 'named type-only import stays type-only', view: 'containment', kind: 'imports', from: { name: 'input.ts' }, to: { name: 'lib.ts' }, at: 'import { type Shape }', typeOnly: true },
+        { label: 'named type-only re-export stays type-only', view: 'containment', kind: 'reexports', from: { name: 'input.ts' }, to: { name: 'lib.ts' }, typeOnly: true },
+      ],
+      mustNotContain: [
+        { label: 'overload signature is not a second implementation', view: 'calls', kind: 'calls', from: { name: 'invoke' }, to: { name: 'choose', kind: 'function', anchor: 'value: number): number;' } },
+      ], uncertainties: [],
+    }, texts);
+  } finally { await rm(fixture.root, { recursive: true, force: true }); }
+});
 
 const precision: Oracle = {
   verification: manual('An early-return branch does not reach the final return; ternary and short-circuit writes have multiple reaching definitions. Reassigning an alias changes its binding, not the previous object. Calls transfer actual arguments into parameters and results back into local definitions. Await in an initializer still suspends.'),
@@ -27,6 +65,37 @@ it('preserves control-flow and alias precision across a compact adversarial prog
   try {
     const result = await runAnalyzer(requestFor(fixture.root, fixture.paths));
     const { artifact, texts } = await assertPipeline(result, fixture.root); assertOracle(artifact, precision, texts);
+  } finally { await rm(fixture.root, { recursive: true, force: true }); }
+});
+
+it('connects constructor stores, shallow facades, disposal and React context', async () => {
+  const fixture = await prepareFixture('framework-lifecycle');
+  try {
+    const result = await runAnalyzer(requestFor(fixture.root, fixture.paths));
+    const { artifact, texts } = await assertPipeline(result, fixture.root);
+    assertOracle(artifact, { verification: manual('The constructor allocates state and wraps its read API. off closes that subscription even when dispose is declared first. The provider value flows to Theme, which Consumer reads through React useContext.'),
+      mustContain: [
+        { label: 'constructor allocates store', view: 'ownership', kind: 'creates', from: { kind: 'constructor' }, to: { kind: 'allocation', anchor: 'createStore(()' } },
+        { label: 'public field is a shallow facade', view: 'ownership', kind: 'exposes-read-api', from: { name: 'store', kind: 'field' }, to: { name: 'state', kind: 'field' }, depth: 'shallow' },
+        { label: 'disposer closes original store subscription', view: 'ownership', kind: 'unsubscribes', from: { name: 'dispose', kind: 'method' }, to: { name: 'state', kind: 'field' } },
+        { label: 'consumer reads context', view: 'dependencies', kind: 'context-read', from: { name: 'Theme' }, to: { name: 'Consumer', kind: 'function' }, mechanism: 'react' },
+        { label: 'provider supplies context value', view: 'dependencies', kind: 'prop-flow', from: { name: 'value', kind: 'parameter' }, to: { name: 'Theme' }, mechanism: 'react' },
+      ], mustNotContain: [{ label: 'facade does not promise deep immutability', view: 'ownership', kind: 'exposes-read-api', from: { name: 'store', kind: 'field' }, to: { name: 'state', kind: 'field' }, depth: 'deep' }], uncertainties: [] }, texts);
+  } finally { await rm(fixture.root, { recursive: true, force: true }); }
+});
+
+it('recovers callback candidates through arguments and returned closures without confusing numbers with functions', async () => {
+  const fixture = await prepareFixture('callback-forwarding');
+  try {
+    const result = await runAnalyzer(requestFor(fixture.root, fixture.paths));
+    const { artifact, texts } = await assertPipeline(result, fixture.root);
+    assertOracle(artifact, { verification: manual('invoke receives work; returned invokes the closure produced by factory, not factory itself. start returns a number, so its callable identity must not flow into numeric.value.'),
+      mustContain: [
+        { label: 'argument callback target', view: 'calls', kind: 'calls', from: { name: 'invoke' }, to: { name: 'work', kind: 'function' }, status: 'inferred' },
+        { label: 'returned closure target', view: 'calls', kind: 'calls', from: { name: 'returned' }, to: { kind: 'function', anchor: '() => 2' }, status: 'inferred' },
+      ], mustNotContain: [
+        { label: 'returned closure is not the factory callable', view: 'calls', kind: 'calls', from: { name: 'returned' }, to: { name: 'factory', kind: 'function' }, at: 'callback()' },
+      ], uncertainties: [] }, texts);
   } finally { await rm(fixture.root, { recursive: true, force: true }); }
 });
 

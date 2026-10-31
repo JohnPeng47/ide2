@@ -1,7 +1,8 @@
-import { mkdir, writeFile, stat } from 'node:fs/promises';
+import { mkdir, writeFile, stat, rename, rm } from 'node:fs/promises';
 import { createWriteStream } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { createGzip } from 'node:zlib';
-import { Readable } from 'node:stream';
+import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import path from 'node:path';
 import ts from 'typescript';
@@ -27,13 +28,24 @@ const output = path.join(root, 'docs/analysis/artifacts'); await mkdir(output, {
 const name = includes.length ? 'selected-scope' : 'whole-repository';
 const started = performance.now();
 let jsonBytes = 0;
-function* chunks() { for (const chunk of analysisArtifactChunks(result.artifact)) { jsonBytes += Buffer.byteLength(chunk); yield chunk; } }
+const jsonHash = createHash('sha256'), compressedHash = createHash('sha256');
+function* chunks() { for (const chunk of analysisArtifactChunks(result.artifact)) { jsonBytes += Buffer.byteLength(chunk); jsonHash.update(chunk); yield chunk; } }
 const artifactPath = path.join(output, `${name}.json.gz`);
-await pipeline(Readable.from(chunks()), createGzip({ level: 6 }), createWriteStream(artifactPath));
-await writeFile(path.join(root, `docs/analysis/architecture-${name}.md`), architectureReport(result.artifact, `artifacts/${name}.json.gz`));
+const temporaryPath = `${artifactPath}.${process.pid}.tmp`;
+try {
+  await pipeline(Readable.from(chunks()), createGzip({ level: 6 }),
+    new Transform({ transform(chunk, _encoding, done) { compressedHash.update(chunk); done(null, chunk); } }), createWriteStream(temporaryPath));
+  await rename(temporaryPath, artifactPath);
+} finally { await rm(temporaryPath, { force: true }); }
+const reportPath = path.join(root, `docs/analysis/architecture-${name}.md`);
+await writeFile(`${reportPath}.tmp`, architectureReport(result.artifact, `artifacts/${name}.json.gz`));
+await rename(`${reportPath}.tmp`, reportPath);
 const manifest = { snapshotId: result.artifact.snapshot.id, ...result.measurements, serializationMs: performance.now() - started,
+  completedAt: new Date().toISOString(), jsonSha256: jsonHash.digest('hex'), compressedSha256: compressedHash.digest('hex'),
   finalPeakRssBytes: process.resourceUsage().maxRSS * 1024, jsonBytes, compressedBytes: (await stat(artifactPath)).size,
   analyzedFiles: paths.length, entities: result.artifact.entities.length, relations: result.artifact.relations.length,
   views: result.artifact.coverage.views, unresolvedCount: result.artifact.coverage.unresolvedCount };
-await writeFile(path.join(output, `${name}.run.json`), JSON.stringify(manifest, null, 2) + '\n');
+const manifestPath = path.join(output, `${name}.run.json`);
+await writeFile(`${manifestPath}.tmp`, JSON.stringify(manifest, null, 2) + '\n');
+await rename(`${manifestPath}.tmp`, manifestPath);
 console.log(JSON.stringify(manifest));

@@ -1,4 +1,5 @@
 import { analysisArtifactSchema, type AnalysisArtifact, type AnalysisMetricValue, type AnalysisRange } from './schema';
+import { sourceLineStarts } from './sourceText';
 
 function check(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(`Invalid analysis artifact: ${message}`);
@@ -39,6 +40,7 @@ export function validateAnalysisArtifact(input: unknown, texts?: ReadonlyMap<str
   unique(snapshot.tsconfigs.map(file => file.path), 'tsconfig path');
   const files = new Map(snapshot.files.map(file => [file.path, file]));
   const lineStarts = new Map<string, number[]>();
+  const checkedRanges = new WeakSet<AnalysisRange>();
   const entityIds = new Set(entities.map(entity => entity.id));
   const relationIds = new Set(relations.map(relation => relation.id));
   const relationById = new Map(relations.map(relation => [relation.id, relation]));
@@ -52,6 +54,7 @@ export function validateAnalysisArtifact(input: unknown, texts?: ReadonlyMap<str
   const requireRelation = (value: string) => check(relationIds.has(value), `missing relation ${value}`);
   const requireLayer = (value: string) => check(layerIds.has(value), `missing layer ${value}`);
   function range(value: AnalysisRange) {
+    if (checkedRanges.has(value)) return;
     const file = files.get(value.path);
     check(value.snapshotId === snapshot.id && file?.contentHash === value.fileHash, `unpinned range ${value.path}`);
     check(value.end.offset <= file.utf16Length, `range past EOF ${value.path}`);
@@ -60,11 +63,12 @@ export function validateAnalysisArtifact(input: unknown, texts?: ReadonlyMap<str
     if (text !== undefined) for (const position of [value.start, value.end]) {
       check(text.length === file.utf16Length, `text length differs ${value.path}`);
       let starts = lineStarts.get(value.path);
-      if (!starts) { starts = [0]; for (let index = 0; index < text.length; index++) if (text[index] === '\n') starts.push(index + 1); lineStarts.set(value.path, starts); }
+      if (!starts) { starts = sourceLineStarts(text); lineStarts.set(value.path, starts); }
       const start = starts[position.line - 1], end = starts[position.line] ?? text.length + 1;
       check(start !== undefined && position.offset >= start && position.offset < end && position.column === position.offset - start + 1,
         `coordinates disagree ${value.path}`);
     }
+    checkedRanges.add(value);
   }
   for (const config of snapshot.tsconfigs) check(files.get(config.path)?.contentHash === config.contentHash,
     `tsconfig not pinned ${config.path}`);
@@ -228,6 +232,11 @@ function compare(a: string, b: string) { return a < b ? -1 : a > b ? 1 : 0; }
 function orderKey(value: unknown): string {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     const record = value as Record<string, unknown>;
+    const locations = (record.provenance as { locations?: AnalysisRange[] } | undefined)?.locations;
+    if (locations?.length && typeof record.id === 'string') {
+      const first = locations.reduce((a, b) => a.path < b.path || a.path === b.path && a.start.offset <= b.start.offset ? a : b);
+      return `${first.path}\0${String(first.start.offset).padStart(12, '0')}\0${record.id}`;
+    }
     if (typeof record.id === 'string') return record.id;
     if (typeof record.entityId === 'string') return record.entityId;
   }
@@ -237,12 +246,43 @@ function orderKey(value: unknown): string {
 function canonical(value: unknown, key = ''): unknown {
   if (Array.isArray(value)) {
     const items = value.map(item => canonical(item));
-    return key === 'propertyPath' ? items : items.map(item => ({ item, key: orderKey(item) }))
+    return key === 'propertyPath' || items.length < 2 ? items : items.map(item => ({ item, key: orderKey(item) }))
       .sort((a, b) => compare(a.key, b.key)).map(entry => entry.item);
   }
-  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value)
-    .sort(([a], [b]) => compare(a, b)).map(([name, item]) => [name, canonical(item, name)]));
+  if (value && typeof value === 'object') {
+    // Ranges dominate the wire format. Their strict schema has a fixed key order;
+    // avoid sorting five tiny objects for every repeated location.
+    if ('snapshotId' in value && 'fileHash' in value && 'start' in value && 'end' in value && 'path' in value) {
+      const range = value as AnalysisRange;
+      return { end: { column: range.end.column, line: range.end.line, offset: range.end.offset }, fileHash: range.fileHash,
+        path: range.path, snapshotId: range.snapshotId, start: { column: range.start.column, line: range.start.line, offset: range.start.offset } };
+    }
+    return Object.fromEntries(Object.entries(value)
+      .sort(([a], [b]) => compare(a, b)).map(([name, item]) => [name, canonical(item, name)]));
+  }
   return value;
+}
+
+/** Verify order on parsed data without allocating a second canonical object graph. */
+function hasCanonicalOrder(value: unknown, key = ''): boolean {
+  if (Array.isArray(value)) {
+    let previous: string | undefined;
+    for (const item of value) {
+      if (!hasCanonicalOrder(item)) return false;
+      if (key !== 'propertyPath' && value.length > 1) {
+        const current = orderKey(item);
+        if (previous !== undefined && compare(previous, current) > 0) return false;
+        previous = current;
+      }
+    }
+  } else if (value && typeof value === 'object') {
+    let previous: string | undefined;
+    for (const name of Object.keys(value)) {
+      if (previous !== undefined && compare(previous, name) > 0 || !hasCanonicalOrder((value as Record<string, unknown>)[name], name)) return false;
+      previous = name;
+    }
+  }
+  return true;
 }
 
 /** Record-at-a-time canonical JSON avoids duplicating the entire graph during persistence. */
@@ -256,7 +296,7 @@ export function* analysisArtifactChunks(input: AnalysisArtifact, texts?: Readonl
       yield `${JSON.stringify(key)}:`;
       if (Array.isArray(item)) {
         yield '[\n';
-        const records = item.map(record => ({ record, key: orderKey(canonicalOrderKey(record)) }));
+        const records = item.map(record => ({ record, key: record && typeof record === 'object' && 'id' in record ? orderKey(record) : orderKey(canonical(record)) }));
         records.sort((a, b) => compare(a.key, b.key));
         for (let i = 0; i < records.length; i++) yield JSON.stringify(canonical(records[i].record)) + (i + 1 < records.length ? ',\n' : '\n');
         yield ']';
@@ -267,10 +307,6 @@ export function* analysisArtifactChunks(input: AnalysisArtifact, texts?: Readonl
     yield '}';
   }
   yield* object(input as unknown as Record<string, unknown>); yield '\n';
-}
-function canonicalOrderKey(value: unknown): unknown {
-  if (value && typeof value === 'object' && 'id' in value) return { id: value.id };
-  return canonical(value);
 }
 export function serializeAnalysisArtifact(input: AnalysisArtifact): string {
   return [...analysisArtifactChunks(input)].join('');
@@ -287,6 +323,7 @@ export function verifyCanonicalAnalysisStream(chunks: Iterable<string>): Record<
   const shape = analysisArtifactSchema.shape, derivedShape = shape.derived.shape;
   const counts: Record<string, number> = {}, fields = new Set<string>();
   let container = '', array = '', started = false, ended = false;
+  let previousArrayKey: string | undefined;
   const parts: string[] = [];
   function line(raw: string) {
     if (!raw) return;
@@ -298,7 +335,10 @@ export function verifyCanonicalAnalysisStream(chunks: Iterable<string>): Record<
       const value: unknown = JSON.parse(text);
       const schema = container ? derivedShape[array as keyof typeof derivedShape] : shape[array as 'entities' | 'relations' | 'uncertainties' | 'layers'];
       check(schema && 'element' in schema, 'unknown streamed array'); schema.element.parse(value);
-      check(JSON.stringify(canonical(value)) === text, 'noncanonical streamed record'); counts[`${container}${array}`]++;
+      check(hasCanonicalOrder(value) && JSON.stringify(value) === text, 'noncanonical streamed record'); counts[`${container}${array}`]++;
+      const currentKey = orderKey(value);
+      check(previousArrayKey === undefined || compare(previousArrayKey, currentKey) <= 0, 'noncanonical streamed array order');
+      previousArrayKey = currentKey;
       return;
     }
     if (text === '}') { if (container) container = ''; else ended = true; return; }
@@ -308,11 +348,11 @@ export function verifyCanonicalAnalysisStream(chunks: Iterable<string>): Record<
     if (key === 'derived' && !container) { check(content === '{', 'invalid derived container'); container = 'derived.'; return; }
     if (content === '[') {
       const allowed = container ? Object.keys(derivedShape) : ['entities', 'relations', 'uncertainties', 'layers'];
-      check(allowed.includes(key), 'unknown streamed array'); array = key; counts[field] = 0; return;
+      check(allowed.includes(key), 'unknown streamed array'); array = key; previousArrayKey = undefined; counts[field] = 0; return;
     }
     check(!container && ['schemaVersion', 'snapshot', 'coverage'].includes(key), 'unknown streamed field');
     const value: unknown = JSON.parse(content); shape[key as 'schemaVersion' | 'snapshot' | 'coverage'].parse(value);
-    check(JSON.stringify(canonical(value)) === content, 'noncanonical streamed header');
+    check(hasCanonicalOrder(value) && JSON.stringify(value) === content, 'noncanonical streamed header');
   }
   for (const chunk of chunks) {
     let start = 0;

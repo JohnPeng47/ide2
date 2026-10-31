@@ -69,6 +69,7 @@ export class Declarations {
   }
   isParameterBinding(node: ts.Node) { for (let parent = node.parent; parent; parent = parent.parent) { if (ts.isParameter(parent)) return true; if (ts.isVariableDeclaration(parent)) return false; } return false; }
   symbol(node: ts.Node): ts.Symbol | undefined {
+    if (ts.isElementAccessExpression(node) && (ts.isStringLiteralLike(node.argumentExpression) || ts.isNumericLiteral(node.argumentExpression))) node = node.argumentExpression;
     const symbol = this.ctx.checker.getSymbolAtLocation(node);
     if (!symbol) return undefined;
     if (symbol.flags & ts.SymbolFlags.Alias) { try { return this.ctx.checker.getAliasedSymbol(symbol); } catch { return symbol; } }
@@ -90,7 +91,8 @@ export class Declarations {
       return local;
     }
     const symbol = this.symbol(ts.isPropertyAccessExpression(node) ? node.name : node);
-    const declaration = symbol?.valueDeclaration ?? symbol?.declarations?.[0];
+    const declaration = symbol?.declarations?.find(declaration => callable(declaration) && !!declaration.body)
+      ?? symbol?.valueDeclaration ?? symbol?.declarations?.[0];
     if (declaration) {
       if (preferCallable && (ts.isVariableDeclaration(declaration) || ts.isPropertyDeclaration(declaration) || ts.isPropertyAssignment(declaration))
         && declaration.initializer && callable(declaration.initializer)) return this.ensure(declaration.initializer, node);
@@ -155,7 +157,8 @@ export class Declarations {
         }
         let nextScope = scope, nextFunction = functionScope;
         if (callable(node)) { nextScope = this.scope(node, scope); nextFunction = nextScope; this.ctx.callableNodes.push(node); }
-        else if (ts.isClassDeclaration(node) || ts.isCatchClause(node) || ts.isBlock(node) && !callable(node.parent)) nextScope = this.scope(node, scope);
+        else if (ts.isClassDeclaration(node) || ts.isCatchClause(node) || ts.isForStatement(node) || ts.isForOfStatement(node)
+          || ts.isForInStatement(node) || ts.isCaseBlock(node) || ts.isBlock(node) && !callable(node.parent)) nextScope = this.scope(node, scope);
         ts.forEachChild(node, child => visit(child, nextScope, nextFunction));
       };
       this.ctx.module(source); const scope = this.scope(source); ts.forEachChild(source, node => visit(node, scope, scope));
@@ -168,7 +171,11 @@ export class Declarations {
       const symbol = this.symbol(statement.moduleSpecifier), target = symbol?.declarations?.find(ts.isSourceFile);
       const to = target && this.ctx.inside(target) ? this.ctx.module(target)
         : this.ctx.addEntity('external', statement.moduleSpecifier.text, statement.moduleSpecifier, this.ctx.module(source), 'external-module', 'external');
-      const typeOnly = ts.isImportDeclaration(statement) ? !!statement.importClause?.isTypeOnly : statement.isTypeOnly;
+      const clause = ts.isImportDeclaration(statement) ? statement.importClause : undefined;
+      const named = clause?.namedBindings && ts.isNamedImports(clause.namedBindings) ? clause.namedBindings
+        : ts.isExportDeclaration(statement) && statement.exportClause && ts.isNamedExports(statement.exportClause) ? statement.exportClause : undefined;
+      const typeOnly = (ts.isImportDeclaration(statement) ? !!clause?.isTypeOnly : statement.isTypeOnly)
+        || !clause?.name && !!named?.elements.length && named.elements.every(element => element.isTypeOnly);
       this.ctx.edge('containment', ts.isImportDeclaration(statement) ? 'imports' : 'reexports', this.ctx.module(source), to, statement,
         { typeOnly, specifier: statement.moduleSpecifier.text }, 'symbol-resolution');
     }

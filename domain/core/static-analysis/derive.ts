@@ -11,10 +11,13 @@ export function deriveAnalysis(artifact: AnalysisArtifact, input: { partitions: 
   const ids = universe.map(entity => entity.id).sort(), byId = new Map(universe.map(entity => [entity.id, entity]));
   for (const basis of input.partitions) {
     const groups = new Map<string, string>();
+    const groupIds = new Map<string, string>();
     const groupFor = (entity: AnalysisEntity) => basis === 'single-group' ? 'All source entities' : basis === 'layer' ? entity.metadata.layer ?? 'other'
       : entity.provenance.locations[0].path.split('/').slice(0, -1).join('/') || '.';
     const memberships = ids.map(entityId => {
-      const label = groupFor(byId.get(entityId)!), group = `group:${identify(JSON.stringify([basis, label]))}`; groups.set(group, label);
+      const label = groupFor(byId.get(entityId)!);
+      let group = groupIds.get(label);
+      if (!group) { group = `group:${identify(JSON.stringify([basis, label]))}`; groupIds.set(label, group); groups.set(group, label); }
       return { entityId, groupIds: [group], primaryGroupId: group };
     });
     artifact.derived.partitions.push({ id: `partition:${basis}`, basis: basis === 'single-group' ? 'custom' : basis,
@@ -29,10 +32,12 @@ export function deriveAnalysis(artifact: AnalysisArtifact, input: { partitions: 
   ];
   artifact.layers = layers.filter(layer => active.has(layer.view));
   const coverageByPartition = new Map<string, AnalysisArtifact['derived']['metrics'][number]['coverage']>();
+  const agreementByPartition = new Map<string, AnalysisArtifact['derived']['metrics'][number]['variationOfInformation']>();
   for (const partition of artifact.derived.partitions) for (const layer of artifact.layers) {
     const metric = evaluatePartition(artifact, partition.id, layer.id, { ...input,
-      comparisonPartitionId: artifact.derived.partitions.some(item => item.id === 'partition:directory') ? 'partition:directory' : undefined }, coverageByPartition.get(partition.id));
+      comparisonPartitionId: artifact.derived.partitions.some(item => item.id === 'partition:directory') ? 'partition:directory' : undefined }, coverageByPartition.get(partition.id), agreementByPartition.get(partition.id));
     artifact.derived.metrics.push(metric); coverageByPartition.set(partition.id, metric.coverage);
+    agreementByPartition.set(partition.id, metric.variationOfInformation);
   }
   for (const layer of artifact.layers) {
     const kinds = new Set(layer.relationKinds);

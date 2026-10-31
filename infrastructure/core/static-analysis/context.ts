@@ -1,13 +1,14 @@
-import { createHash } from 'node:crypto';
+import { hash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import ts from 'typescript';
 import { sourceClassification } from '../../../domain/core/static-analysis/classification';
+import { sourceLineCount } from '../../../domain/core/static-analysis/sourceText';
 import type { StaticAnalysisRequest } from '../../../application/core/static-analysis/ports';
 import type { AnalysisArtifact, AnalysisEntity, AnalysisProvenance, AnalysisRange, AnalysisRelation, AnalysisView } from '../../../domain/core/static-analysis/schema';
 
-export const sha = (value: string) => createHash('sha256').update(value).digest('hex');
+export const sha = (value: string) => hash('sha256', value, 'hex');
 export const compare = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
 export const callable = (node: ts.Node): node is ts.FunctionLikeDeclaration => ts.isFunctionDeclaration(node) || ts.isFunctionExpression(node)
   || ts.isArrowFunction(node) || ts.isMethodDeclaration(node) || ts.isConstructorDeclaration(node) || ts.isGetAccessorDeclaration(node) || ts.isSetAccessorDeclaration(node);
@@ -57,6 +58,7 @@ export class AnalysisContext {
   readonly relativePaths = new Map<string, string>();
   readonly sites = new Map<ts.Node, string>();
   readonly fingerprints = new Map<ts.Node, string>();
+  readonly packageDirectories = new Map<string, boolean>();
   readonly syntaxProvenance = new WeakMap<ts.Node, AnalysisProvenance>();
   readonly emptyIds: string[] = [];
   readonly issueIds = new Set<string>();
@@ -75,7 +77,16 @@ export class AnalysisContext {
     if (parsed.errors.length) throw new Error(parsed.errors.map(error => ts.flattenDiagnosticMessageText(error.messageText, '\n')).join('\n'));
     this.selectedPaths = new Set([...request.includePaths].map(file => this.relative(path.resolve(this.root, file))));
     for (const file of this.selectedPaths) if (file.startsWith('../') || path.isAbsolute(file)) throw new Error('Analysis input escapes repository');
+    // Reuse is useful for small interactive slices, but a full run should not keep
+    // the previous slice's bound symbols and checker caches alive while rebuilding.
+    if (this.selectedPaths.size > 100) previousProgram = undefined;
     const host = ts.createCompilerHost(parsed.options, true);
+    // ts.sys.readFile strips a UTF-8 BOM; source evidence must preserve its offset
+    // and hash, as well as all original line terminators and surrogate pairs.
+    host.readFile = file => { try { return readFileSync(file, 'utf8'); } catch { return undefined; } };
+    // TypeScript uses the host directory for implicit @types discovery. A fixture or
+    // nested repository must not accidentally inherit this process's checkout types.
+    host.getCurrentDirectory = () => this.root;
     const original = host.getSourceFile.bind(host);
     host.getSourceFile = (file, languageVersion, onError, shouldCreateNewSourceFile) => {
       const previous = previousProgram?.getSourceFile(file);
@@ -116,7 +127,7 @@ export class AnalysisContext {
   }
   inside(node: ts.Node) { const file = this.relative(node.getSourceFile().fileName); return !file.startsWith('../') && !file.includes('node_modules/') && !path.isAbsolute(file); }
   active(view: AnalysisView) { return this.request.views.includes(view); }
-  lineCount(text: string) { return text.length ? text.split('\n').length - (text.endsWith('\n') ? 1 : 0) : 0; }
+  lineCount(text: string) { return sourceLineCount(text); }
   trackFile(source: ts.SourceFile) {
     const relative = this.relative(source.fileName);
     if (this.files.has(relative)) return;
@@ -180,9 +191,18 @@ export class AnalysisContext {
     const segments = relative.split('/').slice(0, -1);
     // Directory keys must not depend on whichever source introduced them.
     for (let i = 0; i < segments.length; i++) {
-      const name = segments.slice(0, i + 1).join('/'), key = JSON.stringify([this.request.repositoryId, 'directory', name]), id = `entity:${sha(key)}`;
+      const name = segments.slice(0, i + 1).join('/');
+      let isPackage = this.packageDirectories.get(name);
+      if (isPackage === undefined) {
+        const manifest = `${name}/package.json`; isPackage = existsSync(path.join(this.root, manifest)); this.packageDirectories.set(name, isPackage);
+        if (isPackage) {
+          const text = readFileSync(path.join(this.root, manifest), 'utf8');
+          this.artifact.snapshot.files.push({ path: manifest, contentHash: sha(text), utf16Length: text.length, lineCount: this.lineCount(text), role: 'configuration', language: 'json' });
+        }
+      }
+      const kind = isPackage ? 'package' : 'directory', key = JSON.stringify([this.request.repositoryId, kind, name]), id = `entity:${sha(key)}`;
       if (!this.entities.has(id)) {
-        this.entities.set(id, { id, kind: 'directory', name, identity: { key, stability: 'named', origin: 'synthetic' }, provenance: this.provenance(source), metadata: classify(relative) });
+        this.entities.set(id, { id, kind, name, identity: { key, stability: 'named', origin: 'synthetic' }, provenance: this.provenance(source), metadata: classify(relative) });
         this.entityNodes.set(id, source); this.edge('containment', 'contains', parent, id, source);
       }
       parent = id;
