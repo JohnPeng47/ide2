@@ -1,0 +1,3 @@
+import { state } from './state';
+export function wrap() { return { state }; }
+export function readMissing() { return missingValue + state.value; }

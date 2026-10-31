@@ -8,6 +8,7 @@ export class Declarations {
   readonly receivers = new Map<ts.Node, string>();
   readonly declarationOwners = new Map<string, ts.Node>();
   readonly scopeBindings = new Map<string, Map<string, string>>();
+  readonly parameterFields = new Map<ts.ParameterDeclaration, string>();
   constructor(readonly ctx: AnalysisContext) {}
 
   name(node: ts.Node): string {
@@ -37,7 +38,10 @@ export class Declarations {
     const existing = this.ctx.nodeEntities.get(node); if (existing) return existing;
     if (!this.ctx.inside(node) || node.getSourceFile().isDeclarationFile && !this.ctx.selectedPaths.has(this.ctx.relative(node.getSourceFile().fileName))) {
       const name = this.name(node), module = this.ctx.module(at.getSourceFile());
-      const id = this.ctx.addEntity('external', name, at, module, `external:${node.getSourceFile().fileName.split('/node_modules/').pop()}:${name}`, 'external');
+      const filename = node.getSourceFile().fileName, relative = this.ctx.relative(filename);
+      const origin = filename.includes('/node_modules/') ? filename.split('/node_modules/').pop()!
+        : !relative.startsWith('../') && !relative.startsWith('/') ? relative : filename.split('/').pop()!;
+      const id = this.ctx.addEntity('external', name, at, module, `external:${origin}:${name}`, 'external');
       this.ctx.nodeEntities.set(node, id); return id;
     }
     if (ts.isSourceFile(node)) return this.ctx.module(node);
@@ -68,9 +72,22 @@ export class Declarations {
     return id;
   }
   isParameterBinding(node: ts.Node) { for (let parent = node.parent; parent; parent = parent.parent) { if (ts.isParameter(parent)) return true; if (ts.isVariableDeclaration(parent)) return false; } return false; }
+  parameterField(node: ts.Node): string | undefined {
+    if (!ts.isParameter(node) || !ts.isConstructorDeclaration(node.parent) || !ts.isParameterPropertyDeclaration(node, node.parent)
+      || !ts.isIdentifier(node.name) || node.getSourceFile().isDeclarationFile) return undefined;
+    const existing = this.parameterFields.get(node); if (existing) return existing;
+    const owner = node.parent.parent, field = this.ctx.addEntity('field', node.name.text, node, this.ensure(owner), 'parameter-property');
+    this.parameterFields.set(node, field); this.declarationOwners.set(field, node);
+    this.ctx.entities.get(field)!.metadata.namespace = 'value';
+    const scope = this.ctx.scopes.get(owner);
+    if (scope) { this.ctx.bindingScopes.set(field, scope); this.ctx.edge('lexical', 'declares', scope, field, node); }
+    this.ctx.edge('dependencies', 'value-flow', this.ensure(node), field, node, { mechanism: 'language' }, 'syntax');
+    return field;
+  }
   symbol(node: ts.Node): ts.Symbol | undefined {
     if (ts.isElementAccessExpression(node) && (ts.isStringLiteralLike(node.argumentExpression) || ts.isNumericLiteral(node.argumentExpression))) node = node.argumentExpression;
-    const symbol = this.ctx.checker.getSymbolAtLocation(node);
+    const symbol = ts.isIdentifier(node) && ts.isShorthandPropertyAssignment(node.parent)
+      ? this.ctx.checker.getShorthandAssignmentValueSymbol(node.parent) : this.ctx.checker.getSymbolAtLocation(node);
     if (!symbol) return undefined;
     if (symbol.flags & ts.SymbolFlags.Alias) { try { return this.ctx.checker.getAliasedSymbol(symbol); } catch { return symbol; } }
     return symbol;
@@ -94,6 +111,9 @@ export class Declarations {
     const declaration = symbol?.declarations?.find(declaration => callable(declaration) && !!declaration.body)
       ?? symbol?.valueDeclaration ?? symbol?.declarations?.[0];
     if (declaration) {
+      if (ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node)) {
+        const field = this.parameterField(declaration); if (field) return field;
+      }
       if (preferCallable && (ts.isVariableDeclaration(declaration) || ts.isPropertyDeclaration(declaration) || ts.isPropertyAssignment(declaration))
         && declaration.initializer && callable(declaration.initializer)) return this.ensure(declaration.initializer, node);
       return this.ensure(declaration, node);
@@ -148,6 +168,7 @@ export class Declarations {
           || ts.isMethodSignature(node) || ts.isPropertyAssignment(node) && ts.isIdentifier(node.name);
         if (hasDeclaration) {
           const id = this.ensure(node), entity = this.ctx.entities.get(id)!;
+          if (ts.isParameter(node)) this.parameterField(node);
           const bindingScope = entity.metadata.bindingKind === 'var' ? functionScope : scope;
           this.ctx.bindingScopes.set(id, bindingScope); this.ctx.edge('lexical', 'declares', bindingScope, id, node);
           if (entity.metadata.namespace !== 'type' && (['binding', 'parameter', 'class'].includes(entity.kind) || ts.isFunctionDeclaration(node))) {

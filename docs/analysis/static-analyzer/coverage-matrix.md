@@ -66,3 +66,9 @@ fixes. They supplement the original matrix and goldens rather than replacing the
 | callback-forwarding | Worklist propagation through arguments and returned closures; callable identities kept distinct from returned values |
 
 | Source coordinates | BOM, CRLF, CR, Unicode separators and surrogate pairs | Exact source hashes, UTF-16 offsets and line/column round trip |
+
+| Scope and dispatch | Loop header scopes, overload bodies, literal members, type-only specifiers | Five source-reasoned required facts plus a forbidden signature call |
+| Mutable callbacks | Reassigned named and inline callbacks | New targets retained as inferred; old initializers never stay resolved |
+| Snapshot inputs | Ambient declaration edits and relocated checkout | Compiler inputs change snapshot IDs; identical relocated inputs preserve every output byte |
+| TypeScript fields and shorthand | Parameter properties, readonly nested mutation, imported shorthand, missing values | Field initialization and callback flow; imported capture; explicit missing-binding uncertainty |
+| Shared metric work | Weighted and unit layers on the hand-calculated four-node graph | Cached and independent evaluation match, including seeded baselines |

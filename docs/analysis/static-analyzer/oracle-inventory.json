@@ -1,0 +1,150 @@
+{
+  "description": "Counts of independently source-reasoned original oracle expectations, not analyzer-generated expected output. Subsystem repeats of seed oracles are counted only once. Later regressions have additional assertions in regressions.integration.ts and are excluded from these totals.",
+  "totals": {
+    "required": 89,
+    "forbidden": 27,
+    "uncertainties": 5
+  },
+  "rows": [
+    {
+      "tier": "micro",
+      "name": "branch-explosion",
+      "required": 3,
+      "forbidden": 1,
+      "uncertainties": 0
+    },
+    {
+      "tier": "micro",
+      "name": "def-use",
+      "required": 4,
+      "forbidden": 2,
+      "uncertainties": 0
+    },
+    {
+      "tier": "micro",
+      "name": "shadowing",
+      "required": 3,
+      "forbidden": 1,
+      "uncertainties": 0
+    },
+    {
+      "tier": "micro",
+      "name": "hoisting",
+      "required": 3,
+      "forbidden": 1,
+      "uncertainties": 0
+    },
+    {
+      "tier": "micro",
+      "name": "captured-cell",
+      "required": 3,
+      "forbidden": 3,
+      "uncertainties": 0
+    },
+    {
+      "tier": "micro",
+      "name": "alias-escape",
+      "required": 6,
+      "forbidden": 1,
+      "uncertainties": 1
+    },
+    {
+      "tier": "micro",
+      "name": "recursion",
+      "required": 3,
+      "forbidden": 1,
+      "uncertainties": 0
+    },
+    {
+      "tier": "micro",
+      "name": "dispatch",
+      "required": 3,
+      "forbidden": 1,
+      "uncertainties": 2
+    },
+    {
+      "tier": "micro",
+      "name": "imports",
+      "required": 3,
+      "forbidden": 2,
+      "uncertainties": 0
+    },
+    {
+      "tier": "micro",
+      "name": "this-capture",
+      "required": 2,
+      "forbidden": 2,
+      "uncertainties": 1
+    },
+    {
+      "tier": "micro",
+      "name": "async-state",
+      "required": 6,
+      "forbidden": 1,
+      "uncertainties": 1
+    },
+    {
+      "tier": "micro",
+      "name": "react-props",
+      "required": 8,
+      "forbidden": 2,
+      "uncertainties": 0
+    },
+    {
+      "tier": "micro",
+      "name": "reactive-cycle",
+      "required": 7,
+      "forbidden": 1,
+      "uncertainties": 0
+    },
+    {
+      "tier": "micro",
+      "name": "cross-layer",
+      "required": 6,
+      "forbidden": 1,
+      "uncertainties": 0
+    },
+    {
+      "tier": "micro",
+      "name": "empty",
+      "required": 1,
+      "forbidden": 0,
+      "uncertainties": 0
+    },
+    {
+      "tier": "real",
+      "name": "react-selector.golden.json",
+      "required": 5,
+      "forbidden": 2,
+      "uncertainties": 0
+    },
+    {
+      "tier": "real",
+      "name": "runtime.golden.json",
+      "required": 5,
+      "forbidden": 1,
+      "uncertainties": 0
+    },
+    {
+      "tier": "real",
+      "name": "session.golden.json",
+      "required": 5,
+      "forbidden": 2,
+      "uncertainties": 0
+    },
+    {
+      "tier": "real",
+      "name": "subsystem.golden.json",
+      "required": 6,
+      "forbidden": 1,
+      "uncertainties": 0
+    },
+    {
+      "tier": "real",
+      "name": "workspace.golden.json",
+      "required": 7,
+      "forbidden": 1,
+      "uncertainties": 0
+    }
+  ]
+}

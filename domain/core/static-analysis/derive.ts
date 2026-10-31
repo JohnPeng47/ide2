@@ -1,5 +1,5 @@
 import type { AnalysisArtifact, AnalysisEntity } from './schema';
-import { evaluatePartition } from './metrics';
+import { evaluateAllPartitions } from './metrics';
 import { deriveFindings } from './findings';
 
 export function deriveAnalysis(artifact: AnalysisArtifact, input: { partitions: readonly ('directory' | 'layer' | 'single-group')[]; shuffleSeed: number; shuffleSamples: number },
@@ -31,14 +31,8 @@ export function deriveAnalysis(artifact: AnalysisArtifact, input: { partitions: 
     { id: 'layer:reactive', view: 'dependencies', relationKinds: ['reactive', 'selects', 'prop-flow', 'context-read', 'effect-dependency'], statuses: ['resolved', 'inferred'], weighting: 'unit-per-relation', excludeSelfEdges: true },
   ];
   artifact.layers = layers.filter(layer => active.has(layer.view));
-  const coverageByPartition = new Map<string, AnalysisArtifact['derived']['metrics'][number]['coverage']>();
-  const agreementByPartition = new Map<string, AnalysisArtifact['derived']['metrics'][number]['variationOfInformation']>();
-  for (const partition of artifact.derived.partitions) for (const layer of artifact.layers) {
-    const metric = evaluatePartition(artifact, partition.id, layer.id, { ...input,
-      comparisonPartitionId: artifact.derived.partitions.some(item => item.id === 'partition:directory') ? 'partition:directory' : undefined }, coverageByPartition.get(partition.id), agreementByPartition.get(partition.id));
-    artifact.derived.metrics.push(metric); coverageByPartition.set(partition.id, metric.coverage);
-    agreementByPartition.set(partition.id, metric.variationOfInformation);
-  }
+  artifact.derived.metrics.push(...evaluateAllPartitions(artifact, { ...input,
+    comparisonPartitionId: artifact.derived.partitions.some(item => item.id === 'partition:directory') ? 'partition:directory' : undefined }));
   for (const layer of artifact.layers) {
     const kinds = new Set(layer.relationKinds);
     const edges = artifact.relations.filter(edge => edge.view === layer.view && kinds.has(edge.kind)

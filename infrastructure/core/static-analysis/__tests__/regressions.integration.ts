@@ -4,6 +4,69 @@ import { expect, it } from 'vitest';
 import { assertOracle, assertPipeline, prepareFixture, requestFor, runAnalyzer } from './harness';
 import { manual, type Oracle } from './oracle';
 import { createHash } from 'node:crypto';
+import { serializeAnalysisArtifact } from '../../../../domain/core/static-analysis/persistence';
+
+it('models constructor parameter properties as initialized fields without promising deep readonly values', async () => {
+  const fixture = await prepareFixture('parameter-properties');
+  try {
+    const { artifact, texts } = await assertPipeline(await runAnalyzer(requestFor(fixture.root, fixture.paths)), fixture.root);
+    assertOracle(artifact, { verification: manual('The constructor counter parameter initializes a distinct instance field. readonly prevents replacing the field; increment still mutates counter.value. onChange receives changed through the constructor and field initialization.'), mustContain: [
+      { label: 'constructor argument initializes instance field', view: 'dependencies', kind: 'value-flow', from: { name: 'counter', kind: 'parameter' }, to: { name: 'counter', kind: 'field' } },
+      { label: 'readonly field can expose a mutable object', view: 'ownership', kind: 'can-mutate', from: { name: 'increment', kind: 'method' }, to: { name: 'counter', kind: 'field' } },
+      { label: 'callback flows through constructor field', view: 'calls', kind: 'calls', from: { name: 'increment', kind: 'method' }, to: { name: 'changed', kind: 'function' }, status: 'inferred' },
+    ], mustNotContain: [], uncertainties: [] }, texts);
+  } finally { await rm(fixture.root, { recursive: true, force: true }); }
+});
+
+it('resolves imported shorthand values and records missing value bindings explicitly', async () => {
+  const fixture = await prepareFixture('imported-shorthand');
+  try {
+    const { artifact, texts } = await assertPipeline(await runAnalyzer(requestFor(fixture.root, fixture.paths)), fixture.root);
+    assertOracle(artifact, { verification: manual('The shorthand property in wrap reads the imported state binding, rather than declaring a new local state. missingValue has no declaration and must remain an explicit lexical gap.'), mustContain: [
+      { label: 'imported shorthand retains its free binding', view: 'lexical', kind: 'captures', from: { name: 'wrap' }, to: { name: 'state', kind: 'binding', path: 'state.ts' }, access: ['read'] },
+    ], mustNotContain: [], uncertainties: [{ view: 'lexical', reason: 'other', at: 'missingValue' }] }, texts);
+  } finally { await rm(fixture.root, { recursive: true, force: true }); }
+});
+
+it('uses repository-relative identities when the same corpus moves to another checkout', async () => {
+  const left = await prepareFixture('react-props'), right = await prepareFixture('react-props');
+  try {
+    const before = await runAnalyzer(requestFor(left.root, left.paths));
+    const after = await runAnalyzer(requestFor(right.root, right.paths));
+    expect(serializeAnalysisArtifact(after.artifact)).toBe(serializeAnalysisArtifact(before.artifact));
+  } finally { await Promise.all([rm(left.root, { recursive: true, force: true }), rm(right.root, { recursive: true, force: true })]); }
+});
+
+it('pins ambient compiler inputs even when they do not own an extracted declaration', async () => {
+  const fixture = await prepareFixture('empty');
+  try {
+    const request = requestFor(fixture.root, fixture.paths), before = await runAnalyzer(request);
+    const filename = path.join(fixture.root, 'frameworks.d.ts');
+    const changed = (await readFile(filename, 'utf8')) + '\ndeclare const ambientVersion: 2;\n';
+    await writeFile(filename, changed);
+    const after = await runAnalyzer(request);
+    expect(after.artifact.snapshot.id).not.toBe(before.artifact.snapshot.id);
+    expect(after.artifact.snapshot.files.find(file => file.path === 'frameworks.d.ts')).toMatchObject({
+      role: 'resolution-only', contentHash: createHash('sha256').update(changed).digest('hex'),
+    });
+    await assertPipeline(after, fixture.root);
+  } finally { await rm(fixture.root, { recursive: true, force: true }); }
+});
+
+it('does not resolve a reassigned function variable to its old initializer', async () => {
+  const fixture = await prepareFixture('reassigned-callback');
+  try {
+    const { artifact, texts } = await assertPipeline(await runAnalyzer(requestFor(fixture.root, fixture.paths)), fixture.root);
+    assertOracle(artifact, { verification: manual('action changes from first to second before invocation. A flow-insensitive may-target set can retain both as inferred, but must not label first as the resolved target. A const alias remains a direct resolved target.'),
+      mustContain: [
+        { label: 'reassigned callback includes its new implementation', view: 'calls', kind: 'calls', from: { name: 'reassigned' }, to: { name: 'second', kind: 'function' }, status: 'inferred' },
+        { label: 'const callback remains resolved', view: 'calls', kind: 'calls', from: { name: 'stable' }, to: { name: 'first', kind: 'function' }, status: 'resolved' },
+      ], mustNotContain: [
+        { label: 'old initializer is not a resolved mutable callback target', view: 'calls', kind: 'calls', from: { name: 'reassigned' }, to: { name: 'first', kind: 'function' }, status: 'resolved' },
+        { label: 'inline mutable callback is not permanently its initializer', view: 'calls', kind: 'calls', from: { name: 'inlineReassigned' }, to: { kind: 'function', anchor: '() => 1' }, status: 'resolved' },
+      ], uncertainties: [{ view: 'calls', reason: 'dynamic-dispatch', at: 'action()' }] }, texts);
+  } finally { await rm(fixture.root, { recursive: true, force: true }); }
+});
 
 it('pins BOMs, Unicode and every JavaScript line terminator without shifting source coordinates', async () => {
   const fixture = await prepareFixture('empty');

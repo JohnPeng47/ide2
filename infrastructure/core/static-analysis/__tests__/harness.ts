@@ -4,11 +4,14 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect } from 'vitest';
+import { tsImport } from 'tsx/esm/api';
 import type { StaticAnalysisRequest, StaticAnalysisResult } from '../../../../application/core/static-analysis/ports';
 import { analysisArtifactChunks, parseAnalysisArtifact, serializeAnalysisArtifact, validateAnalysisArtifact, verifyCanonicalAnalysisStream } from '../../../../domain/core/static-analysis/persistence';
 import type { AnalysisArtifact, AnalysisEntity, AnalysisRange, AnalysisRelation, AnalysisView } from '../../../../domain/core/static-analysis/schema';
 import type { EntitySelector, ExpectedFact, Oracle } from './oracle';
-import { staticAnalyzer } from '../analyzer';
+// Exercise the CLI's Node/tsx execution path. Vitest still owns assertions and
+// external measurements, but its SSR module rewriting is not part of the product.
+const { staticAnalyzer }: typeof import('../analyzer') = await tsImport('../analyzer.ts', import.meta.url);
 
 export const testRoot = fileURLToPath(new URL('.', import.meta.url));
 export const repositoryRoot = path.resolve(testRoot, '../../../..');
@@ -103,7 +106,7 @@ export async function readOracle(name: string): Promise<Oracle> {
 export function artifactFingerprint(artifact: AnalysisArtifact) {
   const hash = createHash('sha256'); for (const chunk of analysisArtifactChunks(artifact)) hash.update(chunk); return hash.digest('hex');
 }
-export async function assertPipeline(result: StaticAnalysisResult, root: string, stream = false): Promise<{ artifact: AnalysisArtifact; texts: Map<string, string>; fingerprint?: string }> {
+export async function assertPipeline(result: StaticAnalysisResult, root: string, stream = false, verifiedFingerprint?: string): Promise<{ artifact: AnalysisArtifact; texts: Map<string, string>; fingerprint?: string }> {
   const verificationStarted = performance.now();
   // A whole graph exceeds V8's 512 MiB string ceiling. Verify every serialized record
   // and its canonical parse/re-encode instead of retaining duplicate giant strings.
@@ -114,9 +117,17 @@ export async function assertPipeline(result: StaticAnalysisResult, root: string,
   if (stream) {
     const hash = createHash('sha256');
     function* hashedChunks() { for (const chunk of analysisArtifactChunks(artifact, texts)) { hash.update(chunk); yield chunk; } }
-    expect(verifyCanonicalAnalysisStream(hashedChunks())).toMatchObject({ entities: artifact.entities.length, relations: artifact.relations.length,
-      uncertainties: artifact.uncertainties.length, 'derived.findings': artifact.derived.findings.length });
+    if (verifiedFingerprint === undefined) {
+      expect(verifyCanonicalAnalysisStream(hashedChunks())).toMatchObject({ entities: artifact.entities.length, relations: artifact.relations.length,
+        uncertainties: artifact.uncertainties.length, 'derived.findings': artifact.derived.findings.length });
+    } else {
+      // The writer still validates this entire graph and all supplied coordinates.
+      // An identical complete SHA-256 stream reuses the first stream's parse proof;
+      // changed bytes fail below instead of bypassing wire validation silently.
+      for (const _chunk of hashedChunks()) { /* hash every emitted byte */ }
+    }
     fingerprint = hash.digest('hex');
+    if (verifiedFingerprint !== undefined) expect(fingerprint, 'repeat must match the fully parsed and validated first stream').toBe(verifiedFingerprint);
   } else validateAnalysisArtifact(artifact, texts);
   for (const file of artifact.snapshot.files) expect(createHash('sha256').update(texts.get(file.path)!).digest('hex'), file.path).toBe(file.contentHash);
   if (json !== undefined) expect(serializeAnalysisArtifact(artifact)).toBe(json);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { evaluatePartition } from '../../../../domain/core/static-analysis/metrics';
+import { evaluateAllPartitions, evaluatePartition } from '../../../../domain/core/static-analysis/metrics';
 import type { AnalysisArtifact, AnalysisPartition } from '../../../../domain/core/static-analysis/schema';
 import { contractFixture } from '../../../../domain/core/static-analysis/__tests__/contractFixture';
 import { validateAnalysisArtifact } from '../../../../domain/core/static-analysis/persistence';
@@ -34,6 +34,15 @@ export function metricFixture(): AnalysisArtifact {
 const options = { shuffleSeed: 1729, shuffleSamples: 0 };
 
 describe('independent partition metric oracles', () => {
+  it('reuses permutations across weighted and unit layers without changing any score', () => {
+    const artifact = metricFixture();
+    artifact.layers.push({ ...artifact.layers[0], id: 'layer:unit', weighting: 'unit-per-relation' });
+    const settings = { shuffleSeed: 1729, shuffleSamples: 1000, comparisonPartitionId: 'Q' };
+    const reports = evaluateAllPartitions(artifact, settings);
+    expect(reports).toEqual(artifact.derived.partitions.flatMap(partition => artifact.layers.map(layer => evaluatePartition(artifact, partition.id, layer.id, settings))));
+    expect(reports.find(report => report.partitionId === 'P' && report.layerId === 'layer:data')!.coveredCohesion).toEqual({ status: 'ok', value: 5 / 8 });
+    expect(reports.find(report => report.partitionId === 'P' && report.layerId === 'layer:unit')!.coveredCohesion).toEqual({ status: 'ok', value: 1 / 2 });
+  });
   it('uses weighted edges, preserves direction, and computes VI in bits', () => {
     const report = evaluatePartition(metricFixture(), 'P', 'layer:data', { ...options, comparisonPartitionId: 'Q' });
     expect(report.edgeMass).toEqual({ internal: 5, between: 3, boundary: 0, uncovered: 0, total: 8 });

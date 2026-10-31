@@ -5,6 +5,25 @@ These notes distinguish direct source inspection from interpretation. The genera
 partition scores, uncertainties and persisted evidence for its pinned snapshot.
 This page does not substitute code examples for measured whole-program accuracy.
 
+## The inspected subsystem
+
+This diagram is a source-inspected explanation of the mandatory real-source seeds,
+not an automatically inferred execution trace. Arrows have explicit meanings;
+containment, lifecycle and reactive edges remain distinct in the persisted graph.
+
+```mermaid
+flowchart LR
+  Workspace[CanvasWorkspace] -->|creates / disposes| Session[CanvasSession]
+  Session -->|constructs / retains| Controller[MappingDocumentController]
+  Controller -->|subscription callback publishes| Stores[Private Zustand stores]
+  Session -->|exposes shallow readable APIs| Stores
+  Stores -->|selectors / subscriptions| React[React consumers]
+  Controller -->|connect subscription invokes sync| Runtime[CanvasRuntime]
+  Runtime -->|publishes with structural sharing| Models[tldraw atoms and models]
+```
+
+The source links below identify the wiring and its limitations.
+
 ## The workspace/session boundary is a real lifecycle boundary
 
 `CanvasWorkspace.setDrafts` constructs sessions for incoming document seeds, reuses

@@ -8,6 +8,8 @@ export interface Reference {
 }
 export function isValueReference(node: ts.Identifier): boolean {
   const parent = node.parent;
+  if (ts.isJsxNamespacedName(parent) || (ts.isJsxOpeningElement(parent) || ts.isJsxClosingElement(parent) || ts.isJsxSelfClosingElement(parent))
+    && parent.tagName === node && /^[a-z]/.test(node.text)) return false;
   if (ts.isPropertyAccessExpression(parent) && parent.name === node) return false;
   if ((ts.isVariableDeclaration(parent) || ts.isParameter(parent) || ts.isBindingElement(parent) || ts.isPropertyDeclaration(parent)
     || ts.isPropertyAssignment(parent) || ts.isMethodDeclaration(parent) || ts.isFunctionDeclaration(parent) || ts.isClassDeclaration(parent)
@@ -63,7 +65,8 @@ export function extractLexical(ctx: AnalysisContext, declarations: Declarations)
           const existing = captures.get(key) ?? { from, to: target, node, nodes: [], accesses: new Set(), receiver: node.kind === ts.SyntaxKind.ThisKeyword, direct: false };
           existing.nodes.push(node); access.access.forEach(value => existing.accesses.add(value)); existing.direct ||= enclosing === owner; captures.set(key, existing);
         }
-      }
+      } else if (!(ts.isIdentifier(node) && node.text === 'undefined')) ctx.issue('lexical', 'other', node,
+        [declarations.ensure(ctx.owner(node))], 'No value binding resolved for this reference; runtime-provided globals or invalid source may supply it.');
     }
     ts.forEachChild(node, visit);
   };

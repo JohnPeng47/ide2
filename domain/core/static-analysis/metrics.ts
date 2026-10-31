@@ -57,14 +57,41 @@ function lineCoverage(artifact: AnalysisArtifact, partition: AnalysisPartition) 
   return { totalLines, coveredLines, overlappingLines, fraction: ratio(coveredLines, totalLines), overlapFraction: ratio(overlappingLines, totalLines) };
 }
 
-export function evaluatePartition(artifact: AnalysisArtifact, partitionId: string, layerId: string,
-  options: MetricOptions, coverage?: AnalysisMetricReport['coverage'], agreement?: AnalysisMetricValue): AnalysisMetricReport {
+interface PreparedPartition {
+  members: AnalysisPartition['memberships'];
+  indices: Map<string, number>;
+  labels: (string | null)[];
+  shuffles?: Int32Array[];
+}
+function prepare(partition: AnalysisPartition): PreparedPartition {
+  const members = [...partition.memberships].sort((a, b) => a.entityId < b.entityId ? -1 : a.entityId > b.entityId ? 1 : 0);
+  return { members, indices: new Map(members.map((member, index) => [member.entityId, index])), labels: members.map(member => member.primaryGroupId) };
+}
+
+export function evaluatePartition(artifact: AnalysisArtifact, partitionId: string, layerId: string, options: MetricOptions): AnalysisMetricReport {
+  return evaluate(artifact, partitionId, layerId, options);
+}
+
+/** Reuse partition-invariant work across layers; cached permutations are bounded. */
+export function evaluateAllPartitions(artifact: AnalysisArtifact, options: MetricOptions): AnalysisMetricReport[] {
+  const reports: AnalysisMetricReport[] = [];
+  for (const partition of artifact.derived.partitions) {
+    const prepared = prepare(partition);
+    let coverage: AnalysisMetricReport['coverage'] | undefined, agreement: AnalysisMetricValue | undefined;
+    for (const layer of artifact.layers) {
+      const report = evaluate(artifact, partition.id, layer.id, options, coverage, agreement, prepared);
+      reports.push(report); coverage = report.coverage; agreement = report.variationOfInformation;
+    }
+  }
+  return reports;
+}
+
+function evaluate(artifact: AnalysisArtifact, partitionId: string, layerId: string,
+  options: MetricOptions, coverage?: AnalysisMetricReport['coverage'], agreement?: AnalysisMetricValue, prepared?: PreparedPartition): AnalysisMetricReport {
   const partition = artifact.derived.partitions.find(item => item.id === partitionId), layer = artifact.layers.find(item => item.id === layerId);
   if (!partition || !layer) throw new Error('Unknown partition or dependency layer');
   if (!Number.isInteger(options.shuffleSamples) || options.shuffleSamples < 0) throw new Error('Expected a nonnegative shuffle sample count');
-  const members = [...partition.memberships].sort((a, b) => a.entityId < b.entityId ? -1 : a.entityId > b.entityId ? 1 : 0);
-  const indices = new Map(members.map((member, index) => [member.entityId, index]));
-  const labels = members.map(member => member.primaryGroupId);
+  const { members, indices, labels } = prepared ?? prepare(partition);
   const kinds = new Set(layer.relationKinds), statuses = new Set(layer.statuses);
   const edges: { from: number; to: number; weight: number }[] = [];
   const mass = { internal: 0, between: 0, boundary: 0, uncovered: 0, total: 0 };
@@ -88,26 +115,34 @@ export function evaluatePartition(artifact: AnalysisArtifact, partitionId: strin
     if (groupCount === 1) {
       mean = ok(1); standardDeviation = ok(0); excessCohesion = ok(coveredCohesion.value - 1);
     } else {
+    const cached = prepared?.shuffles;
+    // At most ~32 MiB per partition; larger caller requests retain streaming space.
+    const save = prepared && !cached && options.shuffleSamples * labels.length <= 8_000_000 ? [] as Int32Array[] : undefined;
     let state = options.shuffleSeed >>> 0;
     const random = () => { state = (state + 0x6d2b79f5) >>> 0; let value = state;
       value = Math.imul(value ^ value >>> 15, value | 1); value ^= value + Math.imul(value ^ value >>> 7, value | 61);
       return ((value ^ value >>> 14) >>> 0) / 4294967296; };
-    const covered = members.map((member, i) => member.primaryGroupId === null ? -1 : i).filter(index => index !== -1);
+    const covered = cached ? [] : members.map((member, i) => member.primaryGroupId === null ? -1 : i).filter(index => index !== -1);
     const groupNumbers = new Map<string, number>();
-    for (const label of labels) if (label !== null && !groupNumbers.has(label)) groupNumbers.set(label, groupNumbers.size);
-    const numericLabels = Int32Array.from(labels.map(label => label === null ? -1 : groupNumbers.get(label)!));
+    if (!cached) for (const label of labels) if (label !== null && !groupNumbers.has(label)) groupNumbers.set(label, groupNumbers.size);
+    const numericLabels = cached ? new Int32Array(0) : Int32Array.from(labels.map(label => label === null ? -1 : groupNumbers.get(label)!));
     const original = Int32Array.from(covered.map(index => numericLabels[index]));
-    const shuffled = new Int32Array(original.length), assigned = new Int32Array(numericLabels.length);
+    const shuffled = new Int32Array(original.length), buffer = new Int32Array(numericLabels.length);
     let average = 0, m2 = 0;
     for (let sample = 0; sample < options.shuffleSamples; sample++) {
-      shuffled.set(original); assigned.set(numericLabels);
-      for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(random() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; }
-      covered.forEach((index, i) => { assigned[index] = shuffled[i]; });
+      const assigned = cached?.[sample] ?? buffer;
+      if (!cached) {
+        shuffled.set(original); assigned.set(numericLabels);
+        for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(random() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; }
+        covered.forEach((index, i) => { assigned[index] = shuffled[i]; });
+        save?.push(assigned.slice());
+      }
       let internal = 0;
       for (const edge of edges) if (assigned[edge.from] !== -1 && assigned[edge.from] === assigned[edge.to]) internal += edge.weight;
       const value = internal / (mass.internal + mass.between), delta = value - average;
       average += delta / (sample + 1); m2 += delta * (value - average);
     }
+    if (prepared && save) prepared.shuffles = save;
     mean = ok(average); standardDeviation = ok(Math.sqrt(Math.max(0, m2 / options.shuffleSamples))); excessCohesion = ok(coveredCohesion.value - average);
     }
   } else if (options.shuffleSamples) mean = standardDeviation = excessCohesion = na('zero-denominator');

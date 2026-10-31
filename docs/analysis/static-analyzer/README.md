@@ -26,7 +26,10 @@ npm run analysis:run -- src/features/mapping/workspace
 
 The normal `npm test` includes contract, source-join and corpus-integrity tests.
 The separate integration configuration runs the compiler pipeline and performance
-checks. On hosts with exhausted inotify watches, the full app suite can run with
+checks. Integration loads the analyzer through the same Node/tsx loader as the CLI;
+Vitest retains the assertions, independent wall-clock measurements and process RSS
+checks. This avoids benchmarking Vitest SSR module rewriting as analyzer work.
+On hosts with exhausted inotify watches, the full app suite can run with
 `CHOKIDAR_USEPOLLING=1 npm test -- --maxWorkers=2`; this changes the watcher backend,
 not assertions. Analyzer integration uses a 1728 MiB V8 heap cap to trigger garbage
 collection before the unchanged 2 GiB process RSS ceiling.
@@ -79,8 +82,9 @@ hashes the source files. JSON Schema alone is not sufficient validation.
 
 Time budgets apply to the analyzer call (parse through metrics), excluding fixture staging
 and test assertions. Tier 3 also checks peak RSS after persistence verification. The harness independently measures wall time and Linux process
-peak RSS rather than trusting only analyzer-reported timing. Tier 3 repeats the run,
-so its test timeout is 180 seconds.
+peak RSS rather than trusting only analyzer-reported timing. Tier 3 owns a fresh test worker and repeats the run, so both cold/repeat timings
+and process peak RSS describe that benchmark instead of earlier fixtures. Its
+test timeout remains 180 seconds.
 Cold/warm measurements should be logged separately in Phase 2; thresholds must not
 be silently relaxed to make a test pass. Micro corpus integrity also typechecks a
 staged multi-file import seed. The historical estimate of 711 files is not a golden:
@@ -88,9 +92,10 @@ the current corpus is discovered from tsconfig and its emitted file list must ma
 
 All tiers call the same pipeline. Small/real seeds assert against a fully
 serialized/deserialized artifact. The whole graph exceeds V8's single-string limit,
-so Tier 3 parses, schema-checks and canonically re-encodes every streamed record,
-checks all graph and source invariants, and compares SHA-256 fingerprints of two
-complete streams. It does not retain duplicate giant JSON strings. No compiler
+so Tier 3 parses, schema-checks and canonically re-encodes every record in the first
+stream, checks all graph and source invariants on both runs, and compares SHA-256
+fingerprints of both complete streams. The repeat reuses the first wire-validation
+result only if every emitted byte has the same fingerprint. It does not retain duplicate giant JSON strings. No compiler
 nodes are used as golden evidence. Goldens compare a bounded semantic projection
 (named facts present, forbidden facts absent, required uncertainty present), allowing
 legitimate extra facts and coordinate changes. They are not whole-output snapshots
@@ -152,3 +157,10 @@ slots abstract multiple runtime instances; a shared-state finding does not prove
 that those instances alias. Ownership facts never prove exclusive ownership or
 complete disposal. Callback may-target propagation is capped at 16 candidates per
 value, with explicit uncertainty when saturation affects a call.
+
+Compiler resolution inputs are pinned too: local ambient declarations and in-root
+library files have hashes and `resolution-only` roles, without retaining their ASTs
+through graph derivation. Out-of-root compiler inputs contribute sorted name/hash
+pairs to the configuration fingerprint. Neither category enters analyzed-line
+coverage. The relocation regression checks byte-identical output from two temporary
+checkouts, including external declaration identities.

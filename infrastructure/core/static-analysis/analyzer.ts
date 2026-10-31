@@ -37,6 +37,7 @@ export const staticAnalyzer: StaticAnalyzer = {
     phase('snapshot');
     context.release(); references.length = 0;
     declarations.declarationOwners.clear(); declarations.receivers.clear(); declarations.scopeBindings.clear();
+    declarations.parameterFields.clear();
     deriveAnalysis(artifact, request.metrics, sha);
     phase('derive');
     return { artifact, measurements: { elapsedMs: performance.now() - started, peakRssBytes: process.resourceUsage().maxRSS * 1024, phasesMs } };

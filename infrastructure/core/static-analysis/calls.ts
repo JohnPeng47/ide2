@@ -12,6 +12,7 @@ export function callableTarget(declarations: Declarations, expression: ts.Node, 
   if (local) {
     const declaration = declarations.ctx.entityNodes.get(local)!;
     if (ts.isVariableDeclaration(declaration) && declaration.initializer) {
+      if (declarations.ctx.entities.get(local)?.metadata.bindingKind !== 'const') return local;
       if (callable(declaration.initializer)) return declarations.ensure(declaration.initializer);
       if (ts.isIdentifier(declaration.initializer)) return callableTarget(declarations, declaration.initializer, seen);
     }
@@ -19,6 +20,8 @@ export function callableTarget(declarations: Declarations, expression: ts.Node, 
   }
   const symbol = declarations.symbol(ts.isPropertyAccessExpression(expression) ? expression.name : expression);
   const declaration = symbol?.valueDeclaration ?? symbol?.declarations?.[0];
+  if (declaration && ts.isVariableDeclaration(declaration) && ts.isVariableDeclarationList(declaration.parent)
+    && !(declaration.parent.flags & ts.NodeFlags.Const)) return declarations.ensure(declaration, expression);
   if (declaration && (ts.isVariableDeclaration(declaration) || ts.isPropertyDeclaration(declaration) || ts.isPropertyAssignment(declaration)) && declaration.initializer) {
     if (callable(declaration.initializer)) return declarations.ensure(declaration.initializer, expression);
     if (ts.isIdentifier(declaration.initializer) || ts.isPropertyAccessExpression(declaration.initializer)) return callableTarget(declarations, declaration.initializer, seen);

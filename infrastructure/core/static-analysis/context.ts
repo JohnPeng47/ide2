@@ -53,6 +53,8 @@ export class AnalysisContext {
   readonly relationMap = new Map<string, AnalysisRelation>();
   readonly callableNodes: ts.FunctionLikeDeclaration[] = [];
   readonly files = new Map<string, { source: ts.SourceFile; hash: string }>();
+  private readonly compilerFileHashes = new Map<string, string>();
+  private compilerInputsPinned = false;
   readonly duplicates = new Map<string, number>();
   readonly ranges = new Map<ts.Node, AnalysisRange>();
   readonly relativePaths = new Map<string, string>();
@@ -105,7 +107,7 @@ export class AnalysisContext {
     if (!this.selected.length) throw new Error('Select at least one source file');
     this.artifact = { schemaVersion: 1,
       snapshot: { id: 'pending', repositoryId: request.repositoryId, commit: null, dirtyFiles: [], files: [],
-        analyzer: { version: '0.2.0', compilerVersion: ts.version, identityVersion: 1, configurationHash: sha(JSON.stringify({ options: parsed.options, views: request.views, frameworks: request.frameworks, metrics: request.metrics })) },
+        analyzer: { version: '0.3.0', compilerVersion: ts.version, identityVersion: 1, configurationHash: sha(JSON.stringify({ options: parsed.options, views: request.views, frameworks: request.frameworks, metrics: request.metrics })) },
         tsconfigs: [], scope: { roots: [...this.selectedPaths].sort(), excludedPatterns: ['node_modules/**', 'docs/analysis/artifacts/**'], externalPolicy: 'summarize', followImports: true } },
       entities: [], relations: [], uncertainties: [], layers: [], derived: { sccs: [], trees: [], partitions: [], metrics: [], sourceJoins: [], findings: [] },
       coverage: { analyzedFiles: 0, resolutionOnlyFiles: 0, unresolvedCount: 0, views: views.map(view => ({ view, status: request.views.includes(view) ? 'complete' : 'not-run', candidateSites: 0, resolvedSites: 0, unresolvedSites: 0 })) } };
@@ -132,7 +134,7 @@ export class AnalysisContext {
     const relative = this.relative(source.fileName);
     if (this.files.has(relative)) return;
     const hash = sha(source.text); this.files.set(relative, { source, hash });
-    this.artifact.snapshot.files.push({ path: relative, contentHash: hash, utf16Length: source.text.length, lineCount: this.lineCount(source.text),
+    if (!this.compilerFileHashes.has(relative)) this.artifact.snapshot.files.push({ path: relative, contentHash: hash, utf16Length: source.text.length, lineCount: this.lineCount(source.text),
       role: this.selectedPaths.has(relative) ? 'analyzed' : 'resolution-only', language: relative.endsWith('.tsx') ? 'tsx' : 'ts' });
   }
   range(node: ts.Node): AnalysisRange {
@@ -246,6 +248,7 @@ export class AnalysisContext {
     return current as ts.FunctionLikeDeclaration | ts.SourceFile;
   }
   releaseCompiler() {
+    this.pinCompilerInputs();
     if (this.selected.length > 100 && previousProgram === this.activeProgram) previousProgram = undefined;
     this.activeProgram = undefined; this.typeChecker = undefined;
   }
@@ -256,6 +259,7 @@ export class AnalysisContext {
     this.ranges.clear(); this.sites.clear(); this.fingerprints.clear(); this.siteKeys.clear(); this.siteCounts.clear(); this.siteSets.clear(); this.duplicates.clear(); this.issueIds.clear();
   }
   finish() {
+    this.pinCompilerInputs();
     const artifact = this.artifact;
     artifact.entities = [...this.entities.values()]; artifact.relations = [...this.relationMap.values()];
     artifact.snapshot.files.sort((a, b) => compare(a.path, b.path));
@@ -264,11 +268,12 @@ export class AnalysisContext {
     } catch { /* Non-Git corpora have a null commit; content hashes still pin their inputs. */ }
     if (artifact.snapshot.commit) {
       // Scope Git reads to pinned inputs; large unrelated diagram stores can exceed maxBuffer.
-      const paths = artifact.snapshot.files.map(file => file.path);
+      const paths = artifact.snapshot.files.filter(file => !file.path.split('/').includes('node_modules')).map(file => file.path);
+      const gitPaths = new Set(paths);
       const options = { cwd: this.root, encoding: 'utf8' as const, maxBuffer: 16 * 1024 * 1024 };
       const tracked = new Set(execFileSync('git', ['ls-files', '-z', '--', ...paths], options).split('\0'));
       const changed = new Set(execFileSync('git', ['diff', 'HEAD', '--name-only', '-z', '--', ...paths], options).split('\0'));
-      artifact.snapshot.dirtyFiles = artifact.snapshot.files.filter(file => changed.has(file.path) || !tracked.has(file.path))
+      artifact.snapshot.dirtyFiles = artifact.snapshot.files.filter(file => gitPaths.has(file.path) && (changed.has(file.path) || !tracked.has(file.path)))
         .map(file => ({ path: file.path, status: tracked.has(file.path) ? 'modified' as const : 'untracked' as const, contentHash: file.contentHash }));
     }
     artifact.snapshot.id = `snapshot:${sha(JSON.stringify({ ...artifact.snapshot, id: undefined }))}`;
@@ -283,5 +288,26 @@ export class AnalysisContext {
       if (coverage.unresolvedSites) coverage.status = 'partial';
     }
     return artifact;
+  }
+
+  /** Pin resolution inputs without retaining their compiler ASTs after release. */
+  private pinCompilerInputs() {
+    if (this.compilerInputsPinned || !this.activeProgram) return;
+    this.compilerInputsPinned = true;
+    const known = new Set(this.artifact.snapshot.files.map(file => file.path));
+    const external: [string, string][] = [];
+    for (const source of this.activeProgram.getSourceFiles()) {
+      const relative = this.relative(source.fileName);
+      if (known.has(relative)) continue;
+      const contentHash = sha(source.text);
+      if (relative.startsWith('../') || path.isAbsolute(relative)) { external.push([path.basename(source.fileName), contentHash]); continue; }
+      this.compilerFileHashes.set(relative, contentHash); known.add(relative);
+      this.artifact.snapshot.files.push({ path: relative, contentHash, utf16Length: source.text.length, lineCount: this.lineCount(source.text),
+        role: 'resolution-only', language: relative.endsWith('.tsx') ? 'tsx' : relative.endsWith('.json') ? 'json'
+          : relative.endsWith('.jsx') ? 'jsx' : relative.endsWith('.js') ? 'js' : 'ts' });
+    }
+    if (external.length) this.artifact.snapshot.analyzer.configurationHash = sha(JSON.stringify([
+      this.artifact.snapshot.analyzer.configurationHash, external.sort(([a, ah], [b, bh]) => compare(a, b) || compare(ah, bh)),
+    ]));
   }
 }

@@ -1,0 +1,16 @@
+export function first() { return 1; }
+export function second() { return 2; }
+export function reassigned() {
+  let action = first;
+  action = second;
+  return action();
+}
+export function stable() {
+  const action = first;
+  return action();
+}
+export function inlineReassigned() {
+  let action = () => 1;
+  action = () => 2;
+  return action();
+}

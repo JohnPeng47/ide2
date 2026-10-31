@@ -1,6 +1,5 @@
 import { rm, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import { serializeAnalysisArtifact } from '../../../../domain/core/static-analysis/persistence';
 import { assertOracle, assertPipeline, entityMatches, prepareFixture, readOracle, repositoryRoot, requestFor, runAnalyzer, selectedViews } from './harness';
@@ -65,26 +64,4 @@ describe('Tier 2: workspace/session/controller/reactive consumer pipeline', () =
     expect(serializeAnalysisArtifact((await runAnalyzer(request)).artifact)).toBe(serializeAnalysisArtifact(artifact));
     expect(result.measurements.elapsedMs, 'Tier 2 target').toBeLessThan(10_000);
   });
-});
-
-describe('Tier 3: whole repository', () => {
-  it('emits a complete pinned corpus with bounded runtime and memory', async () => {
-    const config = ts.readConfigFile(path.join(repositoryRoot, 'tsconfig.json'), ts.sys.readFile);
-    const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, repositoryRoot);
-    expect(parsed.errors).toEqual([]);
-    const paths = parsed.fileNames.filter(file => /\.tsx?$/.test(file) && !file.endsWith('.d.ts'))
-      .map(file => path.relative(repositoryRoot, file).replaceAll(path.sep, '/')).sort();
-    expect(paths.length).toBeGreaterThan(500); // Discover current corpus; never freeze the historical 711 estimate.
-    const request = requestFor(repositoryRoot, paths);
-    const analyzeAndCheck = async () => {
-      const result = await runAnalyzer(request);
-      const { artifact, fingerprint } = await assertPipeline(result, repositoryRoot, true);
-      expect(artifact.snapshot.files.filter(file => file.role === 'analyzed').map(file => file.path).sort()).toEqual(paths);
-      expect(result.measurements.elapsedMs, 'Tier 3 extraction budget').toBeLessThan(60_000);
-      // Include persistence verification in the memory bound, not just extraction.
-      expect(process.resourceUsage().maxRSS * 1024, 'Tier 3 process peak RSS budget').toBeLessThan(2 * 1024 ** 3);
-      return fingerprint;
-    };
-    expect(await analyzeAndCheck()).toBe(await analyzeAndCheck());
-  }, 180_000);
 });

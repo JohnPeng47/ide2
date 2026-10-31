@@ -21,10 +21,13 @@ will never need a migration.
   tsconfigs, relevant package/lock files and compiler declaration inputs in the manifest
   or configuration fingerprint. Excluded files and external summarization policy are
   explicit. A file read only to resolve a selected file is not counted as analyzed.
-- Dirty manifest includes modifications, added/deleted/renamed/untracked files in the
-  declared input scope, with previous paths for renames. Exclude generated analysis
-  output from inputs to prevent self-invalidating snapshots. Persist the actual source
-  snapshot or retain retrievable Git/blob evidence if cross-machine navigation is needed.
+- The dirty-manifest schema can represent modified, added, deleted, renamed and
+  untracked paths, with previous paths for renames. The current extractor records
+  modified/untracked current pinned repository inputs; it does not inventory files
+  deleted outside the discovered corpus or reconstruct rename history. Installed
+  dependency files are content-pinned without being labeled untracked Git inputs.
+  Exclude generated analysis output from inputs to prevent self-invalidating snapshots.
+  Persist source files or retain retrievable Git/blob evidence for cross-machine navigation.
 - Named entity key: canonical JSON tuple `[repositoryId, normalizedPath, parentEntityId,
   entityKind, declarationName, role]`. ID: `entity:sha256(key)`.
   Do not include snapshot hash, line, offset, body text, or unrelated sibling ordinal.

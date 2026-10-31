@@ -1,0 +1,7 @@
+export interface Counter { value: number }
+export class Owner {
+  constructor(readonly counter: Counter, private onChange: () => void) {}
+  increment() { this.counter.value++; this.onChange(); }
+}
+export function changed() { return 1; }
+export function build() { return new Owner({ value: 0 }, changed); }
