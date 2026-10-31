@@ -42,6 +42,8 @@ export class AnalysisContext {
   readonly callableNodes: ts.FunctionLikeDeclaration[] = [];
   readonly files = new Map<string, { source: ts.SourceFile; hash: string }>();
   readonly duplicates = new Map<string, number>();
+  readonly siteKeys = new Map<ts.Node, string>();
+  readonly siteCounts = new Map<string, number>();
   readonly resourceKinds = new Map<string, NonNullable<AnalysisEntity['metadata']['resourceKind']>>();
   readonly siteSets = new Map<AnalysisView, { resolved: Set<string>; unresolved: Set<string> }>();
   readonly rootId: string;
@@ -142,11 +144,18 @@ export class AnalysisContext {
     const id = this.addEntity('module', relative, source, parent); this.nodeEntities.set(source, id); return id;
   }
   site(node: ts.Node) { return `${this.relative(node.getSourceFile().fileName)}:${node.pos}:${node.end}`; }
+  stableSite(node: ts.Node): string {
+    const known = this.siteKeys.get(node); if (known) return known;
+    const owner = ts.isSourceFile(node) ? node : this.owner(node);
+    const key = JSON.stringify([this.relative(node.getSourceFile().fileName), this.nodeEntities.get(owner) ?? 'module', node.kind, sha(node.getText().replace(/\s+/g, ' '))]);
+    const ordinal = this.siteCounts.get(key) ?? 0; this.siteCounts.set(key, ordinal + 1);
+    const result = `${sha(key)}:${ordinal}`; this.siteKeys.set(node, result); return result;
+  }
   edge(view: AnalysisView, kind: AnalysisRelation['kind'], from: string, to: string, node: ts.Node,
     attributes: Record<string, unknown> = {}, method: AnalysisProvenance['method'] = 'syntax', status: AnalysisProvenance['status'] = 'resolved'): string {
     if (view !== 'containment' && !this.active(view)) return '';
     const baseAttributes = view === 'lexical' ? { access: [], ...attributes } : view === 'calls' ? { dispatch: 'direct', ...attributes } : attributes;
-    const site = sha(node.getText().replace(/\s+/g, ' ')).slice(0, 20);
+    const site = this.stableSite(node);
     const key = JSON.stringify([view, kind, from, to, site, baseAttributes]), id = `relation:${sha(key)}`;
     if (!this.relationMap.has(id)) this.relationMap.set(id, { id, view, kind, from, to, weight: 1,
       provenance: this.provenance(node, method, status), ...baseAttributes } as AnalysisRelation);
