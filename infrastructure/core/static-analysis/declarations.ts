@@ -5,6 +5,7 @@ import type { AnalysisEntity } from '../../../domain/core/static-analysis/schema
 export class Declarations {
   readonly receivers = new Map<ts.Node, string>();
   readonly declarationOwners = new Map<string, ts.Node>();
+  readonly scopeBindings = new Map<string, Map<string, string>>();
   constructor(readonly ctx: AnalysisContext) {}
 
   name(node: ts.Node): string {
@@ -74,6 +75,13 @@ export class Declarations {
   resolve(node: ts.Node, preferCallable = false): string | undefined {
     if (ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isNonNullExpression(node) || ts.isTypeAssertionExpression(node)) return this.resolve(node.expression, preferCallable);
     if (node.kind === ts.SyntaxKind.ThisKeyword) return this.receiver(node);
+    const local = this.local(node);
+    if (local) {
+      const declaration = this.ctx.entityNodes.get(local);
+      if (preferCallable && declaration && (ts.isVariableDeclaration(declaration) || ts.isPropertyDeclaration(declaration))
+        && declaration.initializer && callable(declaration.initializer)) return this.ensure(declaration.initializer);
+      return local;
+    }
     const symbol = this.symbol(ts.isPropertyAccessExpression(node) ? node.name : node);
     const declaration = symbol?.valueDeclaration ?? symbol?.declarations?.[0];
     if (declaration) {
@@ -82,6 +90,15 @@ export class Declarations {
       return this.ensure(declaration, node);
     }
     return this.ctx.nodeEntities.get(node);
+  }
+  /** Local binding lookup needs no library types; imports/member dispatch still use TypeChecker. */
+  local(node: ts.Node): string | undefined {
+    if (!ts.isIdentifier(node)) return undefined;
+    for (let owner: ts.Node | undefined = node.parent; owner; owner = owner.parent) {
+      const scope = this.ctx.scopes.get(owner), binding = scope && this.scopeBindings.get(scope)?.get(node.text);
+      if (binding) return binding;
+    }
+    return undefined;
   }
   receiver(node: ts.Node): string {
     let owner: ts.Node = node;
@@ -114,6 +131,10 @@ export class Declarations {
           const id = this.ensure(node), entity = this.ctx.entities.get(id)!;
           const bindingScope = entity.metadata.bindingKind === 'var' ? functionScope : scope;
           this.ctx.bindingScopes.set(id, bindingScope); this.ctx.edge('lexical', 'declares', bindingScope, id, node);
+          if (entity.metadata.namespace !== 'type' && (['binding', 'parameter', 'class'].includes(entity.kind) || ts.isFunctionDeclaration(node))) {
+            const bindings = this.scopeBindings.get(bindingScope) ?? new Map<string, string>();
+            bindings.set(entity.name, id); this.scopeBindings.set(bindingScope, bindings);
+          }
         }
         let nextScope = scope, nextFunction = functionScope;
         if (callable(node)) { nextScope = this.scope(node, scope); nextFunction = nextScope; this.ctx.callableNodes.push(node); }
