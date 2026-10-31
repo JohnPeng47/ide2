@@ -40,6 +40,6 @@ export const staticAnalyzer: StaticAnalyzer = {
     declarations.parameterFields.clear();
     deriveAnalysis(artifact, request.metrics, sha);
     phase('derive');
-    return { artifact, measurements: { elapsedMs: performance.now() - started, peakRssBytes: process.resourceUsage().maxRSS * 1024, phasesMs } };
+    return { artifact, execution: { semanticResolution: context.usedSemanticResolution }, measurements: { elapsedMs: performance.now() - started, peakRssBytes: process.resourceUsage().maxRSS * 1024, phasesMs } };
   },
 };

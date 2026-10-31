@@ -9,6 +9,7 @@ import type { StaticAnalysisRequest } from '../../../application/core/static-ana
 import type { AnalysisArtifact, AnalysisEntity, AnalysisProvenance, AnalysisRange, AnalysisRelation, AnalysisView } from '../../../domain/core/static-analysis/schema';
 
 export const sha = (value: string) => hash('sha256', value, 'hex');
+export const ANALYZER_VERSION = '0.4.0';
 export const compare = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
 export const callable = (node: ts.Node): node is ts.FunctionLikeDeclaration => ts.isFunctionDeclaration(node) || ts.isFunctionExpression(node)
   || ts.isArrowFunction(node) || ts.isMethodDeclaration(node) || ts.isConstructorDeclaration(node) || ts.isGetAccessorDeclaration(node) || ts.isSetAccessorDeclaration(node);
@@ -28,6 +29,7 @@ export class AnalysisContext {
   get program(): ts.Program { if (!this.activeProgram) throw new Error('Analysis compiler context has been released'); return this.activeProgram; }
   private typeChecker?: ts.TypeChecker;
   private semanticReady = false;
+  get usedSemanticResolution() { return this.semanticReady; }
   private compilerOptions!: ts.CompilerOptions;
   private compilerRoots!: string[];
   private compilerHost!: ts.CompilerHost;
@@ -67,7 +69,6 @@ export class AnalysisContext {
   readonly siteKeys = new Map<ts.Node, string>();
   readonly siteCounts = new Map<string, number>();
   readonly resourceKinds = new Map<string, NonNullable<AnalysisEntity['metadata']['resourceKind']>>();
-  readonly siteSets = new Map<AnalysisView, { resolved: Set<string>; unresolved: Set<string> }>();
   readonly rootId: string;
 
   constructor(readonly request: StaticAnalysisRequest) {
@@ -107,11 +108,10 @@ export class AnalysisContext {
     if (!this.selected.length) throw new Error('Select at least one source file');
     this.artifact = { schemaVersion: 1,
       snapshot: { id: 'pending', repositoryId: request.repositoryId, commit: null, dirtyFiles: [], files: [],
-        analyzer: { version: '0.3.0', compilerVersion: ts.version, identityVersion: 1, configurationHash: sha(JSON.stringify({ options: parsed.options, views: request.views, frameworks: request.frameworks, metrics: request.metrics })) },
+        analyzer: { version: ANALYZER_VERSION, compilerVersion: ts.version, identityVersion: 1, configurationHash: sha(JSON.stringify({ options: parsed.options, views: request.views, frameworks: request.frameworks, metrics: request.metrics })) },
         tsconfigs: [], scope: { roots: [...this.selectedPaths].sort(), excludedPatterns: ['node_modules/**', 'docs/analysis/artifacts/**'], externalPolicy: 'summarize', followImports: true } },
       entities: [], relations: [], uncertainties: [], layers: [], derived: { sccs: [], trees: [], partitions: [], metrics: [], sourceJoins: [], findings: [] },
       coverage: { analyzedFiles: 0, resolutionOnlyFiles: 0, unresolvedCount: 0, views: views.map(view => ({ view, status: request.views.includes(view) ? 'complete' : 'not-run', candidateSites: 0, resolvedSites: 0, unresolvedSites: 0 })) } };
-    for (const view of views) this.siteSets.set(view, { resolved: new Set(), unresolved: new Set() });
     for (const source of this.selected) this.trackFile(source);
     const configText = readFileSync(configPath, 'utf8'), relativeConfig = this.relative(configPath);
     this.artifact.snapshot.files.push({ path: relativeConfig, contentHash: sha(configText), utf16Length: configText.length, lineCount: this.lineCount(configText), role: 'configuration', language: 'json' });
@@ -231,7 +231,6 @@ export class AnalysisContext {
     const key = JSON.stringify([view, kind, from, to, site, baseAttributes]), id = `relation:${sha(key)}`;
     if (!this.relationMap.has(id)) this.relationMap.set(id, { id, view, kind, from, to, weight: 1,
       provenance: this.provenance(node, method, status), ...baseAttributes } as AnalysisRelation);
-    if (this.active(view)) this.siteSets.get(view)!.resolved.add(this.site(node));
     return id;
   }
   issue(view: AnalysisView, reason: AnalysisArtifact['uncertainties'][number]['reason'], node: ts.Node,
@@ -240,7 +239,6 @@ export class AnalysisContext {
     const id = `issue:${sha(JSON.stringify([view, reason, this.site(node), entityIds]))}`;
     if (!this.issueIds.has(id)) { this.issueIds.add(id); this.artifact.uncertainties.push({ id, kind, view, reason, entityIds,
       relationIds: [], candidateEntityIds: [], provenance: this.provenance(node, 'syntax', 'unresolved', explanation) }); }
-    this.siteSets.get(view)!.unresolved.add(this.site(node));
   }
   canonical(id: string): string { const seen = new Set<string>(); while (this.aliases.has(id) && !seen.has(id)) { seen.add(id); id = this.aliases.get(id)!; } return id; }
   owner(node: ts.Node): ts.FunctionLikeDeclaration | ts.SourceFile {
@@ -256,7 +254,7 @@ export class AnalysisContext {
     this.releaseCompiler(); this.selected.length = 0; this.files.clear();
     this.entities.clear(); this.entityNodes.clear(); this.nodeEntities.clear(); this.scopes.clear(); this.bindingScopes.clear();
     this.aliases.clear(); this.setters.clear(); this.relationMap.clear(); this.callableNodes.length = 0;
-    this.ranges.clear(); this.sites.clear(); this.fingerprints.clear(); this.siteKeys.clear(); this.siteCounts.clear(); this.siteSets.clear(); this.duplicates.clear(); this.issueIds.clear();
+    this.ranges.clear(); this.sites.clear(); this.fingerprints.clear(); this.siteKeys.clear(); this.siteCounts.clear(); this.duplicates.clear(); this.issueIds.clear();
   }
   finish() {
     this.pinCompilerInputs();
@@ -282,7 +280,14 @@ export class AnalysisContext {
     artifact.coverage.resolutionOnlyFiles = artifact.snapshot.files.filter(file => file.role === 'resolution-only').length;
     artifact.coverage.unresolvedCount = artifact.uncertainties.filter(issue => ['unresolved', 'unsupported', 'ambiguous-identity'].includes(issue.kind)).length;
     for (const coverage of artifact.coverage.views) {
-      const sites = this.siteSets.get(coverage.view)!;
+      // Derivable from persisted facts, so assembled and freshly extracted graphs
+      // have exactly the same coverage accounting without hidden compiler state.
+      const sites = { resolved: new Set<string>(), unresolved: new Set<string>() };
+      const key = (range: AnalysisRange) => `${range.path}:${range.start.offset}:${range.end.offset}`;
+      if (coverage.status !== 'not-run') {
+        for (const edge of artifact.relations) if (edge.view === coverage.view) sites.resolved.add(key(edge.provenance.locations[0]));
+        for (const issue of artifact.uncertainties) if (issue.view === coverage.view) sites.unresolved.add(key(issue.provenance.locations[0]));
+      }
       coverage.unresolvedSites = sites.unresolved.size; coverage.resolvedSites = [...sites.resolved].filter(site => !sites.unresolved.has(site)).length;
       coverage.candidateSites = coverage.resolvedSites + coverage.unresolvedSites;
       if (coverage.unresolvedSites) coverage.status = 'partial';

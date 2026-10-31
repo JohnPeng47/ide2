@@ -29,7 +29,17 @@ const name = includes.length ? 'selected-scope' : 'whole-repository';
 const started = performance.now();
 let jsonBytes = 0;
 const jsonHash = createHash('sha256'), compressedHash = createHash('sha256');
-function* chunks() { for (const chunk of analysisArtifactChunks(result.artifact)) { jsonBytes += Buffer.byteLength(chunk); jsonHash.update(chunk); yield chunk; } }
+function* chunks() {
+  let parts: string[] = [], bytes = 0;
+  // Keep canonical bytes intact while avoiding a zlib/stream callback per record.
+  for (const chunk of analysisArtifactChunks(result.artifact)) {
+    parts.push(chunk); bytes += Buffer.byteLength(chunk);
+    if (bytes >= 256 * 1024) {
+      const block = parts.join(''); jsonBytes += bytes; jsonHash.update(block); yield block; parts = []; bytes = 0;
+    }
+  }
+  if (parts.length) { const block = parts.join(''); jsonBytes += bytes; jsonHash.update(block); yield block; }
+}
 const artifactPath = path.join(output, `${name}.json.gz`);
 const temporaryPath = `${artifactPath}.${process.pid}.tmp`;
 try {

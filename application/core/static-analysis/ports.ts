@@ -15,6 +15,8 @@ export interface StaticAnalysisRequest {
 export interface StaticAnalysisResult {
   artifact: AnalysisArtifact;
   measurements: { elapsedMs: number; peakRssBytes: number; phasesMs?: Record<string, number> };
+  /** Compiler mode used to reconstruct an identical snapshot during incremental assembly. */
+  execution?: { semanticResolution: boolean };
 }
 export interface StaticAnalyzer {
   analyze(request: StaticAnalysisRequest): Promise<StaticAnalysisResult>;

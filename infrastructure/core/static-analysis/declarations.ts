@@ -9,6 +9,7 @@ export class Declarations {
   readonly declarationOwners = new Map<string, ts.Node>();
   readonly scopeBindings = new Map<string, Map<string, string>>();
   readonly parameterFields = new Map<ts.ParameterDeclaration, string>();
+  readonly externalEntities = new WeakMap<ts.Node, Map<string, string>>();
   constructor(readonly ctx: AnalysisContext) {}
 
   name(node: ts.Node): string {
@@ -35,15 +36,20 @@ export class Declarations {
   ensure(node: ts.Node, at: ts.Node = node): string {
     if (ts.isIdentifier(node) && node.parent && (ts.isBindingElement(node.parent) || ts.isParameter(node.parent)
       || ts.isVariableDeclaration(node.parent) || ts.isPropertyDeclaration(node.parent))) node = node.parent;
-    const existing = this.ctx.nodeEntities.get(node); if (existing) return existing;
     if (!this.ctx.inside(node) || node.getSourceFile().isDeclarationFile && !this.ctx.selectedPaths.has(this.ctx.relative(node.getSourceFile().fileName))) {
+      // External summaries belong to the referencing module. Sharing the first
+      // caller's summary across modules makes unrelated files affect identity.
+      const file = this.ctx.relative(at.getSourceFile().fileName);
+      const summaries = this.externalEntities.get(node) ?? new Map<string, string>();
+      const existing = summaries.get(file); if (existing) return existing;
       const name = this.name(node), module = this.ctx.module(at.getSourceFile());
       const filename = node.getSourceFile().fileName, relative = this.ctx.relative(filename);
       const origin = filename.includes('/node_modules/') ? filename.split('/node_modules/').pop()!
         : !relative.startsWith('../') && !relative.startsWith('/') ? relative : filename.split('/').pop()!;
       const id = this.ctx.addEntity('external', name, at, module, `external:${origin}:${name}`, 'external');
-      this.ctx.nodeEntities.set(node, id); return id;
+      summaries.set(file, id); this.externalEntities.set(node, summaries); return id;
     }
+    const existing = this.ctx.nodeEntities.get(node); if (existing) return existing;
     if (ts.isSourceFile(node)) return this.ctx.module(node);
     const parent = this.structuralParent(node);
     let kind: AnalysisEntity['kind'] = 'binding';

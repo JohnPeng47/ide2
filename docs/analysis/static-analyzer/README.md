@@ -12,6 +12,11 @@ iterations are recorded in [iterations.jsonl](iterations.jsonl). The generated
 During implementation, consult the report's snapshot and run manifest: a generated
 report describes that pinned run, not later working-tree edits.
 
+[Incremental analysis](incremental.md) describes dependency-connected extraction
+reuse, checkpoint persistence, conservative invalidation and historical worktree
+replay. Run `npm run analysis:history` to compare incremental and fresh artifacts
+across the default commit sequence in an isolated detached worktree.
+
 ## Run
 
 ```sh
@@ -57,6 +62,8 @@ explicit even in a completed pass. Metrics only use available layers.
 | `domain/core/static-analysis/persistence.ts` | Validation, canonical JSON serialization and parsing |
 | `application/core/static-analysis/ports.ts` | Full-pipeline request/result boundary |
 | `infrastructure/core/static-analysis/analyzer.ts` | Compiler-backed extraction and bounded compiler lifetime |
+| `infrastructure/core/static-analysis/incremental.ts` | Dependency inventory, component cache and snapshot assembly |
+| `domain/core/static-analysis/incremental.ts` | Component grouping, graph dependency edges and fact merging |
 | `domain/core/static-analysis/sourceJoins.ts` | Pinned diagram range joins and overlap-preserving concept partitions |
 | `domain/core/static-analysis/report.ts` | Deterministic Markdown report from persisted evidence |
 | `domain/core/static-analysis/metrics.ts` | Weighted cohesion, coverage, overlap, VI and seeded shuffled baselines |

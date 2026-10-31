@@ -1,0 +1,285 @@
+{
+  "worktree": "/tmp/new-diagram-analysis-history-01a19014",
+  "analyzerCommit": "13b6833415df115d36787c72ad0dca2e5239d682",
+  "analyzerVersion": "0.4.0",
+  "implementationSha256": "49d3b3182f7a46b7d8cc5fc45d974fa10a8b11711986d82ecfc3fbcc5900810f",
+  "analyzerTrackedChanges": [
+    "application/core/static-analysis/ports.ts",
+    "infrastructure/core/static-analysis/analyzer.ts",
+    "infrastructure/core/static-analysis/context.ts",
+    "infrastructure/core/static-analysis/declarations.ts"
+  ],
+  "dependencyPolicy": "Current installed dependencies shared read-only through a node_modules symlink; historical source commits, not historical dependency installs.",
+  "rows": [
+    {
+      "commit": "4cfd462c50351ef95846152d5a6d0a62b4a3a971",
+      "paths": [
+        "src/features/mapping/workspace/canvasSession.ts",
+        "src/features/mapping/workspace/canvasWorkspace.ts",
+        "domain/core/immutability.ts",
+        "tests/architecture/dependencies.test.ts"
+      ],
+      "snapshotId": "snapshot:5d1b5d0ed0dcfa9de2f45561ceafc29121db4e973acfb8601312b1d75cb3c736",
+      "changedFiles": [
+        "domain/core/immutability.ts",
+        "src/features/mapping/workspace/canvasSession.ts",
+        "src/features/mapping/workspace/canvasWorkspace.ts",
+        "tests/architecture/dependencies.test.ts"
+      ],
+      "removedFiles": [],
+      "analyzedFiles": [
+        "domain/core/immutability.ts",
+        "src/features/mapping/workspace/canvasSession.ts",
+        "src/features/mapping/workspace/canvasWorkspace.ts",
+        "tests/architecture/dependencies.test.ts"
+      ],
+      "reusedFiles": [],
+      "components": 2,
+      "fallbackReasons": [],
+      "derivedRecomputed": true,
+      "incrementalMs": 4387.38677,
+      "freshMs": 463.7247640000005,
+      "incrementalHash": "1de41ef9ee98baa081304db8995b5cfcde87c1fe7e853bb9db29defb00925f75",
+      "freshHash": "1de41ef9ee98baa081304db8995b5cfcde87c1fe7e853bb9db29defb00925f75",
+      "equal": true
+    },
+    {
+      "commit": "e0c9e7641c073c9ba433d5c13277532eed2cfc26",
+      "paths": [
+        "src/features/mapping/workspace/canvasSession.ts",
+        "src/features/mapping/workspace/canvasWorkspace.ts",
+        "domain/core/immutability.ts",
+        "tests/architecture/dependencies.test.ts"
+      ],
+      "snapshotId": "snapshot:31a194fa9e2da5b45463e136d382d4b58200ae6aa1c6de26687154905ab68732",
+      "changedFiles": [
+        "src/features/mapping/workspace/canvasSession.ts"
+      ],
+      "removedFiles": [],
+      "analyzedFiles": [
+        "domain/core/immutability.ts",
+        "src/features/mapping/workspace/canvasSession.ts",
+        "src/features/mapping/workspace/canvasWorkspace.ts"
+      ],
+      "reusedFiles": [
+        "tests/architecture/dependencies.test.ts"
+      ],
+      "components": 2,
+      "fallbackReasons": [],
+      "derivedRecomputed": true,
+      "incrementalMs": 1615.09202,
+      "freshMs": 285.47376299999996,
+      "incrementalHash": "b714fa61dc97fad56074ee418c4cc282595e0b91486ca825f4a7f053f05868f8",
+      "freshHash": "b714fa61dc97fad56074ee418c4cc282595e0b91486ca825f4a7f053f05868f8",
+      "equal": true
+    },
+    {
+      "commit": "4cfd462c50351ef95846152d5a6d0a62b4a3a971",
+      "paths": [
+        "src/features/mapping/workspace/canvasSession.ts",
+        "src/features/mapping/workspace/canvasWorkspace.ts",
+        "domain/core/immutability.ts",
+        "tests/architecture/dependencies.test.ts"
+      ],
+      "snapshotId": "snapshot:5d1b5d0ed0dcfa9de2f45561ceafc29121db4e973acfb8601312b1d75cb3c736",
+      "changedFiles": [
+        "src/features/mapping/workspace/canvasSession.ts"
+      ],
+      "removedFiles": [],
+      "analyzedFiles": [
+        "domain/core/immutability.ts",
+        "src/features/mapping/workspace/canvasSession.ts",
+        "src/features/mapping/workspace/canvasWorkspace.ts"
+      ],
+      "reusedFiles": [
+        "tests/architecture/dependencies.test.ts"
+      ],
+      "components": 2,
+      "fallbackReasons": [],
+      "derivedRecomputed": true,
+      "incrementalMs": 1322.1795359999996,
+      "freshMs": 263.45170999999937,
+      "incrementalHash": "1de41ef9ee98baa081304db8995b5cfcde87c1fe7e853bb9db29defb00925f75",
+      "freshHash": "1de41ef9ee98baa081304db8995b5cfcde87c1fe7e853bb9db29defb00925f75",
+      "equal": true
+    },
+    {
+      "commit": "adbf1845e2fa286d2b9fb7644c7260f982735cd2",
+      "paths": [
+        "src/features/mapping/workspace/canvasSession.ts",
+        "src/features/mapping/workspace/canvasWorkspace.ts",
+        "domain/core/immutability.ts",
+        "tests/architecture/dependencies.test.ts"
+      ],
+      "snapshotId": "snapshot:ad0f438b9ebef536719a59c5b648931e06dcb790b324a60f23be948d4602a466",
+      "changedFiles": [
+        "src/features/mapping/workspace/canvasSession.ts",
+        "src/features/mapping/workspace/canvasWorkspace.ts",
+        "tests/architecture/dependencies.test.ts"
+      ],
+      "removedFiles": [],
+      "analyzedFiles": [
+        "domain/core/immutability.ts",
+        "src/features/mapping/workspace/canvasSession.ts",
+        "src/features/mapping/workspace/canvasWorkspace.ts",
+        "tests/architecture/dependencies.test.ts"
+      ],
+      "reusedFiles": [],
+      "components": 2,
+      "fallbackReasons": [],
+      "derivedRecomputed": true,
+      "incrementalMs": 2318.3364029999993,
+      "freshMs": 468.209648,
+      "incrementalHash": "bc7a0f95aa684c277c8e0c1e9ebebadf3796a9c2ef5b959b7a0531b339e52998",
+      "freshHash": "bc7a0f95aa684c277c8e0c1e9ebebadf3796a9c2ef5b959b7a0531b339e52998",
+      "equal": true
+    },
+    {
+      "commit": "7fa6f6f3196875b3c9405fb7eaf279b8525025d6",
+      "paths": [
+        "src/features/mapping/workspace/canvasSession.ts",
+        "src/features/mapping/workspace/canvasWorkspace.ts",
+        "domain/core/immutability.ts",
+        "tests/architecture/dependencies.test.ts"
+      ],
+      "snapshotId": "snapshot:76d41419b03ceb1ffde63854734e282c9601930d5b08295db86ed92717e2bc94",
+      "changedFiles": [
+        "src/features/mapping/workspace/canvasWorkspace.ts"
+      ],
+      "removedFiles": [],
+      "analyzedFiles": [
+        "domain/core/immutability.ts",
+        "src/features/mapping/workspace/canvasSession.ts",
+        "src/features/mapping/workspace/canvasWorkspace.ts",
+        "tests/architecture/dependencies.test.ts"
+      ],
+      "reusedFiles": [],
+      "components": 2,
+      "fallbackReasons": [],
+      "derivedRecomputed": true,
+      "incrementalMs": 2282.435361,
+      "freshMs": 358.8511950000029,
+      "incrementalHash": "88de11e223b597b1e5ed624e3aae474f28626a976006ec822bf593fa521654b0",
+      "freshHash": "88de11e223b597b1e5ed624e3aae474f28626a976006ec822bf593fa521654b0",
+      "equal": true
+    },
+    {
+      "commit": "b321abcf792ac36961052bb6001385a8376678e5",
+      "paths": [
+        "src/features/mapping/workspace/canvasSession.ts",
+        "src/features/mapping/workspace/canvasWorkspace.ts",
+        "domain/core/immutability.ts",
+        "tests/architecture/dependencies.test.ts"
+      ],
+      "snapshotId": "snapshot:60439cea13d7e1b3c8a270fda3908735bf76e6155dacd94369823ee471d45295",
+      "changedFiles": [
+        "src/features/mapping/workspace/canvasSession.ts",
+        "src/features/mapping/workspace/canvasWorkspace.ts",
+        "tests/architecture/dependencies.test.ts"
+      ],
+      "removedFiles": [],
+      "analyzedFiles": [
+        "domain/core/immutability.ts",
+        "src/features/mapping/workspace/canvasSession.ts",
+        "src/features/mapping/workspace/canvasWorkspace.ts",
+        "tests/architecture/dependencies.test.ts"
+      ],
+      "reusedFiles": [],
+      "components": 2,
+      "fallbackReasons": [],
+      "derivedRecomputed": true,
+      "incrementalMs": 1826.7170890000016,
+      "freshMs": 337.88910100000066,
+      "incrementalHash": "44042a9114fa83ead2839e671e9046b4aaf003828edfbc247de8d0b7a40e518a",
+      "freshHash": "44042a9114fa83ead2839e671e9046b4aaf003828edfbc247de8d0b7a40e518a",
+      "equal": true
+    },
+    {
+      "commit": "7fa6f6f3196875b3c9405fb7eaf279b8525025d6",
+      "paths": [
+        "src/features/mapping/workspace/canvasSession.ts",
+        "src/features/mapping/workspace/canvasWorkspace.ts",
+        "domain/core/immutability.ts",
+        "tests/architecture/dependencies.test.ts"
+      ],
+      "snapshotId": "snapshot:76d41419b03ceb1ffde63854734e282c9601930d5b08295db86ed92717e2bc94",
+      "changedFiles": [
+        "src/features/mapping/workspace/canvasSession.ts",
+        "src/features/mapping/workspace/canvasWorkspace.ts",
+        "tests/architecture/dependencies.test.ts"
+      ],
+      "removedFiles": [],
+      "analyzedFiles": [
+        "domain/core/immutability.ts",
+        "src/features/mapping/workspace/canvasSession.ts",
+        "src/features/mapping/workspace/canvasWorkspace.ts",
+        "tests/architecture/dependencies.test.ts"
+      ],
+      "reusedFiles": [],
+      "components": 2,
+      "fallbackReasons": [],
+      "derivedRecomputed": true,
+      "incrementalMs": 1981.8154379999978,
+      "freshMs": 303.2174870000017,
+      "incrementalHash": "88de11e223b597b1e5ed624e3aae474f28626a976006ec822bf593fa521654b0",
+      "freshHash": "88de11e223b597b1e5ed624e3aae474f28626a976006ec822bf593fa521654b0",
+      "equal": true
+    },
+    {
+      "commit": "adbf1845e2fa286d2b9fb7644c7260f982735cd2",
+      "paths": [
+        "src/features/mapping/workspace/canvasSession.ts",
+        "src/features/mapping/workspace/canvasWorkspace.ts",
+        "domain/core/immutability.ts",
+        "tests/architecture/dependencies.test.ts"
+      ],
+      "snapshotId": "snapshot:ad0f438b9ebef536719a59c5b648931e06dcb790b324a60f23be948d4602a466",
+      "changedFiles": [
+        "src/features/mapping/workspace/canvasWorkspace.ts"
+      ],
+      "removedFiles": [],
+      "analyzedFiles": [
+        "domain/core/immutability.ts",
+        "src/features/mapping/workspace/canvasSession.ts",
+        "src/features/mapping/workspace/canvasWorkspace.ts",
+        "tests/architecture/dependencies.test.ts"
+      ],
+      "reusedFiles": [],
+      "components": 2,
+      "fallbackReasons": [],
+      "derivedRecomputed": true,
+      "incrementalMs": 2084.4526609999994,
+      "freshMs": 353.2019939999991,
+      "incrementalHash": "bc7a0f95aa684c277c8e0c1e9ebebadf3796a9c2ef5b959b7a0531b339e52998",
+      "freshHash": "bc7a0f95aa684c277c8e0c1e9ebebadf3796a9c2ef5b959b7a0531b339e52998",
+      "equal": true
+    },
+    {
+      "commit": "adbf1845e2fa286d2b9fb7644c7260f982735cd2",
+      "paths": [
+        "src/features/mapping/workspace/canvasSession.ts",
+        "src/features/mapping/workspace/canvasWorkspace.ts",
+        "domain/core/immutability.ts",
+        "tests/architecture/dependencies.test.ts"
+      ],
+      "snapshotId": "snapshot:ad0f438b9ebef536719a59c5b648931e06dcb790b324a60f23be948d4602a466",
+      "changedFiles": [],
+      "removedFiles": [],
+      "analyzedFiles": [],
+      "reusedFiles": [
+        "domain/core/immutability.ts",
+        "src/features/mapping/workspace/canvasSession.ts",
+        "src/features/mapping/workspace/canvasWorkspace.ts",
+        "tests/architecture/dependencies.test.ts"
+      ],
+      "components": 2,
+      "fallbackReasons": [],
+      "derivedRecomputed": true,
+      "incrementalMs": 1133.7035460000006,
+      "freshMs": 319.35991999999897,
+      "incrementalHash": "bc7a0f95aa684c277c8e0c1e9ebebadf3796a9c2ef5b959b7a0531b339e52998",
+      "freshHash": "bc7a0f95aa684c277c8e0c1e9ebebadf3796a9c2ef5b959b7a0531b339e52998",
+      "equal": true
+    }
+  ]
+}
