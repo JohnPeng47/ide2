@@ -28,7 +28,9 @@ export function provenance(generated?: GeneratedCanvas) {
 }
 /** Provenance worth showing under a title; omitted when the canvas name already says it. */
 export function provenanceDetail(name: string, generated?: GeneratedCanvas) {
-  return generated && !name.startsWith(promptLabel(generated.prompt)) ? provenance(generated) : undefined;
+  if (!generated) return undefined;
+  return [!name.startsWith(promptLabel(generated.prompt)) ? provenance(generated) : undefined,
+    generated.layoutTemplate ? `Layout: ${generated.layoutTemplate.name}` : undefined].filter(Boolean).join(' · ') || undefined;
 }
 export function relativeTime(iso: string) {
   const seconds = Math.round((Date.now() - Date.parse(iso)) / 1000);

@@ -14,6 +14,7 @@ export const evalRunRequestSchema = z.object({
   task: z.string().max(20000).optional(),
   /** Earlier generated canvases attached as extra input (Alternatives). */
   previous: z.array(z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_-]{0,80}$/)).max(6).optional(),
+  layoutTemplateId: id.optional(),
   passes: z.number().int().min(1).max(4).default(1),
   model: z.string().trim().min(1).max(100).default('gpt-6-sol'),
   effort: z.enum(['low', 'medium', 'high', 'xhigh']).default('high'),
@@ -28,6 +29,7 @@ export const evalEfforts = ['low', 'medium', 'high', 'xhigh'] as const;
 export interface EvalRunPrompt { promptId: string; version?: number; name: string; stages: Record<string, string> }
 export type EvalCellStatus = 'queued' | 'generating' | 'finished' | 'failed' | 'skipped' | 'cancelled';
 export interface EvalRunCell {
+  layoutPlacements?: import('../../core/diagrams/layoutTemplate').LayoutPlacement[];
   candidateName?: string;
   key: string; promptId?: string; promptVersion?: number; promptName?: string; pass: number; stage: string;
   status: EvalCellStatus; canvasId?: string; checkpointId?: string; explanation?: string; error?: string;
@@ -37,6 +39,7 @@ export interface EvalRunCell {
 }
 export type EvalRunStatus = 'queued' | 'generating' | 'finished' | 'failed' | 'partial' | 'cancelled';
 export interface EvalRun {
+  layoutTemplate?: import('../../core/diagrams/layoutTemplate').LayoutTemplate;
   number?: number;
   deletedAt?: string;
   outputSnapshots?: Record<string, import('../../core/diagrams/generatedCanvas').GeneratedCanvasRecord>;

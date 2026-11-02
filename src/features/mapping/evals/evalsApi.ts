@@ -2,6 +2,8 @@ import type { EvalPrompt, SaveEvalPrompt } from '../../../../domain/mapping/eval
 import type { EvalRunRequest, EvalRunSummary } from '../../../../domain/mapping/evals/evalRun';
 import type { GeneratedCanvasRecord } from '../../../../domain/core/diagrams/generatedCanvas';
 import type { ProjectRepresentationRecord } from '../../../../domain/core/representations/projectCatalog';
+import type { LayoutCapture, LayoutTemplate } from '../../../../domain/core/diagrams/layoutTemplate';
+import type { CompareSource } from '../../../../domain/mapping/compare/comparePageSession';
 
 const base = `${import.meta.env.BASE_URL}api/mapping/evals`;
 async function request<T>(path: string, body?: unknown, method?: 'DELETE'): Promise<T> {
@@ -11,6 +13,11 @@ async function request<T>(path: string, body?: unknown, method?: 'DELETE'): Prom
   return value;
 }
 export const listPrompts = () => request<EvalPrompt[]>('/prompts');
+export const listLayoutTemplates = () => request<LayoutTemplate[]>('/layout-templates');
+export const captureLayoutTemplate = (source: CompareSource) => request<LayoutCapture>('/layout-templates/capture', source);
+export const saveLayoutTemplate = (capture: LayoutCapture, name: string, requestId: string) => request<LayoutTemplate>('/layout-templates', { capture, name, requestId });
+export const renameLayoutTemplate = (id: string, name: string) => request<LayoutTemplate>(`/layout-templates/${encodeURIComponent(id)}`, { name });
+export const deleteLayoutTemplate = (id: string) => request<{ deleted: true }>(`/layout-templates/${encodeURIComponent(id)}`, undefined, 'DELETE');
 export const readPrompt = (id: string) => request<EvalPrompt>(`/prompts/${encodeURIComponent(id)}`);
 export const savePrompt = (input: SaveEvalPrompt) => request<EvalPrompt>('/prompts', input);
 export const archivePrompt = (id: string, archived: boolean) => request<EvalPrompt>(`/prompts/${encodeURIComponent(id)}/archive`, { archived });

@@ -1,3 +1,4 @@
+import { LayoutTemplates } from './LayoutTemplates';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { generatedWorkflow } from '../../../../domain/core/diagrams/generatedCanvas';
 import type { ComparePageSession } from '../../../../domain/mapping/compare/comparePageSession';
@@ -61,6 +62,7 @@ function usePolled<T>(load: () => Promise<T>, active: (value: T) => boolean, onE
 }
 
 export function EvalsPage() {
+  const [templatesOpen, setTemplatesOpen] = useState(false);
   const [route, setRoute] = useState(readRoute);
   const [error, setError] = useState('');
   const onError = useCallback((error: unknown) => setError(errorMessage(error)), []);
@@ -247,6 +249,7 @@ export function EvalsPage() {
       <span className="evals-muted">Prompt workflows, runs and comparisons</span>
       <span className="evals-spacer" />
       <button type="button" aria-haspopup="menu" onClick={event => { const box = event.currentTarget.getBoundingClientRect(); promptsMenu({ x: box.left, y: box.bottom + 4 }); }}>Prompts ▾</button>
+      <button type="button" onClick={() => setTemplatesOpen(true)}>Layout templates</button>
       <button type="button" onClick={() => setLaunch('compare')}>New comparison</button>
       <button type="button" className="is-primary" onClick={() => setLaunch({ workflow: route.kind === 'prompt' && current ? current.workflow : 'roll-up' })}>New run</button>
     </header>
@@ -268,6 +271,7 @@ export function EvalsPage() {
         {loading && route.kind === 'home' ? <p role="status" className="evals-message">Loading…</p> : content()}
       </section>
     </div>
+    {templatesOpen && <LayoutTemplates onClose={() => setTemplatesOpen(false)} />}
     {launch === 'compare' && <CompareLauncher onClose={() => setLaunch(undefined)} onCreated={openSession} />}
     {menu && <PopoverMenu label={menu.label} at={menu.at} sections={menu.sections} onClose={() => setMenu(undefined)} />}
     {launch && launch !== 'compare' && prompts && <RunLauncher prompts={prompts} runs={runs ?? []} initial={launch} onClose={() => setLaunch(undefined)} onStarted={started} />}

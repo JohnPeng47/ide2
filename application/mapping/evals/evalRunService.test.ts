@@ -18,8 +18,10 @@ import { compareWorkspaceFixture } from '../../../tests/support/compareWorkspace
 import { MappingDocumentController } from '../../../domain/mapping/workspace/mappingDocumentController';
 import { initialCanvasState } from '../../../domain/mapping/workspace/mappingWorkspace';
 import { documentFromHistory } from '../../../domain/core/diagrams/canvasHistory';
+import { getDiagramRevision } from '../../../domain/core/diagrams/diagramRevisionStore';
 import type { EvalPrompt } from '../../../domain/mapping/evals/evalPrompt';
 import type { EvalRun } from '../../../domain/mapping/evals/evalRun';
+import { LayoutTemplateService, type LayoutTemplateStore } from './layoutTemplateService';
 
 const roots: string[] = [];
 afterEach(async () => { await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true }))); });
@@ -38,14 +40,101 @@ async function fixture() {
   const prompts = new EvalPromptService(new JsonDirectoryStore<EvalPrompt>(root, 'eval-prompts'), projects);
   const runtime = new FakeEvalRuntime();
   const service = new EvalRunService(comparisons, workspace, projects, contexts, prompts, canvases, new JsonDirectoryStore<EvalRun>(root, 'eval-runs'), runtime, new FileRollUpRunStore(root));
+  const layouts = new LayoutTemplateService(new JsonDirectoryStore<Awaited<ReturnType<LayoutTemplateStore['list']>>[number]>(root, 'layout-templates'), comparisons, projects);
+  service.layoutTemplates = layouts;
   canvases.snapshot = (id, checkpoint) => service.outputSnapshot(id, checkpoint);
   const sources = (await comparisons.candidates()).filter(c => c.viewId).map(({ documentId, viewId, checkpointId }) => ({ documentId, viewId, checkpointId }));
   const strict = await prompts.save({ requestId: crypto.randomUUID(), workflow: 'roll-up', name: 'Strict', stages: { r2: 'Strict r2 for {{child}} pass {{pass}}', g2: 'Strict g2 into {{parent}}' } });
   const rollUp = (extra = {}) => ({ requestId: crypto.randomUUID(), workflow: 'roll-up', inputs: { child: sources[0], parent: sources[1] }, passes: 2,
     prompts: [{ promptId: 'builtin-roll-up', version: 1 }, { promptId: strict.id, version: 1 }], ...extra });
-  return { root, service, prompts, comparisons, catalogs, contexts, runtime, records, sources, strict, rollUp, projects, workspace, canvases };
+  return { root, service, prompts, comparisons, catalogs, contexts, runtime, records, sources, strict, rollUp, projects, workspace, canvases, layouts };
 }
 const settle = (f: Awaited<ReturnType<typeof fixture>>, id: string) => expect.poll(async () => (await f.service.read(id)).status, { timeout: 10000 }).not.toMatch(/queued|generating/);
+
+it('pins geometry-only templates across source deletion, template rename/deletion, restart and reruns', async () => {
+  const f = await fixture(), before = JSON.stringify(f.records);
+  const sourceRun = await f.service.start(f.rollUp({ passes: 1, prompts: [{ promptId: 'builtin-roll-up', version: 1 }] }));
+  await settle(f, sourceRun.id);
+  const sourceCell = (await f.service.read(sourceRun.id)).cells[1];
+  const capture = await f.layouts.capture({ documentId: sourceCell.canvasId!, checkpointId: sourceCell.checkpointId! });
+  const save = { requestId: crypto.randomUUID(), name: 'Private source layout name', capture };
+  // The save persists the preview geometry, even if its source no longer exists.
+  await f.service.deleteCanvas(sourceCell.canvasId!);
+  const [template, retry] = await Promise.all([f.layouts.save(save), f.layouts.save(save)]);
+  expect(retry).toEqual(template);
+  await expect(f.layouts.save({ ...save, name: 'Different' })).rejects.toThrow('Request ID');
+  expect(template.geometry.slots.length).toBeGreaterThan(1);
+  await expect(f.service.start(f.rollUp({ layoutTemplateId: template.id }))).rejects.toThrow('Alternatives only');
+  const context = await f.contexts.create({ requestId: crypto.randomUUID(), name: 'New content', context: 'Fresh context for a brand new diagram.' });
+  const original = f.runtime.generate.bind(f.runtime), seen: Parameters<typeof original>[0][] = [];
+  let bad = true;
+  f.runtime.generate = async input => {
+    seen.push(input);
+    if (bad) { bad = false; return { output: { format: 'template-slots-v1', explanation: 'Missing slots', diagrams: [] } as never }; }
+    return original(input);
+  };
+  const request = { requestId: crypto.randomUUID(), workflow: 'alternatives', task: 'New content in each slot', passes: 2,
+    inputs: { context: { agentContextId: context.agentContextId } }, prompts: [{ promptId: 'builtin-alternatives', version: 1 }], layoutTemplateId: template.id };
+  const run = await f.service.start(request);
+  await settle(f, run.id);
+  const result = await f.service.read(run.id);
+  expect(result.status).toBe('finished');
+  expect(result.cells).toHaveLength(2);
+  expect(result.layoutTemplate).toEqual(template);
+  expect(seen.some(input => 'validation-error.json' in input.files)).toBe(true);
+  for (const input of seen) {
+    expect(input.files['layout-template.json']).toEqual(template.geometry);
+    expect(JSON.stringify(input.files['layout-template.json'])).not.toContain(template.name);
+    expect(input.prompt).toContain('template-slots-v1');
+    expect(input.prompt).not.toContain('position:{column,row}');
+  }
+  const identities: string[] = [];
+  for (const cell of result.cells) {
+    const output = await f.service.canvas(cell.canvasId!), doc = documentFromHistory(output.history);
+    expect(output.generated).toMatchObject({ layoutTemplate: template, layoutPlacements: cell.layoutPlacements });
+    expect(cell.layoutPlacements).toHaveLength(template.geometry.slots.length);
+    expect(doc.edges).toEqual([]);
+    for (const diagram of Object.values(doc.scene.contents)) {
+      identities.push(diagram.diagramId, diagram.revisionId, ...Object.values(getDiagramRevision(diagram.revisionId).nodeRefs));
+      expect(diagram.content.ascii).toContain('Fresh diagram');
+      expect(diagram.sourceContext.mappings).toEqual([]);
+    }
+  }
+  expect(new Set(identities).size).toBe(identities.length);
+  await f.layouts.rename(template.id, 'Renamed layout');
+  expect((await f.service.read(run.id)).layoutTemplate!.name).toBe(template.name);
+  await f.layouts.delete(template.id);
+  expect(await f.layouts.list()).toEqual([]);
+  await expect(f.service.start({ ...request, requestId: crypto.randomUUID() })).rejects.toThrow('not found');
+  // A fresh service must recover the durable pin, without consulting the deleted library entry.
+  f.service = new EvalRunService(f.comparisons, f.workspace, f.projects, f.contexts, f.prompts, f.canvases,
+    new JsonDirectoryStore<EvalRun>(f.root, 'eval-runs'), f.runtime, new FileRollUpRunStore(f.root));
+  f.service.layoutTemplates = f.layouts;
+  const rerun = await f.service.start({ ...request, requestId: crypto.randomUUID(), parentRunId: run.id });
+  await settle(f, rerun.id);
+  expect((await f.service.read(rerun.id)).status).toBe('finished');
+  expect((await f.service.read(rerun.id)).layoutTemplate).toEqual(template);
+  expect(JSON.stringify(f.records)).toBe(before);
+});
+
+it('cancels template generations through the existing run lifecycle without creating placeholder outputs', async () => {
+  const f = await fixture();
+  const capture = await f.layouts.capture(f.sources[0]);
+  const template = await f.layouts.save({ requestId: crypto.randomUUID(), name: 'Cancelable layout', capture });
+  const context = await f.contexts.create({ requestId: crypto.randomUUID(), name: 'Context', context: 'Task context' });
+  let started = false;
+  f.runtime.generate = async input => {
+    started = true;
+    await new Promise((_, reject) => input.signal.addEventListener('abort', () => reject(Error('Aborted')), { once: true }));
+    throw Error('Unreachable');
+  };
+  const run = await f.service.start({ requestId: crypto.randomUUID(), workflow: 'alternatives', task: 'Test', passes: 1,
+    inputs: { context: { agentContextId: context.agentContextId } }, prompts: [{ promptId: 'builtin-alternatives', version: 1 }], layoutTemplateId: template.id });
+  await expect.poll(() => started).toBe(true);
+  await f.service.cancel(run.id); await settle(f, run.id);
+  expect((await f.service.read(run.id)).status).toBe('cancelled');
+  expect(await f.service.generated()).toEqual([]);
+});
 
 it('migrates alternatives once under a shared AgentContext and retains original views, diagrams and provenance', async () => {
   const f = await fixture(), before = JSON.stringify(f.records);

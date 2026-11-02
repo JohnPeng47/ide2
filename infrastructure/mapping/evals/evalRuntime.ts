@@ -63,6 +63,12 @@ export class FakeEvalRuntime implements EvalRuntime {
   async generate(input: Parameters<EvalRuntime['generate']>[0]) {
     input.signal.throwIfAborted();
     if (input.stage === 'alternative') {
+      if (input.files['layout-template.json']) {
+        const geometry = input.files['layout-template.json'] as import('../../../domain/core/diagrams/layoutTemplate').LayoutGeometry;
+        return { output: { format: 'template-slots-v1', explanation: 'Fresh diagrams fitted to the selected layout.',
+          // A wide first slot exercises deterministic fitting in browser fixtures.
+          diagrams: geometry.slots.map((slot, index) => ({ slotId: slot.id, ascii: `Fresh diagram ${index + 1}\n${index === 0 ? '|-- A wider generated branch demonstrates deterministic layout fitting\n' : ''}\`-- Generated from context` })), edges: [] } };
+      }
       const context = input.files['context.json'] as { name: string };
       const pass = input.prompt.match(/pass \d+/)?.[0] ?? 'pass';
       return { output: { explanation: `Alternative of ${context.name} for ${pass}`, edges: [{ source: { diagram: 'overview', line: 2 }, target: { diagram: 'detail', line: 1 }, label: 'expands' }],

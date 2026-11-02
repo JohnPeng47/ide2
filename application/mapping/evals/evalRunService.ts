@@ -17,7 +17,10 @@ import { composePrompt, evalWorkflows, promptHasErrors, validatePromptStages, ty
 import { templateVariables } from '../../../domain/mapping/evals/promptTemplate';
 import { cellKey, evalRunRequestSchema, legacyRollUpRun, runStatus, summarizeEvalRun, type EvalRun, type EvalRunCell, type EvalRunContext, type EvalRunPrompt } from '../../../domain/mapping/evals/evalRun';
 import { materializeAttachment, materializeRollUp } from '../rollup/rollUpMaterializer';
-import { materializeAlternative } from './alternativeMaterializer';
+import { materializeAlternative, materializeTemplateAlternative } from './alternativeMaterializer';
+import type { LayoutTemplateService } from './layoutTemplateService';
+import type { LayoutPlacement } from '../../../domain/core/diagrams/layoutTemplate';
+import { templateOutputInstructions, templateOutputSchema } from '../../../domain/mapping/evals/layoutTemplate';
 import type { EvalPromptService } from './evalPromptService';
 import type { GeneratedCanvasSource } from './generatedCanvasCatalog';
 
@@ -26,9 +29,10 @@ export interface LegacyRollUpStore { list(): Promise<RollUpRun[]>; read(id: stri
 export interface EvalRuntime {
   generate(input: { workflow: EvalWorkflowId; stage: string; prompt: string; schema: z.ZodType; files: Record<string, unknown>; model: string; effort: string; signal: AbortSignal }): Promise<{ output: unknown; usage?: Record<string, number> }>;
 }
-type Generation = Omit<Parameters<EvalRuntime['generate']>[0], 'prompt'> & { body: string; values: Record<string, string> };
+type Generation = Omit<Parameters<EvalRuntime['generate']>[0], 'prompt'> & { body: string; values: Record<string, string>; templateOutput?: boolean };
 
 export class EvalRunService {
+  layoutTemplates?: LayoutTemplateService;
   private ready: Promise<void>;
   readonly legacyGenerations: LegacyGenerationAdapter;
   deleteContextComparisons?: (id: string, workflow: EvalWorkflowId) => Promise<void>;
@@ -148,6 +152,10 @@ export class EvalRunService {
     const workflow = evalWorkflows[request.workflow];
     // A rerun of a rerun is filed under the same original run.
     const rerun = request.parentRunId ? await this.read(request.parentRunId) : undefined;
+    if (request.layoutTemplateId && request.workflow !== 'alternatives') throw new ApplicationError('invalid-input', 'Layout templates are supported by Alternatives only.');
+    const layoutTemplate = request.layoutTemplateId ? structuredClone(rerun?.layoutTemplate?.id === request.layoutTemplateId
+      ? rerun.layoutTemplate : await this.layoutTemplates?.read(request.layoutTemplateId)) : undefined;
+    if (request.layoutTemplateId && !layoutTemplate) throw new ApplicationError('invalid-input', 'Layout templates are unavailable.');
     if (rerun?.compatibility) throw new ApplicationError('invalid-input', 'Rerun this generation through its original chat executor.');
     const parent = request.parentRunId ? await this.read(request.parentRunId).then(run => run.parentRunId ? this.read(run.parentRunId) : run) : undefined;
     if (parent && parent.workflow !== request.workflow) throw new ApplicationError('invalid-input', 'A rerun must use the same workflow as its run.');
@@ -209,6 +217,7 @@ export class EvalRunService {
       key: cellKey(prompt.promptId, i + 1, stage.id), promptId: prompt.promptId, promptVersion: prompt.version, promptName: prompt.name,
       pass: i + 1, stage: stage.id, status: 'queued' as const })))).flat();
     const run: EvalRun = { schemaVersion: 1, number: this.nextNumber++, id: request.requestId, requestHash, request, projectId: captured.projectId, workflow: workflow.id,
+      ...(layoutTemplate ? { layoutTemplate } : {}),
       agentContextId, contextName, prompts, inputs, ...(contextInputs.length ? { contexts } : {}), ...(previous.length ? { previous } : {}), status: 'queued', createdAt: new Date().toISOString(), cells,
       ...(parent ? { parentRunId: parent.id } : {}) };
     await this.store.save(run);
@@ -241,7 +250,7 @@ export class EvalRunService {
   private cell(run: EvalRun, prompt: EvalRunPrompt, pass: number, stage: string) {
     return run.cells.find(cell => cell.key === cellKey(prompt.promptId, pass, stage))!;
   }
-  private async step<T extends { history: CanvasHistoryRecord; output: { explanation: string }; viewId?: string }>(run: EvalRun, cell: EvalRunCell, signal: AbortSignal,
+  private async step<T extends { history: CanvasHistoryRecord; output: { explanation: string }; viewId?: string; layoutPlacements?: LayoutPlacement[] }>(run: EvalRun, cell: EvalRunCell, signal: AbortSignal,
     generation: Generation, validate: (output: unknown) => T, name: string, generated: Omit<GeneratedCanvas, 'key' | 'agentContextId' | 'contextName' | 'runId' | 'pass' | 'stage'>, repositoryId?: string) {
     Object.assign(cell, { status: 'generating', startedAt: new Date().toISOString() }); await this.persist(run);
     try {
@@ -252,10 +261,12 @@ export class EvalRunService {
       const saved = await this.projects.projectCatalogs.saveMappingDiagram(run.projectId, { name: name.slice(0, 120), type: 'generated', history: result.history,
         scene: document.scene, edges: document.edges, repositoryId, generated: { ...generated, key: cell.key + ':' + run.id, agentContextId: run.agentContextId,
           contextName: run.contextName, runId: run.id, pass: cell.pass, stage: cell.stage as GeneratedCanvas['stage'], workflow: run.workflow,
+          ...(run.layoutTemplate ? { layoutTemplate: run.layoutTemplate, layoutPlacements: result.layoutPlacements } : {}),
           ...(result.viewId ? { storageViewId: result.viewId } : {}) } });
       if (this.deleted.has(run.id)) { await this.projects.projectCatalogs.archiveRepresentation(run.projectId, saved.representation.id); signal.throwIfAborted(); }
       (run.outputSnapshots ??= {})[saved.representation.id] = { id: saved.representation.id, name, generated: saved.representation.generated!, history: copyCompareHistory(result.history, result.history.headId) };
       Object.assign(cell, { status: 'finished', canvasId: saved.representation.id, checkpointId: result.history.headId,
+        ...(result.layoutPlacements ? { layoutPlacements: result.layoutPlacements } : {}),
         explanation: result.output.explanation, usage, completedAt: new Date().toISOString() });
       await this.persist(run);
       return result;
@@ -285,10 +296,12 @@ export class EvalRunService {
         await this.persist(run); throw error;
       }
       await this.step(run, cell, signal,
-        { ...common, stage: 'alternative', body: prompt.stages.alternative, schema: alternativeOutputSchema,
+        { ...common, stage: 'alternative', body: prompt.stages.alternative, templateOutput: !!run.layoutTemplate,
+          schema: run.layoutTemplate ? templateOutputSchema : alternativeOutputSchema,
           files: { 'context.json': { name: saved.name, description: saved.description, snapshot: saved.resolvedSnapshot ?? saved.snapshot },
+            ...(run.layoutTemplate ? { 'layout-template.json': run.layoutTemplate.geometry } : {}),
             ...Object.fromEntries((run.previous ?? []).map((copy, i) => [`previous-${i + 1}.json`, canvasContext(copy, false)])) } },
-        materializeAlternative, title, provenance, repositoryId);
+        output => run.layoutTemplate ? materializeTemplateAlternative(output, run.layoutTemplate.geometry) : materializeAlternative(output), title, provenance, repositoryId);
       return;
     }
     const { child, parent } = run.inputs;
@@ -305,8 +318,9 @@ export class EvalRunService {
       { ...common, stage: 'g2', body: prompt.stages.g2, schema: attachOutputSchema, files: { ...files, 'r2.json': r2.output } },
       output => materializeAttachment(parent.history, r2.output, output), `${title} · g2`, { ...provenance, source: parent.source }, repositoryId);
   }
-  private async generateValidated<T>({ body, values, ...input }: Generation, validate: (output: unknown) => T) {
-    const prompt = composePrompt(evalWorkflows[input.workflow], input.stage, body, values);
+  private async generateValidated<T>({ body, values, templateOutput, ...input }: Generation, validate: (output: unknown) => T) {
+    const workflow = evalWorkflows[input.workflow];
+    const prompt = composePrompt(templateOutput ? { ...workflow, stages: workflow.stages.map(stage => ({ ...stage, outputFormat: templateOutputInstructions })) } : workflow, input.stage, body, values);
     let files = input.files;
     const usage: Record<string, number> = {};
     for (let attempt = 0; ; attempt++) {

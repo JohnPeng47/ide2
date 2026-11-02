@@ -4,12 +4,22 @@ import type { Connect } from 'vite';
 import type { EvalPromptService } from '../../../../../application/mapping/evals/evalPromptService';
 import type { EvalRunService } from '../../../../../application/mapping/evals/evalRunService';
 import { archiveEvalPromptSchema } from '../../../../../domain/mapping/evals/evalPrompt';
+import { renameLayoutTemplateSchema } from '../../../../../domain/mapping/evals/layoutTemplate';
 import { renameEvalRunSchema, summarizeEvalRun } from '../../../../../domain/mapping/evals/evalRun';
 import { readBody, sendJson } from '../../../http/http';
 
 const segment = '([A-Za-z0-9][A-Za-z0-9_-]{0,80})';
 export async function handleEvalRoutes(request: Connect.IncomingMessage, response: ServerResponse, url: URL, prompts: EvalPromptService, runs: EvalRunService) {
   const route = url.pathname.slice('/api/mapping/evals'.length), method = request.method;
+  if (route.startsWith('/layout-templates') && runs.layoutTemplates) {
+    const templates = runs.layoutTemplates;
+    if (route === '/layout-templates' && method === 'GET') return sendJson(response, 200, await templates.list());
+    if (route === '/layout-templates' && method === 'POST') return sendJson(response, 200, await templates.save(await readBody(request)));
+    if (route === '/layout-templates/capture' && method === 'POST') return sendJson(response, 200, await templates.capture(await readBody(request)));
+    const match = route.match(new RegExp(`^/layout-templates/${segment}$`));
+    if (match && method === 'POST') return sendJson(response, 200, await templates.rename(match[1], renameLayoutTemplateSchema.parse(await readBody(request)).name));
+    if (match && method === 'DELETE') { await templates.delete(match[1]); return sendJson(response, 200, { deleted: true }); }
+  }
   if (route === '/prompts') {
     if (method === 'GET') return sendJson(response, 200, await prompts.list());
     if (method === 'POST') return sendJson(response, 200, await prompts.save(await readBody(request)));

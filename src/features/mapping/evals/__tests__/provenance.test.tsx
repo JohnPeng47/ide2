@@ -8,6 +8,7 @@ import { PromptDiff } from '../ComparisonView';
 import type { EvalRunSummary } from '../../../../../domain/mapping/evals/evalRun';
 import type { EvalPrompt } from '../../../../../domain/mapping/evals/evalPrompt';
 import type { CompareCanvasCopy } from '../../../../../domain/mapping/compare/comparePageSession';
+import { layoutFromBounds } from '../../../../../domain/core/diagrams/layoutTemplate';
 
 it('renders a rerun with pinned v2 text when the cached catalog only has v1, or the prompt is absent', () => {
   const prompt: EvalPrompt = { schemaVersion: 1, id: 'prompt', projectId: 'p', name: 'Example', workflow: 'alternatives', createdAt: '', updatedAt: '',
@@ -26,6 +27,18 @@ it('diffs every workflow stage from immutable provenance without needing the pro
   const html = renderToStaticMarkup(<PromptDiff A={copy('roll', 'roll-up', { r2: 'Compress', g2: 'Attach' })}
     B={copy('alt', 'alternatives', { alternative: 'Entire alternative instruction' })} prompts={[]} onClose={() => {}} />);
   for (const text of ['Stage r2 diff', 'Stage g2 diff', 'Stage alternative diff', 'Entire alternative instruction']) expect(html).toContain(text);
+});
+
+it('shows pinned layout differences even when both user prompt versions are identical', () => {
+  const A = { generated: { workflow: 'alternatives', prompt: { id: 'alt', name: 'Example', version: 1 }, promptStages: { alternative: 'Same instructions' } } } as unknown as CompareCanvasCopy;
+  const B = structuredClone(A);
+  B.generated!.layoutTemplate = { schemaVersion: 1, id: 'template', name: 'Deleted library template', projectId: 'p', createdAt: '',
+    source: { documentId: 'deleted-source', checkpointId: 'pinned' }, geometry: layoutFromBounds([{ column: 5, row: 7, columns: 10, rows: 2 }]) };
+  const html = renderToStaticMarkup(<PromptDiff A={A} B={B} prompts={[]} onClose={() => {}} />);
+  expect(html).toContain('Pinned layout inputs');
+  expect(html).toContain('No layout template.');
+  expect(html).toContain('Deleted library template');
+  expect(html).toContain('data-layout-slot="slot-1"');
 });
 
 it('loads every AgentContext page so contexts beyond the first hundred remain selectable', async () => {

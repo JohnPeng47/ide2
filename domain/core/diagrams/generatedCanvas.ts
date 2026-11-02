@@ -2,6 +2,8 @@ import type { CanvasGeneration } from './canvasGeneration';
 
 /** Ownership is the AgentContext; source canvases are provenance, not parents. */
 export interface GeneratedCanvas {
+  layoutTemplate?: import('./layoutTemplate').LayoutTemplate;
+  layoutPlacements?: import('./layoutTemplate').LayoutPlacement[];
   key: string;
   agentContextId: string;
   contextName: string;

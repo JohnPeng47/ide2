@@ -6,6 +6,7 @@ import { lineDiff } from '../../../../domain/mapping/evals/lineDiff';
 import { CompareCanvasPane } from './CompareCanvasPane';
 import { DiagramPane } from './DiagramPane';
 import { Drawer } from './Drawer';
+import { LayoutProvenance } from './LayoutTemplates';
 import { errorMessage, promptLabel, provenanceDetail } from './evalsFormat';
 
 class ComparisonBoundary extends Component<{ children: ReactNode }, { error?: string }> {
@@ -102,6 +103,11 @@ export function PromptDiff({ A, B, prompts, onClose }: { A: CompareCanvasCopy; B
   const stages = [...new Set([...Object.keys(a ?? {}), ...Object.keys(b ?? {})])];
   return <Drawer title="Prompt diff" wide onClose={onClose}>
     <p className="prompt-diff-legend"><span className="is-removed">− A · {promptLabel(A.generated!.prompt)}</span><span className="is-added">+ B · {promptLabel(B.generated!.prompt)}</span></p>
+    {(A.generated?.layoutTemplate || B.generated?.layoutTemplate) && <section aria-label="Pinned layout inputs">
+      {([['A', A], ['B', B]] as const).map(([side, copy]) => <div key={side}><h3>{side} · Layout input</h3>
+        {copy.generated?.layoutTemplate ? <LayoutProvenance template={copy.generated.layoutTemplate} placements={copy.generated.layoutPlacements} /> : <p>No layout template.</p>}
+      </div>)}
+    </section>}
     {!a || !b ? <p className="evals-muted">One of these prompt versions is no longer available.</p> : stages.map(stage => {
       const lines = lineDiff(a[stage] ?? '', b[stage] ?? ''), changed = lines.some(line => line.kind !== 'same');
       return <section key={stage} className="prompt-diff" aria-label={`Stage ${stage} diff`}>

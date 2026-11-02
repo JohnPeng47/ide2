@@ -1,4 +1,5 @@
 import { EvalRunService } from '../../../application/mapping/evals/evalRunService';
+import { LayoutTemplateService, type LayoutTemplateStore } from '../../../application/mapping/evals/layoutTemplateService';
 import { EvalPromptService } from '../../../application/mapping/evals/evalPromptService';
 import { GeneratedCanvasCatalog } from '../../../application/mapping/evals/generatedCanvasCatalog';
 import { FileRollUpRunStore } from '../../../infrastructure/mapping/rollup/fileRollUpRunStore';
@@ -123,6 +124,7 @@ export function createBackend(projectRoot: string, diagramsDirectory: string, co
   const evalPrompts = new EvalPromptService(new JsonDirectoryStore<EvalPrompt>(store.storeRoot, 'eval-prompts'), store);
   const evalRuns = new EvalRunService(compareSessions, workspace, store, contextLibrary, evalPrompts, generatedCanvases,
     new JsonDirectoryStore<EvalRun>(store.storeRoot, 'eval-runs'), fake ? new FakeEvalRuntime() : new CodexEvalRuntime(options.piEnabled === true), new FileRollUpRunStore(store.storeRoot));
+  evalRuns.layoutTemplates = new LayoutTemplateService(new JsonDirectoryStore<Awaited<ReturnType<LayoutTemplateStore['list']>>[number]>(store.storeRoot, 'layout-templates'), compareSessions, store);
   evalRuns.replayLegacy = (run, requestId) => agentChat.rerunAlternatives(run, requestId);
   evalRuns.cancelLegacy = id => agentChat.cancelGeneration(id);
   void agentChat.observeGenerations((children, parent, historical) => evalRuns.recordLegacy(children, parent, historical)).catch(error => console.error('Generation reconciliation failed', error));

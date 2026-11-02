@@ -1,3 +1,4 @@
+import { LayoutProvenance, SaveLayoutTemplate } from './LayoutTemplates';
 import { useEffect, useState } from 'react';
 import type { CompareCanvasCopy } from '../../../../domain/mapping/compare/comparePageSession';
 import type { MappingCanvasState } from '../../../../domain/mapping/workspace/mappingWorkspace';
@@ -7,6 +8,7 @@ import { errorMessage, provenanceDetail } from './evalsFormat';
 
 /** Read-only preview: browsing outputs never replaces the Mapping canvas. */
 export function CanvasPreview({ canvasId, checkpointId, deleted, bare }: { canvasId: string; checkpointId?: string; deleted?: boolean; bare?: boolean }) {
+  const [savingLayout, setSavingLayout] = useState(false);
   const [copy, setCopy] = useState<CompareCanvasCopy>(), [error, setError] = useState('');
   useEffect(() => {
     let closed = false; setCopy(undefined); setError('');
@@ -23,10 +25,11 @@ export function CanvasPreview({ canvasId, checkpointId, deleted, bare }: { canva
   if (error) return <p role="alert" className="evals-error">{error}</p>;
   if (!copy) return <p role="status" className="evals-muted canvas-preview-loading">Loading preview…</p>;
   const viewport = (copy.history.snapshots[copy.history.headId].view as MappingCanvasState | undefined)?.viewport;
-  return <div className="canvas-preview">{copy.generated?.generation && <details className="output-details"><summary>Original generation prompts</summary>
+  return <div className="canvas-preview">{savingLayout && <SaveLayoutTemplate source={copy.source} onClose={() => setSavingLayout(false)} />}
+    {copy.generated?.layoutTemplate && <LayoutProvenance template={copy.generated.layoutTemplate} placements={copy.generated.layoutPlacements} />}{copy.generated?.generation && <details className="output-details"><summary>Original generation prompts</summary>
     {Object.entries({ 'Original triggering prompt': copy.generated.generation.triggerPrompt, 'Shared generation task': copy.generated.generation.taskPrompt,
       'Candidate prompt': copy.generated.generation.prompt }).map(([label, text]) => text ? <section key={label}><strong>{label}</strong><pre style={{ whiteSpace: 'pre-wrap' }}>{text}</pre></section> : null)}
   </details>}<CompareCanvasPane copy={copy} fitContent bare={bare} detail={provenanceDetail(copy.view.name, copy.generated)}
     camera={{ transform: viewport ?? { offset: { x: 170, y: 36 }, scale: 1 } }}
-    actions={!deleted && <a className="evals-button" href={`${import.meta.env.BASE_URL}?diagram=${encodeURIComponent(canvasId)}`} target="_blank" rel="noreferrer">Open in Mapping ↗</a>} /></div>;
+    actions={<><button type="button" className="evals-button" onClick={() => setSavingLayout(true)}>Save layout as template</button>{!deleted && <a className="evals-button" href={`${import.meta.env.BASE_URL}?diagram=${encodeURIComponent(canvasId)}`} target="_blank" rel="noreferrer">Open in Mapping ↗</a>}</>} /></div>;
 }

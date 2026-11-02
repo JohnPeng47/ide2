@@ -1,3 +1,5 @@
+import type { LayoutTemplate } from '../../../../domain/core/diagrams/layoutTemplate';
+import { LayoutPreview } from './LayoutTemplates';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CompareCandidate } from '../../../../domain/mapping/compare/comparePageSession';
 import type { ProjectRepresentationRecord } from '../../../../domain/core/representations/projectCatalog';
@@ -6,7 +8,7 @@ import { evalEfforts, type EvalRunRequest, type EvalRunSummary } from '../../../
 import { evalWorkflowIds, evalWorkflows, type EvalWorkflowId } from '../../../../domain/mapping/evals/evalWorkflows';
 import { templateVariables } from '../../../../domain/mapping/evals/promptTemplate';
 import { listCompareCandidates } from './compareApi';
-import { listContexts, listGenerated, startRun, type AgentContextSummary } from './evalsApi';
+import { listLayoutTemplates, listContexts, listGenerated, startRun, type AgentContextSummary } from './evalsApi';
 import { errorMessage, promptLabel, relativeTime, runNumbers } from './evalsFormat';
 import { candidateKey, sourceOf } from './CanvasPicker';
 import { Drawer } from './Drawer';
@@ -47,6 +49,10 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
   const [picked, setPicked] = useState<string[]>(rerun ? ROLES.flatMap(role => rerun.inputs[role] ? [candidateKey(rerun.inputs[role].source)] : []) : initial.canvasKeys ?? []);
   /** Alternatives: one source AgentContext plus earlier alternatives from it. */
   const [contextId, setContextId] = useState<string | undefined>(rerun?.contexts?.context?.agentContextId ?? initial.contextId);
+  const [templates, setTemplates] = useState<LayoutTemplate[]>();
+  const [layoutTemplateId, setLayoutTemplateId] = useState(request?.layoutTemplateId ?? '');
+  const [templateError, setTemplateError] = useState('');
+  const layoutTemplate = (rerun?.layoutTemplate?.id === layoutTemplateId ? rerun.layoutTemplate : templates?.find(item => item.id === layoutTemplateId));
   const [previous, setPrevious] = useState<string[]>(request?.previous ?? []);
   const [task, setTask] = useState(request?.task ?? ''), [passes, setPasses] = useState(request?.passes ?? workflow.defaultPasses);
   const [model, setModel] = useState(request?.model ?? 'gpt-6-sol'), [effort, setEffort] = useState<EvalRunRequest['effort']>(request?.effort ?? 'high');
@@ -61,6 +67,7 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
       // Preselected canvases may have been saved again since; keep only those still pinned.
       setPicked(current => current.filter(key => pinned.has(key) || items.some(item => candidateKey(item) === key)));
     }).catch(fail);
+    void listLayoutTemplates().then(items => { if (!closed) setTemplates(items); }).catch(error => { if (!closed) setTemplateError(errorMessage(error)); });
     void listContexts().then(result => { if (!closed) setContexts(result.items); }).catch(fail);
     void listGenerated().then(items => {
       if (closed) return;
@@ -150,6 +157,7 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
     workflowId === 'roll-up' && picked.length < 2 && `Tick ${picked.length ? 'a parent' : 'a child and a parent'} canvas in the tree.`,
     workflowId === 'alternatives' && !contextId && 'Tick an AgentContext in the tree.',
     rerun?.contexts?.context && contextId && contextId !== rerun.contexts.context.agentContextId && `A rerun must use ${rerun.contexts.context.name}.`,
+    workflowId === 'alternatives' && !!layoutTemplateId && !layoutTemplate && 'The selected layout template is unavailable.',
     usesTask && !task.trim() && 'A selected prompt uses {{task}}. Describe the task.'
   ].filter((problem): problem is string => !!problem);
   const outputs = chosen.length * passes * workflow.stages.length;
@@ -157,7 +165,7 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
     const inputs: EvalRunRequest['inputs'] = workflowId === 'roll-up'
       ? { child: sourceOf(candidate(picked[0])!), parent: sourceOf(candidate(picked[1])!) } : { context: { agentContextId: contextId! } };
     const body = { workflow: workflowId, prompts: chosen.map(prompt => ({ promptId: prompt.id, version: selected[prompt.id] })), passes, model: model.trim(), effort,
-      inputs, ...(usesTask ? { task: task.trim() } : {}), ...(workflowId === 'alternatives' && previous.length ? { previous } : {}), ...(rerun ? { parentRunId: rerun.id } : {}) };
+      inputs, ...(workflowId === 'alternatives' && layoutTemplateId ? { layoutTemplateId } : {}), ...(usesTask ? { task: task.trim() } : {}), ...(workflowId === 'alternatives' && previous.length ? { previous } : {}), ...(rerun ? { parentRunId: rerun.id } : {}) };
     const signature = JSON.stringify(body);
     if (pending.current?.signature !== signature) pending.current = { signature, requestId: crypto.randomUUID() };
     setBusy(true); setError('');
@@ -206,6 +214,16 @@ export function RunLauncher({ prompts, runs, initial, onClose, onStarted }: {
                 {previous.length > 0 && chosen.length > 0 && !uses('previous') && <p className="evals-warning">The selected prompts don't use {'{{previous}}'}; the files are still attached.</p>}
               </>}
             </section>
+            {workflowId === 'alternatives' && <section aria-label="Layout template"><h3>Layout template <small>optional</small></h3>
+              <label>Layout template<select aria-label="Layout template" value={layoutTemplateId} onChange={event => setLayoutTemplateId(event.target.value)}>
+                <option value="">No template</option>
+                {rerun?.layoutTemplate && <option value={rerun.layoutTemplate.id}>{rerun.layoutTemplate.name} · pinned from run</option>}
+                {templates?.filter(item => item.id !== rerun?.layoutTemplate?.id).map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+              </select></label>
+              {templateError && <p className="evals-warning">{templateError}</p>}
+              {layoutTemplate && <LayoutPreview geometry={layoutTemplate.geometry} />}
+              <p className="evals-muted">Save layouts from a canvas or the Layout templates menu in Evals. New content may expand right/down.</p>
+            </section>}
             <section aria-label="Prompts"><h3>Prompts <small>{chosen.length} of {available.length} selected</small></h3>
               {!available.length && <p className="evals-muted">No prompts for this workflow yet.</p>}
               <ul className="run-prompt-list">{available.map(prompt => {

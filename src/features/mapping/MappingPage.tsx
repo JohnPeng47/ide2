@@ -1,3 +1,6 @@
+import { extractLayoutTemplate, type LayoutCapture } from '../../../domain/core/diagrams/layoutTemplate';
+import { presentationScene, resolveDiagramView } from '../../../domain/mapping/workspace/diagramViewState';
+import { SaveLayoutTemplate } from './evals/LayoutTemplates';
 import { GeneratedCanvases } from './canvas-views/GeneratedCanvases';
 import { getDiagramRevision, listDiagramRevisions } from '../../../domain/core/diagrams/diagramRevisionStore';
 import { CanvasViewDiffPreview } from './canvas-views/CanvasViewDiffPreview';
@@ -175,6 +178,7 @@ function MappingWorkspacePage() {
   const [newRepositoryId, setNewRepositoryId] = useState('');
   const [newAscii, setNewAscii] = useState("[New diagram]");
   const [copyCurrent, setCopyCurrent] = useState(false);
+  const [layoutCapture, setLayoutCapture] = useState<LayoutCapture>();
   const active = activeId ? drafts[activeId] : undefined;
   const activeScene = active ? documentOf(active).scene : undefined;
   const viewDiffId = !changeMode && viewDiffSelection?.documentId === activeId && viewDiffSelection?.epoch === workspaceEpoch
@@ -1138,6 +1142,14 @@ function MappingWorkspacePage() {
           canSave={Boolean(active?.name.trim() && active && dirty(active) && !active.busy && !savingId && !deletingId && !workspaceBusy)}
           onNameChange={(name) => { if (activeId) setDrafts((current) => ({ ...current, [activeId]: { ...current[activeId], name } })); }}
           onNew={() => { setCopyCurrent(false); setCreating(true); }} onSave={() => void save()} />}
+        {!changeMode && <button type="button" disabled={!active || !!active.busy} onClick={() => {
+          if (!active || !activeId) return;
+          try {
+            const current = active.session.controller.getSnapshot();
+            setLayoutCapture({ geometry: extractLayoutTemplate(resolveDiagramView(presentationScene(current.document), current.canvas.diagramViews)),
+              source: { documentId: activeId, checkpointId: active.session.controller.exportHistory().headId } });
+          } catch (error) { setError(error instanceof Error ? error.message : String(error)); }
+        }}>Save layout as template</button>}
         {!changeMode && <div className="mapping-workspace-actions">
           <span className="mapping-agent-status" role="status" aria-live="polite" aria-atomic="true"
             data-state={!agentStatus.connected ? 'unavailable' : agentStatus.count ? 'connected' : 'idle'}
@@ -1163,7 +1175,7 @@ function MappingWorkspacePage() {
       </div>
       <p className="mapping-menu-status">{active?.newerRevision ? "A newer saved revision is available. Your local edits were preserved." : workspaceStatus}</p>
     </>;
-  return <SourcePaneViewStateContext.Provider value={viewState}><UiTestFramework id="mapping-local-chat" title="Menu" triggerLabel="Menu" menuContent={workspaceMenu} controls={LOCAL_CHAT_UI_CONTROLS}>
+  return <SourcePaneViewStateContext.Provider value={viewState}>{layoutCapture && <SaveLayoutTemplate initial={layoutCapture} onClose={() => setLayoutCapture(undefined)} onSaved={template => setWorkspaceStatus(`Saved layout template “${template.name}” · available in Evals Alternatives`)} />}<UiTestFramework id="mapping-local-chat" title="Menu" triggerLabel="Menu" menuContent={workspaceMenu} controls={LOCAL_CHAT_UI_CONTROLS}>
     {(ui) => <main className="mapping-poc-shell" data-local-chat-variant={ui.variant}>
       <section className="mapping-poc-workspace">
         <div className="mapping-viewport" {...symbolSearchHandlers}>
